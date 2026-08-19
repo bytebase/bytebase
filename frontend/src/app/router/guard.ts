@@ -7,6 +7,7 @@ import {
   workspaceCacheScope,
 } from "@/utils/storage-keys";
 import {
+  ACCOUNT_ROUTE,
   AUTH_2FA_SETUP_MODULE,
   AUTH_MFA_MODULE,
   AUTH_OAUTH_CALLBACK_MODULE,
@@ -14,7 +15,6 @@ import {
   AUTH_PASSWORD_FORGOT_MODULE,
   AUTH_PASSWORD_RESET_MODULE,
   AUTH_PROFILE_SETUP_MODULE,
-  AUTH_SIGNIN_ADMIN_MODULE,
   AUTH_SIGNIN_MODULE,
   AUTH_SIGNUP_MODULE,
   DATABASE_ROUTE_DASHBOARD,
@@ -45,7 +45,6 @@ const SIGNIN_QUERY_PARAMS = [
 export function isAuthRelatedRoute(routeName: string): boolean {
   return [
     AUTH_SIGNIN_MODULE,
-    AUTH_SIGNIN_ADMIN_MODULE,
     AUTH_SIGNUP_MODULE,
     AUTH_MFA_MODULE,
     AUTH_PASSWORD_RESET_MODULE,
@@ -80,6 +79,7 @@ export function buildSigninRedirectQuery(url: URL): Record<string, string> {
 
 // Route-name prefixes that an authenticated user may always access.
 const ALLOWED_ROUTE_PATTERNS = [
+  ACCOUNT_ROUTE,
   ENVIRONMENT_V1_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DASHBOARD,
@@ -198,7 +198,10 @@ export function rootGuard({
   const store = useAppStore.getState();
   const isLoggedIn = store.isLoggedIn();
 
-  if (toName === AUTH_SIGNUP_MODULE && store.isSaaSMode()) {
+  if (
+    toName === AUTH_SIGNUP_MODULE &&
+    store.authenticationInfo?.restriction?.disallowSignup
+  ) {
     return redirect(
       resolvePath(AUTH_SIGNIN_MODULE, {
         query: Object.fromEntries(url.searchParams),

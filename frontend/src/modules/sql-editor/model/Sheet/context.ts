@@ -25,6 +25,7 @@ import {
   getDefaultPagination,
   getSheetStatement,
   isSavedQueryReadableV1,
+  isSavedQueryWritableV1,
   storageKeySqlEditorSavedQueryFolder,
   storageKeySqlEditorSavedQueryTree,
   workspaceCacheScope,
@@ -1245,18 +1246,18 @@ const batchUpdateSavedQueryFolders = async (
     affectedFolderKeysByView.set(view, keys);
   };
 
-  const requestByKey = new Map<
-    string,
-    { parent: string; folders: string[]; names: string[] }
-  >();
-  const currentUserName = `users/${useAppStore.getState().currentUser?.email}`;
+  // Re-filing rides UpdateSavedQuery's folder field — MoveMySavedQueries
+  // moves whole folders only. The row is always cached here (it came off the
+  // tree), and it moves exactly when the caller can update it — the predicate
+  // that gates rename — so an EDITOR grantee re-files a shared saved query
+  // while a row the server would refuse is skipped rather than patched into
+  // a NotFound the cache would contradict.
+  const updates: { current: SavedQuery; folder: string }[] = [];
   for (const savedQuery of savedQueries) {
     const current = useAppStore.getState().getSavedQueryByName(savedQuery.name);
-    // Only the creator's own rows move. Sending somebody else's would come
-    // back with nothing moved while the cache patch below claimed otherwise.
-    if (current && current.creator !== currentUserName) continue;
-    const view = current ? viewForSavedQuery(current) : undefined;
-    if (current && (view === "my" || view === "shared")) {
+    if (!current || !isSavedQueryWritableV1(current)) continue;
+    const view = viewForSavedQuery(current);
+    if (view === "my" || view === "shared") {
       addAffectedFolderKey(
         view,
         getPwdForSavedQuery(view, {
@@ -1265,36 +1266,17 @@ const batchUpdateSavedQueryFolders = async (
       );
       addAffectedFolderKey(view, getPwdForSavedQuery(view, savedQuery));
     }
-
-    const index = savedQuery.name.lastIndexOf("/savedQueries/");
-    if (index < 0) {
-      continue;
-    }
-    const parent = savedQuery.name.slice(0, index);
-    const key = JSON.stringify([parent, savedQuery.folders]);
-    const request = requestByKey.get(key);
-    if (request) {
-      request.names.push(savedQuery.name);
-    } else {
-      requestByKey.set(key, {
-        parent,
-        folders: savedQuery.folders,
-        names: [savedQuery.name],
-      });
-    }
+    updates.push({ current, folder: savedQuery.folders.join("/") });
   }
-  const requests = [...requestByKey.values()];
-  if (requests.length === 0) return;
+  if (updates.length === 0) return;
   await Promise.all(
-    requests.map(async (request) => {
-      const folder = request.folders.join("/");
-      await useAppStore.getState().moveMySavedQueries(request.parent, {
-        names: request.names,
-        targetFolder: folder,
-      });
+    updates.map(async ({ current, folder }) => {
+      await useAppStore
+        .getState()
+        .patchSavedQuery({ ...current, folder }, ["folder"]);
       useAppStore
         .getState()
-        .patchSavedQueryFolderInCache(request.names, folder);
+        .patchSavedQueryFolderInCache([current.name], folder);
     })
   );
   for (const [view, folderKeys] of affectedFolderKeysByView) {

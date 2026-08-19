@@ -10,6 +10,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/stretchr/testify/require"
+	statuspb "google.golang.org/genproto/googleapis/rpc/status"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
@@ -18,11 +19,160 @@ import (
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
 const authTestEnterpriseLicense = "eyJhbGciOiJSUzI1NiIsImtpZCI6InYxIiwidHlwIjoiSldUIn0.eyJpbnN0YW5jZUNvdW50Ijo5OTksInRyaWFsaW5nIjpmYWxzZSwicGxhbiI6IkVOVEVSUFJJU0UiLCJvcmdOYW1lIjoiYmIiLCJhdWQiOiJiYi5saWNlbnNlIiwiZXhwIjo3OTc0OTc5MjAwLCJpYXQiOjE2NjM2Njc1NjEsImlzcyI6ImJ5dGViYXNlIiwic3ViIjoiMDAwMDEwMDAuIn0.JjYCMeAAMB9FlVeDFLdN3jvFcqtPsbEzaIm1YEDhUrfekthCbIOeX_DB2Bg2OUji3HSX5uDvG9AkK4Gtrc4gLMPI3D5mk3L-6wUKZ0L4REztS47LT4oxVhpqPQayYa9lKJB1YoHaqeMV4Z5FXeOXwuACoELznlwpT6pXo9xXm_I6QwQiO7-zD83XOTO4PRjByc-q3GKQu_64zJMIKiCW0I8a3GvrdSnO7jUuYU1KPmCuk0ZRq3I91m29LTo478BMST59HqCLj1GGuCKtR3SL_376XsZfUUM0iSAur5scg99zNGWRj-sUo05wbAadYx6V6TKaWrBUi_8_0RnJyP5gbA"
+
+func TestCountRecentLoginFailures(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+	db := container.GetDB()
+	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('ws-test')`)
+	require.NoError(t, err)
+
+	pgURL := fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres", container.GetHost(), container.GetPort())
+	stores, err := store.New(ctx, pgURL, false)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, stores.Close()) })
+	service := &AuthService{store: stores}
+
+	const email = "member@example.com"
+	createFailure := func(workspace, method, resource, user, message, response string) {
+		t.Helper()
+		require.NoError(t, stores.CreateAuditLog(ctx, workspace, &storepb.AuditLog{
+			Method:   method,
+			Resource: resource,
+			User:     user,
+			Response: response,
+			Status: &statuspb.Status{
+				Code:    int32(connect.CodeUnauthenticated),
+				Message: message,
+			},
+		}))
+	}
+
+	createFailure("ws-test", v1connect.AuthServiceLoginProcedure, email, "", errMsgInvalidCredentials, "")
+	createFailure("ws-test", v1connect.AuthServiceLoginProcedure, email, "", errMsgInvalidCredentials, "")
+	createFailure("ws-test", v1connect.AuthServiceLoginProcedure, email, "", errMsgInvalidCredentials, "old")
+	createFailure("ws-test", v1connect.AuthServiceLoginProcedure, email, "", errMsgInvalidMFACode, "")
+	createFailure("ws-test", v1connect.AuthServiceLoginProcedure, email, "", errMsgInvalidRecoveryCode, "")
+	createFailure("ws-test", v1connect.AuthServiceSwitchWorkspaceProcedure, "workspaces/ws-test", common.FormatUserEmail(email), errMsgInvalidMFACode, "")
+	createFailure("ws-test", v1connect.AuthServiceSwitchWorkspaceProcedure, "workspaces/ws-test", common.FormatUserEmail(email), errMsgInvalidRecoveryCode, "")
+	require.NoError(t, stores.CreateAuditLog(ctx, "ws-test", &storepb.AuditLog{
+		Method:   v1connect.AuthServiceLoginProcedure,
+		Resource: email,
+		Status:   &statuspb.Status{},
+	}))
+
+	result, err := db.ExecContext(ctx, `UPDATE audit_log SET created_at = $1 WHERE payload->>'response' = 'old'`, time.Now().Add(-2*time.Hour))
+	require.NoError(t, err)
+	rowsAffected, err := result.RowsAffected()
+	require.NoError(t, err)
+	require.EqualValues(t, 1, rowsAffected)
+
+	passwordFailures, err := service.countRecentLoginFailures(ctx, email, time.Hour, errMsgInvalidCredentials)
+	require.NoError(t, err)
+	require.Equal(t, 2, passwordFailures)
+
+	mfaFailures, err := service.countRecentLoginFailures(ctx, email, time.Hour, errMsgInvalidMFACode, errMsgInvalidRecoveryCode)
+	require.NoError(t, err)
+	require.Equal(t, 2, mfaFailures)
+}
+
+func TestLoginAnnouncesPreAuthenticationWorkspace(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+	db := container.GetDB()
+	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('ws-test')`)
+	require.NoError(t, err)
+
+	pgURL := fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres", container.GetHost(), container.GetPort())
+	stores, err := store.New(ctx, pgURL, false)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, stores.Close()) })
+
+	t.Run("self-hosted singleton", func(t *testing.T) {
+		service := &AuthService{store: stores, profile: &config.Profile{}}
+		var auditWorkspaceID string
+		ctx := common.WithSetAuditWorkspaceID(ctx, func(workspaceID string) {
+			auditWorkspaceID = workspaceID
+		})
+		_, err := service.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+			Email:    "unknown@example.com",
+			Password: "wrong-password",
+		}))
+		require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
+		require.Equal(t, "ws-test", auditWorkspaceID)
+	})
+
+	t.Run("SaaS requested workspace", func(t *testing.T) {
+		service := &AuthService{store: stores, profile: &config.Profile{SaaS: true}}
+		var auditWorkspaceID string
+		ctx := common.WithSetAuditWorkspaceID(ctx, func(workspaceID string) {
+			auditWorkspaceID = workspaceID
+		})
+		workspace := common.FormatWorkspace("ws-test")
+		_, err := service.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+			Email:     "unknown@example.com",
+			Password:  "wrong-password",
+			Workspace: &workspace,
+		}))
+		require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
+		require.Equal(t, "ws-test", auditWorkspaceID)
+	})
+
+	t.Run("SaaS requested workspace without membership", func(t *testing.T) {
+		user, err := stores.CreateUser(ctx, &store.UserMessage{
+			Email:        "member@example.com",
+			Name:         "Member",
+			PasswordHash: "wrong-password-hash",
+			Profile:      &storepb.UserProfile{},
+		})
+		require.NoError(t, err)
+		_, err = stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
+			ResourceID: "ws-member",
+			Payload:    &storepb.WorkspacePayload{Title: "Member workspace"},
+		}, user.Email)
+		require.NoError(t, err)
+
+		service := &AuthService{store: stores, profile: &config.Profile{SaaS: true}}
+		var auditWorkspaceIDs []string
+		ctx := common.WithSetAuditWorkspaceID(ctx, func(workspaceID string) {
+			auditWorkspaceIDs = append(auditWorkspaceIDs, workspaceID)
+		})
+		workspace := common.FormatWorkspace("ws-test")
+		_, err = service.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+			Email:     user.Email,
+			Password:  "wrong-password",
+			Workspace: &workspace,
+		}))
+		require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
+		require.Equal(t, []string{"ws-test"}, auditWorkspaceIDs)
+	})
+
+	t.Run("rejects nonexistent requested workspace", func(t *testing.T) {
+		service := &AuthService{store: stores, profile: &config.Profile{}}
+		var auditWorkspaceID string
+		ctx := common.WithSetAuditWorkspaceID(ctx, func(workspaceID string) {
+			auditWorkspaceID = workspaceID
+		})
+		workspace := common.FormatWorkspace("missing")
+		_, err := service.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+			Email:     "unknown@example.com",
+			Password:  "wrong-password",
+			Workspace: &workspace,
+		}))
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		require.Empty(t, auditWorkspaceID)
+	})
+}
 
 func TestExtractDomain(t *testing.T) {
 	tests := []struct {
@@ -160,31 +310,19 @@ func TestLoginEnforcesWorkspaceDomains(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("workspace admin", func(t *testing.T) {
-		for _, test := range []struct {
-			name    string
-			request *v1pb.LoginRequest
-		}{
-			{
-				name:    "password login enforces domains",
-				request: &v1pb.LoginRequest{Email: blockedAdmin.Email, Password: "password"},
-			},
-			{
-				name:    "SSO login enforces domains",
-				request: &v1pb.LoginRequest{Email: blockedAdmin.Email, IdpName: "idps/test"},
-			},
-		} {
-			t.Run(test.name, func(t *testing.T) {
-				err := service.validateLoginPermissions(ctx, blockedAdmin, workspaceID, test.request)
-				require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
-				require.ErrorContains(t, err, "does not belong to allowed domains")
-			})
-		}
+		err := service.validateLoginPermissions(ctx, blockedAdmin, workspaceID, &v1pb.LoginRequest{
+			Email:   blockedAdmin.Email,
+			IdpName: "idps/test",
+		})
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		require.ErrorContains(t, err, "does not belong to allowed domains")
 
-		err := service.validateLoginPermissions(ctx, allowedAdmin, workspaceID, &v1pb.LoginRequest{
+		err = service.validateLoginPermissions(ctx, allowedAdmin, workspaceID, &v1pb.LoginRequest{
 			Email:    allowedAdmin.Email,
 			Password: "password",
 		})
-		require.NoError(t, err, "workspace admins remain exempt from disallow_password_signin")
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
+		require.ErrorContains(t, err, "password signin is disallowed")
 	})
 
 	t.Run("send code", func(t *testing.T) {

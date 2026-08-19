@@ -100,7 +100,8 @@ func (s *SavedQueryService) CreateSavedQuery(
 	return connect.NewResponse(convertToAPISavedQuery(savedQuery)), nil
 }
 
-// GetSavedQuery returns the requested saved query, cutoff the content if the content is too long and the `raw` flag in request is false.
+// GetSavedQuery returns the requested saved query with its full content —
+// only Search truncates.
 func (s *SavedQueryService) GetSavedQuery(
 	ctx context.Context,
 	req *connect.Request[v1pb.GetSavedQueryRequest],
@@ -110,16 +111,29 @@ func (s *SavedQueryService) GetSavedQuery(
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	savedQuery, err := s.findSavedQuery(ctx, projectID, savedQueryID, true /* loadFull */)
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+	}
+	savedQuery, err := s.store.GetSavedQuery(ctx, &store.FindSavedQueryMessage{
+		ProjectIDs:     []string{projectID},
+		Workspace:      common.GetWorkspaceIDFromContext(ctx),
+		ResourceID:     &savedQueryID,
+		LoadFull:       true,
+		PrincipalEmail: user.Email,
+	})
 	if err != nil {
-		return nil, err
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get saved query: %v", err))
+	}
+	if savedQuery == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
 
-	access, err := s.savedQueryAccess(ctx, savedQuery)
+	canGet, err := s.hasSavedQueryPermission(ctx, user, savedQuery, permission.SavedQueriesGet)
 	if err != nil {
 		return nil, err
 	}
-	if !access.canRead() {
+	if !canGet {
 		// Same answer as a name that does not exist: a saved query the caller
 		// cannot read must not be probeable, by existence or by title.
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
@@ -230,28 +244,23 @@ func (s *SavedQueryService) SearchSavedQueryFolders(
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-	if err := s.checkDiscoverSavedQueries(ctx, user, projectID); err != nil {
+	// Folders inherit the rows' read rule, exactly as SearchSavedQueries does.
+	members, access, err := s.searchScope(ctx, user, projectID)
+	if err != nil {
 		return nil, err
 	}
 
-	accessMembers, err := s.iamManager.PrincipalMembers(ctx, common.GetWorkspaceIDFromContext(ctx), user)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve principals: %v", err))
-	}
-
-	filterQ, err := store.GetSearchSavedQueryFilter(ctx, s.store, user.Email, accessMembers, request.Filter, false /* allowTitleContains */)
+	filterQ, err := store.GetSearchSavedQueryFilter(ctx, s.store, user.Email, members, request.Filter, false /* allowTitleContains */)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	// Folders inherit the rows' read rule, exactly as SearchSavedQueries does:
-	// the caller's own saved queries plus those a binding shares with them, and
-	// no admin widening. The filter is what splits My (creator == me) from
-	// Shared (shared == true) — scoping to the caller's own rows here instead
-	// would hide a shared saved query its creator filed, since the client seeds
-	// its folder tree from this call and cannot expand into a folder it never
-	// learns about.
-	paths, err := s.store.ListSavedQueryFolderPaths(ctx, projectID, user.Email, accessMembers, filterQ)
+	// The filter is what splits My (creator == me) from Shared (shared ==
+	// true) — scoping to the caller's own rows here instead would hide a
+	// shared saved query its creator filed, since the client seeds its folder
+	// tree from this call and cannot expand into a folder it never learns
+	// about.
+	paths, err := s.store.ListSavedQueryFolderPaths(ctx, common.GetWorkspaceIDFromContext(ctx), projectID, user.Email, access, filterQ)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to search saved query folders: %v", err))
 	}
@@ -294,7 +303,10 @@ func (s *SavedQueryService) SearchSavedQueries(
 	if projectID == "-" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New(`SearchSavedQueries does not support parent "projects/-"`))
 	}
-	if err := s.checkDiscoverSavedQueries(ctx, user, projectID); err != nil {
+	// Search returns the saved queries the caller can read, the same rule as
+	// GetSavedQuery.
+	members, access, err := s.searchScope(ctx, user, projectID)
+	if err != nil {
 		return nil, err
 	}
 	if request.PageSize < 0 {
@@ -312,29 +324,21 @@ func (s *SavedQueryService) SearchSavedQueries(
 	limitPlusOne := offset.limit + 1
 
 	savedQueryFind := &store.FindSavedQueryMessage{
-		ProjectIDs:     []string{projectID},
+		ProjectIDs: []string{projectID},
+		// The workspace fence: a project outside the caller's workspace, or
+		// a deleted one, yields nothing — required now that a project-level
+		// bb.savedQueries.get drops the access clause entirely.
+		Workspace:      common.GetWorkspaceIDFromContext(ctx),
 		PrincipalEmail: user.Email,
 		Limit:          &limitPlusOne,
 		Offset:         &offset.offset,
+		// Access pushed into the query rather than filtered off the page
+		// afterwards, which would return short pages: nine of ten rows
+		// dropped still consumes the whole page.
+		AccessMembers: access,
 	}
 
-	// Search is caller-scoped: the caller's own saved queries plus those a
-	// binding shares with them, and nothing else — the admin backstop does not
-	// widen it. An admin wanting everyone's rows uses ListSavedQueries, the
-	// surface built for that, which is gated on bb.savedQueries.list and
-	// returns whole statements.
-	//
-	// The predicate goes into the query rather than filtering the page
-	// afterwards, which would return short pages: nine of ten rows dropped
-	// still consumes the whole page.
-	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	accessMembers, err := s.iamManager.PrincipalMembers(ctx, workspaceID, user)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve principals: %v", err))
-	}
-	savedQueryFind.AccessMembers = accessMembers
-
-	filterQ, err := store.GetSearchSavedQueryFilter(ctx, s.store, user.Email, accessMembers, request.Filter, true /* allowTitleContains */)
+	filterQ, err := store.GetSearchSavedQueryFilter(ctx, s.store, user.Email, members, request.Filter, true /* allowTitleContains */)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
@@ -371,8 +375,10 @@ func (s *SavedQueryService) UpdateSavedQuery(
 	if request.SavedQuery == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("saved query cannot be empty"))
 	}
-	if request.UpdateMask == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask cannot be empty"))
+	// An empty mask would touch nothing yet still return the full saved query
+	// — a read in update's clothing, which an update-only role must not get.
+	if request.UpdateMask == nil || len(request.UpdateMask.Paths) == 0 {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask must name at least one field"))
 	}
 	if request.SavedQuery.Name == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("saved query name cannot be empty"))
@@ -387,26 +393,29 @@ func (s *SavedQueryService) UpdateSavedQuery(
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-	savedQuery, err := s.findSavedQuery(ctx, projectID, savedQueryID, false /* loadFull */)
+	savedQuery, err := s.store.GetSavedQuery(ctx, &store.FindSavedQueryMessage{
+		ProjectIDs:     []string{projectID},
+		Workspace:      common.GetWorkspaceIDFromContext(ctx),
+		ResourceID:     &savedQueryID,
+		PrincipalEmail: user.Email,
+	})
 	if err != nil {
-		return nil, err
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get saved query: %v", err))
 	}
-	access, err := s.savedQueryAccess(ctx, savedQuery)
-	if err != nil {
-		return nil, err
-	}
-	if !access.canRead() {
-		// Invisible to this caller, so answer as if it were missing rather
-		// than confirming the name exists.
+	if savedQuery == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
-	if !access.canWrite() {
-		// A VIEWER can already see the row, so there is nothing left to hide.
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied to update the saved query"))
+	canUpdate, err := s.hasSavedQueryPermission(ctx, user, savedQuery, permission.SavedQueriesUpdate)
+	if err != nil {
+		return nil, err
+	}
+	if !canUpdate {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
 
 	savedQueryPatch := &store.PatchSavedQueryMessage{
 		ResourceID: savedQuery.ResourceID,
+		ProjectID:  savedQuery.ProjectID,
 	}
 	for _, path := range request.UpdateMask.Paths {
 		switch path {
@@ -416,11 +425,6 @@ func (s *SavedQueryService) UpdateSavedQuery(
 			statement := string(request.SavedQuery.Content)
 			savedQueryPatch.Statement = &statement
 		case "folder":
-			// Filing is organization rather than editing: you never re-file
-			// someone else's saved query, whatever your binding says.
-			if !access.canManage() {
-				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("only the creator or an admin can re-file a saved query"))
-			}
 			folder, err := store.NormalizeSavedQueryFolder(request.SavedQuery.Folder)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -454,6 +458,7 @@ func (s *SavedQueryService) UpdateSavedQuery(
 
 	savedQuery, err = s.store.GetSavedQuery(ctx, &store.FindSavedQueryMessage{
 		ProjectIDs:     []string{savedQuery.ProjectID},
+		Workspace:      common.GetWorkspaceIDFromContext(ctx),
 		ResourceID:     &savedQueryID,
 		PrincipalEmail: user.Email,
 		// Only Search truncates. The client caches this response as its FULL
@@ -481,33 +486,48 @@ func (s *SavedQueryService) DeleteSavedQuery(
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	savedQuery, err := s.findSavedQuery(ctx, projectID, savedQueryID, false /* loadFull */)
-	if err != nil {
-		return nil, err
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-	access, err := s.savedQueryAccess(ctx, savedQuery)
+	savedQuery, err := s.store.GetSavedQuery(ctx, &store.FindSavedQueryMessage{
+		ProjectIDs:     []string{projectID},
+		Workspace:      common.GetWorkspaceIDFromContext(ctx),
+		ResourceID:     &savedQueryID,
+		PrincipalEmail: user.Email,
+	})
 	if err != nil {
-		return nil, err
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get saved query: %v", err))
 	}
-	if !access.canRead() {
+	if savedQuery == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
-	// An EDITOR binding carries content writes, never deletion, so sharing a
-	// saved query for editing cannot cost its owner the saved query.
-	if !access.canManage() {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("only the creator or an admin can delete a saved query"))
+	// Bindings never carry deletion, so sharing a saved query for editing
+	// cannot cost its owner the saved query.
+	canDelete, err := s.hasSavedQueryPermission(ctx, user, savedQuery, permission.SavedQueriesDelete)
+	if err != nil {
+		return nil, err
+	}
+	if !canDelete {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
 
-	if err := s.store.DeleteSavedQuery(ctx, savedQuery.ResourceID); err != nil {
+	deleted, err := s.store.DeleteSavedQuery(ctx, savedQuery.ProjectID, savedQuery.ResourceID)
+	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to delete saved query: %v", err))
+	}
+	if !deleted {
+		// Gone — or reassigned by a purge — between the read above and the
+		// delete.
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
 
 // UpdateSavedQueryStar stars or unstars a saved query for the caller. Stars
-// are personal: you can star anything you created or were granted, and your
-// stars are invisible to everyone else.
+// are personal: you can star anything you can read, and your stars are
+// invisible to everyone else.
 func (s *SavedQueryService) UpdateSavedQueryStar(
 	ctx context.Context,
 	req *connect.Request[v1pb.UpdateSavedQueryStarRequest],
@@ -518,26 +538,36 @@ func (s *SavedQueryService) UpdateSavedQueryStar(
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	savedQuery, err := s.findSavedQuery(ctx, projectID, savedQueryID, true /* loadFull */)
-	if err != nil {
-		return nil, err
-	}
-	access, err := s.savedQueryAccess(ctx, savedQuery)
-	if err != nil {
-		return nil, err
-	}
-	// NotFound rather than PermissionDenied: the star surface only concerns
-	// saved queries you can use, and answering "exists, but not yours" would
-	// make names probeable.
-	if !access.canStar() {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
-	}
-
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-	applied, err := s.store.SetSavedQueryStar(ctx, savedQuery.ResourceID, user.Email, request.Starred)
+	// Truncated read: the permission check needs only creator and bindings,
+	// and no consumer reads the star response's content.
+	savedQuery, err := s.store.GetSavedQuery(ctx, &store.FindSavedQueryMessage{
+		ProjectIDs:     []string{projectID},
+		Workspace:      common.GetWorkspaceIDFromContext(ctx),
+		ResourceID:     &savedQueryID,
+		PrincipalEmail: user.Email,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get saved query: %v", err))
+	}
+	if savedQuery == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
+	}
+	// Starring takes read access. NotFound rather than PermissionDenied: the
+	// star surface only concerns saved queries you can use, and answering
+	// "exists, but not yours" would make names probeable.
+	canGet, err := s.hasSavedQueryPermission(ctx, user, savedQuery, permission.SavedQueriesGet)
+	if err != nil {
+		return nil, err
+	}
+	if !canGet {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
+	}
+
+	applied, err := s.store.SetSavedQueryStar(ctx, savedQuery.ProjectID, savedQuery.ResourceID, user.Email, request.Starred)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update star: %v", err))
 	}
@@ -550,10 +580,9 @@ func (s *SavedQueryService) UpdateSavedQueryStar(
 	return connect.NewResponse(convertToAPISavedQuery(savedQuery)), nil
 }
 
-// MoveMySavedQueries files saved queries, named individually or a folder at a
-// time. Creator-only: filing is personal organization, so the store scopes
-// every move to the caller's own rows and anything else is simply not
-// selected.
+// MoveMySavedQueries moves the caller's saved queries filed under one folder.
+// Creator-only: filing is personal organization, so the store scopes the move
+// to the caller's own rows and anything else is simply not selected.
 func (s *SavedQueryService) MoveMySavedQueries(
 	ctx context.Context,
 	req *connect.Request[v1pb.MoveMySavedQueriesRequest],
@@ -566,9 +595,6 @@ func (s *SavedQueryService) MoveMySavedQueries(
 	if projectID == "-" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`projects/- is not supported`))
 	}
-	if (len(request.Names) == 0) == (request.SourceFolder == "") {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("set either names or source_folder, not both"))
-	}
 
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
@@ -579,43 +605,23 @@ func (s *SavedQueryService) MoveMySavedQueries(
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-
-	var moved int
-	if request.SourceFolder != "" {
-		source, err := store.NormalizeSavedQueryFolder(request.SourceFolder)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-		if source == "" {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("source_folder cannot be empty"))
-		}
-		if source == target {
-			return connect.NewResponse(&v1pb.MoveMySavedQueriesResponse{}), nil
-		}
-		if strings.HasPrefix(target, source+"/") {
-			// "a/b" into "a/b/c" would rewrite the rows it just moved.
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot move a folder into itself"))
-		}
-		moved, err = s.store.MoveSavedQueryFolder(ctx, projectID, user.Email, source, target)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to move folder: %v", err))
-		}
-	} else {
-		resourceIDs := make([]string, 0, len(request.Names))
-		for _, name := range request.Names {
-			nameProject, savedQueryID, err := common.GetProjectIDSavedQueryID(name)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInvalidArgument, err)
-			}
-			if nameProject != projectID {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("saved query %q is not in %q", name, request.Parent))
-			}
-			resourceIDs = append(resourceIDs, savedQueryID)
-		}
-		moved, err = s.store.MoveSavedQueries(ctx, projectID, user.Email, resourceIDs, target)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to move saved queries: %v", err))
-		}
+	source, err := store.NormalizeSavedQueryFolder(request.SourceFolder)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if source == "" {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("source_folder cannot be empty"))
+	}
+	if source == target {
+		return connect.NewResponse(&v1pb.MoveMySavedQueriesResponse{}), nil
+	}
+	if strings.HasPrefix(target, source+"/") {
+		// "a/b" into "a/b/c" would rewrite the rows it just moved.
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("cannot move a folder into itself"))
+	}
+	moved, err := s.store.MoveSavedQueryFolder(ctx, projectID, user.Email, source, target)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to move folder: %v", err))
 	}
 
 	return connect.NewResponse(&v1pb.MoveMySavedQueriesResponse{MovedCount: int32(moved)}), nil
@@ -632,40 +638,30 @@ func (s *SavedQueryService) checkProjectWide(ctx context.Context, user *store.Us
 	return nil
 }
 
-func (s *SavedQueryService) checkDiscoverSavedQueries(ctx context.Context, user *store.UserMessage, projectID string) error {
-	// bb.savedQueries.search alone, not "search or manage". The search family
-	// is caller-scoped, so manage would let a role through the gate to see
-	// only its own rows — no use to it, and one more thing to explain. Admins
-	// reach everyone's saved queries through ListSavedQueries instead, and
-	// every predefined role holding manage holds search too.
-	ok, err := s.iamManager.CheckProjectWidePermission(ctx, permission.SavedQueriesSearch, user, common.GetWorkspaceIDFromContext(ctx), projectID)
+// searchScope gates the search family on bb.savedQueries.search, denying the
+// call outright without it, whatever the caller could read. It then returns
+// the caller's members — them plus their groups, which the shared filter
+// probes either way — and the access clause: nil, no restriction, when a
+// project-level bb.savedQueries.get reads every row; the same members
+// otherwise, scoping results to the caller's own rows plus those a binding
+// shares with them.
+func (s *SavedQueryService) searchScope(ctx context.Context, user *store.UserMessage, projectID string) (members, access []string, err error) {
+	if err := s.checkProjectWide(ctx, user, permission.SavedQueriesSearch, projectID); err != nil {
+		return nil, nil, err
+	}
+	groups, err := s.callerGroups(ctx, user)
 	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err))
+		return nil, nil, err
 	}
-	if !ok {
-		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied: %s", permission.SavedQueriesSearch))
-	}
-	return nil
-}
-
-func (s *SavedQueryService) findSavedQuery(ctx context.Context, projectID string, savedQueryID string, loadFull bool) (*store.SavedQueryMessage, error) {
-	user, ok := GetUserFromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
-	}
-	savedQuery, err := s.store.GetSavedQuery(ctx, &store.FindSavedQueryMessage{
-		ProjectIDs:     []string{projectID},
-		ResourceID:     &savedQueryID,
-		LoadFull:       loadFull,
-		PrincipalEmail: user.Email,
-	})
+	members = append([]string{callerMember(user)}, groups...)
+	canGet, err := s.iamManager.CheckProjectWidePermission(ctx, permission.SavedQueriesGet, user, common.GetWorkspaceIDFromContext(ctx), projectID)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get saved query: %v", err))
+		return nil, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err))
 	}
-	if savedQuery == nil {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
+	if canGet {
+		return members, nil, nil
 	}
-	return savedQuery, nil
+	return members, members, nil
 }
 
 // validateSavedQueryDatabase checks that `name` refers to an existing
@@ -710,9 +706,8 @@ func (s *SavedQueryService) validateSavedQueryDatabase(ctx context.Context, proj
 	return name, nil
 }
 
-// GetSavedQueryPolicy returns a saved query's grants. Anyone who can read the
-// saved query can read its policy — that is how a grantee learns whether they
-// may edit it, now that nothing caller-relative rides on the resource.
+// GetSavedQueryPolicy returns a saved query's grants. Bindings carry
+// getIamPolicy, so a grantee can always learn their own level.
 func (s *SavedQueryService) GetSavedQueryPolicy(
 	ctx context.Context,
 	req *connect.Request[v1pb.GetSavedQueryPolicyRequest],
@@ -722,15 +717,27 @@ func (s *SavedQueryService) GetSavedQueryPolicy(
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	savedQuery, err := s.findSavedQuery(ctx, projectID, savedQueryID, false /* loadFull */)
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+	}
+	savedQuery, err := s.store.GetSavedQuery(ctx, &store.FindSavedQueryMessage{
+		ProjectIDs:     []string{projectID},
+		Workspace:      common.GetWorkspaceIDFromContext(ctx),
+		ResourceID:     &savedQueryID,
+		PrincipalEmail: user.Email,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get saved query: %v", err))
+	}
+	if savedQuery == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
+	}
+	canGetIamPolicy, err := s.hasSavedQueryPermission(ctx, user, savedQuery, permission.SavedQueriesGetIamPolicy)
 	if err != nil {
 		return nil, err
 	}
-	access, err := s.savedQueryAccess(ctx, savedQuery)
-	if err != nil {
-		return nil, err
-	}
-	if !access.canRead() {
+	if !canGetIamPolicy {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
 
@@ -755,19 +762,30 @@ func (s *SavedQueryService) SetSavedQueryPolicy(
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
-	savedQuery, err := s.findSavedQuery(ctx, projectID, savedQueryID, false /* loadFull */)
-	if err != nil {
-		return nil, err
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-	access, err := s.savedQueryAccess(ctx, savedQuery)
+	savedQuery, err := s.store.GetSavedQuery(ctx, &store.FindSavedQueryMessage{
+		ProjectIDs:     []string{projectID},
+		Workspace:      common.GetWorkspaceIDFromContext(ctx),
+		ResourceID:     &savedQueryID,
+		PrincipalEmail: user.Email,
+	})
 	if err != nil {
-		return nil, err
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get saved query: %v", err))
 	}
-	if !access.canRead() {
+	if savedQuery == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
-	if !access.canManage() {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("only the creator or an admin can share a saved query"))
+	// No binding and no predefined role carries setIamPolicy, so sharing is
+	// the creator's unless a custom role grants it deliberately.
+	canSetIamPolicy, err := s.hasSavedQueryPermission(ctx, user, savedQuery, permission.SavedQueriesSetIamPolicy)
+	if err != nil {
+		return nil, err
+	}
+	if !canSetIamPolicy {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot find the saved query"))
 	}
 
 	bindings, err := convertToStoreSavedQueryBindings(request.Policy.Bindings)
@@ -843,8 +861,8 @@ func convertToV1SavedQueryMember(member string) string {
 // for storage, converting each member from the API's binding form to the
 // resource name the store holds -- "user:a@corp.com" becomes "users/a@corp.com"
 // -- exactly as convertToStoreIamPolicyMember does for an IAM policy. Doing it
-// once here rather than at every read is what lets the access queries compare
-// stored members against iam.PrincipalMembers with no conversion at all.
+// once here rather than at every read is what lets the access checks compare
+// stored members against callerMember and the caller's groups directly.
 //
 // A member may appear at one binding only, so the stored policy never needs a
 // tie-break rule. Members are prefix-checked, not resolved, the same shape
@@ -891,81 +909,95 @@ func convertToStoreSavedQueryBindings(bindings []*v1pb.SavedQueryBinding) ([]*st
 	return converted, nil
 }
 
-// savedQueryAccess is how one caller stands relative to one saved query. The
-// three sources of access are resolved once and the predicates derived from
-// them, so read, write, share, and delete cannot drift apart.
-type savedQueryAccess struct {
-	isCreator bool
-	// Holds bb.savedQueries.manage in scope.
-	isAdmin bool
-	// The highest level this caller's bindings grant, directly or through one
-	// of their groups. LEVEL_UNSPECIFIED when no binding names them.
-	level storepb.SavedQueryBinding_Level
-}
-
-// EDITOR > VIEWER in the enum, so the comparisons below read as the levels do.
-func (a savedQueryAccess) canRead() bool {
-	return a.isCreator || a.isAdmin || a.level >= storepb.SavedQueryBinding_VIEWER
-}
-
-func (a savedQueryAccess) canWrite() bool {
-	return a.isCreator || a.isAdmin || a.level >= storepb.SavedQueryBinding_EDITOR
-}
-
-// canStar covers starring, which is personal: you can star any saved query you
-// created or were granted access to, and your stars are yours alone.
-func (a savedQueryAccess) canStar() bool {
-	return a.isCreator || a.level >= storepb.SavedQueryBinding_VIEWER
-}
-
-// canManage covers sharing, deleting, and re-filing: a binding never confers
-// any of them, so sharing a saved query for editing cannot cost its owner the
-// saved query.
-func (a savedQueryAccess) canManage() bool {
-	return a.isCreator || a.isAdmin
-}
-
-func (s *SavedQueryService) savedQueryAccess(ctx context.Context, savedQuery *store.SavedQueryMessage) (savedQueryAccess, error) {
-	user, ok := GetUserFromContext(ctx)
-	if !ok {
-		return savedQueryAccess{}, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
+// bindingGrants: a VIEWER binding grants get and getIamPolicy — a grantee
+// can always see their own grant; an EDITOR binding adds update. No binding
+// grants anything else.
+//
+// Must stay in lockstep with the store's level-blind access probe
+// (bindingProbe in store/saved_query.go), which assumes every level grants
+// get; a future level that does not grant get needs a level term there, or
+// Search would leak previews GetSavedQuery denies.
+func bindingGrants(level storepb.SavedQueryBinding_Level, p permission.Permission) bool {
+	switch level {
+	case storepb.SavedQueryBinding_VIEWER:
+		return p == permission.SavedQueriesGet || p == permission.SavedQueriesGetIamPolicy
+	case storepb.SavedQueryBinding_EDITOR:
+		return p == permission.SavedQueriesGet || p == permission.SavedQueriesGetIamPolicy || p == permission.SavedQueriesUpdate
+	default:
+		return false
 	}
-	access := savedQueryAccess{isCreator: savedQuery.Creator == user.Email}
-	if access.isCreator {
-		// Nothing a binding or the backstop adds can exceed what the owner
-		// already has, so skip both lookups.
-		return access, nil
-	}
+}
 
-	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	isAdmin, err := s.iamManager.CheckProjectWidePermission(ctx, permission.SavedQueriesManage, user, workspaceID, savedQuery.ProjectID)
+// callerMember is the policy-member form of the caller — typed, so a service
+// account is only ever named "serviceAccounts/{email}" and a binding naming
+// one under a "users/" prefix matches nobody.
+func callerMember(user *store.UserMessage) string {
+	return common.FormatPrincipalMember(user.Email, user.Type)
+}
+
+// callerGroups resolves the groups that stand for the caller in bindings.
+// Only end users belong to groups on this surface: a service account or
+// workload identity is never a grantee, so the group path must not widen for
+// them even when a group lists their email.
+func (s *SavedQueryService) callerGroups(ctx context.Context, user *store.UserMessage) ([]string, error) {
+	switch user.Type {
+	case storepb.PrincipalType_SERVICE_ACCOUNT, storepb.PrincipalType_WORKLOAD_IDENTITY:
+		return nil, nil
+	default:
+	}
+	groups, err := s.iamManager.GetUserGroups(ctx, common.GetWorkspaceIDFromContext(ctx), user.Email)
 	if err != nil {
-		return savedQueryAccess{}, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve groups: %v", err))
 	}
-	access.isAdmin = isAdmin
+	return groups, nil
+}
 
-	if len(savedQuery.Bindings) > 0 {
-		principals, err := s.iamManager.PrincipalMembers(ctx, workspaceID, user)
-		if err != nil {
-			return savedQueryAccess{}, connect.NewError(connect.CodeInternal, errors.Errorf("failed to resolve principals: %v", err))
+// hasSavedQueryPermission is the access rule: the creator holds every
+// permission on their saved query; a binding grants what bindingGrants says,
+// to members it names directly or through one of their groups; a project- or
+// workspace-level role grant reaches every saved query in the project.
+// Bindings are checked before the role walk: the sources are OR'd, so the
+// order is outcome-identical, and for the common grantee case the bindings
+// answer with string compares on the already-fetched row.
+func (s *SavedQueryService) hasSavedQueryPermission(ctx context.Context, user *store.UserMessage, savedQuery *store.SavedQueryMessage, p permission.Permission) (bool, error) {
+	if savedQuery.Creator == user.Email {
+		return true, nil
+	}
+	member := callerMember(user)
+	// The caller's groups, resolved once and only when a granting binding
+	// actually names a group.
+	var groups map[string]bool
+	for _, binding := range savedQuery.Bindings {
+		if !bindingGrants(binding.Level, p) {
+			continue
 		}
-		principalSet := make(map[string]bool, len(principals))
-		for _, principal := range principals {
-			principalSet[principal] = true
-		}
-		for _, binding := range savedQuery.Bindings {
-			if binding.Level <= access.level {
+		for _, m := range binding.Members {
+			if m == member {
+				return true, nil
+			}
+			if !strings.HasPrefix(m, common.GroupPrefix) {
 				continue
 			}
-			for _, member := range binding.Members {
-				if principalSet[member] {
-					access.level = binding.Level
-					break
+			if groups == nil {
+				list, err := s.callerGroups(ctx, user)
+				if err != nil {
+					return false, err
 				}
+				groups = make(map[string]bool, len(list))
+				for _, group := range list {
+					groups[group] = true
+				}
+			}
+			if groups[m] {
+				return true, nil
 			}
 		}
 	}
-	return access, nil
+	ok, err := s.iamManager.CheckProjectWidePermission(ctx, p, user, common.GetWorkspaceIDFromContext(ctx), savedQuery.ProjectID)
+	if err != nil {
+		return false, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err))
+	}
+	return ok, nil
 }
 
 // convertToAPISavedQuery converts a store message to the API shape. The

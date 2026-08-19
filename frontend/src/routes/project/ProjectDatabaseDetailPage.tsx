@@ -8,7 +8,6 @@ import { ComponentPermissionGuard } from "@/components/ComponentPermissionGuard"
 import { TransferProjectSheet } from "@/components/database";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -67,8 +66,6 @@ export function ProjectDatabaseDetailPage({
     parseProjectDatabaseDetailTabHash(hash)
   );
   const [showTransferDrawer, setShowTransferDrawer] = useState(false);
-  const [showIncorrectProjectModal, setShowIncorrectProjectModal] =
-    useState(false);
 
   const handleTabChange = useCallback(
     (tab: string | number | null) => {
@@ -98,10 +95,6 @@ export function ProjectDatabaseDetailPage({
   const handleSetEnvironment = useCallback(() => {
     handleTabChange(PROJECT_DATABASE_DETAIL_TAB_SETTING);
   }, [handleTabChange]);
-
-  const handleSQLEditorFailed = useCallback(() => {
-    setShowIncorrectProjectModal(true);
-  }, []);
 
   const handleTransferProject = useCallback(
     async (projectName: string) => {
@@ -176,10 +169,7 @@ export function ProjectDatabaseDetailPage({
       )}
 
       <div className="flex flex-col items-start gap-y-2 xl:flex-row xl:items-center xl:justify-between xl:gap-x-2">
-        <DatabaseDetailHeader
-          database={detail.database}
-          onSQLEditorFailed={handleSQLEditorFailed}
-        />
+        <DatabaseDetailHeader database={detail.database} />
         <DatabaseDetailActions
           database={detail.database}
           isDefaultProject={detail.isDefaultProject}
@@ -237,36 +227,6 @@ export function ProjectDatabaseDetailPage({
           <DatabaseCatalogPanel database={detail.database} />
         </ComponentPermissionGuard>
       )}
-
-      <Dialog
-        open={showIncorrectProjectModal}
-        onOpenChange={setShowIncorrectProjectModal}
-      >
-        <DialogContent className="p-6">
-          <DialogTitle>{t("common.warning")}</DialogTitle>
-          <p className="mt-3 text-sm text-control-light">
-            {t("common.missing-required-permission", {
-              permissions: "bb.sql.select",
-            })}
-          </p>
-          <div className="mt-6 flex justify-end gap-x-2">
-            <Button
-              appearance="outline"
-              onClick={() => setShowIncorrectProjectModal(false)}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              onClick={() => {
-                setShowIncorrectProjectModal(false);
-                setShowTransferDrawer(true);
-              }}
-            >
-              {t("database.transfer-project")}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
 
       <TransferProjectSheet
         open={showTransferDrawer}

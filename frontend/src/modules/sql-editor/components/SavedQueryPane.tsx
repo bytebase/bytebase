@@ -2,18 +2,16 @@
  * SavedQueryPane — React port of SavedQueryPane.vue (Stage 12, Phase 4).
  *
  * Hosts the SQL editor's saved query sidebar: search, filter menu, multi-select
- * toolbar, move-to-folder dialog, and one SheetTree per visible view.
+ * toolbar, and one SheetTree per visible view.
  */
 
-import { FolderInputIcon, FunnelIcon, TrashIcon, XIcon } from "lucide-react";
+import { FunnelIcon, TrashIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   type SelectionAction,
   SelectionActionBar,
 } from "@/components/SelectionActionBar";
-import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,7 +28,6 @@ import {
   useSheetContextByView,
 } from "@/modules/sql-editor/model/Sheet";
 import { FilterMenuItem } from "./FilterMenuItem";
-import { FolderForm } from "./FolderForm";
 import { SheetTree, type SheetTreeHandle } from "./SheetTree";
 
 function collectSelectableNodes(
@@ -47,18 +44,14 @@ export function SavedQueryPane() {
   const { t } = useTranslation();
 
   const sheetContext = useSheetContext();
-  const { filter, filterChanged, batchUpdateSavedQueryFolders, setFilter } =
-    sheetContext;
+  const { filter, filterChanged, setFilter } = sheetContext;
 
   const myViewContext = useSheetContextByView("my");
-  const { getFoldersForSavedQuery } = myViewContext;
 
   const mineSheetTreeRef = useRef<SheetTreeHandle>(null);
 
   const [multiSelectMode, setMultiSelectMode] = useState(false);
   const [checkedNodes, setCheckedNodes] = useState<SavedQueryFolderNode[]>([]);
-  const [showReorgModal, setShowReorgModal] = useState(false);
-  const [pendingMoveFolder, setPendingMoveFolder] = useState("");
   const [loading, setLoading] = useState(false);
   const [showFilterMenu, setShowFilterMenu] = useState(false);
 
@@ -76,13 +69,6 @@ export function SavedQueryPane() {
     return results;
   }, [filter.showShared, filter.showDraft]);
 
-  const checkedSavedQueries = useMemo(
-    () =>
-      checkedNodes
-        .filter((node) => node.savedQuery)
-        .map((node) => node.savedQuery!.name),
-    [checkedNodes]
-  );
   const selectableNodes = useMemo(
     () => collectSelectableNodes(myViewContext.sheetTree),
     [myViewContext.sheetTree]
@@ -112,37 +98,7 @@ export function SavedQueryPane() {
     }
   };
 
-  const handleMoveSavedQueries = async () => {
-    setLoading(true);
-    try {
-      const folders = getFoldersForSavedQuery(pendingMoveFolder);
-      await batchUpdateSavedQueryFolders(
-        checkedSavedQueries.map((savedQuery) => ({ name: savedQuery, folders }))
-      );
-      setShowReorgModal(false);
-      setMultiSelectMode(false);
-      setPendingMoveFolder("");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const closeReorgModal = () => {
-    setShowReorgModal(false);
-    setPendingMoveFolder("");
-  };
-
   const batchActions: SelectionAction[] = [
-    {
-      key: "move",
-      label: t("sheet.move-saved-queries"),
-      icon: FolderInputIcon,
-      onClick: () => {
-        setPendingMoveFolder("");
-        setShowReorgModal(true);
-      },
-      disabled: checkedSavedQueries.length === 0 || loading,
-    },
     {
       key: "cancel",
       label: t("common.cancel"),
@@ -228,7 +184,7 @@ export function SavedQueryPane() {
           // Non-"my" trees intentionally omit multi-select callbacks. Vue
           // bound v-model only on the `my` tree; wiring them everywhere let
           // a shared/draft right-click populate the my tree's checkedNodes,
-          // which the toolbar's Delete + Move-to-folder flows act on.
+          // which the toolbar's Delete flow acts on.
           <SheetTree key={view} view={view} />
         ))}
         {!hasAnyView && (
@@ -254,30 +210,6 @@ export function SavedQueryPane() {
           density="compact"
         />
       )}
-
-      <Dialog
-        open={showReorgModal}
-        onOpenChange={(open) => !open && closeReorgModal()}
-      >
-        <DialogContent className="w-lg max-w-[calc(100vw-8rem)] p-6">
-          <DialogTitle>{t("sheet.move-saved-queries")}</DialogTitle>
-          <div className="mt-3 flex flex-col gap-y-3">
-            <FolderForm
-              folder={pendingMoveFolder}
-              onFolderChange={setPendingMoveFolder}
-              includeRoot
-            />
-            <div className="flex justify-end gap-x-2 mt-4">
-              <Button appearance="outline" onClick={closeReorgModal}>
-                {t("common.close")}
-              </Button>
-              <Button onClick={handleMoveSavedQueries} disabled={loading}>
-                {t("common.save")}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

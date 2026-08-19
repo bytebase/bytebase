@@ -38,8 +38,8 @@ export function useCurrentUser() {
   const user = useOptionalCurrentUser();
   // Stabilize the fallback identity: a fresh unknownUser() each render would
   // change identity while the user is unresolved, retriggering identity-keyed
-  // effects in callers (e.g. ProfilePage, TwoFactorSetupPage) and risking a
-  // render loop.
+  // effects in callers (e.g. AccountSettingsPage, TwoFactorSetupPage) and
+  // risking a render loop.
   return useMemo(() => user ?? unknownUser(), [user]);
 }
 

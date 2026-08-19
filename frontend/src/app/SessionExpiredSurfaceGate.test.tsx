@@ -32,7 +32,6 @@ vi.mock("@/utils/auth", () => ({
   isAuthRelatedRoute: (name: string) =>
     [
       "auth.signin",
-      "auth.signin.admin",
       "auth.signup",
       "auth.mfa",
       "auth.password.reset",

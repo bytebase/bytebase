@@ -131,21 +131,9 @@ paths:
       summary: GetActuatorInfo
       description: |-
         Gets system information and health status of the Bytebase instance.
-         When `name` is provided (or the workspace-scoped binding is used), the
-         response includes workspace-scoped fields for that workspace.
-         Permissions required: None
+         The workspace is resolved from the authenticated session.
+         Permissions required: None (authentication required)
       operationId: ActuatorService_GetActuatorInfo
-      parameters:
-        - name: name
-          in: query
-          description: |-
-            Optional. The workspace to scope the response to.
-             Format: workspaces/{workspace}
-             When unset, the workspace is resolved from the request context (self-hosted)
-             or no workspace-scoped fields are returned (SaaS).
-          schema:
-            type: string
-            title: name
       responses:
         "200":
           description: Success
@@ -301,6 +289,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.RefreshResponse'
+  /v1/auth/restriction:
+    get:
+      tags:
+        - AuthService
+      summary: GetAuthenticationRestriction
+      description: |-
+        Gets the effective restrictions needed to render authentication flows.
+         Permissions required: None
+      operationId: AuthService_GetAuthenticationRestriction
+      parameters:
+        - name: workspace
+          in: query
+          description: |-
+            Optional. The workspace whose authentication policy should be returned.
+             Format: workspaces/{workspace}
+             When unset, self-hosted resolves the singleton workspace and SaaS uses
+             the deployment-level defaults.
+          schema:
+            type: string
+            title: workspace
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.AuthenticationInfo'
   /v1/auth/signup:
     post:
       tags:
@@ -13690,12 +13705,11 @@ paths:
         - SavedQueryService
       summary: ListSavedQueries
       description: |-
-        List saved queries for auditing. Bindings are ignored: the permission
-         alone reads every matched saved query's content, private ones included.
-         Returns whole statements rather than Search's previews, and accepts
-         "projects/-" to span every project.
-         Permissions required: bb.savedQueries.list on the parent project, or
-         workspace-wide when the parent is "projects/-"
+        List saved queries for auditing. The permission alone grants reading
+         every matched saved query with full content, private ones included;
+         bindings are ignored. Use parent "projects/-" for all projects.
+         Permissions required: bb.savedQueries.list on the project, or on the
+         workspace when the parent is "projects/-"
       operationId: SavedQueryService_ListSavedQueries
       parameters:
         - name: project
@@ -13729,10 +13743,8 @@ paths:
         - name: pageToken
           in: query
           description: |-
-            A page token from a previous ListSavedQueries call. Every other parameter
-             must match the call that returned it: the token carries the offset reached
-             so far, so changing `filter` or `page_size` mid-pagination reinterprets
-             that offset against a different result set.
+            A page token from a previous ListSavedQueries call. Keep every other
+             parameter the same as the call that returned it.
           schema:
             type: string
             title: page_token
@@ -13748,9 +13760,9 @@ paths:
         - SavedQueryService
       summary: CreateSavedQuery
       description: |-
-        Create a saved query. The creator becomes its fixed owner, and the saved
-         query starts private.
-         Permissions required: bb.savedQueries.create on the parent project
+        Create a saved query. The creator becomes the owner and the saved query
+         starts private.
+         Permissions required: bb.savedQueries.create on the project
       operationId: SavedQueryService_CreateSavedQuery
       parameters:
         - name: project
@@ -13780,9 +13792,9 @@ paths:
         - SavedQueryService
       summary: GetSavedQuery
       description: |-
-        Get a saved query with its full content. An unreadable saved query returns
-         NotFound rather than PermissionDenied, so it stays unprobeable by name.
-         Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage
+        Get a saved query with its full content.
+         Permissions required: bb.savedQueries.get (creator, VIEWER/EDITOR
+         binding, or project-level grant)
       operationId: SavedQueryService_GetSavedQuery
       parameters:
         - name: project
@@ -13809,10 +13821,10 @@ paths:
         - SavedQueryService
       summary: DeleteSavedQuery
       description: |-
-        Delete a saved query and every user's stars on it. An EDITOR binding never
-         carries deletion. An unreadable saved query returns NotFound; a grantee
-         who can read but not delete gets PermissionDenied.
-         Permissions required: creator, or bb.savedQueries.manage
+        Delete a saved query and every user's stars on it. An EDITOR binding
+         cannot delete.
+         Permissions required: bb.savedQueries.delete (creator or project-level
+         grant)
       operationId: SavedQueryService_DeleteSavedQuery
       parameters:
         - name: project
@@ -13839,12 +13851,9 @@ paths:
         - SavedQueryService
       summary: UpdateSavedQuery
       description: |-
-        Update a saved query. `title`, `content`, and `database` need write access;
-         `folder` is creator/admin only, because filing is organization rather than
-         editing. `database` must belong to the saved query's own project. An
-         unreadable saved query returns NotFound; a VIEWER who cannot write gets
-         PermissionDenied.
-         Permissions required: creator, an EDITOR binding, or bb.savedQueries.manage
+        Update a saved query. `database` must belong to the saved query's project.
+         Permissions required: bb.savedQueries.update (creator, EDITOR binding, or
+         project-level grant)
       operationId: SavedQueryService_UpdateSavedQuery
       parameters:
         - name: project
@@ -14086,12 +14095,11 @@ paths:
     get:
       tags:
         - SavedQueryService
-      summary: 'Get a saved query''s sharing policy: who it is shared with, at what level.'
+      summary: GetSavedQueryPolicy
       description: |-
-        Anyone who can read the saved query can read its policy, which is how a
-         grantee learns whether they may edit it. Callers who cannot read the
-         saved query get NotFound.
-         Permissions required: creator, a VIEWER or EDITOR binding, or bb.savedQueries.manage
+        Get a saved query's sharing policy: who it is shared with, at what level.
+         Permissions required: bb.savedQueries.getIamPolicy (creator, VIEWER/EDITOR
+         binding, or project-level grant)
       operationId: SavedQueryService_GetSavedQueryPolicy
       parameters:
         - name: project
@@ -14120,9 +14128,9 @@ paths:
       summary: SetSavedQueryPolicy
       description: |-
         Replace a saved query's sharing policy in full. `policy.etag` must match
-         the stored policy or the call fails with ABORTED, so a stale write cannot
-         reinstate a grant somebody just revoked.
-         Permissions required: creator, or bb.savedQueries.manage
+         the stored policy; a mismatch fails with ABORTED.
+         Permissions required: bb.savedQueries.setIamPolicy (creator or
+         project-level grant; no predefined role carries it)
       operationId: SavedQueryService_SetSavedQueryPolicy
       parameters:
         - name: project
@@ -14146,8 +14154,8 @@ paths:
                 policy:
                   title: policy
                   description: |-
-                    Replaces the stored policy in full: a member absent from it loses their
-                     grant, and a policy with no bindings makes the saved query private again.
+                    The new policy, replacing the stored one in full. Empty `bindings` makes
+                     the saved query private again.
                   $ref: '#/components/schemas/bytebase.v1.SavedQueryPolicy'
               title: SetSavedQueryPolicyRequest
               required:
@@ -14167,11 +14175,12 @@ paths:
         - SavedQueryService
       summary: UpdateSavedQueryStar
       description: |-
-        Star or unstar a saved query for the caller. Stars are personal: yours are
-         invisible to everyone else and grant nothing. You can star any saved query
-         you created or have been granted access to; anything else answers
-         NotFound, so names stay unprobeable.
-         Permissions required: creator, or a VIEWER or EDITOR binding
+        Star or unstar a saved query for the caller. Stars are personal: nobody
+         else sees them and they grant nothing. The caller can star any saved
+         query they can read. When access is lost the star is hidden, not
+         deleted; it comes back if access returns.
+         Permissions required: bb.savedQueries.get (creator, VIEWER/EDITOR
+         binding, or project-level grant)
       operationId: SavedQueryService_UpdateSavedQueryStar
       parameters:
         - name: project
@@ -14210,14 +14219,13 @@ paths:
     post:
       tags:
         - SavedQueryService
-      summary: |-
-        Move the caller's own saved queries into a folder, named individually or a
-         whole folder at a time. Moving a folder carries its descendants, so renaming "a/b" to
-         "a/c" also moves "a/b/deep" -- one call, not one per path.
+      summary: MoveMySavedQueries
       description: |-
-        Filing is personal organization, so only the creator's own move: a folder
-         is that person's tree, and neither a binding nor the admin backstop
-         reaches into it. The response counts what moved.
+        Move the caller's saved queries filed under `source_folder`, descendants
+         included, into `target_folder`: renaming "a/b" to "a/c" also moves
+         "a/b/deep". Only the caller's own saved queries move; the response counts
+         how many did. Re-filing a single saved query is UpdateSavedQuery's
+         `folder` field.
          Permissions required: creator
       operationId: SavedQueryService_MoveMySavedQueries
       parameters:
@@ -14233,27 +14241,22 @@ paths:
             schema:
               type: object
               properties:
-                names:
-                  type: array
-                  items:
-                    type: string
-                  title: names
-                  description: |-
-                    The saved queries to move. Set this or `source_folder`, not both.
-                     Format: projects/{project}/savedQueries/{savedQuery}
                 sourceFolder:
                   type: string
                   title: source_folder
                   maxLength: 256
-                  description: |-
-                    Move everything filed under this path, descendants included, e.g. "a/b".
-                     Set this or `names`, not both.
+                  minLength: 1
+                  description: The folder to move, descendants included, e.g. "a/b".
                 targetFolder:
                   type: string
                   title: target_folder
                   maxLength: 256
-                  description: Where they land. A path like "a/b/c"; empty unfiles them.
+                  description: |-
+                    Where it lands. A path like "a/b/c"; empty drops the `source_folder`
+                     prefix, promoting the folder's contents toward the root.
               title: MoveMySavedQueriesRequest
+              required:
+                - sourceFolder
               additionalProperties: false
         required: true
       responses:
@@ -14267,15 +14270,10 @@ paths:
     post:
       tags:
         - SavedQueryService
-      summary: |-
-        Search saved queries in one project: the SQL Editor's list path, returning
-         content previews.
+      summary: SearchSavedQueries
       description: |-
-        Caller-scoped, always: the caller's own saved queries plus those a binding
-         shares with them. bb.savedQueries.manage does not widen it — an admin
-         reading everyone's saved queries uses ListSavedQueries, which is built for
-         that. The permission here gates discovery only and grants access to
-         nothing by itself.
+        Search saved queries in one project. Returns content previews of the
+         saved queries the caller can read, the same access rule as GetSavedQuery.
          Permissions required: bb.savedQueries.search on the project
       operationId: SavedQueryService_SearchSavedQueries
       parameters:
@@ -14301,16 +14299,16 @@ paths:
                      - name: the saved query name. Supports "==" and "in [...]".
                      - title: the title. Supports "contains".
                      - creator: the creator in "users/{email}" format. Supports "==" and "!=".
-                     - shared: true selects only saved queries the caller reaches through a
-                       binding, excluding their own and any seen through
-                       bb.savedQueries.manage; false selects the rest. Supports "==".
+                     - shared: whether a binding shares the saved query with the caller. Their
+                       own saved queries, and ones visible only through a project-level
+                       bb.savedQueries.get, are not "shared". Supports "==".
                      - starred: whether the caller starred it. Supports "==".
                      - folder: the exact folder path. Supports "==".
 
-                     The SQL Editor's views are `creator == "users/{me}"` for My and
-                     `shared == true` for Shared. Prefer `shared` over `creator !=` for the
-                     latter: for an admin, `creator !=` also matches saved queries nobody
-                     shared with them.
+                     Use `creator == "users/{me}"` for a My view and `shared == true` for a
+                     Shared view. Prefer `shared` over `creator !=`: with a project-level
+                     bb.savedQueries.get, `creator !=` also matches saved queries nobody
+                     shared with the caller.
 
                      For example:
                      creator == "users/alice@example.com"
@@ -14329,11 +14327,8 @@ paths:
                   type: string
                   title: page_token
                   description: |-
-                    A page token from a previous SearchSavedQueries call. Every other
-                     parameter must match the call that returned it: the token carries the
-                     offset reached so far, so changing `filter` or `page_size` mid-pagination
-                     reinterprets that offset against a different result set and can skip or
-                     repeat rows.
+                    A page token from a previous SearchSavedQueries call. Keep every other
+                     parameter the same as the call that returned it.
               title: SearchSavedQueriesRequest
               additionalProperties: false
         required: true
@@ -14348,17 +14343,10 @@ paths:
     post:
       tags:
         - SavedQueryService
-      summary: |-
-        Search the folder paths holding saved queries the caller can read. Folders
-         are a derived view over the `folder` field rather than a resource
-         collection, so this is a custom method, caller-scoped like
-         SearchSavedQueries.
+      summary: SearchSavedQueryFolders
       description: |-
-        A path is returned when at least one readable saved query sits in it —
-         including one somebody else filed and shared, since a client seeds its
-         folder tree from here and cannot expand into a folder it never learns
-         about. Use the filter to split your own folders (`creator == "users/me"`)
-         from the ones reaching you through a grant (`shared == true`).
+        Search folder paths. A path is returned when it holds at least one saved
+         query the caller can read, the same access rule as SearchSavedQueries.
          Permissions required: bb.savedQueries.search on the project
       operationId: SavedQueryService_SearchSavedQueryFolders
       parameters:
@@ -17612,17 +17600,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Workspace'
-  /v1/workspaces/{workspace}/actuator/info:
+  /v1/workspaces/{workspace}/auth/restriction:
     get:
       tags:
-        - ActuatorService
-      summary: GetActuatorInfo
+        - AuthService
+      summary: GetAuthenticationRestriction
       description: |-
-        Gets system information and health status of the Bytebase instance.
-         When `name` is provided (or the workspace-scoped binding is used), the
-         response includes workspace-scoped fields for that workspace.
+        Gets the effective restrictions needed to render authentication flows.
          Permissions required: None
-      operationId: ActuatorService_GetActuatorInfo2
+      operationId: AuthService_GetAuthenticationRestriction2
       parameters:
         - name: workspace
           in: path
@@ -17636,7 +17622,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/bytebase.v1.ActuatorInfo'
+                $ref: '#/components/schemas/bytebase.v1.AuthenticationInfo'
   /v1/workspaces/{workspace}/databases:
     get:
       tags:
@@ -18908,25 +18894,10 @@ components:
           title: git_commit
           description: The git commit hash of the build.
           readOnly: true
-        readonly:
-          type: boolean
-          title: readonly
-          description: Whether the Bytebase instance is running in read-only mode.
-          readOnly: true
         saas:
           type: boolean
           title: saas
           description: Whether the Bytebase instance is running in SaaS mode where some features cannot be edited by users.
-          readOnly: true
-        host:
-          type: string
-          title: host
-          description: The host address of the Bytebase instance.
-          readOnly: true
-        port:
-          type: string
-          title: port
-          description: The port number of the Bytebase instance.
           readOnly: true
         externalUrl:
           type: string
@@ -18952,17 +18923,6 @@ components:
             readOnly: true
           title: unlicensed_features
           description: List of features that are not licensed.
-          readOnly: true
-        docker:
-          type: boolean
-          title: docker
-          description: Whether the Bytebase instance is running in Docker.
-          readOnly: true
-        activatedUserCount:
-          type: integer
-          title: activated_user_count
-          format: int32
-          description: The number of activated users.
           readOnly: true
         activatedInstanceCount:
           type: integer
@@ -18992,10 +18952,6 @@ components:
           format: int32
           description: The number of active replicas (servers sharing the same database).
           readOnly: true
-        restriction:
-          title: restriction
-          readOnly: true
-          $ref: '#/components/schemas/bytebase.v1.Restriction'
         defaultProject:
           type: string
           title: default_project
@@ -19635,6 +19591,23 @@ components:
         - IAM
         - CUSTOM
       description: Authorization method for RPC calls.
+    bytebase.v1.AuthenticationInfo:
+      type: object
+      properties:
+        workspace:
+          type: string
+          title: workspace
+          description: |-
+            The workspace used for authentication, when one can be resolved.
+             Format: workspaces/{workspace}
+          readOnly: true
+        restriction:
+          title: restriction
+          description: The effective authentication restrictions.
+          readOnly: true
+          $ref: '#/components/schemas/bytebase.v1.Restriction'
+      title: AuthenticationInfo
+      additionalProperties: false
     bytebase.v1.BatchCancelTaskRunsRequest:
       type: object
       properties:
@@ -22926,18 +22899,22 @@ components:
       additionalProperties: false
     bytebase.v1.GetActuatorInfoRequest:
       type: object
-      properties:
-        name:
-          type: string
-          title: name
-          description: |-
-            Optional. The workspace to scope the response to.
-             Format: workspaces/{workspace}
-             When unset, the workspace is resolved from the request context (self-hosted)
-             or no workspace-scoped fields are returned (SaaS).
       title: GetActuatorInfoRequest
       additionalProperties: false
       description: Request message for getting actuator information.
+    bytebase.v1.GetAuthenticationRestrictionRequest:
+      type: object
+      properties:
+        workspace:
+          type: string
+          title: workspace
+          description: |-
+            Optional. The workspace whose authentication policy should be returned.
+             Format: workspaces/{workspace}
+             When unset, self-hosted resolves the singleton workspace and SaaS uses
+             the deployment-level defaults.
+      title: GetAuthenticationRestrictionRequest
+      additionalProperties: false
     bytebase.v1.GetChangelogRequest:
       type: object
       properties:
@@ -25553,10 +25530,8 @@ components:
           type: string
           title: page_token
           description: |-
-            A page token from a previous ListSavedQueries call. Every other parameter
-             must match the call that returned it: the token carries the offset reached
-             so far, so changing `filter` or `page_size` mid-pagination reinterprets
-             that offset against a different result set.
+            A page token from a previous ListSavedQueries call. Keep every other
+             parameter the same as the call that returned it.
       title: ListSavedQueriesRequest
       required:
         - parent
@@ -26208,29 +26183,23 @@ components:
           type: string
           title: parent
           description: 'Format: projects/{project}'
-        names:
-          type: array
-          items:
-            type: string
-          title: names
-          description: |-
-            The saved queries to move. Set this or `source_folder`, not both.
-             Format: projects/{project}/savedQueries/{savedQuery}
         sourceFolder:
           type: string
           title: source_folder
           maxLength: 256
-          description: |-
-            Move everything filed under this path, descendants included, e.g. "a/b".
-             Set this or `names`, not both.
+          minLength: 1
+          description: The folder to move, descendants included, e.g. "a/b".
         targetFolder:
           type: string
           title: target_folder
           maxLength: 256
-          description: Where they land. A path like "a/b/c"; empty unfiles them.
+          description: |-
+            Where it lands. A path like "a/b/c"; empty drops the `source_folder`
+             prefix, promoting the folder's contents toward the root.
       title: MoveMySavedQueriesRequest
       required:
         - parent
+        - sourceFolder
       additionalProperties: false
     bytebase.v1.MoveMySavedQueriesResponse:
       type: object
@@ -26239,7 +26208,7 @@ components:
           type: integer
           title: moved_count
           format: int32
-          description: How many moved. Fewer than were named when some are not the caller's.
+          description: How many moved.
       title: MoveMySavedQueriesResponse
       additionalProperties: false
     bytebase.v1.OAuth2AuthStyle:
@@ -28080,7 +28049,7 @@ components:
         disallowPasswordSignin:
           type: boolean
           title: disallow_password_signin
-          description: Whether password-based signin is disabled (except for workspace admins).
+          description: Whether password sign-in is disabled for all end users.
           readOnly: true
         passwordRestriction:
           title: password_restriction
@@ -28894,7 +28863,7 @@ components:
           type: string
           title: creator
           description: |-
-            The fixed owner. Ownership does not transfer.
+            The owner. Ownership does not transfer.
              Format: users/{email}
           readOnly: true
         createTime:
@@ -28910,8 +28879,8 @@ components:
           title: content
           format: byte
           description: |-
-            The SQL text. SearchSavedQueries truncates it; when it is shorter than
-             `content_size`, GetSavedQuery returns the whole thing.
+            The SQL text. SearchSavedQueries returns a truncated preview;
+             GetSavedQuery returns the full text.
         contentSize:
           type:
             - integer
@@ -28930,8 +28899,8 @@ components:
           title: folder
           maxLength: 256
           description: |-
-            The folder holding this saved query, set by its creator or an admin. A
-             path like "a/b/c"; empty means unfiled.
+            The folder holding this saved query. A path like "a/b/c"; empty means
+             unfiled.
       title: SavedQuery
       required:
         - name
@@ -28951,26 +28920,17 @@ components:
           title: members
           minItems: 1
           description: |-
-            The principals granted `level`, in bytebase.v1.Binding.members format,
-             restricted to "user:{email}" and "group:{email}" -- prefix-checked, as
-             project and workspace IAM check their own members.
+            The members granted `level`: "user:{email}" or "group:{email}" only.
 
-             Service accounts and workload identities are not grantees: they own and
-             run their own saved queries and reach them as the creator. Naming one
-             under a "user:" prefix grants nothing rather than being rejected, because
-             a caller's member is derived from their principal type, so such a binding
-             matches nobody.
-
-             A group is stored as a reference and never expanded, so its membership
-             stays live and a large group costs no more than a small one.
+             Service accounts cannot be grantees — they reach their own saved queries
+             as the creator. Naming one under "user:" grants nothing rather than
+             failing. Groups are stored as references, so membership stays live.
       title: SavedQueryBinding
       required:
         - level
         - members
       additionalProperties: false
-      description: |-
-        Binds members to one access level on one saved query. Not bytebase.v1.Binding
-         because per-object access here is a capability, not a role.
+      description: Binds members to one access level on one saved query.
     bytebase.v1.SavedQueryBinding.Level:
       type: string
       title: Level
@@ -28979,8 +28939,8 @@ components:
         - VIEWER
         - EDITOR
       description: |-
-        Nested because bytebase.v1 already defines a package-scoped EDITOR
-         (DatabaseChangeMode), and enum values live in the enclosing scope.
+        Nested to avoid colliding with the package-scoped EDITOR in
+         DatabaseChangeMode.
     bytebase.v1.SavedQueryPolicy:
       type: object
       properties:
@@ -29001,9 +28961,8 @@ components:
       title: SavedQueryPolicy
       additionalProperties: false
       description: |-
-        Who a saved query is shared with, and at what level. A saved query with no
-         bindings is private. The creator is never a binding member: ownership comes
-         from creating the saved query and cannot be granted away.
+        Who a saved query is shared with, and at what level. No bindings means
+         private. The creator is never a binding member; ownership cannot be granted.
     bytebase.v1.SchemaCatalog:
       type: object
       properties:
@@ -29493,16 +29452,16 @@ components:
              - name: the saved query name. Supports "==" and "in [...]".
              - title: the title. Supports "contains".
              - creator: the creator in "users/{email}" format. Supports "==" and "!=".
-             - shared: true selects only saved queries the caller reaches through a
-               binding, excluding their own and any seen through
-               bb.savedQueries.manage; false selects the rest. Supports "==".
+             - shared: whether a binding shares the saved query with the caller. Their
+               own saved queries, and ones visible only through a project-level
+               bb.savedQueries.get, are not "shared". Supports "==".
              - starred: whether the caller starred it. Supports "==".
              - folder: the exact folder path. Supports "==".
 
-             The SQL Editor's views are `creator == "users/{me}"` for My and
-             `shared == true` for Shared. Prefer `shared` over `creator !=` for the
-             latter: for an admin, `creator !=` also matches saved queries nobody
-             shared with them.
+             Use `creator == "users/{me}"` for a My view and `shared == true` for a
+             Shared view. Prefer `shared` over `creator !=`: with a project-level
+             bb.savedQueries.get, `creator !=` also matches saved queries nobody
+             shared with the caller.
 
              For example:
              creator == "users/alice@example.com"
@@ -29521,11 +29480,8 @@ components:
           type: string
           title: page_token
           description: |-
-            A page token from a previous SearchSavedQueries call. Every other
-             parameter must match the call that returned it: the token carries the
-             offset reached so far, so changing `filter` or `page_size` mid-pagination
-             reinterprets that offset against a different result set and can skip or
-             repeat rows.
+            A page token from a previous SearchSavedQueries call. Keep every other
+             parameter the same as the call that returned it.
       title: SearchSavedQueriesRequest
       required:
         - parent
@@ -29760,8 +29716,8 @@ components:
         policy:
           title: policy
           description: |-
-            Replaces the stored policy in full: a member absent from it loses their
-             grant, and a policy with no bindings makes the saved query private again.
+            The new policy, replacing the stored one in full. Empty `bindings` makes
+             the saved query private again.
           $ref: '#/components/schemas/bytebase.v1.SavedQueryPolicy'
       title: SetSavedQueryPolicyRequest
       required:
@@ -32010,6 +31966,7 @@ components:
           description: |-
             Fields to update, relative to the saved query (`title`, not
              `saved_query.title`). Supported: `title`, `content`, `database`, `folder`.
+             At least one path is required.
           $ref: '#/components/schemas/google.protobuf.FieldMask'
       title: UpdateSavedQueryRequest
       required:
@@ -32617,7 +32574,7 @@ components:
         disallowPasswordSignin:
           type: boolean
           title: disallow_password_signin
-          description: Whether to disallow password signin. (Except workspace admins)
+          description: Whether password sign-in is disabled for all end users.
         enableMetricCollection:
           type: boolean
           title: enable_metric_collection
@@ -34036,6 +33993,12 @@ security: []
 tags:
   - name: AccessGrantService
     description: AccessGrantService manages temporary access grants within projects.
+  - name: ActuatorService
+    description: ActuatorService manages system health and operational information.
+  - name: AIService
+    description: AIService provides AI chat capabilities for the page agent.
+  - name: AuditLogService
+    description: AuditLogService manages audit logs for system activities and API calls.
   - name: RolloutService
     description: RolloutService manages the execution of deployment plans.
   - name: QueryHistoryService
@@ -34048,12 +34011,6 @@ tags:
     description: IssueService manages issues for tracking database changes and tasks.
   - name: SettingService
     description: SettingService manages workspace-level settings and configurations.
-  - name: ActuatorService
-    description: ActuatorService manages system health and operational information.
-  - name: AIService
-    description: AIService provides AI chat capabilities for the page agent.
-  - name: AuditLogService
-    description: AuditLogService manages audit logs for system activities and API calls.
   - name: UserService
     description: UserService manages user accounts and authentication.
   - name: AuthService
@@ -34090,16 +34047,18 @@ tags:
     description: RoleService manages workspace roles and permissions.
   - name: SavedQueryService
     description: |-
-      SavedQueryService manages saved queries for SQL Editor query development.
+      SavedQueryService manages saved queries in the SQL Editor.
 
-       A saved query is private to its creator until shared. Three things grant
-       access to one: being its creator (the fixed owner), holding a VIEWER or
-       EDITOR binding on it, and holding bb.savedQueries.manage, the admin backstop
-       that reaches private saved queries too. Bindings are managed through the
-       GetSavedQueryPolicy/SetSavedQueryPolicy pair.
-
-       Two gates sit on top of that: bb.savedQueries.search gates discovery, and
-       running a saved query needs the SQL Editor's own database permissions.
+       A saved query is private to its creator until shared. Permissions come from
+       three places:
+       - The creator owns the saved query and holds every permission on it.
+       - A VIEWER binding grants bb.savedQueries.get and getIamPolicy; an EDITOR
+         binding adds update.
+       - Permissions granted on the project or workspace apply to every saved
+         query in the project, private ones included.
+       A caller without a method's permission gets NotFound, not
+       PermissionDenied, so private names stay unprobeable. Running a saved query
+       is governed by the SQL Editor's database permissions, not by this service.
   - name: ServiceAccountService
     description: ServiceAccountService manages service accounts for API integrations.
   - name: SheetService

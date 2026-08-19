@@ -9,13 +9,12 @@ import {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { router } from "@/app/router";
-import { SQL_EDITOR_HOME_MODULE } from "@/app/router/handles";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import {
   PermissionGuard,
   usePermissionCheck,
 } from "@/components/PermissionGuard";
+import { SQLEditorButton } from "@/components/SQLEditorButton";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -126,10 +125,6 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
       description: t("settings.general.workspace.external-url.description"),
       disabled: isSaaSMode,
     });
-
-    const goToSQLEditor = () => {
-      router.push({ name: SQL_EDITOR_HOME_MODULE });
-    };
 
     return (
       <>
@@ -260,11 +255,11 @@ export const GeneralSection = forwardRef<SectionHandle, GeneralSectionProps>(
                 >
                   {t("common.ok")}
                 </Button>
-                <Button onClick={goToSQLEditor}>
-                  {t(
+                <SQLEditorButton
+                  label={t(
                     "settings.general.workspace.default-landing-page.go-to-sql-editor"
                   )}
-                </Button>
+                />
               </div>
             </DialogContent>
           </Dialog>

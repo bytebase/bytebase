@@ -201,7 +201,6 @@ vi.mock("@/lib/project-member/utils", () => ({
 vi.mock("@/app/router", () => ({
   useNavigate: () => vi.fn(),
   WORKSPACE_ROUTE_GROUPS: "groups",
-  WORKSPACE_ROUTE_USER_PROFILE: "user-profile",
 }));
 
 vi.mock("@/modules/cel", () => ({

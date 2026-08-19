@@ -22,10 +22,12 @@ type AppState = {
   fetchSavedQueryList: ReturnType<typeof vi.fn>;
   updateSavedQueryStar: ReturnType<typeof vi.fn>;
   moveMySavedQueries: ReturnType<typeof vi.fn>;
+  patchSavedQuery: ReturnType<typeof vi.fn>;
 };
 
 const mocks = vi.hoisted(() => {
   let appState: AppState;
+  const isSavedQueryWritableV1 = vi.fn();
   const appSubscribers = new Set<(state: AppState, prev: AppState) => void>();
   const keyForSavedQuery = (name: string) => `${name.split("/").pop()}:FULL`;
 
@@ -53,6 +55,7 @@ const mocks = vi.hoisted(() => {
 
   return {
     getAppState: () => appState,
+    isSavedQueryWritableV1,
     resetAppState: () => {
       appSubscribers.clear();
       appState = {
@@ -78,6 +81,7 @@ const mocks = vi.hoisted(() => {
         }),
         updateSavedQueryStar: vi.fn(),
         moveMySavedQueries: vi.fn(async () => 0),
+        patchSavedQuery: vi.fn(async () => undefined),
         patchSavedQueryFolderInCache: vi.fn(),
       };
     },
@@ -107,6 +111,14 @@ vi.mock("@/stores/app", () => ({
   useAppStore: mocks.useAppStore,
 }));
 
+// The real predicate reads registration bridges the mocked store never
+// installs, so it is stubbed; the default (set in beforeEach) mirrors its
+// creator arm.
+vi.mock("@/utils", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils")>()),
+  isSavedQueryWritableV1: mocks.isSavedQueryWritableV1,
+}));
+
 vi.mock("@/modules/sql-editor/store/editor", () => ({
   getSQLEditorEditorState: () => ({ project: "projects/proj1" }),
   subscribeSQLEditorEditorState: mocks.subscribeSQLEditorEditorState,
@@ -126,6 +138,9 @@ describe("sheet context", () => {
   beforeEach(() => {
     vi.useFakeTimers();
     mocks.resetAppState();
+    mocks.isSavedQueryWritableV1.mockImplementation(
+      (sheet: SavedQuery) => sheet.creator === "users/creator@example.com"
+    );
     window.localStorage.clear();
     container = document.createElement("div");
     document.body.appendChild(container);
@@ -900,7 +915,7 @@ describe("sheet context", () => {
     expect(viewContext!.hasMoreForFolder("/my/alpha")).toBe(false);
   });
 
-  test("batch updates saved query folders with one name filter per target folder", async () => {
+  test("batch updates saved query folders via UpdateSavedQuery per row", async () => {
     const { provideSheetContext, useSheetContext } = await import("./context");
     let sheetContext: ReturnType<typeof useSheetContext> | undefined;
 
@@ -915,6 +930,23 @@ describe("sheet context", () => {
       root.render(<Probe />);
     });
 
+    // Re-filing patches the cached row, so the rows must be in the cache and
+    // writable by the caller (the default stub passes creator rows).
+    mocks.addSavedQueries([
+      create(SavedQuerySchema, {
+        name: "projects/proj1/savedQueries/1",
+        project: "projects/proj1",
+        creator: "users/creator@example.com",
+        title: "one",
+      }),
+      create(SavedQuerySchema, {
+        name: "projects/proj1/savedQueries/2",
+        project: "projects/proj1",
+        creator: "users/creator@example.com",
+        title: "two",
+      }),
+    ]);
+
     await act(async () => {
       await sheetContext!.batchUpdateSavedQueryFolders([
         { name: "projects/proj1/savedQueries/1", folders: ["target"] },
@@ -922,23 +954,100 @@ describe("sheet context", () => {
       ]);
     });
 
-    expect(mocks.getAppState().moveMySavedQueries).toHaveBeenCalledTimes(1);
-    expect(mocks.getAppState().moveMySavedQueries).toHaveBeenCalledWith(
-      "projects/proj1",
-      {
-        names: [
-          "projects/proj1/savedQueries/1",
-          "projects/proj1/savedQueries/2",
-        ],
-        targetFolder: "target",
-      }
+    expect(mocks.getAppState().moveMySavedQueries).not.toHaveBeenCalled();
+    expect(mocks.getAppState().patchSavedQuery).toHaveBeenCalledTimes(2);
+    expect(mocks.getAppState().patchSavedQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "projects/proj1/savedQueries/1",
+        folder: "target",
+      }),
+      ["folder"]
     );
-    // The batch RPC answers with a count, so the moved rows are mirrored into
-    // the cache — otherwise the tree rebuild snaps them back to the old folder.
+    expect(mocks.getAppState().patchSavedQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "projects/proj1/savedQueries/2",
+        folder: "target",
+      }),
+      ["folder"]
+    );
+    // Both cache views are re-filed per row so the tree rebuild does not snap
+    // the rows back to the old folder.
+    expect(
+      mocks.getAppState().patchSavedQueryFolderInCache
+    ).toHaveBeenCalledWith(["projects/proj1/savedQueries/1"], "target");
+    expect(
+      mocks.getAppState().patchSavedQueryFolderInCache
+    ).toHaveBeenCalledWith(["projects/proj1/savedQueries/2"], "target");
+  });
+
+  test("re-files shared rows the caller can update and skips the rest", async () => {
+    const { provideSheetContext, useSheetContext } = await import("./context");
+    let sheetContext: ReturnType<typeof useSheetContext> | undefined;
+
+    const Probe = () => {
+      provideSheetContext();
+      sheetContext = useSheetContext();
+      return null;
+    };
+
+    root = createRoot(container);
+    await act(async () => {
+      root.render(<Probe />);
+    });
+
+    // The server lets an EDITOR grantee (or a project-level update grant)
+    // re-file somebody else's saved query — folder is an ordinary update
+    // field — so the move keys off writability, not ownership.
+    mocks.addSavedQueries([
+      create(SavedQuerySchema, {
+        name: "projects/proj1/savedQueries/editable-shared",
+        project: "projects/proj1",
+        creator: "users/other@example.com",
+        title: "editable",
+      }),
+      create(SavedQuerySchema, {
+        name: "projects/proj1/savedQueries/readonly-shared",
+        project: "projects/proj1",
+        creator: "users/other@example.com",
+        title: "read-only",
+      }),
+    ]);
+    mocks.isSavedQueryWritableV1.mockImplementation(
+      (sheet: SavedQuery) =>
+        sheet.name === "projects/proj1/savedQueries/editable-shared"
+    );
+
+    await act(async () => {
+      await sheetContext!.batchUpdateSavedQueryFolders([
+        {
+          name: "projects/proj1/savedQueries/editable-shared",
+          folders: ["target"],
+        },
+        {
+          name: "projects/proj1/savedQueries/readonly-shared",
+          folders: ["target"],
+        },
+      ]);
+    });
+
+    expect(mocks.getAppState().patchSavedQuery).toHaveBeenCalledTimes(1);
+    expect(mocks.getAppState().patchSavedQuery).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "projects/proj1/savedQueries/editable-shared",
+        folder: "target",
+      }),
+      ["folder"]
+    );
     expect(
       mocks.getAppState().patchSavedQueryFolderInCache
     ).toHaveBeenCalledWith(
-      ["projects/proj1/savedQueries/1", "projects/proj1/savedQueries/2"],
+      ["projects/proj1/savedQueries/editable-shared"],
+      "target"
+    );
+    expect(
+      mocks.getAppState().patchSavedQueryFolderInCache
+    ).not.toHaveBeenCalledWith(
+      ["projects/proj1/savedQueries/readonly-shared"],
       "target"
     );
   });

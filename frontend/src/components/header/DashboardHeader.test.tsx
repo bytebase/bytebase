@@ -34,6 +34,10 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: {
+    init: vi.fn(),
+    type: "3rdParty",
+  },
   useTranslation: () => ({
     t: (key: string) =>
       ({
@@ -71,6 +75,10 @@ vi.mock("@/components/header/ProfileMenuTrigger", () => ({
 }));
 
 vi.mock("@/app/router", () => ({
+  router: {
+    resolve: mocks.resolve,
+    push: mocks.push,
+  },
   useCurrentRoute: () => mocks.currentRoute,
   useNavigate: () => ({
     resolve: mocks.resolve,
@@ -187,18 +195,19 @@ describe("DashboardHeader", () => {
 
     render();
 
-    const sqlEditorButton = Array.from(
-      container.querySelectorAll("button")
-    ).find((button) => button.textContent?.includes("SQL Editor"));
-    expect(sqlEditorButton).not.toBeUndefined();
-    act(() => {
-      sqlEditorButton?.click();
-    });
-    expect(window.open).toHaveBeenCalledWith(
-      `/${SQL_EDITOR_DATABASE_MODULE}`,
-      "_blank",
-      "noopener,noreferrer"
+    const sqlEditorLink = container.querySelector(
+      'a[aria-label="SQL Editor"]'
     );
+    expect(sqlEditorLink?.getAttribute("target")).toBe("_blank");
+    expect(sqlEditorLink?.getAttribute("rel")).toBe("noopener noreferrer");
+    expect(mocks.resolve).toHaveBeenCalledWith({
+      name: SQL_EDITOR_DATABASE_MODULE,
+      params: {
+        project: "sample-project",
+        instance: "prod",
+        database: "db",
+      },
+    });
 
     const myIssuesButton = Array.from(
       container.querySelectorAll("button")

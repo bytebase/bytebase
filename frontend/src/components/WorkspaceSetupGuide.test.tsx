@@ -86,6 +86,9 @@ vi.mock("@/app/router", () => ({
     push: mocks.routerPush,
   },
   useCurrentRoute: () => mocks.currentRoute,
+  SQL_EDITOR_DATABASE_MODULE: "sql-editor.database",
+  SQL_EDITOR_HOME_MODULE: "sql-editor.home",
+  SQL_EDITOR_PROJECT_MODULE: "sql-editor.project",
 }));
 
 vi.mock("@/app/analytics/provider", () => ({
@@ -839,6 +842,7 @@ describe("WorkspaceSetupGuide", () => {
     expect(actionLink?.textContent).toContain(
       "workspace-setup-guide.actions.query"
     );
+    expect(actionLink?.querySelector(".lucide-square-terminal")).not.toBeNull();
 
     const secondaryAction = container.querySelector(
       "[data-testid='secondary-action']"

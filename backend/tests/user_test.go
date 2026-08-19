@@ -48,9 +48,7 @@ func TestDeleteUser(t *testing.T) {
 	a.Error(err)
 	a.ErrorContains(err, expectErrorMsg)
 
-	actuator, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{
-		Name: memberResp.Msg.Workspace,
-	}))
+	actuator, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
 	a.NoError(err)
 
 	serviceAccountResp, err := ctl.serviceAccountServiceClient.CreateServiceAccount(ctx, connect.NewRequest(&v1pb.CreateServiceAccountRequest{
@@ -587,8 +585,8 @@ func TestGetCurrentUser_ServiceAccount(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	// Create a dummy user to get the workspace reference.
-	userResp, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+	// Create a dummy user before creating the service account.
+	_, err = ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
 		User: &v1pb.User{
 			Title:    "dummy",
 			Email:    "dummy@bytebase.com",
@@ -596,12 +594,8 @@ func TestGetCurrentUser_ServiceAccount(t *testing.T) {
 		},
 	}))
 	a.NoError(err)
-	workspace := userResp.Msg.Workspace
-
-	// Get actuator info using the workspace reference.
-	actuator, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{
-		Name: workspace,
-	}))
+	// Get actuator info for the authenticated workspace.
+	actuator, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
 	a.NoError(err)
 
 	// Create a service account.

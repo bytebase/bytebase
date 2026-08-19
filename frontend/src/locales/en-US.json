@@ -279,6 +279,7 @@
     "database-group": "Database Group",
     "databases": "Databases",
     "deactivate": "Deactivate",
+    "deactivated": "Deactivated",
     "default": "Default",
     "definition": "Definition",
     "delete": "Delete",
@@ -295,6 +296,7 @@
     "discard-changes": "Discard changes",
     "discord": "Discord",
     "dismiss": "Dismiss",
+    "done": "Done",
     "download": "Download",
     "draft": "Draft",
     "duplicate": "Duplicate",
@@ -444,7 +446,6 @@
     "show-less": "Show less",
     "show-more": "Show more",
     "sign-in": "Sign in",
-    "sign-in-as-admin": "Sign in as administrator",
     "sign-up": "Sign up",
     "skip": "Skip",
     "skipped": "Skipped",
@@ -2276,6 +2277,14 @@
     }
   },
   "settings": {
+    "account": {
+      "description": "Manage your personal profile and how you sign in.",
+      "email-managed": "Contact a workspace admin to change your sign-in email.",
+      "password-notice": "Changing your password signs you out everywhere, including this session.",
+      "security": "Security",
+      "self": "Account settings",
+      "update-password": "Update password"
+    },
     "general": {
       "workspace": {
         "access-token-duration": {
@@ -2559,6 +2568,29 @@
         "reactivate-confirm-title": "Are you sure to reactivate"
       },
       "add-member": "Add member",
+      "admin": {
+        "change-email": "Change email",
+        "change-email-description": "Move this account from {{email}} to a new sign-in address. The user must sign in with the new address.",
+        "create-user": "Create user",
+        "create-user-roles-failed": "The account was created, but its roles could not be assigned. Set them from Members.",
+        "deactivate": "Deactivate user",
+        "deactivate-tip": "The account keeps its data but can no longer sign in. You can reactivate it later.",
+        "edit-user": "Edit user",
+        "email-immutable-tip": "To move this account to another address, close this panel and use Change email in the row menu.",
+        "external-source": "This account is synced from {{source}}. Changes made here can be overwritten by the next sync.",
+        "generate": "Generate",
+        "reactivate": "Reactivate user",
+        "reactivate-tip": "The account can sign in again with its existing credentials and roles.",
+        "reset-mfa": "Reset 2FA",
+        "reset-mfa-optional": "{{user}} loses their authenticator and recovery codes, and signs in without two-factor authentication until they enroll again.",
+        "reset-mfa-recovery-first": "If they still have a recovery code they can sign in with it and enroll again themselves, without this reset.",
+        "reset-mfa-required": "{{user}} loses their authenticator and recovery codes. This workspace requires two-factor authentication, so they must set up a new authenticator at next sign-in.",
+        "reset-password": "Reset password",
+        "reset-password-deliver": "Send this to them over a channel you trust. Bytebase does not email it.",
+        "reset-password-description": "Set a new password for {{user}}. They are signed out of every session and must sign in again with it.",
+        "reset-password-issued": "New password for {{user}}. It is shown once and cannot be retrieved later.",
+        "saas-read-only": "User profiles are owned by the account holder in the cloud. Manage workspace access from Members instead."
+      },
       "all-users": "All users",
       "assign-role": "Assign role",
       "cannot-revoke-self": "You cannot revoke yourself",
@@ -2658,13 +2690,11 @@
       "password-mismatch": "New password mismatch",
       "phone": "Phone",
       "phone-tips": "Be sure to include the country code +1xxxxxx",
-      "role": "Role",
       "setup-failed": "Failed to update profile.",
       "setup-first-project": "Setup 1st project",
       "setup-skip": "I'll do this later",
       "setup-success": "Profile updated.",
       "setup-title": "Welcome! Set up your workspace",
-      "subscription": "(Upgrade to enable role management)",
       "workspace-name": "Workspace name",
       "workspace-name-placeholder": "Enter workspace name"
     },
@@ -2896,7 +2926,6 @@
       "non-empty-folder-title": "Non-empty folder"
     },
     "mine": "Mine",
-    "move-saved-queries": "Move saved queries",
     "notifications": {
       "duplicate-success": "Saved query duplicated"
     },

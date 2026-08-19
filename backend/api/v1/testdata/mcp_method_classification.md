@@ -15,12 +15,12 @@ belongs; the gate that acts on them is a later change.
 
 | Class | Methods | Meaning |
 |---|---|---|
-| READ | 47 | served to a read-only session and above |
+| READ | 48 | served to a read-only session and above |
 | WRITE | 40 | served to a read-write session only |
 | EXCLUDED | 93 | served by no mode this phase ships |
 | FORBIDDEN | 28 | never served, enforced today |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this |
-| **total** | **208** | |
+| **total** | **209** | |
 
 | Method | Class | Reason | Permission |
 |---|---|---|---|
@@ -36,6 +36,7 @@ belongs; the gate that acts on them is a later change.
 | AuditLogService/ExportAuditLogs | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.auditLogs.export |
 | AuditLogService/SearchAuditLogs | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.auditLogs.search |
 | AuthService/ExchangeToken | FORBIDDEN | MINTS_CREDENTIAL | — |
+| AuthService/GetAuthenticationRestriction | READ | — | — |
 | AuthService/Login | FORBIDDEN | MINTS_CREDENTIAL | — |
 | AuthService/Logout | FORBIDDEN | ENDS_SESSION | — |
 | AuthService/Refresh | FORBIDDEN | MINTS_CREDENTIAL | — |

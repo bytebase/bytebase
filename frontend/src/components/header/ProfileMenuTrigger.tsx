@@ -2,13 +2,13 @@ import { ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
+  ACCOUNT_ROUTE,
   isSqlEditorRouteName,
-  SETTING_ROUTE_PROFILE,
-  SQL_EDITOR_HOME_MODULE,
   useCurrentRoute,
   useNavigate,
   WORKSPACE_ROUTE_LANDING,
 } from "@/app/router";
+import { SQLEditorButton } from "@/components/SQLEditorButton";
 import { UserAvatar } from "@/components/UserAvatar";
 import {
   DropdownMenu,
@@ -74,7 +74,7 @@ export function ProfileMenuTrigger({
   const quickStartEnabled =
     !hideQuickStart &&
     Boolean(serverInfo?.enableSample) &&
-    (serverInfo?.activatedUserCount ?? 0) <= 1;
+    (serverInfo?.userCountInIam ?? 0) <= 1;
   const customLogo = workspace?.logo ?? "";
   const [open, setOpen] = useState(false);
 
@@ -89,21 +89,20 @@ export function ProfileMenuTrigger({
 
   const logoClass = size === "small" ? "mr-2" : "mr-4";
 
-  const sqlEditorMenuLabel = isSqlEditorRouteName(route.name)
+  const isInSQLEditor = isSqlEditorRouteName(route.name);
+  const sqlEditorMenuLabel = isInSQLEditor
     ? t("settings.general.workspace.default-landing-page.go-to-workspace")
     : t("settings.general.workspace.default-landing-page.go-to-sql-editor");
 
   const handleProfileNavigate = () => {
     if (!link) return;
     setOpen(false);
-    void navigate.push({ name: SETTING_ROUTE_PROFILE });
+    void navigate.push({ name: ACCOUNT_ROUTE });
   };
 
   const handleWorkspaceToggle = () => {
     const target = navigate.resolve({
-      name: isSqlEditorRouteName(route.name)
-        ? WORKSPACE_ROUTE_LANDING
-        : SQL_EDITOR_HOME_MODULE,
+      name: WORKSPACE_ROUTE_LANDING,
     });
     setOpen(false);
     window.open(target.fullPath, "_blank", "noopener,noreferrer");
@@ -238,9 +237,23 @@ export function ProfileMenuTrigger({
             </DropdownMenuItem>
           ) : null}
 
-          <DropdownMenuItem onClick={handleWorkspaceToggle}>
-            {sqlEditorMenuLabel}
-          </DropdownMenuItem>
+          {isInSQLEditor ? (
+            <DropdownMenuItem onClick={handleWorkspaceToggle}>
+              {sqlEditorMenuLabel}
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem
+              render={
+                <SQLEditorButton
+                  openInNewTab
+                  appearance="secondary"
+                  size="sm"
+                  className="w-full justify-start"
+                  label={sqlEditorMenuLabel}
+                />
+              }
+            />
+          )}
 
           <DropdownMenuSeparator className="mx-0" />
 

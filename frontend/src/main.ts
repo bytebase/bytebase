@@ -29,17 +29,18 @@ rewriteLegacyPath();
   const store = useAppStore.getState();
 
   // Load the authenticated session BEFORE mounting so the route guard sees the
-  // correct auth state on the very first navigation (the Vue bootstrap awaited
-  // fetchCurrentUser + server info the same way before mounting the router).
+  // correct auth state on the very first navigation. Authentication info is
+  // independent from the authenticated actuator response and is always loaded.
   const currentUser = await store.loadCurrentUser();
-  const initPromises: Promise<unknown>[] = [store.loadServerInfo()];
+  const initPromises: Promise<unknown>[] = [store.loadAuthenticationInfo()];
   if (currentUser) {
+    initPromises.push(store.loadServerInfo());
     initPromises.push(store.loadSubscription());
     initPromises.push(store.loadWorkspaceList());
     initPromises.push(store.loadWorkspaceProfile());
   }
   await Promise.all(initPromises);
-  initializeGA4(store.isSaaSMode());
+  initializeGA4();
 
   const { mountReactRouterApp } = await import("./app/mountApp");
   await mountReactRouterApp("#app");

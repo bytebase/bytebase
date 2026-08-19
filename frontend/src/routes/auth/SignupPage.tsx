@@ -23,33 +23,36 @@ export function SignupPage() {
   const [nameManuallyEdited, setNameManuallyEdited] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const activeUserCount = useAppStore((s) => s.activeUserCount());
-  const serverInfo = useAppStore((s) => s.serverInfo);
-  const needAdminSetup = activeUserCount === 0;
+  const authenticationInfo = useAppStore((s) => s.authenticationInfo);
+  const needsInitialSetup = authenticationInfo
+    ? !authenticationInfo.workspace &&
+      !authenticationInfo.restriction?.disallowSignup
+    : false;
 
   // This page renders outside any shell, so the workspace bootstrap hasn't
-  // populated the app store yet — load server info so the active-user count
-  // and signup restriction flags resolve.
+  // populated the app store yet — load authentication info so the setup and
+  // signup restriction flags resolve.
   useEffect(() => {
-    void useAppStore.getState().loadServerInfo();
+    void useAppStore.getState().loadAuthenticationInfo();
   }, []);
 
   const [acceptTermsAndPolicy, setAcceptTermsAndPolicy] = useState(
-    !needAdminSetup
+    !needsInitialSetup
   );
 
   const query = router.currentRoute.value.query;
 
   useEffect(() => {
-    if (!needAdminSetup && serverInfo?.restriction?.disallowSignup) {
+    if (!needsInitialSetup && authenticationInfo?.restriction?.disallowSignup) {
       router.replace({ name: AUTH_SIGNIN_MODULE, query });
     }
-    if (needAdminSetup) {
+    if (needsInitialSetup) {
       setAcceptTermsAndPolicy(false);
     }
   }, []);
 
-  const passwordRestriction = serverInfo?.restriction?.passwordRestriction;
+  const passwordRestriction =
+    authenticationInfo?.restriction?.passwordRestriction;
   const validation = computePasswordValidation(
     password,
     passwordConfirm,
@@ -63,7 +66,7 @@ export function SignupPage() {
     !validation.hint &&
     !validation.mismatch &&
     acceptTermsAndPolicy &&
-    !serverInfo?.restriction?.disallowSignup;
+    !authenticationInfo?.restriction?.disallowSignup;
 
   const onEmailChange = (value: string) => {
     const normalized = value.trim().toLowerCase();
@@ -109,7 +112,7 @@ export function SignupPage() {
         <div>
           <BytebaseLogo className="mx-auto" />
           <h2 className="text-2xl leading-9 font-medium text-main text-center mt-4">
-            {needAdminSetup ? (
+            {needsInitialSetup ? (
               <Trans
                 i18nKey="auth.sign-up.admin-title"
                 components={{
@@ -171,7 +174,7 @@ export function SignupPage() {
               </div>
             </div>
 
-            {needAdminSetup && (
+            {needsInitialSetup && (
               <div className="w-full flex flex-row justify-start items-start gap-x-2">
                 <Checkbox
                   checked={acceptTermsAndPolicy}
@@ -212,7 +215,7 @@ export function SignupPage() {
                 className="w-full"
                 disabled={!allowSignup || isLoading}
               >
-                {needAdminSetup
+                {needsInitialSetup
                   ? t("auth.sign-up.create-admin-account")
                   : t("common.sign-up")}
               </Button>
@@ -220,7 +223,7 @@ export function SignupPage() {
           </form>
         </div>
 
-        {!needAdminSetup && (
+        {!needsInitialSetup && (
           <AuthDivider className="mt-6">
             <span className="pl-2 bg-white text-control">
               {t("auth.sign-up.existing-user")}

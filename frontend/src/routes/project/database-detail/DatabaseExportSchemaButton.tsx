@@ -4,6 +4,7 @@ import { ChevronDown, Download } from "lucide-react";
 import { useCallback, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { databaseServiceClientConnect } from "@/api";
+import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -106,7 +107,7 @@ export function DatabaseExportSchemaButton({
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger
-        className="inline-flex h-8 items-center justify-center gap-x-2 whitespace-nowrap rounded-sm border border-control-border bg-background px-3 text-sm font-medium text-control shadow-xs hover:bg-control-bg cursor-pointer outline-hidden focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"
+        render={<Button appearance="outline" />}
         disabled={disabled || exporting}
       >
         <Download className="size-4" />

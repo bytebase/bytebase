@@ -20,7 +20,7 @@ import { ListRolesRequestSchema } from "@/types/proto-es/v1/role_service_pb";
 import { ALL_USERS_USER_EMAIL, groupBindingPrefix } from "@/types/v1/user";
 import { getUserListInBinding, isBindingPolicyExpired } from "@/utils/v1/iam";
 import type { AppSliceCreator, IamSlice } from "./types";
-import { bindingMatchesUser } from "./utils";
+import { bindingMatchesUser, projectWideBindings } from "./utils";
 
 // Merge a member's role set into a policy clone: drop the member from roles it
 // no longer holds, add it to roles it gained, and append bindings for brand-new
@@ -389,6 +389,29 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
     ).map((binding) => binding.role);
     return [...workspaceLevelProjectRoles, ...projectRoles].some((roleName) =>
       roleByName.get(roleName)?.permissions.includes(permission)
+    );
+  },
+
+  // Mirrors the server's CheckProjectWidePermission: like
+  // hasProjectPermission, but a binding whose condition scopes resources
+  // confers nothing — a data-slice grant must not widen to project-wide
+  // surfaces such as the saved-query permissions. The workspace policy skips
+  // allUsers in SaaS mode and a condition the client cannot positively
+  // evaluate hides the grant, both exactly as the server evaluates.
+  hasProjectWidePermission: (project, permission) => {
+    const user = get().currentUser;
+    if (!user) return false;
+    const roleByName = new Map(get().roles.map((role) => [role.name, role]));
+    const bindings = [
+      ...projectWideBindings(get().workspacePolicy, user, {
+        skipAllUsers: get().isSaaSMode(),
+      }),
+      ...projectWideBindings(get().projectPoliciesByName[project.name], user, {
+        skipAllUsers: false,
+      }),
+    ];
+    return bindings.some((binding) =>
+      roleByName.get(binding.role)?.permissions.includes(permission)
     );
   },
 });

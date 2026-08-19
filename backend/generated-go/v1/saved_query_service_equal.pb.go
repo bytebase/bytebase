@@ -160,14 +160,6 @@ func (x *MoveMySavedQueriesRequest) Equal(y *MoveMySavedQueriesRequest) bool {
 	if x.Parent != y.Parent {
 		return false
 	}
-	if len(x.Names) != len(y.Names) {
-		return false
-	}
-	for i := 0; i < len(x.Names); i++ {
-		if x.Names[i] != y.Names[i] {
-			return false
-		}
-	}
 	if x.SourceFolder != y.SourceFolder {
 		return false
 	}

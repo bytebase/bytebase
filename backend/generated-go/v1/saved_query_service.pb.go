@@ -26,16 +26,17 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Nested because bytebase.v1 already defines a package-scoped EDITOR
-// (DatabaseChangeMode), and enum values live in the enclosing scope.
+// Nested to avoid colliding with the package-scoped EDITOR in
+// DatabaseChangeMode.
 type SavedQueryBinding_Level int32
 
 const (
 	SavedQueryBinding_LEVEL_UNSPECIFIED SavedQueryBinding_Level = 0
-	// Open and read the saved query.
+	// Holds bb.savedQueries.get and bb.savedQueries.getIamPolicy on the
+	// saved query: open and read it, and see who it is shared with.
 	SavedQueryBinding_VIEWER SavedQueryBinding_Level = 1
-	// VIEWER, plus write the title, content, and connected database. Sharing
-	// and deletion stay with the creator and admins.
+	// VIEWER, plus bb.savedQueries.update: write the title, content,
+	// database, and folder. Not deletion, not setIamPolicy.
 	SavedQueryBinding_EDITOR SavedQueryBinding_Level = 2
 )
 
@@ -196,10 +197,8 @@ type ListSavedQueriesRequest struct {
 	// The maximum number of saved queries to return. The service may return
 	// fewer. Defaults to 10; values above 1000 are coerced to 1000.
 	PageSize int32 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// A page token from a previous ListSavedQueries call. Every other parameter
-	// must match the call that returned it: the token carries the offset reached
-	// so far, so changing `filter` or `page_size` mid-pagination reinterprets
-	// that offset against a different result set.
+	// A page token from a previous ListSavedQueries call. Keep every other
+	// parameter the same as the call that returned it.
 	PageToken     string `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -426,6 +425,7 @@ type UpdateSavedQueryRequest struct {
 	SavedQuery *SavedQuery `protobuf:"bytes,1,opt,name=saved_query,json=savedQuery,proto3" json:"saved_query,omitempty"`
 	// Fields to update, relative to the saved query (`title`, not
 	// `saved_query.title`). Supported: `title`, `content`, `database`, `folder`.
+	// At least one path is required.
 	UpdateMask    *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -533,14 +533,11 @@ type MoveMySavedQueriesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}
 	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
-	// The saved queries to move. Set this or `source_folder`, not both.
-	// Format: projects/{project}/savedQueries/{savedQuery}
-	Names []string `protobuf:"bytes,2,rep,name=names,proto3" json:"names,omitempty"`
-	// Move everything filed under this path, descendants included, e.g. "a/b".
-	// Set this or `names`, not both.
-	SourceFolder string `protobuf:"bytes,3,opt,name=source_folder,json=sourceFolder,proto3" json:"source_folder,omitempty"`
-	// Where they land. A path like "a/b/c"; empty unfiles them.
-	TargetFolder  string `protobuf:"bytes,4,opt,name=target_folder,json=targetFolder,proto3" json:"target_folder,omitempty"`
+	// The folder to move, descendants included, e.g. "a/b".
+	SourceFolder string `protobuf:"bytes,2,opt,name=source_folder,json=sourceFolder,proto3" json:"source_folder,omitempty"`
+	// Where it lands. A path like "a/b/c"; empty drops the `source_folder`
+	// prefix, promoting the folder's contents toward the root.
+	TargetFolder  string `protobuf:"bytes,3,opt,name=target_folder,json=targetFolder,proto3" json:"target_folder,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -582,13 +579,6 @@ func (x *MoveMySavedQueriesRequest) GetParent() string {
 	return ""
 }
 
-func (x *MoveMySavedQueriesRequest) GetNames() []string {
-	if x != nil {
-		return x.Names
-	}
-	return nil
-}
-
 func (x *MoveMySavedQueriesRequest) GetSourceFolder() string {
 	if x != nil {
 		return x.SourceFolder
@@ -605,7 +595,7 @@ func (x *MoveMySavedQueriesRequest) GetTargetFolder() string {
 
 type MoveMySavedQueriesResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// How many moved. Fewer than were named when some are not the caller's.
+	// How many moved.
 	MovedCount    int32 `protobuf:"varint,1,opt,name=moved_count,json=movedCount,proto3" json:"moved_count,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -697,8 +687,8 @@ type SetSavedQueryPolicyRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: projects/{project}/savedQueries/{savedQuery}
 	Resource string `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
-	// Replaces the stored policy in full: a member absent from it loses their
-	// grant, and a policy with no bindings makes the saved query private again.
+	// The new policy, replacing the stored one in full. Empty `bindings` makes
+	// the saved query private again.
 	Policy        *SavedQueryPolicy `protobuf:"bytes,2,opt,name=policy,proto3" json:"policy,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -748,9 +738,8 @@ func (x *SetSavedQueryPolicyRequest) GetPolicy() *SavedQueryPolicy {
 	return nil
 }
 
-// Who a saved query is shared with, and at what level. A saved query with no
-// bindings is private. The creator is never a binding member: ownership comes
-// from creating the saved query and cannot be granted away.
+// Who a saved query is shared with, and at what level. No bindings means
+// private. The creator is never a binding member; ownership cannot be granted.
 type SavedQueryPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// At most one binding per level. A member listed under two levels is
@@ -807,23 +796,15 @@ func (x *SavedQueryPolicy) GetEtag() string {
 	return ""
 }
 
-// Binds members to one access level on one saved query. Not bytebase.v1.Binding
-// because per-object access here is a capability, not a role.
+// Binds members to one access level on one saved query.
 type SavedQueryBinding struct {
 	state protoimpl.MessageState  `protogen:"open.v1"`
 	Level SavedQueryBinding_Level `protobuf:"varint,1,opt,name=level,proto3,enum=bytebase.v1.SavedQueryBinding_Level" json:"level,omitempty"`
-	// The principals granted `level`, in bytebase.v1.Binding.members format,
-	// restricted to "user:{email}" and "group:{email}" -- prefix-checked, as
-	// project and workspace IAM check their own members.
+	// The members granted `level`: "user:{email}" or "group:{email}" only.
 	//
-	// Service accounts and workload identities are not grantees: they own and
-	// run their own saved queries and reach them as the creator. Naming one
-	// under a "user:" prefix grants nothing rather than being rejected, because
-	// a caller's member is derived from their principal type, so such a binding
-	// matches nobody.
-	//
-	// A group is stored as a reference and never expanded, so its membership
-	// stays live and a large group costs no more than a small one.
+	// Service accounts cannot be grantees — they reach their own saved queries
+	// as the creator. Naming one under "user:" grants nothing rather than
+	// failing. Groups are stored as references, so membership stays live.
 	Members       []string `protobuf:"bytes,2,rep,name=members,proto3" json:"members,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -928,16 +909,16 @@ type SearchSavedQueriesRequest struct {
 	//   - name: the saved query name. Supports "==" and "in [...]".
 	//   - title: the title. Supports "contains".
 	//   - creator: the creator in "users/{email}" format. Supports "==" and "!=".
-	//   - shared: true selects only saved queries the caller reaches through a
-	//     binding, excluding their own and any seen through
-	//     bb.savedQueries.manage; false selects the rest. Supports "==".
+	//   - shared: whether a binding shares the saved query with the caller. Their
+	//     own saved queries, and ones visible only through a project-level
+	//     bb.savedQueries.get, are not "shared". Supports "==".
 	//   - starred: whether the caller starred it. Supports "==".
 	//   - folder: the exact folder path. Supports "==".
 	//
-	// The SQL Editor's views are `creator == "users/{me}"` for My and
-	// `shared == true` for Shared. Prefer `shared` over `creator !=` for the
-	// latter: for an admin, `creator !=` also matches saved queries nobody
-	// shared with them.
+	// Use `creator == "users/{me}"` for a My view and `shared == true` for a
+	// Shared view. Prefer `shared` over `creator !=`: with a project-level
+	// bb.savedQueries.get, `creator !=` also matches saved queries nobody
+	// shared with the caller.
 	//
 	// For example:
 	// creator == "users/alice@example.com"
@@ -949,11 +930,8 @@ type SearchSavedQueriesRequest struct {
 	// The maximum number of saved queries to return. The service may return
 	// fewer. Defaults to 10; values above 1000 are coerced to 1000.
 	PageSize int32 `protobuf:"varint,3,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
-	// A page token from a previous SearchSavedQueries call. Every other
-	// parameter must match the call that returned it: the token carries the
-	// offset reached so far, so changing `filter` or `page_size` mid-pagination
-	// reinterprets that offset against a different result set and can skip or
-	// repeat rows.
+	// A page token from a previous SearchSavedQueries call. Keep every other
+	// parameter the same as the call that returned it.
 	PageToken     string `protobuf:"bytes,4,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1085,20 +1063,20 @@ type SavedQuery struct {
 	Database string `protobuf:"bytes,3,opt,name=database,proto3" json:"database,omitempty"`
 	// The title of the saved query.
 	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
-	// The fixed owner. Ownership does not transfer.
+	// The owner. Ownership does not transfer.
 	// Format: users/{email}
 	Creator    string                 `protobuf:"bytes,5,opt,name=creator,proto3" json:"creator,omitempty"`
 	CreateTime *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
 	UpdateTime *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
-	// The SQL text. SearchSavedQueries truncates it; when it is shorter than
-	// `content_size`, GetSavedQuery returns the whole thing.
+	// The SQL text. SearchSavedQueries returns a truncated preview;
+	// GetSavedQuery returns the full text.
 	Content []byte `protobuf:"bytes,8,opt,name=content,proto3" json:"content,omitempty"`
 	// The full size of the content, which may exceed the `content` returned.
 	ContentSize int64 `protobuf:"varint,9,opt,name=content_size,json=contentSize,proto3" json:"content_size,omitempty"`
 	// Whether the calling user starred it.
 	Starred bool `protobuf:"varint,11,opt,name=starred,proto3" json:"starred,omitempty"`
-	// The folder holding this saved query, set by its creator or an admin. A
-	// path like "a/b/c"; empty means unfiled.
+	// The folder holding this saved query. A path like "a/b/c"; empty means
+	// unfiled.
 	Folder        string `protobuf:"bytes,13,opt,name=folder,proto3" json:"folder,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1220,9 +1198,10 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12=\n" +
 	"\vsaved_query\x18\x02 \x01(\v2\x17.bytebase.v1.SavedQueryB\x03\xe0A\x02R\n" +
-	"savedQuery\"/\n" +
-	"\x14GetSavedQueryRequest\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\"\xa3\x01\n" +
+	"savedQuery\"K\n" +
+	"\x14GetSavedQueryRequest\x123\n" +
+	"\x04name\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
+	"\x17bytebase.com/SavedQueryR\x04name\"\xa3\x01\n" +
 	"\x17ListSavedQueriesRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x12\x16\n" +
@@ -1243,16 +1222,16 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\vsaved_query\x18\x01 \x01(\v2\x17.bytebase.v1.SavedQueryB\x03\xe0A\x02R\n" +
 	"savedQuery\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\"P\n" +
-	"\x1bUpdateSavedQueryStarRequest\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name\x12\x18\n" +
-	"\astarred\x18\x02 \x01(\bR\astarred\"\xc5\x01\n" +
+	"updateMask\"l\n" +
+	"\x1bUpdateSavedQueryStarRequest\x123\n" +
+	"\x04name\x18\x01 \x01(\tB\x1f\xe0A\x02\xfaA\x19\n" +
+	"\x17bytebase.com/SavedQueryR\x04name\x12\x18\n" +
+	"\astarred\x18\x02 \x01(\bR\astarred\"\xb4\x01\n" +
 	"\x19MoveMySavedQueriesRequest\x124\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x06parent\x12\x14\n" +
-	"\x05names\x18\x02 \x03(\tR\x05names\x12-\n" +
-	"\rsource_folder\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\fsourceFolder\x12-\n" +
-	"\rtarget_folder\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\ftargetFolder\"=\n" +
+	"\x14bytebase.com/ProjectR\x06parent\x122\n" +
+	"\rsource_folder\x18\x02 \x01(\tB\r\xe0A\x02\xbaH\ar\x05\x10\x01\x18\x80\x02R\fsourceFolder\x12-\n" +
+	"\rtarget_folder\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\ftargetFolder\"=\n" +
 	"\x1aMoveMySavedQueriesResponse\x12\x1f\n" +
 	"\vmoved_count\x18\x01 \x01(\x05R\n" +
 	"movedCount\"Y\n" +
@@ -1304,7 +1283,7 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\astarred\x18\v \x01(\bB\x03\xe0A\x03R\astarred\x12 \n" +
 	"\x06folder\x18\r \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\x06folder:K\xeaAH\n" +
 	"\x17bytebase.com/SavedQuery\x12-projects/{project}/savedQueries/{saved_query}J\x04\b\n" +
-	"\x10\vJ\x04\b\f\x10\r2\xd8\x0f\n" +
+	"\x10\vJ\x04\b\f\x10\r2\xe6\x0f\n" +
 	"\x11SavedQueryService\x12\xc7\x01\n" +
 	"\x10CreateSavedQuery\x12$.bytebase.v1.CreateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"t\xdaA\x12parent,saved_query\x8a\xea0\x16bb.savedQueries.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x023:\vsaved_query\"$/v1/{parent=projects/*}/savedQueries\x12\x88\x01\n" +
 	"\rGetSavedQuery\x12!.bytebase.v1.GetSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\";\xdaA\x04name\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x02&\x12$/v1/{name=projects/*/savedQueries/*}\x12\xba\x01\n" +
@@ -1312,8 +1291,8 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\x12SearchSavedQueries\x12&.bytebase.v1.SearchSavedQueriesRequest\x1a'.bytebase.v1.SearchSavedQueriesResponse\"G\xdaA\x06parent\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{parent=projects/*}/savedQueries:search\x12\xc4\x01\n" +
 	"\x17SearchSavedQueryFolders\x12+.bytebase.v1.SearchSavedQueryFoldersRequest\x1a,.bytebase.v1.SearchSavedQueryFoldersResponse\"N\xdaA\x06parent\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x027:\x01*\"2/v1/{parent=projects/*}/savedQueries:searchFolders\x12\xbe\x01\n" +
 	"\x10UpdateSavedQuery\x12$.bytebase.v1.UpdateSavedQueryRequest\x1a\x17.bytebase.v1.SavedQuery\"k\xdaA\x17saved_query,update_mask\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02?:\vsaved_query20/v1/{saved_query.name=projects/*/savedQueries/*}\x12\xac\x01\n" +
-	"\x14UpdateSavedQueryStar\x12(.bytebase.v1.UpdateSavedQueryStarRequest\x1a\x17.bytebase.v1.SavedQuery\"Q\xdaA\fname,starred\x90\xea0\x02\xa0\xea0\x02\x82\xd3\xe4\x93\x024:\x01*\"//v1/{name=projects/*/savedQueries/*}:updateStar\x12\xc0\x01\n" +
-	"\x12MoveMySavedQueries\x12&.bytebase.v1.MoveMySavedQueriesRequest\x1a'.bytebase.v1.MoveMySavedQueriesResponse\"Y\xdaA\x14parent,target_folder\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{parent=projects/*}/savedQueries:moveMy\x12\x91\x01\n" +
+	"\x14UpdateSavedQueryStar\x12(.bytebase.v1.UpdateSavedQueryStarRequest\x1a\x17.bytebase.v1.SavedQuery\"Q\xdaA\fname,starred\x90\xea0\x02\xa0\xea0\x02\x82\xd3\xe4\x93\x024:\x01*\"//v1/{name=projects/*/savedQueries/*}:updateStar\x12\xce\x01\n" +
+	"\x12MoveMySavedQueries\x12&.bytebase.v1.MoveMySavedQueriesRequest\x1a'.bytebase.v1.MoveMySavedQueriesResponse\"g\xdaA\"parent,source_folder,target_folder\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{parent=projects/*}/savedQueries:moveMy\x12\x91\x01\n" +
 	"\x10DeleteSavedQuery\x12$.bytebase.v1.DeleteSavedQueryRequest\x1a\x16.google.protobuf.Empty\"?\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02&*$/v1/{name=projects/*/savedQueries/*}\x12\xb0\x01\n" +
 	"\x13GetSavedQueryPolicy\x12'.bytebase.v1.GetSavedQueryPolicyRequest\x1a\x1d.bytebase.v1.SavedQueryPolicy\"Q\xdaA\bresource\x90\xea0\x02\xa0\xea0\x04\xb0\xea0\x01\x82\xd3\xe4\x93\x024\x122/v1/{resource=projects/*/savedQueries/*}:getPolicy\x12\xbe\x01\n" +
 	"\x13SetSavedQueryPolicy\x12'.bytebase.v1.SetSavedQueryPolicyRequest\x1a\x1d.bytebase.v1.SavedQueryPolicy\"_\xdaA\x0fresource,policy\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x04\xb0\xea0\x01\x82\xd3\xe4\x93\x027:\x01*\"2/v1/{resource=projects/*/savedQueries/*}:setPolicyB\xac\x01\n" +

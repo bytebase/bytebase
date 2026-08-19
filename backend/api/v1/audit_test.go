@@ -15,9 +15,11 @@ import (
 	"google.golang.org/protobuf/types/known/durationpb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 // TestLogAuditToStdoutFormat is a contract test for the structured JSON fields
@@ -202,6 +204,58 @@ func TestAuditRedactsCredentials(t *testing.T) {
 			"issued Bytebase access token must never be logged — anyone with "+
 				"audit read access could use it as a valid API token")
 	})
+}
+
+func TestFailedLoginWithoutWorkspaceIsSkipped(t *testing.T) {
+	ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{Audit: true})
+	st := newAuditLiveStore(t)
+	t.Cleanup(func() { require.NoError(t, st.Close()) })
+	in := NewAuditInterceptor(st, "test-secret", &config.Profile{})
+
+	err := in.createAuditLog(ctx, &auditEntry{
+		request: &v1pb.LoginRequest{
+			Email:    " Unknown@Example.com ",
+			Password: "wrong-password",
+		},
+		method: v1connect.AuthServiceLoginProcedure,
+		rerr: connect.NewError(
+			connect.CodeUnauthenticated,
+			errors.New("invalid email or password"),
+		),
+	})
+	require.NoError(t, err)
+
+	rows, err := st.SearchAuditLogs(ctx, &store.AuditLogFind{})
+	require.NoError(t, err)
+	require.Empty(t, rows)
+}
+
+func TestFailedLoginWithHandlerWorkspaceCreatesSingleAuditRow(t *testing.T) {
+	ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{Audit: true})
+	st := newAuditLiveStore(t)
+	t.Cleanup(func() { require.NoError(t, st.Close()) })
+	in := NewAuditInterceptor(st, "test-secret", &config.Profile{})
+
+	err := in.createAuditLog(ctx, &auditEntry{
+		request: &v1pb.LoginRequest{
+			Email:    " Member@Example.com ",
+			Password: "wrong-password",
+		},
+		method:                  v1connect.AuthServiceLoginProcedure,
+		handlerAuditWorkspaceID: auditTestWorkspace,
+		rerr: connect.NewError(
+			connect.CodeUnauthenticated,
+			errors.New("invalid email or password"),
+		),
+	})
+	require.NoError(t, err)
+
+	rows, err := st.SearchAuditLogs(ctx, &store.AuditLogFind{})
+	require.NoError(t, err)
+	require.Len(t, rows, 1)
+	require.Equal(t, auditTestWorkspace, rows[0].Workspace)
+	require.Equal(t, common.FormatWorkspace(auditTestWorkspace), rows[0].Payload.GetParent())
+	require.Equal(t, "member@example.com", rows[0].Payload.GetResource())
 }
 
 // TestStreamingAuditPersistedBeforeSend pins the streaming audit contract: a

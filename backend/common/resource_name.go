@@ -637,6 +637,23 @@ func FormatGroupEmail(email string) string {
 	return fmt.Sprintf("%s%s", GroupPrefix, email)
 }
 
+// FormatPrincipalMember returns the policy-member form of a principal by its
+// type: users/{email}, serviceAccounts/{email}, or workloadIdentities/{email}.
+// A service account never appears under users/, which is what lets member
+// validation and matching go by prefix alone. The single source for every
+// evaluator — IAM, saved-query bindings, member formatting — so the switches
+// cannot drift.
+func FormatPrincipalMember(email string, principalType storepb.PrincipalType) string {
+	switch principalType {
+	case storepb.PrincipalType_SERVICE_ACCOUNT:
+		return FormatServiceAccountEmail(email)
+	case storepb.PrincipalType_WORKLOAD_IDENTITY:
+		return FormatWorkloadIdentityEmail(email)
+	default:
+		return FormatUserEmail(email)
+	}
+}
+
 // IsWorkloadIdentityEmail checks if the email is a workload identity email.
 func IsWorkloadIdentityEmail(email string) bool {
 	return strings.HasSuffix(email, fmt.Sprintf("@%s", WorkloadIdentitySuffix)) || isProjectLevelEmail(email, WorkloadIdentitySuffix)

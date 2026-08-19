@@ -111,10 +111,7 @@ describe("UserCell", () => {
           title="Dev User"
           subtitle="dev@example.com"
           nameLink={{
-            to: {
-              name: "workspace.user-profile",
-              params: { principalEmail: "dev@example.com" },
-            },
+            to: { name: "workspace.groups" },
           }}
         />
       </div>
@@ -122,9 +119,7 @@ describe("UserCell", () => {
 
     const link = container.querySelector("a");
     expect(link).toBeInstanceOf(HTMLAnchorElement);
-    expect(link?.getAttribute("data-route-name")).toBe(
-      "workspace.user-profile"
-    );
+    expect(link?.getAttribute("data-route-name")).toBe("workspace.groups");
     expect(link?.textContent).toBe("Dev User");
 
     act(() => {

@@ -5,7 +5,6 @@
 // ↔ @/types). The values mirror `@/app/router/handles`.
 const AUTH_RELATED_ROUTES = [
   "auth.signin",
-  "auth.signin.admin",
   "auth.signup",
   "auth.mfa",
   "auth.password.reset",

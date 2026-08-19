@@ -209,7 +209,7 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
       const pending = get().serverInfoRequest;
       if (pending) return pending;
       const request = actuatorServiceClientConnect
-        .getActuatorInfo({ name: get().currentUser?.workspace ?? "" })
+        .getActuatorInfo({})
         .then((info) => {
           set({
             serverInfo: info,
@@ -227,9 +227,7 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
     },
 
     refreshServerInfo: async () => {
-      const info = await actuatorServiceClientConnect.getActuatorInfo({
-        name: get().currentUser?.workspace ?? get().serverInfo?.workspace ?? "",
-      });
+      const info = await actuatorServiceClientConnect.getActuatorInfo({});
       set({ serverInfo: info, serverInfoTs: Date.now() });
       return info;
     },
@@ -658,7 +656,8 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
 
     isSaaSMode: () => get().serverInfo?.saas ?? false,
 
-    workspaceResourceName: () => get().serverInfo?.workspace ?? "",
+    workspaceResourceName: () =>
+      get().serverInfo?.workspace ?? get().authenticationInfo?.workspace ?? "",
 
     externalUrl: () => get().serverInfo?.externalUrl ?? "",
 
@@ -687,10 +686,7 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
 
     activeVcsUserCount: () => get().serverInfo?.activeVcsUserCount ?? 0,
 
-    activeUserCount: () => get().serverInfo?.activatedUserCount ?? 0,
-
-    enableOnboarding: () =>
-      get().activeUserCount() === 1 && !get().isSaaSMode(),
+    enableOnboarding: () => get().userCountInIam() === 1 && !get().isSaaSMode(),
 
     quickStartEnabled: () => {
       if (get().appFeatures["bb.feature.hide-quick-start"]) {
@@ -699,18 +695,15 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
       if (!get().serverInfo?.enableSample) {
         return false;
       }
-      return get().activeUserCount() <= 1;
+      return get().userCountInIam() <= 1;
     },
 
     setupSample: async () => {
       await actuatorServiceClientConnect.setupSample({});
     },
 
-    // Alias for the legacy Pinia `actuatorStore.fetchServerInfo(workspace?)`.
-    fetchServerInfo: async (workspaceResourceName) => {
-      const info = await actuatorServiceClientConnect.getActuatorInfo({
-        name: workspaceResourceName ?? get().serverInfo?.workspace ?? "",
-      });
+    fetchServerInfo: async () => {
+      const info = await actuatorServiceClientConnect.getActuatorInfo({});
       set({ serverInfo: info, serverInfoTs: Date.now() });
       return info;
     },
@@ -759,7 +752,7 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
         ),
       });
       // Refresh the latest server info (mirrors the Pinia store).
-      await get().fetchServerInfo(get().workspaceResourceName());
+      await get().fetchServerInfo();
     },
 
     fetchEnvironments: async (force = false) => {

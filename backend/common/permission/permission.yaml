@@ -100,9 +100,13 @@ permissions:
   - bb.rollouts.get
   - bb.rollouts.list
   - bb.savedQueries.create
-  - bb.savedQueries.search
+  - bb.savedQueries.delete
+  - bb.savedQueries.get
+  - bb.savedQueries.getIamPolicy
   - bb.savedQueries.list
-  - bb.savedQueries.manage
+  - bb.savedQueries.search
+  - bb.savedQueries.setIamPolicy
+  - bb.savedQueries.update
   - bb.serviceAccounts.create
   - bb.serviceAccounts.delete
   - bb.serviceAccounts.get

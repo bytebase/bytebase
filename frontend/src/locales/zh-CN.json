@@ -279,6 +279,7 @@
     "database-group": "数据库分组",
     "databases": "数据库",
     "deactivate": "禁用",
+    "deactivated": "已停用",
     "default": "默认",
     "definition": "定义",
     "delete": "删除",
@@ -295,6 +296,7 @@
     "discard-changes": "取消修改",
     "discord": "Discord",
     "dismiss": "关闭",
+    "done": "完成",
     "download": "下载",
     "draft": "草稿",
     "duplicate": "拷贝",
@@ -444,7 +446,6 @@
     "show-less": "收起",
     "show-more": "显示更多",
     "sign-in": "登录",
-    "sign-in-as-admin": "以管理员身份登录",
     "sign-up": "注册",
     "skip": "跳过",
     "skipped": "已跳过",
@@ -2276,6 +2277,14 @@
     }
   },
   "settings": {
+    "account": {
+      "description": "管理您的个人资料和登录方式。",
+      "email-managed": "如需修改登录邮箱，请联系工作空间管理员。",
+      "password-notice": "修改密码后，所有会话（包括当前会话）都会退出登录。",
+      "security": "安全",
+      "self": "账号设置",
+      "update-password": "更新密码"
+    },
     "general": {
       "workspace": {
         "access-token-duration": {
@@ -2559,6 +2568,29 @@
         "reactivate-confirm-title": "确定启用"
       },
       "add-member": "添加成员",
+      "admin": {
+        "change-email": "修改邮箱",
+        "change-email-description": "将该账号的登录邮箱从 {{email}} 修改为新邮箱。该用户需使用新邮箱登录。",
+        "create-user": "创建用户",
+        "create-user-roles-failed": "账号已创建，但角色分配失败。请在成员页面中设置。",
+        "deactivate": "停用用户",
+        "deactivate-tip": "账号数据会保留，但无法再登录。您之后可以重新启用。",
+        "edit-user": "编辑用户",
+        "email-immutable-tip": "如需更换邮箱，请关闭此面板，在该行的操作菜单中选择“修改邮箱”。",
+        "external-source": "该账号从 {{source}} 同步。此处的修改可能会被下次同步覆盖。",
+        "generate": "生成",
+        "reactivate": "启用用户",
+        "reactivate-tip": "该账号可以使用原有的凭证和角色重新登录。",
+        "reset-mfa": "重置两步验证",
+        "reset-mfa-optional": "{{user}} 将失去当前的验证器和恢复码，在重新绑定之前将不使用两步验证登录。",
+        "reset-mfa-recovery-first": "如果对方还有恢复码，可以直接用恢复码登录并自行重新绑定，无需重置。",
+        "reset-mfa-required": "{{user}} 将失去当前的验证器和恢复码。此工作空间要求两步验证，因此对方下次登录时必须重新绑定验证器。",
+        "reset-password": "重置密码",
+        "reset-password-deliver": "请通过可信渠道发送给对方。Bytebase 不会通过邮件发送。",
+        "reset-password-description": "为 {{user}} 设置新密码。该用户的所有会话都会退出登录，需要使用新密码重新登录。",
+        "reset-password-issued": "{{user}} 的新密码。仅显示一次，之后无法再次查看。",
+        "saas-read-only": "云端账号资料由账号本人管理。请在成员页面管理工作空间访问权限。"
+      },
       "all-users": "全部用户",
       "assign-role": "分配角色",
       "cannot-revoke-self": "您不能撤销自己",
@@ -2658,13 +2690,11 @@
       "password-mismatch": "新密码不匹配",
       "phone": "手机号",
       "phone-tips": "请包含国家代码前缀 +86xxxxxx",
-      "role": "角色",
       "setup-failed": "更新个人资料失败。",
       "setup-first-project": "设置第一个项目",
       "setup-skip": "稍后再说",
       "setup-success": "个人资料已更新。",
       "setup-title": "欢迎！设置您的工作空间",
-      "subscription": "（升级到付费方案来解锁角色管理）",
       "workspace-name": "工作空间名称",
       "workspace-name-placeholder": "输入工作空间名称"
     },
@@ -2896,7 +2926,6 @@
       "non-empty-folder-title": "非空文件夹"
     },
     "mine": "我的",
-    "move-saved-queries": "移动已保存的查询",
     "notifications": {
       "duplicate-success": "查询已复制"
     },

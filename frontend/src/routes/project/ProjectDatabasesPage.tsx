@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { Plus, SquareTerminal } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { createBehaviorMetric } from "@/app/analytics/behavior";
@@ -32,6 +32,7 @@ import {
   ProjectPageLayout,
   ProjectPageToolbar,
 } from "@/components/ProjectPageLayout";
+import { SQLEditorButton } from "@/components/SQLEditorButton";
 import { Alert } from "@/components/ui/alert";
 import {
   AlertDialog,
@@ -71,7 +72,6 @@ import {
 } from "@/types/proto-es/v1/database_service_pb";
 import { unknownDatabase } from "@/types/v1/database";
 import {
-  autoSQLEditorDatabaseRoute,
   engineNameV1,
   extractInstanceResourceName,
   getDefaultPagination,
@@ -530,16 +530,13 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   }, [projectName, visibleDatabases]);
 
   const handleOpenFirstDatabaseInSQLEditor = useCallback(() => {
-    const firstDatabase = visibleDatabases[0];
-    if (!firstDatabase) return;
     behaviorAnalytics.captureMetric(
       createBehaviorMetric("post sync sql editor clicked", {
         routeId: router.currentRoute.value.name?.toString(),
         resource: projectName,
       })
     );
-    router.push(autoSQLEditorDatabaseRoute(firstDatabase));
-  }, [projectName, visibleDatabases]);
+  }, [projectName]);
 
   useProductIntro({
     id: CONNECT_DATABASE_PRODUCT_INTRO,
@@ -675,13 +672,16 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
                   permissions={["bb.sql.select"]}
                   project={project}
                 >
-                  <Button
-                    size="sm"
-                    onClick={handleOpenFirstDatabaseInSQLEditor}
+                  <span
+                    className="inline-flex"
+                    onClickCapture={handleOpenFirstDatabaseInSQLEditor}
                   >
-                    <SquareTerminal className="size-4" />
-                    {t("db.project-instance-synced-sql-editor-action")}
-                  </Button>
+                    <SQLEditorButton
+                      size="sm"
+                      database={visibleDatabases[0]}
+                      label={t("db.project-instance-synced-sql-editor-action")}
+                    />
+                  </span>
                 </PermissionGuard>
                 <PermissionGuard
                   permissions={PERMISSIONS_FOR_DATABASE_CREATE_ISSUE}

@@ -5,11 +5,11 @@ type GAWindow = Window & {
   gtag?: (...args: unknown[]) => void;
 };
 
-export function initializeGA4(isSaaSMode: boolean): void {
+export function initializeGA4(): void {
   const measurementId = import.meta.env.BB_GA4_MEASUREMENT_ID as
     | string
     | undefined;
-  if (!isSaaSMode || !measurementId || document.getElementById(GA4_SCRIPT_ID)) {
+  if (!measurementId || document.getElementById(GA4_SCRIPT_ID)) {
     return;
   }
 

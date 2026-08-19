@@ -295,20 +295,8 @@ func (s *UserService) validatePassword(ctx context.Context, workspaceID, passwor
 }
 
 func validatePasswordWithRestriction(password string, passwordRestriction *storepb.WorkspaceProfileSetting_PasswordRestriction) error {
-	if len(password) < int(passwordRestriction.GetMinLength()) {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password length should no less than %v characters", passwordRestriction.GetMinLength()))
-	}
-	if passwordRestriction.GetRequireNumber() && !regexp.MustCompile("[0-9]+").MatchString(password) {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password must contains at least 1 number"))
-	}
-	if passwordRestriction.GetRequireLetter() && !regexp.MustCompile("[a-zA-Z]+").MatchString(password) {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password must contains at least 1 lower case letter"))
-	}
-	if passwordRestriction.GetRequireUppercaseLetter() && !regexp.MustCompile("[A-Z]+").MatchString(password) {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password must contains at least 1 upper case letter"))
-	}
-	if passwordRestriction.GetRequireSpecialCharacter() && !regexp.MustCompile(`[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]+`).MatchString(password) {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password must contains at least 1 special character"))
+	if err := common.ValidatePassword(password, passwordRestriction); err != nil {
+		return connect.NewError(connect.CodeInvalidArgument, err)
 	}
 	return nil
 }
@@ -511,7 +499,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 // DeleteUser deletes a user.
 func (s *UserService) DeleteUser(ctx context.Context, request *connect.Request[v1pb.DeleteUserRequest]) (*connect.Response[emptypb.Empty], error) {
 	if s.profile.SaaS {
-		return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("CreateUser is not available in SaaS mode, add users via workspace IAM policy instead"))
+		return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("DeleteUser is not available in SaaS mode, remove users from the workspace IAM policy instead"))
 	}
 
 	callerUser, ok := GetUserFromContext(ctx)
@@ -598,7 +586,7 @@ func (s *UserService) hasExtraWorkspaceAdmin(ctx context.Context, policy *storep
 // UndeleteUser undeletes a user.
 func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request[v1pb.UndeleteUserRequest]) (*connect.Response[v1pb.User], error) {
 	if s.profile.SaaS {
-		return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("CreateUser is not available in SaaS mode, add users via workspace IAM policy instead"))
+		return nil, connect.NewError(connect.CodeUnimplemented, errors.Errorf("UndeleteUser is not available in SaaS mode, add users back to the workspace IAM policy instead"))
 	}
 
 	callerUser, ok := GetUserFromContext(ctx)

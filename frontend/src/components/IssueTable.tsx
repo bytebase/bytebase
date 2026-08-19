@@ -4,10 +4,7 @@ import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { issueServiceClientConnect } from "@/api";
 import { router } from "@/app/router";
-import {
-  PROJECT_V1_ROUTE_DETAIL,
-  WORKSPACE_ROUTE_USER_PROFILE,
-} from "@/app/router/handles";
+import { PROJECT_V1_ROUTE_DETAIL } from "@/app/router/handles";
 import {
   AdvancedSearch,
   type ScopeOption,
@@ -19,6 +16,7 @@ import { HumanizeTs } from "@/components/HumanizeTs";
 import { RouterLink } from "@/components/RouterLink";
 import { SelectionActionBar } from "@/components/SelectionActionBar";
 import { TimeRangePicker } from "@/components/TimeRangePicker";
+import { UserHoverCard } from "@/components/UserHoverCard";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -47,6 +45,8 @@ import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
+  AccountType,
+  getAccountTypeByEmail,
   getTimeForPbTimestampProtoEs,
   isValidProjectName,
   unknownUser,
@@ -773,18 +773,23 @@ export const IssueListItem = memo(function IssueListItem({
             {t("common.created")}
             <HumanizeTs ts={createTimeTs} />
             <span>&middot;</span>
-            <RouterLink
-              className="hover:underline"
-              to={{
-                name: WORKSPACE_ROUTE_USER_PROFILE,
-                params: { principalEmail: creator.email },
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-              }}
-            >
-              {creator.title}
-            </RouterLink>
+            {getAccountTypeByEmail(creator.email) === AccountType.USER ? (
+              <UserHoverCard
+                email={creator.email}
+                fallbackTitle={creator.title}
+              >
+                <span
+                  className="cursor-default"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                  }}
+                >
+                  {creator.title}
+                </span>
+              </UserHoverCard>
+            ) : (
+              <span>{creator.title}</span>
+            )}
             {showProject && issueProject && (
               <>
                 <span>&middot;</span>

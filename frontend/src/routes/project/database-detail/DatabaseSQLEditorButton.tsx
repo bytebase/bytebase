@@ -1,70 +1,32 @@
-import { SquareTerminal } from "lucide-react";
-import { useCallback } from "react";
-import { useTranslation } from "react-i18next";
-import { router } from "@/app/router";
-import { useAppStore } from "@/stores/app";
+import { useCurrentRoute } from "@/app/router";
+import { PermissionGuard } from "@/components/PermissionGuard";
+import { SQLEditorButton } from "@/components/SQLEditorButton";
+import { useProjectByName } from "@/hooks/useProjectByName";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import { defaultProject, isDefaultProject } from "@/types/v1/project";
-import { autoSQLEditorDatabaseRoute } from "@/utils";
 
 export function DatabaseSQLEditorButton({
   database,
   disabled = false,
-  onFailed,
 }: {
   database: Database;
   disabled?: boolean;
-  onFailed?: (database: Database) => void;
 }) {
-  const { t } = useTranslation();
-  const hasProjectPermissionFn = useAppStore(
-    (state) => state.hasProjectPermission
-  );
-  const hasWorkspacePermissionFn = useAppStore(
-    (state) => state.hasWorkspacePermission
-  );
-
-  const handleClick = useCallback(() => {
-    if (disabled) {
-      return;
-    }
-
-    if (isDefaultProject(database.project)) {
-      const canQuery =
-        hasWorkspacePermissionFn("bb.sql.select") ||
-        hasProjectPermissionFn(
-          defaultProject(database.project),
-          "bb.sql.select"
-        );
-      if (!canQuery) {
-        onFailed?.(database);
-        return;
-      }
-    }
-
-    const route = router.resolve(autoSQLEditorDatabaseRoute(database));
-
-    if (router.currentRoute.value.name?.toString().startsWith("sql-editor")) {
-      void router.push(route);
-      return;
-    }
-
-    window.open(route.fullPath, "_blank");
-  }, [
-    database,
-    disabled,
-    hasProjectPermissionFn,
-    hasWorkspacePermissionFn,
-    onFailed,
-  ]);
+  const route = useCurrentRoute();
+  const project = useProjectByName(database.project);
 
   return (
-    <dd
-      className="flex cursor-pointer items-center text-sm textlabel hover:text-accent md:mr-4"
-      onClick={handleClick}
-    >
-      <SquareTerminal className="mr-1 size-4" />
-      {t("sql-editor.self")}
+    <dd className="md:mr-4">
+      <PermissionGuard permissions={["bb.sql.select"]} project={project}>
+        {({ disabled: permissionDisabled }) => (
+          <SQLEditorButton
+            database={database}
+            disabled={disabled || permissionDisabled}
+            openInNewTab={!route.name?.startsWith("sql-editor")}
+            appearance="secondary"
+            size="sm"
+          />
+        )}
+      </PermissionGuard>
     </dd>
   );
 }

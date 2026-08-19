@@ -31,13 +31,7 @@ const extractDatabaseParts = (resource: string) => {
   };
 };
 
-export function DatabaseDetailHeader({
-  database,
-  onSQLEditorFailed,
-}: {
-  database: Database;
-  onSQLEditorFailed?: (database: Database) => void;
-}) {
+export function DatabaseDetailHeader({ database }: { database: Database }) {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const { databaseName } = useMemo(
@@ -158,10 +152,7 @@ export function DatabaseDetailHeader({
             <span>{extractReleaseUID(database.release)}</span>
           </div>
         )}
-        <DatabaseSQLEditorButton
-          database={database}
-          onFailed={onSQLEditorFailed}
-        />
+        <DatabaseSQLEditorButton database={database} />
       </div>
     </div>
   );

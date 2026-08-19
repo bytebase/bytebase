@@ -20,10 +20,7 @@ import React, {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
-import {
-  WORKSPACE_ROUTE_GROUPS,
-  WORKSPACE_ROUTE_USER_PROFILE,
-} from "@/app/router";
+import { WORKSPACE_ROUTE_GROUPS } from "@/app/router";
 import { AccountMultiSelect } from "@/components/AccountMultiSelect";
 import { DatabaseResourceSelector as DatabaseResourceSelectorComponent } from "@/components/DatabaseResourceSelector";
 import { EnvironmentSelect } from "@/components/EnvironmentSelect";
@@ -422,23 +419,19 @@ function MemberTable({
                           </>
                         ) : undefined
                       }
+                      hoverEmail={
+                        mb.type === "users" && canGetUsers
+                          ? mb.user?.email
+                          : undefined
+                      }
                       nameLink={
-                        mb.type === "users" && canGetUsers && mb.user?.email
+                        mb.type === "groups" && canGetGroups
                           ? {
                               to: {
-                                name: WORKSPACE_ROUTE_USER_PROFILE,
-                                params: {
-                                  principalEmail: mb.user.email,
-                                },
+                                name: WORKSPACE_ROUTE_GROUPS,
                               },
                             }
-                          : mb.type === "groups" && canGetGroups
-                            ? {
-                                to: {
-                                  name: WORKSPACE_ROUTE_GROUPS,
-                                },
-                              }
-                            : undefined
+                          : undefined
                       }
                       badges={
                         <>
@@ -542,18 +535,7 @@ function MemberTable({
                             subtitle={user.email}
                             size="sm"
                             className="pl-12"
-                            nameLink={
-                              canGetUsers
-                                ? {
-                                    to: {
-                                      name: WORKSPACE_ROUTE_USER_PROFILE,
-                                      params: {
-                                        principalEmail: user.email,
-                                      },
-                                    },
-                                  }
-                                : undefined
-                            }
+                            hoverEmail={canGetUsers ? user.email : undefined}
                             badges={
                               user.name === currentUser.name ? (
                                 <Badge className="text-xs">

@@ -10,6 +10,7 @@ const session = {
   requireMfa: false,
   hasTwoFa: false,
   isSaaSMode: false,
+  disallowSignup: false,
   currentUser: undefined as { mfaEnabled: boolean } | undefined,
   // Mirrors the store default: PIPELINE until the workspace profile loads.
   databaseChangeMode: DatabaseChangeMode.PIPELINE,
@@ -30,6 +31,9 @@ vi.mock("@/stores/app", () => ({
       getWorkspaceProfile: () => ({ requireMfa: session.requireMfa }),
       hasFeature: () => session.hasTwoFa,
       isSaaSMode: () => session.isSaaSMode,
+      authenticationInfo: {
+        restriction: { disallowSignup: session.disallowSignup },
+      },
       currentUser: session.currentUser,
       appFeatures: {
         "bb.feature.database-change-mode": session.databaseChangeMode,
@@ -46,6 +50,8 @@ vi.mock("@/modules/ai/store", () => ({
 
 import { buildSigninRedirectQuery, rootGuard } from "./guard";
 import {
+  ACCOUNT_ROUTE,
+  ACCOUNT_ROUTE_TWO_FACTOR,
   AUTH_2FA_SETUP_MODULE,
   AUTH_OAUTH_CALLBACK_MODULE,
   AUTH_PASSWORD_RESET_MODULE,
@@ -67,6 +73,7 @@ beforeEach(() => {
   session.requireMfa = false;
   session.hasTwoFa = false;
   session.isSaaSMode = false;
+  session.disallowSignup = false;
   session.currentUser = undefined;
   session.databaseChangeMode = DatabaseChangeMode.PIPELINE;
   vi.clearAllMocks();
@@ -150,6 +157,13 @@ describe("rootGuard", () => {
     expect(response.headers.get("Location")).toBe("/404");
   });
 
+  test("/auth/admin matches the catch-all route", () => {
+    const matched = matchRoutes(routes, "/auth/admin");
+    const leafRoute = matched?.at(-1)?.route;
+    const handle = leafRoute?.handle as { name?: string } | undefined;
+    expect(handle?.name).toBe(WORKSPACE_ROUTE_404);
+  });
+
   test("oauth callback is allowed directly", () => {
     expect(run(AUTH_OAUTH_CALLBACK_MODULE, "/auth/oauth/callback")).toBeNull();
   });
@@ -178,8 +192,8 @@ describe("rootGuard", () => {
     expect(resets.resetProjects).toHaveBeenCalled();
   });
 
-  test("redirects SaaS signup route to signin", () => {
-    session.isSaaSMode = true;
+  test("redirects to signin when signup is disallowed", () => {
+    session.disallowSignup = true;
 
     expect(
       location(
@@ -232,6 +246,15 @@ describe("rootGuard", () => {
   test("allows an authenticated user on an allowed route", () => {
     session.isLoggedIn = true;
     expect(run(PROJECT_V1_ROUTE_DASHBOARD, "/projects/p1")).toBeNull();
+  });
+
+  // Personal account routes live outside the /setting tree, so they need
+  // their own entry in the allowlist. Without it a full page load of /account
+  // lands on 404 while in-app navigation still appears to work.
+  test("allows an authenticated user on their account page", () => {
+    session.isLoggedIn = true;
+    expect(run(ACCOUNT_ROUTE, "/account")).toBeNull();
+    expect(run(ACCOUNT_ROUTE_TWO_FACTOR, "/account/two-factor")).toBeNull();
   });
 
   test("unknown named route falls back to 404", () => {

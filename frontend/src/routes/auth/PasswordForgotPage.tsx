@@ -22,17 +22,17 @@ export function PasswordForgotPage() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const serverInfo = useAppStore((state) => state.serverInfo);
+  const authenticationInfo = useAppStore((state) => state.authenticationInfo);
   const passwordResetEnabled =
-    serverInfo?.restriction?.passwordResetEnabled ?? false;
+    authenticationInfo?.restriction?.passwordResetEnabled ?? false;
   const disallowPasswordSignin =
-    serverInfo?.restriction?.disallowPasswordSignin ?? false;
+    authenticationInfo?.restriction?.disallowPasswordSignin ?? false;
 
   // This page renders outside any shell, so the workspace bootstrap hasn't
-  // populated the app store yet — load server info so the password-reset
+  // populated the app store yet — load authentication info so password-reset
   // restriction flags resolve.
   useEffect(() => {
-    void useAppStore.getState().loadServerInfo();
+    void useAppStore.getState().loadAuthenticationInfo();
   }, []);
 
   useEffect(() => {

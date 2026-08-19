@@ -18,6 +18,7 @@ import {
 import { isValidInstanceName } from "@/types/v1/instance";
 import { workspaceCacheScope } from "@/utils/storage-keys";
 import { escapeCELStringLiteral } from "@/utils/v1/cel";
+import { bindingScopesResources } from "@/utils/v1/iam";
 import type { AppStoreState } from "./types";
 
 export const MAX_RECENT_PROJECT = 5;
@@ -193,6 +194,65 @@ export function bindingMatchesUser(
         (name) =>
           name === user.name ||
           name === ALL_USERS_NAME ||
+          (name.startsWith("groups/") && userGroups.has(name))
+      );
+    });
+  });
+}
+
+// The canonical expiry condition is the only non-empty form the client
+// evaluates, and the whole expression must be it — matching a substring would
+// let a lower-bounded window ("not before") read as already granting.
+const CANONICAL_EXPIRY_CONDITION =
+  /^\s*request\.time\s*<\s*timestamp\(\s*"([^"]+)"\s*\)\s*$/;
+
+// Whether the client can positively evaluate the binding's condition as
+// granting right now. The server evaluates the full CEL expression; the
+// client recognizes the empty condition and the canonical expiry form, and
+// treats everything else as not granting — the affordance hides rather than
+// dangling on an RPC the server will deny. An unparsable timestamp compares
+// as NaN, which also reads as not granting.
+function conditionGrantsNow(binding: Binding): boolean {
+  const expression = binding.condition?.expression ?? "";
+  if (expression.trim() === "") {
+    return true;
+  }
+  const match = expression.match(CANONICAL_EXPIRY_CONDITION);
+  if (!match) {
+    return false;
+  }
+  return new Date(match[1]) > new Date();
+}
+
+// Mirrors the server's project-wide binding filter (iam.Manager's check with
+// projectWideOnly): the member must match explicitly — allUsers is skipped
+// for the workspace policy in SaaS mode, where workspace members must be
+// explicit, while a project-level allUsers means "all workspace members" —
+// a condition that scopes resources confers nothing, and a condition the
+// client cannot positively evaluate hides the grant instead of showing an
+// affordance the server denies.
+export function projectWideBindings(
+  policy: AppStoreState["workspacePolicy"],
+  user: User,
+  { skipAllUsers }: { skipAllUsers: boolean }
+): Binding[] {
+  if (!policy || !user.name) {
+    return [];
+  }
+  const userGroups = new Set(user.groups);
+  return policy.bindings.filter((binding) => {
+    if (bindingScopesResources(binding)) {
+      return false;
+    }
+    if (!conditionGrantsNow(binding)) {
+      return false;
+    }
+    return binding.members.some((member) => {
+      const names = bindingMemberToNames(member);
+      return names.some(
+        (name) =>
+          name === user.name ||
+          (name === ALL_USERS_NAME && !skipAllUsers) ||
           (name.startsWith("groups/") && userGroups.has(name))
       );
     });

@@ -33,6 +33,13 @@ func getBaseProfile(dataDir string) *config.Profile {
 	return config
 }
 
+func resolveProfile() (*config.Profile, error) {
+	if err := checkDataDir(); err != nil {
+		return nil, err
+	}
+	return activeProfile(flags.dataDir), nil
+}
+
 func isDocker() bool {
 	if _, err := os.Stat("/etc/bb.env"); err == nil {
 		return true

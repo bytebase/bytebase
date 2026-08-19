@@ -17,13 +17,16 @@ type ProjectChecker = (project: Project, permission: Permission) => boolean;
 // well before any render-time permission check).
 let workspaceChecker: WorkspaceChecker = () => false;
 let projectChecker: ProjectChecker = () => false;
+let projectWideChecker: ProjectChecker = () => false;
 
 export const registerPermissionCheckers = (checkers: {
   hasWorkspacePermission: WorkspaceChecker;
   hasProjectPermission: ProjectChecker;
+  hasProjectWidePermission: ProjectChecker;
 }): void => {
   workspaceChecker = checkers.hasWorkspacePermission;
   projectChecker = checkers.hasProjectPermission;
+  projectWideChecker = checkers.hasProjectWidePermission;
 };
 
 export const hasWorkspacePermissionV2 = (permission: Permission): boolean =>
@@ -36,3 +39,12 @@ export const hasProjectPermissionV2 = (
   project: Project,
   permission: Permission
 ): boolean => projectChecker(project, permission);
+
+// hasProjectWidePermissionV2 mirrors the server's CheckProjectWidePermission:
+// a binding whose condition scopes resources confers nothing. Surfaces the
+// server gates project-wide (the saved-query permissions) use this so the UI
+// never offers what the RPC will deny.
+export const hasProjectWidePermissionV2 = (
+  project: Project,
+  permission: Permission
+): boolean => projectWideChecker(project, permission);

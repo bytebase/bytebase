@@ -35,18 +35,17 @@ export function PasswordResetPage() {
   const query = router.currentRoute.value.query;
   const codeMode = !!query.email;
 
-  const serverInfo = useAppStore((state) => state.serverInfo);
-  const passwordRestriction = serverInfo?.restriction?.passwordRestriction;
-  const disallowPasswordSignin =
-    serverInfo?.restriction?.disallowPasswordSignin ?? false;
+  const authenticationInfo = useAppStore((state) => state.authenticationInfo);
+  const restriction = authenticationInfo?.restriction;
+  const passwordRestriction = restriction?.passwordRestriction;
+  const disallowPasswordSignin = restriction?.disallowPasswordSignin ?? false;
   const requireResetPassword = useAppStore((s) => s.requireResetPassword());
   const currentUser = useCurrentUser();
 
-  // This page renders outside any shell, so the workspace bootstrap hasn't
-  // populated the app store yet — load server info so the password policy
-  // checks resolve.
+  // Password policy comes from the authentication API in both public and
+  // forced-reset flows.
   useEffect(() => {
-    void useAppStore.getState().loadServerInfo();
+    void useAppStore.getState().loadAuthenticationInfo();
   }, []);
 
   const redirectQuery = () => {

@@ -4,6 +4,7 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
+import type { WorkspaceProfileSetting_PasswordRestriction } from "./setting_service_pb";
 import type { User } from "./user_service_pb";
 import type { EmptySchema } from "@bufbuild/protobuf/wkt";
 
@@ -11,6 +12,100 @@ import type { EmptySchema } from "@bufbuild/protobuf/wkt";
  * Describes the file v1/auth_service.proto.
  */
 export declare const file_v1_auth_service: GenFile;
+
+/**
+ * @generated from message bytebase.v1.GetAuthenticationRestrictionRequest
+ */
+export declare type GetAuthenticationRestrictionRequest = Message<"bytebase.v1.GetAuthenticationRestrictionRequest"> & {
+  /**
+   * Optional. The workspace whose authentication policy should be returned.
+   * Format: workspaces/{workspace}
+   * When unset, self-hosted resolves the singleton workspace and SaaS uses
+   * the deployment-level defaults.
+   *
+   * @generated from field: string workspace = 1;
+   */
+  workspace: string;
+};
+
+/**
+ * Describes the message bytebase.v1.GetAuthenticationRestrictionRequest.
+ * Use `create(GetAuthenticationRestrictionRequestSchema)` to create a new message.
+ */
+export declare const GetAuthenticationRestrictionRequestSchema: GenMessage<GetAuthenticationRestrictionRequest>;
+
+/**
+ * @generated from message bytebase.v1.AuthenticationInfo
+ */
+export declare type AuthenticationInfo = Message<"bytebase.v1.AuthenticationInfo"> & {
+  /**
+   * The workspace used for authentication, when one can be resolved.
+   * Format: workspaces/{workspace}
+   *
+   * @generated from field: string workspace = 1;
+   */
+  workspace: string;
+
+  /**
+   * The effective authentication restrictions.
+   *
+   * @generated from field: bytebase.v1.Restriction restriction = 2;
+   */
+  restriction?: Restriction | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.AuthenticationInfo.
+ * Use `create(AuthenticationInfoSchema)` to create a new message.
+ */
+export declare const AuthenticationInfoSchema: GenMessage<AuthenticationInfo>;
+
+/**
+ * @generated from message bytebase.v1.Restriction
+ */
+export declare type Restriction = Message<"bytebase.v1.Restriction"> & {
+  /**
+   * Whether self-service user signup is disabled.
+   *
+   * @generated from field: bool disallow_signup = 1;
+   */
+  disallowSignup: boolean;
+
+  /**
+   * Whether password sign-in is disabled for all end users.
+   *
+   * @generated from field: bool disallow_password_signin = 2;
+   */
+  disallowPasswordSignin: boolean;
+
+  /**
+   * Password complexity and restriction requirements.
+   *
+   * @generated from field: bytebase.v1.WorkspaceProfileSetting.PasswordRestriction password_restriction = 3;
+   */
+  passwordRestriction?: WorkspaceProfileSetting_PasswordRestriction | undefined;
+
+  /**
+   * Whether email + 6-digit code signin is enabled for this workspace.
+   *
+   * @generated from field: bool allow_email_code_signin = 4;
+   */
+  allowEmailCodeSignin: boolean;
+
+  /**
+   * Whether password reset via email is available for this workspace.
+   * True when the workspace (or deployment) has an email setting configured.
+   *
+   * @generated from field: bool password_reset_enabled = 5;
+   */
+  passwordResetEnabled: boolean;
+};
+
+/**
+ * Describes the message bytebase.v1.Restriction.
+ * Use `create(RestrictionSchema)` to create a new message.
+ */
+export declare const RestrictionSchema: GenMessage<Restriction>;
 
 /**
  * @generated from message bytebase.v1.LoginRequest
@@ -473,6 +568,17 @@ export declare const SwitchWorkspaceRequestSchema: GenMessage<SwitchWorkspaceReq
  * @generated from service bytebase.v1.AuthService
  */
 export declare const AuthService: GenService<{
+  /**
+   * Gets the effective restrictions needed to render authentication flows.
+   * Permissions required: None
+   *
+   * @generated from rpc bytebase.v1.AuthService.GetAuthenticationRestriction
+   */
+  getAuthenticationRestriction: {
+    methodKind: "unary";
+    input: typeof GetAuthenticationRestrictionRequestSchema;
+    output: typeof AuthenticationInfoSchema;
+  },
   /**
    * Authenticates a user and returns access tokens.
    * Permissions required: None

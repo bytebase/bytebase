@@ -587,7 +587,7 @@ type WorkspaceProfileSetting struct {
 	EnforceIdentityDomain bool `protobuf:"varint,8,opt,name=enforce_identity_domain,json=enforceIdentityDomain,proto3" json:"enforce_identity_domain,omitempty"`
 	// The workspace database change mode.
 	DatabaseChangeMode WorkspaceProfileSetting_DatabaseChangeMode `protobuf:"varint,9,opt,name=database_change_mode,json=databaseChangeMode,proto3,enum=bytebase.store.WorkspaceProfileSetting_DatabaseChangeMode" json:"database_change_mode,omitempty"`
-	// Whether to disallow password signin. (Except workspace admins)
+	// Whether password sign-in is disabled for all end users.
 	DisallowPasswordSignin bool `protobuf:"varint,10,opt,name=disallow_password_signin,json=disallowPasswordSignin,proto3" json:"disallow_password_signin,omitempty"`
 	// Whether to enable metric collection for the workspace.
 	EnableMetricCollection bool `protobuf:"varint,11,opt,name=enable_metric_collection,json=enableMetricCollection,proto3" json:"enable_metric_collection,omitempty"`
