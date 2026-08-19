@@ -406,3 +406,75 @@ func TestRDSCertPoolCollapsesConcurrentDownloads(t *testing.T) {
 	}
 	require.Equal(t, int32(1), requests.Load())
 }
+
+func TestRDSCertPoolWaiterObservesItsOwnCancellation(t *testing.T) {
+	ca := selfSignedCAPEM(t)
+	release := make(chan struct{})
+	inFlight := make(chan struct{}, 1)
+	serveRDSCertBundle(t, func(w http.ResponseWriter, _ *http.Request) {
+		inFlight <- struct{}{}
+		<-release
+		_, _ = w.Write([]byte(ca))
+	})
+	// Registered after serveRDSCertBundle so this runs before its server.Close,
+	// which would otherwise wait forever on the blocked handler.
+	t.Cleanup(func() { close(release) })
+
+	dataSource := &storepb.DataSource{Host: "db.example.com", VerifyTlsCertificate: true}
+	// Leader occupies the flight and stays blocked in the handler.
+	go func() {
+		_, _ = cachedRDSCertPool(context.Background())
+	}()
+	<-inFlight
+
+	// The waiter joins the in-flight download, then gives up on its own context.
+	ctx, cancel := context.WithCancel(context.Background())
+	waiterDone := make(chan error, 1)
+	go func() {
+		_, err := rdsTLSConfig(ctx, dataSource)
+		waiterDone <- err
+	}()
+	cancel()
+
+	select {
+	case err := <-waiterDone:
+		require.ErrorIs(t, err, context.Canceled)
+	case <-time.After(5 * time.Second):
+		require.Fail(t, "canceled waiter blocked on the shared download")
+	}
+}
+
+func TestRDSCertPoolLeaderCancellationDoesNotFailWaiter(t *testing.T) {
+	ca := selfSignedCAPEM(t)
+	release := make(chan struct{})
+	inFlight := make(chan struct{}, 1)
+	serveRDSCertBundle(t, func(w http.ResponseWriter, _ *http.Request) {
+		inFlight <- struct{}{}
+		<-release
+		_, _ = w.Write([]byte(ca))
+	})
+
+	leaderCtx, cancelLeader := context.WithCancel(context.Background())
+	go func() {
+		_, _ = cachedRDSCertPool(leaderCtx)
+	}()
+	<-inFlight
+
+	// A second caller with a live context is waiting on the same flight.
+	waiterDone := make(chan error, 1)
+	go func() {
+		_, err := cachedRDSCertPool(context.Background())
+		waiterDone <- err
+	}()
+
+	// The leader walks away; the shared fetch must still complete for the waiter.
+	cancelLeader()
+	close(release)
+
+	select {
+	case err := <-waiterDone:
+		require.NoError(t, err)
+	case <-time.After(5 * time.Second):
+		require.Fail(t, "waiter never completed after leader cancellation")
+	}
+}
