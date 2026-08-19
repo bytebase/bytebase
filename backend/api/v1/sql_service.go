@@ -745,17 +745,8 @@ func queryRetry(
 
 	syncDatabaseMap := make(map[string]bool)
 	for i, r := range results {
-		if r.Error != "" {
-			continue
-		}
 		if i >= len(spans) {
 			continue
-		}
-		if spans[i].NotFoundError != nil {
-			for k := range spans[i].SourceColumns {
-				slog.Debug("database metadata need to sync", slog.String("instance", instance.ResourceID), slog.String("database", k.Database), slog.String("schema", k.Schema), slog.String("table", k.Table), slog.String("column", k.Column))
-				syncDatabaseMap[k.Database] = true
-			}
 		}
 		// A relation whose columns the snapshot cannot describe blocks masking.
 		// Re-sync it once before deciding the condition is real: the usual cause
@@ -763,6 +754,12 @@ func queryRetry(
 		// fresh sync repairs. The databases come from the signal itself rather
 		// than from SourceColumns, so the target survives even when column
 		// resolution produced no entries.
+		//
+		// This runs before the error skip below, because MaskResults refuses on
+		// this condition whatever the result shape. A size-limited result carries
+		// rows and an error together, so skipping it here would refuse a stale
+		// snapshot without ever giving it the one sync that repairs it — the
+		// re-sync and the refusal have to agree on when they fire.
 		if maskingEnabled && maskingBlockedByUnresolvedColumns(spans[i], instance) {
 			for _, dbName := range spans[i].UnresolvedColumnsError.Databases() {
 				slog.Debug("database metadata need to sync: unresolved columns",
@@ -770,6 +767,15 @@ func queryRetry(
 					slog.String("database", dbName),
 					slog.String("detail", spans[i].UnresolvedColumnsError.Error()))
 				syncDatabaseMap[dbName] = true
+			}
+		}
+		if r.Error != "" {
+			continue
+		}
+		if spans[i].NotFoundError != nil {
+			for k := range spans[i].SourceColumns {
+				slog.Debug("database metadata need to sync", slog.String("instance", instance.ResourceID), slog.String("database", k.Database), slog.String("schema", k.Schema), slog.String("table", k.Table), slog.String("column", k.Column))
+				syncDatabaseMap[k.Database] = true
 			}
 		}
 	}
