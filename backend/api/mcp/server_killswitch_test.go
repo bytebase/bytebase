@@ -260,12 +260,37 @@ func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
 	// The connection verdict alone cannot separate "the ceiling parsed as
 	// READ_ONLY" from "the ceiling could not be read", because mcpCapability
 	// maps any error to DISABLED and both refuse. So the resolver is asserted
-	// directly on the row 1b-3 will flip: READ_ONLY must come back as
-	// READ_ONLY, not as an error.
-	readOnly, err := s.GetMCPCapabilityUncached(ctx, "ws-readonly")
-	require.NoError(t, err, "a stored READ_ONLY ceiling is a value this build understands")
-	require.Equal(t, storepb.WorkspaceProfileSetting_READ_ONLY, readOnly,
-		"the cutover in 1b-3 flips the connection gate against this value, so it must resolve as itself")
+	// directly, on every workspace at once.
+	//
+	// That doubles as the composite-primary-key check the setting table needs.
+	// It is keyed (workspace, name), and GetMCPCapabilityUncached is a new
+	// reader of it: a future edit that dropped the workspace predicate would
+	// return whichever row the scan reached first and apply one tenant's MCP
+	// ceiling to every other tenant — a kill switch answering for the wrong
+	// workspace. Six workspaces with six different stored values sit in this
+	// one database, so each must still resolve to its own; the ws-readonly row
+	// is additionally the value 1b-3's cutover will flip against, and it must
+	// resolve as itself rather than as a fail-closed error.
+	for workspace, want := range map[string]storepb.WorkspaceProfileSetting_MCPCapability{
+		"ws-readonly":            storepb.WorkspaceProfileSetting_READ_ONLY,
+		"ws-open":                storepb.WorkspaceProfileSetting_READ_WRITE,
+		"ws-other-unknown-field": storepb.WorkspaceProfileSetting_READ_WRITE,
+	} {
+		got, err := s.GetMCPCapabilityUncached(ctx, workspace)
+		require.NoError(t, err, "%s stores a ceiling this build understands", workspace)
+		require.Equal(t, want, got,
+			"%s must resolve its OWN stored ceiling, not a neighbour's", workspace)
+	}
+	for _, workspace := range []string{"ws-typo", "ws-reserved", "ws-explicit-unset"} {
+		got, err := s.GetMCPCapabilityUncached(ctx, workspace)
+		if err == nil {
+			// The reserved number parses; it is refused later because no
+			// ceiling serves it. What must never happen is resolving to a
+			// value some other workspace stored.
+			require.NotEqual(t, storepb.WorkspaceProfileSetting_READ_WRITE, got,
+				"%s must not resolve to a neighbour's permissive ceiling", workspace)
+		}
+	}
 
 	for _, row := range rows {
 		t.Run(row.workspace, func(t *testing.T) {
