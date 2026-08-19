@@ -220,28 +220,36 @@ func cachedRDSCertPool(ctx context.Context) (*x509.CertPool, error) {
 	if pool := rdsCertPool.Load(); pool != nil {
 		return pool, nil
 	}
-	// Collapse a cold-start burst into one download. singleflight does not retain
-	// the error, so a failed fetch is retried by the next caller.
-	v, err, _ := rdsCertGroup.Do("", func() (any, error) {
+	// Collapse a cold-start burst into one download. The shared fetch does not
+	// inherit any one caller's context, so the caller that starts it cannot
+	// cancel it for everybody else; each caller waits on its own context below.
+	ch := rdsCertGroup.DoChan("", func() (any, error) {
 		// Double check after entering singleflight.
 		if pool := rdsCertPool.Load(); pool != nil {
 			return pool, nil
 		}
-		pool, err := getRDSCertPool(ctx)
+		fetchCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), rdsCertFetchTimeout)
+		defer cancel()
+		pool, err := getRDSCertPool(fetchCtx)
 		if err != nil {
 			return nil, err
 		}
 		rdsCertPool.Store(pool)
 		return pool, nil
 	})
-	if err != nil {
-		return nil, err
+	select {
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	case res := <-ch:
+		if res.Err != nil {
+			return nil, res.Err
+		}
+		pool, ok := res.Val.(*x509.CertPool)
+		if !ok {
+			return nil, errors.Errorf("unexpected RDS cert pool type %T", res.Val)
+		}
+		return pool, nil
 	}
-	pool, ok := v.(*x509.CertPool)
-	if !ok {
-		return nil, errors.Errorf("unexpected RDS cert pool type %T", v)
-	}
-	return pool, nil
 }
 
 // rdsRootCAs prefers an operator-supplied CA, so a deployment can serve RDS IAM
