@@ -6,6 +6,8 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/omni/pg/ast"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
@@ -47,11 +49,17 @@ func healthySchema() *storepb.DatabaseSchemaMetadata {
 // current PostgreSQL sync reads pg_catalog and cannot produce this, but a
 // snapshot written by an older version and never re-synced still carries it.
 func degradedSchema() *storepb.DatabaseSchemaMetadata {
+	return degradedSchemaNamed("t")
+}
+
+// degradedSchemaNamed is degradedSchema with the column-less table under a
+// chosen name, for statements that also bind a CTE of that name.
+func degradedSchemaNamed(table string) *storepb.DatabaseSchemaMetadata {
 	return &storepb.DatabaseSchemaMetadata{
 		Name: "db",
 		Schemas: []*storepb.SchemaMetadata{{
 			Name:   "public",
-			Tables: []*storepb.TableMetadata{{Name: "t"}},
+			Tables: []*storepb.TableMetadata{{Name: table}},
 		}},
 	}
 }
@@ -95,6 +103,31 @@ func spanFor(t *testing.T, statement string, metadata *storepb.DatabaseSchemaMet
 	return span
 }
 
+// analyzerResolves reports whether omni's analyzer resolved the statement.
+//
+// It is what puts a span on the path that consults the analyzer's scope. A
+// statement the analyzer rejects takes the fallback path, which checks every
+// access and would make a coverage assertion pass without the walk over the
+// analyzed query being involved at all.
+func analyzerResolves(t *testing.T, statement string, metadata *storepb.DatabaseSchemaMetadata) bool {
+	t.Helper()
+	getter, lister := buildMockDatabaseMetadataGetter([]*storepb.DatabaseSchemaMetadata{metadata})
+	extractor := newOmniQuerySpanExtractor(metadata.Name, []string{"public"}, base.GetQuerySpanContext{
+		InstanceID:              "inst",
+		GetDatabaseMetadataFunc: getter,
+		ListDatabaseNamesFunc:   lister,
+	})
+	extractor.ctx = context.Background()
+	statements, err := ParsePg(statement)
+	require.NoError(t, err)
+	require.Len(t, statements, 1)
+	selStmt, ok := statements[0].AST.(*ast.SelectStmt)
+	require.True(t, ok)
+	require.NoError(t, extractor.initCatalog())
+	_, err = extractor.cat.AnalyzeSelectStmt(selStmt)
+	return err == nil
+}
+
 // TestUnresolvedColumnsSignalFiresOnDegradedSnapshot covers the reported bug: a
 // table synced with no columns yields a span whose lineage cannot support
 // masking. Every one of these shapes returned unmasked rows before the signal
@@ -102,6 +135,9 @@ func spanFor(t *testing.T, statement string, metadata *storepb.DatabaseSchemaMet
 func TestUnresolvedColumnsSignalFiresOnDegradedSnapshot(t *testing.T) {
 	statements := []string{
 		"SELECT * FROM public.t",
+		// The analyzer rejects the four shapes below — the degraded table has no
+		// column to bind email, id or ssn to — so they exercise the fallback path,
+		// which has no scope resolution to consult and checks every access.
 		"SELECT email FROM public.t",
 		"SELECT t.email FROM public.t",
 		"SELECT * FROM public.t WHERE email = 'x'",
@@ -188,7 +224,8 @@ func TestUnresolvedColumnsSignalScope(t *testing.T) {
 	t.Run("a CTE shadowing a degraded table is not a read of it", func(t *testing.T) {
 		// ExtractAccessTables resolves the unqualified `t` to public.t without
 		// modelling CTE scope, so the access set names a table this query never
-		// reads. The query resolves entirely from the CTE.
+		// reads. The query resolves entirely from the CTE, and the analyzer's
+		// range table says so: it holds a CTE reference, not a relation.
 		span := spanFor(t, "WITH t AS (SELECT 1 AS n) SELECT * FROM t", degradedSchema())
 		require.Nil(t, span.UnresolvedColumnsError,
 			"a query that reads only a CTE must not be refused for a same-named table")
@@ -201,17 +238,43 @@ func TestUnresolvedColumnsSignalScope(t *testing.T) {
 	})
 
 	t.Run("a CTE inside a derived table also shadows", func(t *testing.T) {
-		// A WITH clause can sit anywhere a SELECT can, so the name collector
-		// walks the whole tree rather than the top-level WITH alone.
+		// A WITH clause can sit anywhere a SELECT can, so the walk covers every
+		// nested query rather than the top-level one alone.
 		span := spanFor(t, "SELECT * FROM (WITH t AS (SELECT 1 AS n) SELECT * FROM t) q", degradedSchema())
 		require.Nil(t, span.UnresolvedColumnsError,
 			"a CTE bound inside a subquery shadows the physical table just as a top-level one does")
 	})
 
+	t.Run("a non-recursive CTE reading its own name reads the table", func(t *testing.T) {
+		// This is the case name-based shadowing cannot express, and the reason
+		// the check reads the analyzer's range table instead. A non-recursive
+		// CTE's own name is not visible inside its own body, so the inner `t` is
+		// the physical public.t — verified on PostgreSQL 17, where this statement
+		// returns the table's row. The outer `t` is the CTE.
+		require.True(t, analyzerResolves(t, "WITH t AS (SELECT * FROM t) SELECT * FROM t", degradedSchema()),
+			"the analyzer resolves this statement, so the scope walk decides it")
+		span := spanFor(t, "WITH t AS (SELECT * FROM t) SELECT * FROM t", degradedSchema())
+		require.NotNil(t, span.UnresolvedColumnsError,
+			"the CTE body reads the degraded table, so masking cannot be evaluated")
+		require.Contains(t, span.UnresolvedColumnsError.Error(), "public.t")
+	})
+
+	t.Run("a recursive CTE reading its own name reads the CTE", func(t *testing.T) {
+		// WITH RECURSIVE is the opposite binding: the name is visible inside the
+		// body, so the self-reference is the CTE and no table is read.
+		span := spanFor(t,
+			"WITH RECURSIVE t AS (SELECT 1 AS n UNION ALL SELECT n + 1 FROM t WHERE n < 3) SELECT * FROM t",
+			degradedSchema())
+		require.Nil(t, span.UnresolvedColumnsError,
+			"a recursive self-reference is the CTE, not the same-named table")
+	})
+
 	t.Run("a qualified read is still checked when a CTE shares the name", func(t *testing.T) {
 		// PostgreSQL does not let a CTE shadow a schema-qualified name, so this
 		// statement really does read the degraded public.t. Excluding by name
-		// alone would have dropped it; the qualified-reference set keeps it.
+		// alone would have dropped it; the analyzer binds it as a relation.
+		require.True(t, analyzerResolves(t, "WITH t AS (SELECT 1 AS n) SELECT * FROM public.t", degradedSchema()),
+			"the analyzer resolves this statement, so the scope walk decides it")
 		span := spanFor(t, "WITH t AS (SELECT 1 AS n) SELECT * FROM public.t", degradedSchema())
 		require.NotNil(t, span.UnresolvedColumnsError,
 			"a schema-qualified read is never shadowed by a CTE of the same name")
@@ -219,9 +282,13 @@ func TestUnresolvedColumnsSignalScope(t *testing.T) {
 	})
 
 	t.Run("a statement reading both the CTE and the qualified table is checked", func(t *testing.T) {
-		span := spanFor(t,
-			"WITH t AS (SELECT 1 AS n) SELECT * FROM t UNION ALL SELECT * FROM public.t",
-			degradedSchema())
+		// The arms project different column counts, so the analyzer rejects the
+		// statement. This is the fallback path, which has no scope to consult and
+		// checks every access — including the ones a CTE shares a name with.
+		const statement = "WITH t AS (SELECT 1 AS n) SELECT * FROM t UNION ALL SELECT * FROM public.t"
+		require.False(t, analyzerResolves(t, statement, degradedSchema()),
+			"the analyzer rejects the mismatched set operation, which is what puts this on the fallback path")
+		span := spanFor(t, statement, degradedSchema())
 		require.NotNil(t, span.UnresolvedColumnsError,
 			"the qualified arm is a genuine read regardless of the CTE arm")
 	})
@@ -241,4 +308,127 @@ func TestUnresolvedColumnsSignalScope(t *testing.T) {
 		require.Contains(t, span.UnresolvedColumnsError.Error(), "public.o")
 		require.Contains(t, span.UnresolvedColumnsError.Error(), "public.t")
 	})
+}
+
+// TestUnresolvedColumnsSignalReachesEveryReadPosition is the completeness guard
+// for the walk over the analyzed query.
+//
+// Every statement here binds a CTE named t and reads the degraded public.t in
+// one position. The CTE name alone would drop the access, so the signal fires
+// only if the walk reaches that position. A position the walk misses stops
+// checking the reads inside it, which lets a query the snapshot cannot mask run
+// unmasked — so this list is the one that must grow when omni grows a new node.
+func TestUnresolvedColumnsSignalReachesEveryReadPosition(t *testing.T) {
+	const cte = "WITH t AS (SELECT 1 AS n) "
+	statements := []string{
+		// Range table.
+		"SELECT * FROM public.t",
+		"SELECT * FROM (SELECT count(*) FROM public.t) s",
+		"SELECT * FROM t, LATERAL (SELECT count(*) FROM public.t) s",
+		"SELECT * FROM (WITH u AS (SELECT count(*) AS n FROM public.t) SELECT * FROM u) s",
+		// Target list, through each expression node that can carry a subquery.
+		"SELECT (SELECT count(*) FROM public.t) FROM t",
+		"SELECT COALESCE((SELECT count(*) FROM public.t), 0) FROM t",
+		"SELECT CASE WHEN true THEN (SELECT count(*) FROM public.t) ELSE 0 END FROM t",
+		"SELECT CASE (SELECT count(*) FROM public.t) WHEN 1 THEN 1 ELSE 0 END FROM t",
+		"SELECT ARRAY[(SELECT count(*) FROM public.t)] FROM t",
+		"SELECT ROW((SELECT count(*) FROM public.t)) FROM t",
+		"SELECT NULLIF((SELECT count(*) FROM public.t), 0) FROM t",
+		"SELECT GREATEST((SELECT count(*) FROM public.t), 0) FROM t",
+		"SELECT ((SELECT count(*) FROM public.t))::text FROM t",
+		"SELECT (SELECT count(*) FROM public.t) IS NULL FROM t",
+		"SELECT (SELECT count(*) FROM public.t) IS NOT TRUE FROM t",
+		"SELECT (SELECT count(*) FROM public.t) IS DISTINCT FROM 1 FROM t",
+		"SELECT n = ANY (SELECT count(*) FROM public.t) FROM t",
+		"SELECT n IN (SELECT count(*) FROM public.t) FROM t",
+		"SELECT abs((SELECT count(*) FROM public.t)) FROM t",
+		"SELECT sum((SELECT count(*) FROM public.t)) FROM t",
+		"SELECT n + (SELECT count(*) FROM public.t) FROM t",
+		"SELECT EXISTS (SELECT 1 FROM public.t) FROM t",
+		// Clauses that hold expressions of their own.
+		"SELECT n FROM t WHERE n > (SELECT count(*) FROM public.t)",
+		"SELECT t.n FROM t JOIN t t2 ON t.n > (SELECT count(*) FROM public.t)",
+		"SELECT n FROM t GROUP BY n HAVING count(*) > (SELECT count(*) FROM public.t)",
+		"SELECT n FROM t LIMIT (SELECT count(*) FROM public.t)",
+		"SELECT n FROM t OFFSET (SELECT count(*) FROM public.t)",
+		"SELECT sum(n) OVER (ORDER BY n ROWS BETWEEN (SELECT count(*) FROM public.t) PRECEDING AND CURRENT ROW) FROM t",
+		"SELECT count(*) FILTER (WHERE n > (SELECT count(*) FROM public.t)) OVER () FROM t",
+		// GROUP BY, ORDER BY and DISTINCT ON carry no expression of their own:
+		// omni moves them into the target list as hidden entries.
+		"SELECT n FROM t GROUP BY (SELECT count(*) FROM public.t), n",
+		"SELECT n FROM t ORDER BY (SELECT count(*) FROM public.t)",
+		"SELECT DISTINCT ON ((SELECT count(*) FROM public.t)) n FROM t",
+		// Set operation branches.
+		"SELECT n FROM t UNION ALL SELECT count(*) FROM public.t",
+		"SELECT n FROM t EXCEPT SELECT count(*) FROM public.t",
+	}
+	for _, statement := range statements {
+		t.Run(statement, func(t *testing.T) {
+			require.True(t, analyzerResolves(t, cte+statement, degradedSchema()),
+				"the analyzer must resolve this statement, or the fallback path would carry the test")
+			span := spanFor(t, cte+statement, degradedSchema())
+			require.NotNil(t, span.UnresolvedColumnsError,
+				"a read of the degraded table in this position must still be checked")
+			require.Contains(t, span.UnresolvedColumnsError.Error(), "public.t")
+		})
+	}
+}
+
+// TestUnresolvedColumnsSignalSurvivesUnwalkedExpressions covers the shapes that
+// hide a read inside an expression the analyzed-query walk does not reach.
+//
+// Each statement wraps a subquery over the degraded relation in an expression
+// node, and names a CTE after that relation so the walk's CTE evidence would
+// otherwise drop the access. An earlier revision returned unmasked rows for
+// every one of these: it enumerated catalog.AnalyzedExpr against a stale module
+// directory, so twenty-two live types fell through to a default arm that only
+// logged. Two defenses close them — the schema-qualified names the parse tree
+// carries, which no CTE can shadow, and a default arm that marks the walk's
+// evidence incomplete instead of trusting it.
+//
+// Every case asserts the analyzer resolved the statement, so none of them can
+// pass by falling back to the unfiltered path.
+func TestUnresolvedColumnsSignalSurvivesUnwalkedExpressions(t *testing.T) {
+	const cte = "WITH d AS (SELECT 1 AS id) "
+	statements := map[string]string{
+		"array subscript":    cte + "SELECT (ARRAY[1,2,3])[(SELECT count(*)::int FROM public.d)]",
+		"row comparison":     cte + "SELECT 1 WHERE (1, 1) < ((SELECT count(*)::int FROM public.d), 5)",
+		"xml constructor":    cte + "SELECT xmlelement(name e, (SELECT count(*) FROM public.d))",
+		"json constructor":   cte + "SELECT json_array((SELECT count(*) FROM public.d))",
+		"json is predicate":  cte + "SELECT 1 WHERE (SELECT count(*)::text FROM public.d) IS JSON",
+		"aggregate filter":   cte + "SELECT count(*) FILTER (WHERE EXISTS (SELECT 1 FROM public.d))",
+		"aggregate order by": cte + "SELECT string_agg('x', ',' ORDER BY (SELECT count(*) FROM public.d))",
+		"tablesample arg":    cte + "SELECT 1 FROM public.d TABLESAMPLE BERNOULLI ((SELECT 1.0::float8))",
+	}
+	for name, statement := range statements {
+		t.Run(name, func(t *testing.T) {
+			span := spanFor(t, statement, degradedSchemaNamed("d"))
+			require.NotNil(t, span.UnresolvedColumnsError,
+				"a read of the degraded relation inside this expression must still be seen")
+		})
+	}
+}
+
+// TestUnresolvedColumnsSignalNotCoveredShapes pins the reads this signal cannot
+// see, so the boundary is a recorded decision rather than something a reviewer
+// rediscovers.
+//
+// These are not walk gaps. ExtractAccessTables never reports the relation at
+// all, so it is absent from span.SourceColumns too — the access-level fix
+// belongs upstream and is tracked in BYT-10076. Until then a query shaped like
+// this returns unmasked rows against a degraded snapshot.
+func TestUnresolvedColumnsSignalNotCoveredShapes(t *testing.T) {
+	notCovered := map[string]string{
+		"subquery in a FROM-clause function argument": "SELECT * FROM generate_series(1, (SELECT count(*)::int FROM public.d))",
+		"subquery inside a VALUES list":               "SELECT * FROM (VALUES ((SELECT count(*) FROM public.d))) v(x)",
+	}
+	for name, statement := range notCovered {
+		t.Run(name, func(t *testing.T) {
+			span := spanFor(t, statement, degradedSchemaNamed("d"))
+			require.Empty(t, span.SourceColumns,
+				"the premise of this gap is that the access set is empty; if this fails the gap may have been closed upstream")
+			require.Nil(t, span.UnresolvedColumnsError,
+				"documented gap: no access reported, so nothing to check (BYT-10076)")
+		})
+	}
 }

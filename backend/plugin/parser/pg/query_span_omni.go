@@ -205,10 +205,15 @@ func findDollarQuotedBody(definition string) (tag string, bodyStart int, bodyEnd
 //   - a relation read only inside a SQL-language function body, whose accesses
 //     the body analysis does not surface (BYT-10075).
 //
+// scope is the analyzer's scope resolution for this statement, used to drop the
+// accesses that name a CTE rather than a table. It is nil when the analyzer
+// failed and produced no query to read; every access is then checked. See
+// unresolvedColumnsError.
+//
 // On PostgreSQL a current sync cannot produce this state: #20581 moved the
 // column query to pg_catalog so privileges no longer hide columns. What
 // reaches it is a snapshot written before that fix and never re-synced.
-func (e *omniQuerySpanExtractor) findUnresolvedRelations(accesses base.SourceColumnSet, cteNames, qualified map[string]bool) []base.ColumnResource {
+func (e *omniQuerySpanExtractor) findUnresolvedRelations(accesses base.SourceColumnSet, scope *analyzedScope) []base.ColumnResource {
 	seen := make(map[base.ColumnResource]bool, len(accesses))
 	var unresolved []base.ColumnResource
 	for access := range accesses {
@@ -224,11 +229,9 @@ func (e *omniQuerySpanExtractor) findUnresolvedRelations(accesses base.SourceCol
 		seen[relation] = true
 		// ExtractAccessTables walks every RangeVar without tracking CTE scope, so
 		// a reference to a CTE that shares a table's name arrives here resolved to
-		// that table. Skip it only when nothing in the statement names the table
-		// with a schema: PostgreSQL does not let a CTE shadow a qualified name, so
-		// a qualified mention is a genuine read no matter what the CTEs are called.
-		lower := strings.ToLower(relation.Table)
-		if cteNames[lower] && !qualified[lower] {
+		// that table. The analyzer already did that scope resolution, so ask it
+		// which names are relations the statement really reads.
+		if !scope.reads(relation.Schema, relation.Table) {
 			continue
 		}
 		if e.relationHasNoSyncedColumns(relation) {
@@ -268,12 +271,42 @@ func (e *omniQuerySpanExtractor) relationHasNoSyncedColumns(relation base.Column
 
 // unresolvedColumnsError builds the span signal for accesses whose columns the
 // snapshot cannot describe, or nil when every accessed table resolves.
-func (e *omniQuerySpanExtractor) unresolvedColumnsError(accesses base.SourceColumnSet, selStmt *ast.SelectStmt) *base.UnresolvedColumnsError {
-	unresolved := e.findUnresolvedRelations(accesses, collectCTENames(selStmt), collectQualifiedTableNames(selStmt))
+//
+// scope is the analyzer's scope resolution, which says which of the accesses
+// name a relation the statement really reads. Pass nil when there is none.
+func (e *omniQuerySpanExtractor) unresolvedColumnsError(accesses base.SourceColumnSet, scope *analyzedScope) *base.UnresolvedColumnsError {
+	unresolved := e.findUnresolvedRelations(accesses, scope)
 	if len(unresolved) == 0 {
 		return nil
 	}
 	return &base.UnresolvedColumnsError{Relations: unresolved}
+}
+
+// analyzedScopeOf reads the analyzer's scope resolution for query and widens it
+// with the relations the function body analysis surfaced.
+//
+// Those reads are real and they reach accessesMap, but they happen inside a
+// function body that the top-level analyzed query does not contain, so the walk
+// over that query cannot find them. Dropping them would stop checking a table a
+// PL/pgSQL body reads.
+func (e *omniQuerySpanExtractor) analyzedScopeOf(query *catalog.Query, selStmt *ast.SelectStmt) *analyzedScope {
+	scope := collectAnalyzedScope(e.cat, query)
+	for access := range e.funcSourceColumns {
+		scope.relations.add(access.Schema, access.Table)
+	}
+	// Floor the analyzer's answer with the parse tree's schema-qualified names.
+	// A CTE cannot shadow a qualified reference, so every one of these is a real
+	// read no matter what the walk found. This is a second, independent oracle
+	// for the same question, and it covers the positions the analyzed tree drops
+	// outright — an aggregate's FILTER and ORDER BY subqueries reach neither
+	// catalog.AggExpr nor therefore the walk.
+	ast.Inspect(selStmt, func(node ast.Node) bool {
+		if rv, ok := node.(*ast.RangeVar); ok && rv.Schemaname != "" && rv.Relname != "" {
+			scope.relations.add(rv.Schemaname, rv.Relname)
+		}
+		return true
+	})
+	return scope
 }
 
 // getQuerySpan extracts the query span for the given SQL statement.
@@ -365,6 +398,14 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 		// gate behavior — the fallback below always runs on analyzer errors.
 		e.lastFallbackReason = classifyAnalyzeError(err)
 
+		// Both returns below pass a nil scope: analysis failed, so there is no
+		// scope resolution to consult and every access is checked. The accesses
+		// that name a CTE rather than a table stay in, which can refuse a query
+		// that reads only a CTE named like a degraded relation. That is the safe
+		// direction for a masking guard, and the alternative — the name-based
+		// shadowing heuristic this replaced — drops a real read whenever any CTE
+		// anywhere in the statement shares an unqualified relation's name.
+		//
 		// Before falling back, try to handle user-defined table-returning functions
 		// that omni's AnalyzeSelectStmt can't resolve (e.g., RETURNS TABLE functions
 		// used as table sources: SELECT * FROM func()).
@@ -373,7 +414,7 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 				Type:                   base.Select,
 				SourceColumns:          accessesMap,
 				Results:                results,
-				UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap, selStmt),
+				UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap, nil),
 			}, nil
 		}
 		// Fail-open: return access tables with best-effort column names and lineage
@@ -383,7 +424,7 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 			SourceColumns:          accessesMap,
 			Results:                e.extractFallbackColumns(selStmt),
 			PredicateColumns:       e.funcPredicateColumns,
-			UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap, selStmt),
+			UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap, nil),
 		}, nil
 	}
 
@@ -397,12 +438,14 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 		accessesMap[col] = true
 	}
 
+	// Analysis succeeded, so the analyzer's scope resolution is available and
+	// decides which accesses are relation reads.
 	return &base.QuerySpan{
 		Type:                   base.Select,
 		SourceColumns:          accessesMap,
 		PredicateColumns:       e.funcPredicateColumns,
 		Results:                results,
-		UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap, selStmt),
+		UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap, e.analyzedScopeOf(query, selStmt)),
 	}, nil
 }
 
@@ -1379,54 +1422,6 @@ func collectColumnRefNames(node ast.Node) []string {
 		names = append(names, collectColumnRefNames(v.Arg)...)
 	default:
 	}
-	return names
-}
-
-// collectCTENames returns every name bound by a WITH clause anywhere in the
-// statement, lowercased. A CTE name shadows an unqualified reference to a
-// physical table of the same name, and the access-table walk does not model
-// that scope, so a CTE reference arrives resolved to the table.
-//
-// The walk is over the whole tree rather than the top-level WITH clause alone:
-// a WITH can sit inside a derived table, a scalar subquery, or a branch of a
-// set operation, and a name bound in any of those shadows just as effectively.
-//
-// Names are collected without regard to the scope they are visible in, so a
-// CTE bound in one branch suppresses an unqualified reference in another. A
-// schema-qualified reference is never suppressed — see
-// collectQualifiedTableNames — so a genuine read still reaches the check.
-func collectCTENames(selStmt *ast.SelectStmt) map[string]bool {
-	names := make(map[string]bool)
-	if selStmt == nil {
-		return names
-	}
-	ast.Inspect(selStmt, func(node ast.Node) bool {
-		if cte, ok := node.(*ast.CommonTableExpr); ok {
-			names[strings.ToLower(cte.Ctename)] = true
-		}
-		return true
-	})
-	return names
-}
-
-// collectQualifiedTableNames returns the lowercased base names of every table
-// reference in the statement that carries a schema, anywhere in the tree.
-//
-// A CTE cannot shadow a schema-qualified reference in PostgreSQL, so a name
-// that appears qualified somewhere is being read as a real table there, whatever
-// the statement's CTEs are called. Excluding it as a CTE name would drop a
-// genuine read.
-func collectQualifiedTableNames(selStmt *ast.SelectStmt) map[string]bool {
-	names := make(map[string]bool)
-	if selStmt == nil {
-		return names
-	}
-	ast.Inspect(selStmt, func(node ast.Node) bool {
-		if rv, ok := node.(*ast.RangeVar); ok && rv.Schemaname != "" && rv.Relname != "" {
-			names[strings.ToLower(rv.Relname)] = true
-		}
-		return true
-	})
 	return names
 }
 
