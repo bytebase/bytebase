@@ -1023,41 +1023,34 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 		require.True(t, got.dispatched)
 	})
 
-	t.Run("UpdateIssue refuses the same creation through allow_missing", func(t *testing.T) {
-		got := invokeMCPGate(t, readWriteCeiling(), write, v1connect.IssueServiceUpdateIssueProcedure,
-			connect.NewRequest(&v1pb.UpdateIssueRequest{
-				Issue:        &v1pb.Issue{Name: "projects/p/issues/404", Type: v1pb.Issue_ROLE_GRANT},
-				AllowMissing: true,
-			}))
-		require.Error(t, got.err)
-		require.False(t, got.dispatched)
-		require.Contains(t, got.err.Error(), v1pb.Issue_ROLE_GRANT.String())
-	})
-
-	t.Run("an allow_missing upsert carrying no type is served", func(t *testing.T) {
-		// UpdateIssue takes no `type` update path, so an ordinary AIP upsert of
-		// an issue that DOES exist sends none. Refusing it would break the
-		// upsert and would do it with a sentence about issue creation.
-		got := invokeMCPGate(t, readWriteCeiling(), write, v1connect.IssueServiceUpdateIssueProcedure,
-			connect.NewRequest(&v1pb.UpdateIssueRequest{
-				Issue:        &v1pb.Issue{Name: "projects/p/issues/1", Title: "retitled"},
-				AllowMissing: true,
-			}))
-		require.NoError(t, got.err)
-		require.True(t, got.dispatched)
-	})
-
-	t.Run("UpdateIssue without allow_missing edits an existing issue", func(t *testing.T) {
-		// Editing a grant issue somebody else opened is an ordinary WRITE:
-		// without allow_missing the handler cannot create one, and the debt
-		// this carve-out settles is creation.
-		got := invokeMCPGate(t, readWriteCeiling(), write, v1connect.IssueServiceUpdateIssueProcedure,
-			connect.NewRequest(&v1pb.UpdateIssueRequest{
-				Issue: &v1pb.Issue{Name: "projects/p/issues/1", Type: v1pb.Issue_ROLE_GRANT},
-			}))
-		require.NoError(t, got.err)
-		require.True(t, got.dispatched)
-	})
+	// UpdateIssue reaches the gate unrefused whatever its body says, including
+	// allow_missing with a grant type. The gate cannot tell an upsert that
+	// creates from one that edits — "the issue does not exist" is not a field
+	// of the request — and an AIP upsert sends the complete resource, so a
+	// caller PATCHing an existing ROLE_GRANT issue carries that type in a body
+	// the handler ignores. rejectMCPOriginatedGrantIssue guards the creation
+	// where the creation happens; TestMCPGateRefusesGrantIssues (backend/tests)
+	// is the end-to-end proof that the bypass stays closed.
+	for name, request := range map[string]*v1pb.UpdateIssueRequest{
+		"allow_missing with a grant type": {
+			Issue:        &v1pb.Issue{Name: "projects/p/issues/1", Type: v1pb.Issue_ROLE_GRANT},
+			AllowMissing: true,
+		},
+		"allow_missing with no type": {
+			Issue:        &v1pb.Issue{Name: "projects/p/issues/1", Title: "retitled"},
+			AllowMissing: true,
+		},
+		"an ordinary edit": {
+			Issue: &v1pb.Issue{Name: "projects/p/issues/1", Type: v1pb.Issue_ROLE_GRANT},
+		},
+	} {
+		t.Run("UpdateIssue is served: "+name, func(t *testing.T) {
+			got := invokeMCPGate(t, readWriteCeiling(), write, v1connect.IssueServiceUpdateIssueProcedure,
+				connect.NewRequest(request))
+			require.NoError(t, got.err)
+			require.True(t, got.dispatched)
+		})
+	}
 
 	t.Run("a request the table cannot read refuses", func(t *testing.T) {
 		// A wiring bug — the table keyed by a procedure whose request type is
@@ -1463,4 +1456,44 @@ func TestLintDenialRequestsAreReviewedForRedaction(t *testing.T) {
 	}
 	slices.Sort(stale)
 	require.Empty(t, stale, "these no longer need a redaction decision; drop them so the list keeps meaning something")
+}
+
+// TestRejectMCPOriginatedGrantIssue pins the guard that sits at the creation
+// rather than at the gate, and in particular pins the half that makes putting
+// MCP policy inside a service handler safe: a human in the console is a request
+// with no delegated grant, and must be untouched by it.
+//
+// The gate cannot take this decision. UpdateIssue creates only when the issue is
+// missing, which is not a field of the request, and an AIP upsert sends the
+// complete resource — so a caller PATCHing an existing ROLE_GRANT issue carries
+// that type in a body the handler ignores. Refusing on the request shape there
+// would refuse an ordinary edit for a mechanism that is not running.
+func TestRejectMCPOriginatedGrantIssue(t *testing.T) {
+	mcpSession := context.WithValue(context.Background(), common.AuthContextKey,
+		&common.AuthContext{DelegatedGrant: &common.DelegatedGrant{CorrelationID: "corr-issue"}})
+	console := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{})
+
+	for name, tt := range map[string]struct {
+		ctx       context.Context
+		issueType v1pb.Issue_Type
+		refused   bool
+	}{
+		"an MCP session may not create a role grant":    {mcpSession, v1pb.Issue_ROLE_GRANT, true},
+		"an MCP session may not create an access grant": {mcpSession, v1pb.Issue_ACCESS_GRANT, true},
+		"an MCP session may not create an unknown type": {mcpSession, v1pb.Issue_Type(9999), true},
+		"an MCP session composes database changes":      {mcpSession, v1pb.Issue_DATABASE_CHANGE, false},
+		"the console creates a role grant":              {console, v1pb.Issue_ROLE_GRANT, false},
+		"a request with no auth context at all":         {context.Background(), v1pb.Issue_ROLE_GRANT, false},
+	} {
+		t.Run(name, func(t *testing.T) {
+			err := rejectMCPOriginatedGrantIssue(tt.ctx, tt.issueType)
+			if !tt.refused {
+				require.NoError(t, err, "this guard binds MCP sessions and nothing else")
+				return
+			}
+			require.Error(t, err)
+			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
+			require.Contains(t, err.Error(), tt.issueType.String(), "the denial must name the type it refused")
+		})
+	}
 }

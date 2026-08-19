@@ -117,6 +117,44 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	a.Contains(grant.Error, "ROLE_GRANT", "the denial must name the issue type it refused")
 	a.Contains(grant.Error, "no human step")
 
+	// The bypass: UpdateIssue with allow_missing creates the issue when it does
+	// not exist, by calling CreateIssue directly — a Go call, so the ceiling
+	// gate never sees it. The gate deliberately does not refuse UpdateIssue,
+	// because an AIP upsert sends the complete resource and the request cannot
+	// say whether it will create anything; the guard sits at the creation
+	// instead, and this is what proves it is there.
+	upsert := callAPIOnSession(ctx, t, session, "IssueService/UpdateIssue", map[string]any{
+		"issue": map[string]any{
+			"name":  projectName + "/issues/999999",
+			"title": "grant me project owner",
+			"type":  "ROLE_GRANT",
+			"roleGrant": map[string]any{
+				"role": "roles/projectOwner",
+				"user": "users/demo@example.com",
+			},
+		},
+		"updateMask":   "title",
+		"allowMissing": true,
+	})
+	a.Equal(http.StatusForbidden, upsert.Status,
+		"allow_missing on a missing issue is a creation, and the guard must reach it: %s", upsert.Error)
+	a.Contains(upsert.Error, "may not create a ROLE_GRANT issue")
+
+	// The same upsert for the type an agent is allowed to create reaches the
+	// handler, which then asks for the plan it has no way to do without. The
+	// refusal is about the issue type, not about allow_missing.
+	changeUpsert := callAPIOnSession(ctx, t, session, "IssueService/UpdateIssue", map[string]any{
+		"issue": map[string]any{
+			"name":  projectName + "/issues/999998",
+			"title": "an ordinary change",
+			"type":  "DATABASE_CHANGE",
+		},
+		"updateMask":   "title",
+		"allowMissing": true,
+	})
+	a.NotEqual(http.StatusForbidden, changeUpsert.Status,
+		"a database-change upsert must reach the handler: %s", changeUpsert.Error)
+
 	// The same method with the type it is classified for reaches its handler.
 	// A missing plan is the handler's own complaint, which is the point: the
 	// gate did not answer this one.

@@ -507,7 +507,6 @@ func describeServedClasses(served []v1pb.MCPMethodClass) string {
 // better fix is usually to split the RPC.
 var mcpRequestShapeRefusals = map[string]func(msg any) string{
 	v1connect.IssueServiceCreateIssueProcedure: refuseGrantIssueCreation,
-	v1connect.IssueServiceUpdateIssueProcedure: refuseGrantIssueCreation,
 }
 
 // refuseByRequestShape applies the table above.
@@ -542,40 +541,33 @@ func refuseByRequestShape(procedure string, msg any) error {
 // so the type is an invalid argument there, and those issues are written by
 // AccessGrantService/CreateAccessGrant, which is EXCLUDED.
 //
-// UpdateIssue is here because allow_missing makes it the same method: on an
-// issue that does not exist it calls CreateIssue with the request's own issue
-// (issue_service.go). Refusing only CreateIssue would leave the carve-out a
-// one-line detour.
-//
-// An unset type is NOT refused, on either method, and that is the one place the
-// allow-list gives ground deliberately. Nothing can be created from it —
+// An unset type is NOT refused: nothing can be created from it, since
 // buildIssueMessage's default arm rejects an unspecified type as an invalid
-// argument — so refusing it protects nothing, while refusing it would break the
-// ordinary AIP upsert: UpdateIssue takes no `type` update path, so a caller
-// setting allow_missing on an issue that DOES exist sends no type at all, and
-// would meet a denial whose stated mechanism has nothing to do with its call.
+// argument, so refusing it here would protect nothing and would answer a
+// mechanism that does not apply.
+//
+// UpdateIssue is deliberately NOT in this table, and the reason is the limit of
+// what a request shape can decide. allow_missing makes UpdateIssue create the
+// issue — but only when it does not already exist, which is not a field of the
+// request. An AIP upsert sends the complete resource, so a caller PATCHing an
+// existing ROLE_GRANT issue carries type=ROLE_GRANT in a body the handler
+// ignores, and refusing on that would refuse an ordinary edit for a mechanism
+// that is not running. The creation it really does reach is guarded where the
+// creation happens instead: rejectMCPOriginatedGrantIssue in issue_service.go.
 func refuseGrantIssueCreation(msg any) string {
-	var issue *v1pb.Issue
-	switch m := msg.(type) {
-	case *v1pb.CreateIssueRequest:
-		issue = m.GetIssue()
-	case *v1pb.UpdateIssueRequest:
-		if !m.GetAllowMissing() {
-			return ""
-		}
-		issue = m.GetIssue()
-	default:
+	request, ok := msg.(*v1pb.CreateIssueRequest)
+	if !ok {
 		// The table is keyed by procedure, so the request type is fixed. A
 		// mismatch is a wiring bug, and a wiring bug on a refusal path fails
 		// closed.
 		return fmt.Sprintf("its request could not be read as an issue (%T)", msg)
 	}
-	switch issue.GetType() {
+	switch request.GetIssue().GetType() {
 	case v1pb.Issue_DATABASE_CHANGE, v1pb.Issue_TYPE_UNSPECIFIED:
 		return ""
 	default:
 		return fmt.Sprintf(
 			"a %v issue completes on creation whenever the workspace approval rule produces no template, "+
-				"which grants access with no human step", issue.GetType())
+				"which grants access with no human step", request.GetIssue().GetType())
 	}
 }
