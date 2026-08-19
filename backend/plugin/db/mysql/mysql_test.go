@@ -411,6 +411,11 @@ func TestRDSCertPoolWaiterObservesItsOwnCancellation(t *testing.T) {
 	ca := selfSignedCAPEM(t)
 	release := make(chan struct{})
 	inFlight := make(chan struct{}, 1)
+	var leader sync.WaitGroup
+	// Registered before serveRDSCertBundle, so it runs last: the leader must finish
+	// before the helper resets rdsCertPool, or it re-stores this test's pool
+	// afterwards and a later cache test never contacts its own server.
+	t.Cleanup(leader.Wait)
 	serveRDSCertBundle(t, func(w http.ResponseWriter, _ *http.Request) {
 		inFlight <- struct{}{}
 		<-release
@@ -422,7 +427,9 @@ func TestRDSCertPoolWaiterObservesItsOwnCancellation(t *testing.T) {
 
 	dataSource := &storepb.DataSource{Host: "db.example.com", VerifyTlsCertificate: true}
 	// Leader occupies the flight and stays blocked in the handler.
+	leader.Add(1)
 	go func() {
+		defer leader.Done()
 		_, _ = cachedRDSCertPool(context.Background())
 	}()
 	<-inFlight
@@ -430,7 +437,9 @@ func TestRDSCertPoolWaiterObservesItsOwnCancellation(t *testing.T) {
 	// The waiter joins the in-flight download, then gives up on its own context.
 	ctx, cancel := context.WithCancel(context.Background())
 	waiterDone := make(chan error, 1)
+	leader.Add(1)
 	go func() {
+		defer leader.Done()
 		_, err := rdsTLSConfig(ctx, dataSource)
 		waiterDone <- err
 	}()
@@ -448,6 +457,10 @@ func TestRDSCertPoolLeaderCancellationDoesNotFailWaiter(t *testing.T) {
 	ca := selfSignedCAPEM(t)
 	release := make(chan struct{})
 	inFlight := make(chan struct{}, 1)
+	var leader sync.WaitGroup
+	// See the note in TestRDSCertPoolWaiterObservesItsOwnCancellation: this runs
+	// last, so no background store lands after the cache reset.
+	t.Cleanup(leader.Wait)
 	serveRDSCertBundle(t, func(w http.ResponseWriter, _ *http.Request) {
 		inFlight <- struct{}{}
 		<-release
@@ -455,14 +468,18 @@ func TestRDSCertPoolLeaderCancellationDoesNotFailWaiter(t *testing.T) {
 	})
 
 	leaderCtx, cancelLeader := context.WithCancel(context.Background())
+	leader.Add(1)
 	go func() {
+		defer leader.Done()
 		_, _ = cachedRDSCertPool(leaderCtx)
 	}()
 	<-inFlight
 
 	// A second caller with a live context is waiting on the same flight.
 	waiterDone := make(chan error, 1)
+	leader.Add(1)
 	go func() {
+		defer leader.Done()
 		_, err := cachedRDSCertPool(context.Background())
 		waiterDone <- err
 	}()
