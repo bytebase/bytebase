@@ -319,21 +319,19 @@ type mcpCeilingReader interface {
 //     are, and closing it means letting the audit path trust the workspace of
 //     the delegated credential the internal chain already verified.
 //
-//   - The approval gate contains who APPROVES a change, not who executes one
-//     without an approval to move past. ApproveIssue, RejectIssue and
-//     RetryIssueApproval are FORBIDDEN, but CreatePlan, CreateRollout and
-//     BatchRunTasks are WRITE, and the approval check on the execution path is
-//     guarded on an issue existing (`project.Setting.RequireIssueApproval &&
-//     issueN != nil`, rollout_service.go), so a plan created without an issue
-//     reaches execution with no approval at all. 1b-1 left the call to this PR
-//     and this PR takes it deliberately: they stay WRITE. Composing and running
-//     a change IS the agent's job, the route is no wider than it was before
-//     this gate existed, and the gate cannot express the refusal anyway —
-//     "the plan has no issue" is not a field of either request, so a
-//     request-shape check cannot see it and only a classification change or a
-//     handler-level guard can. Both are outside this PR, and the second is the
-//     one that would also bind the console. Recorded so the next reader knows
-//     it was decided rather than missed.
+//   - Two refusals this gate is the right slot for the CLASS of, but not the
+//     right place for the decision, because the fact they turn on is not in the
+//     request. Both are guarded at the point where the fact is loaded, and both
+//     key on the delegated grant so the console is untouched:
+//     rejectMCPOriginatedGrantIssue (issue_service.go), for the issue types
+//     that complete into a permission grant, and
+//     rejectMCPOriginatedIssuelessRollout (rollout_service.go), for the
+//     issueless plan that reaches execution without ever meeting the approval
+//     the three FORBIDDEN approval methods exist to protect. Without the
+//     second, those three are decorative in the change lane: an agent that
+//     cannot clear the gate could skip it instead. The gate keeps the half it
+//     can decide — CreateIssue, where the request shape IS the whole story —
+//     so the denial still lands before dispatch wherever that is possible.
 type internalMCPGateInterceptor struct {
 	store mcpCeilingReader
 }

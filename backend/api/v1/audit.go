@@ -286,9 +286,23 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 		seenParent[ap.parent] = true
 		parents = append(parents, ap)
 	}
-	handlerValidatedWorkspaceMethod := e.method == v1connect.AuthServiceRequestPasswordResetProcedure ||
+	// The reset flow is allow_without_credential, so an unauthenticated caller
+	// could name any workspace and write rows into it. Its audit parent
+	// therefore comes only from the workspace the HANDLER validated, and never
+	// from the request or the fallback below.
+	//
+	// A request carrying a delegated MCP grant is the one exception, because
+	// its workspace was not named by the caller: the internal MCP interceptor
+	// verified the credential and bound the workspace before the request
+	// reached this chain. Without the exception these three methods are the
+	// last silent denials in the system — the ceiling gate refuses them before
+	// dispatch, so the handler never runs and never announces a workspace —
+	// and they are the flow that mails or consumes the secret a login accepts.
+	// Presence of the grant is the marker, never a field value.
+	handlerValidatedWorkspaceMethod := (e.method == v1connect.AuthServiceRequestPasswordResetProcedure ||
 		e.method == v1connect.AuthServiceResetPasswordProcedure ||
-		e.method == v1connect.AuthServiceSendEmailLoginCodeProcedure
+		e.method == v1connect.AuthServiceSendEmailLoginCodeProcedure) &&
+		authContext.DelegatedGrant == nil
 	if handlerValidatedWorkspaceMethod {
 		if e.handlerAuditWorkspaceID != "" {
 			appendParent(auditParent{

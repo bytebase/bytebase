@@ -3,11 +3,14 @@ package tests
 import (
 	"context"
 	"encoding/base64"
+	"fmt"
 	"net/http"
 	"testing"
 
 	"connectrpc.com/connect"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
@@ -165,4 +168,100 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	a.Equal(http.StatusBadRequest, change.Status,
 		"a database-change issue must reach the handler, which then asks for its plan: %s", change.Error)
 	a.NotContains(change.Error, "not available to MCP sessions")
+}
+
+// TestMCPCannotRunAnIssuelessRollout is the rule rollout_service.proto says the
+// gate PR owes, and the reason it is a rule rather than a classification.
+//
+// Three approval RPCs are FORBIDDEN so an agent cannot move its own change
+// through the human gate. That buys nothing if the agent can go round it: both
+// approval checks on the execution path are guarded on a LINKED ISSUE existing,
+// so a plan created without one reaches task creation with no approval whatever
+// require_issue_approval says. CreatePlan, CreateRollout and BatchRunTasks are
+// all WRITE and stay WRITE — issueless deployment is a supported contract, the
+// shipped GitOps Service Agent role holds no issue permission at all — so the
+// refusal is per session, not per method.
+//
+// The ceiling gate cannot take it: "the plan has no linked issue" is not a
+// field of either request. The guard sits where the fact is loaded, and the
+// control that matters most is the last one — a human doing the identical thing
+// must be unaffected, because that is the risk of putting MCP policy in a
+// handler at all.
+func TestMCPCannotRunAnIssuelessRollout(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	pgContainer, err := provisionPgInstance(ctx, t)
+	a.NoError(err)
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("inst"),
+		Instance: &v1pb.Instance{
+			Title:       "MCP rollout instance",
+			Engine:      v1pb.Engine_POSTGRES,
+			Environment: new("environments/prod"),
+			Activation:  true,
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+		},
+	}))
+	a.NoError(err)
+	dbName := generateRandomString("db")
+	a.NoError(ctl.createDatabase(ctx, ctl.project, instanceResp.Msg, nil, dbName, ""))
+	target := fmt.Sprintf("%s/databases/%s", instanceResp.Msg.Name, dbName)
+
+	// The project requires issue approval, which is the whole point: the
+	// customer turned the gate on.
+	project := ctl.project
+	project.RequireIssueApproval = true
+	updated, err := ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+		Project:    project,
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"require_issue_approval"}},
+	}))
+	a.NoError(err)
+	a.True(updated.Msg.RequireIssueApproval)
+
+	// A plan with no issue, created the way an agent would.
+	sheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
+		Parent: ctl.project.Name,
+		Sheet:  &v1pb.Sheet{Content: []byte("CREATE TABLE mcp_rollout_guard(id INT);")},
+	}))
+	a.NoError(err)
+	planResp, err := ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
+		Parent: ctl.project.Name,
+		Plan: &v1pb.Plan{Specs: []*v1pb.Plan_Spec{{
+			Id: uuid.NewString(),
+			Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+				ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{
+					Targets: []string{target},
+					Sheet:   sheetResp.Msg.Name,
+				},
+			},
+		}}},
+	}))
+	a.NoError(err)
+
+	session := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
+	defer session.Close()
+
+	rollout := callAPIOnSession(ctx, t, session, "RolloutService/CreateRollout", map[string]any{
+		"parent": planResp.Msg.Name,
+	})
+	a.Equal(http.StatusForbidden, rollout.Status,
+		"an MCP session must not start an issueless change on a project that requires approval: %s", rollout.Error)
+	a.Contains(rollout.Error, "plan with no issue")
+	a.Contains(rollout.Error, "Bytebase console", "the denial must name where the human can do it instead")
+
+	// The control that makes the handler guard safe: the same call, same plan,
+	// same setting, on the public chain. A human — and the GitOps agent, which
+	// holds no issue permission at all — must be unaffected.
+	consoleRollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{
+		Parent: planResp.Msg.Name,
+	}))
+	a.NoError(err, "the guard binds MCP sessions and nothing else")
+	a.NotEmpty(consoleRollout.Msg.Name)
 }

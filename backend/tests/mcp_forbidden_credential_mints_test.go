@@ -776,15 +776,18 @@ func TestMCPCannotRewriteItsOwnCeiling(t *testing.T) {
 // comes only from what the HANDLER validated via common.SetAuditWorkspaceID,
 // and the ordinary workspace fallback is explicitly skipped for them.
 //
-// The FORBIDDEN gate refuses before dispatch, so the handler never runs, so
-// nothing ever calls SetAuditWorkspaceID, so there is no parent and no row.
-// The workspace is not actually unknown here — the internal chain put a
-// credential-verified one in the context — the carve-out just cannot use it.
+// The gate refuses before dispatch, so the handler never runs, so nothing ever
+// calls SetAuditWorkspaceID. That used to mean no parent and no row, which made
+// the silent set seven rather than the four an annotation audit suggests.
 //
-// So the silent set is seven, not the four an annotation audit would suggest.
-// Closing it means letting the audit path use the delegated workspace, or the
-// typed denial record: 1b-2's work, not this PR's. This test is the tripwire.
-func TestMCPResetFlowDenialsAreSilent(t *testing.T) {
+// 1b-2 closed it, and this test now pins the close. The workspace was never
+// actually unknown here: the internal MCP chain put a credential-verified one
+// in the context, and the carve-out simply could not use it. It can now, for
+// requests carrying a delegated grant and only those — an unauthenticated
+// public reset still gets its parent from the handler alone, because there the
+// workspace IS caller-named and auditing against it would let anyone write
+// rows into someone else'"'"'s.
+func TestMCPResetFlowDenialsAreAudited(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
@@ -845,10 +848,13 @@ func TestMCPResetFlowDenialsAreSilent(t *testing.T) {
 		"/bytebase.v1.AuthService/SendEmailLoginCode":   "SendEmailLoginCode",
 	} {
 		rows := deniedMCPRows(ctx, t, ctl, workspaceName, method)
-		t.Logf("audit rows for denied %s: %d", label, len(rows))
-		a.Empty(rows,
-			"%s carries audit = true, yet its MCP denial writes no row: the audit parent for this "+
-				"method comes only from the handler, and the gate refuses before the handler runs", label)
+		a.Len(rows, 1,
+			"%s is refused before its handler runs, so it announces no workspace — the delegated "+
+				"credential's verified one stands in, and the denial is recorded like every other", label)
+		a.Equal(int32(connect.CodePermissionDenied), rows[0].Status.GetCode(),
+			"the %s row must record the denial", label)
+		a.True(strings.HasPrefix(rows[0].Name, workspaceName+"/auditLogs/"),
+			"the row is parented to the workspace the MCP credential was bound to, not one the caller named")
 	}
 }
 
