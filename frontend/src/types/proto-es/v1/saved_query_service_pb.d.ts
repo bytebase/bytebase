@@ -95,6 +95,19 @@ export declare type ListSavedQueriesRequest = Message<"bytebase.v1.ListSavedQuer
    * @generated from field: string page_token = 4;
    */
   pageToken: string;
+
+  /**
+   * Sort the results, per https://google.aip.dev/132#ordering. Supported
+   * fields: `update_time`, `create_time`, `title`; append " desc" for
+   * descending, e.g. "update_time desc" for most recently modified first.
+   * A modification is a title, content, database, or folder write; sharing
+   * and stars do not count, and a never-modified saved query counts its
+   * create time. Empty means `title` ascending. `resource_id` is always
+   * appended as a final tiebreak so pages stay stable.
+   *
+   * @generated from field: string order_by = 5;
+   */
+  orderBy: string;
 };
 
 /**
@@ -655,6 +668,7 @@ export declare const SavedQueryService: GenService<{
    * List saved queries for auditing. The permission alone grants reading
    * every matched saved query with full content, private ones included;
    * bindings are ignored. Use parent "projects/-" for all projects.
+   * Results default to title ascending; see `order_by`.
    * Permissions required: bb.savedQueries.list on the project, or on the
    * workspace when the parent is "projects/-"
    *
