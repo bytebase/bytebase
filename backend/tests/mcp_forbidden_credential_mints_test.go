@@ -12,6 +12,7 @@ import (
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
 // deniedMCPRows returns the audit rows an MCP session produced for one method.
@@ -400,16 +401,25 @@ func TestMCPCannotWriteTrustAnchorsOrShipStoredSecrets(t *testing.T) {
 			"%s must name this class's reason", name)
 	}
 
-	// Nothing landed. The agent's own read answers this, which is the point of
-	// leaving it served: it is legitimate work, it carries no secret, and here
-	// it is also the instrument. Reading the listing rather than just its
-	// status is what discriminates a gate that refuses before dispatch from one
-	// that refuses after the identity provider is written.
-	idps := callAPIOnSession(ctx, t, session, "IdentityProviderService/ListIdentityProviders", map[string]any{})
-	a.Equal(http.StatusOK, idps.Status, "the read stays served — it blanks every secret before returning")
-	a.NotContains(idps.RawResponse, idpID, "the identity provider must never have been created")
-	a.NotContains(idps.RawResponse, "attacker.example.com",
-		"no part of the attacker's SSO config may have reached the store")
+	// Nothing landed. Reading the listing rather than just the statuses above
+	// is what discriminates a gate that refuses before dispatch from one that
+	// refuses after the identity provider is written.
+	//
+	// The read is taken on the public chain rather than through the session.
+	// It is not FORBIDDEN — TestForbiddenClassLeavesReadsAlone pins that it
+	// never becomes so — but it is EXCLUDED as workspace administration, which
+	// the ceiling gate refuses, so the agent's own read no longer answers this
+	// question. The claim is about what reached the store either way.
+	idpClient := v1connect.NewIdentityProviderServiceClient(ctl.client, ctl.rootURL,
+		connect.WithInterceptors(&authInterceptor{token: ctl.authInterceptor.token}))
+	idps, err := idpClient.ListIdentityProviders(ctx,
+		connect.NewRequest(&v1pb.ListIdentityProvidersRequest{Parent: workspaceName}))
+	a.NoError(err)
+	for _, idp := range idps.Msg.IdentityProviders {
+		a.NotContains(idp.Name, idpID, "the identity provider must never have been created")
+		a.NotContains(idp.Domain, "attacker.example.com",
+			"no part of the attacker's SSO config may have reached the store")
+	}
 	wis, err := ctl.workloadIdentityServiceClient.ListWorkloadIdentities(ctx, connect.NewRequest(&v1pb.ListWorkloadIdentitiesRequest{
 		Parent: workspaceName,
 	}))
@@ -418,12 +428,20 @@ func TestMCPCannotWriteTrustAnchorsOrShipStoredSecrets(t *testing.T) {
 		a.NotContains(wi.Email, wiID, "the workload identity must never have been written")
 	}
 
-	// Four of the six carry the audit annotation and produce a denial row.
+	// All six produce a denial row, and two of them only since 1b-2. Four carry
+	// the audit annotation; TestIdentityProvider and TestEmailSetting carry
+	// none, so until the gate started marking its own refusals they were
+	// refused silently — the two methods in this batch that would have carried
+	// a stored secret to an address the agent chose were the two that left no
+	// trace. This assertion is what tells anyone who touches the marking that
+	// the coverage is load-bearing.
 	for method, label := range map[string]string{
 		"/bytebase.v1.IdentityProviderService/CreateIdentityProvider": "CreateIdentityProvider",
 		"/bytebase.v1.IdentityProviderService/UpdateIdentityProvider": "UpdateIdentityProvider",
 		"/bytebase.v1.WorkloadIdentityService/CreateWorkloadIdentity": "CreateWorkloadIdentity",
 		"/bytebase.v1.WorkloadIdentityService/UpdateWorkloadIdentity": "UpdateWorkloadIdentity",
+		"/bytebase.v1.IdentityProviderService/TestIdentityProvider":   "TestIdentityProvider (no audit annotation)",
+		"/bytebase.v1.SettingService/TestEmailSetting":                "TestEmailSetting (no audit annotation)",
 	} {
 		rows := deniedMCPRows(ctx, t, ctl, workspaceName, method)
 		a.Len(rows, 1, "the denied %s must produce exactly one audit row", label)
@@ -431,21 +449,14 @@ func TestMCPCannotWriteTrustAnchorsOrShipStoredSecrets(t *testing.T) {
 			"the %s row must record the denial", label)
 	}
 
-	// The two Test methods do not, and that gap is worth stating rather than
-	// leaving to be discovered. needAudit reads the audit annotation and
-	// nothing else, and neither has one — so the two methods in this batch that
-	// would carry a stored secret to an address the agent chose are the two
-	// refused silently. Not fixed here: the typed policy-denial record that
-	// bypasses needAudit is 1b-2's, and when it lands these assertions are what
-	// tell whoever writes it that these methods are now covered.
-	//
-	// The zeroes are only meaningful because the four rows above came back from
-	// this same helper on this same workspace: the query works, and these two
-	// methods genuinely produced nothing.
-	a.Empty(deniedMCPRows(ctx, t, ctl, workspaceName, "/bytebase.v1.IdentityProviderService/TestIdentityProvider"),
-		"TestIdentityProvider carries no audit annotation, so its denial is silent — 1b-2's typed denial record closes this")
-	a.Empty(deniedMCPRows(ctx, t, ctl, workspaceName, "/bytebase.v1.SettingService/TestEmailSetting"),
-		"TestEmailSetting carries no audit annotation either — same gap, same fix")
+	// What the row must NOT carry: TestIdentityProvider's request names the
+	// stored client secret's destination and supplies a code, and recording a
+	// denial verbatim would put both in a log the denial exists to protect.
+	idpRow := deniedMCPRows(ctx, t, ctl, workspaceName,
+		"/bytebase.v1.IdentityProviderService/TestIdentityProvider")[0]
+	a.NotContains(idpRow.Request, "anything", "the supplied authorization code must be masked in the row")
+	a.Contains(idpRow.Request, "collector.attacker.example.com",
+		"the host the agent named is the point of the row and stays readable")
 }
 
 // TestMCPCannotRetargetADataSource covers the same "carry a stored secret to a

@@ -3356,7 +3356,7 @@ through the gate.</p></td>
         </table>
       
         <h3 id="bytebase.v1.MCPMethodClass">MCPMethodClass</h3>
-        <p>Classification of an RPC for MCP (AI agent) sessions. The effective</p><p>authorization of an MCP session is this classification intersected with the</p><p>caller's own RBAC: it can only ever narrow what the human could do, never</p><p>widen it.</p><p>Only FORBIDDEN is enforced today. READ, WRITE and EXCLUDED are recorded</p><p>classifications and nothing reads them at request time yet — the gate that</p><p>selects between them is a later change. A method annotated READ or WRITE is</p><p>therefore served exactly as it is today; the annotation states where it</p><p>belongs, not where the boundary currently sits. FORBIDDEN is the exception</p><p>and is enforced the moment it is annotated.</p>
+        <p>Classification of an RPC for MCP (AI agent) sessions. The effective</p><p>authorization of an MCP session is this classification intersected with the</p><p>caller's own RBAC: it can only ever narrow what the human could do, never</p><p>widen it.</p><p>Every value is enforced, at the gate on the internal MCP chain. READ and</p><p>WRITE are the serving classes the workspace's MCP capability ceiling selects</p><p>between, EXCLUDED and FORBIDDEN are served by no ceiling, and an unclassified</p><p>method is refused rather than served. Annotating a method is therefore a</p><p>change to what an MCP session can reach, taking effect on the next request.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -3366,9 +3366,10 @@ through the gate.</p></td>
               <tr>
                 <td>MCP_METHOD_CLASS_UNSPECIFIED</td>
                 <td>0</td>
-                <td><p>Not yet classified. Reaches its handler, subject to RBAC as usual. CI
-rejects this value on any v1 RPC, so it survives only inside a build that
-has not been linted: a new RPC is classified before it can ship.</p></td>
+                <td><p>Not yet classified, and refused. CI rejects this value on any v1 RPC, so
+it survives only inside a build that has not been linted: a new RPC is
+classified before it can ship, and one that somehow reaches an MCP session
+unclassified is denied rather than guessed at.</p></td>
               </tr>
             
               <tr>
@@ -3398,9 +3399,10 @@ console; an agent acting for them does not get to.</p></td>
               <tr>
                 <td>EXCLUDED</td>
                 <td>4</td>
-                <td><p>Served by no MCP mode this phase ships, and not a durable never. These are
-workspace administration, plus the handful of methods that do something
-materially worse than the plain read permission they share suggests.
+                <td><p>Served by no MCP capability ceiling this phase ships, and not a durable
+never. These are workspace administration, plus the handful of methods
+that do something materially worse than the plain read permission they
+share suggests.
 
 The line against FORBIDDEN is reversibility. An admin-capable ceiling, if
 one is ever built, could legitimately serve an EXCLUDED method — that is a

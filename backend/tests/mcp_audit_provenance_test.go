@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"net/http"
 	"strings"
@@ -82,26 +83,65 @@ func TestMCPAuditProvenance(t *testing.T) {
 		return out.Status
 	}
 
-	// Permitted audited call: creating a group needs bb.groups.create, which a
-	// workspace member does hold. (Self-updating the member's own title would
-	// read more naturally, but UpdateUser is FORBIDDEN to MCP sessions as a
-	// whole method — see backend/api/v1/mcp_forbidden.go.)
-	a.Equal(http.StatusOK, callAPI("GroupService/CreateGroup", map[string]any{
-		"group":      map[string]any{"title": "agent driver group"},
-		"groupEmail": "agent-driver-group@example.com",
+	// The permitted call has to be one the MCP ceiling serves AND the member is
+	// allowed, and no audited READ or WRITE method is reachable on a plain
+	// workspace membership alone — every one of them is project-scoped. So the
+	// member owns a project. (Creating a group was the natural probe and is
+	// EXCLUDED from the ceiling as workspace administration; self-updating the
+	// member's title reads even better and is FORBIDDEN — see
+	// backend/api/v1/mcp_gate.go.)
+	const ownedProjectID = "mcp-audit-owned"
+	ownedProject, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
+		ProjectId: ownedProjectID,
+		Project:   &v1pb.Project{Title: "MCP audit owned"},
+	}))
+	a.NoError(err)
+	ownedProjectName := ownedProject.Msg.Name
+	ownedPolicy, err := ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
+		Resource: ownedProjectName,
+	}))
+	a.NoError(err)
+	policy := ownedPolicy.Msg
+	policy.Bindings = append(policy.Bindings, &v1pb.Binding{
+		Role:    "roles/projectOwner",
+		Members: []string{"user:" + memberEmail},
+	})
+	_, err = ctl.projectServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
+		Resource: ownedProjectName,
+		Policy:   policy,
+	}))
+	a.NoError(err)
+
+	// A second project the member has no role in, so the denial below is the
+	// ACL's and lands on a resource the ACL validated.
+	const otherProjectID = "mcp-audit-other"
+	otherProject, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
+		ProjectId: otherProjectID,
+		Project:   &v1pb.Project{Title: "MCP audit other"},
+	}))
+	a.NoError(err)
+	otherProjectName := otherProject.Msg.Name
+
+	// Permitted audited call: creating a sheet needs bb.sheets.create, which
+	// the member holds on the project it owns.
+	a.Equal(http.StatusOK, callAPI("SheetService/CreateSheet", map[string]any{
+		"parent": ownedProjectName,
+		"sheet":  map[string]any{"content": base64.StdEncoding.EncodeToString([]byte("SELECT 1;"))},
 	}))
 
 	// Denied audited call: creating a user needs bb.users.create, which a
-	// workspace member does not hold — the ACL interceptor refuses it.
+	// workspace member does not hold. CreateUser is also FORBIDDEN to MCP
+	// sessions, so the refusal now comes from the ceiling gate rather than the
+	// ACL — either way it is a workspace-parented denial the operator must see.
 	a.Equal(http.StatusForbidden, callAPI("UserService/CreateUser", map[string]any{
 		"user": map[string]any{"email": "sneaky@example.com", "title": "sneaky", "password": memberPassword},
 	}))
 
-	// The operator's view: both calls surface through the v1 audit-log read
+	// The operator's view: the calls surface through the v1 audit-log read
 	// API, attributed to the member.
-	searchMemberRows := func(method string) []*v1pb.AuditLog {
+	searchMemberRows := func(parent, method string) []*v1pb.AuditLog {
 		resp, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
-			Parent:  workspace,
+			Parent:  parent,
 			Filter:  `method == "` + method + `"`,
 			OrderBy: "create_time desc",
 		}))
@@ -115,7 +155,7 @@ func TestMCPAuditProvenance(t *testing.T) {
 		return rows
 	}
 
-	permittedRows := searchMemberRows("/bytebase.v1.GroupService/CreateGroup")
+	permittedRows := searchMemberRows(ownedProjectName, "/bytebase.v1.SheetService/CreateSheet")
 	a.Len(permittedRows, 1, "the permitted MCP call must produce exactly one audit row")
 	permitted := permittedRows[0]
 	a.Nil(permitted.Status, "the permitted call's row keeps its success status")
@@ -125,8 +165,8 @@ func TestMCPAuditProvenance(t *testing.T) {
 	a.Equal(clientID, permitted.McpDelegation.ClientId)
 	a.NotEmpty(permitted.McpDelegation.CorrelationId)
 
-	deniedRows := searchMemberRows("/bytebase.v1.UserService/CreateUser")
-	a.Len(deniedRows, 1, "an ACL-denied MCP call must still produce an audit row — it is exactly the event an operator investigating an agent needs")
+	deniedRows := searchMemberRows(workspace, "/bytebase.v1.UserService/CreateUser")
+	a.Len(deniedRows, 1, "a denied MCP call must still produce an audit row — it is exactly the event an operator investigating an agent needs")
 	denied := deniedRows[0]
 	a.NotNil(denied.Status, "the denied row must reflect the denial")
 	a.Equal(int32(connect.CodePermissionDenied), denied.Status.Code)
@@ -142,22 +182,23 @@ func TestMCPAuditProvenance(t *testing.T) {
 	// UNVALIDATED resources — the workspace-mismatch arm — fall back to the
 	// caller's workspace; an IAM denial's resources passed workspace-scoped
 	// validation.)
-	projects, err := ctl.projectServiceClient.ListProjects(ctx, connect.NewRequest(&v1pb.ListProjectsRequest{}))
-	a.NoError(err)
-	a.NotEmpty(projects.Msg.Projects)
-	projectName := projects.Msg.Projects[0].Name
-	a.Equal(http.StatusForbidden, callAPI("ProjectService/SetIamPolicy", map[string]any{
-		"resource": projectName,
-		"policy":   map[string]any{"bindings": []any{}},
+	//
+	// The probe is a WRITE method deliberately: the parent comes from the
+	// resources the ACL interceptor validated, and the ceiling gate runs before
+	// ACL. A method the ceiling refuses never reaches ACL, so its row falls
+	// back to the caller's workspace and would prove nothing about parents.
+	a.Equal(http.StatusForbidden, callAPI("PlanService/CreatePlan", map[string]any{
+		"parent": otherProjectName,
+		"plan":   map[string]any{"title": "not mine to make"},
 	}))
 	projectDenied, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
-		Parent: projectName,
-		Filter: `method == "/bytebase.v1.ProjectService/SetIamPolicy"`,
+		Parent: otherProjectName,
+		Filter: `method == "/bytebase.v1.PlanService/CreatePlan"`,
 	}))
 	a.NoError(err)
 	a.Len(projectDenied.Msg.AuditLogs, 1, "the project-scoped denial must be audited under the project it targeted")
 	projectRow := projectDenied.Msg.AuditLogs[0]
-	a.True(strings.HasPrefix(projectRow.Name, projectName+"/auditLogs/"))
+	a.True(strings.HasPrefix(projectRow.Name, otherProjectName+"/auditLogs/"))
 	a.Equal("users/"+memberEmail, projectRow.User)
 	a.Equal(int32(connect.CodePermissionDenied), projectRow.Status.GetCode())
 	a.Equal(permitted.McpDelegation.CorrelationId, projectRow.McpDelegation.GetCorrelationId())

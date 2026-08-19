@@ -42,12 +42,16 @@ func TestMCPToolCallParity(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	// Parity baseline: the principal's direct v1 API view.
-	direct, err := ctl.projectServiceClient.ListProjects(ctx, connect.NewRequest(&v1pb.ListProjectsRequest{}))
+	// Parity baseline: the principal's direct v1 API view. The probe is
+	// ListWorkspaces rather than ListProjects because the project reads are
+	// EXCLUDED from the MCP ceiling (they return the incoming-webhook URL
+	// verbatim, BOT-60); a probe the gate refuses would test the gate, not
+	// parity. Any READ method whose result is scoped to the caller does.
+	direct, err := ctl.workspaceServiceClient.ListWorkspaces(ctx, connect.NewRequest(&v1pb.ListWorkspacesRequest{}))
 	a.NoError(err)
 	var directNames []string
-	for _, p := range direct.Msg.Projects {
-		directNames = append(directNames, p.Name)
+	for _, w := range direct.Msg.Workspaces {
+		directNames = append(directNames, w.Name)
 	}
 	a.NotEmpty(directNames)
 
@@ -65,7 +69,7 @@ func TestMCPToolCallParity(t *testing.T) {
 
 	result, err := session.CallTool(ctx, &mcp.CallToolParams{
 		Name:      "call_api",
-		Arguments: map[string]any{"operationId": "ProjectService/ListProjects"},
+		Arguments: map[string]any{"operationId": "WorkspaceService/ListWorkspaces"},
 	})
 	a.NoError(err)
 	a.False(result.IsError, "call_api must succeed through the internal transport: %v", result.Content)
@@ -75,20 +79,20 @@ func TestMCPToolCallParity(t *testing.T) {
 	var out struct {
 		Status   int `json:"status"`
 		Response struct {
-			Projects []struct {
+			Workspaces []struct {
 				Name string `json:"name"`
-			} `json:"projects"`
+			} `json:"workspaces"`
 		} `json:"response"`
 	}
 	a.NoError(json.Unmarshal(raw, &out))
 	a.Equal(http.StatusOK, out.Status)
 
 	var mcpNames []string
-	for _, p := range out.Response.Projects {
-		mcpNames = append(mcpNames, p.Name)
+	for _, w := range out.Response.Workspaces {
+		mcpNames = append(mcpNames, w.Name)
 	}
 	a.ElementsMatch(directNames, mcpNames,
-		"the MCP tool call must see exactly the projects the same principal sees directly")
+		"the MCP tool call must see exactly what the same principal sees directly")
 }
 
 // TestMCPCannotMintPlainUserToken pins the boundary escape that riding the

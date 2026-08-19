@@ -15025,12 +15025,11 @@ components:
          authorization of an MCP session is this classification intersected with the
          caller's own RBAC: it can only ever narrow what the human could do, never
          widen it.
-         Only FORBIDDEN is enforced today. READ, WRITE and EXCLUDED are recorded
-         classifications and nothing reads them at request time yet — the gate that
-         selects between them is a later change. A method annotated READ or WRITE is
-         therefore served exactly as it is today; the annotation states where it
-         belongs, not where the boundary currently sits. FORBIDDEN is the exception
-         and is enforced the moment it is annotated.
+         Every value is enforced, at the gate on the internal MCP chain. READ and
+         WRITE are the serving classes the workspace's MCP capability ceiling selects
+         between, EXCLUDED and FORBIDDEN are served by no ceiling, and an unclassified
+         method is refused rather than served. Annotating a method is therefore a
+         change to what an MCP session can reach, taking effect on the next request.
     bytebase.v1.MaskingExemptionPolicy:
       type: object
       properties:

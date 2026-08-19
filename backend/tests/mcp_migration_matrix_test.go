@@ -176,20 +176,28 @@ func TestMCPMigrationGrantStateMatrix(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
-		Name: "workspaces/-",
+	// The probe is an audited mutation, so each session leaves exactly one
+	// provenance-carrying row to sort out below, and it is a WRITE method
+	// because the MCP ceiling serves READ and WRITE only. Every audited
+	// serving-class method is project-scoped, hence the project.
+	project, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
+		ProjectId: "mcp-grant-matrix",
+		Project:   &v1pb.Project{Title: "MCP grant matrix"},
 	}))
 	a.NoError(err)
+	createSheet := func(sql string) map[string]any {
+		return map[string]any{
+			"parent": project.Msg.Name,
+			"sheet":  map[string]any{"content": base64.StdEncoding.EncodeToString([]byte(sql))},
+		}
+	}
 
 	// Row 3: the legacy admission — a plain web-session token driving MCP.
-	// The call is an audited mutation, so each session leaves exactly one
-	// provenance-carrying row to sort out below.
 	plainSession := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
 	defer plainSession.Close()
-	a.Equal(http.StatusOK, callAPIStatus(ctx, t, plainSession, "GroupService/CreateGroup", map[string]any{
-		"group":      map[string]any{"title": "driven by a pre-grant session"},
-		"groupEmail": "pre-grant-group@example.com",
-	}), "a plain web-session token must keep working through tools")
+	a.Equal(http.StatusOK, callAPIStatus(ctx, t, plainSession, "SheetService/CreateSheet",
+		createSheet("SELECT 'driven by a pre-grant session';")),
+		"a plain web-session token must keep working through tools")
 
 	// Row 4: a real consent that never names a scope.
 	scopelessToken, scopelessRefresh, clientID := mintMCPOAuthTokenWithScope(t, ctl, ctl.authInterceptor.token, "")
@@ -211,15 +219,14 @@ func TestMCPMigrationGrantStateMatrix(t *testing.T) {
 
 	scopelessSession := openMCPSession(ctx, t, ctl, scopelessToken)
 	defer scopelessSession.Close()
-	a.Equal(http.StatusOK, callAPIStatus(ctx, t, scopelessSession, "GroupService/CreateGroup", map[string]any{
-		"group":      map[string]any{"title": "driven by a scope-less grant"},
-		"groupEmail": "scopeless-grant-group@example.com",
-	}), "a grant that recorded no scope must still work end to end")
+	a.Equal(http.StatusOK, callAPIStatus(ctx, t, scopelessSession, "SheetService/CreateSheet",
+		createSheet("SELECT 'driven by a scope-less grant';")),
+		"a grant that recorded no scope must still work end to end")
 
 	// What an operator investigating these sessions sees.
 	rows, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
-		Parent:  workspace.Msg.Name,
-		Filter:  `method == "/bytebase.v1.GroupService/CreateGroup"`,
+		Parent:  project.Msg.Name,
+		Filter:  `method == "/bytebase.v1.SheetService/CreateSheet"`,
 		OrderBy: "create_time desc",
 	}))
 	a.NoError(err)
@@ -341,7 +348,10 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 
 	session := openMCPSession(ctx, t, ctl, mcpToken)
 	defer session.Close()
-	a.Equal(http.StatusOK, callAPIStatus(ctx, t, session, "ProjectService/ListProjects", nil))
+	// The probe is a READ method deliberately: the MCP gate serves READ and
+	// WRITE and refuses everything else, so an EXCLUDED probe would answer 403
+	// for a reason that has nothing to do with the ceiling this test is about.
+	a.Equal(http.StatusOK, callAPIStatus(ctx, t, session, "WorkspaceService/ListWorkspaces", nil))
 }
 
 // TestMCPMigrationTightenedCeilingBitesLiveSession is matrix row 7: tightening
@@ -365,7 +375,7 @@ func TestMCPMigrationTightenedCeilingBitesLiveSession(t *testing.T) {
 	mcpToken, _ := mintMCPOAuthToken(t, ctl, ctl.authInterceptor.token)
 	session := openMCPSession(ctx, t, ctl, mcpToken)
 	defer session.Close()
-	a.Equal(http.StatusOK, callAPIStatus(ctx, t, session, "ProjectService/ListProjects", nil),
+	a.Equal(http.StatusOK, callAPIStatus(ctx, t, session, "WorkspaceService/ListWorkspaces", nil),
 		"the session is live under the default ceiling")
 
 	// An admin tightens the ceiling while the session stays open.
@@ -378,7 +388,7 @@ func TestMCPMigrationTightenedCeilingBitesLiveSession(t *testing.T) {
 
 	_, err = session.CallTool(ctx, &mcp.CallToolParams{
 		Name:      "call_api",
-		Arguments: map[string]any{"operationId": "ProjectService/ListProjects"},
+		Arguments: map[string]any{"operationId": "WorkspaceService/ListWorkspaces"},
 	})
 	// The cause matters, not just the failure: a bare "some error" would go
 	// green if the session broke for an unrelated reason while the ceiling
@@ -391,5 +401,5 @@ func TestMCPMigrationTightenedCeilingBitesLiveSession(t *testing.T) {
 	a.NoError(ctl.setMCPCapability(ctx, v1pb.WorkspaceProfileSetting_READ_WRITE))
 	restored := openMCPSession(ctx, t, ctl, mcpToken)
 	defer restored.Close()
-	a.Equal(http.StatusOK, callAPIStatus(ctx, t, restored, "ProjectService/ListProjects", nil))
+	a.Equal(http.StatusOK, callAPIStatus(ctx, t, restored, "WorkspaceService/ListWorkspaces", nil))
 }

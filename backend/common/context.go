@@ -19,6 +19,7 @@ const (
 	ServiceDataKey
 	WorkspaceIDContextKey
 	AuditWorkspaceIDKey
+	MCPPolicyDenialKey
 )
 
 func WithSetServiceData(ctx context.Context, setServiceData func(a *anypb.Any)) context.Context {
@@ -51,6 +52,31 @@ func SetAuditWorkspaceID(ctx context.Context, workspaceID string) {
 		return
 	}
 	setter(workspaceID)
+}
+
+// WithSetMCPPolicyDenied registers a callback the MCP ceiling gate uses to tell
+// the audit interceptor that it refused this request. The gate runs inside the
+// audit interceptor, so a value it puts on the context cannot travel back out;
+// this is the same setter shape WithSetAuditWorkspaceID already uses for the
+// same reason.
+//
+// The signal is needed because the audit interceptor otherwise writes a row
+// only when the method's own audit annotation asks for one, and four of the
+// methods the gate refuses carry no such annotation. A denial nobody can see is
+// the outcome an operator most needs to see.
+func WithSetMCPPolicyDenied(ctx context.Context, setMCPPolicyDenied func()) context.Context {
+	return context.WithValue(ctx, MCPPolicyDenialKey, setMCPPolicyDenied)
+}
+
+// SetMCPPolicyDenied records that the MCP ceiling gate refused the current
+// request, if the audit interceptor registered a setter on the context. Safe to
+// call when it did not: the public chain never runs the gate at all.
+func SetMCPPolicyDenied(ctx context.Context) {
+	setter, ok := ctx.Value(MCPPolicyDenialKey).(func())
+	if !ok {
+		return
+	}
+	setter()
 }
 
 // GetWorkspaceIDFromContext returns the workspace ID from the request context.
@@ -132,16 +158,22 @@ type AuthContext struct {
 	AuthMethod             AuthMethod
 	// MCPMethodClass is the method's bytebase.v1.mcp_method_class annotation.
 	// The effective authorization of an MCP session is this classification
-	// intersected with the caller's own RBAC — it only ever narrows. Only
-	// FORBIDDEN is enforced today; READ and WRITE are the serving classes
-	// P1b's ceiling modes select between, and UNSPECIFIED means "not yet
-	// classified" rather than "safe".
+	// intersected with the caller's own RBAC — it only ever narrows. The MCP
+	// gate enforces every value: READ and WRITE are the serving classes the
+	// workspace ceiling selects between, EXCLUDED and FORBIDDEN are served by
+	// no ceiling, and UNSPECIFIED means "not yet classified" rather than
+	// "safe", so it is refused too.
 	MCPMethodClass v1pb.MCPMethodClass
 	// MCPForbiddenReason is the method's bytebase.v1.mcp_forbidden_reason
 	// annotation: which mechanism made it FORBIDDEN, so the denial can say
 	// why. Meaningful only when MCPMethodClass is FORBIDDEN, and UNSPECIFIED
 	// costs wording rather than enforcement — the class is what denies.
 	MCPForbiddenReason v1pb.MCPForbiddenReason
+	// MCPExclusionReason is the method's bytebase.v1.mcp_exclusion_reason
+	// annotation, and the same thing for the other refused class: why no mode
+	// this release ships serves it. Meaningful only when MCPMethodClass is
+	// EXCLUDED.
+	MCPExclusionReason v1pb.MCPExclusionReason
 	Resources          []*Resource
 	// DelegatedGrant carries the grant state of the delegated MCP credential
 	// on internal-chain requests; nil on the public chain. Presence, not any

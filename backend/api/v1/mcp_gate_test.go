@@ -9,12 +9,15 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/component/config"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
@@ -174,21 +177,11 @@ func TestForbiddenClassMembership(t *testing.T) {
 // clause fires. A clause with no RED test is a clause nobody has proved can
 // fail.
 
-// mcpServingModes says which classes each ceiling mode serves. It is the
-// specification the gate will implement, written here as data so the lint can
-// hold the classification against it; nothing reads it at request time, and the
-// interceptor still enforces FORBIDDEN alone. DISABLED serves nothing because
-// it refuses the connection.
-//
-// The gate PR must LIFT this table into the code it evaluates rather than
-// declare a second copy. Two copies would let this lint stay green while the
-// runtime serving rules drift away from it, which is the one failure mode a
-// specification-shaped test cannot catch about itself.
-var mcpServingModes = map[v1pb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass{
-	v1pb.WorkspaceProfileSetting_DISABLED:   {},
-	v1pb.WorkspaceProfileSetting_READ_ONLY:  {v1pb.MCPMethodClass_READ},
-	v1pb.WorkspaceProfileSetting_READ_WRITE: {v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE},
-}
+// The serving table this lint holds the classification against is
+// mcpServingClasses, the one the gate evaluates — not a copy. 1b-1 declared it
+// here as a specification with a note that the gate PR had to lift it into the
+// code, because two copies would let this lint stay green while the runtime
+// rules drifted away from it. This is that lift.
 
 // checkEveryMethodIsClassified is the clause that ends the whack-a-mole. A new
 // RPC arrives unannotated, which is UNSPECIFIED, which fails the build — so it
@@ -270,13 +263,13 @@ var mcpDeniedClasses = []v1pb.MCPMethodClass{v1pb.MCPMethodClass_FORBIDDEN, v1pb
 // reports every method annotated READ, which is the shape of the damage.
 func checkEveryClassHasAServingDecision(
 	rows []mcpClassification,
-	serving map[v1pb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass,
+	serving map[storepb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass,
 	denied []v1pb.MCPMethodClass,
 	classes protoreflect.EnumDescriptor,
 	modes protoreflect.EnumDescriptor,
 ) []string {
 	var violations []string
-	servedBy := map[v1pb.MCPMethodClass][]v1pb.WorkspaceProfileSetting_MCPCapability{}
+	servedBy := map[v1pb.MCPMethodClass][]storepb.WorkspaceProfileSetting_MCPCapability{}
 	for mode, served := range serving {
 		for _, class := range served {
 			servedBy[class] = append(servedBy[class], mode)
@@ -319,8 +312,8 @@ func checkEveryClassHasAServingDecision(
 	modeValues := modes.Values()
 	for i := range modeValues.Len() {
 		value := modeValues.Get(i)
-		mode := v1pb.WorkspaceProfileSetting_MCPCapability(value.Number())
-		if mode == v1pb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED {
+		mode := storepb.WorkspaceProfileSetting_MCPCapability(value.Number())
+		if mode == storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED {
 			continue
 		}
 		if _, ok := serving[mode]; !ok {
@@ -347,16 +340,41 @@ func TestLintReasonsMatchTheClass(t *testing.T) {
 
 // mcpEnums reads the two enums the serving decision spans out of the compiled
 // descriptors, so the lint below tracks the protos rather than a Go copy of
-// them.
+// them. The ceiling comes from the STORE enum because that is the one a
+// setting row holds and the gate reads back.
 func mcpEnums(t *testing.T) (classes, modes protoreflect.EnumDescriptor) {
 	t.Helper()
-	return v1pb.MCPMethodClass(0).Descriptor(), v1pb.WorkspaceProfileSetting_MCPCapability(0).Descriptor()
+	return v1pb.MCPMethodClass(0).Descriptor(), storepb.WorkspaceProfileSetting_MCPCapability(0).Descriptor()
 }
 
 func TestLintEveryClassHasAServingDecision(t *testing.T) {
 	classes, modes := mcpEnums(t)
 	require.Empty(t, checkEveryClassHasAServingDecision(
-		mcpClassificationsFromDescriptors(t), mcpServingModes, mcpDeniedClasses, classes, modes))
+		mcpClassificationsFromDescriptors(t), mcpServingClasses, mcpDeniedClasses, classes, modes))
+}
+
+// TestMCPCapabilityEnumsAgree is what lets the lint above read one enum and the
+// gate read the other. The settings API writes the v1 ceiling, the setting row
+// stores the store ceiling, and the conversion between them is by number
+// (setting_service_converter.go). If the two ever disagree — a mode added to
+// one, a number reused — a customer could set a ceiling the gate would read as
+// something else entirely, and every serving decision above would be about the
+// wrong vocabulary.
+func TestMCPCapabilityEnumsAgree(t *testing.T) {
+	v1Values := v1pb.WorkspaceProfileSetting_MCPCapability(0).Descriptor().Values()
+	storeValues := storepb.WorkspaceProfileSetting_MCPCapability(0).Descriptor().Values()
+
+	byNumber := func(values protoreflect.EnumValueDescriptors) map[int32]string {
+		out := map[int32]string{}
+		for i := range values.Len() {
+			value := values.Get(i)
+			out[int32(value.Number())] = string(value.Name())
+		}
+		return out
+	}
+	require.Equal(t, byNumber(v1Values), byNumber(storeValues),
+		"the API ceiling enum and the stored ceiling enum must name the same numbers; "+
+			"they convert by number and the gate reads the stored one")
 }
 
 // TestLintClausesFireWhenBroken is the RED half: one mutation per clause,
@@ -430,10 +448,10 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 	classes, modes := mcpEnums(t)
 
 	t.Run("a class both served and denied fails once, not once per method", func(t *testing.T) {
-		widened := map[v1pb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass{
-			v1pb.WorkspaceProfileSetting_DISABLED:  {},
-			v1pb.WorkspaceProfileSetting_READ_ONLY: {v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_EXCLUDED},
-			v1pb.WorkspaceProfileSetting_READ_WRITE: {
+		widened := map[storepb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass{
+			storepb.WorkspaceProfileSetting_DISABLED:  {},
+			storepb.WorkspaceProfileSetting_READ_ONLY: {v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_EXCLUDED},
+			storepb.WorkspaceProfileSetting_READ_WRITE: {
 				v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE, v1pb.MCPMethodClass_EXCLUDED,
 			},
 		}
@@ -455,25 +473,25 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 		require.Equal(t, []string{
 			"/p: carries WRITE, which has no serving decision",
 			"WRITE is neither served by a mode nor denied",
-		}, checkEveryClassHasAServingDecision(rows, map[v1pb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass{
-			v1pb.WorkspaceProfileSetting_DISABLED:   {},
-			v1pb.WorkspaceProfileSetting_READ_ONLY:  {v1pb.MCPMethodClass_READ},
-			v1pb.WorkspaceProfileSetting_READ_WRITE: {v1pb.MCPMethodClass_READ},
+		}, checkEveryClassHasAServingDecision(rows, map[storepb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass{
+			storepb.WorkspaceProfileSetting_DISABLED:   {},
+			storepb.WorkspaceProfileSetting_READ_ONLY:  {v1pb.MCPMethodClass_READ},
+			storepb.WorkspaceProfileSetting_READ_WRITE: {v1pb.MCPMethodClass_READ},
 		}, mcpDeniedClasses, classes, modes))
 	})
 
 	t.Run("a ceiling mode with no serving row fails", func(t *testing.T) {
 		require.Equal(t, []string{"ceiling mode DISABLED does not say which classes it serves"},
-			checkEveryClassHasAServingDecision(nil, map[v1pb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass{
-				v1pb.WorkspaceProfileSetting_READ_ONLY:  {v1pb.MCPMethodClass_READ},
-				v1pb.WorkspaceProfileSetting_READ_WRITE: {v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE},
+			checkEveryClassHasAServingDecision(nil, map[storepb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass{
+				storepb.WorkspaceProfileSetting_READ_ONLY:  {v1pb.MCPMethodClass_READ},
+				storepb.WorkspaceProfileSetting_READ_WRITE: {v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE},
 			}, mcpDeniedClasses, classes, modes))
 	})
 
 	t.Run("a row carrying an undecided class fails", func(t *testing.T) {
 		rows := []mcpClassification{{procedure: "/p", class: v1pb.MCPMethodClass(9999)}}
 		require.Equal(t, []string{"/p: carries 9999, which has no serving decision"},
-			checkEveryClassHasAServingDecision(rows, mcpServingModes, mcpDeniedClasses, classes, modes))
+			checkEveryClassHasAServingDecision(rows, mcpServingClasses, mcpDeniedClasses, classes, modes))
 	})
 }
 
@@ -599,8 +617,9 @@ func renderMCPInventory(rows []mcpClassification) string {
 	b.WriteString("`mcp_exclusion_reason` annotations on the v1 RPCs. The annotations are the source of\n")
 	b.WriteString("truth; this file is a reviewable view of them and nothing reads it at runtime.\n\n")
 	b.WriteString("Regenerate with:\n\n```\n" + mcpInventoryRegenerate + "\n```\n\n")
-	b.WriteString("Only FORBIDDEN is enforced today. READ, WRITE and EXCLUDED record where a method\n")
-	b.WriteString("belongs; the gate that acts on them is a later change.\n\n")
+	b.WriteString("Every class is enforced by the MCP gate. READ and WRITE are the serving classes a\n")
+	b.WriteString("workspace's MCP capability ceiling selects between; EXCLUDED and FORBIDDEN are\n")
+	b.WriteString("served by no ceiling.\n\n")
 
 	counts := map[v1pb.MCPMethodClass]int{}
 	for _, row := range rows {
@@ -613,9 +632,9 @@ func renderMCPInventory(rows []mcpClassification) string {
 	}{
 		{v1pb.MCPMethodClass_READ, "served to a read-only session and above"},
 		{v1pb.MCPMethodClass_WRITE, "served to a read-write session only"},
-		{v1pb.MCPMethodClass_EXCLUDED, "served by no mode this phase ships"},
-		{v1pb.MCPMethodClass_FORBIDDEN, "never served, enforced today"},
-		{v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, "unclassified — CI rejects this"},
+		{v1pb.MCPMethodClass_EXCLUDED, "served by no ceiling this phase ships"},
+		{v1pb.MCPMethodClass_FORBIDDEN, "never served, whatever the ceiling"},
+		{v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED, "unclassified — CI rejects this, and the gate refuses it"},
 	} {
 		fmt.Fprintf(&b, "| %v | %d | %s |\n", line.class, counts[line.class], line.meaning)
 	}
@@ -658,81 +677,401 @@ func TestMCPClassificationInventory(t *testing.T) {
 	require.Equal(t, string(committed), rendered, "the inventory is stale; regenerate with: %s", mcpInventoryRegenerate)
 }
 
-// TestInternalMCPForbiddenInterceptor pins what the interceptor does with a
-// classification once the auth interceptor has resolved one.
-func TestInternalMCPForbiddenInterceptor(t *testing.T) {
-	interceptor := NewInternalMCPForbiddenInterceptor()
+// --- the gate ---
 
-	invoke := func(ctx context.Context, procedure string) (bool, error) {
-		dispatched := false
-		next := func(_ context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {
-			dispatched = true
-			return connect.NewResponse(&v1pb.User{}), nil
-		}
-		req := &specRequest{
-			AnyRequest: connect.NewRequest(&v1pb.GetUserRequest{}),
-			procedure:  procedure,
-		}
-		_, err := interceptor.WrapUnary(next)(ctx, req)
-		return dispatched, err
-	}
-	withClass := func(class v1pb.MCPMethodClass, reason v1pb.MCPForbiddenReason) context.Context {
-		return context.WithValue(context.Background(), common.AuthContextKey,
-			&common.AuthContext{MCPMethodClass: class, MCPForbiddenReason: reason})
-	}
+// mcpGateStore stands in for the workspace's stored ceiling. A READ_ONLY
+// ceiling cannot be reached end to end yet — mcpConnectionAllowed still refuses
+// the connection until 1b-3 lands the SQL clamp — so the only way to exercise
+// the read-only half of the rule today is here.
+type mcpGateStore struct {
+	ceiling storepb.WorkspaceProfileSetting_MCPCapability
+	err     error
+}
 
-	for procedure, reason := range forbiddenProceduresFromDescriptors(t) {
-		t.Run(procedure, func(t *testing.T) {
-			dispatched, err := invoke(withClass(v1pb.MCPMethodClass_FORBIDDEN, reason), procedure)
-			require.Error(t, err, "a FORBIDDEN method must never reach its handler")
-			require.False(t, dispatched, "the denial must happen before dispatch, so no handler side effect can land")
-			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
-			require.Contains(t, err.Error(), procedure, "the message must name the method the agent called")
-			require.Contains(t, err.Error(), mcpForbiddenReasons[reason],
-				"the message must name why, so the agent can act on it")
+func (s mcpGateStore) GetMCPCapabilityUncached(context.Context, string) (storepb.WorkspaceProfileSetting_MCPCapability, error) {
+	return s.ceiling, s.err
+}
+
+func readWriteCeiling() mcpGateStore {
+	return mcpGateStore{ceiling: storepb.WorkspaceProfileSetting_READ_WRITE}
+}
+
+func readOnlyCeiling() mcpGateStore {
+	return mcpGateStore{ceiling: storepb.WorkspaceProfileSetting_READ_ONLY}
+}
+
+type mcpGateResult struct {
+	dispatched  bool
+	auditMarked bool
+	err         error
+}
+
+// invokeMCPGate runs one request through the gate alone. auditMarked is what
+// the audit interceptor reads when the request comes back out; standing in for
+// it here keeps the class rules provable without a database, and
+// TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation proves the real
+// interceptor honors the mark.
+func invokeMCPGate(t *testing.T, stores mcpCeilingStore, authCtx *common.AuthContext, procedure string, req connect.AnyRequest) mcpGateResult {
+	t.Helper()
+	out := mcpGateResult{}
+	next := func(_ context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {
+		out.dispatched = true
+		return connect.NewResponse(&v1pb.User{}), nil
+	}
+	ctx := context.Background()
+	if authCtx != nil {
+		ctx = context.WithValue(ctx, common.AuthContextKey, authCtx)
+	}
+	ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, auditTestWorkspace)
+	ctx = common.WithSetMCPPolicyDenied(ctx, func() { out.auditMarked = true })
+	_, out.err = NewInternalMCPGateInterceptor(stores).WrapUnary(next)(ctx,
+		&specRequest{AnyRequest: req, procedure: procedure})
+	return out
+}
+
+func classContext(class v1pb.MCPMethodClass) *common.AuthContext {
+	return &common.AuthContext{MCPMethodClass: class}
+}
+
+// TestMCPGateRefusesTheDeniedClasses walks every method the annotations refuse
+// outright and proves the gate refuses it under the most permissive ceiling
+// there is. FORBIDDEN was already enforced; EXCLUDED is what this PR turns from
+// a recorded classification into a denial, and it is the larger population by
+// far — 93 methods the console and the public API serve today.
+func TestMCPGateRefusesTheDeniedClasses(t *testing.T) {
+	for _, row := range mcpClassificationsFromDescriptors(t) {
+		var wantReason string
+		switch row.class {
+		case v1pb.MCPMethodClass_FORBIDDEN:
+			wantReason = mcpForbiddenReasons[row.forbiddenReason]
+		case v1pb.MCPMethodClass_EXCLUDED:
+			wantReason = mcpExclusionReasons[row.exclusionReason]
+		default:
+			continue
+		}
+		t.Run(row.procedure, func(t *testing.T) {
+			got := invokeMCPGate(t, readWriteCeiling(), &common.AuthContext{
+				MCPMethodClass:     row.class,
+				MCPForbiddenReason: row.forbiddenReason,
+				MCPExclusionReason: row.exclusionReason,
+			}, row.procedure, connect.NewRequest(&v1pb.GetUserRequest{}))
+
+			require.Error(t, got.err, "a %v method must never reach its handler", row.class)
+			require.False(t, got.dispatched, "the denial must land before dispatch, so no handler side effect can")
+			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+			require.Contains(t, got.err.Error(), row.procedure, "the message must name the method the agent called")
+			require.NotEmpty(t, wantReason, "every refused method's reason must have wording")
+			require.Contains(t, got.err.Error(), wantReason, "the message must name why, so the agent can act on it")
+			require.True(t, got.auditMarked, "every denial is an audited outcome")
 		})
 	}
+}
 
-	// A method classified FORBIDDEN whose reason this build does not recognize
-	// is still refused — the class is what denies, and the wording degrades to
-	// the generic sentence rather than the denial degrading to nothing. This is
-	// the rolling-upgrade case: an old replica meeting a reason value added
-	// after it was built.
-	t.Run("unknown reason still denies", func(t *testing.T) {
-		dispatched, err := invoke(withClass(v1pb.MCPMethodClass_FORBIDDEN, v1pb.MCPForbiddenReason(9999)),
-			v1connect.AuthServiceLoginProcedure)
-		require.Error(t, err)
-		require.False(t, dispatched)
-		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
-		require.Contains(t, err.Error(), reasonForbiddenClass)
+// TestMCPGateServesTheAdmittedClasses is the other half: under a read-write
+// ceiling both serving classes reach their handler, and the gate grants
+// nothing on its own — ACL runs after it, unchanged.
+func TestMCPGateServesTheAdmittedClasses(t *testing.T) {
+	for _, class := range []v1pb.MCPMethodClass{v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE} {
+		t.Run(class.String(), func(t *testing.T) {
+			got := invokeMCPGate(t, readWriteCeiling(), classContext(class),
+				v1connect.DatabaseServiceGetDatabaseProcedure, connect.NewRequest(&v1pb.GetDatabaseRequest{}))
+			require.NoError(t, got.err)
+			require.True(t, got.dispatched)
+			require.False(t, got.auditMarked)
+		})
+	}
+}
+
+// TestMCPGateUnderAReadOnlyCeiling is the rule this PR exists for: the same
+// session that reaches a WRITE method under read-write is refused it under
+// read-only, while its reads keep working. It is unit-level because READ_ONLY
+// cannot connect until 1b-3 — see TestMCPCeilingCutoverHasNotMoved.
+func TestMCPGateUnderAReadOnlyCeiling(t *testing.T) {
+	t.Run("a READ method is served", func(t *testing.T) {
+		got := invokeMCPGate(t, readOnlyCeiling(), classContext(v1pb.MCPMethodClass_READ),
+			v1connect.DatabaseServiceGetDatabaseProcedure, connect.NewRequest(&v1pb.GetDatabaseRequest{}))
+		require.NoError(t, got.err)
+		require.True(t, got.dispatched)
 	})
 
-	// Only FORBIDDEN is enforced in this phase, so every other class still
-	// dispatches. EXCLUDED is the one that most looks like a denial and is not
-	// one yet — it is the largest class, and it covers methods the console and
-	// the API serve today — so a later change to the condition above that turned
-	// it into a serving-class allowlist would silently deny them. UNSPECIFIED
-	// reaches here only in a build that has not been linted; it is served, as
-	// before.
-	for name, class := range map[string]v1pb.MCPMethodClass{
-		"unclassified": v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED,
-		"read":         v1pb.MCPMethodClass_READ,
-		"write":        v1pb.MCPMethodClass_WRITE,
-		"excluded":     v1pb.MCPMethodClass_EXCLUDED,
+	t.Run("a WRITE method is refused, naming the ceiling and the way out", func(t *testing.T) {
+		// A WRITE method with no request-shape rule of its own, so the refusal
+		// can only be the ceiling's.
+		got := invokeMCPGate(t, readOnlyCeiling(), classContext(v1pb.MCPMethodClass_WRITE),
+			v1connect.SheetServiceCreateSheetProcedure, connect.NewRequest(&v1pb.CreateSheetRequest{}))
+		require.Error(t, got.err)
+		require.False(t, got.dispatched)
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+		require.Contains(t, got.err.Error(), "READ_ONLY", "the denial must name the ceiling in force")
+		require.Contains(t, got.err.Error(), "raise the MCP ceiling", "the denial must name the way out")
+		require.True(t, got.auditMarked)
+	})
+}
+
+// TestMCPGateFailsClosedOnTheCeiling covers the two states where the workspace
+// has a ceiling the gate cannot act on. Both refuse: a policy that cannot be
+// read is not a policy that permits.
+func TestMCPGateFailsClosedOnTheCeiling(t *testing.T) {
+	t.Run("a lookup failure refuses", func(t *testing.T) {
+		got := invokeMCPGate(t, mcpGateStore{err: errors.New("db unreachable")},
+			classContext(v1pb.MCPMethodClass_READ),
+			v1connect.DatabaseServiceGetDatabaseProcedure, connect.NewRequest(&v1pb.GetDatabaseRequest{}))
+		require.Error(t, got.err)
+		require.False(t, got.dispatched)
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+		require.NotContains(t, got.err.Error(), "db unreachable",
+			"the agent gets the verdict, not the workspace's storage state")
+		require.True(t, got.auditMarked)
+	})
+
+	t.Run("a stored ceiling this build does not serve refuses", func(t *testing.T) {
+		// The reserved number 2, which was METADATA_ONLY before the tier was
+		// dropped. It survives protojson as an unknown enum number, so unlike
+		// an unknown NAME it reaches the gate intact — and no mode serves it.
+		got := invokeMCPGate(t, mcpGateStore{ceiling: storepb.WorkspaceProfileSetting_MCPCapability(2)},
+			classContext(v1pb.MCPMethodClass_READ),
+			v1connect.DatabaseServiceGetDatabaseProcedure, connect.NewRequest(&v1pb.GetDatabaseRequest{}))
+		require.Error(t, got.err)
+		require.False(t, got.dispatched)
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+		require.True(t, got.auditMarked)
+	})
+
+	t.Run("no workspace on the request refuses", func(t *testing.T) {
+		// The internal auth interceptor puts one on every request it admits,
+		// so this is the reordered-chain case.
+		out := mcpGateResult{}
+		next := func(_ context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {
+			out.dispatched = true
+			return connect.NewResponse(&v1pb.User{}), nil
+		}
+		ctx := context.WithValue(context.Background(), common.AuthContextKey, classContext(v1pb.MCPMethodClass_READ))
+		_, err := NewInternalMCPGateInterceptor(readWriteCeiling()).WrapUnary(next)(ctx, &specRequest{
+			AnyRequest: connect.NewRequest(&v1pb.GetDatabaseRequest{}),
+			procedure:  v1connect.DatabaseServiceGetDatabaseProcedure,
+		})
+		require.Error(t, err)
+		require.False(t, out.dispatched)
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
+	})
+}
+
+// TestMCPGateFailsClosedOnAnUnclassifiedMethod pins the arm CI is supposed to
+// make unreachable. A new RPC arrives unannotated, which is UNSPECIFIED; the
+// lint fails the build on one, and if a build ever ships past that, the method
+// is refused rather than served.
+func TestMCPGateFailsClosedOnAnUnclassifiedMethod(t *testing.T) {
+	got := invokeMCPGate(t, readWriteCeiling(), classContext(v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED),
+		"/bytebase.v1.NewService/NewMethod", connect.NewRequest(&v1pb.GetUserRequest{}))
+	require.Error(t, got.err)
+	require.False(t, got.dispatched)
+	require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+	require.Contains(t, got.err.Error(), "carries no MCP classification")
+	require.True(t, got.auditMarked)
+}
+
+// TestMCPGateFallsBackToGenericWording pins that a refusal whose reason this
+// build does not recognize still refuses. The class denies; the reason table
+// only supplies a better sentence. This is the rolling-upgrade case, on both
+// refused classes.
+func TestMCPGateFallsBackToGenericWording(t *testing.T) {
+	t.Run("forbidden", func(t *testing.T) {
+		got := invokeMCPGate(t, readWriteCeiling(), &common.AuthContext{
+			MCPMethodClass:     v1pb.MCPMethodClass_FORBIDDEN,
+			MCPForbiddenReason: v1pb.MCPForbiddenReason(9999),
+		}, v1connect.AuthServiceLoginProcedure, connect.NewRequest(&v1pb.LoginRequest{}))
+		require.Error(t, got.err)
+		require.False(t, got.dispatched)
+		require.Contains(t, got.err.Error(), reasonForbiddenClass)
+	})
+
+	t.Run("excluded", func(t *testing.T) {
+		got := invokeMCPGate(t, readWriteCeiling(), &common.AuthContext{
+			MCPMethodClass:     v1pb.MCPMethodClass_EXCLUDED,
+			MCPExclusionReason: v1pb.MCPExclusionReason(9999),
+		}, v1connect.UserServiceListUsersProcedure, connect.NewRequest(&v1pb.ListUsersRequest{}))
+		require.Error(t, got.err)
+		require.False(t, got.dispatched)
+		require.Contains(t, got.err.Error(), reasonExcludedClass)
+	})
+}
+
+// TestMCPGateFailsClosedWithoutAnAuthContext pins that the gate does not guess.
+func TestMCPGateFailsClosedWithoutAnAuthContext(t *testing.T) {
+	got := invokeMCPGate(t, readWriteCeiling(), nil,
+		v1connect.AuthServiceLoginProcedure, connect.NewRequest(&v1pb.LoginRequest{}))
+	require.Error(t, got.err, "without a resolved classification the interceptor must not guess")
+	require.False(t, got.dispatched)
+	require.Equal(t, connect.CodeInternal, connect.CodeOf(got.err))
+}
+
+// TestMCPGateRefusesGrantIssues pins the one refusal a per-method class cannot
+// express. CreateIssue is WRITE for the database-change issue an agent exists
+// to compose; the grant types complete on creation and hand out access with no
+// human step. UpdateIssue is the same method under another name whenever
+// allow_missing is set.
+func TestMCPGateRefusesGrantIssues(t *testing.T) {
+	write := classContext(v1pb.MCPMethodClass_WRITE)
+
+	t.Run("an ordinary change issue is served", func(t *testing.T) {
+		got := invokeMCPGate(t, readWriteCeiling(), write, v1connect.IssueServiceCreateIssueProcedure,
+			connect.NewRequest(&v1pb.CreateIssueRequest{
+				Parent: "projects/p",
+				Issue:  &v1pb.Issue{Type: v1pb.Issue_DATABASE_CHANGE, Plan: "projects/p/plans/1"},
+			}))
+		require.NoError(t, got.err)
+		require.True(t, got.dispatched)
+	})
+
+	for _, issueType := range []v1pb.Issue_Type{
+		v1pb.Issue_ROLE_GRANT,
+		v1pb.Issue_ACCESS_GRANT,
+		v1pb.Issue_TYPE_UNSPECIFIED,
 	} {
-		t.Run("dispatched: "+name, func(t *testing.T) {
-			dispatched, err := invoke(
-				withClass(class, v1pb.MCPForbiddenReason_MCP_FORBIDDEN_REASON_UNSPECIFIED),
-				v1connect.UserServiceGetUserProcedure)
-			require.NoError(t, err)
-			require.True(t, dispatched)
+		t.Run("CreateIssue refuses "+issueType.String(), func(t *testing.T) {
+			got := invokeMCPGate(t, readWriteCeiling(), write, v1connect.IssueServiceCreateIssueProcedure,
+				connect.NewRequest(&v1pb.CreateIssueRequest{
+					Parent: "projects/p",
+					Issue:  &v1pb.Issue{Type: issueType},
+				}))
+			require.Error(t, got.err)
+			require.False(t, got.dispatched)
+			require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
+			require.Contains(t, got.err.Error(), issueType.String())
+			require.True(t, got.auditMarked)
 		})
 	}
 
-	t.Run("no auth context fails closed", func(t *testing.T) {
-		dispatched, err := invoke(context.Background(), v1connect.AuthServiceLoginProcedure)
-		require.Error(t, err, "without a resolved classification the interceptor must not guess")
-		require.False(t, dispatched)
-		require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
+	t.Run("UpdateIssue refuses the same creation through allow_missing", func(t *testing.T) {
+		got := invokeMCPGate(t, readWriteCeiling(), write, v1connect.IssueServiceUpdateIssueProcedure,
+			connect.NewRequest(&v1pb.UpdateIssueRequest{
+				Issue:        &v1pb.Issue{Name: "projects/p/issues/404", Type: v1pb.Issue_ROLE_GRANT},
+				AllowMissing: true,
+			}))
+		require.Error(t, got.err)
+		require.False(t, got.dispatched)
+		require.Contains(t, got.err.Error(), v1pb.Issue_ROLE_GRANT.String())
+	})
+
+	t.Run("UpdateIssue without allow_missing edits an existing issue", func(t *testing.T) {
+		// Editing a grant issue somebody else opened is an ordinary WRITE:
+		// without allow_missing the handler cannot create one, and the debt
+		// this carve-out settles is creation.
+		got := invokeMCPGate(t, readWriteCeiling(), write, v1connect.IssueServiceUpdateIssueProcedure,
+			connect.NewRequest(&v1pb.UpdateIssueRequest{
+				Issue: &v1pb.Issue{Name: "projects/p/issues/1", Type: v1pb.Issue_ROLE_GRANT},
+			}))
+		require.NoError(t, got.err)
+		require.True(t, got.dispatched)
+	})
+
+	t.Run("a request the table cannot read refuses", func(t *testing.T) {
+		// A wiring bug — the table keyed by a procedure whose request type is
+		// something else — fails closed rather than waving the call through.
+		got := invokeMCPGate(t, readWriteCeiling(), write, v1connect.IssueServiceCreateIssueProcedure,
+			connect.NewRequest(&v1pb.GetUserRequest{}))
+		require.Error(t, got.err)
+		require.False(t, got.dispatched)
+	})
+}
+
+// TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation is the typed
+// policy-denial record, end to end through the real audit interceptor and a
+// real store. The four methods below are refused and carry no audit annotation,
+// so before this PR their denials produced nothing at all: needAudit reads only
+// the annotation, and these are the whole of that population.
+//
+// Each also carries a secret in its request, which is why the rows are checked
+// for what they wrote as well as that they wrote. The gate refuses before
+// dispatch, so the secret was never used — recording it verbatim would turn a
+// silent denial into a worse one.
+func TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation(t *testing.T) {
+	st := newAuditLiveStore(t)
+	auditIn := NewAuditInterceptor(st, "test-secret", &config.Profile{})
+	gate := NewInternalMCPGateInterceptor(readWriteCeiling())
+
+	invoke := func(t *testing.T, correlationID, procedure string, req connect.AnyRequest) {
+		t.Helper()
+		authCtx := &common.AuthContext{
+			// No audit annotation: the point of the test.
+			Audit:              false,
+			AuthMethod:         common.AuthMethodCustom,
+			MCPMethodClass:     v1pb.MCPMethodClass_FORBIDDEN,
+			MCPForbiddenReason: v1pb.MCPForbiddenReason_MINTS_CREDENTIAL_FOR_OTHERS,
+			DelegatedGrant:     &common.DelegatedGrant{CorrelationID: correlationID, Scope: "mcp:read-write"},
+		}
+		handlerReached := false
+		handler := func(_ context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {
+			handlerReached = true
+			return connect.NewResponse(&v1pb.User{}), nil
+		}
+		// The internal chain's order: audit outside, gate inside.
+		chain := auditIn.WrapUnary(gate.WrapUnary(handler))
+		_, err := chain(newAuditTestContext(authCtx), &specRequest{AnyRequest: req, procedure: procedure})
+		require.Error(t, err)
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
+		require.False(t, handlerReached)
+	}
+
+	assertOneDeniedRow := func(t *testing.T, correlationID, procedure string) *storepb.AuditLog {
+		t.Helper()
+		rows := findRowsByCorrelation(t, st, correlationID)
+		require.Len(t, rows, 1, "a policy denial must be recorded even where the method asks for no audit row")
+		row := rows[0].Payload
+		require.Equal(t, procedure, row.Method)
+		require.Equal(t, int32(connect.CodePermissionDenied), row.GetStatus().GetCode())
+		require.Equal(t, "workspaces/"+auditTestWorkspace, row.Parent)
+		require.Equal(t, "mcp:read-write", row.GetMcpDelegation().GetScope(),
+			"the row must carry the MCP provenance an operator filters on")
+		return row
+	}
+
+	t.Run("Refresh", func(t *testing.T) {
+		invoke(t, "corr-refresh", v1connect.AuthServiceRefreshProcedure, connect.NewRequest(&v1pb.RefreshRequest{}))
+		assertOneDeniedRow(t, "corr-refresh", v1connect.AuthServiceRefreshProcedure)
+	})
+
+	t.Run("SwitchWorkspace", func(t *testing.T) {
+		otp := "123456"
+		invoke(t, "corr-switch", v1connect.AuthServiceSwitchWorkspaceProcedure,
+			connect.NewRequest(&v1pb.SwitchWorkspaceRequest{Workspace: "workspaces/other", OtpCode: &otp}))
+		row := assertOneDeniedRow(t, "corr-switch", v1connect.AuthServiceSwitchWorkspaceProcedure)
+		require.NotContains(t, row.Request, otp, "the MFA proof must not be transcribed into the row")
+	})
+
+	t.Run("TestIdentityProvider", func(t *testing.T) {
+		invoke(t, "corr-idp", v1connect.IdentityProviderServiceTestIdentityProviderProcedure,
+			connect.NewRequest(&v1pb.TestIdentityProviderRequest{
+				IdentityProvider: &v1pb.IdentityProvider{
+					Config: &v1pb.IdentityProviderConfig{
+						Config: &v1pb.IdentityProviderConfig_OidcConfig{
+							OidcConfig: &v1pb.OIDCIdentityProviderConfig{ClientSecret: "idp-client-secret"},
+						},
+					},
+				},
+				Context: &v1pb.TestIdentityProviderRequest_OidcContext{
+					OidcContext: &v1pb.OIDCIdentityProviderTestRequestContext{Code: "authorization-code"},
+				},
+			}))
+		row := assertOneDeniedRow(t, "corr-idp", v1connect.IdentityProviderServiceTestIdentityProviderProcedure)
+		require.NotContains(t, row.Request, "idp-client-secret")
+		require.NotContains(t, row.Request, "authorization-code")
+	})
+
+	t.Run("TestEmailSetting", func(t *testing.T) {
+		invoke(t, "corr-email", v1connect.SettingServiceTestEmailSettingProcedure,
+			connect.NewRequest(&v1pb.TestEmailSettingRequest{
+				Parent: "workspaces/" + auditTestWorkspace,
+				To:     "someone@example.com",
+				EmailSetting: &v1pb.EmailSetting{
+					Config: &v1pb.EmailSetting_Smtp{
+						Smtp: &v1pb.EmailSetting_SMTPConfig{Host: "smtp.attacker.example", Password: "relay-password"},
+					},
+				},
+			}))
+		row := assertOneDeniedRow(t, "corr-email", v1connect.SettingServiceTestEmailSettingProcedure)
+		require.NotContains(t, row.Request, "relay-password")
+		require.Contains(t, row.Request, "smtp.attacker.example",
+			"the host the agent named is the point of the row and stays readable")
 	})
 }

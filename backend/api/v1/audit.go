@@ -77,11 +77,23 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 			handlerAuditWorkspaceID = workspaceID
 		})
 
+		// The MCP ceiling gate sits inside this interceptor and refuses a call
+		// before it reaches its handler. needAudit reads only the method's own
+		// audit annotation, and four of the methods the gate refuses carry
+		// none — Refresh, SwitchWorkspace, TestIdentityProvider and
+		// TestEmailSetting — so their denials would leave no trace at all.
+		// A policy denial is recorded whatever the annotation says: the
+		// annotation decides whether ordinary use of a method is interesting,
+		// and a refused agent is interesting either way. Only the internal MCP
+		// chain runs the gate, so the public chain is unaffected.
+		mcpPolicyDenied := false
+		ctx = common.WithSetMCPPolicyDenied(ctx, func() { mcpPolicyDenied = true })
+
 		startTime := time.Now()
 		response, rerr := next(ctx, req)
 		latency := time.Since(startTime)
 
-		if needAudit(ctx) {
+		if needAudit(ctx) || mcpPolicyDenied {
 			var respMsg any
 			if !common.IsNil(response) {
 				respMsg = response.Any()
@@ -571,6 +583,24 @@ func getRequestString(request any) (string, error) {
 			r = proto.CloneOf(r)
 			r.Webhook = redactWebhook(r.Webhook)
 			return r
+		// The four below carry a secret in a request that produced no audit
+		// row until the MCP gate started recording its denials. The methods
+		// themselves are still unaudited; what reaches here is a refusal, and
+		// a refusal that transcribed the secret it refused would be worse than
+		// the silence it replaced. Every field masked here is already masked
+		// on a sibling method that has always been audited.
+		case *v1pb.TestWebhookRequest:
+			r = proto.CloneOf(r)
+			r.Webhook = redactWebhook(r.Webhook)
+			return r
+		case *v1pb.TestEmailSettingRequest:
+			r = proto.CloneOf(r)
+			r.EmailSetting = redactEmailSetting(r.EmailSetting)
+			return r
+		case *v1pb.TestIdentityProviderRequest:
+			return redactTestIdentityProviderRequest(r)
+		case *v1pb.SwitchWorkspaceRequest:
+			return redactSwitchWorkspaceRequest(r)
 		case *v1pb.CreateReleaseRequest:
 			r = proto.CloneOf(r)
 			r.Release = redactRelease(r.Release)
@@ -907,6 +937,60 @@ func redactIdentityProvider(r *v1pb.IdentityProvider) *v1pb.IdentityProvider {
 			config.LdapConfig.BindPassword = maskedString
 		}
 	default:
+	}
+	return r
+}
+
+// redactEmailSetting masks the SMTP password, the same field redactSetting
+// masks when the same value arrives through UpdateSetting.
+func redactEmailSetting(e *v1pb.EmailSetting) *v1pb.EmailSetting {
+	if e == nil {
+		return nil
+	}
+	e = proto.CloneOf(e)
+	if smtp := e.GetSmtp(); smtp.GetPassword() != "" {
+		smtp.Password = maskedString
+	}
+	return e
+}
+
+// redactTestIdentityProviderRequest masks both halves of a connection test: the
+// provider's own client secret or LDAP bind password, which redactIdentityProvider
+// already masks on Create and Update, and the credential supplied to run the
+// test — an authorization code, or a directory user's password.
+func redactTestIdentityProviderRequest(r *v1pb.TestIdentityProviderRequest) *v1pb.TestIdentityProviderRequest {
+	if r == nil {
+		return nil
+	}
+	r = proto.CloneOf(r)
+	r.IdentityProvider = redactIdentityProvider(r.IdentityProvider)
+	switch context := r.GetContext().(type) {
+	case *v1pb.TestIdentityProviderRequest_Oauth2Context:
+		context.Oauth2Context.Code = maskedString
+	case *v1pb.TestIdentityProviderRequest_OidcContext:
+		context.OidcContext.Code = maskedString
+	case *v1pb.TestIdentityProviderRequest_LdapContext:
+		context.LdapContext.Password = maskedString
+	default:
+	}
+	return r
+}
+
+// redactSwitchWorkspaceRequest masks the MFA proofs, the same three fields
+// redactLoginRequest masks when they arrive on Login.
+func redactSwitchWorkspaceRequest(r *v1pb.SwitchWorkspaceRequest) *v1pb.SwitchWorkspaceRequest {
+	if r == nil {
+		return nil
+	}
+	r = proto.CloneOf(r)
+	if r.OtpCode != nil {
+		r.OtpCode = &maskedString
+	}
+	if r.RecoveryCode != nil {
+		r.RecoveryCode = &maskedString
+	}
+	if r.MfaTempToken != nil {
+		r.MfaTempToken = &maskedString
 	}
 	return r
 }
