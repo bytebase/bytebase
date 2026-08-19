@@ -732,7 +732,7 @@ type mcpGateResult struct {
 // it here keeps the class rules provable without a database, and
 // TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation proves the real
 // interceptor honors the mark.
-func invokeMCPGate(t *testing.T, stores mcpCeilingStore, authCtx *common.AuthContext, procedure string, req connect.AnyRequest) mcpGateResult {
+func invokeMCPGate(t *testing.T, stores mcpCeilingReader, authCtx *common.AuthContext, procedure string, req connect.AnyRequest) mcpGateResult {
 	t.Helper()
 	out := mcpGateResult{}
 	next := func(_ context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {

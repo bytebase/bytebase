@@ -256,11 +256,12 @@ var mcpServingClasses = map[storepb.WorkspaceProfileSetting_MCPCapability][]v1pb
 	storepb.WorkspaceProfileSetting_READ_WRITE: {v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE},
 }
 
-// mcpCeilingStore is the whole of what the gate needs from the store: one live
+// mcpCeilingReader is the whole of what the gate needs from the store: one live
 // read of the workspace's ceiling. *store.Store satisfies it; a test supplies
 // its own, which is what lets a READ_ONLY ceiling be exercised at all before
-// 1b-3 lets one connect.
-type mcpCeilingStore interface {
+// 1b-3 lets one connect. Named for what it does rather than for what satisfies
+// it, per the convention for a single-method interface.
+type mcpCeilingReader interface {
 	GetMCPCapabilityUncached(ctx context.Context, workspace string) (storepb.WorkspaceProfileSetting_MCPCapability, error)
 }
 
@@ -334,12 +335,12 @@ type mcpCeilingStore interface {
 //     one that would also bind the console. Recorded so the next reader knows
 //     it was decided rather than missed.
 type internalMCPGateInterceptor struct {
-	store mcpCeilingStore
+	store mcpCeilingReader
 }
 
 // NewInternalMCPGateInterceptor returns the MCP ceiling gate for the internal
 // chain. See internalMCPGateInterceptor for what it enforces.
-func NewInternalMCPGateInterceptor(stores mcpCeilingStore) connect.Interceptor {
+func NewInternalMCPGateInterceptor(stores mcpCeilingReader) connect.Interceptor {
 	return &internalMCPGateInterceptor{store: stores}
 }
 

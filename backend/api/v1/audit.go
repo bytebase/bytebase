@@ -552,6 +552,9 @@ func getRequestString(request any) (string, error) {
 		if request == nil || reflect.ValueOf(request).IsNil() {
 			return nil
 		}
+		if redacted, ok := redactMCPDenialRequest(request); ok {
+			return redacted
+		}
 		switch r := request.(type) {
 		case *v1pb.ExportRequest:
 			return redactExportRequest(r)
@@ -588,44 +591,6 @@ func getRequestString(request any) (string, error) {
 		case *v1pb.RemoveWebhookRequest:
 			r = proto.CloneOf(r)
 			r.Webhook = redactWebhook(r.Webhook)
-			return r
-		// The six below carry something in a request that produced no audit
-		// row until the MCP gate started recording its denials. The methods
-		// themselves are still unaudited; what reaches here is a refusal, and
-		// a refusal that transcribed the secret it refused would be worse than
-		// the silence it replaced. Every secret masked here is already masked
-		// on a sibling method that has always been audited.
-		//
-		// Which six is not a judgment to repeat by eye — the first pass of it
-		// missed ListInstanceDatabase, whose request carries a whole Instance
-		// and therefore every data-source credential the product has. The
-		// population is derived from the descriptors instead, and
-		// TestLintDenialRequestsAreReviewedForRedaction fails when a method
-		// joins it.
-		case *v1pb.TestWebhookRequest:
-			r = proto.CloneOf(r)
-			r.Webhook = redactWebhook(r.Webhook)
-			return r
-		case *v1pb.TestEmailSettingRequest:
-			r = proto.CloneOf(r)
-			r.EmailSetting = redactEmailSetting(r.EmailSetting)
-			return r
-		case *v1pb.TestIdentityProviderRequest:
-			return redactTestIdentityProviderRequest(r)
-		case *v1pb.SwitchWorkspaceRequest:
-			return redactSwitchWorkspaceRequest(r)
-		case *v1pb.AIChatRequest:
-			return redactAIChatRequest(r)
-		case *v1pb.ListInstanceDatabaseRequest:
-			// The request carries a whole Instance — "we need to set this
-			// field if the target instance is not created yet" — so it holds
-			// every data-source credential: password, ssl_key,
-			// ssh_private_key, the Kerberos keytab, the AWS/Azure/GCP
-			// credentials, the external-secret token and master_password.
-			// redactInstance is the same helper CreateInstance and
-			// UpdateInstance already use.
-			r = proto.CloneOf(r)
-			r.Instance = redactInstance(r.Instance)
 			return r
 		case *v1pb.CreateReleaseRequest:
 			r = proto.CloneOf(r)
@@ -714,6 +679,56 @@ func getRequestString(request any) (string, error) {
 		return "", err
 	}
 	return string(b), nil
+}
+
+// redactMCPDenialRequest handles the requests that reach the audit log only
+// because MCP denials are recorded. The methods themselves are unaudited; what
+// arrives here is a refusal, and a refusal that transcribed the secret it
+// refused would be worse than the silence it replaced. Every secret masked here
+// is already masked on a sibling method that has always been audited.
+//
+// It is a function rather than six more arms of getRequestString's switch
+// because it is one population with one reason for existing, and that reason is
+// worth stating once where a reader can find it.
+//
+// Which six is not a judgment to repeat by eye — the first pass of it missed
+// ListInstanceDatabase, whose request carries a whole Instance and therefore
+// every data-source credential the product has. The population is derived from
+// the descriptors instead, and TestLintDenialRequestsAreReviewedForRedaction
+// fails when a method joins it.
+//
+// The bool reports whether this was one of them, so an unrelated request falls
+// through to the main switch untouched.
+func redactMCPDenialRequest(request any) (protoreflect.ProtoMessage, bool) {
+	switch r := request.(type) {
+	case *v1pb.TestWebhookRequest:
+		r = proto.CloneOf(r)
+		r.Webhook = redactWebhook(r.Webhook)
+		return r, true
+	case *v1pb.TestEmailSettingRequest:
+		r = proto.CloneOf(r)
+		r.EmailSetting = redactEmailSetting(r.EmailSetting)
+		return r, true
+	case *v1pb.TestIdentityProviderRequest:
+		return redactTestIdentityProviderRequest(r), true
+	case *v1pb.SwitchWorkspaceRequest:
+		return redactSwitchWorkspaceRequest(r), true
+	case *v1pb.AIChatRequest:
+		return redactAIChatRequest(r), true
+	case *v1pb.ListInstanceDatabaseRequest:
+		// The request carries a whole Instance — "we need to set this
+		// field if the target instance is not created yet" — so it holds
+		// every data-source credential: password, ssl_key,
+		// ssh_private_key, the Kerberos keytab, the AWS/Azure/GCP
+		// credentials, the external-secret token and master_password.
+		// redactInstance is the same helper CreateInstance and
+		// UpdateInstance already use.
+		r = proto.CloneOf(r)
+		r.Instance = redactInstance(r.Instance)
+		return r, true
+	default:
+		return nil, false
+	}
 }
 
 func getResponseString(response any) (string, error) {
