@@ -128,6 +128,72 @@ func TestManagerCompensatesConcreteDiscoveryFailure(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestManagerCompensatesWhenWorkspaceDeletedDuringProvisioning(t *testing.T) {
+	ctx, db, s, target, manager := newConcreteManager(t)
+	const advisoryLockID = 4243
+	lockConn, err := db.Conn(ctx)
+	require.NoError(t, err)
+	defer lockConn.Close()
+	_, err = lockConn.ExecContext(ctx, "SELECT pg_advisory_lock($1)", advisoryLockID)
+	require.NoError(t, err)
+	lockReleased := false
+	defer func() {
+		if !lockReleased {
+			_, _ = lockConn.ExecContext(context.Background(), "SELECT pg_advisory_unlock($1)", advisoryLockID)
+		}
+	}()
+	_, err = db.ExecContext(ctx, fmt.Sprintf(`
+		CREATE FUNCTION block_sample_instance_activation() RETURNS trigger
+		LANGUAGE plpgsql AS $$
+		BEGIN
+			PERFORM pg_advisory_xact_lock(%d);
+			RETURN NEW;
+		END;
+		$$;
+		CREATE TRIGGER block_sample_instance_activation
+		BEFORE INSERT ON instance
+		FOR EACH ROW
+		WHEN (NEW.resource_id LIKE 'sample-%%')
+		EXECUTE FUNCTION block_sample_instance_activation();
+	`, advisoryLockID))
+	require.NoError(t, err)
+
+	prepareErr := make(chan error, 1)
+	go func() {
+		_, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+		prepareErr <- err
+	}()
+	require.Eventually(t, func() bool {
+		var waiting bool
+		err := db.QueryRowContext(ctx, `
+			SELECT EXISTS (
+				SELECT 1
+				FROM pg_locks
+				WHERE locktype = 'advisory' AND objid = $1 AND NOT granted
+			)
+		`, advisoryLockID).Scan(&waiting)
+		return err == nil && waiting
+	}, 30*time.Second, 50*time.Millisecond)
+	require.NoError(t, s.DeleteWorkspace(ctx, "workspace-a"))
+	_, err = lockConn.ExecContext(ctx, "SELECT pg_advisory_unlock($1)", advisoryLockID)
+	require.NoError(t, err)
+	lockReleased = true
+
+	err = <-prepareErr
+	require.Equal(t, FailureFailedPrecondition, FailureKindOf(err))
+	require.Nil(t, mustGetSampleProjectInstance(ctx, t, s))
+	assertAllocationAbsent(ctx, t, target, sampleNames("workspace-a"))
+	var activeInstances int
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT COUNT(*)
+		FROM instance
+		WHERE workspace = 'workspace-a'
+			AND resource_id LIKE 'sample-%'
+			AND deleted = FALSE
+	`).Scan(&activeInstances))
+	require.Zero(t, activeInstances)
+}
+
 func TestManagerPersistsAndRecoversConcreteProvisionOwnership(t *testing.T) {
 	ctx, _, s, target, manager := newConcreteManager(t)
 	names := sampleNames("workspace-a")

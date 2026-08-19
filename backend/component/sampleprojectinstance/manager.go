@@ -14,6 +14,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
@@ -389,7 +390,11 @@ func (m *Manager) prepareLocked(
 		return m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, errors.New("sample project instance discovery invariant failed"))
 	}
 	if err := tx.SetExpiration(workCtx, m.clock().Add(sampleLifetime)); err != nil {
-		return m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, errors.Join(errors.New("failed to activate sample project instance"), err))
+		activationErr := errors.Join(errors.New("failed to activate sample project instance"), err)
+		if common.ErrorCode(err) == common.NotFound {
+			activationErr = newFailure(FailureFailedPrecondition, activationErr)
+		}
+		return m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, activationErr)
 	}
 	return prepareOutcome{
 		instance:            synced,

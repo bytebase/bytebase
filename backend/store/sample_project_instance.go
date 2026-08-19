@@ -141,8 +141,25 @@ func (s *Store) WithLockedSampleProjectInstance(
 	return nil
 }
 
-// SetExpiration sets an immutable expiration on the locked reservation.
+// SetExpiration activates the locked reservation only while its workspace is
+// still active, then sets an immutable expiration.
 func (tx *SampleProjectInstanceTx) SetExpiration(ctx context.Context, expiresAt time.Time) error {
+	var workspaceDeleted bool
+	if err := tx.tx.QueryRowContext(ctx, `
+		SELECT deleted
+		FROM workspace
+		WHERE resource_id = $1
+		FOR UPDATE
+	`, tx.workspace).Scan(&workspaceDeleted); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return common.Errorf(common.NotFound, "workspace %s not found", tx.workspace)
+		}
+		return errors.Wrapf(err, "failed to lock workspace %s for sample Project Instance activation", tx.workspace)
+	}
+	if workspaceDeleted {
+		return common.Errorf(common.NotFound, "workspace %s is deleted", tx.workspace)
+	}
+
 	result, err := tx.tx.ExecContext(ctx, `
 		UPDATE sample_project_instance
 		SET expires_at = $1

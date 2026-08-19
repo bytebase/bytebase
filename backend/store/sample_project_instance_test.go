@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
@@ -128,6 +129,98 @@ func TestWithLockedSampleProjectInstanceAppliesImmutableLifecycleState(t *testin
 	})
 	require.Error(t, err)
 	require.Equal(t, &expiresAt, activated.ExpiresAt)
+}
+
+func TestSetSampleProjectInstanceExpirationSerializesWithWorkspaceDeletion(t *testing.T) {
+	ctx, db, s := newSampleProjectInstanceFixture(t)
+	expiresAt := time.Date(2026, time.August, 24, 9, 0, 0, 0, time.UTC)
+
+	t.Run("deletion wins", func(t *testing.T) {
+		_, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-a"))
+		require.NoError(t, err)
+
+		deleteTx, err := db.BeginTx(ctx, nil)
+		require.NoError(t, err)
+		deletionCommitted := false
+		defer func() {
+			if !deletionCommitted {
+				_ = deleteTx.Rollback()
+			}
+		}()
+		_, err = deleteTx.ExecContext(ctx, "UPDATE workspace SET deleted = TRUE WHERE resource_id = 'workspace-a'")
+		require.NoError(t, err)
+
+		activationErr := make(chan error, 1)
+		go func() {
+			activationErr <- s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
+				return tx.SetExpiration(ctx, expiresAt)
+			})
+		}()
+		require.Eventually(t, func() bool {
+			var waiting bool
+			err := db.QueryRowContext(ctx, `
+				SELECT EXISTS (
+					SELECT 1
+					FROM pg_stat_activity
+					WHERE wait_event_type = 'Lock'
+						AND query LIKE '%SELECT deleted%FROM workspace%FOR UPDATE%'
+				)
+			`).Scan(&waiting)
+			return err == nil && waiting
+		}, 5*time.Second, 10*time.Millisecond)
+		require.NoError(t, deleteTx.Commit())
+		deletionCommitted = true
+		err = <-activationErr
+		require.Equal(t, common.NotFound, common.ErrorCode(err))
+
+		reservation, err := s.GetSampleProjectInstance(ctx, "workspace-a")
+		require.NoError(t, err)
+		require.Nil(t, reservation.ExpiresAt)
+	})
+
+	t.Run("activation wins", func(t *testing.T) {
+		_, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-b"))
+		require.NoError(t, err)
+
+		activationReady := make(chan struct{})
+		finishActivation := make(chan struct{})
+		activationErr := make(chan error, 1)
+		go func() {
+			activationErr <- s.WithLockedSampleProjectInstance(ctx, "workspace-b", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
+				if err := tx.SetExpiration(ctx, expiresAt); err != nil {
+					return err
+				}
+				close(activationReady)
+				<-finishActivation
+				return nil
+			})
+		}()
+		<-activationReady
+
+		deletionErr := make(chan error, 1)
+		go func() {
+			deletionErr <- s.DeleteWorkspace(ctx, "workspace-b")
+		}()
+		require.Eventually(t, func() bool {
+			var waiting bool
+			err := db.QueryRowContext(ctx, `
+				SELECT EXISTS (
+					SELECT 1
+					FROM pg_stat_activity
+					WHERE wait_event_type = 'Lock'
+						AND query LIKE 'UPDATE workspace SET deleted = TRUE%'
+				)
+			`).Scan(&waiting)
+			return err == nil && waiting
+		}, 5*time.Second, 10*time.Millisecond)
+		close(finishActivation)
+		require.NoError(t, <-activationErr)
+		require.NoError(t, <-deletionErr)
+
+		reservation, err := s.GetSampleProjectInstance(ctx, "workspace-b")
+		require.NoError(t, err)
+		require.Equal(t, &expiresAt, reservation.ExpiresAt)
+	})
 }
 
 func TestWithLockedSampleProjectInstanceResetsStaleReservationAndCountsCleanup(t *testing.T) {
