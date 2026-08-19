@@ -4,11 +4,11 @@ import { useTranslation } from "react-i18next";
 import {
   ACCOUNT_ROUTE,
   isSqlEditorRouteName,
-  SQL_EDITOR_HOME_MODULE,
   useCurrentRoute,
   useNavigate,
   WORKSPACE_ROUTE_LANDING,
 } from "@/app/router";
+import { SQLEditorButton } from "@/components/SQLEditorButton";
 import { UserAvatar } from "@/components/UserAvatar";
 import {
   DropdownMenu,
@@ -89,7 +89,8 @@ export function ProfileMenuTrigger({
 
   const logoClass = size === "small" ? "mr-2" : "mr-4";
 
-  const sqlEditorMenuLabel = isSqlEditorRouteName(route.name)
+  const isInSQLEditor = isSqlEditorRouteName(route.name);
+  const sqlEditorMenuLabel = isInSQLEditor
     ? t("settings.general.workspace.default-landing-page.go-to-workspace")
     : t("settings.general.workspace.default-landing-page.go-to-sql-editor");
 
@@ -101,9 +102,7 @@ export function ProfileMenuTrigger({
 
   const handleWorkspaceToggle = () => {
     const target = navigate.resolve({
-      name: isSqlEditorRouteName(route.name)
-        ? WORKSPACE_ROUTE_LANDING
-        : SQL_EDITOR_HOME_MODULE,
+      name: WORKSPACE_ROUTE_LANDING,
     });
     setOpen(false);
     window.open(target.fullPath, "_blank", "noopener,noreferrer");
@@ -238,9 +237,23 @@ export function ProfileMenuTrigger({
             </DropdownMenuItem>
           ) : null}
 
-          <DropdownMenuItem onClick={handleWorkspaceToggle}>
-            {sqlEditorMenuLabel}
-          </DropdownMenuItem>
+          {isInSQLEditor ? (
+            <DropdownMenuItem onClick={handleWorkspaceToggle}>
+              {sqlEditorMenuLabel}
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem
+              render={
+                <SQLEditorButton
+                  openInNewTab
+                  appearance="secondary"
+                  size="sm"
+                  className="w-full justify-start"
+                  label={sqlEditorMenuLabel}
+                />
+              }
+            />
+          )}
 
           <DropdownMenuSeparator className="mx-0" />
 
