@@ -14,7 +14,10 @@ const mocks = vi.hoisted(() => ({
   uploadLicense: vi.fn(),
   emitStorageChangedEvent: vi.fn(),
   push: vi.fn(),
-  resolve: vi.fn(({ name }: { name: string }) => ({ fullPath: `/${name}` })),
+  resolve: vi.fn(({ name }: { name: string }) => ({
+    fullPath: `/${name}`,
+    href: `/${name}`,
+  })),
   currentRoute: {
     name: "sql-editor.home",
     fullPath: "/sql-editor",
@@ -27,6 +30,10 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("react-i18next", () => ({
+  initReactI18next: {
+    init: vi.fn(),
+    type: "3rdParty",
+  },
   useTranslation: () => ({
     i18n: {
       language: "en-US",
@@ -73,10 +80,12 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
   DropdownMenuItem: ({
     children,
     onClick,
+    render,
   }: {
-    children: ReactElement | string;
+    children?: ReactElement | string;
     onClick?: () => void;
-  }) => <button onClick={onClick}>{children}</button>,
+    render?: ReactElement;
+  }) => render ?? <button onClick={onClick}>{children}</button>,
   DropdownMenuSeparator: () => <div />,
   DropdownMenuSubmenu: ({ children }: { children: ReactElement[] }) => (
     <div>{children}</div>
@@ -101,6 +110,10 @@ vi.mock("./common", () => ({
 }));
 
 vi.mock("@/app/router", () => ({
+  router: {
+    push: mocks.push,
+    resolve: mocks.resolve,
+  },
   useCurrentRoute: () => mocks.currentRoute,
   useNavigate: () => ({
     push: mocks.push,
@@ -110,7 +123,9 @@ vi.mock("@/app/router", () => ({
   AUTH_SIGNIN_MODULE: "auth.signin",
   WORKSPACE_ROUTE_LANDING: "workspace.landing",
   ACCOUNT_ROUTE: "account",
+  SQL_EDITOR_DATABASE_MODULE: "sql-editor.database",
   SQL_EDITOR_HOME_MODULE: "sql-editor.home",
+  SQL_EDITOR_PROJECT_MODULE: "sql-editor.project",
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
@@ -170,6 +185,7 @@ beforeEach(async () => {
   vi.clearAllMocks();
   mocks.hideQuickStart = false;
   mocks.isDev = false;
+  mocks.currentRoute.name = "sql-editor.home";
   window.open = vi.fn();
   ({ ProfileMenuTrigger } = await import("./ProfileMenuTrigger"));
 });
@@ -225,6 +241,23 @@ describe("ProfileMenuTrigger", () => {
       logoutButton?.click();
     });
     expect(mocks.logout).toHaveBeenCalled();
+
+    unmount();
+  });
+
+  test("renders the shared SQL Editor link outside SQL Editor", () => {
+    mocks.currentRoute.name = "workspace.landing";
+    const { container, render, unmount } = renderIntoContainer(
+      <ProfileMenuTrigger size="medium" link />
+    );
+
+    render();
+
+    const sqlEditorLink = Array.from(container.querySelectorAll("a")).find(
+      (link) => link.textContent?.includes("Go to SQL Editor")
+    );
+    expect(sqlEditorLink).not.toBeUndefined();
+    expect(sqlEditorLink).toHaveAttribute("target", "_blank");
 
     unmount();
   });

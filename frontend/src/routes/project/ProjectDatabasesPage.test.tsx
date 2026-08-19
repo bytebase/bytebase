@@ -68,6 +68,9 @@ vi.mock("@/app/router", () => ({
     name: mocks.routerCurrentName,
     query: mocks.routerCurrentQuery,
   }),
+  SQL_EDITOR_DATABASE_MODULE: "sql-editor.database",
+  SQL_EDITOR_HOME_MODULE: "sql-editor.home",
+  SQL_EDITOR_PROJECT_MODULE: "sql-editor.project",
 }));
 
 vi.mock("@/app/analytics/provider", () => ({
@@ -569,13 +572,12 @@ describe("ProjectDatabasesPage", () => {
       "projects/demo/instances/prod/databases/app",
     ]);
 
-    const sqlEditorButton = Array.from(
-      container.querySelectorAll("button")
-    ).find((button) =>
-      button.textContent?.includes(
+    const sqlEditorButton = Array.from(container.querySelectorAll("a")).find(
+      (link) =>
+        link.textContent?.includes(
         "db.project-instance-synced-sql-editor-action"
       )
-    ) as HTMLButtonElement;
+    ) as HTMLAnchorElement;
     expect(sqlEditorButton.className).toContain("bg-accent");
     expect(nextActionButton.className).toContain("border-control-border");
     expect(

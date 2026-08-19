@@ -1,23 +1,14 @@
-import {
-  Bot,
-  CircleDot,
-  Menu,
-  MessagesSquare,
-  SquareTerminal,
-} from "lucide-react";
+import { Bot, CircleDot, Menu, MessagesSquare } from "lucide-react";
 import { useMemo, useSyncExternalStore } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
 import {
-  SQL_EDITOR_DATABASE_MODULE,
-  SQL_EDITOR_HOME_MODULE,
-  SQL_EDITOR_PROJECT_MODULE,
-  useCurrentRoute,
   useNavigate,
   WORKSPACE_ROUTE_LANDING,
   WORKSPACE_ROUTE_MY_ISSUES,
 } from "@/app/router";
 import { BytebaseLogo } from "@/components/BytebaseLogo";
+import { SQLEditorButton } from "@/components/SQLEditorButton";
 import { Button } from "@/components/ui/button";
 import { useRecentVisit, useSubscription } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
@@ -49,7 +40,6 @@ export function DashboardHeader({
   const { t } = useTranslation();
   const { record } = useRecentVisit();
   const { subscription } = useSubscription();
-  const route = useCurrentRoute();
   const navigate = useNavigate();
   const currentPlan = subscription?.plan ?? PlanType.FREE;
   const windowWidth = useSyncExternalStore(
@@ -59,40 +49,6 @@ export function DashboardHeader({
   );
   const isDesktopLabelVisible = windowWidth >= 640;
   const isLargeLabelVisible = windowWidth >= 1024;
-
-  const sqlEditorHref = useMemo(() => {
-    const projectId = route.params.projectId as string | undefined;
-    const instanceId = route.params.instanceId as string | undefined;
-    const databaseName = route.params.databaseName as string | undefined;
-
-    if (projectId) {
-      if (instanceId && databaseName) {
-        return navigate.resolve({
-          name: SQL_EDITOR_DATABASE_MODULE,
-          params: {
-            project: projectId,
-            instance: instanceId,
-            database: databaseName,
-          },
-        }).href;
-      }
-      return navigate.resolve({
-        name: SQL_EDITOR_PROJECT_MODULE,
-        params: {
-          project: projectId,
-        },
-      }).href;
-    }
-
-    return navigate.resolve({
-      name: SQL_EDITOR_HOME_MODULE,
-    }).href;
-  }, [
-    navigate,
-    route.params.databaseName,
-    route.params.instanceId,
-    route.params.projectId,
-  ]);
 
   const myIssueHref = useMemo(
     () =>
@@ -164,20 +120,18 @@ export function DashboardHeader({
           </Button>
         ) : null}
 
-        <Button
+        <SQLEditorButton
           size="sm"
           appearance="outline"
           aria-label={t("sql-editor.self")}
           title={t("sql-editor.self")}
-          onClick={() => {
-            window.open(sqlEditorHref, "_blank", "noopener,noreferrer");
-          }}
-        >
-          <SquareTerminal className="h-4 w-4" />
-          {isLargeLabelVisible ? (
-            <span className="whitespace-nowrap">{t("sql-editor.self")}</span>
-          ) : null}
-        </Button>
+          openInNewTab
+          label={
+            isLargeLabelVisible ? (
+              <span className="whitespace-nowrap">{t("sql-editor.self")}</span>
+            ) : null
+          }
+        />
 
         <Button
           size="sm"

@@ -13,8 +13,8 @@ import {
   PROJECT_V1_ROUTE_DATABASES,
   SQL_EDITOR_DATABASE_MODULE,
 } from "@/app/router/handles";
-import { RouterLink } from "@/components/RouterLink";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { SQLEditorButton } from "@/components/SQLEditorButton";
+import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useIntroStateByKey } from "@/hooks/useAppState";
 import { preCreateIssue } from "@/lib/plan/issue";
@@ -30,11 +30,7 @@ import {
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import { SearchQueryHistoriesRequestSchema } from "@/types/proto-es/v1/query_history_service_pb";
-import {
-  autoSQLEditorDatabaseRoute,
-  extractProjectResourceName,
-  hasWorkspacePermissionV2,
-} from "@/utils";
+import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
 
 type SetupKeys = {
   hasProject: boolean;
@@ -225,14 +221,14 @@ export function WorkspaceSetupGuide() {
     currentRoute.name,
   ]);
 
-  const databaseRoute = useMemo(() => {
+  const sqlEditorDatabase = useMemo(() => {
     if (!setupState.databaseName || !setupState.projectName) {
       return undefined;
     }
-    return autoSQLEditorDatabaseRoute({
+    return {
       name: setupState.databaseName,
       project: setupState.projectName,
-    });
+    };
   }, [setupState.databaseName, setupState.projectName]);
 
   const steps = useMemo<SetupStep[]>(
@@ -412,14 +408,13 @@ export function WorkspaceSetupGuide() {
               {t("workspace-setup-guide.actions.change")}
             </Button>
           )}
-        {actionStep.key === "hasFirstQuery" && databaseRoute && (
-          <RouterLink
+        {actionStep.key === "hasFirstQuery" && sqlEditorDatabase && (
+          <SQLEditorButton
             data-testid="active-action"
-            to={databaseRoute}
-            className={buttonVariants({ size: "sm" })}
-          >
-            {t("workspace-setup-guide.actions.query")}
-          </RouterLink>
+            database={sqlEditorDatabase}
+            size="sm"
+            label={t("workspace-setup-guide.actions.query")}
+          />
         )}
         <Button
           type="button"
