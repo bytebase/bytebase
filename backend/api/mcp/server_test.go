@@ -122,6 +122,45 @@ func TestMCPAuthMiddleware(t *testing.T) {
 	}
 }
 
+// TestNewServerRequiresStore keeps the constructor's nil check honest. A nil
+// *store.Store assigned to the serverStore interface produces a NON-nil
+// interface holding a nil pointer, so no later nil test catches it and the
+// failure would surface as a nil-receiver panic on the first ceiling read
+// inside authMiddleware.
+func TestNewServerRequiresStore(t *testing.T) {
+	_, err := NewServer(nil, &config.Profile{}, "test-secret", nil)
+	require.Error(t, err)
+}
+
+// TestMCPCeilingReadFailureRejectsTheConnection pins mcpCapability's error arm
+// at the connection gate: a ceiling that cannot be read is not a ceiling that
+// permits. The store-level fail-closed cases are covered against a real
+// database in TestMCPCeilingStoredValueFailsClosed; this one covers the arm
+// above them, which maps ANY read failure to DISABLED.
+func TestMCPCeilingReadFailureRejectsTheConnection(t *testing.T) {
+	secret := "test-secret-key"
+	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
+	store := newTestServerStore()
+	store.capabilityErr = errors.New("db unreachable")
+	s, err := newServerWithStore(store, profile, secret, nil)
+	require.NoError(t, err)
+
+	e := echo.New()
+	req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+tokenForWorkspace(t, secret, store.workspaceID))
+	rec := httptest.NewRecorder()
+	c := e.NewContext(req, rec)
+	handler := s.authMiddleware(func(c *echo.Context) error {
+		return c.String(http.StatusOK, "success")
+	})
+	if err := handler(c); err != nil {
+		echo.DefaultHTTPErrorHandler(true)(c, err)
+	}
+	require.Equal(t, http.StatusForbidden, rec.Code,
+		"a ceiling the server cannot read must refuse the connection")
+}
+
 func TestMCPAuthFailsExplicitlyWithoutExternalURL(t *testing.T) {
 	s := &Server{
 		store:   newTestServerStore(),

@@ -243,7 +243,7 @@ type mcpCeilingStore interface {
 	GetMCPCapabilityUncached(ctx context.Context, workspace string) (storepb.WorkspaceProfileSetting_MCPCapability, error)
 }
 
-// NewInternalMCPGateInterceptor refuses, before dispatch, every request an MCP
+// internalMCPGateInterceptor refuses, before dispatch, every request an MCP
 // session may not make. The rule is one line — effective = ceiling ∩ RBAC — and
 // this interceptor is the ceiling half: it never grants anything, and ACL runs
 // after it exactly as before, so a caller still needs the permission for
@@ -262,52 +262,115 @@ type mcpCeilingStore interface {
 //
 // The ceiling is read live, per request, with no caching anywhere in the path
 // (store.GetMCPCapabilityUncached). An admin tightening the ceiling binds the
-// next request of a session already open; work already admitted finishes. A
-// ceiling that cannot be read refuses, which is the only safe reading of "the
-// policy is unknown".
+// next request of a session already open; work already admitted finishes.
 //
-// Denials reach the audit log whatever the method's audit annotation says: the
+// A policy denial is recorded whatever the method's audit annotation says: the
 // gate marks the outcome and the audit interceptor records it (see
-// common.SetMCPPolicyDenied). Without that, the denials of Refresh,
-// SwitchWorkspace, TestIdentityProvider and TestEmailSetting would leave no
-// trace at all, and the last two are the rows an operator would most want —
-// each would have carried a stored secret to an address the agent chose.
+// common.SetMCPPolicyDenied). 47 of the 121 refused methods carry no audit
+// annotation — the 4 FORBIDDEN ones that were silent before this gate
+// (Refresh, SwitchWorkspace, TestIdentityProvider, TestEmailSetting) plus 43
+// EXCLUDED ones — and TestEmailSetting and TestIdentityProvider are the rows an
+// operator would most want, since each would have carried a stored secret to an
+// address the agent chose. Recording requests that were never recorded is why
+// getRequestString grew redactors in the same change (audit.go).
 //
-// One gap survives this PR, and it is worth knowing because nothing in the
-// annotations shows it. RequestPasswordReset, ResetPassword and
-// SendEmailLoginCode are allow_without_credential, so createAuditLog takes
-// their audit parent ONLY from what the handler announced
-// (handlerValidatedWorkspaceMethod, audit.go) — an unvalidated workspace on an
-// unauthenticated method would let anyone write rows into someone else's. This
-// gate refuses before dispatch, so the handler never runs and no parent is ever
-// set. Their denials are still silent, TestMCPResetFlowDenialsAreSilent pins
-// that they are, and closing it means letting the audit path trust the
-// workspace of the delegated credential the internal chain already verified.
-func NewInternalMCPGateInterceptor(stores mcpCeilingStore) connect.Interceptor {
-	return connect.UnaryInterceptorFunc(func(next connect.UnaryFunc) connect.UnaryFunc {
-		return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-			if err := refuseMCPRequest(ctx, stores, req); err != nil {
-				// Record the refusal before returning it: the audit
-				// interceptor wraps this one and reads the mark when the
-				// request comes back out.
-				common.SetMCPPolicyDenied(ctx)
-				return nil, err
-			}
-			return next(ctx, req)
-		}
-	})
+// A ceiling that CANNOT BE READ is a different outcome and gets a different
+// answer: the request is still refused — an unknown policy never permits — but
+// with CodeUnavailable and no policy mark, because a database blip is not a
+// verdict about the caller and must not read as one in the audit log. The /mcp
+// connection gate takes the same line for the same class of failure
+// (backend/api/mcp/server.go answers 503, not 401, when it cannot resolve the
+// audience).
+//
+// Two gaps survive this PR, and both are worth knowing because nothing in the
+// annotations shows either.
+//
+//   - RequestPasswordReset, ResetPassword and SendEmailLoginCode are
+//     allow_without_credential, so createAuditLog takes their audit parent ONLY
+//     from what the handler announced (handlerValidatedWorkspaceMethod,
+//     audit.go) — an unvalidated workspace on an unauthenticated method would
+//     let anyone write rows into someone else's. This gate refuses before
+//     dispatch, so the handler never runs and no parent is ever set. Their
+//     denials are still silent, TestMCPResetFlowDenialsAreSilent pins that they
+//     are, and closing it means letting the audit path trust the workspace of
+//     the delegated credential the internal chain already verified.
+//
+//   - The approval gate contains who APPROVES a change, not who executes one
+//     without an approval to move past. ApproveIssue, RejectIssue and
+//     RetryIssueApproval are FORBIDDEN, but CreatePlan, CreateRollout and
+//     BatchRunTasks are WRITE, and the approval check on the execution path is
+//     guarded on an issue existing (`project.Setting.RequireIssueApproval &&
+//     issueN != nil`, rollout_service.go), so a plan created without an issue
+//     reaches execution with no approval at all. 1b-1 left the call to this PR
+//     and this PR takes it deliberately: they stay WRITE. Composing and running
+//     a change IS the agent's job, the route is no wider than it was before
+//     this gate existed, and the gate cannot express the refusal anyway —
+//     "the plan has no issue" is not a field of either request, so a
+//     request-shape check cannot see it and only a classification change or a
+//     handler-level guard can. Both are outside this PR, and the second is the
+//     one that would also bind the console. Recorded so the next reader knows
+//     it was decided rather than missed.
+type internalMCPGateInterceptor struct {
+	store mcpCeilingStore
 }
 
-// refuseMCPRequest returns the error the gate refuses this request with, or nil
-// to let it through to ACL.
-func refuseMCPRequest(ctx context.Context, stores mcpCeilingStore, req connect.AnyRequest) error {
+// NewInternalMCPGateInterceptor returns the MCP ceiling gate for the internal
+// chain. See internalMCPGateInterceptor for what it enforces.
+func NewInternalMCPGateInterceptor(stores mcpCeilingStore) connect.Interceptor {
+	return &internalMCPGateInterceptor{store: stores}
+}
+
+func (in *internalMCPGateInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
+	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
+		policyDenial, err := in.refuse(ctx, req)
+		if err == nil {
+			return next(ctx, req)
+		}
+		if policyDenial {
+			// Record the refusal before returning it: the audit interceptor
+			// wraps this one and reads the mark when the request comes back
+			// out. Only a verdict about the caller is marked — an unreadable
+			// ceiling and a broken chain are not policy denials.
+			common.SetMCPPolicyDenied(ctx)
+		}
+		return nil, err
+	}
+}
+
+// WrapStreamingClient is a pass-through: the gate guards inbound handlers.
+func (*internalMCPGateInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) connect.StreamingClientFunc {
+	return func(ctx context.Context, spec connect.Spec) connect.StreamingClientConn {
+		return next(ctx, spec)
+	}
+}
+
+// WrapStreamingHandler refuses outright. The gate's rule is per method and its
+// classification vocabulary covers streaming RPCs too, but a streaming handler
+// gets no request message, so the request-shape half of the rule cannot run —
+// and the one streaming v1 RPC, SQLService/AdminExecute, is EXCLUDED anyway
+// (it opens an admin connection to the customer's database). Refusing every
+// stream keeps "every class is enforced at the gate" true without depending on
+// the auth interceptor, which also refuses streams on this chain, continuing to
+// do so.
+func (*internalMCPGateInterceptor) WrapStreamingHandler(connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
+	return func(_ context.Context, conn connect.StreamingHandlerConn) error {
+		return connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+			"%s is not available to MCP sessions: no streaming RPC is served on the MCP transport",
+			conn.Spec().Procedure))
+	}
+}
+
+// refuse returns the error the gate refuses this request with, or nil to let it
+// through to ACL. The bool reports whether the refusal is a verdict about the
+// caller, which is an audited outcome; an infrastructure failure is not.
+func (in *internalMCPGateInterceptor) refuse(ctx context.Context, req connect.AnyRequest) (bool, error) {
 	procedure := req.Spec().Procedure
 	authCtx, ok := common.GetAuthContextFromContext(ctx)
 	if !ok {
 		// The auth interceptor runs first and always sets this. Its absence
 		// means the chain was reordered, and guessing which class a method is
 		// in is exactly the wrong response.
-		return connect.NewError(connect.CodeInternal,
+		return false, connect.NewError(connect.CodeInternal,
 			errors.New("MCP method classification unavailable: no auth context"))
 	}
 
@@ -317,7 +380,7 @@ func refuseMCPRequest(ctx context.Context, stores mcpCeilingStore, req connect.A
 		if !ok {
 			reason = reasonForbiddenClass
 		}
-		return connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+		return true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
 			"%s is not available to MCP sessions because %s. Perform this action signed in to the Bytebase console instead",
 			procedure, reason))
 	case v1pb.MCPMethodClass_EXCLUDED:
@@ -325,46 +388,61 @@ func refuseMCPRequest(ctx context.Context, stores mcpCeilingStore, req connect.A
 		if !ok {
 			reason = reasonExcludedClass
 		}
-		return connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+		return true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
 			"%s is served by no MCP capability ceiling because %s. Perform this action signed in to the Bytebase console instead",
 			procedure, reason))
 	case v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE:
 	default:
-		return connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+		return true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
 			"%s carries no MCP classification, so no MCP session may call it", procedure))
 	}
 
-	if err := refuseByCeiling(ctx, stores, procedure, authCtx.MCPMethodClass); err != nil {
-		return err
+	if policyDenial, err := in.refuseByCeiling(ctx, procedure, authCtx.MCPMethodClass); err != nil {
+		return policyDenial, err
 	}
-	return refuseByRequestShape(procedure, req.Any())
+	if err := refuseByRequestShape(procedure, req.Any()); err != nil {
+		return true, err
+	}
+	return false, nil
 }
 
 // refuseByCeiling holds the method's class against the workspace's live
 // ceiling.
-func refuseByCeiling(ctx context.Context, stores mcpCeilingStore, procedure string, class v1pb.MCPMethodClass) error {
-	ceiling, err := resolveMCPCeiling(ctx, stores)
+func (in *internalMCPGateInterceptor) refuseByCeiling(ctx context.Context, procedure string, class v1pb.MCPMethodClass) (bool, error) {
+	// The internal auth interceptor puts the delegated credential's workspace
+	// on every request it admits, so an empty one means the chain was
+	// reordered — a bug in this process, not an outage, and not a verdict
+	// about the caller.
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	if workspaceID == "" {
+		return false, connect.NewError(connect.CodeInternal, errors.Errorf(
+			"%s cannot be checked against the MCP capability ceiling: no workspace on the request", procedure))
+	}
+	// The store applies the backward-compatible default for a workspace that
+	// never set a ceiling and reports everything it cannot make sense of as an
+	// error.
+	ceiling, err := in.store.GetMCPCapabilityUncached(ctx, workspaceID)
 	if err != nil {
 		// The agent gets no detail: an unreadable policy is an operator
 		// problem, and the error text can carry the workspace's storage state.
-		slog.Error("failed to read the MCP capability ceiling; refusing the request",
-			slog.String("method", procedure), log.BBError(err))
-		return connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+		slog.Warn("failed to read the MCP capability ceiling; refusing the request",
+			slog.String("method", procedure), slog.String("workspace", workspaceID), log.BBError(err))
+		return false, connect.NewError(connect.CodeUnavailable, errors.Errorf(
 			"%s is refused: this workspace's MCP capability ceiling could not be read, so the request fails closed. "+
 				"Retry shortly; if it persists, a workspace admin must set the MCP ceiling again in the workspace settings",
 			procedure))
 	}
 	served, known := mcpServingClasses[ceiling]
 	if !known {
-		return connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+		return true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
 			"%s is refused: this workspace's stored MCP capability ceiling %v is not one this build serves. "+
 				"Ask a workspace admin to set the MCP ceiling to a supported value in the workspace settings",
 			procedure, ceiling))
 	}
 	if slices.Contains(served, class) {
-		return nil
+		return false, nil
 	}
-	return connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+	return true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
 		"%s is a %v method and this workspace's MCP capability ceiling is %v, which serves %s. "+
 			"Ask a workspace admin to raise the MCP ceiling in the workspace settings, "+
 			"or perform this action signed in to the Bytebase console instead",
@@ -381,21 +459,6 @@ func describeServedClasses(served []v1pb.MCPMethodClass) string {
 		names = append(names, class.String())
 	}
 	return strings.Join(names, " and ") + " methods"
-}
-
-// resolveMCPCeiling reads the workspace's live ceiling. The store applies the
-// backward-compatible default for a workspace that never set one and reports
-// everything it cannot make sense of as an error, so all this adds is the
-// workspace itself.
-func resolveMCPCeiling(ctx context.Context, stores mcpCeilingStore) (storepb.WorkspaceProfileSetting_MCPCapability, error) {
-	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	if workspaceID == "" {
-		// The internal auth interceptor puts the delegated credential's
-		// workspace on every request it admits, so an empty one means the
-		// chain was reordered.
-		return storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED, errors.New("no workspace on the request")
-	}
-	return stores.GetMCPCapabilityUncached(ctx, workspaceID)
 }
 
 // mcpRequestShapeRefusals holds the refusals a per-method class cannot express,
@@ -436,25 +499,33 @@ func refuseByRequestShape(procedure string, msg any) error {
 
 // refuseGrantIssueCreation is the CreateIssue carve-out. CreateIssue is WRITE
 // for the database-change issue it exists for, and an agent composing a change
-// is the whole point of the MCP surface. The other issue types are a different
-// method wearing the same name: a ROLE_GRANT issue completes on creation
-// whenever the workspace approval rule produces no template, and completing it
-// writes the project IAM binding for whichever grantee the request names —
-// which is ProjectService/SetIamPolicy, EXCLUDED. An ACCESS_GRANT issue
-// completes into AccessGrantService/ActivateAccessGrant, EXCLUDED for the same
-// reason. Either way the session ends up granting access with no human step.
+// is the whole point of the MCP surface. A ROLE_GRANT issue is a different
+// method wearing the same name: it completes on creation whenever the workspace
+// approval rule produces no template, and completing it writes the project IAM
+// binding for whichever grantee the request names — which is
+// ProjectService/SetIamPolicy, EXCLUDED for exactly that outcome. The session
+// ends up granting access with no human step.
 //
-// It is an allow-list of the one type the class covers, not a deny-list of the
-// two that reach past it. A deny-list would silently admit the next issue type
+// It is an allow-list of the type the class covers, not a deny-list of the ones
+// that reach past it. A deny-list would silently admit the next issue type
 // somebody adds, and adding an issue type is not where anyone would think to
-// re-read the MCP ceiling.
+// re-read the MCP ceiling. ACCESS_GRANT is refused by that allow-list and never
+// reaches the handler in the first place: buildIssueMessage has no arm for it,
+// so the type is an invalid argument there, and those issues are written by
+// AccessGrantService/CreateAccessGrant, which is EXCLUDED.
 //
 // UpdateIssue is here because allow_missing makes it the same method: on an
 // issue that does not exist it calls CreateIssue with the request's own issue
 // (issue_service.go). Refusing only CreateIssue would leave the carve-out a
-// one-line detour. The check fires only when allow_missing is set, so ordinary
-// edits of an existing grant issue are unaffected — a session that meant to
-// edit one and set allow_missing anyway retries without it.
+// one-line detour.
+//
+// An unset type is NOT refused, on either method, and that is the one place the
+// allow-list gives ground deliberately. Nothing can be created from it —
+// buildIssueMessage's default arm rejects an unspecified type as an invalid
+// argument — so refusing it protects nothing, while refusing it would break the
+// ordinary AIP upsert: UpdateIssue takes no `type` update path, so a caller
+// setting allow_missing on an issue that DOES exist sends no type at all, and
+// would meet a denial whose stated mechanism has nothing to do with its call.
 func refuseGrantIssueCreation(msg any) string {
 	var issue *v1pb.Issue
 	switch m := msg.(type) {
@@ -471,10 +542,12 @@ func refuseGrantIssueCreation(msg any) string {
 		// closed.
 		return fmt.Sprintf("its request could not be read as an issue (%T)", msg)
 	}
-	if issue.GetType() == v1pb.Issue_DATABASE_CHANGE {
+	switch issue.GetType() {
+	case v1pb.Issue_DATABASE_CHANGE, v1pb.Issue_TYPE_UNSPECIFIED:
 		return ""
+	default:
+		return fmt.Sprintf(
+			"a %v issue completes on creation whenever the workspace approval rule produces no template, "+
+				"which grants access with no human step", issue.GetType())
 	}
-	return fmt.Sprintf(
-		"a %v issue completes on creation whenever the workspace approval rule produces no template, "+
-			"which grants access with no human step", issue.GetType())
 }

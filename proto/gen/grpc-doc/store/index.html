@@ -13217,7 +13217,9 @@ Deprecated: use just-in-time access request flows instead. </p></td>
                   <td><p>The maximum capability available to MCP (Model Context Protocol) sessions in
 this workspace, acting as an admin-set ceiling. Unset is treated as
 READ_WRITE for backward compatibility; DISABLED rejects all MCP
-connections. Enforced server-side by the /mcp endpoint. </p></td>
+connections. Enforced server-side at two points: the /mcp endpoint decides
+whether a connection is admitted at all, and the ceiling gate on the
+internal MCP chain decides, per request, which method classes are served. </p></td>
                 </tr>
               
                 <tr>

@@ -257,6 +257,16 @@ func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
 	srv, err := NewServer(s, profile, secret, nil)
 	require.NoError(t, err)
 
+	// The connection verdict alone cannot separate "the ceiling parsed as
+	// READ_ONLY" from "the ceiling could not be read", because mcpCapability
+	// maps any error to DISABLED and both refuse. So the resolver is asserted
+	// directly on the row 1b-3 will flip: READ_ONLY must come back as
+	// READ_ONLY, not as an error.
+	readOnly, err := s.GetMCPCapabilityUncached(ctx, "ws-readonly")
+	require.NoError(t, err, "a stored READ_ONLY ceiling is a value this build understands")
+	require.Equal(t, storepb.WorkspaceProfileSetting_READ_ONLY, readOnly,
+		"the cutover in 1b-3 flips the connection gate against this value, so it must resolve as itself")
+
 	for _, row := range rows {
 		t.Run(row.workspace, func(t *testing.T) {
 			e := echo.New()

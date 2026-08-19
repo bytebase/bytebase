@@ -58,7 +58,16 @@ type serverStore interface {
 // NewServer creates a new MCP server. internalAPI is the internal API handler
 // chain tool calls dispatch to in memory; it is never bound to a listener.
 // It takes the concrete store; tests reach newServerWithStore with a fake.
+//
+// The nil check is not redundant with the typed parameter. A nil *store.Store
+// assigned to the serverStore interface field produces a NON-nil interface
+// holding a nil pointer, which no later nil test catches, so without this the
+// failure moves from a returned error here to a nil-receiver panic on the first
+// ceiling read inside authMiddleware.
 func NewServer(stores *store.Store, profile *config.Profile, secret string, internalAPI http.Handler) (*Server, error) {
+	if stores == nil {
+		return nil, errors.New("store is required")
+	}
 	return newServerWithStore(stores, profile, secret, internalAPI)
 }
 

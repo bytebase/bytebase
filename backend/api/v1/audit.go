@@ -79,13 +79,19 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 
 		// The MCP ceiling gate sits inside this interceptor and refuses a call
 		// before it reaches its handler. needAudit reads only the method's own
-		// audit annotation, and four of the methods the gate refuses carry
-		// none — Refresh, SwitchWorkspace, TestIdentityProvider and
-		// TestEmailSetting — so their denials would leave no trace at all.
+		// audit annotation, and 47 of the 121 methods the gate refuses carry
+		// none: the four FORBIDDEN ones that were silent before the gate grew
+		// (Refresh, SwitchWorkspace, TestIdentityProvider, TestEmailSetting)
+		// plus 43 EXCLUDED ones. Their denials would leave no trace at all.
 		// A policy denial is recorded whatever the annotation says: the
 		// annotation decides whether ordinary use of a method is interesting,
 		// and a refused agent is interesting either way. Only the internal MCP
 		// chain runs the gate, so the public chain is unaffected.
+		//
+		// Recording a request that was never recorded is why getRequestString
+		// grew redactors below: a denial must not transcribe the secret it
+		// refused. The rule for a new one is the population above, not the four
+		// named methods.
 		mcpPolicyDenied := false
 		ctx = common.WithSetMCPPolicyDenied(ctx, func() { mcpPolicyDenied = true })
 
@@ -583,12 +589,17 @@ func getRequestString(request any) (string, error) {
 			r = proto.CloneOf(r)
 			r.Webhook = redactWebhook(r.Webhook)
 			return r
-		// The four below carry a secret in a request that produced no audit
+		// The five below carry something in a request that produced no audit
 		// row until the MCP gate started recording its denials. The methods
 		// themselves are still unaudited; what reaches here is a refusal, and
 		// a refusal that transcribed the secret it refused would be worse than
-		// the silence it replaced. Every field masked here is already masked
+		// the silence it replaced. Every secret masked here is already masked
 		// on a sibling method that has always been audited.
+		//
+		// They were chosen by walking all 47 refused-and-unaudited methods and
+		// reading each request message: these five are the ones carrying a
+		// credential or an unbounded body. The rest carry names, filters and
+		// page tokens.
 		case *v1pb.TestWebhookRequest:
 			r = proto.CloneOf(r)
 			r.Webhook = redactWebhook(r.Webhook)
@@ -601,6 +612,8 @@ func getRequestString(request any) (string, error) {
 			return redactTestIdentityProviderRequest(r)
 		case *v1pb.SwitchWorkspaceRequest:
 			return redactSwitchWorkspaceRequest(r)
+		case *v1pb.AIChatRequest:
+			return redactAIChatRequest(r)
 		case *v1pb.CreateReleaseRequest:
 			r = proto.CloneOf(r)
 			r.Release = redactRelease(r.Release)
@@ -833,18 +846,10 @@ func redactLoginRequest(r *v1pb.LoginRequest) *v1pb.LoginRequest {
 	if r.Password != "" {
 		r.Password = maskedString
 	}
-	if r.OtpCode != nil {
-		r.OtpCode = &maskedString
-	}
-	if r.RecoveryCode != nil {
-		r.RecoveryCode = &maskedString
-	}
-	if r.MfaTempToken != nil {
-		r.MfaTempToken = &maskedString
-	}
-	if r.EmailCode != nil {
-		r.EmailCode = &maskedString
-	}
+	maskOptionalString(&r.OtpCode)
+	maskOptionalString(&r.RecoveryCode)
+	maskOptionalString(&r.MfaTempToken)
+	maskOptionalString(&r.EmailCode)
 	if r.IdpContext != nil {
 		r.IdpContext = nil
 	}
@@ -957,7 +962,9 @@ func redactEmailSetting(e *v1pb.EmailSetting) *v1pb.EmailSetting {
 // redactTestIdentityProviderRequest masks both halves of a connection test: the
 // provider's own client secret or LDAP bind password, which redactIdentityProvider
 // already masks on Create and Update, and the credential supplied to run the
-// test — an authorization code, or a directory user's password.
+// test — an authorization code, or a directory user's password. Each arm checks
+// the wrapped message: a oneof wrapper can be set with a nil payload, and this
+// runs on the audit path, where a panic would cost the row.
 func redactTestIdentityProviderRequest(r *v1pb.TestIdentityProviderRequest) *v1pb.TestIdentityProviderRequest {
 	if r == nil {
 		return nil
@@ -966,11 +973,17 @@ func redactTestIdentityProviderRequest(r *v1pb.TestIdentityProviderRequest) *v1p
 	r.IdentityProvider = redactIdentityProvider(r.IdentityProvider)
 	switch context := r.GetContext().(type) {
 	case *v1pb.TestIdentityProviderRequest_Oauth2Context:
-		context.Oauth2Context.Code = maskedString
+		if context.Oauth2Context != nil {
+			context.Oauth2Context.Code = maskedString
+		}
 	case *v1pb.TestIdentityProviderRequest_OidcContext:
-		context.OidcContext.Code = maskedString
+		if context.OidcContext != nil {
+			context.OidcContext.Code = maskedString
+		}
 	case *v1pb.TestIdentityProviderRequest_LdapContext:
-		context.LdapContext.Password = maskedString
+		if context.LdapContext != nil {
+			context.LdapContext.Password = maskedString
+		}
 	default:
 	}
 	return r
@@ -983,16 +996,32 @@ func redactSwitchWorkspaceRequest(r *v1pb.SwitchWorkspaceRequest) *v1pb.SwitchWo
 		return nil
 	}
 	r = proto.CloneOf(r)
-	if r.OtpCode != nil {
-		r.OtpCode = &maskedString
-	}
-	if r.RecoveryCode != nil {
-		r.RecoveryCode = &maskedString
-	}
-	if r.MfaTempToken != nil {
-		r.MfaTempToken = &maskedString
-	}
+	maskOptionalString(&r.OtpCode)
+	maskOptionalString(&r.RecoveryCode)
+	maskOptionalString(&r.MfaTempToken)
 	return r
+}
+
+// redactAIChatRequest drops the conversation instead of masking a field. The
+// request has no secret in it; it has an unbounded body — every message the
+// caller sent, plus the tool definitions — and the audit row stores it whole
+// (the size cap applies to the stdout logger only). AIService/Chat is EXCLUDED
+// and unaudited, so the only rows it ever produces are the gate's denials, and
+// a denial needs the fact of the call, not its transcript.
+func redactAIChatRequest(r *v1pb.AIChatRequest) *v1pb.AIChatRequest {
+	if r == nil {
+		return nil
+	}
+	return &v1pb.AIChatRequest{}
+}
+
+// maskOptionalString masks an optional string field in place when it is set,
+// so the several credential fields spelled `optional string` mask the same way
+// wherever they appear.
+func maskOptionalString(field **string) {
+	if *field != nil {
+		*field = &maskedString
+	}
 }
 
 func redactWebhook(w *v1pb.Webhook) *v1pb.Webhook {

@@ -13,7 +13,6 @@ import (
 	v3high "github.com/pb33f/libopenapi/datamodel/high/v3"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 //go:embed gen/openapi.yaml
@@ -178,7 +177,7 @@ func (idx *OpenAPIIndex) parseSpec() {
 		// anyway (from memory, or from a skill written before the
 		// classification) should meet the gate's actionable denial rather than
 		// "unknown operation".
-		if forbiddenToMCP(path) {
+		if refusedToMCP(path) {
 			idx.hiddenEndpoints = append(idx.hiddenEndpoints, endpoint)
 			idx.byOperation[endpoint.OperationID] = &idx.hiddenEndpoints[len(idx.hiddenEndpoints)-1]
 			continue
@@ -201,17 +200,22 @@ func (idx *OpenAPIIndex) parseSpec() {
 	slices.Sort(idx.services)
 }
 
-// forbiddenToMCP reports whether the RPC behind a connect path is annotated
-// mcp_method_class = FORBIDDEN. A path whose descriptor cannot be resolved is
-// treated as not forbidden: this decides only what to advertise, and hiding a
-// legitimate endpoint because a lookup failed would be the worse failure —
-// enforcement is the interceptor's job and reads the annotation itself.
-func forbiddenToMCP(path string) bool {
+// refusedToMCP reports whether the RPC behind a connect path is served by no
+// MCP capability ceiling — FORBIDDEN and EXCLUDED alike, since the ceiling gate
+// refuses both whatever the workspace is set to. It keys on that predicate
+// rather than on one class, so a class the ceiling stops serving stops being
+// advertised in the same change.
+//
+// A path whose descriptor cannot be resolved is treated as not refused: this
+// decides only what to advertise, and hiding a legitimate endpoint because a
+// lookup failed would be the worse failure — enforcement is the interceptor's
+// job and reads the annotation itself.
+func refusedToMCP(path string) bool {
 	class, err := auth.MCPMethodClassOfProcedure(path)
 	if err != nil {
 		return false
 	}
-	return class == v1pb.MCPMethodClass_FORBIDDEN
+	return auth.MCPClassIsRefused(class)
 }
 
 func extractPermissions(description string) []string {

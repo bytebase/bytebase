@@ -870,53 +870,73 @@ func TestMCPCredentialMintsLeaveDiscovery(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
+	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
+		Name: "workspaces/-",
+	}))
+	a.NoError(err)
+	workspaceName := workspace.Msg.Name
+
 	session := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
 	defer session.Close()
 
-	// Browsing the service must not list the forbidden methods, while the
-	// reads of that same service stay on offer — the assertion is that the
-	// classification is per method, not per service.
+	// Browsing a service must not list a method the session can never call,
+	// and the hiding is per method: a service keeping any served method stays
+	// on the menu with that method on it.
 	//
-	// Each row carries a `served` method as a positive control. Without one,
+	// The positive control comes first and on the same tool: without one,
 	// NotContains over an opaque text blob passes for the wrong reason as soon
 	// as search_api returns anything that is not an endpoint listing — an
-	// unknown service name, an error string, an empty result — and a test that
-	// cannot fail is worse here than no test, because this is the assertion
-	// standing between an agent and a menu of work it can never do.
+	// error string, an empty result — and a test that cannot fail is worse
+	// here than no test, because this is the assertion standing between an
+	// agent and a menu of work it can never do.
+	servedListing := searchAPIOnSession(ctx, t, session, map[string]any{"service": "DatabaseService"})
+	a.Contains(servedListing, "DatabaseService/ListDatabases",
+		"positive control: a service the ceiling serves must really come back as an endpoint listing")
+
+	// These services host the credential mints, and since the ceiling gate
+	// refuses EXCLUDED as well as FORBIDDEN, every one of their methods is now
+	// refused — the mints outright, their read siblings as workspace
+	// administration. So they do not come back as a listing at all.
 	for _, row := range []struct {
-		service   string
-		forbidden []string
-		served    string
+		service string
+		refused []string
 	}{
-		{"ServiceAccountService", []string{"CreateServiceAccount", "UpdateServiceAccount"}, "GetServiceAccount"},
-		{"IdentityProviderService", []string{"CreateIdentityProvider", "UpdateIdentityProvider", "TestIdentityProvider"}, "GetIdentityProvider"},
-		{"WorkloadIdentityService", []string{"CreateWorkloadIdentity", "UpdateWorkloadIdentity"}, "GetWorkloadIdentity"},
-		{"UserService", []string{"CreateUser", "UpdateEmail"}, "GetUser"},
-		{"WorkspaceService", []string{"RotateDirectorySyncToken"}, "GetIamPolicy"},
-		{"SettingService", []string{"TestEmailSetting"}, "GetSetting"},
+		{"ServiceAccountService", []string{"CreateServiceAccount", "UpdateServiceAccount", "GetServiceAccount"}},
+		{"IdentityProviderService", []string{"CreateIdentityProvider", "UpdateIdentityProvider", "TestIdentityProvider"}},
+		{"WorkloadIdentityService", []string{"CreateWorkloadIdentity", "UpdateWorkloadIdentity"}},
+		{"UserService", []string{"CreateUser", "UpdateEmail", "GetUser"}},
+		{"SettingService", []string{"TestEmailSetting", "GetSetting"}},
 	} {
 		listing := searchAPIOnSession(ctx, t, session, map[string]any{"service": row.service})
-		a.Contains(listing, row.service+"/"+row.served,
-			"positive control: %s must really be an endpoint listing", row.service)
-		for _, method := range row.forbidden {
+		a.Contains(listing, "No endpoints found for service: "+row.service,
+			"%s serves no method under any ceiling, so it is not a menu", row.service)
+		for _, method := range row.refused {
 			a.NotContains(listing, row.service+"/"+method,
 				"search_api must not offer %s/%s, which the session can never call", row.service, method)
 		}
 	}
 
-	// The service list is the entry point into discovery. Every service here
-	// keeps at least its reads, so all of them stay listed — a service does
-	// drop out when every one of its methods is forbidden, which is what
-	// happened to AuthService and is pinned in the mcp package. The per-method
-	// hiding is the browse assertion above; this only checks the batch did not
-	// take a whole service off the menu.
+	// WorkspaceService is the mixed case and the one that proves the hiding is
+	// per method rather than per service: it keeps GetWorkspace and
+	// ListWorkspaces, so it stays on the menu, and the token rotation is gone
+	// from it.
+	workspaceListing := searchAPIOnSession(ctx, t, session, map[string]any{"service": "WorkspaceService"})
+	a.Contains(workspaceListing, "WorkspaceService/ListWorkspaces",
+		"a service keeps the methods the ceiling serves")
+	a.NotContains(workspaceListing, "WorkspaceService/RotateDirectorySyncToken",
+		"search_api must not offer the token rotation, which the session can never call")
+
+	// The service list is the entry point into discovery, and a service whose
+	// every method is refused drops out of it entirely.
 	services := searchAPIOnSession(ctx, t, session, map[string]any{})
 	for _, service := range []string{
 		"ServiceAccountService", "IdentityProviderService", "WorkloadIdentityService",
-		"UserService", "WorkspaceService", "SettingService",
+		"UserService", "SettingService",
 	} {
-		a.Contains(services, service, "%s keeps its reads, so it must stay listed", service)
+		a.NotContains(services, service, "%s serves nothing, so it must not be listed", service)
 	}
+	a.Contains(services, "DatabaseService", "positive control: services the ceiling serves stay listed")
+	a.Contains(services, "WorkspaceService", "a service keeping any served method stays listed")
 
 	// Still resolvable by operation ID, and a call still reaches the gate.
 	for _, operation := range []string{
@@ -937,10 +957,15 @@ func TestMCPCredentialMintsLeaveDiscovery(t *testing.T) {
 			"%s must stay resolvable so the denial can explain itself", operation)
 	}
 
-	// The reads of the same services are unaffected — the batch classified
-	// credential issuance, not the services that happen to host it.
-	saListing := searchAPIOnSession(ctx, t, session, map[string]any{"service": "ServiceAccountService"})
-	a.Contains(saListing, "ServiceAccountService/GetServiceAccount",
-		"the reads must still be discoverable")
-	a.Contains(saListing, "ServiceAccountService/ListServiceAccounts")
+	// The reads of those services are still not FORBIDDEN — they carry no
+	// credential, and TestForbiddenClassLeavesReadsAlone pins that they never
+	// become so. They are EXCLUDED, which is a scope decision a later
+	// admin-capable ceiling can revisit, and until then they are refused and
+	// unadvertised like everything else no mode serves.
+	saRead := callAPIOnSession(ctx, t, session, "ServiceAccountService/ListServiceAccounts", map[string]any{
+		"parent": workspaceName,
+	})
+	a.Equal(http.StatusForbidden, saRead.Status)
+	a.Contains(saRead.Error, "administers the workspace",
+		"the read is refused for what it is, not for minting a credential")
 }

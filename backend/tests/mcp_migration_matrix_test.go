@@ -304,10 +304,11 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 	defer db.Close()
 
 	// The stored ceiling is given a value the profile cannot be parsed with, so
-	// the read errors. An unrecognized enum NAME would not do it: the store's
-	// unmarshaler discards values it does not know, so such a ceiling reads
-	// back as unset — a different behavior, and one this test deliberately does
-	// not assert either way.
+	// the read errors outright. That is a distinct arm from an unrecognized
+	// enum NAME, which the store's unmarshaler discards: a name it does not
+	// know is caught by the raw-key check in GetMCPCapabilityUncached and also
+	// fails closed, and TestMCPCeilingStoredValueFailsClosed
+	// (backend/api/mcp) owns that case. This one is the unmarshal error itself.
 	restore := func() {
 		result, err := db.ExecContext(ctx, `
 			UPDATE setting SET value = value - 'mcpCapability'

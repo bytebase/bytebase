@@ -61,7 +61,7 @@ func SetAuditWorkspaceID(ctx context.Context, workspaceID string) {
 // same reason.
 //
 // The signal is needed because the audit interceptor otherwise writes a row
-// only when the method's own audit annotation asks for one, and four of the
+// only when the method's own audit annotation asks for one, and 47 of the
 // methods the gate refuses carry no such annotation. A denial nobody can see is
 // the outcome an operator most needs to see.
 func WithSetMCPPolicyDenied(ctx context.Context, setMCPPolicyDenied func()) context.Context {
