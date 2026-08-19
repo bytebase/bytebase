@@ -43,3 +43,12 @@ export const getPlainValue = (
   if (value === undefined || value === null) return value;
   return String(value);
 };
+
+export const isLikelyJSON = (value: string | null | undefined) => {
+  if (!value) return false;
+  const trimmed = value.trim();
+  return (
+    (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
+    (trimmed.startsWith("[") && trimmed.endsWith("]"))
+  );
+};

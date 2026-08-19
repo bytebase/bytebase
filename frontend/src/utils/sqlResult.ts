@@ -327,20 +327,13 @@ export interface NoSQLJSONViewResult {
   documents: NoSQLJSONDocument[];
 }
 
-export const formatNoSQLQueryResultForJSONView = (
-  result: QueryResult
-): NoSQLJSONViewResult | undefined => {
+const formatNoSQLRows = (result: QueryResult): string[] | undefined => {
   if (result.columnNames.length !== 1 || result.columnNames[0] !== "result") {
     return undefined;
   }
 
-  if (result.rows.length === 0) {
-    return { content: "[]", documents: [] };
-  }
-
-  const lines = ["["];
-  const documents: NoSQLJSONDocument[] = [];
-  for (const [index, row] of result.rows.entries()) {
+  const formattedRows: string[] = [];
+  for (const row of result.rows) {
     if (row.values.length !== 1 || row.values[0].kind.case !== "stringValue") {
       return undefined;
     }
@@ -353,29 +346,82 @@ export const formatNoSQLQueryResultForJSONView = (
       if (document === undefined) {
         return undefined;
       }
-      const documentLines = document.split("\n").map((line) => `  ${line}`);
-      if (index < result.rows.length - 1) {
-        documentLines[documentLines.length - 1] += ",";
-      }
-      const startLineNumber = lines.length + 1;
-      lines.push(...documentLines);
-      documents.push({
-        content: document,
-        startLineNumber,
-        endLineNumber: lines.length,
-      });
+      formattedRows.push(document);
     } catch {
       return undefined;
     }
   }
-  lines.push("]");
 
-  return { content: lines.join("\n"), documents };
+  return formattedRows;
 };
 
-export const formatNoSQLQueryResultAsJSON = (
+export const isNoSQLQueryResult = (result: QueryResult): boolean => {
+  if (result.columnNames.length !== 1 || result.columnNames[0] !== "result") {
+    return false;
+  }
+
+  return result.rows.every((row) => {
+    if (row.values.length !== 1 || row.values[0].kind.case !== "stringValue") {
+      return false;
+    }
+    try {
+      losslessParse(row.values[0].kind.value);
+      return true;
+    } catch {
+      return false;
+    }
+  });
+};
+
+const formatNoSQLDocumentsAsJSON = (documents: string[]): string => {
+  if (documents.length === 0) {
+    return "[]";
+  }
+
+  const lines = ["["];
+  for (const [index, document] of documents.entries()) {
+    const documentLines = document.split("\n").map((line) => `  ${line}`);
+    if (index < documents.length - 1) {
+      documentLines[documentLines.length - 1] += ",";
+    }
+    lines.push(...documentLines);
+  }
+  lines.push("]");
+  return lines.join("\n");
+};
+
+export const formatNoSQLQueryResultForJSONView = (
   result: QueryResult
-): string | undefined => formatNoSQLQueryResultForJSONView(result)?.content;
+): NoSQLJSONViewResult | undefined => {
+  const formattedRows = formatNoSQLRows(result);
+  if (!formattedRows) {
+    return undefined;
+  }
+  let startLineNumber = 2;
+  const documents: NoSQLJSONDocument[] = [];
+  for (const document of formattedRows) {
+    const lineCount = document.split("\n").length;
+    documents.push({
+      content: document,
+      startLineNumber,
+      endLineNumber: startLineNumber + lineCount - 1,
+    });
+    startLineNumber += lineCount;
+  }
+
+  return {
+    content: formatNoSQLDocumentsAsJSON(formattedRows),
+    documents,
+  };
+};
+
+export const formatNoSQLQueryResultAsJSON = (result: QueryResult) => {
+  const formattedRows = formatNoSQLRows(result);
+  if (!formattedRows) {
+    return undefined;
+  }
+  return formatNoSQLDocumentsAsJSON(formattedRows);
+};
 
 // Parses the hits array from an Elasticsearch _search QueryResult's "hits" column.
 const parseESHitsArray = (result: QueryResult): unknown[] | undefined => {

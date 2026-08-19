@@ -12,13 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
-import { MaskingReasonPopover } from "@/modules/sql-editor/components/MaskingReasonPopover";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { MaskingReason } from "@/types/proto-es/v1/sql_service_pb";
 import type { SearchParams } from "@/utils/v1/advanced-search/common";
 import { getPlainValue } from "./cell-value";
-import { useBinaryFormatContext } from "./context";
+import { useBinaryFormatContext, useSQLResultViewContext } from "./context";
 import { ResultCopyContextMenu } from "./ResultCopyContextMenu";
+import { RowDataBlock } from "./RowDataBlock";
 import { TableCell } from "./TableCell";
 import type { ResultTableColumn, ResultTableRow } from "./types";
 
@@ -30,7 +30,6 @@ export interface VirtualDataBlockProps {
   rows: ResultTableRow[];
   columns: ResultTableColumn[];
   activeRowIndex: number;
-  isSensitiveColumn: (index: number) => boolean;
   getMaskingReason?: (index: number) => MaskingReason | undefined;
   database: Database;
   statement?: string;
@@ -60,6 +59,7 @@ export const VirtualDataBlock = forwardRef<
   const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const { getBinaryFormat } = useBinaryFormatContext();
+  const { setDetail } = useSQLResultViewContext();
 
   // Estimate based on column count: header + (per-column line ≈ 28px) +
   // padding. Real measurements come from `measureElement` once mounted.
@@ -150,57 +150,45 @@ export const VirtualDataBlock = forwardRef<
                   ******************************** {rowIndex + 1}. row
                   ********************************
                 </p>
-                <div
+                <RowDataBlock
+                  columns={columns}
+                  database={database.name}
+                  statement={statement}
+                  getMaskingReason={getMaskingReason}
                   className={cn(
-                    // Subtle surface tint (matches VirtualDataTable's zebra
-                    // rows) rather than full surface, so a dark custom surface
-                    // doesn't make each card too heavy.
-                    "py-2 px-3 bg-control-bg/40 rounded relative",
                     isActive && "border-2 border-accent/20 bg-accent/10!"
                   )}
-                >
-                  <CopyJSONButton
-                    getContent={() => buildRowJSON(rowIndex)}
-                    label={t("common.copy")}
-                  />
-                  {columns.map((column, columnIndex) => {
-                    const reason = getMaskingReason?.(columnIndex);
-                    return (
-                      <div
-                        key={column.id}
-                        className="flex items-start text-control-light text-sm"
-                      >
-                        <div className="min-w-28 text-left flex items-center font-medium pt-1">
-                          <div className="flex items-center gap-x-1">
-                            {column.name}
-                            {reason && (
-                              <MaskingReasonPopover
-                                reason={reason}
-                                statement={statement}
-                                database={database.name}
-                              />
-                            )}
-                          </div>
-                          :
-                        </div>
-                        <div className="flex-1">
-                          <TableCell
-                            value={row.item.values[columnIndex]}
-                            keyword={search.query}
-                            scope={search.scopes.find(
-                              (s) => s.id === columns[columnIndex]?.id
-                            )}
-                            rowIndex={rowIndex}
-                            colIndex={columnIndex}
-                            columnType={column.columnType}
-                            allowSelect
-                            database={database}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                  actions={
+                    <CopyJSONButton
+                      getContent={() => buildRowJSON(rowIndex)}
+                      label={t("common.copy")}
+                    />
+                  }
+                  renderValue={(column, columnIndex) => (
+                    <div
+                      onDoubleClick={(event) => {
+                        event.stopPropagation();
+                        setDetail({
+                          row: rowIndex,
+                          col: columnIndex,
+                          view: "cell",
+                        });
+                      }}
+                    >
+                      <TableCell
+                        value={row.item.values[columnIndex]}
+                        keyword={search.query}
+                        scope={search.scopes.find(
+                          (scope) => scope.id === column.id
+                        )}
+                        rowIndex={rowIndex}
+                        colIndex={columnIndex}
+                        columnType={column.columnType}
+                        allowSelect
+                      />
+                    </div>
+                  )}
+                />
               </div>
             );
           })}

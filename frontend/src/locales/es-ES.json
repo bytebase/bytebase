@@ -3065,6 +3065,7 @@
     "request-access-grant": "Solicitar concesión de acceso",
     "request-export": "Solicitar exportación",
     "result-detail": {
+      "cell": "Detalle de celda",
       "next-match": "Siguiente coincidencia",
       "previous-match": "Coincidencia anterior",
       "search": "Buscar en detalles"

@@ -69,6 +69,33 @@ export function renderTextWithSearchMatches(
   return { nodes, count: matches.length };
 }
 
+export function renderRowFieldsWithSearchMatches(
+  fields: ReadonlyArray<{ columnName: string; value: string }>,
+  query: string,
+  activeIndex: number
+): {
+  fields: Array<{ columnName: ReactNode; value: ReactNode }>;
+  count: number;
+} {
+  let matchOffset = 0;
+  const renderedFields = fields.map((field) => {
+    const columnName = renderTextWithSearchMatches(
+      field.columnName,
+      query,
+      activeIndex - matchOffset
+    );
+    matchOffset += columnName.count;
+    const value = renderTextWithSearchMatches(
+      field.value,
+      query,
+      activeIndex - matchOffset
+    );
+    matchOffset += value.count;
+    return { columnName: columnName.nodes, value: value.nodes };
+  });
+  return { fields: renderedFields, count: matchOffset };
+}
+
 const getTextNodes = (root: Node) => {
   const nodes: Text[] = [];
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);

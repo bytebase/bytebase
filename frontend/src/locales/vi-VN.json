@@ -3065,6 +3065,7 @@
     "request-access-grant": "Yêu cầu cấp quyền truy cập",
     "request-export": "Yêu cầu xuất dữ liệu",
     "result-detail": {
+      "cell": "Chi tiết ô",
       "next-match": "Kết quả tiếp theo",
       "previous-match": "Kết quả trước",
       "search": "Tìm trong chi tiết"

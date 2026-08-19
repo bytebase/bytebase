@@ -9,7 +9,10 @@ import {
   type RowValue,
   RowValueSchema,
 } from "@/types/proto-es/v1/sql_service_pb";
-import { SQLResultViewProvider } from "./context";
+import {
+  SQLResultViewProvider,
+  useSQLResultViewContext,
+} from "./context";
 import type { ResultTableColumn, ResultTableRow } from "./types";
 import { VirtualDataBlock } from "./VirtualDataBlock";
 
@@ -140,6 +143,15 @@ const database = {
   },
 } as Database;
 
+function DetailProbe() {
+  const { detail } = useSQLResultViewContext();
+  return (
+    <div data-testid="detail-state">
+      {detail ? `${detail.row}:${detail.col}:${detail.view}` : "closed"}
+    </div>
+  );
+}
+
 const renderBlock = () =>
   render(
     <SQLResultViewProvider
@@ -151,10 +163,10 @@ const renderBlock = () =>
         rows={rows}
         columns={columns}
         activeRowIndex={-1}
-        isSensitiveColumn={() => false}
         database={database}
         search={{ query: "", scopes: [] }}
       />
+      <DetailProbe />
     </SQLResultViewProvider>
   );
 
@@ -170,6 +182,10 @@ describe("VirtualDataBlock", () => {
 
   test("reserves end scroll space and keeps the final row copy action clickable", () => {
     const { container } = renderBlock();
+
+    expect(
+      container.querySelectorAll('[data-testid="row-data-block"]')
+    ).toHaveLength(rows.length);
 
     const virtualizerConfig = virtualizerOptions.at(-1);
     expect(virtualizerConfig?.paddingEnd).toBeGreaterThanOrEqual(96);
@@ -200,5 +216,13 @@ describe("VirtualDataBlock", () => {
         4
       )
     );
+  });
+
+  test("opens cell detail when a value is double-clicked", () => {
+    renderBlock();
+
+    fireEvent.doubleClick(screen.getByText("Acme"));
+
+    expect(screen.getByTestId("detail-state")).toHaveTextContent("0:0:cell");
   });
 });

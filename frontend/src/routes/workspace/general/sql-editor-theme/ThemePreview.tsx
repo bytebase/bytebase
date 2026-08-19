@@ -225,7 +225,6 @@ export function ThemePreview({ theme }: Readonly<ThemePreviewProps>) {
                   rows={SAMPLE_ROWS}
                   columns={SAMPLE_COLUMNS}
                   activeRowIndex={-1}
-                  isSensitiveColumn={() => false}
                   database={SAMPLE_DATABASE}
                   statement={PREVIEW_SQL}
                   search={EMPTY_SEARCH}
@@ -235,7 +234,6 @@ export function ThemePreview({ theme }: Readonly<ThemePreviewProps>) {
                   rows={SAMPLE_ROWS}
                   columns={SAMPLE_COLUMNS}
                   activeRowIndex={-1}
-                  isSensitiveColumn={() => false}
                   database={SAMPLE_DATABASE}
                   statement={PREVIEW_SQL}
                   search={EMPTY_SEARCH}

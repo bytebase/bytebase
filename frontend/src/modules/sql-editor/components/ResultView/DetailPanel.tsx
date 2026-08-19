@@ -8,41 +8,53 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   CopyIcon,
-  SearchIcon,
   WrapTextIcon,
-  XIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Tooltip } from "@/components/ui/tooltip";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import type {
+  MaskingReason,
+  QueryResult,
+} from "@/types/proto-es/v1/sql_service_pb";
 import {
   STORAGE_KEY_SQL_EDITOR_DETAIL_FORMAT,
   STORAGE_KEY_SQL_EDITOR_DETAIL_LINE_WRAP,
 } from "@/utils/storage-keys";
+import { getInstanceResource } from "@/utils/v1/database";
 import { BinaryFormatButton } from "./BinaryFormatButton";
-import { getPlainValue } from "./cell-value";
+import { getPlainValue, isLikelyJSON } from "./cell-value";
 import { useBinaryFormatContext, useSQLResultViewContext } from "./context";
 import {
   DETAIL_SEARCH_ACTIVE_MATCH_SELECTOR,
+  renderRowFieldsWithSearchMatches,
   renderTextWithSearchMatches,
-  searchMatchCountLabel,
 } from "./detail-panel-search";
+import { getCellDisplayText, PlainCellValue } from "./PlainCellValue";
 import { PrettyJSON } from "./PrettyJSON";
+import { RowDataBlock } from "./RowDataBlock";
+import { TextSearchControl } from "./TextSearchControl";
 import type { ResultTableColumn, ResultTableRow } from "./types";
 
 interface DetailPanelProps {
   rows: ResultTableRow[];
   columns: ResultTableColumn[];
+  database: Database;
+  result: QueryResult;
+  statement?: string;
+  getMaskingReason?: (index: number) => MaskingReason | undefined;
 }
 
 function useLocalStorageBoolean(
@@ -86,16 +98,22 @@ const isEditableTarget = (target: EventTarget | null) => {
   );
 };
 
-export function DetailPanel({ rows, columns }: DetailPanelProps) {
+export function DetailPanel({
+  rows,
+  columns,
+  database,
+  result,
+  statement,
+  getMaskingReason,
+}: DetailPanelProps) {
   const { t } = useTranslation();
   const { detail, disallowCopyingData, setDetail } = useSQLResultViewContext();
   const { getBinaryFormat, setBinaryFormat } = useBinaryFormatContext();
   const [copied, setCopied] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [activeMatchIndex, setActiveMatchIndex] = useState(0);
-  const [matchCount, setMatchCount] = useState(0);
+  const [formattedMatchCount, setFormattedMatchCount] = useState(0);
   const [highlightedContentVersion, setHighlightedContentVersion] = useState(0);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const [format, setFormat] = useLocalStorageBoolean(
@@ -109,32 +127,98 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
 
   const totalCount = rows.length;
 
-  const rawValue = useMemo(() => {
+  const engine = getInstanceResource(database).engine;
+  const isDocumentEngine =
+    engine === Engine.COSMOSDB || engine === Engine.MONGODB;
+
+  const detailContent = useMemo(() => {
     if (!detail) return undefined;
-    return rows[detail.row]?.item.values[detail.col];
-  }, [detail, rows]);
+    const displayedRow = rows[detail.row];
+    if (!displayedRow) return undefined;
 
-  const columnType = detail ? (columns[detail.col]?.columnType ?? "") : "";
+    if (detail.view === "row") {
+      if (isDocumentEngine) {
+        const sourceValue = result.rows[displayedRow.key]?.values[0];
+        return {
+          kind: "document" as const,
+          content: getPlainValue(
+            sourceValue,
+            result.columnTypeNames[0] ?? "",
+            undefined
+          ),
+        };
+      }
 
-  const binaryFormat = detail
-    ? getBinaryFormat({ rowIndex: detail.row, colIndex: detail.col })
-    : undefined;
+      const fields = columns.map((column, colIndex) => ({
+        column,
+        value: getPlainValue(
+          displayedRow.item.values[colIndex],
+          column.columnType,
+          getBinaryFormat({ rowIndex: detail.row, colIndex })
+        ),
+      }));
+      return {
+        kind: "row" as const,
+        fields,
+        content: fields
+          .map(
+            ({ column, value }) =>
+              `${column.name}: ${getCellDisplayText(value)}`
+          )
+          .join("\n"),
+      };
+    }
 
-  const isBinaryData = rawValue?.kind?.case === "bytesValue";
+    const value = displayedRow.item.values[detail.col];
+    const columnType = columns[detail.col]?.columnType ?? "";
+    const binaryFormat = getBinaryFormat({
+      rowIndex: detail.row,
+      colIndex: detail.col,
+    });
+    return {
+      kind: "cell" as const,
+      value,
+      binaryFormat,
+      content: getPlainValue(value, columnType, binaryFormat),
+    };
+  }, [columns, detail, getBinaryFormat, isDocumentEngine, result, rows]);
 
-  const content = useMemo(
-    () => getPlainValue(rawValue, columnType, binaryFormat),
-    [rawValue, columnType, binaryFormat]
-  );
+  const content = detailContent?.content;
 
-  const guessedIsJSON = useMemo(() => {
-    if (!content) return false;
-    const trimmed = content.trim();
-    return (
-      (trimmed.startsWith("{") && trimmed.endsWith("}")) ||
-      (trimmed.startsWith("[") && trimmed.endsWith("]"))
-    );
-  }, [content]);
+  const guessedIsJSON = isLikelyJSON(content);
+  const showFormattedJSON =
+    guessedIsJSON &&
+    (detailContent?.kind === "document" ||
+      (detailContent?.kind === "cell" && format));
+
+  const searchResult = useMemo(() => {
+    if (detailContent?.kind === "row") {
+      return {
+        kind: "row" as const,
+        ...renderRowFieldsWithSearchMatches(
+          detailContent.fields.map(({ column, value }) => ({
+            columnName: column.name,
+            value: getCellDisplayText(value),
+          })),
+          searchQuery,
+          activeMatchIndex
+        ),
+      };
+    }
+    return {
+      kind: "plain" as const,
+      ...renderTextWithSearchMatches(
+        content ?? "",
+        searchQuery,
+        activeMatchIndex
+      ),
+    };
+  }, [activeMatchIndex, content, detailContent, searchQuery]);
+  const matchCount = showFormattedJSON
+    ? formattedMatchCount
+    : searchResult.count;
+  const rowSearchFields =
+    searchResult.kind === "row" ? searchResult.fields : [];
 
   const move = useCallback(
     (offset: number) => {
@@ -181,22 +265,8 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
   }, [detail, move]);
 
   useEffect(() => {
-    if (!detail) return;
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "f") {
-        e.preventDefault();
-        e.stopPropagation();
-        searchInputRef.current?.focus();
-        searchInputRef.current?.select();
-      }
-    };
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [detail]);
-
-  useEffect(() => {
     setActiveMatchIndex(0);
-  }, [content, format, searchQuery]);
+  }, [content, detailContent?.kind, format, searchQuery]);
 
   useEffect(() => {
     if (matchCount === 0) {
@@ -226,7 +296,7 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
 
   const copyContent = useMemo(() => {
     const raw = content ?? "";
-    if (guessedIsJSON && format) {
+    if (showFormattedJSON) {
       try {
         const obj = losslessParse(raw);
         return losslessStringify(obj, null, "  ") ?? raw;
@@ -236,7 +306,7 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
       }
     }
     return raw;
-  }, [content, guessedIsJSON, format]);
+  }, [content, showFormattedJSON]);
 
   const handleCopy = useCallback(async () => {
     if (await writeTextToClipboard(copyContent)) {
@@ -258,42 +328,31 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
     }
   };
 
-  const plainSearchResult = useMemo(
-    () =>
-      renderTextWithSearchMatches(content ?? "", searchQuery, activeMatchIndex),
-    [activeMatchIndex, content, searchQuery]
-  );
-
   const handleHighlightedContentChange = useCallback(() => {
     setHighlightedContentVersion((version) => version + 1);
   }, []);
-
-  useEffect(() => {
-    if (!(guessedIsJSON && format)) {
-      setMatchCount(plainSearchResult.count);
-    }
-  }, [format, guessedIsJSON, plainSearchResult.count]);
-
-  const handleSearchKeyDown = (
-    event: React.KeyboardEvent<HTMLInputElement>
-  ) => {
-    if (event.key !== "Enter") {
-      return;
-    }
-    event.preventDefault();
-    moveSearchMatch(event.shiftKey ? -1 : 1);
-  };
-
-  const clearSearch = () => {
-    setSearchQuery("");
-    searchInputRef.current?.focus();
-  };
+  const selectedColumnName =
+    detail?.view === "cell" ? columns[detail.col]?.name : undefined;
 
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetContent width="standard">
         <SheetHeader>
-          <SheetTitle>{t("common.detail")}</SheetTitle>
+          <SheetTitle>
+            {detail?.view === "cell"
+              ? t("sql-editor.result-detail.cell")
+              : t("common.detail")}
+          </SheetTitle>
+          {selectedColumnName && (
+            <SheetDescription className="flex min-w-0 items-center gap-x-1">
+              <span className="shrink-0">{t("common.column")}:</span>
+              <Tooltip content={selectedColumnName} delayDuration={500}>
+                <span className="block max-w-[32rem] truncate font-mono text-control">
+                  {selectedColumnName}
+                </span>
+              </Tooltip>
+            </SheetDescription>
+          )}
         </SheetHeader>
         {detail && (
           <div
@@ -345,74 +404,18 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
               </div>
 
               <div className="flex min-w-0 items-center gap-x-2">
-                <div
-                  data-testid="detail-search-control"
-                  className={cn(
-                    "h-8 w-80 min-w-0 flex items-center overflow-hidden rounded-xs",
-                    "border border-control-border bg-transparent text-main transition-colors"
-                  )}
-                >
-                  <SearchIcon className="ml-2.5 size-4 shrink-0 text-control-placeholder" />
-                  <Input
-                    ref={searchInputRef}
-                    size="sm"
-                    aria-label={t("sql-editor.result-detail.search")}
-                    className="h-7 min-w-0 flex-1 border-0 px-2 text-sm focus:ring-0"
-                    placeholder={t("sql-editor.result-detail.search")}
-                    value={searchQuery}
-                    autoComplete="off"
-                    onChange={(event) => setSearchQuery(event.target.value)}
-                    onKeyDown={handleSearchKeyDown}
-                  />
-                  {searchQuery.trim() && (
-                    <span className="min-w-10 text-center text-xs text-control-light">
-                      {searchMatchCountLabel(activeMatchIndex, matchCount)}
-                    </span>
-                  )}
-                  {searchQuery.trim() && (
-                    <div className="ml-1 flex shrink-0 items-center">
-                      <Tooltip
-                        content={t("sql-editor.result-detail.previous-match")}
-                      >
-                        <Button
-                          size="sm"
-                          appearance="secondary"
-                          className="size-7 p-0"
-                          disabled={matchCount === 0}
-                          onClick={() => moveSearchMatch(-1)}
-                        >
-                          <ChevronUpIcon className="size-4" />
-                        </Button>
-                      </Tooltip>
-                      <Tooltip
-                        content={t("sql-editor.result-detail.next-match")}
-                      >
-                        <Button
-                          size="sm"
-                          appearance="secondary"
-                          className="size-7 p-0"
-                          disabled={matchCount === 0}
-                          onClick={() => moveSearchMatch(1)}
-                        >
-                          <ChevronDownIcon className="size-4" />
-                        </Button>
-                      </Tooltip>
-                      <Tooltip content={t("common.close")}>
-                        <Button
-                          size="sm"
-                          appearance="secondary"
-                          className="size-7 border-l border-control-border p-0"
-                          onClick={clearSearch}
-                        >
-                          <XIcon className="size-4" />
-                        </Button>
-                      </Tooltip>
-                    </div>
-                  )}
-                </div>
+                <TextSearchControl
+                  query={searchQuery}
+                  activeMatchIndex={activeMatchIndex}
+                  matchCount={matchCount}
+                  onQueryChange={setSearchQuery}
+                  onMove={moveSearchMatch}
+                  label={t("sql-editor.result-detail.search")}
+                  className="w-80 flex-none"
+                />
 
                 <div className="flex shrink-0 items-center gap-1">
-                  {guessedIsJSON && (
+                  {guessedIsJSON && detailContent?.kind === "cell" && (
                     <Tooltip content={t("sql-editor.format")}>
                       <Button
                         size="sm"
@@ -425,18 +428,19 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
                     </Tooltip>
                   )}
 
-                  {isBinaryData && (
-                    <BinaryFormatButton
-                      format={binaryFormat}
-                      onFormatChange={(next) =>
-                        setBinaryFormat({
-                          rowIndex: detail.row,
-                          colIndex: detail.col,
-                          format: next,
-                        })
-                      }
-                    />
-                  )}
+                  {detailContent?.kind === "cell" &&
+                    detailContent.value?.kind?.case === "bytesValue" && (
+                      <BinaryFormatButton
+                        format={detailContent.binaryFormat}
+                        onFormatChange={(next) =>
+                          setBinaryFormat({
+                            rowIndex: detail.row,
+                            colIndex: detail.col,
+                            format: next,
+                          })
+                        }
+                      />
+                    )}
 
                   {!disallowCopyingData && (
                     <Tooltip content={t("common.copy")}>
@@ -463,13 +467,32 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
               className={cn(
                 "flex-1 overflow-auto text-sm font-mono border p-2 relative",
                 disallowCopyingData ? "select-none" : "select-text",
-                guessedIsJSON && format && !wrap
+                showFormattedJSON && !wrap
                   ? "whitespace-pre"
                   : "whitespace-pre-wrap"
               )}
               onClick={stopSelectionClickPropagation}
             >
-              {guessedIsJSON && format ? (
+              {detailContent?.kind === "row" ? (
+                <RowDataBlock
+                  columns={columns}
+                  database={database.name}
+                  statement={statement}
+                  getMaskingReason={getMaskingReason}
+                  renderColumnName={(_, columnIndex) =>
+                    rowSearchFields[columnIndex]?.columnName
+                  }
+                  renderValue={(_, columnIndex) => (
+                    <div className="px-2 py-1">
+                      <PlainCellValue
+                        value={detailContent.fields[columnIndex]?.value}
+                      >
+                        {rowSearchFields[columnIndex]?.value}
+                      </PlainCellValue>
+                    </div>
+                  )}
+                />
+              ) : showFormattedJSON ? (
                 <>
                   <div className="absolute right-2 top-2 flex justify-end items-center gap-1">
                     <Tooltip content={t("common.text-wrap")}>
@@ -487,12 +510,12 @@ export function DetailPanel({ rows, columns }: DetailPanelProps) {
                     content={content ?? ""}
                     searchQuery={searchQuery}
                     activeMatchIndex={activeMatchIndex}
-                    onMatchCountChange={setMatchCount}
+                    onMatchCountChange={setFormattedMatchCount}
                     onHighlightedContentChange={handleHighlightedContentChange}
                   />
                 </>
               ) : content && content.length > 0 ? (
-                <>{plainSearchResult.nodes}</>
+                <>{searchResult.kind === "plain" ? searchResult.nodes : null}</>
               ) : (
                 <br style={{ minWidth: "1rem", display: "inline-flex" }} />
               )}

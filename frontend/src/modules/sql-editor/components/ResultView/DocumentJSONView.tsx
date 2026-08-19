@@ -1,5 +1,5 @@
 import { CheckIcon, CopyIcon } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { MonacoEditor } from "@/components/monaco/MonacoEditor";
 import type {
@@ -11,12 +11,15 @@ import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { cn } from "@/lib/utils";
-import type { NoSQLJSONDocument } from "@/utils/sqlResult";
+import type { QueryResult } from "@/types/proto-es/v1/sql_service_pb";
+import {
+  formatNoSQLQueryResultForJSONView,
+  type NoSQLJSONDocument,
+} from "@/utils/sqlResult";
 import { normalizeSearchQuery } from "./detail-panel-search";
 
 interface DocumentJSONViewProps {
-  content: string;
-  documents: NoSQLJSONDocument[];
+  result: QueryResult;
   disallowCopyingData: boolean;
   compact: boolean;
   searchQuery: string;
@@ -24,9 +27,30 @@ interface DocumentJSONViewProps {
   onMatchCountChange: (count: number) => void;
 }
 
+const findDocumentIndex = (
+  documents: NoSQLJSONDocument[],
+  lineNumber: number
+) => {
+  let low = 0;
+  let high = documents.length - 1;
+
+  while (low <= high) {
+    const middle = Math.floor((low + high) / 2);
+    const document = documents[middle];
+    if (lineNumber < document.startLineNumber) {
+      high = middle - 1;
+    } else if (lineNumber > document.endLineNumber) {
+      low = middle + 1;
+    } else {
+      return middle;
+    }
+  }
+
+  return -1;
+};
+
 export function DocumentJSONView({
-  content,
-  documents,
+  result,
   disallowCopyingData,
   compact,
   searchQuery,
@@ -34,6 +58,14 @@ export function DocumentJSONView({
   onMatchCountChange,
 }: DocumentJSONViewProps) {
   const { t } = useTranslation();
+  const { content, documents } = useMemo(
+    () =>
+      formatNoSQLQueryResultForJSONView(result) ?? {
+        content: "[]",
+        documents: [],
+      },
+    [result]
+  );
   const [editor, setEditor] = useState<IStandaloneCodeEditor | null>(null);
   const [copyAction, setCopyAction] = useState<{
     documentIndex: number;
@@ -119,11 +151,7 @@ export function DocumentJSONView({
         setCopyAction(undefined);
         return;
       }
-      const documentIndex = documents.findIndex(
-        (document) =>
-          lineNumber >= document.startLineNumber &&
-          lineNumber <= document.endLineNumber
-      );
+      const documentIndex = findDocumentIndex(documents, lineNumber);
       if (documentIndex < 0) {
         setCopyAction(undefined);
         return;
@@ -131,7 +159,7 @@ export function DocumentJSONView({
 
       const document = documents[documentIndex];
       const layout = editor.getLayoutInfo();
-      setCopyAction({
+      const next = {
         documentIndex,
         left:
           layout.glyphMarginLeft +
@@ -140,7 +168,14 @@ export function DocumentJSONView({
         top:
           editor.getTopForLineNumber(document.startLineNumber) -
           editor.getScrollTop(),
-      });
+      };
+      setCopyAction((current) =>
+        current?.documentIndex === next.documentIndex &&
+        current.left === next.left &&
+        current.top === next.top
+          ? current
+          : next
+      );
     },
     [disallowCopyingData, documents, editor]
   );

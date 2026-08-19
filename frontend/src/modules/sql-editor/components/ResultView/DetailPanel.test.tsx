@@ -1,15 +1,20 @@
 import { create } from "@bufbuild/protobuf";
+import { NullValue } from "@bufbuild/protobuf/wkt";
 import type { ReactElement } from "react";
 import { act, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
+import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
+  type QueryResult,
+  QueryResultSchema,
   QueryRowSchema,
   type RowValue,
   RowValueSchema,
 } from "@/types/proto-es/v1/sql_service_pb";
 import {
+  type ResultViewDetail,
   SQLResultViewProvider,
   useSelectionContext,
   useSQLResultViewContext,
@@ -45,6 +50,14 @@ vi.mock("@/components/ui/tooltip", () => ({
   Tooltip: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
+vi.mock("@/modules/sql-editor/components/MaskingReasonPopover", () => ({
+  MaskingReasonPopover: () => null,
+}));
+
+vi.mock("@/utils/v1/database", () => ({
+  getInstanceResource: (database: Database) => database.instanceResource,
+}));
+
 const textValue = (value: string): RowValue =>
   create(RowValueSchema, {
     kind: { case: "stringValue", value },
@@ -68,11 +81,31 @@ const rows: ResultTableRow[] = [
   },
 ];
 
-function OpenDetailOnMount() {
+const databaseForEngine = (engine: Engine) =>
+  ({
+    name: "instances/prod/databases/main",
+    project: "projects/prod",
+    instanceResource: {
+      name: "instances/prod",
+      engine,
+    },
+  }) as Database;
+
+const resultForRows = (
+  panelRows: ResultTableRow[],
+  panelColumns: ResultTableColumn[]
+) =>
+  create(QueryResultSchema, {
+    columnNames: panelColumns.map((column) => column.name),
+    columnTypeNames: panelColumns.map((column) => column.columnType),
+    rows: panelRows.map((row) => row.item),
+  });
+
+function OpenDetailOnMount({ view }: Pick<ResultViewDetail, "view">) {
   const { setDetail } = useSQLResultViewContext();
   useEffect(() => {
-    setDetail({ row: 0, col: 0 });
-  }, [setDetail]);
+    setDetail({ row: 0, col: 0, view });
+  }, [setDetail, view]);
   return null;
 }
 
@@ -88,20 +121,32 @@ function TestDetailPanel({
   disallowCopyingData = false,
   panelRows = rows,
   panelColumns = columns,
+  engine = Engine.POSTGRES,
+  sourceResult,
+  detailView = "cell",
 }: {
   disallowCopyingData?: boolean;
   panelRows?: ResultTableRow[];
   panelColumns?: ResultTableColumn[];
+  engine?: Engine;
+  sourceResult?: QueryResult;
+  detailView?: ResultViewDetail["view"];
 }) {
+  const result = sourceResult ?? resultForRows(panelRows, panelColumns);
   return (
     <SQLResultViewProvider
-      engine={Engine.POSTGRES}
+      engine={engine}
       rows={panelRows}
       columns={panelColumns}
       disallowCopyingData={disallowCopyingData}
     >
-      <OpenDetailOnMount />
-      <DetailPanel rows={panelRows} columns={panelColumns} />
+      <OpenDetailOnMount view={detailView} />
+      <DetailPanel
+        rows={panelRows}
+        columns={panelColumns}
+        database={databaseForEngine(engine)}
+        result={result}
+      />
     </SQLResultViewProvider>
   );
 }
@@ -169,7 +214,7 @@ const waitForAssertion = async (assertion: () => void) => {
 };
 
 const getDetailSearchControl = (input: HTMLInputElement) => {
-  const searchControl = input.closest("[data-testid='detail-search-control']");
+  const searchControl = input.parentElement;
   expect(searchControl).toBeInstanceOf(HTMLDivElement);
   return searchControl as HTMLDivElement;
 };
@@ -204,6 +249,10 @@ describe("DetailPanel", () => {
     const { render, unmount } = renderIntoContainer(<TestDetailPanel />);
     render();
 
+    expect(document.body.textContent).toContain(
+      "sql-editor.result-detail.cell"
+    );
+    expect(document.body.textContent).toContain("common.column:payload");
     expect(getDetailContentRegion().className).toContain("select-text");
 
     unmount();
@@ -299,9 +348,7 @@ describe("DetailPanel", () => {
     expect(marks.map((mark) => mark.textContent)).toEqual(["CREATE", "CREATE"]);
     expect(document.body.textContent).toContain("1 / 2");
     expect(marks[0]?.className).toContain("bg-accent");
-    const searchControl = input!.closest(
-      "[data-testid='detail-search-control']"
-    );
+    const searchControl = getDetailSearchControl(input!);
     expect(searchControl).toBeInstanceOf(HTMLDivElement);
     expect(searchControl?.textContent).toContain("1 / 2");
     expect(searchControl?.querySelectorAll("button")).toHaveLength(3);
@@ -428,6 +475,159 @@ describe("DetailPanel", () => {
     });
 
     HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+    unmount();
+  });
+
+  test("shows the original document as formatted JSON for a document table row", async () => {
+    const flattenedRows: ResultTableRow[] = [
+      {
+        key: 1,
+        item: create(QueryRowSchema, {
+          values: [textValue("two")],
+        }),
+      },
+    ];
+    const sourceResult = create(QueryResultSchema, {
+      columnNames: ["result"],
+      columnTypeNames: ["JSON"],
+      rows: [
+        create(QueryRowSchema, {
+          values: [
+            textValue('{"id":"one","profile":{"tags":["a","b"]}}'),
+          ],
+        }),
+        create(QueryRowSchema, {
+          values: [
+            textValue('{"id":"two","settings":{"theme":"dark"}}'),
+          ],
+        }),
+      ],
+    });
+    const { render, unmount } = renderIntoContainer(
+      <TestDetailPanel
+        panelRows={flattenedRows}
+        engine={Engine.COSMOSDB}
+        sourceResult={sourceResult}
+        detailView="row"
+      />
+    );
+    render();
+
+    await waitForAssertion(() => {
+      const contentRegion = getDetailContentRegion("settings");
+      expect(contentRegion.textContent).toContain("theme");
+      expect(contentRegion.textContent).toContain("dark");
+    });
+    expect(document.body.querySelector(".lucide-braces")).toBeNull();
+
+    unmount();
+  });
+
+  test("shows the clicked cell instead of the source document for cell detail", () => {
+    const flattenedRows: ResultTableRow[] = [
+      {
+        key: 0,
+        item: create(QueryRowSchema, {
+          values: [textValue('{"cell":"value"}')],
+        }),
+      },
+    ];
+    const sourceResult = create(QueryResultSchema, {
+      columnNames: ["result"],
+      columnTypeNames: ["JSON"],
+      rows: [
+        create(QueryRowSchema, {
+          values: [textValue('{"document":"source"}')],
+        }),
+      ],
+    });
+    const { render, unmount } = renderIntoContainer(
+      <TestDetailPanel
+        panelRows={flattenedRows}
+        engine={Engine.COSMOSDB}
+        sourceResult={sourceResult}
+      />
+    );
+    render();
+
+    const contentRegion = getDetailContentRegion("cell");
+    expect(contentRegion.textContent).toContain('{"cell":"value"}');
+    expect(contentRegion.textContent).not.toContain("source");
+
+    unmount();
+  });
+
+  test("shows every column and value for a relational table row", () => {
+    const rowColumns: ResultTableColumn[] = [
+      { id: "id", name: "id", columnType: "TEXT" },
+      { id: "name-1", name: "name", columnType: "TEXT" },
+      { id: "name-2", name: "name", columnType: "TEXT" },
+      { id: "environment", name: "environment", columnType: "TEXT" },
+      { id: "optional", name: "optional", columnType: "TEXT" },
+    ];
+    const rowRows: ResultTableRow[] = [
+      {
+        key: 0,
+        item: create(QueryRowSchema, {
+          values: [
+            textValue("1"),
+            textValue("Ada"),
+            textValue("Lovelace"),
+            create(RowValueSchema, {
+              kind: { case: "nullValue", value: NullValue.NULL_VALUE },
+            }),
+            create(RowValueSchema),
+          ],
+        }),
+      },
+    ];
+    const { render, unmount } = renderIntoContainer(
+      <TestDetailPanel
+        panelRows={rowRows}
+        panelColumns={rowColumns}
+        detailView="row"
+      />
+    );
+    render();
+
+    const contentRegion = getDetailContentRegion("id: 1");
+    expect(
+      contentRegion.querySelector('[data-testid="row-data-block"]')
+    ).toBeInstanceOf(HTMLDivElement);
+    expect(contentRegion.textContent).toContain("name: Ada");
+    expect(contentRegion.textContent).toContain("name: Lovelace");
+    expect(contentRegion.textContent).toContain("environment: NULL");
+    expect(contentRegion.textContent).toContain("optional: UNSET");
+    const placeholders = Array.from(contentRegion.querySelectorAll("span"))
+      .filter((element) => ["NULL", "UNSET"].includes(element.textContent ?? ""));
+    expect(placeholders).toHaveLength(2);
+    for (const placeholder of placeholders) {
+      expect(placeholder).toHaveClass("text-control-placeholder", "italic");
+    }
+
+    const input = document.body.querySelector(
+      "input[aria-label='sql-editor.result-detail.search']"
+    ) as HTMLInputElement;
+    act(() => {
+      setInputValue(input, "name");
+    });
+
+    let marks = Array.from(contentRegion.querySelectorAll("mark"));
+    expect(marks.map((mark) => mark.textContent)).toEqual(["name", "name"]);
+    expect(getDetailSearchControl(input).textContent).toContain("1 / 2");
+
+    act(() => {
+      input.dispatchEvent(
+        new KeyboardEvent("keydown", {
+          key: "Enter",
+          bubbles: true,
+          cancelable: true,
+        })
+      );
+    });
+    marks = Array.from(contentRegion.querySelectorAll("mark"));
+    expect(marks[1]?.dataset.detailSearchActiveMatch).toBe("true");
+
     unmount();
   });
 

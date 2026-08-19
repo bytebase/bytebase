@@ -18,6 +18,8 @@ interface TextSearchControlProps {
   matchCount: number;
   onQueryChange: (query: string) => void;
   onMove: (offset: number) => void;
+  label?: string;
+  className?: string;
 }
 
 export function TextSearchControl({
@@ -26,10 +28,13 @@ export function TextSearchControl({
   matchCount,
   onQueryChange,
   onMove,
+  label,
+  className,
 }: TextSearchControlProps) {
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
   const searchActive = query.trim().length > 0;
+  const searchLabel = label ?? t("common.search");
 
   useEffect(() => {
     const handler = (event: KeyboardEvent) => {
@@ -48,16 +53,17 @@ export function TextSearchControl({
     <div
       className={cn(
         "h-8 min-w-0 flex-1 flex items-center overflow-hidden rounded-xs",
-        "border border-control-border bg-transparent text-main transition-colors"
+        "border border-control-border bg-transparent text-main transition-colors",
+        className
       )}
     >
       <SearchIcon className="ml-2.5 size-4 shrink-0 text-control-placeholder" />
       <Input
         ref={inputRef}
         size="sm"
-        aria-label={t("common.search")}
+        aria-label={searchLabel}
         className="h-7 min-w-0 flex-1 border-0 px-2 text-sm focus:ring-0"
-        placeholder={t("common.search")}
+        placeholder={searchLabel}
         value={query}
         autoComplete="off"
         onChange={(event) => onQueryChange(event.target.value)}

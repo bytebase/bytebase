@@ -37,12 +37,13 @@ import {
 import type { ResultTableColumn, ResultTableRow } from "./types";
 
 // =============================================================================
-// SQLResultViewContext (disallowCopyingData / detail-cell)
+// SQLResultViewContext (disallowCopyingData / detail view)
 // =============================================================================
 
 export interface ResultViewDetail {
   row: number;
   col: number;
+  view: "cell" | "row";
 }
 
 export interface SQLResultViewContext {
@@ -144,7 +145,7 @@ interface SQLResultViewProviderProps {
 
 /**
  * Per-instance provider for one `<ResultView>` mount. Owns:
- *  - The disallowCopying flag + the detail-cell state
+ *  - The disallowCopying flag + the detail-view state
  *  - The binary-format Map (per-cell and per-column overrides)
  *  - The selection state + row/column/cell toggles + clipboard copy
  *
