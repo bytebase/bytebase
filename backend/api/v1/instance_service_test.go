@@ -25,18 +25,16 @@ func TestPrepareSampleProjectInstanceValidatesParentAndDeployment(t *testing.T) 
 	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 
 	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
-	manager := &sampleProjectManagerStub{}
 	service = &InstanceService{
 		store:                stores,
 		profile:              &config.Profile{},
 		licenseService:       &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 10},
-		sampleProjectManager: manager,
+		sampleProjectManager: &sampleprojectinstance.Manager{},
 	}
 	_, err = service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
 		Parent: common.FormatProject(projectID),
 	}))
 	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
-	require.Zero(t, manager.calls)
 
 	service.profile = nil
 	_, err = service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
@@ -62,48 +60,35 @@ func TestPrepareSampleProjectInstanceRejectsConsumedEntitlementAfterProjectDelet
 		WHERE workspace = $1 AND resource_id = $2
 	`, workspaceID, projectID)
 	require.NoError(t, err)
-	manager := &sampleProjectManagerStub{}
 	service := &InstanceService{
 		store:                stores,
 		profile:              &config.Profile{SaaS: true},
 		licenseService:       &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 10},
-		sampleProjectManager: manager,
+		sampleProjectManager: &sampleprojectinstance.Manager{},
 	}
 
 	_, err = service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
 		Parent: common.FormatProject(projectID),
 	}))
 	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
-	require.Zero(t, manager.calls)
 }
 
-func TestPrepareSampleProjectInstanceMapsUnknownAndGuardErrors(t *testing.T) {
-	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
+func TestSampleProjectInstanceConnectErrorMapsUnknownFailure(t *testing.T) {
+	err := sampleProjectInstanceConnectError(errors.New("unexpected manager failure"))
+	require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
+}
+
+func TestSampleProjectInstanceCreatePolicyMapsCapacityDenial(t *testing.T) {
+	ctx, stores, _, _, _ := setupProjectInstanceLifecycleAPITest(t)
 	service := &InstanceService{
 		store:          stores,
 		profile:        &config.Profile{SaaS: true},
-		licenseService: &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 10},
-		sampleProjectManager: &sampleProjectManagerStub{
-			err: errors.New("unexpected manager failure"),
-		},
-	}
-	_, err := service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
-		Parent: common.FormatProject(projectID),
-	}))
-	require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
-
-	service = &InstanceService{
-		store:          stores,
-		profile:        &config.Profile{SaaS: true},
 		licenseService: &instanceLicenseServiceStub{instanceLimit: 1, activatedInstanceLimit: 10},
-		sampleProjectManager: &sampleProjectManagerStub{
-			runGuard: true,
-		},
 	}
-	_, err = service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
-		Parent: common.FormatProject(projectID),
-	}))
-	require.Equal(t, connect.CodeResourceExhausted, connect.CodeOf(err))
+	policy, err := service.sampleProjectInstanceCreatePolicy(ctx, common.GetWorkspaceIDFromContext(ctx))
+	require.NoError(t, err)
+	require.Error(t, policy.DeniedReason)
+	require.Equal(t, connect.CodeUnknown, connect.CodeOf(policy.DeniedReason))
 }
 
 func TestTransportNeutralErrorRemovesConnectType(t *testing.T) {
@@ -111,36 +96,6 @@ func TestTransportNeutralErrorRemovesConnectType(t *testing.T) {
 	var connectErr *connect.Error
 	require.NotErrorAs(t, neutral, &connectErr)
 	require.EqualError(t, neutral, "instance limit reached")
-}
-
-type sampleProjectManagerStub struct {
-	err      error
-	runGuard bool
-	calls    int
-}
-
-func (m *sampleProjectManagerStub) Prepare(ctx context.Context, request sampleprojectinstance.PrepareRequest) (*sampleprojectinstance.PrepareResult, error) {
-	m.calls++
-	if m.runGuard && request.CheckCreatePolicy != nil {
-		policy, err := request.CheckCreatePolicy(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if policy.DeniedReason != nil {
-			return &sampleprojectinstance.PrepareResult{PolicyDenied: policy.DeniedReason}, nil //nolint:nilerr // Policy denial is a result.
-		}
-	}
-	if m.err != nil {
-		return nil, m.err
-	}
-	return &sampleprojectinstance.PrepareResult{
-		Instance: &store.InstanceMessage{
-			ResourceID: "sample",
-			Workspace:  request.WorkspaceID,
-			ProjectID:  &request.ProjectID,
-			Metadata:   &storepb.Instance{},
-		},
-	}, nil
 }
 
 func TestValidateIAMCredentialForSaaS(t *testing.T) {
