@@ -54,7 +54,7 @@ func TestManagerCompensatesConcreteMetadataFailure(t *testing.T) {
 
 	_, err = manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
 	require.Error(t, err)
-	require.Nil(t, mustGetSampleProjectInstance(ctx, t, s, "workspace-a"))
+	require.Nil(t, mustGetSampleProjectInstance(ctx, t, s))
 	assertAllocationAbsent(ctx, t, target, sampleNames("workspace-a"))
 
 	_, err = db.ExecContext(ctx, `
@@ -116,7 +116,7 @@ func TestManagerCompensatesConcreteDiscoveryFailure(t *testing.T) {
 	_, err = lockConn.ExecContext(ctx, "SELECT pg_advisory_unlock($1)", advisoryLockID)
 	require.NoError(t, err)
 	require.Error(t, <-prepareErr)
-	require.Nil(t, mustGetSampleProjectInstance(ctx, t, s, "workspace-a"))
+	require.Nil(t, mustGetSampleProjectInstance(ctx, t, s))
 	assertAllocationAbsent(ctx, t, target, names)
 
 	_, err = db.ExecContext(ctx, `
@@ -147,7 +147,7 @@ func TestManagerPersistsAndRecoversConcreteProvisionOwnership(t *testing.T) {
 
 	_, err = manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
 	require.Equal(t, FailureUnavailable, FailureKindOf(err))
-	reservation := mustGetSampleProjectInstance(ctx, t, s, "workspace-a")
+	reservation := mustGetSampleProjectInstance(ctx, t, s)
 	require.True(t, reservation.OwnershipKnown)
 	require.False(t, reservation.DatabaseCreated)
 	require.True(t, reservation.RoleCreated)
@@ -157,6 +157,34 @@ func TestManagerPersistsAndRecoversConcreteProvisionOwnership(t *testing.T) {
 	require.NoError(t, err)
 	_, err = manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
 	require.NoError(t, err)
+}
+
+func TestManagerPreservesAndRecoversUnknownProvisionOwnership(t *testing.T) {
+	stages := []provisionStage{
+		provisionStageRoleCreatedUnacknowledged,
+		provisionStageDatabaseCreatedUnacknowledged,
+	}
+	for _, stage := range stages {
+		t.Run(string(stage), func(t *testing.T) {
+			ctx, _, s, target, manager := newConcreteManager(t)
+			target.provisionHook = func(current provisionStage) error {
+				if current == stage {
+					return errors.New("injected lost provisioning acknowledgement")
+				}
+				return nil
+			}
+
+			_, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+			require.Equal(t, FailureUnavailable, FailureKindOf(err))
+			reservation := mustGetSampleProjectInstance(ctx, t, s)
+			require.False(t, reservation.OwnershipKnown)
+
+			target.provisionHook = nil
+			result, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+			require.NoError(t, err)
+			require.NotNil(t, result.Instance)
+		})
+	}
 }
 
 func newConcreteManager(t *testing.T) (context.Context, *sql.DB, *store.Store, *Target, *Manager) {
@@ -204,9 +232,9 @@ func assertAllocationAbsent(ctx context.Context, t *testing.T, target *Target, n
 	require.False(t, roleExists)
 }
 
-func mustGetSampleProjectInstance(ctx context.Context, t *testing.T, s *store.Store, workspaceID string) *store.SampleProjectInstanceMessage {
+func mustGetSampleProjectInstance(ctx context.Context, t *testing.T, s *store.Store) *store.SampleProjectInstanceMessage {
 	t.Helper()
-	reservation, err := s.GetSampleProjectInstance(ctx, workspaceID)
+	reservation, err := s.GetSampleProjectInstance(ctx, "workspace-a")
 	require.NoError(t, err)
 	return reservation
 }
