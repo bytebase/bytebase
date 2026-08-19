@@ -3030,6 +3030,7 @@
       }
     },
     "invalid-database": "Base de datos no válida {{database}}",
+    "json-view": "Vista JSON",
     "last-synced": "Última sincronización: <time></time>",
     "loading-data": "Cargando datos...",
     "loading-databases": "Cargando bases de datos...",
@@ -3062,6 +3063,7 @@
     },
     "request-aborted": "El usuario abortó la solicitud",
     "request-access-grant": "Solicitar concesión de acceso",
+    "request-export": "Solicitar exportación",
     "result-detail": {
       "next-match": "Siguiente coincidencia",
       "previous-match": "Coincidencia anterior",
@@ -3070,6 +3072,7 @@
     "result-limit": {
       "self": "Límite de resultados"
     },
+    "result-view-mode": "Modo de vista de resultados",
     "revoke-access": "Revocar",
     "revoke-confirm": "¿Está seguro de que desea revocar esta concesión de acceso?",
     "rows": {

@@ -22,7 +22,6 @@ import type {
   SQLResultSetV1,
 } from "@/types";
 import { isValidDatabaseName } from "@/types";
-import { Engine } from "@/types/proto-es/v1/common_pb";
 import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import {
@@ -34,10 +33,8 @@ import {
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   getDatabaseProject,
-  getInstanceResource,
   hasPermissionToCreateChangeDatabaseIssueInProject,
 } from "@/utils";
-import { flattenNoSQLResult } from "@/utils/sqlResult";
 
 // QUERY_INTERVAL_LIMIT is the minimal gap between two queries
 const QUERY_INTERVAL_LIMIT = 1000;
@@ -383,11 +380,6 @@ export const useExecuteSQL = () => {
         .finally(() => {
           void sqlEditorEvents.emit("query-executed");
         });
-
-      const instanceResource = getInstanceResource(database);
-      if (instanceResource.engine === Engine.COSMOSDB) {
-        flattenNoSQLResult(resultSet);
-      }
 
       if (isDisallowChangeDatabaseError(resultSet)) {
         // Show a tips to navigate to issue creation
