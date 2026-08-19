@@ -34,6 +34,7 @@ type QueryHistoryServiceClient interface {
 	// Permissions required: None (only returns caller's own query histories)
 	SearchQueryHistories(ctx context.Context, in *SearchQueryHistoriesRequest, opts ...grpc.CallOption) (*SearchQueryHistoriesResponse, error)
 	// ListQueryHistories lists query histories of all users in a project.
+	// Results are ordered by create time descending (newest first).
 	// Permissions required: bb.queryHistories.list
 	ListQueryHistories(ctx context.Context, in *ListQueryHistoriesRequest, opts ...grpc.CallOption) (*ListQueryHistoriesResponse, error)
 	// GetQueryHistory gets a single query history for the caller.
@@ -89,6 +90,7 @@ type QueryHistoryServiceServer interface {
 	// Permissions required: None (only returns caller's own query histories)
 	SearchQueryHistories(context.Context, *SearchQueryHistoriesRequest) (*SearchQueryHistoriesResponse, error)
 	// ListQueryHistories lists query histories of all users in a project.
+	// Results are ordered by create time descending (newest first).
 	// Permissions required: bb.queryHistories.list
 	ListQueryHistories(context.Context, *ListQueryHistoriesRequest) (*ListQueryHistoriesResponse, error)
 	// GetQueryHistory gets a single query history for the caller.

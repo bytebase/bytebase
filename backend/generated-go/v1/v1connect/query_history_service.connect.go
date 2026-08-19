@@ -50,6 +50,7 @@ type QueryHistoryServiceClient interface {
 	// Permissions required: None (only returns caller's own query histories)
 	SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error)
 	// ListQueryHistories lists query histories of all users in a project.
+	// Results are ordered by create time descending (newest first).
 	// Permissions required: bb.queryHistories.list
 	ListQueryHistories(context.Context, *connect.Request[v1.ListQueryHistoriesRequest]) (*connect.Response[v1.ListQueryHistoriesResponse], error)
 	// GetQueryHistory gets a single query history for the caller.
@@ -117,6 +118,7 @@ type QueryHistoryServiceHandler interface {
 	// Permissions required: None (only returns caller's own query histories)
 	SearchQueryHistories(context.Context, *connect.Request[v1.SearchQueryHistoriesRequest]) (*connect.Response[v1.SearchQueryHistoriesResponse], error)
 	// ListQueryHistories lists query histories of all users in a project.
+	// Results are ordered by create time descending (newest first).
 	// Permissions required: bb.queryHistories.list
 	ListQueryHistories(context.Context, *connect.Request[v1.ListQueryHistoriesRequest]) (*connect.Response[v1.ListQueryHistoriesResponse], error)
 	// GetQueryHistory gets a single query history for the caller.

@@ -308,6 +308,7 @@ export declare const QueryHistoryService: GenService<{
   },
   /**
    * ListQueryHistories lists query histories of all users in a project.
+   * Results are ordered by create time descending (newest first).
    * Permissions required: bb.queryHistories.list
    *
    * @generated from rpc bytebase.v1.QueryHistoryService.ListQueryHistories

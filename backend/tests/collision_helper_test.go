@@ -190,6 +190,8 @@ func setupCollidingProjects(
 	}))
 	a.NoError(err)
 
+	waitPlanCheckRunSettled(ctx, t, ctl, planB.Msg.Name)
+
 	f := &collisionFixture{
 		ProjectA:  projectA.Msg,
 		ProjectB:  projectB.Msg,
@@ -257,6 +259,8 @@ func setupCollidingProjectsSeparateInstances(
 	baselineA := snapshotProject(ctx, t, ctl, projectA.Msg)
 
 	planB, issueB := createPlanAndIssue(ctx, t, ctl, projectB.Msg, dbB.Msg, "Collision test B")
+
+	waitPlanCheckRunSettled(ctx, t, ctl, planB.Name)
 
 	f := &collisionFixture{
 		ProjectA:  projectA.Msg,
@@ -527,6 +531,37 @@ func createPlanIssueRollout(ctx context.Context, t *testing.T, ctl *controller, 
 	}))
 	a.NoError(err)
 	return plan, issue, rollout.Msg
+}
+
+// waitPlanCheckRunSettled blocks until the plan's check run leaves the
+// scheduler's hands, so a snapshot of the project is a stable oracle.
+//
+// CreatePlan writes the check run synchronously but the plancheck runner
+// executes it in the background, walking AVAILABLE -> RUNNING -> DONE.
+// Project A settles on its own because the fixture waits out its rollout;
+// project B, whose rollout the caller drives, would otherwise still be
+// mid-flight when a test takes its "before" snapshot. The status then
+// advances during the test and assertProjectUnchanged reads project B's own
+// scheduler as a cross-project write.
+//
+// A plan with no check run is a steady state, not something to wait for.
+func waitPlanCheckRunSettled(ctx context.Context, t *testing.T, ctl *controller, planName string) {
+	t.Helper()
+	a := require.New(t)
+	var last v1pb.PlanCheckRun_Status
+	a.Eventually(func() bool {
+		resp, err := ctl.planServiceClient.GetPlanCheckRun(ctx, connect.NewRequest(&v1pb.GetPlanCheckRunRequest{
+			Name: planName + "/planCheckRun",
+		}))
+		if err != nil {
+			return connect.CodeOf(err) == connect.CodeNotFound
+		}
+		last = resp.Msg.Status
+		return last == v1pb.PlanCheckRun_DONE ||
+			last == v1pb.PlanCheckRun_FAILED ||
+			last == v1pb.PlanCheckRun_CANCELED
+	}, 120*time.Second, 200*time.Millisecond,
+		"plan check run for %s never settled (last status %v)", planName, last)
 }
 
 // projectSnapshot captures the state of a project's composite-PK rows as
