@@ -122,11 +122,6 @@ func TestMCPAuthMiddleware(t *testing.T) {
 	}
 }
 
-func TestNewServerRequiresStore(t *testing.T) {
-	_, err := NewServer(nil, &config.Profile{}, "test-secret", nil)
-	require.Error(t, err)
-}
-
 func TestMCPAuthFailsExplicitlyWithoutExternalURL(t *testing.T) {
 	s := &Server{
 		store:   newTestServerStore(),

@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"math"
 	"time"
 
@@ -548,4 +549,86 @@ func (s *Store) DeleteSetting(ctx context.Context, workspace string, name storep
 	defer s.settingPublishMu.Unlock()
 	s.settingCache.Remove(getSettingCacheKey(workspace, name))
 	return nil
+}
+
+// GetMCPCapabilityUncached reads the workspace's stored MCP capability ceiling
+// straight from the database, bypassing the setting cache. The cache has no TTL
+// and only in-process writes refresh it, so a ceiling flipped out of band —
+// direct SQL, another replica — must still bite on the next request.
+//
+// It reads the row's JSON rather than taking the parsed message, because the
+// shared unmarshaler discards unknown fields and that is the one case a ceiling
+// must not swallow. A stored `{"mcpCapability":"READ_ONLYY"}` parses to the
+// unset value, which resolves to READ_WRITE below, so a typo would
+// silently reopen the workspace. An unknown enum NUMBER survives protojson and
+// fails closed on its own — no mode serves it — and only an unknown NAME
+// disappears, so the check is the raw key's presence against the parsed field
+// and nothing else about the row is read strictly. Rejecting the whole row on
+// any unknown field would let one field from a newer release disable MCP
+// workspace-wide.
+//
+// The returned ceiling is the effective one, never UNSPECIFIED: a workspace
+// that never set a ceiling resolves to READ_WRITE so existing workspaces are
+// unaffected. Every state this cannot make sense of is an error instead, and
+// every caller fails closed on one — so a caller has exactly one decision to
+// take, and it is the same decision in both of them.
+func (s *Store) GetMCPCapabilityUncached(ctx context.Context, workspace string) (storepb.WorkspaceProfileSetting_MCPCapability, error) {
+	const unset = storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED
+	const whenUnset = storepb.WorkspaceProfileSetting_READ_WRITE
+
+	q := qb.Q().Space(`
+		SELECT value FROM setting WHERE workspace = ? AND name = ?
+	`, workspace, storepb.SettingName_WORKSPACE_PROFILE.String())
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return unset, errors.Wrap(err, "failed to build sql")
+	}
+	var valueString string
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&valueString); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			// No workspace profile row at all: the ceiling was never set.
+			return whenUnset, nil
+		}
+		return unset, errors.Wrap(err, "failed to read the workspace profile setting")
+	}
+
+	profile := &storepb.WorkspaceProfileSetting{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(valueString), profile); err != nil {
+		return unset, errors.Wrap(err, "failed to unmarshal the workspace profile setting")
+	}
+	if capability := profile.GetMcpCapability(); capability != unset {
+		return capability, nil
+	}
+
+	stored, err := storedMCPCapability(valueString)
+	if err != nil {
+		return unset, err
+	}
+	if stored != "" {
+		return unset, errors.Errorf("the stored MCP capability ceiling %s is not a value this build understands", stored)
+	}
+	return whenUnset, nil
+}
+
+// storedMCPCapability returns the workspace profile row's raw mcp_capability
+// value, or "" when the row carries no such key. protojson accepts both the
+// JSON name and the proto field name, so a hand-written row may use either.
+//
+// A key present alongside a parsed-unset field means the stored name is one
+// this build does not know. An explicit MCP_CAPABILITY_UNSPECIFIED counts as
+// that too, deliberately: protojson omits a zero enum when it writes, and the
+// settings API rejects an explicit UNSPECIFIED, so no Bytebase write produces
+// this key with that value — only a hand-edited row does, and there it is
+// indistinguishable from a typo.
+func storedMCPCapability(value string) (string, error) {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal([]byte(value), &fields); err != nil {
+		return "", errors.Wrap(err, "failed to read the workspace profile setting as JSON")
+	}
+	for _, key := range []string{"mcpCapability", "mcp_capability"} {
+		if raw, ok := fields[key]; ok {
+			return string(raw), nil
+		}
+	}
+	return "", nil
 }

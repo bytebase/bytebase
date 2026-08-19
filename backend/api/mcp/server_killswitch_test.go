@@ -193,3 +193,85 @@ func tokenForWorkspace(t *testing.T, secret, workspaceID string) string {
 	require.NoError(t, err)
 	return tokenStr
 }
+
+// TestMCPCeilingStoredValueFailsClosed drives the /mcp connection gate against
+// the ceiling values a workspace row can actually hold, including the ones no
+// Bytebase write produces.
+//
+// The typo row is the one that mattered: protojson discards a field whose enum
+// NAME it does not recognize, so `{"mcpCapability":"READ_WRTIE"}` used to parse
+// as unset and resolve to READ_WRITE — a mistyped kill switch that silently did
+// nothing. An unknown enum NUMBER never had that problem, because protojson
+// keeps it and no mode serves it.
+//
+// The read-only row is the cutover pin. READ_ONLY is enforceable per method
+// from this PR, but a read-only session can still write SQL through the query
+// tool until 1b-3 clamps statements, so the connection stays refused. If this
+// row ever returns 200 without the clamp shipping, the cutover moved early.
+func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+
+	db := container.GetDB()
+	require.NoError(t, migrator.MigrateSchema(ctx, db))
+
+	rows := []struct {
+		workspace string
+		value     string
+		want      int
+		why       string
+	}{
+		{"ws-typo", `{"mcpCapability":"READ_WRTIE"}`, http.StatusForbidden,
+			"a ceiling this build cannot read is not a ceiling that permits"},
+		{"ws-reserved", `{"mcpCapability":2}`, http.StatusForbidden,
+			"the reserved number was METADATA_ONLY; no mode serves it"},
+		{"ws-explicit-unset", `{"mcpCapability":"MCP_CAPABILITY_UNSPECIFIED"}`, http.StatusForbidden,
+			"no Bytebase write produces this key with this value, so a row that has it was hand-edited"},
+		{"ws-readonly", `{"mcpCapability":"READ_ONLY"}`, http.StatusForbidden,
+			"READ_ONLY does not admit a connection until the SQL clamp lands (1b-3)"},
+		{"ws-other-unknown-field", `{"someFieldFromANewerRelease":"x"}`, http.StatusOK,
+			"one unknown field must not disable MCP: only the ceiling key is read strictly"},
+		{"ws-open", `{}`, http.StatusOK,
+			"a workspace that never set a ceiling keeps working"},
+	}
+
+	for _, row := range rows {
+		_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ($1)`, row.workspace)
+		require.NoError(t, err)
+		_, err = db.ExecContext(ctx,
+			`INSERT INTO setting (name, workspace, value) VALUES ('WORKSPACE_PROFILE', $1, $2)`,
+			row.workspace, row.value)
+		require.NoError(t, err)
+	}
+
+	pgURL := fmt.Sprintf(
+		"host=%s port=%s user=postgres password=root-password database=postgres",
+		container.GetHost(), container.GetPort(),
+	)
+	s, err := store.New(ctx, pgURL, false)
+	require.NoError(t, err)
+
+	secret := "test-secret-key"
+	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
+	srv, err := NewServer(s, profile, secret, nil)
+	require.NoError(t, err)
+
+	for _, row := range rows {
+		t.Run(row.workspace, func(t *testing.T) {
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{}`))
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Authorization", "Bearer "+tokenForWorkspace(t, secret, row.workspace))
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			handler := srv.authMiddleware(func(c *echo.Context) error {
+				return c.String(http.StatusOK, "success")
+			})
+			if err := handler(c); err != nil {
+				echo.DefaultHTTPErrorHandler(true)(c, err)
+			}
+			require.Equal(t, row.want, rec.Code, row.why)
+		})
+	}
+}
