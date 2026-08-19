@@ -596,10 +596,16 @@ func (s *Server) unauthorized(c *echo.Context, errDescription string) error {
 // through the query tool. 1b-3 lands the clamp and flips this to
 // allow-with-clamp; nothing before it may. Unknown stored values (e.g. the
 // reserved number) hit the default arm and fail closed too.
+//
+// UNSPECIFIED is refused rather than treated as "never configured", even though
+// that is what an unset ceiling means in the stored proto. The resolution
+// happens before this point — store.GetMCPCapabilityUncached returns READ_WRITE
+// for a workspace that never set one — so UNSPECIFIED reaching here is a zero
+// value nobody resolved, and a gate that admits on a zero value is one
+// mistake away from admitting on a failure.
 func mcpConnectionAllowed(capability storepb.WorkspaceProfileSetting_MCPCapability) bool {
 	switch capability {
-	case storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED,
-		storepb.WorkspaceProfileSetting_READ_WRITE:
+	case storepb.WorkspaceProfileSetting_READ_WRITE:
 		return true
 	default:
 		return false

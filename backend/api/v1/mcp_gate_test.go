@@ -1264,86 +1264,179 @@ func TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation(t *testing.T) {
 	})
 }
 
+// mcpDenialRequestReview is one recorded decision: which fields of a request
+// were looked at, and what audit.go does with them.
+type mcpDenialRequestReview struct {
+	fields   []string
+	decision string
+}
+
 // mcpDenialRequestsUnderReview is the population the redaction sweep has to
-// consider: every method the gate refuses that carries NO audit annotation, and
-// whose request holds more than the names, filters and page tokens the rest of
-// them carry. Before the gate, none of these produced an audit row at all; now
-// every denial writes one, so whatever the request holds is what lands in the
-// audit_log table.
+// consider: every method carrying NO audit annotation whose request holds
+// anything beyond the AIP vocabulary below. Before the gate, none of these
+// produced an audit row at all; now a denial writes one, so whatever the
+// request holds is what lands in the audit_log table.
 //
-// The value records what audit.go does with it, so a reviewer sees the decision
-// rather than the membership alone.
+// It covers READ and WRITE as well as the refused classes, because the gate can
+// refuse those too — an uninterpretable stored ceiling refuses whatever the
+// method's class is, and that refusal is a policy denial like any other.
+//
+// The decision is keyed on (method, field), not on the field name alone. A name
+// exempted globally is an exemption for every future method that happens to
+// reuse it, which is the same silent admission the exercise is trying to close:
+// `schema` looks inert next to `name` and `parent`, and on DiffSchema it is the
+// caller's entire DDL body.
 //
 // This exists because the first sweep was done by reading, and reading missed
 // ListInstanceDatabase — whose request carries an entire Instance, and with it
 // every data-source credential the product stores. A list nobody can add to
 // silently is the only version of that sweep worth trusting.
-var mcpDenialRequestsUnderReview = map[string]string{
-	v1connect.AIServiceChatProcedure:                               "redactAIChatRequest drops the conversation body",
-	v1connect.AuthServiceSwitchWorkspaceProcedure:                  "redactSwitchWorkspaceRequest masks the three MFA proofs",
-	v1connect.IdentityProviderServiceTestIdentityProviderProcedure: "redactTestIdentityProviderRequest masks the provider secret and the test credential",
-	v1connect.InstanceServiceListInstanceDatabaseProcedure:         "redactInstance masks every data-source credential",
-	v1connect.ProjectServiceTestWebhookProcedure:                   "redactWebhook masks the webhook URL, which is a bearer credential",
-	v1connect.SettingServiceTestEmailSettingProcedure:              "redactEmailSetting masks the SMTP password",
+var mcpDenialRequestsUnderReview = map[string]mcpDenialRequestReview{
+	// Masked. Each carries a credential that a sibling audited method already
+	// masks, and the gate refuses before dispatch, so it was never even used.
+	v1connect.AIServiceChatProcedure: {
+		[]string{"messages", "tool_definitions"},
+		"redactAIChatRequest drops the conversation body, which is unbounded and stored untruncated",
+	},
+	v1connect.AuthServiceSwitchWorkspaceProcedure: {
+		[]string{"mfa_temp_token", "otp_code", "recovery_code", "web", "workspace"},
+		"redactSwitchWorkspaceRequest masks the three MFA proofs; the workspace it targeted and the cookie flag stay",
+	},
+	v1connect.IdentityProviderServiceTestIdentityProviderProcedure: {
+		[]string{"identity_provider", "ldap_context", "oauth2_context", "oidc_context"},
+		"redactTestIdentityProviderRequest masks the provider secret and the test credential",
+	},
+	v1connect.InstanceServiceListInstanceDatabaseProcedure: {
+		[]string{"instance"},
+		"redactInstance masks every data-source credential; pinned by TestAuditRedactsEveryInputOnlyDataSourceField",
+	},
+	v1connect.ProjectServiceTestWebhookProcedure: {
+		[]string{"project", "webhook"},
+		"redactWebhook masks the URL, which is a bearer credential; the project stays",
+	},
+	v1connect.SettingServiceTestEmailSettingProcedure: {
+		[]string{"email_setting", "to"},
+		"redactEmailSetting masks the SMTP password; the address the agent chose to mail stays, which is the point of the row",
+	},
 
 	// Recorded as sent. Each carries something bigger than a name, and none of
 	// it is a credential: what the row gains by keeping it is what the agent
 	// actually attempted.
-	v1connect.CelServiceBatchParseProcedure:                     "recorded: CEL the caller wrote",
-	v1connect.CelServiceBatchDeparseProcedure:                   "recorded: CEL the caller wrote",
-	v1connect.DatabaseServiceDiffMetadataProcedure:              "recorded: the caller's own proposed schema, which is the subject of the call",
-	v1connect.DatabaseServiceGetSchemaStringProcedure:           "recorded: the caller's own proposed schema",
-	v1connect.InstanceServiceBatchSyncInstancesProcedure:        "recorded: a batch of instance names and a full-sync flag, nothing more",
-	v1connect.ReleaseServiceCheckReleaseProcedure:               "recorded: the caller's own release files, the same way an audited Query records its statement",
-	v1connect.SubscriptionServiceVerifyCheckoutSessionProcedure: "recorded: an opaque checkout id the caller supplied; reaching the payment provider with it needs Bytebase's own key",
+	v1connect.CelServiceBatchParseProcedure: {
+		[]string{"expressions"}, "recorded: CEL the caller wrote",
+	},
+	v1connect.CelServiceBatchDeparseProcedure: {
+		[]string{"expressions"}, "recorded: CEL the caller wrote",
+	},
+	v1connect.DatabaseServiceDiffMetadataProcedure: {
+		[]string{"target_metadata"},
+		"recorded: the caller's own proposed schema, which is the subject of the call",
+	},
+	v1connect.DatabaseServiceDiffSchemaProcedure: {
+		[]string{"changelog", "schema"},
+		"recorded: the caller's own proposed schema, or the changelog it named",
+	},
+	v1connect.DatabaseServiceGetSchemaStringProcedure: {
+		[]string{"metadata", "object", "schema", "type"},
+		"recorded: the caller's own proposed schema",
+	},
+	v1connect.DatabaseServiceGetDatabaseMetadataProcedure: {
+		[]string{"limit"}, "recorded: a row limit",
+	},
+	v1connect.DatabaseServiceGetDatabaseSDLSchemaProcedure: {
+		[]string{"format"}, "recorded: an output format",
+	},
+	v1connect.InstanceServiceBatchSyncInstancesProcedure: {
+		[]string{"requests"},
+		"recorded: a batch of instance names and a full-sync flag, nothing more",
+	},
+	v1connect.InstanceServiceSyncInstanceProcedure: {
+		[]string{"enable_full_sync"}, "recorded: a sync flag",
+	},
+	v1connect.InstanceRoleServiceListInstanceRolesProcedure: {
+		[]string{"refresh"}, "recorded: a refresh flag",
+	},
+	v1connect.OrgPolicyServiceListPoliciesProcedure: {
+		[]string{"policy_type"}, "recorded: which policy kind was asked for",
+	},
+	v1connect.ReleaseServiceCheckReleaseProcedure: {
+		[]string{"custom_rules", "release", "targets", "vcs_user"},
+		"recorded: the caller's own release files, the same way an audited Query records its statement",
+	},
+	v1connect.SavedQueryServiceUpdateSavedQueryStarProcedure: {
+		[]string{"starred"}, "recorded: a star flag",
+	},
+	v1connect.SubscriptionServiceVerifyCheckoutSessionProcedure: {
+		[]string{"session_id"},
+		"recorded: an opaque checkout id the caller supplied; reaching the payment provider with it needs Bytebase's own key",
+	},
+	v1connect.DatabaseServiceBatchGetDatabasesProcedure: {
+		[]string{"names"}, "recorded: resource names",
+	},
+	v1connect.DatabaseServiceBatchSyncDatabasesProcedure: {
+		[]string{"names"}, "recorded: resource names",
+	},
+	v1connect.GroupServiceBatchGetGroupsProcedure: {
+		[]string{"names"}, "recorded: resource names",
+	},
+	v1connect.ProjectServiceBatchGetProjectsProcedure: {
+		[]string{"names"}, "recorded: resource names",
+	},
+	v1connect.UserServiceBatchGetUsersProcedure: {
+		[]string{"names"}, "recorded: resource names",
+	},
+
+	// Recorded, and inert on inspection: a resource reference this repo spells
+	// its own way, or a plain flag. They are here rather than in the global
+	// list because those names mean whatever their RPC decided, and the next
+	// RPC to use one may decide differently.
+	v1connect.AuthServiceGetAuthenticationRestrictionProcedure: {
+		[]string{"workspace"}, "recorded: a workspace resource name",
+	},
+	v1connect.IssueServiceGetIssueProcedure: {
+		[]string{"force"}, "recorded: a refresh flag",
+	},
+	v1connect.SheetServiceGetSheetProcedure: {
+		[]string{"raw"}, "recorded: a flag asking for untruncated content",
+	},
+}
+
+// mcpAIPRequestFields are the standard method-signature fields whose meaning is
+// fixed by AIP rather than by whoever writes the next RPC: a resource name, a
+// parent, the paging and filtering vocabulary, the update controls. They are
+// exempt globally because their semantics cannot drift into carrying a payload
+// — `page_token` is an opaque cursor on every method that has one, by
+// definition.
+//
+// Nothing else is exempt by name. A field called `schema` or `instance` means
+// whatever its own RPC decided it means, so it is reviewed per method above.
+var mcpAIPRequestFields = map[string]bool{
+	"name": true, "parent": true, "filter": true, "query": true, "order_by": true,
+	"page_size": true, "page_token": true, "show_deleted": true, "view": true,
+	"update_mask": true, "etag": true, "allow_missing": true, "validate_only": true,
+	// The IAM-policy resource, standard on Get/SetIamPolicy.
+	"resource": true,
 }
 
 // mcpRequestFieldNeedsReview reports whether a request field could carry more
-// into an audit row than a name or a filter: a nested message, whose whole
-// subtree travels, or a scalar whose name says it is a credential.
-//
-// page_token is the one exclusion. Thirteen list methods carry it, it is an
-// opaque cursor rather than a secret, and leaving it in would bury the six rows
-// that matter under thirteen that do not.
+// into an audit row than the AIP vocabulary does: a nested message, whose whole
+// subtree travels, or any scalar the RPC named for itself.
 func mcpRequestFieldNeedsReview(field protoreflect.FieldDescriptor) bool {
 	if field.Kind() == protoreflect.MessageKind || field.Kind() == protoreflect.GroupKind {
 		return true
 	}
-	return !mcpInertRequestFields[string(field.Name())]
+	return !mcpAIPRequestFields[string(field.Name())]
 }
 
-// mcpInertRequestFields is the closed list of scalar field names that carry
-// nothing worth deciding about: the resource-naming and paging vocabulary AIP
-// standardizes, plus the handful of plain flags on these requests.
-//
-// It is an allowlist rather than a list of credential-sounding names, because
-// the two fail in opposite directions. A denylist of markers admits every field
-// whose name nobody thought of — `session_id` is one that already exists — and
-// admits it silently, which is the failure this lint was written after. An
-// allowlist admits a field only once somebody has looked at it.
-var mcpInertRequestFields = map[string]bool{
-	"name": true, "parent": true, "filter": true, "query": true, "order_by": true,
-	"page_size": true, "page_token": true, "show_deleted": true, "skip_trim": true,
-	"resource": true, "workspace": true, "project": true, "instance": true,
-	"email": true, "user": true, "state": true, "view": true, "raw": true,
-	"schema": true, "sdl_format": true, "concise": true, "validate_only": true,
-	"allow_missing": true, "update_mask": true, "etag": true, "force": true,
-	"web": true, "type": true, "title": true, "description": true,
-	// Plurals of the naming vocabulary, and the plain flags and enums these
-	// requests carry: a batch of resource names is no more interesting than one.
-	"names": true, "targets": true, "changelog": true, "object": true,
-	"limit": true, "format": true, "refresh": true, "enable_full_sync": true,
-	"starred": true, "policy_type": true,
-}
-
-// TestLintDenialRequestsAreReviewedForRedaction fails when a method joins the
-// population above without anyone deciding what its denial row may carry.
+// TestLintDenialRequestsAreReviewedForRedaction fails when a method, or a field
+// on one, joins the population above without anyone deciding what its denial
+// row may carry.
 //
 // It cannot check that a redactor exists — getRequestString's type switch is
-// not readable from here — so it checks the thing that failed last time: that
-// somebody looked. A new EXCLUDED annotation on an unaudited method whose
-// request holds a nested message now breaks the build, and the fix is either a
-// redactor plus a row here, or a row here saying why none is needed.
+// not readable from here — so it checks the thing that failed twice: that
+// somebody looked, at each field rather than at the method as a whole. A new
+// unaudited RPC, or a new field on one already reviewed, breaks the build; the
+// fix is a redactor plus a row here, or a row here saying why none is needed.
 func TestLintDenialRequestsAreReviewedForRedaction(t *testing.T) {
 	needsReview := map[string][]string{}
 	for _, row := range mcpClassificationsFromDescriptors(t) {
@@ -1356,18 +1449,25 @@ func TestLintDenialRequestsAreReviewedForRedaction(t *testing.T) {
 				needsReview[row.procedure] = append(needsReview[row.procedure], string(field.Name()))
 			}
 		}
+		slices.Sort(needsReview[row.procedure])
 	}
 
 	var undecided []string
 	for procedure, fields := range needsReview {
-		if _, ok := mcpDenialRequestsUnderReview[procedure]; !ok {
-			undecided = append(undecided, fmt.Sprintf("%s holds %v", procedure, fields))
+		reviewed, ok := mcpDenialRequestsUnderReview[procedure]
+		if !ok {
+			undecided = append(undecided, fmt.Sprintf("%s holds %v, and nobody has decided about it", procedure, fields))
+			continue
+		}
+		if !slices.Equal(fields, reviewed.fields) {
+			undecided = append(undecided, fmt.Sprintf(
+				"%s holds %v; the recorded decision covers %v", procedure, fields, reviewed.fields))
 		}
 	}
 	slices.Sort(undecided)
 	require.Empty(t, undecided,
-		"these methods are unaudited and the gate can refuse them, so a denial now writes their request into an "+
-			"audit row: decide what may be recorded and add each to mcpDenialRequestsUnderReview")
+		"these methods are unaudited and the gate can refuse them, so a denial writes their request into an "+
+			"audit row: decide what may be recorded and record it in mcpDenialRequestsUnderReview")
 
 	var stale []string
 	for procedure := range mcpDenialRequestsUnderReview {

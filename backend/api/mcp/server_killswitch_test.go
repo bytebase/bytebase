@@ -24,17 +24,21 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 )
 
-// TestMCPConnectionAllowed pins the connection-level gate: only an unset ceiling
-// and READ_WRITE admit a connection in this phase. DISABLED, the
-// not-yet-enforceable READ_ONLY ceiling, and unknown stored values (such as
-// the reserved number 2) all fail closed so a ceiling the server cannot apply
-// per-tool never silently grants read-write.
+// TestMCPConnectionAllowed pins the connection-level gate: only READ_WRITE
+// admits a connection in this phase. DISABLED, the not-yet-enforceable
+// READ_ONLY ceiling, unknown stored values (such as the reserved number 2), and
+// the zero value all fail closed, so a ceiling the server cannot apply per-tool
+// never silently grants read-write.
+//
+// UNSPECIFIED is refused here even though an unset stored ceiling means
+// READ_WRITE: the store resolves that before this point, so a zero value
+// arriving here was resolved by nobody.
 func TestMCPConnectionAllowed(t *testing.T) {
 	tests := []struct {
 		capability storepb.WorkspaceProfileSetting_MCPCapability
 		allowed    bool
 	}{
-		{storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED, true},
+		{storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED, false},
 		{storepb.WorkspaceProfileSetting_READ_WRITE, true},
 		{storepb.WorkspaceProfileSetting_DISABLED, false},
 		{storepb.WorkspaceProfileSetting_MCPCapability(2), false}, // reserved (was METADATA_ONLY)
