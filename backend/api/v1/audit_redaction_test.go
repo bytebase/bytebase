@@ -374,6 +374,13 @@ func TestAuditRedactsEveryInputOnlyDataSourceField(t *testing.T) {
 			{"add data source", &v1pb.AddDataSourceRequest{DataSource: filled}},
 			{"update data source", &v1pb.UpdateDataSourceRequest{DataSource: filled}},
 			{"remove data source", &v1pb.RemoveDataSourceRequest{DataSource: filled}},
+			// The seventh carrier, and the one that reaches the audit log only
+			// because MCP denials are recorded: ListInstanceDatabase is
+			// EXCLUDED and unaudited, so its request was never written down
+			// until the ceiling gate started recording its refusals.
+			{"list instance database", &v1pb.ListInstanceDatabaseRequest{Instance: &v1pb.Instance{
+				DataSources: []*v1pb.DataSource{filled},
+			}}},
 		} {
 			t.Run(fmt.Sprintf("%s/oneof arm %d", tt.name, arm), func(t *testing.T) {
 				got, err := getRequestString(tt.request)

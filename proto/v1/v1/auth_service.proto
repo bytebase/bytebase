@@ -41,7 +41,7 @@ service AuthService {
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = MINTS_CREDENTIAL;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
   }
 
   // Logs out the current user session.
@@ -54,7 +54,7 @@ service AuthService {
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = ENDS_SESSION;
+    option (bytebase.v1.mcp_denial_reason) = ENDS_SESSION;
   }
 
   // Exchanges an external OIDC token for a Bytebase access token.
@@ -68,7 +68,7 @@ service AuthService {
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = MINTS_CREDENTIAL;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
   }
 
   // Registers a new user account. Creates a principal and assigns a workspace:
@@ -83,7 +83,7 @@ service AuthService {
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = MINTS_CREDENTIAL;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
   }
 
   // Refreshes the access token using the refresh token cookie.
@@ -95,7 +95,7 @@ service AuthService {
     };
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = MINTS_CREDENTIAL;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
   }
 
   // Switches the current user's active workspace and issues new tokens.
@@ -107,7 +107,7 @@ service AuthService {
     };
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = MINTS_CREDENTIAL;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
   }
 
   // Requests a password reset email for the given email address.
@@ -121,7 +121,7 @@ service AuthService {
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = RESETS_CREDENTIAL;
+    option (bytebase.v1.mcp_denial_reason) = RESETS_CREDENTIAL;
   }
 
   // Resets the user's password using a password reset token from email.
@@ -134,7 +134,7 @@ service AuthService {
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = RESETS_CREDENTIAL;
+    option (bytebase.v1.mcp_denial_reason) = RESETS_CREDENTIAL;
   }
 
   // Sends a 6-digit verification code to the email for login/signup.
@@ -148,7 +148,7 @@ service AuthService {
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = RESETS_CREDENTIAL;
+    option (bytebase.v1.mcp_denial_reason) = RESETS_CREDENTIAL;
   }
 }
 

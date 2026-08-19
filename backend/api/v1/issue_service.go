@@ -407,6 +407,9 @@ func (s *IssueService) getUserByIdentifier(ctx context.Context, identifier strin
 
 // CreateIssue creates a issue.
 func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1pb.CreateIssueRequest]) (*connect.Response[v1pb.Issue], error) {
+	if err := rejectMCPOriginatedGrantIssue(ctx, req.Msg.GetIssue().GetType()); err != nil {
+		return nil, err
+	}
 	projectID, err := common.GetProjectID(req.Msg.Parent)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
@@ -536,6 +539,42 @@ func (s *IssueService) findLinkedIssueForCreate(ctx context.Context, issue *stor
 		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("plan %d already has a draft issue", *issue.PlanUID))
 	}
 	return existing, nil
+}
+
+// rejectMCPOriginatedGrantIssue refuses an MCP session creating an issue of any
+// type but the database change an agent exists to compose. A ROLE_GRANT issue
+// completes on creation whenever the workspace approval rule produces no
+// template, and completing it writes the project IAM binding for whichever
+// grantee the request named — which is ProjectService/SetIamPolicy, a method
+// the MCP ceiling refuses outright. The session would end up granting access
+// with no human step.
+//
+// It lives here rather than only in the ceiling gate because CREATION is the
+// fact it turns on, and the gate cannot see that fact. UpdateIssue with
+// allow_missing is the same creation under another name, but only when the
+// issue does not exist: the handler reaches this function through that branch
+// alone, so an ordinary AIP upsert of an issue that DOES exist never arrives
+// here — and it must not be refused, since the type in a full-resource PATCH
+// says nothing about whether the call creates anything. The gate keeps its own
+// refusal for CreateIssue, where the request shape IS the whole story and the
+// denial can land before dispatch; this one covers the delegation the gate
+// cannot follow, the same way rejectMCPOriginatedTokenMint sits at the mint
+// rather than only at its callers.
+//
+// Presence of the delegated grant is the MCP-origin marker, never a field
+// value (common.DelegatedGrant).
+func rejectMCPOriginatedGrantIssue(ctx context.Context, issueType v1pb.Issue_Type) error {
+	authCtx, ok := common.GetAuthContextFromContext(ctx)
+	if !ok || authCtx.DelegatedGrant == nil {
+		return nil
+	}
+	if issueType == v1pb.Issue_DATABASE_CHANGE {
+		return nil
+	}
+	return connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+		"an MCP session may not create a %v issue: that issue type completes on creation whenever the "+
+			"workspace approval rule produces no template, which grants access with no human step. "+
+			"Create it signed in to the Bytebase console instead", issueType))
 }
 
 func (s *IssueService) buildIssueMessage(ctx context.Context, project *store.ProjectMessage, userEmail string, request *v1pb.CreateIssueRequest, labels []string) (*store.IssueMessage, error) {

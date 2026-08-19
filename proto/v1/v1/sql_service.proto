@@ -45,7 +45,7 @@ service SQLService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = OPENS_AN_ADMIN_CONNECTION;
+    option (bytebase.v1.mcp_denial_reason) = OPENS_AN_ADMIN_CONNECTION;
   }
 
   // Deprecated: use QueryHistoryService.SearchQueryHistories instead.
@@ -67,7 +67,7 @@ service SQLService {
     option (bytebase.v1.permission) = "bb.queryHistories.list";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = READS_OTHER_USERS_SQL;
+    option (bytebase.v1.mcp_denial_reason) = READS_OTHER_USERS_SQL;
   }
 
   // Deprecated: use QueryHistoryService.GetQueryHistory instead.

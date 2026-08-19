@@ -625,7 +625,9 @@ type WorkspaceProfileSetting struct {
 	// The maximum capability available to MCP (Model Context Protocol) sessions in
 	// this workspace, acting as an admin-set ceiling. Unset is treated as
 	// READ_WRITE for backward compatibility; DISABLED rejects all MCP
-	// connections. Enforced server-side by the /mcp endpoint.
+	// connections. Enforced server-side at two points: the /mcp endpoint decides
+	// whether a connection is admitted at all, and the ceiling gate on the
+	// internal MCP chain decides, per request, which method classes are served.
 	McpCapability WorkspaceProfileSetting_MCPCapability `protobuf:"varint,26,opt,name=mcp_capability,json=mcpCapability,proto3,enum=bytebase.store.WorkspaceProfileSetting_MCPCapability" json:"mcp_capability,omitempty"`
 	// Hex-encoded SHA-256 of the SCIM directory sync token. The plaintext is shown
 	// once at rotation and never stored. SHA-256 rather than a slow KDF because the

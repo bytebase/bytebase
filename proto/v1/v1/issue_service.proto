@@ -42,15 +42,20 @@ service IssueService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     // WRITE covers the DATABASE_CHANGE issue this method exists for. It does
-    // not cover the other two types, which complete on creation whenever the
-    // workspace rule produces no approval template, each reaching past a
-    // method that is EXCLUDED for exactly that outcome: ROLE_GRANT writes the
-    // project IAM binding for a grantee the request names, which is
-    // ProjectService/SetIamPolicy; ACCESS_GRANT sets the grant ACTIVE, which
-    // is AccessGrantService/ActivateAccessGrant. A class annotation cannot
-    // split by request field, so the ceiling PR owes a carve-out refusing
-    // those two types on the MCP path. UpdateIssue reaches the same completion
-    // through allow_missing and carries the same debt.
+    // not cover a ROLE_GRANT issue, which completes on creation whenever the
+    // workspace rule produces no approval template and then writes the project
+    // IAM binding for a grantee the request names — which is
+    // ProjectService/SetIamPolicy, EXCLUDED for exactly that outcome. A class
+    // annotation cannot split by request field, so the MCP gate carries a
+    // request-shape refusal for this method: it admits DATABASE_CHANGE and
+    // refuses every other type (backend/api/v1/mcp_gate.go,
+    // mcpRequestShapeRefusals). UpdateIssue reaches the same creation through
+    // allow_missing and is refused with it.
+    //
+    // An ACCESS_GRANT issue is refused by the same allow-list and does not
+    // reach this handler in the first place: buildIssueMessage has no arm for
+    // it, so the type is an invalid argument here. Those issues are written by
+    // AccessGrantService/CreateAccessGrant, which is EXCLUDED.
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -87,6 +92,12 @@ service IssueService {
     option (bytebase.v1.permission) = "bb.issues.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    // WRITE, and editing an issue is an agent's job — including an edit that
+    // resets approval finding and sends the issue back for review. What this
+    // does not cover is creation: with allow_missing set on an issue that does
+    // not exist, the handler calls CreateIssue with the request's own issue, so
+    // the MCP gate applies CreateIssue's request-shape refusal here too
+    // whenever allow_missing is set.
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -151,7 +162,7 @@ service IssueService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = DRIVES_THE_APPROVAL_DECISION;
+    option (bytebase.v1.mcp_denial_reason) = DRIVES_THE_APPROVAL_DECISION;
   }
 
   // Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
@@ -164,7 +175,7 @@ service IssueService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = DRIVES_THE_APPROVAL_DECISION;
+    option (bytebase.v1.mcp_denial_reason) = DRIVES_THE_APPROVAL_DECISION;
   }
 
   // Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step.
@@ -210,7 +221,7 @@ service IssueService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = DRIVES_THE_APPROVAL_DECISION;
+    option (bytebase.v1.mcp_denial_reason) = DRIVES_THE_APPROVAL_DECISION;
   }
 }
 

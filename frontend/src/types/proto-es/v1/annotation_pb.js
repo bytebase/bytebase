@@ -9,7 +9,7 @@ import { file_google_protobuf_descriptor } from "@bufbuild/protobuf/wkt";
  * Describes the file v1/annotation.proto.
  */
 export const file_v1_annotation = /*@__PURE__*/
-  fileDesc("ChN2MS9hbm5vdGF0aW9uLnByb3RvEgtieXRlYmFzZS52MSo+CgpBdXRoTWV0aG9kEhsKF0FVVEhfTUVUSE9EX1VOU1BFQ0lGSUVEEAASBwoDSUFNEAESCgoGQ1VTVE9NEAIqZAoOTUNQTWV0aG9kQ2xhc3MSIAocTUNQX01FVEhPRF9DTEFTU19VTlNQRUNJRklFRBAAEggKBFJFQUQQARIJCgVXUklURRACEg0KCUZPUkJJRERFThADEgwKCEVYQ0xVREVEEAQqiAIKEk1DUEZvcmJpZGRlblJlYXNvbhIkCiBNQ1BfRk9SQklEREVOX1JFQVNPTl9VTlNQRUNJRklFRBAAEhQKEE1JTlRTX0NSRURFTlRJQUwQARIVChFSRVNFVFNfQ1JFREVOVElBTBACEhYKElRBS0VTX09WRVJfQUNDT1VOVBADEhAKDEVORFNfU0VTU0lPThAEEhMKD0VORFNfTUVNQkVSU0hJUBAFEh8KG01JTlRTX0NSRURFTlRJQUxfRk9SX09USEVSUxAGEh0KGVJFV1JJVEVTX1NFU1NJT05fQk9VTkRBUlkQBxIgChxEUklWRVNfVEhFX0FQUFJPVkFMX0RFQ0lTSU9OEAgq0QEKEk1DUEV4Y2x1c2lvblJlYXNvbhIkCiBNQ1BfRVhDTFVTSU9OX1JFQVNPTl9VTlNQRUNJRklFRBAAEh0KGUFETUlOSVNURVJTX1RIRV9XT1JLU1BBQ0UQARIZChVSRUFEU19PVEhFUl9VU0VSU19TUUwQAhIdChlPUEVOU19BTl9BRE1JTl9DT05ORUNUSU9OEAMSHwobU0VORFNfREFUQV9UT19BX1RISVJEX1BBUlRZEAQSGwoXUkVUVVJOU19BX1NUT1JFRF9TRUNSRVQQBTpaChhhbGxvd193aXRob3V0X2NyZWRlbnRpYWwSHi5nb29nbGUucHJvdG9idWYuTWV0aG9kT3B0aW9ucxigjQYgASgIUhZhbGxvd1dpdGhvdXRDcmVkZW50aWFsOkAKCnBlcm1pc3Npb24SHi5nb29nbGUucHJvdG9idWYuTWV0aG9kT3B0aW9ucxihjQYgASgJUgpwZXJtaXNzaW9uOloKC2F1dGhfbWV0aG9kEh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMYoo0GIAEoDjIXLmJ5dGViYXNlLnYxLkF1dGhNZXRob2RSCmF1dGhNZXRob2Q6NgoFYXVkaXQSHi5nb29nbGUucHJvdG9idWYuTWV0aG9kT3B0aW9ucxijjQYgASgIUgVhdWRpdDpnChBtY3BfbWV0aG9kX2NsYXNzEh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMYpI0GIAEoDjIbLmJ5dGViYXNlLnYxLk1DUE1ldGhvZENsYXNzUg5tY3BNZXRob2RDbGFzczpzChRtY3BfZm9yYmlkZGVuX3JlYXNvbhIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKWNBiABKA4yHy5ieXRlYmFzZS52MS5NQ1BGb3JiaWRkZW5SZWFzb25SEm1jcEZvcmJpZGRlblJlYXNvbjpzChRtY3BfZXhjbHVzaW9uX3JlYXNvbhIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKaNBiABKA4yHy5ieXRlYmFzZS52MS5NQ1BFeGNsdXNpb25SZWFzb25SEm1jcEV4Y2x1c2lvblJlYXNvbkKlAQoPY29tLmJ5dGViYXNlLnYxQg9Bbm5vdGF0aW9uUHJvdG9QAVo0Z2l0aHViLmNvbS9ieXRlYmFzZS9ieXRlYmFzZS9iYWNrZW5kL2dlbmVyYXRlZC1nby92MaICA0JYWKoCC0J5dGViYXNlLlYxygILQnl0ZWJhc2VcVjHiAhdCeXRlYmFzZVxWMVxHUEJNZXRhZGF0YeoCDEJ5dGViYXNlOjpWMWIGcHJvdG8z", [file_google_protobuf_descriptor]);
+  fileDesc("ChN2MS9hbm5vdGF0aW9uLnByb3RvEgtieXRlYmFzZS52MSo+CgpBdXRoTWV0aG9kEhsKF0FVVEhfTUVUSE9EX1VOU1BFQ0lGSUVEEAASBwoDSUFNEAESCgoGQ1VTVE9NEAIqZAoOTUNQTWV0aG9kQ2xhc3MSIAocTUNQX01FVEhPRF9DTEFTU19VTlNQRUNJRklFRBAAEggKBFJFQUQQARIJCgVXUklURRACEg0KCUZPUkJJRERFThADEgwKCEVYQ0xVREVEEAQqmQMKD01DUERlbmlhbFJlYXNvbhIhCh1NQ1BfREVOSUFMX1JFQVNPTl9VTlNQRUNJRklFRBAAEhQKEE1JTlRTX0NSRURFTlRJQUwQARIVChFSRVNFVFNfQ1JFREVOVElBTBACEhYKElRBS0VTX09WRVJfQUNDT1VOVBADEhAKDEVORFNfU0VTU0lPThAEEhMKD0VORFNfTUVNQkVSU0hJUBAFEh8KG01JTlRTX0NSRURFTlRJQUxfRk9SX09USEVSUxAGEh0KGVJFV1JJVEVTX1NFU1NJT05fQk9VTkRBUlkQBxIgChxEUklWRVNfVEhFX0FQUFJPVkFMX0RFQ0lTSU9OEAgSHQoZQURNSU5JU1RFUlNfVEhFX1dPUktTUEFDRRAJEhkKFVJFQURTX09USEVSX1VTRVJTX1NRTBAKEh0KGU9QRU5TX0FOX0FETUlOX0NPTk5FQ1RJT04QCxIfChtTRU5EU19EQVRBX1RPX0FfVEhJUkRfUEFSVFkQDBIbChdSRVRVUk5TX0FfU1RPUkVEX1NFQ1JFVBANOloKGGFsbG93X3dpdGhvdXRfY3JlZGVudGlhbBIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKCNBiABKAhSFmFsbG93V2l0aG91dENyZWRlbnRpYWw6QAoKcGVybWlzc2lvbhIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKGNBiABKAlSCnBlcm1pc3Npb246WgoLYXV0aF9tZXRob2QSHi5nb29nbGUucHJvdG9idWYuTWV0aG9kT3B0aW9ucxiijQYgASgOMhcuYnl0ZWJhc2UudjEuQXV0aE1ldGhvZFIKYXV0aE1ldGhvZDo2CgVhdWRpdBIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKONBiABKAhSBWF1ZGl0OmcKEG1jcF9tZXRob2RfY2xhc3MSHi5nb29nbGUucHJvdG9idWYuTWV0aG9kT3B0aW9ucxikjQYgASgOMhsuYnl0ZWJhc2UudjEuTUNQTWV0aG9kQ2xhc3NSDm1jcE1ldGhvZENsYXNzOmoKEW1jcF9kZW5pYWxfcmVhc29uEh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMYpY0GIAEoDjIcLmJ5dGViYXNlLnYxLk1DUERlbmlhbFJlYXNvblIPbWNwRGVuaWFsUmVhc29uQqUBCg9jb20uYnl0ZWJhc2UudjFCD0Fubm90YXRpb25Qcm90b1ABWjRnaXRodWIuY29tL2J5dGViYXNlL2J5dGViYXNlL2JhY2tlbmQvZ2VuZXJhdGVkLWdvL3YxogIDQlhYqgILQnl0ZWJhc2UuVjHKAgtCeXRlYmFzZVxWMeICF0J5dGViYXNlXFYxXEdQQk1ldGFkYXRh6gIMQnl0ZWJhc2U6OlYxYgZwcm90bzM", [file_google_protobuf_descriptor]);
 
 /**
  * Describes the enum bytebase.v1.AuthMethod.
@@ -36,12 +36,11 @@ export const MCPMethodClassSchema = /*@__PURE__*/
  * authorization of an MCP session is this classification intersected with the
  * caller's own RBAC: it can only ever narrow what the human could do, never
  * widen it.
- * Only FORBIDDEN is enforced today. READ, WRITE and EXCLUDED are recorded
- * classifications and nothing reads them at request time yet — the gate that
- * selects between them is a later change. A method annotated READ or WRITE is
- * therefore served exactly as it is today; the annotation states where it
- * belongs, not where the boundary currently sits. FORBIDDEN is the exception
- * and is enforced the moment it is annotated.
+ * Every value is enforced, at the gate on the internal MCP chain. READ and
+ * WRITE are the serving classes the workspace's MCP capability ceiling selects
+ * between, EXCLUDED and FORBIDDEN are served by no ceiling, and an unclassified
+ * method is refused rather than served. Annotating a method is therefore a
+ * change to what an MCP session can reach, taking effect on the next request.
  *
  * @generated from enum bytebase.v1.MCPMethodClass
  */
@@ -49,40 +48,34 @@ export const MCPMethodClass = /*@__PURE__*/
   tsEnum(MCPMethodClassSchema);
 
 /**
- * Describes the enum bytebase.v1.MCPForbiddenReason.
+ * Describes the enum bytebase.v1.MCPDenialReason.
  */
-export const MCPForbiddenReasonSchema = /*@__PURE__*/
+export const MCPDenialReasonSchema = /*@__PURE__*/
   enumDesc(file_v1_annotation, 2);
 
 /**
- * Why an RPC is FORBIDDEN to MCP sessions. The mechanism, not the wording:
- * each value names what its methods actually do, and the serving side turns
- * that into a sentence. A denial whose stated reason has drifted from the
- * mechanism is worse than a bare refusal, because it is the thing the next
- * reader trusts — so a method changing what it does changes its reason here.
+ * Why an MCP session may not call an RPC. The mechanism, not the wording: each
+ * value names what its methods actually do, and the serving side turns that
+ * into a sentence. A denial whose stated reason has drifted from the mechanism
+ * is worse than a bare refusal, because it is the thing the next reader trusts
+ * — so a method changing what it does changes its reason here.
  *
- * @generated from enum bytebase.v1.MCPForbiddenReason
- */
-export const MCPForbiddenReason = /*@__PURE__*/
-  tsEnum(MCPForbiddenReasonSchema);
-
-/**
- * Describes the enum bytebase.v1.MCPExclusionReason.
- */
-export const MCPExclusionReasonSchema = /*@__PURE__*/
-  enumDesc(file_v1_annotation, 3);
-
-/**
- * Why an RPC is served by no MCP mode. Unlike MCPForbiddenReason, which names
- * a mechanism that breaks the MCP boundary, these name a scope decision: the
- * method is out because this phase ships two modes and neither is the right
- * home for it. Each value is what a future admin-capable ceiling would have to
- * argue with, one population at a time.
+ * One enum covers both refused classes, and every value belongs to exactly one
+ * of them: values 1-8 name a mechanism that breaks the MCP boundary, which is
+ * what FORBIDDEN means, and values 9-13 name a scope decision this phase took,
+ * which is what EXCLUDED means. The distinction is real and lives on the class
+ * annotation — a FORBIDDEN mechanism is a durable never, an EXCLUDED scope
+ * decision is what a future admin-capable ceiling would argue with, one
+ * population at a time. Splitting it across two enums as well only made the
+ * nonsense states representable: a method could carry both, or carry the kind
+ * that contradicts its class. Neither is expressible now, and the one check
+ * left — the reason belongs to the class it is used on — is a table the gate
+ * already keeps for the wording.
  *
- * @generated from enum bytebase.v1.MCPExclusionReason
+ * @generated from enum bytebase.v1.MCPDenialReason
  */
-export const MCPExclusionReason = /*@__PURE__*/
-  tsEnum(MCPExclusionReasonSchema);
+export const MCPDenialReason = /*@__PURE__*/
+  tsEnum(MCPDenialReasonSchema);
 
 /**
  * Whether the method allows access without authentication credentials.
@@ -125,24 +118,20 @@ export const mcp_method_class = /*@__PURE__*/
   extDesc(file_v1_annotation, 4);
 
 /**
- * Why the method is forbidden to MCP sessions. Meaningful only alongside
- * mcp_method_class = FORBIDDEN; the denial names it so the agent, and the
- * operator reading the audit row, learn why rather than just that it was
- * refused.
+ * Why an MCP session may not call the method. Meaningful only alongside
+ * mcp_method_class = FORBIDDEN or EXCLUDED, and required on both: the denial
+ * names it so the agent, and the operator reading the audit row, learn why
+ * rather than just that it was refused, and an exclusion whose reason nobody
+ * wrote down is one nobody can revisit.
  *
- * @generated from extension: bytebase.v1.MCPForbiddenReason mcp_forbidden_reason = 100005;
+ * 100006 was mcp_exclusion_reason, folded into mcp_denial_reason above. Do
+ * not reuse the number: an extend block cannot carry a `reserved` statement,
+ * so this comment is the only marker, and a binary built before the merge
+ * reads 100006 as the old enum — giving that number a new meaning would let
+ * it read a confident wrong answer instead of nothing.
+ *
+ * @generated from extension: bytebase.v1.MCPDenialReason mcp_denial_reason = 100005;
  */
-export const mcp_forbidden_reason = /*@__PURE__*/
+export const mcp_denial_reason = /*@__PURE__*/
   extDesc(file_v1_annotation, 5);
-
-/**
- * Why the method is served by no MCP mode. Meaningful only alongside
- * mcp_method_class = EXCLUDED, and required there: an exclusion whose reason
- * nobody wrote down is one nobody can revisit, and these are the rows a
- * later admin-capable ceiling has to re-decide one at a time.
- *
- * @generated from extension: bytebase.v1.MCPExclusionReason mcp_exclusion_reason = 100006;
- */
-export const mcp_exclusion_reason = /*@__PURE__*/
-  extDesc(file_v1_annotation, 6);
 

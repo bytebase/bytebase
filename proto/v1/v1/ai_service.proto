@@ -18,7 +18,7 @@ service AIService {
     };
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = SENDS_DATA_TO_A_THIRD_PARTY;
+    option (bytebase.v1.mcp_denial_reason) = SENDS_DATA_TO_A_THIRD_PARTY;
   }
 }
 

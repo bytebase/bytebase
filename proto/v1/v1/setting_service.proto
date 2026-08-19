@@ -26,7 +26,7 @@ service SettingService {
     option (bytebase.v1.permission) = "bb.settings.list";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Retrieves a workspace setting by name.
@@ -37,7 +37,7 @@ service SettingService {
     option (bytebase.v1.permission) = "bb.settings.get";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Updates a workspace setting.
@@ -51,7 +51,7 @@ service SettingService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = REWRITES_SESSION_BOUNDARY;
+    option (bytebase.v1.mcp_denial_reason) = REWRITES_SESSION_BOUNDARY;
   }
 
   // Sends a test email using the provided config (without persisting).
@@ -64,7 +64,7 @@ service SettingService {
     option (bytebase.v1.permission) = "bb.settings.set";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
 }
 
