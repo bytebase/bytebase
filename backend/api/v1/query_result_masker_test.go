@@ -110,6 +110,30 @@ func TestUnresolvedSpanDrivesErrorRedaction(t *testing.T) {
 		"a healthy span must still be judged by its column lineage, not redacted wholesale")
 }
 
+// TestMaskingBlockedIgnoresResultShape pins that the refusal decision cannot
+// depend on what the result looks like.
+//
+// The predicate takes no *v1pb.QueryResult at all, and that is the point. An
+// earlier revision gated the refusal on `results[i].Error == ""`, which let two
+// shapes through: a driver can return rows AND an error together — exceeding
+// MaximumSQLResultSize sets Error on the rows collected so far
+// (backend/plugin/db/util/driverutil.go) — and the error-redaction branch below
+// it only handles results with no rows, so those partial rows were transmitted
+// with no maskers at all.
+//
+// If someone re-adds a result condition at the call site, this test will not
+// catch it — MaskResults needs a *store.Store to run. What this pins is that
+// the decision itself has no way to see a result.
+func TestMaskingBlockedIgnoresResultShape(t *testing.T) {
+	span := unresolvedSpan()
+	instance := instanceOn(storepb.Engine_POSTGRES)
+	// Same answer regardless of how the statement turned out, because the
+	// question is about the snapshot, not the outcome.
+	require.True(t, maskingBlockedByUnresolvedColumns(span, instance))
+	require.True(t, maskingBlockedByUnresolvedColumns(span, instance),
+		"the decision is a pure function of span and instance")
+}
+
 // TestMaskingEnginesAgreeWithSignalProducers records which masking-capable
 // engines actually produce the unresolved-columns signal today. Only the
 // PostgreSQL extractor sets it, so every other masking engine still returns
