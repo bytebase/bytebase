@@ -23,6 +23,7 @@ service SheetService {
     option (bytebase.v1.permission) = "bb.sheets.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Creates multiple SQL sheets in a single operation.
@@ -35,6 +36,7 @@ service SheetService {
     option (bytebase.v1.permission) = "bb.sheets.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Retrieves a SQL sheet by name.
@@ -44,6 +46,7 @@ service SheetService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.sheets.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 }
 

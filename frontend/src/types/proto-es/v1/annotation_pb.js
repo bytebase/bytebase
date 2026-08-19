@@ -9,7 +9,7 @@ import { file_google_protobuf_descriptor } from "@bufbuild/protobuf/wkt";
  * Describes the file v1/annotation.proto.
  */
 export const file_v1_annotation = /*@__PURE__*/
-  fileDesc("ChN2MS9hbm5vdGF0aW9uLnByb3RvEgtieXRlYmFzZS52MSo+CgpBdXRoTWV0aG9kEhsKF0FVVEhfTUVUSE9EX1VOU1BFQ0lGSUVEEAASBwoDSUFNEAESCgoGQ1VTVE9NEAIqVgoOTUNQTWV0aG9kQ2xhc3MSIAocTUNQX01FVEhPRF9DTEFTU19VTlNQRUNJRklFRBAAEggKBFJFQUQQARIJCgVXUklURRACEg0KCUZPUkJJRERFThADKuYBChJNQ1BGb3JiaWRkZW5SZWFzb24SJAogTUNQX0ZPUkJJRERFTl9SRUFTT05fVU5TUEVDSUZJRUQQABIUChBNSU5UU19DUkVERU5USUFMEAESFQoRUkVTRVRTX0NSRURFTlRJQUwQAhIWChJUQUtFU19PVkVSX0FDQ09VTlQQAxIQCgxFTkRTX1NFU1NJT04QBBITCg9FTkRTX01FTUJFUlNISVAQBRIfChtNSU5UU19DUkVERU5USUFMX0ZPUl9PVEhFUlMQBhIdChlSRVdSSVRFU19TRVNTSU9OX0JPVU5EQVJZEAc6WgoYYWxsb3dfd2l0aG91dF9jcmVkZW50aWFsEh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMYoI0GIAEoCFIWYWxsb3dXaXRob3V0Q3JlZGVudGlhbDpACgpwZXJtaXNzaW9uEh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMYoY0GIAEoCVIKcGVybWlzc2lvbjpaCgthdXRoX21ldGhvZBIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKKNBiABKA4yFy5ieXRlYmFzZS52MS5BdXRoTWV0aG9kUgphdXRoTWV0aG9kOjYKBWF1ZGl0Eh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMYo40GIAEoCFIFYXVkaXQ6ZwoQbWNwX21ldGhvZF9jbGFzcxIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKSNBiABKA4yGy5ieXRlYmFzZS52MS5NQ1BNZXRob2RDbGFzc1IObWNwTWV0aG9kQ2xhc3M6cwoUbWNwX2ZvcmJpZGRlbl9yZWFzb24SHi5nb29nbGUucHJvdG9idWYuTWV0aG9kT3B0aW9ucxiljQYgASgOMh8uYnl0ZWJhc2UudjEuTUNQRm9yYmlkZGVuUmVhc29uUhJtY3BGb3JiaWRkZW5SZWFzb25CpQEKD2NvbS5ieXRlYmFzZS52MUIPQW5ub3RhdGlvblByb3RvUAFaNGdpdGh1Yi5jb20vYnl0ZWJhc2UvYnl0ZWJhc2UvYmFja2VuZC9nZW5lcmF0ZWQtZ28vdjGiAgNCWFiqAgtCeXRlYmFzZS5WMcoCC0J5dGViYXNlXFYx4gIXQnl0ZWJhc2VcVjFcR1BCTWV0YWRhdGHqAgxCeXRlYmFzZTo6VjFiBnByb3RvMw", [file_google_protobuf_descriptor]);
+  fileDesc("ChN2MS9hbm5vdGF0aW9uLnByb3RvEgtieXRlYmFzZS52MSo+CgpBdXRoTWV0aG9kEhsKF0FVVEhfTUVUSE9EX1VOU1BFQ0lGSUVEEAASBwoDSUFNEAESCgoGQ1VTVE9NEAIqZAoOTUNQTWV0aG9kQ2xhc3MSIAocTUNQX01FVEhPRF9DTEFTU19VTlNQRUNJRklFRBAAEggKBFJFQUQQARIJCgVXUklURRACEg0KCUZPUkJJRERFThADEgwKCEVYQ0xVREVEEAQqiAIKEk1DUEZvcmJpZGRlblJlYXNvbhIkCiBNQ1BfRk9SQklEREVOX1JFQVNPTl9VTlNQRUNJRklFRBAAEhQKEE1JTlRTX0NSRURFTlRJQUwQARIVChFSRVNFVFNfQ1JFREVOVElBTBACEhYKElRBS0VTX09WRVJfQUNDT1VOVBADEhAKDEVORFNfU0VTU0lPThAEEhMKD0VORFNfTUVNQkVSU0hJUBAFEh8KG01JTlRTX0NSRURFTlRJQUxfRk9SX09USEVSUxAGEh0KGVJFV1JJVEVTX1NFU1NJT05fQk9VTkRBUlkQBxIgChxEUklWRVNfVEhFX0FQUFJPVkFMX0RFQ0lTSU9OEAgq0QEKEk1DUEV4Y2x1c2lvblJlYXNvbhIkCiBNQ1BfRVhDTFVTSU9OX1JFQVNPTl9VTlNQRUNJRklFRBAAEh0KGUFETUlOSVNURVJTX1RIRV9XT1JLU1BBQ0UQARIZChVSRUFEU19PVEhFUl9VU0VSU19TUUwQAhIdChlPUEVOU19BTl9BRE1JTl9DT05ORUNUSU9OEAMSHwobU0VORFNfREFUQV9UT19BX1RISVJEX1BBUlRZEAQSGwoXUkVUVVJOU19BX1NUT1JFRF9TRUNSRVQQBTpaChhhbGxvd193aXRob3V0X2NyZWRlbnRpYWwSHi5nb29nbGUucHJvdG9idWYuTWV0aG9kT3B0aW9ucxigjQYgASgIUhZhbGxvd1dpdGhvdXRDcmVkZW50aWFsOkAKCnBlcm1pc3Npb24SHi5nb29nbGUucHJvdG9idWYuTWV0aG9kT3B0aW9ucxihjQYgASgJUgpwZXJtaXNzaW9uOloKC2F1dGhfbWV0aG9kEh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMYoo0GIAEoDjIXLmJ5dGViYXNlLnYxLkF1dGhNZXRob2RSCmF1dGhNZXRob2Q6NgoFYXVkaXQSHi5nb29nbGUucHJvdG9idWYuTWV0aG9kT3B0aW9ucxijjQYgASgIUgVhdWRpdDpnChBtY3BfbWV0aG9kX2NsYXNzEh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMYpI0GIAEoDjIbLmJ5dGViYXNlLnYxLk1DUE1ldGhvZENsYXNzUg5tY3BNZXRob2RDbGFzczpzChRtY3BfZm9yYmlkZGVuX3JlYXNvbhIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKWNBiABKA4yHy5ieXRlYmFzZS52MS5NQ1BGb3JiaWRkZW5SZWFzb25SEm1jcEZvcmJpZGRlblJlYXNvbjpzChRtY3BfZXhjbHVzaW9uX3JlYXNvbhIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKaNBiABKA4yHy5ieXRlYmFzZS52MS5NQ1BFeGNsdXNpb25SZWFzb25SEm1jcEV4Y2x1c2lvblJlYXNvbkKlAQoPY29tLmJ5dGViYXNlLnYxQg9Bbm5vdGF0aW9uUHJvdG9QAVo0Z2l0aHViLmNvbS9ieXRlYmFzZS9ieXRlYmFzZS9iYWNrZW5kL2dlbmVyYXRlZC1nby92MaICA0JYWKoCC0J5dGViYXNlLlYxygILQnl0ZWJhc2VcVjHiAhdCeXRlYmFzZVxWMVxHUEJNZXRhZGF0YeoCDEJ5dGViYXNlOjpWMWIGcHJvdG8z", [file_google_protobuf_descriptor]);
 
 /**
  * Describes the enum bytebase.v1.AuthMethod.
@@ -36,6 +36,12 @@ export const MCPMethodClassSchema = /*@__PURE__*/
  * authorization of an MCP session is this classification intersected with the
  * caller's own RBAC: it can only ever narrow what the human could do, never
  * widen it.
+ * Only FORBIDDEN is enforced today. READ, WRITE and EXCLUDED are recorded
+ * classifications and nothing reads them at request time yet — the gate that
+ * selects between them is a later change. A method annotated READ or WRITE is
+ * therefore served exactly as it is today; the annotation states where it
+ * belongs, not where the boundary currently sits. FORBIDDEN is the exception
+ * and is enforced the moment it is annotated.
  *
  * @generated from enum bytebase.v1.MCPMethodClass
  */
@@ -59,6 +65,24 @@ export const MCPForbiddenReasonSchema = /*@__PURE__*/
  */
 export const MCPForbiddenReason = /*@__PURE__*/
   tsEnum(MCPForbiddenReasonSchema);
+
+/**
+ * Describes the enum bytebase.v1.MCPExclusionReason.
+ */
+export const MCPExclusionReasonSchema = /*@__PURE__*/
+  enumDesc(file_v1_annotation, 3);
+
+/**
+ * Why an RPC is served by no MCP mode. Unlike MCPForbiddenReason, which names
+ * a mechanism that breaks the MCP boundary, these name a scope decision: the
+ * method is out because this phase ships two modes and neither is the right
+ * home for it. Each value is what a future admin-capable ceiling would have to
+ * argue with, one population at a time.
+ *
+ * @generated from enum bytebase.v1.MCPExclusionReason
+ */
+export const MCPExclusionReason = /*@__PURE__*/
+  tsEnum(MCPExclusionReasonSchema);
 
 /**
  * Whether the method allows access without authentication credentials.
@@ -110,4 +134,15 @@ export const mcp_method_class = /*@__PURE__*/
  */
 export const mcp_forbidden_reason = /*@__PURE__*/
   extDesc(file_v1_annotation, 5);
+
+/**
+ * Why the method is served by no MCP mode. Meaningful only alongside
+ * mcp_method_class = EXCLUDED, and required there: an exclusion whose reason
+ * nobody wrote down is one nobody can revisit, and these are the rows a
+ * later admin-capable ceiling has to re-decide one at a time.
+ *
+ * @generated from extension: bytebase.v1.MCPExclusionReason mcp_exclusion_reason = 100006;
+ */
+export const mcp_exclusion_reason = /*@__PURE__*/
+  extDesc(file_v1_annotation, 6);
 

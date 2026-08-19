@@ -23,6 +23,7 @@ service QueryHistoryService {
     };
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // ListQueryHistories lists query histories of all users in a project.
@@ -32,6 +33,8 @@ service QueryHistoryService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.queryHistories.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = READS_OTHER_USERS_SQL;
   }
 
   // GetQueryHistory gets a single query history for the caller.
@@ -39,6 +42,7 @@ service QueryHistoryService {
   rpc GetQueryHistory(GetQueryHistoryRequest) returns (QueryHistory) {
     option (google.api.http) = {get: "/v1/{name=projects/*/queryHistories/*}"};
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 }
 

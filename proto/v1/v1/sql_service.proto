@@ -26,6 +26,14 @@ service SQLService {
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    // READ here is conditional, and it is the one row in the classification
+    // where the method is not the whole story: on every engine in
+    // EngineSupportQueryNewACL this handler classifies each statement and
+    // authorizes DML with bb.sql.dml and DDL with bb.sql.ddl, so what it does
+    // is decided by its argument. The ceiling PR that starts serving READ owes
+    // a statement-level clamp before a read-only session may call this; until
+    // then no session is admitted at that level at all.
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Executes SQL with admin privileges via streaming connection.
@@ -36,6 +44,8 @@ service SQLService {
     option (bytebase.v1.permission) = "bb.sql.admin";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = OPENS_AN_ADMIN_CONNECTION;
   }
 
   // Deprecated: use QueryHistoryService.SearchQueryHistories instead.
@@ -45,6 +55,7 @@ service SQLService {
   rpc SearchQueryHistories(SearchQueryHistoriesRequest) returns (SearchQueryHistoriesResponse) {
     option deprecated = true;
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Deprecated: use QueryHistoryService.ListQueryHistories instead.
@@ -55,6 +66,8 @@ service SQLService {
     option deprecated = true;
     option (bytebase.v1.permission) = "bb.queryHistories.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = READS_OTHER_USERS_SQL;
   }
 
   // Deprecated: use QueryHistoryService.GetQueryHistory instead.
@@ -64,6 +77,7 @@ service SQLService {
   rpc GetQueryHistory(GetQueryHistoryRequest) returns (QueryHistory) {
     option deprecated = true;
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Exports query results to a file format.
@@ -76,6 +90,7 @@ service SQLService {
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 }
 

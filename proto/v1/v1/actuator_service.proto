@@ -19,6 +19,7 @@ service ActuatorService {
   rpc GetActuatorInfo(GetActuatorInfoRequest) returns (ActuatorInfo) {
     option (google.api.http) = {get: "/v1/actuator/info"};
     option (google.api.method_signature) = "";
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Sets up sample data for demonstration and testing purposes.
@@ -31,6 +32,8 @@ service ActuatorService {
     option (bytebase.v1.permission) = "bb.projects.create";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 }
 

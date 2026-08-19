@@ -184,7 +184,7 @@ func TestChange_HappyPath_StopAtIssue(t *testing.T) {
 	require.Equal(t, "projects/hr-system/issues/3003", output.Issue)
 	require.False(t, output.RolloutCreated)
 	require.Equal(t, "NOT_REQUESTED", output.RolloutDeferredReason)
-	require.Equal(t, "APPROVE_ISSUE", output.NextAction)
+	require.Equal(t, "AWAIT_HUMAN_APPROVAL", output.NextAction)
 	require.Contains(t, output.Links.Issue, "projects/hr-system/issues/3003")
 	require.Contains(t, output.Links.Plan, "projects/hr-system/plans/2002")
 	require.Empty(t, output.Links.Rollout)
@@ -357,7 +357,7 @@ func TestChange_Defaults_NextAction_ApprovalNeeded(t *testing.T) {
 
 	output, ok := structured.(*ChangeOutput)
 	require.True(t, ok)
-	require.Equal(t, "APPROVE_ISSUE", output.NextAction)
+	require.Equal(t, "AWAIT_HUMAN_APPROVAL", output.NextAction)
 }
 
 // --- Plan check variation tests ---
@@ -540,7 +540,7 @@ func TestChange_Rollout_ApprovalPending(t *testing.T) {
 	require.True(t, ok)
 	require.False(t, output.RolloutCreated)
 	require.Equal(t, "APPROVAL_PENDING", output.RolloutDeferredReason)
-	require.Equal(t, "APPROVE_ISSUE", output.NextAction)
+	require.Equal(t, "AWAIT_HUMAN_APPROVAL", output.NextAction)
 }
 
 func TestChange_Rollout_ApprovalSkipped(t *testing.T) {
@@ -581,8 +581,8 @@ func TestChange_Rollout_CreateFailed(t *testing.T) {
 	require.True(t, ok)
 	require.False(t, output.RolloutCreated)
 	require.Equal(t, "ROLLOUT_CREATE_FAILED", output.RolloutDeferredReason)
-	// Should NOT be APPROVE_ISSUE — don't assume approval pending.
-	require.NotEqual(t, "APPROVE_ISSUE", output.NextAction)
+	// Should NOT be AWAIT_HUMAN_APPROVAL — don't assume approval pending.
+	require.NotEqual(t, "AWAIT_HUMAN_APPROVAL", output.NextAction)
 	// Backend error should be forwarded in the text output.
 	text := result.Content[0].(*mcpsdk.TextContent).Text
 	require.Contains(t, text, "rollout creation failed")

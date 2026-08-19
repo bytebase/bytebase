@@ -79,22 +79,42 @@ func (AuthMethod) EnumDescriptor() ([]byte, []int) {
 // authorization of an MCP session is this classification intersected with the
 // caller's own RBAC: it can only ever narrow what the human could do, never
 // widen it.
+// Only FORBIDDEN is enforced today. READ, WRITE and EXCLUDED are recorded
+// classifications and nothing reads them at request time yet — the gate that
+// selects between them is a later change. A method annotated READ or WRITE is
+// therefore served exactly as it is today; the annotation states where it
+// belongs, not where the boundary currently sits. FORBIDDEN is the exception
+// and is enforced the moment it is annotated.
 type MCPMethodClass int32
 
 const (
-	// Not yet classified. Reaches its handler, subject to RBAC as usual —
-	// the classification is being rolled out method by method, and only
-	// FORBIDDEN is enforced today.
+	// Not yet classified. Reaches its handler, subject to RBAC as usual. CI
+	// rejects this value on any v1 RPC, so it survives only inside a build that
+	// has not been linted: a new RPC is classified before it can ship.
 	MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED MCPMethodClass = 0
 	// Served to a read-only MCP session and above.
 	MCPMethodClass_READ MCPMethodClass = 1
-	// Served to a read-write MCP session only.
+	// Served to a read-write MCP session only. This is a serving mode, not a
+	// verb: a method that only reads still belongs here when a read-only session
+	// has no business calling it — taking a copy of data out of the product, or
+	// generating migration DDL from a schema the caller supplied.
 	MCPMethodClass_WRITE MCPMethodClass = 2
 	// Never reachable by an MCP session, whatever the caller's own
 	// permissions are. These methods escape the MCP boundary rather than
 	// merely exercising a permission: a human with the permission uses the
 	// console; an agent acting for them does not get to.
 	MCPMethodClass_FORBIDDEN MCPMethodClass = 3
+	// Served by no MCP mode this phase ships, and not a durable never. These are
+	// workspace administration, plus the handful of methods that do something
+	// materially worse than the plain read permission they share suggests.
+	//
+	// The line against FORBIDDEN is reversibility. An admin-capable ceiling, if
+	// one is ever built, could legitimately serve an EXCLUDED method — that is a
+	// product decision nobody has made. It could never serve a FORBIDDEN one,
+	// because FORBIDDEN names a mechanism that breaks the MCP boundary itself.
+	// Keeping them apart is what stops a future widening from having to
+	// re-litigate the credential-minting set alongside the ordinary admin API.
+	MCPMethodClass_EXCLUDED MCPMethodClass = 4
 )
 
 // Enum value maps for MCPMethodClass.
@@ -104,12 +124,14 @@ var (
 		1: "READ",
 		2: "WRITE",
 		3: "FORBIDDEN",
+		4: "EXCLUDED",
 	}
 	MCPMethodClass_value = map[string]int32{
 		"MCP_METHOD_CLASS_UNSPECIFIED": 0,
 		"READ":                         1,
 		"WRITE":                        2,
 		"FORBIDDEN":                    3,
+		"EXCLUDED":                     4,
 	}
 )
 
@@ -175,6 +197,11 @@ const (
 	// key is sent to. A session that can widen its own ceiling is not bounded
 	// by it.
 	MCPForbiddenReason_REWRITES_SESSION_BOUNDARY MCPForbiddenReason = 7
+	// Works the human approval step that gates the change: recording the review
+	// decision, or re-running the finding that sets it and can clear the issue
+	// outright. An agent composes a change; it does not move its own change
+	// through the gate.
+	MCPForbiddenReason_DRIVES_THE_APPROVAL_DECISION MCPForbiddenReason = 8
 )
 
 // Enum value maps for MCPForbiddenReason.
@@ -188,6 +215,7 @@ var (
 		5: "ENDS_MEMBERSHIP",
 		6: "MINTS_CREDENTIAL_FOR_OTHERS",
 		7: "REWRITES_SESSION_BOUNDARY",
+		8: "DRIVES_THE_APPROVAL_DECISION",
 	}
 	MCPForbiddenReason_value = map[string]int32{
 		"MCP_FORBIDDEN_REASON_UNSPECIFIED": 0,
@@ -198,6 +226,7 @@ var (
 		"ENDS_MEMBERSHIP":                  5,
 		"MINTS_CREDENTIAL_FOR_OTHERS":      6,
 		"REWRITES_SESSION_BOUNDARY":        7,
+		"DRIVES_THE_APPROVAL_DECISION":     8,
 	}
 )
 
@@ -226,6 +255,92 @@ func (x MCPForbiddenReason) Number() protoreflect.EnumNumber {
 // Deprecated: Use MCPForbiddenReason.Descriptor instead.
 func (MCPForbiddenReason) EnumDescriptor() ([]byte, []int) {
 	return file_v1_annotation_proto_rawDescGZIP(), []int{2}
+}
+
+// Why an RPC is served by no MCP mode. Unlike MCPForbiddenReason, which names
+// a mechanism that breaks the MCP boundary, these name a scope decision: the
+// method is out because this phase ships two modes and neither is the right
+// home for it. Each value is what a future admin-capable ceiling would have to
+// argue with, one population at a time.
+type MCPExclusionReason int32
+
+const (
+	// No reason recorded. CI rejects this on a method classified EXCLUDED.
+	MCPExclusionReason_MCP_EXCLUSION_REASON_UNSPECIFIED MCPExclusionReason = 0
+	// Administers the workspace rather than doing database work: identity,
+	// credentials, access control, governance policy, billing, workspace and
+	// instance configuration, project lifecycle, and the operator's own audit
+	// trail. Reading is administration too where the read returns the privilege
+	// topology or a stored secret rather than the state of a database.
+	MCPExclusionReason_ADMINISTERS_THE_WORKSPACE MCPExclusionReason = 1
+	// Returns SQL that other people wrote. The permission gating it reads as an
+	// ordinary list permission, so the exclusion is per method rather than per
+	// permission: these methods span the workspace or ignore the per-object
+	// sharing that keeps a saved query private.
+	MCPExclusionReason_READS_OTHER_USERS_SQL MCPExclusionReason = 2
+	// Opens an admin-credentialed connection to the customer's database and
+	// returns live session state from it — including other sessions' in-flight,
+	// unmasked SQL. It shares a plain read permission with sibling methods that
+	// only read Bytebase's own store.
+	MCPExclusionReason_OPENS_AN_ADMIN_CONNECTION MCPExclusionReason = 3
+	// Spends a stored workspace credential on an outbound call to a third
+	// party, which puts whatever the caller passes outside the product.
+	MCPExclusionReason_SENDS_DATA_TO_A_THIRD_PARTY MCPExclusionReason = 4
+	// Returns a stored secret in its response body today. These are ordinary
+	// reads that belong in a serving class on their merits, and each is here
+	// because of a leak that a redaction on the read path would close — the
+	// product already redacts the same values elsewhere. This reason is
+	// therefore the one that is meant to go away: fixing the leak moves the
+	// method to READ, as a reviewed widening, rather than leaving a quiet
+	// exposure the moment the ceiling starts serving.
+	MCPExclusionReason_RETURNS_A_STORED_SECRET MCPExclusionReason = 5
+)
+
+// Enum value maps for MCPExclusionReason.
+var (
+	MCPExclusionReason_name = map[int32]string{
+		0: "MCP_EXCLUSION_REASON_UNSPECIFIED",
+		1: "ADMINISTERS_THE_WORKSPACE",
+		2: "READS_OTHER_USERS_SQL",
+		3: "OPENS_AN_ADMIN_CONNECTION",
+		4: "SENDS_DATA_TO_A_THIRD_PARTY",
+		5: "RETURNS_A_STORED_SECRET",
+	}
+	MCPExclusionReason_value = map[string]int32{
+		"MCP_EXCLUSION_REASON_UNSPECIFIED": 0,
+		"ADMINISTERS_THE_WORKSPACE":        1,
+		"READS_OTHER_USERS_SQL":            2,
+		"OPENS_AN_ADMIN_CONNECTION":        3,
+		"SENDS_DATA_TO_A_THIRD_PARTY":      4,
+		"RETURNS_A_STORED_SECRET":          5,
+	}
+)
+
+func (x MCPExclusionReason) Enum() *MCPExclusionReason {
+	p := new(MCPExclusionReason)
+	*p = x
+	return p
+}
+
+func (x MCPExclusionReason) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (MCPExclusionReason) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_annotation_proto_enumTypes[3].Descriptor()
+}
+
+func (MCPExclusionReason) Type() protoreflect.EnumType {
+	return &file_v1_annotation_proto_enumTypes[3]
+}
+
+func (x MCPExclusionReason) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use MCPExclusionReason.Descriptor instead.
+func (MCPExclusionReason) EnumDescriptor() ([]byte, []int) {
+	return file_v1_annotation_proto_rawDescGZIP(), []int{3}
 }
 
 var file_v1_annotation_proto_extTypes = []protoimpl.ExtensionInfo{
@@ -277,6 +392,14 @@ var file_v1_annotation_proto_extTypes = []protoimpl.ExtensionInfo{
 		Tag:           "varint,100005,opt,name=mcp_forbidden_reason,enum=bytebase.v1.MCPForbiddenReason",
 		Filename:      "v1/annotation.proto",
 	},
+	{
+		ExtendedType:  (*descriptorpb.MethodOptions)(nil),
+		ExtensionType: (*MCPExclusionReason)(nil),
+		Field:         100006,
+		Name:          "bytebase.v1.mcp_exclusion_reason",
+		Tag:           "varint,100006,opt,name=mcp_exclusion_reason,enum=bytebase.v1.MCPExclusionReason",
+		Filename:      "v1/annotation.proto",
+	},
 }
 
 // Extension fields to descriptorpb.MethodOptions.
@@ -308,6 +431,13 @@ var (
 	//
 	// optional bytebase.v1.MCPForbiddenReason mcp_forbidden_reason = 100005;
 	E_McpForbiddenReason = &file_v1_annotation_proto_extTypes[5]
+	// Why the method is served by no MCP mode. Meaningful only alongside
+	// mcp_method_class = EXCLUDED, and required there: an exclusion whose reason
+	// nobody wrote down is one nobody can revisit, and these are the rows a
+	// later admin-capable ceiling has to re-decide one at a time.
+	//
+	// optional bytebase.v1.MCPExclusionReason mcp_exclusion_reason = 100006;
+	E_McpExclusionReason = &file_v1_annotation_proto_extTypes[6]
 )
 
 var File_v1_annotation_proto protoreflect.FileDescriptor
@@ -320,12 +450,13 @@ const file_v1_annotation_proto_rawDesc = "" +
 	"\x17AUTH_METHOD_UNSPECIFIED\x10\x00\x12\a\n" +
 	"\x03IAM\x10\x01\x12\n" +
 	"\n" +
-	"\x06CUSTOM\x10\x02*V\n" +
+	"\x06CUSTOM\x10\x02*d\n" +
 	"\x0eMCPMethodClass\x12 \n" +
 	"\x1cMCP_METHOD_CLASS_UNSPECIFIED\x10\x00\x12\b\n" +
 	"\x04READ\x10\x01\x12\t\n" +
 	"\x05WRITE\x10\x02\x12\r\n" +
-	"\tFORBIDDEN\x10\x03*\xe6\x01\n" +
+	"\tFORBIDDEN\x10\x03\x12\f\n" +
+	"\bEXCLUDED\x10\x04*\x88\x02\n" +
 	"\x12MCPForbiddenReason\x12$\n" +
 	" MCP_FORBIDDEN_REASON_UNSPECIFIED\x10\x00\x12\x14\n" +
 	"\x10MINTS_CREDENTIAL\x10\x01\x12\x15\n" +
@@ -334,7 +465,15 @@ const file_v1_annotation_proto_rawDesc = "" +
 	"\fENDS_SESSION\x10\x04\x12\x13\n" +
 	"\x0fENDS_MEMBERSHIP\x10\x05\x12\x1f\n" +
 	"\x1bMINTS_CREDENTIAL_FOR_OTHERS\x10\x06\x12\x1d\n" +
-	"\x19REWRITES_SESSION_BOUNDARY\x10\a:Z\n" +
+	"\x19REWRITES_SESSION_BOUNDARY\x10\a\x12 \n" +
+	"\x1cDRIVES_THE_APPROVAL_DECISION\x10\b*\xd1\x01\n" +
+	"\x12MCPExclusionReason\x12$\n" +
+	" MCP_EXCLUSION_REASON_UNSPECIFIED\x10\x00\x12\x1d\n" +
+	"\x19ADMINISTERS_THE_WORKSPACE\x10\x01\x12\x19\n" +
+	"\x15READS_OTHER_USERS_SQL\x10\x02\x12\x1d\n" +
+	"\x19OPENS_AN_ADMIN_CONNECTION\x10\x03\x12\x1f\n" +
+	"\x1bSENDS_DATA_TO_A_THIRD_PARTY\x10\x04\x12\x1b\n" +
+	"\x17RETURNS_A_STORED_SECRET\x10\x05:Z\n" +
 	"\x18allow_without_credential\x12\x1e.google.protobuf.MethodOptions\x18\xa0\x8d\x06 \x01(\bR\x16allowWithoutCredential:@\n" +
 	"\n" +
 	"permission\x12\x1e.google.protobuf.MethodOptions\x18\xa1\x8d\x06 \x01(\tR\n" +
@@ -343,7 +482,8 @@ const file_v1_annotation_proto_rawDesc = "" +
 	"authMethod:6\n" +
 	"\x05audit\x12\x1e.google.protobuf.MethodOptions\x18\xa3\x8d\x06 \x01(\bR\x05audit:g\n" +
 	"\x10mcp_method_class\x12\x1e.google.protobuf.MethodOptions\x18\xa4\x8d\x06 \x01(\x0e2\x1b.bytebase.v1.MCPMethodClassR\x0emcpMethodClass:s\n" +
-	"\x14mcp_forbidden_reason\x12\x1e.google.protobuf.MethodOptions\x18\xa5\x8d\x06 \x01(\x0e2\x1f.bytebase.v1.MCPForbiddenReasonR\x12mcpForbiddenReasonB\xa5\x01\n" +
+	"\x14mcp_forbidden_reason\x12\x1e.google.protobuf.MethodOptions\x18\xa5\x8d\x06 \x01(\x0e2\x1f.bytebase.v1.MCPForbiddenReasonR\x12mcpForbiddenReason:s\n" +
+	"\x14mcp_exclusion_reason\x12\x1e.google.protobuf.MethodOptions\x18\xa6\x8d\x06 \x01(\x0e2\x1f.bytebase.v1.MCPExclusionReasonR\x12mcpExclusionReasonB\xa5\x01\n" +
 	"\x0fcom.bytebase.v1B\x0fAnnotationProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
@@ -358,28 +498,31 @@ func file_v1_annotation_proto_rawDescGZIP() []byte {
 	return file_v1_annotation_proto_rawDescData
 }
 
-var file_v1_annotation_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
+var file_v1_annotation_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
 var file_v1_annotation_proto_goTypes = []any{
 	(AuthMethod)(0),                    // 0: bytebase.v1.AuthMethod
 	(MCPMethodClass)(0),                // 1: bytebase.v1.MCPMethodClass
 	(MCPForbiddenReason)(0),            // 2: bytebase.v1.MCPForbiddenReason
-	(*descriptorpb.MethodOptions)(nil), // 3: google.protobuf.MethodOptions
+	(MCPExclusionReason)(0),            // 3: bytebase.v1.MCPExclusionReason
+	(*descriptorpb.MethodOptions)(nil), // 4: google.protobuf.MethodOptions
 }
 var file_v1_annotation_proto_depIdxs = []int32{
-	3, // 0: bytebase.v1.allow_without_credential:extendee -> google.protobuf.MethodOptions
-	3, // 1: bytebase.v1.permission:extendee -> google.protobuf.MethodOptions
-	3, // 2: bytebase.v1.auth_method:extendee -> google.protobuf.MethodOptions
-	3, // 3: bytebase.v1.audit:extendee -> google.protobuf.MethodOptions
-	3, // 4: bytebase.v1.mcp_method_class:extendee -> google.protobuf.MethodOptions
-	3, // 5: bytebase.v1.mcp_forbidden_reason:extendee -> google.protobuf.MethodOptions
-	0, // 6: bytebase.v1.auth_method:type_name -> bytebase.v1.AuthMethod
-	1, // 7: bytebase.v1.mcp_method_class:type_name -> bytebase.v1.MCPMethodClass
-	2, // 8: bytebase.v1.mcp_forbidden_reason:type_name -> bytebase.v1.MCPForbiddenReason
-	9, // [9:9] is the sub-list for method output_type
-	9, // [9:9] is the sub-list for method input_type
-	6, // [6:9] is the sub-list for extension type_name
-	0, // [0:6] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	4,  // 0: bytebase.v1.allow_without_credential:extendee -> google.protobuf.MethodOptions
+	4,  // 1: bytebase.v1.permission:extendee -> google.protobuf.MethodOptions
+	4,  // 2: bytebase.v1.auth_method:extendee -> google.protobuf.MethodOptions
+	4,  // 3: bytebase.v1.audit:extendee -> google.protobuf.MethodOptions
+	4,  // 4: bytebase.v1.mcp_method_class:extendee -> google.protobuf.MethodOptions
+	4,  // 5: bytebase.v1.mcp_forbidden_reason:extendee -> google.protobuf.MethodOptions
+	4,  // 6: bytebase.v1.mcp_exclusion_reason:extendee -> google.protobuf.MethodOptions
+	0,  // 7: bytebase.v1.auth_method:type_name -> bytebase.v1.AuthMethod
+	1,  // 8: bytebase.v1.mcp_method_class:type_name -> bytebase.v1.MCPMethodClass
+	2,  // 9: bytebase.v1.mcp_forbidden_reason:type_name -> bytebase.v1.MCPForbiddenReason
+	3,  // 10: bytebase.v1.mcp_exclusion_reason:type_name -> bytebase.v1.MCPExclusionReason
+	11, // [11:11] is the sub-list for method output_type
+	11, // [11:11] is the sub-list for method input_type
+	7,  // [7:11] is the sub-list for extension type_name
+	0,  // [0:7] is the sub-list for extension extendee
+	0,  // [0:0] is the sub-list for field type_name
 }
 
 func init() { file_v1_annotation_proto_init() }
@@ -392,9 +535,9 @@ func file_v1_annotation_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_annotation_proto_rawDesc), len(file_v1_annotation_proto_rawDesc)),
-			NumEnums:      3,
+			NumEnums:      4,
 			NumMessages:   0,
-			NumExtensions: 6,
+			NumExtensions: 7,
 			NumServices:   0,
 		},
 		GoTypes:           file_v1_annotation_proto_goTypes,

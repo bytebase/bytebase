@@ -137,6 +137,51 @@ var mcpForbiddenReasons = map[v1pb.MCPForbiddenReason]string{
 	// handler so ordinary configuration stays reachable to an agent is the
 	// follow-up (BOT-53); disallowing first is the deliberate order.
 	v1pb.MCPForbiddenReason_REWRITES_SESSION_BOUNDARY: "it rewrites the workspace settings that bound this session, including the switch meant to contain it",
+
+	// The four approval methods. ApproveIssue and RejectIssue are two actions of
+	// one handler (issue_review.go reviewIssue), and that handler records the
+	// review decision itself: applyReviewAction requires an approver role via
+	// canReview, enforces the self-approval guard, and appends an APPROVED or
+	// REJECTED approver (component/review/workflow.go). An agent composes a
+	// change; it does not move its own change through the gate. That is the
+	// whole claim,
+	// and it is deliberately narrower than "an agent only executes approved work",
+	// which this classification does NOT deliver: CreatePlan, CreateRollout and
+	// BatchRunTasks are all WRITE, and both approval checks on the execution
+	// path are guarded on an issue existing, so a plan created without one
+	// reaches execution with no approval at all. Whether an issueless rollout
+	// belongs in WRITE is the gate PR's decision to take deliberately rather
+	// than inherit.
+	//
+	// RequestIssue is the third action of the same handler and is deliberately
+	// NOT here — it is WRITE. Spec §1b-1 named four approval methods; that line
+	// grouped by RPC family rather than by mechanism, and the mechanism does not
+	// agree. This action requires the issue to be already rejected, requires the
+	// actor to be the issue CREATOR, never calls canReview, and records no
+	// decision: it strips the REJECTED approvers and returns the issue to
+	// PENDING for a fresh human decision. It cannot approve anything, so
+	// refusing it protects nothing the other two do not, and it costs the
+	// propose-fix-resubmit loop, since while a rejection stands Approve and
+	// Reject both hard-fail and this is the only exit from that state. The
+	// reasoning is on the RPC in issue_service.proto. Raised by the Codex
+	// review; Vincent took the call.
+	//
+	// RetryIssueApproval is the near miss and is in deliberately. It casts no
+	// vote — it re-runs approval-template finding for an issue stuck in
+	// CHECKING, and only the issue creator may call it (issue_service.go
+	// canRequestIssue) — but it is the other half of the reason's wording
+	// rather than an exception to it: on an auto-approved result the same call
+	// activates the grant and enqueues the rollout (issue_service.go:789,796),
+	// so it moves an issue through the gate without any human acting. What it
+	// does not buy is containment of re-derivation in general: UpdatePlan with
+	// a specs mask, and UpdateIssue on a label change, both reset
+	// ApprovalFindingDone and force the template to be found again against the
+	// current workspace rule (component/review/plan.go, metadata.go), and both
+	// stay WRITE. That is the intended line — editing a proposal is the agent's
+	// job, and re-review after an edit is the system working — not an oversight.
+	// Refusing RetryIssueApproval costs an agent the self-service recovery for
+	// its own stuck issue; the operator retries from the console.
+	v1pb.MCPForbiddenReason_DRIVES_THE_APPROVAL_DECISION: "it works the approval step meant to gate the change, and an agent does not move its own change through that gate",
 }
 
 // reasonForbiddenClass is the fallback for a method annotated FORBIDDEN whose
@@ -150,11 +195,11 @@ const reasonForbiddenClass = "it is not reachable by an AI agent session"
 // audit interceptor, outside ACL: the class is refused regardless of what RBAC
 // would have said.
 //
-// Only FORBIDDEN is enforced. READ and WRITE are the serving classes P1b's
-// ceiling modes select between, and until every RPC carries a classification
-// an unannotated method is served exactly as before — the rollout is method by
-// method, and this interceptor grows with the annotations rather than with a
-// list kept here.
+// Only FORBIDDEN is enforced. Every v1 RPC now carries a class and CI rejects
+// UNSPECIFIED, so READ, WRITE and EXCLUDED are recorded classifications with no
+// request-time reader yet: a method carrying one is served exactly as it is
+// today, and the gate that selects between them is a later change. This
+// interceptor grows with the annotations rather than with a list kept here.
 //
 // Sitting inside audit gets the denial a row for most of the annotated
 // FORBIDDEN methods, but not all, and the exceptions are worth knowing because

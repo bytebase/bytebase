@@ -26,6 +26,7 @@ service DatabaseService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Retrieves multiple databases by their names.
@@ -38,6 +39,7 @@ service DatabaseService {
     };
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Lists databases in a project, instance, or workspace.
@@ -54,6 +56,7 @@ service DatabaseService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.databases.list";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Updates database properties such as labels and project assignment.
@@ -71,6 +74,7 @@ service DatabaseService {
     option (bytebase.v1.permission) = "bb.databases.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Updates multiple databases in a single batch operation.
@@ -87,6 +91,7 @@ service DatabaseService {
     option (bytebase.v1.permission) = "bb.databases.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Synchronizes database schema from the instance.
@@ -102,6 +107,7 @@ service DatabaseService {
     };
     option (bytebase.v1.permission) = "bb.databases.sync";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Synchronizes multiple databases in a single batch operation.
@@ -117,6 +123,7 @@ service DatabaseService {
     };
     option (bytebase.v1.permission) = "bb.databases.sync";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Retrieves database metadata including tables, columns, and indexes.
@@ -128,6 +135,7 @@ service DatabaseService {
     };
     option (bytebase.v1.permission) = "bb.databases.getSchema";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Retrieves database schema as DDL statements.
@@ -139,6 +147,7 @@ service DatabaseService {
     };
     option (bytebase.v1.permission) = "bb.databases.getSchema";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Retrieves database schema in SDL (Schema Definition Language) format.
@@ -150,6 +159,7 @@ service DatabaseService {
     };
     option (bytebase.v1.permission) = "bb.databases.getSchema";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Compares and generates migration statements between two schemas.
@@ -176,6 +186,7 @@ service DatabaseService {
     // TODO(d): secure it.
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Generates migration statements from the database's current schema to the
@@ -192,6 +203,7 @@ service DatabaseService {
     };
     option (bytebase.v1.permission) = "bb.databases.diffMetadata";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
   // Generates schema DDL for a database object.
@@ -204,6 +216,7 @@ service DatabaseService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.databases.getSchema";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 }
 

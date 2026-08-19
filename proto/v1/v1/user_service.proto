@@ -25,6 +25,8 @@ service UserService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.users.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Get the users in batch.
@@ -34,6 +36,8 @@ service UserService {
     option (google.api.http) = {get: "/v1/users:batchGet"};
     option (bytebase.v1.permission) = "bb.users.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Get the current authenticated user.
@@ -42,6 +46,8 @@ service UserService {
     option (google.api.http) = {get: "/v1/users/me"};
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = RETURNS_A_STORED_SECRET;
   }
 
   // List all users.
@@ -52,6 +58,8 @@ service UserService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.users.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Creates a user in the caller's workspace (admin action, self-hosted only).
@@ -92,6 +100,8 @@ service UserService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Restores a deleted user.
@@ -103,6 +113,8 @@ service UserService {
     };
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Updates a user's email address.

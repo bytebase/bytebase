@@ -282,9 +282,9 @@ const file_v1_instance_role_service_proto_rawDesc = "" +
 	"\x11_connection_limitB\x0e\n" +
 	"\f_valid_untilB\f\n" +
 	"\n" +
-	"_attribute2\xf5\x01\n" +
-	"\x13InstanceRoleService\x12\xdd\x01\n" +
-	"\x11ListInstanceRoles\x12%.bytebase.v1.ListInstanceRolesRequest\x1a&.bytebase.v1.ListInstanceRolesResponse\"y\xdaA\x06parent\x8a\xea0\x15bb.instanceRoles.list\x90\xea0\x01\x82\xd3\xe4\x93\x02MZ+\x12)/v1/{parent=projects/*/instances/*}/roles\x12\x1e/v1/{parent=instances/*}/rolesB\xae\x01\n" +
+	"_attribute2\xfe\x01\n" +
+	"\x13InstanceRoleService\x12\xe6\x01\n" +
+	"\x11ListInstanceRoles\x12%.bytebase.v1.ListInstanceRolesRequest\x1a&.bytebase.v1.ListInstanceRolesResponse\"\x81\x01\xdaA\x06parent\x8a\xea0\x15bb.instanceRoles.list\x90\xea0\x01\xa0\xea0\x04\xb0\xea0\x05\x82\xd3\xe4\x93\x02MZ+\x12)/v1/{parent=projects/*/instances/*}/roles\x12\x1e/v1/{parent=instances/*}/rolesB\xae\x01\n" +
 	"\x0fcom.bytebase.v1B\x18InstanceRoleServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

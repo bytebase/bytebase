@@ -24,6 +24,11 @@ service AuthService {
     };
     option (google.api.method_signature) = "";
     option (bytebase.v1.allow_without_credential) = true;
+    // The sign-in restrictions the login page renders, served without a
+    // credential — #21184 split them out of GetActuatorInfo, which now needs
+    // one. Refusing it to an MCP session would protect nothing: any
+    // unauthenticated client reads the same response.
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Authenticates a user and returns access tokens.
