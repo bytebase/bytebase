@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/require"
 
@@ -87,6 +88,11 @@ WkBKOclmOV2xlTVuPw==
 
 	_, err = target.InstanceConfig(Allocation{Database: "sample_database", Role: "sample_role"})
 	require.Error(t, err)
+}
+
+func TestIsAmbiguousProvisionError(t *testing.T) {
+	require.True(t, isAmbiguousProvisionError(errors.New("connection lost")))
+	require.False(t, isAmbiguousProvisionError(&pgconn.PgError{Code: "42P04"}))
 }
 
 func TestTargetProvisionAndRemove(t *testing.T) {

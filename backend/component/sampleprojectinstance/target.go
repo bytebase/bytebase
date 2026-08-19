@@ -45,16 +45,18 @@ type Target struct {
 type provisionStage string
 
 const (
-	provisionStageRoleCreated         provisionStage = "role-created"
-	provisionStageDatabaseCreated     provisionStage = "database-created"
-	provisionStagePublicAccessRevoked provisionStage = "public-access-revoked"
-	provisionStageRoleAccessGranted   provisionStage = "role-access-granted"
-	provisionStageConnectionsEnabled  provisionStage = "connections-enabled"
-	provisionStagePublicSchemaRevoked provisionStage = "public-schema-revoked"
-	provisionStageRoleSchemaGranted   provisionStage = "role-schema-granted"
-	provisionStageSeeded              provisionStage = "seeded"
-	provisionStageCleanupDatabase     provisionStage = "cleanup-database"
-	provisionStageCleanupRole         provisionStage = "cleanup-role"
+	provisionStageRoleCreatedUnacknowledged     provisionStage = "role-created-unacknowledged"
+	provisionStageRoleCreated                   provisionStage = "role-created"
+	provisionStageDatabaseCreatedUnacknowledged provisionStage = "database-created-unacknowledged"
+	provisionStageDatabaseCreated               provisionStage = "database-created"
+	provisionStagePublicAccessRevoked           provisionStage = "public-access-revoked"
+	provisionStageRoleAccessGranted             provisionStage = "role-access-granted"
+	provisionStageConnectionsEnabled            provisionStage = "connections-enabled"
+	provisionStagePublicSchemaRevoked           provisionStage = "public-schema-revoked"
+	provisionStageRoleSchemaGranted             provisionStage = "role-schema-granted"
+	provisionStageSeeded                        provisionStage = "seeded"
+	provisionStageCleanupDatabase               provisionStage = "cleanup-database"
+	provisionStageCleanupRole                   provisionStage = "cleanup-role"
 )
 
 type targetFailureKind string
@@ -76,8 +78,9 @@ type provisionOwnership struct {
 }
 
 type provisionFailure struct {
-	err       error
-	ownership provisionOwnership
+	err            error
+	ownership      provisionOwnership
+	ownershipKnown bool
 }
 
 func (e *provisionFailure) Error() string {
@@ -90,10 +93,15 @@ func (e *provisionFailure) Unwrap() error {
 
 func provisionOwnershipOf(err error) (provisionOwnership, bool) {
 	var failure *provisionFailure
-	if errors.As(err, &failure) {
+	if errors.As(err, &failure) && failure.ownershipKnown {
 		return failure.ownership, true
 	}
 	return provisionOwnership{}, false
+}
+
+func provisionOwnershipUnknown(err error) bool {
+	var failure *provisionFailure
+	return errors.As(err, &failure) && !failure.ownershipKnown
 }
 
 func (e *targetFailure) Error() string {
@@ -313,6 +321,7 @@ func (t *Target) Provision(ctx context.Context, allocation Allocation) (retErr e
 	defer admin.Close(ctx)
 
 	var roleCreated, databaseCreated bool
+	ownershipKnown := true
 	defer func() {
 		if retErr == nil {
 			return
@@ -325,8 +334,9 @@ func (t *Target) Provision(ctx context.Context, allocation Allocation) (retErr e
 		})
 		if err != nil {
 			retErr = &provisionFailure{
-				err:       unavailableTargetError("failed to clean up sample project instance provisioning attempt"),
-				ownership: remaining,
+				err:            unavailableTargetError("failed to clean up sample project instance provisioning attempt"),
+				ownership:      remaining,
+				ownershipKnown: ownershipKnown,
 			}
 		}
 	}()
@@ -336,14 +346,30 @@ func (t *Target) Provision(ctx context.Context, allocation Allocation) (retErr e
 		quoteIdentifier(allocation.Role),
 		quoteLiteral(allocation.Password),
 	)); err != nil {
+		if isAmbiguousProvisionError(err) {
+			ownershipKnown = false
+			return &provisionFailure{err: classifyProvisionError(err, "failed to create sample project instance role")}
+		}
 		return classifyProvisionError(err, "failed to create sample project instance role")
+	}
+	if err := t.runProvisionHook(provisionStageRoleCreatedUnacknowledged); err != nil {
+		ownershipKnown = false
+		return &provisionFailure{err: unavailableTargetError("failed to confirm sample project instance role creation")}
 	}
 	roleCreated = true
 	if err := t.runProvisionHook(provisionStageRoleCreated); err != nil {
 		return err
 	}
 	if _, err := admin.Exec(ctx, fmt.Sprintf("CREATE DATABASE %s WITH ALLOW_CONNECTIONS false", quoteIdentifier(allocation.Database))); err != nil {
+		if isAmbiguousProvisionError(err) {
+			ownershipKnown = false
+			return &provisionFailure{err: classifyProvisionError(err, "failed to create sample project instance database")}
+		}
 		return classifyProvisionError(err, "failed to create sample project instance database")
+	}
+	if err := t.runProvisionHook(provisionStageDatabaseCreatedUnacknowledged); err != nil {
+		ownershipKnown = false
+		return &provisionFailure{err: unavailableTargetError("failed to confirm sample project instance database creation")}
 	}
 	databaseCreated = true
 	if err := t.runProvisionHook(provisionStageDatabaseCreated); err != nil {
@@ -544,6 +570,11 @@ func staticTargetError(message string) error {
 
 func unavailableTargetError(message string) error {
 	return newTargetFailure(targetFailureUnavailable, errors.New(message))
+}
+
+func isAmbiguousProvisionError(err error) bool {
+	var pgErr *pgconn.PgError
+	return !errors.As(err, &pgErr)
 }
 
 func classifyProvisionError(err error, message string) error {

@@ -354,6 +354,9 @@ func (m *Manager) prepareLocked(
 	timedOut := errors.Is(provisionCtx.Err(), context.DeadlineExceeded)
 	provisionCancel()
 	if err != nil {
+		if provisionOwnershipUnknown(err) {
+			return prepareOutcome{commit: true, err: mapProvisionError(err, timedOut)}
+		}
 		if ownership, ok := provisionOwnershipOf(err); ok {
 			if ownershipErr := tx.SetProvisionOwnership(lifecycleCtx, ownership.databaseCreated, ownership.roleCreated); ownershipErr != nil {
 				return prepareOutcome{err: newFailure(FailureUnavailable, errors.Join(errors.New("failed to preserve sample project instance provision ownership"), ownershipErr))}
