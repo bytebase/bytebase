@@ -562,17 +562,12 @@ message Webhook {
   //
   // Write-only: an incoming-webhook url is the whole credential for posting
   // into the customer's chat, so reads leave it empty, the same way a data
-  // source's password and SSL material are left empty. Set it to change it;
-  // read url_set to know whether one is configured.
+  // source's password and SSL material are left empty. Set it to change it.
   //
   // Required to create a webhook. Not required on TestWebhook, where an empty
   // url on a request that names a webhook means the one already stored, so the
   // field carries no REQUIRED behavior it would contradict there.
   string url = 4 [(google.api.field_behavior) = INPUT_ONLY];
-
-  // Whether a url is configured, since the url itself does not come back on
-  // reads.
-  bool url_set = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Whether the stored url's endpoint form can carry a direct message to the
   // users an event mentions, rather than only a post to the channel the url

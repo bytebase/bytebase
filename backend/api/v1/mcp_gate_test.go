@@ -573,8 +573,8 @@ func TestForbiddenClassLeavesReadsAlone(t *testing.T) {
 //     (audit.go) beside the OIDC client secret and the LDAP bind password.
 //     ListProjects pages the whole workspace, so one call took the lot. The url
 //     is write-only now, the way a data source's password is: reads leave it
-//     empty and url_set says whether one is configured. TestWebhook takes the
-//     stored url when the request names a webhook and sends none of its own.
+//     empty. TestWebhook takes the stored url when the request names a webhook
+//     and sends none of its own.
 //
 //   - The two instance reads and ListInstanceRoles share InstanceRole.Attribute
 //     (convertInstanceRoles, instance_service_converter.go), which is the raw

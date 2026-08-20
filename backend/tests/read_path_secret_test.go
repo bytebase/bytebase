@@ -53,7 +53,6 @@ func TestReadPathHidesTheWebhookURL(t *testing.T) {
 	// supplied the URL, so losing it costs nothing, and keeping the rule in one
 	// place is what stops a read from finding a way around it.
 	a.Empty(added.Msg.Webhooks[0].Url)
-	a.True(added.Msg.Webhooks[0].UrlSet)
 
 	get, err := ctl.projectServiceClient.GetProject(ctx, connect.NewRequest(&v1pb.GetProjectRequest{Name: project.Name}))
 	a.NoError(err)
@@ -79,10 +78,6 @@ func TestReadPathHidesTheWebhookURL(t *testing.T) {
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err),
 		"writing the read-back webhook back must be refused, not saved")
 
-	stillThere, err := ctl.projectServiceClient.GetProject(ctx, connect.NewRequest(&v1pb.GetProjectRequest{Name: project.Name}))
-	a.NoError(err)
-	a.True(stillThere.Msg.Webhooks[0].UrlSet, "and the stored URL must still be there")
-
 	read := map[string][]*v1pb.Project{
 		"GetProject":       {get.Msg},
 		"ListProjects":     list.Msg.Projects,
@@ -99,8 +94,6 @@ func TestReadPathHidesTheWebhookURL(t *testing.T) {
 			a.Len(p.Webhooks, 1, "%s", rpc)
 			a.Empty(p.Webhooks[0].Url,
 				"%s returns the webhook URL, which is the whole credential", rpc)
-			a.True(p.Webhooks[0].UrlSet,
-				"%s must still say the webhook has a URL configured", rpc)
 			a.Equal("release channel", p.Webhooks[0].Title, "%s", rpc)
 		}
 		a.True(found, "%s did not return the project under test", rpc)

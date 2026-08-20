@@ -137,10 +137,9 @@ func TestConvertInstanceRolesRedactsOnTheReadPath(t *testing.T) {
 // the same converter, which is correct, because the caller of AddWebhook is the
 // one who supplied the URL and does not need it read back.
 //
-// url_set is what a client reads instead, so it can say a webhook is configured
-// without being told what to. The rest of the webhook stays: type, title,
-// events and the direct-message flag are configuration, not a credential, and a
-// client still has to be able to list what is configured and edit it.
+// The rest of the webhook stays: type, title, events and the direct-message flag
+// are configuration, not a credential, and a client still has to be able to
+// list what is configured and edit it.
 func TestConvertToProjectWithholdsTheWebhookURL(t *testing.T) {
 	const storedURL = "https://hooks.slack.com/services/fixture-not-a-real-token"
 	project := convertToProject(&store.ProjectMessage{
@@ -157,10 +156,6 @@ func TestConvertToProjectWithholdsTheWebhookURL(t *testing.T) {
 				},
 			},
 			{
-				ResourceID: "2",
-				Payload:    &storepb.ProjectWebhook{Type: storepb.WebhookType_SLACK, Title: "no url yet"},
-			},
-			{
 				// The one URL form direct messages bypass. The console hides
 				// the option for it and cannot see the URL to know that.
 				ResourceID: "3",
@@ -173,18 +168,14 @@ func TestConvertToProjectWithholdsTheWebhookURL(t *testing.T) {
 		},
 	})
 
-	require.Len(t, project.Webhooks, 3)
+	require.Len(t, project.Webhooks, 2)
 	require.Empty(t, project.Webhooks[0].Url,
 		"the incoming-webhook URL is the credential; a read must not return it")
-	require.True(t, project.Webhooks[0].UrlSet,
-		"a configured webhook still reads back as configured")
 	require.True(t, project.Webhooks[0].UrlSupportsDirectMessage,
 		"and the console still learns what it can no longer work out from the URL")
 	require.Equal(t, "release channel", project.Webhooks[0].Title)
 	require.Equal(t, []v1pb.Activity_Type{v1pb.Activity_ISSUE_CREATED}, project.Webhooks[0].NotificationTypes)
-	require.False(t, project.Webhooks[1].UrlSet,
-		"a webhook with no URL must not read back as one that has one")
-	require.False(t, project.Webhooks[2].UrlSupportsDirectMessage,
+	require.False(t, project.Webhooks[1].UrlSupportsDirectMessage,
 		"a Power Automate workflow endpoint is the URL direct messages bypass")
 }
 

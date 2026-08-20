@@ -767,8 +767,7 @@ export declare type Webhook = Message<"bytebase.v1.Webhook"> & {
    *
    * Write-only: an incoming-webhook url is the whole credential for posting
    * into the customer's chat, so reads leave it empty, the same way a data
-   * source's password and SSL material are left empty. Set it to change it;
-   * read url_set to know whether one is configured.
+   * source's password and SSL material are left empty. Set it to change it.
    *
    * Required to create a webhook. Not required on TestWebhook, where an empty
    * url on a request that names a webhook means the one already stored, so the
@@ -777,14 +776,6 @@ export declare type Webhook = Message<"bytebase.v1.Webhook"> & {
    * @generated from field: string url = 4;
    */
   url: string;
-
-  /**
-   * Whether a url is configured, since the url itself does not come back on
-   * reads.
-   *
-   * @generated from field: bool url_set = 7;
-   */
-  urlSet: boolean;
 
   /**
    * Whether the stored url's endpoint form can carry a direct message to the

@@ -136,14 +136,11 @@ export function ProjectWebhookForm({
     }
   }, [state.url]);
 
-  // A saved webhook reads back with no URL and url_set true, since the URL is
-  // the credential for posting into the customer's chat. The field is empty
-  // until the user types a replacement, and testing an untouched webhook sends
-  // no URL at all: the server posts to the one it has stored.
-  const urlHidden = useMemo(
-    () => !state.url && webhook.urlSet,
-    [state.url, webhook.urlSet]
-  );
+  // A saved webhook reads back with no URL, since the URL is the credential for
+  // posting into the customer's chat. The field is empty until the user types a
+  // replacement, and testing an untouched webhook sends no URL at all: the
+  // server posts to the one it has stored.
+  const urlHidden = useMemo(() => !create && !state.url, [create, state.url]);
 
   // Whether the URL in play rules direct messages out. For a saved webhook the
   // client cannot tell, because the read does not return the URL, so the server

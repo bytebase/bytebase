@@ -260,15 +260,12 @@ func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	for _, webhook := range projectMessage.Webhooks {
 		// We don't return the webhook URL on reads. An incoming-webhook URL is
 		// the whole credential: whoever holds it posts into the customer's
-		// Slack, Feishu, WeCom or Teams as Bytebase. url_set carries the one
-		// thing a client still needs, which is whether one is configured, and
-		// TestWebhook takes the stored URL when the request names a webhook and
-		// leaves url empty.
+		// Slack, Feishu, WeCom or Teams as Bytebase. TestWebhook takes the stored
+		// URL when the request names a webhook and leaves url empty.
 		projectWebhooks = append(projectWebhooks, &v1pb.Webhook{
 			Name:              fmt.Sprintf("%s/%s%s", common.FormatProject(projectMessage.ResourceID), common.WebhookIDPrefix, webhook.ResourceID),
 			Type:              convertToV1WebhookType(webhook.Payload.GetType()),
 			Title:             webhook.Payload.GetTitle(),
-			UrlSet:            webhook.Payload.GetUrl() != "",
 			NotificationTypes: convertToV1ActivityTypes(webhook.Payload.GetActivities()),
 			DirectMessage:     webhook.Payload.GetDirectMessage(),
 			UrlSupportsDirectMessage: webhookplugin.URLSupportsDirectMessage(
