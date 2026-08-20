@@ -605,7 +605,7 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 	// cannot partition a table after the fact without rewriting it. printPartitionClause
 	// writes a self-contained /*!50100 ... */ block, matching the schema dump.
 	if len(table.Partitions) > 0 {
-		if err := printPartitionClause(buf, table.Partitions); err != nil {
+		if err := printPartitionClause(buf, table.Partitions, table.Engine); err != nil {
 			return err
 		}
 	}

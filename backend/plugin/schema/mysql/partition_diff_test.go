@@ -95,3 +95,24 @@ func TestDiffMigrationPreservesPartitioning(t *testing.T) {
 		a.Contains(migration, "PARTITION "+partition.Name, "partition %s must be created", partition.Name)
 	}
 }
+
+// MySQL rejects a partitioned table whose partitions declare a different storage engine
+// than the table itself: "ERROR 1497 (HY000): The mix of handlers in the partitions is
+// not allowed in this version of MySQL". Partitioning a non-InnoDB table is still legal
+// on MySQL 5.7, so the partition clause has to carry the table's own engine.
+func TestDiffMigrationPartitionEngineMatchesTable(t *testing.T) {
+	for _, engine := range []string{"InnoDB", "MyISAM", "ARCHIVE"} {
+		t.Run(engine, func(t *testing.T) {
+			a := require.New(t)
+			source := partitionedTable(2)
+			source.Engine = engine
+
+			migration, err := schema.DiffMigration(storepb.Engine_MYSQL, databaseOf(), databaseOf(source))
+			a.NoError(err)
+			a.Equal(len(source.Partitions), strings.Count(migration, "PARTITION p"),
+				"every partition must be emitted:\n%s", migration)
+			a.Equal(len(source.Partitions)+1, strings.Count(migration, "ENGINE="+engine),
+				"the table and every partition must declare the same engine:\n%s", migration)
+		})
+	}
+}

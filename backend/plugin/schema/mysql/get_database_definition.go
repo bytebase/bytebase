@@ -609,7 +609,7 @@ func writeTable(out *strings.Builder, table *storepb.TableMetadata) error {
 	}
 
 	if len(table.Partitions) > 0 {
-		if err := printPartitionClause(out, table.Partitions); err != nil {
+		if err := printPartitionClause(out, table.Partitions, table.Engine); err != nil {
 			return err
 		}
 	}
@@ -619,7 +619,7 @@ func writeTable(out *strings.Builder, table *storepb.TableMetadata) error {
 }
 
 // Copy the logic from backend/plugin/schema/mysql/state.go.
-func printPartitionClause(buf *strings.Builder, partitions []*storepb.TablePartitionMetadata) error {
+func printPartitionClause(buf *strings.Builder, partitions []*storepb.TablePartitionMetadata, engine string) error {
 	if len(partitions) == 0 {
 		return nil
 	}
@@ -757,7 +757,7 @@ func printPartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 					if _, err := fmt.Fprintf(buf, "SUBPARTITION %s", subPartition.Name); err != nil {
 						return err
 					}
-					if err := writePartitionOptions(buf); err != nil {
+					if err := writePartitionOptions(buf, engine); err != nil {
 						return err
 					}
 					if j == len(partition.Subpartitions)-1 {
@@ -771,7 +771,7 @@ func printPartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 					}
 				}
 			} else {
-				if err := writePartitionOptions(buf); err != nil {
+				if err := writePartitionOptions(buf, engine); err != nil {
 					return err
 				}
 			}
@@ -808,7 +808,7 @@ func getPrepositionByType(tp storepb.TablePartitionMetadata_Type) (string, error
 	}
 }
 
-func writePartitionOptions(buf io.StringWriter) error {
+func writePartitionOptions(buf io.StringWriter, engine string) error {
 	/*
 		int err = 0;
 		err += add_space(fptr);
@@ -833,8 +833,15 @@ func writePartitionOptions(buf io.StringWriter) error {
 			err += add_keyword_string(fptr, "COMMENT", true, p_elem->part_comment);
 		return err + add_engine(fptr, p_elem->engine_type);
 	*/
-	// TODO(zp): Get all the partition options from the metadata is too complex, just write ENGINE=InnoDB for now.
-	if _, err := buf.WriteString(" ENGINE=InnoDB"); err != nil {
+	// TODO(zp): Get all the partition options from the metadata is too complex, just write
+	// the engine for now. It must be the table's own engine: MySQL rejects a partitioned
+	// table whose partitions name a different one with "ERROR 1497: The mix of handlers in
+	// the partitions is not allowed in this version of MySQL", and partitioning a
+	// non-InnoDB table is still legal on 5.7.
+	if engine == "" {
+		engine = "InnoDB"
+	}
+	if _, err := buf.WriteString(" ENGINE=" + engine); err != nil {
 		return err
 	}
 
@@ -1781,7 +1788,7 @@ func writeTableSDL(buf *strings.Builder, table *storepb.TableMetadata) error {
 	// differ canonicalizes the expression and per-partition ENGINE, so reusing the
 	// mysqldump partition writer round-trips as a no-op without an SDL-specific form.
 	if len(table.Partitions) > 0 {
-		if err := printPartitionClause(buf, table.Partitions); err != nil {
+		if err := printPartitionClause(buf, table.Partitions, table.Engine); err != nil {
 			return err
 		}
 	}
