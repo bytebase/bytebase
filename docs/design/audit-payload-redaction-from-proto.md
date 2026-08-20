@@ -11,9 +11,14 @@ protected only on the RPCs someone remembered and is exposed the moment the same
 under a new parent.
 
 Three credentials leaked that way — an OIDC client secret, a service-account key, and the SCIM
-directory-sync token — fixed on `main` by #21110 and #21109. Two more are still unprotected
-(`database.instance_resource.data_sources[]` on `UpdateDatabase`, `Instance.roles[].password`), and
-`QueryResult` has two redactors that disagree on whether `rows_count` survives.
+directory-sync token — fixed on `main` by #21110 and #21109. Three more are still unprotected:
+`database.instance_resource.data_sources[]` on `UpdateDatabase` and `Instance.roles[].password`,
+both `OUTPUT_ONLY` fields no read path populates, so neither carries a real credential today; and
+`UpdateUserRequest.otp_code`, which does. `redactUpdateUserRequest` copies it verbatim
+(`audit.go:1176`) while the handler validates it as an MFA proof (`user_service.go:442-449`).
+A failed validation does not consume the code and the interceptor audits failed requests, so a
+still-live OTP reaches `audit_log` and stdout. Separately, `QueryResult` has two redactors that
+disagree on whether `rows_count` survives.
 
 ## Goals
 
@@ -145,18 +150,25 @@ rows regain `rows_count`.
 
 ### Enforcement
 
-- **Coverage.** For every audited RPC, fill every *annotated* field in the request and response
-  tree with a unique sentinel, every oneof arm, redact, assert no sentinel survives. Catches a
-  redactor that stops covering a field. Subsumes
+- **Coverage.** For every RPC in the population below, fill every *annotated* field in the request
+  and response tree with a unique sentinel, every oneof arm, redact, assert no sentinel survives.
+  Catches a redactor that stops covering a field. Subsumes
   `TestAuditRedactsEveryInputOnlyDataSourceField`.
 - **Inventory** — the half that makes goal 4 real. A sentinel sweep cannot distinguish an
   unannotated credential from an ordinary field the audit row intentionally keeps; both survive
   redaction identically, so the sweep alone has no oracle. The oracle is a checked-in inventory of
-  every string and bytes field reachable from an audited RPC's request or response tree. A field
-  missing from it fails the build, and clearing that failure means either annotating the field or
-  recording that it is not a credential. Same shape as `mcpDenialRequestsUnderReview`
-  (`mcp_gate_test.go:1322`), which already gates the unaudited MCP-denial population; subsumes
-  `TestLintDenialRequestsAreReviewedForRedaction`.
+  every string and bytes field reachable from a message that can reach `getRequestString` or
+  `getResponseString`. A field missing from it fails the build; clearing that failure means
+  annotating the field or recording that it is not a credential. Same shape as
+  `mcpDenialRequestsUnderReview` (`mcp_gate_test.go:1322`), which it replaces once the population
+  matches.
+
+  **That population is wider than the audited RPCs.** `WrapUnary` writes a row on
+  `needAudit(ctx) || mcpPolicyDenied` (`audit.go:102`), so the gate-refused methods carrying no
+  audit annotation — `ListInstanceDatabaseRequest` and `SwitchWorkspaceRequest` among them — are in
+  scope. Deriving the inventory from audited methods alone would omit exactly the population
+  `TestLintDenialRequestsAreReviewedForRedaction` exists to cover, and a new secret under one of
+  those requests would be logged on a denial.
 - **Read-path assertion.** `assertNoInputOnlyValues` (`instance_service_converter_test.go:449`)
   already requires every `INPUT_ONLY` field to come back blank from a converter; generalize it to
   `SENSITIVE`. Converters only — issuance responses set the field outside them.
