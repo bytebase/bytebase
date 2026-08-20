@@ -489,7 +489,17 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update user"))
 	}
 
-	userResponse, err := convertToUser(ctx, s.iamManager, user)
+	// Only the two requests that drive MFA enrollment answer with the
+	// enrollment secrets. regenerate_temp_mfa_secret mints them, and the
+	// otp_code verification is the step the console moves to the recovery-code
+	// screen from, reading the codes out of that response. A title, phone or
+	// password update happening to land inside an open enrollment window has no
+	// business carrying a TOTP seed back.
+	convertResponse := convertToUser
+	if request.Msg.RegenerateTempMfaSecret || request.Msg.OtpCode != nil {
+		convertResponse = convertToUserMintingMFAEnrollment
+	}
+	userResponse, err := convertResponse(ctx, s.iamManager, user)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
 	}
@@ -702,6 +712,11 @@ func (s *UserService) UpdateEmail(ctx context.Context, request *connect.Request[
 	return connect.NewResponse(v1User), nil
 }
 
+// convertToUser converts a stored user for a read. The MFA enrollment secrets
+// stay out: temp_otp_secret is the TOTP seed and temp_recovery_codes are the
+// codes that get past the second factor, and a response that carries either
+// hands a reader the account's second factor. Every caller but one is a read,
+// so this is the default and the exception has to be asked for by name.
 func convertToUser(ctx context.Context, iamManager *iam.Manager, user *store.UserMessage) (*v1pb.User, error) {
 	groups, err := iamManager.GetUserGroups(ctx, common.GetWorkspaceIDFromContext(ctx), user.Email)
 	if err != nil {
@@ -726,14 +741,52 @@ func convertToUser(ctx context.Context, iamManager *iam.Manager, user *store.Use
 
 	if user.MFAConfig != nil {
 		convertedUser.MfaEnabled = user.MFAConfig.OtpSecret != ""
-		// Only expose temporary MFA secrets and recovery codes to the user themselves
+		// Only expose MFA enrollment state to the user themselves.
 		if currentUser, ok := GetUserFromContext(ctx); ok && currentUser.ID == user.ID {
-			convertedUser.TempOtpSecret = user.MFAConfig.TempOtpSecret
-			convertedUser.TempRecoveryCodes = user.MFAConfig.TempRecoveryCodes
-			convertedUser.TempOtpSecretCreatedTime = user.MFAConfig.TempOtpSecretCreatedTime
+			// The created time is not a secret. It says an enrollment is open
+			// and when it expires, which is what the console counts down from,
+			// and it is what tells a client the two fields below are missing
+			// because they were redacted rather than because there is nothing
+			// to enroll.
+			//
+			// An expired enrollment is not an open one, so it does not come
+			// back. Nothing clears the stored timestamp when the window runs
+			// out — the two writes are a commit, which nils it, and a
+			// regenerate, which moves it — so an abandoned setup would
+			// otherwise keep answering "still open" forever, and a client
+			// holding the secrets from it would go on holding them. The rule
+			// for what counts as expired stays in isMFATempSecretExpired, the
+			// same one that refuses to verify against a stale seed.
+			if !isMFATempSecretExpired(user.MFAConfig) {
+				convertedUser.TempOtpSecretCreatedTime = user.MFAConfig.TempOtpSecretCreatedTime
+			}
 		}
 	}
 	return convertedUser, nil
+}
+
+// convertToUserMintingMFAEnrollment is that exception: UpdateUser generates the
+// temporary TOTP seed and recovery codes, and its response is the only place
+// the human ever sees them — the console renders the QR code and the
+// recovery-code list straight from it, and the server keeps no other way to
+// hand them over. UpdateUser is FORBIDDEN to MCP, so an intact response here
+// adds nothing an agent can reach.
+//
+// It adds the secrets exactly where the read exposed the created time, and asks
+// nothing else. The read already decided who may see this enrollment and
+// whether there is one: it sets the created time only when the subject is the
+// caller and the window is open. Re-deriving that here would be a second copy
+// of a rule that has to give the same answer.
+func convertToUserMintingMFAEnrollment(ctx context.Context, iamManager *iam.Manager, user *store.UserMessage) (*v1pb.User, error) {
+	converted, err := convertToUser(ctx, iamManager, user)
+	if err != nil {
+		return nil, err
+	}
+	if converted.TempOtpSecretCreatedTime != nil {
+		converted.TempOtpSecret = user.MFAConfig.TempOtpSecret
+		converted.TempRecoveryCodes = user.MFAConfig.TempRecoveryCodes
+	}
+	return converted, nil
 }
 
 func validateEndUserEmail(email string) error {

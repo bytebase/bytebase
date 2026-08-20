@@ -43,10 +43,11 @@ func TestMCPToolCallParity(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	// Parity baseline: the principal's direct v1 API view. The probe is
-	// ListWorkspaces rather than ListProjects because the project reads are
-	// EXCLUDED from the MCP ceiling (they return the incoming-webhook URL
-	// verbatim, BOT-60); a probe the gate refuses would test the gate, not
-	// parity. Any READ method whose result is scoped to the caller does.
+	// ListWorkspaces, and any READ method whose result is scoped to the caller
+	// would do. It was picked over ListProjects when the project reads were
+	// EXCLUDED for returning the incoming-webhook URL, since a probe the gate
+	// refuses tests the gate rather than parity; the URL is write-only now and
+	// the project reads are READ, so the choice is no longer forced.
 	direct, err := ctl.workspaceServiceClient.ListWorkspaces(ctx, connect.NewRequest(&v1pb.ListWorkspacesRequest{}))
 	a.NoError(err)
 	var directNames []string

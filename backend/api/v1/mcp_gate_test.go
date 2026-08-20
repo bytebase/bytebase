@@ -480,8 +480,8 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 				v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE, v1pb.MCPMethodClass_EXCLUDED,
 			},
 		}
-		// The real rows are passed deliberately: 93 of them carry EXCLUDED, and
-		// the diagnosis worth reading is the one about the table, not ninety-three
+		// The real rows are passed deliberately: 85 of them carry EXCLUDED, and
+		// the diagnosis worth reading is the one about the table, not eighty-five
 		// about methods whose annotation is fine. Two modes, so the mode list in
 		// the message is only stable because servedBy is sorted.
 		require.Equal(t, []string{"EXCLUDED is denied and served by [READ_ONLY READ_WRITE]"},
@@ -551,39 +551,80 @@ func TestForbiddenClassLeavesReadsAlone(t *testing.T) {
 	}
 }
 
-// TestExcludedOnlyForALeak pins the population that is excluded for a defect
-// rather than for what the method is. Every row here is an ordinary read that
-// belongs in a serving class on its merits, and is out only because its
-// response carries a stored secret the product already redacts elsewhere. The
-// leak is the thing to fix; when one is fixed its row leaves this test and
-// becomes READ, which is a reviewed widening rather than a silent one.
+// TestExcludedOnlyForALeak pins that nothing is excluded for a defect any
+// more. RETURNS_A_STORED_SECRET named eight ordinary reads that belonged in a
+// serving class on their merits and were out only because their responses
+// carried a stored secret. The redaction closed all three leaks, so the eight
+// are READ and this population is empty. That was the retirement path the
+// reason was written for, and an empty list is what walking it looks like.
 //
-// Each entry names the leak and the redaction that closes it:
+// The list going non-empty again is a deliberate decision either way: a new
+// read found leaking is annotated with this reason on purpose, and adding it
+// here alongside is the second signature. What the list must never do is fill
+// up quietly.
+//
+// The three leaks, and where the redaction that closed each one lives:
 //
 //   - The four project reads share convertToProject
-//     (project_service_converter.go:264), which copies the incoming-webhook URL
-//     out verbatim. That URL is a bearer credential — whoever holds it posts
-//     into the customer's Slack, Feishu, WeCom or Teams as Bytebase — and this
-//     repo already treats it as one: redactWebhook masks it in audit rows
-//     (audit.go:914) beside the OIDC client secret and the LDAP bind password.
-//     ListProjects pages the whole workspace, so one call takes the lot.
+//     (project_service_converter.go), which copied the incoming-webhook URL out
+//     verbatim. That URL is a bearer credential — whoever holds it posts into
+//     the customer's Slack, Feishu, WeCom or Teams as Bytebase — and this repo
+//     already treated it as one: redactWebhook masks it in audit rows
+//     (audit.go) beside the OIDC client secret and the LDAP bind password.
+//     ListProjects pages the whole workspace, so one call took the lot. The url
+//     is write-only now, the way a data source's password is: reads leave it
+//     empty and url_set says whether one is configured. TestWebhook takes the
+//     stored url when the request names a webhook and sends none of its own.
 //
 //   - The two instance reads and ListInstanceRoles share InstanceRole.Attribute
-//     (instance_service_converter.go:57), which is the raw SHOW GRANTS text the
-//     MySQL driver stores (plugin/db/mysql/role.go:38). On MariaDB that text
-//     carries "IDENTIFIED BY PASSWORD '<hash>'", so the response hands over
-//     every database account's password hash. The data-source half of the very
-//     same converter gets this right and says so: "We don't return the password
-//     and SSLs on reads" (instance_service_converter.go:253).
+//     (convertInstanceRoles, instance_service_converter.go), which is the raw
+//     SHOW GRANTS text the MySQL driver stores (plugin/db/mysql/role.go). On
+//     MariaDB that text carries "IDENTIFIED BY PASSWORD '<hash>'", so the
+//     response handed over every database account's password hash. The
+//     credential clause is now masked in place (redactRoleAttribute,
+//     read_redaction.go) and the grant list around it still renders. The
+//     data-source half of the very same converter always got this right and
+//     says so: "We don't return the password and SSLs on reads".
 //
-//   - GetCurrentUser returns temp_otp_secret and temp_recovery_codes whenever
-//     the subject is the caller (user_service.go:742), so a session reading its
-//     own profile during an MFA-setup window captures the TOTP seed. The window
-//     is opened by the human in the console, not by the agent — UpdateUser,
-//     which starts it, is FORBIDDEN — which makes this the narrowest of the
-//     three and still a stored secret in a response body.
+//   - GetCurrentUser returned temp_otp_secret and temp_recovery_codes whenever
+//     the subject was the caller, so a session reading its own profile during
+//     an MFA-setup window captured the TOTP seed. GetUser on yourself did the
+//     same, which is why the fix is in convertToUser rather than in one RPC.
+//     Reads lose both fields. The two UpdateUser requests that drive the
+//     enrollment keep them, through convertToUserMintingMFAEnrollment; the rest
+//     of UpdateUser does not. UpdateUser is FORBIDDEN either way, so that
+//     response is not a surface an agent reaches.
 func TestExcludedOnlyForALeak(t *testing.T) {
-	want := []string{
+	var got []string
+	for _, row := range mcpClassificationsFromDescriptors(t) {
+		if row.reason == v1pb.MCPDenialReason_RETURNS_A_STORED_SECRET {
+			got = append(got, row.procedure)
+		}
+	}
+	require.Empty(t, got,
+		"a read excluded for a leak has to be a deliberate decision, recorded here as well as on the annotation")
+}
+
+// TestTheLeakingReadsAreServed is the other half of the same decision: the
+// eight methods the redaction freed are READ, not merely no longer carrying
+// the reason.
+//
+// Dropping the reason and leaving the class EXCLUDED does not need this test —
+// checkReasonsMatchTheClass already refuses a refused method that records no
+// reason. What needs it is re-excluding these rows under a different reason
+// that is valid on its own terms, which ADMINISTERS_THE_WORKSPACE is for most
+// of them. Probed: with GetProject annotated EXCLUDED and
+// ADMINISTERS_THE_WORKSPACE, every lint passes, TestExcludedOnlyForALeak
+// passes because the reason is not the leak one, and the inventory regenerates
+// clean. Only this test objects, and what it is objecting to is the live
+// regression coming back — an MCP session unable to name a project or an
+// instance, and so unable to reach a database at all.
+func TestTheLeakingReadsAreServed(t *testing.T) {
+	class := map[string]v1pb.MCPMethodClass{}
+	for _, row := range mcpClassificationsFromDescriptors(t) {
+		class[row.procedure] = row.class
+	}
+	for _, procedure := range []string{
 		v1connect.ProjectServiceGetProjectProcedure,
 		v1connect.ProjectServiceListProjectsProcedure,
 		v1connect.ProjectServiceBatchGetProjectsProcedure,
@@ -592,17 +633,29 @@ func TestExcludedOnlyForALeak(t *testing.T) {
 		v1connect.InstanceServiceListInstancesProcedure,
 		v1connect.InstanceRoleServiceListInstanceRolesProcedure,
 		v1connect.UserServiceGetCurrentUserProcedure,
+	} {
+		require.Equal(t, v1pb.MCPMethodClass_READ, class[procedure],
+			"%s was excluded only for a leak that is now redacted; a read-only session needs it to reach a database at all", procedure)
 	}
-	var got []string
-	for _, row := range mcpClassificationsFromDescriptors(t) {
-		if row.reason == v1pb.MCPDenialReason_RETURNS_A_STORED_SECRET {
-			got = append(got, row.procedure)
-		}
+
+	// The reads that stay out, and why they are a different question. Identity
+	// and credential administration is a scope decision, not a defect, so
+	// redacting a leak does not touch it — GetUser and BatchGetUsers read other
+	// people's accounts, and ListQueryHistories reads other people's SQL.
+	// convertToUser was fixed for all of them regardless, because the leak was
+	// live for human callers on GetUser too.
+	for _, procedure := range []string{
+		v1connect.UserServiceGetUserProcedure,
+		v1connect.UserServiceBatchGetUsersProcedure,
+		v1connect.UserServiceListUsersProcedure,
+		v1connect.QueryHistoryServiceListQueryHistoriesProcedure,
+		v1connect.SQLServiceListQueryHistoriesProcedure,
+		v1connect.SQLServiceAdminExecuteProcedure,
+		v1connect.ProjectServiceTestWebhookProcedure,
+	} {
+		require.Equal(t, v1pb.MCPMethodClass_EXCLUDED, class[procedure],
+			"%s is excluded for what it does, which no redaction changes", procedure)
 	}
-	slices.Sort(want)
-	slices.Sort(got)
-	require.Equal(t, want, got,
-		"this population is excluded for a leak, not for what the method is; adding or removing one is a deliberate decision")
 }
 
 // TestDeprecatedSQLServiceAliasesMatchTheirCanonicalMethod pins the three
@@ -758,7 +811,7 @@ func classContext(class v1pb.MCPMethodClass) *common.AuthContext {
 // outright and proves the gate refuses it under the most permissive ceiling
 // there is. FORBIDDEN was already enforced; EXCLUDED is what this PR turns from
 // a recorded classification into a denial, and it is the larger population by
-// far — 93 methods the console and the public API serve today.
+// far — 85 methods the console and the public API serve today.
 func TestMCPGateRefusesTheDeniedClasses(t *testing.T) {
 	for _, row := range mcpClassificationsFromDescriptors(t) {
 		if row.class != v1pb.MCPMethodClass_FORBIDDEN && row.class != v1pb.MCPMethodClass_EXCLUDED {

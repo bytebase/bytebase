@@ -210,7 +210,11 @@ var mcpDenialReasons = map[v1pb.MCPDenialReason]mcpDenialWording{
 	v1pb.MCPDenialReason_READS_OTHER_USERS_SQL:       {v1pb.MCPMethodClass_EXCLUDED, "it returns SQL that other people wrote, across the workspace or past the sharing that keeps a saved query private"},
 	v1pb.MCPDenialReason_OPENS_AN_ADMIN_CONNECTION:   {v1pb.MCPMethodClass_EXCLUDED, "it opens an admin-credentialed connection to the database and returns other sessions' live, unmasked SQL"},
 	v1pb.MCPDenialReason_SENDS_DATA_TO_A_THIRD_PARTY: {v1pb.MCPMethodClass_EXCLUDED, "it spends a stored workspace credential to send whatever the caller passes to a third party"},
-	v1pb.MCPDenialReason_RETURNS_A_STORED_SECRET:     {v1pb.MCPMethodClass_EXCLUDED, "its response carries a stored secret that the product redacts everywhere else"},
+	// No method carries this one: the three leaks it was written for are
+	// redacted on the read path and their eight methods are READ. The row
+	// stays so the next read found leaking is one annotation away from a
+	// denial that explains itself, rather than two edits away.
+	v1pb.MCPDenialReason_RETURNS_A_STORED_SECRET: {v1pb.MCPMethodClass_EXCLUDED, "its response carries a stored secret that the product redacts everywhere else"},
 }
 
 // The fallback wording, per class, for a method whose reason is unset, unknown
@@ -288,9 +292,9 @@ type mcpCeilingReader interface {
 //
 // A policy denial is recorded whatever the method's audit annotation says: the
 // gate marks the outcome and the audit interceptor records it (see
-// common.SetMCPPolicyDenied). 47 of the 121 refused methods carry no audit
+// common.SetMCPPolicyDenied). 39 of the 113 refused methods carry no audit
 // annotation — the 4 FORBIDDEN ones that were silent before this gate
-// (Refresh, SwitchWorkspace, TestIdentityProvider, TestEmailSetting) plus 43
+// (Refresh, SwitchWorkspace, TestIdentityProvider, TestEmailSetting) plus 35
 // EXCLUDED ones — and TestEmailSetting and TestIdentityProvider are the rows an
 // operator would most want, since each would have carried a stored secret to an
 // address the agent chose. Recording requests that were never recorded is why

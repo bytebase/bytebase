@@ -1,4 +1,5 @@
 import { create as createProto } from "@bufbuild/protobuf";
+import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { silentContextKey } from "@/api/context-key";
 import { isValidDatabaseGroupName, UNKNOWN_PROJECT_NAME } from "@/types";
@@ -504,6 +505,139 @@ describe("useAppStore", () => {
     expect(store.getState().currentUser).toBe(user);
     expect(store.getState().currentUserName).toBe(user.name);
     expect(store.getState().isLoggedIn()).toBe(true);
+  });
+
+  // The MFA enrollment secrets ride out only on the UpdateUser response that
+  // mints them; the read the session revalidation makes no longer carries them.
+  // That revalidation fires every five minutes, which is the whole enrollment
+  // window, so the two tests below are the difference between a QR code the
+  // user can finish scanning and one that disappears under them.
+  test("session revalidation keeps the MFA enrollment secrets it cannot refetch", async () => {
+    const enrolling = createProto(UserSchema, {
+      ...user,
+      tempOtpSecret: "SEEDFROMTHEMINT",
+      tempRecoveryCodes: ["code-1", "code-2"],
+      tempOtpSecretCreatedTime: createProto(TimestampSchema, { seconds: 1n }),
+    });
+    mocks.getCurrentUser.mockResolvedValue(
+      createProto(UserSchema, {
+        ...user,
+        tempOtpSecretCreatedTime: createProto(TimestampSchema, { seconds: 1n }),
+      })
+    );
+    const store = createAppStore();
+    store.setState({ currentUser: enrolling, currentUserName: enrolling.name });
+
+    await store.getState().fetchCurrentUser();
+
+    expect(store.getState().currentUser?.tempOtpSecret).toBe("SEEDFROMTHEMINT");
+    expect(store.getState().currentUser?.tempRecoveryCodes).toEqual([
+      "code-1",
+      "code-2",
+    ]);
+  });
+
+  test("session revalidation drops them once the enrollment window closes", async () => {
+    const enrolling = createProto(UserSchema, {
+      ...user,
+      tempOtpSecret: "SEEDFROMTHEMINT",
+      tempRecoveryCodes: ["code-1"],
+      tempOtpSecretCreatedTime: createProto(TimestampSchema, { seconds: 1n }),
+    });
+    // The server clears the created time when the enrollment commits, which is
+    // what says the secrets are gone rather than merely redacted.
+    mocks.getCurrentUser.mockResolvedValue(
+      createProto(UserSchema, { ...user, mfaEnabled: true })
+    );
+    const store = createAppStore();
+    store.setState({ currentUser: enrolling, currentUserName: enrolling.name });
+
+    await store.getState().fetchCurrentUser();
+
+    expect(store.getState().currentUser?.tempOtpSecret).toBe("");
+    expect(store.getState().currentUser?.tempRecoveryCodes).toEqual([]);
+  });
+
+  test("session revalidation drops them when another client minted a new seed", async () => {
+    const enrolling = createProto(UserSchema, {
+      ...user,
+      tempOtpSecret: "SEEDFROMTHEMINT",
+      tempRecoveryCodes: ["code-1"],
+      tempOtpSecretCreatedTime: createProto(TimestampSchema, { seconds: 1n }),
+    });
+    // A second tab regenerated: the read reports an open window, but a later
+    // one, so the seed we hold is the one the server threw away.
+    mocks.getCurrentUser.mockResolvedValue(
+      createProto(UserSchema, {
+        ...user,
+        tempOtpSecretCreatedTime: createProto(TimestampSchema, { seconds: 2n }),
+      })
+    );
+    const store = createAppStore();
+    store.setState({ currentUser: enrolling, currentUserName: enrolling.name });
+
+    await store.getState().fetchCurrentUser();
+
+    expect(store.getState().currentUser?.tempOtpSecret).toBe("");
+    expect(store.getState().currentUser?.tempRecoveryCodes).toEqual([]);
+  });
+
+  test("a non-minting self-update keeps the enrollment the console is showing", async () => {
+    // The account page saves a title from the same screen that shows the
+    // recovery codes, and that response no longer carries them.
+    const window = createProto(TimestampSchema, { seconds: 1n });
+    const enrolling = createProto(UserSchema, {
+      ...user,
+      tempOtpSecret: "SEEDFROMTHEMINT",
+      tempRecoveryCodes: ["code-1"],
+      tempOtpSecretCreatedTime: window,
+    });
+    mocks.getUser.mockResolvedValue(enrolling);
+    mocks.updateUser.mockResolvedValue(
+      createProto(UserSchema, {
+        ...user,
+        title: "Renamed",
+        tempOtpSecretCreatedTime: window,
+      })
+    );
+    const store = createAppStore();
+    store.setState({ currentUser: enrolling, currentUserName: enrolling.name });
+
+    await store.getState().updateUser({
+      user: { name: user.name, title: "Renamed" },
+      updateMask: { paths: ["title"] },
+    } as never);
+
+    expect(store.getState().currentUser?.title).toBe("Renamed");
+    expect(store.getState().currentUser?.tempOtpSecret).toBe("SEEDFROMTHEMINT");
+    expect(store.getState().currentUser?.tempRecoveryCodes).toEqual(["code-1"]);
+  });
+
+  test("and drops them for a reseed inside the same second", async () => {
+    const enrolling = createProto(UserSchema, {
+      ...user,
+      tempOtpSecret: "SEEDFROMTHEMINT",
+      tempRecoveryCodes: ["code-1"],
+      tempOtpSecretCreatedTime: createProto(TimestampSchema, {
+        seconds: 1n,
+        nanos: 100,
+      }),
+    });
+    mocks.getCurrentUser.mockResolvedValue(
+      createProto(UserSchema, {
+        ...user,
+        tempOtpSecretCreatedTime: createProto(TimestampSchema, {
+          seconds: 1n,
+          nanos: 200,
+        }),
+      })
+    );
+    const store = createAppStore();
+    store.setState({ currentUser: enrolling, currentUserName: enrolling.name });
+
+    await store.getState().fetchCurrentUser();
+
+    expect(store.getState().currentUser?.tempOtpSecret).toBe("");
   });
 
   test("auto logout preserves the full current path for signin redirect", async () => {

@@ -265,6 +265,13 @@ export enum MCPDenialReason {
    * method to READ, as a reviewed widening, rather than leaving a quiet
    * exposure the moment the ceiling starts serving.
    *
+   * No method carries it. The three leaks it was written for — project
+   * webhook URLs, the MySQL-family grant text, and the MFA enrollment
+   * secrets — are redacted on the read path, and their eight methods are
+   * READ. The value stays because the category is real and the next read
+   * found leaking should carry it rather than an invented one, and because
+   * retiring an enum value costs a reserved number for nothing.
+   *
    * @generated from enum value: RETURNS_A_STORED_SECRET = 13;
    */
   RETURNS_A_STORED_SECRET = 13,

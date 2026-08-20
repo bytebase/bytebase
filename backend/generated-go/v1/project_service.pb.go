@@ -1288,7 +1288,11 @@ type TestWebhookRequest struct {
 	// The name of the project which owns the webhook to test.
 	// Format: projects/{project}
 	Project string `protobuf:"bytes,1,opt,name=project,proto3" json:"project,omitempty"`
-	// The webhook to test. Identified by its url.
+	// The webhook to test.
+	//
+	// The url is what gets posted to. Reads do not return a saved webhook's url,
+	// so leave url empty and set name to test the one already stored; set url to
+	// test a url before saving it.
 	Webhook       *Webhook `protobuf:"bytes,2,opt,name=webhook,proto3" json:"webhook,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1394,7 +1398,29 @@ type Webhook struct {
 	// title is the title of the webhook.
 	Title string `protobuf:"bytes,3,opt,name=title,proto3" json:"title,omitempty"`
 	// url is the url of the webhook, should be unique within the project.
+	//
+	// Write-only: an incoming-webhook url is the whole credential for posting
+	// into the customer's chat, so reads leave it empty, the same way a data
+	// source's password and SSL material are left empty. Set it to change it;
+	// read url_set to know whether one is configured.
+	//
+	// Required to create a webhook. Not required on TestWebhook, where an empty
+	// url on a request that names a webhook means the one already stored, so the
+	// field carries no REQUIRED behavior it would contradict there.
 	Url string `protobuf:"bytes,4,opt,name=url,proto3" json:"url,omitempty"`
+	// Whether a url is configured, since the url itself does not come back on
+	// reads.
+	UrlSet bool `protobuf:"varint,7,opt,name=url_set,json=urlSet,proto3" json:"url_set,omitempty"`
+	// Whether the stored url's endpoint form can carry a direct message to the
+	// users an event mentions, rather than only a post to the channel the url
+	// names. False for a Microsoft Teams Power Automate workflow endpoint, which
+	// direct messages bypass entirely: a webhook with direct_message set sends
+	// them and returns, so the workflow post never happens.
+	//
+	// Reads do not return the url, so a client editing a saved webhook cannot
+	// work this out for itself. It is a fact about the stored url and says
+	// nothing about what the url is.
+	UrlSupportsDirectMessage bool `protobuf:"varint,8,opt,name=url_supports_direct_message,json=urlSupportsDirectMessage,proto3" json:"url_supports_direct_message,omitempty"`
 	// if direct_message is set, the notification is sent directly
 	// to the persons and url will be ignored.
 	// IM integration setting should be set for this function to work.
@@ -1469,6 +1495,20 @@ func (x *Webhook) GetUrl() string {
 		return x.Url
 	}
 	return ""
+}
+
+func (x *Webhook) GetUrlSet() bool {
+	if x != nil {
+		return x.UrlSet
+	}
+	return false
+}
+
+func (x *Webhook) GetUrlSupportsDirectMessage() bool {
+	if x != nil {
+		return x.UrlSupportsDirectMessage
+	}
+	return false
 }
 
 func (x *Webhook) GetDirectMessage() bool {
@@ -1669,12 +1709,14 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x14bytebase.com/ProjectR\aproject\x123\n" +
 	"\awebhook\x18\x02 \x01(\v2\x14.bytebase.v1.WebhookB\x03\xe0A\x02R\awebhook\"+\n" +
 	"\x13TestWebhookResponse\x12\x14\n" +
-	"\x05error\x18\x01 \x01(\tR\x05error\"\xbb\x02\n" +
+	"\x05error\x18\x01 \x01(\tR\x05error\"\x9d\x03\n" +
 	"\aWebhook\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x121\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x18.bytebase.v1.WebhookTypeB\x03\xe0A\x02R\x04type\x12\x19\n" +
 	"\x05title\x18\x03 \x01(\tB\x03\xe0A\x02R\x05title\x12\x15\n" +
-	"\x03url\x18\x04 \x01(\tB\x03\xe0A\x02R\x03url\x12%\n" +
+	"\x03url\x18\x04 \x01(\tB\x03\xe0A\x04R\x03url\x12\x1c\n" +
+	"\aurl_set\x18\a \x01(\bB\x03\xe0A\x03R\x06urlSet\x12B\n" +
+	"\x1burl_supports_direct_message\x18\b \x01(\bB\x03\xe0A\x03R\x18urlSupportsDirectMessage\x12%\n" +
 	"\x0edirect_message\x18\x06 \x01(\bR\rdirectMessage\x12N\n" +
 	"\x12notification_types\x18\x05 \x03(\x0e2\x1a.bytebase.v1.Activity.TypeB\x03\xe0A\x06R\x11notificationTypes:@\xeaA=\n" +
 	"\x14bytebase.com/Webhook\x12%projects/{project}/webhooks/{webhook}\"\xb6\x01\n" +
@@ -1687,13 +1729,13 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x0fISSUE_SENT_BACK\x10\f\x12\x13\n" +
 	"\x0fPIPELINE_FAILED\x10\r\x12\x16\n" +
 	"\x12PIPELINE_COMPLETED\x10\x0e\x12\x12\n" +
-	"\x0eISSUE_APPROVED\x10\x0f\"\x04\b\x01\x10\t2\x90\x13\n" +
-	"\x0eProjectService\x12\x87\x01\n" +
+	"\x0eISSUE_APPROVED\x10\x0f\"\x04\b\x01\x10\t2\x80\x13\n" +
+	"\x0eProjectService\x12\x83\x01\n" +
 	"\n" +
-	"GetProject\x12\x1e.bytebase.v1.GetProjectRequest\x1a\x14.bytebase.v1.Project\"C\xdaA\x04name\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\r\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=projects/*}\x12\x9d\x01\n" +
-	"\x10BatchGetProjects\x12$.bytebase.v1.BatchGetProjectsRequest\x1a%.bytebase.v1.BatchGetProjectsResponse\"<\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\r\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/projects:batchGet\x12\x8c\x01\n" +
-	"\fListProjects\x12 .bytebase.v1.ListProjectsRequest\x1a!.bytebase.v1.ListProjectsResponse\"7\xdaA\x00\x8a\xea0\x10bb.projects.list\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\r\x82\xd3\xe4\x93\x02\x0e\x12\f/v1/projects\x12\x88\x01\n" +
-	"\x0eSearchProjects\x12\".bytebase.v1.SearchProjectsRequest\x1a#.bytebase.v1.SearchProjectsResponse\"-\xdaA\x00\x90\xea0\x02\xa0\xea0\x04\xa8\xea0\r\x82\xd3\xe4\x93\x02\x18:\x01*\"\x13/v1/projects:search\x12\x90\x01\n" +
+	"GetProject\x12\x1e.bytebase.v1.GetProjectRequest\x1a\x14.bytebase.v1.Project\"?\xdaA\x04name\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=projects/*}\x12\x99\x01\n" +
+	"\x10BatchGetProjects\x12$.bytebase.v1.BatchGetProjectsRequest\x1a%.bytebase.v1.BatchGetProjectsResponse\"8\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/projects:batchGet\x12\x88\x01\n" +
+	"\fListProjects\x12 .bytebase.v1.ListProjectsRequest\x1a!.bytebase.v1.ListProjectsResponse\"3\xdaA\x00\x8a\xea0\x10bb.projects.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x0e\x12\f/v1/projects\x12\x84\x01\n" +
+	"\x0eSearchProjects\x12\".bytebase.v1.SearchProjectsRequest\x1a#.bytebase.v1.SearchProjectsResponse\")\xdaA\x00\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x18:\x01*\"\x13/v1/projects:search\x12\x90\x01\n" +
 	"\rCreateProject\x12!.bytebase.v1.CreateProjectRequest\x1a\x14.bytebase.v1.Project\"F\xdaA\x00\x8a\xea0\x12bb.projects.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x17:\aproject\"\f/v1/projects\x12\xb4\x01\n" +
 	"\rUpdateProject\x12!.bytebase.v1.UpdateProjectRequest\x1a\x14.bytebase.v1.Project\"j\xdaA\x13project,update_mask\x8a\xea0\x12bb.projects.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02(:\aproject2\x1d/v1/{project.name=projects/*}\x12\x96\x01\n" +
 	"\rDeleteProject\x12!.bytebase.v1.DeleteProjectRequest\x1a\x16.google.protobuf.Empty\"J\xdaA\x04name\x8a\xea0\x12bb.projects.delete\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x17*\x15/v1/{name=projects/*}\x12\x9f\x01\n" +

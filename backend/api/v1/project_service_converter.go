@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	webhookplugin "github.com/bytebase/bytebase/backend/plugin/webhook"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -257,13 +258,21 @@ func convertToStoreIamPolicyMember(member string) (string, error) {
 func convertToProject(projectMessage *store.ProjectMessage) *v1pb.Project {
 	var projectWebhooks []*v1pb.Webhook
 	for _, webhook := range projectMessage.Webhooks {
+		// We don't return the webhook URL on reads. An incoming-webhook URL is
+		// the whole credential: whoever holds it posts into the customer's
+		// Slack, Feishu, WeCom or Teams as Bytebase. url_set carries the one
+		// thing a client still needs, which is whether one is configured, and
+		// TestWebhook takes the stored URL when the request names a webhook and
+		// leaves url empty.
 		projectWebhooks = append(projectWebhooks, &v1pb.Webhook{
 			Name:              fmt.Sprintf("%s/%s%s", common.FormatProject(projectMessage.ResourceID), common.WebhookIDPrefix, webhook.ResourceID),
 			Type:              convertToV1WebhookType(webhook.Payload.GetType()),
 			Title:             webhook.Payload.GetTitle(),
-			Url:               webhook.Payload.GetUrl(),
+			UrlSet:            webhook.Payload.GetUrl() != "",
 			NotificationTypes: convertToV1ActivityTypes(webhook.Payload.GetActivities()),
 			DirectMessage:     webhook.Payload.GetDirectMessage(),
+			UrlSupportsDirectMessage: webhookplugin.URLSupportsDirectMessage(
+				webhook.Payload.GetType(), webhook.Payload.GetUrl()),
 		})
 	}
 

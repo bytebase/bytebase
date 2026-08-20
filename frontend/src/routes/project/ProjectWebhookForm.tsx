@@ -45,6 +45,7 @@ import type {
 import { WebhookSchema } from "@/types/proto-es/v1/project_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { extractProjectWebhookID } from "@/utils";
+import { findAddedWebhook } from "./webhookCreation";
 
 interface Props {
   allowEdit?: boolean;
@@ -116,6 +117,11 @@ export function ProjectWebhookForm({
     );
   }, [imSetting, selectedWebhook]);
 
+  // Mirrors webhook.IsPowerAutomateURL in the backend, which is the authority:
+  // both the apex and any subdomain, because ValidateWebhookURL accepts both.
+  // The client needs its own copy for a URL the server has never seen, which is
+  // every URL on the create form and any the user types over a saved one; for a
+  // saved URL it uses the server's answer instead, below.
   const isPowerAutomateURL = useMemo(() => {
     try {
       const hostname = new URL(state.url).hostname.toLowerCase();
@@ -130,9 +136,30 @@ export function ProjectWebhookForm({
     }
   }, [state.url]);
 
+  // A saved webhook reads back with no URL and url_set true, since the URL is
+  // the credential for posting into the customer's chat. The field is empty
+  // until the user types a replacement, and testing an untouched webhook sends
+  // no URL at all: the server posts to the one it has stored.
+  const urlHidden = useMemo(
+    () => !state.url && webhook.urlSet,
+    [state.url, webhook.urlSet]
+  );
+
+  // Whether the URL in play rules direct messages out. For a saved webhook the
+  // client cannot tell, because the read does not return the URL, so the server
+  // says: url_supports_direct_message is false for a Power Automate workflow
+  // endpoint, which direct messages bypass entirely. It describes the STORED
+  // URL under its STORED type, so it only answers while both are untouched.
+  const urlSupportsDirectMessage = useMemo(() => {
+    if (urlHidden && state.type === webhook.type) {
+      return webhook.urlSupportsDirectMessage;
+    }
+    return !isPowerAutomateURL;
+  }, [urlHidden, state.type, webhook, isPowerAutomateURL]);
+
   const webhookSupportDirectMessage = useMemo(
-    () => selectedWebhook?.supportDirectMessage && !isPowerAutomateURL,
-    [selectedWebhook, isPowerAutomateURL]
+    () => selectedWebhook?.supportDirectMessage && urlSupportsDirectMessage,
+    [selectedWebhook, urlSupportsDirectMessage]
   );
 
   const activitySupportDirectMessage = useMemo(
@@ -223,20 +250,25 @@ export function ProjectWebhookForm({
           name: state.title,
         }),
       });
-      const createdWebhook = updatedProject.webhooks.find(
-        (wh) =>
-          wh.title === state.title &&
-          wh.type === state.type &&
-          wh.url === state.url
+      // Straight to the new webhook when the response says which one it is,
+      // and to the list when it does not. Guessing would open somebody else's
+      // webhook for editing, and staying put would strand the user on a create
+      // form for a webhook that already exists.
+      const createdWebhook = findAddedWebhook(
+        project.webhooks,
+        updatedProject.webhooks,
+        state
       );
-      if (createdWebhook) {
-        router.push({
-          name: PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
-          params: {
-            webhookResourceId: extractProjectWebhookID(createdWebhook.name),
-          },
-        });
-      }
+      router.push(
+        createdWebhook
+          ? {
+              name: PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
+              params: {
+                webhookResourceId: extractProjectWebhookID(createdWebhook.name),
+              },
+            }
+          : { name: PROJECT_V1_ROUTE_WEBHOOKS }
+      );
     });
   }, [project, state, createProjectWebhook, t, withLoading]);
 
@@ -419,6 +451,11 @@ export function ProjectWebhookForm({
               onChange={(e) => updateField("url", e.target.value)}
               disabled={!allowEdit}
             />
+            {urlHidden && (
+              <div className="mt-1 text-sm text-control-light">
+                {t("project.webhook.url-hidden")}
+              </div>
+            )}
           </div>
 
           {/* Triggering activities */}
@@ -513,7 +550,7 @@ export function ProjectWebhookForm({
           <div className="mt-4">
             <Button
               appearance="outline"
-              disabled={!state.url || loading}
+              disabled={(!state.url && !urlHidden) || loading}
               onClick={testWebhook}
             >
               {t("project.webhook.test-webhook")}

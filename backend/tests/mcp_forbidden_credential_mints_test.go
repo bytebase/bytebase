@@ -910,7 +910,6 @@ func TestMCPCredentialMintsLeaveDiscovery(t *testing.T) {
 		{"ServiceAccountService", []string{"CreateServiceAccount", "UpdateServiceAccount", "GetServiceAccount"}},
 		{"IdentityProviderService", []string{"CreateIdentityProvider", "UpdateIdentityProvider", "TestIdentityProvider"}},
 		{"WorkloadIdentityService", []string{"CreateWorkloadIdentity", "UpdateWorkloadIdentity"}},
-		{"UserService", []string{"CreateUser", "UpdateEmail", "GetUser"}},
 		{"SettingService", []string{"TestEmailSetting", "GetSetting"}},
 	} {
 		listing := searchAPIOnSession(ctx, t, session, map[string]any{"service": row.service})
@@ -932,17 +931,31 @@ func TestMCPCredentialMintsLeaveDiscovery(t *testing.T) {
 	a.NotContains(workspaceListing, "WorkspaceService/RotateDirectorySyncToken",
 		"search_api must not offer the token rotation, which the session can never call")
 
+	// UserService is the second mixed case, and it moved here when
+	// GetCurrentUser stopped returning the MFA enrollment secrets. Reading who
+	// you are is the one thing an agent does on this service; creating a user,
+	// redirecting an account's email and reading somebody else's profile stay
+	// refused, and stay off the menu.
+	userListing := searchAPIOnSession(ctx, t, session, map[string]any{"service": "UserService"})
+	a.Contains(userListing, "UserService/GetCurrentUser",
+		"the session reads its own identity, so the service is a menu with that on it")
+	for _, method := range []string{"CreateUser", "UpdateEmail", "GetUser", "ListUsers"} {
+		a.NotContains(userListing, "UserService/"+method,
+			"search_api must not offer UserService/%s, which the session can never call", method)
+	}
+
 	// The service list is the entry point into discovery, and a service whose
 	// every method is refused drops out of it entirely.
 	services := searchAPIOnSession(ctx, t, session, map[string]any{})
 	for _, service := range []string{
 		"ServiceAccountService", "IdentityProviderService", "WorkloadIdentityService",
-		"UserService", "SettingService",
+		"SettingService",
 	} {
 		a.NotContains(services, service, "%s serves nothing, so it must not be listed", service)
 	}
 	a.Contains(services, "DatabaseService", "positive control: services the ceiling serves stay listed")
 	a.Contains(services, "WorkspaceService", "a service keeping any served method stays listed")
+	a.Contains(services, "UserService", "and so does the one that kept only GetCurrentUser")
 
 	// Still resolvable by operation ID, and a call still reaches the gate.
 	for _, operation := range []string{

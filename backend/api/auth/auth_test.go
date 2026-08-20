@@ -72,14 +72,17 @@ func TestMCPMethodClassOfProcedure(t *testing.T) {
 		{"/bytebase.v1.AuthService/Login", v1pb.MCPMethodClass_FORBIDDEN},
 		{"/bytebase.v1.UserService/UpdateUser", v1pb.MCPMethodClass_FORBIDDEN},
 		{"/bytebase.v1.WorkspaceService/LeaveWorkspace", v1pb.MCPMethodClass_FORBIDDEN},
-		// The serving classes resolve through the same path. Nothing acts on
-		// them yet — the gate that selects between them is a later change — so
-		// these pin resolution, not enforcement. Every v1 RPC now carries a
-		// class, which is why none of these is UNSPECIFIED.
+		// The serving classes resolve through the same path, and the gate acts
+		// on whatever this returns, so these pin resolution rather than the
+		// classification decision itself — mcp_gate_test.go owns that. Every v1
+		// RPC carries a class, which is why none of these is UNSPECIFIED.
 		{"/bytebase.v1.DatabaseService/GetDatabase", v1pb.MCPMethodClass_READ},
 		{"/bytebase.v1.IssueService/CreateIssue", v1pb.MCPMethodClass_WRITE},
 		{"/bytebase.v1.UserService/GetUser", v1pb.MCPMethodClass_EXCLUDED},
-		{"/bytebase.v1.ProjectService/ListProjects", v1pb.MCPMethodClass_EXCLUDED},
+		// ListProjects was EXCLUDED for returning webhook URLs verbatim. The
+		// URL is write-only now, so it is an ordinary read again, and an agent
+		// that cannot list projects cannot reach a database at all.
+		{"/bytebase.v1.ProjectService/ListProjects", v1pb.MCPMethodClass_READ},
 	} {
 		got, err := MCPMethodClassOfProcedure(tc.procedure)
 		require.NoError(t, err, tc.procedure)

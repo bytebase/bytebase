@@ -24,6 +24,7 @@ import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { UNKNOWN_USER_NAME } from "@/types/v1/user";
 import { storageKeyResetPassword } from "@/utils/storage-keys";
 import type { AppSliceCreator, AuthSlice } from "./types";
+import { keepMfaEnrollment } from "./utils";
 
 // `users/{email}` → `{email}`.
 function emailOf(currentUserName: string | undefined): string {
@@ -145,7 +146,8 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
   // the server — login/signup need the fresh authenticated user).
   fetchCurrentUser: async () => {
     try {
-      const user = await userServiceClientConnect.getCurrentUser({});
+      const fresh = await userServiceClientConnect.getCurrentUser({});
+      const user = keepMfaEnrollment(fresh, get().currentUser);
       set({ currentUser: user, currentUserName: user.name });
       return user;
     } catch {

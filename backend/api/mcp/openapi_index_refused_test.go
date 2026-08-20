@@ -45,11 +45,29 @@ func TestRefusedEndpointsAreNotAdvertised(t *testing.T) {
 	})
 
 	t.Run("a service whose every method is refused is not listed at all", func(t *testing.T) {
-		// Every ProjectService read returns the incoming-webhook URL verbatim
-		// and every write administers the workspace, so the whole service is
-		// EXCLUDED. Nothing about it is offered.
-		require.NotContains(t, idx.Services(), "ProjectService")
-		require.Empty(t, idx.GetServiceEndpoints("ProjectService"))
+		// Every identity-provider method is refused: the writes choose what
+		// will later be trusted to mint a credential, and the reads are
+		// workspace administration. Nothing about the service is offered.
+		require.NotContains(t, idx.Services(), "IdentityProviderService")
+		require.Empty(t, idx.GetServiceEndpoints("IdentityProviderService"))
+	})
+
+	t.Run("a service keeps only the methods a ceiling serves", func(t *testing.T) {
+		// ProjectService is the mixed case. Its four reads are served now that
+		// the webhook URL no longer rides out on them; its writes administer
+		// the workspace and TestWebhook posts to a third party, so those stay
+		// refused and stay unadvertised.
+		var served []string
+		for _, ep := range idx.GetServiceEndpoints("ProjectService") {
+			served = append(served, ep.OperationID)
+		}
+		require.ElementsMatch(t, []string{
+			"bytebase.v1.ProjectService.GetProject",
+			"bytebase.v1.ProjectService.ListProjects",
+			"bytebase.v1.ProjectService.BatchGetProjects",
+			"bytebase.v1.ProjectService.SearchProjects",
+		}, served)
+		require.Contains(t, idx.Services(), "ProjectService")
 	})
 
 	t.Run("absent from search", func(t *testing.T) {

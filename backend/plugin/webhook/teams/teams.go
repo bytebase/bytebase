@@ -16,8 +16,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"net/url"
-	"strings"
 
 	"github.com/pkg/errors"
 	"go.uber.org/multierr"
@@ -97,21 +95,10 @@ func (*Receiver) Post(context webhook.Context) error {
 			return nil
 		}
 	}
-	if isPowerAutomateURL(context.URL) {
+	if webhook.IsPowerAutomateURL(context.URL) {
 		return postPowerAutomateMessage(context)
 	}
 	return postMessage(context)
-}
-
-// isPowerAutomateURL returns true if the webhook URL is a Power Automate Workflow URL
-// (*.powerplatform.com or legacy *.logic.azure.com) rather than a legacy Office 365 Connector URL.
-func isPowerAutomateURL(webhookURL string) bool {
-	u, err := url.Parse(webhookURL)
-	if err != nil {
-		return false
-	}
-	hostname := strings.ToLower(u.Hostname())
-	return strings.HasSuffix(hostname, ".powerplatform.com") || strings.HasSuffix(hostname, ".logic.azure.com")
 }
 
 // postPowerAutomateMessage sends a webhook message to a Power Automate Workflow URL

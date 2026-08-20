@@ -46,8 +46,7 @@ service UserService {
     option (google.api.http) = {get: "/v1/users/me"};
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = RETURNS_A_STORED_SECRET;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // List all users.

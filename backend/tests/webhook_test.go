@@ -184,6 +184,179 @@ func TestWebhookIntegration(t *testing.T) {
 	require.NoError(t, err)
 	instance := instanceResp.Msg
 
+	t.Run("TestWebhookOnASavedWebhookPostsToTheStoredURL", func(t *testing.T) {
+		// A saved webhook reads back with no URL, so the console cannot send
+		// the real one to TestWebhook: it never received it. The button has to
+		// keep working anyway, which it does by sending the webhook's name and
+		// no URL and letting the server look the stored one up. Delivery
+		// landing on this collector is what proves the lookup happened; without
+		// it the empty URL would have been rejected as invalid instead.
+		collector.reset()
+
+		project := ctl.createTestProject(ctx, t, "webhook-redacted-test")
+		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_ISSUE_CREATED})
+
+		projectResp, err := ctl.projectServiceClient.GetProject(ctx, connect.NewRequest(&v1pb.GetProjectRequest{
+			Name: project.Name,
+		}))
+		require.NoError(t, err)
+		require.Len(t, projectResp.Msg.Webhooks, 1)
+		saved := projectResp.Msg.Webhooks[0]
+		require.Empty(t, saved.Url, "the read path must not hand the URL back")
+		require.True(t, saved.UrlSet, "and must still say one is configured")
+
+		result, err := ctl.projectServiceClient.TestWebhook(ctx, connect.NewRequest(&v1pb.TestWebhookRequest{
+			Project: project.Name,
+			Webhook: saved,
+		}))
+		require.NoError(t, err)
+		require.Empty(t, result.Msg.Error, "the test post has to reach the stored URL")
+		require.Eventually(t, func() bool {
+			for _, req := range collector.getRequests() {
+				if strings.Contains(string(req.Body), "Test webhook") {
+					return true
+				}
+			}
+			return false
+		}, webhookWaitTimeout, 200*time.Millisecond, "no test notification arrived at the webhook server")
+
+		// A URL the caller typed is still tested as typed, which is what the
+		// create form does before there is anything saved to look up.
+		typed, err := ctl.projectServiceClient.TestWebhook(ctx, connect.NewRequest(&v1pb.TestWebhookRequest{
+			Project: project.Name,
+			Webhook: &v1pb.Webhook{
+				Type:  v1pb.WebhookType_SLACK,
+				Title: "typed by hand",
+				Url:   webhookServer.URL,
+			},
+		}))
+		require.NoError(t, err)
+		require.Empty(t, typed.Msg.Error)
+	})
+
+	t.Run("TestWebhookRefusesToLookUpAWebhookItWasNotGiven", func(t *testing.T) {
+		// Looking the stored URL up is what the caller cannot do for
+		// themselves, so the three ways of asking for the wrong one are the
+		// branches worth pinning. The cross-project case is the one that
+		// matters: the ACL runs against the project in the request, not against
+		// the project in the webhook name, so without the check a caller with
+		// the permission on one project could make the server post through
+		// another project's stored webhook.
+		collector.reset()
+
+		project := ctl.createTestProject(ctx, t, "webhook-lookup-guard")
+		other := ctl.createTestProject(ctx, t, "webhook-lookup-other")
+		addWebhookForEvents(ctx, t, ctl, other, webhookServer.URL, []v1pb.Activity_Type{v1pb.Activity_ISSUE_CREATED})
+
+		otherResp, err := ctl.projectServiceClient.GetProject(ctx, connect.NewRequest(&v1pb.GetProjectRequest{
+			Name: other.Name,
+		}))
+		require.NoError(t, err)
+		require.Len(t, otherResp.Msg.Webhooks, 1)
+
+		for _, tc := range []struct {
+			name    string
+			webhook *v1pb.Webhook
+			code    connect.Code
+		}{
+			{
+				name:    "no URL and no name is not a request the server can complete",
+				webhook: &v1pb.Webhook{Type: v1pb.WebhookType_SLACK, Title: "nameless"},
+				code:    connect.CodeInvalidArgument,
+			},
+			{
+				name:    "a webhook belonging to another project",
+				webhook: &v1pb.Webhook{Name: otherResp.Msg.Webhooks[0].Name, Type: v1pb.WebhookType_SLACK, Title: "not mine"},
+				code:    connect.CodeInvalidArgument,
+			},
+			{
+				name: "a webhook that does not exist",
+				webhook: &v1pb.Webhook{
+					Name:  fmt.Sprintf("%s/webhooks/does-not-exist", project.Name),
+					Type:  v1pb.WebhookType_SLACK,
+					Title: "gone",
+				},
+				code: connect.CodeNotFound,
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				_, err := ctl.projectServiceClient.TestWebhook(ctx, connect.NewRequest(&v1pb.TestWebhookRequest{
+					Project: project.Name,
+					Webhook: tc.webhook,
+				}))
+				require.Error(t, err)
+				require.Equal(t, tc.code, connect.CodeOf(err))
+			})
+		}
+
+		require.Empty(t, collector.getRequests(),
+			"none of those may reach the other project's webhook")
+
+		// The caller picks the type the stored URL gets validated against, and
+		// the validator names the URL it rejects, so a deliberate mismatch was
+		// a way of reading back a URL the read path withholds.
+		_, err = ctl.projectServiceClient.TestWebhook(ctx, connect.NewRequest(&v1pb.TestWebhookRequest{
+			Project: other.Name,
+			Webhook: &v1pb.Webhook{
+				Name:  otherResp.Msg.Webhooks[0].Name,
+				Type:  v1pb.WebhookType_GOOGLE_CHAT,
+				Title: "tell me where you post",
+			},
+		}))
+		require.Error(t, err)
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		require.NotContains(t, err.Error(), "127.0.0.1",
+			"the refusal must not name the stored URL the caller cannot read")
+		require.Contains(t, err.Error(), "GOOGLE_CHAT",
+			"it names the type instead, which is the half the caller supplied")
+	})
+
+	t.Run("TestWebhookReportsAFailureWithoutTheURL", func(t *testing.T) {
+		// The posters wrap their failure with the URL they posted to, and this
+		// response is the one place that error reaches a caller. Testing a
+		// saved webhook that cannot be delivered to would otherwise read the
+		// URL back out of the error, which is the read the redaction closed.
+		// Port 1 on loopback refuses, so the failure is the transport one every
+		// poster wraps.
+		const deadURL = "http://127.0.0.1:1/services/unreachable-on-purpose"
+
+		project := ctl.createTestProject(ctx, t, "webhook-error-redaction")
+		addWebhookForEvents(ctx, t, ctl, project, deadURL, []v1pb.Activity_Type{v1pb.Activity_ISSUE_CREATED})
+
+		projectResp, err := ctl.projectServiceClient.GetProject(ctx, connect.NewRequest(&v1pb.GetProjectRequest{
+			Name: project.Name,
+		}))
+		require.NoError(t, err)
+		require.Len(t, projectResp.Msg.Webhooks, 1)
+
+		result, err := ctl.projectServiceClient.TestWebhook(ctx, connect.NewRequest(&v1pb.TestWebhookRequest{
+			Project: project.Name,
+			Webhook: projectResp.Msg.Webhooks[0],
+		}))
+		require.NoError(t, err)
+		require.NotEmpty(t, result.Msg.Error, "the post has to have failed for this to be testing anything")
+		require.NotContains(t, result.Msg.Error, "unreachable-on-purpose",
+			"the failure must not hand back the URL the read path withheld")
+		require.NotContains(t, result.Msg.Error, "127.0.0.1:1")
+		require.Equal(t, "the test notification could not be delivered to the stored webhook URL",
+			result.Msg.Error, "a transport failure has no status code to report")
+
+		// The other half: a URL the caller typed comes back with the poster's
+		// message intact, because there is nothing to withhold from the person
+		// who supplied it.
+		typedFailure, err := ctl.projectServiceClient.TestWebhook(ctx, connect.NewRequest(&v1pb.TestWebhookRequest{
+			Project: project.Name,
+			Webhook: &v1pb.Webhook{
+				Type:  v1pb.WebhookType_SLACK,
+				Title: "typed by hand",
+				Url:   deadURL,
+			},
+		}))
+		require.NoError(t, err)
+		require.Contains(t, typedFailure.Msg.Error, "unreachable-on-purpose")
+		require.Contains(t, typedFailure.Msg.Error, "connection refused")
+	})
+
 	t.Run("IssueWithPlanWebhookPayload", func(t *testing.T) {
 		collector.reset()
 

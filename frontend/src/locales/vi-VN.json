@@ -2013,6 +2013,7 @@
       "success-updated-prompt": "Đã cập nhật thành công webhook {{name}}.",
       "test-webhook": "Kiểm tra Webhook",
       "triggering-activity": "Hoạt động kích hoạt",
+      "url-hidden": "Đã ẩn vì lý do bảo mật. Nhập URL mới để thay thế.",
       "webhook-url": "URL Webhook"
     }
   },

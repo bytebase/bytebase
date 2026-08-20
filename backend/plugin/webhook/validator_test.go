@@ -96,6 +96,24 @@ func TestValidateWebhookURL(t *testing.T) {
 			wantErr:     false,
 		},
 		{
+			// A leading dot in allowedDomains means the domain itself as well
+			// as any subdomain of it. Every other dotted case here uses a
+			// strict subdomain, and IsPowerAutomateURL now depends on the apex
+			// being accepted too: if it were not, a URL it classifies as Power
+			// Automate could never be stored, and the classification would be
+			// about nothing.
+			name:        "valid teams apex powerplatform URL",
+			webhookType: storepb.WebhookType_TEAMS,
+			webhookURL:  "https://powerplatform.com/powerautomate/automations/direct/workflows/abc123",
+			wantErr:     false,
+		},
+		{
+			name:        "valid teams apex logic.azure.com URL",
+			webhookType: storepb.WebhookType_TEAMS,
+			webhookURL:  "https://logic.azure.com/workflows/abc123/triggers/manual/paths/invoke",
+			wantErr:     false,
+		},
+		{
 			name:        "invalid teams domain",
 			webhookType: storepb.WebhookType_TEAMS,
 			webhookURL:  "https://evil-office.com/webhook/xxx",

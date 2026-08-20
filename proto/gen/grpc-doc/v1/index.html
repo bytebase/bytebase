@@ -3325,7 +3325,14 @@ because of a leak that a redaction on the read path would close — the
 product already redacts the same values elsewhere. This reason is
 therefore the one that is meant to go away: fixing the leak moves the
 method to READ, as a reviewed widening, rather than leaving a quiet
-exposure the moment the ceiling starts serving.</p></td>
+exposure the moment the ceiling starts serving.
+
+No method carries it. The three leaks it was written for — project
+webhook URLs, the MySQL-family grant text, and the MFA enrollment
+secrets — are redacted on the read path, and their eight methods are
+READ. The value stays because the category is real and the next read
+found leaking should carry it rather than an invented one, and because
+retiring an enum value costs a reserved number for nothing.</p></td>
               </tr>
             
           </tbody>
@@ -28145,7 +28152,11 @@ Format: projects/{project} </p></td>
                   <td>webhook</td>
                   <td><a href="#bytebase.v1.Webhook">Webhook</a></td>
                   <td></td>
-                  <td><p>The webhook to test. Identified by its url. </p></td>
+                  <td><p>The webhook to test.
+
+The url is what gets posted to. Reads do not return a saved webhook&#39;s url,
+so leave url empty and set name to test the one already stored; set url to
+test a url before saving it. </p></td>
                 </tr>
               
             </tbody>
@@ -28322,7 +28333,39 @@ type is the type of the webhook. </p></td>
                   <td>url</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>url is the url of the webhook, should be unique within the project. </p></td>
+                  <td><p>url is the url of the webhook, should be unique within the project.
+
+Write-only: an incoming-webhook url is the whole credential for posting
+into the customer&#39;s chat, so reads leave it empty, the same way a data
+source&#39;s password and SSL material are left empty. Set it to change it;
+read url_set to know whether one is configured.
+
+Required to create a webhook. Not required on TestWebhook, where an empty
+url on a request that names a webhook means the one already stored, so the
+field carries no REQUIRED behavior it would contradict there. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>url_set</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether a url is configured, since the url itself does not come back on
+reads. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>url_supports_direct_message</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether the stored url&#39;s endpoint form can carry a direct message to the
+users an event mentions, rather than only a post to the channel the url
+names. False for a Microsoft Teams Power Automate workflow endpoint, which
+direct messages bypass entirely: a webhook with direct_message set sends
+them and returns, so the workflow post never happens.
+
+Reads do not return the url, so a client editing a saved webhook cannot
+work this out for itself. It is a fact about the stored url and says
+nothing about what the url is. </p></td>
                 </tr>
               
                 <tr>

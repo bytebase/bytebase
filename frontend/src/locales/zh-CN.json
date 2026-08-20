@@ -2013,6 +2013,7 @@
       "success-updated-prompt": "成功更新 {{name}} webhook.",
       "test-webhook": "测试 Webhook",
       "triggering-activity": "触发事件",
+      "url-hidden": "出于安全考虑已隐藏。输入新的 URL 以替换。",
       "webhook-url": "Webhook URL"
     }
   },

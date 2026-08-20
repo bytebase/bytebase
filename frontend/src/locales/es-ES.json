@@ -2013,6 +2013,7 @@
       "success-updated-prompt": "Webhook {{name}} actualizado exitosamente.",
       "test-webhook": "Probar webhook",
       "triggering-activity": "Actividades de disparo",
+      "url-hidden": "Oculta por seguridad. Introduzca una nueva URL para reemplazarla.",
       "webhook-url": "URL del webhook"
     }
   },

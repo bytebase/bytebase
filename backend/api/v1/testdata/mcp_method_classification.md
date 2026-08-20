@@ -16,9 +16,9 @@ served by no ceiling.
 
 | Class | Methods | Meaning |
 |---|---|---|
-| READ | 48 | served to a read-only session and above |
+| READ | 56 | served to a read-only session and above |
 | WRITE | 40 | served to a read-write session only |
-| EXCLUDED | 93 | served by no ceiling this phase ships |
+| EXCLUDED | 85 | served by no ceiling this phase ships |
 | FORBIDDEN | 28 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
 | **total** | **209** | |
@@ -82,15 +82,15 @@ served by no ceiling.
 | IdentityProviderService/ListIdentityProviders | EXCLUDED | ADMINISTERS_THE_WORKSPACE | — |
 | IdentityProviderService/TestIdentityProvider | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.identityProviders.update |
 | IdentityProviderService/UpdateIdentityProvider | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.identityProviders.update |
-| InstanceRoleService/ListInstanceRoles | EXCLUDED | RETURNS_A_STORED_SECRET | bb.instanceRoles.list |
+| InstanceRoleService/ListInstanceRoles | READ | — | bb.instanceRoles.list |
 | InstanceService/AddDataSource | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.update |
 | InstanceService/BatchSyncInstances | WRITE | — | bb.instances.sync |
 | InstanceService/BatchUpdateInstances | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.update |
 | InstanceService/CreateInstance | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.create |
 | InstanceService/DeleteInstance | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.delete |
-| InstanceService/GetInstance | EXCLUDED | RETURNS_A_STORED_SECRET | bb.instances.get |
+| InstanceService/GetInstance | READ | — | bb.instances.get |
 | InstanceService/ListInstanceDatabase | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.get |
-| InstanceService/ListInstances | EXCLUDED | RETURNS_A_STORED_SECRET | bb.instances.list |
+| InstanceService/ListInstances | READ | — | bb.instances.list |
 | InstanceService/RemoveDataSource | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.update |
 | InstanceService/SyncInstance | WRITE | — | bb.instances.sync |
 | InstanceService/UndeleteInstance | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.undelete |
@@ -123,14 +123,14 @@ served by no ceiling.
 | PlanService/UpdatePlan | WRITE | — | bb.plans.update |
 | ProjectService/AddWebhook | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.update |
 | ProjectService/BatchDeleteProjects | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.delete |
-| ProjectService/BatchGetProjects | EXCLUDED | RETURNS_A_STORED_SECRET | bb.projects.get |
+| ProjectService/BatchGetProjects | READ | — | bb.projects.get |
 | ProjectService/CreateProject | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.create |
 | ProjectService/DeleteProject | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.delete |
 | ProjectService/GetIamPolicy | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.getIamPolicy |
-| ProjectService/GetProject | EXCLUDED | RETURNS_A_STORED_SECRET | bb.projects.get |
-| ProjectService/ListProjects | EXCLUDED | RETURNS_A_STORED_SECRET | bb.projects.list |
+| ProjectService/GetProject | READ | — | bb.projects.get |
+| ProjectService/ListProjects | READ | — | bb.projects.list |
 | ProjectService/RemoveWebhook | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.update |
-| ProjectService/SearchProjects | EXCLUDED | RETURNS_A_STORED_SECRET | — |
+| ProjectService/SearchProjects | READ | — | — |
 | ProjectService/SetIamPolicy | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.setIamPolicy |
 | ProjectService/TestWebhook | EXCLUDED | SENDS_DATA_TO_A_THIRD_PARTY | bb.projects.update |
 | ProjectService/UndeleteProject | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.undelete |
@@ -214,7 +214,7 @@ served by no ceiling.
 | UserService/BatchGetUsers | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.users.get |
 | UserService/CreateUser | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.users.create |
 | UserService/DeleteUser | EXCLUDED | ADMINISTERS_THE_WORKSPACE | — |
-| UserService/GetCurrentUser | EXCLUDED | RETURNS_A_STORED_SECRET | — |
+| UserService/GetCurrentUser | READ | — | — |
 | UserService/GetUser | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.users.get |
 | UserService/ListUsers | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.users.list |
 | UserService/UndeleteUser | EXCLUDED | ADMINISTERS_THE_WORKSPACE | — |
