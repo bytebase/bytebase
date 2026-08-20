@@ -55,6 +55,7 @@ interface DetailPanelProps {
   result: QueryResult;
   statement?: string;
   getMaskingReason?: (index: number) => MaskingReason | undefined;
+  presentation?: "sheet" | "embedded";
 }
 
 function useLocalStorageBoolean(
@@ -105,6 +106,7 @@ export function DetailPanel({
   result,
   statement,
   getMaskingReason,
+  presentation = "sheet",
 }: DetailPanelProps) {
   const { t } = useTranslation();
   const { detail, disallowCopyingData, setDetail } = useSQLResultViewContext();
@@ -334,6 +336,182 @@ export function DetailPanel({
   const selectedColumnName =
     detail?.view === "cell" ? columns[detail.col]?.name : undefined;
 
+  const body = detail ? (
+    <div
+      className={cn(
+        // `flex-1 min-h-0` instead of `h-full` so the wrapper absorbs
+        // the space remaining after `SheetHeader` (not 100vh). The
+        // `min-h-0` lets the inner `flex-1 overflow-auto` block
+        // actually clip and scroll — without it, the scroll region
+        // expands to fit its content and the bottom rows render past
+        // the viewport.
+        // Match `SheetBody`'s `px-6 py-4` so the toolbar buttons
+        // and the content code block don't bleed to the sheet's
+        // raw edges.
+        "flex-1 min-h-0 flex flex-col gap-y-2",
+        presentation === "sheet" ? "px-6 py-4" : "p-2",
+        "text-main"
+      )}
+    >
+      <div
+        className={cn(
+          "flex items-center justify-between gap-x-4",
+          presentation === "embedded" && "flex-wrap gap-y-2"
+        )}
+      >
+        <div className="flex items-center gap-x-2">
+          <Tooltip content={t("sql-editor.previous-row")} delayDuration={500}>
+            <Button
+              size="sm"
+              appearance="outline"
+              disabled={detail.row === 0}
+              onClick={() => move(-1)}
+            >
+              <ChevronUpIcon className="size-4" />
+            </Button>
+          </Tooltip>
+          <Tooltip content={t("sql-editor.next-row")} delayDuration={500}>
+            <Button
+              size="sm"
+              appearance="outline"
+              disabled={detail.row === totalCount - 1}
+              onClick={() => move(1)}
+            >
+              <ChevronDownIcon className="size-4" />
+            </Button>
+          </Tooltip>
+          <div className="text-xs text-control-light flex items-center gap-x-1">
+            <span>{detail.row + 1}</span>
+            <span>/</span>
+            <span>{totalCount}</span>
+            <span>{t("sql-editor.rows.self")}</span>
+          </div>
+        </div>
+
+        <div className="flex min-w-0 items-center gap-x-2">
+          <TextSearchControl
+            query={searchQuery}
+            activeMatchIndex={activeMatchIndex}
+            matchCount={matchCount}
+            onQueryChange={setSearchQuery}
+            onMove={moveSearchMatch}
+            label={t("sql-editor.result-detail.search")}
+            className={cn(
+              presentation === "sheet" ? "w-80 flex-none" : "flex-1"
+            )}
+          />
+
+          <div className="flex shrink-0 items-center gap-1">
+            {guessedIsJSON && detailContent?.kind === "cell" && (
+              <Tooltip content={t("sql-editor.format")}>
+                <Button
+                  size="sm"
+                  appearance={format ? "solid" : "outline"}
+                  className="h-7 px-1.5"
+                  onClick={() => setFormat(!format)}
+                >
+                  <BracesIcon className="size-4" />
+                </Button>
+              </Tooltip>
+            )}
+
+            {detailContent?.kind === "cell" &&
+              detailContent.value?.kind?.case === "bytesValue" && (
+                <BinaryFormatButton
+                  format={detailContent.binaryFormat}
+                  onFormatChange={(next) =>
+                    setBinaryFormat({
+                      rowIndex: detail.row,
+                      colIndex: detail.col,
+                      format: next,
+                    })
+                  }
+                />
+              )}
+
+            {!disallowCopyingData && (
+              <Tooltip content={t("common.copy")}>
+                <Button
+                  size="sm"
+                  appearance="secondary"
+                  className="size-7 p-0"
+                  onClick={handleCopy}
+                >
+                  {copied ? (
+                    <CheckIcon className="size-4" />
+                  ) : (
+                    <CopyIcon className="size-4" />
+                  )}
+                </Button>
+              </Tooltip>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div
+        ref={contentRef}
+        className={cn(
+          "flex-1 overflow-auto text-sm font-mono border p-2 relative",
+          disallowCopyingData ? "select-none" : "select-text",
+          showFormattedJSON && !wrap ? "whitespace-pre" : "whitespace-pre-wrap"
+        )}
+        onClick={stopSelectionClickPropagation}
+      >
+        {detailContent?.kind === "row" ? (
+          <RowDataBlock
+            columns={columns}
+            database={database.name}
+            statement={statement}
+            getMaskingReason={getMaskingReason}
+            renderColumnName={(_, columnIndex) =>
+              rowSearchFields[columnIndex]?.columnName
+            }
+            renderValue={(_, columnIndex) => (
+              <div className="px-2 py-1">
+                <PlainCellValue
+                  value={detailContent.fields[columnIndex]?.value}
+                >
+                  {rowSearchFields[columnIndex]?.value}
+                </PlainCellValue>
+              </div>
+            )}
+          />
+        ) : showFormattedJSON ? (
+          <>
+            <div className="absolute right-2 top-2 flex justify-end items-center gap-1">
+              <Tooltip content={t("common.text-wrap")}>
+                <Button
+                  size="sm"
+                  appearance={wrap ? "solid" : "outline"}
+                  className="h-6 px-1"
+                  onClick={() => setWrap(!wrap)}
+                >
+                  <WrapTextIcon className="size-3" />
+                </Button>
+              </Tooltip>
+            </div>
+            <PrettyJSON
+              content={content ?? ""}
+              searchQuery={searchQuery}
+              activeMatchIndex={activeMatchIndex}
+              onMatchCountChange={setFormattedMatchCount}
+              onHighlightedContentChange={handleHighlightedContentChange}
+            />
+          </>
+        ) : content && content.length > 0 ? (
+          <>{searchResult.kind === "plain" ? searchResult.nodes : null}</>
+        ) : (
+          <br style={{ minWidth: "1rem", display: "inline-flex" }} />
+        )}
+      </div>
+    </div>
+  ) : null;
+
+  if (presentation === "embedded") {
+    return <div className="h-full min-h-0 flex flex-col">{body}</div>;
+  }
+
   return (
     <Sheet open={isOpen} onOpenChange={handleOpenChange}>
       <SheetContent width="standard">
@@ -354,174 +532,7 @@ export function DetailPanel({
             </SheetDescription>
           )}
         </SheetHeader>
-        {detail && (
-          <div
-            className={cn(
-              // `flex-1 min-h-0` instead of `h-full` so the wrapper absorbs
-              // the space remaining after `SheetHeader` (not 100vh). The
-              // `min-h-0` lets the inner `flex-1 overflow-auto` block
-              // actually clip and scroll — without it, the scroll region
-              // expands to fit its content and the bottom rows render past
-              // the viewport.
-              // Match `SheetBody`'s `px-6 py-4` so the toolbar buttons
-              // and the content code block don't bleed to the sheet's
-              // raw edges.
-              "flex-1 min-h-0 flex flex-col gap-y-2 px-6 py-4",
-              "text-main"
-            )}
-          >
-            <div className="flex items-center justify-between gap-x-4">
-              <div className="flex items-center gap-x-2">
-                <Tooltip
-                  content={t("sql-editor.previous-row")}
-                  delayDuration={500}
-                >
-                  <Button
-                    size="sm"
-                    appearance="outline"
-                    disabled={detail.row === 0}
-                    onClick={() => move(-1)}
-                  >
-                    <ChevronUpIcon className="size-4" />
-                  </Button>
-                </Tooltip>
-                <Tooltip content={t("sql-editor.next-row")} delayDuration={500}>
-                  <Button
-                    size="sm"
-                    appearance="outline"
-                    disabled={detail.row === totalCount - 1}
-                    onClick={() => move(1)}
-                  >
-                    <ChevronDownIcon className="size-4" />
-                  </Button>
-                </Tooltip>
-                <div className="text-xs text-control-light flex items-center gap-x-1">
-                  <span>{detail.row + 1}</span>
-                  <span>/</span>
-                  <span>{totalCount}</span>
-                  <span>{t("sql-editor.rows.self")}</span>
-                </div>
-              </div>
-
-              <div className="flex min-w-0 items-center gap-x-2">
-                <TextSearchControl
-                  query={searchQuery}
-                  activeMatchIndex={activeMatchIndex}
-                  matchCount={matchCount}
-                  onQueryChange={setSearchQuery}
-                  onMove={moveSearchMatch}
-                  label={t("sql-editor.result-detail.search")}
-                  className="w-80 flex-none"
-                />
-
-                <div className="flex shrink-0 items-center gap-1">
-                  {guessedIsJSON && detailContent?.kind === "cell" && (
-                    <Tooltip content={t("sql-editor.format")}>
-                      <Button
-                        size="sm"
-                        appearance={format ? "solid" : "outline"}
-                        className="h-7 px-1.5"
-                        onClick={() => setFormat(!format)}
-                      >
-                        <BracesIcon className="size-4" />
-                      </Button>
-                    </Tooltip>
-                  )}
-
-                  {detailContent?.kind === "cell" &&
-                    detailContent.value?.kind?.case === "bytesValue" && (
-                      <BinaryFormatButton
-                        format={detailContent.binaryFormat}
-                        onFormatChange={(next) =>
-                          setBinaryFormat({
-                            rowIndex: detail.row,
-                            colIndex: detail.col,
-                            format: next,
-                          })
-                        }
-                      />
-                    )}
-
-                  {!disallowCopyingData && (
-                    <Tooltip content={t("common.copy")}>
-                      <Button
-                        size="sm"
-                        appearance="secondary"
-                        className="size-7 p-0"
-                        onClick={handleCopy}
-                      >
-                        {copied ? (
-                          <CheckIcon className="size-4" />
-                        ) : (
-                          <CopyIcon className="size-4" />
-                        )}
-                      </Button>
-                    </Tooltip>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div
-              ref={contentRef}
-              className={cn(
-                "flex-1 overflow-auto text-sm font-mono border p-2 relative",
-                disallowCopyingData ? "select-none" : "select-text",
-                showFormattedJSON && !wrap
-                  ? "whitespace-pre"
-                  : "whitespace-pre-wrap"
-              )}
-              onClick={stopSelectionClickPropagation}
-            >
-              {detailContent?.kind === "row" ? (
-                <RowDataBlock
-                  columns={columns}
-                  database={database.name}
-                  statement={statement}
-                  getMaskingReason={getMaskingReason}
-                  renderColumnName={(_, columnIndex) =>
-                    rowSearchFields[columnIndex]?.columnName
-                  }
-                  renderValue={(_, columnIndex) => (
-                    <div className="px-2 py-1">
-                      <PlainCellValue
-                        value={detailContent.fields[columnIndex]?.value}
-                      >
-                        {rowSearchFields[columnIndex]?.value}
-                      </PlainCellValue>
-                    </div>
-                  )}
-                />
-              ) : showFormattedJSON ? (
-                <>
-                  <div className="absolute right-2 top-2 flex justify-end items-center gap-1">
-                    <Tooltip content={t("common.text-wrap")}>
-                      <Button
-                        size="sm"
-                        appearance={wrap ? "solid" : "outline"}
-                        className="h-6 px-1"
-                        onClick={() => setWrap(!wrap)}
-                      >
-                        <WrapTextIcon className="size-3" />
-                      </Button>
-                    </Tooltip>
-                  </div>
-                  <PrettyJSON
-                    content={content ?? ""}
-                    searchQuery={searchQuery}
-                    activeMatchIndex={activeMatchIndex}
-                    onMatchCountChange={setFormattedMatchCount}
-                    onHighlightedContentChange={handleHighlightedContentChange}
-                  />
-                </>
-              ) : content && content.length > 0 ? (
-                <>{searchResult.kind === "plain" ? searchResult.nodes : null}</>
-              ) : (
-                <br style={{ minWidth: "1rem", display: "inline-flex" }} />
-              )}
-            </div>
-          </div>
-        )}
+        {body}
       </SheetContent>
     </Sheet>
   );

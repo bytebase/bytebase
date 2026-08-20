@@ -28,7 +28,8 @@ export function Label({ tab }: Props) {
   const [draft, setDraft] = useState(tab.title);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const readonly = tab.viewState.view !== "CODE";
+  const readonly =
+    tab.mode === "DATA_EXPLORER" || tab.viewState.view !== "CODE";
   const displayTitle = tab.title || t("common.untitled");
   // Captures whether the tab was already current at mousedown time, before
   // the parent TabItem's onMouseDown handler runs and switches activation.

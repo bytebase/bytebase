@@ -16,6 +16,8 @@ const mocks = vi.hoisted(() => ({
   maybeUpdateSavedQuery: vi.fn().mockResolvedValue(undefined),
   canCreateSavedQueryInProject: vi.fn(() => true),
   addTab: vi.fn(() => ({ id: "local-tab" })),
+  tabsById: new Map<string, { id: string; mode: string }>(),
+  currentTabId: "",
 }));
 
 vi.mock("react-i18next", () => ({
@@ -68,8 +70,8 @@ vi.mock("@/modules/sql-editor/model/events", () => ({
 
 vi.mock("@/modules/sql-editor/store/tab", () => ({
   getSQLEditorTabsState: () => ({
-    tabsById: new Map(),
-    currentTabId: "",
+    tabsById: mocks.tabsById,
+    currentTabId: mocks.currentTabId,
     addTab: mocks.addTab,
     updateTab: vi.fn(),
   }),
@@ -168,6 +170,8 @@ beforeEach(async () => {
   mocks.canCreateSavedQueryInProject.mockReturnValue(true);
   mocks.addTab.mockReturnValue({ id: "local-tab" });
   mocks.createSavedQuery.mockResolvedValue(undefined);
+  mocks.tabsById.clear();
+  mocks.currentTabId = "";
   ({ useConnectionMenu } = await import("./actions"));
 });
 
@@ -204,6 +208,27 @@ describe("setConnection", () => {
 
     expect(mocks.createSavedQuery).toHaveBeenCalled();
     expect(mocks.addTab).not.toHaveBeenCalled();
+  });
+
+  test("does not replace a data explorer tab", async () => {
+    mocks.currentTabId = "data-explorer";
+    mocks.tabsById.set("data-explorer", {
+      id: "data-explorer",
+      mode: "DATA_EXPLORER",
+    });
+    const { setConnection } = await import("./actions");
+
+    await act(async () => {
+      setConnection({
+        database: { name: "instances/prod/databases/db1" } as never,
+        mode: "DATA_EXPLORER",
+        newTab: false,
+      });
+      await Promise.resolve();
+    });
+
+    expect(mocks.maybeUpdateSavedQuery).not.toHaveBeenCalled();
+    expect(mocks.createSavedQuery).toHaveBeenCalled();
   });
 });
 

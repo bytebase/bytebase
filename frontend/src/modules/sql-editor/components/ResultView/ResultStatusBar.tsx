@@ -6,6 +6,16 @@ import { CopyButton } from "@/components/ui/copy-button";
 import { EllipsisText } from "@/components/ui/ellipsis-text";
 import { cn } from "@/lib/utils";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import type { QueryResult } from "@/types/proto-es/v1/sql_service_pb";
+
+export const formatQueryTime = (latency: QueryResult["latency"]): string => {
+  if (!latency) return "-";
+  const totalSeconds = Number(latency.seconds) + latency.nanos / 1e9;
+  if (totalSeconds < 1) {
+    return `${Math.round(totalSeconds * 1000)} ms`;
+  }
+  return `${totalSeconds.toFixed(2)} s`;
+};
 
 type ResultStatusBarProps = Readonly<{
   database: Database;

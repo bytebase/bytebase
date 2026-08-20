@@ -1,4 +1,4 @@
-import { PencilLine, Users, Wrench } from "lucide-react";
+import { PencilLine, TableProperties, Users, Wrench } from "lucide-react";
 import { useSheetContext } from "@/modules/sql-editor/model/Sheet";
 import { useAppStore } from "@/stores/app";
 import type { SQLEditorTab } from "@/types/sqlEditor/tab";
@@ -19,7 +19,10 @@ type Props = {
 export function Prefix({ tab }: Props) {
   const { isSavedQueryCreator } = useSheetContext();
 
-  const isDraft = !tab.savedQuery && tab.viewState.view === "CODE";
+  const isDraft =
+    tab.mode === "SAVED_QUERY" &&
+    !tab.savedQuery &&
+    tab.viewState.view === "CODE";
 
   const sheet = useAppStore((s) =>
     tab.savedQuery ? s.getSavedQueryByName(tab.savedQuery) : null
@@ -33,6 +36,9 @@ export function Prefix({ tab }: Props) {
         <>
           {sheet && !isSavedQueryCreator(sheet) && <Users className="size-4" />}
           {tab.mode === "ADMIN" && <Wrench className="size-4" />}
+          {tab.mode === "DATA_EXPLORER" && (
+            <TableProperties className="size-4" />
+          )}
         </>
       )}
       <SheetConnectionIcon tab={tab} />

@@ -2,7 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { act } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
-import { ResultStatusBar } from "./ResultStatusBar";
+import { formatQueryTime, ResultStatusBar } from "./ResultStatusBar";
 
 vi.mock("react-i18next", () => ({
   initReactI18next: {
@@ -74,6 +74,16 @@ const setElementWidth = (
 describe("ResultStatusBar", () => {
   beforeEach(() => {
     resizeCallbacks = [];
+  });
+
+  test("formats query latency", () => {
+    expect(formatQueryTime(undefined)).toBe("-");
+    expect(formatQueryTime({ seconds: 0n, nanos: 250_000_000 } as never)).toBe(
+      "250 ms"
+    );
+    expect(formatQueryTime({ seconds: 2n, nanos: 500_000_000 } as never)).toBe(
+      "2.50 s"
+    );
   });
 
   test("lets the database label shrink while the statement truncates", () => {

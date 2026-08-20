@@ -26,6 +26,7 @@ export { getPlainValue } from "./cell-value";
 export type {
   ResultTableColumn,
   ResultTableRow,
+  ResultViewPresentation,
   SortDirection,
   SortState,
 } from "./types";

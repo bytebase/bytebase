@@ -437,6 +437,7 @@
     "search": "Buscar",
     "search-for-more": "Buscar más",
     "search-no-result": "No se encontraron resultados coincidentes",
+    "search-results": "Buscar resultados",
     "select": "Seleccionar",
     "select-all": "Seleccionar todo",
     "selected": "seleccionado",
@@ -2963,6 +2964,7 @@
     "and-more-grant": "… y {{count}} concesión más",
     "and-more-grants": "… y {{count}} concesiones más",
     "and-n-more-databases": "y {{n}} bases de datos más",
+    "apply-filter": "Aplicar filtro",
     "batch-export": {
       "failed-for-db": "No se pudieron exportar los datos de {{db}}",
       "partial": "Exportación parcial por lotes",
@@ -3002,6 +3004,10 @@
     "copy-selected-rows-as-csv": "Copiar las filas seleccionadas como CSV",
     "copy-selected-rows-as-sql": "Copiar las filas seleccionadas como SQL",
     "copy-url": "Copiar URL",
+    "data-explorer-elasticsearch-filter-placeholder": "Introduce una expresión de consulta, p. ej. status:active",
+    "data-explorer-filter-placeholder": "Introduce un predicado de consulta, p. ej. WHERE c.id = \"1\"",
+    "data-explorer-mongodb-filter-placeholder": "Introduce un documento de filtro, p. ej. { \"status\": \"active\" }",
+    "data-explorer-sql-filter-placeholder": "Introduce un predicado de consulta, p. ej. WHERE id = 1",
     "ddl-dml-requires-data-change-plan": "Para ejecutar sentencias DDL/DML en <environment></environment>, envíe un Plan de Cambio de Datos para su aprobación.",
     "download-as-file": "Descargar como {{file}}",
     "duration-day": "{{days}} día",
@@ -3013,6 +3019,7 @@
     "expire-at": "Expira el {{time}}",
     "expire-in": "Expira en {{time}}",
     "expired": "Expirado",
+    "explore-data": "Explorar datos",
     "export-available-via-issue": "Exportación disponible vía issue \"{{title}}\"",
     "export-available-via-n-grants": "Exportación disponible vía {{count}} concesiones de acceso:",
     "export-enabled-by-grant": "Exportación habilitada por la concesión de acceso",
@@ -3046,7 +3053,6 @@
     "open-in-new-tab": "Abrir en nueva pestaña",
     "opened-from-link": "Abierto desde enlace",
     "pending-query": "Consulta pendiente",
-    "preview-table-data": "Vista previa de datos de la tabla",
     "previous-row": "Fila anterior",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "No se permite realizar consultas a la fuente de datos del administrador."

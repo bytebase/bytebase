@@ -437,6 +437,7 @@
     "search": "Search",
     "search-for-more": "Search for more",
     "search-no-result": "No matching result found",
+    "search-results": "Search results",
     "select": "Please Select",
     "select-all": "Select all",
     "selected": "selected",
@@ -2963,6 +2964,7 @@
     "and-more-grant": "… and {{count}} more grant",
     "and-more-grants": "… and {{count}} more grants",
     "and-n-more-databases": "and {{n}} more databases",
+    "apply-filter": "Apply filter",
     "batch-export": {
       "failed-for-db": "Failed to export data for {{db}}",
       "partial": "Partial batch export",
@@ -3002,6 +3004,10 @@
     "copy-selected-rows-as-csv": "Copy selected rows as CSV",
     "copy-selected-rows-as-sql": "Copy selected rows as SQL",
     "copy-url": "Copy URL",
+    "data-explorer-elasticsearch-filter-placeholder": "Enter a query expression, e.g. status:active",
+    "data-explorer-filter-placeholder": "Enter a query predicate, e.g. WHERE c.id = \"1\"",
+    "data-explorer-mongodb-filter-placeholder": "Enter a filter document, e.g. { \"status\": \"active\" }",
+    "data-explorer-sql-filter-placeholder": "Enter a query predicate, e.g. WHERE id = 1",
     "ddl-dml-requires-data-change-plan": "To execute DDL/DML statements in <environment></environment>, please submit a Data Change Plan for approval.",
     "download-as-file": "Download as {{file}}",
     "duration-day": "{{days}} day",
@@ -3013,6 +3019,7 @@
     "expire-at": "Expire at {{time}}",
     "expire-in": "Expire in {{time}}",
     "expired": "Expired",
+    "explore-data": "Explore data",
     "export-available-via-issue": "Export available via issue \"{{title}}\"",
     "export-available-via-n-grants": "Export available via {{count}} access grants:",
     "export-enabled-by-grant": "Export enabled by access grant",
@@ -3046,7 +3053,6 @@
     "open-in-new-tab": "Open in new tab",
     "opened-from-link": "Opened from link",
     "pending-query": "Pending query",
-    "preview-table-data": "Preview table data",
     "previous-row": "Previous Row",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "Admin data source is disallowed to query."

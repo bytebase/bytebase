@@ -17,3 +17,5 @@ export interface SortState {
   columnIndex: number;
   direction: SortDirection;
 }
+
+export type ResultViewPresentation = "STANDARD" | "DATA_EXPLORER";

@@ -437,6 +437,7 @@
     "search": "Tìm kiếm",
     "search-for-more": "Tìm kiếm thêm",
     "search-no-result": "Không tìm thấy kết quả phù hợp",
+    "search-results": "Tìm kiếm kết quả",
     "select": "Vui lòng chọn",
     "select-all": "Chọn tất cả",
     "selected": "đã chọn",
@@ -2963,6 +2964,7 @@
     "and-more-grant": "… và {{count}} cấp quyền nữa",
     "and-more-grants": "… và {{count}} cấp quyền nữa",
     "and-n-more-databases": "và {{n}} cơ sở dữ liệu khác",
+    "apply-filter": "Áp dụng bộ lọc",
     "batch-export": {
       "failed-for-db": "Không xuất được dữ liệu cho {{db}}",
       "partial": "Xuất hàng loạt một phần",
@@ -3002,6 +3004,10 @@
     "copy-selected-rows-as-csv": "Sao chép các hàng đã chọn dưới dạng CSV",
     "copy-selected-rows-as-sql": "Sao chép các hàng đã chọn dưới dạng SQL",
     "copy-url": "Sao chép URL",
+    "data-explorer-elasticsearch-filter-placeholder": "Nhập biểu thức truy vấn, ví dụ status:active",
+    "data-explorer-filter-placeholder": "Nhập điều kiện truy vấn, ví dụ WHERE c.id = \"1\"",
+    "data-explorer-mongodb-filter-placeholder": "Nhập tài liệu bộ lọc, ví dụ { \"status\": \"active\" }",
+    "data-explorer-sql-filter-placeholder": "Nhập điều kiện truy vấn, ví dụ WHERE id = 1",
     "ddl-dml-requires-data-change-plan": "Để thực thi câu lệnh DDL/DML trong <environment></environment>, vui lòng gửi Kế hoạch Thay đổi Dữ liệu để được phê duyệt.",
     "download-as-file": "Tải xuống dưới dạng {{file}}",
     "duration-day": "{{days}} ngày",
@@ -3013,6 +3019,7 @@
     "expire-at": "Hết hạn lúc {{time}}",
     "expire-in": "Hết hạn sau {{time}}",
     "expired": "Đã hết hạn",
+    "explore-data": "Khám phá dữ liệu",
     "export-available-via-issue": "Xuất khả dụng qua issue \"{{title}}\"",
     "export-available-via-n-grants": "Xuất khả dụng qua {{count}} cấp quyền truy cập:",
     "export-enabled-by-grant": "Xuất được kích hoạt bởi cấp quyền truy cập",
@@ -3046,7 +3053,6 @@
     "open-in-new-tab": "Mở trong tab mới",
     "opened-from-link": "Mở từ liên kết",
     "pending-query": "Đang chờ truy vấn",
-    "preview-table-data": "Xem trước dữ liệu bảng",
     "previous-row": "Dòng trước",
     "query-context": {
       "admin-data-source-is-disallowed-to-query": "Nguồn dữ liệu quản trị không được phép truy vấn."

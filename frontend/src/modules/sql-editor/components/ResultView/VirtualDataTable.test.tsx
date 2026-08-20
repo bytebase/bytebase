@@ -156,6 +156,65 @@ describe("VirtualDataTable row detail action", () => {
     expect(screen.getByTestId("detail-state")).toHaveTextContent("0:0:row");
   });
 
+  test("releases row detail action focus after pointer activation", () => {
+    render(
+      <SQLResultViewProvider
+        engine={Engine.COSMOSDB}
+        rows={rows}
+        columns={columns}
+      >
+        <VirtualDataTable
+          rows={rows}
+          columns={columns}
+          activeRowIndex={-1}
+          database={database}
+          search={{ query: "", scopes: [] }}
+          onToggleSort={() => undefined}
+        />
+        <DetailProbe />
+      </SQLResultViewProvider>
+    );
+
+    const action = screen.getByRole("button", {
+      name: "sql-editor.view-detail",
+    });
+    action.focus();
+    expect(action).toHaveFocus();
+
+    fireEvent.click(action, { detail: 1 });
+
+    expect(action).not.toHaveFocus();
+    expect(screen.getByTestId("detail-state")).toHaveTextContent("0:0:row");
+  });
+
+  test("keeps row detail action focus after keyboard activation", () => {
+    render(
+      <SQLResultViewProvider
+        engine={Engine.COSMOSDB}
+        rows={rows}
+        columns={columns}
+      >
+        <VirtualDataTable
+          rows={rows}
+          columns={columns}
+          activeRowIndex={-1}
+          database={database}
+          search={{ query: "", scopes: [] }}
+          onToggleSort={() => undefined}
+        />
+      </SQLResultViewProvider>
+    );
+
+    const action = screen.getByRole("button", {
+      name: "sql-editor.view-detail",
+    });
+    action.focus();
+
+    fireEvent.click(action, { detail: 0 });
+
+    expect(action).toHaveFocus();
+  });
+
   test("opens the entire relational row when a data cell is double-clicked", () => {
     const { container } = render(
       <SQLResultViewProvider
@@ -183,5 +242,78 @@ describe("VirtualDataTable row detail action", () => {
 
     fireEvent.doubleClick(cellValue);
     expect(screen.getByTestId("detail-state")).toHaveTextContent("0:0:row");
+  });
+
+  test("supports selecting a row without the row detail action", () => {
+    const onRowClick = vi.fn();
+    const { container } = render(
+      <SQLResultViewProvider
+        engine={Engine.COSMOSDB}
+        rows={rows}
+        columns={columns}
+      >
+        <VirtualDataTable
+          rows={rows}
+          columns={columns}
+          activeRowIndex={0}
+          database={database}
+          search={{ query: "", scopes: [] }}
+          onToggleSort={() => undefined}
+          onRowClick={onRowClick}
+          showRowDetailAction={false}
+        />
+      </SQLResultViewProvider>
+    );
+
+    fireEvent.click(
+      container.querySelector(
+        '[data-row-index="0"] [data-col-index="1"]'
+      )!
+    );
+
+    expect(onRowClick).toHaveBeenCalledWith(0);
+    expect(
+      screen.queryByRole("button", { name: "sql-editor.view-detail" })
+    ).not.toBeInTheDocument();
+    expect(container.querySelector(".textinfolabel")).not.toHaveClass(
+      "group-hover:opacity-0"
+    );
+  });
+
+  test("activates a row without creating a copy selection", () => {
+    const onRowClick = vi.fn();
+    const { container } = render(
+      <SQLResultViewProvider
+        engine={Engine.COSMOSDB}
+        rows={rows}
+        columns={columns}
+      >
+        <VirtualDataTable
+          rows={rows}
+          columns={columns}
+          activeRowIndex={0}
+          database={database}
+          search={{ query: "", scopes: [] }}
+          onToggleSort={() => undefined}
+          onRowClick={onRowClick}
+          showRowDetailAction={false}
+          allowSelection={false}
+          activeRowHighlight="strong"
+        />
+      </SQLResultViewProvider>
+    );
+
+    fireEvent.click(screen.getByText("one"));
+
+    expect(onRowClick).toHaveBeenCalledWith(0);
+    expect(
+      screen.queryByRole("button", { name: "Select row 1" })
+    ).not.toBeInTheDocument();
+    expect(
+      container.querySelector('[data-col-index="1"] > div')
+    ).not.toHaveClass("cursor-pointer");
+    expect(container.querySelector('[data-col-index="1"]')).toHaveClass(
+      "bg-accent/20!"
+    );
   });
 });

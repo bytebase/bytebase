@@ -14,6 +14,7 @@ import { AIChatToSQL, AIContextProvider } from "@/modules/ai/components";
 import { aiContextEvents } from "@/modules/ai/logic";
 import { resizeHandleClass } from "@/modules/schema-editor/resize";
 import { DatabaseChooser } from "@/modules/sql-editor/components/DatabaseChooser";
+import { DataExplorerPanel } from "@/modules/sql-editor/components/DataExplorer/DataExplorerPanel";
 import { DiagramPanel } from "@/modules/sql-editor/components/DiagramPanel";
 import { ExternalTablesPanel } from "@/modules/sql-editor/components/ExternalTablesPanel";
 import { FunctionsPanel } from "@/modules/sql-editor/components/FunctionsPanel";
@@ -99,6 +100,7 @@ export function Panels() {
   const editorPanelSize = useSQLEditorStore(useShallow(selectEditorPanelSize));
 
   const showAIPaneAlongsidePanel = showAIPanel && isShowingCode;
+  const effectiveView = tabMode === "DATA_EXPLORER" ? "CODE" : view;
   const { setSchema, updateViewState } = useViewStateNav();
   const { execute } = useExecuteSQL();
 
@@ -169,6 +171,9 @@ export function Panels() {
     if (tabMode === "ADMIN") {
       return <TerminalPanel key={`terminal-${tab.id}`} />;
     }
+    if (tabMode === "DATA_EXPLORER") {
+      return <DataExplorerPanel key={`data-explorer-${tab.id}`} />;
+    }
     return (
       <Alert variant="error" className="m-2" key={`no-permission-${tab.id}`}>
         <ShieldAlert className="size-5 shrink-0 mt-0.5" />
@@ -177,7 +182,9 @@ export function Panels() {
     );
   }, [tab, tabMode, t]);
 
-  const subPanel = view ? renderSubPanel(view, tab?.id) : null;
+  const subPanel = effectiveView
+    ? renderSubPanel(effectiveView, tab?.id)
+    : null;
 
   const handleAiResize = (sizePct: number) => {
     if (!Number.isFinite(sizePct)) return;
@@ -187,8 +194,8 @@ export function Panels() {
   return (
     <div className="flex-1 flex items-stretch overflow-hidden">
       <div className="flex-1 overflow-y-hidden overflow-x-auto">
-        {(!view || view === "CODE") && codePanel}
-        {view && view !== "CODE" && (
+        {(!effectiveView || effectiveView === "CODE") && codePanel}
+        {effectiveView && effectiveView !== "CODE" && (
           <div className="h-full flex flex-col">
             <div className="py-2 px-2 w-full flex flex-row gap-x-2 justify-between items-center">
               <div className="flex items-center justify-start gap-2">
