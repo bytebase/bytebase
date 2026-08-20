@@ -2468,7 +2468,7 @@
               "self": "Tắt"
             },
             "read-only": {
-              "description": "Các phiên MCP có thể xem siêu dữ liệu và chạy truy vấn chỉ đọc, vẫn bị giới hạn bởi quyền của từng người dùng. Toàn bộ yêu cầu sẽ bị từ chối nếu Bytebase xác định bất kỳ câu lệnh nào trong đó là ghi.",
+              "description": "Các phiên MCP có thể xem siêu dữ liệu và chạy truy vấn chỉ đọc, vẫn bị giới hạn bởi quyền của từng người dùng. Toàn bộ yêu cầu sẽ bị từ chối nếu Bytebase xác định bất kỳ câu lệnh nào trong đó là ghi, hoặc không thể xác nhận rằng nó chỉ đọc.",
               "self": "Chỉ đọc"
             },
             "read-write": {

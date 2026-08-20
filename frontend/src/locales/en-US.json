@@ -2468,7 +2468,7 @@
               "self": "Disabled"
             },
             "read-only": {
-              "description": "MCP sessions can inspect metadata and run read-only queries, still bounded by each user's own permissions. A request is refused whole if Bytebase classifies any statement in it as a write.",
+              "description": "MCP sessions can inspect metadata and run read-only queries, still bounded by each user's own permissions. A request is refused whole if Bytebase classifies any statement in it as a write, or cannot determine that it only reads.",
               "self": "Read-only"
             },
             "read-write": {
