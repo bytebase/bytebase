@@ -82,11 +82,17 @@ Constraints:
 
 - A shared subtree is reachable from two messages, so the redacted copy is write-once: marshaled
   and discarded. `TestAuditRedactionDoesNotMutateInput` pins this.
-- Dropping is `Clear()`, never assignment to `""` — they differ for `optional` fields, where `""`
+- Dropping is `Clear()`, not assignment to `""` — they differ for `optional` fields, where `""`
   leaves `{"password":""}`. `InstanceRole.password` is `optional`.
-- Oneofs need no special case: only the set arm reports `Has()`, and clearing a field inside an arm
-  leaves the arm set, so the row still records which credential type was supplied. This reproduces
-  `redactIAMExtension` byte-for-byte.
+- **A oneof member is blanked, not cleared.** Clearing a scalar arm unsets the oneof and erases
+  which arm was supplied: `DataSourceExternalSecret.token` (`instance_service.proto:644`) is an
+  `INPUT_ONLY` string arm whose sibling `app_role` is a message and would survive as `{}`, so
+  clearing would make token auth indistinguishable from unconfigured while AppRole stayed legible.
+  Blanking keeps the arm present with no value, which is already the read path's convention
+  (`instance_service_converter_test.go:457` — "Oneof members may stay present as an is-configured
+  signal ... require blank content, not absence").
+- Otherwise oneofs need no special case: only the set arm reports `Has()`, and clearing a field
+  *inside* a message arm leaves the arm set. This reproduces `redactIAMExtension` byte-for-byte.
 - Maps do: an annotated map is cleared whole, a map whose value type has a plan is descended per
   entry. The existing net skips maps.
 
