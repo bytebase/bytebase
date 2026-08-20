@@ -12,6 +12,7 @@ import (
 
 	"github.com/pkg/errors"
 	"github.com/prometheus/client_golang/prometheus"
+	metricpb "github.com/prometheus/client_model/go"
 
 	"github.com/bytebase/bytebase/backend/enterprise"
 	"github.com/bytebase/bytebase/backend/store"
@@ -45,12 +46,13 @@ type databaseIdentity struct {
 }
 
 type nativeHistogram struct {
-	count   uint64
-	sum     float64
-	buckets map[int]int64
-	zero    uint64
-	created time.Time
-	schema  int32
+	prometheus.Histogram
+}
+
+type dynamicHistogramMetric struct {
+	desc        *prometheus.Desc
+	histogram   prometheus.Histogram
+	labelValues []string
 }
 
 type stateStore interface {
@@ -241,12 +243,7 @@ func (m *ProductMetrics) collectEvents(ch chan<- prometheus.Metric) {
 	for identity, byResult := range m.instanceHistograms {
 		for result, histogram := range byResult {
 			labels := append([]string{string(result), identity}, instanceSchema.values(m.instanceLabels[identity])...)
-			metric, err := histogram.metric(instanceDesc, labels...)
-			if err != nil {
-				fail(ch, err)
-				return
-			}
-			ch <- metric
+			ch <- histogram.metric(instanceDesc, labels...)
 		}
 	}
 
@@ -263,55 +260,39 @@ func (m *ProductMetrics) collectEvents(ch chan<- prometheus.Metric) {
 	runnerDesc := prometheus.NewDesc("bytebase_runner_run_duration_seconds", "Duration of synchronous runner control-loop cycles.", []string{"runner", "result"}, nil)
 	for runner, byResult := range m.runnerEvents {
 		for result, histogram := range byResult {
-			metric, err := histogram.metric(runnerDesc, string(runner), string(result))
-			if err != nil {
-				fail(ch, err)
-				return
-			}
-			ch <- metric
+			ch <- histogram.metric(runnerDesc, string(runner), string(result))
 		}
 	}
 }
 
 func newNativeHistogram() *nativeHistogram {
-	return &nativeHistogram{buckets: make(map[int]int64), created: time.Now(), schema: 3}
+	return &nativeHistogram{Histogram: prometheus.NewHistogram(prometheus.HistogramOpts{
+		Name:                            "bytebase_internal_product_duration_seconds",
+		Help:                            "Internal accumulator for dynamically labeled product duration metrics.",
+		NativeHistogramBucketFactor:     1.1,
+		NativeHistogramMaxBucketNumber:  100,
+		NativeHistogramMinResetDuration: time.Hour,
+	})}
 }
 
 func (h *nativeHistogram) observe(value float64) {
-	h.count++
-	h.sum += value
-	if value <= prometheus.DefNativeHistogramZeroThreshold {
-		h.zero++
-		return
-	}
-	index := int(math.Floor(math.Log2(value) * 8))
-	h.buckets[index]++
-	for len(h.buckets) > 100 {
-		if time.Since(h.created) >= time.Hour {
-			h.count, h.sum, h.zero = 0, 0, 0
-			clear(h.buckets)
-			h.created = time.Now()
-			h.observe(value)
-			return
-		}
-		coalesced := make(map[int]int64, len(h.buckets))
-		for bucket, count := range h.buckets {
-			coalesced[floorDiv2(bucket)] += count
-		}
-		h.buckets = coalesced
-		h.schema--
-	}
+	h.Observe(value)
 }
 
-func (h *nativeHistogram) metric(desc *prometheus.Desc, labels ...string) (prometheus.Metric, error) {
-	return prometheus.NewConstNativeHistogram(desc, h.count, h.sum, h.buckets, nil, h.zero, h.schema, prometheus.DefNativeHistogramZeroThreshold, h.created, labels...)
+func (h *nativeHistogram) metric(desc *prometheus.Desc, labels ...string) prometheus.Metric {
+	return &dynamicHistogramMetric{desc: desc, histogram: h.Histogram, labelValues: labels}
 }
 
-func floorDiv2(value int) int {
-	if value < 0 && value%2 != 0 {
-		return value/2 - 1
+func (m *dynamicHistogramMetric) Desc() *prometheus.Desc {
+	return m.desc
+}
+
+func (m *dynamicHistogramMetric) Write(out *metricpb.Metric) error {
+	if err := m.histogram.Write(out); err != nil {
+		return errors.Wrap(err, "failed to write native histogram")
 	}
-	return value / 2
+	out.Label = prometheus.MakeLabelPairs(m.desc, m.labelValues)
+	return nil
 }
 
 type labelSchema struct {

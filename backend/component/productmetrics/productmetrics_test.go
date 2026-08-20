@@ -161,8 +161,35 @@ func TestNativeHistogramBucketCap(t *testing.T) {
 	for i := range 150 {
 		histogram.observe(math.Pow(2, float64(i)))
 	}
-	require.LessOrEqual(t, len(histogram.buckets), 100)
-	require.Less(t, histogram.schema, int32(3))
+	metric := &metricpb.Metric{}
+	require.NoError(t, histogram.Write(metric))
+	nativeBucketCount := 0
+	for _, span := range metric.GetHistogram().GetPositiveSpan() {
+		nativeBucketCount += int(span.GetLength())
+	}
+	require.LessOrEqual(t, nativeBucketCount, 100)
+	require.Less(t, metric.GetHistogram().GetSchema(), int32(3))
+}
+
+func TestNativeHistogramBucketAssignment(t *testing.T) {
+	tests := []struct {
+		value     float64
+		wantIndex int32
+	}{
+		{value: 0.95, wantIndex: 0},
+		{value: 1, wantIndex: 0},
+		{value: 1.05, wantIndex: 1},
+		{value: 2, wantIndex: 8},
+	}
+	for _, test := range tests {
+		histogram := newNativeHistogram()
+		histogram.observe(test.value)
+		metric := &metricpb.Metric{}
+		require.NoError(t, histogram.Write(metric))
+		require.Equal(t, int32(3), metric.GetHistogram().GetSchema())
+		require.Len(t, metric.GetHistogram().GetPositiveSpan(), 1)
+		require.Equal(t, test.wantIndex, metric.GetHistogram().GetPositiveSpan()[0].GetOffset())
+	}
 }
 
 func TestConcurrentObserveAndCollect(t *testing.T) {

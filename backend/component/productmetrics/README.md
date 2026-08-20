@@ -40,6 +40,6 @@ collisions receive deterministic `_conflictN` suffixes. The label schema is the
 union of labels observed by that process; a resource without a union label emits
 an empty value for it.
 
-The duration metrics use Prometheus native histograms. Their bucket factor is at
-most 1.1, populated buckets are capped at 100, and bucket state is not reset more
-often than once per hour.
+The duration metrics use the Prometheus client library's native histogram
+implementation. Their bucket factor is at most 1.1, populated buckets are capped
+at 100, and bucket state is not reset more often than once per hour.
