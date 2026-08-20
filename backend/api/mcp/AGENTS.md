@@ -11,8 +11,7 @@ Skills are markdown files in `skills/` that get embedded into the binary and ser
 ```
 skills/
 ├── query.md
-├── database-change.md
-└── grant-permission.md
+└── database-change.md
 ```
 
 ### Skill Format
@@ -103,5 +102,5 @@ const getSkillDescription = `Get step-by-step guides for Bytebase tasks.
 
 **Workflow:** get_skill("task") → search_api(operationId) → call_api(...)
 
-Skills: query, database-change, grant-permission, NEW-SKILL`
+Skills: query, database-change, NEW-SKILL`
 ```

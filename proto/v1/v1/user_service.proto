@@ -26,7 +26,7 @@ service UserService {
     option (bytebase.v1.permission) = "bb.users.get";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Get the users in batch.
@@ -37,7 +37,7 @@ service UserService {
     option (bytebase.v1.permission) = "bb.users.get";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Get the current authenticated user.
@@ -47,7 +47,7 @@ service UserService {
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = RETURNS_A_STORED_SECRET;
+    option (bytebase.v1.mcp_denial_reason) = RETURNS_A_STORED_SECRET;
   }
 
   // List all users.
@@ -59,7 +59,7 @@ service UserService {
     option (bytebase.v1.permission) = "bb.users.list";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Creates a user in the caller's workspace (admin action, self-hosted only).
@@ -75,7 +75,7 @@ service UserService {
     option (bytebase.v1.permission) = "bb.users.create";
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
 
   // Updates a user. Users can update their own profile, or users with bb.users.update permission can update any user.
@@ -90,7 +90,7 @@ service UserService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = TAKES_OVER_ACCOUNT;
+    option (bytebase.v1.mcp_denial_reason) = TAKES_OVER_ACCOUNT;
   }
 
   // Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted.
@@ -101,7 +101,7 @@ service UserService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Restores a deleted user.
@@ -114,7 +114,7 @@ service UserService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Updates a user's email address.
@@ -129,7 +129,7 @@ service UserService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
 }
 

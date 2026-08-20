@@ -14989,27 +14989,11 @@ components:
          Protocol) server's delegated credential. The values are copied verbatim from
          the verified credential's grant state; empty fields record that the grant
          stored nothing (legacy sessions), never a resolved or synthesized value.
-    bytebase.v1.MCPExclusionReason:
+    bytebase.v1.MCPDenialReason:
       type: string
-      title: MCPExclusionReason
+      title: MCPDenialReason
       enum:
-        - MCP_EXCLUSION_REASON_UNSPECIFIED
-        - ADMINISTERS_THE_WORKSPACE
-        - READS_OTHER_USERS_SQL
-        - OPENS_AN_ADMIN_CONNECTION
-        - SENDS_DATA_TO_A_THIRD_PARTY
-        - RETURNS_A_STORED_SECRET
-      description: |-
-        Why an RPC is served by no MCP mode. Unlike MCPForbiddenReason, which names
-         a mechanism that breaks the MCP boundary, these name a scope decision: the
-         method is out because this phase ships two modes and neither is the right
-         home for it. Each value is what a future admin-capable ceiling would have to
-         argue with, one population at a time.
-    bytebase.v1.MCPForbiddenReason:
-      type: string
-      title: MCPForbiddenReason
-      enum:
-        - MCP_FORBIDDEN_REASON_UNSPECIFIED
+        - MCP_DENIAL_REASON_UNSPECIFIED
         - MINTS_CREDENTIAL
         - RESETS_CREDENTIAL
         - TAKES_OVER_ACCOUNT
@@ -15018,12 +15002,29 @@ components:
         - MINTS_CREDENTIAL_FOR_OTHERS
         - REWRITES_SESSION_BOUNDARY
         - DRIVES_THE_APPROVAL_DECISION
+        - ADMINISTERS_THE_WORKSPACE
+        - READS_OTHER_USERS_SQL
+        - OPENS_AN_ADMIN_CONNECTION
+        - SENDS_DATA_TO_A_THIRD_PARTY
+        - RETURNS_A_STORED_SECRET
       description: |-
-        Why an RPC is FORBIDDEN to MCP sessions. The mechanism, not the wording:
-         each value names what its methods actually do, and the serving side turns
-         that into a sentence. A denial whose stated reason has drifted from the
-         mechanism is worse than a bare refusal, because it is the thing the next
-         reader trusts — so a method changing what it does changes its reason here.
+        Why an MCP session may not call an RPC. The mechanism, not the wording: each
+         value names what its methods actually do, and the serving side turns that
+         into a sentence. A denial whose stated reason has drifted from the mechanism
+         is worse than a bare refusal, because it is the thing the next reader trusts
+         — so a method changing what it does changes its reason here.
+
+         One enum covers both refused classes, and every value belongs to exactly one
+         of them: values 1-8 name a mechanism that breaks the MCP boundary, which is
+         what FORBIDDEN means, and values 9-13 name a scope decision this phase took,
+         which is what EXCLUDED means. The distinction is real and lives on the class
+         annotation — a FORBIDDEN mechanism is a durable never, an EXCLUDED scope
+         decision is what a future admin-capable ceiling would argue with, one
+         population at a time. Splitting it across two enums as well only made the
+         nonsense states representable: a method could carry both, or carry the kind
+         that contradicts its class. Neither is expressible now, and the one check
+         left — the reason belongs to the class it is used on — is a table the gate
+         already keeps for the wording.
     bytebase.v1.MCPMethodClass:
       type: string
       title: MCPMethodClass
@@ -15038,12 +15039,11 @@ components:
          authorization of an MCP session is this classification intersected with the
          caller's own RBAC: it can only ever narrow what the human could do, never
          widen it.
-         Only FORBIDDEN is enforced today. READ, WRITE and EXCLUDED are recorded
-         classifications and nothing reads them at request time yet — the gate that
-         selects between them is a later change. A method annotated READ or WRITE is
-         therefore served exactly as it is today; the annotation states where it
-         belongs, not where the boundary currently sits. FORBIDDEN is the exception
-         and is enforced the moment it is annotated.
+         Every value is enforced, at the gate on the internal MCP chain. READ and
+         WRITE are the serving classes the workspace's MCP capability ceiling selects
+         between, EXCLUDED and FORBIDDEN are served by no ceiling, and an unclassified
+         method is refused rather than served. Annotating a method is therefore a
+         change to what an MCP session can reach, taking effect on the next request.
     bytebase.v1.MaskingExemptionPolicy:
       type: object
       properties:

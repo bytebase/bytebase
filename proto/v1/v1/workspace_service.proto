@@ -43,7 +43,7 @@ service WorkspaceService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Retrieves IAM policy for the workspace.
@@ -53,7 +53,7 @@ service WorkspaceService {
     option (bytebase.v1.permission) = "bb.workspaces.getIamPolicy";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Deletes a workspace. SaaS only. Cancels any active subscription and
@@ -65,7 +65,7 @@ service WorkspaceService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = ENDS_MEMBERSHIP;
+    option (bytebase.v1.mcp_denial_reason) = ENDS_MEMBERSHIP;
   }
 
   // Removes the calling user from a workspace and switches to the next
@@ -79,7 +79,7 @@ service WorkspaceService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = ENDS_MEMBERSHIP;
+    option (bytebase.v1.mcp_denial_reason) = ENDS_MEMBERSHIP;
   }
 
   // Sets IAM policy for the workspace.
@@ -93,7 +93,7 @@ service WorkspaceService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Mints a new directory sync (SCIM) token, immediately invalidating the
@@ -111,7 +111,7 @@ service WorkspaceService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_forbidden_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
 }
 

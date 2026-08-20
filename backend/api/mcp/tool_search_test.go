@@ -27,7 +27,11 @@ func TestSearchAPIListServices(t *testing.T) {
 	require.Contains(t, text, "Available Services")
 	require.Contains(t, text, "SQLService")
 	require.Contains(t, text, "DatabaseService")
-	require.Contains(t, text, "ProjectService")
+	// A service the MCP ceiling serves nothing of is not on the menu.
+	// ProjectService is the clearest case: its reads return the
+	// incoming-webhook URL verbatim and its writes administer the workspace,
+	// so every one of its methods is refused.
+	require.NotContains(t, text, "ProjectService")
 }
 
 func TestSearchAPIByService(t *testing.T) {

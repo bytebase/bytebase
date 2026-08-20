@@ -796,7 +796,7 @@ const file_v1_database_catalog_service_proto_rawDesc = "" +
 	"\x04kind2\xc5\x04\n" +
 	"\x16DatabaseCatalogService\x12\xf2\x01\n" +
 	"\x12GetDatabaseCatalog\x12&.bytebase.v1.GetDatabaseCatalogRequest\x1a\x1c.bytebase.v1.DatabaseCatalog\"\x95\x01\xdaA\x04name\x8a\xea0\x17bb.databaseCatalogs.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02eZ7\x125/v1/{name=projects/*/instances/*/databases/*/catalog}\x12*/v1/{name=instances/*/databases/*/catalog}\x12\xb5\x02\n" +
-	"\x15UpdateDatabaseCatalog\x12).bytebase.v1.UpdateDatabaseCatalogRequest\x1a\x1c.bytebase.v1.DatabaseCatalog\"\xd2\x01\xdaA\x13catalog,update_mask\x8a\xea0\x1abb.databaseCatalogs.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xb0\xea0\x01\x82\xd3\xe4\x93\x02\x87\x01:\acatalogZH:\acatalog2=/v1/{catalog.name=projects/*/instances/*/databases/*/catalog}22/v1/{catalog.name=instances/*/databases/*/catalog}B\xb1\x01\n" +
+	"\x15UpdateDatabaseCatalog\x12).bytebase.v1.UpdateDatabaseCatalogRequest\x1a\x1c.bytebase.v1.DatabaseCatalog\"\xd2\x01\xdaA\x13catalog,update_mask\x8a\xea0\x1abb.databaseCatalogs.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x87\x01:\acatalogZH:\acatalog2=/v1/{catalog.name=projects/*/instances/*/databases/*/catalog}22/v1/{catalog.name=instances/*/databases/*/catalog}B\xb1\x01\n" +
 	"\x0fcom.bytebase.v1B\x1bDatabaseCatalogServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

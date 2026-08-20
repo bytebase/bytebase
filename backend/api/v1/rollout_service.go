@@ -288,6 +288,9 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("permission denied to create rollout"))
 	}
 
+	if err := rejectMCPOriginatedIssuelessRollout(ctx, project, issue, "create a rollout"); err != nil {
+		return nil, err
+	}
 	if project.Setting.RequireIssueApproval && issue != nil {
 		approved, err := utils.CheckIssueApprovedForPlan(issue, plan)
 		if err != nil {
@@ -829,6 +832,9 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("Not allowed to run tasks"))
 	}
 
+	if err := rejectMCPOriginatedIssuelessRollout(ctx, project, issueN, "run tasks"); err != nil {
+		return nil, err
+	}
 	// Check if issue approval is required according to the project settings
 	if project.Setting.RequireIssueApproval && issueN != nil {
 		approved, err := utils.CheckIssueApprovedForPlan(issueN, plan)
@@ -1361,4 +1367,49 @@ func (s *RolloutService) canUserRunEnvironmentTasks(ctx context.Context, user *s
 
 func (s *RolloutService) canUserCancelEnvironmentTaskRun(ctx context.Context, user *store.UserMessage, project *store.ProjectMessage, issue *store.IssueMessage, environment string, creator string) (bool, error) {
 	return s.canUserRunEnvironmentTasks(ctx, user, project, issue, environment, creator)
+}
+
+// rejectMCPOriginatedIssuelessRollout refuses an MCP session driving a change
+// to execution when the project requires issue approval and the plan carries no
+// linked issue.
+//
+// Both approval checks on this path are guarded on a linked issue existing, so
+// a plan created without one reaches task creation with no approval whatever
+// require_issue_approval says. That is not a defect for every caller — the
+// shipped GitOps Service Agent role holds no issue permission at all, so
+// issueless deployment is a supported product contract, and READ_WRITE
+// preserves supported contracts. It is a defect for an MCP session, because
+// without this rule the three FORBIDDEN approval methods are decorative in the
+// change lane: an agent that cannot clear the gate can skip it instead, which
+// is the same end state the self-approval guard exists to prevent. The rule is
+// the one rollout_service.proto states the gate PR owes.
+//
+// It cannot live in the ceiling gate. "The plan has no linked issue" is not a
+// field of either request, so the interceptor would have to read the store to
+// find out — a lookup it has no business doing and one that would race the
+// handler's own. The guard sits where the fact is already loaded.
+//
+// It must bite BEFORE the rollout exists: once an issueless rollout is created,
+// approval finding refuses outright ("rollout already started"), so a rule that
+// only covered BatchRunTasks would leave the change stranded rather than
+// gated. Hence both callers, CreateRollout first.
+//
+// Presence of the delegated grant is the MCP-origin marker, never a field value
+// (common.DelegatedGrant), so the console and the GitOps agent are untouched.
+// BOT-71 tracks whether the product should close this for every caller; if it
+// does, this guard becomes redundant rather than wrong.
+func rejectMCPOriginatedIssuelessRollout(ctx context.Context, project *store.ProjectMessage, issue *store.IssueMessage, action string) error {
+	authCtx, ok := common.GetAuthContextFromContext(ctx)
+	if !ok || authCtx.DelegatedGrant == nil {
+		return nil
+	}
+	if !project.Setting.GetRequireIssueApproval() || issue != nil {
+		// With an issue linked, the approval check beside this one decides,
+		// and it refuses an unapproved one.
+		return nil
+	}
+	return connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+		"an MCP session may not %s for a plan with no issue: this project requires issue approval, and a "+
+			"rollout created without an issue never meets that gate. Create an issue for the plan and have it "+
+			"approved, or perform this action signed in to the Bytebase console instead", action))
 }

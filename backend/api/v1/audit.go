@@ -77,11 +77,29 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 			handlerAuditWorkspaceID = workspaceID
 		})
 
+		// The MCP ceiling gate sits inside this interceptor and refuses a call
+		// before it reaches its handler. needAudit reads only the method's own
+		// audit annotation, and 47 of the 121 methods the gate refuses carry
+		// none: the four FORBIDDEN ones that were silent before the gate grew
+		// (Refresh, SwitchWorkspace, TestIdentityProvider, TestEmailSetting)
+		// plus 43 EXCLUDED ones. Their denials would leave no trace at all.
+		// A policy denial is recorded whatever the annotation says: the
+		// annotation decides whether ordinary use of a method is interesting,
+		// and a refused agent is interesting either way. Only the internal MCP
+		// chain runs the gate, so the public chain is unaffected.
+		//
+		// Recording a request that was never recorded is why getRequestString
+		// grew redactors below: a denial must not transcribe the secret it
+		// refused. The rule for a new one is the population above, not the four
+		// named methods.
+		mcpPolicyDenied := false
+		ctx = common.WithSetMCPPolicyDenied(ctx, func() { mcpPolicyDenied = true })
+
 		startTime := time.Now()
 		response, rerr := next(ctx, req)
 		latency := time.Since(startTime)
 
-		if needAudit(ctx) {
+		if needAudit(ctx) || mcpPolicyDenied {
 			var respMsg any
 			if !common.IsNil(response) {
 				respMsg = response.Any()
@@ -268,9 +286,23 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 		seenParent[ap.parent] = true
 		parents = append(parents, ap)
 	}
-	handlerValidatedWorkspaceMethod := e.method == v1connect.AuthServiceRequestPasswordResetProcedure ||
+	// The reset flow is allow_without_credential, so an unauthenticated caller
+	// could name any workspace and write rows into it. Its audit parent
+	// therefore comes only from the workspace the HANDLER validated, and never
+	// from the request or the fallback below.
+	//
+	// A request carrying a delegated MCP grant is the one exception, because
+	// its workspace was not named by the caller: the internal MCP interceptor
+	// verified the credential and bound the workspace before the request
+	// reached this chain. Without the exception these three methods are the
+	// last silent denials in the system — the ceiling gate refuses them before
+	// dispatch, so the handler never runs and never announces a workspace —
+	// and they are the flow that mails or consumes the secret a login accepts.
+	// Presence of the grant is the marker, never a field value.
+	handlerValidatedWorkspaceMethod := (e.method == v1connect.AuthServiceRequestPasswordResetProcedure ||
 		e.method == v1connect.AuthServiceResetPasswordProcedure ||
-		e.method == v1connect.AuthServiceSendEmailLoginCodeProcedure
+		e.method == v1connect.AuthServiceSendEmailLoginCodeProcedure) &&
+		authContext.DelegatedGrant == nil
 	if handlerValidatedWorkspaceMethod {
 		if e.handlerAuditWorkspaceID != "" {
 			appendParent(auditParent{
@@ -534,6 +566,9 @@ func getRequestString(request any) (string, error) {
 		if request == nil || reflect.ValueOf(request).IsNil() {
 			return nil
 		}
+		if redacted, ok := redactMCPDenialRequest(request); ok {
+			return redacted
+		}
 		switch r := request.(type) {
 		case *v1pb.ExportRequest:
 			return redactExportRequest(r)
@@ -658,6 +693,56 @@ func getRequestString(request any) (string, error) {
 		return "", err
 	}
 	return string(b), nil
+}
+
+// redactMCPDenialRequest handles the requests that reach the audit log only
+// because MCP denials are recorded. The methods themselves are unaudited; what
+// arrives here is a refusal, and a refusal that transcribed the secret it
+// refused would be worse than the silence it replaced. Every secret masked here
+// is already masked on a sibling method that has always been audited.
+//
+// It is a function rather than six more arms of getRequestString's switch
+// because it is one population with one reason for existing, and that reason is
+// worth stating once where a reader can find it.
+//
+// Which six is not a judgment to repeat by eye — the first pass of it missed
+// ListInstanceDatabase, whose request carries a whole Instance and therefore
+// every data-source credential the product has. The population is derived from
+// the descriptors instead, and TestLintDenialRequestsAreReviewedForRedaction
+// fails when a method joins it.
+//
+// The bool reports whether this was one of them, so an unrelated request falls
+// through to the main switch untouched.
+func redactMCPDenialRequest(request any) (protoreflect.ProtoMessage, bool) {
+	switch r := request.(type) {
+	case *v1pb.TestWebhookRequest:
+		r = proto.CloneOf(r)
+		r.Webhook = redactWebhook(r.Webhook)
+		return r, true
+	case *v1pb.TestEmailSettingRequest:
+		r = proto.CloneOf(r)
+		r.EmailSetting = redactEmailSetting(r.EmailSetting)
+		return r, true
+	case *v1pb.TestIdentityProviderRequest:
+		return redactTestIdentityProviderRequest(r), true
+	case *v1pb.SwitchWorkspaceRequest:
+		return redactSwitchWorkspaceRequest(r), true
+	case *v1pb.AIChatRequest:
+		return redactAIChatRequest(r), true
+	case *v1pb.ListInstanceDatabaseRequest:
+		// The request carries a whole Instance — "we need to set this
+		// field if the target instance is not created yet" — so it holds
+		// every data-source credential: password, ssl_key,
+		// ssh_private_key, the Kerberos keytab, the AWS/Azure/GCP
+		// credentials, the external-secret token and master_password.
+		// redactInstance is the same helper CreateInstance and
+		// UpdateInstance already use.
+		r = proto.CloneOf(r)
+		r.Instance = redactInstance(r.Instance)
+		return r, true
+	default:
+		return nil, false
+	}
 }
 
 func getResponseString(response any) (string, error) {
@@ -803,18 +888,10 @@ func redactLoginRequest(r *v1pb.LoginRequest) *v1pb.LoginRequest {
 	if r.Password != "" {
 		r.Password = maskedString
 	}
-	if r.OtpCode != nil {
-		r.OtpCode = &maskedString
-	}
-	if r.RecoveryCode != nil {
-		r.RecoveryCode = &maskedString
-	}
-	if r.MfaTempToken != nil {
-		r.MfaTempToken = &maskedString
-	}
-	if r.EmailCode != nil {
-		r.EmailCode = &maskedString
-	}
+	maskOptionalString(&r.OtpCode)
+	maskOptionalString(&r.RecoveryCode)
+	maskOptionalString(&r.MfaTempToken)
+	maskOptionalString(&r.EmailCode)
 	if r.IdpContext != nil {
 		r.IdpContext = nil
 	}
@@ -909,6 +986,84 @@ func redactIdentityProvider(r *v1pb.IdentityProvider) *v1pb.IdentityProvider {
 	default:
 	}
 	return r
+}
+
+// redactEmailSetting masks the SMTP password, the same field redactSetting
+// masks when the same value arrives through UpdateSetting.
+func redactEmailSetting(e *v1pb.EmailSetting) *v1pb.EmailSetting {
+	if e == nil {
+		return nil
+	}
+	e = proto.CloneOf(e)
+	if smtp := e.GetSmtp(); smtp.GetPassword() != "" {
+		smtp.Password = maskedString
+	}
+	return e
+}
+
+// redactTestIdentityProviderRequest masks both halves of a connection test: the
+// provider's own client secret or LDAP bind password, which redactIdentityProvider
+// already masks on Create and Update, and the credential supplied to run the
+// test — an authorization code, or a directory user's password. Each arm checks
+// the wrapped message: a oneof wrapper can be set with a nil payload, and this
+// runs on the audit path, where a panic would cost the row.
+func redactTestIdentityProviderRequest(r *v1pb.TestIdentityProviderRequest) *v1pb.TestIdentityProviderRequest {
+	if r == nil {
+		return nil
+	}
+	r = proto.CloneOf(r)
+	r.IdentityProvider = redactIdentityProvider(r.IdentityProvider)
+	switch context := r.GetContext().(type) {
+	case *v1pb.TestIdentityProviderRequest_Oauth2Context:
+		if context.Oauth2Context != nil {
+			context.Oauth2Context.Code = maskedString
+		}
+	case *v1pb.TestIdentityProviderRequest_OidcContext:
+		if context.OidcContext != nil {
+			context.OidcContext.Code = maskedString
+		}
+	case *v1pb.TestIdentityProviderRequest_LdapContext:
+		if context.LdapContext != nil {
+			context.LdapContext.Password = maskedString
+		}
+	default:
+	}
+	return r
+}
+
+// redactSwitchWorkspaceRequest masks the MFA proofs, the same three fields
+// redactLoginRequest masks when they arrive on Login.
+func redactSwitchWorkspaceRequest(r *v1pb.SwitchWorkspaceRequest) *v1pb.SwitchWorkspaceRequest {
+	if r == nil {
+		return nil
+	}
+	r = proto.CloneOf(r)
+	maskOptionalString(&r.OtpCode)
+	maskOptionalString(&r.RecoveryCode)
+	maskOptionalString(&r.MfaTempToken)
+	return r
+}
+
+// redactAIChatRequest drops the conversation instead of masking a field. The
+// request has no secret in it; it has an unbounded body — every message the
+// caller sent, plus the tool definitions — and the audit row stores it whole
+// (the size cap applies to the stdout logger only). AIService/Chat is EXCLUDED
+// and unaudited, so the only rows it ever produces are the gate's denials, and
+// a denial needs the fact of the call, not its transcript.
+func redactAIChatRequest(r *v1pb.AIChatRequest) *v1pb.AIChatRequest {
+	if r == nil {
+		return nil
+	}
+	return &v1pb.AIChatRequest{}
+}
+
+// maskOptionalString masks an optional string field in place when it is set,
+// so the several credential fields spelled `optional string` mask the same way
+// wherever they appear.
+func maskOptionalString(field **string) {
+	if *field != nil {
+		*field = &maskedString
+	}
 }
 
 func redactWebhook(w *v1pb.Webhook) *v1pb.Webhook {

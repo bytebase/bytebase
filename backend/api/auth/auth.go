@@ -489,10 +489,10 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 	if !ok {
 		return nil, errs.Errorf("invalid MCP method class extension, full method name %q", fullMethod)
 	}
-	mcpForbiddenReasonAny := proto.GetExtension(md, v1pb.E_McpForbiddenReason)
-	mcpForbiddenReason, ok := mcpForbiddenReasonAny.(v1pb.MCPForbiddenReason)
+	mcpDenialReasonAny := proto.GetExtension(md, v1pb.E_McpDenialReason)
+	mcpDenialReason, ok := mcpDenialReasonAny.(v1pb.MCPDenialReason)
 	if !ok {
-		return nil, errs.Errorf("invalid MCP forbidden reason extension, full method name %q", fullMethod)
+		return nil, errs.Errorf("invalid MCP denial reason extension, full method name %q", fullMethod)
 	}
 
 	return &common.AuthContext{
@@ -501,8 +501,31 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 		AuthMethod:             authMethod,
 		Audit:                  audit,
 		MCPMethodClass:         mcpMethodClass,
-		MCPForbiddenReason:     mcpForbiddenReason,
+		MCPDenialReason:        mcpDenialReason,
 	}, nil
+}
+
+// MCPClassIsRefused reports whether NO MCP capability ceiling serves methods of
+// this class, so a session can never call one whatever the workspace is
+// configured for. It exists here rather than beside the gate because two
+// packages need the same answer for different reasons — the gate refuses on it,
+// and the MCP OpenAPI index declines to advertise on it — and they must not
+// disagree about which methods an agent is offered.
+//
+// It is a predicate rather than a copy of the serving table: the table lives in
+// backend/api/v1 with the code that evaluates it, and
+// TestLintRefusedClassesMatchTheServingTable holds this function against it, so
+// adding a ceiling mode that serves a class cannot leave this stale.
+//
+// UNSPECIFIED counts as refused. The gate refuses an unclassified method, and
+// CI rejects one, so advertising it would offer work that cannot be done.
+func MCPClassIsRefused(class v1pb.MCPMethodClass) bool {
+	switch class {
+	case v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE:
+		return false
+	default:
+		return true
+	}
 }
 
 // MCPMethodClassOfProcedure resolves the MCP classification for a connect

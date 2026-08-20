@@ -3728,9 +3728,9 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\n" +
 	"\x06EDITOR\x10\x022\x82\x05\n" +
 	"\x0eSettingService\x12\x8c\x01\n" +
-	"\fListSettings\x12 .bytebase.v1.ListSettingsRequest\x1a!.bytebase.v1.ListSettingsResponse\"7\xdaA\x00\x8a\xea0\x10bb.settings.list\x90\xea0\x01\xa0\xea0\x04\xb0\xea0\x01\x82\xd3\xe4\x93\x02\x0e\x12\f/v1/settings\x12\x87\x01\n" +
+	"\fListSettings\x12 .bytebase.v1.ListSettingsRequest\x1a!.bytebase.v1.ListSettingsResponse\"7\xdaA\x00\x8a\xea0\x10bb.settings.list\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x0e\x12\f/v1/settings\x12\x87\x01\n" +
 	"\n" +
-	"GetSetting\x12\x1e.bytebase.v1.GetSettingRequest\x1a\x14.bytebase.v1.Setting\"C\xdaA\x04name\x8a\xea0\x0fbb.settings.get\x90\xea0\x02\xa0\xea0\x04\xb0\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=settings/*}\x12\x9b\x01\n" +
+	"GetSetting\x12\x1e.bytebase.v1.GetSettingRequest\x1a\x14.bytebase.v1.Setting\"C\xdaA\x04name\x8a\xea0\x0fbb.settings.get\x90\xea0\x02\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=settings/*}\x12\x9b\x01\n" +
 	"\rUpdateSetting\x12!.bytebase.v1.UpdateSettingRequest\x1a\x14.bytebase.v1.Setting\"Q\x8a\xea0\x0fbb.settings.set\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\a\x82\xd3\xe4\x93\x02(:\asetting2\x1d/v1/{setting.name=settings/*}\x12\xb8\x01\n" +
 	"\x10TestEmailSetting\x12$.bytebase.v1.TestEmailSettingRequest\x1a%.bytebase.v1.TestEmailSettingResponse\"W\x8a\xea0\x0fbb.settings.set\x90\xea0\x01\xa0\xea0\x03\xa8\xea0\x06\x82\xd3\xe4\x93\x022:\x01*\"-/v1/{parent=workspaces/*}/settings/EMAIL:testB\xa9\x01\n" +
 	"\x0fcom.bytebase.v1B\x13SettingServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"

@@ -64,7 +64,7 @@ service SavedQueryService {
     option (bytebase.v1.permission) = "bb.savedQueries.list";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = READS_OTHER_USERS_SQL;
+    option (bytebase.v1.mcp_denial_reason) = READS_OTHER_USERS_SQL;
   }
 
   // Search saved queries in one project. Returns content previews of the
@@ -160,7 +160,7 @@ service SavedQueryService {
     option (google.api.method_signature) = "resource";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Replace a saved query's sharing policy in full. `policy.etag` must match
@@ -176,7 +176,7 @@ service SavedQueryService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 }
 

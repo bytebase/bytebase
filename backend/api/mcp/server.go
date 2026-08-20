@@ -51,12 +51,19 @@ type Server struct {
 type serverStore interface {
 	GetWorkspaceID(context.Context) (string, error)
 	GetWorkspaceProfileSetting(context.Context, string) (*storepb.WorkspaceProfileSetting, error)
-	GetSettingUncached(context.Context, string, storepb.SettingName) (*store.SettingMessage, error)
+	GetMCPCapabilityUncached(context.Context, string) (storepb.WorkspaceProfileSetting_MCPCapability, error)
 	DeleteOAuth2RefreshTokensByUserAndClient(context.Context, string, string) error
 }
 
 // NewServer creates a new MCP server. internalAPI is the internal API handler
 // chain tool calls dispatch to in memory; it is never bound to a listener.
+// It takes the concrete store; tests reach newServerWithStore with a fake.
+//
+// The nil check is not redundant with the typed parameter. A nil *store.Store
+// assigned to the serverStore interface field produces a NON-nil interface
+// holding a nil pointer, which no later nil test catches, so without this the
+// failure moves from a returned error here to a nil-receiver panic on the first
+// ceiling read inside authMiddleware.
 func NewServer(stores *store.Store, profile *config.Profile, secret string, internalAPI http.Handler) (*Server, error) {
 	if stores == nil {
 		return nil, errors.New("store is required")
@@ -199,11 +206,23 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		// Enforce the workspace MCP capability ceiling before dispatching to any
-		// tool. DISABLED — and, until per-tool enforcement lands in a later
-		// phase, the not-yet-enforceable READ_ONLY ceiling — reject the
-		// connection outright. Read live so an admin change takes effect on the
-		// next request without re-issuing tokens.
-		if !mcpConnectionAllowed(s.mcpCapability(c.Request().Context(), workspaceID)) {
+		// tool. DISABLED rejects the connection outright, and so does READ_ONLY:
+		// the per-method gate on the internal chain now serves a read-only
+		// ceiling correctly, but the query tool still reaches SQLService/Query,
+		// which authorizes writes per statement. Admitting a read-only session
+		// before that clamp exists would be a read-only session that can write.
+		// Read live so an admin change takes effect on the next request without
+		// re-issuing tokens.
+		capability, err := s.mcpCapability(c.Request().Context(), workspaceID)
+		if err != nil {
+			// Infra failure reading the policy, not a verdict on the
+			// workspace: a 403 here would tell the operator their admin
+			// disabled MCP. 503 says retry, and the session still does not
+			// proceed.
+			slog.Error("failed to read the MCP capability ceiling; cannot admit the session", log.BBError(err))
+			return echo.NewHTTPError(http.StatusServiceUnavailable, "cannot read the MCP policy; retry shortly")
+		}
+		if !mcpConnectionAllowed(capability) {
 			return echo.NewHTTPError(http.StatusForbidden, "MCP access is disabled for this workspace by policy")
 		}
 
@@ -571,51 +590,63 @@ func (s *Server) unauthorized(c *echo.Context, errDescription string) error {
 }
 
 // mcpConnectionAllowed reports whether an MCP connection may proceed under the
-// resolved workspace capability ceiling. This phase enforces the connection-level
-// gate only: DISABLED is rejected, and the not-yet-enforceable
-// READ_ONLY ceiling is also rejected — a ceiling the server cannot yet
-// apply per-tool must fail closed rather than silently grant read-write. A
-// later phase turns it into allow-with-clamp. Unknown stored values (e.g. a
+// resolved workspace capability ceiling. DISABLED is rejected, and so is
+// READ_ONLY: per-method enforcement exists from P1b 1b-2, but the SQL statement
+// clamp does not, so a read-only session admitted here could still write
+// through the query tool. 1b-3 lands the clamp and flips this to
+// allow-with-clamp; nothing before it may. Unknown stored values (e.g. the
 // reserved number) hit the default arm and fail closed too.
+//
+// UNSPECIFIED is refused rather than treated as "never configured", even though
+// that is what an unset ceiling means in the stored proto. The resolution
+// happens before this point — store.GetMCPCapabilityUncached returns READ_WRITE
+// for a workspace that never set one — so UNSPECIFIED reaching here is a zero
+// value nobody resolved, and a gate that admits on a zero value is one
+// mistake away from admitting on a failure.
 func mcpConnectionAllowed(capability storepb.WorkspaceProfileSetting_MCPCapability) bool {
 	switch capability {
-	case storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED,
-		storepb.WorkspaceProfileSetting_READ_WRITE:
+	case storepb.WorkspaceProfileSetting_READ_WRITE:
 		return true
 	default:
 		return false
 	}
 }
 
-// mcpCapability resolves the workspace's effective MCP capability ceiling. An
-// unset ceiling resolves to READ_WRITE so workspaces that never configured
-// one keep working; a genuine lookup error fails closed to DISABLED so a
-// policy that cannot be read never silently permits MCP. A missing setting row
-// is treated as unset, not an error.
+// mcpCapability resolves the workspace's effective MCP capability ceiling for
+// the connection gate. A stored value this build cannot interpret — a mistyped
+// enum name, a wrong-typed row — resolves to DISABLED, so the connection is
+// refused and the operator is told the policy is the problem, which is true:
+// no retry fixes it, an admin has to. A read that FAILED returns an error
+// instead, because "your workspace disabled MCP" is a lie during a database
+// blip; the caller answers 503 and the client retries, exactly as it already
+// does when the token audience cannot be resolved.
 //
-// The read deliberately bypasses the store's setting cache: the cache has no
-// TTL and only in-process writes refresh it, so a profile cached as unset
-// would keep admitting MCP indefinitely after the ceiling is flipped by an
-// out-of-band admin path (direct SQL, another process). A kill switch must
-// observe the stored truth on the next request.
-func (s *Server) mcpCapability(ctx context.Context, workspaceID string) storepb.WorkspaceProfileSetting_MCPCapability {
-	setting, err := s.store.GetSettingUncached(ctx, workspaceID, storepb.SettingName_WORKSPACE_PROFILE)
+// Either way the session does not proceed. The request gate on the internal
+// chain makes the same split on the same two errors — the connection and the
+// per-method gate must never disagree about a workspace's ceiling, nor about
+// which kind of failure the operator is looking at.
+//
+// The resolution itself lives in the store, uncached. Bypassing the setting
+// cache is what makes the kill switch a kill switch: the cache has no TTL and
+// only in-process writes refresh it, so a profile cached as unset would keep
+// admitting MCP after the ceiling was flipped out of band.
+func (s *Server) mcpCapability(ctx context.Context, workspaceID string) (storepb.WorkspaceProfileSetting_MCPCapability, error) {
+	capability, err := s.store.GetMCPCapabilityUncached(ctx, workspaceID)
 	if err != nil {
-		slog.Warn("failed to read MCP capability policy; failing closed",
-			slog.String("workspace", workspaceID), log.BBError(err))
-		return storepb.WorkspaceProfileSetting_DISABLED
+		if errors.Is(err, store.ErrMCPCapabilityUnreadable) {
+			slog.Warn("the stored MCP capability ceiling cannot be interpreted; refusing the connection",
+				slog.String("workspace", workspaceID), log.BBError(err))
+			return storepb.WorkspaceProfileSetting_DISABLED, nil
+		}
+		// DISABLED rather than UNSPECIFIED, even though the error is what the
+		// caller acts on. UNSPECIFIED is the zero value and means "nobody
+		// resolved this"; DISABLED is a decision. mcpConnectionAllowed refuses
+		// both, so nothing turns on it today — the point is that the value
+		// stays safe to read on its own, in case a later caller logs the error
+		// and carries on.
+		return storepb.WorkspaceProfileSetting_DISABLED, err
 	}
-	if setting == nil {
-		return storepb.WorkspaceProfileSetting_READ_WRITE
-	}
-	profile, ok := setting.Value.(*storepb.WorkspaceProfileSetting)
-	if !ok {
-		return storepb.WorkspaceProfileSetting_READ_WRITE
-	}
-	if capability := profile.GetMcpCapability(); capability != storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED {
-		return capability
-	}
-	return storepb.WorkspaceProfileSetting_READ_WRITE
+	return capability, nil
 }
 
 // buildResourceMetadataURL returns the absolute URL of the protected resource

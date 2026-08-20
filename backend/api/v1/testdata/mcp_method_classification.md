@@ -1,7 +1,7 @@
 # MCP method classification
 
-Rendered from the `bytebase.v1.mcp_method_class`, `mcp_forbidden_reason` and
-`mcp_exclusion_reason` annotations on the v1 RPCs. The annotations are the source of
+Rendered from the `bytebase.v1.mcp_method_class` and `mcp_denial_reason`
+annotations on the v1 RPCs. The annotations are the source of
 truth; this file is a reviewable view of them and nothing reads it at runtime.
 
 Regenerate with:
@@ -10,16 +10,17 @@ Regenerate with:
 MCP_INVENTORY=write go test ./backend/api/v1/ -run TestMCPClassificationInventory
 ```
 
-Only FORBIDDEN is enforced today. READ, WRITE and EXCLUDED record where a method
-belongs; the gate that acts on them is a later change.
+Every class is enforced by the MCP gate. READ and WRITE are the serving classes a
+workspace's MCP capability ceiling selects between; EXCLUDED and FORBIDDEN are
+served by no ceiling.
 
 | Class | Methods | Meaning |
 |---|---|---|
 | READ | 48 | served to a read-only session and above |
 | WRITE | 40 | served to a read-write session only |
-| EXCLUDED | 93 | served by no mode this phase ships |
-| FORBIDDEN | 28 | never served, enforced today |
-| MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this |
+| EXCLUDED | 93 | served by no ceiling this phase ships |
+| FORBIDDEN | 28 | never served, whatever the ceiling |
+| MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
 | **total** | **209** | |
 
 | Method | Class | Reason | Permission |

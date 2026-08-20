@@ -24,17 +24,21 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 )
 
-// TestMCPConnectionAllowed pins the connection-level gate: only an unset ceiling
-// and READ_WRITE admit a connection in this phase. DISABLED, the
-// not-yet-enforceable READ_ONLY ceiling, and unknown stored values (such as
-// the reserved number 2) all fail closed so a ceiling the server cannot apply
-// per-tool never silently grants read-write.
+// TestMCPConnectionAllowed pins the connection-level gate: only READ_WRITE
+// admits a connection in this phase. DISABLED, the not-yet-enforceable
+// READ_ONLY ceiling, unknown stored values (such as the reserved number 2), and
+// the zero value all fail closed, so a ceiling the server cannot apply per-tool
+// never silently grants read-write.
+//
+// UNSPECIFIED is refused here even though an unset stored ceiling means
+// READ_WRITE: the store resolves that before this point, so a zero value
+// arriving here was resolved by nobody.
 func TestMCPConnectionAllowed(t *testing.T) {
 	tests := []struct {
 		capability storepb.WorkspaceProfileSetting_MCPCapability
 		allowed    bool
 	}{
-		{storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED, true},
+		{storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED, false},
 		{storepb.WorkspaceProfileSetting_READ_WRITE, true},
 		{storepb.WorkspaceProfileSetting_DISABLED, false},
 		{storepb.WorkspaceProfileSetting_MCPCapability(2), false}, // reserved (was METADATA_ONLY)
@@ -192,4 +196,121 @@ func tokenForWorkspace(t *testing.T, secret, workspaceID string) string {
 	tokenStr, err := token.SignedString([]byte(secret))
 	require.NoError(t, err)
 	return tokenStr
+}
+
+// TestMCPCeilingStoredValueFailsClosed drives the /mcp connection gate against
+// the ceiling values a workspace row can actually hold, including the ones no
+// Bytebase write produces.
+//
+// The typo row is the one that mattered: protojson discards a field whose enum
+// NAME it does not recognize, so `{"mcpCapability":"READ_WRTIE"}` used to parse
+// as unset and resolve to READ_WRITE — a mistyped kill switch that silently did
+// nothing. An unknown enum NUMBER never had that problem, because protojson
+// keeps it and no mode serves it.
+//
+// The read-only row is the cutover pin. READ_ONLY is enforceable per method
+// from this PR, but a read-only session can still write SQL through the query
+// tool until 1b-3 clamps statements, so the connection stays refused. If this
+// row ever returns 200 without the clamp shipping, the cutover moved early.
+func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+
+	db := container.GetDB()
+	require.NoError(t, migrator.MigrateSchema(ctx, db))
+
+	rows := []struct {
+		workspace string
+		value     string
+		want      int
+		why       string
+	}{
+		{"ws-typo", `{"mcpCapability":"READ_WRTIE"}`, http.StatusForbidden,
+			"a ceiling this build cannot read is not a ceiling that permits"},
+		{"ws-reserved", `{"mcpCapability":2}`, http.StatusForbidden,
+			"the reserved number was METADATA_ONLY; no mode serves it"},
+		{"ws-explicit-unset", `{"mcpCapability":"MCP_CAPABILITY_UNSPECIFIED"}`, http.StatusForbidden,
+			"no Bytebase write produces this key with this value, so a row that has it was hand-edited"},
+		{"ws-readonly", `{"mcpCapability":"READ_ONLY"}`, http.StatusForbidden,
+			"READ_ONLY does not admit a connection until the SQL clamp lands (1b-3)"},
+		{"ws-other-unknown-field", `{"someFieldFromANewerRelease":"x"}`, http.StatusOK,
+			"one unknown field must not disable MCP: only the ceiling key is read strictly"},
+		{"ws-open", `{}`, http.StatusOK,
+			"a workspace that never set a ceiling keeps working"},
+	}
+
+	for _, row := range rows {
+		_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ($1)`, row.workspace)
+		require.NoError(t, err)
+		_, err = db.ExecContext(ctx,
+			`INSERT INTO setting (name, workspace, value) VALUES ('WORKSPACE_PROFILE', $1, $2)`,
+			row.workspace, row.value)
+		require.NoError(t, err)
+	}
+
+	pgURL := fmt.Sprintf(
+		"host=%s port=%s user=postgres password=root-password database=postgres",
+		container.GetHost(), container.GetPort(),
+	)
+	s, err := store.New(ctx, pgURL, false)
+	require.NoError(t, err)
+
+	secret := "test-secret-key"
+	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
+	srv, err := NewServer(s, profile, secret, nil)
+	require.NoError(t, err)
+
+	// The connection verdict alone cannot separate "the ceiling parsed as
+	// READ_ONLY" from "the ceiling could not be read", because mcpCapability
+	// maps any error to DISABLED and both refuse. So the resolver is asserted
+	// directly, on every workspace at once.
+	//
+	// That doubles as the composite-primary-key check the setting table needs.
+	// It is keyed (workspace, name), and GetMCPCapabilityUncached is a new
+	// reader of it: a future edit that dropped the workspace predicate would
+	// return whichever row the scan reached first and apply one tenant's MCP
+	// ceiling to every other tenant — a kill switch answering for the wrong
+	// workspace. Six workspaces with six different stored values sit in this
+	// one database, so each must still resolve to its own; the ws-readonly row
+	// is additionally the value 1b-3's cutover will flip against, and it must
+	// resolve as itself rather than as a fail-closed error.
+	for workspace, want := range map[string]storepb.WorkspaceProfileSetting_MCPCapability{
+		"ws-readonly":            storepb.WorkspaceProfileSetting_READ_ONLY,
+		"ws-open":                storepb.WorkspaceProfileSetting_READ_WRITE,
+		"ws-other-unknown-field": storepb.WorkspaceProfileSetting_READ_WRITE,
+	} {
+		got, err := s.GetMCPCapabilityUncached(ctx, workspace)
+		require.NoError(t, err, "%s stores a ceiling this build understands", workspace)
+		require.Equal(t, want, got,
+			"%s must resolve its OWN stored ceiling, not a neighbour's", workspace)
+	}
+	for _, workspace := range []string{"ws-typo", "ws-reserved", "ws-explicit-unset"} {
+		got, err := s.GetMCPCapabilityUncached(ctx, workspace)
+		if err == nil {
+			// The reserved number parses; it is refused later because no
+			// ceiling serves it. What must never happen is resolving to a
+			// value some other workspace stored.
+			require.NotEqual(t, storepb.WorkspaceProfileSetting_READ_WRITE, got,
+				"%s must not resolve to a neighbour's permissive ceiling", workspace)
+		}
+	}
+
+	for _, row := range rows {
+		t.Run(row.workspace, func(t *testing.T) {
+			e := echo.New()
+			req := httptest.NewRequest(http.MethodPost, "/mcp", strings.NewReader(`{}`))
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("Authorization", "Bearer "+tokenForWorkspace(t, secret, row.workspace))
+			rec := httptest.NewRecorder()
+			c := e.NewContext(req, rec)
+			handler := srv.authMiddleware(func(c *echo.Context) error {
+				return c.String(http.StatusOK, "success")
+			})
+			if err := handler(c); err != nil {
+				echo.DefaultHTTPErrorHandler(true)(c, err)
+			}
+			require.Equal(t, row.want, rec.Code, row.why)
+		})
+	}
 }

@@ -5,11 +5,9 @@
 
 - [v1/annotation.proto](#v1_annotation-proto)
     - [AuthMethod](#bytebase-v1-AuthMethod)
-    - [MCPExclusionReason](#bytebase-v1-MCPExclusionReason)
-    - [MCPForbiddenReason](#bytebase-v1-MCPForbiddenReason)
+    - [MCPDenialReason](#bytebase-v1-MCPDenialReason)
     - [MCPMethodClass](#bytebase-v1-MCPMethodClass)
   
-    - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
@@ -812,38 +810,30 @@ Authorization method for RPC calls.
 
 
 
-<a name="bytebase-v1-MCPExclusionReason"></a>
+<a name="bytebase-v1-MCPDenialReason"></a>
 
-### MCPExclusionReason
-Why an RPC is served by no MCP mode. Unlike MCPForbiddenReason, which names
-a mechanism that breaks the MCP boundary, these name a scope decision: the
-method is out because this phase ships two modes and neither is the right
-home for it. Each value is what a future admin-capable ceiling would have to
-argue with, one population at a time.
+### MCPDenialReason
+Why an MCP session may not call an RPC. The mechanism, not the wording: each
+value names what its methods actually do, and the serving side turns that
+into a sentence. A denial whose stated reason has drifted from the mechanism
+is worse than a bare refusal, because it is the thing the next reader trusts
+— so a method changing what it does changes its reason here.
 
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MCP_EXCLUSION_REASON_UNSPECIFIED | 0 | No reason recorded. CI rejects this on a method classified EXCLUDED. |
-| ADMINISTERS_THE_WORKSPACE | 1 | Administers the workspace rather than doing database work: identity, credentials, access control, governance policy, billing, workspace and instance configuration, project lifecycle, and the operator&#39;s own audit trail. Reading is administration too where the read returns the privilege topology or a stored secret rather than the state of a database. |
-| READS_OTHER_USERS_SQL | 2 | Returns SQL that other people wrote. The permission gating it reads as an ordinary list permission, so the exclusion is per method rather than per permission: these methods span the workspace or ignore the per-object sharing that keeps a saved query private. |
-| OPENS_AN_ADMIN_CONNECTION | 3 | Opens an admin-credentialed connection to the customer&#39;s database and returns live session state from it — including other sessions&#39; in-flight, unmasked SQL. It shares a plain read permission with sibling methods that only read Bytebase&#39;s own store. |
-| SENDS_DATA_TO_A_THIRD_PARTY | 4 | Spends a stored workspace credential on an outbound call to a third party, which puts whatever the caller passes outside the product. |
-| RETURNS_A_STORED_SECRET | 5 | Returns a stored secret in its response body today. These are ordinary reads that belong in a serving class on their merits, and each is here because of a leak that a redaction on the read path would close — the product already redacts the same values elsewhere. This reason is therefore the one that is meant to go away: fixing the leak moves the method to READ, as a reviewed widening, rather than leaving a quiet exposure the moment the ceiling starts serving. |
-
-
-
-<a name="bytebase-v1-MCPForbiddenReason"></a>
-
-### MCPForbiddenReason
-Why an RPC is FORBIDDEN to MCP sessions. The mechanism, not the wording:
-each value names what its methods actually do, and the serving side turns
-that into a sentence. A denial whose stated reason has drifted from the
-mechanism is worse than a bare refusal, because it is the thing the next
-reader trusts — so a method changing what it does changes its reason here.
+One enum covers both refused classes, and every value belongs to exactly one
+of them: values 1-8 name a mechanism that breaks the MCP boundary, which is
+what FORBIDDEN means, and values 9-13 name a scope decision this phase took,
+which is what EXCLUDED means. The distinction is real and lives on the class
+annotation — a FORBIDDEN mechanism is a durable never, an EXCLUDED scope
+decision is what a future admin-capable ceiling would argue with, one
+population at a time. Splitting it across two enums as well only made the
+nonsense states representable: a method could carry both, or carry the kind
+that contradicts its class. Neither is expressible now, and the one check
+left — the reason belongs to the class it is used on — is a table the gate
+already keeps for the wording.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| MCP_FORBIDDEN_REASON_UNSPECIFIED | 0 | No reason recorded. The method is still denied — mcp_method_class is what enforces — and the denial falls back to generic wording. |
+| MCP_DENIAL_REASON_UNSPECIFIED | 0 | No reason recorded. The method is still denied — mcp_method_class is what enforces — and the denial falls back to generic wording. CI rejects this on a method classified FORBIDDEN or EXCLUDED. |
 | MINTS_CREDENTIAL | 1 | Puts a token for the caller&#39;s own principal in the response body. |
 | RESETS_CREDENTIAL | 2 | Drives the out-of-band reset flow that sets or delivers the secret a login accepts. |
 | TAKES_OVER_ACCOUNT | 3 | Rewrites an account&#39;s own credentials, which would let the session log in as that account. |
@@ -852,6 +842,11 @@ reader trusts — so a method changing what it does changes its reason here.
 | MINTS_CREDENTIAL_FOR_OTHERS | 6 | Leaves someone holding a principal the caller is not — by issuing its credential, carrying an existing one out to a host the caller named, choosing what will later be trusted to mint one, or redirecting where one gets delivered. |
 | REWRITES_SESSION_BOUNDARY | 7 | Rewrites the workspace configuration that governs the session making the call — the MCP switch itself, the sign-in and SSO settings, the mail relay that carries credential resets, and the AI endpoint the stored API key is sent to. A session that can widen its own ceiling is not bounded by it. |
 | DRIVES_THE_APPROVAL_DECISION | 8 | Works the human approval step that gates the change: recording the review decision, or re-running the finding that sets it and can clear the issue outright. An agent composes a change; it does not move its own change through the gate. |
+| ADMINISTERS_THE_WORKSPACE | 9 | Administers the workspace rather than doing database work: identity, credentials, access control, governance policy, billing, workspace and instance configuration, project lifecycle, and the operator&#39;s own audit trail. Reading is administration too where the read returns the privilege topology or a stored secret rather than the state of a database. |
+| READS_OTHER_USERS_SQL | 10 | Returns SQL that other people wrote. The permission gating it reads as an ordinary list permission, so the exclusion is per method rather than per permission: these methods span the workspace or ignore the per-object sharing that keeps a saved query private. |
+| OPENS_AN_ADMIN_CONNECTION | 11 | Opens an admin-credentialed connection to the customer&#39;s database and returns live session state from it — including other sessions&#39; in-flight, unmasked SQL. It shares a plain read permission with sibling methods that only read Bytebase&#39;s own store. |
+| SENDS_DATA_TO_A_THIRD_PARTY | 12 | Spends a stored workspace credential on an outbound call to a third party, which puts whatever the caller passes outside the product. |
+| RETURNS_A_STORED_SECRET | 13 | Returns a stored secret in its response body today. These are ordinary reads that belong in a serving class on their merits, and each is here because of a leak that a redaction on the read path would close — the product already redacts the same values elsewhere. This reason is therefore the one that is meant to go away: fixing the leak moves the method to READ, as a reviewed widening, rather than leaving a quiet exposure the moment the ceiling starts serving. |
 
 
 
@@ -862,20 +857,19 @@ Classification of an RPC for MCP (AI agent) sessions. The effective
 authorization of an MCP session is this classification intersected with the
 caller&#39;s own RBAC: it can only ever narrow what the human could do, never
 widen it.
-Only FORBIDDEN is enforced today. READ, WRITE and EXCLUDED are recorded
-classifications and nothing reads them at request time yet — the gate that
-selects between them is a later change. A method annotated READ or WRITE is
-therefore served exactly as it is today; the annotation states where it
-belongs, not where the boundary currently sits. FORBIDDEN is the exception
-and is enforced the moment it is annotated.
+Every value is enforced, at the gate on the internal MCP chain. READ and
+WRITE are the serving classes the workspace&#39;s MCP capability ceiling selects
+between, EXCLUDED and FORBIDDEN are served by no ceiling, and an unclassified
+method is refused rather than served. Annotating a method is therefore a
+change to what an MCP session can reach, taking effect on the next request.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
-| MCP_METHOD_CLASS_UNSPECIFIED | 0 | Not yet classified. Reaches its handler, subject to RBAC as usual. CI rejects this value on any v1 RPC, so it survives only inside a build that has not been linted: a new RPC is classified before it can ship. |
+| MCP_METHOD_CLASS_UNSPECIFIED | 0 | Not yet classified, and refused. CI rejects this value on any v1 RPC, so it survives only inside a build that has not been linted: a new RPC is classified before it can ship, and one that somehow reaches an MCP session unclassified is denied rather than guessed at. |
 | READ | 1 | Served to a read-only MCP session and above. |
 | WRITE | 2 | Served to a read-write MCP session only. This is a serving mode, not a verb: a method that only reads still belongs here when a read-only session has no business calling it — taking a copy of data out of the product, or generating migration DDL from a schema the caller supplied. |
 | FORBIDDEN | 3 | Never reachable by an MCP session, whatever the caller&#39;s own permissions are. These methods escape the MCP boundary rather than merely exercising a permission: a human with the permission uses the console; an agent acting for them does not get to. |
-| EXCLUDED | 4 | Served by no MCP mode this phase ships, and not a durable never. These are workspace administration, plus the handful of methods that do something materially worse than the plain read permission they share suggests.
+| EXCLUDED | 4 | Served by no MCP capability ceiling this phase ships, and not a durable never. These are workspace administration, plus the handful of methods that do something materially worse than the plain read permission they share suggests.
 
 The line against FORBIDDEN is reversibility. An admin-capable ceiling, if one is ever built, could legitimately serve an EXCLUDED method — that is a product decision nobody has made. It could never serve a FORBIDDEN one, because FORBIDDEN names a mechanism that breaks the MCP boundary itself. Keeping them apart is what stops a future widening from having to re-litigate the credential-minting set alongside the ordinary admin API. |
 
@@ -891,8 +885,9 @@ The line against FORBIDDEN is reversibility. An admin-capable ceiling, if one is
 | allow_without_credential | bool | .google.protobuf.MethodOptions | 100000 | Whether the method allows access without authentication credentials. |
 | audit | bool | .google.protobuf.MethodOptions | 100003 | Whether to audit calls to this method. |
 | auth_method | AuthMethod | .google.protobuf.MethodOptions | 100002 | The authorization method to use for this RPC. |
-| mcp_exclusion_reason | MCPExclusionReason | .google.protobuf.MethodOptions | 100006 | Why the method is served by no MCP mode. Meaningful only alongside mcp_method_class = EXCLUDED, and required there: an exclusion whose reason nobody wrote down is one nobody can revisit, and these are the rows a later admin-capable ceiling has to re-decide one at a time. |
-| mcp_forbidden_reason | MCPForbiddenReason | .google.protobuf.MethodOptions | 100005 | Why the method is forbidden to MCP sessions. Meaningful only alongside mcp_method_class = FORBIDDEN; the denial names it so the agent, and the operator reading the audit row, learn why rather than just that it was refused. |
+| mcp_denial_reason | MCPDenialReason | .google.protobuf.MethodOptions | 100005 | Why an MCP session may not call the method. Meaningful only alongside mcp_method_class = FORBIDDEN or EXCLUDED, and required on both: the denial names it so the agent, and the operator reading the audit row, learn why rather than just that it was refused, and an exclusion whose reason nobody wrote down is one nobody can revisit.
+
+100006 was mcp_exclusion_reason, folded into mcp_denial_reason above. Do not reuse the number: an extend block cannot carry a `reserved` statement, so this comment is the only marker, and a binary built before the merge reads 100006 as the old enum — giving that number a new meaning would let it read a confident wrong answer instead of nothing. |
 | mcp_method_class | MCPMethodClass | .google.protobuf.MethodOptions | 100004 | How the method is classified for MCP (AI agent) sessions. |
 | permission | string | .google.protobuf.MethodOptions | 100001 | The permission required to call this method. |
 

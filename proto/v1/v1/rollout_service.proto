@@ -51,14 +51,18 @@ service RolloutService {
     // only one of them is fixable at the MCP layer. Both are stated here
     // because the gate PR is the reader who needs them.
     //
-    // 1. The gate PR OWES A RULE. Both approval checks on this path are
+    // 1. DELIVERED by the gate PR (1b-2), as rejectMCPOriginatedIssuelessRollout
+    //    in rollout_service.go, on CreateRollout and BatchRunTasks both.
+    //    Both approval checks on this path are
     //    guarded on a LINKED ISSUE existing (rollout_service.go, and the
     //    locked re-check in component/review/rollout.go), so a plan created
     //    without one reaches task creation with no approval whatever
     //    require_issue_approval says. The rule to implement: on the MCP path,
     //    refuse CreateRollout and BatchRunTasks when the project sets
     //    require_issue_approval and the plan has no linked approved issue.
-    //    Not because the behavior is a defect — the shipped GitOps Service
+    //    It keys on the delegated grant, so the console and the GitOps agent
+    //    are unaffected, and it bites on CreateRollout first per the ordering
+    //    trap below. Not because the behavior is a defect — the shipped GitOps Service
     //    Agent role holds no issue permission at all, so issueless deployment
     //    is a supported product contract, and READ_WRITE preserves supported
     //    contracts. Because without the rule the four FORBIDDEN approval
@@ -123,7 +127,7 @@ service RolloutService {
     option (bytebase.v1.permission) = "bb.taskRuns.list";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = OPENS_AN_ADMIN_CONNECTION;
+    option (bytebase.v1.mcp_denial_reason) = OPENS_AN_ADMIN_CONNECTION;
   }
 
   // Executes multiple tasks in a rollout stage.
@@ -138,9 +142,10 @@ service RolloutService {
     option (bytebase.v1.audit) = true;
     // WRITE, and the same two cases as CreateRollout reach it — this is the
     // method that actually starts execution. Its approval check carries the
-    // identical linked-issue guard, so the rule the gate PR owes covers this
-    // method too; and it runs whatever tasks the live group resolution
-    // produced, which no MCP rule can constrain. Both stated on CreateRollout.
+    // identical linked-issue guard, so 1b-2's rule covers this method too
+    // (rejectMCPOriginatedIssuelessRollout, rollout_service.go); and it runs
+    // whatever tasks the live group resolution produced, which no MCP rule can
+    // constrain. Both stated on CreateRollout.
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 

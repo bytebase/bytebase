@@ -27,7 +27,7 @@ service ProjectService {
     option (bytebase.v1.permission) = "bb.projects.get";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = RETURNS_A_STORED_SECRET;
+    option (bytebase.v1.mcp_denial_reason) = RETURNS_A_STORED_SECRET;
   }
 
   // BatchGetProjects retrieves multiple projects by their names.
@@ -37,7 +37,7 @@ service ProjectService {
     option (bytebase.v1.permission) = "bb.projects.get";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = RETURNS_A_STORED_SECRET;
+    option (bytebase.v1.mcp_denial_reason) = RETURNS_A_STORED_SECRET;
   }
 
   // Lists all projects in the workspace with optional filtering.
@@ -48,7 +48,7 @@ service ProjectService {
     option (bytebase.v1.permission) = "bb.projects.list";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = RETURNS_A_STORED_SECRET;
+    option (bytebase.v1.mcp_denial_reason) = RETURNS_A_STORED_SECRET;
   }
 
   // Searches for projects with advanced filtering capabilities.
@@ -62,7 +62,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = CUSTOM;
     // TODO(d): secure it.
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = RETURNS_A_STORED_SECRET;
+    option (bytebase.v1.mcp_denial_reason) = RETURNS_A_STORED_SECRET;
   }
 
   // Creates a new project in the workspace.
@@ -77,7 +77,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Updates an existing project's properties.
@@ -92,7 +92,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Deletes (soft-delete or purge) a project.
@@ -104,7 +104,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Restores a soft-deleted project.
@@ -118,7 +118,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Deletes multiple projects in a single operation.
@@ -132,7 +132,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Retrieves the IAM policy for a project.
@@ -142,7 +142,7 @@ service ProjectService {
     option (bytebase.v1.permission) = "bb.projects.getIamPolicy";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Sets the IAM policy for a project.
@@ -156,7 +156,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Adds a webhook to a project for notifications.
@@ -170,7 +170,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Updates an existing webhook configuration.
@@ -185,7 +185,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Removes a webhook from a project.
@@ -199,7 +199,7 @@ service ProjectService {
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = ADMINISTERS_THE_WORKSPACE;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
   // Tests a webhook by sending a test notification.
@@ -212,7 +212,7 @@ service ProjectService {
     option (bytebase.v1.permission) = "bb.projects.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_exclusion_reason) = SENDS_DATA_TO_A_THIRD_PARTY;
+    option (bytebase.v1.mcp_denial_reason) = SENDS_DATA_TO_A_THIRD_PARTY;
   }
 }
 
