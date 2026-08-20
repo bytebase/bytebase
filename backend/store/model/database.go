@@ -29,9 +29,14 @@ type DatabaseMetadata struct {
 
 // SchemaMetadata is the unified metadata for a schema, combining proto metadata and catalog config.
 type SchemaMetadata struct {
-	isObjectCaseSensitive    bool
-	isDetailCaseSensitive    bool
-	internalTables           map[string]*TableMetadata
+	isObjectCaseSensitive bool
+	isDetailCaseSensitive bool
+	internalTables        map[string]*TableMetadata
+	// internalPartitionTables maps a partition name to its owning table, so a partition can
+	// be resolved by name. It is kept apart from internalTables because partition names are
+	// scoped per table and may collide with a real table's name; merging the two let a
+	// partition shadow a root table and hand callers the wrong table's proto.
+	internalPartitionTables  map[string]*TableMetadata
 	internalExternalTable    map[string]*ExternalTableMetadata
 	internalViews            map[string]*storepb.ViewMetadata
 	internalMaterializedView map[string]*storepb.MaterializedViewMetadata
@@ -127,6 +132,7 @@ func NewDatabaseMetadata(
 			isObjectCaseSensitive:    isObjectCaseSensitive,
 			isDetailCaseSensitive:    isDetailCaseSensitive,
 			internalTables:           make(map[string]*TableMetadata),
+			internalPartitionTables:  make(map[string]*TableMetadata),
 			internalExternalTable:    make(map[string]*ExternalTableMetadata),
 			internalViews:            make(map[string]*storepb.ViewMetadata),
 			internalMaterializedView: make(map[string]*storepb.MaterializedViewMetadata),
@@ -141,6 +147,10 @@ func NewDatabaseMetadata(
 			tables, names := buildTablesMetadata(table, tableCatalog, isDetailCaseSensitive)
 			for i, table := range tables {
 				tableID := normalizeNameByCaseSensitivity(names[i], isObjectCaseSensitive)
+				if table.partitionOf != nil {
+					schemaMetadata.internalPartitionTables[tableID] = table
+					continue
+				}
 				schemaMetadata.internalTables[tableID] = table
 			}
 		}
@@ -285,6 +295,7 @@ func (d *DatabaseMetadata) CreateSchema(schemaName string) *SchemaMetadata {
 		isObjectCaseSensitive:    d.isObjectCaseSensitive,
 		isDetailCaseSensitive:    d.isDetailCaseSensitive,
 		internalTables:           make(map[string]*TableMetadata),
+		internalPartitionTables:  make(map[string]*TableMetadata),
 		internalExternalTable:    make(map[string]*ExternalTableMetadata),
 		internalViews:            make(map[string]*storepb.ViewMetadata),
 		internalMaterializedView: make(map[string]*storepb.MaterializedViewMetadata),
@@ -335,7 +346,20 @@ func (s *SchemaMetadata) GetTable(name string) *TableMetadata {
 		return nil
 	}
 	nameID := normalizeNameByCaseSensitivity(name, s.isObjectCaseSensitive)
-	return s.internalTables[nameID]
+	if table, ok := s.internalTables[nameID]; ok {
+		return table
+	}
+	return s.internalPartitionTables[nameID]
+}
+
+// getRootTable looks up a real table, ignoring partition aliases. Table creation, drops,
+// and renames operate on real tables only: a partition named like a table does not reserve
+// that table name, and dropping a partition by name is not dropping a table.
+func (s *SchemaMetadata) getRootTable(name string) *TableMetadata {
+	if s == nil {
+		return nil
+	}
+	return s.internalTables[normalizeNameByCaseSensitivity(name, s.isObjectCaseSensitive)]
 }
 
 // GetIndex gets the index by name.
@@ -446,23 +470,12 @@ func (s *SchemaMetadata) GetCatalog() *storepb.SchemaCatalog {
 
 // ListTableNames lists the table names.
 func (s *SchemaMetadata) ListTableNames() []string {
-	// Read the root tables rather than internalTables: that map also holds every partition
-	// under its own name as a lookup alias for GetTable, and each alias carries the parent's
-	// proto. Deriving the listing from it named the parent once per partition, and hid a
-	// table outright when a partition shared its name. CreateTable, DropTable, and
-	// RenameTable all keep this list in step with the map.
-	tables := s.proto.GetTables()
-	result := make([]string, 0, len(tables))
-	seen := make(map[string]bool, len(tables))
-	for _, table := range tables {
-		// internalTables was previously the de facto guarantee that a name appears once.
-		// Keep it: callers such as the schema differ emit one change per name returned.
-		id := normalizeNameByCaseSensitivity(table.GetName(), s.isObjectCaseSensitive)
-		if seen[id] {
-			continue
-		}
-		seen[id] = true
-		result = append(result, table.GetName())
+	// internalTables holds only root tables; partitions live in internalPartitionTables.
+	// Listing and GetTable therefore read the same map, so every name returned here
+	// resolves back to the table it names.
+	result := make([]string, 0, len(s.internalTables))
+	for _, table := range s.internalTables {
+		result = append(result, table.GetProto().GetName())
 	}
 
 	slices.Sort(result)
@@ -528,7 +541,7 @@ func (s *SchemaMetadata) ListSequenceNames() []string {
 // Returns the created TableMetadata or an error if the table already exists.
 func (s *SchemaMetadata) CreateTable(tableName string) (*TableMetadata, error) {
 	// Check if table already exists
-	if s.GetTable(tableName) != nil {
+	if s.getRootTable(tableName) != nil {
 		return nil, errors.Errorf("table %q already exists in schema %q", tableName, s.proto.Name)
 	}
 
@@ -561,7 +574,7 @@ func (s *SchemaMetadata) CreateTable(tableName string) (*TableMetadata, error) {
 // Returns an error if the table does not exist.
 func (s *SchemaMetadata) DropTable(tableName string) error {
 	// Check if table exists
-	if s.GetTable(tableName) == nil {
+	if s.getRootTable(tableName) == nil {
 		return errors.Errorf("table %q does not exist in schema %q", tableName, s.proto.Name)
 	}
 
@@ -595,13 +608,13 @@ func (s *SchemaMetadata) RenameTable(oldName string, newName string) error {
 	}
 
 	// Check if old table exists
-	oldTable := s.GetTable(oldName)
+	oldTable := s.getRootTable(oldName)
 	if oldTable == nil {
 		return errors.Errorf("table %q does not exist in schema %q", oldName, s.proto.Name)
 	}
 
 	// Check if new table already exists
-	if s.GetTable(newName) != nil {
+	if s.getRootTable(newName) != nil {
 		return errors.Errorf("table %q already exists in schema %q", newName, s.proto.Name)
 	}
 

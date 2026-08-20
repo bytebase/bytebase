@@ -422,3 +422,70 @@ func TestListTableNames_PartitionSharingTableName(t *testing.T) {
 
 	a.Equal([]string{"sales"}, dbMetadata.GetSchemaMetadata("").ListTableNames())
 }
+
+// A partition of one table may share the name of a different root table. The root listing
+// and the root lookup must agree: resolving that name has to return the root table's own
+// proto, not the partition owner's, or the differ generates one table using another's
+// columns and indexes.
+func TestGetTable_PartitionAliasDoesNotShadowRootTable(t *testing.T) {
+	a := require.New(t)
+
+	dbMetadata := NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{
+			{
+				Name:    "archive",
+				Columns: []*storepb.ColumnMetadata{{Name: "archive_col"}},
+			},
+			{
+				Name:    "events",
+				Columns: []*storepb.ColumnMetadata{{Name: "events_col"}},
+				Partitions: []*storepb.TablePartitionMetadata{
+					{Name: "archive", Type: storepb.TablePartitionMetadata_RANGE, Expression: "dt"},
+					{Name: "recent", Type: storepb.TablePartitionMetadata_RANGE, Expression: "dt"},
+				},
+			},
+		}}},
+	}, nil, &storepb.DatabaseConfig{}, storepb.Engine_MYSQL, true)
+	schemaMetadata := dbMetadata.GetSchemaMetadata("")
+
+	a.Equal([]string{"archive", "events"}, schemaMetadata.ListTableNames())
+
+	// Every listed name must resolve to that same table.
+	for _, name := range schemaMetadata.ListTableNames() {
+		a.Equal(name, schemaMetadata.GetTable(name).GetProto().GetName(),
+			"GetTable(%q) resolved to the wrong table", name)
+	}
+	a.NotNil(schemaMetadata.GetTable("archive").GetColumn("archive_col"))
+
+	// A partition name that is not also a root table still resolves to its owner.
+	a.Equal("events", schemaMetadata.GetTable("recent").GetProto().GetName())
+}
+
+// A partition name does not reserve a table name, and dropping a partition by name is not
+// dropping a table. Table creation and drops therefore have to consult real tables only.
+func TestTableMutationsIgnorePartitionAliases(t *testing.T) {
+	a := require.New(t)
+
+	dbMetadata := NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{
+			{
+				Name:    "events",
+				Columns: []*storepb.ColumnMetadata{{Name: "events_col"}},
+				Partitions: []*storepb.TablePartitionMetadata{
+					{Name: "archive", Type: storepb.TablePartitionMetadata_RANGE, Expression: "dt"},
+				},
+			},
+		}}},
+	}, nil, &storepb.DatabaseConfig{}, storepb.Engine_MYSQL, true)
+	schemaMetadata := dbMetadata.GetSchemaMetadata("")
+
+	a.ErrorContains(schemaMetadata.DropTable("archive"), "does not exist")
+
+	created, err := schemaMetadata.CreateTable("archive")
+	a.NoError(err)
+	a.Equal("archive", created.GetProto().GetName())
+	a.Equal([]string{"archive", "events"}, schemaMetadata.ListTableNames())
+	a.Equal("archive", schemaMetadata.GetTable("archive").GetProto().GetName())
+}
