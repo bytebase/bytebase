@@ -383,7 +383,12 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, db.ConnectionContext{
 		DatabaseName: database.DatabaseName,
 		DataShare:    database.Metadata.GetDatashare(),
-		ReadOnly:     dataSource.GetType() == storepb.DataSourceType_READ_ONLY,
+		// A clamped request asks for the read-only session whatever data
+		// source it landed on, so the depth does not depend on the customer
+		// having configured a read-only data source. The driver is opened and
+		// closed inside this handler, so the session cannot outlive the
+		// request or be reused by another one.
+		ReadOnly: clamped || dataSource.GetType() == storepb.DataSourceType_READ_ONLY,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database driver: %v", err))
@@ -490,7 +495,8 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	)
 
 	response := &v1pb.QueryResponse{
-		Results: results,
+		Results:             results,
+		ReadOnlyEnforcement: mcpReadOnlyDepth(clamped, instance.Metadata.GetEngine(), database.Metadata.GetDatashare()),
 	}
 	if accessGrant != nil {
 		response.AppliedAccessGrant = common.FormatAccessGrant(accessGrant.ProjectID, accessGrant.ID)

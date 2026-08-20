@@ -707,3 +707,86 @@ func TestQueryDatabase_Timeout(t *testing.T) {
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "QUERY_ERROR")
 }
+
+// TestQueryDatabaseDisclosesReadOnlyEnforcement pins that the depth the server
+// applied reaches the agent on both of query_database's channels: the text a
+// model reads and the structured output a client can act on. call_api needs no
+// help here — it returns the API response verbatim, so an additive field
+// arrives on its own.
+func TestQueryDatabaseDisclosesReadOnlyEnforcement(t *testing.T) {
+	rows := []struct {
+		name        string
+		enforcement string
+		wantText    string
+	}{
+		{
+			name:        "classification alone",
+			enforcement: "STATEMENT_CLASSIFICATION",
+			wantText:    "every statement was classified as a read before it ran",
+		},
+		{
+			name:        "classification plus a read-only session",
+			enforcement: "STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION",
+			wantText:    "the database connection itself was opened read-only",
+		},
+		{
+			// A depth a later server grew and this build has no sentence for
+			// is still repeated rather than dropped.
+			name:        "a depth this build does not know",
+			enforcement: "LEAST_PRIVILEGE_ACCOUNT",
+			wantText:    "Read-only session: LEAST_PRIVILEGE_ACCOUNT",
+		},
+	}
+
+	for _, row := range rows {
+		t.Run(row.name, func(t *testing.T) {
+			databases := []map[string]any{
+				makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+			}
+			qr := makeQueryResponse([]string{"id"}, []string{"int4"}, [][]any{{"1"}}, "0.010s")
+			qr["readOnlyEnforcement"] = row.enforcement
+			s := newTestServerWithMock(t, mockQueryServer(databases, qr))
+
+			result, structured, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
+				Database:  "employee_db",
+				Statement: "SELECT id FROM users",
+			})
+			require.NoError(t, err)
+			require.False(t, result.IsError)
+
+			output, ok := structured.(*QueryOutput)
+			require.True(t, ok)
+			require.Equal(t, row.enforcement, output.ReadOnlyEnforcement)
+
+			text := result.Content[0].(*mcpsdk.TextContent).Text
+			require.Contains(t, text, row.wantText)
+		})
+	}
+}
+
+// TestQueryDatabaseSaysNothingWhenTheSessionIsNotCapped keeps the disclosure
+// meaningful: an ordinary read-write session must not be told it was held to
+// reads.
+func TestQueryDatabaseSaysNothingWhenTheSessionIsNotCapped(t *testing.T) {
+	for _, enforcement := range []string{"", "READ_ONLY_ENFORCEMENT_UNSPECIFIED"} {
+		databases := []map[string]any{
+			makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+		}
+		qr := makeQueryResponse([]string{"id"}, []string{"int4"}, [][]any{{"1"}}, "0.010s")
+		if enforcement != "" {
+			qr["readOnlyEnforcement"] = enforcement
+		}
+		s := newTestServerWithMock(t, mockQueryServer(databases, qr))
+
+		result, structured, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
+			Database:  "employee_db",
+			Statement: "SELECT id FROM users",
+		})
+		require.NoError(t, err)
+
+		output, ok := structured.(*QueryOutput)
+		require.True(t, ok)
+		require.Empty(t, output.ReadOnlyEnforcement)
+		require.NotContains(t, result.Content[0].(*mcpsdk.TextContent).Text, "Read-only session")
+	}
+}

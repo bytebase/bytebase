@@ -104,6 +104,9 @@ func (x *QueryResponse) Equal(y *QueryResponse) bool {
 	if x.AppliedAccessGrant != y.AppliedAccessGrant {
 		return false
 	}
+	if x.ReadOnlyEnforcement != y.ReadOnlyEnforcement {
+		return false
+	}
 	return true
 }
 

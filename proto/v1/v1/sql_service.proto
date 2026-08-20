@@ -165,6 +165,31 @@ message QueryResponse {
   // Format: projects/{project}/accessGrants/{accessGrant}.
   // Empty when the user was authorized through normal ACL rather than a grant.
   string applied_access_grant = 2;
+
+  // How this query was held to reads, for a caller whose session is capped at
+  // read-only. Unset for every other caller, the SQL editor included.
+  ReadOnlyEnforcement read_only_enforcement = 3;
+
+  // ReadOnlyEnforcement is what a read-only session actually got. The server
+  // applies the strongest it can per connection and reports it here, so the
+  // caller need not infer it from the engine.
+  //
+  // It says what was applied, not that a write is impossible: a statement that
+  // reads structurally can still call a side-effecting function, and a
+  // classifier can be wrong about a grammar it does not fully model.
+  enum ReadOnlyEnforcement {
+    // The caller's session is not capped at read-only.
+    READ_ONLY_ENFORCEMENT_UNSPECIFIED = 0;
+
+    // Every statement in the request was classified as a read before any of
+    // it ran, and a request holding anything else was refused whole.
+    STATEMENT_CLASSIFICATION = 1;
+
+    // Statement classification, and the driver opened the database session
+    // read-only as well, so the database server refuses a write from this
+    // connection whatever the classifier concluded.
+    STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION = 2;
+  }
 }
 
 message QueryOption {

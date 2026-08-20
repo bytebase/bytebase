@@ -284,6 +284,52 @@ func TestMCPClampReadsTheCeilingTheGateResolved(t *testing.T) {
 	}
 }
 
+// TestMCPClampDisclosesTheDepthItApplied pins what the response tells the
+// caller. The depth is whatever the connection actually got, so an agent does
+// not have to know which drivers open a read-only session to know whether this
+// one did.
+func TestMCPClampDisclosesTheDepthItApplied(t *testing.T) {
+	const withSession = v1pb.QueryResponse_STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION
+	const classificationOnly = v1pb.QueryResponse_STATEMENT_CLASSIFICATION
+
+	rows := []struct {
+		name      string
+		clamped   bool
+		engine    storepb.Engine
+		datashare bool
+		want      v1pb.QueryResponse_ReadOnlyEnforcement
+	}{
+		{
+			name:   "an unclamped request discloses nothing",
+			engine: storepb.Engine_POSTGRES,
+			want:   v1pb.QueryResponse_READ_ONLY_ENFORCEMENT_UNSPECIFIED,
+		},
+		{name: "postgres gets the session too", clamped: true, engine: storepb.Engine_POSTGRES, want: withSession},
+		{name: "cockroachdb gets the session too", clamped: true, engine: storepb.Engine_COCKROACHDB, want: withSession},
+		{name: "redshift gets the session too", clamped: true, engine: storepb.Engine_REDSHIFT, want: withSession},
+		{
+			// The redshift driver skips the read-only parameter here, so the
+			// disclosure has to skip it as well.
+			name:      "a redshift datashare gets classification alone",
+			clamped:   true,
+			engine:    storepb.Engine_REDSHIFT,
+			datashare: true,
+			want:      classificationOnly,
+		},
+		{name: "mysql gets classification alone", clamped: true, engine: storepb.Engine_MYSQL, want: classificationOnly},
+		{name: "tidb gets classification alone", clamped: true, engine: storepb.Engine_TIDB, want: classificationOnly},
+		{name: "mssql gets classification alone", clamped: true, engine: storepb.Engine_MSSQL, want: classificationOnly},
+		{name: "oracle gets classification alone", clamped: true, engine: storepb.Engine_ORACLE, want: classificationOnly},
+		{name: "clickhouse gets classification alone", clamped: true, engine: storepb.Engine_CLICKHOUSE, want: classificationOnly},
+	}
+
+	for _, row := range rows {
+		t.Run(row.name, func(t *testing.T) {
+			require.Equal(t, row.want, mcpReadOnlyDepth(row.clamped, row.engine, row.datashare))
+		})
+	}
+}
+
 func contextWithAuth(authCtx *common.AuthContext) context.Context {
 	return context.WithValue(context.Background(), common.AuthContextKey, authCtx)
 }

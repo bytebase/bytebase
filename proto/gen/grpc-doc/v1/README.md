@@ -177,6 +177,7 @@
     - [Advice.RuleType](#bytebase-v1-Advice-RuleType)
     - [QueryOption.MSSQLExplainFormat](#bytebase-v1-QueryOption-MSSQLExplainFormat)
     - [QueryOption.RedisRunCommandsOn](#bytebase-v1-QueryOption-RedisRunCommandsOn)
+    - [QueryResponse.ReadOnlyEnforcement](#bytebase-v1-QueryResponse-ReadOnlyEnforcement)
     - [QueryResult.CommandError.Type](#bytebase-v1-QueryResult-CommandError-Type)
     - [QueryResult.Message.Level](#bytebase-v1-QueryResult-Message-Level)
   
@@ -3108,6 +3109,7 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 | ----- | ---- | ----- | ----------- |
 | results | [QueryResult](#bytebase-v1-QueryResult) | repeated | The query results. |
 | applied_access_grant | [string](#string) |  | The just-in-time access grant applied to this query, if any. Format: projects/{project}/accessGrants/{accessGrant}. Empty when the user was authorized through normal ACL rather than a grant. |
+| read_only_enforcement | [QueryResponse.ReadOnlyEnforcement](#bytebase-v1-QueryResponse-ReadOnlyEnforcement) |  | How this query was held to reads, for a caller whose session is capped at read-only. Unset for every other caller, the SQL editor included. |
 
 
 
@@ -3348,6 +3350,25 @@ RuleType indicates the source of the linting rule.
 | REDIS_RUN_COMMANDS_ON_UNSPECIFIED | 0 | UNSPECIFIED defaults to SINGLE_NODE. |
 | SINGLE_NODE | 1 | Execute Redis commands on a single node in the cluster. |
 | ALL_NODES | 2 | Execute Redis commands on all nodes in the cluster for cluster-wide operations. |
+
+
+
+<a name="bytebase-v1-QueryResponse-ReadOnlyEnforcement"></a>
+
+### QueryResponse.ReadOnlyEnforcement
+ReadOnlyEnforcement is what a read-only session actually got. The server
+applies the strongest it can per connection and reports it here, so the
+caller need not infer it from the engine.
+
+It says what was applied, not that a write is impossible: a statement that
+reads structurally can still call a side-effecting function, and a
+classifier can be wrong about a grammar it does not fully model.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| READ_ONLY_ENFORCEMENT_UNSPECIFIED | 0 | The caller&#39;s session is not capped at read-only. |
+| STATEMENT_CLASSIFICATION | 1 | Every statement in the request was classified as a read before any of it ran, and a request holding anything else was refused whole. |
+| STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION | 2 | Statement classification, and the driver opened the database session read-only as well, so the database server refuses a write from this connection whatever the classifier concluded. |
 
 
 

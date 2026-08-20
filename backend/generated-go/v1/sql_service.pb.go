@@ -25,6 +25,68 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// ReadOnlyEnforcement is what a read-only session actually got. The server
+// applies the strongest it can per connection and reports it here, so the
+// caller need not infer it from the engine.
+//
+// It says what was applied, not that a write is impossible: a statement that
+// reads structurally can still call a side-effecting function, and a
+// classifier can be wrong about a grammar it does not fully model.
+type QueryResponse_ReadOnlyEnforcement int32
+
+const (
+	// The caller's session is not capped at read-only.
+	QueryResponse_READ_ONLY_ENFORCEMENT_UNSPECIFIED QueryResponse_ReadOnlyEnforcement = 0
+	// Every statement in the request was classified as a read before any of
+	// it ran, and a request holding anything else was refused whole.
+	QueryResponse_STATEMENT_CLASSIFICATION QueryResponse_ReadOnlyEnforcement = 1
+	// Statement classification, and the driver opened the database session
+	// read-only as well, so the database server refuses a write from this
+	// connection whatever the classifier concluded.
+	QueryResponse_STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION QueryResponse_ReadOnlyEnforcement = 2
+)
+
+// Enum value maps for QueryResponse_ReadOnlyEnforcement.
+var (
+	QueryResponse_ReadOnlyEnforcement_name = map[int32]string{
+		0: "READ_ONLY_ENFORCEMENT_UNSPECIFIED",
+		1: "STATEMENT_CLASSIFICATION",
+		2: "STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION",
+	}
+	QueryResponse_ReadOnlyEnforcement_value = map[string]int32{
+		"READ_ONLY_ENFORCEMENT_UNSPECIFIED":              0,
+		"STATEMENT_CLASSIFICATION":                       1,
+		"STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION": 2,
+	}
+)
+
+func (x QueryResponse_ReadOnlyEnforcement) Enum() *QueryResponse_ReadOnlyEnforcement {
+	p := new(QueryResponse_ReadOnlyEnforcement)
+	*p = x
+	return p
+}
+
+func (x QueryResponse_ReadOnlyEnforcement) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (QueryResponse_ReadOnlyEnforcement) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_sql_service_proto_enumTypes[0].Descriptor()
+}
+
+func (QueryResponse_ReadOnlyEnforcement) Type() protoreflect.EnumType {
+	return &file_v1_sql_service_proto_enumTypes[0]
+}
+
+func (x QueryResponse_ReadOnlyEnforcement) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use QueryResponse_ReadOnlyEnforcement.Descriptor instead.
+func (QueryResponse_ReadOnlyEnforcement) EnumDescriptor() ([]byte, []int) {
+	return file_v1_sql_service_proto_rawDescGZIP(), []int{3, 0}
+}
+
 type QueryOption_RedisRunCommandsOn int32
 
 const (
@@ -61,11 +123,11 @@ func (x QueryOption_RedisRunCommandsOn) String() string {
 }
 
 func (QueryOption_RedisRunCommandsOn) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_sql_service_proto_enumTypes[0].Descriptor()
+	return file_v1_sql_service_proto_enumTypes[1].Descriptor()
 }
 
 func (QueryOption_RedisRunCommandsOn) Type() protoreflect.EnumType {
-	return &file_v1_sql_service_proto_enumTypes[0]
+	return &file_v1_sql_service_proto_enumTypes[1]
 }
 
 func (x QueryOption_RedisRunCommandsOn) Number() protoreflect.EnumNumber {
@@ -113,11 +175,11 @@ func (x QueryOption_MSSQLExplainFormat) String() string {
 }
 
 func (QueryOption_MSSQLExplainFormat) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_sql_service_proto_enumTypes[1].Descriptor()
+	return file_v1_sql_service_proto_enumTypes[2].Descriptor()
 }
 
 func (QueryOption_MSSQLExplainFormat) Type() protoreflect.EnumType {
-	return &file_v1_sql_service_proto_enumTypes[1]
+	return &file_v1_sql_service_proto_enumTypes[2]
 }
 
 func (x QueryOption_MSSQLExplainFormat) Number() protoreflect.EnumNumber {
@@ -165,11 +227,11 @@ func (x QueryResult_CommandError_Type) String() string {
 }
 
 func (QueryResult_CommandError_Type) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_sql_service_proto_enumTypes[2].Descriptor()
+	return file_v1_sql_service_proto_enumTypes[3].Descriptor()
 }
 
 func (QueryResult_CommandError_Type) Type() protoreflect.EnumType {
-	return &file_v1_sql_service_proto_enumTypes[2]
+	return &file_v1_sql_service_proto_enumTypes[3]
 }
 
 func (x QueryResult_CommandError_Type) Number() protoreflect.EnumNumber {
@@ -233,11 +295,11 @@ func (x QueryResult_Message_Level) String() string {
 }
 
 func (QueryResult_Message_Level) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_sql_service_proto_enumTypes[3].Descriptor()
+	return file_v1_sql_service_proto_enumTypes[4].Descriptor()
 }
 
 func (QueryResult_Message_Level) Type() protoreflect.EnumType {
-	return &file_v1_sql_service_proto_enumTypes[3]
+	return &file_v1_sql_service_proto_enumTypes[4]
 }
 
 func (x QueryResult_Message_Level) Number() protoreflect.EnumNumber {
@@ -290,11 +352,11 @@ func (x Advice_Level) String() string {
 }
 
 func (Advice_Level) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_sql_service_proto_enumTypes[4].Descriptor()
+	return file_v1_sql_service_proto_enumTypes[5].Descriptor()
 }
 
 func (Advice_Level) Type() protoreflect.EnumType {
-	return &file_v1_sql_service_proto_enumTypes[4]
+	return &file_v1_sql_service_proto_enumTypes[5]
 }
 
 func (x Advice_Level) Number() protoreflect.EnumNumber {
@@ -345,11 +407,11 @@ func (x Advice_RuleType) String() string {
 }
 
 func (Advice_RuleType) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_sql_service_proto_enumTypes[5].Descriptor()
+	return file_v1_sql_service_proto_enumTypes[6].Descriptor()
 }
 
 func (Advice_RuleType) Type() protoreflect.EnumType {
-	return &file_v1_sql_service_proto_enumTypes[5]
+	return &file_v1_sql_service_proto_enumTypes[6]
 }
 
 func (x Advice_RuleType) Number() protoreflect.EnumNumber {
@@ -612,8 +674,11 @@ type QueryResponse struct {
 	// Format: projects/{project}/accessGrants/{accessGrant}.
 	// Empty when the user was authorized through normal ACL rather than a grant.
 	AppliedAccessGrant string `protobuf:"bytes,2,opt,name=applied_access_grant,json=appliedAccessGrant,proto3" json:"applied_access_grant,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// How this query was held to reads, for a caller whose session is capped at
+	// read-only. Unset for every other caller, the SQL editor included.
+	ReadOnlyEnforcement QueryResponse_ReadOnlyEnforcement `protobuf:"varint,3,opt,name=read_only_enforcement,json=readOnlyEnforcement,proto3,enum=bytebase.v1.QueryResponse_ReadOnlyEnforcement" json:"read_only_enforcement,omitempty"`
+	unknownFields       protoimpl.UnknownFields
+	sizeCache           protoimpl.SizeCache
 }
 
 func (x *QueryResponse) Reset() {
@@ -658,6 +723,13 @@ func (x *QueryResponse) GetAppliedAccessGrant() string {
 		return x.AppliedAccessGrant
 	}
 	return ""
+}
+
+func (x *QueryResponse) GetReadOnlyEnforcement() QueryResponse_ReadOnlyEnforcement {
+	if x != nil {
+		return x.ReadOnlyEnforcement
+	}
+	return QueryResponse_READ_ONLY_ENFORCEMENT_UNSPECIFIED
 }
 
 type QueryOption struct {
@@ -2074,10 +2146,15 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\tcontainer\x18\b \x01(\tH\x01R\tcontainer\x88\x01\x01B\t\n" +
 	"\a_schemaB\f\n" +
 	"\n" +
-	"_container\"u\n" +
+	"_container\"\xea\x02\n" +
 	"\rQueryResponse\x122\n" +
 	"\aresults\x18\x01 \x03(\v2\x18.bytebase.v1.QueryResultR\aresults\x120\n" +
-	"\x14applied_access_grant\x18\x02 \x01(\tR\x12appliedAccessGrant\"\xa1\x03\n" +
+	"\x14applied_access_grant\x18\x02 \x01(\tR\x12appliedAccessGrant\x12b\n" +
+	"\x15read_only_enforcement\x18\x03 \x01(\x0e2..bytebase.v1.QueryResponse.ReadOnlyEnforcementR\x13readOnlyEnforcement\"\x8e\x01\n" +
+	"\x13ReadOnlyEnforcement\x12%\n" +
+	"!READ_ONLY_ENFORCEMENT_UNSPECIFIED\x10\x00\x12\x1c\n" +
+	"\x18STATEMENT_CLASSIFICATION\x10\x01\x122\n" +
+	".STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION\x10\x02\"\xa1\x03\n" +
 	"\vQueryOption\x12^\n" +
 	"\x15redis_run_commands_on\x18\x01 \x01(\x0e2+.bytebase.v1.QueryOption.RedisRunCommandsOnR\x12redisRunCommandsOn\x12]\n" +
 	"\x14mssql_explain_format\x18\x02 \x01(\x0e2+.bytebase.v1.QueryOption.MSSQLExplainFormatR\x12mssqlExplainFormat\"[\n" +
@@ -2248,93 +2325,95 @@ func file_v1_sql_service_proto_rawDescGZIP() []byte {
 	return file_v1_sql_service_proto_rawDescData
 }
 
-var file_v1_sql_service_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
+var file_v1_sql_service_proto_enumTypes = make([]protoimpl.EnumInfo, 7)
 var file_v1_sql_service_proto_msgTypes = make([]protoimpl.MessageInfo, 18)
 var file_v1_sql_service_proto_goTypes = []any{
-	(QueryOption_RedisRunCommandsOn)(0),  // 0: bytebase.v1.QueryOption.RedisRunCommandsOn
-	(QueryOption_MSSQLExplainFormat)(0),  // 1: bytebase.v1.QueryOption.MSSQLExplainFormat
-	(QueryResult_CommandError_Type)(0),   // 2: bytebase.v1.QueryResult.CommandError.Type
-	(QueryResult_Message_Level)(0),       // 3: bytebase.v1.QueryResult.Message.Level
-	(Advice_Level)(0),                    // 4: bytebase.v1.Advice.Level
-	(Advice_RuleType)(0),                 // 5: bytebase.v1.Advice.RuleType
-	(*AdminExecuteRequest)(nil),          // 6: bytebase.v1.AdminExecuteRequest
-	(*AdminExecuteResponse)(nil),         // 7: bytebase.v1.AdminExecuteResponse
-	(*QueryRequest)(nil),                 // 8: bytebase.v1.QueryRequest
-	(*QueryResponse)(nil),                // 9: bytebase.v1.QueryResponse
-	(*QueryOption)(nil),                  // 10: bytebase.v1.QueryOption
-	(*QueryResult)(nil),                  // 11: bytebase.v1.QueryResult
-	(*MaskingReason)(nil),                // 12: bytebase.v1.MaskingReason
-	(*QueryRow)(nil),                     // 13: bytebase.v1.QueryRow
-	(*RowValue)(nil),                     // 14: bytebase.v1.RowValue
-	(*Advice)(nil),                       // 15: bytebase.v1.Advice
-	(*ExportRequest)(nil),                // 16: bytebase.v1.ExportRequest
-	(*ExportResponse)(nil),               // 17: bytebase.v1.ExportResponse
-	(*QueryResult_PostgresError)(nil),    // 18: bytebase.v1.QueryResult.PostgresError
-	(*QueryResult_SyntaxError)(nil),      // 19: bytebase.v1.QueryResult.SyntaxError
-	(*QueryResult_CommandError)(nil),     // 20: bytebase.v1.QueryResult.CommandError
-	(*QueryResult_Message)(nil),          // 21: bytebase.v1.QueryResult.Message
-	(*RowValue_Timestamp)(nil),           // 22: bytebase.v1.RowValue.Timestamp
-	(*RowValue_TimestampTZ)(nil),         // 23: bytebase.v1.RowValue.TimestampTZ
-	(*durationpb.Duration)(nil),          // 24: google.protobuf.Duration
-	(*PermissionDeniedDetail)(nil),       // 25: bytebase.v1.PermissionDeniedDetail
-	(structpb.NullValue)(0),              // 26: google.protobuf.NullValue
-	(*structpb.Value)(nil),               // 27: google.protobuf.Value
-	(*Position)(nil),                     // 28: bytebase.v1.Position
-	(ExportFormat)(0),                    // 29: bytebase.v1.ExportFormat
-	(*timestamppb.Timestamp)(nil),        // 30: google.protobuf.Timestamp
-	(*SearchQueryHistoriesRequest)(nil),  // 31: bytebase.v1.SearchQueryHistoriesRequest
-	(*ListQueryHistoriesRequest)(nil),    // 32: bytebase.v1.ListQueryHistoriesRequest
-	(*GetQueryHistoryRequest)(nil),       // 33: bytebase.v1.GetQueryHistoryRequest
-	(*SearchQueryHistoriesResponse)(nil), // 34: bytebase.v1.SearchQueryHistoriesResponse
-	(*ListQueryHistoriesResponse)(nil),   // 35: bytebase.v1.ListQueryHistoriesResponse
-	(*QueryHistory)(nil),                 // 36: bytebase.v1.QueryHistory
+	(QueryResponse_ReadOnlyEnforcement)(0), // 0: bytebase.v1.QueryResponse.ReadOnlyEnforcement
+	(QueryOption_RedisRunCommandsOn)(0),    // 1: bytebase.v1.QueryOption.RedisRunCommandsOn
+	(QueryOption_MSSQLExplainFormat)(0),    // 2: bytebase.v1.QueryOption.MSSQLExplainFormat
+	(QueryResult_CommandError_Type)(0),     // 3: bytebase.v1.QueryResult.CommandError.Type
+	(QueryResult_Message_Level)(0),         // 4: bytebase.v1.QueryResult.Message.Level
+	(Advice_Level)(0),                      // 5: bytebase.v1.Advice.Level
+	(Advice_RuleType)(0),                   // 6: bytebase.v1.Advice.RuleType
+	(*AdminExecuteRequest)(nil),            // 7: bytebase.v1.AdminExecuteRequest
+	(*AdminExecuteResponse)(nil),           // 8: bytebase.v1.AdminExecuteResponse
+	(*QueryRequest)(nil),                   // 9: bytebase.v1.QueryRequest
+	(*QueryResponse)(nil),                  // 10: bytebase.v1.QueryResponse
+	(*QueryOption)(nil),                    // 11: bytebase.v1.QueryOption
+	(*QueryResult)(nil),                    // 12: bytebase.v1.QueryResult
+	(*MaskingReason)(nil),                  // 13: bytebase.v1.MaskingReason
+	(*QueryRow)(nil),                       // 14: bytebase.v1.QueryRow
+	(*RowValue)(nil),                       // 15: bytebase.v1.RowValue
+	(*Advice)(nil),                         // 16: bytebase.v1.Advice
+	(*ExportRequest)(nil),                  // 17: bytebase.v1.ExportRequest
+	(*ExportResponse)(nil),                 // 18: bytebase.v1.ExportResponse
+	(*QueryResult_PostgresError)(nil),      // 19: bytebase.v1.QueryResult.PostgresError
+	(*QueryResult_SyntaxError)(nil),        // 20: bytebase.v1.QueryResult.SyntaxError
+	(*QueryResult_CommandError)(nil),       // 21: bytebase.v1.QueryResult.CommandError
+	(*QueryResult_Message)(nil),            // 22: bytebase.v1.QueryResult.Message
+	(*RowValue_Timestamp)(nil),             // 23: bytebase.v1.RowValue.Timestamp
+	(*RowValue_TimestampTZ)(nil),           // 24: bytebase.v1.RowValue.TimestampTZ
+	(*durationpb.Duration)(nil),            // 25: google.protobuf.Duration
+	(*PermissionDeniedDetail)(nil),         // 26: bytebase.v1.PermissionDeniedDetail
+	(structpb.NullValue)(0),                // 27: google.protobuf.NullValue
+	(*structpb.Value)(nil),                 // 28: google.protobuf.Value
+	(*Position)(nil),                       // 29: bytebase.v1.Position
+	(ExportFormat)(0),                      // 30: bytebase.v1.ExportFormat
+	(*timestamppb.Timestamp)(nil),          // 31: google.protobuf.Timestamp
+	(*SearchQueryHistoriesRequest)(nil),    // 32: bytebase.v1.SearchQueryHistoriesRequest
+	(*ListQueryHistoriesRequest)(nil),      // 33: bytebase.v1.ListQueryHistoriesRequest
+	(*GetQueryHistoryRequest)(nil),         // 34: bytebase.v1.GetQueryHistoryRequest
+	(*SearchQueryHistoriesResponse)(nil),   // 35: bytebase.v1.SearchQueryHistoriesResponse
+	(*ListQueryHistoriesResponse)(nil),     // 36: bytebase.v1.ListQueryHistoriesResponse
+	(*QueryHistory)(nil),                   // 37: bytebase.v1.QueryHistory
 }
 var file_v1_sql_service_proto_depIdxs = []int32{
-	11, // 0: bytebase.v1.AdminExecuteResponse.results:type_name -> bytebase.v1.QueryResult
-	10, // 1: bytebase.v1.QueryRequest.query_option:type_name -> bytebase.v1.QueryOption
-	11, // 2: bytebase.v1.QueryResponse.results:type_name -> bytebase.v1.QueryResult
-	0,  // 3: bytebase.v1.QueryOption.redis_run_commands_on:type_name -> bytebase.v1.QueryOption.RedisRunCommandsOn
-	1,  // 4: bytebase.v1.QueryOption.mssql_explain_format:type_name -> bytebase.v1.QueryOption.MSSQLExplainFormat
-	13, // 5: bytebase.v1.QueryResult.rows:type_name -> bytebase.v1.QueryRow
-	24, // 6: bytebase.v1.QueryResult.latency:type_name -> google.protobuf.Duration
-	18, // 7: bytebase.v1.QueryResult.postgres_error:type_name -> bytebase.v1.QueryResult.PostgresError
-	19, // 8: bytebase.v1.QueryResult.syntax_error:type_name -> bytebase.v1.QueryResult.SyntaxError
-	25, // 9: bytebase.v1.QueryResult.permission_denied:type_name -> bytebase.v1.PermissionDeniedDetail
-	20, // 10: bytebase.v1.QueryResult.command_error:type_name -> bytebase.v1.QueryResult.CommandError
-	21, // 11: bytebase.v1.QueryResult.messages:type_name -> bytebase.v1.QueryResult.Message
-	12, // 12: bytebase.v1.QueryResult.masked:type_name -> bytebase.v1.MaskingReason
-	14, // 13: bytebase.v1.QueryRow.values:type_name -> bytebase.v1.RowValue
-	26, // 14: bytebase.v1.RowValue.null_value:type_name -> google.protobuf.NullValue
-	27, // 15: bytebase.v1.RowValue.value_value:type_name -> google.protobuf.Value
-	22, // 16: bytebase.v1.RowValue.timestamp_value:type_name -> bytebase.v1.RowValue.Timestamp
-	23, // 17: bytebase.v1.RowValue.timestamp_tz_value:type_name -> bytebase.v1.RowValue.TimestampTZ
-	4,  // 18: bytebase.v1.Advice.status:type_name -> bytebase.v1.Advice.Level
-	28, // 19: bytebase.v1.Advice.start_position:type_name -> bytebase.v1.Position
-	28, // 20: bytebase.v1.Advice.end_position:type_name -> bytebase.v1.Position
-	5,  // 21: bytebase.v1.Advice.rule_type:type_name -> bytebase.v1.Advice.RuleType
-	29, // 22: bytebase.v1.ExportRequest.format:type_name -> bytebase.v1.ExportFormat
-	28, // 23: bytebase.v1.QueryResult.SyntaxError.start_position:type_name -> bytebase.v1.Position
-	2,  // 24: bytebase.v1.QueryResult.CommandError.command_type:type_name -> bytebase.v1.QueryResult.CommandError.Type
-	3,  // 25: bytebase.v1.QueryResult.Message.level:type_name -> bytebase.v1.QueryResult.Message.Level
-	30, // 26: bytebase.v1.RowValue.Timestamp.google_timestamp:type_name -> google.protobuf.Timestamp
-	30, // 27: bytebase.v1.RowValue.TimestampTZ.google_timestamp:type_name -> google.protobuf.Timestamp
-	8,  // 28: bytebase.v1.SQLService.Query:input_type -> bytebase.v1.QueryRequest
-	6,  // 29: bytebase.v1.SQLService.AdminExecute:input_type -> bytebase.v1.AdminExecuteRequest
-	31, // 30: bytebase.v1.SQLService.SearchQueryHistories:input_type -> bytebase.v1.SearchQueryHistoriesRequest
-	32, // 31: bytebase.v1.SQLService.ListQueryHistories:input_type -> bytebase.v1.ListQueryHistoriesRequest
-	33, // 32: bytebase.v1.SQLService.GetQueryHistory:input_type -> bytebase.v1.GetQueryHistoryRequest
-	16, // 33: bytebase.v1.SQLService.Export:input_type -> bytebase.v1.ExportRequest
-	9,  // 34: bytebase.v1.SQLService.Query:output_type -> bytebase.v1.QueryResponse
-	7,  // 35: bytebase.v1.SQLService.AdminExecute:output_type -> bytebase.v1.AdminExecuteResponse
-	34, // 36: bytebase.v1.SQLService.SearchQueryHistories:output_type -> bytebase.v1.SearchQueryHistoriesResponse
-	35, // 37: bytebase.v1.SQLService.ListQueryHistories:output_type -> bytebase.v1.ListQueryHistoriesResponse
-	36, // 38: bytebase.v1.SQLService.GetQueryHistory:output_type -> bytebase.v1.QueryHistory
-	17, // 39: bytebase.v1.SQLService.Export:output_type -> bytebase.v1.ExportResponse
-	34, // [34:40] is the sub-list for method output_type
-	28, // [28:34] is the sub-list for method input_type
-	28, // [28:28] is the sub-list for extension type_name
-	28, // [28:28] is the sub-list for extension extendee
-	0,  // [0:28] is the sub-list for field type_name
+	12, // 0: bytebase.v1.AdminExecuteResponse.results:type_name -> bytebase.v1.QueryResult
+	11, // 1: bytebase.v1.QueryRequest.query_option:type_name -> bytebase.v1.QueryOption
+	12, // 2: bytebase.v1.QueryResponse.results:type_name -> bytebase.v1.QueryResult
+	0,  // 3: bytebase.v1.QueryResponse.read_only_enforcement:type_name -> bytebase.v1.QueryResponse.ReadOnlyEnforcement
+	1,  // 4: bytebase.v1.QueryOption.redis_run_commands_on:type_name -> bytebase.v1.QueryOption.RedisRunCommandsOn
+	2,  // 5: bytebase.v1.QueryOption.mssql_explain_format:type_name -> bytebase.v1.QueryOption.MSSQLExplainFormat
+	14, // 6: bytebase.v1.QueryResult.rows:type_name -> bytebase.v1.QueryRow
+	25, // 7: bytebase.v1.QueryResult.latency:type_name -> google.protobuf.Duration
+	19, // 8: bytebase.v1.QueryResult.postgres_error:type_name -> bytebase.v1.QueryResult.PostgresError
+	20, // 9: bytebase.v1.QueryResult.syntax_error:type_name -> bytebase.v1.QueryResult.SyntaxError
+	26, // 10: bytebase.v1.QueryResult.permission_denied:type_name -> bytebase.v1.PermissionDeniedDetail
+	21, // 11: bytebase.v1.QueryResult.command_error:type_name -> bytebase.v1.QueryResult.CommandError
+	22, // 12: bytebase.v1.QueryResult.messages:type_name -> bytebase.v1.QueryResult.Message
+	13, // 13: bytebase.v1.QueryResult.masked:type_name -> bytebase.v1.MaskingReason
+	15, // 14: bytebase.v1.QueryRow.values:type_name -> bytebase.v1.RowValue
+	27, // 15: bytebase.v1.RowValue.null_value:type_name -> google.protobuf.NullValue
+	28, // 16: bytebase.v1.RowValue.value_value:type_name -> google.protobuf.Value
+	23, // 17: bytebase.v1.RowValue.timestamp_value:type_name -> bytebase.v1.RowValue.Timestamp
+	24, // 18: bytebase.v1.RowValue.timestamp_tz_value:type_name -> bytebase.v1.RowValue.TimestampTZ
+	5,  // 19: bytebase.v1.Advice.status:type_name -> bytebase.v1.Advice.Level
+	29, // 20: bytebase.v1.Advice.start_position:type_name -> bytebase.v1.Position
+	29, // 21: bytebase.v1.Advice.end_position:type_name -> bytebase.v1.Position
+	6,  // 22: bytebase.v1.Advice.rule_type:type_name -> bytebase.v1.Advice.RuleType
+	30, // 23: bytebase.v1.ExportRequest.format:type_name -> bytebase.v1.ExportFormat
+	29, // 24: bytebase.v1.QueryResult.SyntaxError.start_position:type_name -> bytebase.v1.Position
+	3,  // 25: bytebase.v1.QueryResult.CommandError.command_type:type_name -> bytebase.v1.QueryResult.CommandError.Type
+	4,  // 26: bytebase.v1.QueryResult.Message.level:type_name -> bytebase.v1.QueryResult.Message.Level
+	31, // 27: bytebase.v1.RowValue.Timestamp.google_timestamp:type_name -> google.protobuf.Timestamp
+	31, // 28: bytebase.v1.RowValue.TimestampTZ.google_timestamp:type_name -> google.protobuf.Timestamp
+	9,  // 29: bytebase.v1.SQLService.Query:input_type -> bytebase.v1.QueryRequest
+	7,  // 30: bytebase.v1.SQLService.AdminExecute:input_type -> bytebase.v1.AdminExecuteRequest
+	32, // 31: bytebase.v1.SQLService.SearchQueryHistories:input_type -> bytebase.v1.SearchQueryHistoriesRequest
+	33, // 32: bytebase.v1.SQLService.ListQueryHistories:input_type -> bytebase.v1.ListQueryHistoriesRequest
+	34, // 33: bytebase.v1.SQLService.GetQueryHistory:input_type -> bytebase.v1.GetQueryHistoryRequest
+	17, // 34: bytebase.v1.SQLService.Export:input_type -> bytebase.v1.ExportRequest
+	10, // 35: bytebase.v1.SQLService.Query:output_type -> bytebase.v1.QueryResponse
+	8,  // 36: bytebase.v1.SQLService.AdminExecute:output_type -> bytebase.v1.AdminExecuteResponse
+	35, // 37: bytebase.v1.SQLService.SearchQueryHistories:output_type -> bytebase.v1.SearchQueryHistoriesResponse
+	36, // 38: bytebase.v1.SQLService.ListQueryHistories:output_type -> bytebase.v1.ListQueryHistoriesResponse
+	37, // 39: bytebase.v1.SQLService.GetQueryHistory:output_type -> bytebase.v1.QueryHistory
+	18, // 40: bytebase.v1.SQLService.Export:output_type -> bytebase.v1.ExportResponse
+	35, // [35:41] is the sub-list for method output_type
+	29, // [29:35] is the sub-list for method input_type
+	29, // [29:29] is the sub-list for extension type_name
+	29, // [29:29] is the sub-list for extension extendee
+	0,  // [0:29] is the sub-list for field type_name
 }
 
 func init() { file_v1_sql_service_proto_init() }
@@ -2374,7 +2453,7 @@ func file_v1_sql_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_sql_service_proto_rawDesc), len(file_v1_sql_service_proto_rawDesc)),
-			NumEnums:      6,
+			NumEnums:      7,
 			NumMessages:   18,
 			NumExtensions: 0,
 			NumServices:   1,

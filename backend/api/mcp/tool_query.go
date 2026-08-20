@@ -40,6 +40,9 @@ type QueryOutput struct {
 	RowCount    int      `json:"rowCount"`
 	Truncated   bool     `json:"truncated"`
 	LatencyMs   int64    `json:"latencyMs"`
+	// ReadOnlyEnforcement is what held this query to reads, verbatim from the
+	// server, when the session is capped at read-only. Empty otherwise.
+	ReadOnlyEnforcement string `json:"readOnlyEnforcement,omitempty"`
 }
 
 // queryDatabaseDescription is the description for the query_database tool.
@@ -130,11 +133,34 @@ func formatQueryOutput(statement, resourceName string, output *QueryOutput) stri
 			output.RowCount, len(output.Columns), columnList, output.LatencyMs)
 	}
 
+	if notice := readOnlyEnforcementNotice(output.ReadOnlyEnforcement); notice != "" {
+		sb.WriteString(notice)
+		sb.WriteString("\n")
+	}
+
 	sb.WriteString("\n")
 	jsonBytes, _ := json.Marshal(output)
 	sb.Write(jsonBytes)
 
 	return sb.String()
+}
+
+// readOnlyEnforcementNotice renders the server's disclosure as a sentence the
+// agent can repeat to the person it is acting for. An enforcement this build
+// does not recognize is passed through rather than dropped: the disclosure is
+// the server's to make, and saying less than it did is the wrong way to be
+// wrong about it.
+func readOnlyEnforcementNotice(enforcement string) string {
+	switch enforcement {
+	case "":
+		return ""
+	case "STATEMENT_CLASSIFICATION":
+		return "Read-only session: every statement was classified as a read before it ran."
+	case "STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION":
+		return "Read-only session: every statement was classified as a read, and the database connection itself was opened read-only."
+	default:
+		return "Read-only session: " + enforcement
+	}
 }
 
 // formatToolError converts an error into an MCP error result.
@@ -157,7 +183,8 @@ func formatToolError(err error) *mcp.CallToolResult {
 
 // queryResponse is the typed response from the SQL Query API.
 type queryResponse struct {
-	Results []queryResult `json:"results"`
+	Results             []queryResult `json:"results"`
+	ReadOnlyEnforcement string        `json:"readOnlyEnforcement"`
 }
 
 // queryResult represents a single result set from a query.
@@ -213,9 +240,10 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, s
 	}
 	if len(qr.Results) == 0 {
 		return &QueryOutput{
-			Columns:     []string{},
-			ColumnTypes: []string{},
-			Rows:        [][]any{},
+			Columns:             []string{},
+			ColumnTypes:         []string{},
+			Rows:                [][]any{},
+			ReadOnlyEnforcement: disclosedEnforcement(qr.ReadOnlyEnforcement),
 		}, nil
 	}
 
@@ -245,13 +273,23 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, s
 	}
 
 	return &QueryOutput{
-		Columns:     result.ColumnNames,
-		ColumnTypes: result.ColumnTypeNames,
-		Rows:        rows,
-		RowCount:    len(rows),
-		Truncated:   truncated,
-		LatencyMs:   parseLatencyMs(result.Latency),
+		Columns:             result.ColumnNames,
+		ColumnTypes:         result.ColumnTypeNames,
+		Rows:                rows,
+		RowCount:            len(rows),
+		Truncated:           truncated,
+		LatencyMs:           parseLatencyMs(result.Latency),
+		ReadOnlyEnforcement: disclosedEnforcement(qr.ReadOnlyEnforcement),
 	}, nil
+}
+
+// disclosedEnforcement drops the server's "nothing capped this session" value,
+// so the tool's own output carries a depth or carries nothing at all.
+func disclosedEnforcement(enforcement string) string {
+	if enforcement == "READ_ONLY_ENFORCEMENT_UNSPECIFIED" {
+		return ""
+	}
+	return enforcement
 }
 
 // flattenRowValue extracts a plain Go value from a protojson RowValue oneof.

@@ -171,6 +171,14 @@ export declare type QueryResponse = Message<"bytebase.v1.QueryResponse"> & {
    * @generated from field: string applied_access_grant = 2;
    */
   appliedAccessGrant: string;
+
+  /**
+   * How this query was held to reads, for a caller whose session is capped at
+   * read-only. Unset for every other caller, the SQL editor included.
+   *
+   * @generated from field: bytebase.v1.QueryResponse.ReadOnlyEnforcement read_only_enforcement = 3;
+   */
+  readOnlyEnforcement: QueryResponse_ReadOnlyEnforcement;
 };
 
 /**
@@ -178,6 +186,48 @@ export declare type QueryResponse = Message<"bytebase.v1.QueryResponse"> & {
  * Use `create(QueryResponseSchema)` to create a new message.
  */
 export declare const QueryResponseSchema: GenMessage<QueryResponse>;
+
+/**
+ * ReadOnlyEnforcement is what a read-only session actually got. The server
+ * applies the strongest it can per connection and reports it here, so the
+ * caller need not infer it from the engine.
+ *
+ * It says what was applied, not that a write is impossible: a statement that
+ * reads structurally can still call a side-effecting function, and a
+ * classifier can be wrong about a grammar it does not fully model.
+ *
+ * @generated from enum bytebase.v1.QueryResponse.ReadOnlyEnforcement
+ */
+export enum QueryResponse_ReadOnlyEnforcement {
+  /**
+   * The caller's session is not capped at read-only.
+   *
+   * @generated from enum value: READ_ONLY_ENFORCEMENT_UNSPECIFIED = 0;
+   */
+  READ_ONLY_ENFORCEMENT_UNSPECIFIED = 0,
+
+  /**
+   * Every statement in the request was classified as a read before any of
+   * it ran, and a request holding anything else was refused whole.
+   *
+   * @generated from enum value: STATEMENT_CLASSIFICATION = 1;
+   */
+  STATEMENT_CLASSIFICATION = 1,
+
+  /**
+   * Statement classification, and the driver opened the database session
+   * read-only as well, so the database server refuses a write from this
+   * connection whatever the classifier concluded.
+   *
+   * @generated from enum value: STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION = 2;
+   */
+  STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.QueryResponse.ReadOnlyEnforcement.
+ */
+export declare const QueryResponse_ReadOnlyEnforcementSchema: GenEnum<QueryResponse_ReadOnlyEnforcement>;
 
 /**
  * @generated from message bytebase.v1.QueryOption
