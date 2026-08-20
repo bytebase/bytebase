@@ -37,6 +37,15 @@ func ValidateSQLForEditor(statement string) (bool, bool, error) {
 
 func CheckStatementWithoutQuotedTextAndComment(statement string) bool {
 	formattedStr := strings.ToUpper(strings.TrimSpace(statement))
+	// This classifier reads a leading keyword, so it can only speak for one
+	// statement. The ClickHouse and Hive splitters break on newlines rather
+	// than on terminators, so a one-line batch arrives here whole and its tail
+	// would go unread — "SELECT 1; DROP TABLE t" would pass on its SELECT.
+	// A statement still carrying a terminator that is not its own is one this
+	// function cannot answer for.
+	if strings.Contains(strings.TrimSuffix(formattedStr, ";"), ";") {
+		return false
+	}
 	if isSelect, _ := regexp.MatchString(`^SELECT\s+?`, formattedStr); isSelect {
 		return true
 	}

@@ -235,6 +235,64 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			reason:    "returns no data",
 		},
 		{
+			// The clause form decides, not the path it names: these fields
+			// hold the decoded filename, so an empty one is still a write.
+			name:      "an empty OUTFILE target is still a file write",
+			engine:    storepb.Engine_MYSQL,
+			statement: "SELECT 1 INTO OUTFILE ''",
+			refused:   true,
+			reason:    "the statement is not a read",
+		},
+		{
+			// StarRocks and Doris export straight out of the database, to S3
+			// or HDFS, which leaves before Bytebase can mask a returned row.
+			name:      "StarRocks INTO OUTFILE exports out of the database",
+			engine:    storepb.Engine_STARROCKS,
+			statement: `SELECT * FROM employee INTO OUTFILE "s3://bucket/export/" FORMAT AS PARQUET PROPERTIES("a" = "b")`,
+			refused:   true,
+			reason:    "the statement is not a read",
+		},
+		{
+			name:      "and so does Doris",
+			engine:    storepb.Engine_DORIS,
+			statement: `SELECT * FROM employee INTO OUTFILE "s3://bucket/export/" FORMAT AS PARQUET PROPERTIES("a" = "b")`,
+			refused:   true,
+			reason:    "the statement is not a read",
+		},
+		{
+			// USE rebinds the connection's catalog and schema, so an
+			// unqualified read after it resolves somewhere the caller never
+			// named and the span ACL never authorized.
+			name:      "Trino USE rebinds the connection",
+			engine:    storepb.Engine_TRINO,
+			statement: "USE other_catalog.secret_schema; SELECT * FROM t",
+			refused:   true,
+			reason:    "returns no data",
+		},
+		{
+			name:      "so does SET SESSION AUTHORIZATION",
+			engine:    storepb.Engine_TRINO,
+			statement: "SET SESSION AUTHORIZATION alice",
+			refused:   true,
+			reason:    "returns no data",
+		},
+		{
+			// Redis SELECT switches the connection's logical database, so the
+			// GET after it reads a database the caller did not ask for.
+			name:      "Redis SELECT switches the logical database",
+			engine:    storepb.Engine_REDIS,
+			statement: "SELECT 1\nGET secret",
+			refused:   true,
+			reason:    "returns no data",
+		},
+		{
+			name:      "an unseparated batch is refused rather than read on its first statement",
+			engine:    storepb.Engine_CLICKHOUSE,
+			statement: "SELECT 1; DROP TABLE employee",
+			refused:   true,
+			reason:    "the statement is not a read",
+		},
+		{
 			name:      "a read on an engine with no splitter is still classified",
 			engine:    storepb.Engine_REDIS,
 			statement: "GET k",
@@ -281,25 +339,24 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 // a leading read with a write behind it — across every engine that has a
 // classifier, and pins which ones the clamp catches it on.
 //
-// It exists because the rule is only as good as the split. Two engines break
-// it: the ClickHouse and Hive splitters break on newlines rather than statement
-// terminators, so a one-line batch reaches the leading-keyword validator whole
-// and reads as a SELECT. That is BOT-86, it is the same over-accept a SQL
-// Editor Read User meets on those engines today, and fixing it changes shared
-// classification that the export gate and the drivers' result routing also
-// read.
+// It exists because the rule is only as good as the split, and two engines
+// cannot make it: the ClickHouse and Hive splitters break on newlines rather
+// than statement terminators, so a one-line batch reaches the leading-keyword
+// validator whole (BOT-86). That validator now refuses a statement still
+// carrying a terminator it did not end with, which is what keeps the exception
+// set below empty.
 //
-// Naming the exceptions here rather than omitting the engines is the point: the
-// set is closed, so a third engine joining it fails this test instead of
-// passing quietly.
+// The set is kept rather than deleted: an engine that starts serving such a
+// batch fails this test instead of passing quietly.
 func TestMCPClampBatchTailIsClassifiedOnEveryEngine(t *testing.T) {
 	const batch = "SELECT 1; DROP TABLE employee"
 
-	// Splits on newlines, not on terminators — BOT-86.
-	servesTheWholeBatch := map[storepb.Engine]bool{
-		storepb.Engine_CLICKHOUSE: true,
-		storepb.Engine_HIVE:       true,
-	}
+	// Empty, and it must stay that way. The ClickHouse and Hive splitters
+	// still break on newlines rather than terminators (BOT-86), but their
+	// validator now refuses a statement that carries a terminator which is not
+	// its own, so an unseparated batch fails closed instead of being read on
+	// its leading SELECT.
+	servesTheWholeBatch := map[storepb.Engine]bool{}
 
 	values := storepb.Engine(0).Descriptor().Values()
 	for i := range values.Len() {

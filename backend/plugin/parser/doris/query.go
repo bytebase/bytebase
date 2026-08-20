@@ -1,10 +1,13 @@
 package doris
 
 import (
+	"regexp"
+
 	"github.com/bytebase/omni/doris/ast"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 )
 
 func init() {
@@ -25,6 +28,19 @@ func init() {
 // The (bool, bool, error) return shape matches the bytebase QueryValidator
 // contract: (isReadOnly, isExplicitReadOnly, syntaxError).
 func validateQuery(statement string) (bool, bool, error) {
+	// INTO OUTFILE exports the result straight out of the database, to S3 or
+	// HDFS, so it is a write and it leaves through the engine before Bytebase
+	// can mask a returned row.
+	//
+	// It is matched on the text rather than on the AST because omni's Doris
+	// grammar does not represent the clause at all: "SELECT 1 INTO OUTFILE
+	// '/tmp/x'" parses to a bare *ast.SelectStmt indistinguishable from
+	// "SELECT 1" (BOT-92). StarRocks carries an ast.IntoOutfileClause and is
+	// checked there instead. Delete this once the Doris grammar has the
+	// clause, and check n.Into the way starrocks/query.go does.
+	if statementMentionsOutfile(statement) {
+		return false, false, nil
+	}
 	parsed, err := parseDorisSQL(statement)
 	if err != nil {
 		return false, false, err
@@ -90,3 +106,19 @@ func isExplainableInner(node ast.Node) bool {
 	}
 	return false
 }
+
+// statementMentionsOutfile reports whether an INTO OUTFILE or INTO DUMPFILE
+// clause appears outside quoted text
+// and comments. Only Doris uses it; see validateQuery for why the AST cannot
+// answer this there.
+func statementMentionsOutfile(statement string) bool {
+	stripped, err := tokenizer.StandardRemoveQuotedTextAndComment(statement)
+	if err != nil {
+		// A statement this tokenizer cannot read is one whose OUTFILE could be
+		// hiding anywhere in it.
+		return true
+	}
+	return outfilePattern.MatchString(stripped)
+}
+
+var outfilePattern = regexp.MustCompile(`(?i)\bINTO\s+(OUTFILE|DUMPFILE)\b`)

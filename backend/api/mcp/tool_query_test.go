@@ -796,3 +796,34 @@ func TestQueryDatabaseSaysNothingWhenTheSessionIsNotCapped(t *testing.T) {
 			"an uncapped session must not be told it was held to reads")
 	}
 }
+
+// TestQueryDatabaseKeepsDisclosureOnDatabaseError pins the case the disclosure
+// is most useful in. A read-only session refuses nextval() at the database
+// after the classifier admitted it, and that failure arrives as a result error
+// rather than an HTTP status — so the depth has to travel with it, and the
+// advice must not be "check your SQL syntax".
+func TestQueryDatabaseKeepsDisclosureOnDatabaseError(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	qr := makeQueryResponse([]string{"id"}, []string{"int4"}, [][]any{}, "0.010s")
+	qr["readOnlyEnforcement"] = "STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION"
+	results, ok := qr["results"].([]map[string]any)
+	require.True(t, ok)
+	results[0]["error"] = "ERROR: cannot execute nextval() in a read-only transaction (SQLSTATE 25006)"
+	s := newTestServerWithMock(t, mockQueryServer(databases, qr))
+
+	result, _, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
+		Database:  "employee_db",
+		Statement: "SELECT nextval('employee_seq')",
+	})
+	require.NoError(t, err)
+	require.True(t, result.IsError)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, "STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION",
+		"the depth must survive a database-level failure")
+	require.Contains(t, text, "capped at read-only")
+	require.NotContains(t, text, "check your SQL syntax",
+		"a read-only refusal is not a syntax problem")
+}

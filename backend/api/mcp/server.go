@@ -587,29 +587,16 @@ func (s *Server) unauthorized(c *echo.Context, errDescription string) error {
 	return echo.NewHTTPError(http.StatusUnauthorized, errDescription)
 }
 
-// mcpConnectionAllowed reports whether an MCP connection may proceed under the
-// resolved workspace capability ceiling: a ceiling that serves some method
-// class opens a session, and one that serves none does not.
+// mcpConnectionAllowed reports whether an MCP connection may proceed: a ceiling
+// that serves some method class opens a session, one that serves none does not.
 //
-// The rule is auth.MCPCeilingServesAnything rather than a switch here, so this
-// gate and the per-method serving table cannot state the same policy twice and
-// drift; a lint holds the two against each other over the whole enum.
+// The rule lives in auth.MCPCeilingServesAnything so this gate and the
+// per-method serving table cannot state the same policy twice; a lint holds the
+// two against each other over the whole enum.
 //
-// READ_ONLY serves a class from the cutover, because all three of the things it
-// promises now exist. A method it does not cover is refused before dispatch by
-// the ceiling gate on the internal chain. A statement that writes is refused
-// before execution by the SQL clamp in SQLService/Query, which is the one
-// method whose class depends on its argument. And where the driver has one, the
-// database session itself is opened read-only. Admitting a read-only session
-// before the clamp existed would have been a read-only session that could
-// write; that was the whole reason this refused it.
-//
-// UNSPECIFIED is refused rather than treated as "never configured", even though
-// that is what an unset ceiling means in the stored proto. The resolution
-// happens before this point — store.GetMCPCapabilityUncached returns READ_WRITE
-// for a workspace that never set one — so UNSPECIFIED reaching here is a zero
-// value nobody resolved, and a gate that admits on a zero value is one
-// mistake away from admitting on a failure.
+// UNSPECIFIED is refused rather than read as "never configured":
+// store.GetMCPCapabilityUncached already resolves an unset ceiling to
+// READ_WRITE, so a zero value arriving here was resolved by nobody.
 func mcpConnectionAllowed(capability storepb.WorkspaceProfileSetting_MCPCapability) bool {
 	return auth.MCPCeilingServesAnything(capability)
 }

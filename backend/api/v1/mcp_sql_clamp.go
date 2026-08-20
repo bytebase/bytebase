@@ -13,33 +13,19 @@ import (
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// The SQL clamp is the third point that holds an MCP session to the workspace
-// ceiling, and the only one that reads what the request carries rather than
-// which method it is.
+// SQLService/Query is classified READ, but on the EngineSupportQueryNewACL
+// engines it authorizes DML and DDL per statement against the caller's own
+// RBAC — so its class depends on its argument, and a read-only session held by
+// someone who may write would write. The clamp is the point that reads the
+// argument.
 //
-// SQLService/Query is classified READ, so the method gate serves it under a
-// read-only ceiling. But what Query does is decided by its statement: on every
-// engine in EngineSupportQueryNewACL the handler classifies each statement and
-// authorizes DML with bb.sql.dml and DDL with bb.sql.ddl, against the caller's
-// own RBAC. A read-only session held by someone who may write would therefore
-// write. The clamp closes that: under a READ_ONLY ceiling every statement in
-// the request must classify as a read, or the whole request is refused.
-//
-// What it claims is classifier-enforced read-only, reinforced by a read-only
-// driver session where the engine has one. It is not a proof that nothing can
-// write: a statement that reads structurally can still call a side-effecting
-// function, and a classifier can be wrong about a grammar it does not fully
-// model. Those are the conformance lane's business, not this gate's.
+// Ceiling: classifier-enforced, not proven. A structurally-reading statement
+// can still have an effect, and a classifier can be wrong about a grammar it
+// does not fully model; closing that is the conformance lane's work.
 
-// mcpCeilingContextKey carries the ceiling the MCP gate resolved for this
-// request. The gate reads the workspace's ceiling once per request; stamping it
-// here is what lets the clamp hold the same request against the same value,
-// rather than reading the setting a second time and possibly disagreeing with
-// the gate that already admitted the call.
-//
-// It travels inward — gate to handler — so it is a plain context value, not the
-// callback shape SetMCPPolicyDenied needs to reach the audit interceptor
-// wrapping the gate from outside.
+// mcpCeilingContextKey carries the ceiling the gate already resolved, so the
+// clamp holds the request against that same read rather than a second one the
+// gate could disagree with.
 type mcpCeilingContextKey struct{}
 
 func withMCPCeiling(ctx context.Context, ceiling storepb.WorkspaceProfileSetting_MCPCapability) context.Context {
@@ -54,14 +40,10 @@ func mcpCeilingFromContext(ctx context.Context) (storepb.WorkspaceProfileSetting
 // mcpReadOnlyClampApplies reports whether this request must be held to
 // read-only statements.
 //
-// It keys on the presence of the delegated grant, never on any of its values:
-// a legacy or scope-omitting session leaves every grant field empty, so no
-// value is a sound proxy for MCP origin. Public-chain requests carry no grant
-// at all and are untouched.
-//
-// An MCP request that carries no ceiling means the gate did not run, which can
-// only happen if the internal chain was reordered. The clamp refuses rather
-// than guess: an unresolved ceiling is not a read-write one.
+// Keyed on the grant's presence, never a field value: a legacy or
+// scope-omitting session leaves every field empty, so no value marks MCP
+// origin. An MCP request with no stamped ceiling means the gate never ran, and
+// an unresolved ceiling is not a read-write one.
 func mcpReadOnlyClampApplies(ctx context.Context) (bool, error) {
 	authCtx, ok := common.GetAuthContextFromContext(ctx)
 	if !ok || authCtx.DelegatedGrant == nil {
@@ -75,36 +57,22 @@ func mcpReadOnlyClampApplies(ctx context.Context) (bool, error) {
 	return ceiling == storepb.WorkspaceProfileSetting_READ_ONLY, nil
 }
 
-// refuseNonReadOnlyStatement is the fail-closed classifier the clamp owns.
+// refuseNonReadOnlyStatement classifies a request fail-closed. Nothing here
+// calls base.ValidateSQLForEditor bare: it answers "read-only" for an engine
+// with no registered validator, which suits a caller that only routes on the
+// verdict and admits every write for one that must refuse a write.
 //
-// It exists because base.ValidateSQLForEditor answers "read-only" for an engine
-// with no registered validator: that default suits a caller who only routes or
-// formats with the verdict, and admits every write for a caller who must refuse
-// one. Nothing here calls it bare.
+// A statement that returns no data is refused as well as one that is not a
+// read. Every unit of a request runs on one connection, and Postgres applies a
+// changed default_transaction_read_only to the next transaction, so
+// "SET default_transaction_read_only = off" followed by a classifier-admitted
+// read disarms the depth layer and writes (verified, PG 17). The same bool
+// carries the other rebinding statements — Trino USE and SET ROLE, Redis
+// SELECT — which repoint the connection so a later read resolves somewhere the
+// caller never named.
 //
-// A request is refused when the engine has no classifier, when a statement will
-// not parse, when any statement classifies as anything but a read, and when any
-// statement changes session state — so a batch is served only if every
-// statement in it reads and none of it rewrites the session it runs on.
-//
-// "Returns data" is the second bool the validators already report, and a
-// statement that returns none is either a session change or a statement that
-// runs the query to measure it. Refusing both is what stops the depth layer
-// being switched off by a statement this same rule admits: every unit of a
-// request runs on one connection, so "SET default_transaction_read_only = off"
-// followed by anything the classifier calls a read would leave the read-only
-// session disarmed and the second statement free to write — verified against
-// Postgres 17, where the two land as separate transactions and the write
-// succeeds.
-//
-// It closes neither class completely, and both gaps are recorded rather than
-// papered over. The bool reports the SET family on postgres, cockroachdb, the
-// mysql family, tidb, snowflake and redshift, but not on Trino, whose
-// validator classifies SET SESSION as a data-returning read (BOT-91). And a
-// statement that reads structurally can still call a function that rewrites
-// the same setting — set_config on Postgres — which no classifier catches
-// (BOT-88). See the type comment on QueryResponse.ReadOnlyEnforcement for what
-// the depth may and may not be said to guarantee.
+// Not closed: a structurally-reading statement can still call a function that
+// rewrites the same setting (set_config, BOT-88).
 func refuseNonReadOnlyStatement(engine storepb.Engine, statement string) error {
 	if !parserbase.HasQueryValidator(engine) {
 		return refuseClampedStatement(fmt.Sprintf(
@@ -129,24 +97,17 @@ func refuseNonReadOnlyStatement(engine storepb.Engine, statement string) error {
 	return nil
 }
 
-// mcpClampUnits splits a request the way queryRetryStopOnError does, so the
-// clamp classifies the same text that would execute — including the
-// whole-request fallback that function takes when an engine has no splitter
-// (Redis) or the split fails. Classifying a different unit than the executor
-// runs is how a batch gets past a per-statement rule: on the engines whose
-// validator classifies by leading keyword, handing it the whole request reads
-// "SELECT 1; DROP TABLE t" as a SELECT.
+// mcpClampUnits splits a request the way queryRetryStopOnError does, including
+// its whole-request fallback for an engine with no splitter (Redis) or a failed
+// split, so the clamp classifies the text that would execute.
 //
-// A splitter can also return the request whole without failing: the ClickHouse
-// and Hive splitters break on newlines rather than statement terminators, so a
-// one-line batch arrives here as one unit and their leading-keyword validator
-// reads it as a SELECT. That is BOT-86, and it is why this comment enumerates
-// three ways to end up judging the whole request rather than two.
+// A splitter can also succeed and still return the request whole: ClickHouse
+// and Hive break on newlines rather than terminators (BOT-86). Their validator
+// refuses a unit carrying a terminator it did not end with, which is what keeps
+// that from being read on its leading statement.
 //
-// MSSQL is the one engine where the units differ, and in the safe direction:
-// it is split for analysis but sent to the driver whole, to keep variable
-// scope across the batch, so the clamp judges it one statement at a time and
-// is stricter than the executor rather than looser.
+// MSSQL differs in the safe direction: split for analysis, sent to the driver
+// whole to keep variable scope, so the clamp is stricter than the executor.
 func mcpClampUnits(engine storepb.Engine, statement string) []string {
 	statements, err := parserbase.SplitMultiSQL(engine, statement)
 	if err != nil {
@@ -187,17 +148,12 @@ func mcpReadOnlyDepth(clamped bool, engine storepb.Engine, datashare bool) v1pb.
 }
 
 // readOnlyDriverSession reports whether the driver turns
-// ConnectionContext.ReadOnly into a read-only database session. Three do, all
-// by setting default_transaction_read_only on the connection they open:
-// postgres (plugin/db/pg), cockroachdb (plugin/db/cockroachdb), and redshift
-// (plugin/db/redshift), which skips it on a datashare database because a
-// datashare cannot run a read-only transaction. Every other driver ignores the
-// flag, so a clamped request there gets classification alone.
-//
-// This mirrors the drivers rather than asking them, because the answer is
-// needed before a connection is opened. A driver that starts honoring the flag
-// without a row here understates its own depth, which is the safe way for this
-// to be wrong.
+// ConnectionContext.ReadOnly into a read-only database session. Three do, by
+// setting default_transaction_read_only on the connection they open: postgres,
+// cockroachdb, and redshift outside a datashare database, which cannot run a
+// read-only transaction. It mirrors the drivers rather than asking them
+// because the answer is needed before a connection exists; a driver that
+// starts honoring the flag without a row here understates its own depth.
 func readOnlyDriverSession(engine storepb.Engine, datashare bool) bool {
 	switch engine {
 	case storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB:

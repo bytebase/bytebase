@@ -153,6 +153,17 @@ func formatQueryOutput(statement, resourceName string, output *QueryOutput) stri
 const readOnlyClassificationNotice = "Read-only session: this request was classified as a read before any of it ran, " +
 	"and one holding a write is refused whole, as far as the classifier can separate and recognize its statements."
 
+// queryErrorSuggestion advises on a statement the database refused. A capped
+// session gets the reason it is capped; "check your syntax" is what a
+// read-only refusal is least likely to be.
+func queryErrorSuggestion(enforcement string) string {
+	if readOnlyEnforcementNotice(enforcement) == "" {
+		return "check your SQL syntax and try again"
+	}
+	return "this session is capped at read-only; a statement the classifier allowed can still be refused by the database. " +
+		"Ask a workspace admin to raise the MCP ceiling, or run it signed in to the Bytebase console"
+}
+
 // readOnlyEnforcementNotice renders the server's disclosure as a sentence the
 // agent can repeat to the person it is acting for. An enforcement this build
 // does not recognize is passed through rather than dropped: the disclosure is
@@ -272,10 +283,13 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, s
 
 	result := qr.Results[0]
 	if result.Error != "" {
+		// Postgres refuses a classifier-admitted nextval() on a read-only
+		// session, so the depth travels with the failure, not just the rows.
 		return nil, &toolError{
-			Code:       "QUERY_ERROR",
-			Message:    result.Error,
-			Suggestion: "check your SQL syntax and try again",
+			Code:                "QUERY_ERROR",
+			Message:             result.Error,
+			Suggestion:          queryErrorSuggestion(qr.ReadOnlyEnforcement),
+			ReadOnlyEnforcement: qr.ReadOnlyEnforcement,
 		}
 	}
 

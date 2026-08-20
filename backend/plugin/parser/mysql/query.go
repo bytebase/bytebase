@@ -71,11 +71,13 @@ func selectIntoTargets(n *ast.SelectStmt) (writesFile, assignsVariables bool) {
 		if !ok || sel.Into == nil {
 			return true
 		}
-		if sel.Into.Outfile != "" || sel.Into.Dumpfile != "" {
-			writesFile = true
-		}
+		// The clause form decides, not the filename it carries: those fields
+		// hold the decoded path, so "INTO OUTFILE ''" leaves both empty while
+		// still being a file write.
 		if len(sel.Into.Vars) > 0 {
 			assignsVariables = true
+		} else {
+			writesFile = true
 		}
 		return true
 	})

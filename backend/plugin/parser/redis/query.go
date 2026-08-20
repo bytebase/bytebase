@@ -115,6 +115,7 @@ func init() {
 }
 
 func validateQuery(statement string) (bool, bool, error) {
+	returnsData := true
 	lines := strings.Split(statement, "\n")
 	for _, line := range lines {
 		fields, err := shlex.Split(line)
@@ -127,8 +128,16 @@ func validateQuery(statement string) (bool, bool, error) {
 		if !isReadCommand(fields) {
 			return false, false, nil
 		}
+		// SELECT reads nothing: it changes which logical database the
+		// connection is attached to, so every command after it runs somewhere
+		// the caller did not ask for. Reporting it as not-data-returning is
+		// how the SET family is reported on the SQL engines, and it is what a
+		// read-only caller is held to.
+		if strings.EqualFold(fields[0], "select") {
+			returnsData = false
+		}
 	}
-	return true, true, nil
+	return true, returnsData, nil
 }
 
 func isReadCommand(fields []string) bool {
