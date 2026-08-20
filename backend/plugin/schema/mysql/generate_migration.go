@@ -601,6 +601,15 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 		_, _ = buf.WriteString("'")
 	}
 
+	// Partitioning is part of the table definition, so it has to be emitted here: MySQL
+	// cannot partition a table after the fact without rewriting it. printPartitionClause
+	// writes a self-contained /*!50100 ... */ block, matching the schema dump.
+	if len(table.Partitions) > 0 {
+		if err := printPartitionClause(buf, table.Partitions); err != nil {
+			return err
+		}
+	}
+
 	_, _ = buf.WriteString(";\n")
 
 	// Create non-unique indexes separately

@@ -357,3 +357,44 @@ func TestTableMetadata_DropColumn_NotExists(t *testing.T) {
 	require.NotNil(t, err)
 	require.Contains(t, err.Error(), "does not exist")
 }
+
+func TestListTableNames_ExcludesPartitions(t *testing.T) {
+	a := require.New(t)
+
+	// A range-partitioned table whose last partition is itself subpartitioned. Every
+	// partition and subpartition is registered in internalTables under its own name but
+	// carries the parent's proto, so listing them once yielded "sales" six times.
+	sales := &storepb.TableMetadata{
+		Name:    "sales",
+		Columns: []*storepb.ColumnMetadata{{Name: "dt"}},
+		Partitions: []*storepb.TablePartitionMetadata{
+			{Name: "p0", Type: storepb.TablePartitionMetadata_RANGE, Expression: "dt"},
+			{Name: "p1", Type: storepb.TablePartitionMetadata_RANGE, Expression: "dt"},
+			{
+				Name: "p2", Type: storepb.TablePartitionMetadata_RANGE, Expression: "dt",
+				Subpartitions: []*storepb.TablePartitionMetadata{
+					{Name: "p2s0", Type: storepb.TablePartitionMetadata_HASH, Expression: "dt"},
+					{Name: "p2s1", Type: storepb.TablePartitionMetadata_HASH, Expression: "dt"},
+				},
+			},
+		},
+	}
+	customers := &storepb.TableMetadata{
+		Name:    "customers",
+		Columns: []*storepb.ColumnMetadata{{Name: "id"}},
+	}
+
+	dbMetadata := NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+		Name:    "db",
+		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{sales, customers}}},
+	}, nil, &storepb.DatabaseConfig{}, storepb.Engine_MYSQL, true)
+	schemaMetadata := dbMetadata.GetSchemaMetadata("")
+
+	a.Equal([]string{"customers", "sales"}, schemaMetadata.ListTableNames())
+
+	// Partitions stay resolvable by name; only the listing changed.
+	for _, partitionName := range []string{"p0", "p1", "p2", "p2s0", "p2s1"} {
+		a.NotNil(schemaMetadata.GetTable(partitionName), "partition %s should still resolve", partitionName)
+	}
+	a.NotNil(schemaMetadata.GetTable("sales"))
+}

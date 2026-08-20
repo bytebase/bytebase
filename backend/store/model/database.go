@@ -448,6 +448,12 @@ func (s *SchemaMetadata) GetCatalog() *storepb.SchemaCatalog {
 func (s *SchemaMetadata) ListTableNames() []string {
 	var result []string
 	for _, table := range s.internalTables {
+		// Partitions are registered under their own key so GetTable can resolve a
+		// partition name, but they carry the parent's proto. Listing them would repeat
+		// the parent's name once per partition instead of naming the partition.
+		if table.partitionOf != nil {
+			continue
+		}
 		result = append(result, table.GetProto().GetName())
 	}
 
