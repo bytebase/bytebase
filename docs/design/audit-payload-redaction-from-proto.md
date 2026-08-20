@@ -36,8 +36,9 @@ directory-sync token — fixed on `main` by #21110 and #21109. Two more are stil
 - **Secrets inside free-form text.** `redactRoleAttribute` (`read_redaction.go`) masks a password
   hash within MariaDB `SHOW GRANTS` output. No field annotation expresses that; it stays
   hand-written on the read path.
-- **Runtime enforcement.** `debug_redact` is inert in Go, and a denylist logs anything nobody
-  annotated. CI is the only check, where today's allowlist rebuilds fail closed.
+- **Runtime enforcement.** `debug_redact` is inert in Go and the redactor is a denylist, so at
+  runtime an unannotated field is logged. The inventory below moves that failure to CI; nothing
+  catches it in a binary built past a skipped lint, where today's allowlist rebuilds fail closed.
 
 ## Design
 
@@ -45,8 +46,13 @@ directory-sync token — fixed on `main` by #21110 and #21109. Two more are stil
 
 | | must not reach an audit payload | may the API return it |
 |---|---|---|
-| `debug_redact = true` | yes | never |
+| `debug_redact = true` | yes | only on the response that mints it; never on a read path |
 | `(bytebase.v1.audit_omit) = true` | yes | yes — returning it is the point of the RPC |
+
+`ServiceAccount.service_key` forces that distinction: `CreateServiceAccount` and key rotation
+return it exactly once (`service_account_service.go:117`, `:270`), while `convertToServiceAccount`
+never populates it. `RotateDirectorySyncTokenResponse` has the same shape. The read-path assertion
+runs on converters, which is precisely the boundary that permits issuance and forbids reads.
 
 ```proto
 string client_secret = 5 [debug_redact = true];
@@ -90,13 +96,21 @@ rows regain `rows_count`.
 
 ### Enforcement
 
-- **Audit lint.** For every audited RPC, fill every string and bytes field in the request and
-  response tree with a unique sentinel, every oneof arm, redact, assert nothing unannotated
-  survives. Subsumes `TestAuditRedactsEveryInputOnlyDataSourceField` and
+- **Coverage.** For every audited RPC, fill every *annotated* field in the request and response
+  tree with a unique sentinel, every oneof arm, redact, assert no sentinel survives. Catches a
+  redactor that stops covering a field. Subsumes
+  `TestAuditRedactsEveryInputOnlyDataSourceField`.
+- **Inventory** — the half that makes goal 4 real. A sentinel sweep cannot distinguish an
+  unannotated credential from an ordinary field the audit row intentionally keeps; both survive
+  redaction identically, so the sweep alone has no oracle. The oracle is a checked-in inventory of
+  every string and bytes field reachable from an audited RPC's request or response tree. A field
+  missing from it fails the build, and clearing that failure means either annotating the field or
+  recording that it is not a credential. Same shape as `mcpDenialRequestsUnderReview`
+  (`mcp_gate_test.go:1322`), which already gates the unaudited MCP-denial population; subsumes
   `TestLintDenialRequestsAreReviewedForRedaction`.
 - **Read-path assertion.** `assertNoInputOnlyValues` (`instance_service_converter_test.go:449`)
   already requires every `INPUT_ONLY` field to come back blank from a converter; generalize it to
-  `debug_redact`.
+  `debug_redact`. Converters only — issuance responses set the field outside them.
 
 ## Performance
 
