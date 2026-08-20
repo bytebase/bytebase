@@ -61,12 +61,9 @@ func validateQuery(statement string) (bool, bool, error) {
 		readOnly := queryType == base.Select ||
 			queryType == base.Explain ||
 			queryType == base.SelectInfoSchema
-		// USE, SET ROLE, SET PATH, SET SESSION and SET SESSION AUTHORIZATION
-		// read nothing and return nothing; what they do is rebind the
-		// connection's catalog, schema, role or identity, so every statement
-		// after them resolves somewhere the caller did not ask for. Reporting
-		// them as not-data-returning is how every other engine reports its SET
-		// family, and it is what a read-only caller is held to.
+		// USE and the SET family rebind the connection's catalog, schema, role
+		// or identity, so a later statement resolves somewhere the caller did
+		// not name. Reported through the same bool as every other engine's SET.
 		returnsData := readOnly && !changesSession(p.Node())
 
 		if !readOnly {

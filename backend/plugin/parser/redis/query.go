@@ -128,11 +128,8 @@ func validateQuery(statement string) (bool, bool, error) {
 		if !isReadCommand(fields) {
 			return false, false, nil
 		}
-		// SELECT reads nothing: it changes which logical database the
-		// connection is attached to, so every command after it runs somewhere
-		// the caller did not ask for. Reporting it as not-data-returning is
-		// how the SET family is reported on the SQL engines, and it is what a
-		// read-only caller is held to.
+		// SELECT switches the connection's logical database, so a later command
+		// runs somewhere the caller did not name.
 		if strings.EqualFold(fields[0], "select") {
 			returnsData = false
 		}

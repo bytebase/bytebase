@@ -27,14 +27,9 @@ func validateQuery(statement string) (bool, bool, error) {
 	for _, node := range stmts.Items {
 		switch stmt := node.(type) {
 		case *ast.SelectStmt:
-			// A SELECT is a read unless its INTO clause makes it something
-			// else. INTO OUTFILE and INTO DUMPFILE write a file on the
-			// database server, so they are writes however the rest of the
-			// statement reads — pg refuses its own SELECT ... INTO for the
-			// same reason (isWriteSelect, parser/pg). INTO <variable> assigns
-			// session variables and returns no rows, which is the same
-			// "executes rather than returns data" case the SET family below
-			// is, not a write.
+			// INTO OUTFILE and INTO DUMPFILE write a file on the server, so
+			// they are writes (pg refuses its own SELECT ... INTO likewise).
+			// INTO <variable> returns no rows: the SET case, not a write.
 			writesFile, assignsVariables := selectIntoTargets(stmt)
 			if writesFile {
 				return false, false, nil

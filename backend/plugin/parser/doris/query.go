@@ -28,16 +28,10 @@ func init() {
 // The (bool, bool, error) return shape matches the bytebase QueryValidator
 // contract: (isReadOnly, isExplicitReadOnly, syntaxError).
 func validateQuery(statement string) (bool, bool, error) {
-	// INTO OUTFILE exports the result straight out of the database, to S3 or
-	// HDFS, so it is a write and it leaves through the engine before Bytebase
-	// can mask a returned row.
-	//
-	// It is matched on the text rather than on the AST because omni's Doris
-	// grammar does not represent the clause at all: "SELECT 1 INTO OUTFILE
-	// '/tmp/x'" parses to a bare *ast.SelectStmt indistinguishable from
-	// "SELECT 1" (BOT-92). StarRocks carries an ast.IntoOutfileClause and is
-	// checked there instead. Delete this once the Doris grammar has the
-	// clause, and check n.Into the way starrocks/query.go does.
+	// INTO OUTFILE exports to S3 or HDFS, past masking and the export gate.
+	// Matched on text because omni's Doris grammar has no INTO node: it parses
+	// to a bare SelectStmt identical to one without the clause (BOT-92).
+	// Replace with an AST check, as starrocks/query.go does, once it has one.
 	if statementMentionsOutfile(statement) {
 		return false, false, nil
 	}
@@ -107,16 +101,12 @@ func isExplainableInner(node ast.Node) bool {
 	return false
 }
 
-// statementMentionsOutfile reports whether an INTO OUTFILE or INTO DUMPFILE
-// clause appears outside quoted text
-// and comments. Only Doris uses it; see validateQuery for why the AST cannot
-// answer this there.
+// statementMentionsOutfile finds INTO OUTFILE or INTO DUMPFILE outside quoted
+// text and comments. Doris only; see validateQuery for why not the AST.
 func statementMentionsOutfile(statement string) bool {
 	stripped, err := tokenizer.StandardRemoveQuotedTextAndComment(statement)
 	if err != nil {
-		// A statement this tokenizer cannot read is one whose OUTFILE could be
-		// hiding anywhere in it.
-		return true
+		return true // unreadable: OUTFILE could be anywhere in it
 	}
 	return outfilePattern.MatchString(stripped)
 }

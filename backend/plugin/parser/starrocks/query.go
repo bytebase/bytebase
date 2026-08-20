@@ -53,10 +53,7 @@ func validateQuery(statement string) (bool, bool, error) {
 func isReadOnlyAST(node ast.Node) bool {
 	switch n := node.(type) {
 	case *ast.SelectStmt:
-		// INTO OUTFILE exports the result straight out of the database — to
-		// S3 or HDFS, not just a local path — so it is a write, and it leaves
-		// through the engine before Bytebase can mask a returned row. The
-		// clause form decides, not the target it names.
+		// INTO OUTFILE exports to S3 or HDFS, past masking and the export gate.
 		return n.Into == nil
 	case *ast.SetOpStmt:
 		return !setOpWritesOutfile(n)
@@ -97,9 +94,8 @@ func isExplainableInner(node ast.Node) bool {
 	return false
 }
 
-// setOpWritesOutfile reports whether any arm of a set operation carries INTO
-// OUTFILE. The parser attaches the clause to an arm rather than to the set
-// operation, and arms nest, so this walks them.
+// setOpWritesOutfile walks the arms: the parser attaches INTO to an arm rather
+// than to the set operation, and arms nest.
 func setOpWritesOutfile(node ast.Node) bool {
 	switch n := node.(type) {
 	case *ast.SelectStmt:
