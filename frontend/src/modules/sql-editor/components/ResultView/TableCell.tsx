@@ -23,6 +23,7 @@ interface TableCellProps {
   columnType: string;
   scope?: SearchScope;
   keyword: string;
+  showDetailAction?: boolean;
 }
 
 export function TableCell({
@@ -33,6 +34,7 @@ export function TableCell({
   columnType,
   scope,
   keyword,
+  showDetailAction = true,
 }: TableCellProps) {
   const { setDetail } = useSQLResultViewContext();
   const { getBinaryFormat, setBinaryFormat } = useBinaryFormatContext();
@@ -126,8 +128,12 @@ export function TableCell({
         ref={wrapperRef}
         className={cn(
           "font-mono text-start whitespace-pre line-clamp-3",
-          (hasByteData || clickable) && "max-w-[calc(100%-1.5rem)]",
-          hasByteData && clickable && "max-w-[calc(100%-3.25rem)]"
+          (hasByteData || (clickable && showDetailAction)) &&
+            "max-w-[calc(100%-1.5rem)]",
+          hasByteData &&
+            clickable &&
+            showDetailAction &&
+            "max-w-[calc(100%-3.25rem)]"
         )}
       >
         {inner}
@@ -141,7 +147,7 @@ export function TableCell({
             }
           />
         )}
-        {clickable && (
+        {clickable && showDetailAction && (
           <Button
             size="sm"
             appearance="outline"

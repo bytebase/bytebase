@@ -135,7 +135,7 @@ const formatTimestampWithTz = (timestampTzValue: RowValue_TimestampTZ) => {
   return formattedTimestamp;
 };
 
-const escapeMongoDBCollectionName = (name: string) => {
+export const escapeMongoDBCollectionName = (name: string) => {
   // The backend wraps --eval in single quotes for shell execution and escapes
   // single quotes with '"'"'. To avoid conflicts, we:
   // 1. Use double quotes for the collection name string
@@ -168,7 +168,7 @@ const wrapSQLIdentifier = (id: string, engine: Engine) => {
   return "`" + id + "`";
 };
 
-const generateSchemaAndTableNameInSQL = (
+export const generateSchemaAndTableNameInSQL = (
   engine: Engine,
   schema: string,
   tableOrView: string

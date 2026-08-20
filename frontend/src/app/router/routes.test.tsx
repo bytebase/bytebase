@@ -5,6 +5,7 @@ import {
   WORKSPACE_ROUTE_404,
 } from "@/app/router/handles";
 import { routes } from "./routes";
+import { sqlEditorRoutes } from "./routes/sqlEditor";
 
 // Guardrail for the "blank body" route bug class. During the Vue→React router
 // migration, several leaf routes were ported as bare `{ path, handle }` objects
@@ -85,6 +86,15 @@ describe("workspace root", () => {
 });
 
 describe("react route table reachability", () => {
+  it("marks SQL Editor layout leaves with an explicit null element", () => {
+    const children = sqlEditorRoutes[0].children ?? [];
+
+    expect(children.length).toBeGreaterThan(0);
+    for (const route of children) {
+      expect(route).toHaveProperty("element", null);
+    }
+  });
+
   it("every leaf route renders something or redirects (no blank-body bare leaves)", () => {
     expect(collectBareLeaves(routes)).toEqual([]);
   });

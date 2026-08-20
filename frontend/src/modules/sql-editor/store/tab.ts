@@ -160,7 +160,7 @@ const persistOpenTabs = (openTabs: PersistentTab[]) => {
   if (!scope) return;
   safeWrite(
     storageKeySqlEditorTabs(scope.wsScope, scope.project, scope.email),
-    openTabs
+    openTabs.filter((tab) => tab.mode !== "DATA_EXPLORER")
   );
 };
 
@@ -637,6 +637,7 @@ export const useTabById = (tabId: string): SQLEditorTab | undefined =>
 export const isSQLEditorTabClosable = (tab: SQLEditorTab): boolean => {
   const open = getSQLEditorTabsState().openTmpTabList;
   if (open.length > 1) return true;
+  if (tab.mode === "DATA_EXPLORER") return true;
   if (open.length === 1) return !!tab.savedQuery;
   return false;
 };
@@ -657,14 +658,14 @@ export const useIsDisconnected = (): boolean =>
 export const useSupportBatchMode = (): boolean =>
   useSQLEditorTabsStore((s) => {
     const tab = s.tabsById.get(s.currentTabId);
-    return tab?.mode !== "ADMIN";
+    return tab?.mode === "SAVED_QUERY";
   });
 
 export const useIsInBatchMode = (): boolean =>
   useSQLEditorTabsStore((s) => {
     const tab = s.tabsById.get(s.currentTabId);
     if (!tab) return false;
-    if (tab.mode === "ADMIN") return false;
+    if (tab.mode !== "SAVED_QUERY") return false;
     const appStore = useAppStore.getState();
     if (!appStore.hasFeature(PlanFeature.FEATURE_BATCH_QUERY)) return false;
     const ctx = tab.batchQueryContext;

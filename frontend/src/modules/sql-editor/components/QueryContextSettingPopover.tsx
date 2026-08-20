@@ -35,13 +35,17 @@ import { getInstanceResource, readableDataSourceType } from "@/utils";
 
 type Props = {
   readonly disabled?: boolean;
+  readonly size?: "sm" | "md";
 };
 
 /**
  * Replaces frontend/src/views/sql-editor/EditorCommon/QueryContextSettingPopover.vue.
  * Popover for selecting query data source, Redis command mode, and max row count.
  */
-export function QueryContextSettingPopover({ disabled = false }: Props) {
+export function QueryContextSettingPopover({
+  disabled = false,
+  size = "sm",
+}: Props) {
   const { t } = useTranslation();
   const { database, connection: connectionRef } =
     useConnectionOfCurrentSQLEditorTab();
@@ -119,9 +123,12 @@ export function QueryContextSettingPopover({ disabled = false }: Props) {
         render={
           <Button
             variant="default"
-            size="sm"
+            size={size}
             disabled={disabled}
-            className={cn("h-7 px-1 gap-0", "rounded-none rounded-r-xs")}
+            className={cn(
+              "px-1 gap-0 rounded-none rounded-r-xs",
+              size === "sm" && "h-7"
+            )}
           />
         }
       >

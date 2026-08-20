@@ -1,4 +1,4 @@
-import { ChevronLeft, Play, Save, Share2 } from "lucide-react";
+import { ChevronLeft, Save, Share2 } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
@@ -9,7 +9,6 @@ import {
 } from "@/components/ui/popover";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useSavedQueryAndTab } from "@/hooks/useSavedQueryAndTab";
-import { cn } from "@/lib/utils";
 import { useConnectionOfCurrentSQLEditorTab } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
@@ -32,6 +31,7 @@ import { ChooserGroup } from "./ChooserGroup";
 import { ContainerChooser } from "./ContainerChooser";
 import { OpenAIButton } from "./OpenAIButton";
 import { QueryContextSettingPopover } from "./QueryContextSettingPopover";
+import { RunQueryButton } from "./RunQueryButton";
 import { SharePopoverBody } from "./SharePopoverBody";
 
 type Props = {
@@ -74,7 +74,6 @@ export function EditorAction({ onExecute }: Props) {
     (s) => s.tabsById.get(s.currentTabId)?.connection.table ?? ""
   );
   const isDisconnected = useIsDisconnected();
-  const resultRowsLimit = useSQLEditorEditorState((s) => s.resultRowsLimit);
   const project = useSQLEditorEditorState((s) => s.project);
 
   const isAdminMode = tabMode === "ADMIN";
@@ -168,31 +167,21 @@ export function EditorAction({ onExecute }: Props) {
           </Button>
         )}
 
-        {!isAdminMode && (
-          <div className="inline-flex">
-            {isCosmosDBWithoutContainer ? (
+        {!isAdminMode &&
+          (isCosmosDBWithoutContainer ? (
+            <div className="inline-flex">
               <ContainerChooser variant="run" />
-            ) : (
-              <Tooltip content="" side="bottom">
-                <Button
-                  variant="default"
-                  size="sm"
-                  className={cn("h-7 px-1.5 gap-1 rounded-r-none text-sm")}
-                  disabled={!allowQuery}
-                  onClick={handleRunQuery}
-                >
-                  <Play className="size-4 fill-current" />
-                  <span className="inline-flex items-center">
-                    (limit&nbsp;{resultRowsLimit})
-                  </span>
-                </Button>
-              </Tooltip>
-            )}
-            <QueryContextSettingPopover
-              disabled={!showQueryContextSettingPopover}
+              <QueryContextSettingPopover
+                disabled={!showQueryContextSettingPopover}
+              />
+            </div>
+          ) : (
+            <RunQueryButton
+              disabled={!allowQuery}
+              settingsDisabled={!showQueryContextSettingPopover}
+              onClick={handleRunQuery}
             />
-          </div>
-        )}
+          ))}
 
         <AdminModeButton size="sm" hideText />
 

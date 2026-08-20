@@ -72,6 +72,8 @@ export function setConnection(options: {
 
   const tabsState = getSQLEditorTabsState();
   const currentTab = tabsState.tabsById.get(tabsState.currentTabId);
+  const nextMode = mode === "DATA_EXPLORER" ? DEFAULT_TAB_MODE : mode;
+  const shouldCreateNewTab = newTab || currentTab?.mode === "DATA_EXPLORER";
   const { maybeUpdateSavedQuery, createSavedQuery } =
     useSQLEditorStore.getState();
 
@@ -82,7 +84,7 @@ export function setConnection(options: {
   );
 
   const createOrUpdate = () => {
-    if (!newTab && currentTab) {
+    if (!shouldCreateNewTab && currentTab) {
       return maybeUpdateSavedQuery({
         tabId: currentTab.id,
         savedQuery: currentTab.savedQuery,
@@ -103,7 +105,10 @@ export function setConnection(options: {
 
   void createOrUpdate().then((tab) => {
     if (tab) {
-      getSQLEditorTabsState().updateTab(tab.id, { mode, batchQueryContext });
+      getSQLEditorTabsState().updateTab(tab.id, {
+        mode: nextMode,
+        batchQueryContext,
+      });
       useSQLEditorStore.getState().setAsidePanelTab("SCHEMA");
     }
   });

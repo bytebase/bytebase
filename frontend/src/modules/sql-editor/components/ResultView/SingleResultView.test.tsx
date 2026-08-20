@@ -248,6 +248,7 @@ vi.mock("./ErrorView", () => ({
 }));
 
 vi.mock("./ResultStatusBar", () => ({
+  formatQueryTime: () => "-",
   ResultStatusBar: () => <div data-testid="result-status" />,
 }));
 

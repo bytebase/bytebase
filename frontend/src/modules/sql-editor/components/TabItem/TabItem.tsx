@@ -127,11 +127,7 @@ export function TabItem({
         style={bodyStyle}
       >
         <Prefix tab={tab} />
-        {tab.mode === "SAVED_QUERY" ? (
-          <Label tab={tab} />
-        ) : (
-          <AdminLabel tab={tab} />
-        )}
+        {tab.mode === "ADMIN" ? <AdminLabel tab={tab} /> : <Label tab={tab} />}
         <Suffix tab={tab} onClose={() => onClose(tab, index)} />
       </div>
     </div>

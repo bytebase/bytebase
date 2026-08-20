@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { useExecuteSQL } from "@/hooks/useExecuteSQL";
+import type { ResultViewPresentation } from "@/modules/sql-editor/components/ResultView";
 import { ResultView } from "@/modules/sql-editor/components/ResultView";
 import { getSQLEditorTabsState } from "@/modules/sql-editor/store/tab";
 import type {
@@ -14,6 +15,7 @@ import type { Database } from "@/types/proto-es/v1/database_service_pb";
 export interface DatabaseQueryContextProps {
   database: Database;
   context: SQLEditorDatabaseQueryContext;
+  presentation?: ResultViewPresentation;
 }
 
 /**
@@ -29,6 +31,7 @@ export interface DatabaseQueryContextProps {
 export function DatabaseQueryContext({
   database,
   context,
+  presentation = "STANDARD",
 }: DatabaseQueryContextProps) {
   const { t } = useTranslation();
   const { runQuery } = useExecuteSQL();
@@ -107,6 +110,7 @@ export function DatabaseQueryContext({
       executeParams={context.params}
       database={database}
       resultSet={context.resultSet}
+      presentation={presentation}
     />
   );
 }

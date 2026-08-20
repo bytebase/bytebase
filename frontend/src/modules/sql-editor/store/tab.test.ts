@@ -3,6 +3,7 @@ import { storageKeySqlEditorTabs } from "@/utils";
 import {
   __resetTabStoreProjectCursor,
   getSQLEditorTabsState,
+  isSQLEditorTabClosable,
   subscribeSQLEditorTabsState,
   useSQLEditorTabsStore,
 } from "./tab";
@@ -150,6 +151,12 @@ describe("useSQLEditorTabsStore", () => {
     const state = useSQLEditorTabsStore.getState();
     expect(state.openTmpTabList).toHaveLength(0);
     expect(state.currentTabId).toBe("");
+  });
+
+  test("the only data explorer tab is closable", () => {
+    const tab = getSQLEditorTabsState().addTab({ mode: "DATA_EXPLORER" });
+
+    expect(isSQLEditorTabClosable(tab)).toBe(true);
   });
 
   test("setOpenTabListOrder rewrites the persisted order without losing tabs", () => {

@@ -158,39 +158,51 @@ function SchemaPaneInner() {
   // Build the tree via requestAnimationFrame so the heavy walk doesn't
   // block the metadata-fetch teardown's transition. Mirrors Vue's
   // `requestAnimationFrame(() => { tree.value = buildDatabaseSchemaTree(...) })`.
-  const [tree, setTree] = useState<SchemaTreeNode[] | undefined>(undefined);
+  const [treeResult, setTreeResult] = useState<
+    { database: string; tree: SchemaTreeNode[] } | undefined
+  >(undefined);
+  const tree =
+    treeResult?.database === database.name ? treeResult.tree : undefined;
   useEffect(() => {
     if (isFetching || !metadata) {
-      setTree(undefined);
+      setTreeResult(undefined);
       return;
     }
     if (totalTableCount > FLAT_TABLE_THRESHOLD) {
-      setTree(undefined);
+      setTreeResult(undefined);
       return;
     }
     let raf = 0;
     raf = requestAnimationFrame(() => {
       const built = buildDatabaseSchemaTree(database, metadata);
-      setTree(built);
-      // First-mount default expand: seed treeState.keys so the user
-      // sees database/schema/Tables/Views opened by default. The Vue
-      // version seeds when `treeStateDb !== connectionDb && connectionDb`.
-      const tab = getSQLEditorTabsState().tabsById.get(
-        getSQLEditorTabsState().currentTabId
-      );
-      const connectionDb = tab?.connection.database;
-      if (tab && connectionDb && tab.treeState.database !== connectionDb) {
-        getSQLEditorTabsState().updateTab(tab.id, {
-          treeState: {
-            ...tab.treeState,
-            database: connectionDb,
-            keys: defaultExpandedKeys(built),
-          },
-        });
-      }
+      setTreeResult({ database: database.name, tree: built });
     });
     return () => cancelAnimationFrame(raf);
   }, [isFetching, metadata, totalTableCount, database]);
+
+  // Seed expansion state for every tab, including a newly opened Data
+  // Explorer tab that reuses the already-built tree for the same database.
+  useEffect(() => {
+    if (!tree) return;
+    const tabsState = getSQLEditorTabsState();
+    const tab = tabsState.tabsById.get(currentTabId);
+    const connectionDb = tab?.connection.database;
+    if (
+      !tab ||
+      !connectionDb ||
+      connectionDb !== database.name ||
+      tab.treeState.database === connectionDb
+    ) {
+      return;
+    }
+    tabsState.updateTab(tab.id, {
+      treeState: {
+        ...tab.treeState,
+        database: connectionDb,
+        keys: defaultExpandedKeys(tree),
+      },
+    });
+  }, [currentTabId, database.name, tree]);
 
   // Reactive proxy for `tab.treeState.keys`. Writes via `setExpandedKeys`
   // always REPLACE the whole array. The Zustand selector subscribes on

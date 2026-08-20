@@ -4,7 +4,6 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   BracesIcon,
-  ChevronDownIcon,
   CopyIcon,
   InfoIcon,
   Table2Icon,
@@ -20,11 +19,7 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { v4 as uuidv4 } from "uuid";
-import {
-  AdvancedSearch,
-  type ScopeOption,
-  type SearchParams,
-} from "@/components/AdvancedSearch";
+import { AdvancedSearch } from "@/components/AdvancedSearch";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import {
   DataExportButton,
@@ -32,12 +27,6 @@ import {
 } from "@/components/DataExportButton";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip } from "@/components/ui/tooltip";
@@ -47,7 +36,6 @@ import { cn } from "@/lib/utils";
 import { useSQLEditorQueryDataPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { useSQLEditorTabState } from "@/modules/sql-editor/store/tab";
-import { useAppStore } from "@/stores/app";
 import type {
   SQLEditorDatabaseQueryContext,
   SQLEditorQueryParams,
@@ -58,7 +46,6 @@ import {
   QueryOption_MSSQLExplainFormat,
   QueryOptionSchema,
   type QueryResult,
-  type RowValue,
 } from "@/types/proto-es/v1/sql_service_pb";
 import { createExplainToken } from "@/utils/pev2";
 import {
@@ -68,19 +55,25 @@ import {
   isNoSQLQueryResult,
 } from "@/utils/sqlResult";
 import { STORAGE_KEY_SQL_EDITOR_NOSQL_TABLE_VIEW } from "@/utils/storage-keys";
-import { isNullOrUndefined } from "@/utils/util";
 import { getInstanceResource } from "@/utils/v1/database";
 import { compareQueryRowValues, extractSQLRowValuePlain } from "@/utils/v1/sql";
-import { SQLResultViewProvider, useSelectionContext } from "./context";
-import { formatAsCSV, formatAsSQL, formatAsText } from "./copy-formats";
+import { CopyAllButton } from "./CopyAllButton";
+import { SQLResultViewProvider } from "./context";
+import { DataExplorerResultView } from "./DataExplorerResultView";
 import { DetailPanel } from "./DetailPanel";
 import { DocumentJSONView } from "./DocumentJSONView";
 import { EmptyView } from "./EmptyView";
 import { ErrorView } from "./ErrorView";
-import { ResultStatusBar } from "./ResultStatusBar";
+import { formatQueryTime, ResultStatusBar } from "./ResultStatusBar";
 import { SelectionCopyTooltips } from "./SelectionCopyTooltips";
 import { TextSearchControl } from "./TextSearchControl";
-import type { ResultTableColumn, ResultTableRow, SortState } from "./types";
+import type {
+  ResultTableColumn,
+  ResultTableRow,
+  ResultViewPresentation,
+  SortState,
+} from "./types";
+import { useResultTableSearch } from "./useResultTableSearch";
 import {
   VirtualDataBlock,
   type VirtualDataBlockHandle,
@@ -107,6 +100,7 @@ export interface SingleResultViewProps {
   // Compact layout (fixed-height, non-growing body) used by the terminal /
   // admin result panel. Defaults to the flex-grow saved query layout.
   compact?: boolean;
+  presentation?: ResultViewPresentation;
 }
 
 type ViewMode = "RESULT" | "EMPTY" | "AFFECTED-ROWS" | "ERROR";
@@ -144,9 +138,12 @@ export function SingleResultView(props: SingleResultViewProps) {
     () => isDocumentEngine && isNoSQLQueryResult(result),
     [isDocumentEngine, result]
   );
-  const activeDocumentViewMode = supportsDocumentJSONView
-    ? documentViewMode
-    : "TABLE";
+  const activeDocumentViewMode =
+    props.presentation === "DATA_EXPLORER"
+      ? "TABLE"
+      : supportsDocumentJSONView
+        ? documentViewMode
+        : "TABLE";
   const flattened = useMemo(() => {
     if (engine === Engine.ELASTICSEARCH) {
       return flattenElasticsearchSearchResult(result);
@@ -225,21 +222,32 @@ export function SingleResultView(props: SingleResultViewProps) {
       rows={rows}
       columns={columns}
     >
-      <SingleResultViewInner
-        {...props}
-        engine={engine}
-        columns={columns}
-        rows={rows}
-        sortState={sortState}
-        toggleSort={toggleSort}
-        flattenedTableView={flattenedTableView}
-        supportsTableViewToggle={supportsTableViewToggle}
-        noSQLTableView={noSQLTableView}
-        setNoSQLTableView={setNoSQLTableView}
-        supportsDocumentJSONView={supportsDocumentJSONView}
-        documentViewMode={activeDocumentViewMode}
-        setDocumentViewMode={setDocumentViewMode}
-      />
+      {props.presentation === "DATA_EXPLORER" ? (
+        <DataExplorerResultView
+          rows={rows}
+          columns={columns}
+          database={database}
+          result={result}
+          sortState={sortState}
+          onToggleSort={toggleSort}
+        />
+      ) : (
+        <SingleResultViewInner
+          {...props}
+          engine={engine}
+          columns={columns}
+          rows={rows}
+          sortState={sortState}
+          toggleSort={toggleSort}
+          flattenedTableView={flattenedTableView}
+          supportsTableViewToggle={supportsTableViewToggle}
+          noSQLTableView={noSQLTableView}
+          setNoSQLTableView={setNoSQLTableView}
+          supportsDocumentJSONView={supportsDocumentJSONView}
+          documentViewMode={activeDocumentViewMode}
+          setDocumentViewMode={setDocumentViewMode}
+        />
+      )}
     </SQLResultViewProvider>
   );
 }
@@ -292,7 +300,6 @@ function SingleResultViewInner({
   const resultRowsLimit = useSQLEditorEditorState((s) => s.resultRowsLimit);
   const policyMaxRows = queryDataPolicy.maximumResultRows;
   const { runQuery } = useExecuteSQL();
-  const { copy, canCopyAsInsert } = useSelectionContext();
 
   const supportFormats = useMemo(
     () => [
@@ -309,15 +316,17 @@ function SingleResultViewInner({
   >(null);
 
   const [vertical, setVertical] = useState(false);
-  const [searchParams, setSearchParams] = useState<SearchParams>({
-    query: "",
-    scopes: [],
-  });
-  const [searchCandidateActiveIndex, setSearchCandidateActiveIndex] =
-    useState(-1);
-  const [searchCandidateRowIndexs, setSearchCandidateRowIndexs] = useState<
-    number[]
-  >([]);
+  const {
+    params: searchParams,
+    setParams: setSearchParams,
+    scopeOptions: searchScopeOptions,
+    candidateActiveIndex: searchCandidateActiveIndex,
+    candidateRowIndexes: searchCandidateRowIndexes,
+    activeRowIndex,
+    next: scrollToNextCandidate,
+    previous: scrollToPreviousCandidate,
+    clear: clearSearchCandidate,
+  } = useResultTableSearch(rows, columns, noSQLTableView);
   const [documentSearchQuery, setDocumentSearchQuery] = useState("");
   const [documentSearchActiveIndex, setDocumentSearchActiveIndex] = useState(0);
   const [documentSearchMatchCount, setDocumentSearchMatchCount] = useState(0);
@@ -341,14 +350,6 @@ function SingleResultViewInner({
     });
   }, [documentSearchMatchCount]);
 
-  // Reset search state when toggling NoSQL table view (sort reset is
-  // handled by the wrapper, where sortState lives).
-  useEffect(() => {
-    setSearchParams({ query: "", scopes: [] });
-    setSearchCandidateActiveIndex(-1);
-    setSearchCandidateRowIndexs([]);
-  }, [noSQLTableView]);
-
   const viewMode: ViewMode = useMemo(() => {
     if (result.error && rows.length === 0) return "ERROR";
     const columnNames = result.columnNames;
@@ -359,97 +360,6 @@ function SingleResultViewInner({
     return "RESULT";
   }, [result, rows.length]);
 
-  const searchScopeOptions: ScopeOption[] = useMemo(() => {
-    const opts: ScopeOption[] = [
-      {
-        id: "row-number",
-        title: t("sql-editor.search-scope-row-number-title"),
-        description: t("sql-editor.search-scope-row-number-description"),
-      },
-    ];
-    for (const column of columns) {
-      opts.push({
-        id: column.id,
-        title: column.name,
-        description: t("sql-editor.search-scope-column-description", {
-          type: column.columnType,
-        }),
-      });
-    }
-    return opts;
-  }, [columns, t]);
-
-  // Recompute candidates when search params change.
-  const cellValueMatches = useCallback(
-    (cell: RowValue, query: string): boolean => {
-      const value = extractSQLRowValuePlain(cell);
-      if (isNullOrUndefined(value)) return false;
-      return String(value).toLowerCase().includes(query.toLowerCase());
-    },
-    []
-  );
-
-  const getNextCandidateRowIndex = useCallback(
-    (from: number, sp: SearchParams): number => {
-      if (sp.scopes.length === 0 && !sp.query) return -1;
-      for (let i = from; i < rows.length; i++) {
-        const row = rows[i];
-        const scopeOk = sp.scopes.every((scope) => {
-          if (!scope.value) return false;
-          if (scope.id === "row-number") {
-            return i + 1 === Number.parseInt(scope.value, 10);
-          }
-          const columnIndex = columns.findIndex((c) => c.name === scope.id);
-          if (columnIndex < 0) return false;
-          return cellValueMatches(row.item.values[columnIndex], scope.value);
-        });
-        if (!scopeOk) continue;
-        if (sp.query) {
-          const queryOk = row.item.values.some((cell) =>
-            cellValueMatches(cell, sp.query)
-          );
-          if (!queryOk) continue;
-        }
-        return i;
-      }
-      return -1;
-    },
-    [rows, columns, cellValueMatches]
-  );
-
-  // Tracks whether the previous searchParams already resolved to the
-  // "active search, zero matches" state. Used to fire the no-results
-  // notification only on the transition into that state — typing extra
-  // characters that keep the match set empty must not re-notify.
-  const wasInNoResultsRef = useRef(false);
-
-  useEffect(() => {
-    const next = getNextCandidateRowIndex(0, searchParams);
-    const indexes: number[] = [];
-    if (next >= 0) {
-      indexes.push(next);
-      const another = getNextCandidateRowIndex(next + 1, searchParams);
-      if (another >= 0) indexes.push(another);
-    }
-    setSearchCandidateRowIndexs(indexes);
-    setSearchCandidateActiveIndex(0);
-
-    const searchActive =
-      searchParams.query.trim().length > 0 || searchParams.scopes.length > 0;
-    const isNoResults = searchActive && indexes.length === 0;
-    if (isNoResults && !wasInNoResultsRef.current) {
-      useAppStore.getState().notify({
-        module: "bytebase",
-        style: "INFO",
-        title: t("sql-editor.search-no-result"),
-      });
-    }
-    wasInNoResultsRef.current = isNoResults;
-  }, [searchParams, getNextCandidateRowIndex, t]);
-
-  const activeRowIndex =
-    searchCandidateRowIndexs[searchCandidateActiveIndex] ?? -1;
-
   const scrollToRow = useCallback((index: number | undefined) => {
     if (index === undefined || index < 0) return;
     requestAnimationFrame(() => dataTableRef.current?.scrollTo(index));
@@ -459,30 +369,6 @@ function SingleResultViewInner({
   useEffect(() => {
     scrollToRow(activeRowIndex);
   }, [activeRowIndex, vertical, scrollToRow]);
-
-  const scrollToNextCandidate = () => {
-    if (searchCandidateActiveIndex >= searchCandidateRowIndexs.length - 1) {
-      return;
-    }
-    const next = searchCandidateActiveIndex + 1;
-    setSearchCandidateActiveIndex(next);
-    if (next === searchCandidateRowIndexs.length - 1) {
-      const cur = searchCandidateRowIndexs[next];
-      const more = getNextCandidateRowIndex(cur + 1, searchParams);
-      if (more >= 0) {
-        setSearchCandidateRowIndexs((prev) => [...prev, more]);
-      }
-    }
-  };
-
-  const scrollToPreviousCandidate = () => {
-    if (searchCandidateActiveIndex <= 0) return;
-    setSearchCandidateActiveIndex(searchCandidateActiveIndex - 1);
-  };
-
-  const clearSearchCandidate = () => {
-    setSearchParams({ query: "", scopes: [] });
-  };
 
   const reachQueryLimit =
     currentTabMode !== "ADMIN" &&
@@ -522,15 +408,7 @@ function SingleResultViewInner({
     }
   };
 
-  const queryTime = useMemo(() => {
-    const { latency } = result;
-    if (!latency) return "-";
-    const totalSeconds = Number(latency.seconds) + latency.nanos / 1e9;
-    if (totalSeconds < 1) {
-      return `${Math.round(totalSeconds * 1000)} ms`;
-    }
-    return `${totalSeconds.toFixed(2)} s`;
-  }, [result]);
+  const queryTime = formatQueryTime(result.latency);
 
   const resultRowsText = `${rows.length} ${t("sql-editor.rows.self")}`;
   const isJSONView = supportsDocumentJSONView && documentViewMode === "JSON";
@@ -705,53 +583,7 @@ function SingleResultViewInner({
                 </Button>
               )}
               {!disallowCopyingData && rows.length > 0 && !isJSONView && (
-                // Split button: the main action copies as plain text (TSV); the
-                // dropdown caret (hover) offers CSV and, for SQL engines, SQL.
-                <div className="flex items-center">
-                  <Button
-                    size="sm"
-                    appearance="outline"
-                    className="h-7 px-2 rounded-r-none border-r-0 text-control border-control-border hover:bg-control-bg-hover"
-                    onClick={() => copy("all", formatAsText)}
-                  >
-                    <CopyIcon className="size-4" />
-                    {t("common.copy-all")}
-                  </Button>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger
-                      openOnHover
-                      delay={100}
-                      render={
-                        <Button
-                          size="sm"
-                          appearance="outline"
-                          aria-label={t("common.copy")}
-                          className="h-7 w-6 px-0 rounded-l-none text-control border-control-border hover:bg-control-bg-hover"
-                        >
-                          <ChevronDownIcon className="size-4" />
-                        </Button>
-                      }
-                    />
-                    <DropdownMenuContent align="end" className="min-w-0">
-                      <DropdownMenuItem
-                        onClick={() => copy("all", formatAsCSV)}
-                        className="px-2 py-1 text-xs gap-x-1.5"
-                      >
-                        <CopyIcon className="size-3" />
-                        {t("sql-editor.copy-all-rows-as-csv")}
-                      </DropdownMenuItem>
-                      {canCopyAsInsert && (
-                        <DropdownMenuItem
-                          onClick={() => copy("all", formatAsSQL)}
-                          className="px-2 py-1 text-xs gap-x-1.5"
-                        >
-                          <CopyIcon className="size-3" />
-                          {t("sql-editor.copy-all-rows-as-sql")}
-                        </DropdownMenuItem>
-                      )}
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
+                <CopyAllButton />
               )}
               {showExport ? (
                 <DataExportButton
@@ -819,7 +651,7 @@ function SingleResultViewInner({
 
               {/* Floating buttons */}
               <div className="absolute bottom-2 right-4 flex items-end gap-x-2">
-                {searchCandidateRowIndexs.length > 0 && (
+                {searchCandidateRowIndexes.length > 0 && (
                   <div className="flex flex-row gap-x-2 border shadow rounded bg-background py-1 px-2">
                     <Button
                       size="sm"
@@ -835,7 +667,7 @@ function SingleResultViewInner({
                       appearance="secondary"
                       disabled={
                         searchCandidateActiveIndex >=
-                        searchCandidateRowIndexs.length - 1
+                        searchCandidateRowIndexes.length - 1
                       }
                       onClick={scrollToNextCandidate}
                     >
