@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net"
-	"regexp"
 	"strings"
 	"time"
 
@@ -155,7 +154,10 @@ func (d *Driver) GetDB() *sql.DB {
 	return d.db
 }
 
-// getVersion gets the version.
+// getVersion returns the verbatim VERSION() output, e.g. "8.0.11-TiDB-v8.5.0". It is
+// stored and displayed as-is; callers that gate behavior on a version parse it
+// themselves, so a version string we do not recognize costs a feature rather than the
+// whole sync.
 func (d *Driver) getVersion(ctx context.Context) (string, error) {
 	query := "SELECT VERSION()"
 	var version string
@@ -166,15 +168,7 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 		return "", util.FormatErrorWithQuery(err, query)
 	}
 
-	return parseVersion(version)
-}
-
-func parseVersion(version string) (string, error) {
-	// Examples: 8.0.11-TiDB-v8.5.0, 8.0.11-TiDB-v7.5.2-serverless.
-	if loc := regexp.MustCompile(`v\d+\.\d+\.\d+`).FindStringIndex(version); loc != nil {
-		return version[loc[0]:loc[1]], nil
-	}
-	return "", errors.Errorf("failed to parse version %q", version)
+	return version, nil
 }
 
 func buildExecuteCommands(statement string) ([]base.Statement, error) {

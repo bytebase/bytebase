@@ -297,3 +297,41 @@ func TestStripSingleQuote(t *testing.T) {
 		})
 	}
 }
+
+func TestSupportsCheckConstraintTable(t *testing.T) {
+	tests := []struct {
+		version string
+		want    bool
+	}{
+		// information_schema.CHECK_CONSTRAINTS landed in TiDB v7.4.0, the same release
+		// that moved the reported MySQL prefix from 5.7.25 to 8.0.11. The TiDB version
+		// decides whenever it is readable.
+		{version: "5.7.25-TiDB-v7.1.1", want: false},
+		{version: "5.7.25-TiDB-v7.2.0", want: false},
+		{version: "5.7.25-TiDB-v7.3.0", want: false},
+		{version: "8.0.11-TiDB-v7.4.0", want: true},
+		{version: "8.0.11-TiDB-v8.5.0", want: true},
+		{version: "8.0.11-TiDB-v7.5.2-serverless", want: true},
+		// No readable TiDB version, so the MySQL prefix decides. TiDB Cloud reports a
+		// calendar version; a custom server-version can drop the TiDB half entirely.
+		{version: "8.0.11-TiDB-CLOUD.202603.4", want: true},
+		{version: "5.7.25-TiDB-CLOUD.202603.4", want: false},
+		{version: "8.0.11", want: true},
+		{version: "5.7.25", want: false},
+		// A future prefix bump must not regress.
+		{version: "8.4.0-TiDB-CLOUD.202701.1", want: true},
+		// The TiDB version wins over the prefix when both are readable.
+		{version: "8.0.11-TiDB-v7.3.0", want: false},
+		// MySQL added the table in 8.0.16; comparing the prefix against that would
+		// answer false for every TiDB build, all of which report 8.0.11.
+		{version: "8.0.11-TiDB-CLOUD.202512.1", want: true},
+		{version: "", want: false},
+		{version: "not-a-version", want: false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.version, func(t *testing.T) {
+			require.Equal(t, tc.want, supportsCheckConstraintTable(tc.version))
+		})
+	}
+}
