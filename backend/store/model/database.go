@@ -352,10 +352,13 @@ func (s *SchemaMetadata) GetTable(name string) *TableMetadata {
 	return s.internalPartitionTables[nameID]
 }
 
-// getRootTable looks up a real table, ignoring partition aliases. Table creation, drops,
-// and renames operate on real tables only: a partition named like a table does not reserve
-// that table name, and dropping a partition by name is not dropping a table.
-func (s *SchemaMetadata) getRootTable(name string) *TableMetadata {
+// GetRootTable looks up a real table, ignoring partition aliases. Callers asking "does a
+// table by this name exist" want this rather than GetTable: a partition may carry another
+// table's name, and answering with its owner makes the schema differ miss a drop and
+// mistake a create for a modification. GetTable keeps resolving partition names because
+// engines such as PostgreSQL expose partitions as queryable relations, so query analysis
+// has to find them.
+func (s *SchemaMetadata) GetRootTable(name string) *TableMetadata {
 	if s == nil {
 		return nil
 	}
@@ -541,7 +544,7 @@ func (s *SchemaMetadata) ListSequenceNames() []string {
 // Returns the created TableMetadata or an error if the table already exists.
 func (s *SchemaMetadata) CreateTable(tableName string) (*TableMetadata, error) {
 	// Check if table already exists
-	if s.getRootTable(tableName) != nil {
+	if s.GetRootTable(tableName) != nil {
 		return nil, errors.Errorf("table %q already exists in schema %q", tableName, s.proto.Name)
 	}
 
@@ -574,7 +577,7 @@ func (s *SchemaMetadata) CreateTable(tableName string) (*TableMetadata, error) {
 // Returns an error if the table does not exist.
 func (s *SchemaMetadata) DropTable(tableName string) error {
 	// Check if table exists
-	if s.getRootTable(tableName) == nil {
+	if s.GetRootTable(tableName) == nil {
 		return errors.Errorf("table %q does not exist in schema %q", tableName, s.proto.Name)
 	}
 
@@ -608,13 +611,13 @@ func (s *SchemaMetadata) RenameTable(oldName string, newName string) error {
 	}
 
 	// Check if old table exists
-	oldTable := s.getRootTable(oldName)
+	oldTable := s.GetRootTable(oldName)
 	if oldTable == nil {
 		return errors.Errorf("table %q does not exist in schema %q", oldName, s.proto.Name)
 	}
 
 	// Check if new table already exists
-	if s.getRootTable(newName) != nil {
+	if s.GetRootTable(newName) != nil {
 		return errors.Errorf("table %q already exists in schema %q", newName, s.proto.Name)
 	}
 

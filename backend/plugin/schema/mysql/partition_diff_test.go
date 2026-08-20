@@ -133,3 +133,47 @@ func TestDiffMigrationQuotesPartitionNames(t *testing.T) {
 	a.Contains(migration, "PARTITION `select`", "reserved-word partition name must be quoted:\n%s", migration)
 	a.Contains(migration, "PARTITION `order`", "reserved-word partition name must be quoted:\n%s", migration)
 }
+
+// tableAction returns the action the diff recorded for one table, or "" if absent.
+func tableAction(diff *schema.MetadataDiff, name string) schema.MetadataDiffAction {
+	for _, tableDiff := range diff.TableChanges {
+		if tableDiff.TableName == name {
+			return tableDiff.Action
+		}
+	}
+	return ""
+}
+
+// The differ decides whether a table exists in the other snapshot by name. A partition of
+// some other table may carry that name, and resolving it as if it were the table makes the
+// differ miss a drop and mistake a create for a modification of the partition's owner.
+func TestDiffMigrationPartitionAliasDoesNotMaskTableExistence(t *testing.T) {
+	archive := &storepb.TableMetadata{
+		Name: "archive", Engine: "InnoDB",
+		Columns: []*storepb.ColumnMetadata{{Name: "archive_col", Type: "int"}},
+	}
+	events := func(partitions ...*storepb.TablePartitionMetadata) *storepb.TableMetadata {
+		return &storepb.TableMetadata{
+			Name: "events", Engine: "InnoDB",
+			Columns:    []*storepb.ColumnMetadata{{Name: "events_col", Type: "int"}},
+			Partitions: partitions,
+		}
+	}
+	alias := &storepb.TablePartitionMetadata{Name: "archive", Type: storepb.TablePartitionMetadata_RANGE, Expression: "dt"}
+
+	t.Run("drop", func(t *testing.T) {
+		a := require.New(t)
+		diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_MYSQL,
+			databaseOf(archive, events()), databaseOf(events(alias)))
+		a.NoError(err)
+		a.Equal(schema.MetadataDiffActionDrop, tableAction(diff, "archive"))
+	})
+
+	t.Run("create", func(t *testing.T) {
+		a := require.New(t)
+		diff, err := schema.GetDatabaseSchemaDiff(storepb.Engine_MYSQL,
+			databaseOf(events(alias)), databaseOf(archive, events()))
+		a.NoError(err)
+		a.Equal(schema.MetadataDiffActionCreate, tableAction(diff, "archive"))
+	})
+}
