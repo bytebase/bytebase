@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	stderrors "errors"
 	"time"
 
 	"github.com/pkg/errors"
@@ -31,6 +32,7 @@ type SampleProjectInstanceMessage struct {
 type SampleProjectInstanceTx struct {
 	tx        *sql.Tx
 	workspace string
+	project   string
 }
 
 // GetSampleProjectInstance returns the independent lifecycle record for a
@@ -132,7 +134,7 @@ func (s *Store) WithLockedSampleProjectInstance(
 	if err != nil {
 		return err
 	}
-	if err := callback(ctx, &SampleProjectInstanceTx{tx: tx, workspace: workspaceID}, message); err != nil {
+	if err := callback(ctx, &SampleProjectInstanceTx{tx: tx, workspace: workspaceID, project: message.ProjectID}, message); err != nil {
 		return err
 	}
 	if err := tx.Commit(); err != nil {
@@ -141,9 +143,39 @@ func (s *Store) WithLockedSampleProjectInstance(
 	return nil
 }
 
-// SetExpiration activates the locked reservation only while its workspace is
-// still active, then sets an immutable expiration.
-func (tx *SampleProjectInstanceTx) SetExpiration(ctx context.Context, expiresAt time.Time) error {
+// SetExpiration activates the locked reservation only while its Project and
+// workspace are still active, then sets an immutable expiration. The
+// reservation is locked before its Project and workspace, preserving the
+// child-to-parent lock order.
+func (tx *SampleProjectInstanceTx) SetExpiration(ctx context.Context, expiresAt time.Time) (retErr error) {
+	if _, err := tx.tx.ExecContext(ctx, "SAVEPOINT sample_project_instance_activation"); err != nil {
+		return errors.Wrap(err, "failed to create sample Project Instance activation savepoint")
+	}
+	defer func() {
+		if retErr == nil {
+			return
+		}
+		if _, err := tx.tx.ExecContext(ctx, "ROLLBACK TO SAVEPOINT sample_project_instance_activation"); err != nil {
+			retErr = stderrors.Join(retErr, errors.Wrap(err, "failed to release sample Project Instance activation locks"))
+		}
+	}()
+
+	var projectDeleted bool
+	if err := tx.tx.QueryRowContext(ctx, `
+		SELECT deleted
+		FROM project
+		WHERE resource_id = $1 AND workspace = $2
+		FOR UPDATE
+	`, tx.project, tx.workspace).Scan(&projectDeleted); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return common.Errorf(common.NotFound, "project %s not found", tx.project)
+		}
+		return errors.Wrapf(err, "failed to lock project %s for sample Project Instance activation", tx.project)
+	}
+	if projectDeleted {
+		return common.Errorf(common.NotFound, "project %s is deleted", tx.project)
+	}
+
 	var workspaceDeleted bool
 	if err := tx.tx.QueryRowContext(ctx, `
 		SELECT deleted
@@ -175,6 +207,9 @@ func (tx *SampleProjectInstanceTx) SetExpiration(ctx context.Context, expiresAt 
 	}
 	if rows != 1 {
 		return errors.Errorf("sample Project Instance %s expiration is already set", tx.workspace)
+	}
+	if _, err := tx.tx.ExecContext(ctx, "RELEASE SAVEPOINT sample_project_instance_activation"); err != nil {
+		return errors.Wrap(err, "failed to release sample Project Instance activation savepoint")
 	}
 	return nil
 }
@@ -349,7 +384,7 @@ func (s *Store) WithLockedSampleProjectInstanceCleanupRecord(
 		WorkspaceID: message.WorkspaceID,
 		Found:       true,
 	}
-	recordTx := &SampleProjectInstanceTx{tx: tx, workspace: message.WorkspaceID}
+	recordTx := &SampleProjectInstanceTx{tx: tx, workspace: message.WorkspaceID, project: message.ProjectID}
 	if err := callback(ctx, recordTx, message); err != nil {
 		result.CallbackErr = err
 	} else if message.ExpiresAt == nil {

@@ -27,6 +27,11 @@ func newSampleProjectInstanceFixture(t *testing.T) (context.Context, *sql.DB, *s
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES
 			('workspace-a'), ('workspace-b'), ('workspace-c'), ('workspace-d');
+		INSERT INTO project (resource_id, workspace, name) VALUES
+			('project-workspace-a', 'workspace-a', 'Project A'),
+			('project-workspace-b', 'workspace-b', 'Project B'),
+			('project-workspace-c', 'workspace-c', 'Project C'),
+			('project-workspace-d', 'workspace-d', 'Project D');
 	`)
 	require.NoError(t, err)
 	pgURL := fmt.Sprintf(
@@ -220,6 +225,132 @@ func TestSetSampleProjectInstanceExpirationSerializesWithWorkspaceDeletion(t *te
 		reservation, err := s.GetSampleProjectInstance(ctx, "workspace-b")
 		require.NoError(t, err)
 		require.Equal(t, &expiresAt, reservation.ExpiresAt)
+	})
+}
+
+func TestSetSampleProjectInstanceExpirationSerializesWithProjectArchive(t *testing.T) {
+	ctx, db, s := newSampleProjectInstanceFixture(t)
+	expiresAt := time.Date(2026, time.August, 24, 9, 0, 0, 0, time.UTC)
+
+	t.Run("archive wins", func(t *testing.T) {
+		_, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-a"))
+		require.NoError(t, err)
+
+		archiveTx, err := db.BeginTx(ctx, nil)
+		require.NoError(t, err)
+		archiveCommitted := false
+		defer func() {
+			if !archiveCommitted {
+				_ = archiveTx.Rollback()
+			}
+		}()
+		_, err = archiveTx.ExecContext(ctx, "UPDATE project SET deleted = TRUE WHERE resource_id = 'project-workspace-a' AND workspace = 'workspace-a'")
+		require.NoError(t, err)
+
+		activationErr := make(chan error, 1)
+		go func() {
+			activationErr <- s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
+				return tx.SetExpiration(ctx, expiresAt)
+			})
+		}()
+		require.Eventually(t, func() bool {
+			var waiting bool
+			err := db.QueryRowContext(ctx, `
+				SELECT EXISTS (
+					SELECT 1
+					FROM pg_stat_activity
+					WHERE wait_event_type = 'Lock'
+						AND query LIKE '%SELECT deleted%FROM project%FOR UPDATE%'
+				)
+			`).Scan(&waiting)
+			return err == nil && waiting
+		}, 5*time.Second, 10*time.Millisecond)
+		require.NoError(t, archiveTx.Commit())
+		archiveCommitted = true
+		err = <-activationErr
+		require.Equal(t, common.NotFound, common.ErrorCode(err))
+
+		reservation, err := s.GetSampleProjectInstance(ctx, "workspace-a")
+		require.NoError(t, err)
+		require.Nil(t, reservation.ExpiresAt)
+	})
+
+	t.Run("activation wins", func(t *testing.T) {
+		_, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-b"))
+		require.NoError(t, err)
+
+		activationReady := make(chan struct{})
+		finishActivation := make(chan struct{})
+		activationErr := make(chan error, 1)
+		go func() {
+			activationErr <- s.WithLockedSampleProjectInstance(ctx, "workspace-b", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
+				if err := tx.SetExpiration(ctx, expiresAt); err != nil {
+					return err
+				}
+				close(activationReady)
+				<-finishActivation
+				return nil
+			})
+		}()
+		<-activationReady
+
+		archiveErr := make(chan error, 1)
+		go func() {
+			_, err := db.ExecContext(ctx, "UPDATE project SET deleted = TRUE WHERE resource_id = 'project-workspace-b' AND workspace = 'workspace-b'")
+			archiveErr <- err
+		}()
+		require.Eventually(t, func() bool {
+			var waiting bool
+			err := db.QueryRowContext(ctx, `
+				SELECT EXISTS (
+					SELECT 1
+					FROM pg_stat_activity
+					WHERE wait_event_type = 'Lock'
+						AND query LIKE 'UPDATE project SET deleted = TRUE%'
+				)
+			`).Scan(&waiting)
+			return err == nil && waiting
+		}, 5*time.Second, 10*time.Millisecond)
+		close(finishActivation)
+		require.NoError(t, <-activationErr)
+		require.NoError(t, <-archiveErr)
+
+		reservation, err := s.GetSampleProjectInstance(ctx, "workspace-b")
+		require.NoError(t, err)
+		require.Equal(t, &expiresAt, reservation.ExpiresAt)
+	})
+}
+
+func TestSetSampleProjectInstanceExpirationRejectsMissingAndDeletedProject(t *testing.T) {
+	ctx, db, s := newSampleProjectInstanceFixture(t)
+	expiresAt := time.Date(2026, time.August, 24, 9, 0, 0, 0, time.UTC)
+
+	t.Run("missing", func(t *testing.T) {
+		reservation := sampleProjectInstance("workspace-a")
+		reservation.ProjectID = "missing"
+		_, _, err := s.ReserveSampleProjectInstance(ctx, reservation)
+		require.NoError(t, err)
+		err = s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
+			return tx.SetExpiration(ctx, expiresAt)
+		})
+		require.Equal(t, common.NotFound, common.ErrorCode(err))
+	})
+
+	t.Run("deleted", func(t *testing.T) {
+		_, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-b"))
+		require.NoError(t, err)
+		_, err = db.ExecContext(ctx, "UPDATE project SET deleted = TRUE WHERE resource_id = 'project-workspace-b' AND workspace = 'workspace-b'")
+		require.NoError(t, err)
+		err = s.WithLockedSampleProjectInstance(ctx, "workspace-b", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
+			activationErr := tx.SetExpiration(ctx, expiresAt)
+			require.Equal(t, common.NotFound, common.ErrorCode(activationErr))
+			lockCtx, cancel := context.WithTimeout(ctx, time.Second)
+			defer cancel()
+			_, err := db.ExecContext(lockCtx, "UPDATE project SET name = name WHERE resource_id = 'project-workspace-b' AND workspace = 'workspace-b'")
+			require.NoError(t, err)
+			return activationErr
+		})
+		require.Equal(t, common.NotFound, common.ErrorCode(err))
 	})
 }
 
