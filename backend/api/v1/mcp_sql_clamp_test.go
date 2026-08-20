@@ -278,12 +278,9 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			reason:    "the statement is not a read",
 		},
 		{
-			// The cost of reading the raw statement: the keyword refuses even
-			// inside a string literal. Fail-closed, and pinned so the trade is
-			// visible rather than discovered.
-			name:      "the export keyword in a string literal refuses too",
+			name:      "an unlexable Doris statement fails closed",
 			engine:    storepb.Engine_DORIS,
-			statement: "SELECT * FROM t WHERE a = 'into outfile'",
+			statement: "SELECT * FROM t WHERE a = 'unterminated",
 			refused:   true,
 			reason:    "the statement is not a read",
 		},
@@ -319,6 +316,24 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			statement: "SELECT 1; DROP TABLE employee",
 			refused:   true,
 			reason:    "the statement is not a read",
+		},
+		{
+			// The lexer, not the text, decides. Reading an audit log for
+			// attempted exports is a plausible read-only task, so the keyword
+			// inside a literal, a quoted identifier or a comment must serve.
+			name:      "Doris serves the export keyword inside a string literal",
+			engine:    storepb.Engine_DORIS,
+			statement: "SELECT * FROM audit_log WHERE statement LIKE '%INTO OUTFILE%'",
+		},
+		{
+			name:      "and inside a quoted identifier",
+			engine:    storepb.Engine_DORIS,
+			statement: "SELECT `outfile` FROM t",
+		},
+		{
+			name:      "and inside a comment",
+			engine:    storepb.Engine_DORIS,
+			statement: "SELECT 1 /* INTO OUTFILE 's3://b/' */",
 		},
 		{
 			name:      "a read on an engine with no splitter is still classified",
