@@ -981,7 +981,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
               break;
             }
             default: {
-              if (!updated.host) {
+              if (!updated.host && !isSaaSMode) {
                 updated.host = isDev() ? "127.0.0.1" : "host.docker.internal";
               }
               break;
@@ -993,7 +993,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
       });
       setBasicInfo((prev) => ({ ...prev, engine }));
     },
-    [resetDataSource, setDataSourceEditState, setBasicInfo]
+    [resetDataSource, setDataSourceEditState, setBasicInfo, isSaaSMode]
   );
 
   const handleSelectInstanceEngine = useCallback(
@@ -1539,7 +1539,9 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                     placeholder={
                       basicInfo.engine === Engine.SNOWFLAKE
                         ? t("instance.your-snowflake-account-locator")
-                        : t("instance.sentence.host.none-snowflake")
+                        : isSaaSMode
+                          ? t("instance.sentence.host.saas")
+                          : t("instance.sentence.host.none-snowflake")
                     }
                     className="mt-1 w-full"
                     disabled={!allowEdit}
@@ -1809,7 +1811,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
               }}
             >
               {state.isTestingConnection
-                ? `${t("instance.test-connection")}...`
+                ? t("instance.testing-connection")
                 : t("instance.test-connection")}
             </Button>
             {testConnectionFailure && (

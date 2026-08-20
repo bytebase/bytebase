@@ -24,6 +24,9 @@ import {
 
 const mocks = vi.hoisted(() => ({
   hasInstancePermission: vi.fn(() => true),
+  pushNotification: vi.fn(),
+  createInstance: vi.fn(),
+  isSaaSMode: false,
 }));
 
 vi.mock("./permission", () => ({
@@ -65,7 +68,7 @@ vi.mock("@/types", () => ({
 }));
 
 vi.mock("@/stores", () => ({
-  pushNotification: vi.fn(),
+  pushNotification: mocks.pushNotification,
 }));
 
 let mockEnvironmentList: { id: string; name: string }[] = [];
@@ -73,13 +76,14 @@ let mockEnvironmentList: { id: string; name: string }[] = [];
 vi.mock("@/stores/app", () => {
   const appState = () => ({
     createDataSource: vi.fn(),
-    createInstance: vi.fn(),
+    createInstance: mocks.createInstance,
     updateDataSource: vi.fn(),
     getEnvironmentByName: (name: string) => ({ name }),
     hasInstanceFeature: () => false,
     instanceLicenseCount: () => 1,
     activatedInstanceCount: () => 0,
     currentPlan: () => 1,
+    isSaaSMode: () => mocks.isSaaSMode,
     environmentList: mockEnvironmentList,
   });
   return {
@@ -158,6 +162,20 @@ const Probe = () => {
   );
 };
 
+const ConnectionProbe = ({ host }: { host: string }) => {
+  const ctx = useInstanceFormContext();
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        await ctx.testConnection({ ...ctx.adminDataSource, host });
+      }}
+    >
+      Test
+    </button>
+  );
+};
+
 const renderIntoContainer = () => {
   const container = document.createElement("div");
   const root = createRoot(container);
@@ -181,6 +199,8 @@ describe("InstanceFormProvider", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mocks.hasInstancePermission.mockReturnValue(true);
+    mocks.isSaaSMode = false;
+    mocks.createInstance.mockResolvedValue(create(InstanceSchema, {}));
     mockEnvironmentList = [];
     vi.useRealTimers();
   });
@@ -219,6 +239,66 @@ describe("InstanceFormProvider", () => {
 
     const probe = harness.container.firstElementChild as HTMLElement;
     expect(probe.dataset.environment).toBe("environments/dev");
+
+    harness.unmount();
+  });
+
+  test("explains local-only hosts in Bytebase Cloud without Docker advice", async () => {
+    mocks.isSaaSMode = true;
+    mocks.createInstance.mockRejectedValue(new Error("connection refused"));
+    const harness = renderIntoContainer();
+
+    await harness.render(
+      <InstanceFormProvider>
+        <ConnectionProbe host="127.1.2.3" />
+      </InstanceFormProvider>
+    );
+    await act(async () => {
+      (harness.container.firstElementChild as HTMLButtonElement).click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.pushNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: expect.stringContaining(
+          "instance.failed-to-connect-instance-saas-local-host"
+        ),
+      })
+    );
+    expect(mocks.pushNotification).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: expect.stringContaining(
+          "instance.failed-to-connect-instance-localhost"
+        ),
+      })
+    );
+
+    harness.unmount();
+  });
+
+  test("keeps Docker host advice for self-hosted local connections", async () => {
+    mocks.createInstance.mockRejectedValue(new Error("connection refused"));
+    const harness = renderIntoContainer();
+
+    await harness.render(
+      <InstanceFormProvider>
+        <ConnectionProbe host="0.0.0.0" />
+      </InstanceFormProvider>
+    );
+    await act(async () => {
+      (harness.container.firstElementChild as HTMLButtonElement).click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.pushNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        description: expect.stringContaining(
+          "instance.failed-to-connect-instance-localhost"
+        ),
+      })
+    );
 
     harness.unmount();
   });

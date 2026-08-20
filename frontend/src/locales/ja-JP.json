@@ -982,10 +982,12 @@
       },
       "docs": "接続ガイドを開く",
       "network": {
-        "description": "ホストとポートが Bytebase Cloud から到達可能か確認してください。ファイアウォールルール、許可リスト、プロキシ、トンネル、およびデータベースがプライベートネットワーク接続のみを許可していないかを確認してください。",
+        "description-saas": "ホストとポートが Bytebase Cloud から到達可能か確認してください。ファイアウォールルール、許可リスト、プロキシ、トンネル、およびデータベースがプライベートネットワーク接続のみを許可していないかを確認してください。",
+        "description-self-hosted": "ホストとポートが Bytebase のデプロイ環境から到達可能か確認してください。ファイアウォールルール、ネットワークルーティング、プロキシ、トンネル、およびデータベースが別のネットワークからの通信のみを許可していないかを確認してください。",
         "steps": {
           "address": "ホストまたはソケットとポートがデータベースエンドポイントと一致していることを確認してください。",
-          "firewall": "Bytebase Cloud を使用する場合は、必要な Cloud IP をデータベースファイアウォールの許可リストに追加してください。",
+          "firewall-saas": "Bytebase Cloud の IP をデータベースファイアウォールの許可リストに追加してください。",
+          "firewall-self-hosted": "Bytebase がデプロイされているネットワークからの接続を許可してください。",
           "private-network": "プライベートデータベースの場合は、VPN、プライベートネットワーク、または SSH トンネルを先に設定してください。"
         },
         "title": "ネットワーク到達性を確認"
@@ -1000,7 +1002,8 @@
         "title": "データベース権限を確認"
       },
       "timeout": {
-        "description": "データベースが時間内に応答しませんでした。ファイアウォールルール、ポート設定、ネットワークルーティング、および Bytebase Cloud からの接続が許可されているかを確認してください。",
+        "description-saas": "データベースが時間内に応答しませんでした。ファイアウォールルール、ポート設定、ネットワークルーティング、および Bytebase Cloud からの接続が許可されているかを確認してください。",
+        "description-self-hosted": "データベースが時間内に応答しませんでした。ファイアウォールルール、ポート設定、ネットワークルーティング、および Bytebase のデプロイ環境からの接続が許可されているかを確認してください。",
         "steps": {
           "load": "データベースがオンラインで、新しい接続を受け付けていることを確認してください。",
           "retry": "データベースがファイアウォールの背後にある場合は、許可リストまたはトンネル設定を完了してから再試行してください。",
@@ -1022,7 +1025,8 @@
         "steps": {
           "fields": "ホスト、ポート、ユーザー名、パスワードまたはシークレットソース、SSL/TLS モードを確認してください。",
           "help": "データベースがプライベートの場合は、VPN、プライベートネットワーク、または SSH トンネルを設定してから再試行してください。",
-          "logs": "データベースにファイアウォールルールがある場合は、Bytebase Cloud またはデプロイ済み Bytebase ネットワークからの接続を許可してください。"
+          "logs-saas": "データベースにファイアウォールルールがある場合は、Bytebase Cloud からの接続を許可してください。",
+          "logs-self-hosted": "データベースにファイアウォールルールがある場合は、Bytebase がデプロイされているネットワークからの接続を許可してください。"
         },
         "title": "接続設定を確認"
       },
@@ -1087,8 +1091,9 @@
       "vault-tls-config": "Vault TLS 構成 (オプション)",
       "vault-url": "ボールトの URL"
     },
-    "failed-to-connect-instance": "インスタンスへの接続に失敗しました。",
-    "failed-to-connect-instance-localhost": "Docker デプロイメントを使用している場合は、ホスト アドレスとして「host.docker.internal」を使用してみてください。",
+    "failed-to-connect-instance": "接続テストに失敗しました。",
+    "failed-to-connect-instance-localhost": "このアドレスは Bytebase ホストを指しています。データベースが Docker ホストで実行されている場合は、ホストアドレスに「host.docker.internal」を使用してください。",
+    "failed-to-connect-instance-saas-local-host": "「{{host}}」はローカル専用アドレスのため、Bytebase Cloud からデータベースへの接続には使用できません。Bytebase Cloud から到達可能なデータベースのホスト名または IP アドレスを入力してください。",
     "filter-instance-name": "インスタンス名のフィルタリング",
     "find-gcp-project-id": "GCP プロジェクト ID とインスタンス ID を表示するには、次を参照してください。",
     "find-gcp-project-id-and-instance-id": "GCP プロジェクト ID の確認方法については、次を参照してください",
@@ -1258,7 +1263,7 @@
           "template": "ユーザー {{user}}、パスワード {{password}}、ウェアハウス {{warehouse}} を作成し、必要な権限を付与する例は次のとおりです。"
         }
       },
-      "firewall-info": "データベースインスタンスにインバウンドファイアウォールルールを使用する場合は、ByteBase Cloud Connection命令を参照してください。",
+      "firewall-info": "Bytebase Cloud の IP をデータベースファイアウォールの許可リストに追加してください。",
       "google-cloud-sql": {
         "instance-name": "インスタンス接続名",
         "instance-name-tips": "インスタンス接続名は {{instance}} である必要があります。",
@@ -1270,7 +1275,8 @@
         }
       },
       "host": {
-        "none-snowflake": "たとえば、host.docker.internal | host ip | local socket"
+        "none-snowflake": "例: host.docker.internal | ホスト IP | ローカルソケット",
+        "saas": "例: db.example.com | データベース IP"
       },
       "proxy": {
         "snowflake": "プロキシ サーバーの場合は、@PROXY_HOST を追加し、ポートに PROXY_PORT を指定します。"
@@ -1279,7 +1285,7 @@
     "show-how-to-create": "作成方法",
     "snowflake-web-console": "スノーフレークウェブコンソール",
     "successfully-archived-instance": "インスタンス '{{0}}' を正常にアーカイブしました。",
-    "successfully-connected-instance": "インスタンスに正常に接続されました。",
+    "successfully-connected-instance": "接続に成功しました。",
     "successfully-created-instance-createdinstance-name": "インスタンス '{{0}}' が正常に作成されました。",
     "successfully-restored-instance": "インスタンス '{{0}}' を正常に復元しました。",
     "successfully-updated-instance-instance-name": "インスタンス '{{0}}' が正常に更新されました。",
@@ -1302,7 +1308,7 @@
     "testing-connection": "接続テスト中...",
     "token-write-only": "YOUR_TOKEN - 書き込み専用",
     "type-or-paste-credentials-write-only": "資格情報を入力または貼り付けます - 書き込みのみ",
-    "unable-to-connect": "Bytebase はインスタンスに接続できません。接続情報を再度確認することをお勧めします。ただし、今のところこの警告は無視してかまいません。作成後もインスタンスの詳細ページで接続情報を修正できます。\n\nエラーの詳細:{{0}}",
+    "unable-to-connect": "この設定では Bytebase から接続できませんでした。上のガイダンスを確認するか、そのまま続行して後で接続を更新してください。\n\n技術的な詳細: {{0}}",
     "users": "ユーザー",
     "your-snowflake-account-locator": "Snowflake アカウント ロケーター"
   },

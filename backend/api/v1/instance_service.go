@@ -188,7 +188,7 @@ func (s *InstanceService) checkAndLogInstanceConnection(ctx context.Context, met
 		}
 		defer driver.Close(ctx)
 		if err := driver.Ping(ctx); err != nil {
-			return newConnectionTestErrorWithCategory(connect.CodeInvalidArgument, err, "invalid datasource %s", dataSource.GetType())
+			return newConnectionTestErrorWithCategory(connect.CodeInvalidArgument, err, "failed to connect to database")
 		}
 		return nil
 	}()

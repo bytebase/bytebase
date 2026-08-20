@@ -982,10 +982,12 @@
       },
       "docs": "Mở hướng dẫn kết nối",
       "network": {
-        "description": "Xác nhận host và port có thể truy cập từ Bytebase Cloud. Kiểm tra firewall, allowlist, proxy, tunnel và liệu cơ sở dữ liệu có chỉ nhận lưu lượng mạng riêng hay không.",
+        "description-saas": "Xác nhận host và port có thể truy cập từ Bytebase Cloud. Kiểm tra firewall, allowlist, proxy, tunnel và liệu cơ sở dữ liệu có chỉ nhận lưu lượng mạng riêng hay không.",
+        "description-self-hosted": "Xác nhận host và port có thể truy cập từ môi trường triển khai Bytebase. Kiểm tra firewall, định tuyến mạng, proxy, tunnel và liệu cơ sở dữ liệu có chỉ nhận lưu lượng từ mạng khác hay không.",
         "steps": {
           "address": "Xác minh host hoặc socket và port khớp với endpoint cơ sở dữ liệu.",
-          "firewall": "Nếu dùng Bytebase Cloud, hãy thêm IP Cloud bắt buộc vào allowlist của firewall cơ sở dữ liệu.",
+          "firewall-saas": "Thêm IP của Bytebase Cloud vào allowlist của firewall cơ sở dữ liệu.",
+          "firewall-self-hosted": "Cho phép kết nối từ mạng nơi Bytebase được triển khai.",
           "private-network": "Với cơ sở dữ liệu riêng tư, hãy cấu hình VPN, mạng riêng hoặc SSH tunnel trước."
         },
         "title": "Kiểm tra khả năng truy cập mạng"
@@ -1000,7 +1002,8 @@
         "title": "Kiểm tra quyền cơ sở dữ liệu"
       },
       "timeout": {
-        "description": "Cơ sở dữ liệu không phản hồi kịp thời. Kiểm tra firewall, cấu hình port, định tuyến mạng và liệu cơ sở dữ liệu có cho phép kết nối từ Bytebase Cloud hay không.",
+        "description-saas": "Cơ sở dữ liệu không phản hồi kịp thời. Kiểm tra firewall, cấu hình port, định tuyến mạng và liệu cơ sở dữ liệu có cho phép kết nối từ Bytebase Cloud hay không.",
+        "description-self-hosted": "Cơ sở dữ liệu không phản hồi kịp thời. Kiểm tra firewall, cấu hình port, định tuyến mạng và liệu cơ sở dữ liệu có cho phép kết nối từ môi trường triển khai Bytebase hay không.",
         "steps": {
           "load": "Xác nhận cơ sở dữ liệu đang online và nhận kết nối mới.",
           "retry": "Nếu cơ sở dữ liệu nằm sau firewall, hãy hoàn tất allowlist hoặc tunnel trước khi thử lại.",
@@ -1022,7 +1025,8 @@
         "steps": {
           "fields": "Kiểm tra host, port, username, password hoặc nguồn secret và chế độ SSL/TLS.",
           "help": "Nếu cơ sở dữ liệu là riêng tư, hãy cấu hình VPN, mạng riêng hoặc SSH tunnel trước khi thử lại.",
-          "logs": "Nếu cơ sở dữ liệu có firewall, hãy cho phép Bytebase Cloud hoặc mạng Bytebase đã triển khai kết nối."
+          "logs-saas": "Nếu cơ sở dữ liệu có firewall, hãy cho phép Bytebase Cloud kết nối.",
+          "logs-self-hosted": "Nếu cơ sở dữ liệu có firewall, hãy cho phép kết nối từ mạng nơi Bytebase được triển khai."
         },
         "title": "Kiểm tra cấu hình kết nối"
       },
@@ -1087,8 +1091,9 @@
       "vault-tls-config": "Cấu hình Vault TLS (Tùy chọn)",
       "vault-url": "URL Vault"
     },
-    "failed-to-connect-instance": "Không kết nối được với phiên bản.",
-    "failed-to-connect-instance-localhost": "Nếu bạn chạy Bytebase bằng Docker, vui lòng thử \"host.docker.internal\" cho địa chỉ máy chủ.",
+    "failed-to-connect-instance": "Kiểm tra kết nối thất bại.",
+    "failed-to-connect-instance-localhost": "Địa chỉ này trỏ đến máy chủ Bytebase. Nếu cơ sở dữ liệu chạy trên máy chủ Docker, hãy thử dùng \"host.docker.internal\" làm địa chỉ host.",
+    "failed-to-connect-instance-saas-local-host": "\"{{host}}\" là địa chỉ chỉ dùng cục bộ nên Bytebase Cloud không thể dùng để truy cập cơ sở dữ liệu. Hãy nhập hostname hoặc địa chỉ IP của cơ sở dữ liệu mà Bytebase Cloud có thể truy cập.",
     "filter-instance-name": "Lọc tên phiên bản",
     "find-gcp-project-id": "Để tìm ID dự án GCP, xem",
     "find-gcp-project-id-and-instance-id": "Để tìm ID dự án GCP và ID phiên bản, xem",
@@ -1258,7 +1263,7 @@
           "template": "Dưới đây là ví dụ để tạo người dùng '{{user}}' với mật khẩu {{password}} cho {{warehouse}} và cấp cho người dùng các đặc quyền cần thiết."
         }
       },
-      "firewall-info": "Nếu bạn sử dụng các quy tắc tường lửa gửi đến cho thể hiện cơ sở dữ liệu của mình, vui lòng tham khảo Hướng dẫn kết nối đám mây Bytebase.",
+      "firewall-info": "Thêm IP của Bytebase Cloud vào allowlist của firewall cơ sở dữ liệu.",
       "google-cloud-sql": {
         "instance-name": "Tên kết nối phiên bản",
         "instance-name-tips": "Tên kết nối phiên bản phải giống như {{instance}}.",
@@ -1270,7 +1275,8 @@
         }
       },
       "host": {
-        "none-snowflake": "ví dụ: host.docker.internal | địa chỉ IP máy chủ | local socket"
+        "none-snowflake": "ví dụ: host.docker.internal | IP máy chủ | local socket",
+        "saas": "ví dụ: db.example.com | IP cơ sở dữ liệu"
       },
       "proxy": {
         "snowflake": "Đối với máy chủ proxy, thêm @PROXY_HOST và chỉ định PROXY_PORT trong cổng"
@@ -1279,7 +1285,7 @@
     "show-how-to-create": "Hiển thị cách tạo",
     "snowflake-web-console": "Bảng điều khiển web Snowflake",
     "successfully-archived-instance": "Đã lưu trữ thành công phiên bản '{{0}}'.",
-    "successfully-connected-instance": "Đã kết nối thành công với phiên bản.",
+    "successfully-connected-instance": "Kết nối thành công.",
     "successfully-created-instance-createdinstance-name": "Đã tạo thành công phiên bản '{{0}}'.",
     "successfully-restored-instance": "Đã khôi phục thành công trường hợp '{{0}}'.",
     "successfully-updated-instance-instance-name": "Đã cập nhật thành công phiên bản '{{0}}'.",
@@ -1302,7 +1308,7 @@
     "testing-connection": "Đang kiểm tra kết nối...",
     "token-write-only": "YOUR_TOKEN - chỉ ghi",
     "type-or-paste-credentials-write-only": "Nhập hoặc dán THÔNG TIN XÁC THỰC - chỉ ghi",
-    "unable-to-connect": "Bytebase không thể kết nối với phiên bản. Chúng tôi khuyên bạn nên xem xét lại thông tin kết nối. Nhưng bạn có thể bỏ qua cảnh báo này ngay bây giờ. Bạn vẫn có thể sửa thông tin kết nối từ trang chi tiết phiên bản sau khi tạo.\n\nChi tiết lỗi: {{0}}",
+    "unable-to-connect": "Bytebase không thể kết nối với các cài đặt này. Hãy xem hướng dẫn ở trên hoặc tiếp tục và cập nhật kết nối sau.\n\nChi tiết kỹ thuật: {{0}}",
     "users": "Người dùng",
     "your-snowflake-account-locator": "Định vị tài khoản Snowflake của bạn"
   },

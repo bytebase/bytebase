@@ -35,8 +35,35 @@ describe("Instance form locale interpolation", () => {
       expect(i18n.t("instance.sentence.host.none-snowflake")).not.toContain(
         "{"
       );
+      expect(i18n.exists("instance.sentence.host.saas")).toBe(true);
+      expect(
+        i18n.exists("instance.failed-to-connect-instance-saas-local-host")
+      ).toBe(true);
+      expect(
+        i18n.exists(
+          "instance.connection-recovery.network.description-self-hosted"
+        )
+      ).toBe(true);
+      expect(
+        i18n.exists("instance.connection-recovery.network.description-saas")
+      ).toBe(true);
       expect(i18n.t("instance.sentence.proxy.snowflake")).toContain("@");
       expect(i18n.t("instance.sentence.proxy.snowflake")).not.toContain("{");
     }
   );
+
+  test("uses concise English connection status messages", () => {
+    expect(enUS.instance["failed-to-connect-instance"]).toBe(
+      "Connection test failed."
+    );
+    expect(enUS.instance["successfully-connected-instance"]).toBe(
+      "Connection successful."
+    );
+    expect(enUS.instance["unable-to-connect"]).toContain(
+      "Review the guidance above, or continue"
+    );
+    expect(enUS.instance.sentence["firewall-info"]).toBe(
+      "Allowlist the Bytebase Cloud IP in your database firewall."
+    );
+  });
 });

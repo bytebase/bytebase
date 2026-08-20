@@ -982,10 +982,12 @@
       },
       "docs": "Open connection guide",
       "network": {
-        "description": "Confirm the host and port are reachable from Bytebase Cloud. Check firewall rules, allowlists, proxies, tunnels, and whether the database only accepts private network traffic.",
+        "description-saas": "Confirm the host and port are reachable from Bytebase Cloud. Check firewall rules, allowlists, proxies, tunnels, and whether the database only accepts private network traffic.",
+        "description-self-hosted": "Confirm the host and port are reachable from your Bytebase deployment. Check firewall rules, network routing, proxies, tunnels, and whether the database only accepts traffic from another network.",
         "steps": {
           "address": "Verify the host or socket and port match the database endpoint.",
-          "firewall": "If you use Bytebase Cloud, allowlist the required Cloud IP in your database firewall.",
+          "firewall-saas": "Allowlist the Bytebase Cloud IP in your database firewall.",
+          "firewall-self-hosted": "Allow connections from the network where Bytebase is deployed.",
           "private-network": "For a private database, configure VPN, private networking, or an SSH tunnel first."
         },
         "title": "Check network reachability"
@@ -1000,7 +1002,8 @@
         "title": "Check database permissions"
       },
       "timeout": {
-        "description": "The database did not respond in time. Check firewall rules, port settings, network routing, and whether the database allows connections from Bytebase Cloud.",
+        "description-saas": "The database did not respond in time. Check firewall rules, port settings, network routing, and whether the database allows connections from Bytebase Cloud.",
+        "description-self-hosted": "The database did not respond in time. Check firewall rules, port settings, network routing, and whether the database allows connections from your Bytebase deployment.",
         "steps": {
           "load": "Confirm the database is online and accepts new connections.",
           "retry": "If the database is behind a firewall, finish the allowlist or tunnel setup before retrying.",
@@ -1022,7 +1025,8 @@
         "steps": {
           "fields": "Check host, port, username, password or secret source, and SSL/TLS mode.",
           "help": "If your database is private, configure VPN, private networking, or an SSH tunnel before retrying.",
-          "logs": "If the database has firewall rules, allow Bytebase Cloud or your deployed Bytebase network to connect."
+          "logs-saas": "If the database has firewall rules, allow Bytebase Cloud to connect.",
+          "logs-self-hosted": "If the database has firewall rules, allow connections from the network where Bytebase is deployed."
         },
         "title": "Review connection settings"
       },
@@ -1087,8 +1091,9 @@
       "vault-tls-config": "Vault TLS Configuration (Optional)",
       "vault-url": "Vault URL"
     },
-    "failed-to-connect-instance": "Failed to connect instance.",
-    "failed-to-connect-instance-localhost": "If you run Bytebase with Docker, please try \"host.docker.internal\" for the host address.",
+    "failed-to-connect-instance": "Connection test failed.",
+    "failed-to-connect-instance-localhost": "This address points to the Bytebase host. If the database runs on the Docker host, try \"host.docker.internal\" as the host address.",
+    "failed-to-connect-instance-saas-local-host": "\"{{host}}\" is a local-only address that Bytebase Cloud cannot use to reach your database. Enter a database hostname or IP address reachable from Bytebase Cloud.",
     "filter-instance-name": "Filter instance name",
     "find-gcp-project-id": "To find GCP Project ID, see",
     "find-gcp-project-id-and-instance-id": "To find GCP Project ID and instance ID, see",
@@ -1258,7 +1263,7 @@
           "template": "Below is an example to create user '{{user}}' with password {{password}} for {{warehouse}} and grant the user with the needed privileges."
         }
       },
-      "firewall-info": "If you use inbound firewall rules for your database instance, please refer to Bytebase Cloud connection instruction.",
+      "firewall-info": "Allowlist the Bytebase Cloud IP in your database firewall.",
       "google-cloud-sql": {
         "instance-name": "Instance Connection Name",
         "instance-name-tips": "The instance connection name should look like {{instance}}.",
@@ -1270,7 +1275,8 @@
         }
       },
       "host": {
-        "none-snowflake": "e.g. host.docker.internal | host ip | local socket"
+        "none-snowflake": "e.g. host.docker.internal | host IP | local socket",
+        "saas": "e.g. db.example.com | database IP"
       },
       "proxy": {
         "snowflake": "For proxy server, append @PROXY_HOST and specify PROXY_PORT in the port"
@@ -1279,7 +1285,7 @@
     "show-how-to-create": "Show how to create",
     "snowflake-web-console": "Snowflake Web Console",
     "successfully-archived-instance": "Successfully archived the instance '{{0}}'.",
-    "successfully-connected-instance": "Successfully connected instance.",
+    "successfully-connected-instance": "Connection successful.",
     "successfully-created-instance-createdinstance-name": "Successfully created instance '{{0}}'.",
     "successfully-restored-instance": "Successfully restored the instance '{{0}}'.",
     "successfully-updated-instance-instance-name": "Successfully updated instance '{{0}}'.",
@@ -1302,7 +1308,7 @@
     "testing-connection": "Testing Connection...",
     "token-write-only": "YOUR_TOKEN - write only",
     "type-or-paste-credentials-write-only": "Type or paste CREDENTIALS - write only",
-    "unable-to-connect": "Bytebase is unable to connect the instance. We recommend you to review the connection info again. But it's OK to ignore this warning for now. You can still fix the connection info from the instance detail page after creation.\n\nError detail: {{0}}",
+    "unable-to-connect": "Bytebase couldn't connect with these settings. Review the guidance above, or continue and update the connection later.\n\nTechnical details: {{0}}",
     "users": "Users",
     "your-snowflake-account-locator": "Your Snowflake account locator"
   },

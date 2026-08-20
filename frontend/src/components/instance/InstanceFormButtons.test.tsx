@@ -62,6 +62,7 @@ vi.mock("@/app/analytics/provider", () => ({
 vi.mock("@/stores/app", () => {
   const appState = {
     hasFeature: () => true,
+    isSaaSMode: () => false,
     createInstance: mocks.createInstance,
     fetchDatabases: mocks.fetchDatabases,
     batchUpdateDatabases: mocks.batchUpdateDatabases,
@@ -463,6 +464,10 @@ describe("InstanceFormButtons", () => {
     expect(container.textContent).toContain(
       "instance.connection-recovery.tls.description"
     );
+    expect(container.textContent).toContain(
+      "instance.failed-to-connect-instance"
+    );
+    expect(container.textContent).not.toContain("common.warning");
     expect(context.emitShowConnectionOptions).not.toHaveBeenCalled();
     expect(mocks.createInstance).not.toHaveBeenCalled();
 

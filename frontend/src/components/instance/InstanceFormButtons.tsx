@@ -534,7 +534,9 @@ export function InstanceFormButtons({
       }}
     >
       <AlertDialogContent className="max-w-2xl">
-        <AlertDialogTitle>{t("common.warning")}</AlertDialogTitle>
+        <AlertDialogTitle>
+          {t("instance.failed-to-connect-instance")}
+        </AlertDialogTitle>
         <ConnectionRecovery
           category={connectionFailureDialogState.failureCategory}
           className="my-2"

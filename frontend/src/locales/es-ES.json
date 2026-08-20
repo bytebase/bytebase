@@ -982,10 +982,12 @@
       },
       "docs": "Abrir guía de conexión",
       "network": {
-        "description": "Confirma que el host y el puerto sean accesibles desde Bytebase Cloud. Revisa reglas de firewall, listas de permitidos, proxies, túneles y si la base de datos solo acepta tráfico de red privada.",
+        "description-saas": "Confirma que el host y el puerto sean accesibles desde Bytebase Cloud. Revisa reglas de firewall, listas de permitidos, proxies, túneles y si la base de datos solo acepta tráfico de red privada.",
+        "description-self-hosted": "Confirma que el host y el puerto sean accesibles desde tu despliegue de Bytebase. Revisa el firewall, las rutas de red, los proxies, los túneles y si la base de datos solo acepta tráfico de otra red.",
         "steps": {
           "address": "Verifica que el host o socket y el puerto coincidan con el endpoint de la base de datos.",
-          "firewall": "Si usas Bytebase Cloud, agrega la IP requerida de Cloud a la lista permitida del firewall de la base de datos.",
+          "firewall-saas": "Agrega la IP de Bytebase Cloud a la lista permitida del firewall de la base de datos.",
+          "firewall-self-hosted": "Permite conexiones desde la red donde está desplegado Bytebase.",
           "private-network": "Para una base de datos privada, configura primero VPN, red privada o túnel SSH."
         },
         "title": "Revisar alcance de red"
@@ -1000,7 +1002,8 @@
         "title": "Revisar permisos de base de datos"
       },
       "timeout": {
-        "description": "La base de datos no respondió a tiempo. Revisa reglas de firewall, configuración de puertos, rutas de red y si la base de datos permite conexiones desde Bytebase Cloud.",
+        "description-saas": "La base de datos no respondió a tiempo. Revisa reglas de firewall, configuración de puertos, rutas de red y si la base de datos permite conexiones desde Bytebase Cloud.",
+        "description-self-hosted": "La base de datos no respondió a tiempo. Revisa las reglas de firewall, los puertos, las rutas de red y si la base de datos permite conexiones desde tu despliegue de Bytebase.",
         "steps": {
           "load": "Confirma que la base de datos esté en línea y acepte nuevas conexiones.",
           "retry": "Si la base de datos está detrás de un firewall, completa primero la lista permitida o el túnel.",
@@ -1022,7 +1025,8 @@
         "steps": {
           "fields": "Revisa host, puerto, usuario, contraseña o fuente de secreto y modo SSL/TLS.",
           "help": "Si la base de datos es privada, configura VPN, red privada o túnel SSH antes de reintentar.",
-          "logs": "Si la base de datos tiene reglas de firewall, permite conexiones desde Bytebase Cloud o la red donde está desplegado Bytebase."
+          "logs-saas": "Si la base de datos tiene reglas de firewall, permite conexiones desde Bytebase Cloud.",
+          "logs-self-hosted": "Si la base de datos tiene reglas de firewall, permite conexiones desde la red donde está desplegado Bytebase."
         },
         "title": "Revisar configuración de conexión"
       },
@@ -1087,8 +1091,9 @@
       "vault-tls-config": "Configuración TLS de Vault (opcional)",
       "vault-url": "URL de Vault"
     },
-    "failed-to-connect-instance": "Error al conectar la instancia.",
-    "failed-to-connect-instance-localhost": "Si ejecuta Bytebase con Docker, intente \"host.docker.internal\" para la dirección del host.",
+    "failed-to-connect-instance": "La prueba de conexión falló.",
+    "failed-to-connect-instance-localhost": "Esta dirección apunta al host de Bytebase. Si la base de datos se ejecuta en el host de Docker, prueba \"host.docker.internal\" como dirección del host.",
+    "failed-to-connect-instance-saas-local-host": "\"{{host}}\" es una dirección local que Bytebase Cloud no puede usar para acceder a tu base de datos. Introduce un nombre de host o una dirección IP accesible desde Bytebase Cloud.",
     "filter-instance-name": "Filtrar nombre de instancia",
     "find-gcp-project-id": "Para encontrar el ID del proyecto de GCP, consulta",
     "find-gcp-project-id-and-instance-id": "Para encontrar el ID de proyecto y el ID de instancia de GCP, consulte",
@@ -1258,7 +1263,7 @@
           "template": "A continuación se muestra un ejemplo para crear el usuario '{{user}}' con la contraseña {{password}} para {{warehouse}} y otorgar al usuario los privilegios necesarios."
         }
       },
-      "firewall-info": "Si usa reglas de firewall entrante para su instancia de base de datos, consulte la instrucción de conexión de Bytebase Cloud.",
+      "firewall-info": "Agrega la IP de Bytebase Cloud a la lista permitida del firewall de la base de datos.",
       "google-cloud-sql": {
         "instance-name": "Nombre de conexión de instancia",
         "instance-name-tips": "El nombre de la conexión de la instancia debería ser {{instance}}.",
@@ -1270,7 +1275,8 @@
         }
       },
       "host": {
-        "none-snowflake": "por ejemplo, host.docker.internal | host ip | local socket"
+        "none-snowflake": "por ejemplo, host.docker.internal | IP del host | socket local",
+        "saas": "por ejemplo, db.example.com | IP de la base de datos"
       },
       "proxy": {
         "snowflake": "Para el servidor proxy, agregue @PROXY_HOST y especifique PROXY_PORT en el puerto"
@@ -1279,7 +1285,7 @@
     "show-how-to-create": "Mostrar cómo crear",
     "snowflake-web-console": "Consola web de Snowflake",
     "successfully-archived-instance": "Se archivó exitosamente la instancia '{{0}}'.",
-    "successfully-connected-instance": "Instancia conectada correctamente.",
+    "successfully-connected-instance": "Conexión correcta.",
     "successfully-created-instance-createdinstance-name": "Se ha creado correctamente la instancia '{{0}}'.",
     "successfully-restored-instance": "Se restauró exitosamente la instancia '{{0}}'.",
     "successfully-updated-instance-instance-name": "Se ha actualizado correctamente la instancia '{{0}}'.",
@@ -1302,7 +1308,7 @@
     "testing-connection": "Probando conexión...",
     "token-write-only": "TU_TOKEN - solo escritura",
     "type-or-paste-credentials-write-only": "Escriba o pegue las CREDENCIALES - solo escritura",
-    "unable-to-connect": "Bytebase no puede conectar la instancia. Le recomendamos que revise la información de conexión nuevamente. Pero está bien ignorar esta advertencia por ahora. Aún puede solucionar la información de conexión desde la página de detalles de la instancia después de la creación.\n\nDetalle del error: {{0}}",
+    "unable-to-connect": "Bytebase no pudo conectarse con esta configuración. Revisa las indicaciones anteriores o continúa y actualiza la conexión más tarde.\n\nDetalles técnicos: {{0}}",
     "users": "Usuarios",
     "your-snowflake-account-locator": "Su localizador de cuentas Snowflake"
   },
