@@ -104,15 +104,17 @@ func TestResourceMetricLabelsAndCumulativeMutation(t *testing.T) {
 	instance := &store.InstanceMessage{
 		ResourceID: "prod",
 		Metadata: &storepb.Instance{Labels: map[string]string{
-			"env.prod":     "before",
-			"env-prod":     "dash",
-			"\u4e2d\u6587": "unicode",
+			"env.prod":           "before",
+			"env-prod":           "dash",
+			"env_prod_conflict1": "reserved",
+			"\u4e2d\u6587":       "unicode",
 		}},
 	}
 	m.RecordInstanceSync(instance, time.Second, nil)
 	collidingMetric := findMetric(t, eventMetrics(m), "bytebase_instance_sync_duration_seconds")
 	require.Equal(t, "before", metricLabel(collidingMetric, "label_env_prod_conflict1"))
 	require.Equal(t, "dash", metricLabel(collidingMetric, "label_env_prod"))
+	require.Equal(t, "reserved", metricLabel(collidingMetric, "label_env_prod_conflict1_conflict1"))
 	require.Equal(t, "unicode", metricLabel(collidingMetric, "label___"))
 	m.RecordInstanceSync(&store.InstanceMessage{ResourceID: "staging", Metadata: &storepb.Instance{Labels: map[string]string{"owner": "platform"}}}, time.Second, nil)
 	unionMetric := findMetricWithLabels(t, eventMetrics(m), "bytebase_instance_sync_duration_seconds", map[string]string{"bytebase_instance_id": "staging"})

@@ -221,6 +221,11 @@ func (s *Syncer) syncQueuedDatabases(ctx context.Context) (retErr error) {
 	startedAt := time.Now()
 	result := productmetrics.ResultFailure
 	defer func() {
+		if !errors.Is(ctx.Err(), context.Canceled) && s.productMetrics != nil {
+			s.productMetrics.RecordRunnerRun(productmetrics.RunnerDatabaseSync, result, time.Since(startedAt))
+		}
+	}()
+	defer func() {
 		if r := recover(); r != nil {
 			panicErr, ok := r.(error)
 			if !ok {
@@ -228,9 +233,6 @@ func (s *Syncer) syncQueuedDatabases(ctx context.Context) (retErr error) {
 			}
 			retErr = errors.Wrap(panicErr, "database sync checker panic")
 			slog.Error("Database sync checker PANIC RECOVER", log.BBError(retErr), log.BBStack("panic-stack"))
-		}
-		if !errors.Is(ctx.Err(), context.Canceled) && s.productMetrics != nil {
-			s.productMetrics.RecordRunnerRun(productmetrics.RunnerDatabaseSync, result, time.Since(startedAt))
 		}
 	}()
 

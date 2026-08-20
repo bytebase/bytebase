@@ -102,7 +102,9 @@ func New(stores *store.Store, licenseService *enterprise.LicenseService) *Produc
 
 // Describe intentionally sends no descriptors. Resource labels can change
 // between observations, so their descriptor is defined only at collection.
-func (*ProductMetrics) Describe(_ chan<- *prometheus.Desc) {}
+func (*ProductMetrics) Describe(_ chan<- *prometheus.Desc) {
+	// Dynamic descriptors are emitted only from Collect.
+}
 
 // RecordInstanceSync records one complete instance-sync attempt. Cancellation
 // is a shutdown path rather than a failed synchronization.
@@ -330,13 +332,17 @@ func dynamicSchema(labelsByIdentity map[string]map[string]string) labelSchema {
 	}
 	slices.Sort(originalKeys)
 	schema := labelSchema{keys: make([]string, 0, len(originalKeys)), mapped: make(map[string]string, len(originalKeys))}
-	used := make(map[string]int)
+	used := make(map[string]struct{})
 	for _, key := range originalKeys {
-		name := "label_" + sanitizeLabelKey(key)
-		if n := used[name]; n > 0 {
-			name += "_conflict" + strconv.Itoa(n)
+		baseName := "label_" + sanitizeLabelKey(key)
+		name := baseName
+		for suffix := 1; ; suffix++ {
+			if _, exists := used[name]; !exists {
+				break
+			}
+			name = baseName + "_conflict" + strconv.Itoa(suffix)
 		}
-		used["label_"+sanitizeLabelKey(key)]++
+		used[name] = struct{}{}
 		schema.keys = append(schema.keys, name)
 		schema.mapped[key] = name
 	}
