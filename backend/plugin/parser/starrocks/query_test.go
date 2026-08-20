@@ -147,7 +147,9 @@ func TestValidateQuery(t *testing.T) {
 			description: "Session and user variables are read-only",
 		},
 		{
-			statement:   "SELECT [1, 2, 3], {'a': 1}, x'1f', b'101'",
+			// StarRocks requires the MAP prefix on a map constructor; a bare
+			// {...} is not a literal there.
+			statement:   "SELECT [1, 2, 3], map{'a': 1}, x'1f', b'101'",
 			valid:       true,
 			description: "Array, map, hex and bit literals are read-only",
 		},
@@ -167,7 +169,9 @@ func TestValidateQuery(t *testing.T) {
 			description: "GROUP BY CUBE is read-only",
 		},
 		{
-			statement:   "SELECT CONVERT(s USING utf8), CONVERT(s, SIGNED), BINARY s FROM t",
+			// StarRocks has no USING charset clause; CONVERT(x, type) and the
+			// BINARY operator are both accepted.
+			statement:   "SELECT CONVERT(s, SIGNED), BINARY s FROM t",
 			valid:       true,
 			description: "CONVERT and BINARY forms are read-only",
 		},
