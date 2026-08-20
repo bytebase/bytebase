@@ -287,6 +287,7 @@ func newSampleProjectInstanceFixture(t *testing.T, clock func() time.Time) (cont
 	stores, err := store.New(ctx, metadataURL, false)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, stores.Close()) })
+	setSampleProjectInstanceTestEnvironment(ctx, t, stores, "sample-workspace")
 
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
 	require.NoError(t, err)
@@ -425,11 +426,24 @@ func (f *sampleProjectInstanceFixture) newWorkspaceProject(ctx context.Context, 
 	projectID := "sample-project-" + suffix
 	_, err := f.store.GetDB().ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ($1)`, workspaceID)
 	require.NoError(t, err)
+	setSampleProjectInstanceTestEnvironment(ctx, t, f.store, workspaceID)
 	_, err = f.store.GetDB().ExecContext(ctx, `
 		INSERT INTO project (resource_id, workspace, name) VALUES ($1, $2, $3)
 	`, projectID, workspaceID, "Sample Project "+suffix)
 	require.NoError(t, err)
 	return context.WithValue(ctx, common.WorkspaceIDContextKey, workspaceID), projectID
+}
+
+func setSampleProjectInstanceTestEnvironment(ctx context.Context, t *testing.T, stores *store.Store, workspaceID string) {
+	t.Helper()
+	_, err := stores.UpsertSetting(ctx, &store.SettingMessage{
+		Name:      storepb.SettingName_ENVIRONMENT,
+		Workspace: workspaceID,
+		Value: &storepb.EnvironmentSetting{Environments: []*storepb.EnvironmentSetting_Environment{
+			{Title: "Test", Id: "test"},
+		}},
+	})
+	require.NoError(t, err)
 }
 
 func (f *sampleProjectInstanceFixture) addProject(ctx context.Context, t *testing.T, workspaceID, suffix string) string {
