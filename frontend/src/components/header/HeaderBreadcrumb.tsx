@@ -290,27 +290,37 @@ export function ProjectSegment({
               <span className="truncate max-w-48">{currentProject.title}</span>
             </RouterLink>
           )
-        ) : (
-          <div className="inline-flex items-center gap-x-1.5 rounded-xs px-2 py-1 text-sm font-medium text-control">
-            <FolderKanban className="size-4 text-control-light shrink-0" />
-            <span className="truncate max-w-48 text-control-placeholder">
-              {t("project.select")}
-            </span>
-          </div>
-        )}
+        ) : null}
         <Popover open={open} onOpenChange={setOpen}>
           <PopoverTrigger
             render={
-              <Button
-                type="button"
-                appearance="secondary"
-                aria-label={t("project.select")}
-                size="xs"
-                className="size-6 p-0 text-control-placeholder"
-              />
+              hasProject && projectId ? (
+                <Button
+                  type="button"
+                  appearance="secondary"
+                  aria-label={t("project.select")}
+                  size="xs"
+                  className="size-6 p-0 text-control-placeholder"
+                />
+              ) : (
+                <Button
+                  type="button"
+                  appearance="secondary"
+                  size="sm"
+                  className="h-auto px-2 py-1 text-sm gap-x-1.5 text-control-placeholder"
+                />
+              )
             }
           >
-            <ChevronDown className="size-3.5" />
+            {hasProject && projectId ? (
+              <ChevronDown className="size-3.5" />
+            ) : (
+              <>
+                <FolderKanban className="size-4 text-control-light shrink-0" />
+                <span className="truncate max-w-48">{t("project.select")}</span>
+                <ChevronDown className="size-3.5 shrink-0" />
+              </>
+            )}
           </PopoverTrigger>
           <PopoverContent
             align="start"

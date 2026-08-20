@@ -982,10 +982,12 @@
       },
       "docs": "打开连接指南",
       "network": {
-        "description": "请确认 Bytebase Cloud 可以访问主机和端口。检查防火墙规则、允许列表、代理、隧道，以及数据库是否只接受私有网络流量。",
+        "description-saas": "请确认 Bytebase Cloud 可以访问主机和端口。检查防火墙规则、允许列表、代理、隧道，以及数据库是否只接受私有网络流量。",
+        "description-self-hosted": "请确认部署 Bytebase 的网络可以访问主机和端口。检查防火墙规则、网络路由、代理、隧道，以及数据库是否只接受来自其他网络的流量。",
         "steps": {
           "address": "确认主机或 Socket、端口与数据库端点一致。",
-          "firewall": "如果使用 Bytebase Cloud，请在数据库防火墙中允许所需的 Cloud IP。",
+          "firewall-saas": "请在数据库防火墙中将 Bytebase Cloud IP 加入允许列表。",
+          "firewall-self-hosted": "允许来自 Bytebase 部署网络的连接。",
           "private-network": "如果数据库是私有网络，请先配置 VPN、私有网络或 SSH 隧道。"
         },
         "title": "检查网络连通性"
@@ -1000,7 +1002,8 @@
         "title": "检查数据库权限"
       },
       "timeout": {
-        "description": "数据库未及时响应。请检查防火墙规则、端口设置、网络路由，以及数据库是否允许来自 Bytebase Cloud 的连接。",
+        "description-saas": "数据库未及时响应。请检查防火墙规则、端口设置、网络路由，以及数据库是否允许来自 Bytebase Cloud 的连接。",
+        "description-self-hosted": "数据库未及时响应。请检查防火墙规则、端口设置、网络路由，以及数据库是否允许来自 Bytebase 部署网络的连接。",
         "steps": {
           "load": "确认数据库在线并接受新连接。",
           "retry": "如果数据库位于防火墙后，请先完成允许列表或隧道配置再重试。",
@@ -1022,7 +1025,8 @@
         "steps": {
           "fields": "检查主机、端口、用户名、密码或密钥来源，以及 SSL/TLS 模式。",
           "help": "如果数据库是私有网络，请先配置 VPN、私有网络或 SSH 隧道后再重试。",
-          "logs": "如果数据库有防火墙规则，请允许 Bytebase Cloud 或已部署的 Bytebase 网络连接。"
+          "logs-saas": "如果数据库有防火墙规则，请允许 Bytebase Cloud 连接。",
+          "logs-self-hosted": "如果数据库有防火墙规则，请允许来自 Bytebase 部署网络的连接。"
         },
         "title": "检查连接配置"
       },
@@ -1087,8 +1091,9 @@
       "vault-tls-config": "Vault TLS 配置（可选）",
       "vault-url": "Vault URL"
     },
-    "failed-to-connect-instance": "连接到实例失败。",
-    "failed-to-connect-instance-localhost": "如果您使用的 Docker 部署，请尝试使用 \"host.docker.internal\" 作为 Host 地址。",
+    "failed-to-connect-instance": "连接测试失败。",
+    "failed-to-connect-instance-localhost": "此地址指向 Bytebase 主机。如果数据库运行在 Docker 宿主机上，请尝试使用 \"host.docker.internal\" 作为主机地址。",
+    "failed-to-connect-instance-saas-local-host": "“{{host}}”是仅限本机使用的地址，Bytebase Cloud 无法通过它访问您的数据库。请输入 Bytebase Cloud 可访问的数据库主机名或 IP 地址。",
     "filter-instance-name": "过滤实例名称",
     "find-gcp-project-id": "查看 GCP 项目 ID 的方法见",
     "find-gcp-project-id-and-instance-id": "查看 GCP 项目 ID 与实例 ID 的方法见",
@@ -1258,7 +1263,7 @@
           "template": "创建用户 {{user}}，密码 {{password}}，warehouse 为{{warehouse}}，并授予必要权限的例子如下。"
         }
       },
-      "firewall-info": "如果您为数据库实例使用入站防火墙规则，请参阅 ByteBase Cloud Connection 文档。",
+      "firewall-info": "请在数据库防火墙中将 Bytebase Cloud IP 加入允许列表。",
       "google-cloud-sql": {
         "instance-name": "实例连接名称",
         "instance-name-tips": "实例连接名称应为 {{instance}}。",
@@ -1270,7 +1275,8 @@
         }
       },
       "host": {
-        "none-snowflake": "例如 host.docker.internal | ip | local socket"
+        "none-snowflake": "例如 host.docker.internal | 主机 IP | 本地 Socket",
+        "saas": "例如 db.example.com | 数据库 IP"
       },
       "proxy": {
         "snowflake": "对于代理服务器，加上 @PROXY_HOST，并在端口里指定 PROXY_PORT"
@@ -1279,7 +1285,7 @@
     "show-how-to-create": "如何创建",
     "snowflake-web-console": "Snowflake Web 控制台",
     "successfully-archived-instance": "成功归档实例'{{0}}'。",
-    "successfully-connected-instance": "成功连接到实例。",
+    "successfully-connected-instance": "连接成功。",
     "successfully-created-instance-createdinstance-name": "成功创建实例'{{0}}'。",
     "successfully-restored-instance": "已成功恢复实例“{{0}}”。",
     "successfully-updated-instance-instance-name": "成功更新实例'{{0}}'。",
@@ -1302,7 +1308,7 @@
     "testing-connection": "测试连接中...",
     "token-write-only": "YOUR_TOKEN - 仅写入",
     "type-or-paste-credentials-write-only": "输入或粘贴 CREDENTIALS - 仅写入",
-    "unable-to-connect": "Bytebase 无法连接到实例。我们推荐您再检查一遍连接信息。但也可以暂时忽略此警告。您在创建后仍能在实例详细页里修复连接信息。\n\n错误详情:{{0}}",
+    "unable-to-connect": "Bytebase 无法使用这些设置连接数据库。请检查上方指引，或继续操作并稍后更新连接。\n\n技术详情：{{0}}",
     "users": "用户",
     "your-snowflake-account-locator": "您的 Snowflake 账户定位符"
   },

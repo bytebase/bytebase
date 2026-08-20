@@ -61,6 +61,17 @@ export type LocalState = {
   isRequesting: boolean;
 };
 
+const localConnectionHosts = new Set([
+  "localhost",
+  "0.0.0.0",
+  "::1",
+  "[::1]",
+  "host.docker.internal",
+]);
+
+const isLocalConnectionHost = (host: string) =>
+  localConnectionHosts.has(host) || host.startsWith("127.");
+
 type TestConnectionResult = {
   success: boolean;
   message: string;
@@ -153,6 +164,7 @@ export function InstanceFormProvider({
 }) {
   const { t } = useTranslation();
   const environmentList = useAppStore((s) => s.environmentList);
+  const isSaaSMode = useAppStore((s) => s.isSaaSMode());
 
   const [state, setState] = useState<LocalState>(() => ({
     editingDataSourceId: instance?.dataSources.find(
@@ -529,9 +541,21 @@ export function InstanceFormProvider({
             ? err.metadata.get(connectionFailureCategoryHeader)
             : undefined
         );
-        let error = extractGrpcErrorMessage(err);
+        let error =
+          err instanceof ConnectError
+            ? err.rawMessage
+            : extractGrpcErrorMessage(err);
         if (!silent) {
-          if (host === "localhost" || host === "127.0.0.1") {
+          const normalizedHost = host.trim().toLowerCase();
+          if (isSaaSMode && isLocalConnectionHost(normalizedHost)) {
+            error = `${error}\n\n${t(
+              "instance.failed-to-connect-instance-saas-local-host",
+              { host }
+            )}`;
+          } else if (
+            isLocalConnectionHost(normalizedHost) &&
+            normalizedHost !== "host.docker.internal"
+          ) {
             error = `${error}\n\n${t("instance.failed-to-connect-instance-localhost")}`;
           }
           pushNotification({
@@ -604,7 +628,15 @@ export function InstanceFormProvider({
         }
       }
     },
-    [isCreating, basicInfo, instance, extractDataSourceFromEdit, parent, t]
+    [
+      isCreating,
+      basicInfo,
+      instance,
+      extractDataSourceFromEdit,
+      parent,
+      isSaaSMode,
+      t,
+    ]
   );
 
   // Debounced valueChanged to avoid expensive deep comparison on every keystroke.

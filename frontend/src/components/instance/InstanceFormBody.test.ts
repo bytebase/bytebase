@@ -174,6 +174,27 @@ describe("InstanceFormBody", () => {
     );
   });
 
+  test("keeps Docker-only host suggestions out of Bytebase Cloud", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/components/instance/InstanceFormBody.tsx"),
+      "utf-8"
+    );
+
+    expect(source).toContain("if (!updated.host && !isSaaSMode)");
+    expect(source).toContain('t("instance.sentence.host.saas")');
+    expect(source).toContain('t("instance.sentence.host.none-snowflake")');
+  });
+
+  test("uses the localized testing label", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/components/instance/InstanceFormBody.tsx"),
+      "utf-8"
+    );
+
+    expect(source).toContain('t("instance.testing-connection")');
+    expect(source).not.toContain('`${t("instance.test-connection")}...`');
+  });
+
   test("shows connection recovery for explicit test connection failures", () => {
     const source = readFileSync(
       join(process.cwd(), "src/components/instance/InstanceFormBody.tsx"),

@@ -1,9 +1,33 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { describe, expect, test } from "vitest";
-import { normalizeConnectionFailureCategory } from "./ConnectionRecovery";
+import { act, createElement } from "react";
+import { createRoot } from "react-dom/client";
+import { beforeEach, describe, expect, test, vi } from "vitest";
+import {
+  ConnectionRecovery,
+  normalizeConnectionFailureCategory,
+} from "./ConnectionRecovery";
+
+const mocks = vi.hoisted(() => ({ isSaaSMode: false }));
+
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({ t: (key: string) => key }),
+}));
+
+vi.mock("@/stores/app", () => ({
+  useAppStore: (selector: (state: { isSaaSMode: () => boolean }) => unknown) =>
+    selector({ isSaaSMode: () => mocks.isSaaSMode }),
+}));
+
+(
+  globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
+).IS_REACT_ACT_ENVIRONMENT = true;
 
 describe("ConnectionRecovery", () => {
+  beforeEach(() => {
+    mocks.isSaaSMode = false;
+  });
+
   test("normalizes backend connection failure categories", () => {
     expect(normalizeConnectionFailureCategory("auth_failed")).toBe(
       "auth_failed"
@@ -60,12 +84,61 @@ describe("ConnectionRecovery", () => {
     );
 
     expect(source).toContain(
-      'href="https://docs.bytebase.com/get-started/connect/overview?source=console"'
+      '"https://docs.bytebase.com/get-started/connect/overview?source=console"'
     );
     expect(source).toContain('target="_blank"');
     expect(source).toContain('rel="noreferrer"');
     expect(source).toContain("instance.connection-recovery.docs");
     expect(enUS).not.toContain("Check Bytebase backend logs");
     expect(enUS).not.toContain("Review required connection fields");
+  });
+
+  test("shows Cloud-specific network recovery in SaaS mode", async () => {
+    mocks.isSaaSMode = true;
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        createElement(ConnectionRecovery, { category: "network_unreachable" })
+      );
+    });
+
+    expect(container.textContent).toContain(
+      "instance.connection-recovery.network.description-saas"
+    );
+    expect(container.textContent).toContain(
+      "instance.connection-recovery.network.steps.firewall-saas"
+    );
+    expect(container.querySelector("a")).toHaveAttribute(
+      "href",
+      "https://docs.bytebase.com/get-started/cloud#prerequisites"
+    );
+
+    act(() => root.unmount());
+  });
+
+  test("shows deployment-specific network recovery when self-hosted", async () => {
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        createElement(ConnectionRecovery, { category: "network_unreachable" })
+      );
+    });
+
+    expect(container.textContent).toContain(
+      "instance.connection-recovery.network.description-self-hosted"
+    );
+    expect(container.textContent).toContain(
+      "instance.connection-recovery.network.steps.firewall-self-hosted"
+    );
+    expect(container.querySelector("a")).toHaveAttribute(
+      "href",
+      "https://docs.bytebase.com/get-started/connect/overview?source=console"
+    );
+
+    act(() => root.unmount());
   });
 });
