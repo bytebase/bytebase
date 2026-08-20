@@ -350,12 +350,21 @@ func (m *Manager) prepareLocked(
 			return m.denyByPolicy(lifecycleCtx, tx, policy.DeniedReason)
 		}
 	}
-	environment, err := m.store.GetEnvironmentByID(workCtx, request.WorkspaceID, testEnvironmentID)
+	environments, err := m.store.GetEnvironment(workCtx, request.WorkspaceID)
 	if err != nil {
-		return m.discardReservation(lifecycleCtx, tx, errors.Join(errors.New("failed to inspect sample project instance environment"), err))
+		return m.discardReservation(lifecycleCtx, tx, errors.Join(errors.New("failed to inspect sample project instance environments"), err))
 	}
-	if environment == nil {
-		return m.discardReservation(lifecycleCtx, tx, newFailure(FailureFailedPrecondition, errors.New("sample project instance requires the test environment")))
+	environmentID := ""
+	for _, environment := range environments.GetEnvironments() {
+		if environmentID == "" || environment.Id == testEnvironmentID {
+			environmentID = environment.Id
+		}
+		if environment.Id == testEnvironmentID {
+			break
+		}
+	}
+	if environmentID == "" {
+		return m.discardReservation(lifecycleCtx, tx, newFailure(FailureFailedPrecondition, errors.New("sample project instance requires an environment")))
 	}
 
 	password, err := randomPassword(m.random)
@@ -394,7 +403,7 @@ func (m *Manager) prepareLocked(
 	registered, err := m.createMetadata(workCtx, registration{
 		WorkspaceID:       request.WorkspaceID,
 		ProjectID:         request.ProjectID,
-		EnvironmentID:     testEnvironmentID,
+		EnvironmentID:     environmentID,
 		InstanceID:        reservation.InstanceID,
 		Title:             sampleProjectInstanceTitle,
 		Engine:            storepb.Engine_POSTGRES,

@@ -255,8 +255,8 @@ func TestManagerRetriesWhenConcurrentFailureDeletesReservation(t *testing.T) {
 	require.Len(t, secondPolicyCalled, 1)
 }
 
-func TestManagerRejectsMissingTestEnvironmentBeforeProvisioning(t *testing.T) {
-	ctx, _, s, target, manager := newConcreteManager(t)
+func TestManagerUsesFirstEnvironmentWhenTestIsMissing(t *testing.T) {
+	ctx, _, s, _, manager := newConcreteManager(t)
 	_, err := s.UpsertSetting(ctx, &store.SettingMessage{
 		Name:      storepb.SettingName_ENVIRONMENT,
 		Workspace: "workspace-a",
@@ -266,10 +266,9 @@ func TestManagerRejectsMissingTestEnvironmentBeforeProvisioning(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	_, err = manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
-	require.Equal(t, FailureFailedPrecondition, FailureKindOf(err))
-	require.Nil(t, mustGetSampleProjectInstance(ctx, t, s))
-	assertAllocationAbsent(ctx, t, target, sampleNames("workspace-a"))
+	result, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	require.NoError(t, err)
+	require.Equal(t, "prod", *result.Instance.EnvironmentID)
 }
 
 func TestManagerPersistsAndRecoversConcreteProvisionOwnership(t *testing.T) {
