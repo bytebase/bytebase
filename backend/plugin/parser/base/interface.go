@@ -93,12 +93,30 @@ func RegisterQueryValidator(engine storepb.Engine, f ValidateSQLForEditorFunc) {
 // 2. SELECT statement
 // We also support CTE with SELECT statements, but not with DML statements.
 // The first bool indicates whether the query can run in read-only mode, and the second bool determines whether all queries return data.
+//
+// An engine with no registered validator answers "read-only, all queries
+// return data". That default suits the callers who only route or format with
+// it; a caller that must REFUSE a write has to ask HasQueryValidator first,
+// because here the answer for such an engine is a default rather than a
+// verdict.
 func ValidateSQLForEditor(engine storepb.Engine, statement string) (bool, bool, error) {
 	f, ok := queryValidators[engine]
 	if !ok {
 		return true, true, nil
 	}
 	return f(statement)
+}
+
+// HasQueryValidator reports whether a read-only query validator is registered
+// for engine, so a caller can tell ValidateSQLForEditor's verdict apart from
+// its no-validator default. The map stays unexported: this is the whole of
+// what a caller outside the package may learn about it.
+//
+// Lock-free like every other lookup here, and for the same reason: validators
+// are registered from package init functions, before any request runs.
+func HasQueryValidator(engine storepb.Engine) bool {
+	_, ok := queryValidators[engine]
+	return ok
 }
 
 func RegisterExtractChangedResourcesFunc(engine storepb.Engine, f ExtractChangedResourcesFunc) {

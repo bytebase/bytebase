@@ -347,6 +347,23 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		}
 	}
 
+	// The MCP read-only clamp. Unconditional on Explain, unlike the gate
+	// above: an explain request carries the bare statement and the driver
+	// prepends EXPLAIN, so skipping it would hand a read-only session an
+	// unclassified write to send.
+	clamped, err := mcpReadOnlyClampApplies(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if clamped {
+		if err := refuseNonReadOnlyStatement(instance.Metadata.GetEngine(), statement); err != nil {
+			// The same kind of refusal the ceiling gate records, taken at the
+			// one point that can see the request's argument.
+			common.SetMCPPolicyDenied(ctx)
+			return nil, err
+		}
+	}
+
 	queryRestriction := getEffectiveQueryDataPolicy(
 		ctx,
 		s.store,

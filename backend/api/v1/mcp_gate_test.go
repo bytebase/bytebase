@@ -778,6 +778,9 @@ type mcpGateResult struct {
 	dispatched  bool
 	auditMarked bool
 	err         error
+	// dispatchedCtx is the context the handler was called with, so a test can
+	// assert what the gate stamped on the way in.
+	dispatchedCtx context.Context
 }
 
 // invokeMCPGate runs one request through the gate alone. auditMarked is what
@@ -788,8 +791,9 @@ type mcpGateResult struct {
 func invokeMCPGate(t *testing.T, stores mcpCeilingReader, authCtx *common.AuthContext, procedure string, req connect.AnyRequest) mcpGateResult {
 	t.Helper()
 	out := mcpGateResult{}
-	next := func(_ context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {
+	next := func(ctx context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {
 		out.dispatched = true
+		out.dispatchedCtx = ctx
 		return connect.NewResponse(&v1pb.User{}), nil
 	}
 	ctx := context.Background()

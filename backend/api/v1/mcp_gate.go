@@ -348,7 +348,7 @@ func NewInternalMCPGateInterceptor(stores mcpCeilingReader) connect.Interceptor 
 
 func (in *internalMCPGateInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc {
 	return func(ctx context.Context, req connect.AnyRequest) (connect.AnyResponse, error) {
-		policyDenial, err := in.refuse(ctx, req)
+		ctx, policyDenial, err := in.refuse(ctx, req)
 		if err == nil {
 			return next(ctx, req)
 		}
@@ -389,51 +389,57 @@ func (*internalMCPGateInterceptor) WrapStreamingHandler(connect.StreamingHandler
 // refuse returns the error the gate refuses this request with, or nil to let it
 // through to ACL. The bool reports whether the refusal is a verdict about the
 // caller, which is an audited outcome; an infrastructure failure is not.
-func (in *internalMCPGateInterceptor) refuse(ctx context.Context, req connect.AnyRequest) (bool, error) {
+//
+// The context it returns carries the ceiling this request was held against,
+// for the one handler that enforces on the request's argument rather than on
+// its method (see mcpCeilingFromContext).
+func (in *internalMCPGateInterceptor) refuse(ctx context.Context, req connect.AnyRequest) (context.Context, bool, error) {
 	procedure := req.Spec().Procedure
 	authCtx, ok := common.GetAuthContextFromContext(ctx)
 	if !ok {
 		// The auth interceptor runs first and always sets this. Its absence
 		// means the chain was reordered, and guessing which class a method is
 		// in is exactly the wrong response.
-		return false, connect.NewError(connect.CodeInternal,
+		return ctx, false, connect.NewError(connect.CodeInternal,
 			errors.New("MCP method classification unavailable: no auth context"))
 	}
 
 	switch authCtx.MCPMethodClass {
 	case v1pb.MCPMethodClass_FORBIDDEN:
-		return true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+		return ctx, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
 			"%s is not available to MCP sessions because %s. Perform this action signed in to the Bytebase console instead",
 			procedure, denialReason(authCtx.MCPMethodClass, authCtx.MCPDenialReason, reasonForbiddenClass)))
 	case v1pb.MCPMethodClass_EXCLUDED:
-		return true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+		return ctx, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
 			"%s is served by no MCP capability ceiling because %s. Perform this action signed in to the Bytebase console instead",
 			procedure, denialReason(authCtx.MCPMethodClass, authCtx.MCPDenialReason, reasonExcludedClass)))
 	case v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE:
 	default:
-		return true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+		return ctx, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
 			"%s carries no MCP classification, so no MCP session may call it", procedure))
 	}
 
-	if policyDenial, err := in.refuseByCeiling(ctx, procedure, authCtx.MCPMethodClass); err != nil {
-		return policyDenial, err
+	ceiling, policyDenial, err := in.refuseByCeiling(ctx, procedure, authCtx.MCPMethodClass)
+	if err != nil {
+		return ctx, policyDenial, err
 	}
 	if err := refuseByRequestShape(procedure, req.Any()); err != nil {
-		return true, err
+		return ctx, true, err
 	}
-	return false, nil
+	return withMCPCeiling(ctx, ceiling), false, nil
 }
 
 // refuseByCeiling holds the method's class against the workspace's live
-// ceiling.
-func (in *internalMCPGateInterceptor) refuseByCeiling(ctx context.Context, procedure string, class v1pb.MCPMethodClass) (bool, error) {
+// ceiling, and returns the ceiling it resolved so the request can be held
+// against the same one further in.
+func (in *internalMCPGateInterceptor) refuseByCeiling(ctx context.Context, procedure string, class v1pb.MCPMethodClass) (storepb.WorkspaceProfileSetting_MCPCapability, bool, error) {
 	// The internal auth interceptor puts the delegated credential's workspace
 	// on every request it admits, so an empty one means the chain was
 	// reordered — a bug in this process, not an outage, and not a verdict
 	// about the caller.
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	if workspaceID == "" {
-		return false, connect.NewError(connect.CodeInternal, errors.Errorf(
+		return storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED, false, connect.NewError(connect.CodeInternal, errors.Errorf(
 			"%s cannot be checked against the MCP capability ceiling: no workspace on the request", procedure))
 	}
 	// The store applies the backward-compatible default for a workspace that
@@ -452,27 +458,27 @@ func (in *internalMCPGateInterceptor) refuseByCeiling(ctx context.Context, proce
 		slog.Warn("failed to resolve the MCP capability ceiling; refusing the request",
 			slog.String("method", procedure), slog.String("workspace", workspaceID), log.BBError(err))
 		if errors.Is(err, store.ErrMCPCapabilityUnreadable) {
-			return true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+			return ceiling, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
 				"%s is refused: this workspace's stored MCP capability ceiling is not one this build understands, "+
 					"so the request fails closed. Ask a workspace admin to set the MCP ceiling again in the workspace settings",
 				procedure))
 		}
-		return false, connect.NewError(connect.CodeUnavailable, errors.Errorf(
+		return ceiling, false, connect.NewError(connect.CodeUnavailable, errors.Errorf(
 			"%s is refused: this workspace's MCP capability ceiling could not be read, so the request fails closed. "+
 				"Retry shortly; if it persists, a workspace admin must check the workspace MCP settings",
 			procedure))
 	}
 	served, known := mcpServingClasses[ceiling]
 	if !known {
-		return true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+		return ceiling, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
 			"%s is refused: this workspace's stored MCP capability ceiling %v is not one this build serves. "+
 				"Ask a workspace admin to set the MCP ceiling to a supported value in the workspace settings",
 			procedure, ceiling))
 	}
 	if slices.Contains(served, class) {
-		return false, nil
+		return ceiling, false, nil
 	}
-	return true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+	return ceiling, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
 		"%s is a %v method and this workspace's MCP capability ceiling is %v, which serves %s. "+
 			"Ask a workspace admin to raise the MCP ceiling in the workspace settings, "+
 			"or perform this action signed in to the Bytebase console instead",
