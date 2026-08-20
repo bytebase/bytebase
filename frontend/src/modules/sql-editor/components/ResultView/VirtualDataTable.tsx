@@ -1,5 +1,6 @@
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { head, last } from "lodash-es";
+import { ExpandIcon } from "lucide-react";
 import {
   forwardRef,
   useCallback,
@@ -9,6 +10,9 @@ import {
   useRef,
   useState,
 } from "react";
+import { useTranslation } from "react-i18next";
+import { Button } from "@/components/ui/button";
+import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { MaskingReasonPopover } from "@/modules/sql-editor/components/MaskingReasonPopover";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
@@ -21,7 +25,11 @@ import {
 } from "./binary-format";
 import { ColumnSortedIcon } from "./ColumnSortedIcon";
 import { getPlainValue } from "./cell-value";
-import { useBinaryFormatContext, useSelectionContext } from "./context";
+import {
+  useBinaryFormatContext,
+  useSelectionContext,
+  useSQLResultViewContext,
+} from "./context";
 import { ResultCopyContextMenu } from "./ResultCopyContextMenu";
 import { TableCell } from "./TableCell";
 import type {
@@ -44,7 +52,6 @@ export interface VirtualDataTableProps {
   rows: ResultTableRow[];
   columns: ResultTableColumn[];
   activeRowIndex: number;
-  isSensitiveColumn: (index: number) => boolean;
   getMaskingReason?: (index: number) => MaskingReason | undefined;
   database: Database;
   statement?: string;
@@ -77,6 +84,7 @@ export const VirtualDataTable = forwardRef<
   },
   ref
 ) {
+  const { t } = useTranslation();
   const containerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
 
@@ -100,6 +108,7 @@ export const VirtualDataTable = forwardRef<
   } = useSelectionContext();
 
   const { getBinaryFormat, setBinaryFormat } = useBinaryFormatContext();
+  const { setDetail } = useSQLResultViewContext();
 
   const getColumnTypeByIndex = useCallback(
     (columnIndex: number) => columns[columnIndex]?.columnType ?? "",
@@ -386,6 +395,9 @@ export const VirtualDataTable = forwardRef<
                 key={virtualRow.key}
                 data-row-index={rowIndex}
                 className="flex absolute inset-x-0 group"
+                onDoubleClick={() =>
+                  setDetail({ row: rowIndex, col: 0, view: "row" })
+                }
                 style={{
                   top: 0,
                   transform: `translateY(${virtualRow.start}px)`,
@@ -407,10 +419,27 @@ export const VirtualDataTable = forwardRef<
                     width: `${indexColWidth}px`,
                   }}
                 >
+                  <div className="absolute left-3 top-1/2 size-6 -translate-y-1/2 opacity-0 pointer-events-none group-hover:opacity-100 group-hover:pointer-events-auto group-focus-within:opacity-100 group-focus-within:pointer-events-auto">
+                    <Tooltip content={t("sql-editor.view-detail")} side="right">
+                      <Button
+                        size="sm"
+                        appearance="outline"
+                        className="size-6 rounded-full p-0 shadow"
+                        aria-label={t("sql-editor.view-detail")}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          setDetail({ row: rowIndex, col: 0, view: "row" });
+                        }}
+                      >
+                        <ExpandIcon className="size-3" />
+                      </Button>
+                    </Tooltip>
+                  </div>
                   <span
                     className={cn(
                       "textinfolabel pr-1 truncate",
-                      selectionDisabled ? "pl-1" : "pl-4"
+                      selectionDisabled ? "pl-1" : "pl-4",
+                      "group-hover:opacity-0 group-hover:pointer-events-none group-focus-within:opacity-0 group-focus-within:pointer-events-none"
                     )}
                   >
                     {rowIndex + 1}
@@ -462,7 +491,6 @@ export const VirtualDataTable = forwardRef<
                           colIndex={columnIndex}
                           allowSelect
                           columnType={getColumnTypeByIndex(columnIndex)}
-                          database={database}
                         />
                       </div>
                     </div>

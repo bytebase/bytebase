@@ -221,7 +221,12 @@ vi.mock("@/utils/v1/sql", () => ({
 }));
 
 vi.mock("./DetailPanel", () => ({
-  DetailPanel: () => <div data-testid="detail-panel" />,
+  DetailPanel: ({ result }: { result: { rows: unknown[] } }) => (
+    <div
+      data-testid="detail-panel"
+      data-result-row-count={result.rows.length}
+    />
+  ),
 }));
 
 vi.mock("./context", () => ({
@@ -372,6 +377,10 @@ describe("SingleResultView document view", () => {
         "id,profile,ssn"
       );
       expect(screen.getByTestId("result-table")).toHaveTextContent("******");
+      expect(screen.getByTestId("detail-panel")).toHaveAttribute(
+        "data-result-row-count",
+        "1"
+      );
     }
   );
 
@@ -394,6 +403,27 @@ describe("SingleResultView document view", () => {
     expect(
       screen.getByRole("region", { name: "sql-editor.json-view" })
     ).toBeInTheDocument();
+  });
+
+  test("shows an empty document result in JSON view", () => {
+    render(
+      <SingleResultView
+        disallowCopyingData
+        params={params}
+        database={databaseForEngine(Engine.COSMOSDB)}
+        result={
+          create(QueryResultSchema, {
+            columnNames: ["result"],
+            columnTypeNames: ["JSON"],
+          })
+        }
+        showExport={false}
+      />
+    );
+
+    expect(
+      screen.getByRole("region", { name: "sql-editor.json-view" })
+    ).toHaveTextContent("[]");
   });
 
   test("does not offer JSON mode for relational or malformed results", () => {

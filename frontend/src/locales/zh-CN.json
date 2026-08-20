@@ -3065,6 +3065,7 @@
     "request-access-grant": "申请访问授权",
     "request-export": "申请导出",
     "result-detail": {
+      "cell": "单元格详情",
       "next-match": "下一个匹配项",
       "previous-match": "上一个匹配项",
       "search": "搜索详情"

@@ -3065,6 +3065,7 @@
     "request-access-grant": "アクセス付与をリクエスト",
     "request-export": "エクスポートをリクエスト",
     "result-detail": {
+      "cell": "セルの詳細",
       "next-match": "次の一致",
       "previous-match": "前の一致",
       "search": "詳細を検索"

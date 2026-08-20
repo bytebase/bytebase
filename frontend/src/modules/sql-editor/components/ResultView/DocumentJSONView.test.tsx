@@ -1,6 +1,12 @@
+import { create } from "@bufbuild/protobuf";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useEffect } from "react";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import {
+  QueryResultSchema,
+  QueryRowSchema,
+  RowValueSchema,
+} from "@/types/proto-es/v1/sql_service_pb";
 import { DocumentJSONView } from "./DocumentJSONView";
 
 const {
@@ -63,6 +69,21 @@ vi.mock("@/components/monaco/MonacoEditor", () => ({
   },
 }));
 
+const documentResult = (documents: string[]) =>
+  create(QueryResultSchema, {
+    columnNames: ["result"],
+    columnTypeNames: ["JSON"],
+    rows: documents.map((document) =>
+      create(QueryRowSchema, {
+        values: [
+          create(RowValueSchema, {
+            kind: { case: "stringValue", value: document },
+          }),
+        ],
+      })
+    ),
+  });
+
 describe("DocumentJSONView", () => {
   beforeEach(() => {
     handlers.mouseMove = undefined;
@@ -75,13 +96,12 @@ describe("DocumentJSONView", () => {
 
     render(
       <DocumentJSONView
-        content={content}
+        result={documentResult(['{"id":"one"}'])}
         disallowCopyingData={false}
         compact={false}
         searchQuery=""
         activeMatchIndex={0}
         onMatchCountChange={vi.fn()}
-        documents={[]}
       />
     );
 
@@ -101,13 +121,12 @@ describe("DocumentJSONView", () => {
   test("prevents native copy events when result copying is disabled", () => {
     const { rerender } = render(
       <DocumentJSONView
-        content="[]"
+        result={documentResult([])}
         disallowCopyingData
         compact={false}
         searchQuery=""
         activeMatchIndex={0}
         onMatchCountChange={vi.fn()}
-        documents={[]}
       />
     );
 
@@ -120,13 +139,12 @@ describe("DocumentJSONView", () => {
 
     rerender(
       <DocumentJSONView
-        content="[]"
+        result={documentResult([])}
         disallowCopyingData={false}
         compact={false}
         searchQuery=""
         activeMatchIndex={0}
         onMatchCountChange={vi.fn()}
-        documents={[]}
       />
     );
     const allowedEvent = new Event("copy", {
@@ -138,15 +156,12 @@ describe("DocumentJSONView", () => {
   });
 
   test("copies the top-level document under the pointer", async () => {
-    const document = {
-      content: '{\n  "id": "one"\n}',
-      startLineNumber: 2,
-      endLineNumber: 4,
-    };
+    const firstDocument = '{\n  "id": "one"\n}';
+    const secondDocument = '{\n  "id": "two"\n}';
+    const result = documentResult(['{"id":"one"}', '{"id":"two"}']);
     const view = render(
       <DocumentJSONView
-        content={`[\n  ${document.content.replaceAll("\n", "\n  ")}\n]`}
-        documents={[document]}
+        result={result}
         disallowCopyingData={false}
         compact={false}
         searchQuery=""
@@ -157,18 +172,30 @@ describe("DocumentJSONView", () => {
 
     await waitFor(() => expect(onMouseMove).toHaveBeenCalled());
     act(() => {
-      handlers.mouseMove?.({ target: { position: { lineNumber: 3 } } });
+      handlers.mouseMove?.({ target: { position: { lineNumber: 6 } } });
     });
 
     const copyButton = screen.getByRole("button", { name: "common.copy" });
     expect(copyButton.parentElement?.parentElement).toHaveStyle({ left: "6px" });
     fireEvent.click(copyButton);
-    expect(writeTextToClipboard).toHaveBeenCalledWith(document.content);
+    expect(writeTextToClipboard).toHaveBeenCalledWith(secondDocument);
+
+    act(() => {
+      handlers.mouseMove?.({ target: { position: { lineNumber: 1 } } });
+    });
+    expect(
+      screen.queryByRole("button", { name: "common.copy" })
+    ).not.toBeInTheDocument();
+
+    act(() => {
+      handlers.mouseMove?.({ target: { position: { lineNumber: 3 } } });
+    });
+    fireEvent.click(screen.getByRole("button", { name: "common.copy" }));
+    expect(writeTextToClipboard).toHaveBeenLastCalledWith(firstDocument);
 
     view.rerender(
       <DocumentJSONView
-        content={`[\n  ${document.content.replaceAll("\n", "\n  ")}\n]`}
-        documents={[document]}
+        result={result}
         disallowCopyingData
         compact={false}
         searchQuery=""

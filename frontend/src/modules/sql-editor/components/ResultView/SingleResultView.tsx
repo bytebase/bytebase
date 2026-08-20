@@ -64,8 +64,8 @@ import { createExplainToken } from "@/utils/pev2";
 import {
   flattenElasticsearchSearchResult,
   flattenNoSQLQueryResult,
-  formatNoSQLQueryResultForJSONView,
-  type NoSQLJSONDocument,
+  formatNoSQLQueryResultAsJSON,
+  isNoSQLQueryResult,
 } from "@/utils/sqlResult";
 import { STORAGE_KEY_SQL_EDITOR_NOSQL_TABLE_VIEW } from "@/utils/storage-keys";
 import { isNullOrUndefined } from "@/utils/util";
@@ -129,7 +129,8 @@ export function SingleResultView(props: SingleResultViewProps) {
     STORAGE_KEY_SQL_EDITOR_NOSQL_TABLE_VIEW,
     true
   );
-  const [documentTableView, setDocumentTableView] = useState(false);
+  const [documentViewMode, setDocumentViewMode] =
+    useState<DocumentViewMode>("JSON");
   // Sort state lives at this level (not inside the inner component) so the
   // sorted `rows` we feed into the provider are the same array the user
   // sees in the table. The provider's selection-copy logic dereferences
@@ -139,25 +140,22 @@ export function SingleResultView(props: SingleResultViewProps) {
 
   const isDocumentEngine =
     engine === Engine.COSMOSDB || engine === Engine.MONGODB;
+  const supportsDocumentJSONView = useMemo(
+    () => isDocumentEngine && isNoSQLQueryResult(result),
+    [isDocumentEngine, result]
+  );
+  const activeDocumentViewMode = supportsDocumentJSONView
+    ? documentViewMode
+    : "TABLE";
   const flattened = useMemo(() => {
     if (engine === Engine.ELASTICSEARCH) {
       return flattenElasticsearchSearchResult(result);
     }
-    if (isDocumentEngine) {
+    if (isDocumentEngine && activeDocumentViewMode === "TABLE") {
       return flattenNoSQLQueryResult(result);
     }
     return undefined;
-  }, [engine, isDocumentEngine, result]);
-  const documentJSONViewResult = useMemo(
-    () =>
-      isDocumentEngine ? formatNoSQLQueryResultForJSONView(result) : undefined,
-    [isDocumentEngine, result]
-  );
-  const documentJSON = documentJSONViewResult?.content;
-  const supportsDocumentJSONView =
-    isDocumentEngine && flattened !== undefined && documentJSON !== undefined;
-  const documentViewMode: DocumentViewMode =
-    supportsDocumentJSONView && !documentTableView ? "JSON" : "TABLE";
+  }, [activeDocumentViewMode, engine, isDocumentEngine, result]);
   const supportsTableViewToggle =
     engine === Engine.ELASTICSEARCH && flattened !== undefined;
   const activeResult = isDocumentEngine
@@ -201,11 +199,11 @@ export function SingleResultView(props: SingleResultViewProps) {
     });
   }, [baseRows, sortState, columns]);
 
-  // Reset sort whenever the user toggles the NoSQL table-view switch:
+  // Reset sort whenever the user toggles a NoSQL view:
   // column indices don't carry over between flattened/raw shapes.
   useEffect(() => {
     setSortState(undefined);
-  }, [noSQLTableView]);
+  }, [activeDocumentViewMode, noSQLTableView]);
 
   const toggleSort = useCallback((columnIndex: number) => {
     setSortState((current) => {
@@ -230,7 +228,6 @@ export function SingleResultView(props: SingleResultViewProps) {
       <SingleResultViewInner
         {...props}
         engine={engine}
-        activeResult={activeResult}
         columns={columns}
         rows={rows}
         sortState={sortState}
@@ -240,10 +237,8 @@ export function SingleResultView(props: SingleResultViewProps) {
         noSQLTableView={noSQLTableView}
         setNoSQLTableView={setNoSQLTableView}
         supportsDocumentJSONView={supportsDocumentJSONView}
-        documentJSON={documentJSON}
-        documentJSONDocuments={documentJSONViewResult?.documents ?? []}
-        documentViewMode={documentViewMode}
-        setDocumentViewMode={(mode) => setDocumentTableView(mode === "TABLE")}
+        documentViewMode={activeDocumentViewMode}
+        setDocumentViewMode={setDocumentViewMode}
       />
     </SQLResultViewProvider>
   );
@@ -251,7 +246,6 @@ export function SingleResultView(props: SingleResultViewProps) {
 
 interface SingleResultViewInnerProps extends SingleResultViewProps {
   engine: Engine;
-  activeResult: QueryResult;
   columns: ResultTableColumn[];
   rows: ResultTableRow[];
   sortState: SortState | undefined;
@@ -261,8 +255,6 @@ interface SingleResultViewInnerProps extends SingleResultViewProps {
   noSQLTableView: boolean;
   setNoSQLTableView: (next: boolean) => void;
   supportsDocumentJSONView: boolean;
-  documentJSON: string | undefined;
-  documentJSONDocuments: NoSQLJSONDocument[];
   documentViewMode: DocumentViewMode;
   setDocumentViewMode: (mode: DocumentViewMode) => void;
 }
@@ -278,7 +270,6 @@ function SingleResultViewInner({
   onExport,
   requestExportSlot,
   engine,
-  activeResult: _activeResult,
   columns,
   rows,
   sortState,
@@ -288,8 +279,6 @@ function SingleResultViewInner({
   noSQLTableView,
   setNoSQLTableView,
   supportsDocumentJSONView,
-  documentJSON,
-  documentJSONDocuments,
   documentViewMode,
   setDocumentViewMode,
   compact = false,
@@ -337,7 +326,7 @@ function SingleResultViewInner({
     setDocumentSearchQuery("");
     setDocumentSearchActiveIndex(0);
     setDocumentSearchMatchCount(0);
-  }, [documentJSON]);
+  }, [result]);
 
   useEffect(() => {
     setDocumentSearchActiveIndex(0);
@@ -499,20 +488,6 @@ function SingleResultViewInner({
     currentTabMode !== "ADMIN" &&
     (rows.length === resultRowsLimit || rows.length === policyMaxRows);
 
-  const isSensitiveColumn = useCallback(
-    (columnIndex: number): boolean => {
-      if (flattenedTableView) return false;
-      const reason = result.masked?.[columnIndex];
-      return (
-        reason !== null &&
-        reason !== undefined &&
-        reason.semanticTypeId !== undefined &&
-        reason.semanticTypeId !== ""
-      );
-    },
-    [flattenedTableView, result.masked]
-  );
-
   const getMaskingReason = useCallback(
     (columnIndex: number) => {
       if (flattenedTableView) return undefined;
@@ -558,10 +533,7 @@ function SingleResultViewInner({
   }, [result]);
 
   const resultRowsText = `${rows.length} ${t("sql-editor.rows.self")}`;
-  const isJSONView =
-    supportsDocumentJSONView &&
-    documentViewMode === "JSON" &&
-    documentJSON !== undefined;
+  const isJSONView = supportsDocumentJSONView && documentViewMode === "JSON";
   const moveDocumentSearchMatch = (offset: number) => {
     if (documentSearchMatchCount === 0) {
       return;
@@ -583,10 +555,13 @@ function SingleResultViewInner({
   };
 
   const handleCopyJSON = () => {
-    if (disallowCopyingData || !documentJSON) {
+    if (disallowCopyingData) {
       return;
     }
-    void writeTextToClipboard(documentJSON);
+    const content = formatNoSQLQueryResultAsJSON(result);
+    if (content) {
+      void writeTextToClipboard(content);
+    }
   };
 
   // ---- Render branches by viewMode ----
@@ -800,8 +775,7 @@ function SingleResultViewInner({
           {/* Body */}
           {isJSONView ? (
             <DocumentJSONView
-              content={documentJSON}
-              documents={documentJSONDocuments}
+              result={result}
               disallowCopyingData={disallowCopyingData}
               compact={compact}
               searchQuery={documentSearchQuery}
@@ -822,7 +796,6 @@ function SingleResultViewInner({
                   ref={dataTableRef as React.RefObject<VirtualDataBlockHandle>}
                   rows={rows}
                   columns={columns}
-                  isSensitiveColumn={isSensitiveColumn}
                   getMaskingReason={getMaskingReason}
                   database={database}
                   statement={params.statement}
@@ -834,7 +807,6 @@ function SingleResultViewInner({
                   ref={dataTableRef as React.RefObject<VirtualDataTableHandle>}
                   rows={rows}
                   columns={columns}
-                  isSensitiveColumn={isSensitiveColumn}
                   getMaskingReason={getMaskingReason}
                   database={database}
                   statement={params.statement}
@@ -922,7 +894,16 @@ function SingleResultViewInner({
         </>
       )}
 
-      {!isJSONView && <DetailPanel rows={rows} columns={columns} />}
+      {!isJSONView && (
+        <DetailPanel
+          rows={rows}
+          columns={columns}
+          database={database}
+          result={result}
+          statement={result.statement}
+          getMaskingReason={getMaskingReason}
+        />
+      )}
     </>
   );
 }

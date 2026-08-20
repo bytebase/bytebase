@@ -3065,6 +3065,7 @@
     "request-access-grant": "Request access grant",
     "request-export": "Request export",
     "result-detail": {
+      "cell": "Cell detail",
       "next-match": "Next match",
       "previous-match": "Previous match",
       "search": "Search detail"
