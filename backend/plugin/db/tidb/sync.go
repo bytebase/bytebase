@@ -333,7 +333,10 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 
 	// Query check constraint info.
-	// information_schema.CHECK_CONSTRAINTS was added in TiDB v7.4.0.
+	// information_schema.CHECK_CONSTRAINTS was added in TiDB v7.4.0. Gate on the TiDB
+	// version rather than the MySQL compatibility prefix: TiDB reports 8.0.11 (also since
+	// v7.4.0, before which it reported 5.7.25), but MySQL itself only added that table in
+	// 8.0.16, so reading the prefix as a MySQL version understates what TiDB supports.
 	checkMap := make(map[db.TableKey][]*storepb.CheckConstraintMetadata)
 	hasCheckConstraints, err := tidbVersionAtLeast(version, "7.4.0")
 	if err != nil {
