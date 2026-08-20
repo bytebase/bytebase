@@ -830,38 +830,42 @@ func (d *Driver) getCheckConstraintList(ctx context.Context, databaseName string
 }
 
 var (
-	// TiDB Self-Managed and TiDB Cloud Starter report the upstream semver, e.g.
-	// "8.0.11-TiDB-v8.5.0" and "8.0.11-TiDB-v7.5.2-serverless".
+	// The TiDB version within a VERSION() string, e.g. "8.0.11-TiDB-v8.5.0" and
+	// "8.0.11-TiDB-v7.5.2-serverless".
 	tidbSemverRegex = regexp.MustCompile(`v\d+\.\d+\.\d+`)
-	// TiDB Cloud reports a calendar version carrying no upstream semver, e.g.
-	// "8.0.11-TiDB-CLOUD.202603.4".
-	tidbCloudVersionRegex = regexp.MustCompile(`CLOUD\.\d+\.\d+`)
+	// The leading MySQL compatibility version every TiDB build reports.
+	mysqlCompatVersionRegex = regexp.MustCompile(`^\d+\.\d+\.\d+`)
 )
 
 // supportsCheckConstraintTable reports whether the server exposes
 // information_schema.CHECK_CONSTRAINTS, which TiDB added in v7.4.0. rawVersion is the
-// verbatim VERSION() output, carrying both a MySQL compatibility version and the TiDB
-// version.
+// verbatim VERSION() output, carrying a MySQL compatibility version and, usually, the
+// TiDB version: "8.0.11-TiDB-v8.5.0".
 //
-// Gate on the TiDB half, not the MySQL prefix: TiDB reports the 8.0.11 prefix from v7.4.0
-// onward (5.7.25 before that), but MySQL itself only added the table in 8.0.16, so
-// reading that prefix as a real MySQL version understates what TiDB supports. TiDB Cloud
-// reports a calendar version in place of the semver, and every TiDB Cloud release
-// postdates v7.4.0.
+// The TiDB version decides whenever it is readable. When it is not — TiDB Cloud reports a
+// calendar version ("8.0.11-TiDB-CLOUD.202603.4"), and a custom server-version can drop it
+// altogether — fall back to the MySQL prefix, which marks the same boundary: TiDB moved
+// that prefix from 5.7.25 to 8.0.11 in v7.4.0, the very release that added the table.
 //
-// A string carrying no recognizable TiDB version — a custom server-version, say — counts
-// as unsupported, so sync omits check constraints instead of failing outright.
+// Do not read the prefix as a real MySQL version. MySQL added the table in 8.0.16, so
+// comparing against that would answer false for every TiDB build, all of which report
+// 8.0.11.
 func supportsCheckConstraintTable(rawVersion string) bool {
-	loc := tidbSemverRegex.FindStringIndex(rawVersion)
-	if loc == nil {
-		return tidbCloudVersionRegex.MatchString(rawVersion)
+	if loc := tidbSemverRegex.FindStringIndex(rawVersion); loc != nil {
+		// Skip the leading "v" that semver.Make does not accept.
+		if tidbVersion, err := semver.Make(rawVersion[loc[0]+1 : loc[1]]); err == nil {
+			return tidbVersion.GE(semver.MustParse("7.4.0"))
+		}
 	}
-	// Skip the leading "v" that semver.Make does not accept.
-	semVersion, err := semver.Make(rawVersion[loc[0]+1 : loc[1]])
+	loc := mysqlCompatVersionRegex.FindStringIndex(rawVersion)
+	if loc == nil {
+		return false
+	}
+	mysqlVersion, err := semver.Make(rawVersion[loc[0]:loc[1]])
 	if err != nil {
 		return false
 	}
-	return semVersion.GE(semver.MustParse("7.4.0"))
+	return mysqlVersion.GE(semver.MustParse("8.0.0"))
 }
 
 func stripSingleQuote(s string) string {
