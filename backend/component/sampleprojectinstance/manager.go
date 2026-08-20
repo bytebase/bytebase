@@ -350,6 +350,13 @@ func (m *Manager) prepareLocked(
 			return m.denyByPolicy(lifecycleCtx, tx, policy.DeniedReason)
 		}
 	}
+	environment, err := m.store.GetEnvironmentByID(workCtx, request.WorkspaceID, testEnvironmentID)
+	if err != nil {
+		return m.discardReservation(lifecycleCtx, tx, errors.Join(errors.New("failed to inspect sample project instance environment"), err))
+	}
+	if environment == nil {
+		return m.discardReservation(lifecycleCtx, tx, newFailure(FailureFailedPrecondition, errors.New("sample project instance requires the test environment")))
+	}
 
 	password, err := randomPassword(m.random)
 	if err != nil {

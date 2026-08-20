@@ -15,6 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/enterprise"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/migrator"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -254,6 +255,23 @@ func TestManagerRetriesWhenConcurrentFailureDeletesReservation(t *testing.T) {
 	require.Len(t, secondPolicyCalled, 1)
 }
 
+func TestManagerRejectsMissingTestEnvironmentBeforeProvisioning(t *testing.T) {
+	ctx, _, s, target, manager := newConcreteManager(t)
+	_, err := s.UpsertSetting(ctx, &store.SettingMessage{
+		Name:      storepb.SettingName_ENVIRONMENT,
+		Workspace: "workspace-a",
+		Value: &storepb.EnvironmentSetting{Environments: []*storepb.EnvironmentSetting_Environment{
+			{Title: "Production", Id: "prod"},
+		}},
+	})
+	require.NoError(t, err)
+
+	_, err = manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	require.Equal(t, FailureFailedPrecondition, FailureKindOf(err))
+	require.Nil(t, mustGetSampleProjectInstance(ctx, t, s))
+	assertAllocationAbsent(ctx, t, target, sampleNames("workspace-a"))
+}
+
 func TestManagerPersistsAndRecoversConcreteProvisionOwnership(t *testing.T) {
 	ctx, _, s, target, manager := newConcreteManager(t)
 	names := sampleNames("workspace-a")
@@ -320,6 +338,14 @@ func newConcreteManager(t *testing.T) (context.Context, *sql.DB, *store.Store, *
 		INSERT INTO project (resource_id, workspace, name)
 		VALUES ('project-a', 'workspace-a', 'Project A')
 	`)
+	require.NoError(t, err)
+	_, err = s.UpsertSetting(ctx, &store.SettingMessage{
+		Name:      storepb.SettingName_ENVIRONMENT,
+		Workspace: "workspace-a",
+		Value: &storepb.EnvironmentSetting{Environments: []*storepb.EnvironmentSetting_Environment{
+			{Title: "Test", Id: testEnvironmentID},
+		}},
+	})
 	require.NoError(t, err)
 
 	container := testcontainer.GetTestTLSPgContainer(ctx, t)
