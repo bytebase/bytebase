@@ -36,34 +36,77 @@ directory-sync token — fixed on `main` by #21110 and #21109. Two more are stil
 - **Secrets inside free-form text.** `redactRoleAttribute` (`read_redaction.go`) masks a password
   hash within MariaDB `SHOW GRANTS` output. No field annotation expresses that; it stays
   hand-written on the read path.
-- **Runtime enforcement.** `debug_redact` is inert in Go and the redactor is a denylist, so at
-  runtime an unannotated field is logged. The inventory below moves that failure to CI; nothing
+- **Runtime enforcement.** The `debug_redact` that `SENSITIVE` carries is inert in Go, and the
+  redactor is a denylist, so at runtime an unannotated field is logged. The inventory below moves that failure to CI; nothing
   catches it in a binary built past a skipped lint, where today's allowlist rebuilds fail closed.
 
 ## Design
 
 ### Annotations
 
+One extension, an enum, declared in `proto/v1/v1/annotation.proto`:
+
+```proto
+enum AuditBehavior {
+  AUDIT_BEHAVIOR_UNSPECIFIED = 0;   // recorded normally
+  SENSITIVE = 1 [debug_redact = true];
+  OMIT = 2;
+}
+
+extend google.protobuf.FieldOptions {
+  AuditBehavior audit_behavior = 100010;
+}
+```
+
+```proto
+string client_secret = 5 [(bytebase.v1.audit_behavior) = SENSITIVE];
+repeated QueryRow rows = 3 [(bytebase.v1.audit_behavior) = OMIT];
+```
+
 | | must not reach an audit payload | may the API return it |
 |---|---|---|
-| `debug_redact = true` | yes | only on the response that mints it; never on a read path |
-| `(bytebase.v1.audit_omit) = true` | yes | yes — returning it is the point of the RPC |
+| `SENSITIVE` | yes | only on the response that mints it; never on a read path |
+| `OMIT` | yes | yes — returning it is the point of the RPC |
 
 `ServiceAccount.service_key` forces that distinction: `CreateServiceAccount` and key rotation
 return it exactly once (`service_account_service.go:117`, `:270`), while `convertToServiceAccount`
 never populates it. `RotateDirectorySyncTokenResponse` has the same shape. The read-path assertion
 runs on converters, which is precisely the boundary that permits issuance and forbids reads.
 
-```proto
-string client_secret = 5 [debug_redact = true];
-repeated QueryRow rows = 3 [(bytebase.v1.audit_omit) = true];
-```
+Not `audit` and not number 100000: `bytebase.v1.audit` already exists as a `bool` on
+`MethodOptions`, and 100000 is `allow_without_credential`. Different extend scopes make reuse
+legal, but grep is how a reviewer audits this, so the identifier has to be unambiguous.
 
-`debug_redact` is `google.protobuf.FieldOptions` field 16 — already in the toolchain, already
-meaning "contains sensitive credentials", no new dependency. `audit_omit` is one new bool on
-`FieldOptions` in `proto/v1/v1/annotation.proto`, covering seven bulk fields, largest being
-`QueryResult.rows` and `Sheet.content`. They stay separate: merging them would either stop
-`debug_redact` constraining read paths, or block `rows` from reaching the client.
+#### Why one enum rather than two bools
+
+The alternative is a bool per behavior — upstream `debug_redact = true` on credentials, a local
+`audit_omit = true` on bulk. Both encode the same two classes and both read from the descriptor,
+so the choice rests on four things.
+
+**`debug_redact` belongs on one of the two values, not both.** It means "contains sensitive
+credentials". `QueryResult.rows` is bulk, not a credential, and must not claim credential semantics
+to anything reading that option. The enum carries `debug_redact` on `SENSITIVE` alone, so the two
+values share local behaviour — both omit from the audit payload — while differing upstream. Two
+bools force the choice of either marking bulk fields `debug_redact` (false) or running two
+unrelated vocabularies.
+
+**Exclusivity becomes structural.** Two bools permit `[debug_redact = true, (audit_omit) = true]`,
+which is meaningless and which nothing rejects. One classification per field is unviolatable in the
+enum.
+
+**One vocabulary at the field.** `= SENSITIVE` and `= OMIT` read in parallel and answer to one
+grep. `[debug_redact = true]` beside `[(bytebase.v1.audit_omit) = true]` mixes an upstream bool
+with a local one, and a reviewer must know both conventions to audit a proto file.
+
+**Nothing upstream is given up.** Annotating enum values with `debug_redact` is protobuf's own
+documented pattern for keeping a local vocabulary while still being recognized, and C++ debug APIs
+honour it as of v30. The literal `[debug_redact = true]` is more immediately recognizable to a
+protobuf reader, which is the one point on the other side, and it is a one-time cost against a doc
+comment in `annotation.proto`.
+
+This changes nothing about enforcement. **Go honours `debug_redact` nowhere**, field-level or
+enum-level, so the upstream recognition is future-proofing and vocabulary, not protection we have
+today. The lints remain the only thing enforcing either value.
 
 ### Redaction
 
@@ -116,7 +159,7 @@ rows regain `rows_count`.
   `TestLintDenialRequestsAreReviewedForRedaction`.
 - **Read-path assertion.** `assertNoInputOnlyValues` (`instance_service_converter_test.go:449`)
   already requires every `INPUT_ONLY` field to come back blank from a converter; generalize it to
-  `debug_redact`. Converters only — issuance responses set the field outside them.
+  `SENSITIVE`. Converters only — issuance responses set the field outside them.
 
 ## Performance
 
@@ -152,10 +195,11 @@ darwin/arm64, one run, with `INPUT_ONLY` standing in for the annotation set.
   `api_key` and Login `password` carry no annotation at all.
 - **`udpa.annotations.sensitive`** (CNCF, used by Envoy) merges PII with secrets, and an audit row
   often should carry identity. Also a new `buf` dependency for one boolean.
-- **An enum with `MASK` and `OMIT`** — there is no mask. `maskedString` is `""` and protojson drops
-  it, so the distinction does not exist today.
-- **An enum-valued extension carrying `EnumValueOptions.debug_redact`** keeps our own vocabulary
-  with upstream recognition. Deferred, not rejected; backward-compatible upgrade path.
+- **A `MASK` value alongside `OMIT`** — there is no mask to model. `maskedString` is `""` and
+  protojson drops it, so every existing "mask" is already an omit. `SENSITIVE` and `OMIT` differ in
+  what the field *is*, not in how much of it survives; both drop it.
+- **Two bools** — upstream `debug_redact` on credentials plus a local `audit_omit` on bulk.
+  Rejected; see "Why one enum rather than two bools" above.
 - **AIP-147** prescribes patterns, not an annotation: `INPUT_ONLY` plus `OUTPUT_ONLY bool
   <name>_set`. We follow it inconsistently — `ssl_ca_set` does, `directory_sync_token_configured`
   does not, and that field is in no tagged release yet.
