@@ -835,8 +835,14 @@ func (d *Driver) getCheckConstraintList(ctx context.Context, databaseName string
 }
 
 // tidbVersionAtLeast checks if a TiDB version string (e.g., "v7.4.0") is
-// greater than or equal to the given threshold (e.g., "7.4.0").
+// greater than or equal to the given threshold (e.g., "7.4.0"). TiDB Cloud
+// calendar versions (e.g., "CLOUD.202603.4") carry no upstream semver to compare,
+// but every TiDB Cloud release postdates the versions gated here, so they satisfy
+// any threshold.
 func tidbVersionAtLeast(version, threshold string) (bool, error) {
+	if isCloudVersion(version) {
+		return true, nil
+	}
 	v := strings.TrimPrefix(version, "v")
 	semVersion, err := semver.Make(v)
 	if err != nil {

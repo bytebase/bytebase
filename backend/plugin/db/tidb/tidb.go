@@ -169,12 +169,29 @@ func (d *Driver) getVersion(ctx context.Context) (string, error) {
 	return parseVersion(version)
 }
 
+var (
+	// TiDB Self-Managed and TiDB Cloud Starter report the upstream semver, e.g.
+	// "8.0.11-TiDB-v8.5.0" and "8.0.11-TiDB-v7.5.2-serverless".
+	tidbSemverRegex = regexp.MustCompile(`v\d+\.\d+\.\d+`)
+	// TiDB Cloud reports a calendar version carrying no upstream semver, e.g.
+	// "8.0.11-TiDB-CLOUD.202603.4".
+	tidbCloudVersionRegex = regexp.MustCompile(`CLOUD\.\d+\.\d+`)
+)
+
 func parseVersion(version string) (string, error) {
-	// Examples: 8.0.11-TiDB-v8.5.0, 8.0.11-TiDB-v7.5.2-serverless.
-	if loc := regexp.MustCompile(`v\d+\.\d+\.\d+`).FindStringIndex(version); loc != nil {
+	if loc := tidbSemverRegex.FindStringIndex(version); loc != nil {
+		return version[loc[0]:loc[1]], nil
+	}
+	if loc := tidbCloudVersionRegex.FindStringIndex(version); loc != nil {
 		return version[loc[0]:loc[1]], nil
 	}
 	return "", errors.Errorf("failed to parse version %q", version)
+}
+
+// isCloudVersion reports whether a version returned by parseVersion is a TiDB Cloud
+// calendar version, e.g. "CLOUD.202603.4".
+func isCloudVersion(version string) bool {
+	return strings.HasPrefix(version, "CLOUD.")
 }
 
 func buildExecuteCommands(statement string) ([]base.Statement, error) {
