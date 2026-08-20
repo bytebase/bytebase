@@ -364,8 +364,8 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 // tightening used here because it is the ceiling that refuses the connection
 // itself. Tightening to READ_ONLY bites the same way and at the same moment,
 // but a step further in: the session still opens, and what it may then do
-// narrows per method and per statement — TestMCPReadOnlyCeilingRefusesAWrite
-// drives that half.
+// narrows per method and per statement — TestMCPReadOnlyTighteningBitesAnOpenSession
+// drives that half, on a session that is already open when the ceiling moves.
 func TestMCPMigrationTightenedCeilingBitesLiveSession(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)

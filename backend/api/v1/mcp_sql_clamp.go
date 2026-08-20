@@ -83,8 +83,22 @@ func mcpReadOnlyClampApplies(ctx context.Context) (bool, error) {
 // one. Nothing here calls it bare.
 //
 // A request is refused when the engine has no classifier, when a statement will
-// not parse, or when any statement classifies as anything but a read — so a
-// batch is served only if every statement in it reads.
+// not parse, when any statement classifies as anything but a read, and when any
+// statement changes session state — so a batch is served only if every
+// statement in it reads and none of it rewrites the session it runs on.
+//
+// Session state is the second bool the validators already report, and refusing
+// it is what stops the depth layer being switched off by a statement this same
+// rule admits. Every unit of a request runs on one connection, so
+// "SET default_transaction_read_only = off" followed by anything the
+// classifier calls a read would leave the read-only session disarmed and the
+// second statement free to write — verified against Postgres 17, where the
+// two statements land as separate transactions and the write succeeds.
+//
+// It does not close the whole class. A statement that reads structurally can
+// still call a function that rewrites the same setting, and no classifier
+// catches that; see the type comment on QueryResponse.ReadOnlyEnforcement for
+// what the depth may and may not be said to guarantee.
 func refuseNonReadOnlyStatement(engine storepb.Engine, statement string) error {
 	if !parserbase.HasQueryValidator(engine) {
 		return refuseClampedStatement(fmt.Sprintf(
@@ -92,7 +106,7 @@ func refuseNonReadOnlyStatement(engine storepb.Engine, statement string) error {
 	}
 	units := mcpClampUnits(engine, statement)
 	for i, unit := range units {
-		readOnly, _, err := parserbase.ValidateSQLForEditor(engine, unit)
+		readOnly, allQuery, err := parserbase.ValidateSQLForEditor(engine, unit)
 		if err != nil {
 			return refuseClampedStatement(fmt.Sprintf(
 				"%s could not be parsed, so it cannot be shown to be a read: %v", describeClampUnit(i, len(units)), err))
@@ -100,15 +114,33 @@ func refuseNonReadOnlyStatement(engine storepb.Engine, statement string) error {
 		if !readOnly {
 			return refuseClampedStatement(fmt.Sprintf("%s is not a read", describeClampUnit(i, len(units))))
 		}
+		if !allQuery {
+			return refuseClampedStatement(fmt.Sprintf(
+				"%s changes the session it runs on rather than returning data, which could switch off the read-only session the rest of the request depends on",
+				describeClampUnit(i, len(units))))
+		}
 	}
 	return nil
 }
 
-// mcpClampUnits returns the statements the driver will run, so the clamp
-// classifies exactly the text that would execute — including the whole-request
-// fallback queryRetryStopOnError itself takes when an engine has no splitter
+// mcpClampUnits splits a request the way queryRetryStopOnError does, so the
+// clamp classifies the same text that would execute — including the
+// whole-request fallback that function takes when an engine has no splitter
 // (Redis) or the split fails. Classifying a different unit than the executor
-// runs is how a batch gets past a per-statement rule.
+// runs is how a batch gets past a per-statement rule: on the engines whose
+// validator classifies by leading keyword, handing it the whole request reads
+// "SELECT 1; DROP TABLE t" as a SELECT.
+//
+// A splitter can also return the request whole without failing: the ClickHouse
+// and Hive splitters break on newlines rather than statement terminators, so a
+// one-line batch arrives here as one unit and their leading-keyword validator
+// reads it as a SELECT. That is BOT-86, and it is why this comment enumerates
+// three ways to end up judging the whole request rather than two.
+//
+// MSSQL is the one engine where the units differ, and in the safe direction:
+// it is split for analysis but sent to the driver whole, to keep variable
+// scope across the batch, so the clamp judges it one statement at a time and
+// is stricter than the executor rather than looser.
 func mcpClampUnits(engine storepb.Engine, statement string) []string {
 	statements, err := parserbase.SplitMultiSQL(engine, statement)
 	if err != nil {

@@ -12,16 +12,31 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 
-	// The clamp asks the parser registry which engines it can classify, so the
-	// registry has to be populated the way the server populates it. Naming the
-	// packages here rather than relying on what the rest of the package happens
-	// to import keeps every row below about the engine it says it is about.
+	// The clamp asks the parser registry what it can classify and how it
+	// splits, so this test binary has to register what the server registers.
+	// The set is the parser half of backend/server/ultimate.go, verbatim:
+	// naming a subset would make a row's verdict depend on which packages this
+	// file happens to import rather than on the engine it says it is about,
+	// and a missing splitter reads as "no splitter" without saying so.
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/bigquery"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/cassandra"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/cosmosdb"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/doris"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/elasticsearch"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/mariadb"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/mongodb"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/partiql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/pg"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/plsql"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/redis"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/redshift"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/snowflake"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/spanner"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/standard"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/starrocks"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/trino"
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
@@ -124,6 +139,31 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			reason:    "statement 2 of 2 is not a read",
 		},
 		{
+			name:      "a statement that rewrites the session is refused",
+			engine:    storepb.Engine_POSTGRES,
+			statement: "SET default_transaction_read_only = off",
+			refused:   true,
+			reason:    "changes the session it runs on",
+		},
+		{
+			// The disarm this rule exists for. Both statements classify as
+			// reads, every unit of a request runs on one connection, and
+			// Postgres applies the changed default to the next transaction —
+			// so admitting the first would let the second write.
+			name:      "a session rewrite ahead of a read is refused before either runs",
+			engine:    storepb.Engine_POSTGRES,
+			statement: "SET default_transaction_read_only = off; SELECT nextval('s')",
+			refused:   true,
+			reason:    "statement 1 of 2 changes the session it runs on",
+		},
+		{
+			name:      "the same on MySQL",
+			engine:    storepb.Engine_MYSQL,
+			statement: "SET SESSION TRANSACTION READ WRITE; SELECT 1",
+			refused:   true,
+			reason:    "changes the session it runs on",
+		},
+		{
 			name:      "a read on an engine with no splitter is still classified",
 			engine:    storepb.Engine_REDIS,
 			statement: "GET k",
@@ -154,6 +194,55 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 				"the denial must name the way out")
 			require.Contains(t, err.Error(), "Bytebase console",
 				"the denial must name where the human can do it instead")
+		})
+	}
+}
+
+// TestMCPClampBatchTailIsClassifiedOnEveryEngine walks one adversarial batch —
+// a leading read with a write behind it — across every engine that has a
+// classifier, and pins which ones the clamp catches it on.
+//
+// It exists because the rule is only as good as the split. Two engines break
+// it: the ClickHouse and Hive splitters break on newlines rather than statement
+// terminators, so a one-line batch reaches the leading-keyword validator whole
+// and reads as a SELECT. That is BOT-86, it is the same over-accept a SQL
+// Editor Read User meets on those engines today, and fixing it changes shared
+// classification that the export gate and the drivers' result routing also
+// read.
+//
+// Naming the exceptions here rather than omitting the engines is the point: the
+// set is closed, so a third engine joining it fails this test instead of
+// passing quietly.
+func TestMCPClampBatchTailIsClassifiedOnEveryEngine(t *testing.T) {
+	const batch = "SELECT 1; DROP TABLE employee"
+
+	// Splits on newlines, not on terminators — BOT-86.
+	servesTheWholeBatch := map[storepb.Engine]bool{
+		storepb.Engine_CLICKHOUSE: true,
+		storepb.Engine_HIVE:       true,
+	}
+
+	values := storepb.Engine(0).Descriptor().Values()
+	for i := range values.Len() {
+		engine := storepb.Engine(values.Get(i).Number())
+		if engine == storepb.Engine_ENGINE_UNSPECIFIED || !parserbase.HasQueryValidator(engine) {
+			continue
+		}
+		// Redis takes commands, not SQL, and separates them by newline, so
+		// this probe is not a batch there at all — it is one malformed SELECT
+		// command. Its batch rule is covered by the newline rows in
+		// TestMCPClampRefusesWhatItCannotShowIsARead instead.
+		if engine == storepb.Engine_REDIS {
+			continue
+		}
+		t.Run(engine.String(), func(t *testing.T) {
+			err := refuseNonReadOnlyStatement(engine, batch)
+			if servesTheWholeBatch[engine] {
+				require.NoError(t, err,
+					"%v is a recorded BOT-86 exception; if it now refuses the batch, delete its row here", engine)
+				return
+			}
+			require.Error(t, err, "%v must not serve a batch whose second statement writes", engine)
 		})
 	}
 }

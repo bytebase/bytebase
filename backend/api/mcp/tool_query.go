@@ -157,7 +157,7 @@ func readOnlyEnforcementNotice(enforcement string) string {
 	case "STATEMENT_CLASSIFICATION":
 		return "Read-only session: every statement was classified as a read before it ran."
 	case "STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION":
-		return "Read-only session: every statement was classified as a read, and the database connection itself was opened read-only."
+		return "Read-only session: every statement was classified as a read, and the database connection itself was opened read-only, so an ordinary write is refused by the database as well."
 	default:
 		return "Read-only session: " + enforcement
 	}
@@ -225,7 +225,14 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, s
 		}
 		suggestion := "check your SQL syntax and try again"
 		if resp.Status == http.StatusForbidden || resp.Status == http.StatusUnauthorized {
-			suggestion = "you may not have permission to query this database — request the SQL Editor role on the project"
+			// A refusal that already names its own way out gets none added.
+			// The workspace MCP ceiling is one of these, and telling an agent
+			// to request a project role for it sends the person it acts for
+			// after a grant that cannot lift a workspace setting.
+			suggestion = ""
+			if !strings.Contains(errMsg, "MCP capability ceiling") {
+				suggestion = "you may not have permission to query this database — request the SQL Editor role on the project"
+			}
 		}
 		return nil, &toolError{
 			Code:       "QUERY_ERROR",

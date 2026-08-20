@@ -113,7 +113,7 @@ func setupMCPClampFixture(ctx context.Context, t *testing.T) *mcpClampFixture {
 	setup, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
 		Sheet: &v1pb.Sheet{Content: []byte(
-			`CREATE TABLE employee(id INT PRIMARY KEY, name TEXT); INSERT INTO employee VALUES (1, 'Bytebase');`)},
+			`CREATE TABLE employee(id INT PRIMARY KEY, name TEXT); INSERT INTO employee VALUES (1, 'Bytebase'); CREATE SEQUENCE employee_seq;`)},
 	}))
 	a.NoError(err)
 	a.NoError(ctl.changeDatabase(ctx, ctl.project, databaseResp.Msg, setup.Msg, false))
@@ -182,6 +182,25 @@ func TestMCPReadOnlyCeilingRefusesAWrite(t *testing.T) {
 	// Refused before execution, not after: the database is untouched.
 	a.Equal(1, f.employeeCount(t), "the refused INSERT must not have reached the database")
 
+	// The depth layer, asserted where only a real read-only session can
+	// satisfy it. nextval writes, but it writes from inside a structural
+	// SELECT, so the classifier calls it a read and the clamp admits it — the
+	// database is what refuses, and only because the connection was opened
+	// read-only. Drop the clamp term from ConnectionContext.ReadOnly and this
+	// is the assertion that goes red.
+	sequence := queryDatabaseOnSession(f.ctx, t, f.session, f.name, "SELECT nextval('employee_seq')")
+	a.True(sequence.isError, "the read-only session must refuse a write the classifier admitted: %s", sequence.text)
+	a.Contains(sequence.text, "read-only transaction",
+		"the refusal must come from the database, not from the classifier")
+
+	// The same statement on the human path proves the refusal was this
+	// session's depth and not something about the statement.
+	_, err := f.ctl.sqlServiceClient.Query(f.ctx, connect.NewRequest(&v1pb.QueryRequest{
+		Name:      f.database,
+		Statement: "SELECT nextval('employee_seq')",
+	}))
+	a.NoError(err, "a person in the console runs the same statement without a read-only session")
+
 	// The refusal is recorded, and attributable to the agent rather than to the
 	// same human working in the console.
 	// Query is a database-scoped method, so its rows are parented to the
@@ -205,9 +224,59 @@ func TestMCPReadOnlyCeilingRefusesAWrite(t *testing.T) {
 	defer widened.Close()
 	allowed := queryDatabaseOnSession(f.ctx, t, widened, f.name,
 		"INSERT INTO employee VALUES (2, 'agent')")
-	a.False(allowed.isError, "under READ_WRITE the same session must write: %s", allowed.text)
+	a.False(allowed.isError, "under READ_WRITE the same principal must write: %s", allowed.text)
 	a.Empty(allowed.output.ReadOnlyEnforcement, "an unclamped session must not be told it was held to reads")
 	a.Equal(2, f.employeeCount(t))
+}
+
+// sequenceValue reads the sequence straight through the human path, so a write
+// that slipped through is caught by the database rather than by the API that
+// was supposed to refuse it.
+func (f *mcpClampFixture) sequenceValue(t *testing.T) int64 {
+	t.Helper()
+	resp, err := f.ctl.sqlServiceClient.Query(f.ctx, connect.NewRequest(&v1pb.QueryRequest{
+		Name:      f.database,
+		Statement: "SELECT last_value FROM employee_seq",
+	}))
+	require.NoError(t, err)
+	require.Len(t, resp.Msg.Results, 1)
+	require.Empty(t, resp.Msg.Results[0].Error)
+	return resp.Msg.Results[0].Rows[0].Values[0].GetInt64Value()
+}
+
+// TestMCPReadOnlyCeilingRefusesASessionRewrite is the escape the two layers
+// would otherwise leave open between them.
+//
+// Both statements classify as reads: SET is not a write, and nextval writes
+// from inside a structural SELECT, which no classifier catches. Every statement
+// of a request runs on one connection, and Postgres applies a changed
+// default_transaction_read_only to the next transaction — so admitting the SET
+// would hand the second statement a session with the depth switched off, and
+// the sequence would advance under a ceiling that had just reported the
+// connection was opened read-only.
+//
+// Refusing a statement that rewrites its session is what closes it, and the
+// sequence value is what proves nothing ran.
+func TestMCPReadOnlyCeilingRefusesASessionRewrite(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	f := setupMCPClampFixture(context.Background(), t)
+	before := f.sequenceValue(t)
+
+	disarm := queryDatabaseOnSession(f.ctx, t, f.session, f.name,
+		"SET default_transaction_read_only = off; SELECT nextval('employee_seq')")
+	a.True(disarm.isError, "a request that rewrites its own session must be refused: %s", disarm.text)
+	a.Contains(disarm.text, "changes the session it runs on")
+	a.Contains(disarm.text, "READ_ONLY")
+
+	a.Equal(before, f.sequenceValue(t),
+		"neither statement may run: the sequence must not have advanced")
+
+	// The rewrite alone is refused too, so the rule is about the statement and
+	// not about what follows it.
+	alone := queryDatabaseOnSession(f.ctx, t, f.session, f.name,
+		"SET default_transaction_read_only = off")
+	a.True(alone.isError, "a bare session rewrite is refused as well: %s", alone.text)
 }
 
 // TestMCPReadOnlyCeilingJudgesTheWholeBatch pins the batch rule: a request is
@@ -241,15 +310,20 @@ func TestMCPReadOnlyCeilingLeavesTheHumanPathAlone(t *testing.T) {
 	a := require.New(t)
 	f := setupMCPClampFixture(context.Background(), t)
 
-	// The agent runs first, so a read-only session that leaked would be live
-	// when the human's write arrives.
+	// The agent's read runs first and is SERVED, which is what actually opens
+	// a read-only Postgres session; a refused statement never reaches a
+	// connection at all, so it could not leak one.
+	served := queryDatabaseOnSession(f.ctx, t, f.session, f.name, "SELECT id FROM employee")
+	a.False(served.isError, "the agent's read must be served, or nothing opened a session: %s", served.text)
+	a.Equal("STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION", served.output.ReadOnlyEnforcement)
+
 	refused := queryDatabaseOnSession(f.ctx, t, f.session, f.name,
 		"INSERT INTO employee VALUES (3, 'agent')")
 	a.True(refused.isError)
 
 	_, err := f.ctl.sqlServiceClient.Query(f.ctx, connect.NewRequest(&v1pb.QueryRequest{
 		Name:      f.database,
-		Statement: "INSERT INTO employee VALUES (4, 'human')",
+		Statement: "INSERT INTO employee VALUES (4, 'human'); SELECT nextval('employee_seq');",
 	}))
 	a.NoError(err, "a workspace ceiling of READ_ONLY must not bind a person in the console")
 	a.Equal(2, f.employeeCount(t))
@@ -261,6 +335,78 @@ func TestMCPReadOnlyCeilingLeavesTheHumanPathAlone(t *testing.T) {
 	a.NoError(err)
 	a.Equal(v1pb.QueryResponse_READ_ONLY_ENFORCEMENT_UNSPECIFIED, human.Msg.ReadOnlyEnforcement,
 		"a person's query is not a capped session and must disclose nothing")
+}
+
+// TestMCPReadOnlyTighteningBitesAnOpenSession is the half of matrix row 7 the
+// cutover moved. Tightening to READ_ONLY used to refuse the connection, so the
+// migration matrix could assert it at the door; now the session stays open and
+// the tightening bites one layer further in, per method and per statement, on
+// the next request. Nothing is re-consented and no token is re-issued.
+func TestMCPReadOnlyTighteningBitesAnOpenSession(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	f := setupMCPClampFixture(context.Background(), t)
+
+	// Start read-write, on a session opened under that ceiling.
+	a.NoError(f.ctl.setMCPCapability(f.ctx, v1pb.WorkspaceProfileSetting_READ_WRITE))
+	session := openMCPSession(f.ctx, t, f.ctl, f.token)
+	defer session.Close()
+	wrote := queryDatabaseOnSession(f.ctx, t, session, f.name,
+		"INSERT INTO employee VALUES (5, 'agent')")
+	a.False(wrote.isError, "the session starts able to write: %s", wrote.text)
+	a.Equal(2, f.employeeCount(t))
+
+	// An admin tightens the ceiling while the session stays open.
+	a.NoError(f.ctl.setMCPCapability(f.ctx, v1pb.WorkspaceProfileSetting_READ_ONLY))
+
+	refused := queryDatabaseOnSession(f.ctx, t, session, f.name,
+		"INSERT INTO employee VALUES (6, 'agent')")
+	a.True(refused.isError, "the tightening must bite the very next request of the open session: %s", refused.text)
+	a.Contains(refused.text, "READ_ONLY")
+	a.Equal(2, f.employeeCount(t))
+
+	// Reads keep working on that same session, so what tightened is the
+	// ceiling and not the session.
+	read := queryDatabaseOnSession(f.ctx, t, session, f.name, "SELECT id FROM employee")
+	a.False(read.isError, "a read must still be served on the tightened session: %s", read.text)
+	a.Equal("STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION", read.output.ReadOnlyEnforcement)
+
+	// Widening bites the same way, on the same session.
+	a.NoError(f.ctl.setMCPCapability(f.ctx, v1pb.WorkspaceProfileSetting_READ_WRITE))
+	again := queryDatabaseOnSession(f.ctx, t, session, f.name,
+		"INSERT INTO employee VALUES (7, 'agent')")
+	a.False(again.isError, "widening restores the write on the unchanged session: %s", again.text)
+	a.Empty(again.output.ReadOnlyEnforcement)
+	a.Equal(3, f.employeeCount(t))
+}
+
+// TestMCPReadOnlyClampCoversAnExplainRequest pins the clamp's placement outside
+// the Explain guard above it. query_database sends no explain flag, but
+// call_api reaches the same handler with the whole request shape, and an
+// explain request carries the bare statement for the driver to prefix — so a
+// clamp that skipped it would hand a read-only session an unclassified write to
+// send.
+func TestMCPReadOnlyClampCoversAnExplainRequest(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	f := setupMCPClampFixture(context.Background(), t)
+
+	explained := callAPIOnSession(f.ctx, t, f.session, "SQLService/Query", map[string]any{
+		"name":      f.database,
+		"statement": "SELECT id FROM employee",
+		"explain":   true,
+	})
+	a.Equal(http.StatusOK, explained.Status, "explaining a read is still a read: %s", explained.Error)
+
+	refused := callAPIOnSession(f.ctx, t, f.session, "SQLService/Query", map[string]any{
+		"name":      f.database,
+		"statement": "INSERT INTO employee VALUES (8, 'agent')",
+		"explain":   true,
+	})
+	a.Equal(http.StatusForbidden, refused.Status,
+		"an explain request must be clamped like any other: %s", refused.Error)
+	a.Contains(refused.Error, "READ_ONLY")
+	a.Equal(1, f.employeeCount(t))
 }
 
 // TestMCPCutoverAdmitsReadOnlyAndNothingElse is the cutover itself. READ_ONLY

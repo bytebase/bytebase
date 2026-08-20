@@ -588,18 +588,21 @@ func (s *Server) unauthorized(c *echo.Context, errDescription string) error {
 }
 
 // mcpConnectionAllowed reports whether an MCP connection may proceed under the
-// resolved workspace capability ceiling. READ_WRITE and READ_ONLY are served;
-// DISABLED is rejected, and so is every value this build does not know,
-// including the reserved number, which hits the default arm.
+// resolved workspace capability ceiling: a ceiling that serves some method
+// class opens a session, and one that serves none does not.
 //
-// READ_ONLY is served because all three of the things it promises now exist. A
-// method it does not cover is refused before dispatch by the ceiling gate on
-// the internal chain. A statement that writes is refused before execution by
-// the SQL clamp in SQLService/Query, which is the one method whose class
-// depends on its argument. And where the driver has one, the database session
-// itself is opened read-only. Admitting a read-only session before the clamp
-// existed would have been a read-only session that could write; that was the
-// whole reason this returned false for it.
+// The rule is auth.MCPCeilingServesAnything rather than a switch here, so this
+// gate and the per-method serving table cannot state the same policy twice and
+// drift; a lint holds the two against each other over the whole enum.
+//
+// READ_ONLY serves a class from the cutover, because all three of the things it
+// promises now exist. A method it does not cover is refused before dispatch by
+// the ceiling gate on the internal chain. A statement that writes is refused
+// before execution by the SQL clamp in SQLService/Query, which is the one
+// method whose class depends on its argument. And where the driver has one, the
+// database session itself is opened read-only. Admitting a read-only session
+// before the clamp existed would have been a read-only session that could
+// write; that was the whole reason this refused it.
 //
 // UNSPECIFIED is refused rather than treated as "never configured", even though
 // that is what an unset ceiling means in the stored proto. The resolution
@@ -608,12 +611,7 @@ func (s *Server) unauthorized(c *echo.Context, errDescription string) error {
 // value nobody resolved, and a gate that admits on a zero value is one
 // mistake away from admitting on a failure.
 func mcpConnectionAllowed(capability storepb.WorkspaceProfileSetting_MCPCapability) bool {
-	switch capability {
-	case storepb.WorkspaceProfileSetting_READ_WRITE, storepb.WorkspaceProfileSetting_READ_ONLY:
-		return true
-	default:
-		return false
-	}
+	return auth.MCPCeilingServesAnything(capability)
 }
 
 // mcpCapability resolves the workspace's effective MCP capability ceiling for

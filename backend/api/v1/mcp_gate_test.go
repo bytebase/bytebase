@@ -380,6 +380,27 @@ func TestLintRefusedClassesMatchTheServingTable(t *testing.T) {
 	}
 }
 
+// TestLintCeilingAdmissionMatchesTheServingTable is the connection gate's half
+// of the same arrangement. The /mcp boundary decides whether a session opens at
+// all, and it asks auth.MCPCeilingServesAnything, which cannot see this table.
+// This holds the two against each other over every ceiling value, so a mode
+// that serves no class cannot start admitting sessions — or the reverse, which
+// would refuse a connection whose methods the gate is ready to serve.
+func TestLintCeilingAdmissionMatchesTheServingTable(t *testing.T) {
+	values := storepb.WorkspaceProfileSetting_MCPCapability(0).Descriptor().Values()
+	for i := range values.Len() {
+		capability := storepb.WorkspaceProfileSetting_MCPCapability(values.Get(i).Number())
+		require.Equal(t, len(mcpServingClasses[capability]) > 0, auth.MCPCeilingServesAnything(capability),
+			"%v: the serving table and auth.MCPCeilingServesAnything disagree about whether this ceiling serves anything", capability)
+	}
+	// A stored number no release ever wrote is refused too, and it cannot come
+	// from the descriptor because it is in no build's enum.
+	for _, unknown := range []storepb.WorkspaceProfileSetting_MCPCapability{2, 99} {
+		require.False(t, auth.MCPCeilingServesAnything(unknown),
+			"%v: a ceiling this build cannot interpret must not open a session", unknown)
+	}
+}
+
 // TestMCPCapabilityEnumsAgree is what lets the lint above read one enum and the
 // gate read the other. The settings API writes the v1 ceiling, the setting row
 // stores the store ceiling, and the conversion between them is by number

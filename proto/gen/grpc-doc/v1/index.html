@@ -10139,8 +10139,11 @@ it ran, and a request holding anything else was refused whole.</p></td>
                 <td>STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION</td>
                 <td>2</td>
                 <td><p>Statement classification, and the driver opened the database session
-read-only as well, so the database server refuses a write from this
-connection whatever the classifier concluded.</p></td>
+read-only as well (Postgres and its relatives set
+default_transaction_read_only), so an ordinary write is refused by the
+database too and not only by the classifier. It is defense in depth, not
+a second independent guarantee: a statement that reads structurally can
+still call a function that rewrites that setting.</p></td>
               </tr>
             
           </tbody>

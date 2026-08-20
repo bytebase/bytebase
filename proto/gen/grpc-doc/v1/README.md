@@ -3368,7 +3368,7 @@ classifier can be wrong about a grammar it does not fully model.
 | ---- | ------ | ----------- |
 | READ_ONLY_ENFORCEMENT_UNSPECIFIED | 0 | The caller&#39;s session is not capped at read-only. |
 | STATEMENT_CLASSIFICATION | 1 | Every statement in the request was classified as a read before any of it ran, and a request holding anything else was refused whole. |
-| STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION | 2 | Statement classification, and the driver opened the database session read-only as well, so the database server refuses a write from this connection whatever the classifier concluded. |
+| STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION | 2 | Statement classification, and the driver opened the database session read-only as well (Postgres and its relatives set default_transaction_read_only), so an ordinary write is refused by the database too and not only by the classifier. It is defense in depth, not a second independent guarantee: a statement that reads structurally can still call a function that rewrites that setting. |
 
 
 
