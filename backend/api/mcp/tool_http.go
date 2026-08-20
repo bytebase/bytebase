@@ -220,11 +220,6 @@ type toolError struct {
 	Code       string `json:"code"`
 	Message    string `json:"message"`
 	Suggestion string `json:"suggestion,omitempty"`
-	// ReadOnlyEnforcement is what held the failed request to reads, when the
-	// session is capped at read-only. Empty otherwise. A statement the
-	// classifier admitted can still be refused by a read-only database
-	// session, and that is when the depth is most worth knowing.
-	ReadOnlyEnforcement string `json:"readOnlyEnforcement,omitempty"`
 }
 
 func (e *toolError) Error() string {

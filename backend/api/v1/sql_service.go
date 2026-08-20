@@ -499,8 +499,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	)
 
 	response := &v1pb.QueryResponse{
-		Results:             results,
-		ReadOnlyEnforcement: mcpReadOnlyDepth(clamped, instance.Metadata.GetEngine(), database.Metadata.GetDatashare()),
+		Results: results,
 	}
 	if accessGrant != nil {
 		response.AppliedAccessGrant = common.FormatAccessGrant(accessGrant.ProjectID, accessGrant.ID)

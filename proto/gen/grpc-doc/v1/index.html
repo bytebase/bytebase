@@ -839,10 +839,6 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.QueryResponse.ReadOnlyEnforcement"><span class="badge">E</span>QueryResponse.ReadOnlyEnforcement</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.QueryResult.CommandError.Type"><span class="badge">E</span>QueryResult.CommandError.Type</a>
                 </li>
               
@@ -9431,14 +9427,6 @@ Format: projects/{project}/accessGrants/{accessGrant}.
 Empty when the user was authorized through normal ACL rather than a grant. </p></td>
                 </tr>
               
-                <tr>
-                  <td>read_only_enforcement</td>
-                  <td><a href="#bytebase.v1.QueryResponse.ReadOnlyEnforcement">QueryResponse.ReadOnlyEnforcement</a></td>
-                  <td></td>
-                  <td><p>How this query was held to reads, for a caller whose session is capped at
-read-only. Unset for every other caller, the SQL editor included. </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -10109,45 +10097,6 @@ These are custom, flexible checks powered by AI models.</p></td>
                 <td>ALL_NODES</td>
                 <td>2</td>
                 <td><p>Execute Redis commands on all nodes in the cluster for cluster-wide operations.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.QueryResponse.ReadOnlyEnforcement">QueryResponse.ReadOnlyEnforcement</h3>
-        <p>ReadOnlyEnforcement is what a read-only session actually got. The server</p><p>applies the strongest it can per connection and reports it here, so the</p><p>caller need not infer it from the engine.</p><p>It says what was applied, not that a write is impossible: a statement that</p><p>reads structurally can still call a side-effecting function, and a</p><p>classifier can be wrong about a grammar it does not fully model.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>READ_ONLY_ENFORCEMENT_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p>The caller&#39;s session is not capped at read-only.</p></td>
-              </tr>
-            
-              <tr>
-                <td>STATEMENT_CLASSIFICATION</td>
-                <td>1</td>
-                <td><p>The request was classified before any of it ran, statement by
-statement, and one holding anything the classifier calls a write was
-refused whole. What a classifier can see is the limit of it: a
-statement that reads structurally can still have an effect, and an
-engine whose splitter cannot separate a one-line batch is judged on the
-batch&#39;s leading statement.</p></td>
-              </tr>
-            
-              <tr>
-                <td>STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION</td>
-                <td>2</td>
-                <td><p>Statement classification, and the driver opened the database session
-read-only as well (Postgres and its relatives set
-default_transaction_read_only), so an ordinary write is refused by the
-database too and not only by the classifier. It is defense in depth, not
-a second independent guarantee: a statement that reads structurally can
-still call a function that rewrites that setting.</p></td>
               </tr>
             
           </tbody>

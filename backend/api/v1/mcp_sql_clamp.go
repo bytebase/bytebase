@@ -9,7 +9,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
@@ -133,36 +132,6 @@ func describeClampUnit(index, total int) string {
 		return "the statement"
 	}
 	return fmt.Sprintf("statement %d of %d", index+1, total)
-}
-
-// mcpReadOnlyDepth reports what a clamped request actually got, for the
-// response to disclose. Unclamped requests disclose nothing.
-func mcpReadOnlyDepth(clamped bool, engine storepb.Engine, datashare bool) v1pb.QueryResponse_ReadOnlyEnforcement {
-	if !clamped {
-		return v1pb.QueryResponse_READ_ONLY_ENFORCEMENT_UNSPECIFIED
-	}
-	if readOnlyDriverSession(engine, datashare) {
-		return v1pb.QueryResponse_STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION
-	}
-	return v1pb.QueryResponse_STATEMENT_CLASSIFICATION
-}
-
-// readOnlyDriverSession reports whether the driver turns
-// ConnectionContext.ReadOnly into a read-only database session. Three do, by
-// setting default_transaction_read_only on the connection they open: postgres,
-// cockroachdb, and redshift outside a datashare database, which cannot run a
-// read-only transaction. It mirrors the drivers rather than asking them
-// because the answer is needed before a connection exists; a driver that
-// starts honoring the flag without a row here understates its own depth.
-func readOnlyDriverSession(engine storepb.Engine, datashare bool) bool {
-	switch engine {
-	case storepb.Engine_POSTGRES, storepb.Engine_COCKROACHDB:
-		return true
-	case storepb.Engine_REDSHIFT:
-		return !datashare
-	default:
-		return false
-	}
 }
 
 // refuseClampedStatement wraps a reason in the denial the gate set the shape

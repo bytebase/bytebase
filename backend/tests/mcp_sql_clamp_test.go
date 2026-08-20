@@ -30,9 +30,8 @@ type queryToolResult struct {
 // QueryToolOutput mirrors the tool's structured output. Only the fields these
 // tests assert on are named.
 type QueryToolOutput struct {
-	Rows                [][]any `json:"rows"`
-	RowCount            int     `json:"rowCount"`
-	ReadOnlyEnforcement string  `json:"readOnlyEnforcement"`
+	Rows     [][]any `json:"rows"`
+	RowCount int     `json:"rowCount"`
 }
 
 // queryDatabaseOnSession runs the query_database tool the way a client would.
@@ -165,9 +164,6 @@ func TestMCPReadOnlyCeilingRefusesAWrite(t *testing.T) {
 	read := queryDatabaseOnSession(f.ctx, t, f.session, f.name, "SELECT id, name FROM employee")
 	a.False(read.isError, "a read must be served under a read-only ceiling: %s", read.text)
 	a.Equal(1, read.output.RowCount)
-	a.Equal("STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION", read.output.ReadOnlyEnforcement,
-		"postgres opens the session read-only, so the disclosure must say so")
-	a.Contains(read.text, "connection itself was opened read-only")
 
 	// The write is refused, with the message the gate set the shape for.
 	write := queryDatabaseOnSession(f.ctx, t, f.session, f.name,
@@ -234,7 +230,6 @@ func TestMCPReadOnlyCeilingRefusesAWrite(t *testing.T) {
 	allowed := queryDatabaseOnSession(f.ctx, t, widened, f.name,
 		"INSERT INTO employee VALUES (2, 'agent')")
 	a.False(allowed.isError, "under READ_WRITE the same principal must write: %s", allowed.text)
-	a.Empty(allowed.output.ReadOnlyEnforcement, "an unclamped session must not be told it was held to reads")
 	a.Equal(2, f.employeeCount(t))
 }
 
@@ -326,7 +321,6 @@ func TestMCPReadOnlyCeilingLeavesTheHumanPathAlone(t *testing.T) {
 	// connection at all, so it could not leak one.
 	served := queryDatabaseOnSession(f.ctx, t, f.session, f.name, "SELECT id FROM employee")
 	a.False(served.isError, "the agent's read must be served, or nothing opened a session: %s", served.text)
-	a.Equal("STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION", served.output.ReadOnlyEnforcement)
 
 	refused := queryDatabaseOnSession(f.ctx, t, f.session, f.name,
 		"INSERT INTO employee VALUES (3, 'agent')")
@@ -350,8 +344,8 @@ func TestMCPReadOnlyCeilingLeavesTheHumanPathAlone(t *testing.T) {
 		Statement: "SELECT id FROM employee",
 	}))
 	a.NoError(err)
-	a.Equal(v1pb.QueryResponse_READ_ONLY_ENFORCEMENT_UNSPECIFIED, humanRead.Msg.ReadOnlyEnforcement,
-		"a person's query is not a capped session and must disclose nothing")
+	a.Len(humanRead.Msg.Results, 1)
+	a.Empty(humanRead.Msg.Results[0].Error, "a person's read is untouched by the ceiling")
 }
 
 // TestMCPReadOnlyTighteningBitesAnOpenSession is the half of matrix row 7 the
@@ -386,14 +380,12 @@ func TestMCPReadOnlyTighteningBitesAnOpenSession(t *testing.T) {
 	// ceiling and not the session.
 	read := queryDatabaseOnSession(f.ctx, t, session, f.name, "SELECT id FROM employee")
 	a.False(read.isError, "a read must still be served on the tightened session: %s", read.text)
-	a.Equal("STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION", read.output.ReadOnlyEnforcement)
 
 	// Widening bites the same way, on the same session.
 	a.NoError(f.ctl.setMCPCapability(f.ctx, v1pb.WorkspaceProfileSetting_READ_WRITE))
 	again := queryDatabaseOnSession(f.ctx, t, session, f.name,
 		"INSERT INTO employee VALUES (7, 'agent')")
 	a.False(again.isError, "widening restores the write on the unchanged session: %s", again.text)
-	a.Empty(again.output.ReadOnlyEnforcement)
 	a.Equal(3, f.employeeCount(t))
 }
 

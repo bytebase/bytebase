@@ -40,9 +40,6 @@ type QueryOutput struct {
 	RowCount    int      `json:"rowCount"`
 	Truncated   bool     `json:"truncated"`
 	LatencyMs   int64    `json:"latencyMs"`
-	// ReadOnlyEnforcement is what held this query to reads, verbatim from the
-	// server, when the session is capped at read-only. Empty otherwise.
-	ReadOnlyEnforcement string `json:"readOnlyEnforcement,omitempty"`
 }
 
 // queryDatabaseDescription is the description for the query_database tool.
@@ -133,57 +130,11 @@ func formatQueryOutput(statement, resourceName string, output *QueryOutput) stri
 			output.RowCount, len(output.Columns), columnList, output.LatencyMs)
 	}
 
-	if notice := readOnlyEnforcementNotice(output.ReadOnlyEnforcement); notice != "" {
-		sb.WriteString(notice)
-		sb.WriteString("\n")
-	}
-
 	sb.WriteString("\n")
 	jsonBytes, _ := json.Marshal(output)
 	sb.Write(jsonBytes)
 
 	return sb.String()
-}
-
-// readOnlyClassificationNotice states what the classification depth did, with
-// the same limit the enum documents. It does not say every statement was
-// classified: on an engine whose splitter cannot separate a one-line batch the
-// classifier sees only the leading statement, so an unconditional claim would
-// tell the agent the request was safer than it was checked to be.
-const readOnlyClassificationNotice = "Read-only session: this request was classified as a read before any of it ran, " +
-	"and one holding a write is refused whole, as far as the classifier can separate and recognize its statements."
-
-// queryErrorSuggestion advises on a statement the database refused. A capped
-// session gets the reason it is capped; "check your syntax" is what a
-// read-only refusal is least likely to be.
-func queryErrorSuggestion(enforcement string) string {
-	if readOnlyEnforcementNotice(enforcement) == "" {
-		return "check your SQL syntax and try again"
-	}
-	return "this session is capped at read-only; a statement the classifier allowed can still be refused by the database. " +
-		"Ask a workspace admin to raise the MCP ceiling, or run it signed in to the Bytebase console"
-}
-
-// readOnlyEnforcementNotice renders the server's disclosure as a sentence the
-// agent can repeat to the person it is acting for. An enforcement this build
-// does not recognize is passed through rather than dropped: the disclosure is
-// the server's to make, and saying less than it did is the wrong way to be
-// wrong about it.
-func readOnlyEnforcementNotice(enforcement string) string {
-	switch enforcement {
-	case "", "READ_ONLY_ENFORCEMENT_UNSPECIFIED":
-		// protojson omits a zero-valued enum, so an uncapped session leaves
-		// this empty; the explicit name is accepted too rather than rendered
-		// as an unknown depth.
-		return ""
-	case "STATEMENT_CLASSIFICATION":
-		return readOnlyClassificationNotice
-	case "STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION":
-		return readOnlyClassificationNotice +
-			" The database connection itself was opened read-only as well, so an ordinary write is refused by the database too."
-	default:
-		return "Read-only session: " + enforcement
-	}
 }
 
 // formatToolError converts an error into an MCP error result.
@@ -206,8 +157,7 @@ func formatToolError(err error) *mcp.CallToolResult {
 
 // queryResponse is the typed response from the SQL Query API.
 type queryResponse struct {
-	Results             []queryResult `json:"results"`
-	ReadOnlyEnforcement string        `json:"readOnlyEnforcement"`
+	Results []queryResult `json:"results"`
 }
 
 // queryResult represents a single result set from a query.
@@ -274,22 +224,18 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, s
 	}
 	if len(qr.Results) == 0 {
 		return &QueryOutput{
-			Columns:             []string{},
-			ColumnTypes:         []string{},
-			Rows:                [][]any{},
-			ReadOnlyEnforcement: qr.ReadOnlyEnforcement,
+			Columns:     []string{},
+			ColumnTypes: []string{},
+			Rows:        [][]any{},
 		}, nil
 	}
 
 	result := qr.Results[0]
 	if result.Error != "" {
-		// Postgres refuses a classifier-admitted nextval() on a read-only
-		// session, so the depth travels with the failure, not just the rows.
 		return nil, &toolError{
-			Code:                "QUERY_ERROR",
-			Message:             result.Error,
-			Suggestion:          queryErrorSuggestion(qr.ReadOnlyEnforcement),
-			ReadOnlyEnforcement: qr.ReadOnlyEnforcement,
+			Code:       "QUERY_ERROR",
+			Message:    result.Error,
+			Suggestion: "check your SQL syntax and try again",
 		}
 	}
 
@@ -310,13 +256,12 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, s
 	}
 
 	return &QueryOutput{
-		Columns:             result.ColumnNames,
-		ColumnTypes:         result.ColumnTypeNames,
-		Rows:                rows,
-		RowCount:            len(rows),
-		Truncated:           truncated,
-		LatencyMs:           parseLatencyMs(result.Latency),
-		ReadOnlyEnforcement: qr.ReadOnlyEnforcement,
+		Columns:     result.ColumnNames,
+		ColumnTypes: result.ColumnTypeNames,
+		Rows:        rows,
+		RowCount:    len(rows),
+		Truncated:   truncated,
+		LatencyMs:   parseLatencyMs(result.Latency),
 	}, nil
 }
 

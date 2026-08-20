@@ -16589,29 +16589,8 @@ components:
             The just-in-time access grant applied to this query, if any.
              Format: projects/{project}/accessGrants/{accessGrant}.
              Empty when the user was authorized through normal ACL rather than a grant.
-        readOnlyEnforcement:
-          title: read_only_enforcement
-          description: |-
-            How this query was held to reads, for a caller whose session is capped at
-             read-only. Unset for every other caller, the SQL editor included.
-          $ref: '#/components/schemas/bytebase.v1.QueryResponse.ReadOnlyEnforcement'
       title: QueryResponse
       additionalProperties: false
-    bytebase.v1.QueryResponse.ReadOnlyEnforcement:
-      type: string
-      title: ReadOnlyEnforcement
-      enum:
-        - READ_ONLY_ENFORCEMENT_UNSPECIFIED
-        - STATEMENT_CLASSIFICATION
-        - STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION
-      description: |-
-        ReadOnlyEnforcement is what a read-only session actually got. The server
-         applies the strongest it can per connection and reports it here, so the
-         caller need not infer it from the engine.
-
-         It says what was applied, not that a write is impossible: a statement that
-         reads structurally can still call a side-effecting function, and a
-         classifier can be wrong about a grammar it does not fully model.
     bytebase.v1.QueryResult:
       type: object
       allOf:
