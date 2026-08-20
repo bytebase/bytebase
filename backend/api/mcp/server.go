@@ -206,13 +206,11 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		// Enforce the workspace MCP capability ceiling before dispatching to any
-		// tool. DISABLED rejects the connection outright, and so does READ_ONLY:
-		// the per-method gate on the internal chain now serves a read-only
-		// ceiling correctly, but the query tool still reaches SQLService/Query,
-		// which authorizes writes per statement. Admitting a read-only session
-		// before that clamp exists would be a read-only session that can write.
-		// Read live so an admin change takes effect on the next request without
-		// re-issuing tokens.
+		// tool. DISABLED rejects the connection outright; READ_ONLY admits it,
+		// and what a read-only session may then do is decided per method by the
+		// gate on the internal chain and per statement by the SQL clamp in
+		// SQLService/Query. Read live so an admin change takes effect on the
+		// next request without re-issuing tokens.
 		capability, err := s.mcpCapability(c.Request().Context(), workspaceID)
 		if err != nil {
 			// Infra failure reading the policy, not a verdict on the
@@ -590,12 +588,18 @@ func (s *Server) unauthorized(c *echo.Context, errDescription string) error {
 }
 
 // mcpConnectionAllowed reports whether an MCP connection may proceed under the
-// resolved workspace capability ceiling. DISABLED is rejected, and so is
-// READ_ONLY: per-method enforcement exists from P1b 1b-2, but the SQL statement
-// clamp does not, so a read-only session admitted here could still write
-// through the query tool. 1b-3 lands the clamp and flips this to
-// allow-with-clamp; nothing before it may. Unknown stored values (e.g. the
-// reserved number) hit the default arm and fail closed too.
+// resolved workspace capability ceiling. READ_WRITE and READ_ONLY are served;
+// DISABLED is rejected, and so is every value this build does not know,
+// including the reserved number, which hits the default arm.
+//
+// READ_ONLY is served because all three of the things it promises now exist. A
+// method it does not cover is refused before dispatch by the ceiling gate on
+// the internal chain. A statement that writes is refused before execution by
+// the SQL clamp in SQLService/Query, which is the one method whose class
+// depends on its argument. And where the driver has one, the database session
+// itself is opened read-only. Admitting a read-only session before the clamp
+// existed would have been a read-only session that could write; that was the
+// whole reason this returned false for it.
 //
 // UNSPECIFIED is refused rather than treated as "never configured", even though
 // that is what an unset ceiling means in the stored proto. The resolution
@@ -605,7 +609,7 @@ func (s *Server) unauthorized(c *echo.Context, errDescription string) error {
 // mistake away from admitting on a failure.
 func mcpConnectionAllowed(capability storepb.WorkspaceProfileSetting_MCPCapability) bool {
 	switch capability {
-	case storepb.WorkspaceProfileSetting_READ_WRITE:
+	case storepb.WorkspaceProfileSetting_READ_WRITE, storepb.WorkspaceProfileSetting_READ_ONLY:
 		return true
 	default:
 		return false

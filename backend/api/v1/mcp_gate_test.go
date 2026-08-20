@@ -753,10 +753,9 @@ func TestMCPClassificationInventory(t *testing.T) {
 
 // --- the gate ---
 
-// mcpGateStore stands in for the workspace's stored ceiling. A READ_ONLY
-// ceiling cannot be reached end to end yet — mcpConnectionAllowed still refuses
-// the connection until 1b-3 lands the SQL clamp — so the only way to exercise
-// the read-only half of the rule today is here.
+// mcpGateStore stands in for the workspace's stored ceiling, so the rule can be
+// exercised without a database. The end-to-end path exists too, in
+// backend/tests, now that a READ_ONLY ceiling admits a connection.
 type mcpGateStore struct {
 	ceiling storepb.WorkspaceProfileSetting_MCPCapability
 	err     error
@@ -854,12 +853,11 @@ func TestMCPGateServesTheAdmittedClasses(t *testing.T) {
 	}
 }
 
-// TestMCPGateUnderAReadOnlyCeiling is the rule this PR exists for: the same
-// session that reaches a WRITE method under read-write is refused it under
-// read-only, while its reads keep working. It is unit-level because READ_ONLY
-// cannot connect until 1b-3: TestMCPConnectionAllowed and the ws-readonly row
-// of TestMCPCeilingStoredValueFailsClosed (backend/api/mcp) are the pins that
-// the cutover has not moved.
+// TestMCPGateUnderAReadOnlyCeiling is the ceiling half of the read-only rule:
+// the same session that reaches a WRITE method under read-write is refused it
+// under read-only, while its reads keep working. Unit-level so every class is
+// covered cheaply; TestMCPReadOnlyCeilingRefusesAWrite (backend/tests) drives
+// the same rule over a live session and a real database.
 func TestMCPGateUnderAReadOnlyCeiling(t *testing.T) {
 	t.Run("a READ method is served", func(t *testing.T) {
 		got := invokeMCPGate(t, readOnlyCeiling(), classContext(v1pb.MCPMethodClass_READ),

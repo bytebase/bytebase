@@ -262,9 +262,9 @@ var mcpServingClasses = map[storepb.WorkspaceProfileSetting_MCPCapability][]v1pb
 
 // mcpCeilingReader is the whole of what the gate needs from the store: one live
 // read of the workspace's ceiling. *store.Store satisfies it; a test supplies
-// its own, which is what lets a READ_ONLY ceiling be exercised at all before
-// 1b-3 lets one connect. Named for what it does rather than for what satisfies
-// it, per the convention for a single-method interface.
+// its own, which is what lets each ceiling be exercised without a database.
+// Named for what it does rather than for what satisfies it, per the convention
+// for a single-method interface.
 type mcpCeilingReader interface {
 	GetMCPCapabilityUncached(ctx context.Context, workspace string) (storepb.WorkspaceProfileSetting_MCPCapability, error)
 }

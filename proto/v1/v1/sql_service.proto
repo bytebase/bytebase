@@ -30,9 +30,9 @@ service SQLService {
     // where the method is not the whole story: on every engine in
     // EngineSupportQueryNewACL this handler classifies each statement and
     // authorizes DML with bb.sql.dml and DDL with bb.sql.ddl, so what it does
-    // is decided by its argument. The ceiling PR that starts serving READ owes
-    // a statement-level clamp before a read-only session may call this; until
-    // then no session is admitted at that level at all.
+    // is decided by its argument. That is what the SQL clamp in the handler
+    // settles: under a read-only ceiling every statement in the request must
+    // classify as a read, or the whole request is refused.
     option (bytebase.v1.mcp_method_class) = READ;
   }
 

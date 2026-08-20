@@ -360,10 +360,12 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 // of an already-open session — no re-auth, no token re-issue, nothing revoked.
 //
 // The ceiling is read live on every /mcp request, which is what makes this
-// admission control rather than a property of session setup. READ_ONLY is the
-// tightening used here because this phase cannot yet clamp per tool, so a
-// ceiling the server cannot apply must refuse the connection instead of
-// silently granting read-write.
+// admission control rather than a property of session setup. DISABLED is the
+// tightening used here because it is the ceiling that refuses the connection
+// itself. Tightening to READ_ONLY bites the same way and at the same moment,
+// but a step further in: the session still opens, and what it may then do
+// narrows per method and per statement — TestMCPReadOnlyCeilingRefusesAWrite
+// drives that half.
 func TestMCPMigrationTightenedCeilingBitesLiveSession(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -380,7 +382,7 @@ func TestMCPMigrationTightenedCeilingBitesLiveSession(t *testing.T) {
 		"the session is live under the default ceiling")
 
 	// An admin tightens the ceiling while the session stays open.
-	a.NoError(ctl.setMCPCapability(ctx, v1pb.WorkspaceProfileSetting_READ_ONLY))
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.WorkspaceProfileSetting_DISABLED))
 
 	status, body := postMCP(t, ctl, mcpToken)
 	a.Equal(http.StatusForbidden, status,
