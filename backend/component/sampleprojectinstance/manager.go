@@ -223,10 +223,52 @@ func (m *Manager) Prepare(ctx context.Context, request PrepareRequest) (*Prepare
 	if request.WorkspaceID == "" || request.ProjectID == "" {
 		return nil, newFailure(FailureFailedPrecondition, errors.New("sample project instance requires workspace and project"))
 	}
+	reservation, created, err := m.reserve(ctx, request)
+	if err != nil {
+		return nil, err
+	}
+
+	lifecycleCtx, lifecycleCancel := context.WithTimeout(context.WithoutCancel(ctx), prepareDeadline)
+	defer lifecycleCancel()
+	for {
+		var outcome prepareOutcome
+		locked := false
+		err = m.store.WithLockedSampleProjectInstance(lifecycleCtx, reservation.WorkspaceID, func(lockCtx context.Context, tx *store.SampleProjectInstanceTx, reservation *store.SampleProjectInstanceMessage) error {
+			locked = true
+			outcome = m.prepareLocked(lockCtx, tx, reservation, request, created)
+			if outcome.commit {
+				return nil
+			}
+			return outcome.err
+		})
+		if err != nil {
+			if !locked && common.ErrorCode(err) == common.NotFound {
+				reservation, created, err = m.reserve(lifecycleCtx, request)
+				if err != nil {
+					return nil, err
+				}
+				continue
+			}
+			return nil, err
+		}
+		if outcome.err != nil {
+			return nil, outcome.err
+		}
+		if len(outcome.discoveredDatabases) > 0 {
+			m.syncer.SyncDatabasesAsync(outcome.discoveredDatabases)
+		}
+		return &PrepareResult{
+			Instance:     outcome.instance,
+			PolicyDenied: outcome.policyDenied,
+		}, nil
+	}
+}
+
+func (m *Manager) reserve(ctx context.Context, request PrepareRequest) (*store.SampleProjectInstanceMessage, bool, error) {
 	names := sampleNames(request.WorkspaceID)
 	existing, err := m.store.GetSampleProjectInstance(ctx, request.WorkspaceID)
 	if err != nil {
-		return nil, errors.Join(errors.New("failed to inspect sample project instance reservation"), err)
+		return nil, false, errors.Join(errors.New("failed to inspect sample project instance reservation"), err)
 	}
 	instanceID := ""
 	if existing != nil {
@@ -234,43 +276,16 @@ func (m *Manager) Prepare(ctx context.Context, request PrepareRequest) (*Prepare
 	} else {
 		instanceID, err = randomInstanceID(m.random)
 		if err != nil {
-			return nil, errors.Join(errors.New("failed to generate sample project instance ID"), err)
+			return nil, false, errors.Join(errors.New("failed to generate sample project instance ID"), err)
 		}
 	}
-	reservation, created, err := m.store.ReserveSampleProjectInstance(ctx, &store.SampleProjectInstanceMessage{
+	return m.store.ReserveSampleProjectInstance(ctx, &store.SampleProjectInstanceMessage{
 		WorkspaceID: request.WorkspaceID,
 		ProjectID:   request.ProjectID,
 		InstanceID:  instanceID,
 		DBName:      names.Database,
 		RoleName:    names.Role,
 	})
-	if err != nil {
-		return nil, err
-	}
-
-	lifecycleCtx, lifecycleCancel := context.WithTimeout(context.WithoutCancel(ctx), prepareDeadline)
-	defer lifecycleCancel()
-	var outcome prepareOutcome
-	err = m.store.WithLockedSampleProjectInstance(lifecycleCtx, reservation.WorkspaceID, func(lockCtx context.Context, tx *store.SampleProjectInstanceTx, locked *store.SampleProjectInstanceMessage) error {
-		outcome = m.prepareLocked(lockCtx, tx, locked, request, created)
-		if outcome.commit {
-			return nil
-		}
-		return outcome.err
-	})
-	if err != nil {
-		return nil, err
-	}
-	if outcome.err != nil {
-		return nil, outcome.err
-	}
-	if len(outcome.discoveredDatabases) > 0 {
-		m.syncer.SyncDatabasesAsync(outcome.discoveredDatabases)
-	}
-	return &PrepareResult{
-		Instance:     outcome.instance,
-		PolicyDenied: outcome.policyDenied,
-	}, nil
 }
 
 func (m *Manager) prepareLocked(

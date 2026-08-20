@@ -194,6 +194,66 @@ func TestManagerCompensatesWhenWorkspaceDeletedDuringProvisioning(t *testing.T) 
 	require.Zero(t, activeInstances)
 }
 
+func TestManagerRetriesWhenConcurrentFailureDeletesReservation(t *testing.T) {
+	ctx, db, _, _, manager := newConcreteManager(t)
+	policyDenied := errors.New("injected capacity denial")
+	firstPolicyEntered := make(chan struct{})
+	releaseFirstPolicy := make(chan struct{})
+	type prepareResult struct {
+		result *PrepareResult
+		err    error
+	}
+	prepare := func(checkPolicy func(context.Context) (CreatePolicyResult, error)) <-chan prepareResult {
+		result := make(chan prepareResult, 1)
+		go func() {
+			prepared, err := manager.Prepare(ctx, PrepareRequest{
+				WorkspaceID:       "workspace-a",
+				ProjectID:         "project-a",
+				CheckCreatePolicy: checkPolicy,
+			})
+			result <- prepareResult{result: prepared, err: err}
+		}()
+		return result
+	}
+
+	first := prepare(func(policyCtx context.Context) (CreatePolicyResult, error) {
+		close(firstPolicyEntered)
+		select {
+		case <-releaseFirstPolicy:
+			return CreatePolicyResult{DeniedReason: policyDenied}, nil
+		case <-policyCtx.Done():
+			return CreatePolicyResult{}, policyCtx.Err()
+		}
+	})
+	<-firstPolicyEntered
+
+	secondPolicyCalled := make(chan struct{}, 1)
+	second := prepare(func(context.Context) (CreatePolicyResult, error) {
+		secondPolicyCalled <- struct{}{}
+		return CreatePolicyResult{DeniedReason: policyDenied}, nil
+	})
+	require.Eventually(t, func() bool {
+		var waiting bool
+		err := db.QueryRowContext(ctx, `
+			SELECT EXISTS (
+				SELECT 1
+				FROM pg_stat_activity
+				WHERE wait_event_type = 'Lock'
+					AND query LIKE '%FROM sample_project_instance%FOR UPDATE%'
+			)
+		`).Scan(&waiting)
+		return err == nil && waiting
+	}, 30*time.Second, 50*time.Millisecond)
+	close(releaseFirstPolicy)
+
+	for _, result := range []prepareResult{<-first, <-second} {
+		require.NoError(t, result.err)
+		require.NotNil(t, result.result)
+		require.ErrorIs(t, result.result.PolicyDenied, policyDenied)
+	}
+	require.Len(t, secondPolicyCalled, 1)
+}
+
 func TestManagerPersistsAndRecoversConcreteProvisionOwnership(t *testing.T) {
 	ctx, _, s, target, manager := newConcreteManager(t)
 	names := sampleNames("workspace-a")
