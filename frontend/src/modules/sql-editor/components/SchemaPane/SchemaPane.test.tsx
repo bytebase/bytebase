@@ -23,6 +23,9 @@ const mocks = vi.hoisted(() => ({
   },
   instanceRefValue: { engine: 1 },
   currentTab: null as unknown,
+  currentTabId: "",
+  databaseMetadata: undefined as unknown,
+  updateTab: vi.fn(),
   getOrFetchDatabaseMetadata: vi
     .fn()
     .mockResolvedValue({ name: "instances/i/databases/db", schemas: [] }),
@@ -55,9 +58,9 @@ vi.mock("@/stores/app", () => {
     syncDatabase: vi.fn(),
     fetchDatabases: vi.fn(async () => ({ databases: [], nextPageToken: "" })),
     databasesByName: {} as Record<string, unknown>,
-    // SchemaPane reads cached metadata reactively via this getter; return
-    // undefined so the tree stays empty unless a test seeds the cache.
-    getCachedDatabaseMetadata: () => undefined,
+    // SchemaPane reads cached metadata reactively via this getter. Tests can
+    // seed the cache through databaseMetadata when they need a rendered tree.
+    getCachedDatabaseMetadata: () => mocks.databaseMetadata,
     getOrFetchDatabaseMetadata: mocks.getOrFetchDatabaseMetadata,
   };
   return {
@@ -80,15 +83,15 @@ vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
 // state built from `mocks.currentTab`; the imperative getter exposes the
 // same shape plus the mutators SchemaPane invokes.
 const tabsState = () => ({
-  currentTabId: mocks.currentTab ? "t1" : "",
+  currentTabId: mocks.currentTabId,
   tabsById: new Map<string, unknown>(
-    mocks.currentTab ? [["t1", mocks.currentTab]] : []
+    mocks.currentTab ? [[mocks.currentTabId, mocks.currentTab]] : []
   ),
   openTmpTabList: [],
   addTab: vi.fn(),
   setCurrentTabId: vi.fn(),
   updateCurrentTab: vi.fn(),
-  updateTab: vi.fn(),
+  updateTab: mocks.updateTab,
 });
 
 vi.mock("@/modules/sql-editor/store/tab", () => ({
@@ -268,7 +271,8 @@ const renderInto = (element: ReactElement) => {
   const root = createRoot(container);
   return {
     container,
-    render: () => act(() => root.render(element)),
+    render: (nextElement = element) =>
+      act(() => root.render(nextElement)),
     unmount: () => {
       act(() => root.unmount());
       container.remove();
@@ -280,6 +284,8 @@ beforeEach(async () => {
   vi.clearAllMocks();
   mocks.databaseRefValue = { name: "" };
   mocks.currentTab = null;
+  mocks.currentTabId = "";
+  mocks.databaseMetadata = undefined;
   mocks.isValidDatabaseName.mockReturnValue(false);
   ({ SchemaPane } = await import("./SchemaPane"));
 });
@@ -328,5 +334,77 @@ describe("SchemaPane shell", () => {
       database: "instances/i/databases/db",
     });
     unmount();
+  });
+
+  test("initializes tree state when switching tabs for the same database", async () => {
+    const requestAnimationFrame = vi
+      .spyOn(window, "requestAnimationFrame")
+      .mockImplementation((callback) => {
+        callback(0);
+        return 1;
+      });
+    const database = "instances/i/databases/db";
+    mocks.isValidDatabaseName.mockReturnValue(true);
+    mocks.databaseRefValue = { name: database };
+    mocks.databaseMetadata = {
+      schemas: [
+        {
+          name: "",
+          tables: [
+            {
+              name: "users",
+              columns: [],
+              indexes: [],
+              foreignKeys: [],
+              triggers: [],
+              checkConstraints: [],
+              partitions: [],
+            },
+          ],
+          externalTables: [],
+          views: [],
+          procedures: [],
+          packages: [],
+          functions: [],
+          sequences: [],
+        },
+      ],
+    };
+    mocks.currentTabId = "editor";
+    mocks.currentTab = {
+      id: "editor",
+      connection: { database, schema: "" },
+      treeState: { database, keys: [] },
+      viewState: { view: "CODE" },
+    };
+    const { container, render, unmount } = renderInto(<SchemaPane />);
+    render();
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(container.querySelector("[data-testid='tree']")).not.toBeNull();
+    mocks.updateTab.mockClear();
+
+    mocks.currentTabId = "explorer";
+    mocks.currentTab = {
+      id: "explorer",
+      connection: { database, schema: "", table: "users" },
+      treeState: { database: "", keys: [] },
+      viewState: { view: "CODE" },
+      mode: "DATA_EXPLORER",
+    };
+    render(<SchemaPane />);
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 30));
+    });
+
+    expect(mocks.updateTab).toHaveBeenCalledWith("explorer", {
+      treeState: {
+        database,
+        keys: expect.arrayContaining([expect.stringContaining("table")]),
+      },
+    });
+    unmount();
+    requestAnimationFrame.mockRestore();
   });
 });

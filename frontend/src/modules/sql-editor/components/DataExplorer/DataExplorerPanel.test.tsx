@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => {
   return {
     tab,
     engine: 23 as Engine,
+    resultRowsLimit: 500,
     execute: vi.fn().mockResolvedValue(undefined),
     updateTab: vi.fn((_: string, patch: Record<string, unknown>) => {
       Object.assign(tab, patch);
@@ -46,6 +47,11 @@ vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
   }),
 }));
 
+vi.mock("@/modules/sql-editor/store/editor", () => ({
+  useSQLEditorEditorState: (selector: (value: unknown) => unknown) =>
+    selector({ resultRowsLimit: mocks.resultRowsLimit }),
+}));
+
 vi.mock("@/modules/sql-editor/store/tab", () => {
   const state = {
     currentTabId: "explorer",
@@ -67,6 +73,15 @@ vi.mock(
   () => ({ DatabaseQueryContext: () => null })
 );
 
+vi.mock("@/modules/sql-editor/components/QueryContextSettingPopover", () => ({
+  QueryContextSettingPopover: ({ disabled }: { disabled?: boolean }) => (
+    <div
+      data-testid="query-context-setting-popover"
+      data-disabled={String(disabled)}
+    />
+  ),
+}));
+
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.tab.dataExplorer = { filter: "", initialized: false };
@@ -74,6 +89,7 @@ beforeEach(() => {
   mocks.tab.connection.schema = "";
   mocks.tab.connection.table = "users";
   mocks.engine = Engine.COSMOSDB;
+  mocks.resultRowsLimit = 500;
 });
 
 describe("DataExplorerPanel", () => {
@@ -86,13 +102,14 @@ describe("DataExplorerPanel", () => {
         statement: "SELECT * FROM c",
         engine: Engine.COSMOSDB,
         explain: false,
+        limit: 500,
         selection: null,
       });
     });
     expect(mocks.tab.dataExplorer.initialized).toBe(true);
   });
 
-  test("joins the filter and runs it from the Apply button", async () => {
+  test("joins the filter and runs it from the shared Run button", async () => {
     mocks.tab.dataExplorer = { filter: "", initialized: true };
     render(<DataExplorerPanel />);
 
@@ -101,13 +118,14 @@ describe("DataExplorerPanel", () => {
       { target: { value: "WHERE c.active = true" } }
     );
     fireEvent.click(
-      screen.getByRole("button", { name: "sql-editor.apply-filter" })
+      screen.getByRole("button", { name: /\(limit\s*500\)/ })
     );
 
     await waitFor(() => {
       expect(mocks.execute).toHaveBeenCalledWith(
         expect.objectContaining({
           statement: "SELECT * FROM c WHERE c.active = true",
+          limit: 500,
         })
       );
     });
@@ -123,8 +141,9 @@ describe("DataExplorerPanel", () => {
     await waitFor(() => {
       expect(mocks.execute).toHaveBeenCalledWith(
         expect.objectContaining({
-          statement: 'SELECT * FROM "public"."users" LIMIT 50;',
+          statement: 'SELECT * FROM "public"."users";',
           engine: Engine.POSTGRES,
+          limit: 500,
         })
       );
     });
@@ -147,7 +166,11 @@ describe("DataExplorerPanel", () => {
       screen.getByLabelText("sql-editor.data-explorer-filter-placeholder")
     ).toBeDisabled();
     expect(
-      screen.getByRole("button", { name: "sql-editor.apply-filter" })
+      screen.getByRole("button", { name: /\(limit\s*500\)/ })
     ).toBeDisabled();
+    expect(screen.getByTestId("query-context-setting-popover")).toHaveAttribute(
+      "data-disabled",
+      "true"
+    );
   });
 });

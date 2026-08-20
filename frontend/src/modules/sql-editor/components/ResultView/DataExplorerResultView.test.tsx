@@ -250,4 +250,36 @@ describe("DataExplorerResultView", () => {
       expect(screen.getByTestId("active-row")).toHaveTextContent("1");
     });
   });
+
+  test("preserves the selected row when sorting changes its index", async () => {
+    const renderView = (viewRows: ResultTableRow[]) => (
+      <SQLResultViewProvider
+        engine={Engine.COSMOSDB}
+        rows={viewRows}
+        columns={columns}
+      >
+        <DataExplorerResultView
+          rows={viewRows}
+          columns={columns}
+          database={database}
+          result={result}
+          onToggleSort={() => undefined}
+        />
+      </SQLResultViewProvider>
+    );
+    const { rerender } = render(renderView(rows));
+
+    fireEvent.click(screen.getByRole("button", { name: "second row" }));
+    await waitFor(() => {
+      expect(screen.getByTestId("detail")).toHaveTextContent("1:row");
+      expect(mocks.tab.dataExplorer.selectedRowKey).toBe(1);
+    });
+
+    rerender(renderView([rows[1], rows[0]]));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("detail")).toHaveTextContent("0:row");
+      expect(mocks.tab.dataExplorer.selectedRowKey).toBe(1);
+    });
+  });
 });

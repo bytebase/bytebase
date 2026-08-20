@@ -2964,7 +2964,6 @@
     "and-more-grant": "他 {{count}} 件のアクセス付与",
     "and-more-grants": "他 {{count}} 件のアクセス付与",
     "and-n-more-databases": "他 {{n}} 件のデータベース",
-    "apply-filter": "フィルターを適用",
     "batch-export": {
       "failed-for-db": "{{db}} のデータのエクスポートに失敗しました",
       "partial": "部分的な一括エクスポート",

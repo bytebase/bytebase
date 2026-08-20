@@ -2964,7 +2964,6 @@
     "and-more-grant": "… and {{count}} more grant",
     "and-more-grants": "… and {{count}} more grants",
     "and-n-more-databases": "and {{n}} more databases",
-    "apply-filter": "Apply filter",
     "batch-export": {
       "failed-for-db": "Failed to export data for {{db}}",
       "partial": "Partial batch export",

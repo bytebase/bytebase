@@ -2964,7 +2964,6 @@
     "and-more-grant": "… y {{count}} concesión más",
     "and-more-grants": "… y {{count}} concesiones más",
     "and-n-more-databases": "y {{n}} bases de datos más",
-    "apply-filter": "Aplicar filtro",
     "batch-export": {
       "failed-for-db": "No se pudieron exportar los datos de {{db}}",
       "partial": "Exportación parcial por lotes",

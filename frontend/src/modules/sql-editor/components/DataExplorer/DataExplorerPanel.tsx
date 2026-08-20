@@ -1,26 +1,24 @@
-import { FilterIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useExecuteSQL } from "@/hooks/useExecuteSQL";
 import { DatabaseQueryContext } from "@/modules/sql-editor/components/ResultPanel/DatabaseQueryContext";
+import { RunQueryButton } from "@/modules/sql-editor/components/RunQueryButton";
 import { useConnectionOfCurrentSQLEditorTab } from "@/modules/sql-editor/hooks/useSQLEditorState";
+import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import {
   getSQLEditorTabsState,
   useSQLEditorTabState,
 } from "@/modules/sql-editor/store/tab";
-import {
-  getDataExplorerFilterPlaceholderKey,
-  getDataExplorerQueryPrefix,
-  getDataExplorerStatement,
-} from "./query";
+import { Engine } from "@/types/proto-es/v1/common_pb";
+import { getDataExplorerQueryPrefix, getDataExplorerStatement } from "./query";
 
 export function DataExplorerPanel() {
   const { t } = useTranslation();
   const { connection, database, instance } =
     useConnectionOfCurrentSQLEditorTab();
   const { execute } = useExecuteSQL();
+  const resultRowsLimit = useSQLEditorEditorState((s) => s.resultRowsLimit);
   const tab = useSQLEditorTabState((state) =>
     state.tabsById.get(state.currentTabId)
   );
@@ -41,9 +39,18 @@ export function DataExplorerPanel() {
     [connection.schema, connection.table, instance.engine]
   );
   const prefix = getDataExplorerQueryPrefix(queryTarget);
-  const filterPlaceholder = t(
-    getDataExplorerFilterPlaceholderKey(instance.engine)
-  );
+  const filterPlaceholder = (() => {
+    switch (instance.engine) {
+      case Engine.COSMOSDB:
+        return t("sql-editor.data-explorer-filter-placeholder");
+      case Engine.MONGODB:
+        return t("sql-editor.data-explorer-mongodb-filter-placeholder");
+      case Engine.ELASTICSEARCH:
+        return t("sql-editor.data-explorer-elasticsearch-filter-placeholder");
+      default:
+        return t("sql-editor.data-explorer-sql-filter-placeholder");
+    }
+  })();
   const isExecuting = context?.status === "EXECUTING";
 
   const updateExplorerState = useCallback(
@@ -65,7 +72,11 @@ export function DataExplorerPanel() {
 
   const run = useCallback(
     async (suffix: string) => {
-      const statement = getDataExplorerStatement(queryTarget, suffix);
+      const statement = getDataExplorerStatement(
+        queryTarget,
+        suffix,
+        resultRowsLimit
+      );
       if (!tab || !statement) return;
 
       const tabsState = getSQLEditorTabsState();
@@ -84,6 +95,7 @@ export function DataExplorerPanel() {
         statement,
         engine: instance.engine,
         explain: false,
+        limit: resultRowsLimit,
         selection: tab.editorState.selection,
       });
     },
@@ -93,6 +105,7 @@ export function DataExplorerPanel() {
       execute,
       instance.engine,
       queryTarget,
+      resultRowsLimit,
       tab,
       updateExplorerState,
     ]
@@ -136,10 +149,12 @@ export function DataExplorerPanel() {
           placeholder={filterPlaceholder}
           onChange={(event) => handleFilterChange(event.target.value)}
         />
-        <Button type="submit" size="md" disabled={isExecuting}>
-          <FilterIcon className="size-4" />
-          {t("sql-editor.apply-filter")}
-        </Button>
+        <RunQueryButton
+          type="submit"
+          size="md"
+          disabled={isExecuting}
+          settingsDisabled={isExecuting}
+        />
       </form>
       <div className="flex-1 min-h-0 overflow-hidden">
         {context && (

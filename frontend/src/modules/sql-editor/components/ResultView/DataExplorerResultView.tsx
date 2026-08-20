@@ -46,6 +46,8 @@ export function DataExplorerResultView({
   const { t } = useTranslation();
   const { detail, disallowCopyingData, setDetail } = useSQLResultViewContext();
   const dataTableRef = useRef<VirtualDataTableHandle>(null);
+  const rowsRef = useRef(rows);
+  rowsRef.current = rows;
   const search = useResultTableSearch(rows, columns, result);
   const tabId = useSQLEditorTabState((state) => state.currentTabId);
   const selectedRowKey = useSQLEditorTabState(
@@ -64,16 +66,18 @@ export function DataExplorerResultView({
   }, [rows, selectedRowKey, setDetail]);
 
   useEffect(() => {
-    if (!detail || detail.view !== "row") return;
-    const rowKey = rows[detail.row]?.key;
-    if (rowKey === undefined || rowKey === selectedRowKey) return;
+    if (detail?.view !== "row") return;
+    const rowKey = rowsRef.current[detail.row]?.key;
+    if (rowKey === undefined) return;
     const tabsState = getSQLEditorTabsState();
     const tab = tabsState.tabsById.get(tabId);
-    if (!tab?.dataExplorer) return;
+    if (!tab?.dataExplorer || rowKey === tab.dataExplorer.selectedRowKey) {
+      return;
+    }
     tabsState.updateTab(tabId, {
       dataExplorer: { ...tab.dataExplorer, selectedRowKey: rowKey },
     });
-  }, [detail, rows, selectedRowKey, tabId]);
+  }, [detail, tabId]);
 
   const handleRowClick = useCallback(
     (rowIndex: number) => {

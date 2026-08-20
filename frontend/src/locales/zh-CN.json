@@ -2964,7 +2964,6 @@
     "and-more-grant": "… 还有 {{count}} 个授权",
     "and-more-grants": "… 还有 {{count}} 个授权",
     "and-n-more-databases": "及其他 {{n}} 个数据库",
-    "apply-filter": "应用筛选",
     "batch-export": {
       "failed-for-db": "无法导出 {{db}} 的数据",
       "partial": "部分批量导出",
