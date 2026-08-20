@@ -2468,7 +2468,7 @@
               "self": "Disabled"
             },
             "read-only": {
-              "description": "Reserved for fine-grained read-only enforcement, which has not shipped yet. Until it does, choosing this refuses MCP connections entirely, the same as Disabled.",
+              "description": "MCP sessions can inspect metadata and run read-only queries, still bounded by each user's own permissions. A request containing a statement that writes is refused.",
               "self": "Read-only"
             },
             "read-write": {

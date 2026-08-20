@@ -2468,7 +2468,7 @@
               "self": "Deshabilitado"
             },
             "read-only": {
-              "description": "Reservado para el control de solo lectura detallado, que aún no está disponible. Hasta entonces, elegir esta opción rechaza por completo las conexiones MCP, igual que Deshabilitado.",
+              "description": "Las sesiones MCP pueden inspeccionar metadatos y ejecutar consultas de solo lectura, siempre limitadas por los permisos de cada usuario. Se rechaza toda solicitud que contenga una instrucción de escritura.",
               "self": "Solo lectura"
             },
             "read-write": {
