@@ -20,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   instanceFormContext: {
     basicInfo: { engine: 0 },
     state: { isRequesting: false },
+    setState: vi.fn(),
     valueChanged: false,
   },
 }));
@@ -82,7 +83,14 @@ vi.mock("@/components/instance", () => ({
   InfoPanelContent: () => <div />,
   InstanceFormBody: () => <div data-testid="instance-form-body" />,
   InstanceFormButtons: ({ className }: { className?: string }) => (
-    <div data-testid="instance-form-buttons" className={className} />
+    <button
+      type="button"
+      data-testid="instance-form-buttons"
+      className={className}
+      disabled={mocks.instanceFormContext.state.isRequesting}
+    >
+      Create
+    </button>
   ),
   InstanceFormProvider: ({
     children,
@@ -118,6 +126,17 @@ beforeEach(async () => {
   });
   mocks.providerProps = undefined;
   mocks.instanceFormContext.state.isRequesting = false;
+  mocks.instanceFormContext.setState.mockImplementation(
+    (
+      updater: (state: { isRequesting: boolean }) => {
+        isRequesting: boolean;
+      }
+    ) => {
+      mocks.instanceFormContext.state = updater(
+        mocks.instanceFormContext.state
+      );
+    }
+  );
   mocks.instanceFormContext.valueChanged = false;
   globalThis.ResizeObserver = class ResizeObserver {
     observe() {}
@@ -353,10 +372,39 @@ describe("CreateInstanceView", () => {
 
     expect(button).toBeDisabled();
     expect(button).toHaveTextContent("Preparing Sample Project Instance…");
+    expect(
+      container.querySelector("[data-testid='instance-form-buttons']")
+    ).toBeDisabled();
 
     await act(async () => {
       resolvePreparation!({ name: "projects/demo/instances/sample" });
     });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("disables the sample action while regular creation is running", () => {
+    mocks.isSaaSMode = true;
+    mocks.instanceFormContext.state.isRequesting = true;
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <CreateInstanceView
+          parent="projects/demo"
+          onDismiss={mocks.onDismiss}
+          onCreated={mocks.onCreated}
+        />
+      );
+    });
+
+    const button = [...container.querySelectorAll("button")].find((element) =>
+      element.textContent?.includes("Use sample instance")
+    ) as HTMLButtonElement;
+    expect(button).toBeDisabled();
 
     act(() => {
       root.unmount();

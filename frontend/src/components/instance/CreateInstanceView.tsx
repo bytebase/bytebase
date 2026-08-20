@@ -86,8 +86,8 @@ function CreateInstanceFormInner({
   parent?: string;
 }) {
   const { t } = useTranslation();
-  const ctx = useInstanceFormContext();
-  const currentEngine = ctx.basicInfo.engine;
+  const { basicInfo, state, setState } = useInstanceFormContext();
+  const currentEngine = basicInfo.engine;
   const prepareSampleProjectInstance = useAppStore(
     (state) => state.prepareSampleProjectInstance
   );
@@ -161,8 +161,11 @@ function CreateInstanceFormInner({
   }, []);
 
   const handlePrepareSampleProjectInstance = useCallback(async () => {
-    if (!parent || isPreparingSampleProjectInstance) return;
+    if (!parent || isPreparingSampleProjectInstance || state.isRequesting) {
+      return;
+    }
     setIsPreparingSampleProjectInstance(true);
+    setState((prev) => ({ ...prev, isRequesting: true }));
     try {
       onCreated(await prepareSampleProjectInstance(parent));
     } catch (error) {
@@ -174,12 +177,15 @@ function CreateInstanceFormInner({
       });
     } finally {
       setIsPreparingSampleProjectInstance(false);
+      setState((prev) => ({ ...prev, isRequesting: false }));
     }
   }, [
     isPreparingSampleProjectInstance,
     onCreated,
     parent,
     prepareSampleProjectInstance,
+    setState,
+    state.isRequesting,
     t,
   ]);
 
@@ -201,7 +207,9 @@ function CreateInstanceFormInner({
               >
                 <Button
                   className="mt-3"
-                  disabled={isPreparingSampleProjectInstance}
+                  disabled={
+                    isPreparingSampleProjectInstance || state.isRequesting
+                  }
                   onClick={handlePrepareSampleProjectInstance}
                 >
                   {isPreparingSampleProjectInstance
