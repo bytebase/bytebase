@@ -4,13 +4,83 @@ import (
 	"context"
 	"testing"
 
+	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/bus"
+	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/productmetrics"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+func TestTaskCyclesRecordEmptySuccess(t *testing.T) {
+	ctx := context.Background()
+	stores := setupRolloutCreatorStore(ctx, t)
+	b, err := bus.New()
+	require.NoError(t, err)
+	metrics := productmetrics.New(nil, nil)
+	scheduler := &Scheduler{
+		store:          stores,
+		bus:            b,
+		profile:        &config.Profile{ReplicaID: "replica-a"},
+		productMetrics: metrics,
+	}
+
+	require.NoError(t, scheduler.schedulePendingTaskRuns(ctx))
+	require.NoError(t, scheduler.scheduleRunningTaskRuns(ctx))
+	tx, err := stores.GetDB().BeginTx(ctx, nil)
+	require.NoError(t, err)
+	acquired, err := store.TryAdvisoryXactLock(ctx, tx, store.AdvisoryLockKeyPendingScheduler)
+	require.NoError(t, err)
+	require.True(t, acquired)
+	require.NoError(t, scheduler.schedulePendingTaskRuns(ctx))
+	require.NoError(t, tx.Rollback())
+	panicScheduler := &Scheduler{productMetrics: metrics}
+	require.Error(t, panicScheduler.schedulePendingTaskRuns(ctx))
+	require.Error(t, panicScheduler.scheduleRunningTaskRuns(ctx))
+	require.Equal(t, uint64(1), runnerRunCount(t, metrics, productmetrics.RunnerTaskPending, productmetrics.ResultSuccess))
+	require.Equal(t, uint64(1), runnerRunCount(t, metrics, productmetrics.RunnerTaskDispatch, productmetrics.ResultSuccess))
+	require.Equal(t, uint64(1), runnerRunCount(t, metrics, productmetrics.RunnerTaskPending, productmetrics.ResultFailure))
+	require.Equal(t, uint64(1), runnerRunCount(t, metrics, productmetrics.RunnerTaskDispatch, productmetrics.ResultFailure))
+	require.Equal(t, uint64(1), runnerRunCount(t, metrics, productmetrics.RunnerTaskPending, productmetrics.ResultSkipped))
+
+	canceledMetrics := productmetrics.New(nil, nil)
+	scheduler.productMetrics = canceledMetrics
+	canceledContext, cancel := context.WithCancel(ctx)
+	cancel()
+	require.Error(t, scheduler.schedulePendingTaskRuns(canceledContext))
+	require.Error(t, scheduler.scheduleRunningTaskRuns(canceledContext))
+	require.Zero(t, runnerRunCount(t, canceledMetrics, productmetrics.RunnerTaskPending, productmetrics.ResultFailure))
+	require.Zero(t, runnerRunCount(t, canceledMetrics, productmetrics.RunnerTaskDispatch, productmetrics.ResultFailure))
+}
+
+func runnerRunCount(t *testing.T, metrics *productmetrics.ProductMetrics, runner productmetrics.Runner, result productmetrics.RunnerResult) uint64 {
+	t.Helper()
+	ch := make(chan prometheus.Metric, 16)
+	go func() {
+		metrics.Collect(ch)
+		close(ch)
+	}()
+
+	var count uint64
+	for metric := range ch {
+		var dtoMetric dto.Metric
+		if metric.Write(&dtoMetric) != nil {
+			continue
+		}
+		labels := map[string]string{}
+		for _, label := range dtoMetric.GetLabel() {
+			labels[label.GetName()] = label.GetValue()
+		}
+		if labels["runner"] == string(runner) && labels["result"] == string(result) {
+			count += dtoMetric.GetHistogram().GetSampleCount()
+		}
+	}
+	return count
+}
 
 func TestCompletionWebhookEnvironmentUsesLastEnvironmentOrder(t *testing.T) {
 	tasks := []*store.TaskMessage{

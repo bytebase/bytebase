@@ -9,6 +9,7 @@ import (
 	"github.com/labstack/echo/v5"
 
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/productmetrics"
 )
 
 func TestSecurityHeadersMiddleware_GA4Sources(t *testing.T) {
@@ -93,12 +94,12 @@ func TestMetricsRouteDisabledInSaaS(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			e := echo.New()
 			if tt.saas {
-				registerMetricsRoute(e, &config.Profile{SaaS: true}, nil, nil)
+				registerMetricsRoute(e, &config.Profile{SaaS: true}, nil)
 			} else {
 				// Self-host: use a real store and license service so the
 				// product-level license gauges are registered and collected.
 				_, st, licenseService := newMetricsTestEcho(t)
-				registerMetricsRoute(e, &config.Profile{SaaS: false}, st, licenseService)
+				registerMetricsRoute(e, &config.Profile{SaaS: false}, productmetrics.New(st, licenseService))
 			}
 
 			req := httptest.NewRequest(http.MethodGet, "/metrics", nil)

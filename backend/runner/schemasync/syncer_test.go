@@ -6,15 +6,66 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	dto "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	"github.com/bytebase/bytebase/backend/component/productmetrics"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+func TestSyncCyclesRecordEmptySuccess(t *testing.T) {
+	ctx := context.Background()
+	stores := setupSyncerStore(ctx, t)
+	metrics := productmetrics.New(nil, nil)
+	syncer := NewSyncer(stores, nil, nil, metrics)
+
+	syncer.trySyncAll(ctx)
+	require.NoError(t, syncer.syncQueuedDatabases(ctx))
+	lock, acquired, err := store.TryAdvisoryLock(ctx, stores.GetDB(), store.AdvisoryLockKeySchemaSyncer)
+	require.NoError(t, err)
+	require.True(t, acquired)
+	syncer.trySyncAll(ctx)
+	require.NoError(t, lock.Release())
+	panicSyncer := &Syncer{productMetrics: metrics}
+	panicSyncer.trySyncAll(ctx)
+	require.Error(t, panicSyncer.syncQueuedDatabases(ctx))
+	require.Equal(t, uint64(1), runnerRunCount(t, metrics, productmetrics.RunnerInstanceSync, productmetrics.ResultSuccess))
+	require.Equal(t, uint64(1), runnerRunCount(t, metrics, productmetrics.RunnerDatabaseSync, productmetrics.ResultSuccess))
+	require.Equal(t, uint64(1), runnerRunCount(t, metrics, productmetrics.RunnerInstanceSync, productmetrics.ResultFailure))
+	require.Equal(t, uint64(1), runnerRunCount(t, metrics, productmetrics.RunnerDatabaseSync, productmetrics.ResultFailure))
+	require.Equal(t, uint64(1), runnerRunCount(t, metrics, productmetrics.RunnerInstanceSync, productmetrics.ResultSkipped))
+}
+
+func runnerRunCount(t *testing.T, metrics *productmetrics.ProductMetrics, runner productmetrics.Runner, result productmetrics.RunnerResult) uint64 {
+	t.Helper()
+	ch := make(chan prometheus.Metric, 16)
+	go func() {
+		metrics.Collect(ch)
+		close(ch)
+	}()
+
+	var count uint64
+	for metric := range ch {
+		var dtoMetric dto.Metric
+		if metric.Write(&dtoMetric) != nil {
+			continue
+		}
+		labels := map[string]string{}
+		for _, label := range dtoMetric.GetLabel() {
+			labels[label.GetName()] = label.GetValue()
+		}
+		if labels["runner"] == string(runner) && labels["result"] == string(result) {
+			count += dtoMetric.GetHistogram().GetSampleCount()
+		}
+	}
+	return count
+}
 
 // TestSyncDatabaseSchemaNilDatabase pins the guard that prevents a nil
 // *store.DatabaseMessage from panicking the syncer. Callers may receive
@@ -85,7 +136,7 @@ func TestTrySyncAllSkipsDatabasesInArchivedProjects(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	syncer := NewSyncer(s, nil, nil)
+	syncer := NewSyncer(s, nil, nil, nil)
 	syncer.trySyncAll(ctx)
 
 	queued := 0
@@ -113,7 +164,7 @@ func TestCanScheduleInstanceSyncRequiresActiveProject(t *testing.T) {
 	ctx := context.Background()
 	s := setupSyncerStore(ctx, t)
 	projectID := "project-a"
-	syncer := NewSyncer(s, nil, nil)
+	syncer := NewSyncer(s, nil, nil, nil)
 	instance := &store.InstanceMessage{ProjectID: &projectID}
 
 	archived := true
