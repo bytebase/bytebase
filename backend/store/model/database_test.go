@@ -398,3 +398,27 @@ func TestListTableNames_ExcludesPartitions(t *testing.T) {
 	}
 	a.NotNil(schemaMetadata.GetTable("sales"))
 }
+
+// Partition names live in a namespace separate from table names, so a partition may carry
+// its own table's name. Both land in internalTables under the same key and the partition
+// wrapper wins, so the root table has to be listed from the schema's own table list rather
+// than inferred from that map.
+func TestListTableNames_PartitionSharingTableName(t *testing.T) {
+	a := require.New(t)
+
+	dbMetadata := NewDatabaseMetadata(&storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{{Name: "", Tables: []*storepb.TableMetadata{
+			{
+				Name:    "sales",
+				Columns: []*storepb.ColumnMetadata{{Name: "dt"}},
+				Partitions: []*storepb.TablePartitionMetadata{
+					{Name: "sales", Type: storepb.TablePartitionMetadata_RANGE, Expression: "dt"},
+					{Name: "p1", Type: storepb.TablePartitionMetadata_RANGE, Expression: "dt"},
+				},
+			},
+		}}},
+	}, nil, &storepb.DatabaseConfig{}, storepb.Engine_MYSQL, true)
+
+	a.Equal([]string{"sales"}, dbMetadata.GetSchemaMetadata("").ListTableNames())
+}

@@ -446,15 +446,23 @@ func (s *SchemaMetadata) GetCatalog() *storepb.SchemaCatalog {
 
 // ListTableNames lists the table names.
 func (s *SchemaMetadata) ListTableNames() []string {
-	var result []string
-	for _, table := range s.internalTables {
-		// Partitions are registered under their own key so GetTable can resolve a
-		// partition name, but they carry the parent's proto. Listing them would repeat
-		// the parent's name once per partition instead of naming the partition.
-		if table.partitionOf != nil {
+	// Read the root tables rather than internalTables: that map also holds every partition
+	// under its own name as a lookup alias for GetTable, and each alias carries the parent's
+	// proto. Deriving the listing from it named the parent once per partition, and hid a
+	// table outright when a partition shared its name. CreateTable, DropTable, and
+	// RenameTable all keep this list in step with the map.
+	tables := s.proto.GetTables()
+	result := make([]string, 0, len(tables))
+	seen := make(map[string]bool, len(tables))
+	for _, table := range tables {
+		// internalTables was previously the de facto guarantee that a name appears once.
+		// Keep it: callers such as the schema differ emit one change per name returned.
+		id := normalizeNameByCaseSensitivity(table.GetName(), s.isObjectCaseSensitive)
+		if seen[id] {
 			continue
 		}
-		result = append(result, table.GetProto().GetName())
+		seen[id] = true
+		result = append(result, table.GetName())
 	}
 
 	slices.Sort(result)

@@ -734,7 +734,7 @@ func printPartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 					return err
 				}
 			}
-			if _, err := fmt.Fprintf(buf, "PARTITION %s", partition.Name); err != nil {
+			if _, err := fmt.Fprintf(buf, "PARTITION %s", mysqlQuoteIdentifier(partition.Name)); err != nil {
 				return err
 			}
 			if preposition != "" {
@@ -754,7 +754,7 @@ func printPartitionClause(buf *strings.Builder, partitions []*storepb.TableParti
 					return err
 				}
 				for j, subPartition := range partition.Subpartitions {
-					if _, err := fmt.Fprintf(buf, "SUBPARTITION %s", subPartition.Name); err != nil {
+					if _, err := fmt.Fprintf(buf, "SUBPARTITION %s", mysqlQuoteIdentifier(subPartition.Name)); err != nil {
 						return err
 					}
 					if err := writePartitionOptions(buf, engine); err != nil {

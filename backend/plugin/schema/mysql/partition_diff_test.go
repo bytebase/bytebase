@@ -92,7 +92,7 @@ func TestDiffMigrationPreservesPartitioning(t *testing.T) {
 	a.NoError(err)
 	a.Contains(migration, "PARTITION BY RANGE (to_days(`dt`))", "created table must keep its partitioning:\n%s", migration)
 	for _, partition := range source.Partitions {
-		a.Contains(migration, "PARTITION "+partition.Name, "partition %s must be created", partition.Name)
+		a.Contains(migration, "PARTITION `"+partition.Name+"`", "partition %s must be created", partition.Name)
 	}
 }
 
@@ -109,10 +109,27 @@ func TestDiffMigrationPartitionEngineMatchesTable(t *testing.T) {
 
 			migration, err := schema.DiffMigration(storepb.Engine_MYSQL, databaseOf(), databaseOf(source))
 			a.NoError(err)
-			a.Equal(len(source.Partitions), strings.Count(migration, "PARTITION p"),
+			a.Equal(len(source.Partitions), strings.Count(migration, "PARTITION `p"),
 				"every partition must be emitted:\n%s", migration)
 			a.Equal(len(source.Partitions)+1, strings.Count(migration, "ENGINE="+engine),
 				"the table and every partition must declare the same engine:\n%s", migration)
 		})
 	}
+}
+
+// Partition names are identifiers, so a reserved word is legal when quoted at creation and
+// comes back from information_schema unquoted. MySQL's own SHOW CREATE TABLE quotes them,
+// and the regenerated DDL has to as well or it is a syntax error.
+func TestDiffMigrationQuotesPartitionNames(t *testing.T) {
+	a := require.New(t)
+	source := partitionedTable(0)
+	source.Partitions = []*storepb.TablePartitionMetadata{
+		{Name: "select", Type: storepb.TablePartitionMetadata_RANGE, Expression: "to_days(`dt`)", Value: "739000"},
+		{Name: "order", Type: storepb.TablePartitionMetadata_RANGE, Expression: "to_days(`dt`)", Value: "MAXVALUE"},
+	}
+
+	migration, err := schema.DiffMigration(storepb.Engine_MYSQL, databaseOf(), databaseOf(source))
+	a.NoError(err)
+	a.Contains(migration, "PARTITION `select`", "reserved-word partition name must be quoted:\n%s", migration)
+	a.Contains(migration, "PARTITION `order`", "reserved-word partition name must be quoted:\n%s", migration)
 }
