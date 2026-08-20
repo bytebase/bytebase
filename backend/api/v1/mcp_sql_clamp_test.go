@@ -260,6 +260,34 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			reason:    "the statement is not a read",
 		},
 		{
+			// Doris nests block comments; the shared stripper stops at the
+			// first "*/", so stripping first would leave text between INTO
+			// and OUTFILE and lose a keyword-pair match. The guard reads the
+			// raw statement for that reason.
+			name:      "a nested comment cannot hide a Doris export",
+			engine:    storepb.Engine_DORIS,
+			statement: "SELECT * FROM employee\nINTO /* outer /* inner */ tail */ OUTFILE \"s3://bucket/export/\"\nFORMAT AS PARQUET",
+			refused:   true,
+			reason:    "the statement is not a read",
+		},
+		{
+			name:      "nor can a line comment",
+			engine:    storepb.Engine_DORIS,
+			statement: "SELECT * FROM employee INTO\n-- c\nOUTFILE \"s3://b/\"",
+			refused:   true,
+			reason:    "the statement is not a read",
+		},
+		{
+			// The cost of reading the raw statement: the keyword refuses even
+			// inside a string literal. Fail-closed, and pinned so the trade is
+			// visible rather than discovered.
+			name:      "the export keyword in a string literal refuses too",
+			engine:    storepb.Engine_DORIS,
+			statement: "SELECT * FROM t WHERE a = 'into outfile'",
+			refused:   true,
+			reason:    "the statement is not a read",
+		},
+		{
 			// USE rebinds the connection's catalog and schema, so an
 			// unqualified read after it resolves somewhere the caller never
 			// named and the span ACL never authorized.

@@ -2468,7 +2468,7 @@
               "self": "Deshabilitado"
             },
             "read-only": {
-              "description": "Las sesiones MCP pueden inspeccionar metadatos y ejecutar consultas de solo lectura, siempre limitadas por los permisos de cada usuario. Se rechaza toda solicitud que contenga una instrucción de escritura.",
+              "description": "Las sesiones MCP pueden inspeccionar metadatos y ejecutar consultas de solo lectura, siempre limitadas por los permisos de cada usuario. Se rechaza la solicitud completa si Bytebase clasifica alguna de sus instrucciones como escritura.",
               "self": "Solo lectura"
             },
             "read-write": {

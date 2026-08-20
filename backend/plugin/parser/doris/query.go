@@ -7,7 +7,6 @@ import (
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/plugin/parser/tokenizer"
 )
 
 func init() {
@@ -32,7 +31,16 @@ func validateQuery(statement string) (bool, bool, error) {
 	// Matched on text because omni's Doris grammar has no INTO node: it parses
 	// to a bare SelectStmt identical to one without the clause (BOT-92).
 	// Replace with an AST check, as starrocks/query.go does, once it has one.
-	if statementMentionsOutfile(statement) {
+	//
+	// The raw statement, deliberately, with nothing stripped first. Doris
+	// nests block comments and the shared stripper stops at the first "*/",
+	// so "INTO /* a /* b */ c */ OUTFILE" survives stripping with text
+	// between INTO and OUTFILE and slips a keyword-pair match. A comment is
+	// whitespace to the lexer, so the keyword itself cannot be split by one:
+	// matching it where it must literally appear is the part no comment
+	// structure can defeat. The cost is that the keyword inside a string
+	// literal refuses too, which fails closed.
+	if mentionsFileExport(statement) {
 		return false, false, nil
 	}
 	parsed, err := parseDorisSQL(statement)
@@ -101,14 +109,11 @@ func isExplainableInner(node ast.Node) bool {
 	return false
 }
 
-// statementMentionsOutfile finds INTO OUTFILE or INTO DUMPFILE outside quoted
-// text and comments. Doris only; see validateQuery for why not the AST.
-func statementMentionsOutfile(statement string) bool {
-	stripped, err := tokenizer.StandardRemoveQuotedTextAndComment(statement)
-	if err != nil {
-		return true // unreadable: OUTFILE could be anywhere in it
-	}
-	return outfilePattern.MatchString(stripped)
+// mentionsFileExport reports whether the export keyword appears anywhere in the
+// statement. Doris only; see validateQuery for why not the AST, and why not the
+// stripped text.
+func mentionsFileExport(statement string) bool {
+	return fileExportPattern.MatchString(statement)
 }
 
-var outfilePattern = regexp.MustCompile(`(?i)\bINTO\s+(OUTFILE|DUMPFILE)\b`)
+var fileExportPattern = regexp.MustCompile(`(?i)\b(OUTFILE|DUMPFILE)\b`)
