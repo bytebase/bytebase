@@ -336,6 +336,19 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			statement: "SELECT 1 /* INTO OUTFILE 's3://b/' */",
 		},
 		{
+			// Not "inside a comment" for a NESTED one: omni's Doris lexer ends
+			// a comment at the first "*/", so the tail leaks back into the
+			// token stream and the keyword is seen. Doris itself nests, so
+			// this query is a plain SELECT 1 there and Bytebase refuses it
+			// anyway (BOT-93). Pinned as the cost of failing closed on a
+			// disagreement rather than guessing which lexer is right.
+			name:      "a nested comment holding the keyword refuses, though Doris would not",
+			engine:    storepb.Engine_DORIS,
+			statement: "SELECT 1 /* outer /* inner */ OUTFILE */",
+			refused:   true,
+			reason:    "the statement is not a read",
+		},
+		{
 			name:      "a read on an engine with no splitter is still classified",
 			engine:    storepb.Engine_REDIS,
 			statement: "GET k",

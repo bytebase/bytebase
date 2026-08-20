@@ -103,14 +103,20 @@ func isExplainableInner(node ast.Node) bool {
 // mentionsFileExport reports whether the statement carries an OUTFILE keyword
 // token. Doris only; see validateQuery for why the AST cannot answer this.
 //
-// The lexer decides, not the text. It closes Doris's nested block comments,
-// which the shared comment stripper does not, so a keyword buried after
-// "/* a /* b */ c */" is still reached; and it yields no keyword for OUTFILE
-// inside a string literal, a backtick-quoted identifier or a comment, so
-// reading an audit log for attempted exports stays a servable query.
+// The lexer decides, not the text, so OUTFILE inside a string literal, a
+// backtick-quoted identifier or a plain comment yields no keyword and the
+// statement serves. Reading an audit log for attempted exports stays a
+// servable query.
 //
-// A statement that will not lex fails closed: an unterminated string or
-// comment is exactly where a keyword could be hiding.
+// Nested block comments are the exception, and they fail closed rather than
+// being understood: this lexer ends a comment at the first "*/", so
+// "/* a /* b */ OUTFILE */" leaks its tail back into the token stream and the
+// keyword is seen. Doris itself nests, so the two disagree about what such a
+// statement even is (BOT-93). The disagreement is one-directional here: what
+// leaks is extra tokens, so a write Doris would run cannot go unseen.
+//
+// A statement that will not lex fails closed as well: an unterminated string
+// or comment is exactly where a keyword could be hiding.
 func mentionsFileExport(statement string) bool {
 	tokens, lexErrors := parser.Tokenize(statement)
 	if len(lexErrors) > 0 {
