@@ -1401,16 +1401,12 @@ type Webhook struct {
 	//
 	// Write-only: an incoming-webhook url is the whole credential for posting
 	// into the customer's chat, so reads leave it empty, the same way a data
-	// source's password and SSL material are left empty. Set it to change it;
-	// read url_set to know whether one is configured.
+	// source's password and SSL material are left empty. Set it to change it.
 	//
 	// Required to create a webhook. Not required on TestWebhook, where an empty
 	// url on a request that names a webhook means the one already stored, so the
 	// field carries no REQUIRED behavior it would contradict there.
 	Url string `protobuf:"bytes,4,opt,name=url,proto3" json:"url,omitempty"`
-	// Whether a url is configured, since the url itself does not come back on
-	// reads.
-	UrlSet bool `protobuf:"varint,7,opt,name=url_set,json=urlSet,proto3" json:"url_set,omitempty"`
 	// Whether the stored url's endpoint form can carry a direct message to the
 	// users an event mentions, rather than only a post to the channel the url
 	// names. False for a Microsoft Teams Power Automate workflow endpoint, which
@@ -1495,13 +1491,6 @@ func (x *Webhook) GetUrl() string {
 		return x.Url
 	}
 	return ""
-}
-
-func (x *Webhook) GetUrlSet() bool {
-	if x != nil {
-		return x.UrlSet
-	}
-	return false
 }
 
 func (x *Webhook) GetUrlSupportsDirectMessage() bool {
@@ -1709,13 +1698,12 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x14bytebase.com/ProjectR\aproject\x123\n" +
 	"\awebhook\x18\x02 \x01(\v2\x14.bytebase.v1.WebhookB\x03\xe0A\x02R\awebhook\"+\n" +
 	"\x13TestWebhookResponse\x12\x14\n" +
-	"\x05error\x18\x01 \x01(\tR\x05error\"\x9d\x03\n" +
+	"\x05error\x18\x01 \x01(\tR\x05error\"\xff\x02\n" +
 	"\aWebhook\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x121\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x18.bytebase.v1.WebhookTypeB\x03\xe0A\x02R\x04type\x12\x19\n" +
 	"\x05title\x18\x03 \x01(\tB\x03\xe0A\x02R\x05title\x12\x15\n" +
-	"\x03url\x18\x04 \x01(\tB\x03\xe0A\x04R\x03url\x12\x1c\n" +
-	"\aurl_set\x18\a \x01(\bB\x03\xe0A\x03R\x06urlSet\x12B\n" +
+	"\x03url\x18\x04 \x01(\tB\x03\xe0A\x04R\x03url\x12B\n" +
 	"\x1burl_supports_direct_message\x18\b \x01(\bB\x03\xe0A\x03R\x18urlSupportsDirectMessage\x12%\n" +
 	"\x0edirect_message\x18\x06 \x01(\bR\rdirectMessage\x12N\n" +
 	"\x12notification_types\x18\x05 \x03(\x0e2\x1a.bytebase.v1.Activity.TypeB\x03\xe0A\x06R\x11notificationTypes:@\xeaA=\n" +

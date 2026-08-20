@@ -203,7 +203,6 @@ func TestWebhookIntegration(t *testing.T) {
 		require.Len(t, projectResp.Msg.Webhooks, 1)
 		saved := projectResp.Msg.Webhooks[0]
 		require.Empty(t, saved.Url, "the read path must not hand the URL back")
-		require.True(t, saved.UrlSet, "and must still say one is configured")
 
 		result, err := ctl.projectServiceClient.TestWebhook(ctx, connect.NewRequest(&v1pb.TestWebhookRequest{
 			Project: project.Name,

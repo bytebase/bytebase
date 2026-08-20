@@ -9999,10 +9999,9 @@ The project&#39;s `name` field is used to identify the project to update. Format
 | title | [string](#string) |  | title is the title of the webhook. |
 | url | [string](#string) |  | url is the url of the webhook, should be unique within the project.
 
-Write-only: an incoming-webhook url is the whole credential for posting into the customer&#39;s chat, so reads leave it empty, the same way a data source&#39;s password and SSL material are left empty. Set it to change it; read url_set to know whether one is configured.
+Write-only: an incoming-webhook url is the whole credential for posting into the customer&#39;s chat, so reads leave it empty, the same way a data source&#39;s password and SSL material are left empty. Set it to change it.
 
 Required to create a webhook. Not required on TestWebhook, where an empty url on a request that names a webhook means the one already stored, so the field carries no REQUIRED behavior it would contradict there. |
-| url_set | [bool](#bool) |  | Whether a url is configured, since the url itself does not come back on reads. |
 | url_supports_direct_message | [bool](#bool) |  | Whether the stored url&#39;s endpoint form can carry a direct message to the users an event mentions, rather than only a post to the channel the url names. False for a Microsoft Teams Power Automate workflow endpoint, which direct messages bypass entirely: a webhook with direct_message set sends them and returns, so the workflow post never happens.
 
 Reads do not return the url, so a client editing a saved webhook cannot work this out for itself. It is a fact about the stored url and says nothing about what the url is. |

@@ -459,9 +459,6 @@ func (x *Webhook) Equal(y *Webhook) bool {
 	if x.Url != y.Url {
 		return false
 	}
-	if x.UrlSet != y.UrlSet {
-		return false
-	}
 	if x.UrlSupportsDirectMessage != y.UrlSupportsDirectMessage {
 		return false
 	}
