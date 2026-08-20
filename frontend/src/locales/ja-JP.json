@@ -2012,6 +2012,7 @@
       "success-updated-prompt": "{{name}} Webhook が正常に更新されました。",
       "test-webhook": "Webhook のテスト",
       "triggering-activity": "トリガーイベント",
+      "url-hidden": "セキュリティのため非表示です。変更するには新しい URL を入力してください。",
       "webhook-url": "Webhook URL"
     }
   },

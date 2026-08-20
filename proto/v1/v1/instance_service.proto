@@ -29,8 +29,7 @@ service InstanceService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.instances.get";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = RETURNS_A_STORED_SECRET;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Lists database instances, optionally within a project.
@@ -43,8 +42,7 @@ service InstanceService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.instances.list";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = RETURNS_A_STORED_SECRET;
+    option (bytebase.v1.mcp_method_class) = READ;
   }
 
   // Creates a new database instance.

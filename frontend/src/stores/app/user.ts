@@ -25,6 +25,7 @@ import {
 } from "@/types/proto-es/v1/user_service_pb";
 import { ensureUserFullName } from "@/utils/v1/user";
 import type { AppSliceCreator, UserFilter, UserSlice } from "./types";
+import { keepMfaEnrollment } from "./utils";
 
 const UNKNOWN_PROJECT_NAME_LEGACY = "projects/-";
 
@@ -210,7 +211,7 @@ export const createUserSlice: AppSliceCreator<UserSlice> = (set, get) => {
         usersByName: { ...state.usersByName, [response.name]: response },
         currentUser:
           state.currentUser?.name === response.name
-            ? response
+            ? keepMfaEnrollment(response, state.currentUser)
             : state.currentUser,
       }));
       return response;

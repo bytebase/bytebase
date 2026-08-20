@@ -923,6 +923,36 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, req *connect.Request
 	return connect.NewResponse(convertToProject(project)), nil
 }
 
+// storedWebhookURL reads back the URL of a saved webhook, for the one caller
+// that needs it: TestWebhook, when the client has no URL to send because the
+// read path does not return one. The URL is used to post the test notification
+// and is never returned, and the caller already holds bb.projects.update on the
+// project, which is what it takes to set that URL in the first place.
+//
+// The webhook has to belong to the project the request named. The ACL runs
+// against that project, so without this check a caller holding the permission
+// on one project could make the server post through another project's webhook.
+func (s *ProjectService) storedWebhookURL(ctx context.Context, projectID, webhookName string) (string, error) {
+	nameProjectID, webhookID, err := common.GetProjectIDWebhookID(webhookName)
+	if err != nil {
+		return "", connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid webhook name"))
+	}
+	if nameProjectID != projectID {
+		return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("webhook %q does not belong to project %q", webhookName, projectID))
+	}
+	webhook, err := s.store.GetProjectWebhook(ctx, &store.FindProjectWebhookMessage{
+		ProjectID:  &projectID,
+		ResourceID: &webhookID,
+	})
+	if err != nil {
+		return "", connect.NewError(connect.CodeInternal, err)
+	}
+	if webhook == nil {
+		return "", connect.NewError(connect.CodeNotFound, errors.Errorf("webhook %q not found", webhookID))
+	}
+	return webhook.Payload.GetUrl(), nil
+}
+
 // TestWebhook tests a webhook.
 func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v1pb.TestWebhookRequest]) (*connect.Response[v1pb.TestWebhookResponse], error) {
 	externalURL, err := utils.GetEffectiveExternalURL(ctx, s.store, s.profile, common.GetWorkspaceIDFromContext(ctx))
@@ -953,8 +983,33 @@ func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
+	// Reads leave a saved webhook's URL empty, so a client testing one cannot
+	// send the real URL: it never had it. An empty URL on a request that names
+	// a webhook means "the one already stored", and that is what gets posted
+	// to. Testing a URL the caller typed still works unchanged, which is what
+	// the create form does.
+	urlFromStore := false
+	if webhook.Payload.GetUrl() == "" && req.Msg.Webhook.GetName() != "" {
+		storedURL, err := s.storedWebhookURL(ctx, project.ResourceID, req.Msg.Webhook.GetName())
+		if err != nil {
+			return nil, err
+		}
+		webhook.Payload.Url = storedURL
+		urlFromStore = true
+	}
+
 	// Validate webhook URL against allowed domains
 	if err := webhookplugin.ValidateWebhookURL(webhook.Payload.GetType(), webhook.Payload.GetUrl()); err != nil {
+		if urlFromStore {
+			// The validator withholds the URL but names its hostname, and the
+			// caller chose the type it was validated against, so echoing that
+			// message would let anyone read a stored webhook's host back by
+			// testing it as the wrong type. For a Teams webhook that host is
+			// per-customer. The type is the actionable half and the only half
+			// they supplied.
+			return nil, connect.NewError(connect.CodeInvalidArgument,
+				errors.Errorf("the stored webhook URL is not a valid %s webhook URL", webhook.Payload.GetType()))
+		}
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "invalid webhook URL"))
 	}
 
@@ -1005,7 +1060,15 @@ func (s *ProjectService) TestWebhook(ctx context.Context, req *connect.Request[v
 		},
 	)
 	if err != nil {
-		resp.Error = err.Error()
+		// Most posters wrap their failure with the URL they posted to, and this
+		// response is the one place that error reaches a caller. A caller who
+		// typed the URL gets the message in full; one testing a stored URL gets
+		// the status code and nothing else.
+		if urlFromStore {
+			resp.Error = storedWebhookDeliveryFailure(err)
+		} else {
+			resp.Error = err.Error()
+		}
 	}
 
 	return connect.NewResponse(resp), nil

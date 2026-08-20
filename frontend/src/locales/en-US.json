@@ -2012,6 +2012,7 @@
       "success-updated-prompt": "Successfully updated webhook {{name}}.",
       "test-webhook": "Test Webhook",
       "triggering-activity": "Triggering activities",
+      "url-hidden": "Hidden for security. Enter a new URL to replace it.",
       "webhook-url": "Webhook URL"
     }
   },

@@ -15145,7 +15145,12 @@ paths:
               properties:
                 webhook:
                   title: webhook
-                  description: The webhook to test. Identified by its url.
+                  description: |-
+                    The webhook to test.
+
+                     The url is what gets posted to. Reads do not return a saved webhook's url,
+                     so leave url empty and set name to test the one already stored; set url to
+                     test a url before saving it.
                   $ref: '#/components/schemas/bytebase.v1.Webhook'
               title: TestWebhookRequest
               required:
@@ -31427,7 +31432,12 @@ components:
              Format: projects/{project}
         webhook:
           title: webhook
-          description: The webhook to test. Identified by its url.
+          description: |-
+            The webhook to test.
+
+             The url is what gets posted to. Reads do not return a saved webhook's url,
+             so leave url empty and set name to test the one already stored; set url to
+             test a url before saving it.
           $ref: '#/components/schemas/bytebase.v1.Webhook'
       title: TestWebhookRequest
       required:
@@ -32365,7 +32375,39 @@ components:
         url:
           type: string
           title: url
-          description: url is the url of the webhook, should be unique within the project.
+          description: |-
+            url is the url of the webhook, should be unique within the project.
+
+             Write-only: an incoming-webhook url is the whole credential for posting
+             into the customer's chat, so reads leave it empty, the same way a data
+             source's password and SSL material are left empty. Set it to change it;
+             read url_set to know whether one is configured.
+
+             Required to create a webhook. Not required on TestWebhook, where an empty
+             url on a request that names a webhook means the one already stored, so the
+             field carries no REQUIRED behavior it would contradict there.
+          writeOnly: true
+        urlSet:
+          type: boolean
+          title: url_set
+          description: |-
+            Whether a url is configured, since the url itself does not come back on
+             reads.
+          readOnly: true
+        urlSupportsDirectMessage:
+          type: boolean
+          title: url_supports_direct_message
+          description: |-
+            Whether the stored url's endpoint form can carry a direct message to the
+             users an event mentions, rather than only a post to the channel the url
+             names. False for a Microsoft Teams Power Automate workflow endpoint, which
+             direct messages bypass entirely: a webhook with direct_message set sends
+             them and returns, so the workflow post never happens.
+
+             Reads do not return the url, so a client editing a saved webhook cannot
+             work this out for itself. It is a fact about the stored url and says
+             nothing about what the url is.
+          readOnly: true
         directMessage:
           type: boolean
           title: direct_message
@@ -32392,7 +32434,6 @@ components:
       required:
         - type
         - title
-        - url
       additionalProperties: false
     bytebase.v1.WebhookType:
       type: string

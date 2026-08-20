@@ -3359,10 +3359,10 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x0eDataSourceType\x12\x1b\n" +
 	"\x17DATA_SOURCE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05ADMIN\x10\x01\x12\r\n" +
-	"\tREAD_ONLY\x10\x022\xb8\x16\n" +
-	"\x0fInstanceService\x12\xb1\x01\n" +
-	"\vGetInstance\x12\x1f.bytebase.v1.GetInstanceRequest\x1a\x15.bytebase.v1.Instance\"j\xdaA\x04name\x8a\xea0\x10bb.instances.get\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\r\x82\xd3\xe4\x93\x02=Z#\x12!/v1/{name=projects/*/instances/*}\x12\x16/v1/{name=instances/*}\x12\xb6\x01\n" +
-	"\rListInstances\x12!.bytebase.v1.ListInstancesRequest\x1a\".bytebase.v1.ListInstancesResponse\"^\xdaA\x00\x8a\xea0\x11bb.instances.list\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\r\x82\xd3\xe4\x93\x024Z#\x12!/v1/{parent=projects/*}/instances\x12\r/v1/instances\x12\xce\x01\n" +
+	"\tREAD_ONLY\x10\x022\xb0\x16\n" +
+	"\x0fInstanceService\x12\xad\x01\n" +
+	"\vGetInstance\x12\x1f.bytebase.v1.GetInstanceRequest\x1a\x15.bytebase.v1.Instance\"f\xdaA\x04name\x8a\xea0\x10bb.instances.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02=Z#\x12!/v1/{name=projects/*/instances/*}\x12\x16/v1/{name=instances/*}\x12\xb2\x01\n" +
+	"\rListInstances\x12!.bytebase.v1.ListInstancesRequest\x1a\".bytebase.v1.ListInstancesResponse\"Z\xdaA\x00\x8a\xea0\x11bb.instances.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x024Z#\x12!/v1/{parent=projects/*}/instances\x12\r/v1/instances\x12\xce\x01\n" +
 	"\x0eCreateInstance\x12\".bytebase.v1.CreateInstanceRequest\x1a\x15.bytebase.v1.Instance\"\x80\x01\xdaA\binstance\x8a\xea0\x13bb.instances.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02H:\binstanceZ-:\binstance\"!/v1/{parent=projects/*}/instances\"\r/v1/instances\x12\xf5\x01\n" +
 	"\x0eUpdateInstance\x12\".bytebase.v1.UpdateInstanceRequest\x1a\x15.bytebase.v1.Instance\"\xa7\x01\xdaA\x14instance,update_mask\x8a\xea0\x13bb.instances.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02c:\binstanceZ6:\binstance2*/v1/{instance.name=projects/*/instances/*}2\x1f/v1/{instance.name=instances/*}\x12\xbf\x01\n" +
 	"\x0eDeleteInstance\x12\".bytebase.v1.DeleteInstanceRequest\x1a\x16.google.protobuf.Empty\"q\xdaA\x04name\x8a\xea0\x13bb.instances.delete\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02=Z#*!/v1/{name=projects/*/instances/*}*\x16/v1/{name=instances/*}\x12\xd6\x01\n" +
