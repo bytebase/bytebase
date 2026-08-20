@@ -145,6 +145,14 @@ func formatQueryOutput(statement, resourceName string, output *QueryOutput) stri
 	return sb.String()
 }
 
+// readOnlyClassificationNotice states what the classification depth did, with
+// the same limit the enum documents. It does not say every statement was
+// classified: on an engine whose splitter cannot separate a one-line batch the
+// classifier sees only the leading statement, so an unconditional claim would
+// tell the agent the request was safer than it was checked to be.
+const readOnlyClassificationNotice = "Read-only session: this request was classified as a read before any of it ran, " +
+	"and one holding a write is refused whole, as far as the classifier can separate and recognize its statements."
+
 // readOnlyEnforcementNotice renders the server's disclosure as a sentence the
 // agent can repeat to the person it is acting for. An enforcement this build
 // does not recognize is passed through rather than dropped: the disclosure is
@@ -158,9 +166,10 @@ func readOnlyEnforcementNotice(enforcement string) string {
 		// as an unknown depth.
 		return ""
 	case "STATEMENT_CLASSIFICATION":
-		return "Read-only session: every statement was classified as a read before it ran."
+		return readOnlyClassificationNotice
 	case "STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION":
-		return "Read-only session: every statement was classified as a read, and the database connection itself was opened read-only, so an ordinary write is refused by the database as well."
+		return readOnlyClassificationNotice +
+			" The database connection itself was opened read-only as well, so an ordinary write is refused by the database too."
 	default:
 		return "Read-only session: " + enforcement
 	}

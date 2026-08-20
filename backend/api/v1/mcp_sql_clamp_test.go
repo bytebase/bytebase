@@ -167,6 +167,74 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			reason:    "rewrites the session it runs on",
 		},
 		{
+			// A single well-formed statement the server executes as a
+			// server-side file write. The MySQL family has no read-only
+			// driver session, so the classifier is the whole guarantee here.
+			name:      "SELECT INTO OUTFILE is a write, not a read",
+			engine:    storepb.Engine_MYSQL,
+			statement: "SELECT * FROM employee INTO OUTFILE '/tmp/employee.txt'",
+			refused:   true,
+			reason:    "the statement is not a read",
+		},
+		{
+			name:      "so is INTO DUMPFILE",
+			engine:    storepb.Engine_MYSQL,
+			statement: "SELECT * FROM employee INTO DUMPFILE '/tmp/employee.bin'",
+			refused:   true,
+			reason:    "the statement is not a read",
+		},
+		{
+			name:      "and on MariaDB, which shares the validator",
+			engine:    storepb.Engine_MARIADB,
+			statement: "SELECT * FROM employee INTO OUTFILE '/tmp/employee.txt'",
+			refused:   true,
+			reason:    "the statement is not a read",
+		},
+		{
+			// TiDB carries its own validator and its own AST. It rejects
+			// DUMPFILE at parse time, so OUTFILE is the form to pin.
+			name:      "and on TiDB, which carries its own",
+			engine:    storepb.Engine_TIDB,
+			statement: "SELECT * FROM employee INTO OUTFILE '/tmp/employee.txt'",
+			refused:   true,
+			reason:    "the statement is not a read",
+		},
+		{
+			// The forms that put INTO below the root. The parser attaches it
+			// to an arm of a set operation or to a parenthesized query, so a
+			// check on the statement it hands back misses all three — pg
+			// walks its arms for the same reason.
+			name:      "INTO OUTFILE on a set operation is still a write",
+			engine:    storepb.Engine_MYSQL,
+			statement: "SELECT 1 UNION SELECT 2 INTO OUTFILE '/tmp/u.txt'",
+			refused:   true,
+			reason:    "the statement is not a read",
+		},
+		{
+			name:      "and on the leading arm of one",
+			engine:    storepb.Engine_MYSQL,
+			statement: "SELECT * FROM employee INTO OUTFILE '/tmp/x.txt' UNION SELECT 1",
+			refused:   true,
+			reason:    "the statement is not a read",
+		},
+		{
+			name:      "and inside a parenthesized query",
+			engine:    storepb.Engine_MYSQL,
+			statement: "(SELECT * FROM employee INTO OUTFILE '/tmp/p.txt')",
+			refused:   true,
+			reason:    "the statement is not a read",
+		},
+		{
+			// INTO a variable assigns session state and returns no rows. It
+			// is refused, but as the "returns no data" case rather than as a
+			// write, because that is what it is.
+			name:      "INTO a variable is session state, not a file write",
+			engine:    storepb.Engine_MYSQL, // TiDB rejects this form at parse time.
+			statement: "SELECT id FROM employee INTO @found",
+			refused:   true,
+			reason:    "returns no data",
+		},
+		{
 			name:      "a read on an engine with no splitter is still classified",
 			engine:    storepb.Engine_REDIS,
 			statement: "GET k",

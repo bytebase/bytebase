@@ -722,12 +722,12 @@ func TestQueryDatabaseDisclosesReadOnlyEnforcement(t *testing.T) {
 		{
 			name:        "classification alone",
 			enforcement: "STATEMENT_CLASSIFICATION",
-			wantText:    "every statement was classified as a read before it ran",
+			wantText:    "as far as the classifier can separate and recognize its statements",
 		},
 		{
 			name:        "classification plus a read-only session",
 			enforcement: "STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION",
-			wantText:    "the database connection itself was opened read-only",
+			wantText:    "The database connection itself was opened read-only as well",
 		},
 		{
 			// A depth a later server grew and this build has no sentence for
@@ -740,6 +740,10 @@ func TestQueryDatabaseDisclosesReadOnlyEnforcement(t *testing.T) {
 
 	for _, row := range rows {
 		t.Run(row.name, func(t *testing.T) {
+			// The notice must not promise more than the classifier checked:
+			// on an engine whose splitter cannot separate a one-line batch
+			// (BOT-86) only the leading statement is seen, and the proto enum
+			// says so. This is that claim's rendering, so it says so too.
 			databases := []map[string]any{
 				makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
 			}
@@ -760,6 +764,8 @@ func TestQueryDatabaseDisclosesReadOnlyEnforcement(t *testing.T) {
 
 			text := result.Content[0].(*mcpsdk.TextContent).Text
 			require.Contains(t, text, row.wantText)
+			require.NotContains(t, text, "every statement was classified",
+				"the notice must not claim more than the classifier checked")
 		})
 	}
 }

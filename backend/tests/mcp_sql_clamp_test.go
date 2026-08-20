@@ -167,7 +167,7 @@ func TestMCPReadOnlyCeilingRefusesAWrite(t *testing.T) {
 	a.Equal(1, read.output.RowCount)
 	a.Equal("STATEMENT_CLASSIFICATION_AND_READ_ONLY_SESSION", read.output.ReadOnlyEnforcement,
 		"postgres opens the session read-only, so the disclosure must say so")
-	a.Contains(read.text, "the database connection itself was opened read-only")
+	a.Contains(read.text, "connection itself was opened read-only")
 
 	// The write is refused, with the message the gate set the shape for.
 	write := queryDatabaseOnSession(f.ctx, t, f.session, f.name,
