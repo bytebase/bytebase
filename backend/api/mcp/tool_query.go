@@ -152,7 +152,10 @@ func formatQueryOutput(statement, resourceName string, output *QueryOutput) stri
 // wrong about it.
 func readOnlyEnforcementNotice(enforcement string) string {
 	switch enforcement {
-	case "":
+	case "", "READ_ONLY_ENFORCEMENT_UNSPECIFIED":
+		// protojson omits a zero-valued enum, so an uncapped session leaves
+		// this empty; the explicit name is accepted too rather than rendered
+		// as an unknown depth.
 		return ""
 	case "STATEMENT_CLASSIFICATION":
 		return "Read-only session: every statement was classified as a read before it ran."
@@ -229,6 +232,10 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, s
 			// The workspace MCP ceiling is one of these, and telling an agent
 			// to request a project role for it sends the person it acts for
 			// after a grant that cannot lift a workspace setting.
+			//
+			// The phrase crosses a process boundary as an error body, so the
+			// producer pins it too: see the assertion on this exact substring
+			// in TestMCPClampRefusesWhatItCannotShowIsARead (backend/api/v1).
 			suggestion = ""
 			if !strings.Contains(errMsg, "MCP capability ceiling") {
 				suggestion = "you may not have permission to query this database — request the SQL Editor role on the project"
@@ -250,7 +257,7 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, s
 			Columns:             []string{},
 			ColumnTypes:         []string{},
 			Rows:                [][]any{},
-			ReadOnlyEnforcement: disclosedEnforcement(qr.ReadOnlyEnforcement),
+			ReadOnlyEnforcement: qr.ReadOnlyEnforcement,
 		}, nil
 	}
 
@@ -286,17 +293,8 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, s
 		RowCount:            len(rows),
 		Truncated:           truncated,
 		LatencyMs:           parseLatencyMs(result.Latency),
-		ReadOnlyEnforcement: disclosedEnforcement(qr.ReadOnlyEnforcement),
+		ReadOnlyEnforcement: qr.ReadOnlyEnforcement,
 	}, nil
-}
-
-// disclosedEnforcement drops the server's "nothing capped this session" value,
-// so the tool's own output carries a depth or carries nothing at all.
-func disclosedEnforcement(enforcement string) string {
-	if enforcement == "READ_ONLY_ENFORCEMENT_UNSPECIFIED" {
-		return ""
-	}
-	return enforcement
 }
 
 // flattenRowValue extracts a plain Go value from a protojson RowValue oneof.

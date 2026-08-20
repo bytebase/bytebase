@@ -207,8 +207,12 @@ export enum QueryResponse_ReadOnlyEnforcement {
   READ_ONLY_ENFORCEMENT_UNSPECIFIED = 0,
 
   /**
-   * Every statement in the request was classified as a read before any of
-   * it ran, and a request holding anything else was refused whole.
+   * The request was classified before any of it ran, statement by
+   * statement, and one holding anything the classifier calls a write was
+   * refused whole. What a classifier can see is the limit of it: a
+   * statement that reads structurally can still have an effect, and an
+   * engine whose splitter cannot separate a one-line batch is judged on the
+   * batch's leading statement.
    *
    * @generated from enum value: STATEMENT_CLASSIFICATION = 1;
    */

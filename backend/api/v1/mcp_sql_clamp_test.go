@@ -40,13 +40,16 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 )
 
-// unclassifiedEngines are the engines with no registered read-only classifier.
-// Every one of them fails closed under the clamp rather than gaining a
-// validator in this change.
-var unclassifiedEngines = []storepb.Engine{
-	storepb.Engine_MONGODB,
-	storepb.Engine_ELASTICSEARCH,
-	storepb.Engine_DATABRICKS,
+// unclassifiedEngineWrites are the engines with no registered read-only
+// classifier, each with a statement that writes on it. Every one fails closed
+// under the clamp rather than gaining a validator in this change.
+//
+// One map rather than a list beside a lookup table: two copies of this set
+// could disagree about which engines the test is even about.
+var unclassifiedEngineWrites = map[storepb.Engine]string{
+	storepb.Engine_MONGODB:       `db.employee.insertOne({name: "Bytebase"})`,
+	storepb.Engine_ELASTICSEARCH: "POST /employee/_doc\n{\"name\":\"Bytebase\"}",
+	storepb.Engine_DATABRICKS:    "INSERT INTO employee VALUES ('Bytebase')",
 }
 
 // TestMCPClampRefusesWhatItCannotShowIsARead is the clamp's whole rule: a
@@ -143,7 +146,7 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			engine:    storepb.Engine_POSTGRES,
 			statement: "SET default_transaction_read_only = off",
 			refused:   true,
-			reason:    "changes the session it runs on",
+			reason:    "rewrites the session it runs on",
 		},
 		{
 			// The disarm this rule exists for. Both statements classify as
@@ -154,14 +157,14 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			engine:    storepb.Engine_POSTGRES,
 			statement: "SET default_transaction_read_only = off; SELECT nextval('s')",
 			refused:   true,
-			reason:    "statement 1 of 2 changes the session it runs on",
+			reason:    "statement 1 of 2 returns no data",
 		},
 		{
 			name:      "the same on MySQL",
 			engine:    storepb.Engine_MYSQL,
 			statement: "SET SESSION TRANSACTION READ WRITE; SELECT 1",
 			refused:   true,
-			reason:    "changes the session it runs on",
+			reason:    "rewrites the session it runs on",
 		},
 		{
 			name:      "a read on an engine with no splitter is still classified",
@@ -190,6 +193,14 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			require.Contains(t, err.Error(), row.reason)
 			require.Contains(t, err.Error(), "READ_ONLY",
 				"the denial must name the ceiling that refused")
+			// query_database suppresses its own "request the SQL Editor role"
+			// suggestion when it sees this phrase in the body, because no
+			// project role lifts a workspace ceiling. The two live in
+			// different processes and meet only over HTTP, so the producer
+			// pins the phrase here and executeQuery (backend/api/mcp) keys on
+			// the same one.
+			require.Contains(t, err.Error(), "MCP capability ceiling",
+				"query_database keys its suggestion suppression on this phrase")
 			require.Contains(t, err.Error(), "raise the MCP ceiling",
 				"the denial must name the way out")
 			require.Contains(t, err.Error(), "Bytebase console",
@@ -257,15 +268,8 @@ func TestMCPClampBatchTailIsClassifiedOnEveryEngine(t *testing.T) {
 // writes run under a read-only ceiling. The second half is the wrapper
 // refusing the same statements.
 func TestMCPClampRefusesEngineItCannotClassify(t *testing.T) {
-	writes := map[storepb.Engine]string{
-		storepb.Engine_MONGODB:       `db.employee.insertOne({name: "Bytebase"})`,
-		storepb.Engine_ELASTICSEARCH: "POST /employee/_doc\n{\"name\":\"Bytebase\"}",
-		storepb.Engine_DATABRICKS:    "INSERT INTO employee VALUES ('Bytebase')",
-	}
-
-	for _, engine := range unclassifiedEngines {
+	for engine, statement := range unclassifiedEngineWrites {
 		t.Run(engine.String(), func(t *testing.T) {
-			statement := writes[engine]
 			require.False(t, parserbase.HasQueryValidator(engine),
 				"this test is about the engines with no classifier; %v has gained one", engine)
 

@@ -37,8 +37,12 @@ type QueryResponse_ReadOnlyEnforcement int32
 const (
 	// The caller's session is not capped at read-only.
 	QueryResponse_READ_ONLY_ENFORCEMENT_UNSPECIFIED QueryResponse_ReadOnlyEnforcement = 0
-	// Every statement in the request was classified as a read before any of
-	// it ran, and a request holding anything else was refused whole.
+	// The request was classified before any of it ran, statement by
+	// statement, and one holding anything the classifier calls a write was
+	// refused whole. What a classifier can see is the limit of it: a
+	// statement that reads structurally can still have an effect, and an
+	// engine whose splitter cannot separate a one-line batch is judged on the
+	// batch's leading statement.
 	QueryResponse_STATEMENT_CLASSIFICATION QueryResponse_ReadOnlyEnforcement = 1
 	// Statement classification, and the driver opened the database session
 	// read-only as well (Postgres and its relatives set

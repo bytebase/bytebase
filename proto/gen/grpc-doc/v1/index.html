@@ -10131,8 +10131,12 @@ These are custom, flexible checks powered by AI models.</p></td>
               <tr>
                 <td>STATEMENT_CLASSIFICATION</td>
                 <td>1</td>
-                <td><p>Every statement in the request was classified as a read before any of
-it ran, and a request holding anything else was refused whole.</p></td>
+                <td><p>The request was classified before any of it ran, statement by
+statement, and one holding anything the classifier calls a write was
+refused whole. What a classifier can see is the limit of it: a
+statement that reads structurally can still have an effect, and an
+engine whose splitter cannot separate a one-line batch is judged on the
+batch&#39;s leading statement.</p></td>
               </tr>
             
               <tr>

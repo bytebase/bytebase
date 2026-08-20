@@ -74,11 +74,10 @@ type mcpClampFixture struct {
 	ctx context.Context
 	// database is the full resource name, for the API; name is the short one
 	// query_database resolves on.
-	database  string
-	name      string
-	session   *mcp.ClientSession
-	token     string
-	container *Container
+	database string
+	name     string
+	session  *mcp.ClientSession
+	token    string
 }
 
 func setupMCPClampFixture(ctx context.Context, t *testing.T) *mcpClampFixture {
@@ -124,19 +123,19 @@ func setupMCPClampFixture(ctx context.Context, t *testing.T) *mcpClampFixture {
 	t.Cleanup(func() { session.Close() })
 
 	return &mcpClampFixture{
-		ctl:       ctl,
-		ctx:       ctx,
-		database:  databaseResp.Msg.Name,
-		name:      databaseName,
-		session:   session,
-		token:     token,
-		container: container,
+		ctl:      ctl,
+		ctx:      ctx,
+		database: databaseResp.Msg.Name,
+		name:     databaseName,
+		session:  session,
+		token:    token,
 	}
 }
 
-// employeeCount reads the row count straight from the container, so a write
-// that slipped through is caught by the database rather than by the API that
-// was supposed to refuse it.
+// employeeCount reads the row count back on the human path, which is a
+// different session from the agent's and is not clamped — so a write that
+// slipped through is caught by the database's state rather than by the API
+// that was supposed to refuse it.
 func (f *mcpClampFixture) employeeCount(t *testing.T) int {
 	t.Helper()
 	resp, err := f.ctl.sqlServiceClient.Query(f.ctx, connect.NewRequest(&v1pb.QueryRequest{
@@ -194,12 +193,19 @@ func TestMCPReadOnlyCeilingRefusesAWrite(t *testing.T) {
 		"the refusal must come from the database, not from the classifier")
 
 	// The same statement on the human path proves the refusal was this
-	// session's depth and not something about the statement.
-	_, err := f.ctl.sqlServiceClient.Query(f.ctx, connect.NewRequest(&v1pb.QueryRequest{
+	// session's depth and not something about the statement. Query reports a
+	// statement failure inside the result rather than as an RPC error, so the
+	// advancing sequence is what actually distinguishes the two.
+	before := f.sequenceValue(t)
+	human, err := f.ctl.sqlServiceClient.Query(f.ctx, connect.NewRequest(&v1pb.QueryRequest{
 		Name:      f.database,
 		Statement: "SELECT nextval('employee_seq')",
 	}))
-	a.NoError(err, "a person in the console runs the same statement without a read-only session")
+	a.NoError(err)
+	a.Len(human.Msg.Results, 1)
+	a.Empty(human.Msg.Results[0].Error,
+		"a person in the console runs the same statement without a read-only session")
+	a.Greater(f.sequenceValue(t), before, "the human's nextval must actually have advanced the sequence")
 
 	// The refusal is recorded, and attributable to the agent rather than to the
 	// same human working in the console.
@@ -217,8 +223,11 @@ func TestMCPReadOnlyCeilingRefusesAWrite(t *testing.T) {
 	a.NotNil(denied, "the denied query must have produced a row of its own")
 	a.Contains(denied.Status.Message, "READ_ONLY")
 
-	// The control. Nothing about the principal or the session changed; only the
-	// ceiling did, and the same INSERT now lands.
+	// The control. Same principal, same credential, same statement; only the
+	// ceiling changed, and the INSERT now lands. It runs on a session opened
+	// after the widening, because a ceiling is read per request and this test
+	// is about the ceiling rather than about session lifetime —
+	// TestMCPReadOnlyTighteningBitesAnOpenSession covers the live-session half.
 	a.NoError(f.ctl.setMCPCapability(f.ctx, v1pb.WorkspaceProfileSetting_READ_WRITE))
 	widened := openMCPSession(f.ctx, t, f.ctl, f.token)
 	defer widened.Close()
@@ -229,14 +238,16 @@ func TestMCPReadOnlyCeilingRefusesAWrite(t *testing.T) {
 	a.Equal(2, f.employeeCount(t))
 }
 
-// sequenceValue reads the sequence straight through the human path, so a write
-// that slipped through is caught by the database rather than by the API that
-// was supposed to refuse it.
+// sequenceValue reads the sequence back on the human path, for the same reason
+// employeeCount does.
 func (f *mcpClampFixture) sequenceValue(t *testing.T) int64 {
 	t.Helper()
 	resp, err := f.ctl.sqlServiceClient.Query(f.ctx, connect.NewRequest(&v1pb.QueryRequest{
-		Name:      f.database,
-		Statement: "SELECT last_value FROM employee_seq",
+		Name: f.database,
+		// last_value alone is 1 both before and after the first nextval; the
+		// is_called flag is what separates them, so this counts calls: 0
+		// before any, N after N.
+		Statement: "SELECT CASE WHEN is_called THEN last_value ELSE 0 END FROM employee_seq",
 	}))
 	require.NoError(t, err)
 	require.Len(t, resp.Msg.Results, 1)
@@ -266,7 +277,7 @@ func TestMCPReadOnlyCeilingRefusesASessionRewrite(t *testing.T) {
 	disarm := queryDatabaseOnSession(f.ctx, t, f.session, f.name,
 		"SET default_transaction_read_only = off; SELECT nextval('employee_seq')")
 	a.True(disarm.isError, "a request that rewrites its own session must be refused: %s", disarm.text)
-	a.Contains(disarm.text, "changes the session it runs on")
+	a.Contains(disarm.text, "rewrites the session it runs on")
 	a.Contains(disarm.text, "READ_ONLY")
 
 	a.Equal(before, f.sequenceValue(t),
@@ -321,19 +332,25 @@ func TestMCPReadOnlyCeilingLeavesTheHumanPathAlone(t *testing.T) {
 		"INSERT INTO employee VALUES (3, 'agent')")
 	a.True(refused.isError)
 
-	_, err := f.ctl.sqlServiceClient.Query(f.ctx, connect.NewRequest(&v1pb.QueryRequest{
+	before := f.sequenceValue(t)
+	human, err := f.ctl.sqlServiceClient.Query(f.ctx, connect.NewRequest(&v1pb.QueryRequest{
 		Name:      f.database,
 		Statement: "INSERT INTO employee VALUES (4, 'human'); SELECT nextval('employee_seq');",
 	}))
 	a.NoError(err, "a workspace ceiling of READ_ONLY must not bind a person in the console")
+	for _, result := range human.Msg.Results {
+		a.Empty(result.Error, "no statement of the human's request may fail")
+	}
 	a.Equal(2, f.employeeCount(t))
+	a.Greater(f.sequenceValue(t), before,
+		"the nextval half must have run too: a leaked read-only session would stop it while the INSERT still counted")
 
-	human, err := f.ctl.sqlServiceClient.Query(f.ctx, connect.NewRequest(&v1pb.QueryRequest{
+	humanRead, err := f.ctl.sqlServiceClient.Query(f.ctx, connect.NewRequest(&v1pb.QueryRequest{
 		Name:      f.database,
 		Statement: "SELECT id FROM employee",
 	}))
 	a.NoError(err)
-	a.Equal(v1pb.QueryResponse_READ_ONLY_ENFORCEMENT_UNSPECIFIED, human.Msg.ReadOnlyEnforcement,
+	a.Equal(v1pb.QueryResponse_READ_ONLY_ENFORCEMENT_UNSPECIFIED, humanRead.Msg.ReadOnlyEnforcement,
 		"a person's query is not a capped session and must disclose nothing")
 }
 

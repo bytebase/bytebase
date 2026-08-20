@@ -784,9 +784,9 @@ func TestQueryDatabaseSaysNothingWhenTheSessionIsNotCapped(t *testing.T) {
 		})
 		require.NoError(t, err)
 
-		output, ok := structured.(*QueryOutput)
+		_, ok := structured.(*QueryOutput)
 		require.True(t, ok)
-		require.Empty(t, output.ReadOnlyEnforcement)
-		require.NotContains(t, result.Content[0].(*mcpsdk.TextContent).Text, "Read-only session")
+		require.NotContains(t, result.Content[0].(*mcpsdk.TextContent).Text, "Read-only session",
+			"an uncapped session must not be told it was held to reads")
 	}
 }

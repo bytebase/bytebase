@@ -87,18 +87,24 @@ func mcpReadOnlyClampApplies(ctx context.Context) (bool, error) {
 // statement changes session state — so a batch is served only if every
 // statement in it reads and none of it rewrites the session it runs on.
 //
-// Session state is the second bool the validators already report, and refusing
-// it is what stops the depth layer being switched off by a statement this same
-// rule admits. Every unit of a request runs on one connection, so
-// "SET default_transaction_read_only = off" followed by anything the
-// classifier calls a read would leave the read-only session disarmed and the
-// second statement free to write — verified against Postgres 17, where the
-// two statements land as separate transactions and the write succeeds.
+// "Returns data" is the second bool the validators already report, and a
+// statement that returns none is either a session change or a statement that
+// runs the query to measure it. Refusing both is what stops the depth layer
+// being switched off by a statement this same rule admits: every unit of a
+// request runs on one connection, so "SET default_transaction_read_only = off"
+// followed by anything the classifier calls a read would leave the read-only
+// session disarmed and the second statement free to write — verified against
+// Postgres 17, where the two land as separate transactions and the write
+// succeeds.
 //
-// It does not close the whole class. A statement that reads structurally can
-// still call a function that rewrites the same setting, and no classifier
-// catches that; see the type comment on QueryResponse.ReadOnlyEnforcement for
-// what the depth may and may not be said to guarantee.
+// It closes neither class completely, and both gaps are recorded rather than
+// papered over. The bool reports the SET family on postgres, cockroachdb, the
+// mysql family, tidb, snowflake and redshift, but not on Trino, whose
+// validator classifies SET SESSION as a data-returning read (BOT-91). And a
+// statement that reads structurally can still call a function that rewrites
+// the same setting — set_config on Postgres — which no classifier catches
+// (BOT-88). See the type comment on QueryResponse.ReadOnlyEnforcement for what
+// the depth may and may not be said to guarantee.
 func refuseNonReadOnlyStatement(engine storepb.Engine, statement string) error {
 	if !parserbase.HasQueryValidator(engine) {
 		return refuseClampedStatement(fmt.Sprintf(
@@ -116,7 +122,7 @@ func refuseNonReadOnlyStatement(engine storepb.Engine, statement string) error {
 		}
 		if !allQuery {
 			return refuseClampedStatement(fmt.Sprintf(
-				"%s changes the session it runs on rather than returning data, which could switch off the read-only session the rest of the request depends on",
+				"%s returns no data, so it either rewrites the session it runs on, which can switch off the read-only session the rest of the request depends on, or runs the query to measure it. A read-only ceiling serves statements that only read",
 				describeClampUnit(i, len(units))))
 		}
 	}
