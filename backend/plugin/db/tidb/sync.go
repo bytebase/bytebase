@@ -333,16 +333,8 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 	}
 
 	// Query check constraint info.
-	// information_schema.CHECK_CONSTRAINTS was added in TiDB v7.4.0. Gate on the TiDB
-	// version rather than the MySQL compatibility prefix: TiDB reports 8.0.11 (also since
-	// v7.4.0, before which it reported 5.7.25), but MySQL itself only added that table in
-	// 8.0.16, so reading the prefix as a MySQL version understates what TiDB supports.
 	checkMap := make(map[db.TableKey][]*storepb.CheckConstraintMetadata)
-	hasCheckConstraints, err := tidbVersionAtLeast(version, "7.4.0")
-	if err != nil {
-		return nil, err
-	}
-	if hasCheckConstraints {
+	if supportsCheckConstraintTable(version) {
 		checkMap, err = d.getCheckConstraintList(ctx, d.databaseName)
 		if err != nil {
 			return nil, err
@@ -837,21 +829,39 @@ func (d *Driver) getCheckConstraintList(ctx context.Context, databaseName string
 	return checkMap, nil
 }
 
-// tidbVersionAtLeast checks if a TiDB version string (e.g., "v7.4.0") is
-// greater than or equal to the given threshold (e.g., "7.4.0"). TiDB Cloud
-// calendar versions (e.g., "CLOUD.202603.4") carry no upstream semver to compare,
-// but every TiDB Cloud release postdates the versions gated here, so they satisfy
-// any threshold.
-func tidbVersionAtLeast(version, threshold string) (bool, error) {
-	if isCloudVersion(version) {
-		return true, nil
+var (
+	// TiDB Self-Managed and TiDB Cloud Starter report the upstream semver, e.g.
+	// "8.0.11-TiDB-v8.5.0" and "8.0.11-TiDB-v7.5.2-serverless".
+	tidbSemverRegex = regexp.MustCompile(`v\d+\.\d+\.\d+`)
+	// TiDB Cloud reports a calendar version carrying no upstream semver, e.g.
+	// "8.0.11-TiDB-CLOUD.202603.4".
+	tidbCloudVersionRegex = regexp.MustCompile(`CLOUD\.\d+\.\d+`)
+)
+
+// supportsCheckConstraintTable reports whether the server exposes
+// information_schema.CHECK_CONSTRAINTS, which TiDB added in v7.4.0. rawVersion is the
+// verbatim VERSION() output, carrying both a MySQL compatibility version and the TiDB
+// version.
+//
+// Gate on the TiDB half, not the MySQL prefix: TiDB reports the 8.0.11 prefix from v7.4.0
+// onward (5.7.25 before that), but MySQL itself only added the table in 8.0.16, so
+// reading that prefix as a real MySQL version understates what TiDB supports. TiDB Cloud
+// reports a calendar version in place of the semver, and every TiDB Cloud release
+// postdates v7.4.0.
+//
+// A string carrying no recognizable TiDB version — a custom server-version, say — counts
+// as unsupported, so sync omits check constraints instead of failing outright.
+func supportsCheckConstraintTable(rawVersion string) bool {
+	loc := tidbSemverRegex.FindStringIndex(rawVersion)
+	if loc == nil {
+		return tidbCloudVersionRegex.MatchString(rawVersion)
 	}
-	v := strings.TrimPrefix(version, "v")
-	semVersion, err := semver.Make(v)
+	// Skip the leading "v" that semver.Make does not accept.
+	semVersion, err := semver.Make(rawVersion[loc[0]+1 : loc[1]])
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to parse TiDB version %q", version)
+		return false
 	}
-	return semVersion.GE(semver.MustParse(threshold)), nil
+	return semVersion.GE(semver.MustParse("7.4.0"))
 }
 
 func stripSingleQuote(s string) string {

@@ -297,3 +297,33 @@ func TestStripSingleQuote(t *testing.T) {
 		})
 	}
 }
+
+func TestSupportsCheckConstraintTable(t *testing.T) {
+	tests := []struct {
+		version string
+		want    bool
+	}{
+		// information_schema.CHECK_CONSTRAINTS landed in TiDB v7.4.0, the same release
+		// that moved the reported MySQL prefix from 5.7.25 to 8.0.11.
+		{version: "5.7.25-TiDB-v7.1.1", want: false},
+		{version: "5.7.25-TiDB-v7.2.0", want: false},
+		{version: "5.7.25-TiDB-v7.3.0", want: false},
+		{version: "8.0.11-TiDB-v7.4.0", want: true},
+		{version: "8.0.11-TiDB-v8.5.0", want: true},
+		{version: "8.0.11-TiDB-v7.5.2-serverless", want: true},
+		// TiDB Cloud reports a calendar version carrying no upstream semver.
+		{version: "8.0.11-TiDB-CLOUD.202603.4", want: true},
+		// The MySQL prefix alone must not decide the gate: MySQL added the table in
+		// 8.0.16, so treating 8.0.11 as a real MySQL version would answer false here.
+		{version: "8.0.11", want: false},
+		// A custom server-version carries no recognizable TiDB version.
+		{version: "5.7.25", want: false},
+		{version: "", want: false},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.version, func(t *testing.T) {
+			require.Equal(t, tc.want, supportsCheckConstraintTable(tc.version))
+		})
+	}
+}
