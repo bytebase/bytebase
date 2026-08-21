@@ -45,11 +45,11 @@ redactors that disagree on whether `rows_count` survives.
 
 - **Sanitizing existing `audit_log` rows.** Treat them as disclosed and rotate. No purge path
   exists for that table; providing one is separate work.
-- **Proving goal 5 outside the declared surfaces.** The read-path assertion covers every converter
-  in a declared list, kept complete by a lint that fails when a `convertTo*` function in
-  `backend/api/v1` has no entry. What it cannot see is a function that populates a `SENSITIVE`
-  field while following neither that naming convention nor the declared minting pairs. That residue
-  is a review gate, not a proof.
+- **Proving goal 5 outside the declared surfaces.** The read-path assertion covers the population
+  defined under Enforcement below. What it cannot see is a function that populates a `SENSITIVE`
+  field while sitting outside that population and outside the declared minting pairs. That residue
+  is a review gate, not a proof. The rule itself lives in one place, under Enforcement; restating
+  it here is how it drifted before.
 - **Secrets inside free-form text.** `redactRoleAttribute` (`read_redaction.go`) masks a password
   hash within MariaDB `SHOW GRANTS` output. No field annotation expresses that; it stays
   hand-written on the read path.
@@ -358,8 +358,21 @@ walking each of the ten rebuilds for what it newly admits, is a precondition for
   masks as a bearer credential) and which `assertNoInputOnlyValues` cannot run on at all, since it
   takes a `protoreflect.Message` asserting the v1 contract. Keying on the prefix produces 19 build
   failures whose only cheap fix is 19 whole-function exemptions — the blanket-exemption failure this
-  design rejects. A function producing a `v1pb` message with no entry in the list fails the build,
-  which is what keeps "every converter" true rather than aspirational.
+  design rejects.
+
+  Return type alone still selects more than converters: `chatWithProvider` (`ai_service.go:55`)
+  makes an outbound provider call, `getSession` (`rollout_service.go:647`) takes a live `*sql.DB`,
+  `validateSpecs` (`plan_service.go:572`) takes a `*store.Store`. A test cannot construct inputs for
+  those generically, and hand-trimming the list back to the ones it can rebuilds the hole.
+
+  So the lint checks **membership, not executability**. Every function in the population needs an
+  entry, and an entry is one of two kinds: *asserted*, where the test builds the inputs and runs the
+  generalized `assertNoInputOnlyValues` on the output; or *reasoned*, a recorded justification for
+  why it cannot be executed — needs a store, a live connection, an outbound call — naming what
+  covers it instead. A new `v1pb`-producing function fails the build until it is classified as one
+  or the other. That is the shape `mcpDenialRequestsUnderReview` already uses, prose reason per
+  entry included, and it is what makes an exemption here a written per-function decision rather than
+  a blanket skip.
 
   The generalized assertion must also **traverse map values**, which `assertNoInputOnlyValues`
   skips today (`:485`). This is inside the declared converter surface, so leaving it would
