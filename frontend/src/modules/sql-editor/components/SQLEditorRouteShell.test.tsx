@@ -285,6 +285,41 @@ beforeEach(() => {
 });
 
 describe("SQLEditorRouteShell", () => {
+  test("keeps a restored data explorer tab that matches the database route", async () => {
+    mocks.tabsState.initProject.mockImplementationOnce(async () => {
+      const tab = {
+        id: "explorer",
+        savedQuery: "",
+        mode: "DATA_EXPLORER",
+        connection: {
+          instance: "instances/inst1",
+          database: "instances/inst1/databases/db1",
+          schema: "public",
+          table: "users",
+        },
+        dataExplorer: {
+          filter: "WHERE active = true",
+          initialized: false,
+        },
+      } as SQLEditorTab;
+      mocks.tabsState.tabsById.set(tab.id, tab);
+      mocks.tabsState.currentTabId = tab.id;
+    });
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.tabsState.addTab).not.toHaveBeenCalled();
+    expect(mocks.tabsState.currentTabId).toBe("explorer");
+
+    unmount();
+  });
+
   test("seeds database route tabs with schema and table from the URL", async () => {
     const { unmount } = renderShell();
 

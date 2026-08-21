@@ -411,7 +411,10 @@ export const VirtualDataTable = forwardRef<
               <div
                 key={virtualRow.key}
                 data-row-index={rowIndex}
-                className="flex absolute inset-x-0 group"
+                className={cn(
+                  "flex absolute inset-x-0 group",
+                  onRowClick && "cursor-pointer"
+                )}
                 onClickCapture={
                   onRowClick ? () => onRowClick(rowIndex) : undefined
                 }

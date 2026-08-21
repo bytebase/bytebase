@@ -80,23 +80,31 @@ export function DataExplorerPanel() {
       if (!tab || !statement) return;
 
       const tabsState = getSQLEditorTabsState();
-      for (const existing of tab.databaseQueryContexts?.get(database.name) ??
-        []) {
-        existing.abortController?.abort();
-      }
-      tabsState.deleteDatabaseQueryContext(database.name);
-      updateExplorerState({
-        filter: suffix,
-        initialized: true,
-        resetRow: true,
-      });
-      await execute({
+      const previousContexts =
+        tab.databaseQueryContexts?.get(database.name) ?? [];
+      const accepted = await execute({
         connection,
         statement,
         engine: instance.engine,
         explain: false,
         limit: resultRowsLimit,
         selection: tab.editorState.selection,
+      });
+      if (!accepted) return;
+
+      for (const context of previousContexts) {
+        context.abortController?.abort();
+      }
+      if (previousContexts.length > 0) {
+        tabsState.batchRemoveDatabaseQueryContext({
+          database: database.name,
+          contextIds: previousContexts.map((context) => context.id),
+        });
+      }
+      updateExplorerState({
+        filter: suffix,
+        initialized: true,
+        resetRow: true,
       });
     },
     [

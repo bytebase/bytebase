@@ -312,6 +312,9 @@ describe("VirtualDataTable row detail action", () => {
     expect(
       container.querySelector('[data-col-index="1"] > div')
     ).not.toHaveClass("cursor-pointer");
+    expect(container.querySelector('[data-row-index="0"]')).toHaveClass(
+      "cursor-pointer"
+    );
     expect(container.querySelector('[data-col-index="1"]')).toHaveClass(
       "bg-accent/20!"
     );
