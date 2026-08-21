@@ -247,7 +247,9 @@ func TestCanScheduleInstanceSyncRequiresActiveProject(t *testing.T) {
 		Workspace:  "default",
 		Delete:     &archived,
 	}))
-	require.False(t, syncer.canScheduleInstanceSync(ctx, instance))
+	canSchedule, err := syncer.canScheduleInstanceSync(ctx, instance)
+	require.NoError(t, err)
+	require.False(t, canSchedule)
 
 	archived = false
 	require.NoError(t, s.UpdateProjects(ctx, &store.UpdateProjectMessage{
@@ -255,7 +257,73 @@ func TestCanScheduleInstanceSyncRequiresActiveProject(t *testing.T) {
 		Workspace:  "default",
 		Delete:     &archived,
 	}))
-	require.True(t, syncer.canScheduleInstanceSync(ctx, instance))
+	canSchedule, err = syncer.canScheduleInstanceSync(ctx, instance)
+	require.NoError(t, err)
+	require.True(t, canSchedule)
+}
+
+func TestTrySyncAllProjectLookupFailureRecordsFailure(t *testing.T) {
+	ctx := context.Background()
+	stores := setupSyncerStore(ctx, t)
+	projectID := "project-a"
+	_, err := stores.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: "instance-a",
+		Workspace:  "default",
+		ProjectID:  &projectID,
+		Metadata: &storepb.Instance{
+			Activation:  true,
+			Engine:      storepb.Engine_POSTGRES,
+			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+		},
+	})
+	require.NoError(t, err)
+	_, err = stores.GetDB().ExecContext(ctx, "ALTER TABLE project RENAME TO unavailable_project")
+	require.NoError(t, err)
+
+	metrics := productmetrics.New(nil, nil)
+	syncer := NewSyncer(stores, nil, nil, metrics)
+	syncer.trySyncAll(ctx)
+
+	require.Equal(t, uint64(1), runnerRunCount(t, metrics, productmetrics.RunnerInstanceSync, productmetrics.ResultFailure))
+	require.Zero(t, runnerRunCount(t, metrics, productmetrics.RunnerInstanceSync, productmetrics.ResultSuccess))
+}
+
+func TestSyncQueuedDatabasesProjectLookupFailureRecordsFailure(t *testing.T) {
+	ctx := context.Background()
+	stores := setupSyncerStore(ctx, t)
+	_, err := stores.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: "instance-a",
+		Workspace:  "default",
+		Metadata: &storepb.Instance{
+			Activation:  true,
+			Engine:      storepb.Engine_POSTGRES,
+			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+		},
+	})
+	require.NoError(t, err)
+	database, err := stores.UpsertDatabase(ctx, &store.DatabaseMessage{
+		ProjectID:    "project-a",
+		InstanceID:   "instance-a",
+		DatabaseName: "app",
+		Metadata:     &storepb.DatabaseMetadata{},
+	})
+	require.NoError(t, err)
+
+	metrics := productmetrics.New(nil, nil)
+	syncer := NewSyncer(stores, nil, nil, metrics)
+	syncer.SyncDatabaseAsync(database)
+	_, err = stores.GetDB().ExecContext(ctx, "ALTER TABLE project RENAME TO unavailable_project")
+	require.NoError(t, err)
+
+	require.Error(t, syncer.syncQueuedDatabases(ctx))
+	require.Equal(t, uint64(1), runnerRunCount(t, metrics, productmetrics.RunnerDatabaseSync, productmetrics.ResultFailure))
+	require.Zero(t, runnerRunCount(t, metrics, productmetrics.RunnerDatabaseSync, productmetrics.ResultSuccess))
+	queued := 0
+	syncer.databaseSyncMap.Range(func(_, _ any) bool {
+		queued++
+		return true
+	})
+	require.Equal(t, 1, queued)
 }
 
 func setupSyncerStore(ctx context.Context, t *testing.T) *store.Store {
