@@ -57,7 +57,9 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 			data_type,
 			collation_name,
 			column_default
-		FROM %s.INFORMATION_SCHEMA.COLUMNS ORDER BY table_name, ordinal_position;`, d.databaseName))
+		FROM %s.INFORMATION_SCHEMA.COLUMNS
+		WHERE is_hidden = 'NO'
+		ORDER BY table_name, ordinal_position;`, d.databaseName))
 	it, err := q.Read(ctx)
 	if err != nil {
 		return nil, err
@@ -70,6 +72,10 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 		}
 		if err != nil {
 			return nil, err
+		}
+		// Pseudo columns such as _PARTITIONTIME/_PARTITIONDATE have NULL ordinal_position.
+		if !row.OrdinalPosition.Valid {
+			continue
 		}
 		nullableBool, err := util.ConvertYesNo(row.IsNullable)
 		if err != nil {
