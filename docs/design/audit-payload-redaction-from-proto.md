@@ -42,8 +42,9 @@ disagree on whether `rows_count` survives.
   hash within MariaDB `SHOW GRANTS` output. No field annotation expresses that; it stays
   hand-written on the read path.
 - **Runtime enforcement.** The `debug_redact` that `SENSITIVE` carries is inert in Go, and the
-  redactor is a denylist, so at runtime an unannotated field is logged. The inventory below moves that failure to CI; nothing
-  catches it in a binary built past a skipped lint, where today's allowlist rebuilds fail closed.
+  redactor is a denylist, so at runtime an unannotated field is logged. The inventory below moves
+  that failure to CI; nothing catches it in a binary built past a skipped lint, where today's
+  allowlist rebuilds fail closed.
 
 ## Design
 
@@ -100,9 +101,8 @@ so the choice rests on four things.
 credentials". `QueryResult.rows` is bulk, not a credential, and must not claim credential semantics
 to anything reading that option. The enum carries `debug_redact` on `SENSITIVE` alone, so the two
 values share local behaviour — both drop the value from the audit payload — while differing
-upstream. Two
-bools force the choice of either marking bulk fields `debug_redact` (false) or running two
-unrelated vocabularies.
+upstream. Two bools force the choice of either marking bulk fields `debug_redact` (false) or
+running two unrelated vocabularies.
 
 **Exclusivity becomes structural.** Two bools permit `[debug_redact = true, (audit_omit) = true]`,
 which is meaningless and which nothing rejects. One classification per field is unviolatable in the
@@ -118,9 +118,9 @@ honour it as of v30. `debug_redact` exists twice in `descriptor.proto` — `Fiel
 and `EnumValueOptions` field 3, the latter documented as "fields annotated with this enum value" —
 so `SENSITIVE = 1 [debug_redact = true]` is a legal declaration, not a borrowed field option. It
 compiles under both `buf build` and `protoc`, and the resulting descriptor carries
-`debug_redact=true` on `SENSITIVE` and `false` on `OMIT`. The literal `[debug_redact = true]` is more immediately recognizable to a
-protobuf reader, which is the one point on the other side, and it is a one-time cost against a doc
-comment in `annotation.proto`.
+`debug_redact=true` on `SENSITIVE` and `false` on `OMIT`. The literal `[debug_redact = true]` is
+more immediately recognizable to a protobuf reader, which is the one point on the other side, and
+it is a one-time cost against a doc comment in `annotation.proto`.
 
 This changes nothing about enforcement. **Go honours `debug_redact` nowhere**, field-level or
 enum-level, so the upstream recognition is future-proofing and vocabulary, not protection we have
