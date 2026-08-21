@@ -351,8 +351,15 @@ walking each of the ten rebuilds for what it newly admits, is a precondition for
   converter is not skipped, it is allowed exactly the `(function, field)` pairs declared for it
   above, so a later line inside it that populated `password` or `service_key` still fails.
 
-  The completeness lint keys on **return type — a function producing a `v1pb` message — not on the
-  `convertTo*` name prefix**. That prefix also matches 19 `convertToStore*` functions going the
+  The completeness lint keys on **return type — a function in `backend/api/v1` whose returns
+  include a `v1pb` message, directly or inside a slice, a map, or any arm of a multi-value return —
+  not on the `convertTo*` name prefix**. Containers are not an edge case here: `convertDataSources`
+  returns `[]*v1pb.DataSource` and `convertInstanceRoles` returns `[]*v1pb.InstanceRole`
+  (`instance_service_converter.go:232`, `:49`), and those two are precisely what the Background
+  leans on to call `instance_resource.data_sources[]` and `roles[].password` safe on reads. A
+  bare-message predicate omits both, plus `convertToAuditLogs` and 17 others — 20 of the 138
+  `v1pb`-producing functions, including the most load-bearing ones. The prefix also matches 19
+  `convertToStore*` functions going the
   other way, which carry credentials by design (`convertToStoreInstance` holds every data-source
   password; `convertToStoreProjectWebhookMessage` copies `Webhook.url`, the field `redactWebhook`
   masks as a bearer credential) and which `assertNoInputOnlyValues` cannot run on at all, since it
@@ -366,13 +373,21 @@ walking each of the ten rebuilds for what it newly admits, is a precondition for
   those generically, and hand-trimming the list back to the ones it can rebuilds the hole.
 
   So the lint checks **membership, not executability**. Every function in the population needs an
-  entry, and an entry is one of two kinds: *asserted*, where the test builds the inputs and runs the
-  generalized `assertNoInputOnlyValues` on the output; or *reasoned*, a recorded justification for
+  entry, and an entry is one of two kinds: *asserted*, where the test **seeds a non-empty sentinel
+  into every `SENSITIVE` field the converter can source**, then runs the generalized
+  `assertNoInputOnlyValues` on the output and requires none to survive; or *reasoned*, a recorded
+  justification for
   why it cannot be executed — needs a store, a live connection, an outbound call — naming what
   covers it instead. A new `v1pb`-producing function fails the build until it is classified as one
   or the other. That is the shape `mcpDenialRequestsUnderReview` already uses, prose reason per
   entry included, and it is what makes an exemption here a written per-function decision rather than
   a blanket skip.
+
+  The seeding is what makes an asserted entry fail closed. `assertNoInputOnlyValues` walks
+  *populated* fields, so a fixture leaving the source at its zero value passes trivially — and would
+  keep passing after someone adds a line copying `password` or `service_key` from that same
+  zero-valued input, which is the failure this section promises to catch. Unseeded, it is the same
+  vacuity as setting every oneof arm in one message, on the read side.
 
   The generalized assertion must also **traverse map values**, which `assertNoInputOnlyValues`
   skips today (`:485`). This is inside the declared converter surface, so leaving it would
