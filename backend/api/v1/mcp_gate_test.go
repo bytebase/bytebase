@@ -268,13 +268,13 @@ var mcpDeniedClasses = []v1pb.MCPMethodClass{v1pb.MCPMethodClass_FORBIDDEN, v1pb
 // reports every method annotated READ, which is the shape of the damage.
 func checkEveryClassHasAServingDecision(
 	rows []mcpClassification,
-	serving map[storepb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass,
+	serving map[storepb.MCPSetting_Capability][]v1pb.MCPMethodClass,
 	denied []v1pb.MCPMethodClass,
 	classes protoreflect.EnumDescriptor,
 	modes protoreflect.EnumDescriptor,
 ) []string {
 	var violations []string
-	servedBy := map[v1pb.MCPMethodClass][]storepb.WorkspaceProfileSetting_MCPCapability{}
+	servedBy := map[v1pb.MCPMethodClass][]storepb.MCPSetting_Capability{}
 	for mode, served := range serving {
 		for _, class := range served {
 			servedBy[class] = append(servedBy[class], mode)
@@ -317,8 +317,8 @@ func checkEveryClassHasAServingDecision(
 	modeValues := modes.Values()
 	for i := range modeValues.Len() {
 		value := modeValues.Get(i)
-		mode := storepb.WorkspaceProfileSetting_MCPCapability(value.Number())
-		if mode == storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED {
+		mode := storepb.MCPSetting_Capability(value.Number())
+		if mode == storepb.MCPSetting_CAPABILITY_UNSPECIFIED {
 			continue
 		}
 		if _, ok := serving[mode]; !ok {
@@ -349,7 +349,7 @@ func TestLintReasonsMatchTheClass(t *testing.T) {
 // setting row holds and the gate reads back.
 func mcpEnums(t *testing.T) (classes, modes protoreflect.EnumDescriptor) {
 	t.Helper()
-	return v1pb.MCPMethodClass(0).Descriptor(), storepb.WorkspaceProfileSetting_MCPCapability(0).Descriptor()
+	return v1pb.MCPMethodClass(0).Descriptor(), storepb.MCPSetting_Capability(0).Descriptor()
 }
 
 func TestLintEveryClassHasAServingDecision(t *testing.T) {
@@ -387,15 +387,15 @@ func TestLintRefusedClassesMatchTheServingTable(t *testing.T) {
 // that serves no class cannot start admitting sessions — or the reverse, which
 // would refuse a connection whose methods the gate is ready to serve.
 func TestLintCeilingAdmissionMatchesTheServingTable(t *testing.T) {
-	values := storepb.WorkspaceProfileSetting_MCPCapability(0).Descriptor().Values()
+	values := storepb.MCPSetting_Capability(0).Descriptor().Values()
 	for i := range values.Len() {
-		capability := storepb.WorkspaceProfileSetting_MCPCapability(values.Get(i).Number())
+		capability := storepb.MCPSetting_Capability(values.Get(i).Number())
 		require.Equal(t, len(mcpServingClasses[capability]) > 0, auth.MCPCeilingServesAnything(capability),
 			"%v: the serving table and auth.MCPCeilingServesAnything disagree about whether this ceiling serves anything", capability)
 	}
 	// A stored number no release ever wrote is refused too, and it cannot come
 	// from the descriptor because it is in no build's enum.
-	for _, unknown := range []storepb.WorkspaceProfileSetting_MCPCapability{2, 99} {
+	for _, unknown := range []storepb.MCPSetting_Capability{2, 99} {
 		require.False(t, auth.MCPCeilingServesAnything(unknown),
 			"%v: a ceiling this build cannot interpret must not open a session", unknown)
 	}
@@ -409,8 +409,8 @@ func TestLintCeilingAdmissionMatchesTheServingTable(t *testing.T) {
 // something else entirely, and every serving decision above would be about the
 // wrong vocabulary.
 func TestMCPCapabilityEnumsAgree(t *testing.T) {
-	v1Values := v1pb.WorkspaceProfileSetting_MCPCapability(0).Descriptor().Values()
-	storeValues := storepb.WorkspaceProfileSetting_MCPCapability(0).Descriptor().Values()
+	v1Values := v1pb.MCPSetting_Capability(0).Descriptor().Values()
+	storeValues := storepb.MCPSetting_Capability(0).Descriptor().Values()
 
 	byNumber := func(values protoreflect.EnumValueDescriptors) map[int32]string {
 		out := map[int32]string{}
@@ -494,10 +494,10 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 	classes, modes := mcpEnums(t)
 
 	t.Run("a class both served and denied fails once, not once per method", func(t *testing.T) {
-		widened := map[storepb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass{
-			storepb.WorkspaceProfileSetting_DISABLED:  {},
-			storepb.WorkspaceProfileSetting_READ_ONLY: {v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_EXCLUDED},
-			storepb.WorkspaceProfileSetting_READ_WRITE: {
+		widened := map[storepb.MCPSetting_Capability][]v1pb.MCPMethodClass{
+			storepb.MCPSetting_DISABLED:  {},
+			storepb.MCPSetting_READ_ONLY: {v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_EXCLUDED},
+			storepb.MCPSetting_READ_WRITE: {
 				v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE, v1pb.MCPMethodClass_EXCLUDED,
 			},
 		}
@@ -519,18 +519,18 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 		require.Equal(t, []string{
 			"/p: carries WRITE, which has no serving decision",
 			"WRITE is neither served by a mode nor denied",
-		}, checkEveryClassHasAServingDecision(rows, map[storepb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass{
-			storepb.WorkspaceProfileSetting_DISABLED:   {},
-			storepb.WorkspaceProfileSetting_READ_ONLY:  {v1pb.MCPMethodClass_READ},
-			storepb.WorkspaceProfileSetting_READ_WRITE: {v1pb.MCPMethodClass_READ},
+		}, checkEveryClassHasAServingDecision(rows, map[storepb.MCPSetting_Capability][]v1pb.MCPMethodClass{
+			storepb.MCPSetting_DISABLED:   {},
+			storepb.MCPSetting_READ_ONLY:  {v1pb.MCPMethodClass_READ},
+			storepb.MCPSetting_READ_WRITE: {v1pb.MCPMethodClass_READ},
 		}, mcpDeniedClasses, classes, modes))
 	})
 
 	t.Run("a ceiling mode with no serving row fails", func(t *testing.T) {
 		require.Equal(t, []string{"ceiling mode DISABLED does not say which classes it serves"},
-			checkEveryClassHasAServingDecision(nil, map[storepb.WorkspaceProfileSetting_MCPCapability][]v1pb.MCPMethodClass{
-				storepb.WorkspaceProfileSetting_READ_ONLY:  {v1pb.MCPMethodClass_READ},
-				storepb.WorkspaceProfileSetting_READ_WRITE: {v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE},
+			checkEveryClassHasAServingDecision(nil, map[storepb.MCPSetting_Capability][]v1pb.MCPMethodClass{
+				storepb.MCPSetting_READ_ONLY:  {v1pb.MCPMethodClass_READ},
+				storepb.MCPSetting_READ_WRITE: {v1pb.MCPMethodClass_READ, v1pb.MCPMethodClass_WRITE},
 			}, mcpDeniedClasses, classes, modes))
 	})
 
@@ -778,20 +778,21 @@ func TestMCPClassificationInventory(t *testing.T) {
 // exercised without a database. The end-to-end path exists too, in
 // backend/tests, now that a READ_ONLY ceiling admits a connection.
 type mcpGateStore struct {
-	ceiling storepb.WorkspaceProfileSetting_MCPCapability
-	err     error
+	ceiling                 storepb.MCPSetting_Capability
+	ignoreMaskingExemptions bool
+	err                     error
 }
 
-func (s mcpGateStore) GetMCPCapabilityUncached(context.Context, string) (storepb.WorkspaceProfileSetting_MCPCapability, error) {
-	return s.ceiling, s.err
+func (s mcpGateStore) GetMCPSettingsUncached(context.Context, string) (store.MCPSettings, error) {
+	return store.MCPSettings{Capability: s.ceiling, IgnoreMaskingExemptions: s.ignoreMaskingExemptions}, s.err
 }
 
 func readWriteCeiling() mcpGateStore {
-	return mcpGateStore{ceiling: storepb.WorkspaceProfileSetting_READ_WRITE}
+	return mcpGateStore{ceiling: storepb.MCPSetting_READ_WRITE}
 }
 
 func readOnlyCeiling() mcpGateStore {
-	return mcpGateStore{ceiling: storepb.WorkspaceProfileSetting_READ_ONLY}
+	return mcpGateStore{ceiling: storepb.MCPSetting_READ_ONLY}
 }
 
 type mcpGateResult struct {
@@ -808,7 +809,7 @@ type mcpGateResult struct {
 // it here keeps the class rules provable without a database, and
 // TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation proves the real
 // interceptor honors the mark.
-func invokeMCPGate(t *testing.T, stores mcpCeilingReader, authCtx *common.AuthContext, procedure string, req connect.AnyRequest) mcpGateResult {
+func invokeMCPGate(t *testing.T, stores mcpSettingsReader, authCtx *common.AuthContext, procedure string, req connect.AnyRequest) mcpGateResult {
 	t.Helper()
 	out := mcpGateResult{}
 	next := func(ctx context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {
@@ -941,7 +942,7 @@ func TestMCPGateFailsClosedOnTheCeiling(t *testing.T) {
 		// precisely so that a ceiling which decided to serve nothing reads as a
 		// denial rather than as the unknown-ceiling error, and that distinction
 		// is only real if something exercises it.
-		got := invokeMCPGate(t, mcpGateStore{ceiling: storepb.WorkspaceProfileSetting_DISABLED},
+		got := invokeMCPGate(t, mcpGateStore{ceiling: storepb.MCPSetting_DISABLED},
 			classContext(v1pb.MCPMethodClass_READ),
 			v1connect.DatabaseServiceGetDatabaseProcedure, connect.NewRequest(&v1pb.GetDatabaseRequest{}))
 		require.Error(t, got.err)
@@ -957,7 +958,7 @@ func TestMCPGateFailsClosedOnTheCeiling(t *testing.T) {
 		// The reserved number 2, which was METADATA_ONLY before the tier was
 		// dropped. It survives protojson as an unknown enum number, so unlike
 		// an unknown NAME it reaches the gate intact — and no mode serves it.
-		got := invokeMCPGate(t, mcpGateStore{ceiling: storepb.WorkspaceProfileSetting_MCPCapability(2)},
+		got := invokeMCPGate(t, mcpGateStore{ceiling: storepb.MCPSetting_Capability(2)},
 			classContext(v1pb.MCPMethodClass_READ),
 			v1connect.DatabaseServiceGetDatabaseProcedure, connect.NewRequest(&v1pb.GetDatabaseRequest{}))
 		require.Error(t, got.err)

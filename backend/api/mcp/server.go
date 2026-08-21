@@ -51,7 +51,7 @@ type Server struct {
 type serverStore interface {
 	GetWorkspaceID(context.Context) (string, error)
 	GetWorkspaceProfileSetting(context.Context, string) (*storepb.WorkspaceProfileSetting, error)
-	GetMCPCapabilityUncached(context.Context, string) (storepb.WorkspaceProfileSetting_MCPCapability, error)
+	GetMCPSettingsUncached(context.Context, string) (store.MCPSettings, error)
 	DeleteOAuth2RefreshTokensByUserAndClient(context.Context, string, string) error
 }
 
@@ -595,9 +595,9 @@ func (s *Server) unauthorized(c *echo.Context, errDescription string) error {
 // two against each other over the whole enum.
 //
 // UNSPECIFIED is refused rather than read as "never configured":
-// store.GetMCPCapabilityUncached already resolves an unset ceiling to
+// store.GetMCPSettingsUncached already resolves an unset ceiling to
 // READ_WRITE, so a zero value arriving here was resolved by nobody.
-func mcpConnectionAllowed(capability storepb.WorkspaceProfileSetting_MCPCapability) bool {
+func mcpConnectionAllowed(capability storepb.MCPSetting_Capability) bool {
 	return auth.MCPCeilingServesAnything(capability)
 }
 
@@ -619,13 +619,13 @@ func mcpConnectionAllowed(capability storepb.WorkspaceProfileSetting_MCPCapabili
 // cache is what makes the kill switch a kill switch: the cache has no TTL and
 // only in-process writes refresh it, so a profile cached as unset would keep
 // admitting MCP after the ceiling was flipped out of band.
-func (s *Server) mcpCapability(ctx context.Context, workspaceID string) (storepb.WorkspaceProfileSetting_MCPCapability, error) {
-	capability, err := s.store.GetMCPCapabilityUncached(ctx, workspaceID)
+func (s *Server) mcpCapability(ctx context.Context, workspaceID string) (storepb.MCPSetting_Capability, error) {
+	settings, err := s.store.GetMCPSettingsUncached(ctx, workspaceID)
 	if err != nil {
 		if errors.Is(err, store.ErrMCPCapabilityUnreadable) {
 			slog.Warn("the stored MCP capability ceiling cannot be interpreted; refusing the connection",
 				slog.String("workspace", workspaceID), log.BBError(err))
-			return storepb.WorkspaceProfileSetting_DISABLED, nil
+			return storepb.MCPSetting_DISABLED, nil
 		}
 		// DISABLED rather than UNSPECIFIED, even though the error is what the
 		// caller acts on. UNSPECIFIED is the zero value and means "nobody
@@ -633,9 +633,9 @@ func (s *Server) mcpCapability(ctx context.Context, workspaceID string) (storepb
 		// both, so nothing turns on it today — the point is that the value
 		// stays safe to read on its own, in case a later caller logs the error
 		// and carries on.
-		return storepb.WorkspaceProfileSetting_DISABLED, err
+		return storepb.MCPSetting_DISABLED, err
 	}
-	return capability, nil
+	return settings.Capability, nil
 }
 
 // buildResourceMetadataURL returns the absolute URL of the protected resource

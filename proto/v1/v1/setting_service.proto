@@ -120,6 +120,7 @@ message Setting {
     SEMANTIC_TYPES = 6;
     ENVIRONMENT = 7;
     EMAIL = 8;
+    MCP = 9;
   }
 
   // The resource name of the setting.
@@ -142,6 +143,7 @@ message SettingValue {
     AISetting ai = 6;
     EnvironmentSetting environment = 7;
     EmailSetting email = 8;
+    MCPSetting mcp = 9;
   }
 }
 
@@ -193,6 +195,9 @@ message AppIMSetting {
 
 message WorkspaceProfileSetting {
   reserved 15;
+  // 26 was mcp_capability, released in 3.21.0 and moved to the MCP setting.
+  reserved 26;
+  reserved "mcp_capability";
   // The external URL is used for sso authentication callback.
   string external_url = 1;
 
@@ -287,12 +292,21 @@ message WorkspaceProfileSetting {
   // Deprecated: use just-in-time access request flows instead.
   google.protobuf.Duration maximum_role_expiration = 25;
 
-  // MCPCapability is the maximum capability an MCP (Model Context Protocol)
-  // session may have in the workspace. It is a ceiling: a session runs at this
-  // level or lower. Unset (UNSPECIFIED) is treated as READ_WRITE so existing
-  // workspaces are unaffected.
-  enum MCPCapability {
-    MCP_CAPABILITY_UNSPECIFIED = 0;
+  // Whether a directory sync token has been generated for this workspace.
+  // The token itself is never returned; this only lets the UI decide between
+  // offering "generate" and "regenerate".
+  bool directory_sync_token_configured = 27 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// MCPSetting is what an MCP (Model Context Protocol) session may do in this
+// workspace.
+message MCPSetting {
+  // Capability is the ceiling: a session runs at this level or lower. An absent
+  // MCP setting resolves to READ_WRITE, so a workspace that never configured
+  // MCP is unaffected. Writing CAPABILITY_UNSPECIFIED explicitly is rejected —
+  // omit the update mask path to leave the ceiling unset.
+  enum Capability {
+    CAPABILITY_UNSPECIFIED = 0;
     // MCP connections are rejected.
     DISABLED = 1;
     // Was MCP_METADATA_ONLY; the Metadata-only tier is deferred out of the design.
@@ -307,17 +321,25 @@ message WorkspaceProfileSetting {
     READ_WRITE = 4;
   }
 
-  // The maximum capability available to MCP (Model Context Protocol) sessions in
-  // this workspace, acting as an admin-set ceiling. Unset is treated as
-  // READ_WRITE for backward compatibility; DISABLED rejects all MCP
-  // connections. Writing MCP_CAPABILITY_UNSPECIFIED explicitly is rejected —
-  // omit the update mask path to leave the ceiling unset.
-  MCPCapability mcp_capability = 26;
+  // The maximum capability available to MCP sessions in this workspace, acting
+  // as an admin-set ceiling. Enforced server-side at three points: the /mcp
+  // endpoint decides whether a connection is admitted at all, the ceiling gate
+  // on the internal MCP chain decides, per request, which method classes are
+  // served, and under READ_ONLY the SQL clamp decides, per statement, whether
+  // it only reads.
+  Capability capability = 1;
 
-  // Whether a directory sync token has been generated for this workspace.
-  // The token itself is never returned; this only lets the UI decide between
-  // offering "generate" and "regenerate".
-  bool directory_sync_token_configured = 27 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // Whether a request that arrived over MCP stops applying the caller's own
+  // unmasking provisioning. Two mechanisms let a user see a real value and this
+  // suppresses both: the masking exemptions granted to them, and the unmask
+  // carried by an access grant. The same user in the console is untouched.
+  //
+  // It cannot force masking where there is none. Masking substitutes values in
+  // query results, so this does not reach data copied into a column carrying no
+  // masking policy, and it does nothing on the engines Bytebase does not mask.
+  // It narrows what an agent reads through the paths Bytebase masks; it is not
+  // a confidentiality boundary.
+  bool ignore_masking_exemptions = 2;
 }
 
 message SQLEditorThemeSetting {

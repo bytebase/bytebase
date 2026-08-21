@@ -135,7 +135,7 @@ func (s *Service) EnablePasswordSignin(ctx context.Context, workspaceID string) 
 		ctx,
 		workspaceID,
 		storepb.SettingName_WORKSPACE_PROFILE,
-		func(current proto.Message) (proto.Message, error) {
+		func(current proto.Message, _ []byte) (proto.Message, error) {
 			profile, ok := current.(*storepb.WorkspaceProfileSetting)
 			if !ok {
 				return nil, errors.New("workspace profile setting has an unexpected type")

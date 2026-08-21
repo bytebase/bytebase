@@ -4,12 +4,13 @@ import (
 	"context"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/store"
 )
 
 type testServerStore struct {
 	workspaceID      string
 	workspaceProfile *storepb.WorkspaceProfileSetting
-	capability       storepb.WorkspaceProfileSetting_MCPCapability
+	capability       storepb.MCPSetting_Capability
 	capabilityErr    error
 }
 
@@ -17,7 +18,7 @@ func newTestServerStore() *testServerStore {
 	return &testServerStore{
 		workspaceID:      "ws-test",
 		workspaceProfile: &storepb.WorkspaceProfileSetting{},
-		capability:       storepb.WorkspaceProfileSetting_READ_WRITE,
+		capability:       storepb.MCPSetting_READ_WRITE,
 	}
 }
 
@@ -29,8 +30,8 @@ func (s *testServerStore) GetWorkspaceProfileSetting(context.Context, string) (*
 	return s.workspaceProfile, nil
 }
 
-func (s *testServerStore) GetMCPCapabilityUncached(context.Context, string) (storepb.WorkspaceProfileSetting_MCPCapability, error) {
-	return s.capability, s.capabilityErr
+func (s *testServerStore) GetMCPSettingsUncached(context.Context, string) (store.MCPSettings, error) {
+	return store.MCPSettings{Capability: s.capability}, s.capabilityErr
 }
 
 func (*testServerStore) DeleteOAuth2RefreshTokensByUserAndClient(context.Context, string, string) error {

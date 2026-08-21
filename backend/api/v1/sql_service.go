@@ -168,11 +168,11 @@ func (s *SQLService) AdminExecute(ctx context.Context, stream *connect.BidiStrea
 }
 
 // buildExportQueryContext assembles the db.QueryContext for an export request.
-// SkipMasking has to be set here (not only checked around the post-execution
-// MaskResults pass) because some drivers mask at query time via SQL rewrites
-// — by the time the second pass runs the rows would already be masked, and
-// a JIT grant with unmask=true would silently export masked data. See PR
-// #20487 review (RainbowDashy).
+// SkipMasking has to be set here, not only checked around the post-execution
+// MaskResults pass: queryRetry reads it off the QueryContext to decide
+// maskingEnabled and whether to extract sensitive predicate columns, and both
+// of those run before the export's own check. See PR #20487 review
+// (RainbowDashy). No driver reads the field.
 func buildExportQueryContext(restriction *store.EffectiveQueryDataPolicy, userEmail string, schema *string, container string, skipMasking bool) db.QueryContext {
 	qc := db.QueryContext{
 		Limit:                int(restriction.MaximumResultRows),
@@ -417,7 +417,10 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		Option:               request.QueryOption,
 		Container:            request.GetContainer(),
 		MaximumSQLResultSize: queryRestriction.MaximumResultSize,
-		SkipMasking:          accessGrant != nil && accessGrant.Payload.Unmask,
+		// SkipMasking turns the whole masking pass off (queryRetry's
+		// maskingEnabled), so exemptionsForPrincipal never runs when it is set.
+		// The toggle has to suppress it here as well as there.
+		SkipMasking: accessGrant != nil && accessGrant.Payload.Unmask && !mcpIgnoresMaskingExemptions(ctx),
 	}
 	if request.Schema != nil {
 		queryContext.Schema = *request.Schema
@@ -1041,9 +1044,11 @@ func (s *SQLService) Export(ctx context.Context, req *connect.Request[v1pb.Expor
 	// its target databases, so span-level ACL still runs and only the
 	// granted targets are exempted from IAM. See PR #20487 review.
 	optionalAccessCheck := s.accessCheckWithGrant(accessGrant)
+	// Export is a WRITE method, so a read-write MCP session reaches it with the
+	// same access-grant unmask Query carries.
 	skipMasking := false
 	if accessGrant != nil {
-		skipMasking = accessGrant.Payload.Unmask
+		skipMasking = accessGrant.Payload.Unmask && !mcpIgnoresMaskingExemptions(ctx)
 	}
 	bytes, duration, exportErr := doExport(ctx, s.store, s.dbFactory, s.licenseService, request, user, instance, database, optionalAccessCheck, s.schemaSyncer, dataSource, skipMasking)
 

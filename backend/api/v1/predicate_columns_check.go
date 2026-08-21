@@ -9,7 +9,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 	"github.com/bytebase/bytebase/backend/store"
-	"github.com/bytebase/bytebase/backend/utils"
 )
 
 func (s *QueryResultMasker) ExtractSensitivePredicateColumns(ctx context.Context, spans []*base.QuerySpan, instance *store.InstanceMessage, user *store.UserMessage) ([][]base.ColumnResource, error) {
@@ -96,17 +95,7 @@ func (s *QueryResultMasker) getSensitiveColumnsForPredicate(
 			continue
 		}
 
-		var exemptions []*storepb.MaskingExemptionPolicy_Exemption
-		if policy := data.getMaskingExemptionPolicy(database.ProjectID); policy != nil {
-			for _, e := range policy.Exemptions {
-				for _, member := range e.Members {
-					if utils.MemberContainsUser(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), member, currentPrincipal) {
-						exemptions = append(exemptions, e)
-						break
-					}
-				}
-			}
-		}
+		exemptions := s.exemptionsForPrincipal(ctx, data, database.ProjectID, currentPrincipal)
 
 		isSensitive, err := m.isSensitiveColumn(database, column, project.Setting.DataClassificationConfigId, config, exemptions)
 		if err != nil {

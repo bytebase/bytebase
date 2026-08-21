@@ -543,9 +543,9 @@ func MCPClassIsRefused(class v1pb.MCPMethodClass) bool {
 // value nobody resolved, and a stored number no release ever wrote — the
 // reserved 2, or anything from a newer build — is a ceiling nobody decided
 // about. Both fall to the default.
-func MCPCeilingServesAnything(capability storepb.WorkspaceProfileSetting_MCPCapability) bool {
+func MCPCeilingServesAnything(capability storepb.MCPSetting_Capability) bool {
 	switch capability {
-	case storepb.WorkspaceProfileSetting_READ_WRITE, storepb.WorkspaceProfileSetting_READ_ONLY:
+	case storepb.MCPSetting_READ_WRITE, storepb.MCPSetting_READ_ONLY:
 		return true
 	default:
 		return false

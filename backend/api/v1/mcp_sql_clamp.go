@@ -22,20 +22,6 @@ import (
 // can still have an effect, and a classifier can be wrong about a grammar it
 // does not fully model; closing that is the conformance lane's work.
 
-// mcpCeilingContextKey carries the ceiling the gate already resolved, so the
-// clamp holds the request against that same read rather than a second one the
-// gate could disagree with.
-type mcpCeilingContextKey struct{}
-
-func withMCPCeiling(ctx context.Context, ceiling storepb.WorkspaceProfileSetting_MCPCapability) context.Context {
-	return context.WithValue(ctx, mcpCeilingContextKey{}, ceiling)
-}
-
-func mcpCeilingFromContext(ctx context.Context) (storepb.WorkspaceProfileSetting_MCPCapability, bool) {
-	ceiling, ok := ctx.Value(mcpCeilingContextKey{}).(storepb.WorkspaceProfileSetting_MCPCapability)
-	return ceiling, ok
-}
-
 // mcpReadOnlyClampApplies reports whether this request must be held to
 // read-only statements.
 //
@@ -48,12 +34,12 @@ func mcpReadOnlyClampApplies(ctx context.Context) (bool, error) {
 	if !ok || authCtx.DelegatedGrant == nil {
 		return false, nil
 	}
-	ceiling, ok := mcpCeilingFromContext(ctx)
+	settings, ok := mcpSettingsFromContext(ctx)
 	if !ok {
 		return false, connect.NewError(connect.CodeInternal, errors.New(
 			"this MCP request cannot be checked against the workspace MCP capability ceiling, so it fails closed"))
 	}
-	return ceiling == storepb.WorkspaceProfileSetting_READ_ONLY, nil
+	return settings.Capability == storepb.MCPSetting_READ_ONLY, nil
 }
 
 // refuseNonReadOnlyStatement classifies a request fail-closed. Nothing here

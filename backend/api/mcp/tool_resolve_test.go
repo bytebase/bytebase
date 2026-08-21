@@ -1,6 +1,9 @@
 package mcp
 
 import (
+	"encoding/json"
+	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -55,4 +58,53 @@ func TestResolve_ProjectInAmbiguous(t *testing.T) {
 	require.Len(t, resolved.candidates, 2)
 	require.Equal(t, "projects/payments", resolved.projects["instances/prod-pg/databases/app"])
 	require.Equal(t, "projects/staging", resolved.projects["instances/staging-pg/databases/app"])
+}
+
+// TestResolve_PolicyDenialGetsNoRoleAdvice covers the resolve door. It answers
+// 403 only when the stored ceiling is unreadable or unserved, which is exactly
+// the case where telling the agent to ask for bb.databases.list would send the
+// person it acts for after a grant that cannot fix a broken setting.
+func TestResolve_PolicyDenialGetsNoRoleAdvice(t *testing.T) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "DatabaseService/ListDatabases") {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"message": "/bytebase.v1.DatabaseService/ListDatabases is refused: this workspace's " +
+					"stored MCP capability ceiling is not one this build understands",
+			})
+			return
+		}
+		w.WriteHeader(http.StatusNotFound)
+	})
+	s := newTestServerWithMock(t, handler)
+
+	_, err := s.resolveDatabase(testContext(), "employee_db", "", "")
+	require.Error(t, err)
+	var te *toolError
+	require.ErrorAs(t, err, &te)
+	require.Contains(t, te.Message, "MCP capability ceiling")
+	require.Empty(t, te.Suggestion, "no grant fixes a stored ceiling this build cannot read")
+}
+
+// TestTranslateMetadataError_PolicyDenialGetsNoRoleAdvice is the same contract
+// on the get_schema door.
+func TestTranslateMetadataError_PolicyDenialGetsNoRoleAdvice(t *testing.T) {
+	body, err := json.Marshal(map[string]any{
+		"message": "/bytebase.v1.DatabaseService/GetDatabaseMetadata is not available to MCP sessions",
+	})
+	require.NoError(t, err)
+
+	got := translateMetadataError(&apiResponse{Status: http.StatusForbidden, Body: body})
+	var te *toolError
+	require.ErrorAs(t, got, &te)
+	require.Contains(t, te.Message, "MCP sessions")
+	require.Empty(t, te.Suggestion)
+
+	plain, err := json.Marshal(map[string]any{"message": "permission denied"})
+	require.NoError(t, err)
+	got = translateMetadataError(&apiResponse{Status: http.StatusForbidden, Body: plain})
+	require.ErrorAs(t, got, &te)
+	require.Contains(t, te.Suggestion, "bb.databases.getSchema",
+		"a plain ACL denial keeps the permission advice")
 }

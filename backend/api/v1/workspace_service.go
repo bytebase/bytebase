@@ -227,7 +227,7 @@ func (s *WorkspaceService) RotateDirectorySyncToken(ctx context.Context, req *co
 	// would keep accepting the token they think they just replaced. apply stays
 	// free of database reads; it runs holding the row lock and the connection.
 	if _, err := s.store.UpdateSettingAtomic(ctx, workspaceID, storepb.SettingName_WORKSPACE_PROFILE,
-		func(current proto.Message) (proto.Message, error) {
+		func(current proto.Message, _ []byte) (proto.Message, error) {
 			profile, ok := current.(*storepb.WorkspaceProfileSetting)
 			if !ok {
 				return nil, errors.Errorf("unexpected setting value type %T", current)

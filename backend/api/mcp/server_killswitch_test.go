@@ -38,15 +38,15 @@ import (
 // arriving here was resolved by nobody.
 func TestMCPConnectionAllowed(t *testing.T) {
 	tests := []struct {
-		capability storepb.WorkspaceProfileSetting_MCPCapability
+		capability storepb.MCPSetting_Capability
 		allowed    bool
 	}{
-		{storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED, false},
-		{storepb.WorkspaceProfileSetting_READ_WRITE, true},
-		{storepb.WorkspaceProfileSetting_DISABLED, false},
-		{storepb.WorkspaceProfileSetting_MCPCapability(2), false},  // reserved (was METADATA_ONLY)
-		{storepb.WorkspaceProfileSetting_MCPCapability(99), false}, // no such value in any build
-		{storepb.WorkspaceProfileSetting_READ_ONLY, true},
+		{storepb.MCPSetting_CAPABILITY_UNSPECIFIED, false},
+		{storepb.MCPSetting_READ_WRITE, true},
+		{storepb.MCPSetting_DISABLED, false},
+		{storepb.MCPSetting_Capability(2), false},  // reserved (was METADATA_ONLY)
+		{storepb.MCPSetting_Capability(99), false}, // no such value in any build
+		{storepb.MCPSetting_READ_ONLY, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.capability.String(), func(t *testing.T) {
@@ -82,9 +82,9 @@ func TestMCPKillSwitchEndToEnd(t *testing.T) {
 
 	// ws-disabled: MCP explicitly disabled. ws-open: no MCP setting → unset → allowed.
 	_, err = s.UpsertSetting(ctx, &store.SettingMessage{
-		Name:      storepb.SettingName_WORKSPACE_PROFILE,
+		Name:      storepb.SettingName_MCP,
 		Workspace: "ws-disabled",
-		Value:     &storepb.WorkspaceProfileSetting{McpCapability: storepb.WorkspaceProfileSetting_DISABLED},
+		Value:     &storepb.MCPSetting{Capability: storepb.MCPSetting_DISABLED},
 	})
 	require.NoError(t, err)
 
@@ -142,11 +142,13 @@ func TestMCPKillSwitchBypassesSettingCache(t *testing.T) {
 	s, err := store.New(ctx, pgURL, true /* enableCache */)
 	require.NoError(t, err)
 
-	// A profile row with no MCP ceiling, as any configured workspace has.
+	// An MCP setting row naming no ceiling, which is what a workspace that
+	// configured only the masking toggle looks like. The row has to exist for
+	// the out-of-band flip below to have something to write into.
 	_, err = s.UpsertSetting(ctx, &store.SettingMessage{
-		Name:      storepb.SettingName_WORKSPACE_PROFILE,
+		Name:      storepb.SettingName_MCP,
 		Workspace: "ws-cached",
-		Value:     &storepb.WorkspaceProfileSetting{},
+		Value:     &storepb.MCPSetting{},
 	})
 	require.NoError(t, err)
 
@@ -176,8 +178,8 @@ func TestMCPKillSwitchBypassesSettingCache(t *testing.T) {
 
 	// Flip the ceiling behind the store's back, as an emergency SQL toggle would.
 	_, err = db.ExecContext(ctx, `
-		UPDATE setting SET value = jsonb_set(value, '{mcpCapability}', '"DISABLED"')
-		WHERE workspace = 'ws-cached' AND name = 'WORKSPACE_PROFILE';
+		UPDATE setting SET value = jsonb_set(value, '{capability}', '"DISABLED"')
+		WHERE workspace = 'ws-cached' AND name = 'MCP';
 	`)
 	require.NoError(t, err)
 
@@ -207,10 +209,17 @@ func tokenForWorkspace(t *testing.T, secret, workspaceID string) string {
 // Bytebase write produces.
 //
 // The typo row is the one that mattered: protojson discards a field whose enum
-// NAME it does not recognize, so `{"mcpCapability":"READ_WRTIE"}` used to parse
-// as unset and resolve to READ_WRITE — a mistyped kill switch that silently did
+// NAME it does not recognize, so `{"capability":"READ_WRTIE"}` would parse as
+// unset and resolve to READ_WRITE — a mistyped kill switch that silently did
 // nothing. An unknown enum NUMBER never had that problem, because protojson
 // keeps it and no mode serves it.
+//
+// The legacy row is the accepted trade recorded in code. Before this change the
+// ceiling lived on the workspace profile; that key is not migrated and not read,
+// so a profile row still carrying it — including DISABLED — resolves to
+// READ_WRITE. Deliberate: the released API served the field but nothing but a
+// hand-built UpdateSetting call could reach it. Pinned here so nobody adds a
+// fallback read to be helpful.
 //
 // The read-only row is the cutover pin, now on its other side: READ_ONLY opens
 // a session, because a read-only session can no longer write — the ceiling gate
@@ -232,27 +241,48 @@ func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
 		want      int
 		why       string
 	}{
-		{"ws-typo", `{"mcpCapability":"READ_WRTIE"}`, http.StatusForbidden,
+		{"ws-typo", `{"capability":"READ_WRTIE"}`, http.StatusForbidden,
 			"a ceiling this build cannot read is not a ceiling that permits"},
-		{"ws-reserved", `{"mcpCapability":2}`, http.StatusForbidden,
+		{"ws-reserved", `{"capability":2}`, http.StatusForbidden,
 			"the reserved number was METADATA_ONLY; no mode serves it"},
-		{"ws-explicit-unset", `{"mcpCapability":"MCP_CAPABILITY_UNSPECIFIED"}`, http.StatusForbidden,
+		{"ws-explicit-unset", `{"capability":"CAPABILITY_UNSPECIFIED"}`, http.StatusForbidden,
 			"no Bytebase write produces this key with this value, so a row that has it was hand-edited"},
-		{"ws-readonly", `{"mcpCapability":"READ_ONLY"}`, http.StatusOK,
+		{"ws-readonly", `{"capability":"READ_ONLY"}`, http.StatusOK,
 			"READ_ONLY admits a session now that the SQL clamp holds it to reads"},
 		{"ws-other-unknown-field", `{"someFieldFromANewerRelease":"x"}`, http.StatusOK,
 			"one unknown field must not disable MCP: only the ceiling key is read strictly"},
 		{"ws-open", `{}`, http.StatusOK,
-			"a workspace that never set a ceiling keeps working"},
+			"an MCP setting row that names no ceiling keeps working"},
+		{"ws-ignoring", `{"capability":"READ_ONLY","ignoreMaskingExemptions":true}`, http.StatusOK,
+			"ignoring masking exemptions is not a reason to refuse the connection; it changes what the session reads"},
 	}
 
 	for _, row := range rows {
 		_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ($1)`, row.workspace)
 		require.NoError(t, err)
 		_, err = db.ExecContext(ctx,
-			`INSERT INTO setting (name, workspace, value) VALUES ('WORKSPACE_PROFILE', $1, $2)`,
+			`INSERT INTO setting (name, workspace, value) VALUES ('MCP', $1, $2)`,
 			row.workspace, row.value)
 		require.NoError(t, err)
+	}
+
+	// Two workspaces with no MCP setting row at all. ws-absent is the ordinary
+	// never-configured case; ws-legacy carries the pre-3.22 ceiling on its
+	// workspace profile, where nothing reads it. Both must resolve READ_WRITE,
+	// and ws-legacy stores DISABLED so the pin is the strongest version of the
+	// trade rather than the mildest.
+	for _, ws := range []struct{ workspace, profile string }{
+		{workspace: "ws-absent"},
+		{workspace: "ws-legacy", profile: `{"mcpCapability":"DISABLED"}`},
+	} {
+		_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ($1)`, ws.workspace)
+		require.NoError(t, err)
+		if ws.profile != "" {
+			_, err = db.ExecContext(ctx,
+				`INSERT INTO setting (name, workspace, value) VALUES ('WORKSPACE_PROFILE', $1, $2)`,
+				ws.workspace, ws.profile)
+			require.NoError(t, err)
+		}
 	}
 
 	pgURL := fmt.Sprintf(
@@ -273,32 +303,54 @@ func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
 	// directly, on every workspace at once.
 	//
 	// That doubles as the composite-primary-key check the setting table needs.
-	// It is keyed (workspace, name), and GetMCPCapabilityUncached is a new
+	// It is keyed (workspace, name), and GetMCPSettingsUncached is a new
 	// reader of it: a future edit that dropped the workspace predicate would
 	// return whichever row the scan reached first and apply one tenant's MCP
 	// ceiling to every other tenant — a kill switch answering for the wrong
-	// workspace. Six workspaces with six different stored values sit in this
-	// one database, so each must still resolve to its own; the ws-readonly row
+	// workspace. Every workspace below sits in this one database and must still
+	// resolve to its own stored value; the ws-readonly row
 	// must resolve as itself rather than as a fail-closed error, which is what
 	// separates "the ceiling says read-only" from "the ceiling could not be
 	// read" now that both no longer answer the same way at the connection.
-	for workspace, want := range map[string]storepb.WorkspaceProfileSetting_MCPCapability{
-		"ws-readonly":            storepb.WorkspaceProfileSetting_READ_ONLY,
-		"ws-open":                storepb.WorkspaceProfileSetting_READ_WRITE,
-		"ws-other-unknown-field": storepb.WorkspaceProfileSetting_READ_WRITE,
+	for workspace, want := range map[string]storepb.MCPSetting_Capability{
+		"ws-readonly":            storepb.MCPSetting_READ_ONLY,
+		"ws-open":                storepb.MCPSetting_READ_WRITE,
+		"ws-other-unknown-field": storepb.MCPSetting_READ_WRITE,
+		"ws-ignoring":            storepb.MCPSetting_READ_ONLY,
+		"ws-absent":              storepb.MCPSetting_READ_WRITE,
+		"ws-legacy":              storepb.MCPSetting_READ_WRITE,
 	} {
-		got, err := s.GetMCPCapabilityUncached(ctx, workspace)
+		got, err := s.GetMCPSettingsUncached(ctx, workspace)
 		require.NoError(t, err, "%s stores a ceiling this build understands", workspace)
-		require.Equal(t, want, got,
+		require.Equal(t, want, got.Capability,
 			"%s must resolve its OWN stored ceiling, not a neighbour's", workspace)
 	}
+	// The toggle comes off the same row read as the ceiling, which is what lets
+	// one resolution per request hold for both. Asserting it here rather than in
+	// a test of its own is how that stays provable: these rows are read once
+	// each, so a reader that resolved the two fields separately would have to
+	// show it.
+	for workspace, want := range map[string]bool{
+		"ws-ignoring":            true,
+		"ws-readonly":            false,
+		"ws-open":                false,
+		"ws-other-unknown-field": false,
+		"ws-absent":              false,
+		"ws-legacy":              false,
+	} {
+		settings, err := s.GetMCPSettingsUncached(ctx, workspace)
+		require.NoError(t, err)
+		require.Equal(t, want, settings.IgnoreMaskingExemptions,
+			"%s must resolve its OWN toggle, and an unset one is false", workspace)
+	}
+
 	for _, workspace := range []string{"ws-typo", "ws-reserved", "ws-explicit-unset"} {
-		got, err := s.GetMCPCapabilityUncached(ctx, workspace)
+		got, err := s.GetMCPSettingsUncached(ctx, workspace)
 		if err == nil {
 			// The reserved number parses; it is refused later because no
 			// ceiling serves it. What must never happen is resolving to a
 			// value some other workspace stored.
-			require.NotEqual(t, storepb.WorkspaceProfileSetting_READ_WRITE, got,
+			require.NotEqual(t, storepb.MCPSetting_READ_WRITE, got.Capability,
 				"%s must not resolve to a neighbour's permissive ceiling", workspace)
 		}
 	}

@@ -293,6 +293,11 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 	a.NoError(err)
 	workspaceID := strings.TrimPrefix(workspace.Msg.Name, "workspaces/")
 
+	// Seeded so the row exists to corrupt: an absent MCP setting is the
+	// never-configured state, which resolves READ_WRITE without a row to write
+	// a wrong-typed value into.
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
+
 	mcpToken, _ := mintMCPOAuthToken(t, ctl, ctl.authInterceptor.token)
 
 	status, body := postMCP(t, ctl, mcpToken)
@@ -303,16 +308,15 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 	a.NoError(err)
 	defer db.Close()
 
-	// The stored ceiling is given a value the profile cannot be parsed with, so
-	// the read errors outright. That is a distinct arm from an unrecognized
+	// The stored ceiling is given a value the MCP setting cannot be parsed with,
+	// so the read errors outright. That is a distinct arm from an unrecognized
 	// enum NAME, which the store's unmarshaler discards: a name it does not
-	// know is caught by the raw-key check in GetMCPCapabilityUncached and also
+	// know is caught by the raw-key check in GetMCPSettingsUncached and also
 	// fails closed, and TestMCPCeilingStoredValueFailsClosed
 	// (backend/api/mcp) owns that case. This one is the unmarshal error itself.
 	restore := func() {
 		result, err := db.ExecContext(ctx, `
-			UPDATE setting SET value = value - 'mcpCapability'
-			WHERE workspace = $1 AND name = 'WORKSPACE_PROFILE';
+			DELETE FROM setting WHERE workspace = $1 AND name = 'MCP';
 		`, workspaceID)
 		a.NoError(err)
 		affected, err := result.RowsAffected()
@@ -320,12 +324,12 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 		a.Equal(int64(1), affected, "the corrupted policy row must be restored")
 	}
 	result, err := db.ExecContext(ctx, `
-		UPDATE setting SET value = jsonb_set(value, '{mcpCapability}', 'true')
-		WHERE workspace = $1 AND name = 'WORKSPACE_PROFILE';
+		UPDATE setting SET value = jsonb_set(value, '{capability}', 'true')
+		WHERE workspace = $1 AND name = 'MCP';
 	`, workspaceID)
 	a.NoError(err)
 	// Registered before the assertions below so a failing one cannot leave the
-	// server running on an unreadable profile through teardown, burying the
+	// server running on an unreadable MCP setting through teardown, burying the
 	// real failure under unrelated errors.
 	restored := false
 	t.Cleanup(func() {
@@ -382,7 +386,7 @@ func TestMCPMigrationTightenedCeilingBitesLiveSession(t *testing.T) {
 		"the session is live under the default ceiling")
 
 	// An admin tightens the ceiling while the session stays open.
-	a.NoError(ctl.setMCPCapability(ctx, v1pb.WorkspaceProfileSetting_DISABLED))
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_DISABLED))
 
 	status, body := postMCP(t, ctl, mcpToken)
 	a.Equal(http.StatusForbidden, status,
@@ -401,7 +405,7 @@ func TestMCPMigrationTightenedCeilingBitesLiveSession(t *testing.T) {
 
 	// Widening again admits a new session, so the refusal was the ceiling
 	// rather than damage to the session or the grant.
-	a.NoError(ctl.setMCPCapability(ctx, v1pb.WorkspaceProfileSetting_READ_WRITE))
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
 	restored := openMCPSession(ctx, t, ctl, mcpToken)
 	defer restored.Close()
 	a.Equal(http.StatusOK, callAPIStatus(ctx, t, restored, "WorkspaceService/ListWorkspaces", nil))
