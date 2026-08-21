@@ -503,7 +503,7 @@ func (s *InstanceService) PrepareSampleProjectInstance(ctx context.Context, req 
 	return connect.NewResponse(s.convertToV1Instance(ctx, result.Instance)), nil
 }
 
-func (s *InstanceService) sampleProjectInstanceCreatePolicy(ctx context.Context, workspaceID string) (sampleprojectinstance.CreatePolicyResult, error) {
+func (s *InstanceService) sampleProjectInstanceCreatePolicy(ctx context.Context, _ string) (sampleprojectinstance.CreatePolicyResult, error) {
 	if err := s.instanceCountGuard(ctx); err != nil {
 		if connect.CodeOf(err) == connect.CodeResourceExhausted {
 			return sampleprojectinstance.CreatePolicyResult{DeniedReason: transportNeutralError(err)}, nil
