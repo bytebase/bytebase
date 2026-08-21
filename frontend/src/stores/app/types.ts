@@ -457,6 +457,7 @@ export type InstanceSlice = {
     validateOnly?: boolean,
     options?: { parent?: string }
   ) => Promise<Instance>;
+  prepareSampleProjectInstance: (parent: string) => Promise<Instance>;
   updateInstance: (
     instance: Instance,
     updateMask: string[]

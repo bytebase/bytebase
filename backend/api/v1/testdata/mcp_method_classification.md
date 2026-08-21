@@ -18,10 +18,10 @@ served by no ceiling.
 |---|---|---|
 | READ | 56 | served to a read-only session and above |
 | WRITE | 40 | served to a read-write session only |
-| EXCLUDED | 85 | served by no ceiling this phase ships |
+| EXCLUDED | 86 | served by no ceiling this phase ships |
 | FORBIDDEN | 28 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
-| **total** | **209** | |
+| **total** | **210** | |
 
 | Method | Class | Reason | Permission |
 |---|---|---|---|
@@ -91,6 +91,7 @@ served by no ceiling.
 | InstanceService/GetInstance | READ | — | bb.instances.get |
 | InstanceService/ListInstanceDatabase | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.get |
 | InstanceService/ListInstances | READ | — | bb.instances.list |
+| InstanceService/PrepareSampleProjectInstance | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.create |
 | InstanceService/RemoveDataSource | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.update |
 | InstanceService/SyncInstance | WRITE | — | bb.instances.sync |
 | InstanceService/UndeleteInstance | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.instances.undelete |
