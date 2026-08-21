@@ -7,19 +7,24 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
 import { useSelectionContext } from "./context";
 import { formatAsCSV, formatAsSQL, formatAsText } from "./copy-formats";
 
-export function CopyAllButton() {
+interface CopyAllButtonProps {
+  size?: "sm" | "md";
+}
+
+export function CopyAllButton({ size = "sm" }: CopyAllButtonProps) {
   const { t } = useTranslation();
   const { copy, canCopyAsInsert } = useSelectionContext();
 
   return (
     <div className="flex items-center">
       <Button
-        size="sm"
+        size={size}
         appearance="outline"
-        className="h-7 px-2 rounded-r-none border-r-0 text-control border-control-border hover:bg-control-bg-hover"
+        className="px-2 rounded-r-none border-r-0 text-control border-control-border hover:bg-control-bg-hover"
         onClick={() => copy("all", formatAsText)}
       >
         <CopyIcon className="size-4" />
@@ -31,10 +36,13 @@ export function CopyAllButton() {
           delay={100}
           render={
             <Button
-              size="sm"
+              size={size}
               appearance="outline"
               aria-label={t("common.copy")}
-              className="h-7 w-6 px-0 rounded-l-none text-control border-control-border hover:bg-control-bg-hover"
+              className={cn(
+                "px-0 rounded-l-none text-control border-control-border hover:bg-control-bg-hover",
+                size === "md" ? "w-8" : "w-6"
+              )}
             >
               <ChevronDownIcon className="size-4" />
             </Button>

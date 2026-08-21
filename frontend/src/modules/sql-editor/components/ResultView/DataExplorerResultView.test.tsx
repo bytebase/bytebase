@@ -48,15 +48,12 @@ vi.mock("@/components/AdvancedSearch", () => ({
   AdvancedSearch: ({
     onParamsChange,
     placeholder,
-    size,
   }: {
     onParamsChange: (params: { query: string; scopes: [] }) => void;
     placeholder: string;
-    size?: "sm" | "md";
   }) => (
     <div>
       <span data-testid="search-placeholder">{placeholder}</span>
-      <span data-testid="search-size">{size}</span>
       <button
         type="button"
         onClick={() => onParamsChange({ query: "2", scopes: [] })}
@@ -204,11 +201,14 @@ describe("DataExplorerResultView", () => {
     expect(screen.getByTestId("search-placeholder")).toHaveTextContent(
       "common.search-results"
     );
-    expect(screen.getByTestId("search-size")).toHaveTextContent("sm");
-    expect(
-      screen.getByRole("button", { name: "common.copy-all" })
-    ).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "common.copy-all" }));
+    const copyAllButton = screen.getByRole("button", {
+      name: "common.copy-all",
+    });
+    expect(copyAllButton).toHaveClass("h-9");
+    expect(screen.getByRole("button", { name: "common.copy" })).toHaveClass(
+      "h-9"
+    );
+    fireEvent.click(copyAllButton);
     await waitFor(() => {
       expect(mocks.writeTextToClipboard).toHaveBeenCalledWith(
         "index\tid\n0\t1\n1\t2"
