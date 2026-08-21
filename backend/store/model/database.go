@@ -29,9 +29,14 @@ type DatabaseMetadata struct {
 
 // SchemaMetadata is the unified metadata for a schema, combining proto metadata and catalog config.
 type SchemaMetadata struct {
-	isObjectCaseSensitive    bool
-	isDetailCaseSensitive    bool
-	internalTables           map[string]*TableMetadata
+	isObjectCaseSensitive bool
+	isDetailCaseSensitive bool
+	internalTables        map[string]*TableMetadata
+	// internalPartitionTables maps a partition name to its owning table, so a partition can
+	// be resolved by name. It is kept apart from internalTables because partition names are
+	// scoped per table and may collide with a real table's name; merging the two let a
+	// partition shadow a root table and hand callers the wrong table's proto.
+	internalPartitionTables  map[string]*TableMetadata
 	internalExternalTable    map[string]*ExternalTableMetadata
 	internalViews            map[string]*storepb.ViewMetadata
 	internalMaterializedView map[string]*storepb.MaterializedViewMetadata
@@ -127,6 +132,7 @@ func NewDatabaseMetadata(
 			isObjectCaseSensitive:    isObjectCaseSensitive,
 			isDetailCaseSensitive:    isDetailCaseSensitive,
 			internalTables:           make(map[string]*TableMetadata),
+			internalPartitionTables:  make(map[string]*TableMetadata),
 			internalExternalTable:    make(map[string]*ExternalTableMetadata),
 			internalViews:            make(map[string]*storepb.ViewMetadata),
 			internalMaterializedView: make(map[string]*storepb.MaterializedViewMetadata),
@@ -141,6 +147,10 @@ func NewDatabaseMetadata(
 			tables, names := buildTablesMetadata(table, tableCatalog, isDetailCaseSensitive)
 			for i, table := range tables {
 				tableID := normalizeNameByCaseSensitivity(names[i], isObjectCaseSensitive)
+				if table.partitionOf != nil {
+					schemaMetadata.internalPartitionTables[tableID] = table
+					continue
+				}
 				schemaMetadata.internalTables[tableID] = table
 			}
 		}
@@ -285,6 +295,7 @@ func (d *DatabaseMetadata) CreateSchema(schemaName string) *SchemaMetadata {
 		isObjectCaseSensitive:    d.isObjectCaseSensitive,
 		isDetailCaseSensitive:    d.isDetailCaseSensitive,
 		internalTables:           make(map[string]*TableMetadata),
+		internalPartitionTables:  make(map[string]*TableMetadata),
 		internalExternalTable:    make(map[string]*ExternalTableMetadata),
 		internalViews:            make(map[string]*storepb.ViewMetadata),
 		internalMaterializedView: make(map[string]*storepb.MaterializedViewMetadata),
@@ -335,7 +346,23 @@ func (s *SchemaMetadata) GetTable(name string) *TableMetadata {
 		return nil
 	}
 	nameID := normalizeNameByCaseSensitivity(name, s.isObjectCaseSensitive)
-	return s.internalTables[nameID]
+	if table, ok := s.internalTables[nameID]; ok {
+		return table
+	}
+	return s.internalPartitionTables[nameID]
+}
+
+// GetRootTable looks up a real table, ignoring partition aliases. Callers asking "does a
+// table by this name exist" want this rather than GetTable: a partition may carry another
+// table's name, and answering with its owner makes the schema differ miss a drop and
+// mistake a create for a modification. GetTable keeps resolving partition names because
+// engines such as PostgreSQL expose partitions as queryable relations, so query analysis
+// has to find them.
+func (s *SchemaMetadata) GetRootTable(name string) *TableMetadata {
+	if s == nil {
+		return nil
+	}
+	return s.internalTables[normalizeNameByCaseSensitivity(name, s.isObjectCaseSensitive)]
 }
 
 // GetIndex gets the index by name.
@@ -446,7 +473,10 @@ func (s *SchemaMetadata) GetCatalog() *storepb.SchemaCatalog {
 
 // ListTableNames lists the table names.
 func (s *SchemaMetadata) ListTableNames() []string {
-	var result []string
+	// internalTables holds only root tables; partitions live in internalPartitionTables.
+	// Listing and GetTable therefore read the same map, so every name returned here
+	// resolves back to the table it names.
+	result := make([]string, 0, len(s.internalTables))
 	for _, table := range s.internalTables {
 		result = append(result, table.GetProto().GetName())
 	}
@@ -514,7 +544,7 @@ func (s *SchemaMetadata) ListSequenceNames() []string {
 // Returns the created TableMetadata or an error if the table already exists.
 func (s *SchemaMetadata) CreateTable(tableName string) (*TableMetadata, error) {
 	// Check if table already exists
-	if s.GetTable(tableName) != nil {
+	if s.GetRootTable(tableName) != nil {
 		return nil, errors.Errorf("table %q already exists in schema %q", tableName, s.proto.Name)
 	}
 
@@ -547,7 +577,7 @@ func (s *SchemaMetadata) CreateTable(tableName string) (*TableMetadata, error) {
 // Returns an error if the table does not exist.
 func (s *SchemaMetadata) DropTable(tableName string) error {
 	// Check if table exists
-	if s.GetTable(tableName) == nil {
+	if s.GetRootTable(tableName) == nil {
 		return errors.Errorf("table %q does not exist in schema %q", tableName, s.proto.Name)
 	}
 
@@ -581,13 +611,13 @@ func (s *SchemaMetadata) RenameTable(oldName string, newName string) error {
 	}
 
 	// Check if old table exists
-	oldTable := s.GetTable(oldName)
+	oldTable := s.GetRootTable(oldName)
 	if oldTable == nil {
 		return errors.Errorf("table %q does not exist in schema %q", oldName, s.proto.Name)
 	}
 
 	// Check if new table already exists
-	if s.GetTable(newName) != nil {
+	if s.GetRootTable(newName) != nil {
 		return errors.Errorf("table %q already exists in schema %q", newName, s.proto.Name)
 	}
 
