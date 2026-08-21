@@ -81,11 +81,19 @@ never populates it. `RotateDirectorySyncTokenResponse` has the same shape.
 The boundary is not "handler versus converter". `UpdateUser` mints *through* a converter, choosing
 `convertToUserMintingMFAEnrollment` over `convertToUser` when an enrollment is in flight
 (`user_service.go:498-500`), and that one deliberately sets `temp_otp_secret` and
-`temp_recovery_codes` (`:786-787`). So the minting surfaces are a declared list — that converter
-plus the direct handler assignments — and the read-path assertion runs on everything else.
-Declared rather than inferred, because an assertion applied to every converter would reject a
-legitimate enrollment response, and the path of least resistance would then be to leave those two
-fields unannotated to keep CI green.
+`temp_recovery_codes` (`:786-787`).
+
+So minting surfaces are declared, as **(function, field) pairs rather than whole functions**:
+`convertToUserMintingMFAEnrollment` may populate `temp_otp_secret` and `temp_recovery_codes`, and
+nothing else. `User` also carries `password` and `service_key`; exempting the function wholesale
+would let a later line inside it return either one and still pass CI. The assertion runs on every
+converter, minting ones included, and permits only what the pair declares — the shape
+`mcpDenialRequestsUnderReview` already uses, for the reason its own comment gives: an exemption
+granted broadly is an exemption for everything that later lands inside it.
+
+Declared rather than inferred, because an assertion applied blindly to every converter would reject
+a legitimate enrollment response, and the cheap way out would be to leave those two fields
+unannotated to keep CI green.
 
 Not `audit` and not number 100000: `bytebase.v1.audit` already exists as a `bool` on
 `MethodOptions`, and 100000 is `allow_without_credential`. Different extend scopes make reuse
