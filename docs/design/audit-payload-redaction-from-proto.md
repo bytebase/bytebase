@@ -113,7 +113,11 @@ with a local one, and a reviewer must know both conventions to audit a proto fil
 
 **Nothing upstream is given up.** Annotating enum values with `debug_redact` is protobuf's own
 documented pattern for keeping a local vocabulary while still being recognized, and C++ debug APIs
-honour it as of v30. The literal `[debug_redact = true]` is more immediately recognizable to a
+honour it as of v30. `debug_redact` exists twice in `descriptor.proto` — `FieldOptions` field 16
+and `EnumValueOptions` field 3, the latter documented as "fields annotated with this enum value" —
+so `SENSITIVE = 1 [debug_redact = true]` is a legal declaration, not a borrowed field option. It
+compiles under both `buf build` and `protoc`, and the resulting descriptor carries
+`debug_redact=true` on `SENSITIVE` and `false` on `OMIT`. The literal `[debug_redact = true]` is more immediately recognizable to a
 protobuf reader, which is the one point on the other side, and it is a one-time cost against a doc
 comment in `annotation.proto`.
 
