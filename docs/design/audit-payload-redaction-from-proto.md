@@ -295,6 +295,14 @@ Constraints:
   precisely because it carries that secret. Error strings that interpolate a remote response have to
   be handled where they are built; nothing in this design covers them.
 
+- **Directly assigned structured fields are in the population too.** `createAuditLog` sets
+  `RequestMetadata` and `McpDelegation` onto the row beside `ServiceData` (`audit.go:379-380`);
+  neither passes an entry point nor is an `Any`. They are ordinary `storepb` messages with
+  descriptors, so the plan runs on them unchanged and they join the inventory rather than needing
+  an exception. This is not theoretical housekeeping:
+  `RequestMetadata.caller_supplied_user_agent` is caller-controlled, and the store proto says so
+  itself — "not authenticated and should be treated accordingly".
+
 All 35 redactors are deleted, allowlist rebuilds included, and `AdminExecute` rows regain
 `rows_count`. But "audit rows carry the non-secret remainder" is not uniformly benign, and two
 values do not sort all of it.
@@ -344,7 +352,9 @@ walking each of the ten rebuilds for what it newly admits, is a precondition for
   `TestLintDenialRequestsAreReviewedForRedaction` exists to cover. Every registered `Any` type is
   in scope too, from all three paths in the table above, since those reach the row without passing
   either entry point. That half comes from the registry rather than from a descriptor walk, which
-  is why the registry has to be enforced at its call sites for the inventory to mean anything.
+  is why the registry has to be enforced at its call sites for the inventory to mean anything. The
+  directly assigned `RequestMetadata` and `McpDelegation` are in scope on the same grounds, and
+  those two do come from a descriptor walk.
 - **Read-path assertion.** `assertNoInputOnlyValues` (`instance_service_converter_test.go:449`)
   already requires every `INPUT_ONLY` field to come back blank from a converter; generalize it to
   `SENSITIVE`. Runs on **every** converter in the declared list, minting ones included: a minting
@@ -352,8 +362,15 @@ walking each of the ten rebuilds for what it newly admits, is a precondition for
   above, so a later line inside it that populated `password` or `service_key` still fails.
 
   The completeness lint keys on **return type — a function in `backend/api/v1` whose returns
-  include a `v1pb` message, directly or inside a slice, a map, or any arm of a multi-value return —
-  not on the `convertTo*` name prefix**. Containers are not an edge case here: `convertDataSources`
+  include a `v1pb` message, directly or inside a slice, a map, a `*connect.Response[T]` wrapper, or
+  any arm of a multi-value return — not on the `convertTo*` name prefix**. The wrapper matters
+  because it is what every RPC handler returns (`GetUser` is
+  `(*connect.Response[v1pb.User], error)`, `user_service.go:53`), and a handler that builds its
+  response inline rather than through a converter is otherwise outside the population entirely.
+  Handlers mostly become *reasoned* entries — they need a store — but that is a recorded decision
+  per handler instead of a silent omission, and it is where the minting assignments named above
+  stop being a separate hand-kept list and become ordinary members with declared
+  `(function, field)` pairs. Containers are not an edge case here: `convertDataSources`
   returns `[]*v1pb.DataSource` and `convertInstanceRoles` returns `[]*v1pb.InstanceRole`
   (`instance_service_converter.go:232`, `:49`), and those two are precisely what the Background
   leans on to call `instance_resource.data_sources[]` and `roles[].password` safe on reads. A
