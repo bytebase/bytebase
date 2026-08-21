@@ -359,9 +359,16 @@ walking each of the ten rebuilds for what it newly admits, is a precondition for
   takes a `protoreflect.Message` asserting the v1 contract. Keying on the prefix produces 19 build
   failures whose only cheap fix is 19 whole-function exemptions — the blanket-exemption failure this
   design rejects. A function producing a `v1pb` message with no entry in the list fails the build,
-  which is what keeps "every converter" true rather than aspirational. Note also that
-  `assertNoInputOnlyValues` skips maps (`:485`), so goal 5 carries the same map-shaped hole the
-  redactor closes above.
+  which is what keeps "every converter" true rather than aspirational.
+
+  The generalized assertion must also **traverse map values**, which `assertNoInputOnlyValues`
+  skips today (`:485`). This is inside the declared converter surface, so leaving it would
+  contradict goal 5 outright rather than sit under a non-goal. Four converter-reachable maps carry
+  message values — `ObjectSchema.StructKind.properties`,
+  `DataClassificationSetting.DataClassificationConfig.classification`,
+  `SQLEditorThemeSetting.tokens` and `google.protobuf.Struct.fields` — and a `SENSITIVE` field
+  inside any of them would reach a read response with CI green. The redactor closes this above; the
+  assertion closes it here.
 
 ## Performance
 
