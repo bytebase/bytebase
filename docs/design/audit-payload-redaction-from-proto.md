@@ -254,14 +254,18 @@ Constraints:
   *unannotated* credential inside it would still be written. So permitted types are a checked-in
   registry, enforced two ways, split by what a descriptor can see.
 
-  The two setters attach their `Any` in Go with nothing to walk, so they need a **lint over their
-  call sites** — ten today — failing the build when one packs a type the registry does not name.
-  An ordinary `Any` *field* is descriptor-visible even though its packed type is not, so the
-  descriptor walk requires a registry entry naming permitted types for **every `Any`-typed field in
-  the audited surface**: a new one fails the build by appearing, and no call-site lint is needed.
-  Without that second half the third row of the table is governed by nothing — a future audited
-  request could add an `Any` field, pack a new type, change neither setter, and have the runtime
-  drop it silently, which is the fail-silent record loss the next paragraph calls a defect.
+  The packed type is chosen in Go on all three paths, so all three need a **call-site lint**: the
+  two setters' ten sites, plus every site assigning into an ordinary `Any` field. It fails the build
+  when a site packs a type the registry does not name for that destination.
+
+  The descriptor adds a second trigger, not a substitute. An ordinary `Any` *field* is
+  descriptor-visible even though its packed type is not, so the walk also requires a registry entry
+  per `Any`-typed field in the audited surface. The two catch different things — the descriptor half
+  catches a **new field**, the call-site half a **new packed type in an existing one** — and either
+  alone leaves a hole. Without the descriptor half a new field is governed by nothing; without the
+  call-site half a producer switches an existing field's packed type with descriptor and registry
+  untouched, CI green, and the runtime drops the payload silently. Both are the fail-silent record
+  loss the next paragraph calls a defect.
 
   The interceptor also drops an unregistered `Any` rather than
   logging it — load-bearing rather than a backstop, since `protojson.Marshal` fails the *entire*
@@ -367,8 +371,8 @@ walking each of the ten rebuilds for what it newly admits, is a precondition for
   because it is what every RPC handler returns (`GetUser` is
   `(*connect.Response[v1pb.User], error)`, `user_service.go:53`), and a handler that builds its
   response inline rather than through a converter is otherwise outside the population entirely.
-  Handlers mostly become *reasoned* entries — they need a store — but that is a recorded decision
-  per handler instead of a silent omission, and it is where the minting assignments named above
+  Handlers mostly become *statically checked* entries — they need a store — but that is a checked
+  decision per handler instead of a silent omission, and it is where the minting assignments named above
   stop being a separate hand-kept list and become ordinary members with declared
   `(function, field)` pairs. Containers are not an edge case here: `convertDataSources`
   returns `[]*v1pb.DataSource` and `convertInstanceRoles` returns `[]*v1pb.InstanceRole`
@@ -392,13 +396,20 @@ walking each of the ten rebuilds for what it newly admits, is a precondition for
   So the lint checks **membership, not executability**. Every function in the population needs an
   entry, and an entry is one of two kinds: *asserted*, where the test **seeds a non-empty sentinel
   into every `SENSITIVE` field the converter can source**, then runs the generalized
-  `assertNoInputOnlyValues` on the output and requires none to survive; or *reasoned*, a recorded
-  justification for
-  why it cannot be executed — needs a store, a live connection, an outbound call — naming what
-  covers it instead. A new `v1pb`-producing function fails the build until it is classified as one
-  or the other. That is the shape `mcpDenialRequestsUnderReview` already uses, prose reason per
-  entry included, and it is what makes an exemption here a written per-function decision rather than
-  a blanket skip.
+  `assertNoInputOnlyValues` on the output and requires none to survive; or *statically checked*,
+  for a function a test cannot execute — needs a store, a live connection, an outbound call.
+
+  A static entry is not a prose exemption. It carries an AST check that the function body assigns to
+  no `SENSITIVE` field beyond the `(function, field)` pairs declared for it — the same shape as the
+  minting pairs, and it needs no runtime. A recorded reason accompanies the check; it never stands
+  alone. Prose-only was the first draft of this rule and is wrong for the reason the design gives
+  everywhere else: a whole-function pass is an exemption for everything that later lands inside it.
+  Adding a direct `SENSITIVE` assignment to an already-exempted handler changes neither its return
+  type nor its entry, so the lint would stay green while the reason went stale — most sharply for
+  the inline handlers the wrapper rule above pulls into the population. A new `v1pb`-producing
+  function fails the build until it is classified as one or the other. That is the shape
+  `mcpDenialRequestsUnderReview` already uses, prose reason per entry included, and it is what makes
+  an exemption here a checked per-field decision rather than a blanket skip.
 
   The seeding is what makes an asserted entry fail closed. `assertNoInputOnlyValues` walks
   *populated* fields, so a fixture leaving the source at its zero value passes trivially — and would
