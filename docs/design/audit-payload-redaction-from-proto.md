@@ -36,8 +36,11 @@ disagree on whether `rows_count` survives.
 
 - **Sanitizing existing `audit_log` rows.** Treat them as disclosed and rotate. No purge path
   exists for that table; providing one is separate work.
-- **Proving goal 5 statically.** The read-path check asserts on one converter's output; nothing
-  proves no converter anywhere populates a credential. Coverage is a review gate.
+- **Proving goal 5 outside the declared surfaces.** The read-path assertion covers every converter
+  in a declared list, kept complete by a lint that fails when a `convertTo*` function in
+  `backend/api/v1` has no entry. What it cannot see is a function that populates a `SENSITIVE`
+  field while following neither that naming convention nor the declared minting pairs. That residue
+  is a review gate, not a proof.
 - **Secrets inside free-form text.** `redactRoleAttribute` (`read_redaction.go`) masks a password
   hash within MariaDB `SHOW GRANTS` output. No field annotation expresses that; it stays
   hand-written on the read path.
@@ -177,11 +180,16 @@ Constraints:
   (`common/context.go:25`), so unlike RPC inputs and outputs there is no descriptor to enumerate:
   a handler that starts packing a new type would not change the inventory and would not fail it,
   and an *unannotated* credential in that type would still be written. So the permitted types are
-  a checked-in list, and the interceptor **drops a `service_data` whose type is not on it** rather
-  than logging it. That makes the registry the derivation source for the inventory's `service_data`
-  half: registering a type is what pulls its fields in for classification, and a handler that packs
-  an unregistered type finds out because its audit data does not appear. Fail-closed at runtime and
-  in CI, without a call-site lint.
+  a checked-in list, enforced twice. A **lint over the setter's call sites** — four today, all
+  reachable from `GetSetServiceDataFromContext` — fails the build when one packs a type the list
+  does not name. The interceptor also **drops a `service_data` whose type is not on it** rather
+  than logging it, as a backstop for whatever the lint cannot see.
+
+  The lint is the half that matters. Dropping alone is fail-closed for secrecy but fail-silent for
+  the record: `SetIamPolicy`'s policy deltas are the interesting part of that audit row, and losing
+  them on every successful call with no error is its own defect. The registry is also the
+  derivation source for the inventory's `service_data` half — registering a type is what pulls its
+  fields in for classification.
 
   Four RPCs set it today and all four are safe — each packs read-path converter output that already
   blanks its secrets, `convertToAISetting` and `convertToEmailSetting` explicitly,
@@ -218,9 +226,11 @@ rows regain `rows_count`.
   registry has to be enforced at runtime for the inventory to mean anything.
 - **Read-path assertion.** `assertNoInputOnlyValues` (`instance_service_converter_test.go:449`)
   already requires every `INPUT_ONLY` field to come back blank from a converter; generalize it to
-  `SENSITIVE`. Runs on **every** converter, minting ones included: a minting converter is not
-  skipped, it is allowed exactly the `(function, field)` pairs declared for it above, so a later
-  line inside it that populated `password` or `service_key` still fails.
+  `SENSITIVE`. Runs on **every** converter in the declared list, minting ones included: a minting
+  converter is not skipped, it is allowed exactly the `(function, field)` pairs declared for it
+  above, so a later line inside it that populated `password` or `service_key` still fails. A
+  `convertTo*` function with no entry in the list fails the build, which is what keeps "every
+  converter" true rather than aspirational.
 
 ## Performance
 
