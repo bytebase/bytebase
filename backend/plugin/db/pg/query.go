@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log/slog"
+	"strconv"
 	"strings"
 	"time"
 
@@ -251,16 +252,18 @@ func getStatementWithResultLimitInline(statement string, limitCount int) (string
 func rewriteSelectLimit(sql string, sel *ast.SelectStmt, limitCount int) (string, error) {
 	if sel.LimitCount != nil {
 		// Already has LIMIT — replace the value if ours is lower.
-		existingLimit := extractIntFromNode(sel.LimitCount)
-		if existingLimit > 0 && existingLimit <= limitCount {
-			return sql, nil // existing limit is already lower or equal, keep it
+		if existingLimit, ok := integerFromNode(sel.LimitCount); ok {
+			if existingLimit <= limitCount {
+				return sql, nil // existing limit is already lower or equal, keep it
+			}
+			loc := nodeLocOf(sel.LimitCount)
+			if end, ok := integerLiteralEnd(sql, loc); ok {
+				return sql[:loc.Start] + strconv.Itoa(limitCount) + sql[end:], nil
+			}
 		}
-		loc := nodeLocOf(sel.LimitCount)
-		if loc.Start >= 0 && loc.End > loc.Start && loc.End <= len(sql) {
-			return sql[:loc.Start] + fmt.Sprintf("%d", limitCount) + sql[loc.End:], nil
-		}
-		// LimitCount is a non-constant expression (e.g. LIMIT $1, LIMIT (1+2)).
-		// Cannot safely rewrite in-place; let the caller fall back to CTE wrapper.
+		// LimitCount is not a plain integer constant (e.g. LIMIT $1, LIMIT (1+2),
+		// LIMIT 1.5). Cannot safely rewrite in-place; let the caller fall back
+		// to the CTE wrapper, which preserves the inner limit while capping.
 		return "", errors.Errorf("cannot rewrite non-constant LIMIT expression")
 	}
 
@@ -301,19 +304,20 @@ func findLimitInsertPosition(sel *ast.SelectStmt) (int, bool) {
 	return end, false
 }
 
-// extractIntFromNode extracts an integer value from a LIMIT/OFFSET node.
-func extractIntFromNode(node ast.Node) int {
+// integerFromNode extracts the integer value from a LIMIT/OFFSET node,
+// reporting whether the node is a plain integer constant. Non-integer nodes
+// (parameters, expressions, floats) report ok=false.
+func integerFromNode(node ast.Node) (int, bool) {
 	switch n := node.(type) {
 	case *ast.Integer:
-		return int(n.Ival)
+		return int(n.Ival), true
 	case *ast.A_Const:
 		if iv, ok := n.Val.(*ast.Integer); ok {
-			return int(iv.Ival)
+			return int(iv.Ival), true
 		}
-		return 0
 	default:
-		return 0
 	}
+	return 0, false
 }
 
 // nodeLocOf returns the Loc of a node, handling common wrapper types.
@@ -324,4 +328,19 @@ func nodeLocOf(node ast.Node) ast.Loc {
 	default:
 		return ast.Loc{Start: -1, End: -1}
 	}
+}
+
+// integerLiteralEnd returns the exclusive end byte offset of the integer
+// literal spanning loc in sql. omni reports A_Const.Loc.End as the start of
+// the next token, so the span may include the whitespace separating the value
+// from a following clause (e.g. OFFSET, FOR UPDATE); trimming it keeps that
+// separator intact when the caller splices in the replacement value. ok is
+// false when loc is unset or out of range, signalling the caller to fall back
+// to the CTE wrapper.
+func integerLiteralEnd(sql string, loc ast.Loc) (int, bool) {
+	if loc.Start < 0 || loc.End <= loc.Start || loc.End > len(sql) {
+		return 0, false
+	}
+	literal := strings.TrimRight(sql[loc.Start:loc.End], " \t\r\n\f\v")
+	return loc.Start + len(literal), true
 }

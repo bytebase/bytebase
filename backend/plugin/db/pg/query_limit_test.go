@@ -270,6 +270,24 @@ FROM affected
 CROSS JOIN params
 ORDER BY resource LIMIT 1000`,
 		},
+		{
+			name:      "over-max LIMIT before OFFSET with semicolon (reported bug)",
+			statement: "select 1 LIMIT 2000 OFFSET 0;",
+			limit:     1000,
+			want:      "select 1 LIMIT 1000 OFFSET 0;",
+		},
+		{
+			name:      "LIMIT 0 is kept unchanged",
+			statement: "SELECT * FROM t LIMIT 0",
+			limit:     1000,
+			want:      "SELECT * FROM t LIMIT 0",
+		},
+		{
+			name:      "Float LIMIT falls back to error",
+			statement: "SELECT * FROM t LIMIT 1.5",
+			limit:     1000,
+			wantErr:   true,
+		},
 	}
 
 	for _, tt := range tests {
