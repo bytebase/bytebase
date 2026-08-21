@@ -12,6 +12,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/bus"
+	"github.com/bytebase/bytebase/backend/component/productmetrics"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
@@ -22,12 +23,13 @@ const (
 )
 
 // NewScheduler creates a new plan check scheduler.
-func NewScheduler(s *store.Store, bus *bus.Bus, executor *CombinedExecutor, licenseService *enterprise.LicenseService) *Scheduler {
+func NewScheduler(s *store.Store, bus *bus.Bus, executor *CombinedExecutor, licenseService *enterprise.LicenseService, productMetrics *productmetrics.ProductMetrics) *Scheduler {
 	return &Scheduler{
 		store:          s,
 		bus:            bus,
 		executor:       executor,
 		licenseService: licenseService,
+		productMetrics: productMetrics,
 	}
 }
 
@@ -37,6 +39,7 @@ type Scheduler struct {
 	bus            *bus.Bus
 	executor       *CombinedExecutor
 	licenseService *enterprise.LicenseService
+	productMetrics *productmetrics.ProductMetrics
 }
 
 // Run runs the scheduler.
@@ -66,6 +69,8 @@ func (s *Scheduler) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (s *Scheduler) runOnce(ctx context.Context) {
+	startedAt := time.Now()
+	result := productmetrics.ResultFailure
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -73,6 +78,9 @@ func (s *Scheduler) runOnce(ctx context.Context) {
 				err = errors.Errorf("%v", r)
 			}
 			slog.Error("Plan check scheduler PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
+		}
+		if !errors.Is(ctx.Err(), context.Canceled) && s.productMetrics != nil {
+			s.productMetrics.RecordRunnerRun(productmetrics.RunnerPlanCheck, result, time.Since(startedAt))
 		}
 	}()
 
@@ -85,6 +93,7 @@ func (s *Scheduler) runOnce(ctx context.Context) {
 	for _, c := range claimed {
 		go s.runPlanCheckRun(ctx, c.ProjectID, c.UID, c.PlanUID, c.ApprovalInputVersion)
 	}
+	result = productmetrics.ResultSuccess
 }
 
 func (s *Scheduler) runPlanCheckRun(ctx context.Context, projectID string, uid int64, planUID int64, approvalInputVersion int64) {

@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/bus"
+	"github.com/bytebase/bytebase/backend/component/productmetrics"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
@@ -50,20 +51,43 @@ func (s *Scheduler) runRunningTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 	}
 }
 
-func (s *Scheduler) scheduleRunningTaskRuns(ctx context.Context) error {
+func (s *Scheduler) scheduleRunningTaskRuns(ctx context.Context) (retErr error) {
+	startedAt := time.Now()
+	result := productmetrics.ResultFailure
+	defer func() {
+		if r := recover(); r != nil {
+			panicErr, ok := r.(error)
+			if !ok {
+				panicErr = errors.Errorf("%v", r)
+			}
+			retErr = errors.Wrap(panicErr, "running task runs scheduler panic")
+			slog.Error("Running task runs scheduler PANIC RECOVER", log.BBError(retErr), log.BBStack("panic-stack"))
+		}
+		if !errors.Is(ctx.Err(), context.Canceled) && s.productMetrics != nil {
+			s.productMetrics.RecordRunnerRun(productmetrics.RunnerTaskDispatch, result, time.Since(startedAt))
+		}
+	}()
 	// Atomically claim all AVAILABLE task runs
 	claimed, err := s.store.ClaimAvailableTaskRuns(ctx, s.profile.ReplicaID)
 	if err != nil {
 		return errors.Wrapf(err, "failed to claim available task runs")
 	}
 
+	var processingErr error
 	for _, c := range claimed {
 		taskRunCtx := taskRunLogContext(ctx, c.ProjectID, c.TaskRunUID)
 		if err := s.executeTaskRun(taskRunCtx, c.ProjectID, c.TaskRunUID, c.TaskUID); err != nil {
+			if processingErr == nil {
+				processingErr = err
+			}
 			slog.ErrorContext(taskRunCtx, "failed to execute task run", log.BBError(err))
 		}
 	}
+	if processingErr != nil {
+		return errors.Wrap(processingErr, "failed to process one or more available task runs")
+	}
 
+	result = productmetrics.ResultSuccess
 	return nil
 }
 

@@ -9,6 +9,7 @@ import (
 	"slices"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/pkg/errors"
@@ -20,6 +21,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
+	"github.com/bytebase/bytebase/backend/component/productmetrics"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -37,11 +39,12 @@ const (
 )
 
 // NewSyncer creates a schema syncer.
-func NewSyncer(stores *store.Store, dbFactory *dbfactory.DBFactory, licenseService *enterprise.LicenseService) *Syncer {
+func NewSyncer(stores *store.Store, dbFactory *dbfactory.DBFactory, licenseService *enterprise.LicenseService, productMetrics *productmetrics.ProductMetrics) *Syncer {
 	return &Syncer{
 		store:          stores,
 		dbFactory:      dbFactory,
 		licenseService: licenseService,
+		productMetrics: productMetrics,
 	}
 }
 
@@ -52,6 +55,7 @@ type Syncer struct {
 	store           *store.Store
 	dbFactory       *dbfactory.DBFactory
 	licenseService  *enterprise.LicenseService
+	productMetrics  *productmetrics.ProductMetrics
 	databaseSyncMap sync.Map // map[string]*store.DatabaseMessage
 }
 
@@ -89,56 +93,10 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 					slog.Warn("Database sync checker skipped due to HA license restriction", log.BBError(err))
 					continue
 				}
-				instances, err := s.store.ListAllInstances(ctx, false)
-				if err != nil {
-					slog.Error("Failed to list instance", log.BBError(err))
-					return
+				if err := s.syncQueuedDatabases(ctx); err != nil {
+					slog.Error("Failed to run database sync cycle", log.BBError(err))
+					continue
 				}
-				instanceMap := make(map[string]*store.InstanceMessage)
-				for _, instance := range instances {
-					instanceMap[instance.ResourceID] = instance
-				}
-				dbwp := pool.New().WithMaxGoroutines(MaximumOutstanding)
-				s.databaseSyncMap.Range(func(key, value any) bool {
-					database, ok := value.(*store.DatabaseMessage)
-					if !ok {
-						return true
-					}
-
-					s.databaseSyncMap.Delete(key)
-					instance, ok := instanceMap[database.InstanceID]
-					if !ok || !s.canScheduleDatabaseSync(ctx, instance, database) {
-						return true
-					}
-					dbwp.Go(func() {
-						slog.Debug("Sync database schema", slog.String("instance", database.InstanceID), slog.String("database", database.DatabaseName))
-						if err := s.SyncDatabaseSchema(ctx, database); err != nil {
-							slog.Debug("Failed to sync database schema",
-								slog.String("instance", database.InstanceID),
-								slog.String("databaseName", database.DatabaseName),
-								log.BBError(err))
-							// Save sync error to database metadata
-							if _, updateErr := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
-								InstanceID:   database.InstanceID,
-								DatabaseName: database.DatabaseName,
-								MetadataUpdates: []func(*storepb.DatabaseMetadata){
-									func(md *storepb.DatabaseMetadata) {
-										md.SyncStatus = storepb.SyncStatus_SYNC_STATUS_FAILED
-										md.SyncError = err.Error()
-										md.LastSyncTime = timestamppb.Now()
-									},
-								},
-							}); updateErr != nil {
-								slog.Error("Failed to update database sync error",
-									slog.String("instance", database.InstanceID),
-									slog.String("database", database.DatabaseName),
-									log.BBError(updateErr))
-							}
-						}
-					})
-					return true
-				})
-				dbwp.Wait()
 			case <-ctx.Done(): // if cancel() execute
 				return
 			}
@@ -148,6 +106,8 @@ func (s *Syncer) Run(ctx context.Context, wg *sync.WaitGroup) {
 }
 
 func (s *Syncer) trySyncAll(ctx context.Context) {
+	startedAt := time.Now()
+	result := productmetrics.ResultFailure
 	defer func() {
 		if r := recover(); r != nil {
 			err, ok := r.(error)
@@ -155,6 +115,9 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 				err = errors.Errorf("%v", r)
 			}
 			slog.Error("Instance syncer PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
+		}
+		if !errors.Is(ctx.Err(), context.Canceled) && s.productMetrics != nil {
+			s.productMetrics.RecordRunnerRun(productmetrics.RunnerInstanceSync, result, time.Since(startedAt))
 		}
 	}()
 
@@ -165,15 +128,18 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 	}
 	if !acquired {
 		slog.Debug("Schema syncer advisory lock held by another replica, skipping")
+		result = productmetrics.ResultSkipped
 		return
 	}
 	defer func() {
 		if err := lock.Release(); err != nil {
+			result = productmetrics.ResultFailure
 			slog.Error("Failed to release schema syncer advisory lock", log.BBError(err))
 		}
 	}()
 
 	wp := pool.New().WithMaxGoroutines(MaximumOutstanding)
+	var syncFailed atomic.Bool
 	instances, err := s.store.ListAllInstances(ctx, false)
 	if err != nil {
 		slog.Error("Failed to retrieve instances", log.BBError(err))
@@ -182,7 +148,15 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 	now := time.Now()
 	for _, instance := range instances {
 		instance := instance
-		if !s.canScheduleInstanceSync(ctx, instance) {
+		canSchedule, err := s.canScheduleInstanceSync(ctx, instance)
+		if err != nil {
+			syncFailed.Store(true)
+			slog.Error("Failed to determine whether instance sync can be scheduled",
+				slog.String("instance", instance.ResourceID),
+				log.BBError(err))
+			continue
+		}
+		if !canSchedule {
 			continue
 		}
 		interval := s.getOrDefaultSyncInterval(ctx, instance)
@@ -200,6 +174,7 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 		wp.Go(func() {
 			slog.Debug("Sync instance schema", slog.String("instance", instance.ResourceID))
 			if _, _, _, err := s.SyncInstance(ctx, instance); err != nil {
+				syncFailed.Store(true)
 				slog.Debug("Failed to sync instance",
 					slog.String("instance", instance.ResourceID),
 					slog.String("error", err.Error()))
@@ -227,7 +202,16 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 		if !ok {
 			continue
 		}
-		if !s.canScheduleDatabaseSync(ctx, instance, database) {
+		canSchedule, err := s.canScheduleDatabaseSync(ctx, instance, database)
+		if err != nil {
+			syncFailed.Store(true)
+			slog.Error("Failed to determine whether database sync can be scheduled",
+				slog.String("instance", database.InstanceID),
+				slog.String("database", database.DatabaseName),
+				log.BBError(err))
+			continue
+		}
+		if !canSchedule {
 			continue
 		}
 		// The database inherits the sync interval from the instance.
@@ -245,33 +229,144 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 
 		s.databaseSyncMap.Store(database.String(), database)
 	}
+	if !syncFailed.Load() {
+		result = productmetrics.ResultSuccess
+	}
 }
 
-func (s *Syncer) canScheduleInstanceSync(ctx context.Context, instance *store.InstanceMessage) bool {
-	return instance.ProjectID == nil || s.isProjectActive(ctx, *instance.ProjectID)
+func (s *Syncer) syncQueuedDatabases(ctx context.Context) (retErr error) {
+	startedAt := time.Now()
+	result := productmetrics.ResultFailure
+	defer func() {
+		if !errors.Is(ctx.Err(), context.Canceled) && s.productMetrics != nil {
+			s.productMetrics.RecordRunnerRun(productmetrics.RunnerDatabaseSync, result, time.Since(startedAt))
+		}
+	}()
+	defer func() {
+		if r := recover(); r != nil {
+			panicErr, ok := r.(error)
+			if !ok {
+				panicErr = errors.Errorf("%v", r)
+			}
+			retErr = errors.Wrap(panicErr, "database sync checker panic")
+			slog.Error("Database sync checker PANIC RECOVER", log.BBError(retErr), log.BBStack("panic-stack"))
+		}
+	}()
+
+	instances, err := s.store.ListAllInstances(ctx, false)
+	if err != nil {
+		return errors.Wrap(err, "failed to list instances")
+	}
+	instanceMap := make(map[string]*store.InstanceMessage)
+	for _, instance := range instances {
+		instanceMap[instance.ResourceID] = instance
+	}
+	dbwp := pool.New().WithMaxGoroutines(MaximumOutstanding)
+	var syncFailed atomic.Bool
+	s.databaseSyncMap.Range(func(key, value any) bool {
+		database, ok := value.(*store.DatabaseMessage)
+		if !ok {
+			return true
+		}
+
+		instance, ok := instanceMap[database.InstanceID]
+		if !ok {
+			s.databaseSyncMap.Delete(key)
+			return true
+		}
+		canSchedule, err := s.canScheduleDatabaseSync(ctx, instance, database)
+		if err != nil {
+			syncFailed.Store(true)
+			slog.Error("Failed to determine whether queued database sync can be scheduled",
+				slog.String("instance", database.InstanceID),
+				slog.String("database", database.DatabaseName),
+				log.BBError(err))
+			return true
+		}
+		s.databaseSyncMap.Delete(key)
+		if !canSchedule {
+			return true
+		}
+		dbwp.Go(func() {
+			slog.Debug("Sync database schema", slog.String("instance", database.InstanceID), slog.String("database", database.DatabaseName))
+			if err := s.SyncDatabaseSchema(ctx, database); err != nil {
+				syncFailed.Store(true)
+				slog.Debug("Failed to sync database schema",
+					slog.String("instance", database.InstanceID),
+					slog.String("databaseName", database.DatabaseName),
+					log.BBError(err))
+				// Save sync error to database metadata
+				if _, updateErr := s.store.UpdateDatabase(ctx, &store.UpdateDatabaseMessage{
+					InstanceID:   database.InstanceID,
+					DatabaseName: database.DatabaseName,
+					MetadataUpdates: []func(*storepb.DatabaseMetadata){
+						func(md *storepb.DatabaseMetadata) {
+							md.SyncStatus = storepb.SyncStatus_SYNC_STATUS_FAILED
+							md.SyncError = err.Error()
+							md.LastSyncTime = timestamppb.Now()
+						},
+					},
+				}); updateErr != nil {
+					syncFailed.Store(true)
+					slog.Error("Failed to update database sync error",
+						slog.String("instance", database.InstanceID),
+						slog.String("database", database.DatabaseName),
+						log.BBError(updateErr))
+				}
+			}
+		})
+		return true
+	})
+	dbwp.Wait()
+
+	if syncFailed.Load() {
+		return errors.New("one or more queued database synchronizations failed")
+	}
+	result = productmetrics.ResultSuccess
+	return nil
 }
 
-func (s *Syncer) canScheduleDatabaseSync(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage) bool {
-	return !database.Deleted && s.canScheduleInstanceSync(ctx, instance) && s.isProjectActive(ctx, database.ProjectID)
+func (s *Syncer) canScheduleInstanceSync(ctx context.Context, instance *store.InstanceMessage) (bool, error) {
+	if instance.ProjectID == nil {
+		return true, nil
+	}
+	return s.isProjectActive(ctx, *instance.ProjectID)
 }
 
-func (s *Syncer) isProjectActive(ctx context.Context, projectID string) bool {
+func (s *Syncer) canScheduleDatabaseSync(ctx context.Context, instance *store.InstanceMessage, database *store.DatabaseMessage) (bool, error) {
+	if database.Deleted {
+		return false, nil
+	}
+	canSchedule, err := s.canScheduleInstanceSync(ctx, instance)
+	if err != nil || !canSchedule {
+		return canSchedule, err
+	}
+	return s.isProjectActive(ctx, database.ProjectID)
+}
+
+func (s *Syncer) isProjectActive(ctx context.Context, projectID string) (bool, error) {
 	project, err := s.store.GetProjectByResourceID(ctx, projectID)
 	if err != nil {
-		slog.Error("failed to get project for schema sync", slog.String("project", projectID), log.BBError(err))
-		return false
+		return false, errors.Wrapf(err, "failed to get project %q for schema sync", projectID)
 	}
 	if project == nil {
 		slog.Warn("project not found for schema sync", slog.String("project", projectID))
-		return false
+		return false, nil
 	}
-	return !project.Deleted
+	return !project.Deleted, nil
 }
 
 func (s *Syncer) SyncAllDatabases(ctx context.Context, instance *store.InstanceMessage) {
 	find := &store.FindDatabaseMessage{}
 	if instance != nil {
-		if !s.canScheduleInstanceSync(ctx, instance) {
+		canSchedule, err := s.canScheduleInstanceSync(ctx, instance)
+		if err != nil {
+			slog.Error("Failed to determine whether instance sync can be scheduled",
+				slog.String("instance", instance.ResourceID),
+				log.BBError(err))
+			return
+		}
+		if !canSchedule {
 			return
 		}
 		find.InstanceID = &instance.ResourceID
@@ -284,8 +379,21 @@ func (s *Syncer) SyncAllDatabases(ctx context.Context, instance *store.InstanceM
 	}
 
 	for _, database := range databases {
-		if database.Deleted || instance != nil && !s.canScheduleDatabaseSync(ctx, instance, database) {
+		if database.Deleted {
 			continue
+		}
+		if instance != nil {
+			canSchedule, err := s.canScheduleDatabaseSync(ctx, instance, database)
+			if err != nil {
+				slog.Error("Failed to determine whether database sync can be scheduled",
+					slog.String("instance", database.InstanceID),
+					slog.String("database", database.DatabaseName),
+					log.BBError(err))
+				continue
+			}
+			if !canSchedule {
+				continue
+			}
 		}
 		s.databaseSyncMap.Store(database.String(), database)
 	}
@@ -329,7 +437,20 @@ func (s *Syncer) GetInstanceMeta(ctx context.Context, instance *store.InstanceMe
 }
 
 // SyncInstance syncs the schema for all databases in an instance.
-func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessage) (*store.InstanceMessage, []*storepb.DatabaseSchemaMetadata, []*store.DatabaseMessage, error) {
+func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessage) (updatedInstance *store.InstanceMessage, allDatabases []*storepb.DatabaseSchemaMetadata, newDatabases []*store.DatabaseMessage, retErr error) {
+	startedAt := time.Now()
+	defer func() {
+		panicValue := recover()
+		if panicValue != nil {
+			retErr = errorFromPanic(panicValue, "instance sync panic")
+		}
+		if !errors.Is(ctx.Err(), context.Canceled) && s.productMetrics != nil {
+			s.productMetrics.RecordInstanceSync(instance, time.Since(startedAt), retErr)
+		}
+		if panicValue != nil {
+			panic(panicValue)
+		}
+	}()
 	instanceMeta, err := s.GetInstanceMeta(ctx, instance)
 	if err != nil {
 		return nil, nil, nil, err
@@ -347,7 +468,7 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	if instanceMeta.Version != instance.Metadata.GetVersion() {
 		metadata.Version = instanceMeta.Version
 	}
-	updatedInstance, err := s.store.UpdateInstance(ctx, updateInstance)
+	updatedInstance, err = s.store.UpdateInstance(ctx, updateInstance)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -355,7 +476,6 @@ func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessa
 	if err != nil {
 		return nil, nil, nil, errors.Wrapf(err, "failed to sync database for instance: %s. Failed to find database list", instance.ResourceID)
 	}
-	var newDatabases []*store.DatabaseMessage
 	var filteredDatabaseMetadatas []*storepb.DatabaseSchemaMetadata
 	var databaseProjectID string
 	if instance.ProjectID != nil {
@@ -410,6 +530,18 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	if database == nil {
 		return "", errors.New("cannot sync nil database")
 	}
+	defer func() {
+		panicValue := recover()
+		if panicValue != nil {
+			retErr = errorFromPanic(panicValue, "database schema sync panic")
+		}
+		if !errors.Is(ctx.Err(), context.Canceled) && s.productMetrics != nil {
+			s.productMetrics.RecordDatabaseSync(database, retErr)
+		}
+		if panicValue != nil {
+			panic(panicValue)
+		}
+	}()
 	instance, err := s.store.GetInstanceByResourceID(ctx, database.InstanceID)
 	if err != nil {
 		return "", errors.Wrapf(err, "failed to get instance %q", database.InstanceID)
@@ -498,6 +630,14 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	}
 
 	return "", nil
+}
+
+func errorFromPanic(value any, message string) error {
+	err, ok := value.(error)
+	if !ok {
+		err = errors.Errorf("%v", value)
+	}
+	return errors.Wrap(err, message)
 }
 
 // SyncDatabaseSchemaToHistory will sync the schema for a database and create a sync history record.
