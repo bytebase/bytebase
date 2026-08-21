@@ -198,7 +198,18 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, s
 		}
 		suggestion := "check your SQL syntax and try again"
 		if resp.Status == http.StatusForbidden || resp.Status == http.StatusUnauthorized {
-			suggestion = "you may not have permission to query this database — request the SQL Editor role on the project"
+			// A refusal that already names its own way out gets none added.
+			// The workspace MCP ceiling is one of these, and telling an agent
+			// to request a project role for it sends the person it acts for
+			// after a grant that cannot lift a workspace setting.
+			//
+			// The phrase crosses a process boundary as an error body, so the
+			// producer pins it too: see the assertion on this exact substring
+			// in TestMCPClampRefusesWhatItCannotShowIsARead (backend/api/v1).
+			suggestion = ""
+			if !strings.Contains(errMsg, "MCP capability ceiling") {
+				suggestion = "you may not have permission to query this database — request the SQL Editor role on the project"
+			}
 		}
 		return nil, &toolError{
 			Code:       "QUERY_ERROR",

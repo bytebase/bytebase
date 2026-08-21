@@ -52,8 +52,11 @@ func validateQuery(statement string) (bool, bool, error) {
 // SQL after parseStarRocksSQL succeeds.
 func isReadOnlyAST(node ast.Node) bool {
 	switch n := node.(type) {
-	case *ast.SelectStmt, *ast.SetOpStmt:
-		return true
+	case *ast.SelectStmt:
+		// INTO OUTFILE exports to S3 or HDFS, past masking and the export gate.
+		return n.Into == nil
+	case *ast.SetOpStmt:
+		return !setOpWritesOutfile(n)
 	case *ast.ShowStmt:
 		// Reject bare `SHOW` (Type is empty when the parser took the stub path
 		// without seeing a recognised variant keyword).
@@ -89,4 +92,17 @@ func isExplainableInner(node ast.Node) bool {
 		return true
 	}
 	return false
+}
+
+// setOpWritesOutfile walks the arms: the parser attaches INTO to an arm rather
+// than to the set operation, and arms nest.
+func setOpWritesOutfile(node ast.Node) bool {
+	switch n := node.(type) {
+	case *ast.SelectStmt:
+		return n.Into != nil
+	case *ast.SetOpStmt:
+		return setOpWritesOutfile(n.Left) || setOpWritesOutfile(n.Right)
+	default:
+		return false
+	}
 }

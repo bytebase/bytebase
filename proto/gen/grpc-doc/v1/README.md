@@ -5287,7 +5287,7 @@ workspaces are unaffected.
 | ---- | ------ | ----------- |
 | MCP_CAPABILITY_UNSPECIFIED | 0 |  |
 | DISABLED | 1 | MCP connections are rejected. |
-| READ_ONLY | 3 | MCP may inspect metadata and run read-only queries. Not enforceable yet: until per-tool enforcement ships, this fails closed and refuses all MCP connections, the same as DISABLED. |
+| READ_ONLY | 3 | MCP may inspect metadata and run read-only queries. A session opens, and what it may do is decided per method by the capability gate and per statement by the SQL clamp: a request holding a statement that is not a read is refused whole, and where the engine&#39;s driver has one the database session is opened read-only as well. |
 | READ_WRITE | 4 | MCP may perform mutations, still bounded by the user&#39;s RBAC. |
 
 

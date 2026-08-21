@@ -528,6 +528,30 @@ func MCPClassIsRefused(class v1pb.MCPMethodClass) bool {
 	}
 }
 
+// MCPCeilingServesAnything reports whether a workspace capability ceiling
+// serves any method class at all, which is what the /mcp connection gate needs
+// to decide whether a session may open.
+//
+// It lives here for the same reason MCPClassIsRefused does: the serving table
+// is in backend/api/v1 with the code that evaluates it, the connection gate is
+// in backend/api/mcp, and the two must not disagree about which ceilings this
+// build serves. TestLintCeilingAdmissionMatchesTheServingTable holds this
+// function against that table over the whole enum, so a mode that starts or
+// stops serving a class cannot leave the connection gate stale.
+//
+// Everything this build cannot interpret is refused: UNSPECIFIED is a zero
+// value nobody resolved, and a stored number no release ever wrote — the
+// reserved 2, or anything from a newer build — is a ceiling nobody decided
+// about. Both fall to the default.
+func MCPCeilingServesAnything(capability storepb.WorkspaceProfileSetting_MCPCapability) bool {
+	switch capability {
+	case storepb.WorkspaceProfileSetting_READ_WRITE, storepb.WorkspaceProfileSetting_READ_ONLY:
+		return true
+	default:
+		return false
+	}
+}
+
 // MCPMethodClassOfProcedure resolves the MCP classification for a connect
 // procedure path such as "/bytebase.v1.AuthService/Login". Callers that only
 // decide what to ADVERTISE may treat an error as "not classified"; the

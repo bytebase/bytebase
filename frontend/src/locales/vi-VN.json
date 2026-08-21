@@ -2474,7 +2474,7 @@
               "self": "Tắt"
             },
             "read-only": {
-              "description": "Dành cho cơ chế kiểm soát chỉ đọc chi tiết, hiện chưa được phát hành. Cho đến khi đó, chọn tùy chọn này sẽ từ chối hoàn toàn các kết nối MCP, giống như Tắt.",
+              "description": "Các phiên MCP có thể xem siêu dữ liệu và chạy truy vấn chỉ đọc, vẫn bị giới hạn bởi quyền của từng người dùng. Toàn bộ yêu cầu sẽ bị từ chối nếu Bytebase xác định bất kỳ câu lệnh nào trong đó là ghi, hoặc không thể xác nhận rằng nó chỉ đọc.",
               "self": "Chỉ đọc"
             },
             "read-write": {

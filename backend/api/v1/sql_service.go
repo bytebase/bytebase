@@ -347,6 +347,27 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		}
 	}
 
+	// The MCP read-only clamp. Unconditional on Explain, unlike the gate
+	// above: an explain request carries the bare statement and the driver
+	// prepends EXPLAIN, so skipping it would hand a read-only session an
+	// unclassified write to send.
+	clamped, err := mcpReadOnlyClampApplies(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if clamped {
+		if err := refuseNonReadOnlyStatement(instance.Metadata.GetEngine(), statement); err != nil {
+			// The same kind of refusal the ceiling gate records, taken at the
+			// one point that can see the request's argument. It adds no row
+			// today — Query is annotated audit = true, so the denial is
+			// recorded either way — and it is here so that stays true if that
+			// annotation ever changes, which is the only thing the mark
+			// controls.
+			common.SetMCPPolicyDenied(ctx)
+			return nil, err
+		}
+	}
+
 	queryRestriction := getEffectiveQueryDataPolicy(
 		ctx,
 		s.store,
@@ -366,7 +387,12 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	driver, err := s.dbFactory.GetDataSourceDriver(ctx, instance, dataSource, db.ConnectionContext{
 		DatabaseName: database.DatabaseName,
 		DataShare:    database.Metadata.GetDatashare(),
-		ReadOnly:     dataSource.GetType() == storepb.DataSourceType_READ_ONLY,
+		// A clamped request asks for the read-only session whatever data
+		// source it landed on, so the depth does not depend on the customer
+		// having configured a read-only data source. The driver is opened and
+		// closed inside this handler, so the session cannot outlive the
+		// request or be reused by another one.
+		ReadOnly: clamped || dataSource.GetType() == storepb.DataSourceType_READ_ONLY,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get database driver: %v", err))

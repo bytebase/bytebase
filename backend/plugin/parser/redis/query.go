@@ -115,6 +115,7 @@ func init() {
 }
 
 func validateQuery(statement string) (bool, bool, error) {
+	returnsData := true
 	lines := strings.Split(statement, "\n")
 	for _, line := range lines {
 		fields, err := shlex.Split(line)
@@ -127,8 +128,13 @@ func validateQuery(statement string) (bool, bool, error) {
 		if !isReadCommand(fields) {
 			return false, false, nil
 		}
+		// SELECT switches the connection's logical database, so a later command
+		// runs somewhere the caller did not name.
+		if strings.EqualFold(fields[0], "select") {
+			returnsData = false
+		}
 	}
-	return true, true, nil
+	return true, returnsData, nil
 }
 
 func isReadCommand(fields []string) bool {
