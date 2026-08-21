@@ -1176,7 +1176,7 @@ export function SheetTree({
           onContextMenu={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            if (folderNode.loadMore) return;
+            if (view === "draft" || folderNode.loadMore) return;
             openMenuAtPoint(e.clientX, e.clientY, folderNode);
           }}
         >

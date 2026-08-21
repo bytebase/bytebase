@@ -201,10 +201,14 @@ describe("DataExplorerResultView", () => {
     expect(screen.getByTestId("search-placeholder")).toHaveTextContent(
       "common.search-results"
     );
-    expect(
-      screen.getByRole("button", { name: "common.copy-all" })
-    ).toBeVisible();
-    fireEvent.click(screen.getByRole("button", { name: "common.copy-all" }));
+    const copyAllButton = screen.getByRole("button", {
+      name: "common.copy-all",
+    });
+    expect(copyAllButton).toHaveClass("h-9");
+    expect(screen.getByRole("button", { name: "common.copy" })).toHaveClass(
+      "h-9"
+    );
+    fireEvent.click(copyAllButton);
     await waitFor(() => {
       expect(mocks.writeTextToClipboard).toHaveBeenCalledWith(
         "index\tid\n0\t1\n1\t2"

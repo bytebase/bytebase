@@ -212,16 +212,7 @@ export function TabList() {
     const [moved] = next.splice(oldIndex, 1);
     next.splice(newIndex, 0, moved);
     // Rewrite the persisted tab order without touching individual tabs.
-    getSQLEditorTabsState().setOpenTabListOrder(
-      next.map((tab) => ({
-        id: tab.id,
-        savedQuery: tab.savedQuery,
-        mode: tab.mode,
-        batchQueryContext: tab.batchQueryContext,
-        treeState: tab.treeState,
-        viewState: tab.viewState,
-      }))
-    );
+    getSQLEditorTabsState().setOpenTabListOrder(next.map((tab) => tab.id));
   };
 
   // Listen for close-tab events from the context menu (batch actions).

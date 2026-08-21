@@ -14,19 +14,28 @@ const mocks = vi.hoisted(() => {
       table: "users",
     },
     editorState: { selection: null },
-    dataExplorer: { filter: "", initialized: false },
+    dataExplorer: {
+      filter: "",
+      initialized: false,
+      selectedRowKey: undefined,
+    } as {
+      filter: string;
+      initialized: boolean;
+      selectedRowKey?: number;
+    },
     databaseQueryContexts: new Map(),
   };
   return {
     tab,
     engine: 23 as Engine,
     resultRowsLimit: 500,
-    execute: vi.fn().mockResolvedValue(undefined),
+    execute: vi.fn().mockResolvedValue(true),
     updateTab: vi.fn((_: string, patch: Record<string, unknown>) => {
       Object.assign(tab, patch);
       return tab;
     }),
     deleteDatabaseQueryContext: vi.fn(),
+    batchRemoveDatabaseQueryContext: vi.fn(),
   };
 });
 
@@ -64,6 +73,7 @@ vi.mock("@/modules/sql-editor/store/tab", () => {
       ...state,
       updateTab: mocks.updateTab,
       deleteDatabaseQueryContext: mocks.deleteDatabaseQueryContext,
+      batchRemoveDatabaseQueryContext: mocks.batchRemoveDatabaseQueryContext,
     }),
   };
 });
@@ -129,6 +139,70 @@ describe("DataExplorerPanel", () => {
         })
       );
     });
+  });
+
+  test("keeps the current result when execution is not accepted", async () => {
+    const previousContext = { id: "previous", status: "DONE" };
+    mocks.tab.dataExplorer = {
+      filter: "",
+      initialized: true,
+      selectedRowKey: 7,
+    };
+    mocks.tab.databaseQueryContexts = new Map([
+      [mocks.tab.connection.database, [previousContext]],
+    ]);
+    mocks.execute.mockResolvedValueOnce(false);
+    render(<DataExplorerPanel />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /\(limit\s*500\)/ })
+    );
+
+    await waitFor(() => {
+      expect(mocks.execute).toHaveBeenCalledOnce();
+    });
+    expect(mocks.deleteDatabaseQueryContext).not.toHaveBeenCalled();
+    expect(mocks.batchRemoveDatabaseQueryContext).not.toHaveBeenCalled();
+    expect(mocks.tab.dataExplorer.selectedRowKey).toBe(7);
+  });
+
+  test("removes the previous result after execution is accepted", async () => {
+    let acceptExecution!: (accepted: boolean) => void;
+    const previousContext = { id: "previous", status: "DONE" };
+    mocks.tab.dataExplorer = {
+      filter: "",
+      initialized: true,
+      selectedRowKey: 7,
+    };
+    mocks.tab.databaseQueryContexts = new Map([
+      [mocks.tab.connection.database, [previousContext]],
+    ]);
+    mocks.execute.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          acceptExecution = resolve;
+        })
+    );
+    render(<DataExplorerPanel />);
+
+    fireEvent.click(
+      screen.getByRole("button", { name: /\(limit\s*500\)/ })
+    );
+
+    await waitFor(() => {
+      expect(mocks.execute).toHaveBeenCalledOnce();
+    });
+    expect(mocks.batchRemoveDatabaseQueryContext).not.toHaveBeenCalled();
+
+    acceptExecution(true);
+    await waitFor(() => {
+      expect(mocks.batchRemoveDatabaseQueryContext).toHaveBeenCalledWith({
+        database: mocks.tab.connection.database,
+        contextIds: ["previous"],
+      });
+    });
+    expect(mocks.deleteDatabaseQueryContext).not.toHaveBeenCalled();
+    expect(mocks.tab.dataExplorer.selectedRowKey).toBeUndefined();
   });
 
   test("builds a qualified relational preview query", async () => {

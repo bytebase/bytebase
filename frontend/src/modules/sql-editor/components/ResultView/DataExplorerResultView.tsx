@@ -119,7 +119,7 @@ export function DataExplorerResultView({
         </div>
         {!disallowCopyingData && rows.length > 0 && (
           <div className="shrink-0">
-            <CopyAllButton />
+            <CopyAllButton size="md" />
           </div>
         )}
       </div>

@@ -64,7 +64,7 @@ export const useExecuteSQL = () => {
   };
 
   const preflight = useCallback(
-    async (params: SQLEditorQueryParams) => {
+    (params: SQLEditorQueryParams) => {
       lastQueryTimeRef.current = Date.now();
 
       const tabsState = getSQLEditorTabsState();
@@ -136,31 +136,31 @@ export const useExecuteSQL = () => {
   };
 
   const preExecute = useCallback(
-    async (params: SQLEditorQueryParams) => {
+    async (params: SQLEditorQueryParams): Promise<boolean> => {
       const now = Date.now();
       if (
         lastQueryTimeRef.current &&
         now - lastQueryTimeRef.current < QUERY_INTERVAL_LIMIT
       ) {
-        return;
+        return false;
       }
 
       const tabsState = getSQLEditorTabsState();
       const tab = tabsState.tabsById.get(tabsState.currentTabId);
       if (!tab) {
-        return;
+        return false;
       }
       const { mode } = tab;
       if (mode === "ADMIN") {
-        return;
+        return false;
       }
 
       if (!preflight(params)) {
-        return;
+        return false;
       }
 
       if (!isValidDatabaseName(params.connection.database)) {
-        return;
+        return false;
       }
 
       // Re-read the tab after preflight, which may have initialized
@@ -168,7 +168,7 @@ export const useExecuteSQL = () => {
       const freshState = getSQLEditorTabsState();
       const freshTab = freshState.tabsById.get(freshState.currentTabId);
       if (!freshTab) {
-        return;
+        return false;
       }
       const existingContexts: Map<string, SQLEditorDatabaseQueryContext[]> =
         freshTab.databaseQueryContexts ?? new Map();
@@ -235,6 +235,7 @@ export const useExecuteSQL = () => {
         .getState()
         .batchGetOrFetchDatabases([...batchQueryDatabaseSet.keys()]);
 
+      let accepted = false;
       for (const databaseName of batchQueryDatabaseSet.values()) {
         // Re-read the latest tab snapshot inside the loop so each
         // iteration sees the prior iteration's writes.
@@ -281,7 +282,9 @@ export const useExecuteSQL = () => {
         const nextMap = new Map(currentMap);
         nextMap.set(databaseName, [context, ...trimmedList]);
         loopState.updateTab(loopTab.id, { databaseQueryContexts: nextMap });
+        accepted = true;
       }
+      return accepted;
     },
     [preflight]
   );

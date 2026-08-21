@@ -321,7 +321,18 @@ export function SQLEditorRouteShell() {
       connection.table = table;
       connection.schema ??= "";
     }
-    getSQLEditorTabsState().addTab({
+    const tabsState = getSQLEditorTabsState();
+    const currentTab = tabsState.tabsById.get(tabsState.currentTabId);
+    if (
+      currentTab?.mode === "DATA_EXPLORER" &&
+      currentTab.connection.instance === connection.instance &&
+      currentTab.connection.database === connection.database &&
+      (currentTab.connection.schema ?? "") === (connection.schema ?? "") &&
+      currentTab.connection.table === connection.table
+    ) {
+      return true;
+    }
+    tabsState.addTab({
       connection,
       mode: DEFAULT_SQL_EDITOR_TAB_MODE,
     });
