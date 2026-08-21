@@ -143,6 +143,14 @@ Constraints:
   *inside* a message arm leaves the arm set. This reproduces `redactIAMExtension` byte-for-byte.
 - Maps do: an annotated map is cleared whole, a map whose value type has a plan is descended per
   entry. The existing net skips maps.
+- **`service_data` runs through the same plan.** `createAuditLog` assigns the handler-supplied
+  `Any` straight onto the row (`audit.go:378`), reaching neither entry point. It is unpacked,
+  redacted against the plan for its own descriptor, and re-packed; a type URL that does not resolve
+  is dropped rather than logged. Four RPCs set it today and all four are safe — each packs
+  read-path converter output that already blanks its secrets, `convertToAISetting` and
+  `convertToEmailSetting` explicitly, `convertToAppIMSetting` by building empty payloads. That is a
+  property of the current call sites, not an enforced one, and `UpdateSetting` — which packs a
+  whole before-image `Setting` — is the RPC where it would matter most.
 
 All 35 redactors are deleted, allowlist rebuilds included. Audit rows will carry the non-secret
 remainder those rebuilds dropped — `redactUser` returns three fields today — and `AdminExecute`
@@ -163,12 +171,12 @@ rows regain `rows_count`.
   `mcpDenialRequestsUnderReview` (`mcp_gate_test.go:1322`), which it replaces once the population
   matches.
 
-  **That population is wider than the audited RPCs.** `WrapUnary` writes a row on
-  `needAudit(ctx) || mcpPolicyDenied` (`audit.go:102`), so the gate-refused methods carrying no
+  **That population is wider than the audited RPCs**, in two directions. `WrapUnary` writes a row
+  on `needAudit(ctx) || mcpPolicyDenied` (`audit.go:102`), so the gate-refused methods carrying no
   audit annotation — `ListInstanceDatabaseRequest` and `SwitchWorkspaceRequest` among them — are in
-  scope. Deriving the inventory from audited methods alone would omit exactly the population
-  `TestLintDenialRequestsAreReviewedForRedaction` exists to cover, and a new secret under one of
-  those requests would be logged on a denial.
+  scope; deriving the inventory from audited methods alone would omit exactly the population
+  `TestLintDenialRequestsAreReviewedForRedaction` exists to cover. And every message type packed
+  into `service_data` is in scope, since those reach the row without passing either entry point.
 - **Read-path assertion.** `assertNoInputOnlyValues` (`instance_service_converter_test.go:449`)
   already requires every `INPUT_ONLY` field to come back blank from a converter; generalize it to
   `SENSITIVE`. Converters only — issuance responses set the field outside them.
