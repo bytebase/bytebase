@@ -156,6 +156,18 @@ Constraints:
   contradict its own annotation.
 - Otherwise oneofs need no special case: only the set arm reports `Has()`, and clearing a field
   *inside* a message arm leaves the arm set. This reproduces `redactIAMExtension` byte-for-byte.
+- **The descriptor graph has a cycle, so the walk is guarded.**
+  `TablePartitionMetadata.subpartitions` (`database_service.proto:936`) is the only self-recursive
+  field in the surface, and it is reachable from `DiffMetadataRequest` — which the MCP gate can
+  refuse, so a denial audits it. An unguarded descend runs until the stack does.
+
+  Termination is the easy half. The harder one is that breaking a cycle by answering "no plan" is
+  *provisional*: caching that answer would hide an annotated field reachable only through the cycle
+  from every other type that reaches the same node. So a plan computed while an enclosing cycle was
+  open is not cached, or the builder iterates to a fixed point. Today the provisional and exact
+  answers agree everywhere, because no annotated field sits inside the cycle — that is a fact about
+  the current protos, not a property, so the plan-construction test pins `DiffMetadataRequest`.
+
 - Maps do: an annotated map is cleared whole, a map whose value type has a plan is descended per
   entry. The existing net skips maps.
 - **Every `Any` that reaches the row is registered and redacted.** The descriptor walk sees
