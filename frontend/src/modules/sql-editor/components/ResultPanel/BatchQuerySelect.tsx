@@ -4,13 +4,13 @@ import { head } from "lodash-es";
 import { CircleAlert, Eye, EyeOff, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import {
   DataExportButton,
   type DataExportRequest,
   type DownloadContent,
 } from "@/components/DataExportButton";
 import { DatabaseTableView } from "@/components/database";
-import { EngineIconPath } from "@/components/instance/constants";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
@@ -32,7 +32,6 @@ import { DEFAULT_ENVIRONMENT_COLOR } from "@/types/v1/environment";
 import {
   extractDatabaseResourceName,
   getDatabaseEnvironment,
-  getInstanceResource,
   hexToRgb,
 } from "@/utils";
 import { TabContextMenu } from "./ContextMenu";
@@ -464,8 +463,6 @@ function TabButton({
     borderTop: isSelected ? "3px solid" : "",
     ...styleProp,
   };
-  const instance = getInstanceResource(item.database);
-
   return (
     <button
       type="button"
@@ -473,22 +470,17 @@ function TabButton({
       style={style}
       onClick={onSelect}
       className={cn(
-        "inline-flex items-center gap-x-1 h-7 px-2 rounded-xs text-xs font-medium",
+        "inline-flex shrink-0 items-center gap-x-1 h-7 px-2 rounded-xs text-xs font-medium",
         "border border-control-border cursor-pointer whitespace-nowrap",
         className
       )}
       {...rest}
     >
-      {EngineIconPath[instance.engine] && (
-        <img
-          src={EngineIconPath[instance.engine]}
-          alt=""
-          className="size-4 shrink-0"
-        />
-      )}
-      <span className="truncate">
-        {extractDatabaseResourceName(item.database.name).databaseName}
-      </span>
+      <DatabaseTargetDisplay
+        database={item.database}
+        showEnvironment
+        className="text-xs"
+      />
       {isFailed && <CircleAlert className="ml-1 text-error size-4 shrink-0" />}
       {isEmpty && (
         <span className="text-control-placeholder italic ml-1">
