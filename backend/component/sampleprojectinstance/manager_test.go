@@ -296,7 +296,7 @@ func TestManagerHealthyOwnerProvisionsOnce(t *testing.T) {
 	ctx, _, s, target, first := newConcreteManager(t)
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
 	require.NoError(t, err)
-	second := NewManager(s, target, schemasync.NewSyncer(s, dbfactory.New(s, licenseService), licenseService), ManagerOptions{ReplicaID: "replica-b"})
+	second := NewManager(s, target, schemasync.NewSyncer(s, dbfactory.New(s, licenseService), licenseService, nil), ManagerOptions{ReplicaID: "replica-b"})
 	require.NoError(t, s.UpsertReplicaHeartbeat(ctx, "replica-a"))
 
 	entered := make(chan struct{})
@@ -353,7 +353,7 @@ func TestManagerTakesOverStaleReservationAfterReconciling(t *testing.T) {
 
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
 	require.NoError(t, err)
-	second := NewManager(s, target, schemasync.NewSyncer(s, dbfactory.New(s, licenseService), licenseService), ManagerOptions{ReplicaID: "replica-b"})
+	second := NewManager(s, target, schemasync.NewSyncer(s, dbfactory.New(s, licenseService), licenseService, nil), ManagerOptions{ReplicaID: "replica-b"})
 	prepared, err := second.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
 	require.NoError(t, err)
 	require.NotNil(t, prepared.Instance)
@@ -508,7 +508,7 @@ func newConcreteManager(t *testing.T) (context.Context, *sql.DB, *store.Store, *
 	require.NoError(t, admin.Close(ctx))
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
 	require.NoError(t, err)
-	syncer := schemasync.NewSyncer(s, dbfactory.New(s, licenseService), licenseService)
+	syncer := schemasync.NewSyncer(s, dbfactory.New(s, licenseService), licenseService, nil)
 	return ctx, db, s, target, NewManager(s, target, syncer, ManagerOptions{ReplicaID: "replica-a"})
 }
 

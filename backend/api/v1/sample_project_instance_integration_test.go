@@ -292,7 +292,7 @@ func newSampleProjectInstanceFixture(t *testing.T, clock func() time.Time) (cont
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
 	require.NoError(t, err)
 	dbFactory := dbfactory.New(stores, licenseService)
-	syncer := schemasync.NewSyncer(stores, dbFactory, licenseService)
+	syncer := schemasync.NewSyncer(stores, dbFactory, licenseService, nil)
 	require.NoError(t, prepareSampleTargetBaseline(ctx, target.GetDB()))
 	targetURL := tlsPostgresTestURL(target)
 	sampleTarget, err := sampleprojectinstance.NewTarget(targetURL)
