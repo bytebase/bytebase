@@ -125,6 +125,7 @@
       "title": "別のユーザーとしてログインしています"
     },
     "oauth-callback": {
+      "idp-error": "ID プロバイダーからエラーが返されました。",
       "invalid-state": "認証に失敗しました：無効なコールバック状態です。もう一度お試しください。",
       "opener-failed": "認証は完了しましたが、親ウィンドウとの通信に失敗しました。このウィンドウを閉じてもう一度お試しください。",
       "opener-unavailable": "認証は完了しましたが、親ウィンドウを利用できなくなっています。このウィンドウを閉じてもう一度お試しください。",
@@ -157,10 +158,24 @@
       "forget-password": "パスワードを忘れましたか？",
       "invited-email": "招待されました。{{email}} でログインしてください",
       "new-user": "Bytebase を初めて使用しますか?",
+      "no-method-available": {
+        "description": "このワークスペースではパスワードとメール認証コードによるログインが無効で、ID プロバイダーも設定されていません。",
+        "title": "利用可能なログイン方法がありません"
+      },
       "resend-code": "コードを再送信",
       "resend-in": "{{seconds}}秒後に再送信可能",
       "sign-in-or-create": "ログインまたはアカウントを作成",
       "sign-in-to-account": "アカウントにログイン",
+      "sso-failure": {
+        "administrators": "管理者：",
+        "contact-administrator": "ワークスペース管理者に連絡してください。",
+        "contact-support": "Bytebase サポートに連絡",
+        "description": "ID プロバイダーからエラーが返されました。",
+        "no-fallback": "このワークスペースではパスワードとメール認証コードによるログインが無効なため、現在利用できる代替手段はありません。",
+        "password-disabled": "このワークスペースではパスワードによるログインが無効です。",
+        "recovery-guide": "復旧ガイドを確認",
+        "title": "{{idp}} でログインできませんでした"
+      },
       "standard-tab": "標準",
       "tos": "続行すると、<terms>利用規約</terms>および<privacy>プライバシーポリシー</privacy>に同意したものとみなされます。",
       "verification-code": "認証コード"

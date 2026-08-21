@@ -225,6 +225,63 @@ describe("OAuthCallbackPage", () => {
     unmount();
   });
 
+  test("redirect mode: returns an IdP callback error to signin", async () => {
+    mocks.currentRoute.value.query = {
+      state: "idp-error-token",
+      error: "temporarily_unavailable",
+    };
+    mocks.retrieveOAuthState.mockReturnValue({
+      token: "idp-error-token",
+      event: "bb.oauth.signin.idps/okta",
+      idpType: IdentityProviderType.OIDC,
+      popup: false,
+      redirect: "/projects",
+      timestamp: Date.now(),
+    });
+
+    const { render, unmount } = renderIntoContainer(<OAuthCallbackPage />);
+    render();
+    await flushPromises();
+
+    expect(mocks.login).not.toHaveBeenCalled();
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "auth.signin",
+      query: {
+        redirect: "/projects",
+        ssoError: "idps/okta",
+      },
+    });
+    unmount();
+  });
+
+  test("redirect mode: returns a failed token exchange to signin", async () => {
+    mocks.currentRoute.value.query = {
+      state: "token-exchange-error-token",
+      code: "abc",
+    };
+    mocks.retrieveOAuthState.mockReturnValue({
+      token: "token-exchange-error-token",
+      event: "bb.oauth.signin.idps/okta",
+      idpType: IdentityProviderType.OIDC,
+      popup: false,
+      timestamp: Date.now(),
+    });
+    mocks.login.mockRejectedValueOnce(new Error("identity provider unavailable"));
+
+    const { render, unmount } = renderIntoContainer(<OAuthCallbackPage />);
+    render();
+    await flushPromises();
+
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "auth.signin",
+      query: {
+        redirect: undefined,
+        ssoError: "idps/okta",
+      },
+    });
+    unmount();
+  });
+
   test("remount replays the processed outcome instead of re-processing the consumed token", async () => {
     mocks.currentRoute.value.query = { state: "remount-token", code: "abc" };
     // Single-use token: consumed (cleared) by the first mount, gone afterwards.

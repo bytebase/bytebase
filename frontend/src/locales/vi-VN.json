@@ -125,6 +125,7 @@
       "title": "Bạn đã đăng nhập với tư cách người dùng khác"
     },
     "oauth-callback": {
+      "idp-error": "Nhà cung cấp danh tính đã trả về lỗi.",
       "invalid-state": "Xác thực thất bại: Trạng thái gọi lại không hợp lệ. Vui lòng thử lại.",
       "opener-failed": "Xác thực đã hoàn tất, nhưng không thể giao tiếp với cửa sổ cha. Vui lòng đóng cửa sổ này và thử lại.",
       "opener-unavailable": "Xác thực đã hoàn tất, nhưng cửa sổ cha không còn khả dụng. Vui lòng đóng cửa sổ này và thử lại.",
@@ -157,10 +158,24 @@
       "forget-password": "Quên mật khẩu?",
       "invited-email": "Bạn đã được mời. Vui lòng đăng nhập bằng {{email}}",
       "new-user": "Mới sử dụng Bytebase?",
+      "no-method-available": {
+        "description": "Đăng nhập bằng mật khẩu và mã email đã bị tắt, đồng thời chưa có nhà cung cấp danh tính nào được cấu hình cho không gian làm việc này.",
+        "title": "Không có phương thức đăng nhập khả dụng"
+      },
       "resend-code": "Gửi lại mã",
       "resend-in": "Gửi lại sau {{seconds}}s",
       "sign-in-or-create": "Đăng nhập hoặc tạo tài khoản của bạn",
       "sign-in-to-account": "Đăng nhập vào tài khoản của bạn",
+      "sso-failure": {
+        "administrators": "Quản trị viên:",
+        "contact-administrator": "Liên hệ với quản trị viên không gian làm việc của bạn.",
+        "contact-support": "Liên hệ bộ phận hỗ trợ Bytebase",
+        "description": "Nhà cung cấp danh tính đã trả về lỗi.",
+        "no-fallback": "Đăng nhập bằng mật khẩu và mã email đã bị tắt cho không gian làm việc này, vì vậy hiện không có phương án dự phòng.",
+        "password-disabled": "Đăng nhập bằng mật khẩu đã bị tắt cho không gian làm việc này.",
+        "recovery-guide": "xem hướng dẫn khôi phục",
+        "title": "Không thể đăng nhập bằng {{idp}}"
+      },
       "standard-tab": "Tiêu chuẩn",
       "tos": "Bằng cách tiếp tục, bạn đồng ý với <terms>Điều khoản dịch vụ</terms> và <privacy>Chính sách quyền riêng tư</privacy> của chúng tôi.",
       "verification-code": "Mã xác minh"

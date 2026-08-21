@@ -125,6 +125,7 @@
       "title": "You have logged in as another user"
     },
     "oauth-callback": {
+      "idp-error": "The identity provider returned an error.",
       "invalid-state": "Authentication failed: Invalid callback state. Please try again.",
       "opener-failed": "Authentication completed, but failed to communicate with the parent window. Please close this window and try again.",
       "opener-unavailable": "Authentication completed, but the parent window is no longer available. Please close this window and try again.",
@@ -157,10 +158,24 @@
       "forget-password": "Forgot your password?",
       "invited-email": "You've been invited. Please sign in with {{email}}",
       "new-user": "New to Bytebase?",
+      "no-method-available": {
+        "description": "Password and email-code sign-in are disabled, and no identity provider is configured for this workspace.",
+        "title": "No sign-in method is available"
+      },
       "resend-code": "Resend code",
       "resend-in": "Resend in {{seconds}}s",
       "sign-in-or-create": "Sign in or create your account",
       "sign-in-to-account": "Sign in to your account",
+      "sso-failure": {
+        "administrators": "Administrators:",
+        "contact-administrator": "Contact your workspace administrator.",
+        "contact-support": "Contact Bytebase support",
+        "description": "The identity provider returned an error.",
+        "no-fallback": "Password and email-code sign-in are disabled for this workspace, so there is no fallback right now.",
+        "password-disabled": "Password sign-in is disabled for this workspace.",
+        "recovery-guide": "see the recovery guide",
+        "title": "Couldn't sign in with {{idp}}"
+      },
       "standard-tab": "Standard",
       "tos": "By continuing, you agree to our <terms>Terms of Service</terms> and <privacy>Privacy Policy</privacy>.",
       "verification-code": "Verification code"

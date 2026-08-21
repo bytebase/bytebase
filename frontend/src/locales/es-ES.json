@@ -125,6 +125,7 @@
       "title": "Has iniciado sesión como otro usuario"
     },
     "oauth-callback": {
+      "idp-error": "El proveedor de identidad devolvió un error.",
       "invalid-state": "La autenticación falló: estado de devolución de llamada no válido. Inténtalo de nuevo.",
       "opener-failed": "La autenticación se completó, pero no se pudo comunicar con la ventana principal. Cierra esta ventana e inténtalo de nuevo.",
       "opener-unavailable": "La autenticación se completó, pero la ventana principal ya no está disponible. Cierra esta ventana e inténtalo de nuevo.",
@@ -157,10 +158,24 @@
       "forget-password": "¿Olvidaste tu contraseña?",
       "invited-email": "Has sido invitado. Inicia sesión con {{email}}",
       "new-user": "¿Nuevo en Bytebase?",
+      "no-method-available": {
+        "description": "El inicio de sesión con contraseña y código por email está deshabilitado, y no hay ningún proveedor de identidad configurado para este espacio de trabajo.",
+        "title": "No hay ningún método de inicio de sesión disponible"
+      },
       "resend-code": "Reenviar código",
       "resend-in": "Reenviar en {{seconds}}s",
       "sign-in-or-create": "Inicia sesión o crea tu cuenta",
       "sign-in-to-account": "Inicia sesión en tu cuenta",
+      "sso-failure": {
+        "administrators": "Administradores:",
+        "contact-administrator": "Contacta con el administrador de tu espacio de trabajo.",
+        "contact-support": "Contactar con el soporte de Bytebase",
+        "description": "El proveedor de identidad devolvió un error.",
+        "no-fallback": "El inicio de sesión con contraseña y código por email está deshabilitado para este espacio de trabajo, por lo que no hay una alternativa disponible en este momento.",
+        "password-disabled": "El inicio de sesión con contraseña está deshabilitado para este espacio de trabajo.",
+        "recovery-guide": "consultar la guía de recuperación",
+        "title": "No se pudo iniciar sesión con {{idp}}"
+      },
       "standard-tab": "Estándar",
       "tos": "Al continuar, aceptas nuestros <terms>Términos de servicio</terms> y la <privacy>Política de privacidad</privacy>.",
       "verification-code": "Código de verificación"

@@ -204,6 +204,7 @@ export type AuthSlice = {
     request: LoginRequest;
     redirect?: boolean;
     redirectUrl?: string;
+    silent?: boolean;
   }) => Promise<void>;
   signup: (request: Partial<User>) => Promise<void>;
   logout: () => Promise<void>;
