@@ -99,7 +99,10 @@ type ConnectionContext struct {
 	DatabaseName string
 	// It's only set for Redshift datashare database.
 	DataShare bool
-	// ReadOnly is only supported for Postgres at the moment.
+	// ReadOnly asks the driver to open a read-only database session. Three
+	// honor it, all by setting default_transaction_read_only on the connection
+	// they open: postgres, cockroachdb, and redshift outside a datashare
+	// database. Every other driver ignores it.
 	ReadOnly bool
 	// MessageBuffer is used for logging messages from the database server.
 	MessageBuffer []*v1pb.QueryResult_Message

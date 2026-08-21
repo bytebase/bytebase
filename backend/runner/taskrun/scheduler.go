@@ -12,6 +12,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/productmetrics"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -33,6 +34,7 @@ type Scheduler struct {
 	bus            *bus.Bus
 	webhookManager *webhook.Manager
 	licenseService *enterprise.LicenseService
+	productMetrics *productmetrics.ProductMetrics
 	executorMap    map[storepb.Task_Type]Executor
 	profile        *config.Profile
 	// haFailSince is when CheckReplicaLimit first started failing.
@@ -47,6 +49,7 @@ func NewScheduler(
 	webhookManager *webhook.Manager,
 	licenseService *enterprise.LicenseService,
 	profile *config.Profile,
+	productMetrics *productmetrics.ProductMetrics,
 ) *Scheduler {
 	return &Scheduler{
 		store:          store,
@@ -54,6 +57,7 @@ func NewScheduler(
 		webhookManager: webhookManager,
 		licenseService: licenseService,
 		profile:        profile,
+		productMetrics: productMetrics,
 		executorMap:    map[storepb.Task_Type]Executor{},
 	}
 }

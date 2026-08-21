@@ -380,6 +380,27 @@ func TestLintRefusedClassesMatchTheServingTable(t *testing.T) {
 	}
 }
 
+// TestLintCeilingAdmissionMatchesTheServingTable is the connection gate's half
+// of the same arrangement. The /mcp boundary decides whether a session opens at
+// all, and it asks auth.MCPCeilingServesAnything, which cannot see this table.
+// This holds the two against each other over every ceiling value, so a mode
+// that serves no class cannot start admitting sessions — or the reverse, which
+// would refuse a connection whose methods the gate is ready to serve.
+func TestLintCeilingAdmissionMatchesTheServingTable(t *testing.T) {
+	values := storepb.WorkspaceProfileSetting_MCPCapability(0).Descriptor().Values()
+	for i := range values.Len() {
+		capability := storepb.WorkspaceProfileSetting_MCPCapability(values.Get(i).Number())
+		require.Equal(t, len(mcpServingClasses[capability]) > 0, auth.MCPCeilingServesAnything(capability),
+			"%v: the serving table and auth.MCPCeilingServesAnything disagree about whether this ceiling serves anything", capability)
+	}
+	// A stored number no release ever wrote is refused too, and it cannot come
+	// from the descriptor because it is in no build's enum.
+	for _, unknown := range []storepb.WorkspaceProfileSetting_MCPCapability{2, 99} {
+		require.False(t, auth.MCPCeilingServesAnything(unknown),
+			"%v: a ceiling this build cannot interpret must not open a session", unknown)
+	}
+}
+
 // TestMCPCapabilityEnumsAgree is what lets the lint above read one enum and the
 // gate read the other. The settings API writes the v1 ceiling, the setting row
 // stores the store ceiling, and the conversion between them is by number
@@ -753,10 +774,9 @@ func TestMCPClassificationInventory(t *testing.T) {
 
 // --- the gate ---
 
-// mcpGateStore stands in for the workspace's stored ceiling. A READ_ONLY
-// ceiling cannot be reached end to end yet — mcpConnectionAllowed still refuses
-// the connection until 1b-3 lands the SQL clamp — so the only way to exercise
-// the read-only half of the rule today is here.
+// mcpGateStore stands in for the workspace's stored ceiling, so the rule can be
+// exercised without a database. The end-to-end path exists too, in
+// backend/tests, now that a READ_ONLY ceiling admits a connection.
 type mcpGateStore struct {
 	ceiling storepb.WorkspaceProfileSetting_MCPCapability
 	err     error
@@ -778,6 +798,9 @@ type mcpGateResult struct {
 	dispatched  bool
 	auditMarked bool
 	err         error
+	// dispatchedCtx is the context the handler was called with, so a test can
+	// assert what the gate stamped on the way in.
+	dispatchedCtx context.Context
 }
 
 // invokeMCPGate runs one request through the gate alone. auditMarked is what
@@ -788,8 +811,9 @@ type mcpGateResult struct {
 func invokeMCPGate(t *testing.T, stores mcpCeilingReader, authCtx *common.AuthContext, procedure string, req connect.AnyRequest) mcpGateResult {
 	t.Helper()
 	out := mcpGateResult{}
-	next := func(_ context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {
+	next := func(ctx context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {
 		out.dispatched = true
+		out.dispatchedCtx = ctx
 		return connect.NewResponse(&v1pb.User{}), nil
 	}
 	ctx := context.Background()
@@ -850,12 +874,11 @@ func TestMCPGateServesTheAdmittedClasses(t *testing.T) {
 	}
 }
 
-// TestMCPGateUnderAReadOnlyCeiling is the rule this PR exists for: the same
-// session that reaches a WRITE method under read-write is refused it under
-// read-only, while its reads keep working. It is unit-level because READ_ONLY
-// cannot connect until 1b-3: TestMCPConnectionAllowed and the ws-readonly row
-// of TestMCPCeilingStoredValueFailsClosed (backend/api/mcp) are the pins that
-// the cutover has not moved.
+// TestMCPGateUnderAReadOnlyCeiling is the ceiling half of the read-only rule:
+// the same session that reaches a WRITE method under read-write is refused it
+// under read-only, while its reads keep working. Unit-level so every class is
+// covered cheaply; TestMCPReadOnlyCeilingRefusesAWrite (backend/tests) drives
+// the same rule over a live session and a real database.
 func TestMCPGateUnderAReadOnlyCeiling(t *testing.T) {
 	t.Run("a READ method is served", func(t *testing.T) {
 		got := invokeMCPGate(t, readOnlyCeiling(), classContext(v1pb.MCPMethodClass_READ),

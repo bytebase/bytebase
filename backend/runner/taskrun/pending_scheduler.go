@@ -13,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/productmetrics"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -56,6 +57,20 @@ func (s *Scheduler) runPendingTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 
 func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) (err error) {
 	startedAt := time.Now()
+	result := productmetrics.ResultFailure
+	defer func() {
+		if r := recover(); r != nil {
+			panicErr, ok := r.(error)
+			if !ok {
+				panicErr = errors.Errorf("%v", r)
+			}
+			err = errors.Wrap(panicErr, "pending task runs scheduler panic")
+			slog.Error("Pending task runs scheduler PANIC RECOVER", log.BBError(err), log.BBStack("panic-stack"))
+		}
+		if !errors.Is(ctx.Err(), context.Canceled) && s.productMetrics != nil {
+			s.productMetrics.RecordRunnerRun(productmetrics.RunnerTaskPending, result, time.Since(startedAt))
+		}
+	}()
 	tx, err := s.store.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return errors.Wrapf(err, "failed to begin pending scheduler transaction")
@@ -75,6 +90,7 @@ func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) (err error) {
 		slog.Debug("Pending scheduler advisory lock held by another replica, skipping",
 			slog.Duration("duration", time.Since(startedAt)),
 		)
+		result = productmetrics.ResultSkipped
 		return nil
 	}
 
@@ -91,8 +107,12 @@ func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) (err error) {
 		return errors.Wrapf(err, "failed to create scheduling context")
 	}
 
+	var processingErr error
 	for _, taskRun := range taskRuns {
 		if err := s.schedulePendingTaskRun(ctx, taskRun, sc); err != nil {
+			if processingErr == nil {
+				processingErr = err
+			}
 			slog.Error("failed to schedule pending task run",
 				slog.Int64("taskRunID", taskRun.ID),
 				log.BBError(err),
@@ -103,7 +123,11 @@ func (s *Scheduler) schedulePendingTaskRuns(ctx context.Context) (err error) {
 	if err := tx.Commit(); err != nil {
 		return errors.Wrapf(err, "failed to commit pending scheduler transaction")
 	}
+	if processingErr != nil {
+		return errors.Wrap(processingErr, "failed to process one or more pending task runs")
+	}
 
+	result = productmetrics.ResultSuccess
 	return nil
 }
 

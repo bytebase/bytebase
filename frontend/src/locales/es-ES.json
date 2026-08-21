@@ -1210,11 +1210,15 @@
     },
     "password-write-only": "SU_DB_PWD - solo escritura",
     "port": "Puerto",
+    "prepare-sample-instance-failed": "No se pudo preparar la instancia de proyecto de muestra.",
+    "preparing-sample-instance": "Preparando la instancia de proyecto de muestra…",
     "project-id": "ID del proyecto",
     "restore-instance-instance-name-to-normal-state": "¿Restaurar la instancia '{{0}}' al estado normal?",
     "role-arn": "ARN del rol",
     "role-arn-description": "Rol IAM para asumir en acceso entre cuentas. Dejar vacío para acceso en la misma cuenta.",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
+    "sample-project-instance-description": "Use una instancia de proyecto de muestra para explorar Bytebase con una base de datos lista para usar durante 7 días.",
+    "sample-project-instance-title": "Pruebe una instancia de proyecto de muestra",
     "scan-interval": {
       "default-never": "Predeterminado (nunca)",
       "description": "Bytebase sincroniza periódicamente el esquema de instancia y detecta anomalías.",
@@ -1309,6 +1313,7 @@
     "token-write-only": "TU_TOKEN - solo escritura",
     "type-or-paste-credentials-write-only": "Escriba o pegue las CREDENCIALES - solo escritura",
     "unable-to-connect": "Bytebase no pudo conectarse con esta configuración. Revisa las indicaciones anteriores o continúa y actualiza la conexión más tarde.\n\nDetalles técnicos: {{0}}",
+    "use-sample-instance": "Usar instancia de ejemplo (Disponible durante 7 días)",
     "users": "Usuarios",
     "your-snowflake-account-locator": "Su localizador de cuentas Snowflake"
   },
@@ -2474,7 +2479,7 @@
               "self": "Deshabilitado"
             },
             "read-only": {
-              "description": "Reservado para el control de solo lectura detallado, que aún no está disponible. Hasta entonces, elegir esta opción rechaza por completo las conexiones MCP, igual que Deshabilitado.",
+              "description": "Las sesiones MCP pueden inspeccionar metadatos y ejecutar consultas de solo lectura, siempre limitadas por los permisos de cada usuario. Se rechaza la solicitud completa si Bytebase clasifica alguna de sus instrucciones como escritura o no puede determinar que solo lee.",
               "self": "Solo lectura"
             },
             "read-write": {

@@ -206,6 +206,25 @@ export declare type CreateInstanceRequest = Message<"bytebase.v1.CreateInstanceR
 export declare const CreateInstanceRequestSchema: GenMessage<CreateInstanceRequest>;
 
 /**
+ * @generated from message bytebase.v1.PrepareSampleProjectInstanceRequest
+ */
+export declare type PrepareSampleProjectInstanceRequest = Message<"bytebase.v1.PrepareSampleProjectInstanceRequest"> & {
+  /**
+   * The project that owns the sample instance.
+   * Format: projects/{project}
+   *
+   * @generated from field: string parent = 1;
+   */
+  parent: string;
+};
+
+/**
+ * Describes the message bytebase.v1.PrepareSampleProjectInstanceRequest.
+ * Use `create(PrepareSampleProjectInstanceRequestSchema)` to create a new message.
+ */
+export declare const PrepareSampleProjectInstanceRequestSchema: GenMessage<PrepareSampleProjectInstanceRequest>;
+
+/**
  * @generated from message bytebase.v1.UpdateInstanceRequest
  */
 export declare type UpdateInstanceRequest = Message<"bytebase.v1.UpdateInstanceRequest"> & {
@@ -1799,6 +1818,17 @@ export declare const InstanceService: GenService<{
   createInstance: {
     methodKind: "unary";
     input: typeof CreateInstanceRequestSchema;
+    output: typeof InstanceSchema;
+  },
+  /**
+   * Prepares a Sample Project Instance for a project.
+   * Permissions required: bb.instances.create
+   *
+   * @generated from rpc bytebase.v1.InstanceService.PrepareSampleProjectInstance
+   */
+  prepareSampleProjectInstance: {
+    methodKind: "unary";
+    input: typeof PrepareSampleProjectInstanceRequestSchema;
     output: typeof InstanceSchema;
   },
   /**

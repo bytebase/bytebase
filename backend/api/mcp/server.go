@@ -206,13 +206,11 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		}
 
 		// Enforce the workspace MCP capability ceiling before dispatching to any
-		// tool. DISABLED rejects the connection outright, and so does READ_ONLY:
-		// the per-method gate on the internal chain now serves a read-only
-		// ceiling correctly, but the query tool still reaches SQLService/Query,
-		// which authorizes writes per statement. Admitting a read-only session
-		// before that clamp exists would be a read-only session that can write.
-		// Read live so an admin change takes effect on the next request without
-		// re-issuing tokens.
+		// tool. DISABLED rejects the connection outright; READ_ONLY admits it,
+		// and what a read-only session may then do is decided per method by the
+		// gate on the internal chain and per statement by the SQL clamp in
+		// SQLService/Query. Read live so an admin change takes effect on the
+		// next request without re-issuing tokens.
 		capability, err := s.mcpCapability(c.Request().Context(), workspaceID)
 		if err != nil {
 			// Infra failure reading the policy, not a verdict on the
@@ -589,27 +587,18 @@ func (s *Server) unauthorized(c *echo.Context, errDescription string) error {
 	return echo.NewHTTPError(http.StatusUnauthorized, errDescription)
 }
 
-// mcpConnectionAllowed reports whether an MCP connection may proceed under the
-// resolved workspace capability ceiling. DISABLED is rejected, and so is
-// READ_ONLY: per-method enforcement exists from P1b 1b-2, but the SQL statement
-// clamp does not, so a read-only session admitted here could still write
-// through the query tool. 1b-3 lands the clamp and flips this to
-// allow-with-clamp; nothing before it may. Unknown stored values (e.g. the
-// reserved number) hit the default arm and fail closed too.
+// mcpConnectionAllowed reports whether an MCP connection may proceed: a ceiling
+// that serves some method class opens a session, one that serves none does not.
 //
-// UNSPECIFIED is refused rather than treated as "never configured", even though
-// that is what an unset ceiling means in the stored proto. The resolution
-// happens before this point — store.GetMCPCapabilityUncached returns READ_WRITE
-// for a workspace that never set one — so UNSPECIFIED reaching here is a zero
-// value nobody resolved, and a gate that admits on a zero value is one
-// mistake away from admitting on a failure.
+// The rule lives in auth.MCPCeilingServesAnything so this gate and the
+// per-method serving table cannot state the same policy twice; a lint holds the
+// two against each other over the whole enum.
+//
+// UNSPECIFIED is refused rather than read as "never configured":
+// store.GetMCPCapabilityUncached already resolves an unset ceiling to
+// READ_WRITE, so a zero value arriving here was resolved by nobody.
 func mcpConnectionAllowed(capability storepb.WorkspaceProfileSetting_MCPCapability) bool {
-	switch capability {
-	case storepb.WorkspaceProfileSetting_READ_WRITE:
-		return true
-	default:
-		return false
-	}
+	return auth.MCPCeilingServesAnything(capability)
 }
 
 // mcpCapability resolves the workspace's effective MCP capability ceiling for

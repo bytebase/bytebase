@@ -374,7 +374,7 @@ func addNewSchemaObjects(diff *MetadataDiff, schemaName string, schema *model.Sc
 
 	// Add all tables
 	for _, tableName := range schema.ListTableNames() {
-		table := schema.GetTable(tableName)
+		table := schema.GetRootTable(tableName)
 		if table != nil && !table.GetProto().GetSkipDump() {
 			diff.TableChanges = append(diff.TableChanges, &TableDiff{
 				Action:     MetadataDiffActionCreate,
@@ -493,8 +493,8 @@ func compareSchemaObjects(engine storepb.Engine, diff *MetadataDiff, schemaName 
 
 	// Check for dropped tables
 	for _, tableName := range oldSchema.ListTableNames() {
-		if newSchema.GetTable(tableName) == nil {
-			oldTable := oldSchema.GetTable(tableName)
+		if newSchema.GetRootTable(tableName) == nil {
+			oldTable := oldSchema.GetRootTable(tableName)
 			if oldTable != nil && !oldTable.GetProto().GetSkipDump() {
 				diff.TableChanges = append(diff.TableChanges, &TableDiff{
 					Action:     MetadataDiffActionDrop,
@@ -508,12 +508,12 @@ func compareSchemaObjects(engine storepb.Engine, diff *MetadataDiff, schemaName 
 
 	// Check for new and modified tables
 	for _, tableName := range newSchema.ListTableNames() {
-		newTable := newSchema.GetTable(tableName)
+		newTable := newSchema.GetRootTable(tableName)
 		if newTable == nil || newTable.GetProto().GetSkipDump() {
 			continue
 		}
 
-		if oldSchema.GetTable(tableName) == nil {
+		if oldSchema.GetRootTable(tableName) == nil {
 			diff.TableChanges = append(diff.TableChanges, &TableDiff{
 				Action:     MetadataDiffActionCreate,
 				SchemaName: schemaName,
@@ -522,7 +522,7 @@ func compareSchemaObjects(engine storepb.Engine, diff *MetadataDiff, schemaName 
 			})
 		} else {
 			// Compare table details
-			oldTable := oldSchema.GetTable(tableName)
+			oldTable := oldSchema.GetRootTable(tableName)
 			if oldTable != nil && !oldTable.GetProto().GetSkipDump() {
 				tableDiff := compareTableDetails(engine, schemaName, tableName, oldTable, newTable)
 				if tableDiff != nil {

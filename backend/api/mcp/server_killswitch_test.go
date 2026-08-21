@@ -24,11 +24,14 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 )
 
-// TestMCPConnectionAllowed pins the connection-level gate: only READ_WRITE
-// admits a connection in this phase. DISABLED, the not-yet-enforceable
-// READ_ONLY ceiling, unknown stored values (such as the reserved number 2), and
-// the zero value all fail closed, so a ceiling the server cannot apply per-tool
-// never silently grants read-write.
+// TestMCPConnectionAllowed pins the connection-level gate: READ_WRITE and
+// READ_ONLY admit a connection, and everything else fails closed — DISABLED,
+// unknown stored values such as the reserved number 2, and the zero value.
+//
+// READ_ONLY is admitted from the cutover, once the SQL clamp made a read-only
+// session one that cannot write. What it may then do is decided per method by
+// the ceiling gate and per statement by the clamp; this function only decides
+// whether the session opens at all.
 //
 // UNSPECIFIED is refused here even though an unset stored ceiling means
 // READ_WRITE: the store resolves that before this point, so a zero value
@@ -41,8 +44,9 @@ func TestMCPConnectionAllowed(t *testing.T) {
 		{storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED, false},
 		{storepb.WorkspaceProfileSetting_READ_WRITE, true},
 		{storepb.WorkspaceProfileSetting_DISABLED, false},
-		{storepb.WorkspaceProfileSetting_MCPCapability(2), false}, // reserved (was METADATA_ONLY)
-		{storepb.WorkspaceProfileSetting_READ_ONLY, false},
+		{storepb.WorkspaceProfileSetting_MCPCapability(2), false},  // reserved (was METADATA_ONLY)
+		{storepb.WorkspaceProfileSetting_MCPCapability(99), false}, // no such value in any build
+		{storepb.WorkspaceProfileSetting_READ_ONLY, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.capability.String(), func(t *testing.T) {
@@ -208,10 +212,12 @@ func tokenForWorkspace(t *testing.T, secret, workspaceID string) string {
 // nothing. An unknown enum NUMBER never had that problem, because protojson
 // keeps it and no mode serves it.
 //
-// The read-only row is the cutover pin. READ_ONLY is enforceable per method
-// from this PR, but a read-only session can still write SQL through the query
-// tool until 1b-3 clamps statements, so the connection stays refused. If this
-// row ever returns 200 without the clamp shipping, the cutover moved early.
+// The read-only row is the cutover pin, now on its other side: READ_ONLY opens
+// a session, because a read-only session can no longer write — the ceiling gate
+// refuses the methods the mode does not cover and the SQL clamp refuses a
+// statement that writes. The rows around it are what must NOT have moved with
+// it: a ceiling this build cannot read still refuses, and so does a value no
+// Bytebase write produces.
 func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.GetTestPgContainer(ctx, t)
@@ -232,8 +238,8 @@ func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
 			"the reserved number was METADATA_ONLY; no mode serves it"},
 		{"ws-explicit-unset", `{"mcpCapability":"MCP_CAPABILITY_UNSPECIFIED"}`, http.StatusForbidden,
 			"no Bytebase write produces this key with this value, so a row that has it was hand-edited"},
-		{"ws-readonly", `{"mcpCapability":"READ_ONLY"}`, http.StatusForbidden,
-			"READ_ONLY does not admit a connection until the SQL clamp lands (1b-3)"},
+		{"ws-readonly", `{"mcpCapability":"READ_ONLY"}`, http.StatusOK,
+			"READ_ONLY admits a session now that the SQL clamp holds it to reads"},
 		{"ws-other-unknown-field", `{"someFieldFromANewerRelease":"x"}`, http.StatusOK,
 			"one unknown field must not disable MCP: only the ceiling key is read strictly"},
 		{"ws-open", `{}`, http.StatusOK,
@@ -273,8 +279,9 @@ func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
 	// ceiling to every other tenant — a kill switch answering for the wrong
 	// workspace. Six workspaces with six different stored values sit in this
 	// one database, so each must still resolve to its own; the ws-readonly row
-	// is additionally the value 1b-3's cutover will flip against, and it must
-	// resolve as itself rather than as a fail-closed error.
+	// must resolve as itself rather than as a fail-closed error, which is what
+	// separates "the ceiling says read-only" from "the ceiling could not be
+	// read" now that both no longer answer the same way at the connection.
 	for workspace, want := range map[string]storepb.WorkspaceProfileSetting_MCPCapability{
 		"ws-readonly":            storepb.WorkspaceProfileSetting_READ_ONLY,
 		"ws-open":                storepb.WorkspaceProfileSetting_READ_WRITE,

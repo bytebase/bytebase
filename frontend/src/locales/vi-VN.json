@@ -1210,11 +1210,15 @@
     },
     "password-write-only": "YOUR_DB_PWD - chỉ ghi",
     "port": "Cổng",
+    "prepare-sample-instance-failed": "Không thể chuẩn bị Phiên bản dự án mẫu.",
+    "preparing-sample-instance": "Đang chuẩn bị Phiên bản dự án mẫu…",
     "project-id": "ID dự án",
     "restore-instance-instance-name-to-normal-state": "Khôi phục phiên bản '{{0}}' về trạng thái bình thường?",
     "role-arn": "ARN vai trò",
     "role-arn-description": "Vai trò IAM để đảm nhận cho truy cập xuyên tài khoản. Để trống cho truy cập cùng tài khoản.",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
+    "sample-project-instance-description": "Sử dụng Phiên bản dự án mẫu để khám phá Bytebase với cơ sở dữ liệu sẵn sàng sử dụng trong 7 ngày.",
+    "sample-project-instance-title": "Dùng thử Phiên bản dự án mẫu",
     "scan-interval": {
       "default-never": "Mặc định (không bao giờ)",
       "description": "Bytebase định kỳ đồng bộ lược đồ phiên bản và phát hiện bất thường.",
@@ -1309,6 +1313,7 @@
     "token-write-only": "YOUR_TOKEN - chỉ ghi",
     "type-or-paste-credentials-write-only": "Nhập hoặc dán THÔNG TIN XÁC THỰC - chỉ ghi",
     "unable-to-connect": "Bytebase không thể kết nối với các cài đặt này. Hãy xem hướng dẫn ở trên hoặc tiếp tục và cập nhật kết nối sau.\n\nChi tiết kỹ thuật: {{0}}",
+    "use-sample-instance": "Sử dụng phiên bản mẫu (Có sẵn trong 7 ngày)",
     "users": "Người dùng",
     "your-snowflake-account-locator": "Định vị tài khoản Snowflake của bạn"
   },
@@ -2474,7 +2479,7 @@
               "self": "Tắt"
             },
             "read-only": {
-              "description": "Dành cho cơ chế kiểm soát chỉ đọc chi tiết, hiện chưa được phát hành. Cho đến khi đó, chọn tùy chọn này sẽ từ chối hoàn toàn các kết nối MCP, giống như Tắt.",
+              "description": "Các phiên MCP có thể xem siêu dữ liệu và chạy truy vấn chỉ đọc, vẫn bị giới hạn bởi quyền của từng người dùng. Toàn bộ yêu cầu sẽ bị từ chối nếu Bytebase xác định bất kỳ câu lệnh nào trong đó là ghi, hoặc không thể xác nhận rằng nó chỉ đọc.",
               "self": "Chỉ đọc"
             },
             "read-write": {

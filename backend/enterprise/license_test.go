@@ -137,6 +137,28 @@ func TestCreateLicenseUsesEqualInstanceClaims(t *testing.T) {
 	}
 }
 
+func TestParseLicenseExpiredIsInvalid(t *testing.T) {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	service := &LicenseService{
+		config: &Config{
+			PublicKey:  &privateKey.PublicKey,
+			PrivateKey: privateKey,
+			Version:    keyID,
+			Issuer:     issuer,
+			Audience:   audience,
+		},
+	}
+	license, err := service.CreateLicense(&LicenseParams{
+		Plan:      v1pb.PlanType_TEAM.String(),
+		ExpiresAt: time.Now().Add(-time.Hour),
+	})
+	require.NoError(t, err)
+
+	_, err = service.parseLicense(license, "test-workspace")
+	require.Equal(t, common.Invalid, common.ErrorCode(err))
+}
+
 func TestGetUserLimitUncached(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.GetTestPgContainer(ctx, t)
@@ -198,6 +220,11 @@ func TestGetUserLimitUncached(t *testing.T) {
 	limit, err = licenseService.GetUserLimitUncached(ctx, "ws-a")
 	require.NoError(t, err)
 	require.Equal(t, 100, limit)
+	state, err := licenseService.GetVerifiedStateUncached(ctx, "ws-a")
+	require.NoError(t, err)
+	require.Nil(t, state.ExpiresAt)
+	require.Equal(t, 100, state.UserLimit)
+	require.Equal(t, math.MaxInt, state.InstanceLimit)
 
 	// Legacy Enterprise license without a seat claim: unlimited.
 	storeLicense(t, &LicenseParams{
@@ -208,11 +235,21 @@ func TestGetUserLimitUncached(t *testing.T) {
 	require.Equal(t, math.MaxInt, limit)
 
 	// Expired Enterprise license: falls back to the Free plan limit.
+	expiresAt := time.Now().Add(-time.Hour)
 	storeLicense(t, &LicenseParams{
 		Plan: v1pb.PlanType_ENTERPRISE.String(), Seats: 100, WorkspaceID: "ws-a",
-		ExpiresAt: time.Now().Add(-time.Hour),
+		ExpiresAt: expiresAt,
 	})
 	limit, err = licenseService.GetUserLimitUncached(ctx, "ws-a")
 	require.NoError(t, err)
 	require.Equal(t, userLimitValues[v1pb.PlanType_FREE], limit)
+	state, err = licenseService.GetVerifiedStateUncached(ctx, "ws-a")
+	require.NoError(t, err)
+	require.WithinDuration(t, expiresAt, *state.ExpiresAt, time.Second)
+	require.Equal(t, userLimitValues[v1pb.PlanType_FREE], state.UserLimit)
+	require.Equal(t, instanceLimitValues[v1pb.PlanType_FREE], state.InstanceLimit)
+
+	require.NoError(t, s.UpdateLicense(ctx, "ws-a", "not-a-license"))
+	_, err = licenseService.GetVerifiedStateUncached(ctx, "ws-a")
+	require.Error(t, err)
 }

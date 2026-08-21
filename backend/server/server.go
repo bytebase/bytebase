@@ -25,8 +25,10 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/productmetrics"
 	"github.com/bytebase/bytebase/backend/component/review"
 	"github.com/bytebase/bytebase/backend/component/sampleinstance"
+	"github.com/bytebase/bytebase/backend/component/sampleprojectinstance"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/telemetry"
 	"github.com/bytebase/bytebase/backend/component/webhook"
@@ -40,6 +42,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/monitor"
 	"github.com/bytebase/bytebase/backend/runner/notifylistener"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
+	sampleprojectinstancerunner "github.com/bytebase/bytebase/backend/runner/sampleprojectinstance"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
@@ -57,18 +60,20 @@ const (
 // Server is the Bytebase server.
 type Server struct {
 	// Asynchronous runners.
-	taskScheduler      *taskrun.Scheduler
-	planCheckScheduler *plancheck.Scheduler
-	schemaSyncer       *schemasync.Syncer
-	approvalRunner     *review.Runner
-	notifyListener     *notifylistener.Listener
-	dataCleaner        *cleaner.DataCleaner
-	heartbeatRunner    *heartbeat.Runner
-	runnerWG           sync.WaitGroup
+	taskScheduler       *taskrun.Scheduler
+	planCheckScheduler  *plancheck.Scheduler
+	schemaSyncer        *schemasync.Syncer
+	approvalRunner      *review.Runner
+	notifyListener      *notifylistener.Listener
+	dataCleaner         *cleaner.DataCleaner
+	heartbeatRunner     *heartbeat.Runner
+	sampleProjectRunner *sampleprojectinstancerunner.Runner
+	runnerWG            sync.WaitGroup
 
 	webhookManager        *webhook.Manager
 	iamManager            *iam.Manager
 	sampleInstanceManager *sampleinstance.Manager
+	sampleProjectManager  *sampleprojectinstance.Manager
 
 	licenseService *enterprise.LicenseService
 
@@ -213,15 +218,28 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Configure echo server.
 	s.echoServer = echo.New()
 
-	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory, s.licenseService)
+	var productMetrics *productmetrics.ProductMetrics
+	if !profile.SaaS {
+		productMetrics = productmetrics.New(stores, s.licenseService)
+	}
+	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory, s.licenseService, productMetrics)
+	if profile.SaaS {
+		s.sampleProjectManager = sampleprojectinstance.NewManagerFromURL(
+			stores,
+			profile.SampleProjectInstancePgURL,
+			s.schemaSyncer,
+			sampleprojectinstance.ManagerOptions{ReplicaID: profile.ReplicaID},
+		)
+		s.sampleProjectRunner = sampleprojectinstancerunner.NewRunner(s.sampleProjectManager)
+	}
 	s.approvalRunner = review.NewRunner(stores, s.bus, s.webhookManager, s.licenseService)
 
-	s.taskScheduler = taskrun.NewScheduler(stores, s.bus, s.webhookManager, s.licenseService, profile)
+	s.taskScheduler = taskrun.NewScheduler(stores, s.bus, s.webhookManager, s.licenseService, profile, productMetrics)
 	s.taskScheduler.Register(storepb.Task_DATABASE_CREATE, taskrun.NewDatabaseCreateExecutor(stores, s.dbFactory, s.schemaSyncer))
 	s.taskScheduler.Register(storepb.Task_DATABASE_MIGRATE, taskrun.NewDatabaseMigrateExecutor(stores, s.dbFactory, s.bus, s.schemaSyncer, profile))
 
 	combinedExecutor := plancheck.NewCombinedExecutor(stores, sheetManager, s.dbFactory)
-	s.planCheckScheduler = plancheck.NewScheduler(stores, s.bus, combinedExecutor, s.licenseService)
+	s.planCheckScheduler = plancheck.NewScheduler(stores, s.bus, combinedExecutor, s.licenseService, productMetrics)
 	s.notifyListener = notifylistener.NewListener(stores.GetDB(), s.bus)
 
 	// Data cleaner
@@ -238,7 +256,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	stripeWebhookHandler := stripeapi.NewWebhookHandler(s.store, s.licenseService, profile.StripeWebhookSecret)
 
-	internalMCPHandler, err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.bus, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleInstanceManager)
+	internalMCPHandler, err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.bus, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleInstanceManager, s.sampleProjectManager)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to configure gRPC routers")
 	}
@@ -246,7 +264,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to create MCP server")
 	}
-	configureEchoRouters(s.echoServer, s.lspServer, directorySyncServer, oauth2Service, mcpServer, stripeWebhookHandler, s.store, s.licenseService, profile)
+	configureEchoRouters(s.echoServer, s.lspServer, directorySyncServer, oauth2Service, mcpServer, stripeWebhookHandler, productMetrics, profile)
 
 	serverStarted = true
 	return s, nil
@@ -272,6 +290,11 @@ func (s *Server) Run(ctx context.Context, port int) error {
 
 	s.runnerWG.Add(1)
 	go s.heartbeatRunner.Run(ctx, &s.runnerWG)
+
+	if s.sampleProjectRunner != nil {
+		s.runnerWG.Add(1)
+		go s.sampleProjectRunner.Run(ctx, &s.runnerWG)
+	}
 
 	s.runnerWG.Add(1)
 	go s.notifyListener.Run(ctx, &s.runnerWG)

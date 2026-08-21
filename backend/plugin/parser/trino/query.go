@@ -1,6 +1,9 @@
 package trino
 
 import (
+	"github.com/bytebase/omni/trino/ast"
+	"github.com/bytebase/omni/trino/parser"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
@@ -20,6 +23,20 @@ func init() {
 // EXPLAIN ANALYZE is special-cased exactly as the legacy plugin did: because it
 // executes the inner query, it is only accepted when getQueryType reports it as
 // read-only (base.Select); it then counts as read-only and data-returning.
+// changesSession reports whether a statement rebinds the connection rather
+// than reading from it.
+func changesSession(node ast.Node) bool {
+	switch node.(type) {
+	case *parser.SetSessionStmt, *parser.ResetSessionStmt,
+		*parser.SetSessionAuthorizationStmt, *parser.ResetSessionAuthorizationStmt,
+		*parser.SetPathStmt, *parser.SetRoleStmt, *parser.SetTimeZoneStmt,
+		*parser.UseStmt:
+		return true
+	default:
+		return false
+	}
+}
+
 func validateQuery(statement string) (bool, bool, error) {
 	parsed, err := parseTrinoSQL(statement)
 	if err != nil {
@@ -44,7 +61,10 @@ func validateQuery(statement string) (bool, bool, error) {
 		readOnly := queryType == base.Select ||
 			queryType == base.Explain ||
 			queryType == base.SelectInfoSchema
-		returnsData := readOnly
+		// USE and the SET family rebind the connection's catalog, schema, role
+		// or identity, so a later statement resolves somewhere the caller did
+		// not name. Reported through the same bool as every other engine's SET.
+		returnsData := readOnly && !changesSession(p.Node())
 
 		if !readOnly {
 			allReadOnly = false
