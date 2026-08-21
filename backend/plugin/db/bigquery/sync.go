@@ -36,7 +36,7 @@ func (d *Driver) SyncInstance(ctx context.Context) (*db.InstanceMetadata, error)
 type columnRow struct {
 	TableName       string              `bigquery:"table_name"`
 	ColumnName      string              `bigquery:"column_name"`
-	OrdinalPosition int32               `bigquery:"ordinal_position"`
+	OrdinalPosition bigquery.NullInt64  `bigquery:"ordinal_position"`
 	IsNullable      string              `bigquery:"is_nullable"`
 	DataType        string              `bigquery:"data_type"`
 	CollationName   bigquery.NullString `bigquery:"collation_name"`
@@ -78,7 +78,7 @@ func (d *Driver) SyncDBSchema(ctx context.Context) (*storepb.DatabaseSchemaMetad
 
 		column := &storepb.ColumnMetadata{
 			Name:     row.ColumnName,
-			Position: row.OrdinalPosition,
+			Position: int32(row.OrdinalPosition.Int64),
 			Nullable: nullableBool,
 			Type:     row.DataType,
 		}
