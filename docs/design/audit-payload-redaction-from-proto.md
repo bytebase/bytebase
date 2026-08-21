@@ -252,8 +252,18 @@ Constraints:
   not enough: the packed type is chosen in Go rather than declared in a descriptor, so a handler
   that starts packing a new one would neither change the inventory nor fail it, and an
   *unannotated* credential inside it would still be written. So permitted types are a checked-in
-  registry, and a **lint over the call sites of both setters** fails the build when one packs a
-  type the registry does not name. The interceptor also drops an unregistered `Any` rather than
+  registry, enforced two ways, split by what a descriptor can see.
+
+  The two setters attach their `Any` in Go with nothing to walk, so they need a **lint over their
+  call sites** — ten today — failing the build when one packs a type the registry does not name.
+  An ordinary `Any` *field* is descriptor-visible even though its packed type is not, so the
+  descriptor walk requires a registry entry naming permitted types for **every `Any`-typed field in
+  the audited surface**: a new one fails the build by appearing, and no call-site lint is needed.
+  Without that second half the third row of the table is governed by nothing — a future audited
+  request could add an `Any` field, pack a new type, change neither setter, and have the runtime
+  drop it silently, which is the fail-silent record loss the next paragraph calls a defect.
+
+  The interceptor also drops an unregistered `Any` rather than
   logging it — load-bearing rather than a backstop, since `protojson.Marshal` fails the *entire*
   message on an unresolvable `Any`, so without the drop the whole audit row is lost.
 
