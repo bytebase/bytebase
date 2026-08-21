@@ -137,6 +137,9 @@ func (x *SettingValue) Equal(y *SettingValue) bool {
 	if !x.GetEmail().Equal(y.GetEmail()) {
 		return false
 	}
+	if !x.GetMcp().Equal(y.GetMcp()) {
+		return false
+	}
 	return true
 }
 
@@ -403,10 +406,23 @@ func (x *WorkspaceProfileSetting) Equal(y *WorkspaceProfileSetting) bool {
 	if p, q := x.MaximumRoleExpiration, y.MaximumRoleExpiration; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
-	if x.McpCapability != y.McpCapability {
+	if x.DirectorySyncTokenConfigured != y.DirectorySyncTokenConfigured {
 		return false
 	}
-	if x.DirectorySyncTokenConfigured != y.DirectorySyncTokenConfigured {
+	return true
+}
+
+func (x *MCPSetting) Equal(y *MCPSetting) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Capability != y.Capability {
+		return false
+	}
+	if x.IgnoreMaskingExemptions != y.IgnoreMaskingExemptions {
 		return false
 	}
 	return true

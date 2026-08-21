@@ -277,6 +277,7 @@
     - [GetSettingResponse](#bytebase-v1-GetSettingResponse)
     - [ListSettingsRequest](#bytebase-v1-ListSettingsRequest)
     - [ListSettingsResponse](#bytebase-v1-ListSettingsResponse)
+    - [MCPSetting](#bytebase-v1-MCPSetting)
     - [SQLEditorThemeSetting](#bytebase-v1-SQLEditorThemeSetting)
     - [SQLEditorThemeSetting.TokensEntry](#bytebase-v1-SQLEditorThemeSetting-TokensEntry)
     - [SemanticTypeSetting](#bytebase-v1-SemanticTypeSetting)
@@ -297,9 +298,9 @@
     - [EmailSetting.SMTPConfig.Authentication](#bytebase-v1-EmailSetting-SMTPConfig-Authentication)
     - [EmailSetting.SMTPConfig.Encryption](#bytebase-v1-EmailSetting-SMTPConfig-Encryption)
     - [EmailSetting.Type](#bytebase-v1-EmailSetting-Type)
+    - [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability)
     - [Setting.SettingName](#bytebase-v1-Setting-SettingName)
     - [WorkspaceApprovalSetting.Rule.Source](#bytebase-v1-WorkspaceApprovalSetting-Rule-Source)
-    - [WorkspaceProfileSetting.MCPCapability](#bytebase-v1-WorkspaceProfileSetting-MCPCapability)
   
     - [SettingService](#bytebase-v1-SettingService)
   
@@ -4900,6 +4901,25 @@ The response message for getting a setting.
 
 
 
+<a name="bytebase-v1-MCPSetting"></a>
+
+### MCPSetting
+MCPSetting is what an MCP (Model Context Protocol) session may do in this
+workspace.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  | The maximum capability available to MCP sessions in this workspace, acting as an admin-set ceiling. Enforced server-side at three points: the /mcp endpoint decides whether a connection is admitted at all, the ceiling gate on the internal MCP chain decides, per request, which method classes are served, and under READ_ONLY the SQL clamp decides, per statement, whether it only reads. |
+| ignore_masking_exemptions | [bool](#bool) |  | Whether a request that arrived over MCP stops applying the caller&#39;s own unmasking provisioning. Two mechanisms let a user see a real value and this suppresses both: the masking exemptions granted to them, and the unmask carried by an access grant. The same user in the console is untouched.
+
+It cannot force masking where there is none. Masking substitutes values in query results, so this does not reach data copied into a column carrying no masking policy, and it does nothing on the engines Bytebase does not mask. It narrows what an agent reads through the paths Bytebase masks; it is not a confidentiality boundary. |
+
+
+
+
+
+
 <a name="bytebase-v1-SQLEditorThemeSetting"></a>
 
 ### SQLEditorThemeSetting
@@ -5000,6 +5020,7 @@ The data in setting value.
 | ai | [AISetting](#bytebase-v1-AISetting) |  |  |
 | environment | [EnvironmentSetting](#bytebase-v1-EnvironmentSetting) |  |  |
 | email | [EmailSetting](#bytebase-v1-EmailSetting) |  |  |
+| mcp | [MCPSetting](#bytebase-v1-MCPSetting) |  |  |
 
 
 
@@ -5128,7 +5149,6 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | sql_editor_theme_id | [string](#string) |  | Enforced SQL Editor theme id: OPAQUE — a frontend-resolved built-in preset id OR a custom theme&#39;s uuid. Empty ⇒ default light. |
 | sql_editor_custom_theme | [SQLEditorThemeSetting](#bytebase-v1-SQLEditorThemeSetting) |  | The enforced CUSTOM theme&#39;s full definition — present ONLY when sql_editor_theme_id is a custom uuid. tokens is always complete. |
 | maximum_role_expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The max expiration duration for request role. Deprecated: use just-in-time access request flows instead. |
-| mcp_capability | [WorkspaceProfileSetting.MCPCapability](#bytebase-v1-WorkspaceProfileSetting-MCPCapability) |  | The maximum capability available to MCP (Model Context Protocol) sessions in this workspace, acting as an admin-set ceiling. Unset is treated as READ_WRITE for backward compatibility; DISABLED rejects all MCP connections. Writing MCP_CAPABILITY_UNSPECIFIED explicitly is rejected — omit the update mask path to leave the ceiling unset. |
 | directory_sync_token_configured | [bool](#bool) |  | Whether a directory sync token has been generated for this workspace. The token itself is never returned; this only lets the UI decide between offering &#34;generate&#34; and &#34;regenerate&#34;. |
 
 
@@ -5241,6 +5261,23 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 
 
 
+<a name="bytebase-v1-MCPSetting-Capability"></a>
+
+### MCPSetting.Capability
+Capability is the ceiling: a session runs at this level or lower. An absent
+MCP setting resolves to READ_WRITE, so a workspace that never configured
+MCP is unaffected. Writing CAPABILITY_UNSPECIFIED explicitly is rejected —
+omit the update mask path to leave the ceiling unset.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| CAPABILITY_UNSPECIFIED | 0 |  |
+| DISABLED | 1 | MCP connections are rejected. |
+| READ_ONLY | 3 | MCP may inspect metadata and run read-only queries. A session opens, and what it may do is decided per method by the capability gate and per statement by the SQL clamp: a request holding a statement that is not a read is refused whole, and where the engine&#39;s driver has one the database session is opened read-only as well. |
+| READ_WRITE | 4 | MCP may perform mutations, still bounded by the user&#39;s RBAC. |
+
+
+
 <a name="bytebase-v1-Setting-SettingName"></a>
 
 ### Setting.SettingName
@@ -5257,6 +5294,7 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | SEMANTIC_TYPES | 6 |  |
 | ENVIRONMENT | 7 |  |
 | EMAIL | 8 |  |
+| MCP | 9 |  |
 
 
 
@@ -5272,23 +5310,6 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 | CREATE_DATABASE | 2 |  |
 | REQUEST_ROLE | 4 |  |
 | REQUEST_ACCESS | 5 |  |
-
-
-
-<a name="bytebase-v1-WorkspaceProfileSetting-MCPCapability"></a>
-
-### WorkspaceProfileSetting.MCPCapability
-MCPCapability is the maximum capability an MCP (Model Context Protocol)
-session may have in the workspace. It is a ceiling: a session runs at this
-level or lower. Unset (UNSPECIFIED) is treated as READ_WRITE so existing
-workspaces are unaffected.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MCP_CAPABILITY_UNSPECIFIED | 0 |  |
-| DISABLED | 1 | MCP connections are rejected. |
-| READ_ONLY | 3 | MCP may inspect metadata and run read-only queries. A session opens, and what it may do is decided per method by the capability gate and per statement by the SQL clamp: a request holding a statement that is not a read is refused whole, and where the engine&#39;s driver has one the database session is opened read-only as well. |
-| READ_WRITE | 4 | MCP may perform mutations, still bounded by the user&#39;s RBAC. |
 
 
  

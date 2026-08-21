@@ -102,6 +102,9 @@ func (s *Server) listDatabases(ctx context.Context, filter string) ([]databaseEn
 			return nil, errors.Wrap(err, "failed to list databases")
 		}
 		if resp.Status == http.StatusForbidden {
+			if message := parseError(resp.Body); IsPolicyRefusal(message) {
+				return nil, &toolError{Code: "PERMISSION_DENIED", Message: message}
+			}
 			return nil, &toolError{
 				Code:       "PERMISSION_DENIED",
 				Message:    "you don't have permission to list databases in this workspace",

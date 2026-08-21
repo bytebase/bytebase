@@ -587,9 +587,9 @@ func TestMCPCannotRetargetADataSource(t *testing.T) {
 // TestMCPCannotRewriteItsOwnCeiling covers the one method refused for what it
 // governs rather than for what it hands out.
 //
-// SettingService/UpdateSetting writes value.workspace_profile.mcp_capability,
-// which IS the MCP ceiling — the workspace switch that decides whether MCP
-// sessions are served at all, and at 1b-2 whether they are served read-only.
+// SettingService/UpdateSetting writes value.mcp.capability, which IS the MCP
+// ceiling — the workspace switch that decides whether MCP sessions are served
+// at all, and at 1b-2 whether they are served read-only.
 // A session that can widen its own ceiling is not bounded by it, and "flip the
 // workspace MCP switch" stops being one of the three levers that contain a
 // runaway agent. The same method also keeps the stored SMTP password when
@@ -614,11 +614,8 @@ func TestMCPCannotRewriteItsOwnCeiling(t *testing.T) {
 	}))
 	a.NoError(err)
 
-	before, err := ctl.settingServiceClient.GetSetting(ctx, connect.NewRequest(&v1pb.GetSettingRequest{
-		Name: "settings/WORKSPACE_PROFILE",
-	}))
+	ceilingBefore, err := ctl.getMCPCapability(ctx)
 	a.NoError(err)
-	ceilingBefore := before.Msg.GetValue().GetWorkspaceProfile().GetMcpCapability()
 
 	// Seed the two settings the retarget vectors merge into. Without a stored
 	// setting the handler answers NotFound, so an unguarded build would report
@@ -659,10 +656,10 @@ func TestMCPCannotRewriteItsOwnCeiling(t *testing.T) {
 
 	widened := callAPIOnSession(ctx, t, session, "SettingService/UpdateSetting", map[string]any{
 		"setting": map[string]any{
-			"name":  "settings/WORKSPACE_PROFILE",
-			"value": map[string]any{"workspaceProfile": map[string]any{"mcpCapability": "READ_WRITE"}},
+			"name":  "settings/MCP",
+			"value": map[string]any{"mcp": map[string]any{"capability": "READ_WRITE"}},
 		},
-		"updateMask": "value.workspaceProfile.mcpCapability",
+		"updateMask": "value.mcp.capability",
 	})
 	redirected := callAPIOnSession(ctx, t, session, "SettingService/UpdateSetting", map[string]any{
 		"setting": map[string]any{
@@ -703,11 +700,9 @@ func TestMCPCannotRewriteItsOwnCeiling(t *testing.T) {
 			"the %s denial must name the boundary, not a credential it did not hand out", name)
 	}
 
-	after, err := ctl.settingServiceClient.GetSetting(ctx, connect.NewRequest(&v1pb.GetSettingRequest{
-		Name: "settings/WORKSPACE_PROFILE",
-	}))
+	after, err := ctl.getMCPCapability(ctx)
 	a.NoError(err)
-	a.Equal(ceilingBefore, after.Msg.GetValue().GetWorkspaceProfile().GetMcpCapability(),
+	a.Equal(ceilingBefore, after,
 		"the session must not have moved the ceiling that governs it")
 
 	// The destinations are still ours. Reads blank the secrets themselves, so
@@ -741,24 +736,12 @@ func TestMCPCannotRewriteItsOwnCeiling(t *testing.T) {
 	// An explicit value rather than an echo of ceilingBefore, which the fixture
 	// leaves UNSPECIFIED — validateMCPCapability rejects writing that back, so
 	// echoing it would fail for a reason that has nothing to do with the gate.
-	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
-		Setting: &v1pb.Setting{
-			Name: "settings/WORKSPACE_PROFILE",
-			Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_WorkspaceProfile{
-				WorkspaceProfile: &v1pb.WorkspaceProfileSetting{
-					McpCapability: v1pb.WorkspaceProfileSetting_READ_ONLY,
-				},
-			}},
-		},
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"value.workspace_profile.mcp_capability"}},
-	}))
-	a.NoError(err, "a normal session must still be able to write workspace settings")
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_ONLY),
+		"a normal session must still be able to write workspace settings")
 
-	moved, err := ctl.settingServiceClient.GetSetting(ctx, connect.NewRequest(&v1pb.GetSettingRequest{
-		Name: "settings/WORKSPACE_PROFILE",
-	}))
+	moved, err := ctl.getMCPCapability(ctx)
 	a.NoError(err)
-	a.Equal(v1pb.WorkspaceProfileSetting_READ_ONLY, moved.Msg.GetValue().GetWorkspaceProfile().GetMcpCapability(),
+	a.Equal(v1pb.MCPSetting_READ_ONLY, moved,
 		"the console write must actually land — otherwise the denial above proves nothing about the gate")
 }
 

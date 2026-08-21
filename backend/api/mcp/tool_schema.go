@@ -423,6 +423,9 @@ func translateMetadataError(resp *apiResponse) error {
 			Suggestion: "check the database name or use search_api to list available databases",
 		}
 	case http.StatusForbidden, http.StatusUnauthorized:
+		if IsPolicyRefusal(errMsg) {
+			return &toolError{Code: "PERMISSION_DENIED", Message: errMsg}
+		}
 		return &toolError{
 			Code:       "PERMISSION_DENIED",
 			Message:    "you don't have permission to read this database's schema",

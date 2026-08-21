@@ -150,7 +150,8 @@ propose_database_change(database="app", sql="UPDATE orders SET status='shipped' 
 - v1 supports single database targets only. For batch changes across multiple databases, use get_skill("database-change").
 - Plan checks run automatically; results included in response when available.
 - Requires bb.sheets.create, bb.plans.create, bb.issues.create permissions.
-- If createRollout=true but policy gates aren't satisfied, returns success with rolloutCreated=false and a reason.`
+- If createRollout=true but policy gates aren't satisfied, returns success with rolloutCreated=false and a reason.
+- Masked data: a masked column reads back as "******". That is a placeholder, not a value anything holds. Any change containing it is refused, because writing it back would overwrite the real value. Ask a human to make the change in the Bytebase console instead.`
 
 func (s *Server) registerChangeTool() {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
@@ -204,13 +205,13 @@ func (s *Server) handleChange(ctx context.Context, req *mcp.CallToolRequest, inp
 	// Step 4: Create sheet.
 	sheetName, err := s.createSheet(ctx, project, input.SQL)
 	if err != nil {
-		return formatChangeStepError(err, "SHEET_CREATE_FAILED", "bb.sheets.create", nil), nil, nil
+		return formatChangeStepError(err, "SHEET_CREATE_FAILED", nil), nil, nil
 	}
 
 	// Step 5: Create plan.
 	planName, err := s.createPlan(ctx, project, input.Title, resolved.resourceName, sheetName)
 	if err != nil {
-		return formatChangeStepError(err, "PLAN_CREATE_FAILED", "bb.plans.create", map[string]string{"sheet": sheetName}), nil, nil
+		return formatChangeStepError(err, "PLAN_CREATE_FAILED", map[string]string{"sheet": sheetName}), nil, nil
 	}
 
 	// Step 6: Run plan checks (hybrid async, 10s budget).
@@ -225,7 +226,7 @@ func (s *Server) handleChange(ctx context.Context, req *mcp.CallToolRequest, inp
 		if planChecks != nil && planChecks.Status == planCheckDone && planChecks.Summary != nil && planChecks.Summary.Error > 0 {
 			suggestion = "plan checks must pass before issue creation; fix SQL and retry"
 		}
-		return formatChangeStepErrorWithHint(err, "ISSUE_CREATE_FAILED", "bb.issues.create", partialRefs, suggestion), nil, nil
+		return formatChangeStepErrorWithHint(err, "ISSUE_CREATE_FAILED", partialRefs, suggestion), nil, nil
 	}
 
 	// Step 8: Determine nextAction from approvalStatus.
@@ -565,9 +566,20 @@ func (s *Server) callAPI(ctx context.Context, path, operation, permission string
 // Returns nil if the response is OK, or a structured error otherwise.
 func checkAPIResponse(resp *apiResponse, operation, permission string) error {
 	if resp.Status == http.StatusForbidden || resp.Status == http.StatusUnauthorized {
+		// A 403 here is not always a missing permission: the MCP enforcement
+		// chain answers the same status for the method class, the ceiling, the
+		// request's own shape and the masked-write guard. No grant lifts a
+		// workspace setting, so those keep their own remedy and get no advice.
+		message := parseError(resp.Body)
+		if IsPolicyRefusal(message) {
+			return &toolError{Code: "PERMISSION_DENIED", Message: message}
+		}
+		if message == "" {
+			message = fmt.Sprintf("you don't have permission to %s", operation)
+		}
 		return &toolError{
 			Code:       "PERMISSION_DENIED",
-			Message:    fmt.Sprintf("you don't have permission to %s", operation),
+			Message:    message,
 			Suggestion: fmt.Sprintf("ask your workspace admin to grant you the %s permission", permission),
 		}
 	}
@@ -588,19 +600,21 @@ func formatChangeError(err *changeError) *mcp.CallToolResult {
 
 // formatChangeStepError formats a step failure into an MCP error result.
 // It detects permission errors and wraps them appropriately.
-func formatChangeStepError(err error, defaultCode, permission string, partialRefs map[string]string) *mcp.CallToolResult {
-	return formatChangeStepErrorWithHint(err, defaultCode, permission, partialRefs, "")
+func formatChangeStepError(err error, defaultCode string, partialRefs map[string]string) *mcp.CallToolResult {
+	return formatChangeStepErrorWithHint(err, defaultCode, partialRefs, "")
 }
 
 // formatChangeStepErrorWithHint is like formatChangeStepError but replaces the
 // default suggestion with hint when non-empty, keeping the JSON shape intact.
-func formatChangeStepErrorWithHint(err error, defaultCode, permission string, partialRefs map[string]string, hint string) *mcp.CallToolResult {
+func formatChangeStepErrorWithHint(err error, defaultCode string, partialRefs map[string]string, hint string) *mcp.CallToolResult {
 	var te *toolError
 	if errors.As(err, &te) && te.Code == "PERMISSION_DENIED" {
+		// Passed through rather than re-derived: re-deriving overwrote a policy
+		// denial's own remedy with the permission advice.
 		return formatChangeError(&changeError{
 			Code:        "PERMISSION_DENIED",
 			Message:     te.Message,
-			Suggestion:  fmt.Sprintf("ask your workspace admin to grant you the %s permission", permission),
+			Suggestion:  te.Suggestion,
 			PartialRefs: partialRefs,
 		})
 	}

@@ -11,6 +11,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
+	"github.com/bytebase/bytebase/backend/store"
 
 	// The clamp asks the parser registry what it can classify and how it
 	// splits, so this test binary has to register what the server registers.
@@ -375,14 +376,6 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 			require.Contains(t, err.Error(), row.reason)
 			require.Contains(t, err.Error(), "READ_ONLY",
 				"the denial must name the ceiling that refused")
-			// query_database suppresses its own "request the SQL Editor role"
-			// suggestion when it sees this phrase in the body, because no
-			// project role lifts a workspace ceiling. The two live in
-			// different processes and meet only over HTTP, so the producer
-			// pins the phrase here and executeQuery (backend/api/mcp) keys on
-			// the same one.
-			require.Contains(t, err.Error(), "MCP capability ceiling",
-				"query_database keys its suggestion suppression on this phrase")
 			require.Contains(t, err.Error(), "raise the MCP ceiling",
 				"the denial must name the way out")
 			require.Contains(t, err.Error(), "Bytebase console",
@@ -492,13 +485,13 @@ func TestMCPClampAppliesOnlyToReadOnlyMCPSessions(t *testing.T) {
 		},
 		{
 			name: "an MCP session under a read-write ceiling is not clamped",
-			ctx: withMCPCeiling(contextWithAuth(withGrant),
-				storepb.WorkspaceProfileSetting_READ_WRITE),
+			ctx: withMCPSettings(contextWithAuth(withGrant),
+				store.MCPSettings{Capability: storepb.MCPSetting_READ_WRITE}),
 		},
 		{
 			name: "an MCP session under a read-only ceiling is clamped",
-			ctx: withMCPCeiling(contextWithAuth(withGrant),
-				storepb.WorkspaceProfileSetting_READ_ONLY),
+			ctx: withMCPSettings(contextWithAuth(withGrant),
+				store.MCPSettings{Capability: storepb.MCPSetting_READ_ONLY}),
 			applies: true,
 		},
 		{
@@ -547,9 +540,9 @@ func TestMCPClampReadsTheCeilingTheGateResolved(t *testing.T) {
 			require.NoError(t, got.err)
 			require.True(t, got.dispatched)
 
-			ceiling, ok := mcpCeilingFromContext(got.dispatchedCtx)
-			require.True(t, ok, "the gate must hand the handler the ceiling it resolved")
-			require.Equal(t, row.stores.ceiling, ceiling)
+			settings, ok := mcpSettingsFromContext(got.dispatchedCtx)
+			require.True(t, ok, "the gate must hand the handler the settings it resolved")
+			require.Equal(t, row.stores.ceiling, settings.Capability)
 
 			clamped, err := mcpReadOnlyClampApplies(got.dispatchedCtx)
 			require.NoError(t, err)

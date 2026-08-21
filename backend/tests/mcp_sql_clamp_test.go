@@ -116,7 +116,7 @@ func setupMCPClampFixture(ctx context.Context, t *testing.T) *mcpClampFixture {
 	a.NoError(err)
 	a.NoError(ctl.changeDatabase(ctx, ctl.project, databaseResp.Msg, setup.Msg, false))
 
-	a.NoError(ctl.setMCPCapability(ctx, v1pb.WorkspaceProfileSetting_READ_ONLY))
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_ONLY))
 	token, _ := mintMCPOAuthToken(t, ctl, ctl.authInterceptor.token)
 	session := openMCPSession(ctx, t, ctl, token)
 	t.Cleanup(func() { session.Close() })
@@ -224,7 +224,7 @@ func TestMCPReadOnlyCeilingRefusesAWrite(t *testing.T) {
 	// after the widening, because a ceiling is read per request and this test
 	// is about the ceiling rather than about session lifetime —
 	// TestMCPReadOnlyTighteningBitesAnOpenSession covers the live-session half.
-	a.NoError(f.ctl.setMCPCapability(f.ctx, v1pb.WorkspaceProfileSetting_READ_WRITE))
+	a.NoError(f.ctl.setMCPCapability(f.ctx, v1pb.MCPSetting_READ_WRITE))
 	widened := openMCPSession(f.ctx, t, f.ctl, f.token)
 	defer widened.Close()
 	allowed := queryDatabaseOnSession(f.ctx, t, widened, f.name,
@@ -359,7 +359,7 @@ func TestMCPReadOnlyTighteningBitesAnOpenSession(t *testing.T) {
 	f := setupMCPClampFixture(context.Background(), t)
 
 	// Start read-write, on a session opened under that ceiling.
-	a.NoError(f.ctl.setMCPCapability(f.ctx, v1pb.WorkspaceProfileSetting_READ_WRITE))
+	a.NoError(f.ctl.setMCPCapability(f.ctx, v1pb.MCPSetting_READ_WRITE))
 	session := openMCPSession(f.ctx, t, f.ctl, f.token)
 	defer session.Close()
 	wrote := queryDatabaseOnSession(f.ctx, t, session, f.name,
@@ -368,7 +368,7 @@ func TestMCPReadOnlyTighteningBitesAnOpenSession(t *testing.T) {
 	a.Equal(2, f.employeeCount(t))
 
 	// An admin tightens the ceiling while the session stays open.
-	a.NoError(f.ctl.setMCPCapability(f.ctx, v1pb.WorkspaceProfileSetting_READ_ONLY))
+	a.NoError(f.ctl.setMCPCapability(f.ctx, v1pb.MCPSetting_READ_ONLY))
 
 	refused := queryDatabaseOnSession(f.ctx, t, session, f.name,
 		"INSERT INTO employee VALUES (6, 'agent')")
@@ -382,7 +382,7 @@ func TestMCPReadOnlyTighteningBitesAnOpenSession(t *testing.T) {
 	a.False(read.isError, "a read must still be served on the tightened session: %s", read.text)
 
 	// Widening bites the same way, on the same session.
-	a.NoError(f.ctl.setMCPCapability(f.ctx, v1pb.WorkspaceProfileSetting_READ_WRITE))
+	a.NoError(f.ctl.setMCPCapability(f.ctx, v1pb.MCPSetting_READ_WRITE))
 	again := queryDatabaseOnSession(f.ctx, t, session, f.name,
 		"INSERT INTO employee VALUES (7, 'agent')")
 	a.False(again.isError, "widening restores the write on the unchanged session: %s", again.text)
@@ -445,7 +445,7 @@ func TestMCPCutoverAdmitsReadOnlyAndNothingElse(t *testing.T) {
 
 	token, _ := mintMCPOAuthToken(t, ctl, ctl.authInterceptor.token)
 
-	a.NoError(ctl.setMCPCapability(ctx, v1pb.WorkspaceProfileSetting_READ_ONLY))
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_ONLY))
 	status, body := postMCP(t, ctl, token)
 	a.Equal(http.StatusOK, status, "READ_ONLY must admit a connection now that the clamp holds it to reads; %s", body)
 
@@ -464,9 +464,15 @@ func TestMCPCutoverAdmitsReadOnlyAndNothingElse(t *testing.T) {
 	a.Contains(sheet.Error, "raise the MCP ceiling")
 
 	// DISABLED is still the ceiling that closes the door.
-	a.NoError(ctl.setMCPCapability(ctx, v1pb.WorkspaceProfileSetting_DISABLED))
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_DISABLED))
 	status, body = postMCP(t, ctl, token)
 	a.Equal(http.StatusForbidden, status, "DISABLED must still refuse the connection; %s", body)
+
+	// Back to a ceiling that admits, so each hand-written value below is what
+	// refuses rather than the DISABLED left over from the assertion above.
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_ONLY))
+	status, body = postMCP(t, ctl, token)
+	a.Equal(http.StatusOK, status, "control: READ_ONLY admits again; %s", body)
 
 	// And so is every value this build cannot serve. The settings API refuses
 	// to write these, so they are written the only way a workspace could
@@ -481,16 +487,16 @@ func TestMCPCutoverAdmitsReadOnlyAndNothingElse(t *testing.T) {
 		{`2`, "the reserved number was METADATA_ONLY; no mode serves it"},
 		{`99`, "a number no build ever wrote"},
 		{`"READ_WRTIE"`, "a mistyped ceiling is not a ceiling that permits"},
-		{`"MCP_CAPABILITY_UNSPECIFIED"`, "the zero value was resolved by nobody"},
+		{`"CAPABILITY_UNSPECIFIED"`, "the zero value was resolved by nobody"},
 	} {
 		result, err := db.ExecContext(ctx, `
-			UPDATE setting SET value = jsonb_set(value, '{mcpCapability}', $2::jsonb)
-			WHERE workspace = $1 AND name = 'WORKSPACE_PROFILE';
+			UPDATE setting SET value = jsonb_set(value, '{capability}', $2::jsonb)
+			WHERE workspace = $1 AND name = 'MCP';
 		`, workspaceID, row.value)
 		a.NoError(err)
 		affected, err := result.RowsAffected()
 		a.NoError(err)
-		a.Equal(int64(1), affected, "the workspace profile row must exist for %s to mean anything", row.value)
+		a.Equal(int64(1), affected, "the MCP setting row must exist for %s to mean anything", row.value)
 
 		status, body = postMCP(t, ctl, token)
 		a.Equal(http.StatusForbidden, status, "%s: %s; %s", row.value, row.why, body)

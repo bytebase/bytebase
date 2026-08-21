@@ -55,7 +55,10 @@ const queryDatabaseDescription = `Execute a SQL query against a Bytebase databas
 
 **Examples:**
 query_database(database="employee_db", statement="SELECT * FROM users LIMIT 10")
-query_database(database="employee", instance="prod-pg", statement="SELECT count(*) FROM orders")`
+query_database(database="employee", instance="prod-pg", statement="SELECT count(*) FROM orders")
+
+**Notes:**
+- Masked data: a masked column reads back as "******". That is a placeholder, not a value anything holds, so never write it back and never filter on it. Any statement containing it is refused.`
 
 func (s *Server) registerQueryTool() {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{
@@ -199,15 +202,11 @@ func (s *Server) executeQuery(ctx context.Context, resolved *resolvedDatabase, s
 		suggestion := "check your SQL syntax and try again"
 		if resp.Status == http.StatusForbidden || resp.Status == http.StatusUnauthorized {
 			// A refusal that already names its own way out gets none added.
-			// The workspace MCP ceiling is one of these, and telling an agent
-			// to request a project role for it sends the person it acts for
-			// after a grant that cannot lift a workspace setting.
-			//
-			// The phrase crosses a process boundary as an error body, so the
-			// producer pins it too: see the assertion on this exact substring
-			// in TestMCPClampRefusesWhatItCannotShowIsARead (backend/api/v1).
+			// Telling an agent to request a project role for one sends the
+			// person it acts for after a grant that cannot lift a workspace
+			// setting.
 			suggestion = ""
-			if !strings.Contains(errMsg, "MCP capability ceiling") {
+			if !IsPolicyRefusal(errMsg) {
 				suggestion = "you may not have permission to query this database — request the SQL Editor role on the project"
 			}
 		}
@@ -341,4 +340,25 @@ func parseLatencyMs(latency string) int64 {
 		return 0
 	}
 	return d.Milliseconds()
+}
+
+// IsPolicyRefusal reports whether a 403 came from the MCP enforcement chain
+// rather than from the caller's own RBAC. It matches wording because the verdict
+// crosses a process boundary as an error body and nothing else survives the
+// trip; the producers call this, not a copy of it, in
+// TestMCPRefusalsNameThemselvesToTheQueryTool (backend/api/v1).
+func IsPolicyRefusal(message string) bool {
+	for _, phrase := range []string{
+		"MCP capability ceiling",
+		// Singular, so it also matches the plural the gate uses and the two
+		// refusals that live outside it (rejectMCPOriginatedGrantIssue,
+		// rejectMCPOriginatedIssuelessRollout).
+		"MCP session",
+		"MCP classification",
+	} {
+		if strings.Contains(message, phrase) {
+			return true
+		}
+	}
+	return false
 }

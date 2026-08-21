@@ -6,6 +6,8 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useMemo,
+  useRef,
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
@@ -16,7 +18,12 @@ import {
 import { FormField, FormFieldGroup, FormSection } from "@/components/ui/form";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { useAppStore } from "@/stores/app";
-import { WorkspaceProfileSetting_MCPCapability } from "@/types/proto-es/v1/setting_service_pb";
+import {
+  MCPSetting_Capability,
+  MCPSettingSchema,
+  Setting_SettingName,
+  SettingValueSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
 import type { SectionHandle } from "./useSettingSection";
 
 interface MCPSectionProps {
@@ -24,45 +31,98 @@ interface MCPSectionProps {
   onDirtyChange: () => void;
 }
 
-interface LocalState {
-  mcpCapability: WorkspaceProfileSetting_MCPCapability;
+export interface LocalState {
+  mcpCapability: MCPSetting_Capability;
 }
 
 // Unset resolves to READ_WRITE server-side, so it renders as Read-write.
-// Unknown or reserved stored values fail closed at /mcp, so they render as
+// Unknown or reserved capability numbers fail closed at /mcp, so they render as
 // Disabled — the option matching their actual behavior; selecting Read-only
-// or Read-write then persists a valid value.
+// or Read-write then persists a valid value. A stored capability name this
+// build does not know never reaches that arm: protojson discards it, so it
+// arrives as unset and renders Read-write while /mcp fails closed (BOT-100).
 export const normalizeCapability = (
-  capability: WorkspaceProfileSetting_MCPCapability
-): WorkspaceProfileSetting_MCPCapability => {
+  capability: MCPSetting_Capability
+): MCPSetting_Capability => {
   switch (capability) {
-    case WorkspaceProfileSetting_MCPCapability.MCP_CAPABILITY_UNSPECIFIED:
-    case WorkspaceProfileSetting_MCPCapability.READ_WRITE:
-      return WorkspaceProfileSetting_MCPCapability.READ_WRITE;
-    case WorkspaceProfileSetting_MCPCapability.DISABLED:
-    case WorkspaceProfileSetting_MCPCapability.READ_ONLY:
+    case MCPSetting_Capability.CAPABILITY_UNSPECIFIED:
+    case MCPSetting_Capability.READ_WRITE:
+      return MCPSetting_Capability.READ_WRITE;
+    case MCPSetting_Capability.DISABLED:
+    case MCPSetting_Capability.READ_ONLY:
       return capability;
     default:
-      return WorkspaceProfileSetting_MCPCapability.DISABLED;
+      return MCPSetting_Capability.DISABLED;
   }
 };
+
+/**
+ * Re-hydration rule for the form. The store value arrives after the first
+ * render, so hydrating unconditionally would replace a capability the admin
+ * had already picked in between — and clear the dirty footer that is their
+ * only way to save it. `hydratedFrom` is what the form was last hydrated to,
+ * so "unedited" is a comparison against that rather than against the value
+ * just fetched.
+ */
+export const hydrateWhilePristine = (
+  current: LocalState,
+  hydratedFrom: LocalState,
+  next: LocalState
+): LocalState => (isEqual(current, hydratedFrom) ? next : current);
 
 export const MCPSection = forwardRef<SectionHandle, MCPSectionProps>(
   function MCPSection({ title, onDirtyChange }, ref) {
     const { t } = useTranslation();
 
-    const [canEdit] = usePermissionCheck(["bb.settings.setWorkspaceProfile"]);
+    const [canEdit] = usePermissionCheck(["bb.settings.set"]);
+
+    const settingsByName = useAppStore((s) => s.settingsByName);
+    const mcpSetting = useMemo(() => {
+      const setting = useAppStore
+        .getState()
+        .getSettingByName(Setting_SettingName.MCP);
+      if (setting?.value?.value?.case === "mcp") {
+        return setting.value.value.value;
+      }
+      return undefined;
+    }, [settingsByName]);
 
     const getInitialState = useCallback(
       (): LocalState => ({
         mcpCapability: normalizeCapability(
-          useAppStore.getState().getWorkspaceProfile().mcpCapability
+          mcpSetting?.capability ?? MCPSetting_Capability.CAPABILITY_UNSPECIFIED
         ),
       }),
-      []
+      [mcpSetting]
     );
 
     const [state, setState] = useState<LocalState>(getInitialState);
+
+    // Re-sync state when the store value changes (e.g. after the initial
+    // fetch, or after a save). Only a pristine form is re-hydrated: the fetch
+    // lands after the first render, so an admin who picks a capability in
+    // between would otherwise have it replaced by the fetched value — and the
+    // dirty footer that is their only way to save it would clear with it.
+    const prevMcpSettingRef = useRef(mcpSetting);
+    const hydratedRef = useRef<LocalState>(state);
+    useEffect(() => {
+      if (prevMcpSettingRef.current === mcpSetting) {
+        return;
+      }
+      prevMcpSettingRef.current = mcpSetting;
+      const hydrated = getInitialState();
+      setState((current) =>
+        hydrateWhilePristine(current, hydratedRef.current, hydrated)
+      );
+      hydratedRef.current = hydrated;
+    }, [mcpSetting, getInitialState]);
+
+    // Fetch setting on mount.
+    useEffect(() => {
+      useAppStore
+        .getState()
+        .getOrFetchSettingByName(Setting_SettingName.MCP, true);
+    }, []);
 
     const isDirty = useCallback(
       () => !isEqual(state, getInitialState()),
@@ -76,12 +136,20 @@ export const MCPSection = forwardRef<SectionHandle, MCPSectionProps>(
     const update = useCallback(async () => {
       const initState = getInitialState();
       if (state.mcpCapability !== initState.mcpCapability) {
-        await useAppStore.getState().updateWorkspaceProfile({
-          payload: {
-            mcpCapability: state.mcpCapability,
-          },
+        // The server merges the named path onto the stored row, so
+        // ignore_masking_exemptions survives a capability-only write.
+        await useAppStore.getState().upsertSetting({
+          name: Setting_SettingName.MCP,
+          value: create(SettingValueSchema, {
+            value: {
+              case: "mcp",
+              value: create(MCPSettingSchema, {
+                capability: state.mcpCapability,
+              }),
+            },
+          }),
           updateMask: create(FieldMaskSchema, {
-            paths: ["value.workspace_profile.mcp_capability"],
+            paths: ["value.mcp.capability"],
           }),
         });
       }
@@ -104,21 +172,21 @@ export const MCPSection = forwardRef<SectionHandle, MCPSectionProps>(
 
     const options = [
       {
-        capability: WorkspaceProfileSetting_MCPCapability.DISABLED,
+        capability: MCPSetting_Capability.DISABLED,
         label: t("settings.general.workspace.mcp.capability.disabled.self"),
         description: t(
           "settings.general.workspace.mcp.capability.disabled.description"
         ),
       },
       {
-        capability: WorkspaceProfileSetting_MCPCapability.READ_ONLY,
+        capability: MCPSetting_Capability.READ_ONLY,
         label: t("settings.general.workspace.mcp.capability.read-only.self"),
         description: t(
           "settings.general.workspace.mcp.capability.read-only.description"
         ),
       },
       {
-        capability: WorkspaceProfileSetting_MCPCapability.READ_WRITE,
+        capability: MCPSetting_Capability.READ_WRITE,
         label: t("settings.general.workspace.mcp.capability.read-write.self"),
         description: t(
           "settings.general.workspace.mcp.capability.read-write.description"
@@ -128,10 +196,7 @@ export const MCPSection = forwardRef<SectionHandle, MCPSectionProps>(
 
     return (
       <FormSection id="mcp" title={title}>
-        <PermissionGuard
-          permissions={["bb.settings.setWorkspaceProfile"]}
-          display="block"
-        >
+        <PermissionGuard permissions={["bb.settings.set"]} display="block">
           <FormFieldGroup>
             <FormField
               title={t("settings.general.workspace.mcp.capability.self")}
@@ -151,7 +216,7 @@ export const MCPSection = forwardRef<SectionHandle, MCPSectionProps>(
                   <RadioGroupItem
                     key={option.capability}
                     value={String(option.capability)}
-                    disabled={!canEdit}
+                    disabled={!canEdit || mcpSetting === undefined}
                     className="items-start gap-x-3"
                     contentClassName="flex flex-col gap-1"
                     radioClassName="mt-1"

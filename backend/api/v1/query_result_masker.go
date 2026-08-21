@@ -421,6 +421,33 @@ func (s *QueryResultMasker) getMaskersForQuerySpan(ctx context.Context, m *maski
 	return maskers, masked, nil
 }
 
+// exemptionsForPrincipal is the one seam the caller's own masking provisioning
+// enters through: getMaskerForColumnResource and the MSSQL
+// getSensitiveColumnsForPredicate both reach evaluateSemanticTypeOfColumn with
+// exactly this slice. An MCP session that ignores exemptions gets an empty one,
+// which is what a user granted nothing already looks like. Filtering only the
+// output path would mask the value and still answer whether a WHERE on it
+// matched.
+func (s *QueryResultMasker) exemptionsForPrincipal(ctx context.Context, data *maskingDataProvider, projectID string, currentPrincipal *store.UserMessage) []*storepb.MaskingExemptionPolicy_Exemption {
+	if mcpIgnoresMaskingExemptions(ctx) {
+		return nil
+	}
+	policy := data.getMaskingExemptionPolicy(projectID)
+	if policy == nil {
+		return nil
+	}
+	var exemptions []*storepb.MaskingExemptionPolicy_Exemption
+	for _, e := range policy.Exemptions {
+		for _, member := range e.Members {
+			if utils.MemberContainsUser(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), member, currentPrincipal) {
+				exemptions = append(exemptions, e)
+				break
+			}
+		}
+	}
+	return exemptions
+}
+
 func (s *QueryResultMasker) getMaskerForColumnResource(
 	ctx context.Context,
 	m *maskingLevelEvaluator,
@@ -449,18 +476,7 @@ func (s *QueryResultMasker) getMaskerForColumnResource(
 		return masker.NewNoneMasker(), nil, nil
 	}
 
-	// Build the filtered maskingExemptionPolicy for current principal.
-	var exemptions []*storepb.MaskingExemptionPolicy_Exemption
-	if policy := data.getMaskingExemptionPolicy(database.ProjectID); policy != nil {
-		for _, e := range policy.Exemptions {
-			for _, member := range e.Members {
-				if utils.MemberContainsUser(ctx, s.store, common.GetWorkspaceIDFromContext(ctx), member, currentPrincipal) {
-					exemptions = append(exemptions, e)
-					break
-				}
-			}
-		}
-	}
+	exemptions := s.exemptionsForPrincipal(ctx, data, database.ProjectID, currentPrincipal)
 
 	evaluation, err := m.evaluateSemanticTypeOfColumn(database, sourceColumn.Schema, sourceColumn.Table, sourceColumn.Column, project.Setting.DataClassificationConfigId, config, exemptions)
 	if err != nil {

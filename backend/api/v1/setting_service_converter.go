@@ -43,6 +43,19 @@ func convertToSettingMessage(setting *store.SettingMessage) (*v1pb.Setting, erro
 				},
 			},
 		}, nil
+	case storepb.SettingName_MCP:
+		storeValue, ok := setting.Value.(*storepb.MCPSetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", setting.Name))
+		}
+		return &v1pb.Setting{
+			Name: settingName,
+			Value: &v1pb.SettingValue{
+				Value: &v1pb.SettingValue_Mcp{
+					Mcp: convertToMCPSetting(storeValue),
+				},
+			},
+		}, nil
 	case storepb.SettingName_WORKSPACE_APPROVAL:
 		storeValue, ok := setting.Value.(*storepb.WorkspaceApprovalSetting)
 		if !ok {
@@ -175,6 +188,8 @@ func convertStoreSettingNameToV1(storeName storepb.SettingName) v1pb.Setting_Set
 		return v1pb.Setting_ENVIRONMENT
 	case storepb.SettingName_EMAIL:
 		return v1pb.Setting_EMAIL
+	case storepb.SettingName_MCP:
+		return v1pb.Setting_MCP
 	case storepb.SettingName_SYSTEM:
 		// Backend-only setting, not exposed in v1 API
 	default:
@@ -204,6 +219,8 @@ func convertV1SettingNameToStore(v1Name v1pb.Setting_SettingName) storepb.Settin
 		return storepb.SettingName_ENVIRONMENT
 	case v1pb.Setting_EMAIL:
 		return storepb.SettingName_EMAIL
+	case v1pb.Setting_MCP:
+		return storepb.SettingName_MCP
 	default:
 		return storepb.SettingName_SETTING_NAME_UNSPECIFIED
 	}
@@ -280,7 +297,6 @@ func convertWorkspaceProfileSetting(v1Setting *v1pb.WorkspaceProfileSetting) *st
 		QueryTimeout:         v1Setting.QueryTimeout,
 		SqlEditorThemeId:     v1Setting.SqlEditorThemeId,
 		SqlEditorCustomTheme: convertToStoreSQLEditorThemeSetting(v1Setting.SqlEditorCustomTheme),
-		McpCapability:        storepb.WorkspaceProfileSetting_MCPCapability(v1Setting.McpCapability),
 	}
 
 	// Convert announcement if present. The store only holds the theme colors.
@@ -359,7 +375,22 @@ func convertToWorkspaceProfileSetting(storeSetting *storepb.WorkspaceProfileSett
 		QueryTimeout:                 storeSetting.QueryTimeout,
 		SqlEditorThemeId:             storeSetting.SqlEditorThemeId,
 		SqlEditorCustomTheme:         convertToV1SQLEditorThemeSetting(storeSetting.SqlEditorCustomTheme),
-		McpCapability:                v1pb.WorkspaceProfileSetting_MCPCapability(storeSetting.McpCapability),
+	}
+}
+
+// convertToStoreMCPCapability crosses the two Capability enums by number.
+// TestMCPCapabilityEnumsAgree pins that they stay aligned.
+func convertToStoreMCPCapability(c v1pb.MCPSetting_Capability) storepb.MCPSetting_Capability {
+	return storepb.MCPSetting_Capability(c)
+}
+
+func convertToMCPSetting(s *storepb.MCPSetting) *v1pb.MCPSetting {
+	if s == nil {
+		return nil
+	}
+	return &v1pb.MCPSetting{
+		Capability:              v1pb.MCPSetting_Capability(s.Capability),
+		IgnoreMaskingExemptions: s.IgnoreMaskingExemptions,
 	}
 }
 

@@ -15044,6 +15044,51 @@ components:
          between, EXCLUDED and FORBIDDEN are served by no ceiling, and an unclassified
          method is refused rather than served. Annotating a method is therefore a
          change to what an MCP session can reach, taking effect on the next request.
+    bytebase.v1.MCPSetting:
+      type: object
+      properties:
+        capability:
+          title: capability
+          description: |-
+            The maximum capability available to MCP sessions in this workspace, acting
+             as an admin-set ceiling. Enforced server-side at three points: the /mcp
+             endpoint decides whether a connection is admitted at all, the ceiling gate
+             on the internal MCP chain decides, per request, which method classes are
+             served, and under READ_ONLY the SQL clamp decides, per statement, whether
+             it only reads.
+          $ref: '#/components/schemas/bytebase.v1.MCPSetting.Capability'
+        ignoreMaskingExemptions:
+          type: boolean
+          title: ignore_masking_exemptions
+          description: |-
+            Whether a request that arrived over MCP stops applying the caller's own
+             unmasking provisioning. Two mechanisms let a user see a real value and this
+             suppresses both: the masking exemptions granted to them, and the unmask
+             carried by an access grant. The same user in the console is untouched.
+
+             It cannot force masking where there is none. Masking substitutes values in
+             query results, so this does not reach data copied into a column carrying no
+             masking policy, and it does nothing on the engines Bytebase does not mask.
+             It narrows what an agent reads through the paths Bytebase masks; it is not
+             a confidentiality boundary.
+      title: MCPSetting
+      additionalProperties: false
+      description: |-
+        MCPSetting is what an MCP (Model Context Protocol) session may do in this
+         workspace.
+    bytebase.v1.MCPSetting.Capability:
+      type: string
+      title: Capability
+      enum:
+        - CAPABILITY_UNSPECIFIED
+        - DISABLED
+        - READ_ONLY
+        - READ_WRITE
+      description: |-
+        Capability is the ceiling: a session runs at this level or lower. An absent
+         MCP setting resolves to READ_WRITE, so a workspace that never configured
+         MCP is unaffected. Writing CAPABILITY_UNSPECIFIED explicitly is rejected —
+         omit the update mask path to leave the ceiling unset.
     bytebase.v1.MaskingExemptionPolicy:
       type: object
       properties:
@@ -18695,6 +18740,7 @@ components:
         - SEMANTIC_TYPES
         - ENVIRONMENT
         - EMAIL
+        - MCP
     bytebase.v1.SettingValue:
       type: object
       oneOf:
@@ -18738,6 +18784,14 @@ components:
           title: environment
           required:
             - environment
+        - type: object
+          properties:
+            mcp:
+              title: mcp
+              $ref: '#/components/schemas/bytebase.v1.MCPSetting'
+          title: mcp
+          required:
+            - mcp
         - type: object
           properties:
             semanticType:
@@ -21501,15 +21555,6 @@ components:
             The max expiration duration for request role.
              Deprecated: use just-in-time access request flows instead.
           $ref: '#/components/schemas/google.protobuf.Duration'
-        mcpCapability:
-          title: mcp_capability
-          description: |-
-            The maximum capability available to MCP (Model Context Protocol) sessions in
-             this workspace, acting as an admin-set ceiling. Unset is treated as
-             READ_WRITE for backward compatibility; DISABLED rejects all MCP
-             connections. Writing MCP_CAPABILITY_UNSPECIFIED explicitly is rejected —
-             omit the update mask path to leave the ceiling unset.
-          $ref: '#/components/schemas/bytebase.v1.WorkspaceProfileSetting.MCPCapability'
         directorySyncTokenConfigured:
           type: boolean
           title: directory_sync_token_configured
@@ -21519,19 +21564,6 @@ components:
              offering "generate" and "regenerate".
       title: WorkspaceProfileSetting
       additionalProperties: false
-    bytebase.v1.WorkspaceProfileSetting.MCPCapability:
-      type: string
-      title: MCPCapability
-      enum:
-        - MCP_CAPABILITY_UNSPECIFIED
-        - DISABLED
-        - READ_ONLY
-        - READ_WRITE
-      description: |-
-        MCPCapability is the maximum capability an MCP (Model Context Protocol)
-         session may have in the workspace. It is a ceiling: a session runs at this
-         level or lower. Unset (UNSPECIFIED) is treated as READ_WRITE so existing
-         workspaces are unaffected.
     bytebase.v1.WorkspaceProfileSetting.PasswordRestriction:
       type: object
       properties:

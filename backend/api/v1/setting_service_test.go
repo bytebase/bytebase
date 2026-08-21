@@ -202,15 +202,15 @@ func TestValidateAnnouncementTheme(t *testing.T) {
 func TestValidateMCPCapability(t *testing.T) {
 	cases := []struct {
 		name       string
-		capability storepb.WorkspaceProfileSetting_MCPCapability
+		capability storepb.MCPSetting_Capability
 		wantErr    bool
 	}{
-		{"unspecified rejected", storepb.WorkspaceProfileSetting_MCP_CAPABILITY_UNSPECIFIED, true},
-		{"disabled", storepb.WorkspaceProfileSetting_DISABLED, false},
-		{"read only", storepb.WorkspaceProfileSetting_READ_ONLY, false},
-		{"read write", storepb.WorkspaceProfileSetting_READ_WRITE, false},
-		{"reserved value rejected", storepb.WorkspaceProfileSetting_MCPCapability(2), true},
-		{"unknown value rejected", storepb.WorkspaceProfileSetting_MCPCapability(99), true},
+		{"unspecified rejected", storepb.MCPSetting_CAPABILITY_UNSPECIFIED, true},
+		{"disabled", storepb.MCPSetting_DISABLED, false},
+		{"read only", storepb.MCPSetting_READ_ONLY, false},
+		{"read write", storepb.MCPSetting_READ_WRITE, false},
+		{"reserved value rejected", storepb.MCPSetting_Capability(2), true},
+		{"unknown value rejected", storepb.MCPSetting_Capability(99), true},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -281,4 +281,18 @@ func TestPreflightWorkspaceProfileSaaSRestrictedPaths(t *testing.T) {
 		err = selfHosted.preflightWorkspaceProfilePaths(context.Background(), "ws", newRequest(path), &storepb.WorkspaceProfileSetting{})
 		require.NoError(t, err, path)
 	}
+}
+
+// TestAlwaysPresentSettingsHaveAZeroValue pins the two halves of the
+// always-present rule against each other. ListSettings walks the slice to
+// synthesize absent rows; Get and Update key on emptySetting returning
+// non-nil. A name in one and not the other is a setting that lists but cannot
+// be read, or reads but cannot be patched.
+func TestAlwaysPresentSettingsHaveAZeroValue(t *testing.T) {
+	for _, name := range alwaysPresentSettings {
+		require.NotNil(t, emptySetting(name, "ws"), "%v is listed as always present", name)
+		require.True(t, settingIsAlwaysPresent(name))
+	}
+	require.False(t, settingIsAlwaysPresent(storepb.SettingName_WORKSPACE_PROFILE),
+		"a setting whose row always exists must keep 404 for a genuinely missing one")
 }

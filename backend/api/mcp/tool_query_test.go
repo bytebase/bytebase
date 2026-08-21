@@ -625,6 +625,41 @@ func TestQueryDatabase_QueryError(t *testing.T) {
 	require.Contains(t, text, "syntax error")
 }
 
+// TestQueryDatabase_PolicyDenialGetsNoRoleAdvice is the same contract on the
+// read tool. The masked-write guard refuses through SQLService/Query, and a
+// project role cannot lift a workspace setting.
+func TestQueryDatabase_PolicyDenialGetsNoRoleAdvice(t *testing.T) {
+	databases := []map[string]any{
+		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "SQLService/Query") {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"message": "/bytebase.v1.SQLService/Query is not available to MCP sessions " +
+					"for this request because its SQL contains \"******\"",
+				"code": "PERMISSION_DENIED",
+			})
+			return
+		}
+		mockListDatabases(databases).ServeHTTP(w, r)
+	})
+	s := newTestServerWithMock(t, handler)
+
+	result, _, err := s.handleQueryDatabase(testContext(), nil, QueryInput{
+		Database:  "employee_db",
+		Statement: "UPDATE users SET name = '******'",
+	})
+	require.NoError(t, err)
+	require.True(t, result.IsError)
+
+	text := result.Content[0].(*mcpsdk.TextContent).Text
+	require.Contains(t, text, "******")
+	require.NotContains(t, text, "SQL Editor role",
+		"no project role lifts a workspace setting")
+}
+
 func TestQueryDatabase_PermissionDenied(t *testing.T) {
 	databases := []map[string]any{
 		makeDatabase("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),

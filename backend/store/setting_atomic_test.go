@@ -78,7 +78,7 @@ func TestUpdateSettingAtomicInterleaving(t *testing.T) {
 	firstResult := make(chan error, 1)
 	go func() {
 		_, err := s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE,
-			func(current proto.Message) (proto.Message, error) {
+			func(current proto.Message, _ []byte) (proto.Message, error) {
 				profile, ok := current.(*storepb.WorkspaceProfileSetting)
 				if !ok {
 					return nil, errors.Errorf("unexpected type %T", current)
@@ -100,12 +100,12 @@ func TestUpdateSettingAtomicInterleaving(t *testing.T) {
 	secondResult := make(chan error, 1)
 	go func() {
 		_, err := s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE,
-			func(current proto.Message) (proto.Message, error) {
+			func(current proto.Message, _ []byte) (proto.Message, error) {
 				profile, ok := current.(*storepb.WorkspaceProfileSetting)
 				if !ok {
 					return nil, errors.Errorf("unexpected type %T", current)
 				}
-				profile.McpCapability = storepb.WorkspaceProfileSetting_DISABLED
+				profile.Watermark = true
 				return profile, nil
 			}, nil)
 		secondResult <- err
@@ -147,14 +147,14 @@ func TestUpdateSettingAtomicInterleaving(t *testing.T) {
 	require.NoError(t, err)
 	freshProfile := mustProfile(t, fresh)
 	require.True(t, freshProfile.EnableMetricCollection, "first update's field must survive")
-	require.Equal(t, storepb.WorkspaceProfileSetting_DISABLED, freshProfile.McpCapability,
+	require.True(t, freshProfile.Watermark,
 		"second update's field must survive")
 	// ... and in the setting cache.
 	cached, err := s.GetSetting(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE)
 	require.NoError(t, err)
 	cachedProfile := mustProfile(t, cached)
 	require.True(t, cachedProfile.EnableMetricCollection)
-	require.Equal(t, storepb.WorkspaceProfileSetting_DISABLED, cachedProfile.McpCapability)
+	require.True(t, cachedProfile.Watermark)
 }
 
 // TestUpdateSettingAtomicApplyAbort pins that an error from apply aborts the
@@ -165,7 +165,7 @@ func TestUpdateSettingAtomicApplyAbort(t *testing.T) {
 
 	sentinel := errors.New("validation failed")
 	_, err := s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE,
-		func(current proto.Message) (proto.Message, error) {
+		func(current proto.Message, _ []byte) (proto.Message, error) {
 			profile, ok := current.(*storepb.WorkspaceProfileSetting)
 			if !ok {
 				return nil, errors.Errorf("unexpected type %T", current)
@@ -191,7 +191,7 @@ func TestUpdateSettingAtomicMissingRow(t *testing.T) {
 	ctx, _, s := newSettingAtomicFixture(t)
 
 	_, err := s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_AI,
-		func(current proto.Message) (proto.Message, error) {
+		func(current proto.Message, _ []byte) (proto.Message, error) {
 			return current, nil
 		}, nil)
 	require.Error(t, err)
@@ -241,7 +241,7 @@ func TestUpdateSettingAtomicPublishOrder(t *testing.T) {
 	firstResult := make(chan error, 1)
 	go func() {
 		_, err := s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE,
-			func(current proto.Message) (proto.Message, error) {
+			func(current proto.Message, _ []byte) (proto.Message, error) {
 				profile, ok := current.(*storepb.WorkspaceProfileSetting)
 				if !ok {
 					return nil, errors.Errorf("unexpected type %T", current)
@@ -261,12 +261,12 @@ func TestUpdateSettingAtomicPublishOrder(t *testing.T) {
 	secondResult := make(chan error, 1)
 	go func() {
 		_, err := s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE,
-			func(current proto.Message) (proto.Message, error) {
+			func(current proto.Message, _ []byte) (proto.Message, error) {
 				profile, ok := current.(*storepb.WorkspaceProfileSetting)
 				if !ok {
 					return nil, errors.Errorf("unexpected type %T", current)
 				}
-				profile.McpCapability = storepb.WorkspaceProfileSetting_DISABLED
+				profile.Watermark = true
 				return profile, nil
 			}, recordPostCommit())
 		secondResult <- err
@@ -283,7 +283,7 @@ func TestUpdateSettingAtomicPublishOrder(t *testing.T) {
 			return false
 		}
 		profile, ok := committed.Value.(*storepb.WorkspaceProfileSetting)
-		return ok && profile.McpCapability == storepb.WorkspaceProfileSetting_DISABLED
+		return ok && profile.Watermark
 	}, 10*time.Second, 10*time.Millisecond,
 		"second update must commit while its publish waits on the mutex")
 
@@ -312,7 +312,7 @@ func TestUpdateSettingAtomicPublishOrder(t *testing.T) {
 	require.NoError(t, err)
 	cachedProfile := mustProfile(t, cached)
 	require.True(t, cachedProfile.EnableMetricCollection, "cache must not serve pre-first-update state")
-	require.Equal(t, storepb.WorkspaceProfileSetting_DISABLED, cachedProfile.McpCapability,
+	require.True(t, cachedProfile.Watermark,
 		"cache must not be overwritten by the earlier committer's stale publish")
 	postCommitMu.Lock()
 	defer postCommitMu.Unlock()
@@ -320,7 +320,7 @@ func TestUpdateSettingAtomicPublishOrder(t *testing.T) {
 	for _, seen := range postCommitSeen {
 		require.True(t, seen.EnableMetricCollection,
 			"postCommit must observe committed truth, not the caller's own write")
-		require.Equal(t, storepb.WorkspaceProfileSetting_DISABLED, seen.McpCapability,
+		require.True(t, seen.Watermark,
 			"postCommit must observe committed truth, not the caller's own write")
 	}
 }
@@ -373,7 +373,7 @@ func TestGetSettingCacheDisabledNotSerialized(t *testing.T) {
 	writerResult := make(chan error, 1)
 	go func() {
 		_, err := s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE,
-			func(current proto.Message) (proto.Message, error) {
+			func(current proto.Message, _ []byte) (proto.Message, error) {
 				profile, ok := current.(*storepb.WorkspaceProfileSetting)
 				if !ok {
 					return nil, errors.Errorf("unexpected type %T", current)
@@ -436,7 +436,7 @@ func TestUpdateSettingAtomicPublishSurvivesCancellation(t *testing.T) {
 
 	var observed *storepb.WorkspaceProfileSetting
 	_, err := s.UpdateSettingAtomic(updateCtx, "default", storepb.SettingName_WORKSPACE_PROFILE,
-		func(current proto.Message) (proto.Message, error) {
+		func(current proto.Message, _ []byte) (proto.Message, error) {
 			profile, ok := current.(*storepb.WorkspaceProfileSetting)
 			if !ok {
 				return nil, errors.Errorf("unexpected type %T", current)
@@ -457,4 +457,37 @@ func TestUpdateSettingAtomicPublishSurvivesCancellation(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, mustProfile(t, cached).EnableMetricCollection,
 		"the served cache must reflect the committed write despite request cancellation")
+}
+
+// TestListSettingsSkipsNamesThisBuildDoesNotKnow pins that a setting row a
+// newer replica wrote does not fail the list for the settings this build does
+// know. SettingName is a closed enum here, so a name added in a later release
+// decodes to nothing — and the unfiltered list is how the settings API serves
+// every other setting, so one unreadable row must not take them all down.
+func TestListSettingsSkipsNamesThisBuildDoesNotKnow(t *testing.T) {
+	ctx, db, s := newSettingAtomicFixture(t)
+
+	// Inserted by hand because the point is a name this build's enum cannot
+	// produce; there is no store call that writes one.
+	_, err := db.ExecContext(ctx,
+		`INSERT INTO setting (name, workspace, value) VALUES ('FUTURE_SETTING', 'default', '{}')`)
+	require.NoError(t, err)
+
+	settings, err := s.ListSettings(ctx, &store.FindSettingMessage{Workspace: "default"})
+	require.NoError(t, err, "one row this build cannot name must not fail the whole list")
+
+	var names []storepb.SettingName
+	for _, setting := range settings {
+		names = append(names, setting.Name)
+	}
+	require.Contains(t, names, storepb.SettingName_WORKSPACE_PROFILE,
+		"the settings this build does know still come back")
+	require.NotContains(t, names, storepb.SettingName_SETTING_NAME_UNSPECIFIED,
+		"the unknown row is skipped, not decoded to the zero name")
+
+	// The filtered read is unaffected either way: it selects by name, so the
+	// unknown row never reaches the loop.
+	profile, err := s.GetSetting(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE)
+	require.NoError(t, err)
+	require.NotNil(t, profile)
 }
