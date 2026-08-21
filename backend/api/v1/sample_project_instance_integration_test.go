@@ -48,7 +48,10 @@ func TestPrepareSampleProjectInstanceLifecycle(t *testing.T) {
 	require.Equal(t, "Sample Project Instance", prepared.Msg.Title)
 	require.Equal(t, v1pb.Engine_POSTGRES, prepared.Msg.Engine)
 	require.Equal(t, "environments/test", prepared.Msg.GetEnvironment())
-	require.True(t, prepared.Msg.Activation)
+	require.False(t, prepared.Msg.Activation)
+	activatedInstanceCount, err := fixture.store.GetActivatedInstanceCount(ctx, fixture.workspaceID)
+	require.NoError(t, err)
+	require.Zero(t, activatedInstanceCount)
 
 	record := fixture.sampleRecord(ctx, t)
 	allocation := fixture.allocation(ctx, t)
@@ -309,7 +312,7 @@ func newSampleProjectInstanceFixture(t *testing.T, clock func() time.Time) (cont
 		service: &InstanceService{
 			store:                stores,
 			profile:              &config.Profile{SaaS: true},
-			licenseService:       &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 10},
+			licenseService:       &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 0},
 			dbFactory:            dbFactory,
 			schemaSyncer:         syncer,
 			sampleProjectManager: manager,
@@ -504,7 +507,7 @@ func (f *sampleProjectInstanceFixture) createPartialReservation(
 		Metadata: &storepb.Instance{
 			Title:      "Sample Project Instance",
 			Engine:     storepb.Engine_POSTGRES,
-			Activation: true,
+			Activation: false,
 			DataSources: []*storepb.DataSource{
 				config.AdminDataSource,
 			},

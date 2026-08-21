@@ -510,12 +510,6 @@ func (s *InstanceService) sampleProjectInstanceCreatePolicy(ctx context.Context,
 		}
 		return sampleprojectinstance.CreatePolicyResult{}, transportNeutralError(err)
 	}
-	if err := s.checkActivationLimit(ctx, workspaceID, true); err != nil {
-		if connect.CodeOf(err) == connect.CodeResourceExhausted {
-			return sampleprojectinstance.CreatePolicyResult{DeniedReason: transportNeutralError(err)}, nil
-		}
-		return sampleprojectinstance.CreatePolicyResult{}, transportNeutralError(err)
-	}
 	return sampleprojectinstance.CreatePolicyResult{}, nil
 }
 
