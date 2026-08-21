@@ -11,14 +11,23 @@ protected only on the RPCs someone remembered and is exposed the moment the same
 under a new parent.
 
 Three credentials leaked that way — an OIDC client secret, a service-account key, and the SCIM
-directory-sync token — fixed on `main` by #21110 and #21109. Three more are still unprotected:
-`database.instance_resource.data_sources[]` on `UpdateDatabase` and `Instance.roles[].password`,
-both `OUTPUT_ONLY` fields no read path populates, so neither carries a real credential today; and
-`UpdateUserRequest.otp_code`, which does. `redactUpdateUserRequest` copies it verbatim
-(`audit.go:1176`) while the handler validates it as an MFA proof (`user_service.go:442-449`).
-A failed validation does not consume the code and the interceptor audits failed requests, so a
-still-live OTP reaches `audit_log` and stdout. Separately, `QueryResult` has two redactors that
-disagree on whether `rows_count` survives.
+directory-sync token — fixed on `main` by #21110 and #21109. Three more are still unprotected, and
+two of them are live today.
+
+`Instance.roles[].password` is `INPUT_ONLY` (`instance_role_service.proto:82`) — only its container
+`Instance.roles` is `OUTPUT_ONLY` — so clients are meant to send it, `CreateInstance`,
+`UpdateInstance` and `BatchUpdateInstances` are all audited, and `redactInstance` passes roles
+through untouched: `{"name":"instances/i","roles":[{"roleName":"r","password":"secret"}]}`.
+`UpdateUserRequest.otp_code` is the second — `redactUpdateUserRequest` copies it verbatim
+(`audit.go:1177`) while the handler validates it as an MFA proof (`user_service.go:442-449`), and a
+failed validation neither consumes the code nor suppresses the audit row, so a still-live OTP
+reaches `audit_log` and stdout.
+
+`database.instance_resource.data_sources[]` is the third and the one that is not live. The
+`OUTPUT_ONLY` sits on `Database.instance_resource`, not on the credentials; reads do populate
+`data_sources[]`, and what keeps them safe is leaf-level blanking in `convertDataSources`. It
+survives on `BatchUpdateDatabases` as well as `UpdateDatabase`. Separately, `QueryResult` has two
+redactors that disagree on whether `rows_count` survives.
 
 ## Goals
 
@@ -44,6 +53,12 @@ disagree on whether `rows_count` survives.
 - **Secrets inside free-form text.** `redactRoleAttribute` (`read_redaction.go`) masks a password
   hash within MariaDB `SHOW GRANTS` output. No field annotation expresses that; it stays
   hand-written on the read path.
+- **Audit rows written outside the interceptor.** `backend/component/recovery/service.go:420-429`
+  calls `store.CreateAuditLog` directly, building its `Request` string with `encoding/json` over
+  anonymous Go structs (`:155`, `:310`, `:370`) — no proto message and no descriptor, so no
+  annotation, plan, sweep, inventory or registry can observe it. `resetUserPassword` marshals that
+  JSON with `request.Password` in scope. Goal 4 does not reach this writer; bringing it in means
+  giving it a proto message, which is separate work.
 - **Runtime enforcement.** The redactor is a denylist, so at runtime an unannotated field is
   logged. The inventory below moves that failure to CI; nothing catches it in a binary built past
   a skipped lint, where today's allowlist rebuilds fail closed.
@@ -93,6 +108,13 @@ converter, minting ones included, and permits only what the pair declares — th
 `mcpDenialRequestsUnderReview` already uses, for the reason its own comment gives: an exemption
 granted broadly is an exemption for everything that later lands inside it.
 
+The list is not one entry. `LoginResponse.token` and `.mfa_temp_token` (`auth_service.proto:254`,
+`:257`) and `ExchangeTokenResponse.access_token` (`:280`) are the product's primary access tokens,
+minted and returned by design — `redactLoginResponse` and `redactExchangeTokenResponse` exist for
+exactly that reason. Neither is set through a `convertTo*` function, so the completeness lint below
+never reaches them; they have to be named here, alongside `ServiceAccount.service_key` and the SCIM
+token.
+
 Declared rather than inferred, because an assertion applied blindly to every converter would reject
 a legitimate enrollment response, and the cheap way out would be to leave those two fields
 unannotated to keep CI green.
@@ -125,23 +147,37 @@ lints are the whole enforcement story, and an annotation implying otherwise is w
 
 ### Redaction
 
+The hook point is `getRequestString` and `getResponseString` themselves, not `WrapUnary`. Unary and
+streaming rows reach redaction only through those two: `auditConnectStreamingConn.Send`
+(`audit.go:171-193`) builds its own `auditEntry` and calls `createAuditLog` directly. `AdminExecute`
+is the only streaming RPC, is audited, and its response carries every row of an admin-mode query, so
+moving the walk up into `WrapUnary` — where the `service_data` and `mcpPolicyDenied` plumbing lives
+— silently drops streaming redaction. One end-to-end assertion on the `Send` path is required:
+streaming persistence is otherwise exercised through the `createAuditLogFunc` stub seam
+(`audit.go:49-52`), which bypasses the real path.
+
 A **plan** per message type, built from the descriptor on first use and cached by
 `protoreflect.FullName`: the fields to drop, and the submessage fields that lead to one. An
 annotated field is recorded and never descended into. A type needing nothing caches a nil plan —
-343 of 418 request/response types, whose messages are returned uncopied.
+343 of the 418 `(method, direction)` pairs. The surface has 209 methods and only 320 *distinct*
+request/response types, so pairs and types are not interchangeable, and the cache is keyed on types.
 
-**Copy-and-share, one mechanism.** Every message on the path to a redacted field is copied
-field-by-field; every subtree no redacted field sits under is shared by pointer and only read; an
-omitted field is never copied. No second strategy, no per-type branch. Go has no filtered clone to
-reuse — `proto.Clone`, `CloneOf` and `Merge` take no options, and field-mask libraries prune after
-a full clone — so this is that primitive.
+**Copy-and-share, one mechanism.** Every message on the path to a redacted field is copied by
+`Range` — never by iterating `Descriptor().Fields()` and calling `Set`, which panics on an unset
+message, list or map field ("cannot be set with read-only value", "has invalid nil pointer") inside
+the request path. `Range` yields only populated fields, which is also how an omitted field is never
+copied: it is skipped during the copy, not cleared afterwards on a message that never held it. Every
+subtree no redacted field sits under is shared by pointer and only read. No second strategy, no
+per-type branch. Go has no filtered clone to reuse — `proto.Clone`, `CloneOf` and `Merge` take no
+options, and field-mask libraries prune after a full clone — so this is that primitive.
 
 Constraints:
 
 - A shared subtree is reachable from two messages, so the redacted copy is write-once: marshaled
   and discarded. `TestAuditRedactionDoesNotMutateInput` pins this.
-- Dropping is `Clear()`, not assignment to `""` — they differ for `optional` fields, where `""`
-  leaves `{"password":""}`. `InstanceRole.password` is `optional`.
+- Where a field must be dropped from a message that already holds it, that is `Clear()`, not
+  assignment to `""` — they differ for `optional` fields, where `""` leaves `{"password":""}`.
+  `InstanceRole.password` is `optional`. On the copy path the field is simply never copied.
 - **A `SENSITIVE` oneof member is blanked; an `OMIT` one is cleared.** Clearing a scalar arm
   unsets the oneof and erases which arm was supplied: `DataSourceExternalSecret.token`
   (`instance_service.proto:644`) is a string arm whose sibling `app_role` is a message and would
@@ -155,21 +191,47 @@ Constraints:
   No current `OMIT` field is a oneof arm; the rule exists so the first one does not silently
   contradict its own annotation.
 - Otherwise oneofs need no special case: only the set arm reports `Has()`, and clearing a field
-  *inside* a message arm leaves the arm set. This reproduces `redactIAMExtension` byte-for-byte.
-- **The descriptor graph has a cycle, so the walk is guarded.**
-  `TablePartitionMetadata.subpartitions` (`database_service.proto:936`) is the only self-recursive
-  field in the surface, and it is reachable from `DiffMetadataRequest` — which the MCP gate can
-  refuse, so a denial audits it. An unguarded descend runs until the stack does.
+  *inside* a message arm leaves the arm set. That covers `redactIAMExtension`'s three current arms
+  but **not** the function. Its `default:` arm nils an unrecognized variant (`audit.go:1308-1312`,
+  "A variant added to the oneof after this function was written is dropped whole rather than
+  logged") — fail-closed, with no denylist equivalent, so a fourth `iam_extension` arm on the one
+  message whose arms are wall-to-wall credentials is logged until somebody annotates it, and the
+  coverage sweep cannot see it because it fills only annotated fields. It also rebuilds
+  `AwsCredential` and `GcpCredential` as *empty* messages, so `role_arn` and `external_id` — not
+  credentials, and so plausibly recorded as such in the inventory — would begin appearing. Deleting
+  this one is a deliberate fail-open trade, not a no-op.
+- **The descriptor graph has four cyclic components, so the walk is guarded.**
+  `TablePartitionMetadata.subpartitions` (`database_service.proto:936`) is the only *self*-recursive
+  field. The other three are mutual, and a guard keyed on `f.Message().FullName() == parent` — which
+  is what "self-recursive" invites — misses every one:
+
+  - `ObjectSchema` ↔ `StructKind` ↔ `ArrayKind` (`database_catalog_service.proto:136`, `:158`,
+    `:163`). `StructKind.properties` is a `map<string, ObjectSchema>`, so this cycle runs through
+    the map rule below. Reached from `UpdateDatabaseCatalog`, which is audited.
+  - `google.protobuf.Value` ↔ `Struct` ↔ `ListValue`, reached from
+    `QueryResponse.results[].rows[].values[].value_value` — every audited `Query` and
+    `AdminExecute`.
+  - `google.api.expr.v1alpha1.Expr` and its nested types, reached from
+    `SetIamPolicyRequest.policy.bindings[].parsed_expr`.
+
+  Three of the four sit on audited paths; `TablePartitionMetadata` is the one that does not. An
+  unguarded descend runs until the stack does, inside the interceptor, taking the RPC with it.
 
   Termination is the easy half. The harder one is that breaking a cycle by answering "no plan" is
-  *provisional*: caching that answer would hide an annotated field reachable only through the cycle
-  from every other type that reaches the same node. So a plan computed while an enclosing cycle was
-  open is not cached, or the builder iterates to a fixed point. Today the provisional and exact
-  answers agree everywhere, because no annotated field sits inside the cycle — that is a fact about
-  the current protos, not a property, so the plan-construction test pins `DiffMetadataRequest`.
+  *provisional*: the resulting plan has **no descend arm at all** for the fields that resolved
+  provisionally, so an annotation inside the cycle is applied at depth 0 and nowhere else, and the
+  coverage sweep still passes because the top-level copy is clean. Declining to cache that answer
+  fixes the poisoning but not the plan, and leaves the cycle head permanently uncacheable. **The
+  builder iterates to a fixed point** — a requirement, not one of two options. The plan-construction
+  test pins one root per component, not `DiffMetadataRequest` alone.
 
-- Maps do: an annotated map is cleared whole, a map whose value type has a plan is descended per
-  entry. The existing net skips maps.
+- Maps do, and they are **rebuilt, never shared**. `dst.Set(fd, src.Get(fd))` on a map field shares
+  the Go map itself and its message values, so clearing a field in an entry writes through to the
+  caller's live message — measured, the source lost the field. The correct form is
+  `dst.Mutable(fd).Map()` plus a per-entry `Set` of a redacted copy. An annotated map is dropped
+  whole; a map whose value type has a plan is rebuilt entry by entry.
+  `TestAuditRedactionDoesNotMutateInput` needs a fixture holding a map whose value type has a plan
+  — none exists today, so this violation of goal 6 would not be caught.
 - **Every `Any` that reaches the row is registered and redacted.** The descriptor walk sees
   `type_url` and `value`, never the packed message, so an annotated field inside one is invisible
   to the redactor, the coverage lint and the inventory alike. Three paths put an `Any` on an audit
@@ -181,37 +243,81 @@ Constraints:
   | `Status.details` (`audit.go:376`, `convertErrToStatus:1482`) | 6, via `connect.NewErrorDetail` | `PermissionDeniedDetail`, `PlanCheckRun_Result` |
   | ordinary `Any` fields | 2, both on `SearchAuditLogsResponse.audit_logs` | rows already redacted when written |
 
-  Each is unpacked, redacted against the plan for its own descriptor, and re-packed. That alone is
+  Each is unpacked, redacted against the plan for its own descriptor, and re-packed — **unless the
+  packed type's plan is nil**, in which case it is left exactly as found. `connect`'s
+  `ErrorDetail.Type()` returns a bare full name, so `Status.details[].type_url` is stored today as
+  `bytebase.v1.PermissionDeniedDetail`; an unconditional round-trip through `anypb.New` rewrites it
+  to `type.googleapis.com/bytebase.v1.PermissionDeniedDetail`, silently changing what
+  `SearchAuditLogs` emits as `@type` for a message that had nothing to redact. That alone is
   not enough: the packed type is chosen in Go rather than declared in a descriptor, so a handler
   that starts packing a new one would neither change the inventory nor fail it, and an
   *unannotated* credential inside it would still be written. So permitted types are a checked-in
   registry, and a **lint over the call sites of both setters** fails the build when one packs a
   type the registry does not name. The interceptor also drops an unregistered `Any` rather than
-  logging it, as a backstop.
+  logging it — load-bearing rather than a backstop, since `protojson.Marshal` fails the *entire*
+  message on an unresolvable `Any`, so without the drop the whole audit row is lost.
 
   The lint is the half that matters. Dropping alone is fail-closed for secrecy but fail-silent for
   the record: `SetIamPolicy`'s policy deltas are the interesting part of that audit row, and losing
   them with no error is its own defect. The registry is also the derivation source for the
   inventory's `Any` half — registering a type is what pulls its fields in for classification.
 
-  Nothing leaks today. The four `service_data` sites each pack read-path converter output that
-  already blanks its secrets — `convertToAISetting` and `convertToEmailSetting` explicitly,
-  `convertToAppIMSetting` by building empty payloads. `PermissionDeniedDetail` carries a method,
-  permissions and resource names; `PlanCheckRun_Result` carries advisory text. Every one of those
-  is a property of the current call sites rather than an enforced one, and `Status.details` is the
-  path that fires on *failed* RPCs — exactly when a handler is most likely to attach context about
-  what went wrong.
+  Nothing leaks today, but not for one reason. Two of the four `service_data` sites
+  (`setting_service.go:174`, `:658`) pack `convertToSettingMessage` output, which blanks its secrets
+  — `convertToAISetting` and `convertToEmailSetting` explicitly, `convertToAppIMSetting` by building
+  empty payloads. The other two (`project_service.go:621`, `workspace_service.go:509`) pack
+  `anypb.New(&v1pb.AuditData{PolicyDelta: ...})` from `findIamPolicyDeltas`, which is not a
+  converter and blanks nothing; they are safe only because `BindingDelta` happens to hold
+  `action`/`role`/`member`/`condition`. The read-path assertion cannot reach them at all, since
+  `convertToProtoAny` returns an `*anypb.Any` — so `AuditData` and `BindingDelta` get classified
+  through the registry rather than assumed clean. `PermissionDeniedDetail` carries a method,
+  permissions and resource names; `PlanCheckRun_Result` carries advisory text. All of it is a
+  property of the current call sites rather than an enforced one, and `Status.details` fires on
+  *failed* RPCs — exactly when a handler attaches context about what went wrong.
 
-All 35 redactors are deleted, allowlist rebuilds included. Audit rows will carry the non-secret
-remainder those rebuilds dropped — `redactUser` returns three fields today — and `AdminExecute`
-rows regain `rows_count`.
+  **`Status.message` is a fourth payload, and no annotation can reach it.** `convertErrToStatus`
+  sets it from `connectErr.Message()`, or `err.Error()` for a non-connect error, onto the row at
+  `audit.go:376`, and `logAuditToStdout` prints it as `status_message`. It is a Go string with no
+  descriptor, so goal 1 and the inventory are structurally blind to it. Not hypothetical:
+  `idp_service.go:283` formats `"failed to exchange access token, error: %s"` from the oauth2
+  exchange error, whose `Error()` embeds the IdP token endpoint's raw response body, and oauth2
+  sends the client secret with `AuthStyleInParams` — on the same method whose *request* is redacted
+  precisely because it carries that secret. Error strings that interpolate a remote response have to
+  be handled where they are built; nothing in this design covers them.
+
+All 35 redactors are deleted, allowlist rebuilds included, and `AdminExecute` rows regain
+`rows_count`. But "audit rows carry the non-secret remainder" is not uniformly benign, and two
+values do not sort all of it.
+
+`OMIT` has to cover more than bulk as the term is used above. `redactMaskingReasons` drops
+`semantic_type_icon` "to avoid polluting audit logs with base64 data", and `redactAIChatRequest`
+drops `messages` and `tool_definitions` as "an unbounded body". Neither field is in the `OMIT` set,
+so deleting those two rebuilds restores base64 blobs to every `Query` row and the full AI transcript
+to every `AIService/Chat` denial. Both go in.
+
+The harder residue is content that is neither a credential nor bulk. `redactUser` returns
+`{name, email, title}` while `convertToUser` populates `phone`, `groups[]` and profile timestamps.
+`SENSITIVE` is unavailable — the read-path assertion would then fail on `convertToUser` itself — and
+`OMIT` reads as "returning it is the point of the RPC", so unannotated is the path of least
+resistance and every audited `Login`, `CreateUser` and `UpdateUser` starts writing a phone number
+and group memberships into `audit_log` and stdout, which have different retention and no purge path.
+`redactPurchaseResponse` drops a Stripe checkout URL, a bearer capability no reviewer classifies as
+a credential. Either `OMIT` is redefined as "must not be recorded, for any reason" — the smaller
+change, and what the rest of this design assumes — or a third value is needed. Settling that, and
+walking each of the ten rebuilds for what it newly admits, is a precondition for deleting them.
 
 ### Enforcement
 
 - **Coverage.** For every RPC in the population below, fill every *annotated* field in the request
-  and response tree with a unique sentinel, every oneof arm, redact, assert no sentinel survives.
-  Catches a redactor that stops covering a field. Subsumes
-  `TestAuditRedactsEveryInputOnlyDataSourceField`.
+  and response tree with a unique sentinel, redact, assert no sentinel survives. Catches a redactor
+  that stops covering a field. Subsumes `TestAuditRedactsEveryInputOnlyDataSourceField`.
+
+  Oneofs need **one message per arm**, not one message with every arm set: setting a second arm
+  clears the first, so a single-message sweep silently exercises only the last-numbered arm while
+  every other assertion passes vacuously. `DataSourceExternalSecret.auth_option` would be tested on
+  `token` (5) and never on `app_role` (4), whose `role_id` and `secret_id` are both `INPUT_ONLY` —
+  and `app_role` is the arm the blanking rule above is argued from. This is a cross-product over
+  oneofs, materially more expensive than one pass.
 - **Inventory** — the half that makes goal 4 real. A sentinel sweep cannot distinguish an
   unannotated credential from an ordinary field the audit row intentionally keeps; both survive
   redaction identically, so the sweep alone has no oracle. The oracle is a checked-in inventory of
@@ -233,9 +339,19 @@ rows regain `rows_count`.
   already requires every `INPUT_ONLY` field to come back blank from a converter; generalize it to
   `SENSITIVE`. Runs on **every** converter in the declared list, minting ones included: a minting
   converter is not skipped, it is allowed exactly the `(function, field)` pairs declared for it
-  above, so a later line inside it that populated `password` or `service_key` still fails. A
-  `convertTo*` function with no entry in the list fails the build, which is what keeps "every
-  converter" true rather than aspirational.
+  above, so a later line inside it that populated `password` or `service_key` still fails.
+
+  The completeness lint keys on **return type — a function producing a `v1pb` message — not on the
+  `convertTo*` name prefix**. That prefix also matches 19 `convertToStore*` functions going the
+  other way, which carry credentials by design (`convertToStoreInstance` holds every data-source
+  password; `convertToStoreProjectWebhookMessage` copies `Webhook.url`, the field `redactWebhook`
+  masks as a bearer credential) and which `assertNoInputOnlyValues` cannot run on at all, since it
+  takes a `protoreflect.Message` asserting the v1 contract. Keying on the prefix produces 19 build
+  failures whose only cheap fix is 19 whole-function exemptions — the blanket-exemption failure this
+  design rejects. A function producing a `v1pb` message with no entry in the list fails the build,
+  which is what keeps "every converter" true rather than aspirational. Note also that
+  `assertNoInputOnlyValues` skips maps (`:485`), so goal 5 carries the same map-shaped hole the
+  redactor closes above.
 
 ## Performance
 
