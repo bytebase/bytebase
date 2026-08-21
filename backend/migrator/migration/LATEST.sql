@@ -25,6 +25,7 @@ CREATE TABLE sample_project_instance (
     instance text NOT NULL UNIQUE,
     db_name text NOT NULL UNIQUE,
     role_name text NOT NULL UNIQUE,
+    replica_id text NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     expires_at timestamptz,
     deleted_at timestamptz,

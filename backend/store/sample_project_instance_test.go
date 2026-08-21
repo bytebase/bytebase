@@ -118,278 +118,135 @@ func TestReserveSampleProjectInstanceRejectsOtherUniqueCollisions(t *testing.T) 
 	require.False(t, wasCreated)
 }
 
-func TestWithLockedSampleProjectInstanceAppliesImmutableLifecycleState(t *testing.T) {
+func TestActivateSampleProjectInstanceAppliesImmutableLifecycleState(t *testing.T) {
 	ctx, _, s := newSampleProjectInstanceFixture(t)
-	_, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-a"))
+	reservation, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-a"))
 	require.NoError(t, err)
 	expiresAt := time.Date(2026, time.August, 24, 9, 0, 0, 0, time.UTC)
-	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
-		return tx.SetExpiration(ctx, expiresAt)
-	}))
-
-	var activated *store.SampleProjectInstanceMessage
-	err = s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(ctx context.Context, tx *store.SampleProjectInstanceTx, message *store.SampleProjectInstanceMessage) error {
-		activated = message
-		return tx.SetExpiration(ctx, expiresAt.Add(time.Hour))
-	})
-	require.Error(t, err)
-	require.Equal(t, &expiresAt, activated.ExpiresAt)
+	activateSampleProjectInstance(ctx, t, s, reservation, expiresAt)
+	activated, err := s.ActivateSampleProjectInstance(ctx, reservation.WorkspaceID, reservation.InstanceID, reservation.ReplicaID, expiresAt.Add(time.Hour))
+	require.NoError(t, err)
+	require.False(t, activated)
 }
 
-func TestSetSampleProjectInstanceExpirationSerializesWithWorkspaceDeletion(t *testing.T) {
+func TestActivateSampleProjectInstanceSerializesWithWorkspaceDeletion(t *testing.T) {
+	ctx, db, s := newSampleProjectInstanceFixture(t)
+	reservation, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-a"))
+	require.NoError(t, err)
+	deleteTx, err := db.BeginTx(ctx, nil)
+	require.NoError(t, err)
+	deletionCommitted := false
+	defer func() {
+		if !deletionCommitted {
+			_ = deleteTx.Rollback()
+		}
+	}()
+	_, err = deleteTx.ExecContext(ctx, "UPDATE workspace SET deleted = TRUE WHERE resource_id = 'workspace-a'")
+	require.NoError(t, err)
+
+	result := make(chan error, 1)
+	go func() {
+		_, err := s.ActivateSampleProjectInstance(ctx, reservation.WorkspaceID, reservation.InstanceID, reservation.ReplicaID, time.Now().Add(time.Hour))
+		result <- err
+	}()
+	require.Eventually(t, func() bool {
+		var waiting bool
+		err := db.QueryRowContext(ctx, `
+			SELECT EXISTS (
+				SELECT 1 FROM pg_stat_activity
+				WHERE wait_event_type = 'Lock'
+					AND query LIKE '%SELECT deleted%FROM workspace%FOR UPDATE%'
+			)
+		`).Scan(&waiting)
+		return err == nil && waiting
+	}, 5*time.Second, 10*time.Millisecond)
+	require.NoError(t, deleteTx.Commit())
+	deletionCommitted = true
+	require.Equal(t, common.NotFound, common.ErrorCode(<-result))
+}
+
+func TestActivateSampleProjectInstanceSerializesWithProjectArchive(t *testing.T) {
+	ctx, db, s := newSampleProjectInstanceFixture(t)
+	reservation, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-a"))
+	require.NoError(t, err)
+	archiveTx, err := db.BeginTx(ctx, nil)
+	require.NoError(t, err)
+	archiveCommitted := false
+	defer func() {
+		if !archiveCommitted {
+			_ = archiveTx.Rollback()
+		}
+	}()
+	_, err = archiveTx.ExecContext(ctx, "UPDATE project SET deleted = TRUE WHERE resource_id = 'project-workspace-a' AND workspace = 'workspace-a'")
+	require.NoError(t, err)
+
+	result := make(chan error, 1)
+	go func() {
+		_, err := s.ActivateSampleProjectInstance(ctx, reservation.WorkspaceID, reservation.InstanceID, reservation.ReplicaID, time.Now().Add(time.Hour))
+		result <- err
+	}()
+	require.Eventually(t, func() bool {
+		var waiting bool
+		err := db.QueryRowContext(ctx, `
+			SELECT EXISTS (
+				SELECT 1 FROM pg_stat_activity
+				WHERE wait_event_type = 'Lock'
+					AND query LIKE '%SELECT deleted%FROM project%FOR UPDATE%'
+			)
+		`).Scan(&waiting)
+		return err == nil && waiting
+	}, 5*time.Second, 10*time.Millisecond)
+	require.NoError(t, archiveTx.Commit())
+	archiveCommitted = true
+	require.Equal(t, common.NotFound, common.ErrorCode(<-result))
+}
+
+func TestActivateSampleProjectInstanceRejectsMissingAndDeletedProject(t *testing.T) {
 	ctx, db, s := newSampleProjectInstanceFixture(t)
 	expiresAt := time.Date(2026, time.August, 24, 9, 0, 0, 0, time.UTC)
 
-	t.Run("deletion wins", func(t *testing.T) {
-		_, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-a"))
-		require.NoError(t, err)
+	missing := sampleProjectInstance("workspace-a")
+	missing.ProjectID = "missing"
+	reservation, _, err := s.ReserveSampleProjectInstance(ctx, missing)
+	require.NoError(t, err)
+	_, err = s.ActivateSampleProjectInstance(ctx, reservation.WorkspaceID, reservation.InstanceID, reservation.ReplicaID, expiresAt)
+	require.Equal(t, common.NotFound, common.ErrorCode(err))
 
-		deleteTx, err := db.BeginTx(ctx, nil)
-		require.NoError(t, err)
-		deletionCommitted := false
-		defer func() {
-			if !deletionCommitted {
-				_ = deleteTx.Rollback()
-			}
-		}()
-		_, err = deleteTx.ExecContext(ctx, "UPDATE workspace SET deleted = TRUE WHERE resource_id = 'workspace-a'")
-		require.NoError(t, err)
-
-		activationErr := make(chan error, 1)
-		go func() {
-			activationErr <- s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
-				return tx.SetExpiration(ctx, expiresAt)
-			})
-		}()
-		require.Eventually(t, func() bool {
-			var waiting bool
-			err := db.QueryRowContext(ctx, `
-				SELECT EXISTS (
-					SELECT 1
-					FROM pg_stat_activity
-					WHERE wait_event_type = 'Lock'
-						AND query LIKE '%SELECT deleted%FROM workspace%FOR UPDATE%'
-				)
-			`).Scan(&waiting)
-			return err == nil && waiting
-		}, 5*time.Second, 10*time.Millisecond)
-		require.NoError(t, deleteTx.Commit())
-		deletionCommitted = true
-		err = <-activationErr
-		require.Equal(t, common.NotFound, common.ErrorCode(err))
-
-		reservation, err := s.GetSampleProjectInstance(ctx, "workspace-a")
-		require.NoError(t, err)
-		require.Nil(t, reservation.ExpiresAt)
-	})
-
-	t.Run("activation wins", func(t *testing.T) {
-		_, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-b"))
-		require.NoError(t, err)
-
-		activationReady := make(chan struct{})
-		finishActivation := make(chan struct{})
-		activationErr := make(chan error, 1)
-		go func() {
-			activationErr <- s.WithLockedSampleProjectInstance(ctx, "workspace-b", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
-				if err := tx.SetExpiration(ctx, expiresAt); err != nil {
-					return err
-				}
-				close(activationReady)
-				<-finishActivation
-				return nil
-			})
-		}()
-		<-activationReady
-
-		deletionErr := make(chan error, 1)
-		go func() {
-			deletionErr <- s.DeleteWorkspace(ctx, "workspace-b")
-		}()
-		require.Eventually(t, func() bool {
-			var waiting bool
-			err := db.QueryRowContext(ctx, `
-				SELECT EXISTS (
-					SELECT 1
-					FROM pg_stat_activity
-					WHERE wait_event_type = 'Lock'
-						AND query LIKE 'UPDATE workspace SET deleted = TRUE%'
-				)
-			`).Scan(&waiting)
-			return err == nil && waiting
-		}, 5*time.Second, 10*time.Millisecond)
-		close(finishActivation)
-		require.NoError(t, <-activationErr)
-		require.NoError(t, <-deletionErr)
-
-		reservation, err := s.GetSampleProjectInstance(ctx, "workspace-b")
-		require.NoError(t, err)
-		require.Equal(t, &expiresAt, reservation.ExpiresAt)
-	})
+	reservation, _, err = s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-b"))
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, "UPDATE project SET deleted = TRUE WHERE resource_id = 'project-workspace-b' AND workspace = 'workspace-b'")
+	require.NoError(t, err)
+	_, err = s.ActivateSampleProjectInstance(ctx, reservation.WorkspaceID, reservation.InstanceID, reservation.ReplicaID, expiresAt)
+	require.Equal(t, common.NotFound, common.ErrorCode(err))
 }
 
-func TestSetSampleProjectInstanceExpirationSerializesWithProjectArchive(t *testing.T) {
+func TestCountSampleProjectInstancesForCleanupIncludesStaleReservation(t *testing.T) {
 	ctx, db, s := newSampleProjectInstanceFixture(t)
-	expiresAt := time.Date(2026, time.August, 24, 9, 0, 0, 0, time.UTC)
-
-	t.Run("archive wins", func(t *testing.T) {
-		_, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-a"))
-		require.NoError(t, err)
-
-		archiveTx, err := db.BeginTx(ctx, nil)
-		require.NoError(t, err)
-		archiveCommitted := false
-		defer func() {
-			if !archiveCommitted {
-				_ = archiveTx.Rollback()
-			}
-		}()
-		_, err = archiveTx.ExecContext(ctx, "UPDATE project SET deleted = TRUE WHERE resource_id = 'project-workspace-a' AND workspace = 'workspace-a'")
-		require.NoError(t, err)
-
-		activationErr := make(chan error, 1)
-		go func() {
-			activationErr <- s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
-				return tx.SetExpiration(ctx, expiresAt)
-			})
-		}()
-		require.Eventually(t, func() bool {
-			var waiting bool
-			err := db.QueryRowContext(ctx, `
-				SELECT EXISTS (
-					SELECT 1
-					FROM pg_stat_activity
-					WHERE wait_event_type = 'Lock'
-						AND query LIKE '%SELECT deleted%FROM project%FOR UPDATE%'
-				)
-			`).Scan(&waiting)
-			return err == nil && waiting
-		}, 5*time.Second, 10*time.Millisecond)
-		require.NoError(t, archiveTx.Commit())
-		archiveCommitted = true
-		err = <-activationErr
-		require.Equal(t, common.NotFound, common.ErrorCode(err))
-
-		reservation, err := s.GetSampleProjectInstance(ctx, "workspace-a")
-		require.NoError(t, err)
-		require.Nil(t, reservation.ExpiresAt)
-	})
-
-	t.Run("activation wins", func(t *testing.T) {
-		_, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-b"))
-		require.NoError(t, err)
-
-		activationReady := make(chan struct{})
-		finishActivation := make(chan struct{})
-		activationErr := make(chan error, 1)
-		go func() {
-			activationErr <- s.WithLockedSampleProjectInstance(ctx, "workspace-b", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
-				if err := tx.SetExpiration(ctx, expiresAt); err != nil {
-					return err
-				}
-				close(activationReady)
-				<-finishActivation
-				return nil
-			})
-		}()
-		<-activationReady
-
-		archiveErr := make(chan error, 1)
-		go func() {
-			_, err := db.ExecContext(ctx, "UPDATE project SET deleted = TRUE WHERE resource_id = 'project-workspace-b' AND workspace = 'workspace-b'")
-			archiveErr <- err
-		}()
-		require.Eventually(t, func() bool {
-			var waiting bool
-			err := db.QueryRowContext(ctx, `
-				SELECT EXISTS (
-					SELECT 1
-					FROM pg_stat_activity
-					WHERE wait_event_type = 'Lock'
-						AND query LIKE 'UPDATE project SET deleted = TRUE%'
-				)
-			`).Scan(&waiting)
-			return err == nil && waiting
-		}, 5*time.Second, 10*time.Millisecond)
-		close(finishActivation)
-		require.NoError(t, <-activationErr)
-		require.NoError(t, <-archiveErr)
-
-		reservation, err := s.GetSampleProjectInstance(ctx, "workspace-b")
-		require.NoError(t, err)
-		require.Equal(t, &expiresAt, reservation.ExpiresAt)
-	})
-}
-
-func TestSetSampleProjectInstanceExpirationRejectsMissingAndDeletedProject(t *testing.T) {
-	ctx, db, s := newSampleProjectInstanceFixture(t)
-	expiresAt := time.Date(2026, time.August, 24, 9, 0, 0, 0, time.UTC)
-
-	t.Run("missing", func(t *testing.T) {
-		reservation := sampleProjectInstance("workspace-a")
-		reservation.ProjectID = "missing"
-		_, _, err := s.ReserveSampleProjectInstance(ctx, reservation)
-		require.NoError(t, err)
-		err = s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
-			return tx.SetExpiration(ctx, expiresAt)
-		})
-		require.Equal(t, common.NotFound, common.ErrorCode(err))
-	})
-
-	t.Run("deleted", func(t *testing.T) {
-		_, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-b"))
-		require.NoError(t, err)
-		_, err = db.ExecContext(ctx, "UPDATE project SET deleted = TRUE WHERE resource_id = 'project-workspace-b' AND workspace = 'workspace-b'")
-		require.NoError(t, err)
-		err = s.WithLockedSampleProjectInstance(ctx, "workspace-b", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
-			activationErr := tx.SetExpiration(ctx, expiresAt)
-			require.Equal(t, common.NotFound, common.ErrorCode(activationErr))
-			lockCtx, cancel := context.WithTimeout(ctx, time.Second)
-			defer cancel()
-			_, err := db.ExecContext(lockCtx, "UPDATE project SET name = name WHERE resource_id = 'project-workspace-b' AND workspace = 'workspace-b'")
-			require.NoError(t, err)
-			return activationErr
-		})
-		require.Equal(t, common.NotFound, common.ErrorCode(err))
-	})
-}
-
-func TestWithLockedSampleProjectInstanceResetsStaleReservationAndCountsCleanup(t *testing.T) {
-	ctx, _, s := newSampleProjectInstanceFixture(t)
 	now := time.Date(2026, time.August, 17, 9, 0, 0, 0, time.UTC)
-	_, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-a"))
+	reservation, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-a"))
 	require.NoError(t, err)
-	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
-		return tx.ResetCreatedAt(ctx, now)
-	}))
+	_, err = db.ExecContext(ctx, "UPDATE sample_project_instance SET created_at = $1 WHERE workspace = $2 AND instance = $3", now, reservation.WorkspaceID, reservation.InstanceID)
+	require.NoError(t, err)
 	count, err := s.CountSampleProjectInstancesForCleanup(ctx, now.Add(time.Hour), now.Add(time.Minute))
 	require.NoError(t, err)
 	require.Equal(t, 1, count)
-	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(_ context.Context, _ *store.SampleProjectInstanceTx, message *store.SampleProjectInstanceMessage) error {
-		require.Equal(t, now, message.CreatedAt)
-		return nil
-	}))
 }
 
 func TestWithLockedSampleProjectInstanceCleanupRecordIteratesAfterCallbackError(t *testing.T) {
 	ctx, db, s := newSampleProjectInstanceFixture(t)
 	now := time.Date(2026, time.August, 17, 9, 0, 0, 0, time.UTC)
 	for _, workspace := range []string{"workspace-a", "workspace-b", "workspace-d"} {
-		_, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance(workspace))
+		reservation, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance(workspace))
 		require.NoError(t, err)
+		if workspace == "workspace-b" {
+			activateSampleProjectInstance(ctx, t, s, reservation, now.Add(time.Second))
+		} else {
+			activateSampleProjectInstance(ctx, t, s, reservation, now.Add(-time.Second))
+		}
 	}
-	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
-		return tx.SetExpiration(ctx, now.Add(-time.Second))
-	}))
-	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-b", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
-		return tx.SetExpiration(ctx, now.Add(time.Second))
-	}))
-	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-d", func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
-		return tx.SetExpiration(ctx, now.Add(-time.Second))
-	}))
 	_, err := db.ExecContext(ctx, `
-		INSERT INTO sample_project_instance (workspace, project, instance, db_name, role_name, created_at)
-		VALUES ('workspace-c', 'project-workspace-c', 'instance-workspace-c', 'database-workspace-c', 'role-workspace-c', $1)
+		INSERT INTO sample_project_instance (workspace, project, instance, db_name, role_name, replica_id, created_at)
+		VALUES ('workspace-c', 'project-workspace-c', 'instance-workspace-c', 'database-workspace-c', 'role-workspace-c', 'replica-a', $1)
 	`, now.Add(-time.Hour))
 	require.NoError(t, err)
 
@@ -414,21 +271,18 @@ func TestWithLockedSampleProjectInstanceCleanupRecordIteratesAfterCallbackError(
 	require.Error(t, callbackErr)
 	require.Equal(t, []string{"workspace-a", "workspace-c", "workspace-d"}, processed)
 
-	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-a", func(_ context.Context, _ *store.SampleProjectInstanceTx, message *store.SampleProjectInstanceMessage) error {
-		require.Nil(t, message.DeletedAt)
-		return nil
-	}))
-	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-b", func(_ context.Context, _ *store.SampleProjectInstanceTx, message *store.SampleProjectInstanceMessage) error {
-		require.Nil(t, message.DeletedAt)
-		return nil
-	}))
-	require.Error(t, s.WithLockedSampleProjectInstance(ctx, "workspace-c", func(context.Context, *store.SampleProjectInstanceTx, *store.SampleProjectInstanceMessage) error {
-		return nil
-	}))
-	require.NoError(t, s.WithLockedSampleProjectInstance(ctx, "workspace-d", func(_ context.Context, _ *store.SampleProjectInstanceTx, message *store.SampleProjectInstanceMessage) error {
-		require.Equal(t, &now, message.DeletedAt)
-		return nil
-	}))
+	reservation, err := s.GetSampleProjectInstance(ctx, "workspace-a")
+	require.NoError(t, err)
+	require.Nil(t, reservation.DeletedAt)
+	reservation, err = s.GetSampleProjectInstance(ctx, "workspace-b")
+	require.NoError(t, err)
+	require.Nil(t, reservation.DeletedAt)
+	reservation, err = s.GetSampleProjectInstance(ctx, "workspace-c")
+	require.NoError(t, err)
+	require.Nil(t, reservation)
+	reservation, err = s.GetSampleProjectInstance(ctx, "workspace-d")
+	require.NoError(t, err)
+	require.Equal(t, &now, reservation.DeletedAt)
 
 	result, err := s.WithLockedSampleProjectInstanceCleanupRecord(ctx, now, now.Add(-time.Hour), "", func(_ context.Context, _ *store.SampleProjectInstanceTx, message *store.SampleProjectInstanceMessage) error {
 		processed = append(processed, message.WorkspaceID)
@@ -444,11 +298,9 @@ func TestWithLockedSampleProjectInstanceCleanupRecordLocksOnlySelectedRow(t *tes
 	ctx, _, s := newSampleProjectInstanceFixture(t)
 	now := time.Date(2026, time.August, 17, 9, 0, 0, 0, time.UTC)
 	for _, workspace := range []string{"workspace-a", "workspace-b"} {
-		_, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance(workspace))
+		reservation, _, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance(workspace))
 		require.NoError(t, err)
-		require.NoError(t, s.WithLockedSampleProjectInstance(ctx, workspace, func(ctx context.Context, tx *store.SampleProjectInstanceTx, _ *store.SampleProjectInstanceMessage) error {
-			return tx.SetExpiration(ctx, now.Add(-time.Second))
-		}))
+		activateSampleProjectInstance(ctx, t, s, reservation, now.Add(-time.Second))
 	}
 
 	started := make(chan struct{})
@@ -490,7 +342,15 @@ func sampleProjectInstance(workspace string) *store.SampleProjectInstanceMessage
 		InstanceID:  "instance-" + workspace,
 		DBName:      "database-" + workspace,
 		RoleName:    "role-" + workspace,
+		ReplicaID:   "replica-a",
 	}
+}
+
+func activateSampleProjectInstance(ctx context.Context, t *testing.T, s *store.Store, reservation *store.SampleProjectInstanceMessage, expiresAt time.Time) {
+	t.Helper()
+	activated, err := s.ActivateSampleProjectInstance(ctx, reservation.WorkspaceID, reservation.InstanceID, reservation.ReplicaID, expiresAt)
+	require.NoError(t, err)
+	require.True(t, activated)
 }
 
 func TestReserveSampleProjectInstanceConsumesWorkspaceEntitlement(t *testing.T) {
@@ -513,4 +373,132 @@ func TestReserveSampleProjectInstanceConsumesWorkspaceEntitlement(t *testing.T) 
 		SELECT COUNT(*) FROM sample_project_instance WHERE workspace = 'workspace-a'
 	`).Scan(&count))
 	require.Equal(t, 1, count)
+}
+
+func TestClaimSampleProjectInstanceRequiresExpiredAttempt(t *testing.T) {
+	ctx, _, s := newSampleProjectInstanceFixture(t)
+	reservation, created, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-a"))
+	require.NoError(t, err)
+	require.True(t, created)
+
+	claimed, ok, err := s.ClaimSampleProjectInstance(
+		ctx, reservation.WorkspaceID, reservation.InstanceID, reservation.CreatedAt,
+		"replica-b", time.Hour, time.Minute,
+	)
+	require.NoError(t, err)
+	require.False(t, ok)
+	require.Nil(t, claimed)
+
+	current, err := s.GetSampleProjectInstance(ctx, reservation.WorkspaceID)
+	require.NoError(t, err)
+	require.Equal(t, "replica-a", current.ReplicaID)
+}
+
+func TestClaimSampleProjectInstanceAllowsOneStaleOwnerTakeover(t *testing.T) {
+	ctx, db, s := newSampleProjectInstanceFixture(t)
+	reservation, created, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-a"))
+	require.NoError(t, err)
+	require.True(t, created)
+	_, err = db.ExecContext(ctx, `
+		UPDATE sample_project_instance
+		SET created_at = now() - INTERVAL '4 minutes'
+		WHERE workspace = $1 AND instance = $2
+	`, reservation.WorkspaceID, reservation.InstanceID)
+	require.NoError(t, err)
+	reservation, err = s.GetSampleProjectInstance(ctx, reservation.WorkspaceID)
+	require.NoError(t, err)
+
+	type result struct {
+		owner   string
+		claimed bool
+		err     error
+	}
+	results := make(chan result, 2)
+	for _, owner := range []string{"replica-b", "replica-c"} {
+		go func() {
+			_, claimed, err := s.ClaimSampleProjectInstance(
+				ctx, reservation.WorkspaceID, reservation.InstanceID, reservation.CreatedAt,
+				owner, 3*time.Minute, time.Minute,
+			)
+			results <- result{owner: owner, claimed: claimed, err: err}
+		}()
+	}
+
+	var winner string
+	for range 2 {
+		result := <-results
+		require.NoError(t, result.err)
+		if result.claimed {
+			require.Empty(t, winner)
+			winner = result.owner
+		}
+	}
+	require.NotEmpty(t, winner)
+	current, err := s.GetSampleProjectInstance(ctx, reservation.WorkspaceID)
+	require.NoError(t, err)
+	require.Equal(t, winner, current.ReplicaID)
+	require.True(t, current.CreatedAt.After(reservation.CreatedAt))
+}
+
+func TestClaimSampleProjectInstanceRequiresStaleOtherOwnerButAllowsSelfRetry(t *testing.T) {
+	ctx, db, s := newSampleProjectInstanceFixture(t)
+	reservation, created, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-a"))
+	require.NoError(t, err)
+	require.True(t, created)
+	_, err = db.ExecContext(ctx, `
+		UPDATE sample_project_instance
+		SET created_at = now() - INTERVAL '4 minutes'
+		WHERE workspace = $1 AND instance = $2
+	`, reservation.WorkspaceID, reservation.InstanceID)
+	require.NoError(t, err)
+	require.NoError(t, s.UpsertReplicaHeartbeat(ctx, reservation.ReplicaID))
+	reservation, err = s.GetSampleProjectInstance(ctx, reservation.WorkspaceID)
+	require.NoError(t, err)
+
+	_, claimed, err := s.ClaimSampleProjectInstance(
+		ctx, reservation.WorkspaceID, reservation.InstanceID, reservation.CreatedAt,
+		"replica-b", 3*time.Minute, time.Minute,
+	)
+	require.NoError(t, err)
+	require.False(t, claimed)
+
+	claimedReservation, claimed, err := s.ClaimSampleProjectInstance(
+		ctx, reservation.WorkspaceID, reservation.InstanceID, reservation.CreatedAt,
+		reservation.ReplicaID, 3*time.Minute, time.Minute,
+	)
+	require.NoError(t, err)
+	require.True(t, claimed)
+	require.Equal(t, reservation.ReplicaID, claimedReservation.ReplicaID)
+}
+
+func TestOwnedSampleProjectInstanceTransitionsFenceFormerOwner(t *testing.T) {
+	ctx, db, s := newSampleProjectInstanceFixture(t)
+	reservation, created, err := s.ReserveSampleProjectInstance(ctx, sampleProjectInstance("workspace-a"))
+	require.NoError(t, err)
+	require.True(t, created)
+	_, err = db.ExecContext(ctx, `
+		UPDATE sample_project_instance
+		SET created_at = now() - INTERVAL '4 minutes'
+		WHERE workspace = $1 AND instance = $2
+	`, reservation.WorkspaceID, reservation.InstanceID)
+	require.NoError(t, err)
+	reservation, err = s.GetSampleProjectInstance(ctx, reservation.WorkspaceID)
+	require.NoError(t, err)
+	_, claimed, err := s.ClaimSampleProjectInstance(
+		ctx, reservation.WorkspaceID, reservation.InstanceID, reservation.CreatedAt,
+		"replica-b", 3*time.Minute, time.Minute,
+	)
+	require.NoError(t, err)
+	require.True(t, claimed)
+
+	activated, err := s.ActivateSampleProjectInstance(ctx, reservation.WorkspaceID, reservation.InstanceID, "replica-a", time.Now().Add(time.Hour))
+	require.NoError(t, err)
+	require.False(t, activated)
+	deleted, err := s.DeletePendingSampleProjectInstance(ctx, reservation.WorkspaceID, reservation.InstanceID, "replica-a")
+	require.NoError(t, err)
+	require.False(t, deleted)
+
+	activated, err = s.ActivateSampleProjectInstance(ctx, reservation.WorkspaceID, reservation.InstanceID, "replica-b", time.Now().Add(time.Hour))
+	require.NoError(t, err)
+	require.True(t, activated)
 }

@@ -30,6 +30,9 @@ const (
 	cleanupValidationDeadline  = 10 * time.Second
 	cleanupAttemptDeadline     = time.Minute
 	staleReservationAge        = time.Hour
+	replicaHeartbeatStaleness  = time.Minute
+	pollInitialDelay           = 10 * time.Millisecond
+	pollMaxDelay               = time.Second
 )
 
 // FailureKind classifies failures at the Manager seam.
@@ -147,11 +150,12 @@ func (s metadataState) matches(reservation *store.SampleProjectInstanceMessage) 
 		s.Database.DatabaseName == reservation.DBName
 }
 
-// ManagerOptions control non-production seams used by lifecycle tests.
+// ManagerOptions control manager identity and lifecycle test seams.
 type ManagerOptions struct {
-	Clock  func() time.Time
-	Random io.Reader
-	Logger *slog.Logger
+	Clock     func() time.Time
+	Random    io.Reader
+	Logger    *slog.Logger
+	ReplicaID string
 }
 
 // Manager orchestrates reservation, physical provisioning, metadata
@@ -164,14 +168,7 @@ type Manager struct {
 	clock     func() time.Time
 	random    io.Reader
 	logger    *slog.Logger
-}
-
-type prepareOutcome struct {
-	instance            *store.InstanceMessage
-	discoveredDatabases []*store.DatabaseMessage
-	policyDenied        error
-	commit              bool
-	err                 error
+	replicaID string
 }
 
 // NewManagerFromURL creates a startup-safe manager from raw target
@@ -206,61 +203,72 @@ func NewManager(
 		options.Logger = slog.Default()
 	}
 	return &Manager{
-		store:  s,
-		target: target,
-		syncer: syncer,
-		clock:  options.Clock,
-		random: options.Random,
-		logger: options.Logger,
+		store:     s,
+		target:    target,
+		syncer:    syncer,
+		clock:     options.Clock,
+		random:    options.Random,
+		logger:    options.Logger,
+		replicaID: options.ReplicaID,
 	}
 }
 
 // Prepare provisions and registers a seven-day sample instance for a project.
 func (m *Manager) Prepare(ctx context.Context, request PrepareRequest) (*PrepareResult, error) {
-	if m.store == nil || (m.target == nil && m.targetErr == nil) || m.syncer == nil {
+	if m.store == nil || (m.target == nil && m.targetErr == nil) || m.syncer == nil || m.replicaID == "" {
 		return nil, errors.New("sample project instance manager is not configured")
 	}
 	if request.WorkspaceID == "" || request.ProjectID == "" {
 		return nil, newFailure(FailureFailedPrecondition, errors.New("sample project instance requires workspace and project"))
 	}
-	reservation, created, err := m.reserve(ctx, request)
+	lifecycleCtx, lifecycleCancel := context.WithTimeout(context.WithoutCancel(ctx), prepareDeadline)
+	defer lifecycleCancel()
+	reservation, created, err := m.reserve(lifecycleCtx, request)
 	if err != nil {
 		return nil, err
 	}
-
-	lifecycleCtx, lifecycleCancel := context.WithTimeout(context.WithoutCancel(ctx), prepareDeadline)
-	defer lifecycleCancel()
+	delay := pollInitialDelay
 	for {
-		var outcome prepareOutcome
-		locked := false
-		err = m.store.WithLockedSampleProjectInstance(lifecycleCtx, reservation.WorkspaceID, func(lockCtx context.Context, tx *store.SampleProjectInstanceTx, reservation *store.SampleProjectInstanceMessage) error {
-			locked = true
-			outcome = m.prepareLocked(lockCtx, tx, reservation, request, created)
-			if outcome.commit {
-				return nil
-			}
-			return outcome.err
-		})
+		if created {
+			return m.prepareOwned(lifecycleCtx, reservation, request, false)
+		}
+		if reservation.ProjectID != request.ProjectID || reservation.DeletedAt != nil {
+			return nil, newFailure(FailureFailedPrecondition, errors.New("sample project instance entitlement is already consumed"))
+		}
+		if reservation.ExpiresAt != nil {
+			return m.activeReservation(lifecycleCtx, reservation, request)
+		}
+
+		// ClaimSampleProjectInstance atomically validates that the observed
+		// reservation has not changed and that the current attempt has exceeded
+		// prepareDeadline. A different owner must also have a stale heartbeat.
+		claimed, claimedOK, err := m.store.ClaimSampleProjectInstance(lifecycleCtx, reservation.WorkspaceID, reservation.InstanceID, reservation.CreatedAt, m.replicaID, prepareDeadline, replicaHeartbeatStaleness)
 		if err != nil {
-			if !locked && common.ErrorCode(err) == common.NotFound {
-				reservation, created, err = m.reserve(lifecycleCtx, request)
-				if err != nil {
-					return nil, err
-				}
-				continue
+			return nil, errors.Join(errors.New("failed to claim abandoned sample project instance reservation"), err)
+		}
+		if claimedOK {
+			return m.prepareOwned(lifecycleCtx, claimed, request, true)
+		}
+		if err := sleepContext(lifecycleCtx, delay); err != nil {
+			return nil, newFailure(FailureDeadlineExceeded, err)
+		}
+		if delay < pollMaxDelay {
+			delay *= 2
+			if delay > pollMaxDelay {
+				delay = pollMaxDelay
 			}
-			return nil, err
 		}
-		if outcome.err != nil {
-			return nil, outcome.err
+		reservation, err = m.store.GetSampleProjectInstance(lifecycleCtx, request.WorkspaceID)
+		if err != nil {
+			return nil, errors.Join(errors.New("failed to poll sample project instance reservation"), err)
 		}
-		if len(outcome.discoveredDatabases) > 0 {
-			m.syncer.SyncDatabasesAsync(outcome.discoveredDatabases)
+		created = false
+		if reservation == nil {
+			reservation, created, err = m.reserve(lifecycleCtx, request)
+			if err != nil {
+				return nil, err
+			}
 		}
-		return &PrepareResult{
-			Instance:     outcome.instance,
-			PolicyDenied: outcome.policyDenied,
-		}, nil
 	}
 }
 
@@ -276,73 +284,82 @@ func (m *Manager) reserve(ctx context.Context, request PrepareRequest) (*store.S
 		InstanceID:  instanceID,
 		DBName:      names.Database,
 		RoleName:    names.Role,
+		ReplicaID:   m.replicaID,
 	})
 }
 
-func (m *Manager) prepareLocked(
-	lifecycleCtx context.Context,
-	tx *store.SampleProjectInstanceTx,
+func (m *Manager) activeReservation(
+	ctx context.Context,
 	reservation *store.SampleProjectInstanceMessage,
 	request PrepareRequest,
-	created bool,
-) prepareOutcome {
-	if reservation.ProjectID != request.ProjectID || reservation.DeletedAt != nil {
-		return prepareOutcome{err: newFailure(FailureFailedPrecondition, errors.New("sample project instance entitlement is already consumed"))}
+) (*PrepareResult, error) {
+	state, err := m.lookupMetadata(ctx, Allocation{Database: reservation.DBName, Role: reservation.RoleName}, reservation.InstanceID, request.WorkspaceID, request.ProjectID)
+	if err != nil {
+		return nil, errors.Join(errors.New("failed to inspect sample project instance metadata"), err)
 	}
+	if !state.matches(reservation) {
+		return nil, newFailure(FailureFailedPrecondition, errors.New("sample project instance entitlement is already consumed"))
+	}
+	return &PrepareResult{Instance: state.Instance}, nil
+}
+
+func (m *Manager) prepareOwned(
+	lifecycleCtx context.Context,
+	reservation *store.SampleProjectInstanceMessage,
+	request PrepareRequest,
+	takeover bool,
+) (*PrepareResult, error) {
 	allocation := Allocation{Database: reservation.DBName, Role: reservation.RoleName}
 
 	state, err := m.lookupMetadata(lifecycleCtx, allocation, reservation.InstanceID, request.WorkspaceID, request.ProjectID)
 	if err != nil {
 		err = errors.Join(errors.New("failed to inspect sample project instance metadata"), err)
-		if created {
-			return m.discardReservation(lifecycleCtx, tx, err)
+		if takeover {
+			return nil, newFailure(FailureUnavailable, err)
 		}
-		return prepareOutcome{err: err}
+		return nil, m.discardReservation(lifecycleCtx, reservation, err)
 	}
 	if reservation.ExpiresAt != nil {
 		if !state.matches(reservation) {
-			return prepareOutcome{err: newFailure(FailureFailedPrecondition, errors.New("sample project instance entitlement is already consumed"))}
+			return nil, newFailure(FailureFailedPrecondition, errors.New("sample project instance entitlement is already consumed"))
 		}
-		return prepareOutcome{instance: state.Instance, commit: true}
+		return &PrepareResult{Instance: state.Instance}, nil
 	}
-	if created && (state.Instance != nil || state.Database != nil) {
-		return m.discardReservation(lifecycleCtx, tx, errors.New("sample project instance metadata collision"))
+	if !takeover && (state.Instance != nil || state.Database != nil) {
+		return nil, m.discardReservation(lifecycleCtx, reservation, errors.New("sample project instance metadata collision"))
 	}
 
 	workCtx, workCancel := preparationWorkContext(lifecycleCtx)
 	defer workCancel()
-	if !created {
+	if takeover {
 		if m.targetErr != nil {
-			return prepareOutcome{err: mapTargetError(m.targetErr)}
+			return nil, mapTargetError(m.targetErr)
 		}
 		m.logger.InfoContext(workCtx, "reconciling stale sample project instance reservation", "workspace", request.WorkspaceID)
 		if err := m.reconcile(workCtx, allocation, reservation.InstanceID, request); err != nil {
 			m.logger.ErrorContext(workCtx, "failed to reconcile stale sample project instance reservation", "workspace", request.WorkspaceID, "error", err)
-			return prepareOutcome{err: newFailure(FailureUnavailable, err)}
-		}
-		if err := tx.ResetCreatedAt(workCtx, m.clock()); err != nil {
-			return prepareOutcome{err: errors.Join(errors.New("failed to reset sample project instance reservation"), err)}
+			return nil, newFailure(FailureUnavailable, err)
 		}
 	}
 
 	if m.targetErr != nil {
-		return m.discardReservation(lifecycleCtx, tx, mapTargetError(m.targetErr))
+		return nil, m.discardReservation(lifecycleCtx, reservation, mapTargetError(m.targetErr))
 	}
 	if err := m.target.Validate(workCtx); err != nil {
-		return m.discardReservation(lifecycleCtx, tx, mapTargetError(err))
+		return nil, m.discardReservation(lifecycleCtx, reservation, mapTargetError(err))
 	}
 	if request.CheckCreatePolicy != nil {
 		policy, err := request.CheckCreatePolicy(workCtx)
 		if err != nil {
-			return m.discardReservation(lifecycleCtx, tx, err)
+			return nil, m.discardReservation(lifecycleCtx, reservation, err)
 		}
 		if policy.DeniedReason != nil {
-			return m.denyByPolicy(lifecycleCtx, tx, policy.DeniedReason)
+			return m.denyByPolicy(lifecycleCtx, reservation, policy.DeniedReason)
 		}
 	}
 	environments, err := m.store.GetEnvironment(workCtx, request.WorkspaceID)
 	if err != nil {
-		return m.discardReservation(lifecycleCtx, tx, errors.Join(errors.New("failed to inspect sample project instance environments"), err))
+		return nil, m.discardReservation(lifecycleCtx, reservation, errors.Join(errors.New("failed to inspect sample project instance environments"), err))
 	}
 	environmentID := ""
 	for _, environment := range environments.GetEnvironments() {
@@ -354,20 +371,20 @@ func (m *Manager) prepareLocked(
 		}
 	}
 	if environmentID == "" {
-		return m.discardReservation(lifecycleCtx, tx, newFailure(FailureFailedPrecondition, errors.New("sample project instance requires an environment")))
+		return nil, m.discardReservation(lifecycleCtx, reservation, newFailure(FailureFailedPrecondition, errors.New("sample project instance requires an environment")))
 	}
 
 	password, err := randomPassword(m.random)
 	if err != nil {
-		return m.discardReservation(lifecycleCtx, tx, errors.Join(errors.New("failed to generate sample project instance password"), err))
+		return nil, m.discardReservation(lifecycleCtx, reservation, errors.Join(errors.New("failed to generate sample project instance password"), err))
 	}
 	allocation.Password = password
 	config, err := m.target.InstanceConfig(allocation)
 	if err != nil {
-		return m.discardReservation(lifecycleCtx, tx, mapTargetError(err))
+		return nil, m.discardReservation(lifecycleCtx, reservation, mapTargetError(err))
 	}
 	if len(config.SyncDatabaseNames) != 1 || config.SyncDatabaseNames[0] != allocation.Database {
-		return m.discardReservation(lifecycleCtx, tx, errors.New("sample project instance sync filter invariant failed"))
+		return nil, m.discardReservation(lifecycleCtx, reservation, errors.New("sample project instance sync filter invariant failed"))
 	}
 
 	m.logger.InfoContext(workCtx, "preparing sample project instance", "workspace", request.WorkspaceID, "project", request.ProjectID)
@@ -376,7 +393,7 @@ func (m *Manager) prepareLocked(
 	timedOut := errors.Is(provisionCtx.Err(), context.DeadlineExceeded)
 	provisionCancel()
 	if err != nil {
-		return m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, mapProvisionError(err, timedOut))
+		return m.compensate(lifecycleCtx, reservation, allocation, request, mapProvisionError(err, timedOut))
 	}
 	registered, err := m.createMetadata(workCtx, registration{
 		WorkspaceID:       request.WorkspaceID,
@@ -389,27 +406,25 @@ func (m *Manager) prepareLocked(
 		SyncDatabaseNames: config.SyncDatabaseNames,
 	})
 	if err != nil {
-		return m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, errors.Join(errors.New("failed to create sample project instance metadata"), err))
+		return m.compensate(lifecycleCtx, reservation, allocation, request, errors.Join(errors.New("failed to create sample project instance metadata"), err))
 	}
 	synced, _, databases, err := m.syncer.SyncInstance(workCtx, registered)
 	if err != nil {
-		return m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, mapDiscoveryError(workCtx, err))
+		return m.compensate(lifecycleCtx, reservation, allocation, request, mapDiscoveryError(workCtx, err))
 	}
 	if len(databases) != 1 || databases[0].DatabaseName != allocation.Database || databases[0].Deleted {
-		return m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, errors.New("sample project instance discovery invariant failed"))
+		return m.compensate(lifecycleCtx, reservation, allocation, request, errors.New("sample project instance discovery invariant failed"))
 	}
-	if err := tx.SetExpiration(workCtx, m.clock().Add(sampleLifetime)); err != nil {
-		activationErr := errors.Join(errors.New("failed to activate sample project instance"), err)
-		if common.ErrorCode(err) == common.NotFound {
+	activated, activationErr := m.store.ActivateSampleProjectInstance(workCtx, reservation.WorkspaceID, reservation.InstanceID, m.replicaID, m.clock().Add(sampleLifetime))
+	if !activated {
+		activationErr = errors.Join(errors.New("failed to activate sample project instance"), activationErr)
+		if common.ErrorCode(activationErr) == common.NotFound {
 			activationErr = newFailure(FailureFailedPrecondition, activationErr)
 		}
-		return m.compensate(lifecycleCtx, tx, allocation, reservation.InstanceID, request, activationErr)
+		return m.handleActivationFailure(lifecycleCtx, reservation, allocation, request, activationErr)
 	}
-	return prepareOutcome{
-		instance:            synced,
-		discoveredDatabases: databases,
-		commit:              true,
-	}
+	m.syncer.SyncDatabasesAsync(databases)
+	return &PrepareResult{Instance: synced}, nil
 }
 
 func mapProvisionError(err error, timedOut bool) error {
@@ -433,40 +448,81 @@ func (m *Manager) reconcile(ctx context.Context, allocation Allocation, instance
 
 func (m *Manager) compensate(
 	lifecycleCtx context.Context,
-	tx *store.SampleProjectInstanceTx,
+	reservation *store.SampleProjectInstanceMessage,
 	allocation Allocation,
-	instanceID string,
 	request PrepareRequest,
 	original error,
-) prepareOutcome {
+) (*PrepareResult, error) {
 	m.logger.WarnContext(lifecycleCtx, "compensating failed sample project instance preparation", "workspace", request.WorkspaceID, "error", original)
 	compensationCtx, cancel := context.WithTimeout(lifecycleCtx, compensationDeadline)
 	defer cancel()
-	if err := m.reconcile(compensationCtx, allocation, instanceID, request); err != nil {
+	current, err := m.store.GetSampleProjectInstance(compensationCtx, reservation.WorkspaceID)
+	if err != nil {
+		return nil, newFailure(FailureUnavailable, errors.Join(original, errors.New("failed to verify sample project instance compensation ownership"), err))
+	}
+	if current == nil || current.InstanceID != reservation.InstanceID || current.ReplicaID != m.replicaID || current.ExpiresAt != nil || current.DeletedAt != nil {
+		return nil, newFailure(FailureUnavailable, errors.Join(original, errors.New("sample project instance reservation ownership changed before compensation")))
+	}
+	if err := m.reconcile(compensationCtx, allocation, reservation.InstanceID, request); err != nil {
 		m.logger.ErrorContext(lifecycleCtx, "sample project instance compensation failed", "workspace", request.WorkspaceID, "error", err)
-		return prepareOutcome{err: newFailure(FailureUnavailable, err)}
+		return nil, newFailure(FailureUnavailable, err)
 	}
-	if err := tx.DeleteReservation(compensationCtx); err != nil {
+	deleted, err := m.store.DeletePendingSampleProjectInstance(compensationCtx, reservation.WorkspaceID, reservation.InstanceID, m.replicaID)
+	if err != nil || !deleted {
+		if err == nil {
+			err = errors.New("sample project instance reservation ownership changed during compensation")
+		}
 		m.logger.ErrorContext(lifecycleCtx, "failed to remove compensated sample project instance reservation", "workspace", request.WorkspaceID, "error", err)
-		return prepareOutcome{err: newFailure(FailureUnavailable, err)}
+		return nil, newFailure(FailureUnavailable, err)
 	}
-	return prepareOutcome{commit: true, err: original}
+	return nil, original
 }
 
-func (m *Manager) discardReservation(ctx context.Context, tx *store.SampleProjectInstanceTx, original error) prepareOutcome {
-	if err := tx.DeleteReservation(ctx); err != nil {
+func (m *Manager) discardReservation(ctx context.Context, reservation *store.SampleProjectInstanceMessage, original error) error {
+	deleted, err := m.store.DeletePendingSampleProjectInstance(ctx, reservation.WorkspaceID, reservation.InstanceID, m.replicaID)
+	if err != nil || !deleted {
+		if err == nil {
+			err = errors.New("sample project instance reservation ownership changed before deletion")
+		}
 		m.logger.ErrorContext(ctx, "failed to discard sample project instance reservation", "error", err)
-		return prepareOutcome{err: newFailure(FailureUnavailable, err)}
+		return newFailure(FailureUnavailable, err)
 	}
-	return prepareOutcome{commit: true, err: original}
+	return original
 }
 
-func (m *Manager) denyByPolicy(ctx context.Context, tx *store.SampleProjectInstanceTx, reason error) prepareOutcome {
-	if err := tx.DeleteReservation(ctx); err != nil {
+func (m *Manager) denyByPolicy(ctx context.Context, reservation *store.SampleProjectInstanceMessage, reason error) (*PrepareResult, error) {
+	deleted, err := m.store.DeletePendingSampleProjectInstance(ctx, reservation.WorkspaceID, reservation.InstanceID, m.replicaID)
+	if err != nil || !deleted {
+		if err == nil {
+			err = errors.New("sample project instance reservation ownership changed before policy denial")
+		}
 		m.logger.ErrorContext(ctx, "failed to discard denied sample project instance reservation", "error", err)
-		return prepareOutcome{err: newFailure(FailureUnavailable, err)}
+		return nil, newFailure(FailureUnavailable, err)
 	}
-	return prepareOutcome{commit: true, policyDenied: reason}
+	return &PrepareResult{PolicyDenied: reason}, nil
+}
+
+// handleActivationFailure avoids compensating resources after ownership might
+// have changed. Only an exact, still-pending reservation owned by this replica
+// proves that this attempt may safely compensate.
+func (m *Manager) handleActivationFailure(
+	ctx context.Context,
+	reservation *store.SampleProjectInstanceMessage,
+	allocation Allocation,
+	request PrepareRequest,
+	original error,
+) (*PrepareResult, error) {
+	current, err := m.store.GetSampleProjectInstance(ctx, reservation.WorkspaceID)
+	if err != nil {
+		return nil, newFailure(FailureUnavailable, errors.Join(original, err))
+	}
+	if current != nil && current.InstanceID == reservation.InstanceID && current.ExpiresAt != nil {
+		return m.activeReservation(ctx, current, request)
+	}
+	if current == nil || current.InstanceID != reservation.InstanceID || current.ReplicaID != m.replicaID || current.ExpiresAt != nil || current.DeletedAt != nil {
+		return nil, newFailure(FailureUnavailable, original)
+	}
+	return m.compensate(ctx, reservation, allocation, request, original)
 }
 
 // Cleanup removes expired target resources and reconciles stale reservations.
@@ -531,6 +587,17 @@ func preparationWorkContext(lifecycleCtx context.Context) (context.Context, cont
 		}
 	}
 	return context.WithDeadline(lifecycleCtx, workDeadline)
+}
+
+func sleepContext(ctx context.Context, duration time.Duration) error {
+	timer := time.NewTimer(duration)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
 }
 
 func randomPassword(reader io.Reader) (string, error) {

@@ -6,6 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -197,7 +199,7 @@ func TestManagerCompensatesWhenWorkspaceDeletedDuringProvisioning(t *testing.T) 
 }
 
 func TestManagerRetriesWhenConcurrentFailureDeletesReservation(t *testing.T) {
-	ctx, db, _, _, manager := newConcreteManager(t)
+	ctx, _, _, _, manager := newConcreteManager(t)
 	policyDenied := errors.New("injected capacity denial")
 	firstPolicyEntered := make(chan struct{})
 	releaseFirstPolicy := make(chan struct{})
@@ -234,18 +236,6 @@ func TestManagerRetriesWhenConcurrentFailureDeletesReservation(t *testing.T) {
 		secondPolicyCalled <- struct{}{}
 		return CreatePolicyResult{DeniedReason: policyDenied}, nil
 	})
-	require.Eventually(t, func() bool {
-		var waiting bool
-		err := db.QueryRowContext(ctx, `
-			SELECT EXISTS (
-				SELECT 1
-				FROM pg_stat_activity
-				WHERE wait_event_type = 'Lock'
-					AND query LIKE '%FROM sample_project_instance%FOR UPDATE%'
-			)
-		`).Scan(&waiting)
-		return err == nil && waiting
-	}, 30*time.Second, 50*time.Millisecond)
 	close(releaseFirstPolicy)
 
 	for _, result := range []prepareResult{<-first, <-second} {
@@ -254,6 +244,118 @@ func TestManagerRetriesWhenConcurrentFailureDeletesReservation(t *testing.T) {
 		require.ErrorIs(t, result.result.PolicyDenied, policyDenied)
 	}
 	require.Len(t, secondPolicyCalled, 1)
+}
+
+func TestManagerDoesNotHoldMetadataConnectionWhileProvisioning(t *testing.T) {
+	ctx, _, s, target, manager := newConcreteManager(t)
+	maxOpenConnections := s.GetDB().Stats().MaxOpenConnections
+	s.GetDB().SetMaxOpenConns(1)
+	t.Cleanup(func() { s.GetDB().SetMaxOpenConns(maxOpenConnections) })
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	released := false
+	defer func() {
+		if !released {
+			close(release)
+		}
+	}()
+	target.provisionHook = func(stage provisionStage) error {
+		if stage == provisionStageRoleCreated {
+			close(entered)
+			<-release
+		}
+		return nil
+	}
+	prepared := make(chan error, 1)
+	go func() {
+		_, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+		prepared <- err
+	}()
+	<-entered
+
+	_, err := s.GetEnvironment(ctx, "workspace-a")
+	require.NoError(t, err)
+
+	close(release)
+	released = true
+	require.NoError(t, <-prepared)
+}
+
+func TestManagerHealthyOwnerProvisionsOnce(t *testing.T) {
+	ctx, _, s, target, first := newConcreteManager(t)
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
+	require.NoError(t, err)
+	second := NewManager(s, target, schemasync.NewSyncer(s, dbfactory.New(s, licenseService), licenseService), ManagerOptions{ReplicaID: "replica-b"})
+	require.NoError(t, s.UpsertReplicaHeartbeat(ctx, "replica-a"))
+
+	entered := make(chan struct{})
+	release := make(chan struct{})
+	var provisions atomic.Int32
+	var enteredOnce sync.Once
+	target.provisionHook = func(stage provisionStage) error {
+		if stage == provisionStageRoleCreated {
+			provisions.Add(1)
+			enteredOnce.Do(func() { close(entered) })
+			<-release
+		}
+		return nil
+	}
+	type prepareResult struct {
+		result *PrepareResult
+		err    error
+	}
+	prepare := func(manager *Manager) <-chan prepareResult {
+		result := make(chan prepareResult, 1)
+		go func() {
+			prepared, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+			result <- prepareResult{result: prepared, err: err}
+		}()
+		return result
+	}
+	firstResult := prepare(first)
+	<-entered
+	secondResult := prepare(second)
+	close(release)
+
+	firstPrepared := <-firstResult
+	secondPrepared := <-secondResult
+	require.NoError(t, firstPrepared.err)
+	require.NoError(t, secondPrepared.err)
+	require.Equal(t, firstPrepared.result.Instance.ResourceID, secondPrepared.result.Instance.ResourceID)
+	require.EqualValues(t, 1, provisions.Load())
+}
+
+func TestManagerTakesOverStaleReservationAfterReconciling(t *testing.T) {
+	ctx, db, s, target, first := newConcreteManager(t)
+	reservation, created, err := first.reserve(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	require.NoError(t, err)
+	require.True(t, created)
+	allocation := Allocation{Database: reservation.DBName, Role: reservation.RoleName, Password: "sample-password"}
+	require.NoError(t, target.Provision(ctx, allocation))
+	_, err = db.ExecContext(ctx, `
+		UPDATE sample_project_instance
+		SET created_at = now() - INTERVAL '3 minutes 1 second',
+			replica_id = 'stopped-replica'
+		WHERE workspace = 'workspace-a'
+	`)
+	require.NoError(t, err)
+
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
+	require.NoError(t, err)
+	second := NewManager(s, target, schemasync.NewSyncer(s, dbfactory.New(s, licenseService), licenseService), ManagerOptions{ReplicaID: "replica-b"})
+	prepared, err := second.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	require.NoError(t, err)
+	require.NotNil(t, prepared.Instance)
+
+	record := mustGetSampleProjectInstance(ctx, t, s)
+	require.Equal(t, "replica-b", record.ReplicaID)
+	require.NotNil(t, record.ExpiresAt)
+	admin, err := target.connect(ctx, "", "", "")
+	require.NoError(t, err)
+	defer admin.Close(ctx)
+	var exists bool
+	require.NoError(t, admin.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = $1)", record.DBName).Scan(&exists))
+	require.True(t, exists)
 }
 
 func TestManagerUsesFirstEnvironmentWhenTestIsMissing(t *testing.T) {
@@ -301,7 +403,7 @@ func TestManagerCompensatesProvisionFailures(t *testing.T) {
 }
 
 func TestManagerPreservesAndRecoversReservationWhenCompensationFails(t *testing.T) {
-	ctx, _, s, target, manager := newConcreteManager(t)
+	ctx, db, s, target, manager := newConcreteManager(t)
 	provisionFailed := false
 	target.provisionHook = func(stage provisionStage) error {
 		if stage == provisionStageDatabaseCreated && !provisionFailed {
@@ -319,6 +421,12 @@ func TestManagerPreservesAndRecoversReservationWhenCompensationFails(t *testing.
 	reservation := mustGetSampleProjectInstance(ctx, t, s)
 	require.NotNil(t, reservation)
 	require.Nil(t, reservation.ExpiresAt)
+	_, err = db.ExecContext(ctx, `
+		UPDATE sample_project_instance
+		SET created_at = now() - INTERVAL '3 minutes 1 second'
+		WHERE workspace = 'workspace-a'
+	`)
+	require.NoError(t, err)
 
 	target.provisionHook = nil
 	result, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
@@ -390,7 +498,7 @@ func newConcreteManager(t *testing.T) (context.Context, *sql.DB, *store.Store, *
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
 	require.NoError(t, err)
 	syncer := schemasync.NewSyncer(s, dbfactory.New(s, licenseService), licenseService)
-	return ctx, db, s, target, NewManager(s, target, syncer, ManagerOptions{})
+	return ctx, db, s, target, NewManager(s, target, syncer, ManagerOptions{ReplicaID: "replica-a"})
 }
 
 func assertAllocationAbsent(ctx context.Context, t *testing.T, target *Target, names AllocationNames) {

@@ -302,7 +302,7 @@ func newSampleProjectInstanceFixture(t *testing.T, clock func() time.Time) (cont
 		stores,
 		targetURL,
 		syncer,
-		sampleprojectinstance.ManagerOptions{Clock: clock},
+		sampleprojectinstance.ManagerOptions{Clock: clock, ReplicaID: "replica-a"},
 	)
 	return context.WithValue(ctx, common.WorkspaceIDContextKey, "sample-workspace"), &sampleProjectInstanceFixture{
 		store: stores,
@@ -484,6 +484,7 @@ func (f *sampleProjectInstanceFixture) createPartialReservation(
 		InstanceID:  sampleInstanceID(workspaceID),
 		DBName:      sampleDatabaseName(workspaceID),
 		RoleName:    sampleRoleName(workspaceID),
+		ReplicaID:   "replica-a",
 	})
 	require.NoError(t, err)
 	require.True(t, created)

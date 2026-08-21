@@ -228,7 +228,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 			stores,
 			profile.SampleProjectInstancePgURL,
 			s.schemaSyncer,
-			sampleprojectinstance.ManagerOptions{},
+			sampleprojectinstance.ManagerOptions{ReplicaID: profile.ReplicaID},
 		)
 		s.sampleProjectRunner = sampleprojectinstancerunner.NewRunner(s.sampleProjectManager)
 	}

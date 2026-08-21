@@ -52,6 +52,7 @@ func TestPrepareSampleProjectInstanceRejectsConsumedEntitlementAfterProjectDelet
 		InstanceID:  "sample-deleted-project",
 		DBName:      "bb_sample_deleted_project",
 		RoleName:    "bb_sample_role_deleted_project",
+		ReplicaID:   "replica-a",
 	})
 	require.NoError(t, err)
 	_, err = stores.GetDB().ExecContext(ctx, `
