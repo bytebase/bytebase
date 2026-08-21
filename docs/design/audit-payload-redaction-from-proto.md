@@ -143,14 +143,25 @@ Constraints:
   *inside* a message arm leaves the arm set. This reproduces `redactIAMExtension` byte-for-byte.
 - Maps do: an annotated map is cleared whole, a map whose value type has a plan is descended per
   entry. The existing net skips maps.
-- **`service_data` runs through the same plan.** `createAuditLog` assigns the handler-supplied
-  `Any` straight onto the row (`audit.go:378`), reaching neither entry point. It is unpacked,
-  redacted against the plan for its own descriptor, and re-packed; a type URL that does not resolve
-  is dropped rather than logged. Four RPCs set it today and all four are safe — each packs
-  read-path converter output that already blanks its secrets, `convertToAISetting` and
-  `convertToEmailSetting` explicitly, `convertToAppIMSetting` by building empty payloads. That is a
-  property of the current call sites, not an enforced one, and `UpdateSetting` — which packs a
-  whole before-image `Setting` — is the RPC where it would matter most.
+- **`service_data` runs through the same plan, and its types are declared.** `createAuditLog`
+  assigns the handler-supplied `Any` straight onto the row (`audit.go:378`), reaching neither entry
+  point. It is unpacked, redacted against the plan for its own descriptor, and re-packed.
+
+  Redacting it is not enough on its own. `WithSetServiceData` takes an arbitrary `*anypb.Any`
+  (`common/context.go:25`), so unlike RPC inputs and outputs there is no descriptor to enumerate:
+  a handler that starts packing a new type would not change the inventory and would not fail it,
+  and an *unannotated* credential in that type would still be written. So the permitted types are
+  a checked-in list, and the interceptor **drops a `service_data` whose type is not on it** rather
+  than logging it. That makes the registry the derivation source for the inventory's `service_data`
+  half: registering a type is what pulls its fields in for classification, and a handler that packs
+  an unregistered type finds out because its audit data does not appear. Fail-closed at runtime and
+  in CI, without a call-site lint.
+
+  Four RPCs set it today and all four are safe — each packs read-path converter output that already
+  blanks its secrets, `convertToAISetting` and `convertToEmailSetting` explicitly,
+  `convertToAppIMSetting` by building empty payloads. That is a property of the current call sites,
+  not an enforced one, and `UpdateSetting` — which packs a whole before-image `Setting` — is the
+  RPC where it would matter most.
 
 All 35 redactors are deleted, allowlist rebuilds included. Audit rows will carry the non-secret
 remainder those rebuilds dropped — `redactUser` returns three fields today — and `AdminExecute`
@@ -175,8 +186,10 @@ rows regain `rows_count`.
   on `needAudit(ctx) || mcpPolicyDenied` (`audit.go:102`), so the gate-refused methods carrying no
   audit annotation — `ListInstanceDatabaseRequest` and `SwitchWorkspaceRequest` among them — are in
   scope; deriving the inventory from audited methods alone would omit exactly the population
-  `TestLintDenialRequestsAreReviewedForRedaction` exists to cover. And every message type packed
-  into `service_data` is in scope, since those reach the row without passing either entry point.
+  `TestLintDenialRequestsAreReviewedForRedaction` exists to cover. And every registered
+  `service_data` type is in scope, since those reach the row without passing either entry point;
+  that half comes from the registry above rather than from a descriptor walk, which is why the
+  registry has to be enforced at runtime for the inventory to mean anything.
 - **Read-path assertion.** `assertNoInputOnlyValues` (`instance_service_converter_test.go:449`)
   already requires every `INPUT_ONLY` field to come back blank from a converter; generalize it to
   `SENSITIVE`. Converters only — issuance responses set the field outside them.
