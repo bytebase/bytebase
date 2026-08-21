@@ -124,7 +124,7 @@ func TestResourceMetricLabelsAndCumulativeMutation(t *testing.T) {
 	m.RecordInstanceSync(instance, 2*time.Second, nil)
 
 	metrics := eventMetrics(m)
-	metric := findMetric(t, metrics, "bytebase_instance_sync_duration_seconds")
+	metric := findMetricWithLabels(t, metrics, "bytebase_instance_sync_duration_seconds", map[string]string{"bytebase_instance_id": "prod"})
 	require.Equal(t, uint64(2), metric.GetHistogram().GetSampleCount())
 	require.Equal(t, 3.0, metric.GetHistogram().GetSampleSum())
 	require.Equal(t, int32(3), metric.GetHistogram().GetSchema())

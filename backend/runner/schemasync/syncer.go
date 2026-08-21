@@ -381,8 +381,15 @@ func (s *Syncer) GetInstanceMeta(ctx context.Context, instance *store.InstanceMe
 func (s *Syncer) SyncInstance(ctx context.Context, instance *store.InstanceMessage) (updatedInstance *store.InstanceMessage, allDatabases []*storepb.DatabaseSchemaMetadata, newDatabases []*store.DatabaseMessage, retErr error) {
 	startedAt := time.Now()
 	defer func() {
+		panicValue := recover()
+		if panicValue != nil {
+			retErr = errorFromPanic(panicValue, "instance sync panic")
+		}
 		if !errors.Is(ctx.Err(), context.Canceled) && s.productMetrics != nil {
 			s.productMetrics.RecordInstanceSync(instance, time.Since(startedAt), retErr)
+		}
+		if panicValue != nil {
+			panic(panicValue)
 		}
 	}()
 	instanceMeta, err := s.GetInstanceMeta(ctx, instance)
@@ -465,8 +472,15 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 		return "", errors.New("cannot sync nil database")
 	}
 	defer func() {
+		panicValue := recover()
+		if panicValue != nil {
+			retErr = errorFromPanic(panicValue, "database schema sync panic")
+		}
 		if !errors.Is(ctx.Err(), context.Canceled) && s.productMetrics != nil {
 			s.productMetrics.RecordDatabaseSync(database, retErr)
+		}
+		if panicValue != nil {
+			panic(panicValue)
 		}
 	}()
 	instance, err := s.store.GetInstanceByResourceID(ctx, database.InstanceID)
@@ -557,6 +571,14 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 	}
 
 	return "", nil
+}
+
+func errorFromPanic(value any, message string) error {
+	err, ok := value.(error)
+	if !ok {
+		err = errors.Errorf("%v", value)
+	}
+	return errors.Wrap(err, message)
 }
 
 // SyncDatabaseSchemaToHistory will sync the schema for a database and create a sync history record.

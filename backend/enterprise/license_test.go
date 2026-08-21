@@ -137,6 +137,28 @@ func TestCreateLicenseUsesEqualInstanceClaims(t *testing.T) {
 	}
 }
 
+func TestParseLicenseExpiredIsInvalid(t *testing.T) {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	service := &LicenseService{
+		config: &Config{
+			PublicKey:  &privateKey.PublicKey,
+			PrivateKey: privateKey,
+			Version:    keyID,
+			Issuer:     issuer,
+			Audience:   audience,
+		},
+	}
+	license, err := service.CreateLicense(&LicenseParams{
+		Plan:      v1pb.PlanType_TEAM.String(),
+		ExpiresAt: time.Now().Add(-time.Hour),
+	})
+	require.NoError(t, err)
+
+	_, err = service.parseLicense(license, "test-workspace")
+	require.Equal(t, common.Invalid, common.ErrorCode(err))
+}
+
 func TestGetUserLimitUncached(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.GetTestPgContainer(ctx, t)

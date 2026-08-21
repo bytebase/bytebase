@@ -602,7 +602,7 @@ func (s *LicenseService) parseLicense(license, workspaceID string) (*v1pb.Subscr
 		return nil, err
 	}
 	if isExpired(subscription) {
-		return nil, errors.Errorf("license has expired at %v", subscription.ExpiresTime.AsTime())
+		return nil, common.Errorf(common.Invalid, "license has expired at %v", subscription.ExpiresTime.AsTime())
 	}
 	return subscription, nil
 }

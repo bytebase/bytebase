@@ -42,6 +42,40 @@ func TestSyncCyclesRecordEmptySuccess(t *testing.T) {
 	require.Equal(t, uint64(1), runnerRunCount(t, metrics, productmetrics.RunnerInstanceSync, productmetrics.ResultSkipped))
 }
 
+func TestSyncInstancePanicRecordsFailure(t *testing.T) {
+	metrics := productmetrics.New(nil, nil)
+	instance := &store.InstanceMessage{
+		ResourceID: "instance-a",
+		Metadata: &storepb.Instance{
+			DataSources: []*storepb.DataSource{{Type: storepb.DataSourceType_ADMIN}},
+		},
+	}
+	syncer := &Syncer{productMetrics: metrics}
+
+	require.Panics(t, func() {
+		_, _, _, _ = syncer.SyncInstance(context.Background(), instance)
+	})
+	require.Equal(t, uint64(1), syncMetricCount(t, metrics, map[string]string{
+		"result":               string(productmetrics.ResultFailure),
+		"bytebase_instance_id": instance.ResourceID,
+	}))
+}
+
+func TestSyncDatabaseSchemaPanicRecordsFailure(t *testing.T) {
+	metrics := productmetrics.New(nil, nil)
+	database := &store.DatabaseMessage{InstanceID: "instance-a", DatabaseName: "db-a"}
+	syncer := &Syncer{productMetrics: metrics}
+
+	require.Panics(t, func() {
+		_ = syncer.SyncDatabaseSchema(context.Background(), database)
+	})
+	require.Equal(t, uint64(1), syncMetricCount(t, metrics, map[string]string{
+		"result":               string(productmetrics.ResultFailure),
+		"bytebase_instance_id": database.InstanceID,
+		"database":             database.DatabaseName,
+	}))
+}
+
 func runnerRunCount(t *testing.T, metrics *productmetrics.ProductMetrics, runner productmetrics.Runner, result productmetrics.RunnerResult) uint64 {
 	t.Helper()
 	ch := make(chan prometheus.Metric, 16)
@@ -65,6 +99,46 @@ func runnerRunCount(t *testing.T, metrics *productmetrics.ProductMetrics, runner
 		}
 	}
 	return count
+}
+
+func syncMetricCount(t *testing.T, metrics *productmetrics.ProductMetrics, expectedLabels map[string]string) uint64 {
+	t.Helper()
+	ch := make(chan prometheus.Metric, 16)
+	go func() {
+		metrics.Collect(ch)
+		close(ch)
+	}()
+
+	for metric := range ch {
+		var dtoMetric dto.Metric
+		if metric.Write(&dtoMetric) != nil {
+			continue
+		}
+		labels := map[string]string{}
+		for _, label := range dtoMetric.GetLabel() {
+			labels[label.GetName()] = label.GetValue()
+		}
+		if len(labels) != len(expectedLabels) {
+			continue
+		}
+		matches := true
+		for name, value := range expectedLabels {
+			if labels[name] != value {
+				matches = false
+				break
+			}
+		}
+		if !matches {
+			continue
+		}
+		if dtoMetric.GetHistogram() != nil {
+			return dtoMetric.GetHistogram().GetSampleCount()
+		}
+		if dtoMetric.GetCounter() != nil {
+			return uint64(dtoMetric.GetCounter().GetValue())
+		}
+	}
+	return 0
 }
 
 // TestSyncDatabaseSchemaNilDatabase pins the guard that prevents a nil
