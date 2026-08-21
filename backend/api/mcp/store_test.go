@@ -12,6 +12,14 @@ type testServerStore struct {
 	workspaceProfile *storepb.WorkspaceProfileSetting
 	capability       storepb.MCPSetting_Capability
 	capabilityErr    error
+
+	// auditRows collects what the connection gate recorded, so a test can
+	// assert on the row a denial wrote without a database.
+	auditRows []*storepb.AuditLog
+	auditErr  error
+	// writeCtxErr is the write context's error at the moment of the write,
+	// which is what shows the row survives a client that hung up.
+	writeCtxErr error
 }
 
 func newTestServerStore() *testServerStore {
@@ -35,5 +43,14 @@ func (s *testServerStore) GetMCPSettingsUncached(context.Context, string) (store
 }
 
 func (*testServerStore) DeleteOAuth2RefreshTokensByUserAndClient(context.Context, string, string) error {
+	return nil
+}
+
+func (s *testServerStore) CreateAuditLog(ctx context.Context, _ string, payload *storepb.AuditLog) error {
+	s.writeCtxErr = ctx.Err()
+	if s.auditErr != nil {
+		return s.auditErr
+	}
+	s.auditRows = append(s.auditRows, payload)
 	return nil
 }

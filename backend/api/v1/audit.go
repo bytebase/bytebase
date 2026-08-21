@@ -34,12 +34,6 @@ var (
 	maskedString string
 )
 
-const (
-	// maxAuditPayloadChars is the maximum characters for request/response payloads in stdout logs.
-	// Set to 100KB (102400 chars) to match AWS CloudTrail industry standard for audit logs.
-	maxAuditPayloadChars = 102400
-)
-
 // AuditInterceptor is the v1 audit interceptor for gRPC server.
 type AuditInterceptor struct {
 	store   *store.Store
@@ -394,7 +388,7 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 
 		// Log audit event to stdout using slog (if enabled)
 		if in.profile.RuntimeEnableAuditLogStdout.Load() {
-			logAuditToStdout(ctx, p)
+			common.LogAuditToStdout(ctx, p)
 		}
 	}
 
@@ -417,103 +411,6 @@ func mcpDelegationFromAuthContext(authContext *common.AuthContext) *storepb.MCPD
 		ClientId:      g.ClientID,
 		CorrelationId: g.CorrelationID,
 	}
-}
-
-// logAuditToStdout writes audit log events to stdout using Go's standard slog library.
-// Output format is controlled by the global slog handler (JSON in production, text in dev).
-// Logs include a "log_type": "audit" field to distinguish from application logs.
-// This is a best-effort operation - errors are not returned to avoid failing the audit flow.
-func logAuditToStdout(ctx context.Context, p *storepb.AuditLog) {
-	attrs := []slog.Attr{
-		slog.String("log_type", "audit"),
-		slog.String("parent", p.Parent),
-		slog.String("method", p.Method),
-	}
-
-	if p.Resource != "" {
-		attrs = append(attrs, slog.String("resource", p.Resource))
-	}
-	if p.User != "" {
-		attrs = append(attrs, slog.String("user", p.User))
-	}
-
-	if p.Status != nil {
-		attrs = append(attrs, slog.Int("status_code", int(p.Status.Code)))
-		if p.Status.Message != "" {
-			attrs = append(attrs, slog.String("status_message", p.Status.Message))
-		}
-	}
-
-	if p.Latency != nil {
-		attrs = append(attrs,
-			slog.Int64("latency_ms", p.Latency.AsDuration().Milliseconds()),
-		)
-	}
-
-	if p.RequestMetadata != nil {
-		if p.RequestMetadata.CallerIp != "" {
-			attrs = append(attrs, slog.String("client_ip", p.RequestMetadata.CallerIp))
-		}
-		if p.RequestMetadata.CallerSuppliedUserAgent != "" {
-			attrs = append(attrs, slog.String("user_agent", p.RequestMetadata.CallerSuppliedUserAgent))
-		}
-	}
-
-	// Include audit severity as an attribute (not as slog level)
-	// Audit logs are always logged at INFO level - they represent business events, not system health
-	// The severity field helps categorize the audit event itself
-	if p.Severity != storepb.AuditLog_SEVERITY_UNSPECIFIED {
-		attrs = append(attrs, slog.String("severity", p.Severity.String()))
-	}
-
-	attrs = append(attrs, mcpDelegationAttrs(p.McpDelegation)...)
-
-	// Include request payload (truncated to 100KB for log manageability)
-	// Request is already redacted for sensitive data by getRequestString()
-	if p.Request != "" {
-		request := p.Request
-		if truncated, wasTruncated := common.TruncateString(p.Request, maxAuditPayloadChars); wasTruncated {
-			request = truncated + "...[truncated]"
-		}
-		attrs = append(attrs, slog.String("request", request))
-	}
-
-	// Include response payload (truncated to 100KB for log manageability)
-	// Response is already redacted for sensitive data by getResponseString()
-	if p.Response != "" {
-		response := p.Response
-		if truncated, wasTruncated := common.TruncateString(p.Response, maxAuditPayloadChars); wasTruncated {
-			response = truncated + "...[truncated]"
-		}
-		attrs = append(attrs, slog.String("response", response))
-	}
-
-	slog.LogAttrs(ctx, slog.LevelInfo, p.Method, attrs...)
-}
-
-// mcpDelegationAttrs renders the MCP provenance for stdout audit lines:
-// "mcp": true marks the row as MCP-originated even when the grant fields are
-// empty (legacy sessions); the correlation ID is what operators pivot on to
-// reassemble an agent session.
-func mcpDelegationAttrs(d *storepb.MCPDelegation) []slog.Attr {
-	if d == nil {
-		return nil
-	}
-	attrs := []slog.Attr{
-		slog.Bool("mcp", true),
-		// Minted for every session, legacy included — never empty.
-		slog.String("mcp_correlation_id", d.CorrelationId),
-	}
-	if d.Scope != "" {
-		attrs = append(attrs, slog.String("mcp_scope", d.Scope))
-	}
-	if d.Resource != "" {
-		attrs = append(attrs, slog.String("mcp_resource", d.Resource))
-	}
-	if d.ClientId != "" {
-		attrs = append(attrs, slog.String("mcp_client_id", d.ClientId))
-	}
-	return attrs
 }
 
 func getRequestResource(request any, method string) string {
@@ -1413,22 +1310,15 @@ func needAudit(ctx context.Context) bool {
 
 // getRequestMetadataFromHeaders extracts request metadata from HTTP headers for ConnectRPC.
 func getRequestMetadataFromHeaders(headers http.Header, peerAddr string) *storepb.RequestMetadata {
-	userAgent := headers.Get("User-Agent")
-	// Extract caller IP with fallback chain:
-	// 1. X-Real-IP (set by reverse proxy, most trustworthy single IP)
-	// 2. X-Forwarded-For (standard but can contain client-spoofed data)
-	// 3. Peer address from ConnectRPC (direct connection fallback)
-	callerIP := headers.Get("X-Real-IP")
+	// The forwarding headers first, then the peer address ConnectRPC reports
+	// for a direct connection.
+	callerIP := common.CallerIPFromHeaders(headers)
 	if callerIP == "" {
-		callerIP = headers.Get("X-Forwarded-For")
+		callerIP = common.StripPort(peerAddr)
 	}
-	if callerIP == "" {
-		callerIP = peerAddr
-	}
-
 	return &storepb.RequestMetadata{
 		CallerIp:                callerIP,
-		CallerSuppliedUserAgent: userAgent,
+		CallerSuppliedUserAgent: headers.Get("User-Agent"),
 	}
 }
 

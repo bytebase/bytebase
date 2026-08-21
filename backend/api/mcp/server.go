@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net"
 	"net/http"
 	"strings"
 	"sync"
@@ -20,6 +19,7 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -53,6 +53,10 @@ type serverStore interface {
 	GetWorkspaceProfileSetting(context.Context, string) (*storepb.WorkspaceProfileSetting, error)
 	GetMCPSettingsUncached(context.Context, string) (store.MCPSettings, error)
 	DeleteOAuth2RefreshTokensByUserAndClient(context.Context, string, string) error
+	// CreateAuditLog records the connection denials this package emits itself.
+	// They happen in echo middleware, outside both connect chains, so the audit
+	// interceptor never sees them.
+	CreateAuditLog(context.Context, string, *storepb.AuditLog) error
 }
 
 // NewServer creates a new MCP server. internalAPI is the internal API handler
@@ -205,25 +209,6 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return s.unauthorized(c, "invalid token: audience mismatch")
 		}
 
-		// Enforce the workspace MCP capability ceiling before dispatching to any
-		// tool. DISABLED rejects the connection outright; READ_ONLY admits it,
-		// and what a read-only session may then do is decided per method by the
-		// gate on the internal chain and per statement by the SQL clamp in
-		// SQLService/Query. Read live so an admin change takes effect on the
-		// next request without re-issuing tokens.
-		capability, err := s.mcpCapability(c.Request().Context(), workspaceID)
-		if err != nil {
-			// Infra failure reading the policy, not a verdict on the
-			// workspace: a 403 here would tell the operator their admin
-			// disabled MCP. 503 says retry, and the session still does not
-			// proceed.
-			slog.Error("failed to read the MCP capability ceiling; cannot admit the session", log.BBError(err))
-			return echo.NewHTTPError(http.StatusServiceUnavailable, "cannot read the MCP policy; retry shortly")
-		}
-		if !mcpConnectionAllowed(capability) {
-			return echo.NewHTTPError(http.StatusForbidden, "MCP access is disabled for this workspace by policy")
-		}
-
 		// Establish the delegated identity that carries this request's principal
 		// and grant state onto the private in-memory transport. The inbound
 		// bearer stops at this boundary: internal API requests mint their own
@@ -232,6 +217,9 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		// (common.DelegatedGrant documents the empty-state semantics; P1b
 		// resolves them). Identity only, no roles: downstream authorization
 		// re-resolves live exactly as for a public request.
+		//
+		// Built before the ceiling is read so a refused request carries the same
+		// provenance an admitted one does.
 		delegated := auth.DelegatedMCPCredential{
 			Principal:     sub,
 			WorkspaceID:   workspaceID,
@@ -239,6 +227,16 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			CorrelationID: uuid.NewString(),
 			Scope:         grantScope(claims),
 			Resource:      grantResource(claims, aud),
+		}
+
+		// Enforce the workspace MCP capability ceiling before dispatching to any
+		// tool. DISABLED rejects the connection outright; READ_ONLY admits it,
+		// and what a read-only session may then do is decided per method by the
+		// gate on the internal chain and per statement by the SQL clamp in
+		// SQLService/Query. Read live so an admin change takes effect on the
+		// next request without re-issuing tokens.
+		if refusal := s.refuseByCeiling(c, delegated); refusal != nil {
+			return refusal
 		}
 
 		// Store access token and workspace ID in request context for MCP tools.
@@ -251,8 +249,8 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 		// Normalize the resolved address onto the request so the per-request
 		// path sees it too: receiving middleware gets each request's headers,
 		// but never its peer address.
-		resolvedIP := callerIP(c.Request())
-		c.Request().Header.Set(headerRealIP, resolvedIP)
+		resolvedIP := common.CallerIP(c.Request())
+		c.Request().Header.Set(common.HeaderRealIP, resolvedIP)
 		ctx = withCallerIP(ctx, resolvedIP)
 		ctx = withSessionBinding(ctx, sessionBinding{
 			fingerprint: sessionFingerprint(delegated),
@@ -269,12 +267,6 @@ func (s *Server) authMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 // OAuth2 access token is minted with since P1a PR 3 (mirrors the constant of
 // the same name in the oauth2 package, which stores that URI on the grant).
 const mcpResourcePath = "/mcp"
-
-// Caller-IP headers, in the precedence the audit interceptor reads them.
-const (
-	headerRealIP       = "X-Real-IP"
-	headerForwardedFor = "X-Forwarded-For"
-)
 
 // RegisterRoutes registers the MCP server routes with Echo.
 func (s *Server) RegisterRoutes(e *echo.Echo) {
@@ -404,7 +396,7 @@ func sessionFingerprint(identity auth.DelegatedMCPCredential) string {
 func liveRequestMetadata(next mcp.MethodHandler) mcp.MethodHandler {
 	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
 		if extra := req.GetExtra(); extra != nil && extra.Header != nil {
-			if ip := headerCallerIP(extra.Header); ip != "" {
+			if ip := common.CallerIPFromHeaders(extra.Header); ip != "" {
 				ctx = withCallerIP(ctx, ip)
 			}
 			if token, err := auth.GetTokenFromHeaders(extra.Header); err == nil && token != "" {
@@ -413,34 +405,6 @@ func liveRequestMetadata(next mcp.MethodHandler) mcp.MethodHandler {
 		}
 		return next(ctx, method, req)
 	}
-}
-
-// headerCallerIP reads the caller IP from request headers, in the order the
-// audit interceptor applies: the proxy-set single IP first, then the standard
-// forwarding chain.
-func headerCallerIP(header http.Header) string {
-	if ip := header.Get(headerRealIP); ip != "" {
-		return ip
-	}
-	return header.Get(headerForwardedFor)
-}
-
-// callerIP resolves who made this /mcp request: the forwarding headers if
-// present, otherwise the peer address, whose port is dropped so the value reads
-// as an IP either way. Same precedence the audit interceptor applies to a
-// request that reaches the v1 API directly.
-//
-// The forwarding headers are client-controllable, exactly as they are on that
-// direct path. Reading them preserves the existing trust model rather than
-// introducing one.
-func callerIP(r *http.Request) string {
-	if ip := headerCallerIP(r.Header); ip != "" {
-		return ip
-	}
-	if host, _, err := net.SplitHostPort(r.RemoteAddr); err == nil {
-		return host
-	}
-	return r.RemoteAddr
 }
 
 // bearerExpiry reads the inbound token's expiry. The JWT parse upstream has
@@ -585,57 +549,6 @@ func (s *Server) unauthorized(c *echo.Context, errDescription string) error {
 		),
 	)
 	return echo.NewHTTPError(http.StatusUnauthorized, errDescription)
-}
-
-// mcpConnectionAllowed reports whether an MCP connection may proceed: a ceiling
-// that serves some method class opens a session, one that serves none does not.
-//
-// The rule lives in auth.MCPCeilingServesAnything so this gate and the
-// per-method serving table cannot state the same policy twice; a lint holds the
-// two against each other over the whole enum.
-//
-// UNSPECIFIED is refused rather than read as "never configured":
-// store.GetMCPSettingsUncached already resolves an unset ceiling to
-// READ_WRITE, so a zero value arriving here was resolved by nobody.
-func mcpConnectionAllowed(capability storepb.MCPSetting_Capability) bool {
-	return auth.MCPCeilingServesAnything(capability)
-}
-
-// mcpCapability resolves the workspace's effective MCP capability ceiling for
-// the connection gate. A stored value this build cannot interpret — a mistyped
-// enum name, a wrong-typed row — resolves to DISABLED, so the connection is
-// refused and the operator is told the policy is the problem, which is true:
-// no retry fixes it, an admin has to. A read that FAILED returns an error
-// instead, because "your workspace disabled MCP" is a lie during a database
-// blip; the caller answers 503 and the client retries, exactly as it already
-// does when the token audience cannot be resolved.
-//
-// Either way the session does not proceed. The request gate on the internal
-// chain makes the same split on the same two errors — the connection and the
-// per-method gate must never disagree about a workspace's ceiling, nor about
-// which kind of failure the operator is looking at.
-//
-// The resolution itself lives in the store, uncached. Bypassing the setting
-// cache is what makes the kill switch a kill switch: the cache has no TTL and
-// only in-process writes refresh it, so a profile cached as unset would keep
-// admitting MCP after the ceiling was flipped out of band.
-func (s *Server) mcpCapability(ctx context.Context, workspaceID string) (storepb.MCPSetting_Capability, error) {
-	settings, err := s.store.GetMCPSettingsUncached(ctx, workspaceID)
-	if err != nil {
-		if errors.Is(err, store.ErrMCPCapabilityUnreadable) {
-			slog.Warn("the stored MCP capability ceiling cannot be interpreted; refusing the connection",
-				slog.String("workspace", workspaceID), log.BBError(err))
-			return storepb.MCPSetting_DISABLED, nil
-		}
-		// DISABLED rather than UNSPECIFIED, even though the error is what the
-		// caller acts on. UNSPECIFIED is the zero value and means "nobody
-		// resolved this"; DISABLED is a decision. mcpConnectionAllowed refuses
-		// both, so nothing turns on it today — the point is that the value
-		// stays safe to read on its own, in case a later caller logs the error
-		// and carries on.
-		return storepb.MCPSetting_DISABLED, err
-	}
-	return settings.Capability, nil
 }
 
 // buildResourceMetadataURL returns the absolute URL of the protected resource

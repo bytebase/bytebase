@@ -24,9 +24,12 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 )
 
-// TestMCPConnectionAllowed pins the connection-level gate: READ_WRITE and
-// READ_ONLY admit a connection, and everything else fails closed — DISABLED,
-// unknown stored values such as the reserved number 2, and the zero value.
+// TestMCPConnectionAllowed pins the rule the connection gate decides from:
+// READ_WRITE and READ_ONLY admit a connection, and everything else fails
+// closed — DISABLED, unknown stored values such as the reserved number 2, and
+// the zero value. The gate reaches it through auth.ClassifyMCPCeiling, which
+// TestMCPCeilingVerdictAdmissionMatchesTheServesPredicate holds against this
+// same predicate over the whole enum.
 //
 // READ_ONLY is admitted from the cutover, once the SQL clamp made a read-only
 // session one that cannot write. What it may then do is decided per method by
@@ -50,7 +53,7 @@ func TestMCPConnectionAllowed(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.capability.String(), func(t *testing.T) {
-			require.Equal(t, tt.allowed, mcpConnectionAllowed(tt.capability))
+			require.Equal(t, tt.allowed, auth.MCPCeilingServesAnything(tt.capability))
 		})
 	}
 }
@@ -297,10 +300,10 @@ func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
 	srv, err := NewServer(s, profile, secret, nil)
 	require.NoError(t, err)
 
-	// The connection verdict alone cannot separate "the ceiling parsed as
-	// READ_ONLY" from "the ceiling could not be read", because mcpCapability
-	// maps any error to DISABLED and both refuse. So the resolver is asserted
-	// directly, on every workspace at once.
+	// The connection's STATUS alone cannot separate "the ceiling parsed as
+	// DISABLED" from "the ceiling could not be read": both are policy and both
+	// answer 403. Its wording does, and TestMCPConnectionDenialEmission pins
+	// that. The resolver is asserted directly here, on every workspace at once.
 	//
 	// That doubles as the composite-primary-key check the setting table needs.
 	// It is keyed (workspace, name), and GetMCPSettingsUncached is a new
@@ -308,10 +311,9 @@ func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
 	// return whichever row the scan reached first and apply one tenant's MCP
 	// ceiling to every other tenant — a kill switch answering for the wrong
 	// workspace. Every workspace below sits in this one database and must still
-	// resolve to its own stored value; the ws-readonly row
-	// must resolve as itself rather than as a fail-closed error, which is what
-	// separates "the ceiling says read-only" from "the ceiling could not be
-	// read" now that both no longer answer the same way at the connection.
+	// resolve to its own stored value; the ws-readonly row must resolve as
+	// itself rather than as a fail-closed error, which is what separates "the
+	// ceiling says read-only" from "the ceiling could not be read".
 	for workspace, want := range map[string]storepb.MCPSetting_Capability{
 		"ws-readonly":            storepb.MCPSetting_READ_ONLY,
 		"ws-open":                storepb.MCPSetting_READ_WRITE,
