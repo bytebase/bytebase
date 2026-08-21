@@ -99,7 +99,8 @@ so the choice rests on four things.
 **`debug_redact` belongs on one of the two values, not both.** It means "contains sensitive
 credentials". `QueryResult.rows` is bulk, not a credential, and must not claim credential semantics
 to anything reading that option. The enum carries `debug_redact` on `SENSITIVE` alone, so the two
-values share local behaviour — both omit from the audit payload — while differing upstream. Two
+values share local behaviour — both drop the value from the audit payload — while differing
+upstream. Two
 bools force the choice of either marking bulk fields `debug_redact` (false) or running two
 unrelated vocabularies.
 
@@ -144,13 +145,18 @@ Constraints:
   and discarded. `TestAuditRedactionDoesNotMutateInput` pins this.
 - Dropping is `Clear()`, not assignment to `""` — they differ for `optional` fields, where `""`
   leaves `{"password":""}`. `InstanceRole.password` is `optional`.
-- **A oneof member is blanked, not cleared.** Clearing a scalar arm unsets the oneof and erases
-  which arm was supplied: `DataSourceExternalSecret.token` (`instance_service.proto:644`) is an
-  `INPUT_ONLY` string arm whose sibling `app_role` is a message and would survive as `{}`, so
-  clearing would make token auth indistinguishable from unconfigured while AppRole stayed legible.
-  Blanking keeps the arm present with no value, which is already the read path's convention
-  (`instance_service_converter_test.go:457` — "Oneof members may stay present as an is-configured
-  signal ... require blank content, not absence").
+- **A `SENSITIVE` oneof member is blanked; an `OMIT` one is cleared.** Clearing a scalar arm
+  unsets the oneof and erases which arm was supplied: `DataSourceExternalSecret.token`
+  (`instance_service.proto:644`) is a string arm whose sibling `app_role` is a message and would
+  survive as `{}`, so clearing would make token auth indistinguishable from unconfigured while
+  AppRole stayed legible. Blanking keeps the arm present with no value — `{"token":""}` — which is
+  already the read path's convention (`instance_service_converter_test.go:457`: "Oneof members may
+  stay present as an is-configured signal ... require blank content, not absence").
+
+  That rationale is `SENSITIVE`-only. For `OMIT` the arm's presence is not audit metadata, and
+  blanking would leave `{"field":""}` in a payload the annotation says to drop, so `OMIT` clears.
+  No current `OMIT` field is a oneof arm; the rule exists so the first one does not silently
+  contradict its own annotation.
 - Otherwise oneofs need no special case: only the set arm reports `Has()`, and clearing a field
   *inside* a message arm leaves the arm set. This reproduces `redactIAMExtension` byte-for-byte.
 - Maps do: an annotated map is cleared whole, a map whose value type has a plan is descended per
