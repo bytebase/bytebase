@@ -218,7 +218,9 @@ rows regain `rows_count`.
   registry has to be enforced at runtime for the inventory to mean anything.
 - **Read-path assertion.** `assertNoInputOnlyValues` (`instance_service_converter_test.go:449`)
   already requires every `INPUT_ONLY` field to come back blank from a converter; generalize it to
-  `SENSITIVE`. Runs on every converter except the declared minting ones.
+  `SENSITIVE`. Runs on **every** converter, minting ones included: a minting converter is not
+  skipped, it is allowed exactly the `(function, field)` pairs declared for it above, so a later
+  line inside it that populated `password` or `service_key` still fails.
 
 ## Performance
 
