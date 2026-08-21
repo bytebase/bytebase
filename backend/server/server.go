@@ -214,7 +214,10 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Configure echo server.
 	s.echoServer = echo.New()
 
-	productMetrics := productmetrics.New(stores, s.licenseService)
+	var productMetrics *productmetrics.ProductMetrics
+	if !profile.SaaS {
+		productMetrics = productmetrics.New(stores, s.licenseService)
+	}
 	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory, s.licenseService, productMetrics)
 	s.approvalRunner = review.NewRunner(stores, s.bus, s.webhookManager, s.licenseService)
 
