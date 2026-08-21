@@ -2,8 +2,11 @@
 // @generated from file v1/workspace_service.proto (package bytebase.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
+import type { MCPSetting_Capability } from "./setting_service_pb";
+import type { AuthMethod, MCPMethodClass } from "./annotation_pb";
+import type { Engine } from "./common_pb";
 import type { FieldMask } from "@bufbuild/protobuf/wkt";
 import type { GetIamPolicyRequestSchema, IamPolicySchema, SetIamPolicyRequestSchema } from "./iam_policy_pb";
 import type { LoginResponseSchema } from "./auth_service_pb";
@@ -12,6 +15,309 @@ import type { LoginResponseSchema } from "./auth_service_pb";
  * Describes the file v1/workspace_service.proto.
  */
 export declare const file_v1_workspace_service: GenFile;
+
+/**
+ * @generated from message bytebase.v1.GetMCPInfoRequest
+ */
+export declare type GetMCPInfoRequest = Message<"bytebase.v1.GetMCPInfoRequest"> & {
+};
+
+/**
+ * Describes the message bytebase.v1.GetMCPInfoRequest.
+ * Use `create(GetMCPInfoRequestSchema)` to create a new message.
+ */
+export declare const GetMCPInfoRequestSchema: GenMessage<GetMCPInfoRequest>;
+
+/**
+ * MCPInfo is what MCP does in this workspace: the ceiling in force, what each
+ * ceiling serves, and the per-engine facts a read-only session depends on.
+ *
+ * Everything here is resolved when the request is served, never from a stored
+ * copy: the method list comes off the compiled API descriptors and the engine
+ * answers off the code that enforces them, so a build whose rules changed
+ * cannot describe the rules of the build before it.
+ *
+ * @generated from message bytebase.v1.MCPInfo
+ */
+export declare type MCPInfo = Message<"bytebase.v1.MCPInfo"> & {
+  /**
+   * The workspace this describes. Format: workspaces/{workspace}. Not this
+   * message's own resource name — MCPInfo is not a named resource and there is
+   * nothing to get it by.
+   *
+   * @generated from field: string workspace = 1;
+   */
+  workspace: string;
+
+  /**
+   * The ceiling in force for this workspace. A workspace that never configured
+   * MCP resolves to READ_WRITE.
+   *
+   * @generated from field: bytebase.v1.MCPSetting.Capability capability = 2;
+   */
+  capability: MCPSetting_Capability;
+
+  /**
+   * What each ceiling serves, including the one in force, so an admin can
+   * compare the choices rather than only read the current answer.
+   *
+   * @generated from field: repeated bytebase.v1.MCPCapabilityMode modes = 3;
+   */
+  modes: MCPCapabilityMode[];
+
+  /**
+   * Every API method some ceiling serves. A mode serves a method when the
+   * method's class is one of that mode's served_classes, which is the ceiling
+   * rule the gate evaluates. Methods no ceiling serves are absent.
+   *
+   * Being listed is necessary, not sufficient. The caller still needs the
+   * permission, and two further rules narrow what a served method does: a
+   * handful of methods are refused on the shape of the request (an issue that
+   * would grant a permission, a rollout that skips approval), and under
+   * READ_ONLY every statement SQLService/Query runs must classify as a read.
+   *
+   * @generated from field: repeated bytebase.v1.MCPMethod methods = 4;
+   */
+  methods: MCPMethod[];
+
+  /**
+   * What a read-only session and the masking toggle actually reach, per engine.
+   * Both are engine-conditional in ways the ceiling alone does not show.
+   *
+   * @generated from field: repeated bytebase.v1.MCPEngineEnforcement engines = 5;
+   */
+  engines: MCPEngineEnforcement[];
+
+  /**
+   * Whether this workspace stops applying the caller's own unmasking
+   * provisioning to MCP requests. It decides which branch of each engine's
+   * masking state a caller is in, and no other API tells an MCP session:
+   * SettingService/GetSetting is served by no ceiling.
+   *
+   * @generated from field: bool ignore_masking_exemptions = 6;
+   */
+  ignoreMaskingExemptions: boolean;
+
+  /**
+   * Whether data masking is licensed for this workspace. When false nothing is
+   * masked whatever an engine supports, so the masking states below describe a
+   * mechanism that does not run. Licensing can also be set per instance, so a
+   * true here is the workspace answer, not a promise about every instance.
+   *
+   * @generated from field: bool data_masking_available = 7;
+   */
+  dataMaskingAvailable: boolean;
+};
+
+/**
+ * Describes the message bytebase.v1.MCPInfo.
+ * Use `create(MCPInfoSchema)` to create a new message.
+ */
+export declare const MCPInfoSchema: GenMessage<MCPInfo>;
+
+/**
+ * MCPCapabilityMode is one ceiling and the method classes it serves.
+ *
+ * @generated from message bytebase.v1.MCPCapabilityMode
+ */
+export declare type MCPCapabilityMode = Message<"bytebase.v1.MCPCapabilityMode"> & {
+  /**
+   * @generated from field: bytebase.v1.MCPSetting.Capability capability = 1;
+   */
+  capability: MCPSetting_Capability;
+
+  /**
+   * Empty means the ceiling serves nothing, which is what DISABLED is.
+   *
+   * @generated from field: repeated bytebase.v1.MCPMethodClass served_classes = 2;
+   */
+  servedClasses: MCPMethodClass[];
+};
+
+/**
+ * Describes the message bytebase.v1.MCPCapabilityMode.
+ * Use `create(MCPCapabilityModeSchema)` to create a new message.
+ */
+export declare const MCPCapabilityModeSchema: GenMessage<MCPCapabilityMode>;
+
+/**
+ * MCPMethod is one API method an MCP session can reach, and what decides it.
+ *
+ * @generated from message bytebase.v1.MCPMethod
+ */
+export declare type MCPMethod = Message<"bytebase.v1.MCPMethod"> & {
+  /**
+   * The method as an audit entry names it, so a denial can be found by it.
+   * Example: /bytebase.v1.SQLService/Query
+   *
+   * @generated from field: string method = 1;
+   */
+  method: string;
+
+  /**
+   * The same method as call_api takes it.
+   * Example: bytebase.v1.SQLService.Query
+   *
+   * @generated from field: string operation_id = 4;
+   */
+  operationId: string;
+
+  /**
+   * @generated from field: bytebase.v1.MCPMethodClass class = 2;
+   */
+  class: MCPMethodClass;
+
+  /**
+   * The IAM permission the method declares. The ceiling never grants: a session
+   * may call a served method only where the person it acts for could.
+   *
+   * Empty means the method declares no permission, which is NOT the same as
+   * needing none — a method that authorizes inside its handler declares nothing
+   * here. auth_method says which case an empty value is.
+   *
+   * @generated from field: string permission = 3;
+   */
+  permission: string;
+
+  /**
+   * How the method authorizes. IAM means the permission above is the whole
+   * rule; CUSTOM means the handler decides and the permission field is silent.
+   *
+   * @generated from field: bytebase.v1.AuthMethod auth_method = 5;
+   */
+  authMethod: AuthMethod;
+};
+
+/**
+ * Describes the message bytebase.v1.MCPMethod.
+ * Use `create(MCPMethodSchema)` to create a new message.
+ */
+export declare const MCPMethodSchema: GenMessage<MCPMethod>;
+
+/**
+ * MCPEngineEnforcement is what the read-only ceiling and the masking toggle
+ * reach on one database engine.
+ *
+ * @generated from message bytebase.v1.MCPEngineEnforcement
+ */
+export declare type MCPEngineEnforcement = Message<"bytebase.v1.MCPEngineEnforcement"> & {
+  /**
+   * @generated from field: bytebase.v1.Engine engine = 1;
+   */
+  engine: Engine;
+
+  /**
+   * @generated from field: bytebase.v1.MCPEngineEnforcement.ReadOnlyDepth read_only_depth = 2;
+   */
+  readOnlyDepth: MCPEngineEnforcement_ReadOnlyDepth;
+
+  /**
+   * @generated from field: bytebase.v1.MCPEngineEnforcement.Masking masking = 3;
+   */
+  masking: MCPEngineEnforcement_Masking;
+
+  /**
+   * Where the answers above are the floor rather than the whole story. Empty
+   * for most engines.
+   *
+   * @generated from field: string note = 4;
+   */
+  note: string;
+};
+
+/**
+ * Describes the message bytebase.v1.MCPEngineEnforcement.
+ * Use `create(MCPEngineEnforcementSchema)` to create a new message.
+ */
+export declare const MCPEngineEnforcementSchema: GenMessage<MCPEngineEnforcement>;
+
+/**
+ * How much of a read-only ceiling this engine can be held to.
+ *
+ * @generated from enum bytebase.v1.MCPEngineEnforcement.ReadOnlyDepth
+ */
+export enum MCPEngineEnforcement_ReadOnlyDepth {
+  /**
+   * @generated from enum value: READ_ONLY_DEPTH_UNSPECIFIED = 0;
+   */
+  READ_ONLY_DEPTH_UNSPECIFIED = 0,
+
+  /**
+   * Bytebase has no read-only classifier for this engine, so a read-only
+   * session is refused every statement on it, including a plain SELECT.
+   *
+   * @generated from enum value: UNSUPPORTED = 1;
+   */
+  UNSUPPORTED = 1,
+
+  /**
+   * Every statement is classified before it runs and a request holding one
+   * that is not a read is refused whole. Nothing below that: the driver does
+   * not open a read-only database session, except where the note says
+   * otherwise.
+   *
+   * @generated from enum value: STATEMENT = 2;
+   */
+  STATEMENT = 2,
+
+  /**
+   * Statement classification, and the driver opens the database session
+   * read-only as well, so the engine refuses most writes the classifier
+   * missed. Not a proof: a statement that classifies as a read can still call
+   * a function that switches the session setting back off.
+   *
+   * @generated from enum value: STATEMENT_AND_SESSION = 3;
+   */
+  STATEMENT_AND_SESSION = 3,
+}
+
+/**
+ * Describes the enum bytebase.v1.MCPEngineEnforcement.ReadOnlyDepth.
+ */
+export declare const MCPEngineEnforcement_ReadOnlyDepthSchema: GenEnum<MCPEngineEnforcement_ReadOnlyDepth>;
+
+/**
+ * How Bytebase masks results on this engine, which is what decides whether
+ * ignoring masking exemptions changes anything here.
+ *
+ * @generated from enum bytebase.v1.MCPEngineEnforcement.Masking
+ */
+export enum MCPEngineEnforcement_Masking {
+  /**
+   * @generated from enum value: MASKING_UNSPECIFIED = 0;
+   */
+  MASKING_UNSPECIFIED = 0,
+
+  /**
+   * Bytebase does not mask on this engine. Nothing narrows what a session
+   * reads, and ignoring masking exemptions does nothing.
+   *
+   * @generated from enum value: NONE = 1;
+   */
+  NONE = 1,
+
+  /**
+   * Column masking. A masking policy substitutes values in query results,
+   * and the exemptions granted to the caller are what let them see the real
+   * value — which is what ignoring exemptions suppresses.
+   *
+   * @generated from enum value: COLUMN = 2;
+   */
+  COLUMN = 2,
+
+  /**
+   * Document masking. Results are masked, but exemptions are never consulted
+   * on this path, so ignoring them changes nothing here either.
+   *
+   * @generated from enum value: DOCUMENT = 3;
+   */
+  DOCUMENT = 3,
+}
+
+/**
+ * Describes the enum bytebase.v1.MCPEngineEnforcement.Masking.
+ */
+export declare const MCPEngineEnforcement_MaskingSchema: GenEnum<MCPEngineEnforcement_Masking>;
 
 /**
  * @generated from message bytebase.v1.RotateDirectorySyncTokenRequest
@@ -269,6 +575,26 @@ export declare const WorkspaceService: GenService<{
     methodKind: "unary";
     input: typeof SetIamPolicyRequestSchema;
     output: typeof IamPolicySchema;
+  },
+  /**
+   * Gets what MCP (Model Context Protocol) does in this workspace: the
+   * capability ceiling in force, what each ceiling serves, and the per-engine
+   * facts a read-only session depends on. The workspace is resolved from the
+   * authenticated session.
+   *
+   * Served to MCP sessions. An agent asking what it may do here is the point:
+   * the response says nothing a session's own denials do not already say, one
+   * refusal at a time, and knowing it up front is what stops the agent
+   * planning work the ceiling was never going to serve.
+   *
+   * Permissions required: None (authentication required)
+   *
+   * @generated from rpc bytebase.v1.WorkspaceService.GetMCPInfo
+   */
+  getMCPInfo: {
+    methodKind: "unary";
+    input: typeof GetMCPInfoRequestSchema;
+    output: typeof MCPInfoSchema;
   },
   /**
    * Mints a new directory sync (SCIM) token, immediately invalidating the

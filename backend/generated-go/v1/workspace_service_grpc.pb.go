@@ -26,6 +26,7 @@ const (
 	WorkspaceService_DeleteWorkspace_FullMethodName          = "/bytebase.v1.WorkspaceService/DeleteWorkspace"
 	WorkspaceService_LeaveWorkspace_FullMethodName           = "/bytebase.v1.WorkspaceService/LeaveWorkspace"
 	WorkspaceService_SetIamPolicy_FullMethodName             = "/bytebase.v1.WorkspaceService/SetIamPolicy"
+	WorkspaceService_GetMCPInfo_FullMethodName               = "/bytebase.v1.WorkspaceService/GetMCPInfo"
 	WorkspaceService_RotateDirectorySyncToken_FullMethodName = "/bytebase.v1.WorkspaceService/RotateDirectorySyncToken"
 )
 
@@ -59,6 +60,18 @@ type WorkspaceServiceClient interface {
 	// Sets IAM policy for the workspace.
 	// Permissions required: bb.workspaces.setIamPolicy
 	SetIamPolicy(ctx context.Context, in *SetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
+	// Gets what MCP (Model Context Protocol) does in this workspace: the
+	// capability ceiling in force, what each ceiling serves, and the per-engine
+	// facts a read-only session depends on. The workspace is resolved from the
+	// authenticated session.
+	//
+	// Served to MCP sessions. An agent asking what it may do here is the point:
+	// the response says nothing a session's own denials do not already say, one
+	// refusal at a time, and knowing it up front is what stops the agent
+	// planning work the ceiling was never going to serve.
+	//
+	// Permissions required: None (authentication required)
+	GetMCPInfo(ctx context.Context, in *GetMCPInfoRequest, opts ...grpc.CallOption) (*MCPInfo, error)
 	// Mints a new directory sync (SCIM) token, immediately invalidating the
 	// previous one. The plaintext token is returned exactly once and cannot be
 	// retrieved afterwards; only its hash is stored. Callers that lose it must
@@ -145,6 +158,16 @@ func (c *workspaceServiceClient) SetIamPolicy(ctx context.Context, in *SetIamPol
 	return out, nil
 }
 
+func (c *workspaceServiceClient) GetMCPInfo(ctx context.Context, in *GetMCPInfoRequest, opts ...grpc.CallOption) (*MCPInfo, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(MCPInfo)
+	err := c.cc.Invoke(ctx, WorkspaceService_GetMCPInfo_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *workspaceServiceClient) RotateDirectorySyncToken(ctx context.Context, in *RotateDirectorySyncTokenRequest, opts ...grpc.CallOption) (*RotateDirectorySyncTokenResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RotateDirectorySyncTokenResponse)
@@ -185,6 +208,18 @@ type WorkspaceServiceServer interface {
 	// Sets IAM policy for the workspace.
 	// Permissions required: bb.workspaces.setIamPolicy
 	SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error)
+	// Gets what MCP (Model Context Protocol) does in this workspace: the
+	// capability ceiling in force, what each ceiling serves, and the per-engine
+	// facts a read-only session depends on. The workspace is resolved from the
+	// authenticated session.
+	//
+	// Served to MCP sessions. An agent asking what it may do here is the point:
+	// the response says nothing a session's own denials do not already say, one
+	// refusal at a time, and knowing it up front is what stops the agent
+	// planning work the ceiling was never going to serve.
+	//
+	// Permissions required: None (authentication required)
+	GetMCPInfo(context.Context, *GetMCPInfoRequest) (*MCPInfo, error)
 	// Mints a new directory sync (SCIM) token, immediately invalidating the
 	// previous one. The plaintext token is returned exactly once and cannot be
 	// retrieved afterwards; only its hash is stored. Callers that lose it must
@@ -221,6 +256,9 @@ func (UnimplementedWorkspaceServiceServer) LeaveWorkspace(context.Context, *Leav
 }
 func (UnimplementedWorkspaceServiceServer) SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetIamPolicy not implemented")
+}
+func (UnimplementedWorkspaceServiceServer) GetMCPInfo(context.Context, *GetMCPInfoRequest) (*MCPInfo, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetMCPInfo not implemented")
 }
 func (UnimplementedWorkspaceServiceServer) RotateDirectorySyncToken(context.Context, *RotateDirectorySyncTokenRequest) (*RotateDirectorySyncTokenResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RotateDirectorySyncToken not implemented")
@@ -372,6 +410,24 @@ func _WorkspaceService_SetIamPolicy_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _WorkspaceService_GetMCPInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetMCPInfoRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(WorkspaceServiceServer).GetMCPInfo(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: WorkspaceService_GetMCPInfo_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(WorkspaceServiceServer).GetMCPInfo(ctx, req.(*GetMCPInfoRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _WorkspaceService_RotateDirectorySyncToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RotateDirectorySyncTokenRequest)
 	if err := dec(in); err != nil {
@@ -424,6 +480,10 @@ var WorkspaceService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SetIamPolicy",
 			Handler:    _WorkspaceService_SetIamPolicy_Handler,
+		},
+		{
+			MethodName: "GetMCPInfo",
+			Handler:    _WorkspaceService_GetMCPInfo_Handler,
 		},
 		{
 			MethodName: "RotateDirectorySyncToken",

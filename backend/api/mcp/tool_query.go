@@ -58,7 +58,8 @@ query_database(database="employee_db", statement="SELECT * FROM users LIMIT 10")
 query_database(database="employee", instance="prod-pg", statement="SELECT count(*) FROM orders")
 
 **Notes:**
-- Masked data: a masked column reads back as "******". That is a placeholder, not a value anything holds, so never write it back and never filter on it. Any statement containing it is refused.`
+- Masked data: a masked column reads back as "******". That is a placeholder, not a value anything holds, so never write it back and never filter on it. Any statement containing it is refused.
+- Workspace ceiling: the workspace's MCP policy decides what is served here, and under a read-only ceiling any statement that is not a read is refused whole. Read it with call_api(operationId="bytebase.v1.WorkspaceService.GetMCPInfo") — it also reports how deeply read-only is enforced on each engine.`
 
 func (s *Server) registerQueryTool() {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{

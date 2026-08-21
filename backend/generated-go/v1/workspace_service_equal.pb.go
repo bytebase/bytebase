@@ -8,6 +8,130 @@ import (
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
+func (x *GetMCPInfoRequest) Equal(y *GetMCPInfoRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	return true
+}
+
+func (x *MCPInfo) Equal(y *MCPInfo) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Workspace != y.Workspace {
+		return false
+	}
+	if x.Capability != y.Capability {
+		return false
+	}
+	if len(x.Modes) != len(y.Modes) {
+		return false
+	}
+	for i := 0; i < len(x.Modes); i++ {
+		if !x.Modes[i].Equal(y.Modes[i]) {
+			return false
+		}
+	}
+	if len(x.Methods) != len(y.Methods) {
+		return false
+	}
+	for i := 0; i < len(x.Methods); i++ {
+		if !x.Methods[i].Equal(y.Methods[i]) {
+			return false
+		}
+	}
+	if len(x.Engines) != len(y.Engines) {
+		return false
+	}
+	for i := 0; i < len(x.Engines); i++ {
+		if !x.Engines[i].Equal(y.Engines[i]) {
+			return false
+		}
+	}
+	if x.IgnoreMaskingExemptions != y.IgnoreMaskingExemptions {
+		return false
+	}
+	if x.DataMaskingAvailable != y.DataMaskingAvailable {
+		return false
+	}
+	return true
+}
+
+func (x *MCPCapabilityMode) Equal(y *MCPCapabilityMode) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Capability != y.Capability {
+		return false
+	}
+	if len(x.ServedClasses) != len(y.ServedClasses) {
+		return false
+	}
+	for i := 0; i < len(x.ServedClasses); i++ {
+		if x.ServedClasses[i] != y.ServedClasses[i] {
+			return false
+		}
+	}
+	return true
+}
+
+func (x *MCPMethod) Equal(y *MCPMethod) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Method != y.Method {
+		return false
+	}
+	if x.OperationId != y.OperationId {
+		return false
+	}
+	if x.Class != y.Class {
+		return false
+	}
+	if x.Permission != y.Permission {
+		return false
+	}
+	if x.AuthMethod != y.AuthMethod {
+		return false
+	}
+	return true
+}
+
+func (x *MCPEngineEnforcement) Equal(y *MCPEngineEnforcement) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Engine != y.Engine {
+		return false
+	}
+	if x.ReadOnlyDepth != y.ReadOnlyDepth {
+		return false
+	}
+	if x.Masking != y.Masking {
+		return false
+	}
+	if x.Note != y.Note {
+		return false
+	}
+	return true
+}
+
 func (x *RotateDirectorySyncTokenRequest) Equal(y *RotateDirectorySyncTokenRequest) bool {
 	if x == y {
 		return true
