@@ -44,10 +44,9 @@ disagree on whether `rows_count` survives.
 - **Secrets inside free-form text.** `redactRoleAttribute` (`read_redaction.go`) masks a password
   hash within MariaDB `SHOW GRANTS` output. No field annotation expresses that; it stays
   hand-written on the read path.
-- **Runtime enforcement.** The `debug_redact` that `SENSITIVE` carries is inert in Go, and the
-  redactor is a denylist, so at runtime an unannotated field is logged. The inventory below moves
-  that failure to CI; nothing catches it in a binary built past a skipped lint, where today's
-  allowlist rebuilds fail closed.
+- **Runtime enforcement.** The redactor is a denylist, so at runtime an unannotated field is
+  logged. The inventory below moves that failure to CI; nothing catches it in a binary built past
+  a skipped lint, where today's allowlist rebuilds fail closed.
 
 ## Design
 
@@ -58,7 +57,7 @@ One extension, an enum, declared in `proto/v1/v1/annotation.proto`:
 ```proto
 enum AuditBehavior {
   AUDIT_BEHAVIOR_UNSPECIFIED = 0;   // recorded normally
-  SENSITIVE = 1 [debug_redact = true];
+  SENSITIVE = 1;
   OMIT = 2;
 }
 
@@ -104,38 +103,25 @@ legal, but grep is how a reviewer audits this, so the identifier has to be unamb
 
 #### Why one enum rather than two bools
 
-The alternative is a bool per behavior — upstream `debug_redact = true` on credentials, a local
-`audit_omit = true` on bulk. Both encode the same two classes and both read from the descriptor,
-so the choice rests on four things.
+The alternative is a bool per behavior — `sensitive = true` on credentials, `audit_omit = true` on
+bulk. Both encode the same two classes and both read from the descriptor, so the choice rests on
+three things.
 
-**`debug_redact` belongs on one of the two values, not both.** It means "contains sensitive
-credentials". `QueryResult.rows` is bulk, not a credential, and must not claim credential semantics
-to anything reading that option. The enum carries `debug_redact` on `SENSITIVE` alone, so the two
-values share local behaviour — both drop the value from the audit payload — while differing
-upstream. Two bools force the choice of either marking bulk fields `debug_redact` (false) or
-running two unrelated vocabularies.
-
-**Exclusivity becomes structural.** Two bools permit `[debug_redact = true, (audit_omit) = true]`,
+**Exclusivity becomes structural.** Two bools permit `[(sensitive) = true, (audit_omit) = true]`,
 which is meaningless and which nothing rejects. One classification per field is unviolatable in the
 enum.
 
 **One vocabulary at the field.** `= SENSITIVE` and `= OMIT` read in parallel and answer to one
-grep. `[debug_redact = true]` beside `[(bytebase.v1.audit_omit) = true]` mixes an upstream bool
-with a local one, and a reviewer must know both conventions to audit a proto file.
+grep. Two bools mean two identifiers to know and two greps to audit a proto file.
 
-**Nothing upstream is given up.** Annotating enum values with `debug_redact` is protobuf's own
-documented pattern for keeping a local vocabulary while still being recognized, and C++ debug APIs
-honour it as of v30. `debug_redact` exists twice in `descriptor.proto` — `FieldOptions` field 16
-and `EnumValueOptions` field 3, the latter documented as "fields annotated with this enum value" —
-so `SENSITIVE = 1 [debug_redact = true]` is a legal declaration, not a borrowed field option. It
-compiles under both `buf build` and `protoc`, and the resulting descriptor carries
-`debug_redact=true` on `SENSITIVE` and `false` on `OMIT`. The literal `[debug_redact = true]` is
-more immediately recognizable to a protobuf reader, which is the one point on the other side, and
-it is a one-time cost against a doc comment in `annotation.proto`.
+**One read in the redactor.** A single `GetExtension` plus a switch, rather than two extension
+reads with separate absent-value handling. A third behavior, if one is ever needed, is an enum
+value rather than a third extension.
 
-This changes nothing about enforcement. **Go honours `debug_redact` nowhere**, field-level or
-enum-level, so the upstream recognition is future-proofing and vocabulary, not protection we have
-today. The lints remain the only thing enforcing either value.
+`google.protobuf.FieldOptions.debug_redact` was considered as the credential marker and rejected.
+It is **inert in Go** — nothing in `protojson`, `prototext`, or the runtime reads it, at field or
+enum-value level — so it would add no enforcement to a Go backend while reading like it did. The
+lints are the whole enforcement story, and an annotation implying otherwise is worse than none.
 
 ### Redaction
 
@@ -190,6 +176,13 @@ Constraints:
   them on every successful call with no error is its own defect. The registry is also the
   derivation source for the inventory's `service_data` half — registering a type is what pulls its
   fields in for classification.
+
+  Ordinary `Any` fields carry the same blind spot: the walk sees `type_url` and `value`, not the
+  packed message, so a `SENSITIVE` field inside one is invisible to the redactor, the coverage lint
+  and the inventory alike. Two exist today, both on `SearchAuditLogsResponse.audit_logs`
+  (`status.details` and the stored `service_data`), and both carry data already redacted when it
+  was written. The inventory lint fails on any `Any` field in the audited surface whose type is not
+  in the registry, so a request that starts carrying one gets classified rather than skipped.
 
   Four RPCs set it today and all four are safe — each packs read-path converter output that already
   blanks its secrets, `convertToAISetting` and `convertToEmailSetting` explicitly,
@@ -269,8 +262,10 @@ darwin/arm64, one run, with `INPUT_ONLY` standing in for the annotation set.
 - **A `MASK` value alongside `OMIT`** — there is no mask to model. `maskedString` is `""` and
   protojson drops it, so every existing "mask" is already an omit. `SENSITIVE` and `OMIT` differ in
   what the field *is*, not in how much of it survives; both drop it.
-- **Two bools** — upstream `debug_redact` on credentials plus a local `audit_omit` on bulk.
-  Rejected; see "Why one enum rather than two bools" above.
+- **Two bools** — `sensitive` on credentials plus `audit_omit` on bulk. Rejected; see "Why one
+  enum rather than two bools" above.
+- **`debug_redact` as the credential marker** — inert in Go, so it would imply enforcement the
+  runtime does not provide. Same section.
 - **AIP-147** prescribes patterns, not an annotation: `INPUT_ONLY` plus `OUTPUT_ONLY bool
   <name>_set`. We follow it inconsistently — `ssl_ca_set` does, `directory_sync_token_configured`
   does not, and that field is in no tagged release yet.
