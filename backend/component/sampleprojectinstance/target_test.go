@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/require"
 
@@ -34,7 +33,7 @@ func TestNewTargetRejectsUnsafeConfiguration(t *testing.T) {
 			_, err := NewTarget(test.targetURL)
 			require.Error(t, err)
 			require.NotContains(t, err.Error(), "secret")
-			require.Equal(t, targetFailureStatic, targetFailureKindOf(err))
+			require.True(t, isStaticTargetError(err))
 		})
 	}
 }
@@ -88,11 +87,6 @@ WkBKOclmOV2xlTVuPw==
 
 	_, err = target.InstanceConfig(Allocation{Database: "sample_database", Role: "sample_role"})
 	require.Error(t, err)
-}
-
-func TestIsAmbiguousProvisionError(t *testing.T) {
-	require.True(t, isAmbiguousProvisionError(errors.New("connection lost")))
-	require.False(t, isAmbiguousProvisionError(&pgconn.PgError{Code: "42P04"}))
 }
 
 func TestTargetProvisionAndRemove(t *testing.T) {
@@ -272,7 +266,7 @@ func TestTargetValidateRejectsUnexpectedPublicDatabase(t *testing.T) {
 
 	err = newLocalTarget(t, container).Validate(ctx)
 	require.Error(t, err)
-	require.Equal(t, targetFailureStatic, targetFailureKindOf(err))
+	require.True(t, isStaticTargetError(err))
 }
 
 func TestTargetValidateForCleanupAllowsUnexpectedPublicDatabase(t *testing.T) {
@@ -298,7 +292,7 @@ func TestTargetValidateForCleanupAllowsUnexpectedPublicDatabase(t *testing.T) {
 	require.NoError(t, target.ValidateForCleanup(ctx))
 }
 
-func TestTargetProvisionRemovesNewRoleWhenDatabaseExists(t *testing.T) {
+func TestTargetProvisionLeavesResourcesForRemoveWhenDatabaseExists(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping PostgreSQL testcontainer test in short mode")
 	}
@@ -324,16 +318,21 @@ func TestTargetProvisionRemovesNewRoleWhenDatabaseExists(t *testing.T) {
 
 	err = newLocalTarget(t, container).Provision(ctx, allocation)
 	require.Error(t, err)
-	require.Equal(t, targetFailureInvariant, targetFailureKindOf(err))
+	require.False(t, isStaticTargetError(err))
 
 	var databasePresent, rolePresent bool
 	require.NoError(t, admin.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = $1)", allocation.Database).Scan(&databasePresent))
 	require.True(t, databasePresent)
 	require.NoError(t, admin.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = $1)", allocation.Role).Scan(&rolePresent))
+	require.True(t, rolePresent)
+	require.NoError(t, newLocalTarget(t, container).Remove(ctx, Allocation{Database: allocation.Database, Role: allocation.Role}))
+	require.NoError(t, admin.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = $1)", allocation.Database).Scan(&databasePresent))
+	require.False(t, databasePresent)
+	require.NoError(t, admin.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = $1)", allocation.Role).Scan(&rolePresent))
 	require.False(t, rolePresent)
 }
 
-func TestTargetProvisionCleansUpAtEveryInterruptionBoundary(t *testing.T) {
+func TestTargetProvisionLeavesResourcesForRemoveAfterInjectedFailure(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping PostgreSQL testcontainer test in short mode")
 	}
@@ -349,12 +348,6 @@ func TestTargetProvisionCleansUpAtEveryInterruptionBoundary(t *testing.T) {
 	stages := []provisionStage{
 		provisionStageRoleCreated,
 		provisionStageDatabaseCreated,
-		provisionStagePublicAccessRevoked,
-		provisionStageRoleAccessGranted,
-		provisionStageConnectionsEnabled,
-		provisionStagePublicSchemaRevoked,
-		provisionStageRoleSchemaGranted,
-		provisionStageSeeded,
 	}
 	for index, interruptedStage := range stages {
 		t.Run(string(interruptedStage), func(t *testing.T) {
@@ -373,6 +366,12 @@ func TestTargetProvisionCleansUpAtEveryInterruptionBoundary(t *testing.T) {
 
 			require.Error(t, target.Provision(ctx, allocation))
 			var exists bool
+			require.NoError(t, admin.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = $1)", allocation.Database).Scan(&exists))
+			require.Equal(t, interruptedStage == provisionStageDatabaseCreated, exists)
+			require.NoError(t, admin.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = $1)", allocation.Role).Scan(&exists))
+			require.True(t, exists)
+			target.provisionHook = nil
+			require.NoError(t, target.Remove(ctx, Allocation{Database: allocation.Database, Role: allocation.Role}))
 			require.NoError(t, admin.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = $1)", allocation.Database).Scan(&exists))
 			require.False(t, exists)
 			require.NoError(t, admin.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = $1)", allocation.Role).Scan(&exists))
@@ -443,7 +442,7 @@ func TestTargetProvisionKeepsDatabaseNonConnectableUntilAccessIsReady(t *testing
 	require.Error(t, crossErr)
 }
 
-func TestTargetProvisionPreservesOwnershipWhenAttemptCleanupFails(t *testing.T) {
+func TestTargetRemoveCanResumeAfterDatabaseCleanupFailure(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping PostgreSQL testcontainer test in short mode")
 	}
@@ -456,39 +455,37 @@ func TestTargetProvisionPreservesOwnershipWhenAttemptCleanupFails(t *testing.T) 
 	defer admin.Close(ctx)
 	require.NoError(t, prepareBaseline(ctx, admin))
 	allocation := Allocation{
-		Database: "sample_target_existing_database",
-		Role:     "sample_target_owned_role",
+		Database: "sample_target_cleanup_database",
+		Role:     "sample_target_cleanup_role",
 		Password: "sample-target-password",
 	}
-	_, err := admin.Exec(ctx, fmt.Sprintf("CREATE DATABASE %s", quoteIdentifier(allocation.Database)))
-	require.NoError(t, err)
+	target := newLocalTarget(t, container)
+	require.NoError(t, target.Provision(ctx, allocation))
 	t.Cleanup(func() {
 		_, _ = admin.Exec(context.Background(), fmt.Sprintf("DROP DATABASE %s", quoteIdentifier(allocation.Database)))
 		_, _ = admin.Exec(context.Background(), fmt.Sprintf("DROP ROLE %s", quoteIdentifier(allocation.Role)))
 	})
 
-	target := newLocalTarget(t, container)
 	target.provisionHook = func(stage provisionStage) error {
-		if stage == provisionStageCleanupRole {
-			return errors.New("injected role cleanup failure")
+		if stage == provisionStageCleanupDatabase {
+			return errors.New("injected database cleanup failure")
 		}
 		return nil
 	}
-	err = target.Provision(ctx, allocation)
-	require.Error(t, err)
-
-	ownership, ok := provisionOwnershipOf(err)
-	require.True(t, ok)
-	require.False(t, ownership.databaseCreated)
-	require.True(t, ownership.roleCreated)
-
-	target.provisionHook = nil
-	require.NoError(t, target.Remove(ctx, Allocation{Role: allocation.Role}))
+	require.Error(t, target.Remove(ctx, Allocation{Database: allocation.Database, Role: allocation.Role}))
 	var databasePresent, rolePresent bool
 	require.NoError(t, admin.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = $1)", allocation.Database).Scan(&databasePresent))
 	require.True(t, databasePresent)
 	require.NoError(t, admin.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = $1)", allocation.Role).Scan(&rolePresent))
+	require.True(t, rolePresent)
+
+	target.provisionHook = nil
+	require.NoError(t, target.Remove(ctx, Allocation{Database: allocation.Database, Role: allocation.Role}))
+	require.NoError(t, admin.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = $1)", allocation.Database).Scan(&databasePresent))
+	require.False(t, databasePresent)
+	require.NoError(t, admin.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = $1)", allocation.Role).Scan(&rolePresent))
 	require.False(t, rolePresent)
+	require.NoError(t, target.Remove(ctx, Allocation{Database: allocation.Database, Role: allocation.Role}))
 }
 
 func newLocalTarget(t *testing.T, container *testcontainer.Container) *Target {

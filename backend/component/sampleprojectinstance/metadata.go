@@ -69,12 +69,11 @@ func (m *Manager) createMetadata(ctx context.Context, registration registration)
 	})
 }
 
-// removeMetadata deletes only the exact, deterministic Sample Project Instance in its
-// owning project and workspace. It rejects collisions so the caller leaves
-// physical resources and the reservation available for later diagnosis.
+// removeMetadata deletes only the exact persisted Sample Project Instance in
+// its owning project and workspace. Mutable Instance metadata is not ownership
+// evidence; the globally unique resource ID and reservation scope are.
 func (m *Manager) removeMetadata(
 	ctx context.Context,
-	allocation Allocation,
 	instanceID, workspaceID, projectID string,
 ) error {
 	instance, err := m.store.GetInstance(ctx, &store.FindInstanceMessage{
@@ -91,9 +90,6 @@ func (m *Manager) removeMetadata(
 	if instance.ProjectID == nil || *instance.ProjectID != projectID {
 		return errors.Errorf("Sample Project Instance %q belongs to a different project", instanceID)
 	}
-	if !matchesRegistration(instance, allocation) {
-		return errors.Errorf("Sample Project Instance %q metadata does not match its allocation", instanceID)
-	}
 	if !instance.Deleted {
 		deleted := true
 		if _, err := m.store.UpdateInstance(ctx, &store.UpdateInstanceMessage{
@@ -108,21 +104,4 @@ func (m *Manager) removeMetadata(
 		return errors.Wrap(err, "delete instance")
 	}
 	return nil
-}
-
-func matchesRegistration(instance *store.InstanceMessage, allocation Allocation) bool {
-	if instance.Metadata == nil ||
-		instance.Metadata.GetTitle() != sampleProjectInstanceTitle ||
-		instance.Metadata.GetEngine() != storepb.Engine_POSTGRES {
-		return false
-	}
-	for _, dataSource := range instance.Metadata.GetDataSources() {
-		if dataSource.GetId() == "admin" &&
-			dataSource.GetType() == storepb.DataSourceType_ADMIN &&
-			dataSource.GetDatabase() == allocation.Database &&
-			dataSource.GetUsername() == allocation.Role {
-			return true
-		}
-	}
-	return false
 }

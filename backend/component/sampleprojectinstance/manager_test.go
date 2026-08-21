@@ -30,10 +30,9 @@ func TestFailureKindOf(t *testing.T) {
 }
 
 func TestMapTargetErrorUsesManagerFailureVocabulary(t *testing.T) {
-	require.Equal(t, FailureFailedPrecondition, FailureKindOf(mapTargetError(newTargetFailure(targetFailureStatic, errors.New("invalid target")))))
-	require.Equal(t, FailureUnavailable, FailureKindOf(mapTargetError(newTargetFailure(targetFailureUnavailable, errors.New("offline")))))
+	require.Equal(t, FailureFailedPrecondition, FailureKindOf(mapTargetError(staticTargetError("invalid target"))))
+	require.Equal(t, FailureUnavailable, FailureKindOf(mapTargetError(errors.New("offline"))))
 	require.Equal(t, FailureDeadlineExceeded, FailureKindOf(mapTargetError(context.DeadlineExceeded)))
-	require.Equal(t, FailureUnknown, FailureKindOf(mapTargetError(newTargetFailure(targetFailureInvariant, errors.New("collision")))))
 }
 
 func TestManagerCompensatesConcreteMetadataFailure(t *testing.T) {
@@ -56,7 +55,7 @@ func TestManagerCompensatesConcreteMetadataFailure(t *testing.T) {
 	_, err = manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
 	require.Error(t, err)
 	require.Nil(t, mustGetSampleProjectInstance(ctx, t, s))
-	assertAllocationAbsent(ctx, t, target, sampleNames("workspace-a"))
+	assertNoSampleAllocations(ctx, t, target)
 
 	_, err = db.ExecContext(ctx, `
 		DROP TRIGGER fail_sample_instance_insert ON instance;
@@ -108,7 +107,9 @@ func TestManagerCompensatesConcreteDiscoveryFailure(t *testing.T) {
 		return err == nil && waiting
 	}, 30*time.Second, 50*time.Millisecond)
 
-	names := sampleNames("workspace-a")
+	reservation := mustGetSampleProjectInstance(ctx, t, s)
+	require.NotNil(t, reservation)
+	names := AllocationNames{Database: reservation.DBName, Role: reservation.RoleName}
 	admin, err := target.connect(ctx, "", "", "")
 	require.NoError(t, err)
 	_, err = admin.Exec(ctx, fmt.Sprintf("ALTER ROLE %s NOLOGIN", quoteIdentifier(names.Role)))
@@ -183,7 +184,7 @@ func TestManagerCompensatesWhenWorkspaceDeletedDuringProvisioning(t *testing.T) 
 	err = <-prepareErr
 	require.Equal(t, FailureFailedPrecondition, FailureKindOf(err))
 	require.Nil(t, mustGetSampleProjectInstance(ctx, t, s))
-	assertAllocationAbsent(ctx, t, target, sampleNames("workspace-a"))
+	assertNoSampleAllocations(ctx, t, target)
 	var activeInstances int
 	require.NoError(t, db.QueryRowContext(ctx, `
 		SELECT COUNT(*)
@@ -269,65 +270,91 @@ func TestManagerUsesFirstEnvironmentWhenTestIsMissing(t *testing.T) {
 	result, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
 	require.NoError(t, err)
 	require.Equal(t, "prod", *result.Instance.EnvironmentID)
-}
-
-func TestManagerPersistsAndRecoversConcreteProvisionOwnership(t *testing.T) {
-	ctx, _, s, target, manager := newConcreteManager(t)
-	names := sampleNames("workspace-a")
-	admin, err := target.connect(ctx, "", "", "")
-	require.NoError(t, err)
-	defer admin.Close(ctx)
-	_, err = admin.Exec(ctx, fmt.Sprintf("CREATE DATABASE %s", quoteIdentifier(names.Database)))
-	require.NoError(t, err)
-	_, err = admin.Exec(ctx, fmt.Sprintf("REVOKE ALL PRIVILEGES ON DATABASE %s FROM PUBLIC", quoteIdentifier(names.Database)))
-	require.NoError(t, err)
-	target.provisionHook = func(stage provisionStage) error {
-		if stage == provisionStageCleanupRole {
-			return errors.New("injected role cleanup failure")
-		}
-		return nil
-	}
-
-	_, err = manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
-	require.Equal(t, FailureUnavailable, FailureKindOf(err))
 	reservation := mustGetSampleProjectInstance(ctx, t, s)
-	require.True(t, reservation.OwnershipKnown)
-	require.False(t, reservation.DatabaseCreated)
-	require.True(t, reservation.RoleCreated)
-
-	target.provisionHook = nil
-	_, err = admin.Exec(ctx, fmt.Sprintf("DROP DATABASE %s", quoteIdentifier(names.Database)))
-	require.NoError(t, err)
-	_, err = manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
-	require.NoError(t, err)
+	require.NotNil(t, reservation)
+	names := sampleNames(reservation.InstanceID)
+	require.Equal(t, names.Database, reservation.DBName)
+	require.Equal(t, names.Role, reservation.RoleName)
 }
 
-func TestManagerPreservesAndRecoversUnknownProvisionOwnership(t *testing.T) {
+func TestManagerCompensatesProvisionFailures(t *testing.T) {
 	stages := []provisionStage{
-		provisionStageRoleCreatedUnacknowledged,
-		provisionStageDatabaseCreatedUnacknowledged,
+		provisionStageRoleCreated,
+		provisionStageDatabaseCreated,
 	}
 	for _, stage := range stages {
 		t.Run(string(stage), func(t *testing.T) {
 			ctx, _, s, target, manager := newConcreteManager(t)
 			target.provisionHook = func(current provisionStage) error {
 				if current == stage {
-					return errors.New("injected lost provisioning acknowledgement")
+					return errors.New("injected provisioning failure")
 				}
 				return nil
 			}
 
 			_, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
 			require.Equal(t, FailureUnavailable, FailureKindOf(err))
-			reservation := mustGetSampleProjectInstance(ctx, t, s)
-			require.False(t, reservation.OwnershipKnown)
-
-			target.provisionHook = nil
-			result, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
-			require.NoError(t, err)
-			require.NotNil(t, result.Instance)
+			require.Nil(t, mustGetSampleProjectInstance(ctx, t, s))
+			assertNoSampleAllocations(ctx, t, target)
 		})
 	}
+}
+
+func TestManagerPreservesAndRecoversReservationWhenCompensationFails(t *testing.T) {
+	ctx, _, s, target, manager := newConcreteManager(t)
+	provisionFailed := false
+	target.provisionHook = func(stage provisionStage) error {
+		if stage == provisionStageDatabaseCreated && !provisionFailed {
+			provisionFailed = true
+			return errors.New("injected provisioning failure")
+		}
+		if stage == provisionStageCleanupRole {
+			return errors.New("injected cleanup failure")
+		}
+		return nil
+	}
+
+	_, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	require.Equal(t, FailureUnavailable, FailureKindOf(err))
+	reservation := mustGetSampleProjectInstance(ctx, t, s)
+	require.NotNil(t, reservation)
+	require.Nil(t, reservation.ExpiresAt)
+
+	target.provisionHook = nil
+	result, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	require.NoError(t, err)
+	require.NotNil(t, result.Instance)
+	reservation = mustGetSampleProjectInstance(ctx, t, s)
+	require.NotNil(t, reservation.ExpiresAt)
+}
+
+func TestManagerReconcileAttemptsTargetCleanupWhenMetadataRemovalFails(t *testing.T) {
+	ctx, db, _, target, manager := newConcreteManager(t)
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO project (resource_id, workspace, name)
+		VALUES ('project-b', 'workspace-a', 'Project B')
+	`)
+	require.NoError(t, err)
+	reservation, created, err := manager.reserve(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	require.NoError(t, err)
+	require.True(t, created)
+	allocation := Allocation{Database: reservation.DBName, Role: reservation.RoleName, Password: "sample-password"}
+	require.NoError(t, target.Provision(ctx, allocation))
+	_, err = manager.createMetadata(ctx, registration{
+		WorkspaceID:       "workspace-a",
+		ProjectID:         "project-b",
+		EnvironmentID:     testEnvironmentID,
+		InstanceID:        reservation.InstanceID,
+		Title:             sampleProjectInstanceTitle,
+		Engine:            storepb.Engine_POSTGRES,
+		AdminDataSource:   &storepb.DataSource{Id: "admin", Type: storepb.DataSourceType_ADMIN},
+		SyncDatabaseNames: []string{reservation.DBName},
+	})
+	require.NoError(t, err)
+
+	err = manager.reconcile(ctx, allocation, reservation.InstanceID, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	require.Error(t, err)
+	assertAllocationAbsent(ctx, t, target, AllocationNames{Database: reservation.DBName, Role: reservation.RoleName})
 }
 
 func newConcreteManager(t *testing.T) (context.Context, *sql.DB, *store.Store, *Target, *Manager) {
@@ -360,11 +387,6 @@ func newConcreteManager(t *testing.T) (context.Context, *sql.DB, *store.Store, *
 	require.NoError(t, err)
 	require.NoError(t, prepareBaseline(ctx, admin))
 	require.NoError(t, admin.Close(ctx))
-	t.Cleanup(func() {
-		names := sampleNames("workspace-a")
-		_ = target.Remove(context.Background(), Allocation{Database: names.Database, Role: names.Role})
-	})
-
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
 	require.NoError(t, err)
 	syncer := schemasync.NewSyncer(s, dbfactory.New(s, licenseService), licenseService)
@@ -381,6 +403,18 @@ func assertAllocationAbsent(ctx context.Context, t *testing.T, target *Target, n
 	require.NoError(t, conn.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = $1)", names.Role).Scan(&roleExists))
 	require.False(t, databaseExists)
 	require.False(t, roleExists)
+}
+
+func assertNoSampleAllocations(ctx context.Context, t *testing.T, target *Target) {
+	t.Helper()
+	conn, err := target.connect(ctx, "", "", "")
+	require.NoError(t, err)
+	defer conn.Close(ctx)
+	var databaseCount, roleCount int
+	require.NoError(t, conn.QueryRow(ctx, "SELECT COUNT(*) FROM pg_database WHERE datname LIKE 'bb\\_sample\\_%' ESCAPE '\\'").Scan(&databaseCount))
+	require.NoError(t, conn.QueryRow(ctx, "SELECT COUNT(*) FROM pg_roles WHERE rolname LIKE 'bb\\_sample\\_role\\_%' ESCAPE '\\'").Scan(&roleCount))
+	require.Zero(t, databaseCount)
+	require.Zero(t, roleCount)
 }
 
 func mustGetSampleProjectInstance(ctx context.Context, t *testing.T, s *store.Store) *store.SampleProjectInstanceMessage {

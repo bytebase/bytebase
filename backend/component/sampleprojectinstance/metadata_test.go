@@ -69,25 +69,9 @@ func TestManagerMetadataCreatesAndLooksUpScopedSampleProjectInstance(t *testing.
 	require.NoError(t, err)
 	require.True(t, state.active())
 
-	require.Error(t, manager.removeMetadata(ctx, allocation, "sample-instance", "workspace-a", "project-a"))
+	require.NoError(t, manager.removeMetadata(ctx, "sample-instance", "workspace-a", "project-a"))
 	projectID := "project-a"
 	instanceID := "sample-instance"
-	remaining, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
-		Workspace:  "workspace-a",
-		ProjectID:  &projectID,
-		ResourceID: &instanceID,
-	})
-	require.NoError(t, err)
-	require.NotNil(t, remaining)
-
-	instance.Metadata.Title = sampleProjectInstanceTitle
-	_, err = stores.UpdateInstance(ctx, &store.UpdateInstanceMessage{
-		ResourceID: &instance.ResourceID,
-		Workspace:  instance.Workspace,
-		Metadata:   instance.Metadata,
-	})
-	require.NoError(t, err)
-	require.NoError(t, manager.removeMetadata(ctx, allocation, "sample-instance", "workspace-a", "project-a"))
 	removed, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
 		Workspace:  "workspace-a",
 		ProjectID:  &projectID,
@@ -119,5 +103,5 @@ func TestManagerMetadataCreatesAndLooksUpScopedSampleProjectInstance(t *testing.
 	require.False(t, state.InstanceMatches)
 	require.NotNil(t, state.Instance)
 	require.Nil(t, state.Database)
-	require.Error(t, manager.removeMetadata(ctx, allocation, "cross-project-instance", "workspace-a", "project-b"))
+	require.Error(t, manager.removeMetadata(ctx, "cross-project-instance", "workspace-a", "project-b"))
 }

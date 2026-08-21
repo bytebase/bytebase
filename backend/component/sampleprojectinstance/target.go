@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/pkg/errors"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -45,86 +44,22 @@ type Target struct {
 type provisionStage string
 
 const (
-	provisionStageRoleCreatedUnacknowledged     provisionStage = "role-created-unacknowledged"
-	provisionStageRoleCreated                   provisionStage = "role-created"
-	provisionStageDatabaseCreatedUnacknowledged provisionStage = "database-created-unacknowledged"
-	provisionStageDatabaseCreated               provisionStage = "database-created"
-	provisionStagePublicAccessRevoked           provisionStage = "public-access-revoked"
-	provisionStageRoleAccessGranted             provisionStage = "role-access-granted"
-	provisionStageConnectionsEnabled            provisionStage = "connections-enabled"
-	provisionStagePublicSchemaRevoked           provisionStage = "public-schema-revoked"
-	provisionStageRoleSchemaGranted             provisionStage = "role-schema-granted"
-	provisionStageSeeded                        provisionStage = "seeded"
-	provisionStageCleanupDatabase               provisionStage = "cleanup-database"
-	provisionStageCleanupRole                   provisionStage = "cleanup-role"
+	provisionStageRoleCreated     provisionStage = "role-created"
+	provisionStageDatabaseCreated provisionStage = "database-created"
+	provisionStageCleanupDatabase provisionStage = "cleanup-database"
+	provisionStageCleanupRole     provisionStage = "cleanup-role"
 )
 
-type targetFailureKind string
-
-const (
-	targetFailureStatic      targetFailureKind = "static"
-	targetFailureUnavailable targetFailureKind = "unavailable"
-	targetFailureInvariant   targetFailureKind = "invariant"
-)
-
-type targetFailure struct {
-	kind targetFailureKind
-	err  error
+type staticTargetFailure struct {
+	err error
 }
 
-type provisionOwnership struct {
-	databaseCreated bool
-	roleCreated     bool
-}
-
-type provisionFailure struct {
-	err            error
-	ownership      provisionOwnership
-	ownershipKnown bool
-}
-
-func (e *provisionFailure) Error() string {
+func (e *staticTargetFailure) Error() string {
 	return e.err.Error()
 }
 
-func (e *provisionFailure) Unwrap() error {
+func (e *staticTargetFailure) Unwrap() error {
 	return e.err
-}
-
-func provisionOwnershipOf(err error) (provisionOwnership, bool) {
-	var failure *provisionFailure
-	if errors.As(err, &failure) && failure.ownershipKnown {
-		return failure.ownership, true
-	}
-	return provisionOwnership{}, false
-}
-
-func provisionOwnershipUnknown(err error) bool {
-	var failure *provisionFailure
-	return errors.As(err, &failure) && !failure.ownershipKnown
-}
-
-func (e *targetFailure) Error() string {
-	if e.err == nil {
-		return string(e.kind)
-	}
-	return e.err.Error()
-}
-
-func (e *targetFailure) Unwrap() error {
-	return e.err
-}
-
-func newTargetFailure(kind targetFailureKind, err error) error {
-	return &targetFailure{kind: kind, err: err}
-}
-
-func targetFailureKindOf(err error) targetFailureKind {
-	var failure *targetFailure
-	if errors.As(err, &failure) {
-		return failure.kind
-	}
-	return targetFailureUnavailable
 }
 
 // NewTarget parses a direct PostgreSQL target URL. It intentionally accepts
@@ -232,7 +167,7 @@ func (t *Target) ValidateForCleanup(ctx context.Context) error {
 func (t *Target) validateCapabilities(ctx context.Context, requireCreateDB bool) error {
 	conn, err := t.connect(ctx, "", "", "")
 	if err != nil {
-		return unavailableTargetError("failed to connect to sample project instance target")
+		return errors.New("failed to connect to sample project instance target")
 	}
 	defer conn.Close(ctx)
 
@@ -242,7 +177,7 @@ func (t *Target) validateCapabilities(ctx context.Context, requireCreateDB bool)
 		FROM pg_roles
 		WHERE rolname = current_user
 	`).Scan(&canCreateDB, &canCreateRole, &canSignal); err != nil {
-		return unavailableTargetError("failed to inspect sample project instance target role")
+		return errors.New("failed to inspect sample project instance target role")
 	}
 	if requireCreateDB && (!canCreateDB || !canCreateRole || !canSignal) {
 		return staticTargetError("sample project instance target role requires CREATEDB, CREATEROLE, and pg_signal_backend")
@@ -256,7 +191,7 @@ func (t *Target) validateCapabilities(ctx context.Context, requireCreateDB bool)
 func (t *Target) validateIsolationBaseline(ctx context.Context) error {
 	conn, err := t.connect(ctx, "", "", "")
 	if err != nil {
-		return unavailableTargetError("failed to connect to sample project instance target")
+		return errors.New("failed to connect to sample project instance target")
 	}
 	defer conn.Close(ctx)
 
@@ -273,7 +208,7 @@ func (t *Target) validateIsolationBaseline(ctx context.Context) error {
 		FROM pg_database
 	`)
 	if err != nil {
-		return unavailableTargetError("failed to inspect sample project instance target database privileges")
+		return errors.New("failed to inspect sample project instance target database privileges")
 	}
 	defer rows.Close()
 
@@ -281,7 +216,7 @@ func (t *Target) validateIsolationBaseline(ctx context.Context) error {
 		var name string
 		var allowConnections, publicAccess bool
 		if err := rows.Scan(&name, &allowConnections, &publicAccess); err != nil {
-			return unavailableTargetError("failed to read sample project instance target database privileges")
+			return errors.New("failed to read sample project instance target database privileges")
 		}
 		switch name {
 		case "postgres", "template1":
@@ -302,14 +237,15 @@ func (t *Target) validateIsolationBaseline(ctx context.Context) error {
 		}
 	}
 	if err := rows.Err(); err != nil {
-		return unavailableTargetError("failed to inspect sample project instance target database privileges")
+		return errors.New("failed to inspect sample project instance target database privileges")
 	}
 	return nil
 }
 
 // Provision creates a sample role and database, applies the isolation policy,
-// and seeds the employee data as the sample role.
-func (t *Target) Provision(ctx context.Context, allocation Allocation) (retErr error) {
+// and seeds the employee data as the sample role. On failure, callers clean up
+// any resources created by this attempt with Remove.
+func (t *Target) Provision(ctx context.Context, allocation Allocation) error {
 	if err := validateProvisionAllocation(allocation); err != nil {
 		return err
 	}
@@ -320,66 +256,24 @@ func (t *Target) Provision(ctx context.Context, allocation Allocation) (retErr e
 	}
 	defer admin.Close(ctx)
 
-	var roleCreated, databaseCreated bool
-	ownershipKnown := true
-	defer func() {
-		if retErr == nil {
-			return
-		}
-		cleanupCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), compensationDeadline)
-		defer cancel()
-		remaining, err := t.cleanupProvisionAttempt(cleanupCtx, admin, allocation, provisionOwnership{
-			databaseCreated: databaseCreated,
-			roleCreated:     roleCreated,
-		})
-		if err != nil {
-			retErr = &provisionFailure{
-				err:            unavailableTargetError("failed to clean up sample project instance provisioning attempt"),
-				ownership:      remaining,
-				ownershipKnown: ownershipKnown,
-			}
-		}
-	}()
-
 	if _, err := admin.Exec(ctx, fmt.Sprintf(
 		"CREATE ROLE %s LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD %s",
 		quoteIdentifier(allocation.Role),
 		quoteLiteral(allocation.Password),
 	)); err != nil {
-		if isAmbiguousProvisionError(err) {
-			ownershipKnown = false
-			return &provisionFailure{err: classifyProvisionError(err, "failed to create sample project instance role")}
-		}
-		return classifyProvisionError(err, "failed to create sample project instance role")
+		return errors.New("failed to create sample project instance role")
 	}
-	if err := t.runProvisionHook(provisionStageRoleCreatedUnacknowledged); err != nil {
-		ownershipKnown = false
-		return &provisionFailure{err: unavailableTargetError("failed to confirm sample project instance role creation")}
-	}
-	roleCreated = true
 	if err := t.runProvisionHook(provisionStageRoleCreated); err != nil {
-		return err
+		return errors.New("failed after creating sample project instance role")
 	}
 	if _, err := admin.Exec(ctx, fmt.Sprintf("CREATE DATABASE %s WITH ALLOW_CONNECTIONS false", quoteIdentifier(allocation.Database))); err != nil {
-		if isAmbiguousProvisionError(err) {
-			ownershipKnown = false
-			return &provisionFailure{err: classifyProvisionError(err, "failed to create sample project instance database")}
-		}
-		return classifyProvisionError(err, "failed to create sample project instance database")
+		return errors.New("failed to create sample project instance database")
 	}
-	if err := t.runProvisionHook(provisionStageDatabaseCreatedUnacknowledged); err != nil {
-		ownershipKnown = false
-		return &provisionFailure{err: unavailableTargetError("failed to confirm sample project instance database creation")}
-	}
-	databaseCreated = true
 	if err := t.runProvisionHook(provisionStageDatabaseCreated); err != nil {
-		return err
+		return errors.New("failed after creating sample project instance database")
 	}
 	if _, err := admin.Exec(ctx, fmt.Sprintf("REVOKE ALL PRIVILEGES ON DATABASE %s FROM PUBLIC", quoteIdentifier(allocation.Database))); err != nil {
 		return errors.New("failed to revoke PUBLIC database privileges")
-	}
-	if err := t.runProvisionHook(provisionStagePublicAccessRevoked); err != nil {
-		return err
 	}
 	if _, err := admin.Exec(ctx, fmt.Sprintf(
 		"GRANT CONNECT, CREATE, TEMPORARY ON DATABASE %s TO %s",
@@ -388,14 +282,8 @@ func (t *Target) Provision(ctx context.Context, allocation Allocation) (retErr e
 	)); err != nil {
 		return errors.New("failed to grant sample project instance database privileges")
 	}
-	if err := t.runProvisionHook(provisionStageRoleAccessGranted); err != nil {
-		return err
-	}
 	if _, err := admin.Exec(ctx, fmt.Sprintf("ALTER DATABASE %s ALLOW_CONNECTIONS true", quoteIdentifier(allocation.Database))); err != nil {
 		return errors.New("failed to enable sample project instance database connections")
-	}
-	if err := t.runProvisionHook(provisionStageConnectionsEnabled); err != nil {
-		return err
 	}
 
 	sampleAdmin, err := t.connect(ctx, allocation.Database, "", "")
@@ -406,14 +294,8 @@ func (t *Target) Provision(ctx context.Context, allocation Allocation) (retErr e
 	if _, err := sampleAdmin.Exec(ctx, "REVOKE CREATE ON SCHEMA public FROM PUBLIC"); err != nil {
 		return errors.New("failed to revoke PUBLIC schema creation")
 	}
-	if err := t.runProvisionHook(provisionStagePublicSchemaRevoked); err != nil {
-		return err
-	}
 	if _, err := sampleAdmin.Exec(ctx, fmt.Sprintf("GRANT USAGE, CREATE ON SCHEMA public TO %s", quoteIdentifier(allocation.Role))); err != nil {
 		return errors.New("failed to grant sample project instance schema privileges")
-	}
-	if err := t.runProvisionHook(provisionStageRoleSchemaGranted); err != nil {
-		return err
 	}
 
 	sample, err := t.connect(ctx, allocation.Database, allocation.Role, allocation.Password)
@@ -437,7 +319,7 @@ func (t *Target) Provision(ctx context.Context, allocation Allocation) (retErr e
 	if err := tx.Commit(ctx); err != nil {
 		return errors.New("failed to commit sample project instance seed transaction")
 	}
-	return t.runProvisionHook(provisionStageSeeded)
+	return nil
 }
 
 func (t *Target) runProvisionHook(stage provisionStage) error {
@@ -447,33 +329,6 @@ func (t *Target) runProvisionHook(stage provisionStage) error {
 	return t.provisionHook(stage)
 }
 
-func (t *Target) cleanupProvisionAttempt(
-	ctx context.Context,
-	admin *pgx.Conn,
-	allocation Allocation,
-	ownership provisionOwnership,
-) (provisionOwnership, error) {
-	if ownership.databaseCreated {
-		if err := t.runProvisionHook(provisionStageCleanupDatabase); err != nil {
-			return ownership, err
-		}
-		if _, err := admin.Exec(ctx, fmt.Sprintf("DROP DATABASE %s WITH (FORCE)", quoteIdentifier(allocation.Database))); err != nil {
-			return ownership, err
-		}
-		ownership.databaseCreated = false
-	}
-	if ownership.roleCreated {
-		if err := t.runProvisionHook(provisionStageCleanupRole); err != nil {
-			return ownership, err
-		}
-		if _, err := admin.Exec(ctx, fmt.Sprintf("DROP ROLE %s", quoteIdentifier(allocation.Role))); err != nil {
-			return ownership, err
-		}
-		ownership.roleCreated = false
-	}
-	return ownership, nil
-}
-
 // Remove revokes access, terminates every role or database session, and drops
 // the allocation's database before its role. Missing resources are successful.
 func (t *Target) Remove(ctx context.Context, allocation Allocation) error {
@@ -481,7 +336,7 @@ func (t *Target) Remove(ctx context.Context, allocation Allocation) error {
 		return err
 	}
 	if allocation.Database != "" && t.config.Database == allocation.Database {
-		return errors.New("sample project instance target cannot remove its configured database")
+		return staticTargetError("sample project instance target cannot remove its configured database")
 	}
 
 	admin, err := t.connect(ctx, "", "", "")
@@ -510,14 +365,20 @@ func (t *Target) Remove(ctx context.Context, allocation Allocation) error {
 		}
 	}
 	if err := terminateAndDrain(ctx, admin, allocation); err != nil {
-		return err
+		return errors.New("failed to terminate sample project instance sessions")
 	}
 	if databaseExists {
+		if err := t.runProvisionHook(provisionStageCleanupDatabase); err != nil {
+			return errors.New("failed while removing sample project instance database")
+		}
 		if _, err := admin.Exec(ctx, fmt.Sprintf("DROP DATABASE %s WITH (FORCE)", quoteIdentifier(allocation.Database))); err != nil {
 			return errors.New("failed to drop sample project instance database")
 		}
 	}
 	if roleExists {
+		if err := t.runProvisionHook(provisionStageCleanupRole); err != nil {
+			return errors.New("failed while removing sample project instance role")
+		}
 		if _, err := admin.Exec(ctx, fmt.Sprintf("DROP ROLE %s", quoteIdentifier(allocation.Role))); err != nil {
 			return errors.New("failed to drop sample project instance role")
 		}
@@ -540,10 +401,10 @@ func (t *Target) connect(ctx context.Context, database, user, password string) (
 func validateProvisionAllocation(allocation Allocation) error {
 	if allocation.Database == "" || allocation.Role == "" ||
 		strings.ContainsRune(allocation.Database, 0) || strings.ContainsRune(allocation.Role, 0) {
-		return errors.New("sample project instance provisioning requires database and role")
+		return staticTargetError("sample project instance provisioning requires database and role")
 	}
 	if allocation.Password == "" || strings.ContainsRune(allocation.Password, 0) {
-		return errors.New("sample project instance provisioning requires password")
+		return staticTargetError("sample project instance provisioning requires password")
 	}
 	return nil
 }
@@ -551,7 +412,7 @@ func validateProvisionAllocation(allocation Allocation) error {
 func validateCleanupAllocation(allocation Allocation) error {
 	if (allocation.Database == "" && allocation.Role == "") ||
 		strings.ContainsRune(allocation.Database, 0) || strings.ContainsRune(allocation.Role, 0) {
-		return errors.New("sample project instance cleanup requires a database or role")
+		return staticTargetError("sample project instance cleanup requires a database or role")
 	}
 	return nil
 }
@@ -565,24 +426,12 @@ func quoteLiteral(value string) string {
 }
 
 func staticTargetError(message string) error {
-	return newTargetFailure(targetFailureStatic, errors.New(message))
+	return &staticTargetFailure{err: errors.New(message)}
 }
 
-func unavailableTargetError(message string) error {
-	return newTargetFailure(targetFailureUnavailable, errors.New(message))
-}
-
-func isAmbiguousProvisionError(err error) bool {
-	var pgErr *pgconn.PgError
-	return !errors.As(err, &pgErr)
-}
-
-func classifyProvisionError(err error, message string) error {
-	var pgErr *pgconn.PgError
-	if errors.As(err, &pgErr) && (pgErr.Code == "42710" || pgErr.Code == "42P04") {
-		return newTargetFailure(targetFailureInvariant, errors.New(message))
-	}
-	return unavailableTargetError(message)
+func isStaticTargetError(err error) bool {
+	var failure *staticTargetFailure
+	return errors.As(err, &failure)
 }
 
 func roleExists(ctx context.Context, conn *pgx.Conn, role string) (bool, error) {
