@@ -55,6 +55,7 @@ export function getValueFromScopes(params: SearchParams, id: string): string {
 // ============================================================
 
 interface AdvancedSearchProps {
+  size?: "sm" | "md";
   params: SearchParams;
   scopeOptions?: ScopeOption[];
   placeholder?: string;
@@ -154,6 +155,7 @@ function ScrollFade({
 }
 
 export function AdvancedSearch({
+  size = "md",
   params,
   scopeOptions = [],
   placeholder,
@@ -666,7 +668,10 @@ export function AdvancedSearch({
     <div ref={containerRef} className="w-full min-w-0 relative">
       {/* Input container */}
       <div
-        className="flex min-w-0 items-center h-9 overflow-hidden border border-control-border rounded-xs bg-background transition-colors dark:bg-dark-bg dark:border-zinc-700"
+        className={cn(
+          "flex min-w-0 items-center overflow-hidden border border-control-border rounded-xs bg-background transition-colors dark:bg-dark-bg dark:border-zinc-700",
+          size === "sm" ? "h-7" : "h-9"
+        )}
         onClick={() => inputRef.current?.focus()}
       >
         {/*

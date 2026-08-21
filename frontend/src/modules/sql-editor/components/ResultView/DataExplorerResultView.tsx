@@ -107,6 +107,7 @@ export function DataExplorerResultView({
       <div className="result-toolbar relative mx-2 mt-2 mb-1 shrink-0 flex items-center justify-between gap-x-4">
         <div className="flex min-w-0 flex-1 items-center gap-x-2">
           <AdvancedSearch
+            size="sm"
             params={search.params}
             scopeOptions={search.scopeOptions}
             placeholder={t("common.search-results")}

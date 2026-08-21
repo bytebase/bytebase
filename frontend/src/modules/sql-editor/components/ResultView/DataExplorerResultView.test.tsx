@@ -48,12 +48,15 @@ vi.mock("@/components/AdvancedSearch", () => ({
   AdvancedSearch: ({
     onParamsChange,
     placeholder,
+    size,
   }: {
     onParamsChange: (params: { query: string; scopes: [] }) => void;
     placeholder: string;
+    size?: "sm" | "md";
   }) => (
     <div>
       <span data-testid="search-placeholder">{placeholder}</span>
+      <span data-testid="search-size">{size}</span>
       <button
         type="button"
         onClick={() => onParamsChange({ query: "2", scopes: [] })}
@@ -201,6 +204,7 @@ describe("DataExplorerResultView", () => {
     expect(screen.getByTestId("search-placeholder")).toHaveTextContent(
       "common.search-results"
     );
+    expect(screen.getByTestId("search-size")).toHaveTextContent("sm");
     expect(
       screen.getByRole("button", { name: "common.copy-all" })
     ).toBeVisible();

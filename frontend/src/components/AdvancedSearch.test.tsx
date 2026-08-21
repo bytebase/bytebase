@@ -22,6 +22,19 @@ globalThis.ResizeObserver =
   ResizeObserverMock as unknown as typeof ResizeObserver;
 
 describe("AdvancedSearch", () => {
+  test("renders a compact input when size is small", () => {
+    render(
+      <AdvancedSearch
+        size="sm"
+        params={emptySearchParams()}
+        scopeOptions={[]}
+        onParamsChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole("textbox").parentElement).toHaveClass("h-7");
+  });
+
   test("renders a default placeholder when none is provided", () => {
     render(
       <AdvancedSearch
