@@ -232,6 +232,14 @@ Constraints:
   whole; a map whose value type has a plan is rebuilt entry by entry.
   `TestAuditRedactionDoesNotMutateInput` needs a fixture holding a map whose value type has a plan
   — none exists today, so this violation of goal 6 would not be caught.
+- **Repeated message fields are rebuilt per element, for the same reason.** `Range` yields a
+  read-only list: assigning it panics, and sharing it cannot produce redacted elements without
+  writing through to the caller's. So a repeated field whose element type has a plan is rebuilt
+  via `dst.Mutable(fd).List()`, appending a redacted copy per element; one whose element type has
+  no plan is shared whole. This is not a corner: the case that motivates the whole design,
+  `Instance.roles[].password`, crosses a repeated message field, as does
+  `instance_resource.data_sources[]`. The non-mutation test needs a repeated-message fixture on a
+  redacted path alongside the map one.
 - **Every `Any` that reaches the row is registered and redacted.** The descriptor walk sees
   `type_url` and `value`, never the packed message, so an annotated field inside one is invisible
   to the redactor, the coverage lint and the inventory alike. Three paths put an `Any` on an audit
@@ -367,13 +375,19 @@ walking each of the ten rebuilds for what it newly admits, is a precondition for
 
   The completeness lint keys on **return type — a function in `backend/api/v1` whose returns
   include a `v1pb` message, directly or inside a slice, a map, a `*connect.Response[T]` wrapper, or
-  any arm of a multi-value return — not on the `convertTo*` name prefix**. The wrapper matters
+  any arm of a multi-value return, plus the response type parameter of a streaming handler — not
+  on the `convertTo*` name prefix**. Streaming needs naming separately because `AdminExecute`
+  returns only `error` and emits through `Send`
+  (`stream *connect.BidiStream[v1pb.AdminExecuteRequest, v1pb.AdminExecuteResponse]`,
+  `sql_service.go:74`), so no return shape selects it — the one handler whose responses carry
+  every row of an admin-mode query would otherwise sit outside the population that the Redaction
+  section above goes out of its way to discuss. The wrapper matters
   because it is what every RPC handler returns (`GetUser` is
   `(*connect.Response[v1pb.User], error)`, `user_service.go:53`), and a handler that builds its
   response inline rather than through a converter is otherwise outside the population entirely.
   Handlers mostly become *statically checked* entries — they need a store — but that is a checked
-  decision per handler instead of a silent omission, and it is where the minting assignments named above
-  stop being a separate hand-kept list and become ordinary members with declared
+  decision per handler instead of a silent omission, and it is where the minting assignments named
+  above stop being a separate hand-kept list and become ordinary members with declared
   `(function, field)` pairs. Containers are not an edge case here: `convertDataSources`
   returns `[]*v1pb.DataSource` and `convertInstanceRoles` returns `[]*v1pb.InstanceRole`
   (`instance_service_converter.go:232`, `:49`), and those two are precisely what the Background
