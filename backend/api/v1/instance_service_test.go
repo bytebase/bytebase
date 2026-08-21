@@ -92,6 +92,18 @@ func TestSampleProjectInstanceCreatePolicyMapsCapacityDenial(t *testing.T) {
 	require.Equal(t, connect.CodeUnknown, connect.CodeOf(policy.DeniedReason))
 }
 
+func TestSampleProjectInstanceCreatePolicyDoesNotConsumeActivationQuota(t *testing.T) {
+	ctx, stores, _, _, _ := setupProjectInstanceLifecycleAPITest(t)
+	service := &InstanceService{
+		store:          stores,
+		profile:        &config.Profile{SaaS: true},
+		licenseService: &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 0},
+	}
+	policy, err := service.sampleProjectInstanceCreatePolicy(ctx, common.GetWorkspaceIDFromContext(ctx))
+	require.NoError(t, err)
+	require.Nil(t, policy.DeniedReason)
+}
+
 func TestTransportNeutralErrorRemovesConnectType(t *testing.T) {
 	neutral := transportNeutralError(connect.NewError(connect.CodeResourceExhausted, errors.New("instance limit reached")))
 	var connectErr *connect.Error

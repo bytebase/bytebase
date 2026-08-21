@@ -49,7 +49,7 @@ func (m *Manager) lookupMetadata(
 	return state, nil
 }
 
-// createMetadata persists the activated, project-scoped PostgreSQL Instance through
+// createMetadata persists the inactive, project-scoped PostgreSQL Instance through
 // Store.CreateInstance so credential obfuscation remains centralized.
 func (m *Manager) createMetadata(ctx context.Context, registration registration) (*store.InstanceMessage, error) {
 	return m.store.CreateInstance(ctx, &store.InstanceMessage{
@@ -60,7 +60,7 @@ func (m *Manager) createMetadata(ctx context.Context, registration registration)
 		Metadata: &storepb.Instance{
 			Title:       registration.Title,
 			Engine:      registration.Engine,
-			Activation:  true,
+			Activation:  false,
 			DataSources: []*storepb.DataSource{registration.AdminDataSource},
 			SyncDatabases: &storepb.SyncDatabases{
 				Databases: registration.SyncDatabaseNames,

@@ -37,7 +37,7 @@ func TestManagerMetadataCreatesAndLooksUpScopedSampleProjectInstance(t *testing.
 		SyncDatabaseNames: []string{allocation.Database},
 	})
 	require.NoError(t, err)
-	require.True(t, instance.Metadata.GetActivation())
+	require.False(t, instance.Metadata.GetActivation())
 	require.Equal(t, allocation.Password, instance.Metadata.GetDataSources()[0].GetPassword())
 
 	state, err := manager.lookupMetadata(ctx, allocation, "sample-instance", "workspace-a", "project-a")
