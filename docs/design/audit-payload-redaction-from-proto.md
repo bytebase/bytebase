@@ -108,6 +108,16 @@ converter, minting ones included, and permits only what the pair declares — th
 `mcpDenialRequestsUnderReview` already uses, for the reason its own comment gives: an exemption
 granted broadly is an exemption for everything that later lands inside it.
 
+Binding the pair to the producing function is necessary but not sufficient, because a caller that
+merely *returns* another function's result assigns nothing itself. A `GetUser` written as
+`return convertToUserMintingMFAEnrollment(...)` would satisfy both entries — the converter's pair
+allows the MFA fields, and `GetUser`'s own body assigns no `SENSITIVE` field — while a read RPC
+handed back an enrollment secret. So the allowance is declared a second time, per **RPC output**:
+`UpdateUser` may emit `temp_otp_secret`, `GetUser` may not. A value reaches a client only when the
+producing function is allowed to assign it *and* the emitting RPC is allowed to return it. That
+second half is where the table's "only on the response that mints it" is actually enforced; the
+function pairs alone say only who may write it, never who may ship it.
+
 The list is not one entry. `LoginResponse.token` and `.mfa_temp_token` (`auth_service.proto:254`,
 `:257`) and `ExchangeTokenResponse.access_token` (`:280`) are the product's primary access tokens,
 minted and returned by design — `redactLoginResponse` and `redactExchangeTokenResponse` exist for
