@@ -11,6 +11,7 @@ export const HEADER_LANGUAGE_OPTIONS: HeaderLocaleOption[] = [
   { label: "English", value: "en-US" },
   { label: "简体中文", value: "zh-CN" },
   { label: "Español", value: "es-ES" },
+  { label: "Bahasa Indonesia", value: "id-ID" },
   { label: "日本語", value: "ja-JP" },
   { label: "Tiếng việt", value: "vi-VN" },
 ];
