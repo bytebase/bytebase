@@ -83,6 +83,7 @@ const (
 	SDLReplaceOperation                       Code = 256
 	StatementDisallowTruncate                 Code = 257
 	StatementExceedMaximumSQLSize             Code = 258
+	SDLUndeclaredExtension                    Code = 259
 
 	// 260 DDL simulation error code.
 	DDLSimulationFailed Code = 260
