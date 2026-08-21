@@ -75,8 +75,16 @@ repeated QueryRow rows = 3 [(bytebase.v1.audit_behavior) = OMIT];
 
 `ServiceAccount.service_key` forces that distinction: `CreateServiceAccount` and key rotation
 return it exactly once (`service_account_service.go:117`, `:270`), while `convertToServiceAccount`
-never populates it. `RotateDirectorySyncTokenResponse` has the same shape. The read-path assertion
-runs on converters, which is precisely the boundary that permits issuance and forbids reads.
+never populates it. `RotateDirectorySyncTokenResponse` has the same shape.
+
+The boundary is not "handler versus converter". `UpdateUser` mints *through* a converter, choosing
+`convertToUserMintingMFAEnrollment` over `convertToUser` when an enrollment is in flight
+(`user_service.go:498-500`), and that one deliberately sets `temp_otp_secret` and
+`temp_recovery_codes` (`:786-787`). So the minting surfaces are a declared list — that converter
+plus the direct handler assignments — and the read-path assertion runs on everything else.
+Declared rather than inferred, because an assertion applied to every converter would reject a
+legitimate enrollment response, and the path of least resistance would then be to leave those two
+fields unannotated to keep CI green.
 
 Not `audit` and not number 100000: `bytebase.v1.audit` already exists as a `bool` on
 `MethodOptions`, and 100000 is `allow_without_credential`. Different extend scopes make reuse
@@ -192,7 +200,7 @@ rows regain `rows_count`.
   registry has to be enforced at runtime for the inventory to mean anything.
 - **Read-path assertion.** `assertNoInputOnlyValues` (`instance_service_converter_test.go:449`)
   already requires every `INPUT_ONLY` field to come back blank from a converter; generalize it to
-  `SENSITIVE`. Converters only — issuance responses set the field outside them.
+  `SENSITIVE`. Runs on every converter except the declared minting ones.
 
 ## Performance
 
