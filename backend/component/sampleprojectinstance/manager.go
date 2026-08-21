@@ -221,7 +221,7 @@ func (m *Manager) Prepare(ctx context.Context, request PrepareRequest) (*Prepare
 	if request.WorkspaceID == "" || request.ProjectID == "" {
 		return nil, newFailure(FailureFailedPrecondition, errors.New("sample project instance requires workspace and project"))
 	}
-	lifecycleCtx, lifecycleCancel := context.WithTimeout(context.WithoutCancel(ctx), prepareDeadline)
+	lifecycleCtx, lifecycleCancel := preparationLifecycleContext(ctx)
 	defer lifecycleCancel()
 	reservation, created, err := m.reserve(lifecycleCtx, request)
 	if err != nil {
@@ -247,7 +247,10 @@ func (m *Manager) Prepare(ctx context.Context, request PrepareRequest) (*Prepare
 			return nil, errors.Join(errors.New("failed to claim abandoned sample project instance reservation"), err)
 		}
 		if claimedOK {
-			return m.prepareOwned(lifecycleCtx, claimed, request, true)
+			takeoverCtx, takeoverCancel := preparationLifecycleContext(ctx)
+			result, err := m.prepareOwned(takeoverCtx, claimed, request, true)
+			takeoverCancel()
+			return result, err
 		}
 		if err := sleepContext(lifecycleCtx, delay); err != nil {
 			return nil, newFailure(FailureDeadlineExceeded, err)
@@ -270,6 +273,10 @@ func (m *Manager) Prepare(ctx context.Context, request PrepareRequest) (*Prepare
 			}
 		}
 	}
+}
+
+func preparationLifecycleContext(ctx context.Context) (context.Context, context.CancelFunc) {
+	return context.WithTimeout(context.WithoutCancel(ctx), prepareDeadline)
 }
 
 func (m *Manager) reserve(ctx context.Context, request PrepareRequest) (*store.SampleProjectInstanceMessage, bool, error) {

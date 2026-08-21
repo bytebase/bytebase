@@ -37,6 +37,17 @@ func TestMapTargetErrorUsesManagerFailureVocabulary(t *testing.T) {
 	require.Equal(t, FailureDeadlineExceeded, FailureKindOf(mapTargetError(context.DeadlineExceeded)))
 }
 
+func TestPreparationLifecycleContextRenewsDeadline(t *testing.T) {
+	oldLifecycle, oldCancel := context.WithDeadline(context.Background(), time.Now().Add(time.Second))
+	defer oldCancel()
+
+	freshLifecycle, freshCancel := preparationLifecycleContext(oldLifecycle)
+	defer freshCancel()
+	freshDeadline, ok := freshLifecycle.Deadline()
+	require.True(t, ok)
+	require.Greater(t, time.Until(freshDeadline), prepareDeadline-time.Second)
+}
+
 func TestManagerCompensatesConcreteMetadataFailure(t *testing.T) {
 	ctx, db, s, target, manager := newConcreteManager(t)
 	_, err := db.ExecContext(ctx, `
