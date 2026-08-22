@@ -136,6 +136,12 @@ func newServerWithStore(stores serverStore, profile *config.Profile, secret stri
 }
 
 // registerTools registers all MCP tools.
+//
+// The list is not filtered by the workspace's ceiling (BOT-89), and cannot be:
+// the SDK builds it once at session start while the ceiling is read per
+// request, so a filtered list would be a promise made under whatever the
+// ceiling was at connect time and would go stale the moment an admin changed
+// it. Revisit only if the SDK grows a way to revise a live session's tool list.
 func (s *Server) registerTools() {
 	s.registerSearchTool()
 	s.registerCallTool()
