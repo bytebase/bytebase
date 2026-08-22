@@ -764,8 +764,13 @@ func (x *PurchaseResponse) GetSessionId() string {
 }
 
 type VerifyCheckoutSessionRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The same Stripe Checkout Session ID PurchaseResponse mints, arriving back
+	// the other way, so it carries the same classification. VerifyCheckoutSession
+	// is EXCLUDED, and the MCP gate records a row for every method it refuses, so
+	// leaving this unannotated would write the id into a denial row while the
+	// response that produced it was redacted.
+	SessionId     string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1691,10 +1696,10 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\vpayment_url\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\n" +
 	"paymentUrl\x12#\n" +
 	"\n" +
-	"session_id\x18\x02 \x01(\tB\x04\xd0\xea0\x01R\tsessionId\"=\n" +
-	"\x1cVerifyCheckoutSessionRequest\x12\x1d\n" +
+	"session_id\x18\x02 \x01(\tB\x04\xd0\xea0\x01R\tsessionId\"C\n" +
+	"\x1cVerifyCheckoutSessionRequest\x12#\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\"7\n" +
+	"session_id\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\tsessionId\"7\n" +
 	"\x1dVerifyCheckoutSessionResponse\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\tR\x06status\"\xa6\x01\n" +
 	"\x15UpdatePurchaseRequest\x12)\n" +
