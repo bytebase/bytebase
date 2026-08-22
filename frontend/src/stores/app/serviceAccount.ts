@@ -13,7 +13,6 @@ import {
   UndeleteServiceAccountRequestSchema,
   UpdateServiceAccountRequestSchema,
 } from "@/types/proto-es/v1/service_account_service_pb";
-import { type User, UserSchema } from "@/types/proto-es/v1/user_service_pb";
 import type {
   AccountFilter,
   AppSliceCreator,
@@ -44,16 +43,6 @@ export const buildAccountListFilter = (params: AccountFilter) => {
     filter.push(`state == "${State[params.state]}"`);
   }
   return filter.join(" && ");
-};
-
-export const serviceAccountToUser = (sa: ServiceAccount): User => {
-  return createProto(UserSchema, {
-    name: `users/${sa.email}`,
-    email: sa.email,
-    title: sa.title,
-    state: sa.state,
-    serviceKey: sa.serviceKey,
-  });
 };
 
 export const createServiceAccountSlice: AppSliceCreator<ServiceAccountSlice> = (
