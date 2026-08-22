@@ -255,12 +255,14 @@ function McpProvenanceDetail({
   );
 }
 
-// AuditLogActorCell renders the acting user, badged when the call reached the
-// API through the MCP server's delegated credential. Presence of
-// `mcpDelegation` is the marker — never read its values to decide MCP-ness.
-// Only `correlationId` is minted for every session; `scope`, `resource`, and
-// `clientId` are grant state that a legacy or scope-omitting session leaves
-// empty, so no field value is a sound proxy for MCP origin.
+// AuditLogActorCell renders the acting user, badged when the entry belongs to
+// MCP: a call that reached the API through the MCP server's delegated
+// credential, or one of the two MCP doors outside the API — the /mcp gate and
+// the OAuth2 consent. Presence of `mcpDelegation` is the marker — never read
+// its values to decide MCP-ness. Every field of it can be empty: `scope`,
+// `resource`, and `clientId` are grant state a legacy or scope-omitting session
+// leaves unset, and `correlationId` is minted at /mcp, so a consent entry has
+// none.
 function AuditLogActorCell({ log }: Readonly<{ log: AuditLog }>) {
   const { t } = useTranslation();
   const email = extractUserEmail(log.user);

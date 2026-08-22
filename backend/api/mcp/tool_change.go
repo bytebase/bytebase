@@ -151,7 +151,8 @@ propose_database_change(database="app", sql="UPDATE orders SET status='shipped' 
 - Plan checks run automatically; results included in response when available.
 - Requires bb.sheets.create, bb.plans.create, bb.issues.create permissions.
 - If createRollout=true but policy gates aren't satisfied, returns success with rolloutCreated=false and a reason.
-- Masked data: a masked column reads back as "******". That is a placeholder, not a value anything holds. Any change containing it is refused, because writing it back would overwrite the real value. Ask a human to make the change in the Bytebase console instead.`
+- Masked data: a masked column reads back as "******". That is a placeholder, not a value anything holds. Any change containing it is refused, because writing it back would overwrite the real value. Ask a human to make the change in the Bytebase console instead.
+- Workspace ceiling: the workspace's MCP policy decides whether changes are served at all, and under a read-only ceiling this tool is refused before anything is created. Read it with call_api(operationId="bytebase.v1.WorkspaceService.GetMCPInfo") before planning a change.`
 
 func (s *Server) registerChangeTool() {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{

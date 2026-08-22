@@ -75,7 +75,7 @@ type OpenAPIIndex struct {
 	// hiddenEndpoints holds every endpoint no MCP capability ceiling serves —
 	// FORBIDDEN and EXCLUDED alike — resolvable through byOperation so a
 	// direct call still gets the gate's actionable denial, but reachable by no
-	// discovery path. That is 121 of the 209 classified RPCs, and 13 services
+	// discovery path. That is 114 of the 211 classified RPCs, and 13 services
 	// whose every method is refused leave Services() entirely.
 	hiddenEndpoints []EndpointInfo
 	byOperation     map[string]*EndpointInfo

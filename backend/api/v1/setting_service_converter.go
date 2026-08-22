@@ -384,12 +384,18 @@ func convertToStoreMCPCapability(c v1pb.MCPSetting_Capability) storepb.MCPSettin
 	return storepb.MCPSetting_Capability(c)
 }
 
+// convertToV1MCPCapability crosses the two Capability enums the other way, by
+// number. Same pin.
+func convertToV1MCPCapability(c storepb.MCPSetting_Capability) v1pb.MCPSetting_Capability {
+	return v1pb.MCPSetting_Capability(c)
+}
+
 func convertToMCPSetting(s *storepb.MCPSetting) *v1pb.MCPSetting {
 	if s == nil {
 		return nil
 	}
 	return &v1pb.MCPSetting{
-		Capability:              v1pb.MCPSetting_Capability(s.Capability),
+		Capability:              convertToV1MCPCapability(s.Capability),
 		IgnoreMaskingExemptions: s.IgnoreMaskingExemptions,
 	}
 }
