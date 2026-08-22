@@ -764,8 +764,13 @@ func (x *PurchaseResponse) GetSessionId() string {
 }
 
 type VerifyCheckoutSessionRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	SessionId     string                 `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The same Stripe Checkout Session ID PurchaseResponse mints, arriving back
+	// the other way, so it carries the same classification. VerifyCheckoutSession
+	// is EXCLUDED, and the MCP gate records a row for every method it refuses, so
+	// leaving this unannotated would write the id into a denial row while the
+	// response that produced it was redacted.
+	SessionId     string `protobuf:"bytes,1,opt,name=session_id,json=sessionId,proto3" json:"session_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1678,23 +1683,23 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\n" +
 	"\x1dv1/subscription_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x18\n" +
 	"\x16GetSubscriptionRequest\"\x1f\n" +
-	"\x1dExportVCSProviderUsersRequest\":\n" +
-	"\x1eExportVCSProviderUsersResponse\x12\x18\n" +
-	"\acontent\x18\x01 \x01(\fR\acontent\"0\n" +
-	"\x14UploadLicenseRequest\x12\x18\n" +
-	"\alicense\x18\x01 \x01(\tR\alicense\"\x92\x01\n" +
+	"\x1dExportVCSProviderUsersRequest\"@\n" +
+	"\x1eExportVCSProviderUsersResponse\x12\x1e\n" +
+	"\acontent\x18\x01 \x01(\fB\x04\xd0\xea0\x02R\acontent\"6\n" +
+	"\x14UploadLicenseRequest\x12\x1e\n" +
+	"\alicense\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\alicense\"\x92\x01\n" +
 	"\x15CreatePurchaseRequest\x12)\n" +
 	"\x04plan\x18\x01 \x01(\x0e2\x15.bytebase.v1.PlanTypeR\x04plan\x128\n" +
 	"\binterval\x18\x02 \x01(\x0e2\x1c.bytebase.v1.BillingIntervalR\binterval\x12\x14\n" +
-	"\x05seats\x18\x03 \x01(\x05R\x05seats\"R\n" +
-	"\x10PurchaseResponse\x12\x1f\n" +
-	"\vpayment_url\x18\x01 \x01(\tR\n" +
-	"paymentUrl\x12\x1d\n" +
+	"\x05seats\x18\x03 \x01(\x05R\x05seats\"^\n" +
+	"\x10PurchaseResponse\x12%\n" +
+	"\vpayment_url\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\n" +
+	"paymentUrl\x12#\n" +
 	"\n" +
-	"session_id\x18\x02 \x01(\tR\tsessionId\"=\n" +
-	"\x1cVerifyCheckoutSessionRequest\x12\x1d\n" +
+	"session_id\x18\x02 \x01(\tB\x04\xd0\xea0\x01R\tsessionId\"C\n" +
+	"\x1cVerifyCheckoutSessionRequest\x12#\n" +
 	"\n" +
-	"session_id\x18\x01 \x01(\tR\tsessionId\"7\n" +
+	"session_id\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\tsessionId\"7\n" +
 	"\x1dVerifyCheckoutSessionResponse\x12\x16\n" +
 	"\x06status\x18\x01 \x01(\tR\x06status\"\xa6\x01\n" +
 	"\x15UpdatePurchaseRequest\x12)\n" +

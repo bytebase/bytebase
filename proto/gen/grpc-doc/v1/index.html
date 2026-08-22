@@ -180,6 +180,10 @@
               
               
                 <li>
+                  <a href="#bytebase.v1.AuditBehavior"><span class="badge">E</span>AuditBehavior</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.AuthMethod"><span class="badge">E</span>AuthMethod</a>
                 </li>
               
@@ -191,6 +195,10 @@
                   <a href="#bytebase.v1.MCPMethodClass"><span class="badge">E</span>MCPMethodClass</a>
                 </li>
               
+              
+                <li>
+                  <a href="#v1%2fannotation.proto-extensions"><span class="badge">X</span>File-level Extensions</a>
+                </li>
               
                 <li>
                   <a href="#v1%2fannotation.proto-extensions"><span class="badge">X</span>File-level Extensions</a>
@@ -3183,6 +3191,39 @@
       
 
       
+        <h3 id="bytebase.v1.AuditBehavior">AuditBehavior</h3>
+        <p>What an audit payload may carry for a field. One enum rather than a bool per</p><p>behavior, because a field has exactly one classification.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>AUDIT_BEHAVIOR_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Recorded as sent. This is a denylist default, so an unannotated secret is
+written; the inventory lint turns that into a build failure.</p></td>
+              </tr>
+            
+              <tr>
+                <td>SENSITIVE</td>
+                <td>1</td>
+                <td><p>A credential. It must not reach an audit payload, and the API may return it
+only on the response that mints it — never on a read path.</p></td>
+              </tr>
+            
+              <tr>
+                <td>OMIT</td>
+                <td>2</td>
+                <td><p>Must not be recorded, for any reason other than being a credential:
+unbounded bodies, base64 blobs, bearer capabilities, and personal data.
+Unlike SENSITIVE it says nothing about the API contract.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.AuthMethod">AuthMethod</h3>
         <p>Authorization method for RPC calls.</p>
         <table class="enum-table">
@@ -3414,6 +3455,14 @@ re-litigate the credential-minting set alongside the ordinary admin API.</p></td
             <tr><td>Extension</td><td>Type</td><td>Base</td><td>Number</td><td>Description</td></tr>
           </thead>
           <tbody>
+            
+              <tr>
+                <td>audit_behavior</td>
+                <td><a href="#bytebase.v1.AuditBehavior">AuditBehavior</a></td>
+                <td><a href="#google.protobuf.FieldOptions">.google.protobuf.FieldOptions</a></td>
+                <td>100010</td>
+                <td><p>How the audit log treats this field.</p></td>
+              </tr>
             
               <tr>
                 <td>allow_without_credential</td>
@@ -34219,7 +34268,11 @@ If empty, the update was applied directly using the existing payment method. </p
                   <td>session_id</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p> </p></td>
+                  <td><p>The same Stripe Checkout Session ID PurchaseResponse mints, arriving back
+the other way, so it carries the same classification. VerifyCheckoutSession
+is EXCLUDED, and the MCP gate records a row for every method it refuses, so
+leaving this unannotated would write the id into a denial row while the
+response that produced it was redacted. </p></td>
                 </tr>
               
             </tbody>

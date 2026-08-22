@@ -268,11 +268,11 @@ const file_v1_instance_role_service_proto_rawDesc = "" +
 	"\arefresh\x18\x04 \x01(\bR\arefresh\"t\n" +
 	"\x19ListInstanceRolesResponse\x12/\n" +
 	"\x05roles\x18\x01 \x03(\v2\x19.bytebase.v1.InstanceRoleR\x05roles\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x97\x03\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x9b\x03\n" +
 	"\fInstanceRole\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1b\n" +
-	"\trole_name\x18\x02 \x01(\tR\broleName\x12$\n" +
-	"\bpassword\x18\x03 \x01(\tB\x03\xe0A\x04H\x00R\bpassword\x88\x01\x01\x12.\n" +
+	"\trole_name\x18\x02 \x01(\tR\broleName\x12(\n" +
+	"\bpassword\x18\x03 \x01(\tB\a\xe0A\x04\xd0\xea0\x01H\x00R\bpassword\x88\x01\x01\x12.\n" +
 	"\x10connection_limit\x18\x04 \x01(\x05H\x01R\x0fconnectionLimit\x88\x01\x01\x12$\n" +
 	"\vvalid_until\x18\x05 \x01(\tH\x02R\n" +
 	"validUntil\x88\x01\x01\x12!\n" +

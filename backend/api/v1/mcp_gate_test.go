@@ -1420,7 +1420,7 @@ var mcpDenialRequestsUnderReview = map[string]mcpDenialRequestReview{
 	},
 	v1connect.SubscriptionServiceVerifyCheckoutSessionProcedure: {
 		[]string{"session_id"},
-		"recorded: an opaque checkout id the caller supplied; reaching the payment provider with it needs Bytebase's own key",
+		"session_id is annotated SENSITIVE: it is the handle inside the Stripe Checkout URL, and the response that mints it is redacted the same way",
 	},
 	v1connect.DatabaseServiceBatchGetDatabasesProcedure: {
 		[]string{"names"}, "recorded: resource names",

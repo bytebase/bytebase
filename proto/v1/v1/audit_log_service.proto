@@ -139,7 +139,7 @@ message ExportAuditLogsRequest {
 // Response message for exporting audit logs.
 message ExportAuditLogsResponse {
   // The exported audit log content in the requested format.
-  bytes content = 1;
+  bytes content = 1 [(bytebase.v1.audit_behavior) = OMIT];
 
   // A token to retrieve next page of log entities.
   // Pass this value in the page_token field in the subsequent call
@@ -186,7 +186,7 @@ message AuditLog {
   google.protobuf.Duration latency = 10;
 
   // Service-specific metadata about the request, response, and activities.
-  google.protobuf.Any service_data = 11;
+  google.protobuf.Any service_data = 11 [(bytebase.v1.audit_behavior) = OMIT];
 
   // Metadata about the request context.
   RequestMetadata request_metadata = 12;
