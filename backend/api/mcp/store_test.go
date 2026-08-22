@@ -20,6 +20,9 @@ type testServerStore struct {
 	// writeCtxErr is the write context's error at the moment of the write,
 	// which is what shows the row survives a client that hung up.
 	writeCtxErr error
+	// writeCtxHasDeadline shows the detached write is still bounded: dropping
+	// the request's cancellation also drops its deadline.
+	writeCtxHasDeadline bool
 }
 
 func newTestServerStore() *testServerStore {
@@ -48,6 +51,7 @@ func (*testServerStore) DeleteOAuth2RefreshTokensByUserAndClient(context.Context
 
 func (s *testServerStore) CreateAuditLog(ctx context.Context, _ string, payload *storepb.AuditLog) error {
 	s.writeCtxErr = ctx.Err()
+	_, s.writeCtxHasDeadline = ctx.Deadline()
 	if s.auditErr != nil {
 		return s.auditErr
 	}

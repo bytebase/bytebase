@@ -15275,8 +15275,10 @@ components:
         authMethod:
           title: auth_method
           description: |-
-            How the method authorizes. IAM means the permission above is the whole
-             rule; CUSTOM means the handler decides and the permission field is silent.
+            How the method authorizes. IAM means the permission above is the primary
+             rule, though not always the only one — an update carrying allow_missing
+             additionally requires the matching create permission. CUSTOM means the
+             handler decides and the permission field is silent.
           $ref: '#/components/schemas/bytebase.v1.AuthMethod'
       title: MCPMethod
       additionalProperties: false

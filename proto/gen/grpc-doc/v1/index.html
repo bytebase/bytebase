@@ -35943,8 +35943,10 @@ here. auth_method says which case an empty value is. </p></td>
                   <td>auth_method</td>
                   <td><a href="#bytebase.v1.AuthMethod">AuthMethod</a></td>
                   <td></td>
-                  <td><p>How the method authorizes. IAM means the permission above is the whole
-rule; CUSTOM means the handler decides and the permission field is silent. </p></td>
+                  <td><p>How the method authorizes. IAM means the permission above is the primary
+rule, though not always the only one — an update carrying allow_missing
+additionally requires the matching create permission. CUSTOM means the
+handler decides and the permission field is silent. </p></td>
                 </tr>
               
             </tbody>

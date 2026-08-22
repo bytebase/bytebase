@@ -12671,7 +12671,7 @@ MCPMethod is one API method an MCP session can reach, and what decides it.
 | permission | [string](#string) |  | The IAM permission the method declares. The ceiling never grants: a session may call a served method only where the person it acts for could.
 
 Empty means the method declares no permission, which is NOT the same as needing none — a method that authorizes inside its handler declares nothing here. auth_method says which case an empty value is. |
-| auth_method | [AuthMethod](#bytebase-v1-AuthMethod) |  | How the method authorizes. IAM means the permission above is the whole rule; CUSTOM means the handler decides and the permission field is silent. |
+| auth_method | [AuthMethod](#bytebase-v1-AuthMethod) |  | How the method authorizes. IAM means the permission above is the primary rule, though not always the only one — an update carrying allow_missing additionally requires the matching create permission. CUSTOM means the handler decides and the permission field is silent. |
 
 
 

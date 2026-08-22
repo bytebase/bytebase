@@ -82,6 +82,7 @@ func TestConsentCeiling(t *testing.T) {
 		body := rec.Body.String()
 		require.Contains(t, body, "MCP access is turned off")
 		require.Contains(t, body, "turned MCP access off for this workspace")
+		require.Contains(t, body, "<title>MCP access is turned off</title>")
 		require.Contains(t, body, "in the workspace settings", "the page names what to ask an admin for")
 		require.NotContains(t, body, "code=", "no authorization code may be issued")
 
@@ -116,6 +117,11 @@ func TestConsentCeiling(t *testing.T) {
 
 		require.Equal(t, http.StatusForbidden, rec.Code)
 		require.Contains(t, rec.Body.String(), "not one this build understands")
+		// The heading follows the verdict: a stored value nobody can read is
+		// not "an admin turned MCP off", and the heading is what a hurried
+		// reader acts on.
+		require.Contains(t, rec.Body.String(), "MCP setting cannot be read")
+		require.NotContains(t, rec.Body.String(), "MCP access is turned off")
 
 		rows := auditRows(t, "ws-typo")
 		require.Len(t, rows, 1)
@@ -127,6 +133,8 @@ func TestConsentCeiling(t *testing.T) {
 
 		require.Equal(t, http.StatusForbidden, rec.Code)
 		require.Contains(t, rec.Body.String(), "not one this build serves")
+		require.Contains(t, rec.Body.String(), "not one this version supports")
+		require.NotContains(t, rec.Body.String(), "MCP access is turned off")
 		require.Len(t, auditRows(t, "ws-reserved"), 1)
 	})
 
@@ -347,10 +355,16 @@ func TestTokenIssuanceRechecksTheCeiling(t *testing.T) {
 		})
 	}
 
-	t.Run("a refresh stops re-issuing", func(t *testing.T) {
+	// The refusal must read as reversible, not as a dead grant. invalid_grant
+	// is what legacyGrantFailure uses to make a compliant client discard the
+	// credential and rerun the OAuth flow — exactly what this path retains the
+	// credential to avoid — so a ceiling refusal must not borrow it.
+	t.Run("a refresh stops re-issuing, retryably", func(t *testing.T) {
 		rec := refresh()
-		require.Equal(t, http.StatusBadRequest, rec.Code, rec.Body.String())
-		require.Equal(t, "invalid_grant", errorCode(t, rec))
+		require.Equal(t, http.StatusServiceUnavailable, rec.Code, rec.Body.String())
+		require.Equal(t, "temporarily_unavailable", errorCode(t, rec))
+		require.NotEqual(t, "invalid_grant", errorCode(t, rec),
+			"a compliant client discards the grant on invalid_grant, and this one must keep it")
 		require.Contains(t, errorDescription(t, rec), "turned MCP access off")
 	})
 
@@ -396,8 +410,8 @@ func TestTokenIssuanceRechecksTheCeiling(t *testing.T) {
 		}
 
 		rec := exchange()
-		require.Equal(t, http.StatusBadRequest, rec.Code, rec.Body.String())
-		require.Equal(t, "invalid_grant", errorCode(t, rec))
+		require.Equal(t, http.StatusServiceUnavailable, rec.Code, rec.Body.String())
+		require.Equal(t, "temporarily_unavailable", errorCode(t, rec))
 
 		var left int
 		require.NoError(t, db.QueryRowContext(ctx,

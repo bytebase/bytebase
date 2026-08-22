@@ -5,6 +5,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -44,17 +45,28 @@ type AuditLogWriter interface {
 // mirror does NOT depend on the insert — a metadata-database failure is when
 // losing the row from both surfaces would matter most.
 func RecordOutOfBandAudit(ctx context.Context, writer AuditLogWriter, mirrorToStdout bool, workspace string, row *storepb.AuditLog) {
-	// WithoutCancel: the row must survive the client hanging up on its own
-	// refusal, which is what a client does when it sees one.
-	ctx = context.WithoutCancel(ctx)
+	// WithoutCancel so the row survives a client hanging up on its own refusal,
+	// bounded because WithoutCancel drops the request deadline too. Both
+	// callers write on the synchronous path of a refusal already decided, so an
+	// unbounded insert holds the user's answer open.
+	ctx, cancel := context.WithTimeout(context.WithoutCancel(ctx), outOfBandAuditTimeout)
+	defer cancel()
+
+	// Before the insert, not after: the stream is the surface that still works
+	// when the metadata database does not, so it must not queue behind it.
+	if mirrorToStdout {
+		LogAuditToStdout(ctx, row)
+	}
 	if err := writer.CreateAuditLog(ctx, workspace, row); err != nil {
 		slog.Warn("failed to record a policy denial",
 			slog.String("workspace", workspace), slog.String("method", row.GetMethod()), log.BBError(err))
 	}
-	if mirrorToStdout {
-		LogAuditToStdout(ctx, row)
-	}
 }
+
+// outOfBandAuditTimeout bounds a detached audit write. Long enough that an
+// ordinary insert never trips it, short enough that a stalled metadata database
+// delays a refusal by seconds rather than indefinitely.
+const outOfBandAuditTimeout = 5 * time.Second
 
 // maxAuditPayloadChars is the maximum characters for request/response payloads in stdout logs.
 // Set to 100KB (102400 chars) to match AWS CloudTrail industry standard for audit logs.

@@ -239,12 +239,17 @@ func legacyGrantFailure() *oauth2Failure {
 }
 
 // tokenFailure renders a helper's refusal as an RFC 6749 token-endpoint error.
-// server_error is the only 500-class code these helpers produce; every other
-// code is a client error.
+// Two codes are not client errors and must not answer 4xx, which is what tells
+// a client to stop and re-authorize: server_error is a fault, and
+// temporarily_unavailable is a policy state an admin reverses.
 func tokenFailure(c *echo.Context, failure *oauth2Failure) error {
 	status := http.StatusBadRequest
-	if failure.code == "server_error" {
+	switch failure.code {
+	case "server_error":
 		status = http.StatusInternalServerError
+	case "temporarily_unavailable":
+		status = http.StatusServiceUnavailable
+	default:
 	}
 	return oauth2Error(c, status, failure.code, failure.description)
 }
@@ -464,12 +469,14 @@ func (s *Service) refuseIssuanceByCeiling(ctx context.Context, workspaceID strin
 	case verdict == auth.MCPCeilingServes:
 		return nil
 	case verdict.IsPolicy():
-		return &oauth2Failure{code: "invalid_grant", description: consentRefusals[verdict]}
+		// NOT invalid_grant: a compliant client discards the grant on it (see
+		// legacyGrantFailure, which uses it for that), and this credential is
+		// deliberately kept so an admin can toggle the ceiling back.
+		// temporarily_unavailable is outside RFC 6749 §5.2, which enumerates
+		// ways the request or the grant is wrong; this is neither.
+		return &oauth2Failure{code: "temporarily_unavailable", description: consentRefusals[verdict].sentence}
 	default:
 		slog.Error("failed to read the MCP capability ceiling; cannot issue a token", log.BBError(err))
-		// server_error, not temporarily_unavailable: RFC 6749 §5.2 does not
-		// define the latter for the token endpoint, and a strict client may
-		// read an unknown code as a protocol error rather than as retryable.
 		return &oauth2Failure{code: "server_error", description: "cannot read the MCP policy; retry shortly"}
 	}
 }

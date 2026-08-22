@@ -180,8 +180,10 @@ export declare type MCPMethod = Message<"bytebase.v1.MCPMethod"> & {
   permission: string;
 
   /**
-   * How the method authorizes. IAM means the permission above is the whole
-   * rule; CUSTOM means the handler decides and the permission field is silent.
+   * How the method authorizes. IAM means the permission above is the primary
+   * rule, though not always the only one — an update carrying allow_missing
+   * additionally requires the matching create permission. CUSTOM means the
+   * handler decides and the permission field is silent.
    *
    * @generated from field: bytebase.v1.AuthMethod auth_method = 5;
    */

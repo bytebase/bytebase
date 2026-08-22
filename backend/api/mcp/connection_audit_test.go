@@ -198,6 +198,9 @@ func TestMCPConnectionDenialEmission(t *testing.T) {
 		require.Len(t, st.auditRows, 1)
 		require.NoError(t, st.writeCtxErr,
 			"the write must not inherit the cancellation it is recording")
+		require.True(t, st.writeCtxHasDeadline,
+			"detaching from the request drops its deadline too, and this write is on the "+
+				"synchronous path of a refusal already decided — an unbounded insert holds the 403 open")
 	})
 
 	t.Run("every refused request writes its own row", func(t *testing.T) {

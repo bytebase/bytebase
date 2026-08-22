@@ -379,8 +379,10 @@ type MCPMethod struct {
 	// needing none — a method that authorizes inside its handler declares nothing
 	// here. auth_method says which case an empty value is.
 	Permission string `protobuf:"bytes,3,opt,name=permission,proto3" json:"permission,omitempty"`
-	// How the method authorizes. IAM means the permission above is the whole
-	// rule; CUSTOM means the handler decides and the permission field is silent.
+	// How the method authorizes. IAM means the permission above is the primary
+	// rule, though not always the only one — an update carrying allow_missing
+	// additionally requires the matching create permission. CUSTOM means the
+	// handler decides and the permission field is silent.
 	AuthMethod    AuthMethod `protobuf:"varint,5,opt,name=auth_method,json=authMethod,proto3,enum=bytebase.v1.AuthMethod" json:"auth_method,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

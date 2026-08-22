@@ -17,16 +17,34 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// One sentence per way the workspace's MCP policy refuses a consent: the
+// consentRefusal is what a user is told about one verdict. The heading is
+// carried beside the sentence rather than written once for the page, because
+// the three states have different fixes and a heading that names the wrong one
+// is the part a hurried reader acts on.
+type consentRefusal struct {
+	heading  string
+	sentence string
+}
+
+// One entry per way the workspace's MCP policy refuses a consent: the
 // connection gate's three, said about the authorization instead of the session.
 // A user who meets both boundaries must hear one story about their workspace.
-var consentRefusals = map[auth.MCPCeilingVerdict]string{
-	auth.MCPCeilingDisabled: "A workspace admin has turned MCP access off for this workspace, " +
-		"so no client can be authorized. Ask a workspace admin to raise the MCP ceiling in the workspace settings.",
-	auth.MCPCeilingUnreadable: "This workspace's stored MCP capability ceiling is not one this build understands, " +
-		"so authorization fails closed. Ask a workspace admin to set the MCP ceiling again in the workspace settings.",
-	auth.MCPCeilingUnserved: "This workspace's stored MCP capability ceiling is not one this build serves, " +
-		"so authorization fails closed. Ask a workspace admin to set the MCP ceiling to a supported value in the workspace settings.",
+var consentRefusals = map[auth.MCPCeilingVerdict]consentRefusal{
+	auth.MCPCeilingDisabled: {
+		heading: "MCP access is turned off",
+		sentence: "A workspace admin has turned MCP access off for this workspace, " +
+			"so no client can be authorized. Ask a workspace admin to raise the MCP ceiling in the workspace settings.",
+	},
+	auth.MCPCeilingUnreadable: {
+		heading: "This workspace's MCP setting cannot be read",
+		sentence: "This workspace's stored MCP capability ceiling is not one this build understands, " +
+			"so authorization fails closed. Ask a workspace admin to set the MCP ceiling again in the workspace settings.",
+	},
+	auth.MCPCeilingUnserved: {
+		heading: "This workspace's MCP setting is not one this version supports",
+		sentence: "This workspace's stored MCP capability ceiling is not one this build serves, " +
+			"so authorization fails closed. Ask a workspace admin to set the MCP ceiling to a supported value in the workspace settings.",
+	},
 }
 
 // consentAttempt is the consent a ceiling check may refuse: who is consenting,
@@ -90,7 +108,7 @@ func (s *Service) refuseConsentByCeiling(c *echo.Context, attempt consentAttempt
 //
 // The row is written here for the same reason the connection gate writes its
 // own: this route is echo, so no interceptor sees it.
-func (s *Service) refuseConsent(c *echo.Context, attempt consentAttempt, reason string) error {
+func (s *Service) refuseConsent(c *echo.Context, attempt consentAttempt, refusal consentRefusal) error {
 	row := &storepb.AuditLog{
 		Parent:   common.FormatWorkspace(attempt.user.workspaceID),
 		Method:   common.AuditMethodMCPConsentApprove,
@@ -99,7 +117,7 @@ func (s *Service) refuseConsent(c *echo.Context, attempt consentAttempt, reason 
 		User:     common.FormatUserEmail(attempt.user.email),
 		Status: &spb.Status{
 			Code:    int32(codes.PermissionDenied),
-			Message: reason,
+			Message: refusal.sentence,
 		},
 		RequestMetadata: common.RequestMetadataFromHTTP(c.Request()),
 		// The MCP provenance this flow has: the client asking, and the
@@ -113,23 +131,24 @@ func (s *Service) refuseConsent(c *echo.Context, attempt consentAttempt, reason 
 	}
 	common.RecordOutOfBandAudit(c.Request().Context(), s.store,
 		s.profile.RuntimeEnableAuditLogStdout.Load(), attempt.user.workspaceID, row)
-	return c.HTML(http.StatusForbidden, consentRefusedHTML(reason, attempt.redirectURI, attempt.state))
+	return c.HTML(http.StatusForbidden, consentRefusedHTML(refusal, attempt.redirectURI, attempt.state))
 }
 
 // consentRefusedHTML renders the refusal. Inline styles only: the global CSP
 // allows inline style and blocks inline script, so the page carries no
 // behavior.
-func consentRefusedHTML(reason, redirectURI, state string) string {
+func consentRefusedHTML(refusal consentRefusal, redirectURI, state string) string {
+	heading := html.EscapeString(refusal.heading)
 	page := `<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>MCP access is turned off</title>
+<title>` + heading + `</title>
 </head>
 <body style="font-family: system-ui, sans-serif; max-width: 32rem; margin: 4rem auto; padding: 0 1rem; line-height: 1.5;">
-<h1 style="font-size: 1.25rem;">MCP access is turned off</h1>
-<p>` + html.EscapeString(reason) + `</p>
+<h1 style="font-size: 1.25rem;">` + heading + `</h1>
+<p>` + html.EscapeString(refusal.sentence) + `</p>
 <p>Nothing was connected.</p>`
 	if back, err := oauth2ErrorRedirectURL(redirectURI, state, "access_denied",
 		"the workspace MCP policy refused this authorization"); err == nil {
