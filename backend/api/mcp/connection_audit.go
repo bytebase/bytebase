@@ -67,11 +67,16 @@ func (s *Server) refuseConnection(c *echo.Context, delegated auth.DelegatedMCPCr
 			Message: reason,
 		},
 		RequestMetadata: common.RequestMetadataFromHTTP(c.Request()),
+		// The grant this token carries, and no correlation ID. That field is
+		// session-scoped, and this refusal is decided before the SDK resolves a
+		// session: an initial connection has none, and a mid-session refusal
+		// cannot reach the ID the session already writes under. The per-request
+		// value minted here would read as a session ID that correlates exactly
+		// one row.
 		McpDelegation: &storepb.MCPDelegation{
-			Scope:         delegated.Scope,
-			Resource:      delegated.Resource,
-			ClientId:      delegated.ClientID,
-			CorrelationId: delegated.CorrelationID,
+			Scope:    delegated.Scope,
+			Resource: delegated.Resource,
+			ClientId: delegated.ClientID,
 		},
 	}
 	common.RecordOutOfBandAudit(c.Request().Context(), s.store,

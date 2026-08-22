@@ -83,11 +83,15 @@ func TestMCPConnectionDenialEmission(t *testing.T) {
 		require.Equal(t, "10.0.1.50", row.RequestMetadata.GetCallerIp())
 		require.Equal(t, "TestAgent/1.0", row.RequestMetadata.GetCallerSuppliedUserAgent())
 
-		// The marker, so the row answers `mcp == "true"` and wears the MCP
-		// badge alongside the calls a session that got in would have made.
+		// The marker, so the row answers `mcp == true` and wears the MCP badge
+		// alongside the calls a session that got in would have made.
 		require.NotNil(t, row.McpDelegation, "a denial at the MCP door is an MCP row")
-		require.NotEmpty(t, row.McpDelegation.GetCorrelationId(),
-			"a refused connection still gets the handle every other MCP row has")
+		// But no correlation ID. It is session-scoped and this refusal is
+		// decided before the SDK resolves a session, so any value here would be
+		// a session ID that names one row — and a mid-session refusal would get
+		// one different from the rows that session already wrote, hiding the
+		// denial from the pivot an operator would use to find it.
+		require.Empty(t, row.McpDelegation.GetCorrelationId())
 	})
 
 	t.Run("an unreadable ceiling writes a row that names the typo, not the policy", func(t *testing.T) {
@@ -173,7 +177,6 @@ func TestMCPConnectionDenialEmission(t *testing.T) {
 		require.Equal(t, "client-A", grant.GetClientId())
 		require.Equal(t, "mcp:read-only", grant.GetScope())
 		require.Equal(t, resource, grant.GetResource())
-		require.NotEmpty(t, grant.GetCorrelationId())
 	})
 
 	t.Run("the row survives a client that hung up on its own refusal", func(t *testing.T) {

@@ -96,8 +96,8 @@ func TestSearchAuditLogsMCPFilters(t *testing.T) {
 		return logs
 	}
 
-	t.Run(`mcp == "true" returns every MCP row and only those`, func(t *testing.T) {
-		got := search(t, `mcp == "true"`)
+	t.Run("mcp == true returns every MCP row and only those", func(t *testing.T) {
+		got := search(t, "mcp == true")
 		require.Len(t, got, 4, "the four rows carrying the marker, including the empty-field legacy one")
 		for _, log := range got {
 			require.NotNil(t, log.Payload.GetMcpDelegation(),
@@ -105,8 +105,8 @@ func TestSearchAuditLogsMCPFilters(t *testing.T) {
 		}
 	})
 
-	t.Run(`mcp == "false" returns the rest`, func(t *testing.T) {
-		got := search(t, `mcp == "false"`)
+	t.Run("mcp == false returns the rest", func(t *testing.T) {
+		got := search(t, "mcp == false")
 		require.Len(t, got, 1)
 		require.Nil(t, got[0].Payload.GetMcpDelegation())
 	})
@@ -120,7 +120,7 @@ func TestSearchAuditLogsMCPFilters(t *testing.T) {
 	})
 
 	t.Run("the MCP filters compose with the existing ones", func(t *testing.T) {
-		got := search(t, `mcp == "true" && method == "/bytebase.v1.SQLService/Query"`)
+		got := search(t, `mcp == true && method == "/bytebase.v1.SQLService/Query"`)
 		require.Len(t, got, 3)
 	})
 
@@ -129,8 +129,10 @@ func TestSearchAuditLogsMCPFilters(t *testing.T) {
 		require.ErrorContains(t, err, "unknown variable mcp_client_id")
 	})
 
-	t.Run("mcp takes only true or false", func(t *testing.T) {
-		_, err := store.GetSearchAuditLogsFilter(`mcp == "yes"`)
-		require.ErrorContains(t, err, `"mcp" accepts only "true" or "false"`)
+	t.Run("mcp is a boolean, not a string", func(t *testing.T) {
+		// Every other boolean filter key in the codebase takes a real CEL
+		// boolean and says so on a mismatch; this one must not be the outlier.
+		_, err := store.GetSearchAuditLogsFilter(`mcp == "true"`)
+		require.ErrorContains(t, err, "expect true or false")
 	})
 }

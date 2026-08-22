@@ -71,7 +71,8 @@ func TestMCPPolicyDenialsReachTheAuditPage(t *testing.T) {
 	a.Contains(connection.Status.Message, "MCP access is disabled")
 	a.NotNil(connection.McpDelegation, "the row wears the MCP badge")
 	a.Equal(clientID, connection.McpDelegation.ClientId)
-	a.NotEmpty(connection.McpDelegation.CorrelationId)
+	a.Empty(connection.McpDelegation.CorrelationId,
+		"the ceiling refuses before the SDK resolves a session, so there is no session ID to record")
 
 	// The same workspace now refuses a NEW authorization too, and that refusal
 	// is a second row. Without it an operator sees an agent stop connecting and
@@ -85,12 +86,16 @@ func TestMCPPolicyDenialsReachTheAuditPage(t *testing.T) {
 	a.Empty(consentRows[0].McpDelegation.GetCorrelationId(),
 		"a consent never reached the boundary that mints one")
 
-	// The operator's two filters, against the rows they exist to find.
-	a.Len(searchMCP(`mcp == "true"`), 2,
+	// The operator's two filters, through the read API they are used from.
+	a.Len(searchMCP("mcp == true"), 2,
 		"both denials answer the MCP filter; nothing else in this workspace does")
-	byCorrelation := searchMCP(`mcp_correlation_id == "` + connection.McpDelegation.CorrelationId + `"`)
-	a.Len(byCorrelation, 1)
-	a.Equal(connection.Name, byCorrelation[0].Name)
+
+	// The correlation key parses and runs here; what it selects is pinned
+	// against real session IDs in TestSearchAuditLogsMCPFilters. Neither denial
+	// belongs to a session, so neither answers it — which is the point: an
+	// operator pivoting on a session must not be handed rows that were never
+	// part of one.
+	a.Empty(searchMCP(`mcp_correlation_id == "any-session"`))
 }
 
 // consentUnderDisabledCeiling registers a fresh MCP client and posts an

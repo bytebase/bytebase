@@ -102,7 +102,7 @@ func TestConsentCeiling(t *testing.T) {
 		require.EqualValues(t, 7, row.GetStatus().GetCode(), "PermissionDenied")
 		require.Contains(t, row.GetStatus().GetMessage(), "turned MCP access off")
 
-		// The MCP marker, so `mcp == "true"` finds this alongside the
+		// The MCP marker, so `mcp == true` finds this alongside the
 		// connection denial the same user would have hit next.
 		require.NotNil(t, row.GetMcpDelegation())
 		require.Equal(t, testClientID, row.GetMcpDelegation().GetClientId())

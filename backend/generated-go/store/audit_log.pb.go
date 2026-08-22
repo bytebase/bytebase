@@ -319,7 +319,11 @@ type MCPDelegation struct {
 	// initialize-time context, so one MCP session carries one correlation ID
 	// across all of its tool calls.
 	//
-	// Empty on a consent entry, which never reached that boundary.
+	// Empty on the entries that belong to no session — a refused consent, which
+	// never reached that boundary, and a refused connection, which is decided
+	// before the SDK resolves a session. Filling those with a fresh value would
+	// read as a session ID that correlates exactly one row, and a mid-session
+	// refusal would get an ID different from the rows the session already wrote.
 	CorrelationId string `protobuf:"bytes,4,opt,name=correlation_id,json=correlationId,proto3" json:"correlation_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

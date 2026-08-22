@@ -869,7 +869,7 @@ stored nothing (legacy sessions), never a resolved or synthesized value.
 | client_id | [string](#string) |  | The OAuth2 client the grant was consented to. Empty for legacy web-session tokens at /mcp. |
 | correlation_id | [string](#string) |  | Correlates the audit rows an MCP session produces. Minted at the /mcp boundary and session-scoped: the MCP SDK hands tool handlers the initialize-time context, so one MCP session carries one correlation ID across all of its tool calls.
 
-Empty on a consent entry, which never reached that boundary. |
+Empty on the entries that belong to no session — a refused consent, which never reached that boundary, and a refused connection, which is decided before the SDK resolves a session. Filling those with a fresh value would read as a session ID that correlates exactly one row, and a mid-session refusal would get an ID different from the rows the session already wrote. |
 
 
 
