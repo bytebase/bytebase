@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	spb "google.golang.org/genproto/googleapis/rpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/reflect/protoregistry"
@@ -33,11 +34,15 @@ import (
 // since those reach the row without passing marshalAuditPayload — which is why
 // the registry is enforced at its call sites for this list to mean anything.
 //
-// The bytebase.store entries are not a layering slip: storepb.AuditLog IS the
-// audit row, protojson-marshaled into audit_log.payload by store.CreateAuditLog
-// and printed by logAuditToStdout. RequestMetadata and MCPDelegation are there
-// because createAuditLog assigns them directly, so nothing else would look at
-// them — and RequestMetadata.caller_supplied_user_agent is caller-controlled.
+// The roots are the payloads createAuditLog marshals onto the row — request,
+// response, status, service_data — and not the row itself. storepb.AuditLog's
+// own columns, its RequestMetadata and its MCPDelegation are assigned in Go
+// from headers and verified grant state and are reviewed there; the annotation
+// is no remedy for them, since bytebase.store does not import bytebase.v1 and
+// marshalAuditPayload never sees them, so a line here would record a decision
+// that had only one branch. TestLintAuditAnyFieldsAreRegistered does walk the
+// row, because its remedy — registering what an Any may pack — is the live
+// enforcement for the row's own service_data.
 
 // TestLintAuditPayloadInventory fails when a string or bytes field joins or
 // leaves the audited surface without anyone deciding what the audit row may
@@ -126,9 +131,9 @@ func auditRecordedScalarFields(t *testing.T) []string {
 		return true
 	})
 
-	// The audit row itself: service_data, status.details, request_metadata and
-	// mcp_delegation never pass an entry point.
-	walk((&storepb.AuditLog{}).ProtoReflect().Descriptor())
+	// The status a failed RPC leaves on the row. The v1 read API happens to
+	// reach it too; it is a root of its own so the list does not rest on that.
+	walk((&spb.Status{}).ProtoReflect().Descriptor())
 
 	// Every registered Any type. These reach the row packed, so no descriptor
 	// walk finds them: registering a type is what pulls its fields in here.
@@ -199,22 +204,8 @@ func inventoryFieldExists(entry string) bool {
 // is; DataSource.AzureCredential's tenant_id and client_id name the principal
 // rather than authenticate as it; google.protobuf.Any.type_url and value are
 // the envelope of a packed message whose own fields come in through
-// auditAnyRegistry. AuditLog.request and .response are the redacted payloads
-// themselves, kept because the rule is every scalar on the row with no
-// exceptions — a new column lands here and forces a decision.
+// auditAnyRegistry.
 var auditRecordedFields = []string{
-	"bytebase.store.AuditLog.method",
-	"bytebase.store.AuditLog.parent",
-	"bytebase.store.AuditLog.request",
-	"bytebase.store.AuditLog.resource",
-	"bytebase.store.AuditLog.response",
-	"bytebase.store.AuditLog.user",
-	"bytebase.store.MCPDelegation.client_id",
-	"bytebase.store.MCPDelegation.correlation_id",
-	"bytebase.store.MCPDelegation.resource",
-	"bytebase.store.MCPDelegation.scope",
-	"bytebase.store.RequestMetadata.caller_ip",
-	"bytebase.store.RequestMetadata.caller_supplied_user_agent",
 	"bytebase.v1.AIChatResponse.content",
 	"bytebase.v1.AIChatToolCall.arguments",
 	"bytebase.v1.AIChatToolCall.id",
