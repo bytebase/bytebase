@@ -154,6 +154,66 @@ function ServiceAccountTable({
     });
   };
 
+  const renderKeyAction = (sa: ServiceAccount) => {
+    if (sa.serviceKey && !copiedKeys.has(sa.name)) {
+      return (
+        <Button
+          appearance="outline"
+          size="xs"
+          onClick={(e) => {
+            e.stopPropagation();
+            handleCopyKey(sa);
+          }}
+        >
+          <Copy className="h-3 w-3 mr-1" />
+          {t("settings.members.copy-service-key")}
+        </Button>
+      );
+    }
+    if (resetConfirmSa?.name === sa.name) {
+      return (
+        <div className="flex items-center gap-x-1">
+          <span className="text-xs text-error">
+            {t("settings.members.reset-service-key-alert")}
+          </span>
+          <Button
+            variant="destructive"
+            size="xs"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleResetKey(sa);
+            }}
+          >
+            {t("common.reset")}
+          </Button>
+          <Button
+            appearance="outline"
+            size="xs"
+            onClick={(e) => {
+              e.stopPropagation();
+              setResetConfirmSa(undefined);
+            }}
+          >
+            {t("common.cancel")}
+          </Button>
+        </div>
+      );
+    }
+    return (
+      <Button
+        appearance="outline"
+        size="xs"
+        onClick={(e) => {
+          e.stopPropagation();
+          setResetConfirmSa(sa);
+        }}
+      >
+        <KeyRound className="h-3 w-3 mr-1" />
+        {t("settings.members.reset-service-key")}
+      </Button>
+    );
+  };
+
   return (
     <div className="border rounded-sm overflow-hidden">
       <Table>
@@ -227,57 +287,7 @@ function ServiceAccountTable({
                       />
                       {!isDeleted && (
                         <div className="ml-auto text-xs shrink-0">
-                          {sa.serviceKey && !copiedKeys.has(sa.name) ? (
-                            <Button
-                              appearance="outline"
-                              size="xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleCopyKey(sa);
-                              }}
-                            >
-                              <Copy className="h-3 w-3 mr-1" />
-                              {t("settings.members.copy-service-key")}
-                            </Button>
-                          ) : resetConfirmSa?.name === sa.name ? (
-                            <div className="flex items-center gap-x-1">
-                              <span className="text-xs text-error">
-                                {t("settings.members.reset-service-key-alert")}
-                              </span>
-                              <Button
-                                variant="destructive"
-                                size="xs"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleResetKey(sa);
-                                }}
-                              >
-                                {t("common.reset")}
-                              </Button>
-                              <Button
-                                appearance="outline"
-                                size="xs"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setResetConfirmSa(undefined);
-                                }}
-                              >
-                                {t("common.cancel")}
-                              </Button>
-                            </div>
-                          ) : (
-                            <Button
-                              appearance="outline"
-                              size="xs"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setResetConfirmSa(sa);
-                              }}
-                            >
-                              <KeyRound className="h-3 w-3 mr-1" />
-                              {t("settings.members.reset-service-key")}
-                            </Button>
-                          )}
+                          {renderKeyAction(sa)}
                         </div>
                       )}
                     </div>
