@@ -1282,7 +1282,7 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"page_token\x18\x04 \x01(\tR\tpageToken\"\x82\x01\n" +
 	"\x1aSearchSavedQueriesResponse\x12<\n" +
 	"\rsaved_queries\x18\x01 \x03(\v2\x17.bytebase.v1.SavedQueryR\fsavedQueries\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x8a\x04\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x8e\x04\n" +
 	"\n" +
 	"SavedQuery\x12\x1a\n" +
 	"\x04name\x18\x01 \x01(\tB\x06\xe0A\x02\xe0A\x05R\x04name\x12\x1d\n" +
@@ -1293,8 +1293,8 @@ const file_v1_saved_query_service_proto_rawDesc = "" +
 	"\vcreate_time\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"createTime\x12@\n" +
 	"\vupdate_time\x18\a \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"updateTime\x12\x1d\n" +
-	"\acontent\x18\b \x01(\fB\x03\xe0A\x02R\acontent\x12&\n" +
+	"updateTime\x12!\n" +
+	"\acontent\x18\b \x01(\fB\a\xe0A\x02\xd0\xea0\x02R\acontent\x12&\n" +
 	"\fcontent_size\x18\t \x01(\x03B\x03\xe0A\x03R\vcontentSize\x12\x1d\n" +
 	"\astarred\x18\v \x01(\bB\x03\xe0A\x03R\astarred\x12 \n" +
 	"\x06folder\x18\r \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\x06folder:K\xeaAH\n" +

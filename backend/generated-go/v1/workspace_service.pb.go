@@ -451,9 +451,9 @@ const file_v1_workspace_service_proto_rawDesc = "" +
 	"\x1av1/workspace_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\x1a\x15v1/auth_service.proto\x1a\x13v1/iam_policy.proto\"U\n" +
 	"\x1fRotateDirectorySyncTokenRequest\x122\n" +
 	"\x04name\x18\x01 \x01(\tB\x1e\xe0A\x02\xfaA\x18\n" +
-	"\x16bytebase.com/WorkspaceR\x04name\"=\n" +
-	" RotateDirectorySyncTokenResponse\x12\x19\n" +
-	"\x05token\x18\x01 \x01(\tB\x03\xe0A\x03R\x05token\"\x17\n" +
+	"\x16bytebase.com/WorkspaceR\x04name\"A\n" +
+	" RotateDirectorySyncTokenResponse\x12\x1d\n" +
+	"\x05token\x18\x01 \x01(\tB\a\xe0A\x03\xd0\xea0\x01R\x05token\"\x17\n" +
 	"\x15ListWorkspacesRequest\"P\n" +
 	"\x16ListWorkspacesResponse\x126\n" +
 	"\n" +

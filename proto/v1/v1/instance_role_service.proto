@@ -79,7 +79,10 @@ message InstanceRole {
   string role_name = 2;
 
   // The role password.
-  optional string password = 3 [(google.api.field_behavior) = INPUT_ONLY];
+  optional string password = 3 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
 
   // The connection count limit for this role.
   optional int32 connection_limit = 4;

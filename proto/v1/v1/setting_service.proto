@@ -149,24 +149,39 @@ message SettingValue {
 
 message AppIMSetting {
   message Slack {
-    string token = 1 [(google.api.field_behavior) = INPUT_ONLY];
+    string token = 1 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
   }
   message Feishu {
     string app_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
-    string app_secret = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    string app_secret = 2 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
   }
   message Wecom {
     string corp_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
     string agent_id = 2 [(google.api.field_behavior) = INPUT_ONLY];
-    string secret = 3 [(google.api.field_behavior) = INPUT_ONLY];
+    string secret = 3 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
   }
   message Lark {
     string app_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
-    string app_secret = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    string app_secret = 2 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
   }
   message DingTalk {
     string client_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
-    string client_secret = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    string client_secret = 2 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
     string robot_code = 3 [(google.api.field_behavior) = INPUT_ONLY];
   }
   message Teams {
@@ -175,7 +190,10 @@ message AppIMSetting {
     // Azure AD application (client) ID.
     string client_id = 2 [(google.api.field_behavior) = INPUT_ONLY];
     // Azure AD client secret.
-    string client_secret = 3 [(google.api.field_behavior) = INPUT_ONLY];
+    string client_secret = 3 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
   }
 
   message IMSetting {
@@ -539,7 +557,7 @@ message AISetting {
   }
   Provider provider = 2;
   string endpoint = 3;
-  string api_key = 4;
+  string api_key = 4 [(bytebase.v1.audit_behavior) = SENSITIVE];
   string model = 5;
   string version = 6;
 }
@@ -582,7 +600,10 @@ message EmailSetting {
     string host = 1;
     int32 port = 2;
     string username = 3;
-    string password = 4 [(google.api.field_behavior) = INPUT_ONLY];
+    string password = 4 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
     Encryption encryption = 5;
     Authentication authentication = 6;
 

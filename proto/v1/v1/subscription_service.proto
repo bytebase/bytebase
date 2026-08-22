@@ -117,11 +117,11 @@ message GetSubscriptionRequest {}
 message ExportVCSProviderUsersRequest {}
 
 message ExportVCSProviderUsersResponse {
-  bytes content = 1;
+  bytes content = 1 [(bytebase.v1.audit_behavior) = OMIT];
 }
 
 message UploadLicenseRequest {
-  string license = 1;
+  string license = 1 [(bytebase.v1.audit_behavior) = SENSITIVE];
 }
 
 // Purchase messages
@@ -135,9 +135,9 @@ message CreatePurchaseRequest {
 message PurchaseResponse {
   // If set, redirect to this Stripe Checkout URL.
   // If empty, the update was applied directly using the existing payment method.
-  string payment_url = 1;
+  string payment_url = 1 [(bytebase.v1.audit_behavior) = SENSITIVE];
   // Stripe Checkout Session ID. Used to verify the session after redirect.
-  string session_id = 2;
+  string session_id = 2 [(bytebase.v1.audit_behavior) = SENSITIVE];
 }
 
 message VerifyCheckoutSessionRequest {

@@ -483,10 +483,10 @@ const file_v1_ai_service_proto_rawDesc = "" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1c\n" +
 	"\targuments\x18\x03 \x01(\tR\targuments\x12\x1f\n" +
 	"\bmetadata\x18\x04 \x01(\tH\x00R\bmetadata\x88\x01\x01B\v\n" +
-	"\t_metadata\"\x95\x01\n" +
-	"\rAIChatRequest\x126\n" +
-	"\bmessages\x18\x01 \x03(\v2\x1a.bytebase.v1.AIChatMessageR\bmessages\x12L\n" +
-	"\x10tool_definitions\x18\x02 \x03(\v2!.bytebase.v1.AIChatToolDefinitionR\x0ftoolDefinitions\"0\n" +
+	"\t_metadata\"\xa1\x01\n" +
+	"\rAIChatRequest\x12<\n" +
+	"\bmessages\x18\x01 \x03(\v2\x1a.bytebase.v1.AIChatMessageB\x04\xd0\xea0\x02R\bmessages\x12R\n" +
+	"\x10tool_definitions\x18\x02 \x03(\v2!.bytebase.v1.AIChatToolDefinitionB\x04\xd0\xea0\x02R\x0ftoolDefinitions\"0\n" +
 	"\vAIChatUsage\x12!\n" +
 	"\ftotal_tokens\x18\x01 \x01(\x05R\vtotalTokens\"\xb6\x01\n" +
 	"\x0eAIChatResponse\x12\x1d\n" +

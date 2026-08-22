@@ -19528,6 +19528,16 @@ components:
       required:
         - name
       additionalProperties: false
+    bytebase.v1.AuditBehavior:
+      type: string
+      title: AuditBehavior
+      enum:
+        - AUDIT_BEHAVIOR_UNSPECIFIED
+        - SENSITIVE
+        - OMIT
+      description: |-
+        What an audit payload may carry for a field. One enum rather than a bool per
+         behavior, because a field has exactly one classification.
     bytebase.v1.AuditData:
       type: object
       properties:

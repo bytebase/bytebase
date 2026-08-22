@@ -2088,11 +2088,11 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x12MSSQLExplainFormat\x12$\n" +
 	" MSSQL_EXPLAIN_FORMAT_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18MSSQL_EXPLAIN_FORMAT_ALL\x10\x01\x12\x1c\n" +
-	"\x18MSSQL_EXPLAIN_FORMAT_XML\x10\x02\"\x8b\r\n" +
+	"\x18MSSQL_EXPLAIN_FORMAT_XML\x10\x02\"\x97\r\n" +
 	"\vQueryResult\x12!\n" +
 	"\fcolumn_names\x18\x01 \x03(\tR\vcolumnNames\x12*\n" +
-	"\x11column_type_names\x18\x02 \x03(\tR\x0fcolumnTypeNames\x12)\n" +
-	"\x04rows\x18\x03 \x03(\v2\x15.bytebase.v1.QueryRowR\x04rows\x12\x1d\n" +
+	"\x11column_type_names\x18\x02 \x03(\tR\x0fcolumnTypeNames\x12/\n" +
+	"\x04rows\x18\x03 \x03(\v2\x15.bytebase.v1.QueryRowB\x04\xd0\xea0\x02R\x04rows\x12\x1d\n" +
 	"\n" +
 	"rows_count\x18\x04 \x01(\x03R\trowsCount\x12\x14\n" +
 	"\x05error\x18\x05 \x01(\tR\x05error\x123\n" +
@@ -2102,8 +2102,8 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\fsyntax_error\x18\t \x01(\v2$.bytebase.v1.QueryResult.SyntaxErrorH\x00R\vsyntaxError\x12R\n" +
 	"\x11permission_denied\x18\n" +
 	" \x01(\v2#.bytebase.v1.PermissionDeniedDetailH\x00R\x10permissionDenied\x12L\n" +
-	"\rcommand_error\x18\r \x01(\v2%.bytebase.v1.QueryResult.CommandErrorH\x00R\fcommandError\x12<\n" +
-	"\bmessages\x18\v \x03(\v2 .bytebase.v1.QueryResult.MessageR\bmessages\x122\n" +
+	"\rcommand_error\x18\r \x01(\v2%.bytebase.v1.QueryResult.CommandErrorH\x00R\fcommandError\x12B\n" +
+	"\bmessages\x18\v \x03(\v2 .bytebase.v1.QueryResult.MessageB\x04\xd0\xea0\x02R\bmessages\x122\n" +
 	"\x06masked\x18\f \x03(\v2\x1a.bytebase.v1.MaskingReasonR\x06masked\x1a\xfd\x03\n" +
 	"\rPostgresError\x12\x1a\n" +
 	"\bseverity\x18\x01 \x01(\tR\bseverity\x12\x12\n" +
@@ -2148,15 +2148,15 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\n" +
 	"\x06NOTICE\x10\x05\x12\r\n" +
 	"\tEXCEPTION\x10\x06B\x10\n" +
-	"\x0edetailed_error\"\xaa\x02\n" +
+	"\x0edetailed_error\"\xb0\x02\n" +
 	"\rMaskingReason\x12(\n" +
 	"\x10semantic_type_id\x18\x01 \x01(\tR\x0esemanticTypeId\x12.\n" +
 	"\x13semantic_type_title\x18\x02 \x01(\tR\x11semanticTypeTitle\x12&\n" +
 	"\x0fmasking_rule_id\x18\x03 \x01(\tR\rmaskingRuleId\x12\x1c\n" +
 	"\talgorithm\x18\x04 \x01(\tR\talgorithm\x12\x18\n" +
 	"\acontext\x18\x05 \x01(\tR\acontext\x121\n" +
-	"\x14classification_level\x18\x06 \x01(\x05R\x13classificationLevel\x12,\n" +
-	"\x12semantic_type_icon\x18\a \x01(\tR\x10semanticTypeIcon\"9\n" +
+	"\x14classification_level\x18\x06 \x01(\x05R\x13classificationLevel\x122\n" +
+	"\x12semantic_type_icon\x18\a \x01(\tB\x04\xd0\xea0\x02R\x10semanticTypeIcon\"9\n" +
 	"\bQueryRow\x12-\n" +
 	"\x06values\x18\x01 \x03(\v2\x15.bytebase.v1.RowValueR\x06values\"\xf9\x06\n" +
 	"\bRowValue\x12;\n" +
@@ -2207,23 +2207,23 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"\x15RULE_TYPE_UNSPECIFIED\x10\x00\x12\x10\n" +
 	"\fPARSER_BASED\x10\x01\x12\x0e\n" +
 	"\n" +
-	"AI_POWERED\x10\x02\"\xda\x02\n" +
+	"AI_POWERED\x10\x02\"\xe0\x02\n" +
 	"\rExportRequest\x121\n" +
 	"\x04name\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\n" +
 	"\x15bytebase.com/DatabaseR\x04name\x12\x1c\n" +
 	"\tstatement\x18\x02 \x01(\tR\tstatement\x12\x14\n" +
 	"\x05limit\x18\x03 \x01(\x05R\x05limit\x121\n" +
 	"\x06format\x18\x04 \x01(\x0e2\x19.bytebase.v1.ExportFormatR\x06format\x12\x14\n" +
-	"\x05admin\x18\x05 \x01(\bR\x05admin\x12\x1a\n" +
-	"\bpassword\x18\x06 \x01(\tR\bpassword\x12$\n" +
+	"\x05admin\x18\x05 \x01(\bR\x05admin\x12 \n" +
+	"\bpassword\x18\x06 \x01(\tB\x04\xd0\xea0\x01R\bpassword\x12$\n" +
 	"\x0edata_source_id\x18\a \x01(\tR\fdataSourceId\x12\x1b\n" +
 	"\x06schema\x18\b \x01(\tH\x00R\x06schema\x88\x01\x01\x12!\n" +
 	"\tcontainer\x18\t \x01(\tH\x01R\tcontainer\x88\x01\x01B\t\n" +
 	"\a_schemaB\f\n" +
 	"\n" +
-	"_container\"\\\n" +
-	"\x0eExportResponse\x12\x18\n" +
-	"\acontent\x18\x01 \x01(\fR\acontent\x120\n" +
+	"_container\"b\n" +
+	"\x0eExportResponse\x12\x1e\n" +
+	"\acontent\x18\x01 \x01(\fB\x04\xd0\xea0\x02R\acontent\x120\n" +
 	"\x14applied_access_grant\x18\x02 \x01(\tR\x12appliedAccessGrant2\xbd\x06\n" +
 	"\n" +
 	"SQLService\x12\x93\x01\n" +

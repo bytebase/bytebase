@@ -846,12 +846,12 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x05users\x18\x01 \x03(\v2\x11.bytebase.v1.UserR\x05users\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"?\n" +
 	"\x11CreateUserRequest\x12*\n" +
-	"\x04user\x18\x01 \x01(\v2\x11.bytebase.v1.UserB\x03\xe0A\x02R\x04user\"\xc7\x02\n" +
+	"\x04user\x18\x01 \x01(\v2\x11.bytebase.v1.UserB\x03\xe0A\x02R\x04user\"\xcd\x02\n" +
 	"\x11UpdateUserRequest\x12*\n" +
 	"\x04user\x18\x01 \x01(\v2\x11.bytebase.v1.UserB\x03\xe0A\x02R\x04user\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\x12\x1e\n" +
-	"\botp_code\x18\x03 \x01(\tH\x00R\aotpCode\x88\x01\x01\x12;\n" +
+	"updateMask\x12$\n" +
+	"\botp_code\x18\x03 \x01(\tB\x04\xd0\xea0\x01H\x00R\aotpCode\x88\x01\x01\x12;\n" +
 	"\x1aregenerate_temp_mfa_secret\x18\x04 \x01(\bR\x17regenerateTempMfaSecret\x12:\n" +
 	"\x19regenerate_recovery_codes\x18\x05 \x01(\bR\x17regenerateRecoveryCodes\x12#\n" +
 	"\rallow_missing\x18\x06 \x01(\bR\fallowMissingB\v\n" +
@@ -865,22 +865,22 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x12UpdateEmailRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/UserR\x04name\x12\x19\n" +
-	"\x05email\x18\x02 \x01(\tB\x03\xe0A\x02R\x05email\"\xf8\x05\n" +
+	"\x05email\x18\x02 \x01(\tB\x03\xe0A\x02R\x05email\"\x98\x06\n" +
 	"\x04User\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x14\n" +
 	"\x05email\x18\x03 \x01(\tR\x05email\x12\x1e\n" +
-	"\x05title\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12\x1f\n" +
-	"\bpassword\x18\x06 \x01(\tB\x03\xe0A\x04R\bpassword\x12\x1f\n" +
+	"\x05title\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12#\n" +
+	"\bpassword\x18\x06 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\bpassword\x12\x1f\n" +
 	"\vmfa_enabled\x18\b \x01(\bR\n" +
-	"mfaEnabled\x12&\n" +
-	"\x0ftemp_otp_secret\x18\t \x01(\tR\rtempOtpSecret\x12.\n" +
+	"mfaEnabled\x12,\n" +
+	"\x0ftemp_otp_secret\x18\t \x01(\tB\x04\xd0\xea0\x01R\rtempOtpSecret\x124\n" +
 	"\x13temp_recovery_codes\x18\n" +
-	" \x03(\tR\x11tempRecoveryCodes\x12Z\n" +
-	"\x1ctemp_otp_secret_created_time\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\x18tempOtpSecretCreatedTime\x12\x14\n" +
-	"\x05phone\x18\f \x01(\tR\x05phone\x123\n" +
-	"\aprofile\x18\r \x01(\v2\x19.bytebase.v1.User.ProfileR\aprofile\x12\x1b\n" +
-	"\x06groups\x18\x0e \x03(\tB\x03\xe0A\x03R\x06groups\x12!\n" +
+	" \x03(\tB\x04\xd0\xea0\x01R\x11tempRecoveryCodes\x12Z\n" +
+	"\x1ctemp_otp_secret_created_time\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\x18tempOtpSecretCreatedTime\x12\x1a\n" +
+	"\x05phone\x18\f \x01(\tB\x04\xd0\xea0\x02R\x05phone\x129\n" +
+	"\aprofile\x18\r \x01(\v2\x19.bytebase.v1.User.ProfileB\x04\xd0\xea0\x02R\aprofile\x12\x1f\n" +
+	"\x06groups\x18\x0e \x03(\tB\a\xe0A\x03\xd0\xea0\x02R\x06groups\x12!\n" +
 	"\tworkspace\x18\x10 \x01(\tB\x03\xe0A\x03R\tworkspace\x1a\xbc\x01\n" +
 	"\aProfile\x12B\n" +
 	"\x0flast_login_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\rlastLoginTime\x12U\n" +

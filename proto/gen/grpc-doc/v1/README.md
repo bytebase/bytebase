@@ -4,10 +4,12 @@
 ## Table of Contents
 
 - [v1/annotation.proto](#v1_annotation-proto)
+    - [AuditBehavior](#bytebase-v1-AuditBehavior)
     - [AuthMethod](#bytebase-v1-AuthMethod)
     - [MCPDenialReason](#bytebase-v1-MCPDenialReason)
     - [MCPMethodClass](#bytebase-v1-MCPMethodClass)
   
+    - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
@@ -799,6 +801,20 @@
  
 
 
+<a name="bytebase-v1-AuditBehavior"></a>
+
+### AuditBehavior
+What an audit payload may carry for a field. One enum rather than a bool per
+behavior, because a field has exactly one classification.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AUDIT_BEHAVIOR_UNSPECIFIED | 0 | Recorded as sent. This is a denylist default, so an unannotated secret is written; the inventory lint turns that into a build failure. |
+| SENSITIVE | 1 | A credential. It must not reach an audit payload, and the API may return it only on the response that mints it — never on a read path. |
+| OMIT | 2 | Must not be recorded, for any reason other than being a credential: unbounded bodies, base64 blobs, bearer capabilities, and personal data. Unlike SENSITIVE it says nothing about the API contract. |
+
+
+
 <a name="bytebase-v1-AuthMethod"></a>
 
 ### AuthMethod
@@ -886,6 +902,7 @@ The line against FORBIDDEN is reversibility. An admin-capable ceiling, if one is
 ### File-level Extensions
 | Extension | Type | Base | Number | Description |
 | --------- | ---- | ---- | ------ | ----------- |
+| audit_behavior | AuditBehavior | .google.protobuf.FieldOptions | 100010 | How the audit log treats this field. |
 | allow_without_credential | bool | .google.protobuf.MethodOptions | 100000 | Whether the method allows access without authentication credentials. |
 | audit | bool | .google.protobuf.MethodOptions | 100003 | Whether to audit calls to this method. |
 | auth_method | AuthMethod | .google.protobuf.MethodOptions | 100002 | The authorization method to use for this RPC. |

@@ -1140,19 +1140,19 @@ const file_v1_auth_service_proto_rawDesc = "" +
 	"\x18disallow_password_signin\x18\x02 \x01(\bB\x03\xe0A\x03R\x16disallowPasswordSignin\x12p\n" +
 	"\x14password_restriction\x18\x03 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionB\x03\xe0A\x03R\x13passwordRestriction\x12:\n" +
 	"\x17allow_email_code_signin\x18\x04 \x01(\bB\x03\xe0A\x03R\x14allowEmailCodeSignin\x129\n" +
-	"\x16password_reset_enabled\x18\x05 \x01(\bB\x03\xe0A\x03R\x14passwordResetEnabled\"\xbf\x03\n" +
+	"\x16password_reset_enabled\x18\x05 \x01(\bB\x03\xe0A\x03R\x14passwordResetEnabled\"\xdd\x03\n" +
 	"\fLoginRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x10\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12 \n" +
+	"\bpassword\x18\x02 \x01(\tB\x04\xd0\xea0\x01R\bpassword\x12\x10\n" +
 	"\x03web\x18\x03 \x01(\bR\x03web\x12\x19\n" +
 	"\bidp_name\x18\x04 \x01(\tR\aidpName\x12E\n" +
 	"\vidp_context\x18\x05 \x01(\v2$.bytebase.v1.IdentityProviderContextR\n" +
-	"idpContext\x12\x1e\n" +
-	"\botp_code\x18\x06 \x01(\tH\x00R\aotpCode\x88\x01\x01\x12(\n" +
-	"\rrecovery_code\x18\a \x01(\tH\x01R\frecoveryCode\x88\x01\x01\x12)\n" +
-	"\x0emfa_temp_token\x18\b \x01(\tH\x02R\fmfaTempToken\x88\x01\x01\x12\"\n" +
+	"idpContext\x12$\n" +
+	"\botp_code\x18\x06 \x01(\tB\x04\xd0\xea0\x01H\x00R\aotpCode\x88\x01\x01\x12.\n" +
+	"\rrecovery_code\x18\a \x01(\tB\x04\xd0\xea0\x01H\x01R\frecoveryCode\x88\x01\x01\x12/\n" +
+	"\x0emfa_temp_token\x18\b \x01(\tB\x04\xd0\xea0\x01H\x02R\fmfaTempToken\x88\x01\x01\x12(\n" +
 	"\n" +
-	"email_code\x18\t \x01(\tH\x03R\temailCode\x88\x01\x01\x12!\n" +
+	"email_code\x18\t \x01(\tB\x04\xd0\xea0\x01H\x03R\temailCode\x88\x01\x01\x12!\n" +
 	"\tworkspace\x18\n" +
 	" \x01(\tH\x04R\tworkspace\x88\x01\x01B\v\n" +
 	"\t_otp_codeB\x10\n" +
@@ -1164,26 +1164,26 @@ const file_v1_auth_service_proto_rawDesc = "" +
 	"\x17IdentityProviderContext\x12S\n" +
 	"\x0eoauth2_context\x18\x01 \x01(\v2*.bytebase.v1.OAuth2IdentityProviderContextH\x00R\roauth2Context\x12M\n" +
 	"\foidc_context\x18\x02 \x01(\v2(.bytebase.v1.OIDCIdentityProviderContextH\x00R\voidcContextB\t\n" +
-	"\acontext\"3\n" +
-	"\x1dOAuth2IdentityProviderContext\x12\x12\n" +
-	"\x04code\x18\x01 \x01(\tR\x04code\"1\n" +
-	"\x1bOIDCIdentityProviderContext\x12\x12\n" +
-	"\x04code\x18\x01 \x01(\tR\x04code\"\xc0\x01\n" +
-	"\rLoginResponse\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\x12)\n" +
-	"\x0emfa_temp_token\x18\x02 \x01(\tH\x00R\fmfaTempToken\x88\x01\x01\x124\n" +
+	"\acontext\"9\n" +
+	"\x1dOAuth2IdentityProviderContext\x12\x18\n" +
+	"\x04code\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\x04code\"7\n" +
+	"\x1bOIDCIdentityProviderContext\x12\x18\n" +
+	"\x04code\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\x04code\"\xcc\x01\n" +
+	"\rLoginResponse\x12\x1a\n" +
+	"\x05token\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\x05token\x12/\n" +
+	"\x0emfa_temp_token\x18\x02 \x01(\tB\x04\xd0\xea0\x01H\x00R\fmfaTempToken\x88\x01\x01\x124\n" +
 	"\x16require_reset_password\x18\x03 \x01(\bR\x14requireResetPassword\x12%\n" +
 	"\x04user\x18\x04 \x01(\v2\x11.bytebase.v1.UserR\x04userB\x11\n" +
 	"\x0f_mfa_temp_token\"\x0f\n" +
-	"\rLogoutRequest\"B\n" +
-	"\x14ExchangeTokenRequest\x12\x14\n" +
-	"\x05token\x18\x01 \x01(\tR\x05token\x12\x14\n" +
-	"\x05email\x18\x02 \x01(\tR\x05email\":\n" +
-	"\x15ExchangeTokenResponse\x12!\n" +
-	"\faccess_token\x18\x01 \x01(\tR\vaccessToken\"W\n" +
+	"\rLogoutRequest\"H\n" +
+	"\x14ExchangeTokenRequest\x12\x1a\n" +
+	"\x05token\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\x05token\x12\x14\n" +
+	"\x05email\x18\x02 \x01(\tR\x05email\"@\n" +
+	"\x15ExchangeTokenResponse\x12'\n" +
+	"\faccess_token\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\vaccessToken\"]\n" +
 	"\rSignupRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\x12\x14\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12 \n" +
+	"\bpassword\x18\x02 \x01(\tB\x04\xd0\xea0\x01R\bpassword\x12\x14\n" +
 	"\x05title\x18\x03 \x01(\tR\x05title\"\x10\n" +
 	"\x0eRefreshRequest\"\x11\n" +
 	"\x0fRefreshResponse\"d\n" +
@@ -1191,22 +1191,22 @@ const file_v1_auth_service_proto_rawDesc = "" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12!\n" +
 	"\tworkspace\x18\x02 \x01(\tH\x00R\tworkspace\x88\x01\x01B\f\n" +
 	"\n" +
-	"_workspace\"c\n" +
+	"_workspace\"o\n" +
 	"\x14ResetPasswordRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\x12\x12\n" +
-	"\x04code\x18\x02 \x01(\tR\x04code\x12!\n" +
-	"\fnew_password\x18\x03 \x01(\tR\vnewPassword\"b\n" +
+	"\x05email\x18\x01 \x01(\tR\x05email\x12\x18\n" +
+	"\x04code\x18\x02 \x01(\tB\x04\xd0\xea0\x01R\x04code\x12'\n" +
+	"\fnew_password\x18\x03 \x01(\tB\x04\xd0\xea0\x01R\vnewPassword\"b\n" +
 	"\x19SendEmailLoginCodeRequest\x12\x14\n" +
 	"\x05email\x18\x01 \x01(\tR\x05email\x12!\n" +
 	"\tworkspace\x18\x02 \x01(\tH\x00R\tworkspace\x88\x01\x01B\f\n" +
 	"\n" +
-	"_workspace\"\xef\x01\n" +
+	"_workspace\"\x81\x02\n" +
 	"\x16SwitchWorkspaceRequest\x12\x1c\n" +
 	"\tworkspace\x18\x01 \x01(\tR\tworkspace\x12\x10\n" +
-	"\x03web\x18\x02 \x01(\bR\x03web\x12\x1e\n" +
-	"\botp_code\x18\x03 \x01(\tH\x00R\aotpCode\x88\x01\x01\x12(\n" +
-	"\rrecovery_code\x18\x04 \x01(\tH\x01R\frecoveryCode\x88\x01\x01\x12)\n" +
-	"\x0emfa_temp_token\x18\x05 \x01(\tH\x02R\fmfaTempToken\x88\x01\x01B\v\n" +
+	"\x03web\x18\x02 \x01(\bR\x03web\x12$\n" +
+	"\botp_code\x18\x03 \x01(\tB\x04\xd0\xea0\x01H\x00R\aotpCode\x88\x01\x01\x12.\n" +
+	"\rrecovery_code\x18\x04 \x01(\tB\x04\xd0\xea0\x01H\x01R\frecoveryCode\x88\x01\x01\x12/\n" +
+	"\x0emfa_temp_token\x18\x05 \x01(\tB\x04\xd0\xea0\x01H\x02R\fmfaTempToken\x88\x01\x01B\v\n" +
 	"\t_otp_codeB\x10\n" +
 	"\x0e_recovery_codeB\x11\n" +
 	"\x0f_mfa_temp_token2\xc2\n" +

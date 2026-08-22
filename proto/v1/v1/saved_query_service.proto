@@ -466,7 +466,10 @@ message SavedQuery {
 
   // The SQL text. SearchSavedQueries returns a truncated preview;
   // GetSavedQuery returns the full text.
-  bytes content = 8 [(google.api.field_behavior) = REQUIRED];
+  bytes content = 8 [
+    (google.api.field_behavior) = REQUIRED,
+    (bytebase.v1.audit_behavior) = OMIT
+  ];
 
   // The full size of the content, which may exceed the `content` returned.
   int64 content_size = 9 [(google.api.field_behavior) = OUTPUT_ONLY];

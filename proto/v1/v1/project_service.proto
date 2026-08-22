@@ -567,7 +567,10 @@ message Webhook {
   // Required to create a webhook. Not required on TestWebhook, where an empty
   // url on a request that names a webhook means the one already stored, so the
   // field carries no REQUIRED behavior it would contradict there.
-  string url = 4 [(google.api.field_behavior) = INPUT_ONLY];
+  string url = 4 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
 
   // Whether the stored url's endpoint form can carry a direct message to the
   // users an event mentions, rather than only a post to the channel the url

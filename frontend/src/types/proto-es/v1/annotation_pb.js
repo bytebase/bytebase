@@ -9,13 +9,28 @@ import { file_google_protobuf_descriptor } from "@bufbuild/protobuf/wkt";
  * Describes the file v1/annotation.proto.
  */
 export const file_v1_annotation = /*@__PURE__*/
-  fileDesc("ChN2MS9hbm5vdGF0aW9uLnByb3RvEgtieXRlYmFzZS52MSo+CgpBdXRoTWV0aG9kEhsKF0FVVEhfTUVUSE9EX1VOU1BFQ0lGSUVEEAASBwoDSUFNEAESCgoGQ1VTVE9NEAIqZAoOTUNQTWV0aG9kQ2xhc3MSIAocTUNQX01FVEhPRF9DTEFTU19VTlNQRUNJRklFRBAAEggKBFJFQUQQARIJCgVXUklURRACEg0KCUZPUkJJRERFThADEgwKCEVYQ0xVREVEEAQqmQMKD01DUERlbmlhbFJlYXNvbhIhCh1NQ1BfREVOSUFMX1JFQVNPTl9VTlNQRUNJRklFRBAAEhQKEE1JTlRTX0NSRURFTlRJQUwQARIVChFSRVNFVFNfQ1JFREVOVElBTBACEhYKElRBS0VTX09WRVJfQUNDT1VOVBADEhAKDEVORFNfU0VTU0lPThAEEhMKD0VORFNfTUVNQkVSU0hJUBAFEh8KG01JTlRTX0NSRURFTlRJQUxfRk9SX09USEVSUxAGEh0KGVJFV1JJVEVTX1NFU1NJT05fQk9VTkRBUlkQBxIgChxEUklWRVNfVEhFX0FQUFJPVkFMX0RFQ0lTSU9OEAgSHQoZQURNSU5JU1RFUlNfVEhFX1dPUktTUEFDRRAJEhkKFVJFQURTX09USEVSX1VTRVJTX1NRTBAKEh0KGU9QRU5TX0FOX0FETUlOX0NPTk5FQ1RJT04QCxIfChtTRU5EU19EQVRBX1RPX0FfVEhJUkRfUEFSVFkQDBIbChdSRVRVUk5TX0FfU1RPUkVEX1NFQ1JFVBANOloKGGFsbG93X3dpdGhvdXRfY3JlZGVudGlhbBIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKCNBiABKAhSFmFsbG93V2l0aG91dENyZWRlbnRpYWw6QAoKcGVybWlzc2lvbhIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKGNBiABKAlSCnBlcm1pc3Npb246WgoLYXV0aF9tZXRob2QSHi5nb29nbGUucHJvdG9idWYuTWV0aG9kT3B0aW9ucxiijQYgASgOMhcuYnl0ZWJhc2UudjEuQXV0aE1ldGhvZFIKYXV0aE1ldGhvZDo2CgVhdWRpdBIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKONBiABKAhSBWF1ZGl0OmcKEG1jcF9tZXRob2RfY2xhc3MSHi5nb29nbGUucHJvdG9idWYuTWV0aG9kT3B0aW9ucxikjQYgASgOMhsuYnl0ZWJhc2UudjEuTUNQTWV0aG9kQ2xhc3NSDm1jcE1ldGhvZENsYXNzOmoKEW1jcF9kZW5pYWxfcmVhc29uEh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMYpY0GIAEoDjIcLmJ5dGViYXNlLnYxLk1DUERlbmlhbFJlYXNvblIPbWNwRGVuaWFsUmVhc29uQqUBCg9jb20uYnl0ZWJhc2UudjFCD0Fubm90YXRpb25Qcm90b1ABWjRnaXRodWIuY29tL2J5dGViYXNlL2J5dGViYXNlL2JhY2tlbmQvZ2VuZXJhdGVkLWdvL3YxogIDQlhYqgILQnl0ZWJhc2UuVjHKAgtCeXRlYmFzZVxWMeICF0J5dGViYXNlXFYxXEdQQk1ldGFkYXRh6gIMQnl0ZWJhc2U6OlYxYgZwcm90bzM", [file_google_protobuf_descriptor]);
+  fileDesc("ChN2MS9hbm5vdGF0aW9uLnByb3RvEgtieXRlYmFzZS52MSpICg1BdWRpdEJlaGF2aW9yEh4KGkFVRElUX0JFSEFWSU9SX1VOU1BFQ0lGSUVEEAASDQoJU0VOU0lUSVZFEAESCAoET01JVBACKj4KCkF1dGhNZXRob2QSGwoXQVVUSF9NRVRIT0RfVU5TUEVDSUZJRUQQABIHCgNJQU0QARIKCgZDVVNUT00QAipkCg5NQ1BNZXRob2RDbGFzcxIgChxNQ1BfTUVUSE9EX0NMQVNTX1VOU1BFQ0lGSUVEEAASCAoEUkVBRBABEgkKBVdSSVRFEAISDQoJRk9SQklEREVOEAMSDAoIRVhDTFVERUQQBCqZAwoPTUNQRGVuaWFsUmVhc29uEiEKHU1DUF9ERU5JQUxfUkVBU09OX1VOU1BFQ0lGSUVEEAASFAoQTUlOVFNfQ1JFREVOVElBTBABEhUKEVJFU0VUU19DUkVERU5USUFMEAISFgoSVEFLRVNfT1ZFUl9BQ0NPVU5UEAMSEAoMRU5EU19TRVNTSU9OEAQSEwoPRU5EU19NRU1CRVJTSElQEAUSHwobTUlOVFNfQ1JFREVOVElBTF9GT1JfT1RIRVJTEAYSHQoZUkVXUklURVNfU0VTU0lPTl9CT1VOREFSWRAHEiAKHERSSVZFU19USEVfQVBQUk9WQUxfREVDSVNJT04QCBIdChlBRE1JTklTVEVSU19USEVfV09SS1NQQUNFEAkSGQoVUkVBRFNfT1RIRVJfVVNFUlNfU1FMEAoSHQoZT1BFTlNfQU5fQURNSU5fQ09OTkVDVElPThALEh8KG1NFTkRTX0RBVEFfVE9fQV9USElSRF9QQVJUWRAMEhsKF1JFVFVSTlNfQV9TVE9SRURfU0VDUkVUEA06WgoYYWxsb3dfd2l0aG91dF9jcmVkZW50aWFsEh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMYoI0GIAEoCFIWYWxsb3dXaXRob3V0Q3JlZGVudGlhbDpACgpwZXJtaXNzaW9uEh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMYoY0GIAEoCVIKcGVybWlzc2lvbjpaCgthdXRoX21ldGhvZBIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKKNBiABKA4yFy5ieXRlYmFzZS52MS5BdXRoTWV0aG9kUgphdXRoTWV0aG9kOjYKBWF1ZGl0Eh4uZ29vZ2xlLnByb3RvYnVmLk1ldGhvZE9wdGlvbnMYo40GIAEoCFIFYXVkaXQ6ZwoQbWNwX21ldGhvZF9jbGFzcxIeLmdvb2dsZS5wcm90b2J1Zi5NZXRob2RPcHRpb25zGKSNBiABKA4yGy5ieXRlYmFzZS52MS5NQ1BNZXRob2RDbGFzc1IObWNwTWV0aG9kQ2xhc3M6agoRbWNwX2RlbmlhbF9yZWFzb24SHi5nb29nbGUucHJvdG9idWYuTWV0aG9kT3B0aW9ucxiljQYgASgOMhwuYnl0ZWJhc2UudjEuTUNQRGVuaWFsUmVhc29uUg9tY3BEZW5pYWxSZWFzb246YgoOYXVkaXRfYmVoYXZpb3ISHS5nb29nbGUucHJvdG9idWYuRmllbGRPcHRpb25zGKqNBiABKA4yGi5ieXRlYmFzZS52MS5BdWRpdEJlaGF2aW9yUg1hdWRpdEJlaGF2aW9yQqUBCg9jb20uYnl0ZWJhc2UudjFCD0Fubm90YXRpb25Qcm90b1ABWjRnaXRodWIuY29tL2J5dGViYXNlL2J5dGViYXNlL2JhY2tlbmQvZ2VuZXJhdGVkLWdvL3YxogIDQlhYqgILQnl0ZWJhc2UuVjHKAgtCeXRlYmFzZVxWMeICF0J5dGViYXNlXFYxXEdQQk1ldGFkYXRh6gIMQnl0ZWJhc2U6OlYxYgZwcm90bzM", [file_google_protobuf_descriptor]);
+
+/**
+ * Describes the enum bytebase.v1.AuditBehavior.
+ */
+export const AuditBehaviorSchema = /*@__PURE__*/
+  enumDesc(file_v1_annotation, 0);
+
+/**
+ * What an audit payload may carry for a field. One enum rather than a bool per
+ * behavior, because a field has exactly one classification.
+ *
+ * @generated from enum bytebase.v1.AuditBehavior
+ */
+export const AuditBehavior = /*@__PURE__*/
+  tsEnum(AuditBehaviorSchema);
 
 /**
  * Describes the enum bytebase.v1.AuthMethod.
  */
 export const AuthMethodSchema = /*@__PURE__*/
-  enumDesc(file_v1_annotation, 0);
+  enumDesc(file_v1_annotation, 1);
 
 /**
  * Authorization method for RPC calls.
@@ -29,7 +44,7 @@ export const AuthMethod = /*@__PURE__*/
  * Describes the enum bytebase.v1.MCPMethodClass.
  */
 export const MCPMethodClassSchema = /*@__PURE__*/
-  enumDesc(file_v1_annotation, 1);
+  enumDesc(file_v1_annotation, 2);
 
 /**
  * Classification of an RPC for MCP (AI agent) sessions. The effective
@@ -51,7 +66,7 @@ export const MCPMethodClass = /*@__PURE__*/
  * Describes the enum bytebase.v1.MCPDenialReason.
  */
 export const MCPDenialReasonSchema = /*@__PURE__*/
-  enumDesc(file_v1_annotation, 2);
+  enumDesc(file_v1_annotation, 3);
 
 /**
  * Why an MCP session may not call an RPC. The mechanism, not the wording: each
@@ -134,4 +149,12 @@ export const mcp_method_class = /*@__PURE__*/
  */
 export const mcp_denial_reason = /*@__PURE__*/
   extDesc(file_v1_annotation, 5);
+
+/**
+ * How the audit log treats this field.
+ *
+ * @generated from extension: bytebase.v1.AuditBehavior audit_behavior = 100010;
+ */
+export const audit_behavior = /*@__PURE__*/
+  extDesc(file_v1_annotation, 6);
 
