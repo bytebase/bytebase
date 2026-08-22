@@ -265,7 +265,7 @@ message UpdateEmailRequest {
 }
 
 message User {
-  reserved 5, 15;
+  reserved 5, 7, 15;
 
   option (google.api.resource) = {
     type: "bytebase.com/User"
@@ -287,9 +287,6 @@ message User {
 
   // The password for authentication. Only used during user creation or password updates.
   string password = 6 [(google.api.field_behavior) = INPUT_ONLY];
-
-  // The service key for service account authentication.
-  string service_key = 7;
 
   // The mfa_enabled flag means if the user has enabled MFA.
   bool mfa_enabled = 8;

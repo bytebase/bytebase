@@ -52,9 +52,10 @@ func mcpReadOnlyClampApplies(ctx context.Context) (bool, error) {
 // changed default_transaction_read_only to the next transaction, so
 // "SET default_transaction_read_only = off" followed by a classifier-admitted
 // read disarms the depth layer and writes (verified, PG 17). The same bool
-// carries the other rebinding statements — Trino USE and SET ROLE, Redis
-// SELECT — which repoint the connection so a later read resolves somewhere the
-// caller never named.
+// carries the other rebinding statements — Trino USE and SET ROLE — which
+// repoint the connection so a later read resolves somewhere the caller never
+// named. Redis SELECT rebinds the same way but its classifier refuses it as
+// not a read, so it never reaches this tier.
 //
 // Not closed: a structurally-reading statement can still call a function that
 // rewrites the same setting (set_config, BOT-88).
