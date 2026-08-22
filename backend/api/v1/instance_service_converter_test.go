@@ -442,57 +442,88 @@ func TestRetainStoredKeytabs(t *testing.T) {
 	require.Empty(t, moved[1].GetSaslConfig().GetKrbConfig().Keytab)
 }
 
-// assertNoInputOnlyValues walks every populated message field and requires
-// that fields annotated INPUT_ONLY carry no value. It pins the read-path
-// contract: whatever the proto declares write-only must be blanked by the
-// store->v1 converters.
-func assertNoInputOnlyValues(t *testing.T, m protoreflect.Message, path string) {
+// assertNoSensitiveValues walks every populated message field and requires that
+// fields the proto declares write-only or credential-bearing carry no value. It
+// pins the read-path contract: whatever is INPUT_ONLY or SENSITIVE must be
+// blanked by the store->v1 converters. A converter that legitimately mints one
+// — CreateServiceAccount returning the key it just made — is exercised by its
+// own test rather than exempted here, so this walk stays unconditional.
+//
+// SENSITIVE as well as INPUT_ONLY, because the two answer different questions
+// and neither subsumes the other: ServiceAccount.service_key is OUTPUT_ONLY and
+// is a live credential, while IdP client_secret and Login password carry no
+// field_behavior at all.
+func assertNoSensitiveValues(t *testing.T, m protoreflect.Message, path string) {
 	fields := m.Descriptor().Fields()
 	for i := 0; i < fields.Len(); i++ {
 		fd := fields.Get(i)
 		fieldPath := fmt.Sprintf("%s.%s", path, fd.Name())
-		if opts, ok := fd.Options().(*descriptorpb.FieldOptions); ok && opts != nil {
-			behaviors, ok := proto.GetExtension(opts, annotations.E_FieldBehavior).([]annotations.FieldBehavior)
-			if ok && slices.Contains(behaviors, annotations.FieldBehavior_INPUT_ONLY) {
-				// Oneof members may stay present as an is-configured signal
-				// (e.g. the Vault token), so require blank content, not
-				// absence.
-				if m.Has(fd) {
-					blank := false
-					switch {
-					case fd.IsList():
-						blank = m.Get(fd).List().Len() == 0
-					case fd.Kind() == protoreflect.BytesKind:
-						blank = len(m.Get(fd).Bytes()) == 0
-					case fd.Kind() == protoreflect.StringKind:
-						blank = m.Get(fd).String() == ""
-					default:
-					}
-					require.True(t, blank, "INPUT_ONLY field %s must be blank on reads", fieldPath)
-				}
-				continue
+		if isInputOnly(fd) || auditBehaviorOf(fd) == v1pb.AuditBehavior_SENSITIVE {
+			// Oneof members may stay present as an is-configured signal
+			// (e.g. the Vault token), so require blank content, not
+			// absence.
+			if m.Has(fd) {
+				require.True(t, isBlankValue(fd, m.Get(fd)), "write-only field %s must be blank on reads", fieldPath)
 			}
-		}
-		if fd.IsMap() {
 			continue
 		}
-		if fd.Kind() != protoreflect.MessageKind {
+		if fd.IsMap() {
+			// Four converter-reachable maps carry message values, and a
+			// credential inside one would reach a read response with CI green
+			// if the walk stopped here.
+			if isMessageKind(fd.MapValue().Kind()) && m.Has(fd) {
+				m.Get(fd).Map().Range(func(key protoreflect.MapKey, entry protoreflect.Value) bool {
+					assertNoSensitiveValues(t, entry.Message(), fmt.Sprintf("%s[%v]", fieldPath, key))
+					return true
+				})
+			}
+			continue
+		}
+		if !isMessageKind(fd.Kind()) {
 			continue
 		}
 		if fd.IsList() {
 			list := m.Get(fd).List()
 			for j := 0; j < list.Len(); j++ {
-				assertNoInputOnlyValues(t, list.Get(j).Message(), fmt.Sprintf("%s[%d]", fieldPath, j))
+				assertNoSensitiveValues(t, list.Get(j).Message(), fmt.Sprintf("%s[%d]", fieldPath, j))
 			}
 			continue
 		}
 		if m.Has(fd) {
-			assertNoInputOnlyValues(t, m.Get(fd).Message(), fieldPath)
+			assertNoSensitiveValues(t, m.Get(fd).Message(), fieldPath)
 		}
 	}
 }
 
-func TestConvertDataSourcesBlanksEveryInputOnlyField(t *testing.T) {
+// isInputOnly reports whether the proto declares a field write-only.
+func isInputOnly(field protoreflect.FieldDescriptor) bool {
+	options, ok := field.Options().(*descriptorpb.FieldOptions)
+	if !ok || options == nil {
+		return false
+	}
+	behaviors, ok := proto.GetExtension(options, annotations.E_FieldBehavior).([]annotations.FieldBehavior)
+	return ok && slices.Contains(behaviors, annotations.FieldBehavior_INPUT_ONLY)
+}
+
+// InstanceRole.password is INPUT_ONLY and SENSITIVE, and the store message has
+// no password field at all — so reads cannot populate it. This pins that: the
+// audit-side leak this design opens with was the request path, and the read
+// path staying clean is what lets the annotation be SENSITIVE rather than OMIT.
+func TestConvertInstanceRolesBlanksEveryWriteOnlyField(t *testing.T) {
+	instance := &store.InstanceMessage{ResourceID: "instance-a"}
+	roles := []*storepb.InstanceRole{
+		{Name: "admin", Attribute: proto.String("SUPERUSER"), ConnectionLimit: proto.Int32(10)},
+		{Name: "readonly"},
+	}
+	got := convertInstanceRoles(instance, roles)
+	require.Len(t, got, len(roles))
+	for _, role := range got {
+		assertNoSensitiveValues(t, role.ProtoReflect(), fmt.Sprintf("instance_role(%s)", role.GetRoleName()))
+	}
+	require.Equal(t, "instances/instance-a/roles/admin", got[0].GetName())
+}
+
+func TestConvertDataSourcesBlanksEveryWriteOnlyField(t *testing.T) {
 	// One store data source per authentication/secret shape, each with every
 	// secret populated, so the INPUT_ONLY walk covers all converter branches.
 	dataSources := []*storepb.DataSource{
@@ -593,7 +624,7 @@ func TestConvertDataSourcesBlanksEveryInputOnlyField(t *testing.T) {
 	got := convertDataSources(dataSources)
 	require.Len(t, got, len(dataSources))
 	for _, ds := range got {
-		assertNoInputOnlyValues(t, ds.ProtoReflect(), fmt.Sprintf("data_source(%s)", ds.GetId()))
+		assertNoSensitiveValues(t, ds.ProtoReflect(), fmt.Sprintf("data_source(%s)", ds.GetId()))
 	}
 
 	// The AWS credential keeps signaling presence without content.

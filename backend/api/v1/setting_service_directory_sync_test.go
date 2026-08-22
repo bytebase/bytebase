@@ -80,8 +80,7 @@ func TestRotateDirectorySyncTokenRejectsMalformedNames(t *testing.T) {
 func TestRotateDirectorySyncTokenResponseIsRedactedForAudit(t *testing.T) {
 	const token = "b17c0d9e-2222-4000-8000-fedcbafedcba"
 
-	got, err := getResponseString(&v1pb.RotateDirectorySyncTokenResponse{Token: token})
-	require.NoError(t, err)
+	got := marshalAuditPayload(&v1pb.RotateDirectorySyncTokenResponse{Token: token})
 	require.NotContains(t, got, token, "minted SCIM token written to the audit log")
 }
 
