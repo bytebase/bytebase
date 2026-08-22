@@ -305,11 +305,16 @@ func TestMCPClampRefusesWhatItCannotShowIsARead(t *testing.T) {
 		{
 			// Redis SELECT switches the connection's logical database, so the
 			// GET after it reads a database the caller did not ask for.
+			//
+			// Refused as not-a-read rather than as a read returning no data:
+			// Redis does not flag SELECT readonly, so isReadCommand rejects it
+			// outright (#21196). Which of the two reasons fires is the
+			// classifier's business; that it is refused at all is this test's.
 			name:      "Redis SELECT switches the logical database",
 			engine:    storepb.Engine_REDIS,
 			statement: "SELECT 1\nGET secret",
 			refused:   true,
-			reason:    "returns no data",
+			reason:    "is not a read",
 		},
 		{
 			name:      "an unseparated batch is refused rather than read on its first statement",
