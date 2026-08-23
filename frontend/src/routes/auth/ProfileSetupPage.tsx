@@ -212,7 +212,7 @@ export function ProfileSetupPage() {
           title={displayName}
           colorSeed={currentUser?.email}
           size="md"
-          className="!size-16 !text-2xl"
+          className="size-16! text-2xl!"
         />
 
         <div className="text-center">
@@ -266,7 +266,7 @@ export function ProfileSetupPage() {
                 resourceTitle={projectTitle}
                 validate={validateProjectResourceId}
                 onChange={(val) => {
-                  setProjectResourceId(val)
+                  setProjectResourceId(val);
                   if (!val) {
                     setEnableSampleDatabases(false);
                   }
