@@ -134,8 +134,10 @@ type ActuatorInfo struct {
 	UserCountInIam int32 `protobuf:"varint,27,opt,name=user_count_in_iam,json=userCountInIam,proto3" json:"user_count_in_iam,omitempty"`
 	// The number of active VCS users seen in the active window.
 	ActiveVcsUserCount int32 `protobuf:"varint,28,opt,name=active_vcs_user_count,json=activeVcsUserCount,proto3" json:"active_vcs_user_count,omitempty"`
-	unknownFields      protoimpl.UnknownFields
-	sizeCache          protoimpl.SizeCache
+	// Whether a validated Sample Project Instance target is available.
+	SampleProjectInstanceAvailable bool `protobuf:"varint,29,opt,name=sample_project_instance_available,json=sampleProjectInstanceAvailable,proto3" json:"sample_project_instance_available,omitempty"`
+	unknownFields                  protoimpl.UnknownFields
+	sizeCache                      protoimpl.SizeCache
 }
 
 func (x *ActuatorInfo) Reset() {
@@ -273,13 +275,20 @@ func (x *ActuatorInfo) GetActiveVcsUserCount() int32 {
 	return 0
 }
 
+func (x *ActuatorInfo) GetSampleProjectInstanceAvailable() bool {
+	if x != nil {
+		return x.SampleProjectInstanceAvailable
+	}
+	return false
+}
+
 var File_v1_actuator_service_proto protoreflect.FileDescriptor
 
 const file_v1_actuator_service_proto_rawDesc = "" +
 	"\n" +
 	"\x19v1/actuator_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x14\n" +
 	"\x12SetupSampleRequest\"\x18\n" +
-	"\x16GetActuatorInfoRequest\"\x80\x06\n" +
+	"\x16GetActuatorInfoRequest\"\xd0\x06\n" +
 	"\fActuatorInfo\x12\x1d\n" +
 	"\aversion\x18\x01 \x01(\tB\x03\xe0A\x03R\aversion\x12\"\n" +
 	"\n" +
@@ -296,7 +305,8 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\rreplica_count\x18\x18 \x01(\x05B\x03\xe0A\x03R\freplicaCount\x12,\n" +
 	"\x0fdefault_project\x18\x1a \x01(\tB\x03\xe0A\x03R\x0edefaultProject\x12.\n" +
 	"\x11user_count_in_iam\x18\x1b \x01(\x05B\x03\xe0A\x03R\x0euserCountInIam\x126\n" +
-	"\x15active_vcs_user_count\x18\x1c \x01(\x05B\x03\xe0A\x03R\x12activeVcsUserCountJ\x04\b\x03\x10\x04J\x04\b\x05\x10\bJ\x04\b\t\x10\n" +
+	"\x15active_vcs_user_count\x18\x1c \x01(\x05B\x03\xe0A\x03R\x12activeVcsUserCount\x12N\n" +
+	"!sample_project_instance_available\x18\x1d \x01(\bB\x03\xe0A\x03R\x1esampleProjectInstanceAvailableJ\x04\b\x03\x10\x04J\x04\b\x05\x10\bJ\x04\b\t\x10\n" +
 	"J\x04\b\n" +
 	"\x10\vJ\x04\b\f\x10\rJ\x04\b\x0e\x10\x0fJ\x04\b\x10\x10\x14J\x04\b\x19\x10\x1a2\x97\x02\n" +
 	"\x0fActuatorService\x12s\n" +

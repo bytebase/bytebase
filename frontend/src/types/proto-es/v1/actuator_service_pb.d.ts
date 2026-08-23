@@ -152,6 +152,13 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
    * @generated from field: int32 active_vcs_user_count = 28;
    */
   activeVcsUserCount: number;
+
+  /**
+   * Whether a validated Sample Project Instance target is available.
+   *
+   * @generated from field: bool sample_project_instance_available = 29;
+   */
+  sampleProjectInstanceAvailable: boolean;
 };
 
 /**

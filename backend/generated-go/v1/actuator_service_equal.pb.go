@@ -80,5 +80,8 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if x.ActiveVcsUserCount != y.ActiveVcsUserCount {
 		return false
 	}
+	if x.SampleProjectInstanceAvailable != y.SampleProjectInstanceAvailable {
+		return false
+	}
 	return true
 }

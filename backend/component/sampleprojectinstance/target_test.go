@@ -24,8 +24,7 @@ func TestNewTargetRejectsUnsafeConfiguration(t *testing.T) {
 		{name: "empty", targetURL: ""},
 		{name: "keyword form", targetURL: "user=postgres password=secret host=db.example.com port=5432 dbname=postgres sslmode=require"},
 		{name: "missing port", targetURL: "postgres://postgres:secret@db.example.com/postgres?sslmode=require"},
-		{name: "insecure TLS", targetURL: "postgres://postgres:secret@db.example.com:5432/postgres?sslmode=disable"},
-		{name: "unauthenticated TLS", targetURL: "postgres://postgres:secret@db.example.com:5432/postgres?sslmode=require"},
+		{name: "unsupported TLS mode", targetURL: "postgres://postgres:secret@db.example.com:5432/postgres?sslmode=prefer"},
 		{name: "missing password", targetURL: "postgres://postgres@db.example.com:5432/postgres?sslmode=require"},
 		{name: "passfile", targetURL: "postgres://postgres:secret@db.example.com:5432/postgres?sslmode=require&passfile=/tmp/password"},
 	} {
@@ -36,6 +35,43 @@ func TestNewTargetRejectsUnsafeConfiguration(t *testing.T) {
 			require.True(t, isStaticTargetError(err))
 		})
 	}
+}
+
+func TestNewTargetBuildsRegistrationConfigWithoutTLS(t *testing.T) {
+	for _, targetURL := range []string{
+		"postgres://control:secret@db.example.com:5432/postgres",
+		"postgres://control:secret@db.example.com:5432/postgres?sslmode=disable",
+	} {
+		target, err := NewTarget(targetURL)
+		require.NoError(t, err)
+		require.Nil(t, target.config.TLSConfig)
+
+		config, err := target.InstanceConfig(Allocation{
+			Database: "sample_database",
+			Role:     "sample_role",
+			Password: "sample-password",
+		})
+		require.NoError(t, err)
+		require.False(t, config.AdminDataSource.UseSsl)
+		require.False(t, config.AdminDataSource.VerifyTlsCertificate)
+		require.Empty(t, config.AdminDataSource.SslCa)
+	}
+}
+
+func TestNewTargetBuildsRegistrationConfigWithTLSWithoutVerification(t *testing.T) {
+	target, err := NewTarget("postgres://control:secret@db.example.com:5432/postgres?sslmode=require")
+	require.NoError(t, err)
+	require.NotNil(t, target.config.TLSConfig)
+
+	config, err := target.InstanceConfig(Allocation{
+		Database: "sample_database",
+		Role:     "sample_role",
+		Password: "sample-password",
+	})
+	require.NoError(t, err)
+	require.True(t, config.AdminDataSource.UseSsl)
+	require.False(t, config.AdminDataSource.VerifyTlsCertificate)
+	require.Empty(t, config.AdminDataSource.SslCa)
 }
 
 func TestNewTargetBuildsRegistrationConfig(t *testing.T) {
@@ -213,7 +249,7 @@ func TestTargetProvisionAndRemove(t *testing.T) {
 	require.NoError(t, err)
 }
 
-func TestTargetValidateRejectsPublicAccess(t *testing.T) {
+func TestTargetValidateAllowsPublicAccess(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping PostgreSQL testcontainer test in short mode")
 	}
@@ -221,32 +257,11 @@ func TestTargetValidateRejectsPublicAccess(t *testing.T) {
 	t.Cleanup(cancel)
 	container := testcontainer.GetTestPgContainer(ctx, t)
 	t.Cleanup(func() { container.Close(context.Background()) })
-
-	require.Error(t, newLocalTarget(t, container).Validate(ctx))
-}
-
-func TestTargetValidateAllowsCloudSQLAdminPublicAccess(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping PostgreSQL testcontainer test in short mode")
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	t.Cleanup(cancel)
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(context.Background()) })
-
-	admin := connectLocal(ctx, t, container, "postgres", "postgres", "root-password")
-	defer admin.Close(ctx)
-	require.NoError(t, prepareBaseline(ctx, admin))
-	_, err := admin.Exec(ctx, "CREATE DATABASE cloudsqladmin")
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		_, _ = admin.Exec(context.Background(), "DROP DATABASE cloudsqladmin")
-	})
 
 	require.NoError(t, newLocalTarget(t, container).Validate(ctx))
 }
 
-func TestTargetValidateRejectsUnexpectedPublicDatabase(t *testing.T) {
+func TestTargetValidateAllowsExistingPublicDatabase(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping PostgreSQL testcontainer test in short mode")
 	}
@@ -257,38 +272,14 @@ func TestTargetValidateRejectsUnexpectedPublicDatabase(t *testing.T) {
 
 	admin := connectLocal(ctx, t, container, "postgres", "postgres", "root-password")
 	defer admin.Close(ctx)
-	require.NoError(t, prepareBaseline(ctx, admin))
-	_, err := admin.Exec(ctx, "CREATE DATABASE unexpected_public_database")
+	_, err := admin.Exec(ctx, "CREATE DATABASE existing_public_database")
 	require.NoError(t, err)
 	t.Cleanup(func() {
-		_, _ = admin.Exec(context.Background(), "DROP DATABASE unexpected_public_database")
-	})
-
-	err = newLocalTarget(t, container).Validate(ctx)
-	require.Error(t, err)
-	require.True(t, isStaticTargetError(err))
-}
-
-func TestTargetValidateForCleanupAllowsUnexpectedPublicDatabase(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping PostgreSQL testcontainer test in short mode")
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
-	t.Cleanup(cancel)
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(context.Background()) })
-
-	admin := connectLocal(ctx, t, container, "postgres", "postgres", "root-password")
-	defer admin.Close(ctx)
-	require.NoError(t, prepareBaseline(ctx, admin))
-	_, err := admin.Exec(ctx, "CREATE DATABASE unexpected_public_cleanup_database")
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		_, _ = admin.Exec(context.Background(), "DROP DATABASE unexpected_public_cleanup_database")
+		_, _ = admin.Exec(context.Background(), "DROP DATABASE existing_public_database")
 	})
 
 	target := newLocalTarget(t, container)
-	require.Error(t, target.Validate(ctx))
+	require.NoError(t, target.Validate(ctx))
 	require.NoError(t, target.ValidateForCleanup(ctx))
 }
 

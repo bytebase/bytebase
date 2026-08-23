@@ -19020,6 +19020,11 @@ components:
           format: int32
           description: The number of active VCS users seen in the active window.
           readOnly: true
+        sampleProjectInstanceAvailable:
+          type: boolean
+          title: sample_project_instance_available
+          description: Whether a validated Sample Project Instance target is available.
+          readOnly: true
       title: ActuatorInfo
       additionalProperties: false
       description: |-

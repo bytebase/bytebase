@@ -669,6 +669,18 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
               <span>{t("db.project-instance-synced-description")}</span>
               <div className="ml-auto flex flex-wrap items-center gap-x-2 gap-y-2">
                 <PermissionGuard
+                  permissions={PERMISSIONS_FOR_DATABASE_CREATE_ISSUE}
+                  project={project}
+                >
+                  <Button
+                    size="sm"
+                    appearance="outline"
+                    onClick={handleCreateFirstChange}
+                  >
+                    {t("db.project-instance-synced-action")}
+                  </Button>
+                </PermissionGuard>
+                <PermissionGuard
                   permissions={["bb.sql.select"]}
                   project={project}
                 >
@@ -682,18 +694,6 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
                       label={t("db.project-instance-synced-sql-editor-action")}
                     />
                   </span>
-                </PermissionGuard>
-                <PermissionGuard
-                  permissions={PERMISSIONS_FOR_DATABASE_CREATE_ISSUE}
-                  project={project}
-                >
-                  <Button
-                    size="sm"
-                    appearance="outline"
-                    onClick={handleCreateFirstChange}
-                  >
-                    {t("db.project-instance-synced-action")}
-                  </Button>
                 </PermissionGuard>
               </div>
             </div>

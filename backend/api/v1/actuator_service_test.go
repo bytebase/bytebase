@@ -13,6 +13,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/sampleprojectinstance"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -38,7 +39,14 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 		GitCommit:   "sensitive-commit",
 		ExternalURL: "https://bytebase.example.com",
 	}
-	actuatorService := NewActuatorService(stores, profile, nil, licenseService, nil)
+	sampleProjectManager, err := sampleprojectinstance.NewManagerFromURL(
+		nil,
+		fmt.Sprintf("postgresql://postgres:root-password@%s:%s/postgres?sslmode=disable", container.GetHost(), container.GetPort()),
+		nil,
+		sampleprojectinstance.ManagerOptions{},
+	)
+	require.NoError(t, err)
+	actuatorService := NewActuatorService(stores, profile, nil, licenseService, nil, sampleProjectManager)
 	authService := NewAuthService(stores, "test-secret", licenseService, profile, nil)
 
 	publicResponse, err := authService.GetAuthenticationRestriction(ctx, connect.NewRequest(&v1pb.GetAuthenticationRestrictionRequest{}))
@@ -97,4 +105,5 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	require.Equal(t, "sensitive-commit", privateResponse.Msg.GitCommit)
 	require.Equal(t, common.FormatWorkspace(workspaceID), privateResponse.Msg.Workspace)
 	require.NotEmpty(t, privateResponse.Msg.DefaultProject)
+	require.True(t, privateResponse.Msg.SampleProjectInstanceAvailable)
 }

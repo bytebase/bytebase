@@ -301,6 +301,29 @@ describe("WorkspaceSetupGuide", () => {
     });
   });
 
+  it("renders the setup guide with prominent controls", async () => {
+    await render(<WorkspaceSetupGuide />);
+
+    expect(container.firstElementChild?.getAttribute("class")).toContain(
+      "py-4"
+    );
+    expect(
+      container
+        .querySelector("[data-testid='setup-step-hasProject']")
+        ?.getAttribute("class")
+    ).toContain("text-base");
+    expect(
+      container
+        .querySelector("[data-testid='setup-step-hasProject']")
+        ?.getAttribute("class")
+    ).toContain("py-2");
+    expect(
+      container
+        .querySelector("[data-testid='dismiss-guide']")
+        ?.getAttribute("class")
+    ).toContain("h-9");
+  });
+
   it("hides when the workspace has more than one member", async () => {
     mocks.workspacePolicy = {
       bindings: [
@@ -681,15 +704,31 @@ describe("WorkspaceSetupGuide", () => {
     expect(container.querySelector("[data-testid='active-action']")).toBeNull();
   });
 
-  it("does not highlight the create project step on project database pages", async () => {
+  it("highlights the active query step on project database pages", async () => {
     mocks.currentRoute = { name: "workspace.project.database" };
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-a" }],
       nextPageToken: "",
     });
+    mocks.fetchInstanceList.mockImplementation(
+      async (params?: { parent?: string }) => ({
+        instances:
+          params?.parent === "projects/project-a"
+            ? [{ name: "projects/project-a/instances/instance-a" }]
+            : [],
+        nextPageToken: "",
+      })
+    );
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [{ name: "instances/instance-a/databases/db-a" }],
+      nextPageToken: "",
+    });
 
     await render(<WorkspaceSetupGuide />);
 
+    expect(mocks.fetchInstanceList).toHaveBeenCalledWith(
+      expect.objectContaining({ parent: "projects/project-a" })
+    );
     expect(
       container
         .querySelector("[data-testid='setup-step-hasProject']")
@@ -700,8 +739,14 @@ describe("WorkspaceSetupGuide", () => {
         .querySelector("[data-testid='setup-step-hasInstance']")
         ?.getAttribute("class")
     ).not.toContain("bg-accent/10");
-
-    expect(container.querySelector("[data-testid='active-action']")).toBeNull();
+    expect(
+      container
+        .querySelector("[data-testid='setup-step-hasFirstQuery']")
+        ?.getAttribute("class")
+    ).toContain("bg-accent/10");
+    expect(
+      container.querySelector("[data-testid='active-action']")
+    ).not.toBeNull();
   });
 
   it("does not highlight the next setup step on unrelated pages", async () => {

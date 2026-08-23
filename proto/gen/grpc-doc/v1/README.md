@@ -1156,6 +1156,7 @@ Actuator concept is similar to the Spring Boot Actuator.
 | default_project | [string](#string) |  | The default project for unassigned databases. Format: projects/{id} |
 | user_count_in_iam | [int32](#int32) |  | The number of users in the workspace IAM (for seat limit display). |
 | active_vcs_user_count | [int32](#int32) |  | The number of active VCS users seen in the active window. |
+| sample_project_instance_available | [bool](#bool) |  | Whether a validated Sample Project Instance target is available. |
 
 
 

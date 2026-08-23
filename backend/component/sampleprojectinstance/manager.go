@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -22,12 +23,13 @@ import (
 
 const (
 	sampleProjectInstanceTitle = "Sample Project Instance"
-	testEnvironmentID          = "test"
 	sampleLifetime             = 7 * 24 * time.Hour
 	prepareDeadline            = 3 * time.Minute
 	provisionDeadline          = 2 * time.Minute
 	compensationDeadline       = time.Minute
 	cleanupValidationDeadline  = 10 * time.Second
+	targetAvailabilityDeadline = 3 * time.Second
+	targetAvailabilityCacheTTL = time.Minute
 	cleanupAttemptDeadline     = time.Minute
 	staleReservationAge        = time.Hour
 	replicaHeartbeatStaleness  = time.Minute
@@ -161,33 +163,34 @@ type ManagerOptions struct {
 // Manager orchestrates reservation, physical provisioning, metadata
 // registration, discovery, expiration, and cleanup.
 type Manager struct {
-	store     *store.Store
-	target    *Target
-	targetErr error
-	syncer    *schemasync.Syncer
-	clock     func() time.Time
-	random    io.Reader
-	logger    *slog.Logger
-	replicaID string
+	store  *store.Store
+	target *Target
+	syncer *schemasync.Syncer
+	clock  func() time.Time
+	random io.Reader
+	logger *slog.Logger
+
+	targetAvailabilityMu        sync.Mutex
+	targetAvailabilityCheckedAt time.Time
+	targetAvailable             bool
+	replicaID                   string
 }
 
-// NewManagerFromURL creates a startup-safe manager from raw target
-// configuration. Invalid static configuration is retained for lifecycle calls
-// instead of failing process startup.
+// NewManagerFromURL creates a manager from raw target configuration.
 func NewManagerFromURL(
 	s *store.Store,
 	targetURL string,
 	syncer *schemasync.Syncer,
 	options ManagerOptions,
-) *Manager {
+) (*Manager, error) {
 	target, err := NewTarget(targetURL)
-	manager := NewManager(s, target, syncer, options)
-	manager.targetErr = err
-	return manager
+	if err != nil {
+		return nil, err
+	}
+	return newManager(s, target, syncer, options), nil
 }
 
-// NewManager creates a Sample Project Instance lifecycle manager.
-func NewManager(
+func newManager(
 	s *store.Store,
 	target *Target,
 	syncer *schemasync.Syncer,
@@ -213,9 +216,49 @@ func NewManager(
 	}
 }
 
+// ValidateTarget verifies the configured target before enabling Sample Project
+// Instance provisioning.
+func (m *Manager) ValidateTarget(ctx context.Context) error {
+	if m == nil || m.target == nil {
+		return errors.New("sample project instance target is not configured")
+	}
+	validationCtx, cancel := context.WithTimeout(ctx, cleanupValidationDeadline)
+	defer cancel()
+	err := m.target.Validate(validationCtx)
+	m.recordTargetAvailability(err == nil)
+	return err
+}
+
+// Available reports cached target readiness, refreshing stale state with a
+// short validation probe.
+func (m *Manager) Available(ctx context.Context) bool {
+	if m == nil || m.target == nil {
+		return false
+	}
+	m.targetAvailabilityMu.Lock()
+	defer m.targetAvailabilityMu.Unlock()
+
+	now := m.clock()
+	if !m.targetAvailabilityCheckedAt.IsZero() && now.Before(m.targetAvailabilityCheckedAt.Add(targetAvailabilityCacheTTL)) {
+		return m.targetAvailable
+	}
+	validationCtx, cancel := context.WithTimeout(ctx, targetAvailabilityDeadline)
+	defer cancel()
+	m.targetAvailable = m.target.Validate(validationCtx) == nil
+	m.targetAvailabilityCheckedAt = m.clock()
+	return m.targetAvailable
+}
+
+func (m *Manager) recordTargetAvailability(available bool) {
+	m.targetAvailabilityMu.Lock()
+	defer m.targetAvailabilityMu.Unlock()
+	m.targetAvailable = available
+	m.targetAvailabilityCheckedAt = m.clock()
+}
+
 // Prepare provisions and registers a seven-day sample instance for a project.
 func (m *Manager) Prepare(ctx context.Context, request PrepareRequest) (*PrepareResult, error) {
-	if m.store == nil || (m.target == nil && m.targetErr == nil) || m.syncer == nil || m.replicaID == "" {
+	if m.store == nil || m.target == nil || m.syncer == nil || m.replicaID == "" {
 		return nil, errors.New("sample project instance manager is not configured")
 	}
 	if request.WorkspaceID == "" || request.ProjectID == "" {
@@ -339,9 +382,6 @@ func (m *Manager) prepareOwned(
 	workCtx, workCancel := preparationWorkContext(lifecycleCtx)
 	defer workCancel()
 	if takeover {
-		if m.targetErr != nil {
-			return nil, mapTargetError(m.targetErr)
-		}
 		m.logger.InfoContext(workCtx, "reconciling stale sample project instance reservation", "workspace", request.WorkspaceID)
 		if err := m.reconcile(workCtx, allocation, reservation.InstanceID, request); err != nil {
 			m.logger.ErrorContext(workCtx, "failed to reconcile stale sample project instance reservation", "workspace", request.WorkspaceID, "error", err)
@@ -349,10 +389,7 @@ func (m *Manager) prepareOwned(
 		}
 	}
 
-	if m.targetErr != nil {
-		return nil, m.discardReservation(lifecycleCtx, reservation, mapTargetError(m.targetErr))
-	}
-	if err := m.target.Validate(workCtx); err != nil {
+	if err := m.ValidateTarget(workCtx); err != nil {
 		return nil, m.discardReservation(lifecycleCtx, reservation, mapTargetError(err))
 	}
 	if request.CheckCreatePolicy != nil {
@@ -369,16 +406,8 @@ func (m *Manager) prepareOwned(
 		return nil, m.discardReservation(lifecycleCtx, reservation, errors.Join(errors.New("failed to inspect sample project instance environments"), err))
 	}
 	environmentID := ""
-	for _, environment := range environments.GetEnvironments() {
-		if environmentID == "" || environment.Id == testEnvironmentID {
-			environmentID = environment.Id
-		}
-		if environment.Id == testEnvironmentID {
-			break
-		}
-	}
-	if environmentID == "" {
-		return nil, m.discardReservation(lifecycleCtx, reservation, newFailure(FailureFailedPrecondition, errors.New("sample project instance requires an environment")))
+	if environments := environments.GetEnvironments(); len(environments) > 0 {
+		environmentID = environments[0].Id
 	}
 
 	password, err := randomPassword(m.random)
@@ -534,15 +563,12 @@ func (m *Manager) handleActivationFailure(
 
 // Cleanup removes expired target resources and reconciles stale reservations.
 func (m *Manager) Cleanup(ctx context.Context, now time.Time) error {
-	if m.store == nil || (m.target == nil && m.targetErr == nil) {
+	if m.store == nil || m.target == nil {
 		return errors.New("sample project instance manager is not configured")
 	}
-	targetErr := m.targetErr
-	if targetErr == nil {
-		validationCtx, validationCancel := context.WithTimeout(ctx, cleanupValidationDeadline)
-		targetErr = m.target.ValidateForCleanup(validationCtx)
-		validationCancel()
-	}
+	validationCtx, validationCancel := context.WithTimeout(ctx, cleanupValidationDeadline)
+	targetErr := m.target.ValidateForCleanup(validationCtx)
+	validationCancel()
 	if targetErr != nil {
 		count, countErr := m.store.CountSampleProjectInstancesForCleanup(ctx, now, now.Add(-staleReservationAge))
 		if countErr != nil {

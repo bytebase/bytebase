@@ -8369,6 +8369,10 @@ components:
           title: active_vcs_user_count
           format: int32
           description: The number of active VCS users seen in the active window.
+        sampleProjectInstanceAvailable:
+          type: boolean
+          title: sample_project_instance_available
+          description: Whether a validated Sample Project Instance target is available.
       title: ActuatorInfo
       additionalProperties: false
       description: |-

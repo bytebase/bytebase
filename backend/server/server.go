@@ -224,13 +224,16 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	}
 	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory, s.licenseService, productMetrics)
 	if profile.SaaS {
-		s.sampleProjectManager = sampleprojectinstance.NewManagerFromURL(
-			stores,
+		s.sampleProjectManager = configureSampleProjectManager(
+			ctx,
 			profile.SampleProjectInstancePgURL,
+			stores,
 			s.schemaSyncer,
-			sampleprojectinstance.ManagerOptions{ReplicaID: profile.ReplicaID},
+			profile.ReplicaID,
 		)
-		s.sampleProjectRunner = sampleprojectinstancerunner.NewRunner(s.sampleProjectManager)
+		if s.sampleProjectManager != nil {
+			s.sampleProjectRunner = sampleprojectinstancerunner.NewRunner(s.sampleProjectManager)
+		}
 	}
 	s.approvalRunner = review.NewRunner(stores, s.bus, s.webhookManager, s.licenseService)
 
@@ -268,6 +271,32 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	serverStarted = true
 	return s, nil
+}
+
+func configureSampleProjectManager(
+	ctx context.Context,
+	targetURL string,
+	stores *store.Store,
+	syncer *schemasync.Syncer,
+	replicaID string,
+) *sampleprojectinstance.Manager {
+	if targetURL == "" {
+		return nil
+	}
+	manager, err := sampleprojectinstance.NewManagerFromURL(
+		stores,
+		targetURL,
+		syncer,
+		sampleprojectinstance.ManagerOptions{ReplicaID: replicaID},
+	)
+	if err != nil {
+		slog.Warn("invalid SAMPLE_PROJECT_INSTANCE_PG_URL; Sample Project Instance is disabled", log.BBError(err))
+		return nil
+	}
+	if err := manager.ValidateTarget(ctx); err != nil {
+		slog.Warn("Sample Project Instance target is temporarily unavailable", log.BBError(err))
+	}
+	return manager
 }
 
 // Run will run the server.

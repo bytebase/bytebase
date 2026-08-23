@@ -94,4 +94,7 @@ message ActuatorInfo {
 
   // The number of active VCS users seen in the active window.
   int32 active_vcs_user_count = 28 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Whether a validated Sample Project Instance target is available.
+  bool sample_project_instance_available = 29 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

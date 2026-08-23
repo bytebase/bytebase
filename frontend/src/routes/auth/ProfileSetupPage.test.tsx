@@ -38,11 +38,13 @@ const mocks = vi.hoisted(() => ({
   updateUser: vi.fn(),
   updateWorkspace: vi.fn(),
   createProject: vi.fn(),
+  prepareSampleProjectInstance: vi.fn(),
   setRecentProject: vi.fn(),
   routerReplace: vi.fn(),
   pushNotification: vi.fn(),
   hasWorkspacePermissionV2: vi.fn(() => false),
   canCreateProject: true,
+  sampleProjectInstanceAvailable: true,
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
@@ -64,12 +66,19 @@ vi.mock("@/stores/app", () => ({
       workspacePolicy: IamPolicy;
       updateUser: typeof mocks.updateUser;
       updateWorkspace: typeof mocks.updateWorkspace;
+      prepareSampleProjectInstance: typeof mocks.prepareSampleProjectInstance;
+      serverInfo: { sampleProjectInstanceAvailable: boolean };
     }) => unknown
   ) =>
     selector({
       workspacePolicy: mocks.workspacePolicy,
       updateUser: mocks.updateUser,
       updateWorkspace: mocks.updateWorkspace,
+      prepareSampleProjectInstance: mocks.prepareSampleProjectInstance,
+      serverInfo: {
+        sampleProjectInstanceAvailable:
+          mocks.sampleProjectInstanceAvailable,
+      },
     }),
 }));
 
@@ -109,6 +118,8 @@ vi.mock("@/stores", () => ({
 }));
 
 vi.mock("@/utils", () => ({
+  extractInstanceResourceName: (name: string) =>
+    name.match(/(?:^|\/)instances\/([^/]+)/)?.[1] ?? "",
   extractProjectResourceName: (name: string) => name.split("/").pop() ?? "",
   hasWorkspacePermissionV2: mocks.hasWorkspacePermissionV2,
 }));
@@ -125,6 +136,11 @@ vi.mock("react-i18next", () => ({
         ({
           "settings.profile.setup-title": "Welcome! Set up your workspace",
           "settings.profile.setup-first-project": "Setup 1st project",
+          "settings.profile.enable-sample-databases":
+            "Enable sample databases",
+          "settings.profile.setup-submit": "Setup my workspace",
+          "instance.prepare-sample-instance-failed":
+            "Failed to prepare Sample Project Instance.",
           "settings.profile.default-project-name": "New project",
           "settings.profile.create-project-description":
             "Optional. If you create a project here, we will take you to its database page next.",
@@ -156,6 +172,7 @@ beforeEach(async () => {
   vi.clearAllMocks();
   mocks.canUpdateWorkspace = true;
   mocks.canCreateProject = true;
+  mocks.sampleProjectInstanceAvailable = true;
   mocks.workspacePolicy = {
     bindings: [
       {
@@ -168,6 +185,9 @@ beforeEach(async () => {
     name: "projects/new-project",
     title: "New Project",
   });
+  mocks.prepareSampleProjectInstance.mockResolvedValue({
+    name: "projects/new-project/instances/sample",
+  });
   ({ ProfileSetupPage } = await import("./ProfileSetupPage"));
 });
 
@@ -178,8 +198,9 @@ describe("ProfileSetupPage", () => {
     });
 
     expect(source).toContain(
-      "query: { [PRODUCT_INTRO_QUERY_KEY]: CONNECT_DATABASE_PRODUCT_INTRO }"
+      "[PRODUCT_INTRO_QUERY_KEY]: CONNECT_DATABASE_PRODUCT_INTRO"
     );
+    expect(source).toContain("PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO");
     expect(source).toContain(
       "query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO }"
     );
@@ -269,8 +290,15 @@ describe("ProfileSetupPage", () => {
       )
     ).toBe(false);
 
+    const sampleCheckbox = page.container.querySelector(
+      "[data-testid='enable-sample-databases']"
+    ) as HTMLButtonElement;
+    expect(sampleCheckbox).toBeChecked();
+    expect(sampleCheckbox).toBeEnabled();
+    expect(page.container.textContent).toContain("Enable sample databases");
+
     const save = Array.from(page.container.querySelectorAll("button")).find(
-      (button) => button.textContent?.includes("common.save")
+      (button) => button.textContent?.includes("Setup my workspace")
     ) as HTMLButtonElement;
     await act(async () => {
       save.click();
@@ -283,10 +311,19 @@ describe("ProfileSetupPage", () => {
       "new-project"
     );
     expect(mocks.setRecentProject).toHaveBeenCalledWith("projects/new-project");
+    expect(mocks.prepareSampleProjectInstance).toHaveBeenCalledWith(
+      "projects/new-project"
+    );
+    expect(mocks.createProject.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.prepareSampleProjectInstance.mock.invocationCallOrder[0]
+    );
     expect(mocks.routerReplace).toHaveBeenCalledWith({
       name: "workspace.project.database",
       params: { projectId: "new-project" },
-      query: { intro: "connect-database" },
+      query: {
+        syncingInstance: "sample",
+        intro: "project-instance-synced",
+      },
     });
 
     page.unmount();
@@ -309,9 +346,28 @@ describe("ProfileSetupPage", () => {
     expect(
       page.container.querySelector("[data-testid='project-resource-id']")
     ).toBeNull();
+    const sampleCheckbox = page.container.querySelector(
+      "[data-testid='enable-sample-databases']"
+    ) as HTMLButtonElement;
+    expect(sampleCheckbox).not.toBeChecked();
+    expect(sampleCheckbox).toHaveAttribute("aria-disabled", "true");
+
+    await act(async () => {
+      fireEvent.change(projectNameInput, {
+        target: { value: "Replacement project" },
+      });
+      await Promise.resolve();
+    });
+    expect(sampleCheckbox).not.toBeChecked();
+    expect(sampleCheckbox).not.toHaveAttribute("aria-disabled", "true");
+
+    await act(async () => {
+      fireEvent.change(projectNameInput, { target: { value: "" } });
+      await Promise.resolve();
+    });
 
     const save = Array.from(page.container.querySelectorAll("button")).find(
-      (button) => button.textContent?.includes("common.save")
+      (button) => button.textContent?.includes("Setup my workspace")
     ) as HTMLButtonElement;
     await act(async () => {
       save.click();
@@ -320,11 +376,92 @@ describe("ProfileSetupPage", () => {
     });
 
     expect(mocks.createProject).not.toHaveBeenCalled();
+    expect(mocks.prepareSampleProjectInstance).not.toHaveBeenCalled();
     expect(mocks.setRecentProject).not.toHaveBeenCalled();
     expect(mocks.routerReplace).toHaveBeenCalledWith({
       name: "workspace.project",
       query: { intro: "create-project" },
     });
+
+    page.unmount();
+  });
+
+  test("does not prepare sample databases when the user opts out", async () => {
+    const page = renderIntoContainer(<ProfileSetupPage />);
+
+    page.render();
+
+    const sampleCheckbox = page.container.querySelector(
+      "[data-testid='enable-sample-databases']"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      sampleCheckbox.click();
+    });
+    expect(sampleCheckbox).not.toBeChecked();
+
+    const submit = Array.from(page.container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("Setup my workspace")
+    ) as HTMLButtonElement;
+    await act(async () => {
+      submit.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.createProject).toHaveBeenCalled();
+    expect(mocks.prepareSampleProjectInstance).not.toHaveBeenCalled();
+    expect(mocks.routerReplace).toHaveBeenCalledWith({
+      name: "workspace.project.database",
+      params: { projectId: "new-project" },
+      query: { intro: "connect-database" },
+    });
+
+    page.unmount();
+  });
+
+  test("finishes setup when sample database preparation fails", async () => {
+    mocks.prepareSampleProjectInstance.mockRejectedValue(
+      new Error("sample target unavailable")
+    );
+    const page = renderIntoContainer(<ProfileSetupPage />);
+
+    page.render();
+
+    const submit = Array.from(page.container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("Setup my workspace")
+    ) as HTMLButtonElement;
+    await act(async () => {
+      submit.click();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.pushNotification).toHaveBeenCalledWith(
+      expect.objectContaining({
+        style: "CRITICAL",
+        title: "Failed to prepare Sample Project Instance.",
+      })
+    );
+    expect(mocks.routerReplace).toHaveBeenCalledWith({
+      name: "workspace.project.database",
+      params: { projectId: "new-project" },
+      query: { intro: "connect-database" },
+    });
+
+    page.unmount();
+  });
+
+  test("hides sample database setup when the target is unavailable", () => {
+    mocks.sampleProjectInstanceAvailable = false;
+    const page = renderIntoContainer(<ProfileSetupPage />);
+
+    page.render();
+
+    expect(
+      page.container.querySelector(
+        "[data-testid='enable-sample-databases']"
+      )
+    ).toBeNull();
 
     page.unmount();
   });

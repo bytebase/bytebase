@@ -581,9 +581,9 @@ describe("ProjectDatabasesPage", () => {
     expect(sqlEditorButton.className).toContain("bg-accent");
     expect(nextActionButton.className).toContain("border-control-border");
     expect(
-      sqlEditorButton.compareDocumentPosition(nextActionButton) &
+      nextActionButton.compareDocumentPosition(sqlEditorButton) &
         Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy();
+    ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     await act(async () => {
       sqlEditorButton.click();
     });

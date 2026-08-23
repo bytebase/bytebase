@@ -17,6 +17,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/sampleinstance"
+	"github.com/bytebase/bytebase/backend/component/sampleprojectinstance"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -28,11 +29,12 @@ import (
 // ActuatorService implements the Connect RPC interface for ActuatorService.
 type ActuatorService struct {
 	v1connect.UnimplementedActuatorServiceHandler
-	store                 *store.Store
-	profile               *config.Profile
-	licenseService        *enterprise.LicenseService
-	schemaSyncer          *schemasync.Syncer
-	sampleInstanceManager *sampleinstance.Manager
+	store                        *store.Store
+	profile                      *config.Profile
+	licenseService               *enterprise.LicenseService
+	schemaSyncer                 *schemasync.Syncer
+	sampleInstanceManager        *sampleinstance.Manager
+	sampleProjectInstanceManager *sampleprojectinstance.Manager
 
 	activeVCSUserCountSnapshot *expirable.LRU[string, int]
 }
@@ -46,14 +48,16 @@ func NewActuatorService(
 	schemaSyncer *schemasync.Syncer,
 	licenseService *enterprise.LicenseService,
 	sampleInstanceManager *sampleinstance.Manager,
+	sampleProjectInstanceManager *sampleprojectinstance.Manager,
 ) *ActuatorService {
 	return &ActuatorService{
-		store:                      store,
-		profile:                    profile,
-		licenseService:             licenseService,
-		schemaSyncer:               schemaSyncer,
-		sampleInstanceManager:      sampleInstanceManager,
-		activeVCSUserCountSnapshot: expirable.NewLRU[string, int](1024, nil, activeVCSUserCountSnapshotTTL),
+		store:                        store,
+		profile:                      profile,
+		licenseService:               licenseService,
+		schemaSyncer:                 schemaSyncer,
+		sampleInstanceManager:        sampleInstanceManager,
+		sampleProjectInstanceManager: sampleProjectInstanceManager,
+		activeVCSUserCountSnapshot:   expirable.NewLRU[string, int](1024, nil, activeVCSUserCountSnapshotTTL),
 	}
 }
 
@@ -107,14 +111,16 @@ func (s *ActuatorService) SetupSample(
 }
 
 func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string) (*v1pb.ActuatorInfo, error) {
+	sampleProjectInstanceAvailable := s.sampleProjectInstanceManager != nil && s.sampleProjectInstanceManager.Available(ctx)
 	serverInfo := v1pb.ActuatorInfo{
-		Version:             s.profile.Version,
-		GitCommit:           s.profile.GitCommit,
-		Saas:                s.profile.SaaS,
-		LastActiveTime:      timestamppb.New(time.Unix(s.profile.LastActiveTS.Load(), 0)),
-		ExternalUrlFromFlag: s.profile.ExternalURL != "",
-		ReplicaCount:        int32(s.licenseService.CountActiveReplicas(ctx)),
-		ExternalUrl:         s.profile.ExternalURL,
+		Version:                        s.profile.Version,
+		GitCommit:                      s.profile.GitCommit,
+		Saas:                           s.profile.SaaS,
+		LastActiveTime:                 timestamppb.New(time.Unix(s.profile.LastActiveTS.Load(), 0)),
+		ExternalUrlFromFlag:            s.profile.ExternalURL != "",
+		ReplicaCount:                   int32(s.licenseService.CountActiveReplicas(ctx)),
+		ExternalUrl:                    s.profile.ExternalURL,
+		SampleProjectInstanceAvailable: sampleProjectInstanceAvailable,
 	}
 
 	if workspaceID != "" {
