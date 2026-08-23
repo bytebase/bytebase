@@ -5,6 +5,7 @@ import (
 	"html"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/labstack/echo/v5"
 	spb "google.golang.org/genproto/googleapis/rpc/status"
@@ -17,34 +18,15 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// consentRefusal is what a user is told about one verdict. The heading is
-// carried beside the sentence rather than written once for the page, because
-// the three states have different fixes and a heading that names the wrong one
-// is the part a hurried reader acts on.
-type consentRefusal struct {
-	heading  string
-	sentence string
-}
-
-// One entry per way the workspace's MCP policy refuses a consent: the
-// connection gate's three, said about the authorization instead of the session.
-// A user who meets both boundaries must hear one story about their workspace.
-var consentRefusals = map[auth.MCPCeilingVerdict]consentRefusal{
-	auth.MCPCeilingDisabled: {
-		heading: "MCP access is turned off",
-		sentence: "A workspace admin has turned MCP access off for this workspace, " +
-			"so no client can be authorized. Ask a workspace admin to raise the MCP ceiling in the workspace settings.",
-	},
-	auth.MCPCeilingUnreadable: {
-		heading: "This workspace's MCP setting cannot be read",
-		sentence: "This workspace's stored MCP capability ceiling is not one this build understands, " +
-			"so authorization fails closed. Ask a workspace admin to set the MCP ceiling again in the workspace settings.",
-	},
-	auth.MCPCeilingUnserved: {
-		heading: "This workspace's MCP setting is not one this version supports",
-		sentence: "This workspace's stored MCP capability ceiling is not one this build serves, " +
-			"so authorization fails closed. Ask a workspace admin to set the MCP ceiling to a supported value in the workspace settings.",
-	},
+// One heading per way the workspace's MCP policy refuses a consent. Only the
+// heading is local: it is page copy, this is its one consumer, and the three
+// states have different fixes, so a heading naming the wrong one is the part a
+// hurried reader acts on. The sentence under it is the verdict's own
+// (auth.MCPCeilingVerdict.Refusal), shared with every other door.
+var consentHeadings = map[auth.MCPCeilingVerdict]string{
+	auth.MCPCeilingDisabled:   "MCP access is turned off",
+	auth.MCPCeilingUnreadable: "This workspace's MCP setting cannot be read",
+	auth.MCPCeilingUnserved:   "This workspace's MCP setting is not one this version supports",
 }
 
 // consentAttempt is the consent a ceiling check may refuse: who is consenting,
@@ -90,13 +72,13 @@ func (s *Service) refuseConsentByCeiling(c *echo.Context, attempt consentAttempt
 		// during a database blip sends them to an admin with nothing to fix.
 		slog.Error("failed to read the MCP capability ceiling; cannot grant the consent", log.BBError(err))
 		return true, oauth2ErrorRedirect(c, attempt.redirectURI, attempt.state, "temporarily_unavailable",
-			"cannot read the MCP policy; retry shortly")
+			verdict.Refusal())
 	}
 	if err != nil {
 		slog.Warn("the stored MCP capability ceiling cannot be interpreted; refusing the consent",
 			slog.String("workspace", attempt.user.workspaceID), log.BBError(err))
 	}
-	return true, s.refuseConsent(c, attempt, consentRefusals[verdict])
+	return true, s.refuseConsent(c, attempt, verdict)
 }
 
 // refuseConsent records the refusal and renders the page the user sees.
@@ -108,7 +90,7 @@ func (s *Service) refuseConsentByCeiling(c *echo.Context, attempt consentAttempt
 //
 // The row is written here for the same reason the connection gate writes its
 // own: this route is echo, so no interceptor sees it.
-func (s *Service) refuseConsent(c *echo.Context, attempt consentAttempt, refusal consentRefusal) error {
+func (s *Service) refuseConsent(c *echo.Context, attempt consentAttempt, verdict auth.MCPCeilingVerdict) error {
 	row := &storepb.AuditLog{
 		Parent:   common.FormatWorkspace(attempt.user.workspaceID),
 		Method:   common.AuditMethodMCPConsentApprove,
@@ -117,7 +99,7 @@ func (s *Service) refuseConsent(c *echo.Context, attempt consentAttempt, refusal
 		User:     common.FormatUserEmail(attempt.user.email),
 		Status: &spb.Status{
 			Code:    int32(codes.PermissionDenied),
-			Message: refusal.sentence,
+			Message: verdict.Refusal(),
 		},
 		RequestMetadata: common.RequestMetadataFromHTTP(c.Request()),
 		// The MCP provenance this flow has: the client asking, and the
@@ -131,14 +113,14 @@ func (s *Service) refuseConsent(c *echo.Context, attempt consentAttempt, refusal
 	}
 	common.RecordOutOfBandAudit(c.Request().Context(), s.store,
 		s.profile.RuntimeEnableAuditLogStdout.Load(), attempt.user.workspaceID, row)
-	return c.HTML(http.StatusForbidden, consentRefusedHTML(refusal, attempt.redirectURI, attempt.state))
+	return c.HTML(http.StatusForbidden, consentRefusedHTML(verdict, attempt.redirectURI, attempt.state))
 }
 
 // consentRefusedHTML renders the refusal. Inline styles only: the global CSP
 // allows inline style and blocks inline script, so the page carries no
 // behavior.
-func consentRefusedHTML(refusal consentRefusal, redirectURI, state string) string {
-	heading := html.EscapeString(refusal.heading)
+func consentRefusedHTML(verdict auth.MCPCeilingVerdict, redirectURI, state string) string {
+	heading := html.EscapeString(consentHeadings[verdict])
 	page := `<!DOCTYPE html>
 <html>
 <head>
@@ -148,7 +130,7 @@ func consentRefusedHTML(refusal consentRefusal, redirectURI, state string) strin
 </head>
 <body style="font-family: system-ui, sans-serif; max-width: 32rem; margin: 4rem auto; padding: 0 1rem; line-height: 1.5;">
 <h1 style="font-size: 1.25rem;">` + heading + `</h1>
-<p>` + html.EscapeString(refusal.sentence) + `</p>
+<p>` + html.EscapeString(asSentence(verdict.Refusal())) + `</p>
 <p>Nothing was connected.</p>`
 	if back, err := oauth2ErrorRedirectURL(redirectURI, state, "access_denied",
 		"the workspace MCP policy refused this authorization"); err == nil {
@@ -158,4 +140,14 @@ func consentRefusedHTML(refusal consentRefusal, redirectURI, state string) strin
 	return page + `
 </body>
 </html>`
+}
+
+// asSentence renders a shared refusal as page prose. The shared form is
+// lowercase and unterminated so every other door can compose it into a larger
+// error; this is the one door that shows it on its own.
+func asSentence(refusal string) string {
+	if refusal == "" {
+		return ""
+	}
+	return strings.ToUpper(refusal[:1]) + refusal[1:] + "."
 }

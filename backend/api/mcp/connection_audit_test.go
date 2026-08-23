@@ -79,7 +79,7 @@ func TestMCPConnectionDenialEmission(t *testing.T) {
 		require.Equal(t, "workspaces/ws-test", row.Resource)
 		require.Equal(t, "users/test@example.com", row.User)
 		require.EqualValues(t, 7, row.Status.GetCode(), "PermissionDenied")
-		require.Contains(t, row.Status.GetMessage(), "disabled for this workspace by policy")
+		require.Contains(t, row.Status.GetMessage(), "turned MCP access off")
 		require.Equal(t, "10.0.1.50", row.RequestMetadata.GetCallerIp())
 		require.Equal(t, "TestAgent/1.0", row.RequestMetadata.GetCallerSuppliedUserAgent())
 
@@ -295,15 +295,22 @@ func mcpToken(t *testing.T, secret string, opts tokenOptions) string {
 	return tokenStr
 }
 
-// TestEveryPolicyVerdictHasAConnectionSentence pins that this door has wording for every
-// verdict that reaches it. The two doors word the same verdict differently on
-// purpose — one answers an agent reading an HTTP error, the other a person
-// reading a page — so what must not drift is coverage, not phrasing.
-func TestEveryPolicyVerdictHasAConnectionSentence(t *testing.T) {
-	for _, verdict := range auth.PolicyMCPCeilingVerdicts() {
-		require.NotEmpty(t, mcpConnectionRefusals[verdict],
-			"a connection refused for %v would say a policy refused it and nothing about which", verdict)
+// TestCeilingRefusalsAreRecognizedAsPolicy runs the real IsPolicyRefusal over
+// the ceiling refusals that can reach a tool, rather than restating its phrase
+// list somewhere it would drift.
+//
+// Only these two reach it. A 403 is what the predicate is consulted for, and
+// the per-request gate answers CodePermissionDenied for exactly these; an
+// outage answers CodeUnavailable, and DISABLED is refused at this door before
+// any tool call and by the serving table at the per-request one. A refusal it
+// stops recognizing gets "request a project role" appended — advice that cannot
+// lift a workspace setting.
+func TestCeilingRefusalsAreRecognizedAsPolicy(t *testing.T) {
+	for _, verdict := range []auth.MCPCeilingVerdict{
+		auth.MCPCeilingUnreadable,
+		auth.MCPCeilingUnserved,
+	} {
+		require.True(t, IsPolicyRefusal(verdict.Refusal()),
+			"%v reaches a tool as a 403 and must carry its own way out", verdict)
 	}
-	require.Len(t, mcpConnectionRefusals, len(auth.PolicyMCPCeilingVerdicts()),
-		"a sentence for a verdict that never reaches here is one nobody maintains")
 }

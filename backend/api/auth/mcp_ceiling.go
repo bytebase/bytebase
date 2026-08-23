@@ -8,8 +8,10 @@ import (
 )
 
 // MCPCeilingVerdict is what a read of a workspace's MCP capability ceiling
-// means to a caller deciding whether to proceed. Four doors decide from it —
-// the consent, the token endpoint, the /mcp gate, the per-request gate.
+// means to a caller deciding whether to proceed. Every reader of the setting
+// decides from it and says so with Refusal — the consent, the token endpoint,
+// the /mcp connection gate, the per-request gate, and the mode-contents read —
+// so no two can disagree about a workspace or describe it two ways.
 type MCPCeilingVerdict int
 
 // Each value names what an admin would have to do about it, which is what the
@@ -60,8 +62,41 @@ func ClassifyMCPCeiling(capability storepb.MCPSetting_Capability, err error) MCP
 	return MCPCeilingServes
 }
 
-// PolicyMCPCeilingVerdicts is every verdict a door must have wording for. Each
-// door pins its own table against this list.
+// Refusal is what a door tells the caller it is refusing: what is wrong with
+// this workspace's ceiling, and what an admin does about it. Empty for
+// MCPCeilingServes, which refuses nothing.
+//
+// Door-neutral on purpose. Each door used to keep its own copy ending in "so
+// the connection fails closed" / "so authorization fails closed", and the
+// copies drifted — the token endpoint borrowed the consent's clause, so a
+// refused refresh told the client that no client could be authorized. Which
+// door refused is already carried by the status, the page, and the audit row's
+// method, so the sentence does not say it again.
+//
+// Lowercase and unterminated: every door but the consent page composes this
+// into a larger error, and that page ends the sentence itself.
+func (v MCPCeilingVerdict) Refusal() string {
+	switch v {
+	case MCPCeilingDisabled:
+		return "a workspace admin has turned MCP access off for this workspace. " +
+			"Ask them to raise the MCP ceiling in the workspace settings"
+	case MCPCeilingUnreadable:
+		return "this workspace's stored MCP capability ceiling is not one this build understands. " +
+			"Ask a workspace admin to set the MCP ceiling again in the workspace settings"
+	case MCPCeilingUnserved:
+		return "this workspace's stored MCP capability ceiling is not one this build serves. " +
+			"Ask a workspace admin to set the MCP ceiling to a supported value in the workspace settings"
+	case MCPCeilingUnavailable:
+		return "this workspace's MCP capability ceiling could not be read. " +
+			"Retry shortly; if it persists, ask a workspace admin to check the workspace settings"
+	default:
+		return ""
+	}
+}
+
+// PolicyMCPCeilingVerdicts is every verdict that is a decision about the
+// workspace rather than an outage, which is what decides whether a refusal is
+// recorded. Refusal covers the outage too; this list does not.
 func PolicyMCPCeilingVerdicts() []MCPCeilingVerdict {
 	return []MCPCeilingVerdict{MCPCeilingDisabled, MCPCeilingUnreadable, MCPCeilingUnserved}
 }

@@ -287,19 +287,6 @@ func (f failingCeilingReader) GetMCPSettingsUncached(context.Context, string) (s
 	return store.MCPSettings{}, f.err
 }
 
-// TestEveryPolicyVerdictHasAConsentSentence pins that this door has wording for every
-// verdict that reaches it. The two doors word the same verdict differently on
-// purpose — one answers an agent reading an HTTP error, the other a person
-// reading a page — so what must not drift is coverage, not phrasing.
-func TestEveryPolicyVerdictHasAConsentSentence(t *testing.T) {
-	for _, verdict := range auth.PolicyMCPCeilingVerdicts() {
-		require.NotEmpty(t, consentRefusals[verdict],
-			"a consent refused for %v would say a policy refused it and nothing about which", verdict)
-	}
-	require.Len(t, consentRefusals, len(auth.PolicyMCPCeilingVerdicts()),
-		"a sentence for a verdict that never reaches here is one nobody maintains")
-}
-
 // TestTokenIssuanceRechecksTheCeiling pins the half a consent-time check alone
 // would miss.
 //

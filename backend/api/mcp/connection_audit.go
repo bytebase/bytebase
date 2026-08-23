@@ -14,19 +14,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-// One sentence per way the workspace's MCP policy refuses a connection. Only
-// the first is fixed by turning MCP back on; the other two are a stored value
-// an admin has to rewrite, and saying "disabled" for either sends them to the
-// wrong control.
-var mcpConnectionRefusals = map[auth.MCPCeilingVerdict]string{
-	auth.MCPCeilingDisabled: "MCP access is disabled for this workspace by policy. " +
-		"Ask a workspace admin to raise the MCP ceiling in the workspace settings",
-	auth.MCPCeilingUnreadable: "this workspace's stored MCP capability ceiling is not one this build understands, " +
-		"so the connection fails closed. Ask a workspace admin to set the MCP ceiling again in the workspace settings",
-	auth.MCPCeilingUnserved: "this workspace's stored MCP capability ceiling is not one this build serves, " +
-		"so the connection fails closed. Ask a workspace admin to set the MCP ceiling to a supported value in the workspace settings",
-}
-
 // refuseByCeiling holds a verified token against the workspace's MCP capability
 // ceiling. It returns nil to admit the request, or the HTTP error to refuse it
 // with, recording a row first when the refusal is a verdict about the
@@ -41,13 +28,13 @@ func (s *Server) refuseByCeiling(c *echo.Context, delegated auth.DelegatedMCPCre
 	}
 	if !verdict.IsPolicy() {
 		slog.Error("failed to read the MCP capability ceiling; cannot admit the session", log.BBError(err))
-		return echo.NewHTTPError(http.StatusServiceUnavailable, "cannot read the MCP policy; retry shortly")
+		return echo.NewHTTPError(http.StatusServiceUnavailable, verdict.Refusal())
 	}
 	if err != nil {
 		slog.Warn("the stored MCP capability ceiling cannot be interpreted; refusing the connection",
 			slog.String("workspace", delegated.WorkspaceID), log.BBError(err))
 	}
-	return s.refuseConnection(c, delegated, mcpConnectionRefusals[verdict])
+	return s.refuseConnection(c, delegated, verdict.Refusal())
 }
 
 // refuseConnection records the refusal and returns the 403 to answer with.

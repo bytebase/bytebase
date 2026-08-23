@@ -348,7 +348,7 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 	// value nobody can parse are different problems with different fixes, and
 	// the refusal is the only place the difference reaches anyone.
 	a.Contains(body, "not one this build understands")
-	a.NotContains(body, "MCP access is disabled")
+	a.NotContains(body, "turned MCP access off")
 
 	// Restoring the row proves the refusal was the unreadable policy and
 	// nothing else: the very same token opens a session again.
@@ -395,7 +395,7 @@ func TestMCPMigrationTightenedCeilingBitesLiveSession(t *testing.T) {
 	status, body := postMCP(t, ctl, mcpToken)
 	a.Equal(http.StatusForbidden, status,
 		"the same bearer must be refused on its next request after the ceiling tightens; %s", body)
-	a.Contains(body, "MCP access is disabled")
+	a.Contains(body, "turned MCP access off")
 
 	_, err = session.CallTool(ctx, &mcp.CallToolParams{
 		Name:      "call_api",

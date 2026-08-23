@@ -68,7 +68,7 @@ func TestMCPPolicyDenialsReachTheAuditPage(t *testing.T) {
 	connection := connectionRows[0]
 	a.Equal(ctl.principalName, connection.User)
 	a.NotNil(connection.Status)
-	a.Contains(connection.Status.Message, "MCP access is disabled")
+	a.Contains(connection.Status.Message, "turned MCP access off")
 	a.NotNil(connection.McpDelegation, "the row wears the MCP badge")
 	a.Equal(clientID, connection.McpDelegation.ClientId)
 	a.Empty(connection.McpDelegation.CorrelationId,

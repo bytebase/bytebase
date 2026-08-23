@@ -45,22 +45,15 @@ func (s *WorkspaceService) GetMCPInfo(ctx context.Context, _ *connect.Request[v1
 	// beside a modes list with no row for it.
 	switch verdict := auth.ClassifyMCPCeiling(settings.Capability, err); verdict {
 	case auth.MCPCeilingServes, auth.MCPCeilingDisabled:
-	case auth.MCPCeilingUnreadable:
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New(
-			"this workspace's stored MCP capability ceiling is not one this build understands. "+
-				"Ask a workspace admin to set the MCP ceiling again in the workspace settings"))
-	case auth.MCPCeilingUnserved:
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New(
-			"this workspace's stored MCP capability ceiling is not one this build serves. "+
-				"Ask a workspace admin to set the MCP ceiling to a supported value in the workspace settings"))
+	case auth.MCPCeilingUnreadable, auth.MCPCeilingUnserved:
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New(verdict.Refusal()))
 	default:
 		// The store error stays in the log. This method is served to MCP
 		// sessions and the tool layer renders a connect message into what the
 		// model reads, so a driver error text would leave the metadata
 		// database's shape in an agent's context.
 		slog.Error("failed to read the MCP setting", slog.String("workspace", workspaceID), log.BBError(err))
-		return nil, connect.NewError(connect.CodeUnavailable, errors.New(
-			"the MCP setting could not be read; retry shortly"))
+		return nil, connect.NewError(connect.CodeUnavailable, errors.New(verdict.Refusal()))
 	}
 
 	return connect.NewResponse(&v1pb.MCPInfo{

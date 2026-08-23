@@ -474,10 +474,10 @@ func (s *Service) refuseIssuanceByCeiling(ctx context.Context, workspaceID strin
 		// deliberately kept so an admin can toggle the ceiling back.
 		// temporarily_unavailable is outside RFC 6749 §5.2, which enumerates
 		// ways the request or the grant is wrong; this is neither.
-		return &oauth2Failure{code: "temporarily_unavailable", description: consentRefusals[verdict].sentence}
+		return &oauth2Failure{code: "temporarily_unavailable", description: verdict.Refusal()}
 	default:
 		slog.Error("failed to read the MCP capability ceiling; cannot issue a token", log.BBError(err))
-		return &oauth2Failure{code: "server_error", description: "cannot read the MCP policy; retry shortly"}
+		return &oauth2Failure{code: "server_error", description: verdict.Refusal()}
 	}
 }
 
