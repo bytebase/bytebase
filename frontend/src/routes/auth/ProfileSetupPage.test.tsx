@@ -328,7 +328,7 @@ describe("ProfileSetupPage", () => {
     page.unmount();
   });
 
-  test("does not create a project when the optional project name is empty", async () => {
+  test("creates a project with an empty title when its resource ID remains", async () => {
     const page = renderIntoContainer(<ProfileSetupPage />);
 
     page.render();
@@ -343,27 +343,17 @@ describe("ProfileSetupPage", () => {
     });
 
     expect(
-      page.container.querySelector("[data-testid='project-resource-id']")
-    ).toBeNull();
+      (
+        page.container.querySelector(
+          "[data-testid='project-resource-id']"
+        ) as HTMLInputElement
+      ).value
+    ).toBe("new-project");
     const sampleCheckbox = page.container.querySelector(
       "[data-testid='enable-sample-databases']"
     ) as HTMLButtonElement;
-    expect(sampleCheckbox).not.toBeChecked();
-    expect(sampleCheckbox).toHaveAttribute("aria-disabled", "true");
-
-    await act(async () => {
-      fireEvent.change(projectNameInput, {
-        target: { value: "Replacement project" },
-      });
-      await Promise.resolve();
-    });
-    expect(sampleCheckbox).not.toBeChecked();
+    expect(sampleCheckbox).toBeChecked();
     expect(sampleCheckbox).not.toHaveAttribute("aria-disabled", "true");
-
-    await act(async () => {
-      fireEvent.change(projectNameInput, { target: { value: "" } });
-      await Promise.resolve();
-    });
 
     const save = Array.from(page.container.querySelectorAll("button")).find(
       (button) => button.textContent?.includes("Setup my workspace")
@@ -374,12 +364,18 @@ describe("ProfileSetupPage", () => {
       await Promise.resolve();
     });
 
-    expect(mocks.createProject).not.toHaveBeenCalled();
-    expect(mocks.prepareSampleProjectInstance).not.toHaveBeenCalled();
-    expect(mocks.setRecentProject).not.toHaveBeenCalled();
+    expect(mocks.createProject).toHaveBeenCalledWith("", "new-project");
+    expect(mocks.prepareSampleProjectInstance).toHaveBeenCalledWith(
+      "projects/new-project"
+    );
+    expect(mocks.setRecentProject).toHaveBeenCalledWith("projects/new-project");
     expect(mocks.routerReplace).toHaveBeenCalledWith({
-      name: "workspace.project",
-      query: { intro: "create-project" },
+      name: "workspace.project.database",
+      params: { projectId: "new-project" },
+      query: {
+        syncingInstance: "sample",
+        intro: "project-instance-synced",
+      },
     });
 
     page.unmount();

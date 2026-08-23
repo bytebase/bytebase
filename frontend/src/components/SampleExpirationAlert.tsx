@@ -6,9 +6,9 @@ import { extractInstanceResourceName, formatAbsoluteDateTime } from "@/utils";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-interface SampleExpirationAlertProps {
+type SampleExpirationAlertProps = Readonly<{
   instanceName: string;
-}
+}>;
 
 export function SampleExpirationAlert({
   instanceName,

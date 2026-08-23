@@ -25,6 +25,7 @@ import {
   PRODUCT_INTRO_QUERY_KEY,
   PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
 } from "@/lib/productIntro";
+import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
@@ -284,11 +285,11 @@ export function ProfileSetupPage() {
                   />
                   <label
                     htmlFor="enable-sample-databases"
-                    className={
-                      shouldCreateProject
-                        ? "cursor-pointer"
-                        : "cursor-not-allowed text-control-placeholder"
-                    }
+                    className={cn(
+                      "cursor-pointer",
+                      !shouldCreateProject &&
+                        "cursor-not-allowed text-control-placeholder"
+                    )}
                   >
                     {t("settings.profile.enable-sample-databases")}
                   </label>
