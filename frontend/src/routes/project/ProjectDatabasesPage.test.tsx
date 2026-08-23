@@ -521,6 +521,9 @@ describe("ProjectDatabasesPage", () => {
 
   test("opens a synced project instance database in SQL Editor", async () => {
     mocks.routerCurrentQuery = { syncingInstance: "prod" };
+    mocks.fetchInstanceList.mockResolvedValueOnce({
+      instances: [{ name: "instances/prod", title: "Prod" }],
+    });
     mocks.visibleDatabases = [
       {
         name: "projects/demo/instances/prod/databases/app",
@@ -596,6 +599,77 @@ describe("ProjectDatabasesPage", () => {
         database: "app",
       },
     });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("hides post-sync guidance when the workspace has multiple instances", async () => {
+    mocks.routerCurrentQuery = { syncingInstance: "prod" };
+    mocks.fetchInstanceList.mockResolvedValueOnce({
+      instances: [
+        { name: "instances/prod", title: "Prod" },
+        { name: "instances/staging", title: "Staging" },
+      ],
+    });
+    mocks.visibleDatabases = [
+      {
+        name: "projects/demo/instances/prod/databases/app",
+        project: "projects/demo",
+      },
+    ];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+      await Promise.resolve();
+    });
+
+    expect(mocks.fetchInstanceList).toHaveBeenCalledWith({ pageSize: 2 });
+    expect(container.textContent).not.toContain(
+      "db.project-instance-synced-title"
+    );
+    expect(mocks.useProductIntro).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "project-instance-synced",
+        disabled: true,
+      })
+    );
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("hides post-sync guidance without permission to list instances", async () => {
+    mocks.workspacePermissions.delete("bb.instances.list");
+    mocks.routerCurrentQuery = { syncingInstance: "prod" };
+    mocks.visibleDatabases = [
+      {
+        name: "projects/demo/instances/prod/databases/app",
+        project: "projects/demo",
+      },
+    ];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+      await Promise.resolve();
+    });
+
+    expect(mocks.fetchInstanceList).not.toHaveBeenCalled();
+    expect(container.textContent).not.toContain(
+      "db.project-instance-synced-title"
+    );
+    expect(mocks.useProductIntro).toHaveBeenCalledWith(
+      expect.objectContaining({
+        id: "project-instance-synced",
+        disabled: true,
+      })
+    );
 
     act(() => {
       root.unmount();
