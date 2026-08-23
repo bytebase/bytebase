@@ -14,7 +14,7 @@ const mocks = vi.hoisted(() => ({
   prepareSampleProjectInstance: vi.fn(),
   pushNotification: vi.fn(),
   isSaaSMode: false,
-  sampleProjectInstanceAvailable: true,
+  sampleAvailable: true,
   instanceCountLimit: 10,
   activatedInstanceCount: 0,
   providerProps: undefined as Record<string, unknown> | undefined,
@@ -62,10 +62,7 @@ vi.mock("@/stores/app", () => ({
     <T,>(selector: (state: Record<string, unknown>) => T) =>
       selector({
         isSaaSMode: () => mocks.isSaaSMode,
-        serverInfo: {
-          sampleProjectInstanceAvailable:
-            mocks.sampleProjectInstanceAvailable,
-        },
+        serverInfo: { sample: { available: mocks.sampleAvailable } },
         prepareSampleProjectInstance: mocks.prepareSampleProjectInstance,
       }),
     {
@@ -124,7 +121,7 @@ vi.mock("@/components/instance", () => ({
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.isSaaSMode = false;
-  mocks.sampleProjectInstanceAvailable = true;
+  mocks.sampleAvailable = true;
   mocks.instanceCountLimit = 10;
   mocks.activatedInstanceCount = 0;
   mocks.prepareSampleProjectInstance.mockResolvedValue({
@@ -350,7 +347,7 @@ describe("CreateInstanceView", () => {
 
   test("hides sample instance creation when the target is unavailable", () => {
     mocks.isSaaSMode = true;
-    mocks.sampleProjectInstanceAvailable = false;
+    mocks.sampleAvailable = false;
     const container = document.createElement("div");
     const root = createRoot(container);
 

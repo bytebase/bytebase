@@ -111,20 +111,33 @@ func (s *ActuatorService) SetupSample(
 }
 
 func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string) (*v1pb.ActuatorInfo, error) {
-	sampleProjectInstanceAvailable := s.sampleProjectInstanceManager != nil && s.sampleProjectInstanceManager.Available(ctx)
 	serverInfo := v1pb.ActuatorInfo{
-		Version:                        s.profile.Version,
-		GitCommit:                      s.profile.GitCommit,
-		Saas:                           s.profile.SaaS,
-		LastActiveTime:                 timestamppb.New(time.Unix(s.profile.LastActiveTS.Load(), 0)),
-		ExternalUrlFromFlag:            s.profile.ExternalURL != "",
-		ReplicaCount:                   int32(s.licenseService.CountActiveReplicas(ctx)),
-		ExternalUrl:                    s.profile.ExternalURL,
-		SampleProjectInstanceAvailable: sampleProjectInstanceAvailable,
+		Version:             s.profile.Version,
+		GitCommit:           s.profile.GitCommit,
+		Saas:                s.profile.SaaS,
+		LastActiveTime:      timestamppb.New(time.Unix(s.profile.LastActiveTS.Load(), 0)),
+		ExternalUrlFromFlag: s.profile.ExternalURL != "",
+		ReplicaCount:        int32(s.licenseService.CountActiveReplicas(ctx)),
+		ExternalUrl:         s.profile.ExternalURL,
+		Sample:              &v1pb.SampleInfo{},
 	}
 
 	if workspaceID != "" {
 		serverInfo.Workspace = common.FormatWorkspace(workspaceID)
+		if s.profile.SaaS {
+			serverInfo.Sample.Available = s.sampleProjectInstanceManager != nil && s.sampleProjectInstanceManager.Available(ctx)
+			sample, err := s.store.GetSampleProjectInstance(ctx, workspaceID)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get sample information"))
+			}
+			if sample != nil && sample.ExpiresAt != nil && sample.DeletedAt == nil {
+				serverInfo.Sample.Instances = []string{common.FormatInstance(sample.InstanceID)}
+				serverInfo.Sample.ExpireTime = timestamppb.New(*sample.ExpiresAt)
+			}
+		} else {
+			hasSampleInstances, _ := s.store.HasSampleInstances(ctx, workspaceID)
+			serverInfo.Sample.Available = hasSampleInstances
+		}
 
 		defaultProjectID, err := s.store.GetDefaultProjectID(ctx, workspaceID)
 		if err != nil {
@@ -158,10 +171,6 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to count active VCS users"))
 		}
 		serverInfo.ActiveVcsUserCount = int32(activeVCSUserCount)
-
-		// Check if sample instances are available
-		hasSampleInstances, _ := s.store.HasSampleInstances(ctx, workspaceID)
-		serverInfo.EnableSample = hasSampleInstances
 
 		setting, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID)
 		if err != nil {

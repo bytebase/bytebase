@@ -1,6 +1,7 @@
 package sampleprojectinstance
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"errors"
@@ -23,6 +24,18 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+func TestRandomInstanceIDUses16CharacterToken(t *testing.T) {
+	id, err := randomInstanceID(bytes.NewReader(make([]byte, 8)))
+	require.NoError(t, err)
+	require.Equal(t, "sample-0000000000000000", id)
+}
+
+func TestSampleNamesUse16CharacterTokens(t *testing.T) {
+	names := sampleNames("sample-0000000000000000")
+	require.Regexp(t, `^bb_sample_[0-9a-f]{16}$`, names.Database)
+	require.Regexp(t, `^bb_sample_role_[0-9a-f]{16}$`, names.Role)
+}
 
 func TestFailureKindOf(t *testing.T) {
 	require.Equal(t, FailureUnknown, FailureKindOf(errors.New("unexpected")))

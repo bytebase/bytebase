@@ -297,6 +297,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.SampleInfo"><span class="badge">M</span>SampleInfo</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.SetupSampleRequest"><span class="badge">M</span>SetupSampleRequest</a>
                 </li>
               
@@ -4228,13 +4232,6 @@ Format: workspaces/{id} </p></td>
                 </tr>
               
                 <tr>
-                  <td>enable_sample</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>Whether sample data setup is enabled. </p></td>
-                </tr>
-              
-                <tr>
                   <td>external_url_from_flag</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
@@ -4271,12 +4268,12 @@ Format: projects/{id} </p></td>
                 </tr>
               
                 <tr>
-                  <td>sample_project_instance_available</td>
-                  <td><a href="#bool">bool</a></td>
+                  <td>sample</td>
+                  <td><a href="#bytebase.v1.SampleInfo">SampleInfo</a></td>
                   <td></td>
-                  <td><p>Whether a validated Sample Project Instance target is available. </p></td>
+                  <td><p>Sample setup availability and provisioned resources. </p></td>
                 </tr>
-
+              
             </tbody>
           </table>
 
@@ -4288,6 +4285,45 @@ Format: projects/{id} </p></td>
         <p>Request message for getting actuator information.</p>
 
         
+
+        
+      
+        <h3 id="bytebase.v1.SampleInfo">SampleInfo</h3>
+        <p>SampleInfo describes sample setup availability and provisioned resources.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>available</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether sample setup is currently available. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>instances</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The provisioned sample instances.
+Format: instances/{instance} </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expire_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The time when the provisioned sample resources expire. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
 
         
       
@@ -36240,3 +36276,4 @@ Permissions required: bb.workspaces.rotateDirectorySyncToken</p></td>
     </table>
   </body>
 </html>
+

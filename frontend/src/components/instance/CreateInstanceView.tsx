@@ -40,14 +40,11 @@ export function CreateInstanceView({
 }: CreateInstanceViewProps) {
   const { t } = useTranslation();
   const isSaaSMode = useAppStore((state) => state.isSaaSMode());
-  const sampleProjectInstanceAvailable = useAppStore(
-    (state) => state.serverInfo?.sampleProjectInstanceAvailable ?? false
+  const sampleAvailable = useAppStore(
+    (state) => state.serverInfo?.sample?.available ?? false
   );
   const canPrepareSampleProjectInstance =
-    isSaaSMode &&
-    sampleProjectInstanceAvailable &&
-    !!parent &&
-    isValidProjectName(parent);
+    isSaaSMode && sampleAvailable && !!parent && isValidProjectName(parent);
 
   // Check instance limit on mount
   useEffect(() => {

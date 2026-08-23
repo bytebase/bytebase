@@ -92,7 +92,7 @@ type AllocationNames struct {
 
 func sampleNames(instanceID string) AllocationNames {
 	sum := sha256.Sum256([]byte(instanceID))
-	token := fmt.Sprintf("%x", sum[:16])
+	token := fmt.Sprintf("%x", sum[:8])
 	return AllocationNames{
 		Database: "bb_sample_" + token,
 		Role:     "bb_sample_role_" + token,
@@ -642,7 +642,7 @@ func randomPassword(reader io.Reader) (string, error) {
 }
 
 func randomInstanceID(reader io.Reader) (string, error) {
-	bytes := make([]byte, 16)
+	bytes := make([]byte, 8)
 	if _, err := io.ReadFull(reader, bytes); err != nil {
 		return "", err
 	}

@@ -44,7 +44,7 @@ const mocks = vi.hoisted(() => ({
   pushNotification: vi.fn(),
   hasWorkspacePermissionV2: vi.fn(() => false),
   canCreateProject: true,
-  sampleProjectInstanceAvailable: true,
+  sampleAvailable: true,
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
@@ -67,7 +67,7 @@ vi.mock("@/stores/app", () => ({
       updateUser: typeof mocks.updateUser;
       updateWorkspace: typeof mocks.updateWorkspace;
       prepareSampleProjectInstance: typeof mocks.prepareSampleProjectInstance;
-      serverInfo: { sampleProjectInstanceAvailable: boolean };
+      serverInfo: { sample: { available: boolean } };
     }) => unknown
   ) =>
     selector({
@@ -76,8 +76,7 @@ vi.mock("@/stores/app", () => ({
       updateWorkspace: mocks.updateWorkspace,
       prepareSampleProjectInstance: mocks.prepareSampleProjectInstance,
       serverInfo: {
-        sampleProjectInstanceAvailable:
-          mocks.sampleProjectInstanceAvailable,
+        sample: { available: mocks.sampleAvailable },
       },
     }),
 }));
@@ -172,7 +171,7 @@ beforeEach(async () => {
   vi.clearAllMocks();
   mocks.canUpdateWorkspace = true;
   mocks.canCreateProject = true;
-  mocks.sampleProjectInstanceAvailable = true;
+  mocks.sampleAvailable = true;
   mocks.workspacePolicy = {
     bindings: [
       {
@@ -452,7 +451,7 @@ describe("ProfileSetupPage", () => {
   });
 
   test("hides sample database setup when the target is unavailable", () => {
-    mocks.sampleProjectInstanceAvailable = false;
+    mocks.sampleAvailable = false;
     const page = renderIntoContainer(<ProfileSetupPage />);
 
     page.render();

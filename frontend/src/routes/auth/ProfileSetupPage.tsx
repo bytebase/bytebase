@@ -45,8 +45,8 @@ export function ProfileSetupPage() {
   const prepareSampleProjectInstance = useAppStore(
     (state) => state.prepareSampleProjectInstance
   );
-  const sampleProjectInstanceAvailable = useAppStore(
-    (state) => state.serverInfo?.sampleProjectInstanceAvailable ?? false
+  const sampleAvailable = useAppStore(
+    (state) => state.serverInfo?.sample?.available ?? false
   );
   const { createProject, setRecentProject } = useCreateProject();
   const workspace = useWorkspace();
@@ -143,7 +143,7 @@ export function ProfileSetupPage() {
         );
         setRecentProject(createdProject.name);
         createdProjectName = createdProject.name;
-        if (sampleProjectInstanceAvailable && createdProject.name) {
+        if (enableSampleDatabases && sampleAvailable && createdProject.name) {
           try {
             const sampleInstance = await prepareSampleProjectInstance(
               createdProject.name
@@ -273,7 +273,7 @@ export function ProfileSetupPage() {
                 }}
                 onValidationChange={setIsProjectResourceIdValid}
               />
-              {sampleProjectInstanceAvailable && (
+              {sampleAvailable && (
                 <div className="flex items-center gap-x-2 pt-1">
                   <Checkbox
                     id="enable-sample-databases"

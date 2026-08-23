@@ -1217,6 +1217,9 @@
     "role-arn": "ARN del rol",
     "role-arn-description": "Rol IAM para asumir en acceso entre cuentas. Dejar vacío para acceso en la misma cuenta.",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
+    "sample-expiration-expired": "La instancia de muestra venció el {{time}} y se eliminará en breve.",
+    "sample-expiration-future_one": "La instancia de muestra se eliminará en {{count}} día, a las {{time}}.",
+    "sample-expiration-future_other": "La instancia de muestra se eliminará en {{count}} días, a las {{time}}.",
     "sample-project-instance-description": "Use una instancia de proyecto de muestra para explorar Bytebase con una base de datos lista para usar durante 7 días.",
     "sample-project-instance-title": "Pruebe una instancia de proyecto de muestra",
     "scan-interval": {

@@ -1217,6 +1217,9 @@
     "role-arn": "Role ARN",
     "role-arn-description": "IAM role to assume for cross-account access. Leave empty for same-account access.",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
+    "sample-expiration-expired": "The sample instance expired at {{time}} and will be removed shortly.",
+    "sample-expiration-future_one": "The sample instance will be removed in {{count}} day, at {{time}}.",
+    "sample-expiration-future_other": "The sample instance will be removed in {{count}} days, at {{time}}.",
     "sample-project-instance-description": "Use a Sample Project Instance to explore Bytebase with a ready-to-use database for 7 days.",
     "sample-project-instance-title": "Try a Sample Project Instance",
     "scan-interval": {

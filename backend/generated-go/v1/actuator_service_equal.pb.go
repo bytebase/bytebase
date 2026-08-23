@@ -23,6 +23,30 @@ func (x *GetActuatorInfoRequest) Equal(y *GetActuatorInfoRequest) bool {
 	return true
 }
 
+func (x *SampleInfo) Equal(y *SampleInfo) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Available != y.Available {
+		return false
+	}
+	if len(x.Instances) != len(y.Instances) {
+		return false
+	}
+	for i := 0; i < len(x.Instances); i++ {
+		if x.Instances[i] != y.Instances[i] {
+			return false
+		}
+	}
+	if p, q := x.ExpireTime, y.ExpireTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	return true
+}
+
 func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if x == y {
 		return true
@@ -62,9 +86,6 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if x.TotalInstanceCount != y.TotalInstanceCount {
 		return false
 	}
-	if x.EnableSample != y.EnableSample {
-		return false
-	}
 	if x.ExternalUrlFromFlag != y.ExternalUrlFromFlag {
 		return false
 	}
@@ -80,7 +101,7 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if x.ActiveVcsUserCount != y.ActiveVcsUserCount {
 		return false
 	}
-	if x.SampleProjectInstanceAvailable != y.SampleProjectInstanceAvailable {
+	if !x.Sample.Equal(y.Sample) {
 		return false
 	}
 	return true

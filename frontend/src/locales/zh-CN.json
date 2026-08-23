@@ -1217,6 +1217,9 @@
     "role-arn": "角色 ARN",
     "role-arn-description": "用于跨账户访问的 IAM 角色。同账户访问请留空。",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
+    "sample-expiration-expired": "示例实例已于 {{time}} 过期，即将被移除。",
+    "sample-expiration-future_one": "示例实例将在 {{count}} 天后的 {{time}} 被移除。",
+    "sample-expiration-future_other": "示例实例将在 {{count}} 天后的 {{time}} 被移除。",
     "sample-project-instance-description": "使用示例项目实例探索 Bytebase，并在 7 天内使用预配置的数据库。",
     "sample-project-instance-title": "试用示例项目实例",
     "scan-interval": {

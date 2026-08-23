@@ -362,21 +362,21 @@ export function WorkspaceSetupGuide() {
   }
 
   return (
-    <div className="flex w-full shrink-0 items-center gap-x-4 border-t border-block-border bg-white px-5 py-4 shadow-[0_-2px_10px_rgba(0,0,0,0.04)]">
-      <div className="flex min-w-0 flex-1 items-center gap-x-5 overflow-hidden">
+    <div className="flex w-full shrink-0 items-center gap-x-2 border-t border-block-border bg-white px-3 py-2 shadow-[0_-2px_10px_rgba(0,0,0,0.04)] 2xl:gap-x-4 2xl:px-5 2xl:py-4">
+      <div className="flex min-w-0 flex-1 items-center gap-x-2 overflow-hidden 2xl:gap-x-5">
         <div className="flex shrink-0 items-baseline gap-x-2">
-          <div className="shrink-0 text-base font-semibold text-main">
+          <div className="shrink-0 text-sm font-semibold text-main 2xl:text-base">
             {t("workspace-setup-guide.self")}
           </div>
         </div>
-        <div className="flex min-w-0 flex-1 items-center gap-x-3 overflow-x-auto pr-2">
+        <div className="flex min-w-0 flex-1 items-center gap-x-2 overflow-x-auto pr-1 2xl:gap-x-3 2xl:pr-2">
           {steps.map((step, index) => {
             const isHighlighted = step.key === highlightedStep?.key;
             const tooltipContent = step.disabled
               ? t("workspace-setup-guide.previous-step-required")
               : step.description;
             const className = cn(
-              "inline-flex items-center gap-x-2 rounded-sm px-3 py-2 text-base whitespace-nowrap",
+              "inline-flex items-center gap-x-1 rounded-sm px-2 py-1 text-sm whitespace-nowrap 2xl:gap-x-2 2xl:px-3 2xl:py-2 2xl:text-base",
               isHighlighted
                 ? "bg-accent/10 text-accent"
                 : step.done
@@ -385,7 +385,10 @@ export function WorkspaceSetupGuide() {
             );
 
             return (
-              <div key={step.key} className="inline-flex items-center gap-x-3">
+              <div
+                key={step.key}
+                className="inline-flex items-center gap-x-2 2xl:gap-x-3"
+              >
                 <Tooltip content={tooltipContent}>
                   <Button
                     type="button"
@@ -393,21 +396,23 @@ export function WorkspaceSetupGuide() {
                     data-testid={`setup-step-${step.key}`}
                     className={cn(
                       className,
-                      "h-auto justify-start py-2 font-medium"
+                      "h-auto justify-start py-1 font-medium 2xl:py-2"
                     )}
                     disabled={step.disabled}
                     onClick={() => onSelectStep(step)}
                   >
                     {step.done ? (
-                      <CheckCircle className="size-5 text-success" />
+                      <CheckCircle className="size-4 text-success 2xl:size-5" />
                     ) : (
-                      <Circle className="size-5" />
+                      <Circle className="size-4 2xl:size-5" />
                     )}
                     <span>{step.label}</span>
                   </Button>
                 </Tooltip>
                 {index < steps.length - 1 && (
-                  <span className="text-base text-control-light">›</span>
+                  <span className="text-sm text-control-light 2xl:text-base">
+                    ›
+                  </span>
                 )}
               </div>
             );
@@ -423,7 +428,7 @@ export function WorkspaceSetupGuide() {
               data-testid="secondary-action"
               appearance="secondary"
               size="md"
-              className="hidden xl:inline-flex"
+              className="hidden 2xl:inline-flex"
               onClick={handleCreateFirstChange}
             >
               {t("workspace-setup-guide.actions.change")}
@@ -433,7 +438,8 @@ export function WorkspaceSetupGuide() {
           <SQLEditorButton
             data-testid="active-action"
             database={sqlEditorDatabase}
-            size="md"
+            size="sm"
+            className="2xl:h-9 2xl:gap-1.5 2xl:px-3 2xl:text-sm 2xl:leading-5"
             label={t("workspace-setup-guide.actions.query")}
           />
         )}
@@ -442,11 +448,11 @@ export function WorkspaceSetupGuide() {
           data-testid="dismiss-guide"
           aria-label={t("workspace-setup-guide.dismiss")}
           appearance="secondary"
-          size="md"
-          className="text-control-light hover:text-control"
+          size="sm"
+          className="text-control-light hover:text-control 2xl:h-9 2xl:gap-1.5 2xl:px-3 2xl:text-sm 2xl:leading-5"
           onClick={handleDismiss}
         >
-          <X className="size-5" />
+          <X className="size-4 2xl:size-5" />
         </Button>
       </div>
     </div>

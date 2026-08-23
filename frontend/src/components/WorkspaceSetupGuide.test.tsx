@@ -301,27 +301,32 @@ describe("WorkspaceSetupGuide", () => {
     });
   });
 
-  it("renders the setup guide with prominent controls", async () => {
+  it("uses compact controls below 2xl and prominent controls at 2xl", async () => {
     await render(<WorkspaceSetupGuide />);
 
     expect(container.firstElementChild?.getAttribute("class")).toContain(
-      "py-4"
+      "py-2"
     );
-    expect(
-      container
-        .querySelector("[data-testid='setup-step-hasProject']")
-        ?.getAttribute("class")
-    ).toContain("text-base");
-    expect(
-      container
-        .querySelector("[data-testid='setup-step-hasProject']")
-        ?.getAttribute("class")
-    ).toContain("py-2");
+    expect(container.firstElementChild?.getAttribute("class")).toContain(
+      "2xl:py-4"
+    );
+    const projectStep = container.querySelector(
+      "[data-testid='setup-step-hasProject']"
+    );
+    expect(projectStep?.getAttribute("class")).toContain("text-sm");
+    expect(projectStep?.getAttribute("class")).toContain("2xl:text-base");
+    expect(projectStep?.getAttribute("class")).toContain("py-1");
+    expect(projectStep?.getAttribute("class")).toContain("2xl:py-2");
     expect(
       container
         .querySelector("[data-testid='dismiss-guide']")
         ?.getAttribute("class")
-    ).toContain("h-9");
+    ).toContain("h-7");
+    expect(
+      container
+        .querySelector("[data-testid='dismiss-guide']")
+        ?.getAttribute("class")
+    ).toContain("2xl:h-9");
   });
 
   it("hides when the workspace has more than one member", async () => {
@@ -893,6 +898,9 @@ describe("WorkspaceSetupGuide", () => {
       "[data-testid='secondary-action']"
     );
     expect(secondaryAction).not.toBeNull();
+    expect(secondaryAction?.getAttribute("class")).toContain(
+      "2xl:inline-flex"
+    );
     expect(
       secondaryAction!.compareDocumentPosition(actionLink as Node) &
         Node.DOCUMENT_POSITION_FOLLOWING

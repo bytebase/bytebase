@@ -40,6 +40,41 @@ export declare type GetActuatorInfoRequest = Message<"bytebase.v1.GetActuatorInf
 export declare const GetActuatorInfoRequestSchema: GenMessage<GetActuatorInfoRequest>;
 
 /**
+ * SampleInfo describes sample setup availability and provisioned resources.
+ *
+ * @generated from message bytebase.v1.SampleInfo
+ */
+export declare type SampleInfo = Message<"bytebase.v1.SampleInfo"> & {
+  /**
+   * Whether sample setup is currently available.
+   *
+   * @generated from field: bool available = 1;
+   */
+  available: boolean;
+
+  /**
+   * The provisioned sample instances.
+   * Format: instances/{instance}
+   *
+   * @generated from field: repeated string instances = 2;
+   */
+  instances: string[];
+
+  /**
+   * The time when the provisioned sample resources expire.
+   *
+   * @generated from field: google.protobuf.Timestamp expire_time = 3;
+   */
+  expireTime?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.SampleInfo.
+ * Use `create(SampleInfoSchema)` to create a new message.
+ */
+export declare const SampleInfoSchema: GenMessage<SampleInfo>;
+
+/**
  * System information and configuration for the Bytebase instance.
  * Actuator concept is similar to the Spring Boot Actuator.
  *
@@ -111,13 +146,6 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
   totalInstanceCount: number;
 
   /**
-   * Whether sample data setup is enabled.
-   *
-   * @generated from field: bool enable_sample = 22;
-   */
-  enableSample: boolean;
-
-  /**
    * Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
    *
    * @generated from field: bool external_url_from_flag = 23;
@@ -154,11 +182,11 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
   activeVcsUserCount: number;
 
   /**
-   * Whether a validated Sample Project Instance target is available.
+   * Sample setup availability and provisioned resources.
    *
-   * @generated from field: bool sample_project_instance_available = 29;
+   * @generated from field: bytebase.v1.SampleInfo sample = 29;
    */
-  sampleProjectInstanceAvailable: boolean;
+  sample?: SampleInfo | undefined;
 };
 
 /**

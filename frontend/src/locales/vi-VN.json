@@ -1217,6 +1217,9 @@
     "role-arn": "ARN vai trò",
     "role-arn-description": "Vai trò IAM để đảm nhận cho truy cập xuyên tài khoản. Để trống cho truy cập cùng tài khoản.",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
+    "sample-expiration-expired": "Phiên bản mẫu đã hết hạn vào {{time}} và sẽ sớm bị xóa.",
+    "sample-expiration-future_one": "Phiên bản mẫu sẽ bị xóa sau {{count}} ngày, vào {{time}}.",
+    "sample-expiration-future_other": "Phiên bản mẫu sẽ bị xóa sau {{count}} ngày, vào {{time}}.",
     "sample-project-instance-description": "Sử dụng Phiên bản dự án mẫu để khám phá Bytebase với cơ sở dữ liệu sẵn sàng sử dụng trong 7 ngày.",
     "sample-project-instance-title": "Dùng thử Phiên bản dự án mẫu",
     "scan-interval": {

@@ -1217,6 +1217,9 @@
     "role-arn": "ロール ARN",
     "role-arn-description": "クロスアカウントアクセス用の IAM ロール。同一アカウントアクセスの場合は空のままにしてください。",
     "role-arn-placeholder": "arn:aws:iam::123456789012:role/CrossAccountRole",
+    "sample-expiration-expired": "サンプルインスタンスは {{time}} に期限切れとなり、まもなく削除されます。",
+    "sample-expiration-future_one": "サンプルインスタンスは {{count}} 日後の {{time}} に削除されます。",
+    "sample-expiration-future_other": "サンプルインスタンスは {{count}} 日後の {{time}} に削除されます。",
     "sample-project-instance-description": "すぐに使えるデータベースを備えたサンプルプロジェクトインスタンスを 7 日間使用して、Bytebase を試すことができます。",
     "sample-project-instance-title": "サンプルプロジェクトインスタンスを試す",
     "scan-interval": {
