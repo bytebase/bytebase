@@ -86,8 +86,7 @@ export function ProfileSetupPage() {
     useState(false);
   const [enableSampleDatabases, setEnableSampleDatabases] = useState(true);
   const [saving, setSaving] = useState(false);
-  const projectTitleTrimmed = projectTitle.trim();
-  const shouldCreateProject = canCreateProject && !!projectTitleTrimmed;
+  const shouldCreateProject = canCreateProject && !!projectResourceId;
 
   const validateProjectResourceId = useCallback(
     async (id: string): Promise<ValidatedMessage[]> => {
@@ -139,7 +138,7 @@ export function ProfileSetupPage() {
       let sampleInstanceName = "";
       if (shouldCreateProject) {
         const createdProject = await createProject(
-          projectTitleTrimmed,
+          projectTitle.trim(),
           projectResourceId
         );
         setRecentProject(createdProject.name);
@@ -257,23 +256,23 @@ export function ProfileSetupPage() {
                 onChange={(e) => {
                   const value = e.target.value;
                   setProjectTitle(value);
-                  if (!value.trim()) {
-                    setEnableSampleDatabases(false);
-                  }
                 }}
                 placeholder={t("quick-action.new-project")}
               />
-              {projectTitleTrimmed && (
-                <ResourceIdField
-                  suffix
-                  value={projectResourceId}
-                  resourceName={t("common.project")}
-                  resourceTitle={projectTitle}
-                  validate={validateProjectResourceId}
-                  onChange={setProjectResourceId}
-                  onValidationChange={setIsProjectResourceIdValid}
-                />
-              )}
+              <ResourceIdField
+                suffix
+                value={projectResourceId}
+                resourceName={t("common.project")}
+                resourceTitle={projectTitle}
+                validate={validateProjectResourceId}
+                onChange={(val) => {
+                  setProjectResourceId(val)
+                  if (!val) {
+                    setEnableSampleDatabases(false);
+                  }
+                }}
+                onValidationChange={setIsProjectResourceIdValid}
+              />
               {sampleProjectInstanceAvailable && (
                 <div className="flex items-center gap-x-2 pt-1">
                   <Checkbox
