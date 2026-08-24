@@ -201,6 +201,9 @@ export const createInstanceSlice: AppSliceCreator<InstanceSlice> = (
       );
       if (!validateOnlyValue) {
         upsertInstances([response]);
+        await get()
+          .refreshServerInfo()
+          .catch(() => undefined);
       }
       return response;
     },

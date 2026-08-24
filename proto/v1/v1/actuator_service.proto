@@ -49,9 +49,9 @@ message SampleInfo {
   // Whether sample setup is currently available.
   bool available = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The provisioned sample instances.
+  // The provisioned sample instance.
   // Format: instances/{instance}
-  repeated string instances = 2 [
+  string instance = 2 [
     (google.api.field_behavior) = OUTPUT_ONLY,
     (google.api.resource_reference) = {type: "bytebase.com/Instance"}
   ];

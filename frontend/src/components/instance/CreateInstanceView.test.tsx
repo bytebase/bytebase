@@ -15,6 +15,8 @@ const mocks = vi.hoisted(() => ({
   pushNotification: vi.fn(),
   isSaaSMode: false,
   sampleAvailable: true,
+  sampleInstance: "",
+  totalInstanceCount: 0,
   instanceCountLimit: 10,
   activatedInstanceCount: 0,
   providerProps: undefined as Record<string, unknown> | undefined,
@@ -62,7 +64,13 @@ vi.mock("@/stores/app", () => ({
     <T,>(selector: (state: Record<string, unknown>) => T) =>
       selector({
         isSaaSMode: () => mocks.isSaaSMode,
-        serverInfo: { sample: { available: mocks.sampleAvailable } },
+        serverInfo: {
+          sample: {
+            available: mocks.sampleAvailable,
+            instance: mocks.sampleInstance,
+          },
+        },
+        totalInstanceCount: () => mocks.totalInstanceCount,
         prepareSampleProjectInstance: mocks.prepareSampleProjectInstance,
       }),
     {
@@ -122,6 +130,8 @@ beforeEach(async () => {
   vi.clearAllMocks();
   mocks.isSaaSMode = false;
   mocks.sampleAvailable = true;
+  mocks.sampleInstance = "";
+  mocks.totalInstanceCount = 0;
   mocks.instanceCountLimit = 10;
   mocks.activatedInstanceCount = 0;
   mocks.prepareSampleProjectInstance.mockResolvedValue({
@@ -348,6 +358,52 @@ describe("CreateInstanceView", () => {
   test("hides sample instance creation when the target is unavailable", () => {
     mocks.isSaaSMode = true;
     mocks.sampleAvailable = false;
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <CreateInstanceView
+          parent="projects/demo"
+          onDismiss={mocks.onDismiss}
+          onCreated={mocks.onCreated}
+        />
+      );
+    });
+
+    expect(container.textContent).not.toContain("Use sample instance");
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("hides sample instance creation when a sample was already provisioned", () => {
+    mocks.isSaaSMode = true;
+    mocks.sampleInstance = "instances/sample";
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <CreateInstanceView
+          parent="projects/demo"
+          onDismiss={mocks.onDismiss}
+          onCreated={mocks.onCreated}
+        />
+      );
+    });
+
+    expect(container.textContent).not.toContain("Use sample instance");
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("hides sample instance creation when the workspace has an instance", () => {
+    mocks.isSaaSMode = true;
+    mocks.totalInstanceCount = 1;
     const container = document.createElement("div");
     const root = createRoot(container);
 

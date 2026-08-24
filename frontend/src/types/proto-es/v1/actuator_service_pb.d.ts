@@ -53,12 +53,12 @@ export declare type SampleInfo = Message<"bytebase.v1.SampleInfo"> & {
   available: boolean;
 
   /**
-   * The provisioned sample instances.
+   * The provisioned sample instance.
    * Format: instances/{instance}
    *
-   * @generated from field: repeated string instances = 2;
+   * @generated from field: string instance = 2;
    */
-  instances: string[];
+  instance: string;
 
   /**
    * The time when the provisioned sample resources expire.

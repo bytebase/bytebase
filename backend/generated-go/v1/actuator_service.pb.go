@@ -103,9 +103,9 @@ type SampleInfo struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Whether sample setup is currently available.
 	Available bool `protobuf:"varint,1,opt,name=available,proto3" json:"available,omitempty"`
-	// The provisioned sample instances.
+	// The provisioned sample instance.
 	// Format: instances/{instance}
-	Instances []string `protobuf:"bytes,2,rep,name=instances,proto3" json:"instances,omitempty"`
+	Instance string `protobuf:"bytes,2,opt,name=instance,proto3" json:"instance,omitempty"`
 	// The time when the provisioned sample resources expire.
 	ExpireTime    *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=expire_time,json=expireTime,proto3" json:"expire_time,omitempty"`
 	unknownFields protoimpl.UnknownFields
@@ -149,11 +149,11 @@ func (x *SampleInfo) GetAvailable() bool {
 	return false
 }
 
-func (x *SampleInfo) GetInstances() []string {
+func (x *SampleInfo) GetInstance() string {
 	if x != nil {
-		return x.Instances
+		return x.Instance
 	}
-	return nil
+	return ""
 }
 
 func (x *SampleInfo) GetExpireTime() *timestamppb.Timestamp {
@@ -344,12 +344,12 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\n" +
 	"\x19v1/actuator_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x14\n" +
 	"\x12SetupSampleRequest\"\x18\n" +
-	"\x16GetActuatorInfoRequest\"\xae\x01\n" +
+	"\x16GetActuatorInfoRequest\"\xac\x01\n" +
 	"\n" +
 	"SampleInfo\x12!\n" +
-	"\tavailable\x18\x01 \x01(\bB\x03\xe0A\x03R\tavailable\x12;\n" +
-	"\tinstances\x18\x02 \x03(\tB\x1d\xe0A\x03\xfaA\x17\n" +
-	"\x15bytebase.com/InstanceR\tinstances\x12@\n" +
+	"\tavailable\x18\x01 \x01(\bB\x03\xe0A\x03R\tavailable\x129\n" +
+	"\binstance\x18\x02 \x01(\tB\x1d\xe0A\x03\xfaA\x17\n" +
+	"\x15bytebase.com/InstanceR\binstance\x12@\n" +
 	"\vexpire_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"expireTime\"\x92\x06\n" +
 	"\fActuatorInfo\x12\x1d\n" +

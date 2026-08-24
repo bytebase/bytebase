@@ -119,6 +119,7 @@ describe("instance store project parent", () => {
     expect(mocks.createInstance.mock.calls[0][0]).toMatchObject({
       parent: "projects/app",
     });
+    expect(mocks.refreshServerInfo).toHaveBeenCalledOnce();
   });
 
   test("refreshes sample metadata after preparing a sample instance", async () => {
