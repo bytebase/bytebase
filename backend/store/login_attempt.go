@@ -11,6 +11,11 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
+// maxIdentityBytes caps the identity column. The longest legal identity today
+// is an LDAP key: a 63-byte provider ID, ":", and a 254-char proto-bounded
+// username — comfortably under this structural bound.
+const maxIdentityBytes = 512
+
 // ClaimLoginAttempt atomically takes one of maxAttempts slots for the identity
 // before the credential is checked (docs/design/login-attempt-lockout.md).
 // Returns (true, nil) when a slot was granted, or (false, nil) when the
@@ -21,10 +26,11 @@ import (
 // restarts the counter at one. The row lock serializes concurrent claims and
 // now() is database time, so replicas cannot disagree.
 func (s *Store) ClaimLoginAttempt(ctx context.Context, identity string, kind storepb.LoginAttemptKind, maxAttempts int, window time.Duration) (bool, error) {
-	// Backstop against programmer error — the auth service bounds identities
-	// before claiming; an unkeyed row must never be writable at all.
-	if identity == "" || kind == storepb.LoginAttemptKind_LOGIN_ATTEMPT_KIND_UNSPECIFIED {
-		return false, errors.Errorf("login attempt requires an identity and a kind")
+	// Backstop against programmer error — request fields that become identities
+	// are bounded at the proto edge, so an unkeyed or structurally oversized
+	// row here means a caller composed an identity from an unbounded source.
+	if identity == "" || len(identity) > maxIdentityBytes || kind == storepb.LoginAttemptKind_LOGIN_ATTEMPT_KIND_UNSPECIFIED {
+		return false, errors.Errorf("login attempt requires a kind and an identity of at most %d bytes", maxIdentityBytes)
 	}
 	q := qb.Q().Space(`
 		INSERT INTO login_attempt (identity, kind, attempts, last_attempt_at)

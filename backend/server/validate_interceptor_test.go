@@ -60,3 +60,47 @@ func TestAuthEmailFieldsAreLengthBounded(t *testing.T) {
 		t.Errorf("a 254-char email must pass: %v", err)
 	}
 }
+
+// TestAuthRequestFieldsAreSizeBounded pins the size bounds on the remaining
+// auth request strings: passwords at bcrypt's 72-byte hard limit, submitted
+// codes at 64 chars, server-minted and IdP-issued tokens at generous caps, and
+// resource names at 256 — so no unauthenticated request can push an oversized
+// value into hashing, comparison, or lockout bookkeeping.
+func TestAuthRequestFieldsAreSizeBounded(t *testing.T) {
+	v, err := protovalidate.New()
+	if err != nil {
+		t.Fatalf("protovalidate.New: %v", err)
+	}
+	long := func(n int) string { return strings.Repeat("a", n) }
+	for _, tc := range []struct {
+		name string
+		msg  proto.Message
+	}{
+		{"login password over bcrypt's 72 bytes", &v1pb.LoginRequest{Password: long(73)}},
+		{"signup password over bcrypt's 72 bytes", &v1pb.SignupRequest{Password: long(73)}},
+		{"reset new_password over bcrypt's 72 bytes", &v1pb.ResetPasswordRequest{NewPassword: long(73)}},
+		{"signup title over 200", &v1pb.SignupRequest{Title: long(201)}},
+		{"otp code over 64", &v1pb.LoginRequest{OtpCode: ptrOf(long(65))}},
+		{"email code over 64", &v1pb.LoginRequest{EmailCode: ptrOf(long(65))}},
+		{"reset code over 64", &v1pb.ResetPasswordRequest{Code: long(65)}},
+		{"switch recovery code over 64", &v1pb.SwitchWorkspaceRequest{RecoveryCode: ptrOf(long(65))}},
+		{"mfa temp token over 4096", &v1pb.SwitchWorkspaceRequest{MfaTempToken: ptrOf(long(4097))}},
+		{"login workspace over 256", &v1pb.LoginRequest{Workspace: ptrOf(long(257))}},
+		{"idp name over 256", &v1pb.LoginRequest{IdpName: long(257)}},
+		{"exchange token over 8192", &v1pb.ExchangeTokenRequest{Token: long(8193)}},
+		{"exchange email over 254", &v1pb.ExchangeTokenRequest{Email: long(255)}},
+		{"user email over 254", &v1pb.User{Email: long(255)}},
+		{"user password over bcrypt's 72 bytes", &v1pb.User{Password: long(73)}},
+		{"update email over 254", &v1pb.UpdateEmailRequest{Email: long(255)}},
+	} {
+		if err := v.Validate(tc.msg); err == nil {
+			t.Errorf("expected size violation for %s, got nil", tc.name)
+		}
+	}
+	// A 72-byte password is bcrypt's maximum and must pass.
+	if err := v.Validate(&v1pb.LoginRequest{Password: long(72)}); err != nil {
+		t.Errorf("a 72-byte password must pass: %v", err)
+	}
+}
+
+func ptrOf[T any](v T) *T { return &v }

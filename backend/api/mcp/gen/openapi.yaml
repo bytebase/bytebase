@@ -11767,10 +11767,12 @@ components:
         token:
           type: string
           title: token
+          maxLength: 8192
           description: External OIDC token (JWT) from CI/CD platform.
         email:
           type: string
           title: email
+          maxLength: 254
           description: |-
             Workload Identity email for identifying which identity to authenticate as.
              Format: {name}@workload.bytebase.com
@@ -14969,7 +14971,9 @@ components:
         password:
           type: string
           title: password
-          description: User's password for authentication.
+          description: |
+            User's password for authentication.
+            string.max_bytes = 72
         web:
           type: boolean
           title: web
@@ -14979,6 +14983,7 @@ components:
         idpName:
           type: string
           title: idp_name
+          maxLength: 256
           description: |-
             The name of the identity provider.
              Format: idps/{idp}
@@ -14991,24 +14996,28 @@ components:
             - string
             - "null"
           title: otp_code
+          maxLength: 64
           description: The otp_code is used to verify the user's identity by MFA.
         recoveryCode:
           type:
             - string
             - "null"
           title: recovery_code
+          maxLength: 64
           description: The recovery_code is used to recovery the user's identity with MFA.
         mfaTempToken:
           type:
             - string
             - "null"
           title: mfa_temp_token
+          maxLength: 4096
           description: The mfa_temp_token is used to verify the user's identity by MFA.
         emailCode:
           type:
             - string
             - "null"
           title: email_code
+          maxLength: 64
           description: |-
             6-digit code from email for passwordless login/signup.
              Pairs with `email`. Mutually exclusive with `password` and `idp_name`.
@@ -15017,6 +15026,7 @@ components:
             - string
             - "null"
           title: workspace
+          maxLength: 256
           description: |-
             Preferred workspace to land in after login. If the user is a member of this
              workspace, the token is issued for it; otherwise falls back to the default
@@ -15626,6 +15636,7 @@ components:
         code:
           type: string
           title: code
+          maxLength: 4096
           description: Authorization code from OAuth2 provider.
       title: OAuth2IdentityProviderContext
       additionalProperties: false
@@ -15689,6 +15700,7 @@ components:
         code:
           type: string
           title: code
+          maxLength: 4096
           description: Authorization code from OIDC provider.
       title: OIDCIdentityProviderContext
       additionalProperties: false
@@ -17346,6 +17358,7 @@ components:
             - string
             - "null"
           title: workspace
+          maxLength: 256
           description: |-
             Optional workspace context captured at send time, used to locate the EMAIL setting,
              and later (at verify time) for signup gate checks and workspace assignment.
@@ -17367,11 +17380,14 @@ components:
         code:
           type: string
           title: code
+          maxLength: 64
           description: The 6-digit code from the reset email.
         newPassword:
           type: string
           title: new_password
-          description: The new password to set.
+          description: |
+            The new password to set.
+            string.max_bytes = 72
       title: ResetPasswordRequest
       additionalProperties: false
     bytebase.v1.Restriction:
@@ -18895,6 +18911,7 @@ components:
             - string
             - "null"
           title: workspace
+          maxLength: 256
           description: |-
             Optional workspace context captured at send time, used to locate the EMAIL setting,
              and later (at verify time) for signup gate checks and workspace assignment.
@@ -19185,10 +19202,13 @@ components:
         password:
           type: string
           title: password
-          description: The password for the new account.
+          description: |
+            The password for the new account.
+            string.max_bytes = 72
         title:
           type: string
           title: title
+          maxLength: 200
           description: The display name of the user.
       title: SignupRequest
       additionalProperties: false
@@ -19450,6 +19470,7 @@ components:
         workspace:
           type: string
           title: workspace
+          maxLength: 256
           description: |-
             The target workspace to switch to.
              Format: workspaces/{workspace}
@@ -19462,18 +19483,21 @@ components:
             - string
             - "null"
           title: otp_code
+          maxLength: 64
           description: OTP code for MFA verification. Required if the target workspace enforces MFA.
         recoveryCode:
           type:
             - string
             - "null"
           title: recovery_code
+          maxLength: 64
           description: Recovery code for MFA verification (alternative to otp_code).
         mfaTempToken:
           type:
             - string
             - "null"
           title: mfa_temp_token
+          maxLength: 4096
           description: Temporary MFA token from a previous SwitchWorkspace call that returned mfa_temp_token.
       title: SwitchWorkspaceRequest
       additionalProperties: false
@@ -20927,6 +20951,7 @@ components:
         email:
           type: string
           title: email
+          maxLength: 254
           description: The new email address.
       title: UpdateEmailRequest
       additionalProperties: false
@@ -21379,6 +21404,7 @@ components:
         email:
           type: string
           title: email
+          maxLength: 254
           description: The email address of the user, used for login and notifications.
         title:
           type: string
@@ -21388,7 +21414,9 @@ components:
         password:
           type: string
           title: password
-          description: The password for authentication. Only used during user creation or password updates.
+          description: |
+            The password for authentication. Only used during user creation or password updates.
+            string.max_bytes = 72
         mfaEnabled:
           type: boolean
           title: mfa_enabled

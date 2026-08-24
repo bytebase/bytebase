@@ -14,7 +14,6 @@ import (
 	"slices"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -50,11 +49,6 @@ const (
 	// Following industry standards (Okta: 5 minutes, Auth0: 10 minutes, AWS Cognito: 3 minutes).
 	// A short duration reduces the attack window for TOTP brute-force attempts.
 	mfaTempTokenDuration = 5 * time.Minute
-
-	// maxLoginIdentityLength bounds, in characters, the identity that keys a
-	// login_attempt row. claimLoginAttempt refuses longer identities before
-	// writing anything, so garbage never writes a row.
-	maxLoginIdentityLength = 254
 
 	// Error messages for authentication failures.
 	errMsgInvalidCredentials  = "invalid email or password"
@@ -2089,9 +2083,6 @@ type loginAttemptPolicy struct {
 	window      time.Duration
 	// lockedMsg answers a claim refused because the identity is locked out.
 	lockedMsg string
-	// invalidMsg answers an identity that may not key a row at all, with the
-	// same error a failed credential of this kind gets.
-	invalidMsg string
 }
 
 // Attempt limits per credential kind (docs/design/login-attempt-lockout.md).
@@ -2101,21 +2092,18 @@ var (
 		maxAttempts: 10,
 		window:      10 * time.Minute,
 		lockedMsg:   errMsgTooManyPassword,
-		invalidMsg:  errMsgInvalidCredentials,
 	}
 	emailCodeAttemptPolicy = loginAttemptPolicy{
 		kind:        storepb.LoginAttemptKind_EMAIL_CODE,
 		maxAttempts: 5,
 		window:      10 * time.Minute,
 		lockedMsg:   errMsgTooManyEmailCode,
-		invalidMsg:  errMsgInvalidEmailCode,
 	}
 	mfaAttemptPolicy = loginAttemptPolicy{
 		kind:        storepb.LoginAttemptKind_MFA,
 		maxAttempts: 5,
 		window:      5 * time.Minute,
 		lockedMsg:   errMsgTooManyMFA,
-		invalidMsg:  errMsgInvalidMFACode,
 	}
 )
 
@@ -2123,13 +2111,10 @@ var (
 // before the credential is checked (docs/design/login-attempt-lockout.md).
 // A locked identity gets ResourceExhausted without any credential comparison.
 // The identity must be server-resolved and globally unique, never optional
-// request context a caller can omit or forge. Empty and over-length identities
-// are refused here, before anything is written, so no call site can turn
-// login_attempt into an unbounded unauthenticated write path.
+// request context a caller can omit or forge. Size is bounded upstream: every
+// request field that becomes an identity carries a proto max_len, and the
+// store refuses structurally oversized or unkeyed rows as a backstop.
 func (s *AuthService) claimLoginAttempt(ctx context.Context, identity string, policy loginAttemptPolicy) error {
-	if identity == "" || utf8.RuneCountInString(identity) > maxLoginIdentityLength {
-		return connect.NewError(connect.CodeUnauthenticated, errors.New(policy.invalidMsg))
-	}
 	granted, err := s.store.ClaimLoginAttempt(ctx, identity, policy.kind, policy.maxAttempts, policy.window)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, err)

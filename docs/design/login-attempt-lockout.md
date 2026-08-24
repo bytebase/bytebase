@@ -98,8 +98,10 @@ cannot merge two identities into one bucket or split one across buckets (G1):
   success deleting the row: keyed by bare username, an attacker who controls that username in a
   directory of their own could clear a victim's counter by logging in there.
 
-Identities over 254 characters — and, where the identity is an email, invalid syntax — are rejected
-before the claim, so garbage never writes a row.
+Every request field that becomes an identity is bounded at the proto edge (emails at 254
+characters, `string.max_len` enforced by the validate interceptor), invalid email syntax is
+rejected before the claim, and the store refuses structurally oversized keys — so garbage never
+writes a row.
 
 This is Vault's threshold / duration / counter-reset model with the last two collapsed, as Vault's
 own defaults do. It is at least as strict as a sliding window everywhere, and stricter against an

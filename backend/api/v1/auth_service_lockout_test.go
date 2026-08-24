@@ -3,7 +3,6 @@ package v1
 import (
 	"context"
 	"fmt"
-	"strings"
 	"testing"
 	"time"
 
@@ -79,17 +78,16 @@ func TestPasswordLockoutClaims(t *testing.T) {
 	})
 
 	t.Run("garbage identities never write a row", func(t *testing.T) {
-		longEmail := strings.Repeat("a", maxLoginIdentityLength) + "@example.com"
-		for _, email := range []string{"not-an-email", longEmail} {
-			for range passwordAttemptPolicy.maxAttempts + 1 {
-				_, err := service.getAndVerifyUser(ctx, &v1pb.LoginRequest{Email: email, Password: "wrong-password"})
-				require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err),
-					"invalid-syntax and over-length emails are rejected before the claim, with the same error as a wrong password")
-			}
+		// Over-length emails are refused at the proto edge (see
+		// TestAuthEmailFieldsAreLengthBounded); invalid syntax is refused here.
+		for range passwordAttemptPolicy.maxAttempts + 1 {
+			_, err := service.getAndVerifyUser(ctx, &v1pb.LoginRequest{Email: "not-an-email", Password: "wrong-password"})
+			require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err),
+				"an invalid-syntax email is rejected before the claim, with the same error as a wrong password")
 		}
 		var count int
 		require.NoError(t, stores.GetDB().QueryRowContext(ctx,
-			`SELECT COUNT(*) FROM login_attempt WHERE identity IN ('not-an-email', $1)`, longEmail).Scan(&count))
+			`SELECT COUNT(*) FROM login_attempt WHERE identity = 'not-an-email'`).Scan(&count))
 		require.Zero(t, count)
 	})
 }
