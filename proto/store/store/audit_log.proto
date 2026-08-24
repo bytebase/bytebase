@@ -45,9 +45,12 @@ message AuditLog {
   // Metadata about the operation.
   RequestMetadata request_metadata = 11;
 
-  // MCP delegation provenance. Present exactly when the audited call arrived
-  // through the MCP server's delegated credential; never set for public API
-  // calls. Presence of this message is the MCP-origin marker.
+  // MCP delegation provenance. Present exactly when the entry belongs to MCP:
+  // the audited call arrived through the MCP server's delegated credential, or
+  // it is one of the two MCP doors that sit outside the API — the /mcp
+  // connection gate and the OAuth2 consent that mints the credential it checks.
+  // Never set for public API calls. Presence of this message is the MCP-origin
+  // marker.
   MCPDelegation mcp_delegation = 12;
 
   enum Severity {
@@ -94,5 +97,11 @@ message MCPDelegation {
   // boundary and session-scoped: the MCP SDK hands tool handlers the
   // initialize-time context, so one MCP session carries one correlation ID
   // across all of its tool calls.
+  //
+  // Empty on the entries that belong to no session — a refused consent, which
+  // never reached that boundary, and a refused connection, which is decided
+  // before the SDK resolves a session. Filling those with a fresh value would
+  // read as a session ID that correlates exactly one row, and a mid-session
+  // refusal would get an ID different from the rows the session already wrote.
   string correlation_id = 4;
 }

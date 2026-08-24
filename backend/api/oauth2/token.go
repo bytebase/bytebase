@@ -126,6 +126,10 @@ func (s *Service) handleAuthorizationCodeGrant(c *echo.Context, client *store.OA
 		return tokenFailure(c, failure)
 	}
 
+	if failure := s.refuseIssuanceByCeiling(ctx, grantWorkspace(authCode.Workspace, client.Workspace)); failure != nil {
+		return tokenFailure(c, failure)
+	}
+
 	// Consume the code after all validations pass. This atomic delete is the
 	// single-use gate: PKCE is verified above so a failed verifier never burns
 	// the code, and concurrent redemptions race here so only the caller that
@@ -235,12 +239,17 @@ func legacyGrantFailure() *oauth2Failure {
 }
 
 // tokenFailure renders a helper's refusal as an RFC 6749 token-endpoint error.
-// server_error is the only 500-class code these helpers produce; every other
-// code is a client error.
+// Two codes are not client errors and must not answer 4xx, which is what tells
+// a client to stop and re-authorize: server_error is a fault, and
+// temporarily_unavailable is a policy state an admin reverses.
 func tokenFailure(c *echo.Context, failure *oauth2Failure) error {
 	status := http.StatusBadRequest
-	if failure.code == "server_error" {
+	switch failure.code {
+	case "server_error":
 		status = http.StatusInternalServerError
+	case "temporarily_unavailable":
+		status = http.StatusServiceUnavailable
+	default:
 	}
 	return oauth2Error(c, status, failure.code, failure.description)
 }
@@ -258,6 +267,10 @@ func (s *Service) handleRefreshTokenGrant(c *echo.Context, client *store.OAuth2C
 		return tokenFailure(c, failure)
 	}
 	tokenHash := auth.HashToken(req.RefreshToken)
+
+	if failure := s.refuseIssuanceByCeiling(ctx, grantWorkspace(refreshToken.Workspace, client.Workspace)); failure != nil {
+		return tokenFailure(c, failure)
+	}
 
 	// Consume the refresh token after validations pass. This atomic delete is
 	// the single-use rotation gate: concurrent refreshes race here so only the
@@ -415,6 +428,57 @@ func resolveBoundWorkspace(ctx context.Context, resolver workspaceResolver, saas
 		return "", errWorkspaceNotMember
 	}
 	return workspaceID, nil
+}
+
+// grantWorkspace is the workspace a stored grant is bound to: the one recorded
+// on it, or the legacy client's backfilled workspace. It is resolveBoundWorkspace's
+// first two lines, without the membership check — the ceiling is a property of
+// the workspace, and asking who the user is comes later.
+func grantWorkspace(issuedWorkspace, clientWorkspace string) string {
+	if issuedWorkspace != "" {
+		return issuedWorkspace
+	}
+	return clientWorkspace
+}
+
+// refuseIssuanceByCeiling holds a grant about to be exchanged against the
+// workspace's MCP capability ceiling, and reports why it refused, or nil to
+// proceed. It returns an *oauth2Failure rather than rendering: a helper that
+// renders returns whatever c.JSON returns, which is nil when it succeeds, so
+// its caller cannot tell "refused" from "carry on" — and here carrying on
+// issues the token underneath the refusal.
+//
+// It runs BEFORE the single-use consume, for the reason PKCE does: a refusal
+// must not burn the credential it refuses. The ceiling is a toggle an admin
+// flips back, so consuming first would turn an hour of MCP being off into every
+// client permanently losing its refresh token — and the message it returns
+// says raising the ceiling restores service, which would then be false.
+// Membership is different and stays after the consume: losing it is a one-way
+// revocation where killing the grant is the point.
+//
+// No audit row: this endpoint is machine-to-machine, and the two doors a person
+// and a session meet carry the record.
+func (s *Service) refuseIssuanceByCeiling(ctx context.Context, workspaceID string) *oauth2Failure {
+	if workspaceID == "" {
+		// An unbound legacy grant. resolveBoundWorkspace refuses it after the
+		// consume with the error that names the real problem.
+		return nil
+	}
+	settings, err := s.mcpCeiling.GetMCPSettingsUncached(ctx, workspaceID)
+	switch verdict := auth.ClassifyMCPCeiling(settings.Capability, err); {
+	case verdict == auth.MCPCeilingServes:
+		return nil
+	case verdict.IsPolicy():
+		// NOT invalid_grant: a compliant client discards the grant on it (see
+		// legacyGrantFailure, which uses it for that), and this credential is
+		// deliberately kept so an admin can toggle the ceiling back.
+		// temporarily_unavailable is outside RFC 6749 §5.2, which enumerates
+		// ways the request or the grant is wrong; this is neither.
+		return &oauth2Failure{code: "temporarily_unavailable", description: verdict.Refusal()}
+	default:
+		slog.Error("failed to read the MCP capability ceiling; cannot issue a token", log.BBError(err))
+		return &oauth2Failure{code: "server_error", description: verdict.Refusal()}
+	}
 }
 
 // issueTokens issues a new OAuth2 access token (and refresh token, when the

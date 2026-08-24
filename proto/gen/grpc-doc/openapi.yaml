@@ -5443,6 +5443,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.BatchUpdateInstancesResponse'
+  /v1/mcp/info:
+    get:
+      tags:
+        - WorkspaceService
+      summary: |-
+        Gets what MCP (Model Context Protocol) does in this workspace: the
+         capability ceiling in force, what each ceiling serves, and the per-engine
+         facts a read-only session depends on. The workspace is resolved from the
+         authenticated session.
+      description: |-
+        Served to MCP sessions. An agent asking what it may do here is the point:
+         the response says nothing a session's own denials do not already say, one
+         refusal at a time, and knowing it up front is what stops the agent
+         planning work the ceiling was never going to serve.
+
+         Permissions required: None (authentication required)
+      operationId: WorkspaceService_GetMCPInfo
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.MCPInfo'
   /v1/projects:
     get:
       tags:
@@ -6180,16 +6204,21 @@ paths:
                      The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
                      Supported filter:
-                     - method: the API name, can be found in the docs, should start with "/bytebase.v1." prefix. For example "/bytebase.v1.UserService/CreateUser". Support "==" operator.
+                     - method: the API name, can be found in the docs. Usually "/bytebase.v1.…", for example "/bytebase.v1.UserService/CreateUser"; entries written outside the v1 API carry their own prefix, such as "/bytebase.mcp.Session/Authorize" or "/bytebase.cli.Recovery/ResetUserPassword". Support "==" operator.
+                     - resource: the resource the entry is about, support "==" operator.
                      - severity: support "==" operator, check Severity enum in AuditLog message for values.
                      - user: the actor, should in "users/{email}" format, support "==" operator.
                      - create_time: support ">=" and "<=" operator.
+                     - mcp: true selects the entries MCP produced, false the rest. A boolean, not a string. Support "==" operator.
+                     - mcp_correlation_id: the MCP session an entry belongs to, taken from an entry's mcp_delegation.correlation_id. Support "==" operator. Entries MCP produced outside a session — a refused connection or consent — carry none and match no value here.
 
                      For example:
                       - filter = "method == '/bytebase.v1.SQLService/Query'"
                       - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
                       - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
                       - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
+                      - filter = "mcp == true"
+                      - filter = "mcp_correlation_id == '0b7f1a3c-1d2e-4f56-8a90-1b2c3d4e5f60'"
                 orderBy:
                   type: string
                   title: order_by
@@ -23185,6 +23214,10 @@ components:
       required:
         - name
       additionalProperties: false
+    bytebase.v1.GetMCPInfoRequest:
+      type: object
+      title: GetMCPInfoRequest
+      additionalProperties: false
     bytebase.v1.GetPaymentInfoRequest:
       type: object
       title: GetPaymentInfoRequest
@@ -25979,6 +26012,21 @@ components:
       title: LogoutRequest
       additionalProperties: false
       description: Request to logout current user session.
+    bytebase.v1.MCPCapabilityMode:
+      type: object
+      properties:
+        capability:
+          title: capability
+          $ref: '#/components/schemas/bytebase.v1.MCPSetting.Capability'
+        servedClasses:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.MCPMethodClass'
+          title: served_classes
+          description: Empty means the ceiling serves nothing, which is what DISABLED is.
+      title: MCPCapabilityMode
+      additionalProperties: false
+      description: MCPCapabilityMode is one ceiling and the method classes it serves.
     bytebase.v1.MCPDelegation:
       type: object
       properties:
@@ -26051,6 +26099,168 @@ components:
          that contradicts its class. Neither is expressible now, and the one check
          left — the reason belongs to the class it is used on — is a table the gate
          already keeps for the wording.
+    bytebase.v1.MCPEngineEnforcement:
+      type: object
+      properties:
+        engine:
+          title: engine
+          $ref: '#/components/schemas/bytebase.v1.Engine'
+        readOnlyDepth:
+          title: read_only_depth
+          $ref: '#/components/schemas/bytebase.v1.MCPEngineEnforcement.ReadOnlyDepth'
+        masking:
+          title: masking
+          $ref: '#/components/schemas/bytebase.v1.MCPEngineEnforcement.Masking'
+        note:
+          type: string
+          title: note
+          description: |-
+            Where the answers above are the floor rather than the whole story. Empty
+             for most engines.
+      title: MCPEngineEnforcement
+      additionalProperties: false
+      description: |-
+        MCPEngineEnforcement is what the read-only ceiling and the masking toggle
+         reach on one database engine.
+    bytebase.v1.MCPEngineEnforcement.Masking:
+      type: string
+      title: Masking
+      enum:
+        - MASKING_UNSPECIFIED
+        - NONE
+        - COLUMN
+        - DOCUMENT
+      description: |-
+        How Bytebase masks results on this engine, which is what decides whether
+         ignoring masking exemptions changes anything here.
+    bytebase.v1.MCPEngineEnforcement.ReadOnlyDepth:
+      type: string
+      title: ReadOnlyDepth
+      enum:
+        - READ_ONLY_DEPTH_UNSPECIFIED
+        - UNSUPPORTED
+        - STATEMENT
+        - STATEMENT_AND_SESSION
+      description: How much of a read-only ceiling this engine can be held to.
+    bytebase.v1.MCPInfo:
+      type: object
+      properties:
+        workspace:
+          type: string
+          title: workspace
+          description: |-
+            The workspace this describes. Format: workspaces/{workspace}. Not this
+             message's own resource name — MCPInfo is not a named resource and there is
+             nothing to get it by.
+          readOnly: true
+        capability:
+          title: capability
+          description: |-
+            The ceiling in force for this workspace. A workspace that never configured
+             MCP resolves to READ_WRITE.
+          readOnly: true
+          $ref: '#/components/schemas/bytebase.v1.MCPSetting.Capability'
+        modes:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.MCPCapabilityMode'
+          title: modes
+          description: |-
+            What each ceiling serves, including the one in force, so an admin can
+             compare the choices rather than only read the current answer.
+          readOnly: true
+        methods:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.MCPMethod'
+          title: methods
+          description: |-
+            Every API method some ceiling serves. A mode serves a method when the
+             method's class is one of that mode's served_classes, which is the ceiling
+             rule the gate evaluates. Methods no ceiling serves are absent.
+
+             Being listed is necessary, not sufficient. The caller still needs the
+             permission, and two further rules narrow what a served method does: a
+             handful of methods are refused on the shape of the request (an issue that
+             would grant a permission, a rollout that skips approval), and under
+             READ_ONLY every statement SQLService/Query runs must classify as a read.
+          readOnly: true
+        engines:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.MCPEngineEnforcement'
+          title: engines
+          description: |-
+            What a read-only session and the masking toggle actually reach, per engine.
+             Both are engine-conditional in ways the ceiling alone does not show.
+          readOnly: true
+        ignoreMaskingExemptions:
+          type: boolean
+          title: ignore_masking_exemptions
+          description: |-
+            Whether this workspace stops applying the caller's own unmasking
+             provisioning to MCP requests. It decides which branch of each engine's
+             masking state a caller is in, and no other API tells an MCP session:
+             SettingService/GetSetting is served by no ceiling.
+          readOnly: true
+        dataMaskingAvailable:
+          type: boolean
+          title: data_masking_available
+          description: |-
+            Whether data masking is licensed for this workspace. When false nothing is
+             masked whatever an engine supports, so the masking states below describe a
+             mechanism that does not run. Licensing can also be set per instance, so a
+             true here is the workspace answer, not a promise about every instance.
+          readOnly: true
+      title: MCPInfo
+      additionalProperties: false
+      description: |-
+        MCPInfo is what MCP does in this workspace: the ceiling in force, what each
+         ceiling serves, and the per-engine facts a read-only session depends on.
+
+         Everything here is resolved when the request is served, never from a stored
+         copy: the method list comes off the compiled API descriptors and the engine
+         answers off the code that enforces them, so a build whose rules changed
+         cannot describe the rules of the build before it.
+    bytebase.v1.MCPMethod:
+      type: object
+      properties:
+        method:
+          type: string
+          title: method
+          description: |-
+            The method as an audit entry names it, so a denial can be found by it.
+             Example: /bytebase.v1.SQLService/Query
+        operationId:
+          type: string
+          title: operation_id
+          description: |-
+            The same method as call_api takes it.
+             Example: bytebase.v1.SQLService.Query
+        class:
+          title: class
+          $ref: '#/components/schemas/bytebase.v1.MCPMethodClass'
+        permission:
+          type: string
+          title: permission
+          description: |-
+            The IAM permission the method declares. The ceiling never grants: a session
+             may call a served method only where the person it acts for could.
+
+             Empty means the method declares no permission, which is NOT the same as
+             needing none — a method that authorizes inside its handler declares nothing
+             here. auth_method says which case an empty value is.
+        authMethod:
+          title: auth_method
+          description: |-
+            How the method authorizes. IAM means the permission above is the primary
+             rule, though not always the only one — an update carrying allow_missing
+             additionally requires the matching create permission. CUSTOM means the
+             handler decides and the permission field is silent.
+          $ref: '#/components/schemas/bytebase.v1.AuthMethod'
+      title: MCPMethod
+      additionalProperties: false
+      description: MCPMethod is one API method an MCP session can reach, and what decides it.
     bytebase.v1.MCPMethodClass:
       type: string
       title: MCPMethodClass
@@ -29258,16 +29468,21 @@ components:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Supported filter:
-             - method: the API name, can be found in the docs, should start with "/bytebase.v1." prefix. For example "/bytebase.v1.UserService/CreateUser". Support "==" operator.
+             - method: the API name, can be found in the docs. Usually "/bytebase.v1.…", for example "/bytebase.v1.UserService/CreateUser"; entries written outside the v1 API carry their own prefix, such as "/bytebase.mcp.Session/Authorize" or "/bytebase.cli.Recovery/ResetUserPassword". Support "==" operator.
+             - resource: the resource the entry is about, support "==" operator.
              - severity: support "==" operator, check Severity enum in AuditLog message for values.
              - user: the actor, should in "users/{email}" format, support "==" operator.
              - create_time: support ">=" and "<=" operator.
+             - mcp: true selects the entries MCP produced, false the rest. A boolean, not a string. Support "==" operator.
+             - mcp_correlation_id: the MCP session an entry belongs to, taken from an entry's mcp_delegation.correlation_id. Support "==" operator. Entries MCP produced outside a session — a refused connection or consent — carry none and match no value here.
 
              For example:
               - filter = "method == '/bytebase.v1.SQLService/Query'"
               - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR'"
               - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && user == 'users/bb@bytebase.com'"
               - filter = "method == '/bytebase.v1.SQLService/Query' && severity == 'ERROR' && create_time <= '2021-01-01T00:00:00Z' && create_time >= '2020-01-01T00:00:00Z'"
+              - filter = "mcp == true"
+              - filter = "mcp_correlation_id == '0b7f1a3c-1d2e-4f56-8a90-1b2c3d4e5f60'"
         orderBy:
           type: string
           title: order_by

@@ -2,7 +2,7 @@
 // @generated from file v1/workspace_service.proto (package bytebase.v1, syntax proto3)
 /* eslint-disable */
 
-import { fileDesc, messageDesc, serviceDesc } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc, serviceDesc, tsEnum } from "@bufbuild/protobuf/codegenv2";
 import { file_google_api_annotations } from "../google/api/annotations_pb";
 import { file_google_api_client } from "../google/api/client_pb";
 import { file_google_api_field_behavior } from "../google/api/field_behavior_pb";
@@ -10,76 +10,142 @@ import { file_google_api_resource } from "../google/api/resource_pb";
 import { file_google_protobuf_field_mask } from "@bufbuild/protobuf/wkt";
 import { file_v1_annotation } from "./annotation_pb";
 import { file_v1_auth_service } from "./auth_service_pb";
+import { file_v1_common } from "./common_pb";
 import { file_v1_iam_policy } from "./iam_policy_pb";
+import { file_v1_setting_service } from "./setting_service_pb";
 
 /**
  * Describes the file v1/workspace_service.proto.
  */
 export const file_v1_workspace_service = /*@__PURE__*/
-  fileDesc("Chp2MS93b3Jrc3BhY2Vfc2VydmljZS5wcm90bxILYnl0ZWJhc2UudjEiTwofUm90YXRlRGlyZWN0b3J5U3luY1Rva2VuUmVxdWVzdBIsCgRuYW1lGAEgASgJQh7gQQL6QRgKFmJ5dGViYXNlLmNvbS9Xb3Jrc3BhY2UiOgogUm90YXRlRGlyZWN0b3J5U3luY1Rva2VuUmVzcG9uc2USFgoFdG9rZW4YASABKAlCB+BBA9DqMAEiFwoVTGlzdFdvcmtzcGFjZXNSZXF1ZXN0IkQKFkxpc3RXb3Jrc3BhY2VzUmVzcG9uc2USKgoKd29ya3NwYWNlcxgBIAMoCzIWLmJ5dGViYXNlLnYxLldvcmtzcGFjZSIjChNHZXRXb3Jrc3BhY2VSZXF1ZXN0EgwKBG5hbWUYASABKAkiNgoJV29ya3NwYWNlEgwKBG5hbWUYASABKAkSDQoFdGl0bGUYAiABKAkSDAoEbG9nbxgDIAEoCSIrChZEZWxldGVXb3Jrc3BhY2VSZXF1ZXN0EhEKBG5hbWUYASABKAlCA+BBAiJ5ChZVcGRhdGVXb3Jrc3BhY2VSZXF1ZXN0Ei4KCXdvcmtzcGFjZRgBIAEoCzIWLmJ5dGViYXNlLnYxLldvcmtzcGFjZUID4EECEi8KC3VwZGF0ZV9tYXNrGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLkZpZWxkTWFzayIqChVMZWF2ZVdvcmtzcGFjZVJlcXVlc3QSEQoEbmFtZRgBIAEoCUID4EECMp8KChBXb3Jrc3BhY2VTZXJ2aWNlEnEKDEdldFdvcmtzcGFjZRIgLmJ5dGViYXNlLnYxLkdldFdvcmtzcGFjZVJlcXVlc3QaFi5ieXRlYmFzZS52MS5Xb3Jrc3BhY2UiJ4DqMAGg6jABgtPkkwIZEhcvdjEve25hbWU9d29ya3NwYWNlcy8qfRJ5Cg5MaXN0V29ya3NwYWNlcxIiLmJ5dGViYXNlLnYxLkxpc3RXb3Jrc3BhY2VzUmVxdWVzdBojLmJ5dGViYXNlLnYxLkxpc3RXb3Jrc3BhY2VzUmVzcG9uc2UiHpDqMAKg6jABgtPkkwIQEg4vdjEvd29ya3NwYWNlcxKkAQoPVXBkYXRlV29ya3NwYWNlEiMuYnl0ZWJhc2UudjEuVXBkYXRlV29ya3NwYWNlUmVxdWVzdBoWLmJ5dGViYXNlLnYxLldvcmtzcGFjZSJUiuowFGJiLndvcmtzcGFjZXMudXBkYXRlkOowAZjqMAGg6jAEqOowCYLT5JMCJjoBKjIhL3YxL3t3b3Jrc3BhY2UubmFtZT13b3Jrc3BhY2VzLyp9EqQBCgxHZXRJYW1Qb2xpY3kSIC5ieXRlYmFzZS52MS5HZXRJYW1Qb2xpY3lSZXF1ZXN0GhYuYnl0ZWJhc2UudjEuSWFtUG9saWN5IlqK6jAaYmIud29ya3NwYWNlcy5nZXRJYW1Qb2xpY3mQ6jABoOowBKjqMAmC0+STAioSKC92MS97cmVzb3VyY2U9d29ya3NwYWNlcy8qfTpnZXRJYW1Qb2xpY3kSmwEKD0RlbGV0ZVdvcmtzcGFjZRIjLmJ5dGViYXNlLnYxLkRlbGV0ZVdvcmtzcGFjZVJlcXVlc3QaGi5ieXRlYmFzZS52MS5Mb2dpblJlc3BvbnNlIkeK6jAUYmIud29ya3NwYWNlcy5kZWxldGWQ6jABmOowAaDqMAOo6jAFgtPkkwIZKhcvdjEve25hbWU9d29ya3NwYWNlcy8qfRKKAQoOTGVhdmVXb3Jrc3BhY2USIi5ieXRlYmFzZS52MS5MZWF2ZVdvcmtzcGFjZVJlcXVlc3QaGi5ieXRlYmFzZS52MS5Mb2dpblJlc3BvbnNlIjiQ6jACmOowAaDqMAOo6jAFgtPkkwIiOgEqIh0vdjEve25hbWU9d29ya3NwYWNlcy8qfTpsZWF2ZRKrAQoMU2V0SWFtUG9saWN5EiAuYnl0ZWJhc2UudjEuU2V0SWFtUG9saWN5UmVxdWVzdBoWLmJ5dGViYXNlLnYxLklhbVBvbGljeSJhiuowGmJiLndvcmtzcGFjZXMuc2V0SWFtUG9saWN5kOowAZjqMAGg6jAEqOowCYLT5JMCLToBKiIoL3YxL3tyZXNvdXJjZT13b3Jrc3BhY2VzLyp9OnNldElhbVBvbGljeRL1AQoYUm90YXRlRGlyZWN0b3J5U3luY1Rva2VuEiwuYnl0ZWJhc2UudjEuUm90YXRlRGlyZWN0b3J5U3luY1Rva2VuUmVxdWVzdBotLmJ5dGViYXNlLnYxLlJvdGF0ZURpcmVjdG9yeVN5bmNUb2tlblJlc3BvbnNlInzaQQRuYW1liuowJmJiLndvcmtzcGFjZXMucm90YXRlRGlyZWN0b3J5U3luY1Rva2VukOowAZjqMAGg6jADqOowBoLT5JMCNToBKiIwL3YxL3tuYW1lPXdvcmtzcGFjZXMvKn06cm90YXRlRGlyZWN0b3J5U3luY1Rva2VuQqsBCg9jb20uYnl0ZWJhc2UudjFCFVdvcmtzcGFjZVNlcnZpY2VQcm90b1ABWjRnaXRodWIuY29tL2J5dGViYXNlL2J5dGViYXNlL2JhY2tlbmQvZ2VuZXJhdGVkLWdvL3YxogIDQlhYqgILQnl0ZWJhc2UuVjHKAgtCeXRlYmFzZVxWMeICF0J5dGViYXNlXFYxXEdQQk1ldGFkYXRh6gIMQnl0ZWJhc2U6OlYxYgZwcm90bzM", [file_google_api_annotations, file_google_api_client, file_google_api_field_behavior, file_google_api_resource, file_google_protobuf_field_mask, file_v1_annotation, file_v1_auth_service, file_v1_iam_policy]);
+  fileDesc("Chp2MS93b3Jrc3BhY2Vfc2VydmljZS5wcm90bxILYnl0ZWJhc2UudjEiEwoRR2V0TUNQSW5mb1JlcXVlc3QixgIKB01DUEluZm8SFgoJd29ya3NwYWNlGAEgASgJQgPgQQMSOwoKY2FwYWJpbGl0eRgCIAEoDjIiLmJ5dGViYXNlLnYxLk1DUFNldHRpbmcuQ2FwYWJpbGl0eUID4EEDEjIKBW1vZGVzGAMgAygLMh4uYnl0ZWJhc2UudjEuTUNQQ2FwYWJpbGl0eU1vZGVCA+BBAxIsCgdtZXRob2RzGAQgAygLMhYuYnl0ZWJhc2UudjEuTUNQTWV0aG9kQgPgQQMSNwoHZW5naW5lcxgFIAMoCzIhLmJ5dGViYXNlLnYxLk1DUEVuZ2luZUVuZm9yY2VtZW50QgPgQQMSJgoZaWdub3JlX21hc2tpbmdfZXhlbXB0aW9ucxgGIAEoCEID4EEDEiMKFmRhdGFfbWFza2luZ19hdmFpbGFibGUYByABKAhCA+BBAyKAAQoRTUNQQ2FwYWJpbGl0eU1vZGUSNgoKY2FwYWJpbGl0eRgBIAEoDjIiLmJ5dGViYXNlLnYxLk1DUFNldHRpbmcuQ2FwYWJpbGl0eRIzCg5zZXJ2ZWRfY2xhc3NlcxgCIAMoDjIbLmJ5dGViYXNlLnYxLk1DUE1ldGhvZENsYXNzIp8BCglNQ1BNZXRob2QSDgoGbWV0aG9kGAEgASgJEhQKDG9wZXJhdGlvbl9pZBgEIAEoCRIqCgVjbGFzcxgCIAEoDjIbLmJ5dGViYXNlLnYxLk1DUE1ldGhvZENsYXNzEhIKCnBlcm1pc3Npb24YAyABKAkSLAoLYXV0aF9tZXRob2QYBSABKA4yFy5ieXRlYmFzZS52MS5BdXRoTWV0aG9kIoQDChRNQ1BFbmdpbmVFbmZvcmNlbWVudBIjCgZlbmdpbmUYASABKA4yEy5ieXRlYmFzZS52MS5FbmdpbmUSSAoPcmVhZF9vbmx5X2RlcHRoGAIgASgOMi8uYnl0ZWJhc2UudjEuTUNQRW5naW5lRW5mb3JjZW1lbnQuUmVhZE9ubHlEZXB0aBI6CgdtYXNraW5nGAMgASgOMikuYnl0ZWJhc2UudjEuTUNQRW5naW5lRW5mb3JjZW1lbnQuTWFza2luZxIMCgRub3RlGAQgASgJImsKDVJlYWRPbmx5RGVwdGgSHwobUkVBRF9PTkxZX0RFUFRIX1VOU1BFQ0lGSUVEEAASDwoLVU5TVVBQT1JURUQQARINCglTVEFURU1FTlQQAhIZChVTVEFURU1FTlRfQU5EX1NFU1NJT04QAyJGCgdNYXNraW5nEhcKE01BU0tJTkdfVU5TUEVDSUZJRUQQABIICgROT05FEAESCgoGQ09MVU1OEAISDAoIRE9DVU1FTlQQAyJPCh9Sb3RhdGVEaXJlY3RvcnlTeW5jVG9rZW5SZXF1ZXN0EiwKBG5hbWUYASABKAlCHuBBAvpBGAoWYnl0ZWJhc2UuY29tL1dvcmtzcGFjZSI6CiBSb3RhdGVEaXJlY3RvcnlTeW5jVG9rZW5SZXNwb25zZRIWCgV0b2tlbhgBIAEoCUIH4EED0OowASIXChVMaXN0V29ya3NwYWNlc1JlcXVlc3QiRAoWTGlzdFdvcmtzcGFjZXNSZXNwb25zZRIqCgp3b3Jrc3BhY2VzGAEgAygLMhYuYnl0ZWJhc2UudjEuV29ya3NwYWNlIiMKE0dldFdvcmtzcGFjZVJlcXVlc3QSDAoEbmFtZRgBIAEoCSI2CglXb3Jrc3BhY2USDAoEbmFtZRgBIAEoCRINCgV0aXRsZRgCIAEoCRIMCgRsb2dvGAMgASgJIisKFkRlbGV0ZVdvcmtzcGFjZVJlcXVlc3QSEQoEbmFtZRgBIAEoCUID4EECInkKFlVwZGF0ZVdvcmtzcGFjZVJlcXVlc3QSLgoJd29ya3NwYWNlGAEgASgLMhYuYnl0ZWJhc2UudjEuV29ya3NwYWNlQgPgQQISLwoLdXBkYXRlX21hc2sYAiABKAsyGi5nb29nbGUucHJvdG9idWYuRmllbGRNYXNrIioKFUxlYXZlV29ya3NwYWNlUmVxdWVzdBIRCgRuYW1lGAEgASgJQgPgQQIygAsKEFdvcmtzcGFjZVNlcnZpY2UScQoMR2V0V29ya3NwYWNlEiAuYnl0ZWJhc2UudjEuR2V0V29ya3NwYWNlUmVxdWVzdBoWLmJ5dGViYXNlLnYxLldvcmtzcGFjZSIngOowAaDqMAGC0+STAhkSFy92MS97bmFtZT13b3Jrc3BhY2VzLyp9EnkKDkxpc3RXb3Jrc3BhY2VzEiIuYnl0ZWJhc2UudjEuTGlzdFdvcmtzcGFjZXNSZXF1ZXN0GiMuYnl0ZWJhc2UudjEuTGlzdFdvcmtzcGFjZXNSZXNwb25zZSIekOowAqDqMAGC0+STAhASDi92MS93b3Jrc3BhY2VzEqQBCg9VcGRhdGVXb3Jrc3BhY2USIy5ieXRlYmFzZS52MS5VcGRhdGVXb3Jrc3BhY2VSZXF1ZXN0GhYuYnl0ZWJhc2UudjEuV29ya3NwYWNlIlSK6jAUYmIud29ya3NwYWNlcy51cGRhdGWQ6jABmOowAaDqMASo6jAJgtPkkwImOgEqMiEvdjEve3dvcmtzcGFjZS5uYW1lPXdvcmtzcGFjZXMvKn0SpAEKDEdldElhbVBvbGljeRIgLmJ5dGViYXNlLnYxLkdldElhbVBvbGljeVJlcXVlc3QaFi5ieXRlYmFzZS52MS5JYW1Qb2xpY3kiWorqMBpiYi53b3Jrc3BhY2VzLmdldElhbVBvbGljeZDqMAGg6jAEqOowCYLT5JMCKhIoL3YxL3tyZXNvdXJjZT13b3Jrc3BhY2VzLyp9OmdldElhbVBvbGljeRKbAQoPRGVsZXRlV29ya3NwYWNlEiMuYnl0ZWJhc2UudjEuRGVsZXRlV29ya3NwYWNlUmVxdWVzdBoaLmJ5dGViYXNlLnYxLkxvZ2luUmVzcG9uc2UiR4rqMBRiYi53b3Jrc3BhY2VzLmRlbGV0ZZDqMAGY6jABoOowA6jqMAWC0+STAhkqFy92MS97bmFtZT13b3Jrc3BhY2VzLyp9EooBCg5MZWF2ZVdvcmtzcGFjZRIiLmJ5dGViYXNlLnYxLkxlYXZlV29ya3NwYWNlUmVxdWVzdBoaLmJ5dGViYXNlLnYxLkxvZ2luUmVzcG9uc2UiOJDqMAKY6jABoOowA6jqMAWC0+STAiI6ASoiHS92MS97bmFtZT13b3Jrc3BhY2VzLyp9OmxlYXZlEqsBCgxTZXRJYW1Qb2xpY3kSIC5ieXRlYmFzZS52MS5TZXRJYW1Qb2xpY3lSZXF1ZXN0GhYuYnl0ZWJhc2UudjEuSWFtUG9saWN5ImGK6jAaYmIud29ya3NwYWNlcy5zZXRJYW1Qb2xpY3mQ6jABmOowAaDqMASo6jAJgtPkkwItOgEqIigvdjEve3Jlc291cmNlPXdvcmtzcGFjZXMvKn06c2V0SWFtUG9saWN5El8KCkdldE1DUEluZm8SHi5ieXRlYmFzZS52MS5HZXRNQ1BJbmZvUmVxdWVzdBoULmJ5dGViYXNlLnYxLk1DUEluZm8iG9pBAKDqMAGC0+STAg4SDC92MS9tY3AvaW5mbxL1AQoYUm90YXRlRGlyZWN0b3J5U3luY1Rva2VuEiwuYnl0ZWJhc2UudjEuUm90YXRlRGlyZWN0b3J5U3luY1Rva2VuUmVxdWVzdBotLmJ5dGViYXNlLnYxLlJvdGF0ZURpcmVjdG9yeVN5bmNUb2tlblJlc3BvbnNlInzaQQRuYW1liuowJmJiLndvcmtzcGFjZXMucm90YXRlRGlyZWN0b3J5U3luY1Rva2VukOowAZjqMAGg6jADqOowBoLT5JMCNToBKiIwL3YxL3tuYW1lPXdvcmtzcGFjZXMvKn06cm90YXRlRGlyZWN0b3J5U3luY1Rva2VuQqsBCg9jb20uYnl0ZWJhc2UudjFCFVdvcmtzcGFjZVNlcnZpY2VQcm90b1ABWjRnaXRodWIuY29tL2J5dGViYXNlL2J5dGViYXNlL2JhY2tlbmQvZ2VuZXJhdGVkLWdvL3YxogIDQlhYqgILQnl0ZWJhc2UuVjHKAgtCeXRlYmFzZVxWMeICF0J5dGViYXNlXFYxXEdQQk1ldGFkYXRh6gIMQnl0ZWJhc2U6OlYxYgZwcm90bzM", [file_google_api_annotations, file_google_api_client, file_google_api_field_behavior, file_google_api_resource, file_google_protobuf_field_mask, file_v1_annotation, file_v1_auth_service, file_v1_common, file_v1_iam_policy, file_v1_setting_service]);
+
+/**
+ * Describes the message bytebase.v1.GetMCPInfoRequest.
+ * Use `create(GetMCPInfoRequestSchema)` to create a new message.
+ */
+export const GetMCPInfoRequestSchema = /*@__PURE__*/
+  messageDesc(file_v1_workspace_service, 0);
+
+/**
+ * Describes the message bytebase.v1.MCPInfo.
+ * Use `create(MCPInfoSchema)` to create a new message.
+ */
+export const MCPInfoSchema = /*@__PURE__*/
+  messageDesc(file_v1_workspace_service, 1);
+
+/**
+ * Describes the message bytebase.v1.MCPCapabilityMode.
+ * Use `create(MCPCapabilityModeSchema)` to create a new message.
+ */
+export const MCPCapabilityModeSchema = /*@__PURE__*/
+  messageDesc(file_v1_workspace_service, 2);
+
+/**
+ * Describes the message bytebase.v1.MCPMethod.
+ * Use `create(MCPMethodSchema)` to create a new message.
+ */
+export const MCPMethodSchema = /*@__PURE__*/
+  messageDesc(file_v1_workspace_service, 3);
+
+/**
+ * Describes the message bytebase.v1.MCPEngineEnforcement.
+ * Use `create(MCPEngineEnforcementSchema)` to create a new message.
+ */
+export const MCPEngineEnforcementSchema = /*@__PURE__*/
+  messageDesc(file_v1_workspace_service, 4);
+
+/**
+ * Describes the enum bytebase.v1.MCPEngineEnforcement.ReadOnlyDepth.
+ */
+export const MCPEngineEnforcement_ReadOnlyDepthSchema = /*@__PURE__*/
+  enumDesc(file_v1_workspace_service, 4, 0);
+
+/**
+ * How much of a read-only ceiling this engine can be held to.
+ *
+ * @generated from enum bytebase.v1.MCPEngineEnforcement.ReadOnlyDepth
+ */
+export const MCPEngineEnforcement_ReadOnlyDepth = /*@__PURE__*/
+  tsEnum(MCPEngineEnforcement_ReadOnlyDepthSchema);
+
+/**
+ * Describes the enum bytebase.v1.MCPEngineEnforcement.Masking.
+ */
+export const MCPEngineEnforcement_MaskingSchema = /*@__PURE__*/
+  enumDesc(file_v1_workspace_service, 4, 1);
+
+/**
+ * How Bytebase masks results on this engine, which is what decides whether
+ * ignoring masking exemptions changes anything here.
+ *
+ * @generated from enum bytebase.v1.MCPEngineEnforcement.Masking
+ */
+export const MCPEngineEnforcement_Masking = /*@__PURE__*/
+  tsEnum(MCPEngineEnforcement_MaskingSchema);
 
 /**
  * Describes the message bytebase.v1.RotateDirectorySyncTokenRequest.
  * Use `create(RotateDirectorySyncTokenRequestSchema)` to create a new message.
  */
 export const RotateDirectorySyncTokenRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_workspace_service, 0);
+  messageDesc(file_v1_workspace_service, 5);
 
 /**
  * Describes the message bytebase.v1.RotateDirectorySyncTokenResponse.
  * Use `create(RotateDirectorySyncTokenResponseSchema)` to create a new message.
  */
 export const RotateDirectorySyncTokenResponseSchema = /*@__PURE__*/
-  messageDesc(file_v1_workspace_service, 1);
+  messageDesc(file_v1_workspace_service, 6);
 
 /**
  * Describes the message bytebase.v1.ListWorkspacesRequest.
  * Use `create(ListWorkspacesRequestSchema)` to create a new message.
  */
 export const ListWorkspacesRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_workspace_service, 2);
+  messageDesc(file_v1_workspace_service, 7);
 
 /**
  * Describes the message bytebase.v1.ListWorkspacesResponse.
  * Use `create(ListWorkspacesResponseSchema)` to create a new message.
  */
 export const ListWorkspacesResponseSchema = /*@__PURE__*/
-  messageDesc(file_v1_workspace_service, 3);
+  messageDesc(file_v1_workspace_service, 8);
 
 /**
  * Describes the message bytebase.v1.GetWorkspaceRequest.
  * Use `create(GetWorkspaceRequestSchema)` to create a new message.
  */
 export const GetWorkspaceRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_workspace_service, 4);
+  messageDesc(file_v1_workspace_service, 9);
 
 /**
  * Describes the message bytebase.v1.Workspace.
  * Use `create(WorkspaceSchema)` to create a new message.
  */
 export const WorkspaceSchema = /*@__PURE__*/
-  messageDesc(file_v1_workspace_service, 5);
+  messageDesc(file_v1_workspace_service, 10);
 
 /**
  * Describes the message bytebase.v1.DeleteWorkspaceRequest.
  * Use `create(DeleteWorkspaceRequestSchema)` to create a new message.
  */
 export const DeleteWorkspaceRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_workspace_service, 6);
+  messageDesc(file_v1_workspace_service, 11);
 
 /**
  * Describes the message bytebase.v1.UpdateWorkspaceRequest.
  * Use `create(UpdateWorkspaceRequestSchema)` to create a new message.
  */
 export const UpdateWorkspaceRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_workspace_service, 7);
+  messageDesc(file_v1_workspace_service, 12);
 
 /**
  * Describes the message bytebase.v1.LeaveWorkspaceRequest.
  * Use `create(LeaveWorkspaceRequestSchema)` to create a new message.
  */
 export const LeaveWorkspaceRequestSchema = /*@__PURE__*/
-  messageDesc(file_v1_workspace_service, 8);
+  messageDesc(file_v1_workspace_service, 13);
 
 /**
  * WorkspaceService manages workspace-level operations and profile.

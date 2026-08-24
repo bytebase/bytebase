@@ -129,6 +129,54 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 	return logs, nil
 }
 
+// auditLogEqualsFilter turns one `variable == "literal"` clause of the audit
+// search grammar into its SQL predicate.
+//
+// The payload is protojson, so its keys are camelCase and a filter name is not
+// always the key it reads. The four plain columns keep the historical rule that
+// the name IS the key; the two MCP filters do not, because the provenance they
+// read lives on a nested message (AuditLog.mcp_delegation, marshalled as
+// "mcpDelegation").
+func auditLogEqualsFilter(variable string, rawValue any) (*qb.Query, error) {
+	// The variable decides the literal's type, so an unknown key is reported as
+	// one whatever it was compared against.
+	switch variable {
+	case "mcp":
+		// A real boolean, like every other boolean filter key in this codebase
+		// (saved_query.starred, database.exclude_unassigned).
+		mcp, ok := rawValue.(bool)
+		if !ok {
+			return nil, errors.Errorf("invalid mcp value %v, expect true or false", rawValue)
+		}
+		// Presence of the mcpDelegation message is the MCP-origin marker, and
+		// the whole of it: the audit interceptor sets that message exactly for
+		// calls carrying the delegated credential, and leaves it off every
+		// public-chain call (proto/store/store/audit_log.proto). Its fields are
+		// empty for a legacy session, so no field of it can stand in for the
+		// test.
+		//
+		// `??` is qb's escape for a literal question mark, which is what the
+		// JSONB key-exists operator is; a bare ? is qb's bind placeholder.
+		if mcp {
+			return qb.Q().Space("payload ?? 'mcpDelegation'"), nil
+		}
+		return qb.Q().Space("NOT (payload ?? 'mcpDelegation')"), nil
+
+	case "resource", "method", "user", "severity", "mcp_correlation_id":
+		value, ok := rawValue.(string)
+		if !ok {
+			return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue)
+		}
+		if variable == "mcp_correlation_id" {
+			return qb.Q().Space("payload->'mcpDelegation'->>'correlationId' = ?", value), nil
+		}
+		return qb.Q().Space(fmt.Sprintf("payload->>'%s' = ?", variable), value), nil
+
+	default:
+		return nil, errors.Errorf("unknown variable %s", variable)
+	}
+}
+
 func GetSearchAuditLogsFilter(filter string) (*qb.Query, error) {
 	if filter == "" {
 		return nil, nil
@@ -171,16 +219,7 @@ func GetSearchAuditLogsFilter(filter string) (*qb.Query, error) {
 				return qb.Q().Space("(?)", q), nil
 			case celoperators.Equals:
 				variable, rawValue := getVariableAndValueFromExpr(expr)
-				value, ok := rawValue.(string)
-				if !ok {
-					return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue)
-				}
-				switch variable {
-				case "resource", "method", "user", "severity":
-				default:
-					return nil, errors.Errorf("unknown variable %s", variable)
-				}
-				return qb.Q().Space(fmt.Sprintf("payload->>'%s' = ?", variable), value), nil
+				return auditLogEqualsFilter(variable, rawValue)
 
 			case celoperators.GreaterEquals, celoperators.LessEquals:
 				variable, rawValue := getVariableAndValueFromExpr(expr)
