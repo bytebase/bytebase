@@ -41,6 +41,8 @@ const (
 	errMsgInvalidRecoveryCode = "invalid recovery code"
 )
 
+const setCookieHeader = "Set-Cookie"
+
 var (
 	invalidCredentialsError = connect.NewError(connect.CodeUnauthenticated, errors.New(errMsgInvalidCredentials))
 )
@@ -460,8 +462,8 @@ func (s *AuthService) clearSessionAndSetCookies(ctx context.Context, reqHeaders 
 		}
 	}
 	origin := reqHeaders.Get("Origin")
-	respHeaders.Add("Set-Cookie", auth.GetTokenCookie(ctx, s.store, s.licenseService, workspaceID, origin, "").String())
-	respHeaders.Add("Set-Cookie", auth.GetRefreshTokenCookie(origin, "", 0).String())
+	respHeaders.Add(setCookieHeader, auth.GetTokenCookie(ctx, s.store, s.licenseService, workspaceID, origin, "").String())
+	respHeaders.Add(setCookieHeader, auth.GetRefreshTokenCookie(origin, "", 0).String())
 }
 
 // Refresh exchanges a refresh token for new access and refresh tokens.
@@ -538,7 +540,7 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 	// 6. Rotate the session: the new refresh token inherits the original
 	// expiration (absolute session lifetime).
 	resp := connect.NewResponse(&v1pb.RefreshResponse{})
-	if err := s.issueSessionCookies(ctx, resp.Header(), req.Header().Get("Origin"), user.Email, workspaceID, accessToken, stored.ExpiresAt, time.Until(stored.ExpiresAt)); err != nil {
+	if err := s.issueSessionCookies(ctx, resp.Header(), req.Header().Get("Origin"), user.Email, workspaceID, accessToken, stored.ExpiresAt); err != nil {
 		return nil, err
 	}
 	return resp, nil
@@ -1000,7 +1002,7 @@ func (s *AuthService) switchWorkspaceInternal(ctx context.Context, user *store.U
 			sessionExpiresAt = time.Now().Add(auth.GetRefreshTokenDuration(ctx, s.store, s.licenseService, workspaceID))
 		}
 
-		if err := s.issueSessionCookies(ctx, resp.Header(), reqHeaders.Get("Origin"), user.Email, workspaceID, token, sessionExpiresAt, time.Until(sessionExpiresAt)); err != nil {
+		if err := s.issueSessionCookies(ctx, resp.Header(), reqHeaders.Get("Origin"), user.Email, workspaceID, token, sessionExpiresAt); err != nil {
 			return nil, err
 		}
 	} else {
@@ -1029,9 +1031,9 @@ func (s *AuthService) finalizeLogin(ctx context.Context, header http.Header, web
 		if user.Type != storepb.PrincipalType_END_USER {
 			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("only users can use web login"))
 		}
-		// A fresh session: the refresh token gets the full duration.
+		// A fresh session: the refresh token gets the full refresh duration.
 		d := auth.GetRefreshTokenDuration(ctx, s.store, s.licenseService, workspaceID)
-		if err := s.issueSessionCookies(ctx, resp.Header(), header.Get("Origin"), user.Email, workspaceID, token, time.Now().Add(d), d); err != nil {
+		if err := s.issueSessionCookies(ctx, resp.Header(), header.Get("Origin"), user.Email, workspaceID, token, time.Now().Add(d)); err != nil {
 			return nil, err
 		}
 	} else {
@@ -1064,10 +1066,10 @@ func (s *AuthService) finalizeLogin(ctx context.Context, header http.Header, web
 
 // issueSessionCookies mints one web session: it stores a refresh token
 // expiring at refreshExpiresAt and sets both HTTP-only cookies on respHeader.
-// Fresh sessions pass the full refresh duration as cookieDuration; rotations
-// pass the existing session's remaining time.
-func (s *AuthService) issueSessionCookies(ctx context.Context, respHeader http.Header, origin, userEmail, workspaceID, accessToken string, refreshExpiresAt time.Time, cookieDuration time.Duration) error {
-	respHeader.Add("Set-Cookie", auth.GetTokenCookie(ctx, s.store, s.licenseService, workspaceID, origin, accessToken).String())
+// The refresh cookie lives until that same expiry (its max age truncates to
+// whole seconds).
+func (s *AuthService) issueSessionCookies(ctx context.Context, respHeader http.Header, origin, userEmail, workspaceID, accessToken string, refreshExpiresAt time.Time) error {
+	respHeader.Add(setCookieHeader, auth.GetTokenCookie(ctx, s.store, s.licenseService, workspaceID, origin, accessToken).String())
 	refreshToken, err := auth.GenerateOpaqueToken()
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate refresh token"))
@@ -1079,7 +1081,7 @@ func (s *AuthService) issueSessionCookies(ctx context.Context, respHeader http.H
 	}); err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to create refresh token"))
 	}
-	respHeader.Add("Set-Cookie", auth.GetRefreshTokenCookie(origin, refreshToken, cookieDuration).String())
+	respHeader.Add(setCookieHeader, auth.GetRefreshTokenCookie(origin, refreshToken, time.Until(refreshExpiresAt)).String())
 	return nil
 }
 
