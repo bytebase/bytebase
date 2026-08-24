@@ -185,7 +185,7 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	}
 	// If the user has no workspace (e.g. left all workspaces), provision one.
 	if workspaceID == "" {
-		targetWorkspaceID, isMember, err := s.resolveWorkspaceIDByEmail(ctx, loginUser.Email)
+		targetWorkspaceID, isMember, err := s.resolveWorkspaceIDByEmail(ctx, loginUser.Email, preferredWS)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve target workspace"))
 		}
@@ -303,7 +303,7 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 
 	// Resolve the target workspace (read-only) so we can check restrictions BEFORE
 	// any write — otherwise a rejected signup would leave an orphan user/workspace behind.
-	targetWorkspaceID, targetIsMember, err := s.resolveWorkspaceIDByEmail(ctx, email)
+	targetWorkspaceID, targetIsMember, err := s.resolveWorkspaceIDByEmail(ctx, email, "")
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve target workspace"))
 	}
@@ -367,7 +367,24 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 // resolveWorkspaceIDByEmail returns (workspaceID, isMember).
 // isMember is true when the user already has an IAM binding in the returned workspace.
 // When false, the returned workspaceID is the self-host singleton (user needs to be added).
-func (s *AuthService) resolveWorkspaceIDByEmail(ctx context.Context, email string) (string, bool, error) {
+// A non-empty preferredWorkspaceID wins when it is one of the email's own
+// memberships — mirroring resolveWorkspaceForLogin for existing users — so a
+// multi-invited email lands in the workspace the login flow named rather than
+// the oldest invitation.
+func (s *AuthService) resolveWorkspaceIDByEmail(ctx context.Context, email, preferredWorkspaceID string) (string, bool, error) {
+	if preferredWorkspaceID != "" {
+		preferredWS, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+			WorkspaceID:    &preferredWorkspaceID,
+			Email:          email,
+			IncludeAllUser: !s.profile.SaaS,
+		})
+		if err != nil {
+			return "", false, errors.Wrapf(err, "failed to find workspace")
+		}
+		if preferredWS != nil {
+			return preferredWS.ResourceID, true, nil
+		}
+	}
 	existingWS, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
 		Email:          email,
 		IncludeAllUser: !s.profile.SaaS,

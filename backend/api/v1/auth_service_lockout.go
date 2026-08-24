@@ -88,13 +88,16 @@ func (s *AuthService) challengeMFAAndClear(ctx context.Context, user *store.User
 }
 
 // ldapLoginIdentity keys the PASSWORD lockout bucket for an LDAP bind: the
-// identity-provider ID joined with the normalized submitted username. The
+// identity-provider ID joined with the submitted username, verbatim. The
 // provider must be part of the key — keyed by bare username, an attacker who
 // controls the same username in a directory of their own could clear this
 // directory's counter by logging in there (success deletes the row). The
-// separator is ":" because it is legal in neither IDP resource IDs
-// ([a-z0-9-]) nor email addresses, so an LDAP bucket can never collide with
-// a plain email account's bucket.
+// username is not normalized: a case-exact directory attribute can name two
+// accounts differing only by case, and merging them would let either lock —
+// or, on success, clear — the other. One bucket per submitted form is the
+// design's accepted trade. The separator is ":" because it is legal in
+// neither IDP resource IDs ([a-z0-9-]) nor email addresses, so an LDAP
+// bucket can never collide with a plain email account's bucket.
 func ldapLoginIdentity(idpID, username string) string {
-	return fmt.Sprintf("%s:%s", idpID, normalizeEmail(username))
+	return fmt.Sprintf("%s:%s", idpID, username)
 }

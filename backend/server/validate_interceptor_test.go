@@ -76,7 +76,7 @@ func TestAuthRequestFieldsAreSizeBounded(t *testing.T) {
 		name string
 		msg  proto.Message
 	}{
-		{"login password over bcrypt's 72 bytes", &v1pb.LoginRequest{Password: long(73)}},
+		{"login password over the LDAP-tolerant 512 bytes", &v1pb.LoginRequest{Password: long(513)}},
 		{"signup password over bcrypt's 72 bytes", &v1pb.SignupRequest{Password: long(73)}},
 		{"reset new_password over bcrypt's 72 bytes", &v1pb.ResetPasswordRequest{NewPassword: long(73)}},
 		{"signup title over 200", &v1pb.SignupRequest{Title: long(201)}},
@@ -87,7 +87,7 @@ func TestAuthRequestFieldsAreSizeBounded(t *testing.T) {
 		{"mfa temp token over 4096", &v1pb.SwitchWorkspaceRequest{MfaTempToken: ptrOf(long(4097))}},
 		{"login workspace over 256", &v1pb.LoginRequest{Workspace: ptrOf(long(257))}},
 		{"idp name over 256", &v1pb.LoginRequest{IdpName: long(257)}},
-		{"exchange token over 8192", &v1pb.ExchangeTokenRequest{Token: long(8193)}},
+		{"exchange token over 64KiB", &v1pb.ExchangeTokenRequest{Token: long(65537)}},
 		{"exchange email over 254", &v1pb.ExchangeTokenRequest{Email: long(255)}},
 		{"user email over 254", &v1pb.User{Email: long(255)}},
 		{"user password over bcrypt's 72 bytes", &v1pb.User{Password: long(73)}},
@@ -97,9 +97,13 @@ func TestAuthRequestFieldsAreSizeBounded(t *testing.T) {
 			t.Errorf("expected size violation for %s, got nil", tc.name)
 		}
 	}
-	// A 72-byte password is bcrypt's maximum and must pass.
-	if err := v.Validate(&v1pb.LoginRequest{Password: long(72)}); err != nil {
-		t.Errorf("a 72-byte password must pass: %v", err)
+	// Login tolerates LDAP passwords beyond bcrypt's 72 bytes; the sinks that
+	// bcrypt-hash (signup, reset) cap at exactly 72.
+	if err := v.Validate(&v1pb.LoginRequest{Password: long(512)}); err != nil {
+		t.Errorf("a 512-byte login password must pass: %v", err)
+	}
+	if err := v.Validate(&v1pb.SignupRequest{Password: long(72)}); err != nil {
+		t.Errorf("a 72-byte signup password must pass: %v", err)
 	}
 }
 

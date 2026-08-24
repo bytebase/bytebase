@@ -121,7 +121,9 @@ export declare type LoginRequest = Message<"bytebase.v1.LoginRequest"> & {
   email: string;
 
   /**
-   * User's password for authentication.
+   * User's password for authentication. Bounded for abuse only: LDAP
+   * directories may accept passwords beyond bcrypt's 72-byte limit, and the
+   * local-password path rejects longer inputs itself.
    *
    * @generated from field: string password = 2;
    */

@@ -179,7 +179,7 @@ func TestLoginAttemptClaim(t *testing.T) {
 		require.Error(t, err, "an empty identity must never write a row")
 		_, err = s.ClaimLoginAttempt(ctx, "someone@example.com", storepb.LoginAttemptKind_LOGIN_ATTEMPT_KIND_UNSPECIFIED, 3, window)
 		require.Error(t, err, "an unspecified kind must never write a row")
-		_, err = s.ClaimLoginAttempt(ctx, strings.Repeat("a", 513), storepb.LoginAttemptKind_PASSWORD, 3, window)
+		_, err = s.ClaimLoginAttempt(ctx, strings.Repeat("a", 2049), storepb.LoginAttemptKind_PASSWORD, 3, window)
 		require.Error(t, err, "a structurally oversized identity must never write a row")
 	})
 

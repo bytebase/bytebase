@@ -364,7 +364,11 @@ func TestSwitchWorkspaceMFAClaims(t *testing.T) {
 // bucket of LDAP user "alice@corp.com" on IDP "corpldap". ":" is legal in
 // neither alphabet, so an LDAP identity can never be a valid email.
 func TestLDAPLoginIdentity(t *testing.T) {
-	require.Equal(t, "corp-ldap:alice@corp.com", ldapLoginIdentity("corp-ldap", "  Alice@Corp.com "))
+	// The submitted username is kept verbatim: a case-exact directory
+	// attribute can name two accounts differing only by case, and merging
+	// them would let either lock — or clear — the other.
+	require.Equal(t, "corp-ldap:Alice@Corp.com", ldapLoginIdentity("corp-ldap", "Alice@Corp.com"))
+	require.NotEqual(t, ldapLoginIdentity("corp-ldap", "alice"), ldapLoginIdentity("corp-ldap", "Alice"))
 	require.True(t, common.IsValidEmail("corpldap/alice@corp.com"))
 	require.False(t, common.IsValidEmail(ldapLoginIdentity("corpldap", "alice@corp.com")))
 }
@@ -397,7 +401,7 @@ func TestLDAPLockoutClaims(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	request := &v1pb.LoginRequest{IdpName: "idps/" + idpID, Email: "  Alice  ", Password: "wrong"}
+	request := &v1pb.LoginRequest{IdpName: "idps/" + idpID, Email: "Alice", Password: "wrong"}
 	_, err = service.getOrCreateUserWithIDP(ctx, request)
 	require.Error(t, err, "the directory is unreachable")
 
@@ -405,7 +409,7 @@ func TestLDAPLockoutClaims(t *testing.T) {
 	var identity string
 	require.NoError(t, stores.GetDB().QueryRowContext(ctx,
 		`SELECT identity FROM login_attempt WHERE kind = 'PASSWORD'`).Scan(&identity))
-	require.Equal(t, idpID+":alice", identity)
+	require.Equal(t, idpID+":Alice", identity)
 
 	for range loginAttemptMax - 1 {
 		_, err := service.getOrCreateUserWithIDP(ctx, request)

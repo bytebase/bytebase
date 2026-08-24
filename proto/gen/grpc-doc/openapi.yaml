@@ -22604,7 +22604,7 @@ components:
         token:
           type: string
           title: token
-          maxLength: 8192
+          maxLength: 65536
           description: External OIDC token (JWT) from CI/CD platform.
         email:
           type: string
@@ -25934,8 +25934,10 @@ components:
           type: string
           title: password
           description: |
-            User's password for authentication.
-            string.max_bytes = 72
+            User's password for authentication. Bounded for abuse only: LDAP
+             directories may accept passwords beyond bcrypt's 72-byte limit, and the
+             local-password path rejects longer inputs itself.
+            string.max_bytes = 512
         web:
           type: boolean
           title: web

@@ -211,7 +211,8 @@ func (s *AuthService) authenticateEmailCodeLogin(ctx context.Context, request *v
 	// the workspace the email would land in — the workspace whose invitation the
 	// email holds, or the self-hosted singleton; provisioning below reuses this
 	// resolution. A brand-new SaaS signup has neither and gets the SaaS defaults.
-	targetWorkspaceID, targetIsMember, err := s.resolveWorkspaceIDByEmail(ctx, email)
+	preferredWS, _ := parseOptionalWorkspace(request.Workspace)
+	targetWorkspaceID, targetIsMember, err := s.resolveWorkspaceIDByEmail(ctx, email, preferredWS)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve target workspace"))
 	}

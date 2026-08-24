@@ -194,10 +194,12 @@ message LoginRequest {
   // handler runs; the login-attempt lockout keys rows by this value.
   string email = 1 [(buf.validate.field).string.max_len = 254];
 
-  // User's password for authentication.
+  // User's password for authentication. Bounded for abuse only: LDAP
+  // directories may accept passwords beyond bcrypt's 72-byte limit, and the
+  // local-password path rejects longer inputs itself.
   string password = 2 [
     (bytebase.v1.audit_behavior) = SENSITIVE,
-    (buf.validate.field).string.max_bytes = 72
+    (buf.validate.field).string.max_bytes = 512
   ];
 
   // If true, sets access token and refresh token as HTTP-only cookies instead of
@@ -294,7 +296,7 @@ message ExchangeTokenRequest {
   // External OIDC token (JWT) from CI/CD platform.
   string token = 1 [
     (bytebase.v1.audit_behavior) = SENSITIVE,
-    (buf.validate.field).string.max_len = 8192
+    (buf.validate.field).string.max_len = 65536
   ];
 
   // Workload Identity email for identifying which identity to authenticate as.

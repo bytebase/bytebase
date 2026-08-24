@@ -16368,7 +16368,9 @@ handler runs; the login-attempt lockout keys rows by this value. </p></td>
                   <td>password</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>User&#39;s password for authentication. </p></td>
+                  <td><p>User&#39;s password for authentication. Bounded for abuse only: LDAP
+directories may accept passwords beyond bcrypt&#39;s 72-byte limit, and the
+local-password path rejects longer inputs itself. </p></td>
                 </tr>
               
                 <tr>

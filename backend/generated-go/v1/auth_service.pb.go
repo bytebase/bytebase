@@ -215,7 +215,9 @@ type LoginRequest struct {
 	// Bounded so an oversized identity is refused at the edge before any
 	// handler runs; the login-attempt lockout keys rows by this value.
 	Email string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	// User's password for authentication.
+	// User's password for authentication. Bounded for abuse only: LDAP
+	// directories may accept passwords beyond bcrypt's 72-byte limit, and the
+	// local-password path rejects longer inputs itself.
 	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
 	// If true, sets access token and refresh token as HTTP-only cookies instead of
 	// returning the token in the response body. Use for browser-based clients.
@@ -1151,10 +1153,10 @@ const file_v1_auth_service_proto_rawDesc = "" +
 	"\x18disallow_password_signin\x18\x02 \x01(\bB\x03\xe0A\x03R\x16disallowPasswordSignin\x12p\n" +
 	"\x14password_restriction\x18\x03 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionB\x03\xe0A\x03R\x13passwordRestriction\x12:\n" +
 	"\x17allow_email_code_signin\x18\x04 \x01(\bB\x03\xe0A\x03R\x14allowEmailCodeSignin\x129\n" +
-	"\x16password_reset_enabled\x18\x05 \x01(\bB\x03\xe0A\x03R\x14passwordResetEnabled\"\x9f\x04\n" +
+	"\x16password_reset_enabled\x18\x05 \x01(\bB\x03\xe0A\x03R\x14passwordResetEnabled\"\xa0\x04\n" +
 	"\fLoginRequest\x12\x1e\n" +
-	"\x05email\x18\x01 \x01(\tB\b\xbaH\x05r\x03\x18\xfe\x01R\x05email\x12'\n" +
-	"\bpassword\x18\x02 \x01(\tB\v\xbaH\x04r\x02(H\xd0\xea0\x01R\bpassword\x12\x10\n" +
+	"\x05email\x18\x01 \x01(\tB\b\xbaH\x05r\x03\x18\xfe\x01R\x05email\x12(\n" +
+	"\bpassword\x18\x02 \x01(\tB\f\xbaH\x05r\x03(\x80\x04\xd0\xea0\x01R\bpassword\x12\x10\n" +
 	"\x03web\x18\x03 \x01(\bR\x03web\x12#\n" +
 	"\bidp_name\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\aidpName\x12E\n" +
 	"\vidp_context\x18\x05 \x01(\v2$.bytebase.v1.IdentityProviderContextR\n" +
@@ -1186,9 +1188,9 @@ const file_v1_auth_service_proto_rawDesc = "" +
 	"\x16require_reset_password\x18\x03 \x01(\bR\x14requireResetPassword\x12%\n" +
 	"\x04user\x18\x04 \x01(\v2\x11.bytebase.v1.UserR\x04userB\x11\n" +
 	"\x0f_mfa_temp_token\"\x0f\n" +
-	"\rLogoutRequest\"Z\n" +
-	"\x14ExchangeTokenRequest\x12\"\n" +
-	"\x05token\x18\x01 \x01(\tB\f\xbaH\x05r\x03\x18\x80@\xd0\xea0\x01R\x05token\x12\x1e\n" +
+	"\rLogoutRequest\"[\n" +
+	"\x14ExchangeTokenRequest\x12#\n" +
+	"\x05token\x18\x01 \x01(\tB\r\xbaH\x06r\x04\x18\x80\x80\x04\xd0\xea0\x01R\x05token\x12\x1e\n" +
 	"\x05email\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xfe\x01R\x05email\"@\n" +
 	"\x15ExchangeTokenResponse\x12'\n" +
 	"\faccess_token\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\vaccessToken\"x\n" +

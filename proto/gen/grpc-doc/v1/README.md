@@ -5717,7 +5717,7 @@ Context for identity provider authentication.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | email | [string](#string) |  | User&#39;s email address. Bounded so an oversized identity is refused at the edge before any handler runs; the login-attempt lockout keys rows by this value. |
-| password | [string](#string) |  | User&#39;s password for authentication. |
+| password | [string](#string) |  | User&#39;s password for authentication. Bounded for abuse only: LDAP directories may accept passwords beyond bcrypt&#39;s 72-byte limit, and the local-password path rejects longer inputs itself. |
 | web | [bool](#bool) |  | If true, sets access token and refresh token as HTTP-only cookies instead of returning the token in the response body. Use for browser-based clients. |
 | idp_name | [string](#string) |  | The name of the identity provider. Format: idps/{idp} |
 | idp_context | [IdentityProviderContext](#bytebase-v1-IdentityProviderContext) |  | The idp_context is used to get the user information from identity provider. |

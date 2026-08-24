@@ -12,9 +12,10 @@ import (
 )
 
 // maxIdentityBytes caps the identity column. The longest legal identity today
-// is an LDAP key: a 63-byte provider ID, ":", and a 254-char proto-bounded
-// username — comfortably under this structural bound.
-const maxIdentityBytes = 512
+// is an LDAP key: a 63-byte provider ID, ":", and a 254-character
+// proto-bounded username, which is up to 254*4 = 1016 bytes of UTF-8 —
+// comfortably under this structural bound.
+const maxIdentityBytes = 2048
 
 // ClaimLoginAttempt atomically takes one of maxAttempts slots for the identity
 // before the credential is checked (docs/design/login-attempt-lockout.md).

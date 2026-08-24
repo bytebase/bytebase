@@ -125,8 +125,9 @@ RETURNING 1;
 
 A row back is a slot; no row is a lockout. The row lock serializes concurrent claims, so the
 `N`th slot goes to exactly one of them (G5). `now()` is database time, so replicas cannot
-disagree. A slot spent on a non-credential error (database failure mid-verification) is not
-refunded.
+disagree. A slot spent on a non-credential error (database failure mid-verification, an
+unreachable LDAP directory) is not refunded — during such an outage login fails regardless, and
+the residual lock expires on its own within `D`.
 
 The store exposes exactly three operations: claim an attempt, clear on success, purge stale rows.
 
@@ -158,7 +159,8 @@ resend cooldown.
   password policy and the audit workspace come from the user's own memberships — the singleton on
   self-hosted. Email-code signup: the gates that run before creating a new user check the singleton on
   self-hosted, or on SaaS the workspace whose invitation the email holds — the same lookup
-  provisioning already uses; a brand-new signup has neither and gets the SaaS defaults, as today.
+  provisioning already uses, preferring the requested workspace when it is one of the email's own
+  invitations, as login does for existing users; a brand-new signup has neither and gets the SaaS defaults, as today.
   Existing users are checked after authentication against their resolved workspace, as today.
 
 ### Audit log and cleanup
