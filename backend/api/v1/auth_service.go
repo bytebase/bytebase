@@ -14,6 +14,7 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -25,7 +26,6 @@ import (
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
-	"github.com/bytebase/bytebase/backend/common/qb"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/enterprise"
@@ -44,7 +44,6 @@ import (
 const (
 	emailCodeLength         = 6
 	emailCodeExpiry         = 10 * time.Minute
-	emailCodeMaxAttempts    = 5
 	emailCodeResendCooldown = 60 * time.Second
 
 	// mfaTempTokenDuration is the duration for MFA temporary tokens.
@@ -52,22 +51,19 @@ const (
 	// A short duration reduces the attack window for TOTP brute-force attempts.
 	mfaTempTokenDuration = 5 * time.Minute
 
-	// Login rate limiting configuration.
-	// Password phase: 10 failed attempts within 10 minutes.
-	passwordMaxFailedAttempts = 10               // Will be used for password rate limiting
-	passwordLockoutWindow     = 10 * time.Minute // Will be used for password rate limiting
-
-	// MFA phase: 5 failed attempts within 5 minutes.
-	mfaMaxFailedAttempts = 5
-	mfaLockoutWindow     = 5 * time.Minute
+	// maxLoginIdentityLength bounds, in characters, the identity that keys a
+	// login_attempt row. claimLoginAttempt refuses longer identities before
+	// writing anything, so garbage never writes a row.
+	maxLoginIdentityLength = 254
 
 	// Error messages for authentication failures.
-	// These constants are used both for error responses and for querying audit logs during rate limiting.
 	errMsgInvalidCredentials  = "invalid email or password"
 	errMsgInvalidMFACode      = "invalid MFA code"
 	errMsgInvalidRecoveryCode = "invalid recovery code"
-	errMsgTooManyPassword     = "too many failed login attempts, please try again later" // Will be used for password rate limiting
+	errMsgTooManyPassword     = "too many failed login attempts, please try again later"
 	errMsgTooManyMFA          = "too many failed MFA attempts, please try again later"
+	errMsgTooManyEmailCode    = "too many attempts, please try again later"
+	errMsgInvalidEmailCode    = "invalid or expired code"
 )
 
 var (
@@ -335,7 +331,7 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 
 	// Resolve the target workspace (read-only) so we can check restrictions BEFORE
 	// any write — otherwise a rejected signup would leave an orphan user/workspace behind.
-	targetWorkspaceID, _, err := s.resolveWorkspaceIDByEmail(ctx, email)
+	targetWorkspaceID, targetIsMember, err := s.resolveWorkspaceIDByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve target workspace"))
 	}
@@ -361,7 +357,7 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		return nil, err
 	}
 
-	workspaceID, err := s.provisionWorkspaceForNewUser(ctx, email)
+	workspaceID, err := s.provisionResolvedWorkspace(ctx, email, targetWorkspaceID, targetIsMember)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to provision workspace"))
 	}
@@ -465,16 +461,21 @@ func (s *AuthService) resolveWorkspaceIDByEmail(ctx context.Context, email strin
 // provisionWorkspaceForNewUser returns a workspace ID for a freshly-created user.
 // If the email was pre-invited to existing workspaces (via IAM), returns the first one.
 // Otherwise creates a new workspace (SaaS: per-user; self-hosted: joins the singleton).
-// Called by both the Signup RPC and the email-code signup branch of Login.
 func (s *AuthService) provisionWorkspaceForNewUser(ctx context.Context, email string) (string, error) {
-	// Step 1: Resolve the target workspace. isMember indicates whether the user already has
-	// an IAM binding. For pre-invited users we must NOT patch IAM — PatchWorkspaceIamPolicy
-	// is a set-replacement that would downgrade an admin to member.
 	workspaceID, isMember, err := s.resolveWorkspaceIDByEmail(ctx, email)
 	if err != nil {
 		return "", err
 	}
+	return s.provisionResolvedWorkspace(ctx, email, workspaceID, isMember)
+}
 
+// provisionResolvedWorkspace finishes provisioning for an already-resolved
+// target. The Signup RPC and the email-code signup branch resolve the target
+// for their gate checks and pass it through, so the gates and the writes see
+// one snapshot. isMember indicates whether the user already has an IAM
+// binding; for pre-invited users we must NOT patch IAM — PatchWorkspaceIamPolicy
+// is a set-replacement that would downgrade an admin to member.
+func (s *AuthService) provisionResolvedWorkspace(ctx context.Context, email, workspaceID string, isMember bool) (string, error) {
 	if workspaceID != "" {
 		if !s.profile.SaaS && !isMember {
 			// Self-hosted, new user joining the singleton workspace — add as member.
@@ -489,7 +490,7 @@ func (s *AuthService) provisionWorkspaceForNewUser(ctx context.Context, email st
 		return workspaceID, nil
 	}
 
-	// Step 2: No existing workspace — create a new one with the user as admin.
+	// No existing workspace — create a new one with the user as admin.
 	wsID, err := common.RandomString(16)
 	if err != nil {
 		return "", errors.Wrap(err, "failed to generate workspace ID")
@@ -621,9 +622,18 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 
 func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
 	email := strings.ToLower(strings.TrimSpace(request.Email))
-
-	// Check if user is locked out due to too many failed password attempts.
-	if err := s.checkPasswordLockout(ctx, email); err != nil {
+	// An invalid-syntax email can never be an account; reject it before the
+	// claim with the same error a wrong password gets.
+	if common.ValidateEmail(email) != nil {
+		return nil, invalidCredentialsError
+	}
+	// Claim an attempt slot before the credential is checked: a locked email is
+	// refused before bcrypt, and unknown emails lock at the same attempt with
+	// the same error (no existence oracle). A successful login holds its slot
+	// only until the clear below, so more than maxAttempts concurrent
+	// correct-credential logins for one identity can see transient refusals —
+	// accepted; the refusal ends when the first login's clear lands.
+	if err := s.claimLoginAttempt(ctx, email, passwordAttemptPolicy); err != nil {
 		return nil, err
 	}
 
@@ -652,6 +662,7 @@ func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginR
 	if user == nil {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("user %q not found", account.Email))
 	}
+	s.clearLoginAttempt(ctx, email, passwordAttemptPolicy)
 	return user, nil
 }
 
@@ -741,10 +752,26 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create new LDAP identity provider"))
 		}
 
+		// An LDAP bind is a password check: claim a PASSWORD slot under the
+		// provider-scoped identity before the bind. The identity must include
+		// the provider — keyed by bare username, an attacker who controls the
+		// same username in a directory of their own could clear this
+		// directory's counter by logging in there (success deletes the row).
+		identity := ldapLoginIdentity(idpID, request.Email)
+		if err := s.claimLoginAttempt(ctx, identity, passwordAttemptPolicy); err != nil {
+			return nil, err
+		}
 		userInfo, err = ldapIDP.Authenticate(request.Email, request.Password)
 		if err != nil {
+			// A rejected credential surfaces as Unauthenticated so edge rate
+			// rules counting 401s see failed LDAP binds; only connectivity and
+			// configuration failures stay Internal.
+			if errors.Is(err, ldap.ErrInvalidCredentials) {
+				return nil, invalidCredentialsError
+			}
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user info"))
 		}
+		s.clearLoginAttempt(ctx, identity, passwordAttemptPolicy)
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("identity provider type %s not supported", idp.Type.String()))
 	}
@@ -878,78 +905,13 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	return user, nil
 }
 
-// countRecentLoginFailures counts the number of failed login attempts for a given email
-// within the specified time window, matching any of the provided error messages.
-func (s *AuthService) countRecentLoginFailures(ctx context.Context, email string, window time.Duration, errMessages ...string) (int, error) {
-	if len(errMessages) == 0 {
-		return 0, errors.New("at least one error message is required")
-	}
-
-	windowStart := time.Now().Add(-window)
-
-	// Build filter query for login failures.
-	filterQ := qb.Q().Space("TRUE")
-	filterQ.And("payload->>'method' = ?", v1connect.AuthServiceLoginProcedure)
-	filterQ.And("payload->>'resource' = ?", email)
-	filterQ.And("(payload->'status'->>'code')::int != 0")
-
-	// Build OR condition for error messages.
-	if len(errMessages) == 1 {
-		filterQ.And("payload->'status'->>'message' = ?", errMessages[0])
-	} else {
-		// For multiple messages, build: (msg = ? OR msg = ? OR ...)
-		orConditions := qb.Q()
-		for i, msg := range errMessages {
-			if i == 0 {
-				orConditions.Space("payload->'status'->>'message' = ?", msg)
-			} else {
-				orConditions.Or("payload->'status'->>'message' = ?", msg)
-			}
-		}
-		filterQ.And("(?)", orConditions)
-	}
-
-	filterQ.And("created_at >= ?", windowStart)
-
-	// Search across all workspaces — lockout is per-email, not per-workspace.
-	logs, err := s.store.SearchAuditLogs(ctx, &store.AuditLogFind{
-		FilterQ: filterQ,
-	})
-	if err != nil {
-		return 0, errors.Wrapf(err, "failed to search audit logs for login failures")
-	}
-
-	return len(logs), nil
-}
-
-// checkPasswordLockout checks if the user has exceeded the password failure rate limit.
-// Returns an error if the user is locked out due to too many failed password attempts.
-func (s *AuthService) checkPasswordLockout(ctx context.Context, email string) error {
-	count, err := s.countRecentLoginFailures(ctx, email, passwordLockoutWindow, errMsgInvalidCredentials)
-	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to count recent password failures"))
-	}
-
-	if count >= passwordMaxFailedAttempts {
-		return connect.NewError(connect.CodeResourceExhausted, errors.Errorf(errMsgTooManyPassword))
-	}
-
-	return nil
-}
-
-// checkMFALockout checks if the user has exceeded the MFA failure rate limit.
-// Returns an error if the user is locked out due to too many failed MFA attempts.
-func (s *AuthService) checkMFALockout(ctx context.Context, email string) error {
-	count, err := s.countRecentLoginFailures(ctx, email, mfaLockoutWindow, errMsgInvalidMFACode, errMsgInvalidRecoveryCode)
-	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to count recent MFA failures"))
-	}
-
-	if count >= mfaMaxFailedAttempts {
-		return connect.NewError(connect.CodeResourceExhausted, errors.Errorf(errMsgTooManyMFA))
-	}
-
-	return nil
+// ldapLoginIdentity keys the PASSWORD lockout bucket for an LDAP bind: the
+// identity-provider ID joined with the normalized submitted username. The
+// separator is ":" because it is legal in neither IDP resource IDs
+// ([a-z0-9-]) nor email addresses, so an LDAP bucket can never collide with —
+// lock out, or be cleared by — a plain email account's bucket.
+func ldapLoginIdentity(idpID, username string) string {
+	return fmt.Sprintf("%s:%s", idpID, strings.ToLower(strings.TrimSpace(username)))
 }
 
 func challengeMFACode(user *store.UserMessage, mfaCode string) error {
@@ -1066,6 +1028,17 @@ func (s *AuthService) completeMFALogin(ctx context.Context, request *v1pb.LoginR
 	if err != nil {
 		return nil, loginAuthMethodPassword, err
 	}
+	// A request carrying no code at all is not a guess: nothing is compared,
+	// so nothing may consume an attempt slot.
+	if request.OtpCode == nil && request.RecoveryCode == nil {
+		return nil, loginAuthMethodPassword, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("OTP or recovery code is required for MFA"))
+	}
+	// Claim an MFA slot for the email inside the signed temp token before any
+	// TOTP or recovery-code comparison. Slots are per identity, so a fresh temp
+	// token does not buy fresh guesses.
+	if err := s.claimLoginAttempt(ctx, userEmail, mfaAttemptPolicy); err != nil {
+		return nil, loginAuthMethodPassword, err
+	}
 	user, err := s.store.GetUserByEmail(ctx, userEmail)
 	if err != nil {
 		return nil, loginAuthMethodPassword, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user"))
@@ -1073,21 +1046,15 @@ func (s *AuthService) completeMFALogin(ctx context.Context, request *v1pb.LoginR
 	if user == nil {
 		return nil, loginAuthMethodPassword, invalidCredentialsError
 	}
-	if err := s.checkMFALockout(ctx, user.Email); err != nil {
-		return nil, loginAuthMethodPassword, err
-	}
 
 	if request.OtpCode != nil {
 		if err := challengeMFACode(user, *request.OtpCode); err != nil {
 			return nil, loginAuthMethodPassword, err
 		}
-	} else if request.RecoveryCode != nil {
-		if err := s.challengeRecoveryCode(ctx, user, *request.RecoveryCode); err != nil {
-			return nil, loginAuthMethodPassword, err
-		}
-	} else {
-		return nil, loginAuthMethodPassword, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("OTP or recovery code is required for MFA"))
+	} else if err := s.challengeRecoveryCode(ctx, user, *request.RecoveryCode); err != nil {
+		return nil, loginAuthMethodPassword, err
 	}
+	s.clearLoginAttempt(ctx, userEmail, mfaAttemptPolicy)
 	return user, loginMethod, nil
 }
 
@@ -1297,11 +1264,9 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 	// Check MFA requirement for the target workspace.
 	mfaSecondStep := request.GetMfaTempToken() != ""
 	if mfaSecondStep {
-		// Check MFA lockout before verifying.
-		if err := s.checkMFALockout(ctx, user.Email); err != nil {
-			return nil, err
-		}
-		// Verify the MFA temp token and OTP/recovery code.
+		// Verify the MFA temp token, then claim an MFA slot for the email
+		// inside it before the OTP/recovery comparison — the same per-identity
+		// bucket the login MFA step draws from.
 		mfaEmail, err := auth.GetUserEmailFromMFATempToken(*request.MfaTempToken, s.secret)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("invalid MFA temp token"))
@@ -1309,17 +1274,21 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 		if mfaEmail != user.Email {
 			return nil, connect.NewError(connect.CodeUnauthenticated, errors.New("MFA token does not match user"))
 		}
+		// An argument error is not a guess — refuse it before the claim.
+		if request.OtpCode == nil && request.RecoveryCode == nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("OTP or recovery code required"))
+		}
+		if err := s.claimLoginAttempt(ctx, mfaEmail, mfaAttemptPolicy); err != nil {
+			return nil, err
+		}
 		if request.OtpCode != nil {
 			if err := challengeMFACode(user, *request.OtpCode); err != nil {
 				return nil, err
 			}
-		} else if request.RecoveryCode != nil {
-			if err := s.challengeRecoveryCode(ctx, user, *request.RecoveryCode); err != nil {
-				return nil, err
-			}
-		} else {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("OTP or recovery code required"))
+		} else if err := s.challengeRecoveryCode(ctx, user, *request.RecoveryCode); err != nil {
+			return nil, err
 		}
+		s.clearLoginAttempt(ctx, mfaEmail, mfaAttemptPolicy)
 	} else {
 		// First step: check if MFA is required for the target workspace.
 		if resp, err := s.checkMFARequired(ctx, user, workspaceID, false, loginAuthMethodPassword); err != nil {
@@ -1680,12 +1649,8 @@ func (s *AuthService) ResetPassword(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("new_password is required"))
 	}
 
-	codeRow, err := s.verifyEmailCode(ctx, email, storepb.EmailVerificationCodePurpose_PASSWORD_RESET, req.Msg.Code)
-	if err != nil {
+	if err := s.verifyEmailCode(ctx, email, storepb.EmailVerificationCodePurpose_PASSWORD_RESET, req.Msg.Code); err != nil {
 		return nil, err
-	}
-	if codeRow.Workspace != "" {
-		common.SetAuditWorkspaceID(ctx, codeRow.Workspace)
 	}
 
 	user, err := s.store.GetUserByEmail(ctx, email)
@@ -1696,22 +1661,15 @@ func (s *AuthService) ResetPassword(ctx context.Context, req *connect.Request[v1
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user not found"))
 	}
 
-	// Validate the user is a member of the workspace captured at send time.
-	// Reject if forged — prevents bypassing password policy via a weaker workspace.
-	if codeRow.Workspace != "" {
-		ws, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
-			WorkspaceID:    &codeRow.Workspace,
-			Email:          email,
-			IncludeAllUser: !s.profile.SaaS,
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to verify workspace membership"))
-		}
-		if ws == nil {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user is not a member of the workspace"))
-		}
+	// The code proved control of the email, so the user is known: the password
+	// policy and the audit workspace come from the user's own memberships — the
+	// singleton on self-hosted — never from anything the caller sent.
+	workspaceID, err := s.resolveWorkspaceForLogin(ctx, user, "")
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve workspace"))
 	}
-	restriction, err := getAccountRestriction(ctx, s.store, s.licenseService, s.profile.SaaS, codeRow.Workspace)
+	common.SetAuditWorkspaceID(ctx, workspaceID)
+	restriction, err := getAccountRestriction(ctx, s.store, s.licenseService, s.profile.SaaS, workspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -1734,6 +1692,10 @@ func (s *AuthService) ResetPassword(ctx context.Context, req *connect.Request[v1
 	if err := s.store.DeleteWebRefreshTokensByUser(ctx, user.Email); err != nil {
 		slog.Warn("failed to revoke refresh tokens after password reset", log.BBError(err))
 	}
+
+	// The user proved control of the email and holds a fresh password: a lock
+	// they guessed themselves into must not outlive the reset.
+	s.clearLoginAttempt(ctx, email, passwordAttemptPolicy)
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
@@ -1926,7 +1888,6 @@ func (s *AuthService) sendEmailVerificationCode(ctx context.Context, workspaceID
 		CodeHash:   s.hashEmailCode(code),
 		ExpiresAt:  now.Add(emailCodeExpiry),
 		LastSentAt: now,
-		Workspace:  workspaceID,
 	}, emailCodeResendCooldown)
 	if err != nil {
 		return errors.Wrap(err, "failed to upsert verification code")
@@ -1954,33 +1915,38 @@ func (s *AuthService) sendEmailVerificationCode(ctx context.Context, workspaceID
 	return nil
 }
 
-// verifyEmailCode checks a submitted code against the stored row.
-// Enforces expiry, attempt limit (5), and constant-time hash compare.
-// On successful match, deletes the row (one-time use) and returns it so the
-// caller can use its captured workspace context (e.g. for gate checks and
-// workspace assignment on the email-code signup path).
-func (s *AuthService) verifyEmailCode(ctx context.Context, email string, purpose storepb.EmailVerificationCodePurpose, submittedCode string) (*store.EmailVerificationCodeMessage, error) {
+// verifyEmailCode checks a submitted code against the stored row for the email.
+// An EMAIL_CODE slot is claimed for the email before the row is even loaded, so
+// guessing is bounded per identity across codes and purposes, and a lock is not
+// an oracle for whether a code is pending. Wrong guesses leave the row in place
+// — the resend cooldown always has a row to evaluate. On a match the row is
+// deleted (one-time use) and the counter is cleared.
+func (s *AuthService) verifyEmailCode(ctx context.Context, email string, purpose storepb.EmailVerificationCodePurpose, submittedCode string) error {
+	// An invalid-syntax email can hold neither an account nor a code; reject it
+	// before the claim so garbage never writes a row.
+	if common.ValidateEmail(email) != nil {
+		return connect.NewError(connect.CodeUnauthenticated, errors.New(errMsgInvalidEmailCode))
+	}
+	if err := s.claimLoginAttempt(ctx, email, emailCodeAttemptPolicy); err != nil {
+		return err
+	}
 	row, err := s.store.GetEmailVerificationCode(ctx, email, purpose)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get email verification code"))
+		return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get email verification code"))
 	}
 	if row == nil {
-		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("invalid or expired code"))
+		return connect.NewError(connect.CodeUnauthenticated, errors.New(errMsgInvalidEmailCode))
 	}
 	if time.Now().After(row.ExpiresAt) {
 		_ = s.store.DeleteEmailVerificationCodeIfMatch(ctx, email, purpose, row.CodeHash)
-		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("invalid or expired code"))
-	}
-	if row.Attempts >= emailCodeMaxAttempts {
-		_ = s.store.DeleteEmailVerificationCodeIfMatch(ctx, email, purpose, row.CodeHash)
-		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("too many attempts"))
+		return connect.NewError(connect.CodeUnauthenticated, errors.New(errMsgInvalidEmailCode))
 	}
 	if subtle.ConstantTimeCompare([]byte(s.hashEmailCode(submittedCode)), []byte(row.CodeHash)) != 1 {
-		_ = s.store.IncrementEmailVerificationCodeAttempts(ctx, email, purpose)
-		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("invalid or expired code"))
+		return connect.NewError(connect.CodeUnauthenticated, errors.New(errMsgInvalidEmailCode))
 	}
 	_ = s.store.DeleteEmailVerificationCodeIfMatch(ctx, email, purpose, row.CodeHash)
-	return row, nil
+	s.clearLoginAttempt(ctx, email, emailCodeAttemptPolicy)
+	return nil
 }
 
 // authenticateEmailCodeLogin handles the email + 6-digit code flow.
@@ -1995,21 +1961,14 @@ func (s *AuthService) authenticateEmailCodeLogin(ctx context.Context, request *v
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email is required"))
 	}
 
-	codeRow, err := s.verifyEmailCode(ctx, email, storepb.EmailVerificationCodePurpose_LOGIN, *request.EmailCode)
-	if err != nil {
-		return nil, err
-	}
-	if codeRow.Workspace != "" {
-		if err := validateEmailWithDomains(ctx, s.licenseService, s.store, codeRow.Workspace, email, false); err != nil {
-			return nil, err
-		}
-	} else if err := validateEndUserEmail(email); err != nil {
+	if err := s.verifyEmailCode(ctx, email, storepb.EmailVerificationCodePurpose_LOGIN, *request.EmailCode); err != nil {
 		return nil, err
 	}
 
-	// Existing user → return. allow_email_code_signin is checked later in validateLoginPermissions
-	// against the actually-resolved login workspace (which may not match the send-time workspace
-	// for multi-workspace users — resolveWorkspaceForLogin prefers LastLoginWorkspace).
+	// Existing user → return. Domain and allow_email_code_signin are checked later
+	// in validateLoginPermissions against the actually-resolved login workspace
+	// (which may not match the send-time workspace for multi-workspace users —
+	// resolveWorkspaceForLogin prefers LastLoginWorkspace).
 	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user"))
@@ -2018,11 +1977,26 @@ func (s *AuthService) authenticateEmailCodeLogin(ctx context.Context, request *v
 		return user, nil
 	}
 
-	// Gate checks run BEFORE user creation to prevent orphan accounts.
+	// Gate checks run BEFORE user creation to prevent orphan accounts, against
+	// the workspace the email would land in — the workspace whose invitation the
+	// email holds, or the self-hosted singleton; provisioning below reuses this
+	// resolution. A brand-new SaaS signup has neither and gets the SaaS defaults.
+	targetWorkspaceID, targetIsMember, err := s.resolveWorkspaceIDByEmail(ctx, email)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve target workspace"))
+	}
+	if targetWorkspaceID != "" {
+		if err := validateEmailWithDomains(ctx, s.licenseService, s.store, targetWorkspaceID, email, false); err != nil {
+			return nil, err
+		}
+	} else if err := validateEndUserEmail(email); err != nil {
+		return nil, err
+	}
+
 	// We only consult AllowEmailCodeSignin here: DisallowSignup governs password self-service
 	// signup (the Signup RPC), not email-code onboarding — the two paths are independent.
 	// Admins who want to block new users via email-code set AllowEmailCodeSignin=false.
-	restriction, err := getAccountRestriction(ctx, s.store, s.licenseService, s.profile.SaaS, codeRow.Workspace)
+	restriction, err := getAccountRestriction(ctx, s.store, s.licenseService, s.profile.SaaS, targetWorkspaceID)
 	if err != nil {
 		return nil, err
 	}
@@ -2041,7 +2015,7 @@ func (s *AuthService) authenticateEmailCodeLogin(ctx context.Context, request *v
 	// workspace via its IAM binding and returns it. The reverse order would leave a user
 	// without a workspace, and subsequent retries would early-return via GetUserByEmail and
 	// never re-run provisioning — permanently stuck. Matches the Signup RPC's ordering.
-	if _, err := s.provisionWorkspaceForNewUser(ctx, email); err != nil {
+	if _, err := s.provisionResolvedWorkspace(ctx, email, targetWorkspaceID, targetIsMember); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to provision workspace"))
 	}
 
@@ -2105,4 +2079,78 @@ func (*AuthService) getAdditionalWorkspaceSettings() []store.AdditionalSetting {
 		}
 	}
 	return settings
+}
+
+// loginAttemptPolicy is one credential's attempt limit: maxAttempts slots per
+// identity, refused with lockedMsg until window has passed since the latest.
+type loginAttemptPolicy struct {
+	kind        storepb.LoginAttemptKind
+	maxAttempts int
+	window      time.Duration
+	// lockedMsg answers a claim refused because the identity is locked out.
+	lockedMsg string
+	// invalidMsg answers an identity that may not key a row at all, with the
+	// same error a failed credential of this kind gets.
+	invalidMsg string
+}
+
+// Attempt limits per credential kind (docs/design/login-attempt-lockout.md).
+var (
+	passwordAttemptPolicy = loginAttemptPolicy{
+		kind:        storepb.LoginAttemptKind_PASSWORD,
+		maxAttempts: 10,
+		window:      10 * time.Minute,
+		lockedMsg:   errMsgTooManyPassword,
+		invalidMsg:  errMsgInvalidCredentials,
+	}
+	emailCodeAttemptPolicy = loginAttemptPolicy{
+		kind:        storepb.LoginAttemptKind_EMAIL_CODE,
+		maxAttempts: 5,
+		window:      10 * time.Minute,
+		lockedMsg:   errMsgTooManyEmailCode,
+		invalidMsg:  errMsgInvalidEmailCode,
+	}
+	mfaAttemptPolicy = loginAttemptPolicy{
+		kind:        storepb.LoginAttemptKind_MFA,
+		maxAttempts: 5,
+		window:      5 * time.Minute,
+		lockedMsg:   errMsgTooManyMFA,
+		invalidMsg:  errMsgInvalidMFACode,
+	}
+)
+
+// claimLoginAttempt claims one attempt slot for the identity under attack,
+// before the credential is checked (docs/design/login-attempt-lockout.md).
+// A locked identity gets ResourceExhausted without any credential comparison.
+// The identity must be server-resolved and globally unique, never optional
+// request context a caller can omit or forge. Empty and over-length identities
+// are refused here, before anything is written, so no call site can turn
+// login_attempt into an unbounded unauthenticated write path.
+func (s *AuthService) claimLoginAttempt(ctx context.Context, identity string, policy loginAttemptPolicy) error {
+	if identity == "" || utf8.RuneCountInString(identity) > maxLoginIdentityLength {
+		return connect.NewError(connect.CodeUnauthenticated, errors.New(policy.invalidMsg))
+	}
+	granted, err := s.store.ClaimLoginAttempt(ctx, identity, policy.kind, policy.maxAttempts, policy.window)
+	if err != nil {
+		return connect.NewError(connect.CodeInternal, err)
+	}
+	if !granted {
+		return connect.NewError(connect.CodeResourceExhausted, errors.New(policy.lockedMsg))
+	}
+	return nil
+}
+
+// clearLoginAttempt forgets the identity's failed attempts after a successful
+// verification. Taking the policy keeps the clear structurally paired with the
+// claim's kind. Success has already consumed a slot, so a swallowed failure
+// here would hold a lock against a proven credential — retry once, then log;
+// a still-standing counter expires on its own within the window.
+func (s *AuthService) clearLoginAttempt(ctx context.Context, identity string, policy loginAttemptPolicy) {
+	err := s.store.ClearLoginAttempt(ctx, identity, policy.kind)
+	if err != nil {
+		err = s.store.ClearLoginAttempt(ctx, identity, policy.kind)
+	}
+	if err != nil {
+		slog.Error("login attempt clear failed", slog.String("kind", policy.kind.String()), log.BBError(err))
+	}
 }

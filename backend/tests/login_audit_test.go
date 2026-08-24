@@ -100,6 +100,26 @@ func TestLoginFailureLockout(t *testing.T) {
 		a.ErrorContains(err, "too many failed login attempts")
 	}
 
+	// Email-code guessing is bounded by the same per-identity claims, taken
+	// before the code row is even loaded — no code needs to be pending and no
+	// audit-log counter is consulted, so the bound holds on Cloud and
+	// self-hosted alike.
+	wrongCode := "000000"
+	for range 5 {
+		_, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+			Email:     "code-victim@example.com",
+			EmailCode: &wrongCode,
+		}))
+		a.Equal(connect.CodeUnauthenticated, connect.CodeOf(err))
+		a.ErrorContains(err, "invalid or expired code")
+	}
+	_, err = ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:     "code-victim@example.com",
+		EmailCode: &wrongCode,
+	}))
+	a.Equal(connect.CodeResourceExhausted, connect.CodeOf(err))
+	a.ErrorContains(err, "too many attempts, please try again later")
+
 	ctl.authInterceptor.token = adminToken
 	search, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
 		Parent:   workspace,
@@ -113,6 +133,8 @@ func TestLoginFailureLockout(t *testing.T) {
 	passwordLockoutCount := map[string]int{}
 	invalidMFACount := 0
 	mfaLockoutCount := 0
+	invalidEmailCodeCount := 0
+	emailCodeLockoutCount := 0
 	for _, auditLog := range search.Msg.AuditLogs {
 		if auditLog.Status == nil {
 			continue
@@ -123,6 +145,7 @@ func TestLoginFailureLockout(t *testing.T) {
 		a.Empty(request.Password)
 		a.Empty(request.GetOtpCode())
 		a.Empty(request.GetMfaTempToken())
+		a.NotEqual(wrongCode, request.GetEmailCode())
 		a.NotContains(auditLog.Request, "wrong-password")
 		a.NotContains(auditLog.Request, invalidOTP)
 		a.NotContains(auditLog.Request, mfaTempToken)
@@ -136,6 +159,10 @@ func TestLoginFailureLockout(t *testing.T) {
 			invalidMFACount++
 		case "too many failed MFA attempts, please try again later":
 			mfaLockoutCount++
+		case "invalid or expired code":
+			invalidEmailCodeCount++
+		case "too many attempts, please try again later":
+			emailCodeLockoutCount++
 		default:
 		}
 	}
@@ -145,6 +172,8 @@ func TestLoginFailureLockout(t *testing.T) {
 	a.Equal(1, passwordLockoutCount["unknown@example.com"])
 	a.Equal(5, invalidMFACount)
 	a.Equal(1, mfaLockoutCount)
+	a.Equal(5, invalidEmailCodeCount)
+	a.Equal(1, emailCodeLockoutCount)
 
 	var misownedRows int
 	a.NoError(metadataDB.QueryRowContext(ctx, `
@@ -563,21 +592,19 @@ func TestAuditLogFormat(t *testing.T) {
 	defer metadataDB.Close()
 	var authSecret string
 	a.NoError(metadataDB.QueryRowContext(ctx, `SELECT payload->>'authSecret' FROM server_config LIMIT 1`).Scan(&authSecret))
-	insertVerificationCode := func(email, purpose, code string, workspaceID sql.NullString) {
+	insertVerificationCode := func(email, purpose, code string) {
 		mac := hmac.New(sha256.New, []byte(authSecret))
 		_, err := mac.Write([]byte(code))
 		a.NoError(err)
 		_, err = metadataDB.ExecContext(ctx, `
-			INSERT INTO email_verification_code (email, purpose, code_hash, expires_at, last_sent_at, workspace)
-			VALUES ($1, $2, $3, $4, $5, $6)
-			ON CONFLICT (email, purpose) DO UPDATE SET code_hash = EXCLUDED.code_hash, attempts = 0,
-				expires_at = EXCLUDED.expires_at, last_sent_at = EXCLUDED.last_sent_at, workspace = EXCLUDED.workspace
-		`, email, purpose, hex.EncodeToString(mac.Sum(nil)), time.Now().Add(time.Hour), time.Now(), workspaceID)
+			INSERT INTO email_verification_code (email, purpose, code_hash, expires_at, last_sent_at)
+			VALUES ($1, $2, $3, $4, $5)
+			ON CONFLICT (email, purpose) DO UPDATE SET code_hash = EXCLUDED.code_hash,
+				expires_at = EXCLUDED.expires_at, last_sent_at = EXCLUDED.last_sent_at
+		`, email, purpose, hex.EncodeToString(mac.Sum(nil)), time.Now().Add(time.Hour), time.Now())
 		a.NoError(err)
 	}
 
-	workspaceID, err := common.GetWorkspaceID(workspace)
-	a.NoError(err)
 	var invitedUserCount int
 	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
 		Setting: &v1pb.Setting{
@@ -614,7 +641,7 @@ func TestAuditLogFormat(t *testing.T) {
 	}))
 	a.NoError(err)
 	loginCode := "765432"
-	insertVerificationCode(invitedEmail, "LOGIN", loginCode, sql.NullString{String: workspaceID, Valid: true})
+	insertVerificationCode(invitedEmail, "LOGIN", loginCode)
 	ctl.authInterceptor.token = ""
 	_, err = ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
 		Email:     invitedEmail,
@@ -656,7 +683,7 @@ func TestAuditLogFormat(t *testing.T) {
 
 	resetCode := "123456"
 	newPassword := "new-password-1024"
-	insertVerificationCode("demo@example.com", "PASSWORD_RESET", resetCode, sql.NullString{String: workspaceID, Valid: true})
+	insertVerificationCode("demo@example.com", "PASSWORD_RESET", resetCode)
 	ctl.authInterceptor.token = ""
 	_, err = ctl.authServiceClient.ResetPassword(ctx, connect.NewRequest(&v1pb.ResetPasswordRequest{
 		Email:       "demo@example.com",
@@ -683,7 +710,7 @@ func TestAuditLogFormat(t *testing.T) {
 
 	failedResetCode := "654321"
 	failedPassword := "short"
-	insertVerificationCode("demo@example.com", "PASSWORD_RESET", failedResetCode, sql.NullString{String: workspaceID, Valid: true})
+	insertVerificationCode("demo@example.com", "PASSWORD_RESET", failedResetCode)
 	ctl.authInterceptor.token = ""
 	_, resetErr := ctl.authServiceClient.ResetPassword(ctx, connect.NewRequest(&v1pb.ResetPasswordRequest{
 		Email:       "demo@example.com",
@@ -710,11 +737,14 @@ func TestAuditLogFormat(t *testing.T) {
 	a.NotContains(failedResetLog.Request, failedResetCode)
 	a.NotContains(failedResetLog.Request, failedPassword)
 
+	// Reset requests carry no workspace context at all: the audit workspace is
+	// resolved from the user's own memberships (here via the allUsers grant), so
+	// these rows land under the workspace even though the caller named none.
 	noWorkspaceUser, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
 		User: &v1pb.User{Email: "no-workspace-reset@example.com", Title: "No workspace reset", Password: "1024bytebase"},
 	}))
 	a.NoError(err)
-	insertVerificationCode(noWorkspaceUser.Msg.Email, "PASSWORD_RESET", resetCode, sql.NullString{})
+	insertVerificationCode(noWorkspaceUser.Msg.Email, "PASSWORD_RESET", resetCode)
 	ctl.authInterceptor.token = ""
 	_, err = ctl.authServiceClient.ResetPassword(ctx, connect.NewRequest(&v1pb.ResetPasswordRequest{
 		Email:       noWorkspaceUser.Msg.Email,
@@ -723,7 +753,7 @@ func TestAuditLogFormat(t *testing.T) {
 	}))
 	a.NoError(err, "no-workspace reset must preserve existing API behavior")
 	ctl.authInterceptor.token = adminToken
-	insertVerificationCode(noWorkspaceUser.Msg.Email, "PASSWORD_RESET", resetCode, sql.NullString{})
+	insertVerificationCode(noWorkspaceUser.Msg.Email, "PASSWORD_RESET", resetCode)
 	_, err = ctl.authServiceClient.ResetPassword(ctx, connect.NewRequest(&v1pb.ResetPasswordRequest{
 		Email:       noWorkspaceUser.Msg.Email,
 		Code:        resetCode,
@@ -735,7 +765,7 @@ func TestAuditLogFormat(t *testing.T) {
 		Filter: `method == "/bytebase.v1.AuthService/ResetPassword"`,
 	}))
 	a.NoError(err)
-	a.Len(resetLogs.Msg.AuditLogs, 2, "a reset code without workspace context has no valid audit parent")
+	a.Len(resetLogs.Msg.AuditLogs, 4, "resets resolve their audit workspace from the user's membership, not the request")
 
 	// --- Part 2.5: Denied Signup is still audited ---
 	//

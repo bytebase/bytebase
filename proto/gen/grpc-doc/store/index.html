@@ -334,6 +334,10 @@
                   <a href="#bytebase.store.EmailVerificationCodePurpose"><span class="badge">E</span>EmailVerificationCodePurpose</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.LoginAttemptKind"><span class="badge">E</span>LoginAttemptKind</a>
+                </li>
+              
               
               
             </ul>
@@ -3137,6 +3141,41 @@ This information is not authenticated and should be treated accordingly. </p></t
               <tr>
                 <td>PASSWORD_RESET</td>
                 <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.store.LoginAttemptKind">LoginAttemptKind</h3>
+        <p>LoginAttemptKind names which credential's attempt limit a login_attempt row</p><p>tracks. Stored as the enum name string in login_attempt.kind column.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>LOGIN_ATTEMPT_KIND_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>PASSWORD</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>EMAIL_CODE</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>MFA</td>
+                <td>3</td>
                 <td><p></p></td>
               </tr>
             

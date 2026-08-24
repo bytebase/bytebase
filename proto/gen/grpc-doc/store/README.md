@@ -44,6 +44,7 @@
   
 - [store/auth.proto](#store_auth-proto)
     - [EmailVerificationCodePurpose](#bytebase-store-EmailVerificationCodePurpose)
+    - [LoginAttemptKind](#bytebase-store-LoginAttemptKind)
   
 - [store/changelog.proto](#store_changelog-proto)
     - [ChangelogPayload](#bytebase-store-ChangelogPayload)
@@ -940,6 +941,21 @@ Stored as the enum name string in email_verification_code.purpose column.
 | EMAIL_VERIFICATION_CODE_PURPOSE_UNSPECIFIED | 0 |  |
 | LOGIN | 1 |  |
 | PASSWORD_RESET | 2 |  |
+
+
+
+<a name="bytebase-store-LoginAttemptKind"></a>
+
+### LoginAttemptKind
+LoginAttemptKind names which credential&#39;s attempt limit a login_attempt row
+tracks. Stored as the enum name string in login_attempt.kind column.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| LOGIN_ATTEMPT_KIND_UNSPECIFIED | 0 |  |
+| PASSWORD | 1 |  |
+| EMAIL_CODE | 2 |  |
+| MFA | 3 |  |
 
 
  

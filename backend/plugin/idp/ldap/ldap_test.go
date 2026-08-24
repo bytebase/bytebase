@@ -8,6 +8,7 @@ import (
 
 	goldap "github.com/go-ldap/ldap/v3"
 	"github.com/lor00x/goldap/message"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/vjeantet/ldapserver"
@@ -339,4 +340,19 @@ func TestEntryAttributes(t *testing.T) {
 		"memberOf":  "cn=dba,dc=example,dc=com, cn=dev,dc=example,dc=com",
 		"jpegPhoto": "<binary>",
 	}, entryAttributes(entry))
+}
+
+// TestBindErrorClassification pins the 401-vs-500 split for failed binds: a
+// credential the directory rejected must surface as ErrInvalidCredentials so
+// login answers Unauthenticated (and edge rate rules counting 401s see it),
+// while connectivity and configuration failures stay generic server errors.
+func TestBindErrorClassification(t *testing.T) {
+	rejected := bindError(goldap.NewError(goldap.LDAPResultInvalidCredentials, errors.New("80090308: LdapErr: DSID-0C09044E, data 532")))
+	require.ErrorIs(t, rejected, ErrInvalidCredentials)
+	require.ErrorContains(t, rejected, "data 532",
+		"the directory's sub-code (expired/disabled/locked vs wrong password) must survive into the admin test-sign-in response")
+
+	unavailable := bindError(goldap.NewError(goldap.LDAPResultUnavailable, errors.New("directory unavailable")))
+	require.NotErrorIs(t, unavailable, ErrInvalidCredentials)
+	require.ErrorContains(t, unavailable, "bind user")
 }

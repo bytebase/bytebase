@@ -184,7 +184,9 @@ it.
 
 **Performance: net improvement.** An indexed single-row upsert replaces an audit-log scan per
 attempt, locked attempts return before bcrypt, and one identifier's attempts serialize on its own
-row, throttling only that attacker. The one new cost — a small row per distinct identifier
+row, throttling only that attacker. A successful login holds its slot only for the verification's
+duration, so more than `N` concurrent correct-credential logins for one identity can see transient
+refusals until the first completes — accepted; a retry succeeds. The one new cost — a small row per distinct identifier
 attempted, an unauthenticated write path Cloud did not have — is bounded by pre-claim validation,
 the hourly purge, and edge rate caps.
 

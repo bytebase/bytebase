@@ -72,6 +72,60 @@ func (EmailVerificationCodePurpose) EnumDescriptor() ([]byte, []int) {
 	return file_store_auth_proto_rawDescGZIP(), []int{0}
 }
 
+// LoginAttemptKind names which credential's attempt limit a login_attempt row
+// tracks. Stored as the enum name string in login_attempt.kind column.
+type LoginAttemptKind int32
+
+const (
+	LoginAttemptKind_LOGIN_ATTEMPT_KIND_UNSPECIFIED LoginAttemptKind = 0
+	LoginAttemptKind_PASSWORD                       LoginAttemptKind = 1
+	LoginAttemptKind_EMAIL_CODE                     LoginAttemptKind = 2
+	LoginAttemptKind_MFA                            LoginAttemptKind = 3
+)
+
+// Enum value maps for LoginAttemptKind.
+var (
+	LoginAttemptKind_name = map[int32]string{
+		0: "LOGIN_ATTEMPT_KIND_UNSPECIFIED",
+		1: "PASSWORD",
+		2: "EMAIL_CODE",
+		3: "MFA",
+	}
+	LoginAttemptKind_value = map[string]int32{
+		"LOGIN_ATTEMPT_KIND_UNSPECIFIED": 0,
+		"PASSWORD":                       1,
+		"EMAIL_CODE":                     2,
+		"MFA":                            3,
+	}
+)
+
+func (x LoginAttemptKind) Enum() *LoginAttemptKind {
+	p := new(LoginAttemptKind)
+	*p = x
+	return p
+}
+
+func (x LoginAttemptKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (LoginAttemptKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_store_auth_proto_enumTypes[1].Descriptor()
+}
+
+func (LoginAttemptKind) Type() protoreflect.EnumType {
+	return &file_store_auth_proto_enumTypes[1]
+}
+
+func (x LoginAttemptKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use LoginAttemptKind.Descriptor instead.
+func (LoginAttemptKind) EnumDescriptor() ([]byte, []int) {
+	return file_store_auth_proto_rawDescGZIP(), []int{1}
+}
+
 var File_store_auth_proto protoreflect.FileDescriptor
 
 const file_store_auth_proto_rawDesc = "" +
@@ -80,7 +134,13 @@ const file_store_auth_proto_rawDesc = "" +
 	"\x1cEmailVerificationCodePurpose\x12/\n" +
 	"+EMAIL_VERIFICATION_CODE_PURPOSE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05LOGIN\x10\x01\x12\x12\n" +
-	"\x0ePASSWORD_RESET\x10\x02B\x8c\x01\n" +
+	"\x0ePASSWORD_RESET\x10\x02*]\n" +
+	"\x10LoginAttemptKind\x12\"\n" +
+	"\x1eLOGIN_ATTEMPT_KIND_UNSPECIFIED\x10\x00\x12\f\n" +
+	"\bPASSWORD\x10\x01\x12\x0e\n" +
+	"\n" +
+	"EMAIL_CODE\x10\x02\x12\a\n" +
+	"\x03MFA\x10\x03B\x8c\x01\n" +
 	"\x12com.bytebase.storeB\tAuthProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (
@@ -95,9 +155,10 @@ func file_store_auth_proto_rawDescGZIP() []byte {
 	return file_store_auth_proto_rawDescData
 }
 
-var file_store_auth_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_store_auth_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
 var file_store_auth_proto_goTypes = []any{
 	(EmailVerificationCodePurpose)(0), // 0: bytebase.store.EmailVerificationCodePurpose
+	(LoginAttemptKind)(0),             // 1: bytebase.store.LoginAttemptKind
 }
 var file_store_auth_proto_depIdxs = []int32{
 	0, // [0:0] is the sub-list for method output_type
@@ -117,7 +178,7 @@ func file_store_auth_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_auth_proto_rawDesc), len(file_store_auth_proto_rawDesc)),
-			NumEnums:      1,
+			NumEnums:      2,
 			NumMessages:   0,
 			NumExtensions: 0,
 			NumServices:   0,

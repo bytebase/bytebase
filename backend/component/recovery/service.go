@@ -316,8 +316,10 @@ func (s *Service) AddUserToWorkspace(ctx context.Context, request AddUserToWorks
 	return result, nil
 }
 
-// ResetUserPassword replaces the password of an existing, active end user
-// without changing any other access state.
+// ResetUserPassword replaces the password of an existing, active end user and
+// clears the user's password-lockout counter so the fresh password works
+// immediately (the API-path ResetPassword does the same); no other access
+// state changes.
 func (s *Service) ResetUserPassword(ctx context.Context, request ResetUserPasswordRequest) (*ResetUserPasswordResult, error) {
 	if err := s.requireWorkspace(ctx, request.WorkspaceID); err != nil {
 		return nil, err
@@ -365,6 +367,16 @@ func (s *Service) ResetUserPassword(ctx context.Context, request ResetUserPasswo
 			return nil, errors.Wrap(err, "failed to reset user password")
 		}
 		result.Changed = true
+	}
+
+	// A lockout the user guessed themselves into must not outlive the reset:
+	// without this, the operator hands over a password that Login keeps
+	// refusing with ResourceExhausted until the window lapses.
+	if err := s.store.ClearLoginAttempt(ctx, email, storepb.LoginAttemptKind_PASSWORD); err != nil {
+		if result.Changed {
+			return result, errors.Wrap(err, "password was reset, but failed to clear the login attempt counter")
+		}
+		return result, errors.Wrap(err, "failed to clear the login attempt counter")
 	}
 
 	if err := s.createAuditLog(ctx, request.WorkspaceID, resetUserPasswordAuditMethod, string(auditRequest)); err != nil {

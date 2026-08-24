@@ -723,20 +723,32 @@ CREATE INDEX idx_web_refresh_token_expires_at ON web_refresh_token(expires_at);
 
 CREATE TABLE email_verification_code (
     email         text NOT NULL,
-    -- Stored as EmailVerificationCodePurpose enum name (proto/store/store/email_verification_code.proto)
+    -- Stored as EmailVerificationCodePurpose enum name (proto/store/store/auth.proto)
     purpose       text NOT NULL,
     code_hash     text NOT NULL,
-    attempts      int  NOT NULL DEFAULT 0,
     expires_at    timestamptz NOT NULL,
     last_sent_at  timestamptz NOT NULL,
-    -- Workspace context captured at send time. Used at verify time for gate checks
-    -- (disallow_signup, allow_email_code_signin) and for provisionWorkspaceForNewUser.
-    -- NULL for SaaS brand-new signup (no workspace exists yet — provision creates one).
-    workspace     text,
     PRIMARY KEY (email, purpose)
 );
 
 CREATE INDEX idx_email_verification_code_expires_at ON email_verification_code (expires_at);
+
+-- Attempt limits for guessable login credentials (docs/design/login-attempt-lockout.md).
+-- One row per (identity, kind): attempts since the last success, and when the latest was.
+CREATE TABLE login_attempt (
+    -- The identity under attack, server-resolved and globally unique: the normalized
+    -- email, or the identity-provider ID joined with the submitted username for LDAP.
+    -- Not a FK, so unknown identities count too (no existence oracle).
+    identity        text NOT NULL,
+    -- Stored as LoginAttemptKind enum name (proto/store/store/auth.proto):
+    -- PASSWORD | EMAIL_CODE | MFA.
+    kind            text NOT NULL,
+    attempts        int NOT NULL,
+    last_attempt_at timestamptz NOT NULL,
+    PRIMARY KEY (identity, kind)
+);
+
+CREATE INDEX idx_login_attempt_last_attempt_at ON login_attempt (last_attempt_at);
 
 -----------------------
 -- Seed data
