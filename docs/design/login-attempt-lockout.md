@@ -37,7 +37,7 @@ Guessing is throttled at three points by three mechanisms:
 
 - **G1** One behavior on Cloud and self-hosted, keyed on the identity under attack — never on
   optional request context a caller can omit to make the record vanish.
-- **G2** Guessing is bounded per email across codes and tokens, independent of request rate.
+- **G2** Guessing is bounded per identity across codes and tokens, independent of request rate.
 - **G3** No existence oracle: unknown and known emails lock at the same attempt with the same error.
 - **G4** Locks expire on their own; no admin unlock.
 - **G5** Correct under replicas: state in the metadata database, one atomic statement per attempt.
@@ -48,7 +48,7 @@ Guessing is throttled at three points by three mechanisms:
 - **Per-IP throttling and send caps.** Edge concerns: Cloudflare rules on Cloud, the reverse proxy
   on self-hosted. See [Security and performance](#security-and-performance).
 - **A per-tenant failed-login record on Cloud.** Accepted in T9.
-- **Single-use MFA temp tokens.** Unnecessary once guesses are bounded per email.
+- **Single-use MFA temp tokens.** Unnecessary once guesses are bounded per identity.
 - **The SaaS password oracle** (wrong password → `Unauthenticated`, right password →
   `PermissionDenied` after bcrypt). Now bounded by the `PASSWORD` lock; the reorder must keep
   service-account password login working, so it is its own change.
@@ -58,20 +58,20 @@ Guessing is throttled at three points by three mechanisms:
 ### Table
 
 ```sql
--- One row per (email, kind): attempts since the last success, and when the latest was.
+-- One row per (identity, kind): attempts since the last success, and when the latest was.
 CREATE TABLE login_attempt (
-    email           text NOT NULL,   -- submitted identifier (usually an email), normalized; not a FK, so unknown ones count (G3)
+    identity        text NOT NULL,   -- the identity under attack, server-resolved and globally unique (see Semantics); not a FK, so unknown ones count (G3)
     kind            text NOT NULL,   -- LoginAttemptKind: PASSWORD | EMAIL_CODE | MFA
     attempts        int NOT NULL,
     last_attempt_at timestamptz NOT NULL,
-    PRIMARY KEY (email, kind)
+    PRIMARY KEY (identity, kind)
 );
 
 CREATE INDEX idx_login_attempt_last_attempt_at ON login_attempt (last_attempt_at);
 ```
 
-No `workspace` column: the credential is per email and opens every workspace the email belongs to.
-No `ip` column: the caller IP is forgeable, and per-source throttling is an edge concern.
+No `workspace` column: the credential is per identity and opens every workspace that identity
+belongs to. No `ip` column: the caller IP is forgeable, and per-source throttling is an edge concern.
 
 ### Semantics
 
@@ -82,17 +82,24 @@ No `ip` column: the caller IP is forgeable, and per-source throttling is an edge
 | `MFA` | 5 | 5 min |
 
 1. **An attempt claims a slot before the credential is checked.** `N` attempts are granted. If
-   the email already holds `N` and the latest was under `D` ago, the next gets no slot:
+   the identity already holds `N` and the latest was under `D` ago, the next gets no slot:
    `ResourceExhausted`, before any bcrypt, TOTP, or hash comparison.
 2. **The counter forgets after `D` of quiet.** A claim more than `D` after the latest attempt
    restarts at one. Locked attempts do not claim, so a lock lasts exactly `D` from the `N`th.
 3. **Success deletes the row.**
 
-The key is the normalized submitted identifier for `PASSWORD` and `EMAIL_CODE` — an email, or
-for LDAP whatever the directory's user filter takes — and the subject of the signed temp token for
-`MFA`. It is always the identity being attacked, so attempts against one identity can never be
-charged to another (G1). Identifiers over 254 characters — and, where the identifier must be an
-email, invalid syntax — are rejected before the claim, so garbage never writes a row.
+The `identity` is the globally-unique subject of the attack, resolved by the server so a caller
+cannot merge two identities into one bucket or split one across buckets (G1):
+
+- local password and emailed code: the normalized email;
+- MFA: the email inside the signed temp token;
+- LDAP: the resolved identity-provider ID joined with the submitted username. The same username in
+  another directory is a different person and must be a different row — the point sharpened by
+  success deleting the row: keyed by bare username, an attacker who controls that username in a
+  directory of their own could clear a victim's counter by logging in there.
+
+Identities over 254 characters — and, where the identity is an email, invalid syntax — are rejected
+before the claim, so garbage never writes a row.
 
 This is Vault's threshold / duration / counter-reset model with the last two collapsed, as Vault's
 own defaults do. It is at least as strict as a sliding window everywhere, and stricter against an
@@ -104,9 +111,9 @@ The same guarded-upsert shape the store already uses for the resend cooldown. `$
 is `D` in seconds:
 
 ```sql
-INSERT INTO login_attempt (email, kind, attempts, last_attempt_at)
+INSERT INTO login_attempt (identity, kind, attempts, last_attempt_at)
 VALUES ($1, $2, 1, now())
-ON CONFLICT (email, kind) DO UPDATE SET
+ON CONFLICT (identity, kind) DO UPDATE SET
     attempts = CASE
         WHEN login_attempt.last_attempt_at < now() - make_interval(secs => $4) THEN 1
         ELSE login_attempt.attempts + 1
@@ -126,9 +133,8 @@ The store exposes exactly three operations: claim an attempt, clear on success, 
 
 ### Where the claims happen
 
-Password login claims `PASSWORD` once, before the credential is checked, whichever way the
-password is verified — against the local hash or an LDAP directory — and clears it when either
-succeeds. Verifying an emailed code claims `EMAIL_CODE` before the code row is even loaded, for
+Password login claims `PASSWORD` once, before the credential is checked — under the email for a
+local password, under the provider-scoped identity for an LDAP bind — and clears it on success. Verifying an emailed code claims `EMAIL_CODE` before the code row is even loaded, for
 login and password-reset codes alike, and clears it on a match. Completing MFA — during login or
 when switching workspaces — claims `MFA` for the email inside the signed temp token and clears it
 on success. A successful password reset also clears `PASSWORD`, as Grafana and Mattermost do, so
@@ -161,7 +167,7 @@ resend cooldown.
 The audit interceptor is untouched: self-hosted keeps writing the failed and locked-out login
 rows it writes today, so the existing end-to-end lockout test holds. The hourly data cleaner also
 purges rows older than an hour — the longest `D` is ten minutes, so they are dead — which caps the
-table at one row per `(email, kind)` attempted in the last hour.
+table at one row per `(identity, kind)` attempted in the last hour.
 
 ### Security and performance
 
@@ -172,7 +178,7 @@ one request every two minutes, keying on IP would hand a botnet unlimited guesse
 Stytch, and GitLab ship the same exposure — so this ships accepted. Remedy if a targeted lockout is
 observed: OWASP's device-cookie bucket — a signed cookie set on web login routes a returning
 browser's attempts to a trusted bucket an attacker cannot reach; the key grows to
-`(email, kind, trusted)`, a free change on a table purged hourly. One soft spot: an LDAP filter
+`(identity, kind, trusted)`, a free change on a table purged hourly. One soft spot: an LDAP filter
 that accepts several identifier forms gets one bucket per form; the directory's own lockout backs
 it.
 
@@ -209,6 +215,9 @@ Self-hosted: the reverse proxy in front, as Gitea and Kratos do.
   field. The server knows the user's workspaces after the code verifies.
 - **Claim only when a code is pending.** Makes the lockout denial noisy (the attacker must trigger
   a send every ten minutes) without preventing it, and adds a pending-code oracle.
+- **Key LDAP by the bare username.** Since success deletes the row, an attacker who controls the
+  same username in a directory of their own clears the victim's counter by logging in there
+  (fails G1).
 
 ## Reference
 
