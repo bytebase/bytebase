@@ -29178,14 +29178,11 @@ components:
           title: available
           description: Whether sample setup is currently available.
           readOnly: true
-        instances:
-          type: array
-          items:
-            type: string
-            readOnly: true
-          title: instances
+        instance:
+          type: string
+          title: instance
           description: |-
-            The provisioned sample instances.
+            The provisioned sample instance.
              Format: instances/{instance}
           readOnly: true
         expireTime:

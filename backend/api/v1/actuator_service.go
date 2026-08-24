@@ -125,13 +125,15 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 	if workspaceID != "" {
 		serverInfo.Workspace = common.FormatWorkspace(workspaceID)
 		if s.profile.SaaS {
-			serverInfo.Sample.Available = s.sampleProjectInstanceManager != nil && s.sampleProjectInstanceManager.Available(ctx)
 			sample, err := s.store.GetSampleProjectInstance(ctx, workspaceID)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get sample information"))
 			}
+			serverInfo.Sample.Available = s.sampleProjectInstanceManager != nil && s.sampleProjectInstanceManager.Available(ctx)
+			if sample != nil {
+				serverInfo.Sample.Instance = common.FormatInstance(sample.InstanceID)
+			}
 			if sample != nil && sample.ExpiresAt != nil && sample.DeletedAt == nil {
-				serverInfo.Sample.Instances = []string{common.FormatInstance(sample.InstanceID)}
 				serverInfo.Sample.ExpireTime = timestamppb.New(*sample.ExpiresAt)
 			}
 		} else {

@@ -51,7 +51,7 @@ const mocks = vi.hoisted(() => ({
   serverInfo: { defaultProject: "projects/default" } as {
     defaultProject: string;
     sample?: {
-      instances: string[];
+      instance: string;
       expireTime?: { seconds: bigint; nanos: number };
     };
   },
@@ -297,7 +297,7 @@ describe("InstanceDetailView", () => {
     mocks.serverInfo = {
       defaultProject: "projects/default",
       sample: {
-        instances: ["instances/prod"],
+        instance: "instances/prod",
         expireTime: {
           seconds: BigInt(Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60),
           nanos: 0,
@@ -322,7 +322,7 @@ describe("InstanceDetailView", () => {
     mocks.serverInfo = {
       defaultProject: "projects/default",
       sample: {
-        instances: ["instances/prod"],
+        instance: "instances/prod",
         expireTime: {
           seconds: BigInt(Math.floor(Date.now() / 1000) - 60),
           nanos: 0,
