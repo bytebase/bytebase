@@ -190,9 +190,12 @@ the hourly purge, and edge rate caps.
 
 **Edge rules (configuration, not code).** Cloudflare does nothing for these paths until rules
 exist. `Login` / `ResetPassword`: ~30 per 10 min per IP, counting only `401`/`429` responses, so
-service accounts and CI logging in successfully from shared IPs never trip it. The two send paths,
-which always answer OK to avoid enumeration: the same limit on all requests — tolerates an office
-NAT, caps single-IP mail-bombing. No challenges on auth paths; CLI and CI cannot solve them.
+service accounts and CI logging in successfully from shared IPs never trip it. For that filter to
+catch LDAP spraying, an invalid-credential bind must surface as `Unauthenticated`, not the
+`Internal` (500) it returns today — a small pre-existing fix, without which the edge misses failed
+LDAP binds and the per-username rows they write. The two send paths, which always answer OK to
+avoid enumeration: the same limit on all requests — tolerates an office NAT, caps single-IP
+mail-bombing. No challenges on auth paths; CLI and CI cannot solve them.
 Preconditions: origin locked to Cloudflare's ranges, `CF-Connecting-IP` as the audit caller IP.
 Self-hosted: the reverse proxy in front, as Gitea and Kratos do.
 
