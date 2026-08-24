@@ -6,6 +6,10 @@ the two counters that fail today: the audit-log count, which reads zero on Cloud
 `attempts` column, which an attacker resets by exhausting it. Closes T9 in
 [`v1-api-audit-2026-08.md`](v1-api-audit-2026-08.md).
 
+**Implemented** in [#21234](https://github.com/bytebase/bytebase/pull/21234) (2026-08-24). Migration
+`3.22/0012##login_attempt.sql`; the store owns the atomic claim, `backend/api/v1/auth_service_lockout.go`
+owns the kinds and limits, and the claim sites live with the credential each verifies.
+
 ## Background
 
 Guessing is throttled at three points by three mechanisms:
@@ -90,10 +94,13 @@ cannot merge two identities into one bucket or split one across buckets (G1):
 
 - local password and emailed code: the normalized email;
 - MFA: the email inside the signed temp token;
-- LDAP: the resolved identity-provider ID joined with the submitted username. The same username in
-  another directory is a different person and must be a different row — the point sharpened by
-  success deleting the row: keyed by bare username, an attacker who controls that username in a
-  directory of their own could clear a victim's counter by logging in there.
+- LDAP: the resolved identity-provider ID joined with the submitted username, verbatim. The same
+  username in another directory is a different person and must be a different row — the point
+  sharpened by success deleting the row: keyed by bare username, an attacker who controls that
+  username in a directory of their own could clear a victim's counter by logging in there. The
+  username is not normalized either, since a case-exact directory attribute can name two accounts
+  differing only by case, and merging them would let either lock — or clear — the other; one
+  bucket per submitted form is the accepted trade below.
 
 Every request field that becomes an identity is bounded at the proto edge (emails at 254
 characters, `string.max_len` enforced by the validate interceptor), invalid email syntax is
@@ -136,9 +143,10 @@ The store exposes exactly three operations: claim an attempt, clear on success, 
 Password login claims `PASSWORD` once, before the credential is checked — under the email for a
 local password, under the provider-scoped identity for an LDAP bind — and clears it on success. Verifying an emailed code claims `EMAIL_CODE` before the code row is even loaded, for
 login and password-reset codes alike, and clears it on a match. Completing MFA — during login or
-when switching workspaces — claims `MFA` for the email inside the signed temp token and clears it
-on success. A successful password reset also clears `PASSWORD`, as Grafana and Mattermost do, so
-a user who locked themselves out is not still locked with the new password. The three
+when switching workspaces — claims `MFA` for the email inside the signed temp token, and refuses a
+request carrying no code at all before claiming, since nothing is compared. A successful password
+reset also clears `PASSWORD` — the API path and the recovery CLI alike, as Grafana and Mattermost
+do — so a user who locked themselves out is not still locked with the new password. The three
 audit-counting checks they replace are deleted.
 
 ### `email_verification_code`
@@ -194,9 +202,9 @@ the hourly purge, and edge rate caps.
 **Edge rules (configuration, not code).** Cloudflare does nothing for these paths until rules
 exist. `Login` / `ResetPassword`: ~30 per 10 min per IP, counting only `401`/`429` responses, so
 service accounts and CI logging in successfully from shared IPs never trip it. For that filter to
-catch LDAP spraying, an invalid-credential bind must surface as `Unauthenticated`, not the
-`Internal` (500) it returns today — a small pre-existing fix, without which the edge misses failed
-LDAP binds and the per-username rows they write. The two send paths, which always answer OK to
+catch LDAP spraying, an invalid-credential bind surfaces as `Unauthenticated` rather than the
+`Internal` (500) it used to return (shipped with this change; the directory's own diagnostic is
+logged and kept for the admin test-sign-in flow). The two send paths, which always answer OK to
 avoid enumeration: the same limit on all requests — tolerates an office NAT, caps single-IP
 mail-bombing. No challenges on auth paths; CLI and CI cannot solve them.
 Preconditions: origin locked to Cloudflare's ranges, `CF-Connecting-IP` as the audit caller IP.
