@@ -10,6 +10,7 @@ import {
 import { ResourceIdField } from "@/components/ResourceIdField";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
@@ -22,20 +23,32 @@ import {
   CONNECT_DATABASE_PRODUCT_INTRO,
   CREATE_PROJECT_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
+  PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
 } from "@/lib/productIntro";
+import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import type { ValidatedMessage } from "@/types";
 import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
 import { WorkspaceSchema } from "@/types/proto-es/v1/workspace_service_pb";
-import { extractProjectResourceName } from "@/utils";
+import {
+  extractInstanceResourceName,
+  extractProjectResourceName,
+} from "@/utils";
+import { extractGrpcErrorMessage } from "@/utils/connect";
 
 export function ProfileSetupPage() {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
   const updateUser = useAppStore((state) => state.updateUser);
   const updateWorkspace = useAppStore((state) => state.updateWorkspace);
+  const prepareSampleProjectInstance = useAppStore(
+    (state) => state.prepareSampleProjectInstance
+  );
+  const sampleAvailable = useAppStore(
+    (state) => state.serverInfo?.sample?.available ?? false
+  );
   const { createProject, setRecentProject } = useCreateProject();
   const workspace = useWorkspace();
   const workspacePolicy = useAppStore((state) => state.workspacePolicy);
@@ -72,9 +85,9 @@ export function ProfileSetupPage() {
   const [projectResourceId, setProjectResourceId] = useState("");
   const [isProjectResourceIdValid, setIsProjectResourceIdValid] =
     useState(false);
+  const [enableSampleDatabases, setEnableSampleDatabases] = useState(true);
   const [saving, setSaving] = useState(false);
-  const projectTitleTrimmed = projectTitle.trim();
-  const shouldCreateProject = canCreateProject && !!projectTitleTrimmed;
+  const shouldCreateProject = canCreateProject && !!projectResourceId;
 
   const validateProjectResourceId = useCallback(
     async (id: string): Promise<ValidatedMessage[]> => {
@@ -123,13 +136,29 @@ export function ProfileSetupPage() {
         );
       }
       let createdProjectName = "";
+      let sampleInstanceName = "";
       if (shouldCreateProject) {
         const createdProject = await createProject(
-          projectTitleTrimmed,
+          projectTitle.trim(),
           projectResourceId
         );
         setRecentProject(createdProject.name);
         createdProjectName = createdProject.name;
+        if (enableSampleDatabases && sampleAvailable && createdProject.name) {
+          try {
+            const sampleInstance = await prepareSampleProjectInstance(
+              createdProject.name
+            );
+            sampleInstanceName = sampleInstance.name;
+          } catch (error) {
+            pushNotification({
+              module: "bytebase",
+              style: "CRITICAL",
+              title: t("instance.prepare-sample-instance-failed"),
+              description: extractGrpcErrorMessage(error),
+            });
+          }
+        }
       }
       pushNotification({
         module: "bytebase",
@@ -137,12 +166,22 @@ export function ProfileSetupPage() {
         title: t("settings.profile.setup-success"),
       });
       if (createdProjectName) {
+        const sampleInstanceId =
+          extractInstanceResourceName(sampleInstanceName);
         router.replace({
           name: PROJECT_V1_ROUTE_DATABASES,
           params: {
             projectId: extractProjectResourceName(createdProjectName),
           },
-          query: { [PRODUCT_INTRO_QUERY_KEY]: CONNECT_DATABASE_PRODUCT_INTRO },
+          query: sampleInstanceId
+            ? {
+                syncingInstance: sampleInstanceId,
+                [PRODUCT_INTRO_QUERY_KEY]:
+                  PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+              }
+            : {
+                [PRODUCT_INTRO_QUERY_KEY]: CONNECT_DATABASE_PRODUCT_INTRO,
+              },
         });
       } else {
         goToDashboard();
@@ -174,7 +213,7 @@ export function ProfileSetupPage() {
           title={displayName}
           colorSeed={currentUser?.email}
           size="md"
-          className="!size-16 !text-2xl"
+          className="size-16! text-2xl!"
         />
 
         <div className="text-center">
@@ -215,19 +254,46 @@ export function ProfileSetupPage() {
               <Input
                 data-testid="profile-project-title"
                 value={projectTitle}
-                onChange={(e) => setProjectTitle(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setProjectTitle(value);
+                }}
                 placeholder={t("quick-action.new-project")}
               />
-              {projectTitleTrimmed && (
-                <ResourceIdField
-                  suffix
-                  value={projectResourceId}
-                  resourceName={t("common.project")}
-                  resourceTitle={projectTitle}
-                  validate={validateProjectResourceId}
-                  onChange={setProjectResourceId}
-                  onValidationChange={setIsProjectResourceIdValid}
-                />
+              <ResourceIdField
+                suffix
+                value={projectResourceId}
+                resourceName={t("common.project")}
+                resourceTitle={projectTitle}
+                validate={validateProjectResourceId}
+                onChange={(val) => {
+                  setProjectResourceId(val);
+                  if (!val) {
+                    setEnableSampleDatabases(false);
+                  }
+                }}
+                onValidationChange={setIsProjectResourceIdValid}
+              />
+              {sampleAvailable && (
+                <div className="flex items-center gap-x-2 pt-1">
+                  <Checkbox
+                    id="enable-sample-databases"
+                    data-testid="enable-sample-databases"
+                    checked={enableSampleDatabases}
+                    disabled={!shouldCreateProject}
+                    onCheckedChange={setEnableSampleDatabases}
+                  />
+                  <label
+                    htmlFor="enable-sample-databases"
+                    className={cn(
+                      "cursor-pointer",
+                      !shouldCreateProject &&
+                        "cursor-not-allowed text-control-placeholder"
+                    )}
+                  >
+                    {t("settings.profile.enable-sample-databases")}
+                  </label>
+                </div>
               )}
             </FormField>
           )}
@@ -238,7 +304,7 @@ export function ProfileSetupPage() {
               disabled={!canSave}
               className="w-full"
             >
-              {t("common.save")}
+              {t("settings.profile.setup-submit")}
             </Button>
             <Button
               appearance="secondary"

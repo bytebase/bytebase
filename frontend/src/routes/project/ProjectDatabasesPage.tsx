@@ -110,9 +110,13 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const [showTransferDrawer, setShowTransferDrawer] = useState(false);
   const [showUnassignConfirm, setShowUnassignConfirm] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
-  const [workspaceHasInstance, setWorkspaceHasInstance] = useState<
-    boolean | undefined
+  const [workspaceInstanceCount, setWorkspaceInstanceCount] = useState<
+    number | undefined
   >(undefined);
+  const workspaceHasInstance =
+    workspaceInstanceCount === undefined
+      ? undefined
+      : workspaceInstanceCount > 0;
   const [syncingRefreshExhausted, setSyncingRefreshExhausted] = useState(false);
   const autoRefreshCountRef = useRef(0);
 
@@ -296,22 +300,22 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
 
   useEffect(() => {
     if (!hasWorkspacePermissionV2("bb.instances.list")) {
-      setWorkspaceHasInstance(false);
+      setWorkspaceInstanceCount(0);
       return;
     }
 
     let cancelled = false;
     useAppStore
       .getState()
-      .fetchInstanceList({ pageSize: 1 })
+      .fetchInstanceList({ pageSize: 2 })
       .then(({ instances }) => {
         if (!cancelled) {
-          setWorkspaceHasInstance(instances.length > 0);
+          setWorkspaceInstanceCount(instances.length);
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setWorkspaceHasInstance(false);
+          setWorkspaceInstanceCount(0);
         }
       });
 
@@ -501,7 +505,8 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const hasVisibleDatabase = visibleDatabases.length > 0;
   const showSyncingInstanceHint =
     !!syncingInstanceId && !hasVisibleDatabase && !syncingRefreshExhausted;
-  const showPostSyncNextAction = !!syncingInstanceId && hasVisibleDatabase;
+  const showPostSyncNextAction =
+    workspaceInstanceCount === 1 && !!syncingInstanceId && hasVisibleDatabase;
   const checkingWorkspaceInstance =
     !hasVisibleDatabase &&
     !showSyncingInstanceHint &&
@@ -669,6 +674,18 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
               <span>{t("db.project-instance-synced-description")}</span>
               <div className="ml-auto flex flex-wrap items-center gap-x-2 gap-y-2">
                 <PermissionGuard
+                  permissions={PERMISSIONS_FOR_DATABASE_CREATE_ISSUE}
+                  project={project}
+                >
+                  <Button
+                    size="sm"
+                    appearance="outline"
+                    onClick={handleCreateFirstChange}
+                  >
+                    {t("db.project-instance-synced-action")}
+                  </Button>
+                </PermissionGuard>
+                <PermissionGuard
                   permissions={["bb.sql.select"]}
                   project={project}
                 >
@@ -682,18 +699,6 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
                       label={t("db.project-instance-synced-sql-editor-action")}
                     />
                   </span>
-                </PermissionGuard>
-                <PermissionGuard
-                  permissions={PERMISSIONS_FOR_DATABASE_CREATE_ISSUE}
-                  project={project}
-                >
-                  <Button
-                    size="sm"
-                    appearance="outline"
-                    onClick={handleCreateFirstChange}
-                  >
-                    {t("db.project-instance-synced-action")}
-                  </Button>
                 </PermissionGuard>
               </div>
             </div>

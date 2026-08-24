@@ -145,10 +145,26 @@ export function WorkspaceSetupGuide() {
             )?.name ?? "")
           : "";
       const hasProject = !!projectName;
-      const hasInstance =
+      let hasInstance =
         instanceCacheSize > 0 ||
         (instanceResult.status === "fulfilled" &&
           instanceResult.value.instances.length > 0);
+      if (
+        !hasInstance &&
+        projectName &&
+        hasWorkspacePermissionV2("bb.instances.list")
+      ) {
+        try {
+          const projectInstanceResult = await store.fetchInstanceList({
+            parent: projectName,
+            pageSize: 1,
+            silent: true,
+          });
+          hasInstance = projectInstanceResult.instances.length > 0;
+        } catch {
+          hasInstance = false;
+        }
+      }
       let databaseName = "";
       let hasWorkspaceDatabase = databaseCacheSize > 0;
       let hasFirstQuery = false;
@@ -307,7 +323,12 @@ export function WorkspaceSetupGuide() {
   const routeMatchedStep = steps.find(
     (step) => step.matchesRoute?.(currentRoute.name) ?? false
   );
-  const highlightedStep = selectedStep ?? routeMatchedStep;
+  const highlightedStep =
+    selectedStep ??
+    routeMatchedStep ??
+    (isRouteInside(currentRoute.name, PROJECT_V1_ROUTE_DATABASES)
+      ? activeStep
+      : undefined);
   const actionStep =
     highlightedStep && !highlightedStep.done ? highlightedStep : activeStep;
 
@@ -341,21 +362,21 @@ export function WorkspaceSetupGuide() {
   }
 
   return (
-    <div className="flex w-full shrink-0 items-center gap-x-3 border-t border-block-border bg-white px-4 py-3 shadow-[0_-2px_10px_rgba(0,0,0,0.04)]">
-      <div className="flex min-w-0 flex-1 items-center gap-x-4 overflow-hidden">
+    <div className="flex w-full shrink-0 items-center gap-x-2 border-t border-block-border bg-white px-3 py-2 shadow-[0_-2px_10px_rgba(0,0,0,0.04)] 2xl:gap-x-4 2xl:px-5 2xl:py-4">
+      <div className="flex min-w-0 flex-1 items-center gap-x-2 overflow-hidden 2xl:gap-x-5">
         <div className="flex shrink-0 items-baseline gap-x-2">
-          <div className="shrink-0 text-sm font-medium text-main">
+          <div className="shrink-0 text-sm font-semibold text-main 2xl:text-base">
             {t("workspace-setup-guide.self")}
           </div>
         </div>
-        <div className="flex min-w-0 flex-1 items-center gap-x-2 overflow-x-auto pr-2">
+        <div className="flex min-w-0 flex-1 items-center gap-x-2 overflow-x-auto pr-1 2xl:gap-x-3 2xl:pr-2">
           {steps.map((step, index) => {
             const isHighlighted = step.key === highlightedStep?.key;
             const tooltipContent = step.disabled
               ? t("workspace-setup-guide.previous-step-required")
               : step.description;
             const className = cn(
-              "inline-flex items-center gap-x-1.5 rounded-sm px-2 py-1 text-sm whitespace-nowrap",
+              "inline-flex items-center gap-x-1 rounded-sm px-2 py-1 text-sm whitespace-nowrap 2xl:gap-x-2 2xl:px-3 2xl:py-2 2xl:text-base",
               isHighlighted
                 ? "bg-accent/10 text-accent"
                 : step.done
@@ -364,7 +385,10 @@ export function WorkspaceSetupGuide() {
             );
 
             return (
-              <div key={step.key} className="inline-flex items-center gap-x-2">
+              <div
+                key={step.key}
+                className="inline-flex items-center gap-x-2 2xl:gap-x-3"
+              >
                 <Tooltip content={tooltipContent}>
                   <Button
                     type="button"
@@ -372,21 +396,23 @@ export function WorkspaceSetupGuide() {
                     data-testid={`setup-step-${step.key}`}
                     className={cn(
                       className,
-                      "h-auto justify-start py-1 font-normal"
+                      "h-auto justify-start py-1 font-medium 2xl:py-2"
                     )}
                     disabled={step.disabled}
                     onClick={() => onSelectStep(step)}
                   >
                     {step.done ? (
-                      <CheckCircle className="h-4 w-4 text-success" />
+                      <CheckCircle className="size-4 text-success 2xl:size-5" />
                     ) : (
-                      <Circle className="h-4 w-4" />
+                      <Circle className="size-4 2xl:size-5" />
                     )}
                     <span>{step.label}</span>
                   </Button>
                 </Tooltip>
                 {index < steps.length - 1 && (
-                  <span className="text-control-light">›</span>
+                  <span className="text-sm text-control-light 2xl:text-base">
+                    ›
+                  </span>
                 )}
               </div>
             );
@@ -401,8 +427,8 @@ export function WorkspaceSetupGuide() {
               type="button"
               data-testid="secondary-action"
               appearance="secondary"
-              size="sm"
-              className="hidden xl:inline-flex"
+              size="md"
+              className="hidden 2xl:inline-flex"
               onClick={handleCreateFirstChange}
             >
               {t("workspace-setup-guide.actions.change")}
@@ -413,6 +439,7 @@ export function WorkspaceSetupGuide() {
             data-testid="active-action"
             database={sqlEditorDatabase}
             size="sm"
+            className="2xl:h-9 2xl:gap-1.5 2xl:px-3 2xl:text-sm 2xl:leading-5"
             label={t("workspace-setup-guide.actions.query")}
           />
         )}
@@ -422,10 +449,10 @@ export function WorkspaceSetupGuide() {
           aria-label={t("workspace-setup-guide.dismiss")}
           appearance="secondary"
           size="sm"
-          className="text-control-light hover:text-control"
+          className="text-control-light hover:text-control 2xl:h-9 2xl:gap-1.5 2xl:px-3 2xl:text-sm 2xl:leading-5"
           onClick={handleDismiss}
         >
-          <X className="h-4 w-4" />
+          <X className="size-4 2xl:size-5" />
         </Button>
       </div>
     </div>

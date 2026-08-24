@@ -2,10 +2,13 @@ import { useCallback, useEffect } from "react";
 import { router } from "@/app/router";
 import {
   PROJECT_V1_ROUTE_DATABASES,
-  PROJECT_V1_ROUTE_INSTANCE_DETAIL,
   PROJECT_V1_ROUTE_INSTANCES,
 } from "@/app/router/handles";
 import { CreateInstanceView } from "@/components/instance/CreateInstanceView";
+import {
+  PRODUCT_INTRO_QUERY_KEY,
+  PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+} from "@/lib/productIntro";
 import { useAppStore } from "@/stores/app";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 import { extractInstanceResourceName } from "@/utils";
@@ -41,10 +44,12 @@ export function ProjectCreateInstancePage({
     (instance: Instance) => {
       const instanceId = extractInstanceResourceName(instance.name);
       router.push({
-        name: PROJECT_V1_ROUTE_INSTANCE_DETAIL,
-        params: { projectId, instanceId },
-        query: { syncingInstance: instanceId },
-        hash: "databases",
+        name: PROJECT_V1_ROUTE_DATABASES,
+        params: { projectId },
+        query: {
+          syncingInstance: instanceId,
+          [PRODUCT_INTRO_QUERY_KEY]: PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+        },
       });
     },
     [projectId]

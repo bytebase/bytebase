@@ -210,7 +210,11 @@ export const createInstanceSlice: AppSliceCreator<InstanceSlice> = (
         await instanceServiceClientConnect.prepareSampleProjectInstance(
           createProto(PrepareSampleProjectInstanceRequestSchema, { parent })
         );
-      return upsertInstances([response])[0];
+      const instance = upsertInstances([response])[0];
+      await get()
+        .refreshServerInfo()
+        .catch(() => undefined);
+      return instance;
     },
 
     updateInstance: async (instance, updateMask) => {

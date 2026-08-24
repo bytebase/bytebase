@@ -10,6 +10,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -465,34 +466,46 @@ func (in *internalMCPGateInterceptor) refuseByCeiling(ctx context.Context, proce
 	// never set a ceiling and reports everything it cannot make sense of as an
 	// error.
 	settings, err := in.store.GetMCPSettingsUncached(ctx, workspaceID)
-	if err != nil {
-		// The agent gets no detail either way: the error text can carry the
-		// workspace's storage state. What it does get is the right KIND of
-		// answer, because the two failures are opposites for a client. A
-		// stored value this build cannot interpret will never succeed on
-		// retry — an admin has to rewrite it — so it is a policy refusal and
-		// an audited one. A read that failed is an outage, so it is
-		// retryable and is not a verdict about the caller. The /mcp
-		// connection gate splits the same two the same way.
+
+	// auth.ClassifyMCPCeiling decides, so this gate, the /mcp connection gate,
+	// the consent and the token endpoint cannot disagree about a workspace —
+	// which is what MCPCeilingVerdict says of itself, and was not true while
+	// this door mirrored the split by hand.
+	//
+	// The agent gets no storage detail either way: the shared sentence names
+	// the state and the remedy, never the error. What it does get is the right
+	// KIND of answer, because the two failures are opposites for a client. A
+	// stored value this build cannot interpret never succeeds on retry — an
+	// admin has to rewrite it — so it is a policy refusal and an audited one.
+	// A read that failed is an outage: retryable, and not a verdict about the
+	// caller.
+	//
+	// DISABLED is deliberately NOT decided here. It reaches the serving table
+	// below, which holds an explicit empty list for it, so a mode that serves
+	// nothing reads as an ordinary per-method denial naming the class — the
+	// more useful answer at a per-method door than a workspace-level sentence.
+	switch verdict := auth.ClassifyMCPCeiling(settings.Capability, err); verdict {
+	case auth.MCPCeilingServes, auth.MCPCeilingDisabled:
+	case auth.MCPCeilingUnavailable:
 		slog.Warn("failed to resolve the MCP capability ceiling; refusing the request",
 			slog.String("method", procedure), slog.String("workspace", workspaceID), log.BBError(err))
-		if errors.Is(err, store.ErrMCPCapabilityUnreadable) {
-			return settings, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
-				"%s is refused: this workspace's stored MCP capability ceiling is not one this build understands, "+
-					"so the request fails closed. Ask a workspace admin to set the MCP ceiling again in the workspace settings",
-				procedure))
-		}
 		return settings, false, connect.NewError(connect.CodeUnavailable, errors.Errorf(
-			"%s is refused: this workspace's MCP capability ceiling could not be read, so the request fails closed. "+
-				"Retry shortly; if it persists, a workspace admin must check the workspace MCP settings",
-			procedure))
+			"%s is refused: %s", procedure, verdict.Refusal()))
+	default:
+		slog.Warn("the MCP capability ceiling refuses this request",
+			slog.String("method", procedure), slog.String("workspace", workspaceID), log.BBError(err))
+		return settings, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+			"%s is refused: %s", procedure, verdict.Refusal()))
 	}
+
 	served, known := mcpServingClasses[settings.Capability]
 	if !known {
+		// Unreachable: a capability no mode serves is MCPCeilingUnserved, which
+		// the switch above already refused. Kept because the serving table and
+		// the classifier are two statements of one rule, and this is what a
+		// caller gets if they ever part company.
 		return settings, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
-			"%s is refused: this workspace's stored MCP capability ceiling %v is not one this build serves. "+
-				"Ask a workspace admin to set the MCP ceiling to a supported value in the workspace settings",
-			procedure, settings.Capability))
+			"%s is refused: %s", procedure, auth.MCPCeilingUnserved.Refusal()))
 	}
 	if slices.Contains(served, class) {
 		return settings, false, nil

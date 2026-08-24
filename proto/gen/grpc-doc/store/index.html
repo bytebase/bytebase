@@ -2929,9 +2929,12 @@ Some fields are omitted because they are too large or contain sensitive informat
                   <td>mcp_delegation</td>
                   <td><a href="#bytebase.store.MCPDelegation">MCPDelegation</a></td>
                   <td></td>
-                  <td><p>MCP delegation provenance. Present exactly when the audited call arrived
-through the MCP server&#39;s delegated credential; never set for public API
-calls. Presence of this message is the MCP-origin marker. </p></td>
+                  <td><p>MCP delegation provenance. Present exactly when the entry belongs to MCP:
+the audited call arrived through the MCP server&#39;s delegated credential, or
+it is one of the two MCP doors that sit outside the API — the /mcp
+connection gate and the OAuth2 consent that mints the credential it checks.
+Never set for public API calls. Presence of this message is the MCP-origin
+marker. </p></td>
                 </tr>
               
             </tbody>
@@ -2982,7 +2985,13 @@ Empty for legacy web-session tokens at /mcp. </p></td>
                   <td><p>Correlates the audit rows an MCP session produces. Minted at the /mcp
 boundary and session-scoped: the MCP SDK hands tool handlers the
 initialize-time context, so one MCP session carries one correlation ID
-across all of its tool calls. </p></td>
+across all of its tool calls.
+
+Empty on the entries that belong to no session — a refused consent, which
+never reached that boundary, and a refused connection, which is decided
+before the SDK resolves a session. Filling those with a fresh value would
+read as a session ID that correlates exactly one row, and a mid-session
+refusal would get an ID different from the rows the session already wrote. </p></td>
                 </tr>
               
             </tbody>

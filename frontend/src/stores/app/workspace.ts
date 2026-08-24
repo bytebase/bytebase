@@ -692,7 +692,7 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
       if (get().appFeatures["bb.feature.hide-quick-start"]) {
         return false;
       }
-      if (!get().serverInfo?.enableSample) {
+      if (!get().serverInfo?.sample?.available) {
         return false;
       }
       return get().userCountInIam() <= 1;

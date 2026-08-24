@@ -1,6 +1,7 @@
 package sampleprojectinstance
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
 	"errors"
@@ -24,6 +25,18 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+func TestRandomInstanceIDUses16CharacterToken(t *testing.T) {
+	id, err := randomInstanceID(bytes.NewReader(make([]byte, 8)))
+	require.NoError(t, err)
+	require.Equal(t, "sample-0000000000000000", id)
+}
+
+func TestSampleNamesUse16CharacterTokens(t *testing.T) {
+	names := sampleNames("sample-0000000000000000")
+	require.Regexp(t, `^bb_sample_[0-9a-f]{16}$`, names.Database)
+	require.Regexp(t, `^bb_sample_role_[0-9a-f]{16}$`, names.Role)
+}
+
 func TestFailureKindOf(t *testing.T) {
 	require.Equal(t, FailureUnknown, FailureKindOf(errors.New("unexpected")))
 	require.Equal(t, FailureFailedPrecondition, FailureKindOf(newFailure(FailureFailedPrecondition, errors.New("invalid target"))))
@@ -35,6 +48,39 @@ func TestMapTargetErrorUsesManagerFailureVocabulary(t *testing.T) {
 	require.Equal(t, FailureFailedPrecondition, FailureKindOf(mapTargetError(staticTargetError("invalid target"))))
 	require.Equal(t, FailureUnavailable, FailureKindOf(mapTargetError(errors.New("offline"))))
 	require.Equal(t, FailureDeadlineExceeded, FailureKindOf(mapTargetError(context.DeadlineExceeded)))
+}
+
+func TestManagerValidateTargetRejectsInvalidConfiguration(t *testing.T) {
+	manager, err := NewManagerFromURL(nil, "postgresql://control:secret@127.0.0.1:5432/postgres?sslmode=prefer", nil, ManagerOptions{})
+	require.Nil(t, manager)
+	require.ErrorContains(t, err, "unsupported sslmode")
+	require.NotContains(t, err.Error(), "secret")
+}
+
+func TestManagerAvailabilityRecoversAfterCachedValidationFailure(t *testing.T) {
+	if testing.Short() {
+		t.Skip("skipping PostgreSQL testcontainer test in short mode")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
+	t.Cleanup(cancel)
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(context.Background()) })
+
+	now := time.Now()
+	target := newLocalTarget(t, container)
+	manager := newManager(nil, target, nil, ManagerOptions{Clock: func() time.Time { return now }})
+	require.True(t, manager.Available(ctx))
+
+	port := target.config.Port
+	target.config.Port = 1
+	require.True(t, manager.Available(ctx))
+	now = now.Add(targetAvailabilityCacheTTL)
+	require.False(t, manager.Available(ctx))
+
+	target.config.Port = port
+	require.False(t, manager.Available(ctx))
+	now = now.Add(targetAvailabilityCacheTTL)
+	require.True(t, manager.Available(ctx))
 }
 
 func TestPreparationLifecycleContextRenewsDeadline(t *testing.T) {
@@ -296,7 +342,7 @@ func TestManagerHealthyOwnerProvisionsOnce(t *testing.T) {
 	ctx, _, s, target, first := newConcreteManager(t)
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
 	require.NoError(t, err)
-	second := NewManager(s, target, schemasync.NewSyncer(s, dbfactory.New(s, licenseService), licenseService, nil), ManagerOptions{ReplicaID: "replica-b"})
+	second := newManager(s, target, schemasync.NewSyncer(s, dbfactory.New(s, licenseService), licenseService, nil), ManagerOptions{ReplicaID: "replica-b"})
 	require.NoError(t, s.UpsertReplicaHeartbeat(ctx, "replica-a"))
 
 	entered := make(chan struct{})
@@ -353,7 +399,7 @@ func TestManagerTakesOverStaleReservationAfterReconciling(t *testing.T) {
 
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
 	require.NoError(t, err)
-	second := NewManager(s, target, schemasync.NewSyncer(s, dbfactory.New(s, licenseService), licenseService, nil), ManagerOptions{ReplicaID: "replica-b"})
+	second := newManager(s, target, schemasync.NewSyncer(s, dbfactory.New(s, licenseService), licenseService, nil), ManagerOptions{ReplicaID: "replica-b"})
 	prepared, err := second.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
 	require.NoError(t, err)
 	require.NotNil(t, prepared.Instance)
@@ -369,13 +415,14 @@ func TestManagerTakesOverStaleReservationAfterReconciling(t *testing.T) {
 	require.True(t, exists)
 }
 
-func TestManagerUsesFirstEnvironmentWhenTestIsMissing(t *testing.T) {
+func TestManagerUsesFirstEnvironment(t *testing.T) {
 	ctx, _, s, _, manager := newConcreteManager(t)
 	_, err := s.UpsertSetting(ctx, &store.SettingMessage{
 		Name:      storepb.SettingName_ENVIRONMENT,
 		Workspace: "workspace-a",
 		Value: &storepb.EnvironmentSetting{Environments: []*storepb.EnvironmentSetting_Environment{
 			{Title: "Production", Id: "prod"},
+			{Title: "Test", Id: "test"},
 		}},
 	})
 	require.NoError(t, err)
@@ -388,6 +435,20 @@ func TestManagerUsesFirstEnvironmentWhenTestIsMissing(t *testing.T) {
 	names := sampleNames(reservation.InstanceID)
 	require.Equal(t, names.Database, reservation.DBName)
 	require.Equal(t, names.Role, reservation.RoleName)
+}
+
+func TestManagerAllowsNoEnvironment(t *testing.T) {
+	ctx, _, s, _, manager := newConcreteManager(t)
+	_, err := s.UpsertSetting(ctx, &store.SettingMessage{
+		Name:      storepb.SettingName_ENVIRONMENT,
+		Workspace: "workspace-a",
+		Value:     &storepb.EnvironmentSetting{},
+	})
+	require.NoError(t, err)
+
+	result, err := manager.Prepare(ctx, PrepareRequest{WorkspaceID: "workspace-a", ProjectID: "project-a"})
+	require.NoError(t, err)
+	require.Nil(t, result.Instance.EnvironmentID)
 }
 
 func TestManagerCompensatesProvisionFailures(t *testing.T) {
@@ -462,7 +523,7 @@ func TestManagerReconcileAttemptsTargetCleanupWhenMetadataRemovalFails(t *testin
 	_, err = manager.createMetadata(ctx, registration{
 		WorkspaceID:       "workspace-a",
 		ProjectID:         "project-b",
-		EnvironmentID:     testEnvironmentID,
+		EnvironmentID:     "test",
 		InstanceID:        reservation.InstanceID,
 		Title:             sampleProjectInstanceTitle,
 		Engine:            storepb.Engine_POSTGRES,
@@ -488,7 +549,7 @@ func newConcreteManager(t *testing.T) (context.Context, *sql.DB, *store.Store, *
 		Name:      storepb.SettingName_ENVIRONMENT,
 		Workspace: "workspace-a",
 		Value: &storepb.EnvironmentSetting{Environments: []*storepb.EnvironmentSetting_Environment{
-			{Title: "Test", Id: testEnvironmentID},
+			{Title: "Test", Id: "test"},
 		}},
 	})
 	require.NoError(t, err)
@@ -509,7 +570,7 @@ func newConcreteManager(t *testing.T) (context.Context, *sql.DB, *store.Store, *
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, s, false, "")
 	require.NoError(t, err)
 	syncer := schemasync.NewSyncer(s, dbfactory.New(s, licenseService), licenseService, nil)
-	return ctx, db, s, target, NewManager(s, target, syncer, ManagerOptions{ReplicaID: "replica-a"})
+	return ctx, db, s, target, newManager(s, target, syncer, ManagerOptions{ReplicaID: "replica-a"})
 }
 
 func assertAllocationAbsent(ctx context.Context, t *testing.T, target *Target, names AllocationNames) {

@@ -54,6 +54,9 @@ const (
 	// WorkspaceServiceSetIamPolicyProcedure is the fully-qualified name of the WorkspaceService's
 	// SetIamPolicy RPC.
 	WorkspaceServiceSetIamPolicyProcedure = "/bytebase.v1.WorkspaceService/SetIamPolicy"
+	// WorkspaceServiceGetMCPInfoProcedure is the fully-qualified name of the WorkspaceService's
+	// GetMCPInfo RPC.
+	WorkspaceServiceGetMCPInfoProcedure = "/bytebase.v1.WorkspaceService/GetMCPInfo"
 	// WorkspaceServiceRotateDirectorySyncTokenProcedure is the fully-qualified name of the
 	// WorkspaceService's RotateDirectorySyncToken RPC.
 	WorkspaceServiceRotateDirectorySyncTokenProcedure = "/bytebase.v1.WorkspaceService/RotateDirectorySyncToken"
@@ -85,6 +88,18 @@ type WorkspaceServiceClient interface {
 	// Sets IAM policy for the workspace.
 	// Permissions required: bb.workspaces.setIamPolicy
 	SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
+	// Gets what MCP (Model Context Protocol) does in this workspace: the
+	// capability ceiling in force, what each ceiling serves, and the per-engine
+	// facts a read-only session depends on. The workspace is resolved from the
+	// authenticated session.
+	//
+	// Served to MCP sessions. An agent asking what it may do here is the point:
+	// the response says nothing a session's own denials do not already say, one
+	// refusal at a time, and knowing it up front is what stops the agent
+	// planning work the ceiling was never going to serve.
+	//
+	// Permissions required: None (authentication required)
+	GetMCPInfo(context.Context, *connect.Request[v1.GetMCPInfoRequest]) (*connect.Response[v1.MCPInfo], error)
 	// Mints a new directory sync (SCIM) token, immediately invalidating the
 	// previous one. The plaintext token is returned exactly once and cannot be
 	// retrieved afterwards; only its hash is stored. Callers that lose it must
@@ -146,6 +161,12 @@ func NewWorkspaceServiceClient(httpClient connect.HTTPClient, baseURL string, op
 			connect.WithSchema(workspaceServiceMethods.ByName("SetIamPolicy")),
 			connect.WithClientOptions(opts...),
 		),
+		getMCPInfo: connect.NewClient[v1.GetMCPInfoRequest, v1.MCPInfo](
+			httpClient,
+			baseURL+WorkspaceServiceGetMCPInfoProcedure,
+			connect.WithSchema(workspaceServiceMethods.ByName("GetMCPInfo")),
+			connect.WithClientOptions(opts...),
+		),
 		rotateDirectorySyncToken: connect.NewClient[v1.RotateDirectorySyncTokenRequest, v1.RotateDirectorySyncTokenResponse](
 			httpClient,
 			baseURL+WorkspaceServiceRotateDirectorySyncTokenProcedure,
@@ -164,6 +185,7 @@ type workspaceServiceClient struct {
 	deleteWorkspace          *connect.Client[v1.DeleteWorkspaceRequest, v1.LoginResponse]
 	leaveWorkspace           *connect.Client[v1.LeaveWorkspaceRequest, v1.LoginResponse]
 	setIamPolicy             *connect.Client[v1.SetIamPolicyRequest, v1.IamPolicy]
+	getMCPInfo               *connect.Client[v1.GetMCPInfoRequest, v1.MCPInfo]
 	rotateDirectorySyncToken *connect.Client[v1.RotateDirectorySyncTokenRequest, v1.RotateDirectorySyncTokenResponse]
 }
 
@@ -202,6 +224,11 @@ func (c *workspaceServiceClient) SetIamPolicy(ctx context.Context, req *connect.
 	return c.setIamPolicy.CallUnary(ctx, req)
 }
 
+// GetMCPInfo calls bytebase.v1.WorkspaceService.GetMCPInfo.
+func (c *workspaceServiceClient) GetMCPInfo(ctx context.Context, req *connect.Request[v1.GetMCPInfoRequest]) (*connect.Response[v1.MCPInfo], error) {
+	return c.getMCPInfo.CallUnary(ctx, req)
+}
+
 // RotateDirectorySyncToken calls bytebase.v1.WorkspaceService.RotateDirectorySyncToken.
 func (c *workspaceServiceClient) RotateDirectorySyncToken(ctx context.Context, req *connect.Request[v1.RotateDirectorySyncTokenRequest]) (*connect.Response[v1.RotateDirectorySyncTokenResponse], error) {
 	return c.rotateDirectorySyncToken.CallUnary(ctx, req)
@@ -233,6 +260,18 @@ type WorkspaceServiceHandler interface {
 	// Sets IAM policy for the workspace.
 	// Permissions required: bb.workspaces.setIamPolicy
 	SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error)
+	// Gets what MCP (Model Context Protocol) does in this workspace: the
+	// capability ceiling in force, what each ceiling serves, and the per-engine
+	// facts a read-only session depends on. The workspace is resolved from the
+	// authenticated session.
+	//
+	// Served to MCP sessions. An agent asking what it may do here is the point:
+	// the response says nothing a session's own denials do not already say, one
+	// refusal at a time, and knowing it up front is what stops the agent
+	// planning work the ceiling was never going to serve.
+	//
+	// Permissions required: None (authentication required)
+	GetMCPInfo(context.Context, *connect.Request[v1.GetMCPInfoRequest]) (*connect.Response[v1.MCPInfo], error)
 	// Mints a new directory sync (SCIM) token, immediately invalidating the
 	// previous one. The plaintext token is returned exactly once and cannot be
 	// retrieved afterwards; only its hash is stored. Callers that lose it must
@@ -290,6 +329,12 @@ func NewWorkspaceServiceHandler(svc WorkspaceServiceHandler, opts ...connect.Han
 		connect.WithSchema(workspaceServiceMethods.ByName("SetIamPolicy")),
 		connect.WithHandlerOptions(opts...),
 	)
+	workspaceServiceGetMCPInfoHandler := connect.NewUnaryHandler(
+		WorkspaceServiceGetMCPInfoProcedure,
+		svc.GetMCPInfo,
+		connect.WithSchema(workspaceServiceMethods.ByName("GetMCPInfo")),
+		connect.WithHandlerOptions(opts...),
+	)
 	workspaceServiceRotateDirectorySyncTokenHandler := connect.NewUnaryHandler(
 		WorkspaceServiceRotateDirectorySyncTokenProcedure,
 		svc.RotateDirectorySyncToken,
@@ -312,6 +357,8 @@ func NewWorkspaceServiceHandler(svc WorkspaceServiceHandler, opts ...connect.Han
 			workspaceServiceLeaveWorkspaceHandler.ServeHTTP(w, r)
 		case WorkspaceServiceSetIamPolicyProcedure:
 			workspaceServiceSetIamPolicyHandler.ServeHTTP(w, r)
+		case WorkspaceServiceGetMCPInfoProcedure:
+			workspaceServiceGetMCPInfoHandler.ServeHTTP(w, r)
 		case WorkspaceServiceRotateDirectorySyncTokenProcedure:
 			workspaceServiceRotateDirectorySyncTokenHandler.ServeHTTP(w, r)
 		default:
@@ -349,6 +396,10 @@ func (UnimplementedWorkspaceServiceHandler) LeaveWorkspace(context.Context, *con
 
 func (UnimplementedWorkspaceServiceHandler) SetIamPolicy(context.Context, *connect.Request[v1.SetIamPolicyRequest]) (*connect.Response[v1.IamPolicy], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorkspaceService.SetIamPolicy is not implemented"))
+}
+
+func (UnimplementedWorkspaceServiceHandler) GetMCPInfo(context.Context, *connect.Request[v1.GetMCPInfoRequest]) (*connect.Response[v1.MCPInfo], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.WorkspaceService.GetMCPInfo is not implemented"))
 }
 
 func (UnimplementedWorkspaceServiceHandler) RotateDirectorySyncToken(context.Context, *connect.Request[v1.RotateDirectorySyncTokenRequest]) (*connect.Response[v1.RotateDirectorySyncTokenResponse], error) {
