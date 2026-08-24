@@ -832,6 +832,7 @@ var auditRecordedFields = []string{
 	"bytebase.v1.SQLReviewRule.NamingRulePayload.format",
 	"bytebase.v1.SQLReviewRule.StringArrayRulePayload.list",
 	"bytebase.v1.SQLReviewRule.StringRulePayload.value",
+	"bytebase.v1.SampleInfo.instances",
 	"bytebase.v1.SavedQuery.creator",
 	"bytebase.v1.SavedQuery.database",
 	"bytebase.v1.SavedQuery.folder",

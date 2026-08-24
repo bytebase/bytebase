@@ -94,7 +94,7 @@ func configureGrpcRouters(
 	)
 	aiService := apiv1.NewAIService(stores)
 	accessGrantService := apiv1.NewAccessGrantService(stores, licenseService, webhookManager, bus)
-	actuatorService := apiv1.NewActuatorService(stores, profile, schemaSyncer, licenseService, sampleInstanceManager)
+	actuatorService := apiv1.NewActuatorService(stores, profile, schemaSyncer, licenseService, sampleInstanceManager, sampleProjectManager)
 	auditLogService := apiv1.NewAuditLogService(stores, licenseService)
 	authService := apiv1.NewAuthService(stores, secret, licenseService, profile, iamManager)
 	celService := apiv1.NewCelService()

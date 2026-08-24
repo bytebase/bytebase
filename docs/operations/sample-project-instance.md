@@ -1,20 +1,19 @@
 # Operate Bytebase Cloud Sample Project Instances
 
-Sample Project Instances are SaaS-only temporary-evaluation aggregates. Each aggregate has one Bytebase Project Instance and one dedicated database and login role on the shared, dedicated Cloud SQL PostgreSQL instance. A Workspace receives one lifetime entitlement. Do not provide reset tooling or expose a separate user-visible expired state.
+Sample Project Instances are SaaS-only temporary-evaluation aggregates. Each aggregate has one Bytebase Project Instance and one dedicated database and login role on the configured PostgreSQL target. A Workspace receives one lifetime entitlement. Do not provide reset tooling or expose a separate user-visible expired state.
 
 ## Configure the target
 
-Set `SAMPLE_PROJECT_INSTANCE_PG_URL` on every SaaS replica to the same direct PostgreSQL password URL for the dedicated Cloud SQL instance. The URL must use `sslmode=verify-full`; `sslmode=require` is rejected because it encrypts the connection without authenticating the server.
+Set `SAMPLE_PROJECT_INSTANCE_PG_URL` on every SaaS replica to the same direct PostgreSQL password URL. TLS is optional: omit `sslmode` or use `sslmode=disable` for a trusted local connection, use `sslmode=require` for encryption without server identity verification, or use `sslmode=verify-full` for encryption with server identity verification.
 
 - Supply the password in the URL. File indirection and hot credential rotation are not supported for this setting.
-- Optionally supply `sslrootcert` pointing to a mounted PEM CA bundle. Bytebase resolves that PEM while loading the target configuration and copies it into the generated sample data source so later connections use the same trust anchor.
-- Use a hostname in the URL that resolves to the Cloud SQL instance and matches the server certificate. `sslmode=verify-full` requires both CA trust and hostname verification; ensure every SaaS replica has DNS access to that hostname.
+- With `sslmode=verify-full`, optionally supply `sslrootcert` pointing to a mounted PEM CA bundle. Bytebase resolves that PEM while loading the target configuration and copies it into the generated sample data source so later connections use the same trust anchor.
+- With `sslmode=verify-full`, use a hostname in the URL that resolves to the PostgreSQL instance and matches the server certificate. This mode requires both CA trust and hostname verification; ensure every SaaS replica has DNS access to that hostname.
 - Keep the value out of source control, shell history, diagnostic dumps, and application logs. Use the deployment secret mechanism and rotate by replacing the deployment configuration uniformly across replicas.
 - The configured control-plane role requires `CREATEDB`, `CREATEROLE`, and membership in `pg_signal_backend`.
-- Maintain the isolation baseline: revoke `PUBLIC` access from `postgres` and `template1`, deny connections to `template0`, and do not leave any connectable database with `PUBLIC` access except Cloud SQL's exact provider-managed `cloudsqladmin` database.
-- Bytebase must not modify `cloudsqladmin`: Cloud SQL documents its corresponding system user as non-modifiable and excludes the database from `pg_dumpall` exports because customer tooling cannot access it. All customer-managed databases remain hardened. See [Cloud SQL SSL/TLS configuration](https://cloud.google.com/sql/docs/postgres/configure-ssl-instance), [Cloud SQL system users](https://cloud.google.com/sql/docs/postgres/users), and [Cloud SQL dump exports](https://cloud.google.com/sql/docs/postgres/import-export/import-export-dmp).
+- The target may contain existing databases with `PUBLIC` access. Bytebase does not grant generated sample roles privileges on those databases, but PostgreSQL's existing grants still apply. Use a dedicated target or revoke `PUBLIC` access when stronger cross-database isolation is required.
 
-An absent or invalid target configuration must not block server startup. Preparation is unavailable until configuration and the full privilege and isolation baseline validation succeed. Cleanup uses a separate 10-second connectivity and capability preflight so a partial database cannot block its own cleanup by violating the provisioning baseline. Startup and hourly cleanup still report structured, redacted errors for outstanding lifecycle records.
+An absent or syntactically invalid target configuration must not block server startup and leaves preparation disabled. A syntactically valid target remains configured when connectivity or capability validation fails. Bytebase logs the transient failure, rechecks target availability through a one-minute cache when serving actuator information, and validates again before every preparation, so repairing the target does not require a service restart. Cleanup uses a separate 10-second connectivity and capability preflight that does not require `CREATEDB`. Startup and hourly cleanup still report structured, redacted errors for outstanding lifecycle records.
 
 ## Provisioning and readiness
 

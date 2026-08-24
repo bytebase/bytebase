@@ -40,8 +40,11 @@ export function CreateInstanceView({
 }: CreateInstanceViewProps) {
   const { t } = useTranslation();
   const isSaaSMode = useAppStore((state) => state.isSaaSMode());
+  const sampleAvailable = useAppStore(
+    (state) => state.serverInfo?.sample?.available ?? false
+  );
   const canPrepareSampleProjectInstance =
-    isSaaSMode && !!parent && isValidProjectName(parent);
+    isSaaSMode && sampleAvailable && !!parent && isValidProjectName(parent);
 
   // Check instance limit on mount
   useEffect(() => {
@@ -199,7 +202,7 @@ function CreateInstanceFormInner({
       <div className="min-w-0 min-h-0 flex-1 flex flex-col">
         {/* Body */}
         <div className="flex-1 min-h-0 overflow-auto">
-          <div className="px-4 py-4 sm:px-6">
+          <div className="px-4 py-4 sm:px-6 gap-y-4 flex flex-col">
             {canPrepareSampleProjectInstance && (
               <Alert
                 title={t("instance.sample-project-instance-title")}

@@ -32,6 +32,7 @@ import {
   InstanceSyncButton,
   useInstanceFormContext,
 } from "@/components/instance";
+import { SampleExpirationAlert } from "@/components/SampleExpirationAlert";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
@@ -569,6 +570,8 @@ export function InstanceDetailView({
           {t("common.archived")}
         </div>
       )}
+
+      <SampleExpirationAlert instanceName={instanceName} />
 
       {/* No environment warning */}
       {!instance.environment && (

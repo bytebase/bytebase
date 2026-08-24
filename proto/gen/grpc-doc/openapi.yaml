@@ -18985,11 +18985,6 @@ components:
           format: int32
           description: The total number of database instances.
           readOnly: true
-        enableSample:
-          type: boolean
-          title: enable_sample
-          description: Whether sample data setup is enabled.
-          readOnly: true
         externalUrlFromFlag:
           type: boolean
           title: external_url_from_flag
@@ -19020,6 +19015,11 @@ components:
           format: int32
           description: The number of active VCS users seen in the active window.
           readOnly: true
+        sample:
+          title: sample
+          description: Sample setup availability and provisioned resources.
+          readOnly: true
+          $ref: '#/components/schemas/bytebase.v1.SampleInfo'
       title: ActuatorInfo
       additionalProperties: false
       description: |-
@@ -28960,6 +28960,32 @@ components:
         - BUILTIN_WALK_THROUGH_CHECK
         - STATEMENT_DISALLOW_TRUNCATE
         - BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+    bytebase.v1.SampleInfo:
+      type: object
+      properties:
+        available:
+          type: boolean
+          title: available
+          description: Whether sample setup is currently available.
+          readOnly: true
+        instances:
+          type: array
+          items:
+            type: string
+            readOnly: true
+          title: instances
+          description: |-
+            The provisioned sample instances.
+             Format: instances/{instance}
+          readOnly: true
+        expireTime:
+          title: expire_time
+          description: The time when the provisioned sample resources expire.
+          readOnly: true
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+      title: SampleInfo
+      additionalProperties: false
+      description: SampleInfo describes sample setup availability and provisioned resources.
     bytebase.v1.SavedQuery:
       type: object
       properties:

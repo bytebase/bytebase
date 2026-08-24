@@ -35,6 +35,7 @@
 - [v1/actuator_service.proto](#v1_actuator_service-proto)
     - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
+    - [SampleInfo](#bytebase-v1-SampleInfo)
     - [SetupSampleRequest](#bytebase-v1-SetupSampleRequest)
   
     - [ActuatorService](#bytebase-v1-ActuatorService)
@@ -1150,12 +1151,12 @@ Actuator concept is similar to the Spring Boot Actuator.
 | unlicensed_features | [string](#string) | repeated | List of features that are not licensed. |
 | activated_instance_count | [int32](#int32) |  | The number of activated database instances. |
 | total_instance_count | [int32](#int32) |  | The total number of database instances. |
-| enable_sample | [bool](#bool) |  | Whether sample data setup is enabled. |
 | external_url_from_flag | [bool](#bool) |  | Whether the external URL is set via command-line flag (and thus cannot be changed via UI). |
 | replica_count | [int32](#int32) |  | The number of active replicas (servers sharing the same database). |
 | default_project | [string](#string) |  | The default project for unassigned databases. Format: projects/{id} |
 | user_count_in_iam | [int32](#int32) |  | The number of users in the workspace IAM (for seat limit display). |
 | active_vcs_user_count | [int32](#int32) |  | The number of active VCS users seen in the active window. |
+| sample | [SampleInfo](#bytebase-v1-SampleInfo) |  | Sample setup availability and provisioned resources. |
 
 
 
@@ -1166,6 +1167,23 @@ Actuator concept is similar to the Spring Boot Actuator.
 
 ### GetActuatorInfoRequest
 Request message for getting actuator information.
+
+
+
+
+
+
+<a name="bytebase-v1-SampleInfo"></a>
+
+### SampleInfo
+SampleInfo describes sample setup availability and provisioned resources.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| available | [bool](#bool) |  | Whether sample setup is currently available. |
+| instances | [string](#string) | repeated | The provisioned sample instances. Format: instances/{instance} |
+| expire_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time when the provisioned sample resources expire. |
 
 
 

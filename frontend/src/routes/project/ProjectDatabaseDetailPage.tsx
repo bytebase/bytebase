@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
 import { ComponentPermissionGuard } from "@/components/ComponentPermissionGuard";
 import { TransferProjectSheet } from "@/components/database";
+import { SampleExpirationAlert } from "@/components/SampleExpirationAlert";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -154,6 +155,10 @@ export function ProjectDatabaseDetailPage({
 
   return (
     <div className="flex min-h-full flex-col gap-y-4 p-4">
+      <SampleExpirationAlert
+        instanceName={detail.database.instanceResource?.name ?? parent}
+      />
+
       {!detail.database.effectiveEnvironment && (
         <Alert
           variant="warning"

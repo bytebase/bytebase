@@ -36,6 +36,7 @@ type InstanceConfig struct {
 // Target manages direct PostgreSQL operations for sample project instances.
 type Target struct {
 	config        *pgx.ConnConfig
+	useSSL        bool
 	verifyTLS     bool
 	sslCA         string
 	provisionHook func(provisionStage) error
@@ -83,8 +84,19 @@ func NewTarget(targetURL string) (*Target, error) {
 	}
 
 	query := u.Query()
-	if len(query["sslmode"]) != 1 || query.Get("sslmode") != "verify-full" {
-		return nil, staticTargetError("sample project instance target URL requires sslmode=verify-full")
+	if len(query["sslmode"]) > 1 {
+		return nil, staticTargetError("sample project instance target URL requires at most one sslmode")
+	}
+	sslMode := query.Get("sslmode")
+	switch sslMode {
+	case "":
+		sslMode = "disable"
+		query.Set("sslmode", sslMode)
+		u.RawQuery = query.Encode()
+		targetURL = u.String()
+	case "disable", "require", "verify-full":
+	default:
+		return nil, staticTargetError("sample project instance target URL has unsupported sslmode")
 	}
 	for key := range query {
 		if key != "sslmode" && key != "sslrootcert" {
@@ -113,7 +125,7 @@ func NewTarget(targetURL string) (*Target, error) {
 		}
 		sslCA = resolved.GetSslCa()
 	}
-	return newTargetFromConfig(config, true, sslCA), nil
+	return newTargetFromConfig(config, sslMode == "verify-full", sslCA), nil
 }
 
 // InstanceConfig builds the persisted admin datasource and its exact discovery
@@ -131,7 +143,7 @@ func (t *Target) InstanceConfig(allocation Allocation) (*InstanceConfig, error) 
 			Database:             allocation.Database,
 			Username:             allocation.Role,
 			Password:             allocation.Password,
-			UseSsl:               true,
+			UseSsl:               t.useSSL,
 			VerifyTlsCertificate: t.verifyTLS,
 			SslCa:                t.sslCA,
 		},
@@ -142,24 +154,19 @@ func (t *Target) InstanceConfig(allocation Allocation) (*InstanceConfig, error) 
 func newTargetFromConfig(config *pgx.ConnConfig, verifyTLS bool, sslCA string) *Target {
 	return &Target{
 		config:    config,
+		useSSL:    config.TLSConfig != nil,
 		verifyTLS: verifyTLS,
 		sslCA:     sslCA,
 	}
 }
 
-// Validate verifies the target is reachable and has the static isolation
-// baseline required before allocating shared sample databases.
+// Validate verifies the target is reachable and can allocate sample databases.
 func (t *Target) Validate(ctx context.Context) error {
-	if err := t.validateCapabilities(ctx, true); err != nil {
-		return err
-	}
-	return t.validateIsolationBaseline(ctx)
+	return t.validateCapabilities(ctx, true)
 }
 
 // ValidateForCleanup verifies the connectivity and target capabilities needed
-// to remove existing allocations. Unlike Validate, it does not require the
-// provisioning isolation baseline because a partially provisioned allocation
-// may need cleanup before that baseline can be restored.
+// to remove existing allocations. Cleanup does not require CREATEDB.
 func (t *Target) ValidateForCleanup(ctx context.Context) error {
 	return t.validateCapabilities(ctx, false)
 }
@@ -184,60 +191,6 @@ func (t *Target) validateCapabilities(ctx context.Context, requireCreateDB bool)
 	}
 	if !requireCreateDB && (!canCreateRole || !canSignal) {
 		return staticTargetError("sample project instance target role requires CREATEROLE and pg_signal_backend for cleanup")
-	}
-	return nil
-}
-
-func (t *Target) validateIsolationBaseline(ctx context.Context) error {
-	conn, err := t.connect(ctx, "", "", "")
-	if err != nil {
-		return errors.New("failed to connect to sample project instance target")
-	}
-	defer conn.Close(ctx)
-
-	rows, err := conn.Query(ctx, `
-		SELECT
-			datname,
-			datallowconn,
-			EXISTS (
-				SELECT 1
-				FROM aclexplode(COALESCE(datacl, acldefault('d', datdba))) AS privilege
-				WHERE privilege.grantee = 0
-					AND privilege.privilege_type IN ('CONNECT', 'TEMPORARY')
-			)
-		FROM pg_database
-	`)
-	if err != nil {
-		return errors.New("failed to inspect sample project instance target database privileges")
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var name string
-		var allowConnections, publicAccess bool
-		if err := rows.Scan(&name, &allowConnections, &publicAccess); err != nil {
-			return errors.New("failed to read sample project instance target database privileges")
-		}
-		switch name {
-		case "postgres", "template1":
-			if publicAccess {
-				return staticTargetError("sample project instance target requires postgres and template1 to deny PUBLIC access")
-			}
-		case "template0":
-			if allowConnections {
-				return staticTargetError("sample project instance target requires template0 to deny connections")
-			}
-		case "cloudsqladmin":
-			// Cloud SQL reserves this exact database for its administration
-			// service. It is not a tenant-accessible sample database.
-		default:
-			if allowConnections && publicAccess {
-				return staticTargetError("sample project instance target has a connectable database with PUBLIC access")
-			}
-		}
-	}
-	if err := rows.Err(); err != nil {
-		return errors.New("failed to inspect sample project instance target database privileges")
 	}
 	return nil
 }
@@ -371,7 +324,7 @@ func (t *Target) Remove(ctx context.Context, allocation Allocation) error {
 		if err := t.runProvisionHook(provisionStageCleanupDatabase); err != nil {
 			return errors.New("failed while removing sample project instance database")
 		}
-		if _, err := admin.Exec(ctx, fmt.Sprintf("DROP DATABASE %s WITH (FORCE)", quoteIdentifier(allocation.Database))); err != nil {
+		if _, err := admin.Exec(ctx, fmt.Sprintf("DROP DATABASE %s", quoteIdentifier(allocation.Database))); err != nil {
 			return errors.New("failed to drop sample project instance database")
 		}
 	}
