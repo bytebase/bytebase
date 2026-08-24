@@ -115,14 +115,20 @@ export function Feature() {
     expect(violations).toHaveLength(3);
   });
 
-  test("flags Button height and size overrides", () => {
+  test("allows responsive Button sizing but flags other dimension overrides", () => {
     const violations = scanSource(
       `
 export function Feature() {
   return (
     <>
       <Button size="sm" className="w-full" />
-      <Button className={cn("h-8", compact ? "md:size-7" : "")} />
+      <Button
+        className={cn(
+          "h-8",
+          compact ? "md:size-7" : "",
+          "hover:h-9 2xl:h-9 max-xl:size-7"
+        )}
+      />
     </>
   );
 }
@@ -137,7 +143,7 @@ export function Feature() {
       }),
       expect.objectContaining({
         rule: "no-button-dimension-override",
-        token: "md:size-7",
+        token: "hover:h-9",
       }),
     ]);
   });

@@ -218,7 +218,12 @@ const scanSheetWidth = (node, path, counts) => {
 const scanButtonDimensions = (node, path, counts) => {
   if (isSharedPrimitive(path) || getTagName(node.tagName) !== "Button") return;
   for (const token of attributeTokens(node, new Set(["class", "className"]))) {
-    if (/(?:^|:)(?:h|size)-/.test(token)) {
+    const isDimensionOverride = /(?:^|:)(?:h|size)-/.test(token);
+    const isResponsiveOverride =
+      /^(?:sm|md|lg|xl|2xl|max-(?:sm|md|lg|xl|2xl)):(?:h|size)-/.test(
+        token
+      );
+    if (isDimensionOverride && !isResponsiveOverride) {
       addViolation(counts, path, "no-button-dimension-override", token);
     }
   }

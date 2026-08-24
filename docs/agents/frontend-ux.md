@@ -72,8 +72,10 @@ The product spacing vocabulary is 4, 6, 8, 12, 16, 24, and 32px.
 
 ### Controls
 
-The `size` prop on shared controls selects the complete contract. Consumers
-MUST NOT resize the control or its managed icon independently.
+The `size` prop on shared controls selects the complete base contract.
+Consumers MUST NOT override base dimensions or resize a managed icon
+independently. A layout owner MAY use standard breakpoint-prefixed classes to
+apply a complete responsive size contract; do not override only the height.
 
 | Size | Height | Inline padding | Text | Icon | Internal gap |
 | --- | ---: | ---: | --- | ---: | ---: |
