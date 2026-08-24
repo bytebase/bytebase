@@ -5716,7 +5716,7 @@ Context for identity provider authentication.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| email | [string](#string) |  | User&#39;s email address. |
+| email | [string](#string) |  | User&#39;s email address. Bounded so an oversized identity is refused at the edge before any handler runs; the login-attempt lockout keys rows by this value. |
 | password | [string](#string) |  | User&#39;s password for authentication. |
 | web | [bool](#bool) |  | If true, sets access token and refresh token as HTTP-only cookies instead of returning the token in the response body. Use for browser-based clients. |
 | idp_name | [string](#string) |  | The name of the identity provider. Format: idps/{idp} |
@@ -5818,7 +5818,7 @@ Response from refreshing the access token.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| email | [string](#string) |  | The email address of the account to reset. |
+| email | [string](#string) |  | The email address of the account to reset. Bounded so an oversized identity is refused at the edge before any handler runs; the login-attempt lockout keys rows by this value. |
 | workspace | [string](#string) | optional | Optional workspace context captured at send time, used to locate the EMAIL setting, and later (at verify time) for signup gate checks and workspace assignment. Unset for SaaS brand-new signup (no workspace exists yet). Format: workspaces/{workspace} |
 
 
@@ -5834,7 +5834,7 @@ Response from refreshing the access token.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| email | [string](#string) |  | The email address of the account. |
+| email | [string](#string) |  | The email address of the account. Bounded so an oversized identity is refused at the edge before any handler runs; the login-attempt lockout keys rows by this value. |
 | code | [string](#string) |  | The 6-digit code from the reset email. |
 | new_password | [string](#string) |  | The new password to set. |
 
@@ -5870,7 +5870,7 @@ Response from refreshing the access token.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| email | [string](#string) |  | The email address to send the code to. |
+| email | [string](#string) |  | The email address to send the code to. Bounded so an oversized identity is refused at the edge before any handler runs; the login-attempt lockout keys rows by this value. |
 | workspace | [string](#string) | optional | Optional workspace context captured at send time, used to locate the EMAIL setting, and later (at verify time) for signup gate checks and workspace assignment. Unset for SaaS brand-new signup (no workspace exists yet). Format: workspaces/{workspace} |
 
 
@@ -5886,7 +5886,7 @@ Response from refreshing the access token.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| email | [string](#string) |  | The email for the new account. |
+| email | [string](#string) |  | The email for the new account. Bounded so an oversized identity is refused at the edge before any handler runs; the login-attempt lockout keys rows by this value. |
 | password | [string](#string) |  | The password for the new account. |
 | title | [string](#string) |  | The display name of the user. |
 

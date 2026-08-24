@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package bytebase.v1;
 
+import "buf/validate/validate.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
@@ -189,7 +190,9 @@ message Restriction {
 
 message LoginRequest {
   // User's email address.
-  string email = 1;
+  // Bounded so an oversized identity is refused at the edge before any
+  // handler runs; the login-attempt lockout keys rows by this value.
+  string email = 1 [(buf.validate.field).string.max_len = 254];
 
   // User's password for authentication.
   string password = 2 [(bytebase.v1.audit_behavior) = SENSITIVE];
@@ -282,7 +285,9 @@ message ExchangeTokenResponse {
 
 message SignupRequest {
   // The email for the new account.
-  string email = 1;
+  // Bounded so an oversized identity is refused at the edge before any
+  // handler runs; the login-attempt lockout keys rows by this value.
+  string email = 1 [(buf.validate.field).string.max_len = 254];
 
   // The password for the new account.
   string password = 2 [(bytebase.v1.audit_behavior) = SENSITIVE];
@@ -299,7 +304,9 @@ message RefreshResponse {}
 
 message RequestPasswordResetRequest {
   // The email address of the account to reset.
-  string email = 1;
+  // Bounded so an oversized identity is refused at the edge before any
+  // handler runs; the login-attempt lockout keys rows by this value.
+  string email = 1 [(buf.validate.field).string.max_len = 254];
   // Optional workspace context captured at send time, used to locate the EMAIL setting,
   // and later (at verify time) for signup gate checks and workspace assignment.
   // Unset for SaaS brand-new signup (no workspace exists yet).
@@ -309,7 +316,9 @@ message RequestPasswordResetRequest {
 
 message ResetPasswordRequest {
   // The email address of the account.
-  string email = 1;
+  // Bounded so an oversized identity is refused at the edge before any
+  // handler runs; the login-attempt lockout keys rows by this value.
+  string email = 1 [(buf.validate.field).string.max_len = 254];
   // The 6-digit code from the reset email.
   string code = 2 [(bytebase.v1.audit_behavior) = SENSITIVE];
   // The new password to set.
@@ -318,7 +327,9 @@ message ResetPasswordRequest {
 
 message SendEmailLoginCodeRequest {
   // The email address to send the code to.
-  string email = 1;
+  // Bounded so an oversized identity is refused at the edge before any
+  // handler runs; the login-attempt lockout keys rows by this value.
+  string email = 1 [(buf.validate.field).string.max_len = 254];
   // Optional workspace context captured at send time, used to locate the EMAIL setting,
   // and later (at verify time) for signup gate checks and workspace assignment.
   // Unset for SaaS brand-new signup (no workspace exists yet).

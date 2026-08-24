@@ -113,6 +113,8 @@ export declare const RestrictionSchema: GenMessage<Restriction>;
 export declare type LoginRequest = Message<"bytebase.v1.LoginRequest"> & {
   /**
    * User's email address.
+   * Bounded so an oversized identity is refused at the edge before any
+   * handler runs; the login-attempt lockout keys rows by this value.
    *
    * @generated from field: string email = 1;
    */
@@ -373,6 +375,8 @@ export declare const ExchangeTokenResponseSchema: GenMessage<ExchangeTokenRespon
 export declare type SignupRequest = Message<"bytebase.v1.SignupRequest"> & {
   /**
    * The email for the new account.
+   * Bounded so an oversized identity is refused at the edge before any
+   * handler runs; the login-attempt lockout keys rows by this value.
    *
    * @generated from field: string email = 1;
    */
@@ -433,6 +437,8 @@ export declare const RefreshResponseSchema: GenMessage<RefreshResponse>;
 export declare type RequestPasswordResetRequest = Message<"bytebase.v1.RequestPasswordResetRequest"> & {
   /**
    * The email address of the account to reset.
+   * Bounded so an oversized identity is refused at the edge before any
+   * handler runs; the login-attempt lockout keys rows by this value.
    *
    * @generated from field: string email = 1;
    */
@@ -461,6 +467,8 @@ export declare const RequestPasswordResetRequestSchema: GenMessage<RequestPasswo
 export declare type ResetPasswordRequest = Message<"bytebase.v1.ResetPasswordRequest"> & {
   /**
    * The email address of the account.
+   * Bounded so an oversized identity is refused at the edge before any
+   * handler runs; the login-attempt lockout keys rows by this value.
    *
    * @generated from field: string email = 1;
    */
@@ -493,6 +501,8 @@ export declare const ResetPasswordRequestSchema: GenMessage<ResetPasswordRequest
 export declare type SendEmailLoginCodeRequest = Message<"bytebase.v1.SendEmailLoginCodeRequest"> & {
   /**
    * The email address to send the code to.
+   * Bounded so an oversized identity is refused at the edge before any
+   * handler runs; the login-attempt lockout keys rows by this value.
    *
    * @generated from field: string email = 1;
    */

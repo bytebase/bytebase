@@ -25922,7 +25922,11 @@ components:
         email:
           type: string
           title: email
-          description: User's email address.
+          maxLength: 254
+          description: |-
+            User's email address.
+             Bounded so an oversized identity is refused at the edge before any
+             handler runs; the login-attempt lockout keys rows by this value.
         password:
           type: string
           title: password
@@ -28346,7 +28350,11 @@ components:
         email:
           type: string
           title: email
-          description: The email address of the account to reset.
+          maxLength: 254
+          description: |-
+            The email address of the account to reset.
+             Bounded so an oversized identity is refused at the edge before any
+             handler runs; the login-attempt lockout keys rows by this value.
         workspace:
           type:
             - string
@@ -28365,7 +28373,11 @@ components:
         email:
           type: string
           title: email
-          description: The email address of the account.
+          maxLength: 254
+          description: |-
+            The email address of the account.
+             Bounded so an oversized identity is refused at the edge before any
+             handler runs; the login-attempt lockout keys rows by this value.
         code:
           type: string
           title: code
@@ -29939,7 +29951,11 @@ components:
         email:
           type: string
           title: email
-          description: The email address to send the code to.
+          maxLength: 254
+          description: |-
+            The email address to send the code to.
+             Bounded so an oversized identity is refused at the edge before any
+             handler runs; the login-attempt lockout keys rows by this value.
         workspace:
           type:
             - string
@@ -30243,7 +30259,11 @@ components:
         email:
           type: string
           title: email
-          description: The email for the new account.
+          maxLength: 254
+          description: |-
+            The email for the new account.
+             Bounded so an oversized identity is refused at the edge before any
+             handler runs; the login-attempt lockout keys rows by this value.
         password:
           type: string
           title: password
