@@ -41,7 +41,8 @@ Guessing is throttled at three points by three mechanisms:
 - **G3** No existence oracle: unknown and known emails lock at the same attempt with the same error.
 - **G4** Locks expire on their own; no admin unlock.
 - **G5** Correct under replicas: state in the metadata database, one atomic statement per attempt.
-- **G6** Password and MFA thresholds, error codes, and messages unchanged.
+- **G6** Lockout error codes and messages unchanged; one shared threshold — five attempts per
+  ten minutes — replaces the three historical ones.
 
 ### Non-goals
 
@@ -75,11 +76,7 @@ belongs to. No `ip` column: the caller IP is forgeable, and per-source throttlin
 
 ### Semantics
 
-| Kind | Attempts `N` | Duration `D` |
-|---|---|---|
-| `PASSWORD` | 10 | 10 min |
-| `EMAIL_CODE` | 5 | 10 min |
-| `MFA` | 5 | 5 min |
+Every kind shares one limit: `N` = 5 attempts, `D` = 10 minutes.
 
 1. **An attempt claims a slot before the credential is checked.** `N` attempts are granted. If
    the identity already holds `N` and the latest was under `D` ago, the next gets no slot:

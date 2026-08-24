@@ -40,7 +40,7 @@ func TestPasswordLockoutClaims(t *testing.T) {
 
 	t.Run("unknown and known emails lock at the same attempt with the same error", func(t *testing.T) {
 		for _, email := range []string{"known@example.com", "unknown@example.com"} {
-			for range passwordAttemptPolicy.maxAttempts {
+			for range loginAttemptMax {
 				_, err := service.getAndVerifyUser(ctx, &v1pb.LoginRequest{Email: email, Password: "wrong-password"})
 				require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
 				require.ErrorContains(t, err, errMsgInvalidCredentials)
@@ -69,7 +69,7 @@ func TestPasswordLockoutClaims(t *testing.T) {
 		require.Equal(t, email, user.Email)
 
 		// The forgotten failures must not count against the fresh window.
-		for range passwordAttemptPolicy.maxAttempts {
+		for range loginAttemptMax {
 			_, err := service.getAndVerifyUser(ctx, &v1pb.LoginRequest{Email: email, Password: "wrong-password"})
 			require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
 		}
@@ -80,7 +80,7 @@ func TestPasswordLockoutClaims(t *testing.T) {
 	t.Run("garbage identities never write a row", func(t *testing.T) {
 		// Over-length emails are refused at the proto edge (see
 		// TestAuthEmailFieldsAreLengthBounded); invalid syntax is refused here.
-		for range passwordAttemptPolicy.maxAttempts + 1 {
+		for range loginAttemptMax + 1 {
 			_, err := service.getAndVerifyUser(ctx, &v1pb.LoginRequest{Email: "not-an-email", Password: "wrong-password"})
 			require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err),
 				"an invalid-syntax email is rejected before the claim, with the same error as a wrong password")
@@ -112,7 +112,7 @@ func TestEmailCodeLockoutClaims(t *testing.T) {
 
 	t.Run("the lockout precedes the code row", func(t *testing.T) {
 		const email = "no-code@example.com"
-		for range emailCodeAttemptPolicy.maxAttempts {
+		for range loginAttemptMax {
 			err := service.verifyEmailCode(ctx, email, storepb.EmailVerificationCodePurpose_LOGIN, "000000")
 			require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
 			require.ErrorContains(t, err, "invalid or expired code")
@@ -142,7 +142,7 @@ func TestEmailCodeLockoutClaims(t *testing.T) {
 	t.Run("wrong guesses no longer delete the code row", func(t *testing.T) {
 		const email = "cooldown@example.com"
 		upsertCode(email, storepb.EmailVerificationCodePurpose_LOGIN, "111111")
-		for range emailCodeAttemptPolicy.maxAttempts {
+		for range loginAttemptMax {
 			err := service.verifyEmailCode(ctx, email, storepb.EmailVerificationCodePurpose_LOGIN, "000000")
 			require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
 		}
@@ -174,7 +174,7 @@ func TestEmailCodeLockoutClaims(t *testing.T) {
 		require.NoError(t, err)
 		require.Nil(t, row, "a matched code is single-use")
 
-		for range emailCodeAttemptPolicy.maxAttempts {
+		for range loginAttemptMax {
 			err := service.verifyEmailCode(ctx, email, storepb.EmailVerificationCodePurpose_LOGIN, "000000")
 			require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
 		}
@@ -209,7 +209,7 @@ func TestResetPasswordClearsPasswordLockout(t *testing.T) {
 	const newPassword = "new-password-1024"
 	createLockoutTestUser(ctx, t, stores, email, oldPassword)
 
-	for range passwordAttemptPolicy.maxAttempts {
+	for range loginAttemptMax {
 		_, err := service.getAndVerifyUser(ctx, &v1pb.LoginRequest{Email: email, Password: "wrong-password"})
 		require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
 	}
@@ -256,7 +256,7 @@ func TestMFALockoutClaims(t *testing.T) {
 	t.Run("guesses are bounded per identity across temp tokens", func(t *testing.T) {
 		const email = "mfa-locked@example.com"
 		_, otpSecret := setupMFAUser(ctx, t, stores, email)
-		for i := range mfaAttemptPolicy.maxAttempts {
+		for i := range loginAttemptMax {
 			// A fresh token per attempt must not buy fresh guesses.
 			err := attempt(email, ptr("not-a-code"))
 			require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err), "attempt %d", i+1)
@@ -276,7 +276,7 @@ func TestMFALockoutClaims(t *testing.T) {
 	t.Run("success clears the counter", func(t *testing.T) {
 		const email = "mfa-clearing@example.com"
 		_, otpSecret := setupMFAUser(ctx, t, stores, email)
-		for range mfaAttemptPolicy.maxAttempts - 1 {
+		for range loginAttemptMax - 1 {
 			err := attempt(email, ptr("not-a-code"))
 			require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
 		}
@@ -284,7 +284,7 @@ func TestMFALockoutClaims(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, attempt(email, &validOTP))
 
-		for range mfaAttemptPolicy.maxAttempts {
+		for range loginAttemptMax {
 			err := attempt(email, ptr("not-a-code"))
 			require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
 		}
@@ -295,7 +295,7 @@ func TestMFALockoutClaims(t *testing.T) {
 	t.Run("codeless requests claim nothing", func(t *testing.T) {
 		const email = "mfa-codeless@example.com"
 		setupMFAUser(ctx, t, stores, email)
-		for range mfaAttemptPolicy.maxAttempts + 1 {
+		for range loginAttemptMax + 1 {
 			err := attempt(email, nil)
 			require.Equal(t, connect.CodeUnauthenticated, connect.CodeOf(err))
 			require.ErrorContains(t, err, "OTP or recovery code is required")
@@ -339,7 +339,7 @@ func TestSwitchWorkspaceMFAClaims(t *testing.T) {
 	}))
 	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 
-	for range mfaAttemptPolicy.maxAttempts {
+	for range loginAttemptMax {
 		_, err := service.SwitchWorkspace(userCtx, connect.NewRequest(&v1pb.SwitchWorkspaceRequest{
 			Workspace:    common.FormatWorkspace(workspaceID),
 			MfaTempToken: &token,
@@ -407,7 +407,7 @@ func TestLDAPLockoutClaims(t *testing.T) {
 		`SELECT identity FROM login_attempt WHERE kind = 'PASSWORD'`).Scan(&identity))
 	require.Equal(t, idpID+":alice", identity)
 
-	for range passwordAttemptPolicy.maxAttempts - 1 {
+	for range loginAttemptMax - 1 {
 		_, err := service.getOrCreateUserWithIDP(ctx, request)
 		require.Error(t, err)
 		require.NotEqual(t, connect.CodeResourceExhausted, connect.CodeOf(err))
@@ -418,13 +418,11 @@ func TestLDAPLockoutClaims(t *testing.T) {
 }
 
 // TestLoginAttemptRetentionOutlivesLockouts ties the cleaner's purge horizon
-// to the lockout windows: a retention shorter than a window would delete
+// to the lockout window: a retention shorter than the window would delete
 // still-running locks, silently capping every lockout at the retention.
 func TestLoginAttemptRetentionOutlivesLockouts(t *testing.T) {
-	for _, policy := range []loginAttemptPolicy{passwordAttemptPolicy, emailCodeAttemptPolicy, mfaAttemptPolicy} {
-		require.Greater(t, cleaner.LoginAttemptRetentionPeriod, policy.window,
-			"the hourly purge must never delete a still-running %s lock", policy.kind)
-	}
+	require.Greater(t, cleaner.LoginAttemptRetentionPeriod, loginAttemptWindow,
+		"the hourly purge must never delete a still-running lock")
 }
 
 func newAuthTestStore(t *testing.T) *store.Store {

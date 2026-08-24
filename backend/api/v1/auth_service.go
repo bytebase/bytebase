@@ -624,7 +624,7 @@ func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginR
 	// Claim an attempt slot before the credential is checked: a locked email is
 	// refused before bcrypt, and unknown emails lock at the same attempt with
 	// the same error (no existence oracle). A successful login holds its slot
-	// only until the clear below, so more than maxAttempts concurrent
+	// only until the clear below, so more than loginAttemptMax concurrent
 	// correct-credential logins for one identity can see transient refusals —
 	// accepted; the refusal ends when the first login's clear lands.
 	if err := s.claimLoginAttempt(ctx, email, passwordAttemptPolicy); err != nil {
@@ -2075,36 +2075,26 @@ func (*AuthService) getAdditionalWorkspaceSettings() []store.AdditionalSetting {
 	return settings
 }
 
-// loginAttemptPolicy is one credential's attempt limit: maxAttempts slots per
-// identity, refused with lockedMsg until window has passed since the latest.
+// Every credential kind shares one attempt limit
+// (docs/design/login-attempt-lockout.md): loginAttemptMax slots per identity,
+// and a claim more than loginAttemptWindow after the latest restarts the
+// counter — so a lock lasts exactly loginAttemptWindow from the last slot.
+const (
+	loginAttemptMax    = 5
+	loginAttemptWindow = 10 * time.Minute
+)
+
+// loginAttemptPolicy names the bucket and the lockout answer for one
+// credential kind.
 type loginAttemptPolicy struct {
-	kind        storepb.LoginAttemptKind
-	maxAttempts int
-	window      time.Duration
-	// lockedMsg answers a claim refused because the identity is locked out.
+	kind      storepb.LoginAttemptKind
 	lockedMsg string
 }
 
-// Attempt limits per credential kind (docs/design/login-attempt-lockout.md).
 var (
-	passwordAttemptPolicy = loginAttemptPolicy{
-		kind:        storepb.LoginAttemptKind_PASSWORD,
-		maxAttempts: 10,
-		window:      10 * time.Minute,
-		lockedMsg:   errMsgTooManyPassword,
-	}
-	emailCodeAttemptPolicy = loginAttemptPolicy{
-		kind:        storepb.LoginAttemptKind_EMAIL_CODE,
-		maxAttempts: 5,
-		window:      10 * time.Minute,
-		lockedMsg:   errMsgTooManyEmailCode,
-	}
-	mfaAttemptPolicy = loginAttemptPolicy{
-		kind:        storepb.LoginAttemptKind_MFA,
-		maxAttempts: 5,
-		window:      5 * time.Minute,
-		lockedMsg:   errMsgTooManyMFA,
-	}
+	passwordAttemptPolicy  = loginAttemptPolicy{storepb.LoginAttemptKind_PASSWORD, errMsgTooManyPassword}
+	emailCodeAttemptPolicy = loginAttemptPolicy{storepb.LoginAttemptKind_EMAIL_CODE, errMsgTooManyEmailCode}
+	mfaAttemptPolicy       = loginAttemptPolicy{storepb.LoginAttemptKind_MFA, errMsgTooManyMFA}
 )
 
 // claimLoginAttempt claims one attempt slot for the identity under attack,
@@ -2115,7 +2105,7 @@ var (
 // request field that becomes an identity carries a proto max_len, and the
 // store refuses structurally oversized or unkeyed rows as a backstop.
 func (s *AuthService) claimLoginAttempt(ctx context.Context, identity string, policy loginAttemptPolicy) error {
-	granted, err := s.store.ClaimLoginAttempt(ctx, identity, policy.kind, policy.maxAttempts, policy.window)
+	granted, err := s.store.ClaimLoginAttempt(ctx, identity, policy.kind, loginAttemptMax, loginAttemptWindow)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, err)
 	}

@@ -84,7 +84,7 @@ func TestLoginFailureLockout(t *testing.T) {
 	a.ErrorContains(err, "too many failed MFA attempts")
 
 	for _, email := range []string{" Demo@Example.com ", " Unknown@Example.com "} {
-		for range 10 {
+		for range 5 {
 			_, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
 				Email:    email,
 				Password: "wrong-password",
@@ -166,8 +166,8 @@ func TestLoginFailureLockout(t *testing.T) {
 		default:
 		}
 	}
-	a.Equal(10, invalidPasswordCount["demo@example.com"])
-	a.Equal(10, invalidPasswordCount["unknown@example.com"])
+	a.Equal(5, invalidPasswordCount["demo@example.com"])
+	a.Equal(5, invalidPasswordCount["unknown@example.com"])
 	a.Equal(1, passwordLockoutCount["demo@example.com"])
 	a.Equal(1, passwordLockoutCount["unknown@example.com"])
 	a.Equal(5, invalidMFACount)
