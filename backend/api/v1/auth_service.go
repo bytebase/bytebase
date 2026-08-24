@@ -54,14 +54,11 @@ const (
 	errMsgInvalidCredentials  = "invalid email or password"
 	errMsgInvalidMFACode      = "invalid MFA code"
 	errMsgInvalidRecoveryCode = "invalid recovery code"
-	errMsgTooManyPassword     = "too many failed login attempts, please try again later"
-	errMsgTooManyMFA          = "too many failed MFA attempts, please try again later"
-	errMsgTooManyEmailCode    = "too many attempts, please try again later"
 	errMsgInvalidEmailCode    = "invalid or expired code"
 )
 
 var (
-	invalidCredentialsError = connect.NewError(connect.CodeUnauthenticated, errors.Errorf(errMsgInvalidCredentials))
+	invalidCredentialsError = connect.NewError(connect.CodeUnauthenticated, errors.New(errMsgInvalidCredentials))
 )
 
 type loginAuthMethod string
@@ -82,23 +79,17 @@ func loginAuthMethodFromRequest(request *v1pb.LoginRequest) loginAuthMethod {
 	return loginAuthMethodPassword
 }
 
-func loginAuthMethodFromString(method string) loginAuthMethod {
-	switch loginAuthMethod(method) {
-	case loginAuthMethodIDP:
-		return loginAuthMethodIDP
-	case loginAuthMethodEmailCode:
-		return loginAuthMethodEmailCode
-	default:
-		return loginAuthMethodPassword
-	}
-}
-
 func loginAuthMethodFromMFATempToken(token, secret string) (string, loginAuthMethod, error) {
 	email, method, err := auth.GetUserEmailAndLoginMethodFromMFATempToken(token, secret)
 	if err != nil {
 		return "", loginAuthMethodPassword, err
 	}
-	return email, loginAuthMethodFromString(method), nil
+	switch m := loginAuthMethod(method); m {
+	case loginAuthMethodIDP, loginAuthMethodEmailCode:
+		return email, m, nil
+	default:
+		return email, loginAuthMethodPassword, nil
+	}
 }
 
 func (m loginAuthMethod) requiresPasswordReset() bool {
@@ -208,17 +199,23 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve workspace"))
 	}
-	// If the user has no workspace (e.g. left all workspaces), provision a new one.
+	// If the user has no workspace (e.g. left all workspaces), provision one.
 	if workspaceID == "" {
-		workspaceID, err = s.provisionWorkspaceForNewUser(ctx, loginUser.Email)
+		targetWorkspaceID, isMember, err := s.resolveWorkspaceIDByEmail(ctx, loginUser.Email)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve target workspace"))
+		}
+		workspaceID, err = s.provisionResolvedWorkspace(ctx, loginUser.Email, targetWorkspaceID, isMember)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to provision workspace"))
 		}
 	}
 	common.SetAuditWorkspaceID(ctx, workspaceID)
 
-	// 3. Post-auth checks (deleted, domain, license)
-	if err := s.validateLoginPermissions(ctx, loginUser, workspaceID, request); err != nil {
+	// 3. Post-auth checks (deleted, domain, license). The fetched restriction
+	// is reused by needResetPassword below to spare a duplicate settings read.
+	restriction, err := s.validateLoginPermissions(ctx, loginUser, workspaceID, request)
+	if err != nil {
 		return nil, err
 	}
 
@@ -236,26 +233,23 @@ func (s *AuthService) Login(ctx context.Context, req *connect.Request[v1pb.Login
 	}
 
 	// 6. Build response and finalize
-	requireResetPassword := loginMethod.requiresPasswordReset() && s.needResetPassword(ctx, loginUser, workspaceID)
-	return s.finalizeLogin(ctx, req, loginUser, token, workspaceID, requireResetPassword)
+	requireResetPassword := loginMethod.requiresPasswordReset() && s.needResetPassword(ctx, loginUser, workspaceID, restriction)
+	return s.finalizeLogin(ctx, req.Header(), request.Web, loginUser, token, workspaceID, requireResetPassword)
 }
 
-func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMessage, workspaceID string) bool {
+func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMessage, workspaceID string, restriction *v1pb.Restriction) bool {
 	// Reset password restriction only works for end user with email & password login.
 	if user.Type != storepb.PrincipalType_END_USER {
 		return false
 	}
 
-	restriction, err := getAccountRestriction(
-		ctx,
-		s.store,
-		s.licenseService,
-		s.profile.SaaS,
-		workspaceID,
-	)
-	if err != nil {
-		slog.Error("failed to get workspace restriction", log.BBError(err), slog.String("workspace", workspaceID))
-		return false
+	if restriction == nil {
+		var err error
+		restriction, err = getAccountRestriction(ctx, s.store, s.licenseService, s.profile.SaaS, workspaceID)
+		if err != nil {
+			slog.Error("failed to get workspace restriction", log.BBError(err), slog.String("workspace", workspaceID))
+			return false
+		}
 	}
 
 	// Don't need to reset password if password signin is not allowed.
@@ -300,7 +294,7 @@ func (s *AuthService) needResetPassword(ctx context.Context, user *store.UserMes
 // - Otherwise, creates a new workspace with the user as admin.
 func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.SignupRequest]) (*connect.Response[v1pb.LoginResponse], error) {
 	request := req.Msg
-	email := strings.ToLower(strings.TrimSpace(request.Email))
+	email := normalizeEmail(request.Email)
 	if email == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email must be set"))
 	}
@@ -372,55 +366,13 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create user"))
 	}
 
-	// Step 3: Generate token and finalize login.
-	tokenDuration := auth.GetAccessTokenDuration(ctx, s.store, s.licenseService, workspaceID)
-	token, err := auth.GenerateAccessToken(user.Email, workspaceID, s.secret, tokenDuration)
+	// Step 3: Generate token and finalize login. Signup is always web-based —
+	// finalizeLogin sets the tokens as HTTP-only cookies.
+	token, err := s.generateLoginToken(ctx, user, workspaceID)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate access token"))
 	}
-
-	response := &v1pb.LoginResponse{}
-	resp := connect.NewResponse(response)
-
-	// Signup is always web-based — set tokens as HTTP-only cookies.
-	origin := req.Header().Get("Origin")
-	cookie := auth.GetTokenCookie(ctx, s.store, s.licenseService, workspaceID, origin, token)
-	resp.Header().Add("Set-Cookie", cookie.String())
-
-	refreshToken, err := auth.GenerateOpaqueToken()
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to generate refresh token"))
-	}
-	refreshTokenDuration := auth.GetRefreshTokenDuration(ctx, s.store, s.licenseService, workspaceID)
-	if err := s.store.CreateWebRefreshToken(ctx, &store.WebRefreshTokenMessage{
-		TokenHash: auth.HashToken(refreshToken),
-		UserEmail: user.Email,
-		ExpiresAt: time.Now().Add(refreshTokenDuration),
-	}); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to create refresh token"))
-	}
-	refreshCookie := auth.GetRefreshTokenCookie(origin, refreshToken, refreshTokenDuration)
-	resp.Header().Add("Set-Cookie", refreshCookie.String())
-
-	// Update last login time and workspace.
-	if _, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{
-		Profile: &storepb.UserProfile{
-			LastLoginTime:      timestamppb.Now(),
-			Source:             user.Profile.GetSource(),
-			LastLoginWorkspace: workspaceID,
-		},
-	}); err != nil {
-		slog.Error("failed to update user profile", log.BBError(err), slog.String("user", user.Email))
-	}
-
-	v1User, err := convertToUser(ctx, s.iamManager, user)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
-	}
-	v1User.Workspace = common.FormatWorkspace(workspaceID)
-	response.User = v1User
-
-	return resp, nil
+	return s.finalizeLogin(ctx, req.Header(), true, user, token, workspaceID, false)
 }
 
 // resolveWorkspaceIDByEmail determines which workspace a signing-up email would
@@ -452,23 +404,14 @@ func (s *AuthService) resolveWorkspaceIDByEmail(ctx context.Context, email strin
 	return "", false, nil
 }
 
-// provisionWorkspaceForNewUser returns a workspace ID for a freshly-created user.
-// If the email was pre-invited to existing workspaces (via IAM), returns the first one.
-// Otherwise creates a new workspace (SaaS: per-user; self-hosted: joins the singleton).
-func (s *AuthService) provisionWorkspaceForNewUser(ctx context.Context, email string) (string, error) {
-	workspaceID, isMember, err := s.resolveWorkspaceIDByEmail(ctx, email)
-	if err != nil {
-		return "", err
-	}
-	return s.provisionResolvedWorkspace(ctx, email, workspaceID, isMember)
-}
+// provisionResolvedWorkspace assigns a workspace for a user who has none: the
+// pre-invited workspace (or self-hosted singleton) resolved by the caller via
+// resolveWorkspaceIDByEmail — callers that gate-check first reuse that same
+// snapshot here — or a freshly created workspace with the user as admin.
+// isMember indicates whether the user already has an IAM binding; for
+// pre-invited users we must NOT patch IAM — PatchWorkspaceIamPolicy is a
+// set-replacement that would downgrade an admin to member.
 
-// provisionResolvedWorkspace finishes provisioning for an already-resolved
-// target. The Signup RPC and the email-code signup branch resolve the target
-// for their gate checks and pass it through, so the gates and the writes see
-// one snapshot. isMember indicates whether the user already has an IAM
-// binding; for pre-invited users we must NOT patch IAM — PatchWorkspaceIamPolicy
-// is a set-replacement that would downgrade an admin to member.
 func (s *AuthService) provisionResolvedWorkspace(ctx context.Context, email, workspaceID string, isMember bool) (string, error) {
 	if workspaceID != "" {
 		if !s.profile.SaaS && !isMember {
@@ -615,19 +558,18 @@ func (s *AuthService) Refresh(ctx context.Context, req *connect.Request[v1pb.Ref
 }
 
 func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginRequest) (*store.UserMessage, error) {
-	email := strings.ToLower(strings.TrimSpace(request.Email))
+	email := normalizeEmail(request.Email)
 	// An invalid-syntax email can never be an account; reject it before the
 	// claim with the same error a wrong password gets.
-	if common.ValidateEmail(email) != nil {
+	if !common.IsValidEmail(email) {
 		return nil, invalidCredentialsError
 	}
-	// Claim an attempt slot before the credential is checked: a locked email is
-	// refused before bcrypt, and unknown emails lock at the same attempt with
-	// the same error (no existence oracle). A successful login holds its slot
-	// only until the clear below, so more than loginAttemptMax concurrent
-	// correct-credential logins for one identity can see transient refusals —
-	// accepted; the refusal ends when the first login's clear lands.
-	if err := s.claimLoginAttempt(ctx, email, passwordAttemptPolicy); err != nil {
+	// Claim an attempt slot before the credential is checked; unknown emails
+	// lock at the same attempt with the same error (no existence oracle).
+	// A successful login holds its slot only until the clear below, so more
+	// than loginAttemptMax concurrent correct logins for one identity can see
+	// transient refusals — accepted; they end when the first clear lands.
+	if err := s.claimLoginAttempt(ctx, email, storepb.LoginAttemptKind_PASSWORD); err != nil {
 		return nil, err
 	}
 
@@ -656,7 +598,7 @@ func (s *AuthService) getAndVerifyUser(ctx context.Context, request *v1pb.LoginR
 	if user == nil {
 		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("user %q not found", account.Email))
 	}
-	s.clearLoginAttempt(ctx, email, passwordAttemptPolicy)
+	s.clearLoginAttempt(ctx, email, storepb.LoginAttemptKind_PASSWORD)
 	return user, nil
 }
 
@@ -747,12 +689,9 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 		}
 
 		// An LDAP bind is a password check: claim a PASSWORD slot under the
-		// provider-scoped identity before the bind. The identity must include
-		// the provider — keyed by bare username, an attacker who controls the
-		// same username in a directory of their own could clear this
-		// directory's counter by logging in there (success deletes the row).
+		// provider-scoped identity before the bind.
 		identity := ldapLoginIdentity(idpID, request.Email)
-		if err := s.claimLoginAttempt(ctx, identity, passwordAttemptPolicy); err != nil {
+		if err := s.claimLoginAttempt(ctx, identity, storepb.LoginAttemptKind_PASSWORD); err != nil {
 			return nil, err
 		}
 		userInfo, err = ldapIDP.Authenticate(request.Email, request.Password)
@@ -765,7 +704,7 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 			}
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user info"))
 		}
-		s.clearLoginAttempt(ctx, identity, passwordAttemptPolicy)
+		s.clearLoginAttempt(ctx, identity, storepb.LoginAttemptKind_PASSWORD)
 	default:
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("identity provider type %s not supported", idp.Type.String()))
 	}
@@ -899,18 +838,9 @@ func (s *AuthService) getOrCreateUserWithIDP(ctx context.Context, request *v1pb.
 	return user, nil
 }
 
-// ldapLoginIdentity keys the PASSWORD lockout bucket for an LDAP bind: the
-// identity-provider ID joined with the normalized submitted username. The
-// separator is ":" because it is legal in neither IDP resource IDs
-// ([a-z0-9-]) nor email addresses, so an LDAP bucket can never collide with —
-// lock out, or be cleared by — a plain email account's bucket.
-func ldapLoginIdentity(idpID, username string) string {
-	return fmt.Sprintf("%s:%s", idpID, strings.ToLower(strings.TrimSpace(username)))
-}
-
 func challengeMFACode(user *store.UserMessage, mfaCode string) error {
-	if !validateWithCodeAndSecret(mfaCode, user.MFAConfig.OtpSecret) {
-		return connect.NewError(connect.CodeUnauthenticated, errors.Errorf(errMsgInvalidMFACode))
+	if !totp.Validate(mfaCode, user.MFAConfig.OtpSecret) {
+		return connect.NewError(connect.CodeUnauthenticated, errors.New(errMsgInvalidMFACode))
 	}
 	return nil
 }
@@ -932,12 +862,7 @@ func (s *AuthService) challengeRecoveryCode(ctx context.Context, user *store.Use
 			return nil
 		}
 	}
-	return connect.NewError(connect.CodeUnauthenticated, errors.Errorf(errMsgInvalidRecoveryCode))
-}
-
-// validateWithCodeAndSecret validates the given code against the given secret.
-func validateWithCodeAndSecret(code, secret string) bool {
-	return totp.Validate(code, secret)
+	return connect.NewError(connect.CodeUnauthenticated, errors.New(errMsgInvalidRecoveryCode))
 }
 
 // syncUserGroups syncs the user groups with the given groups.
@@ -1027,10 +952,9 @@ func (s *AuthService) completeMFALogin(ctx context.Context, request *v1pb.LoginR
 	if request.OtpCode == nil && request.RecoveryCode == nil {
 		return nil, loginAuthMethodPassword, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("OTP or recovery code is required for MFA"))
 	}
-	// Claim an MFA slot for the email inside the signed temp token before any
-	// TOTP or recovery-code comparison. Slots are per identity, so a fresh temp
-	// token does not buy fresh guesses.
-	if err := s.claimLoginAttempt(ctx, userEmail, mfaAttemptPolicy); err != nil {
+	// Claim an MFA slot for the email inside the signed temp token: slots are
+	// per identity, so a fresh temp token does not buy fresh guesses.
+	if err := s.claimLoginAttempt(ctx, userEmail, storepb.LoginAttemptKind_MFA); err != nil {
 		return nil, loginAuthMethodPassword, err
 	}
 	user, err := s.store.GetUserByEmail(ctx, userEmail)
@@ -1041,32 +965,28 @@ func (s *AuthService) completeMFALogin(ctx context.Context, request *v1pb.LoginR
 		return nil, loginAuthMethodPassword, invalidCredentialsError
 	}
 
-	if request.OtpCode != nil {
-		if err := challengeMFACode(user, *request.OtpCode); err != nil {
-			return nil, loginAuthMethodPassword, err
-		}
-	} else if err := s.challengeRecoveryCode(ctx, user, *request.RecoveryCode); err != nil {
+	if err := s.challengeMFAAndClear(ctx, user, userEmail, request.OtpCode, request.RecoveryCode); err != nil {
 		return nil, loginAuthMethodPassword, err
 	}
-	s.clearLoginAttempt(ctx, userEmail, mfaAttemptPolicy)
 	return user, loginMethod, nil
 }
 
-// validateLoginPermissions checks if the user is allowed to login.
-func (s *AuthService) validateLoginPermissions(ctx context.Context, user *store.UserMessage, workspaceID string, request *v1pb.LoginRequest) error {
+// validateLoginPermissions checks if the user is allowed to login. It returns
+// the account restriction it fetched (nil when the checks were skipped) so the
+// caller can reuse it.
+func (s *AuthService) validateLoginPermissions(ctx context.Context, user *store.UserMessage, workspaceID string, request *v1pb.LoginRequest) (*v1pb.Restriction, error) {
 	if user.MemberDeleted {
-		return connect.NewError(connect.CodeUnauthenticated, errors.Errorf("user has been deactivated by administrators"))
+		return nil, connect.NewError(connect.CodeUnauthenticated, errors.Errorf("user has been deactivated by administrators"))
 	}
 
 	// Login restrictions only apply to end users.
 	if user.Type != storepb.PrincipalType_END_USER {
-		return nil
+		return nil, nil
 	}
 
 	// Skip restrictions for MFA second login (already validated in first step)
-	mfaSecondLogin := request.GetMfaTempToken() != ""
-	if mfaSecondLogin {
-		return nil
+	if request.GetMfaTempToken() != "" {
+		return nil, nil
 	}
 
 	restriction, err := getAccountRestriction(
@@ -1077,21 +997,22 @@ func (s *AuthService) validateLoginPermissions(ctx context.Context, user *store.
 		workspaceID,
 	)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if request.GetIdpName() == "" {
 		if request.Password != "" && restriction.DisallowPasswordSignin {
-			return connect.NewError(connect.CodePermissionDenied, errors.Errorf("password signin is disallowed"))
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("password signin is disallowed"))
 		}
-		if request.EmailCode != nil && *request.EmailCode != "" {
-			if !restriction.AllowEmailCodeSignin {
-				return connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("email code login is not enabled for this workspace"))
-			}
+		if request.EmailCode != nil && *request.EmailCode != "" && !restriction.AllowEmailCodeSignin {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("email code login is not enabled for this workspace"))
 		}
 	}
 
 	// Check domain restriction
-	return validateEmailWithDomains(ctx, s.licenseService, s.store, workspaceID, user.Email, false)
+	if err := validateEmailWithDomains(ctx, s.licenseService, s.store, workspaceID, user.Email, false); err != nil {
+		return nil, err
+	}
+	return restriction, nil
 }
 
 // checkMFARequired checks if MFA is required and returns a response with temp token if so.
@@ -1258,8 +1179,7 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 	// Check MFA requirement for the target workspace.
 	mfaSecondStep := request.GetMfaTempToken() != ""
 	if mfaSecondStep {
-		// Verify the MFA temp token, then claim an MFA slot for the email
-		// inside it before the OTP/recovery comparison — the same per-identity
+		// Verify the MFA temp token, then claim from the same per-identity
 		// bucket the login MFA step draws from.
 		mfaEmail, err := auth.GetUserEmailFromMFATempToken(*request.MfaTempToken, s.secret)
 		if err != nil {
@@ -1272,17 +1192,12 @@ func (s *AuthService) SwitchWorkspace(ctx context.Context, req *connect.Request[
 		if request.OtpCode == nil && request.RecoveryCode == nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("OTP or recovery code required"))
 		}
-		if err := s.claimLoginAttempt(ctx, mfaEmail, mfaAttemptPolicy); err != nil {
+		if err := s.claimLoginAttempt(ctx, mfaEmail, storepb.LoginAttemptKind_MFA); err != nil {
 			return nil, err
 		}
-		if request.OtpCode != nil {
-			if err := challengeMFACode(user, *request.OtpCode); err != nil {
-				return nil, err
-			}
-		} else if err := s.challengeRecoveryCode(ctx, user, *request.RecoveryCode); err != nil {
+		if err := s.challengeMFAAndClear(ctx, user, mfaEmail, request.OtpCode, request.RecoveryCode); err != nil {
 			return nil, err
 		}
-		s.clearLoginAttempt(ctx, mfaEmail, mfaAttemptPolicy)
 	} else {
 		// First step: check if MFA is required for the target workspace.
 		if resp, err := s.checkMFARequired(ctx, user, workspaceID, false, loginAuthMethodPassword); err != nil {
@@ -1418,18 +1333,19 @@ func (s *AuthService) switchWorkspaceInternal(ctx context.Context, user *store.U
 	return resp, nil
 }
 
-// finalizeLogin builds the response, sets cookies if needed, and updates the user profile.
-func (s *AuthService) finalizeLogin(ctx context.Context, req *connect.Request[v1pb.LoginRequest], user *store.UserMessage, token string, workspaceID string, requireResetPassword bool) (*connect.Response[v1pb.LoginResponse], error) {
+// finalizeLogin builds the response, sets cookies if needed, and updates the
+// user profile. Shared by Login and Signup.
+func (s *AuthService) finalizeLogin(ctx context.Context, header http.Header, web bool, user *store.UserMessage, token string, workspaceID string, requireResetPassword bool) (*connect.Response[v1pb.LoginResponse], error) {
 	response := &v1pb.LoginResponse{
 		RequireResetPassword: requireResetPassword,
 	}
 	resp := connect.NewResponse(response)
 
-	if req.Msg.Web {
+	if web {
 		if user.Type != storepb.PrincipalType_END_USER {
 			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("only users can use web login"))
 		}
-		origin := req.Header().Get("Origin")
+		origin := header.Get("Origin")
 		cookie := auth.GetTokenCookie(ctx, s.store, s.licenseService, workspaceID, origin, token)
 		resp.Header().Add("Set-Cookie", cookie.String())
 
@@ -1602,7 +1518,7 @@ func getAccountRestriction(
 
 // RequestPasswordReset sends a password reset email. Always returns success to avoid leaking email existence.
 func (s *AuthService) RequestPasswordReset(ctx context.Context, req *connect.Request[v1pb.RequestPasswordResetRequest]) (*connect.Response[emptypb.Empty], error) {
-	email := strings.ToLower(strings.TrimSpace(req.Msg.Email))
+	email := normalizeEmail(req.Msg.Email)
 	if email == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email is required"))
 	}
@@ -1632,7 +1548,7 @@ func (s *AuthService) RequestPasswordReset(ctx context.Context, req *connect.Req
 // ResetPassword verifies the 6-digit code and updates the user's password.
 // Also revokes all refresh tokens to force re-login.
 func (s *AuthService) ResetPassword(ctx context.Context, req *connect.Request[v1pb.ResetPasswordRequest]) (*connect.Response[emptypb.Empty], error) {
-	email := strings.ToLower(strings.TrimSpace(req.Msg.Email))
+	email := normalizeEmail(req.Msg.Email)
 	if email == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email is required"))
 	}
@@ -1689,7 +1605,7 @@ func (s *AuthService) ResetPassword(ctx context.Context, req *connect.Request[v1
 
 	// The user proved control of the email and holds a fresh password: a lock
 	// they guessed themselves into must not outlive the reset.
-	s.clearLoginAttempt(ctx, email, passwordAttemptPolicy)
+	s.clearLoginAttempt(ctx, email, storepb.LoginAttemptKind_PASSWORD)
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
 }
@@ -1731,7 +1647,7 @@ func (s *AuthService) hashEmailCode(code string) string {
 // (no email enumeration). Rate limit: 60-sec resend cooldown enforced atomically
 // via the store — effective cap ≈ 60 sends/hour/email.
 func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Request[v1pb.SendEmailLoginCodeRequest]) (*connect.Response[emptypb.Empty], error) {
-	email := strings.ToLower(strings.TrimSpace(req.Msg.Email))
+	email := normalizeEmail(req.Msg.Email)
 	if email == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email is required"))
 	}
@@ -1910,18 +1826,17 @@ func (s *AuthService) sendEmailVerificationCode(ctx context.Context, workspaceID
 }
 
 // verifyEmailCode checks a submitted code against the stored row for the email.
-// An EMAIL_CODE slot is claimed for the email before the row is even loaded, so
-// guessing is bounded per identity across codes and purposes, and a lock is not
-// an oracle for whether a code is pending. Wrong guesses leave the row in place
-// — the resend cooldown always has a row to evaluate. On a match the row is
-// deleted (one-time use) and the counter is cleared.
+// An EMAIL_CODE slot is claimed before the row is even loaded, so guessing is
+// bounded per identity across codes and purposes, and a lock is not an oracle
+// for whether a code is pending. Wrong guesses leave the row in place — the
+// resend cooldown always has a row to evaluate.
 func (s *AuthService) verifyEmailCode(ctx context.Context, email string, purpose storepb.EmailVerificationCodePurpose, submittedCode string) error {
 	// An invalid-syntax email can hold neither an account nor a code; reject it
 	// before the claim so garbage never writes a row.
-	if common.ValidateEmail(email) != nil {
+	if !common.IsValidEmail(email) {
 		return connect.NewError(connect.CodeUnauthenticated, errors.New(errMsgInvalidEmailCode))
 	}
-	if err := s.claimLoginAttempt(ctx, email, emailCodeAttemptPolicy); err != nil {
+	if err := s.claimLoginAttempt(ctx, email, storepb.LoginAttemptKind_EMAIL_CODE); err != nil {
 		return err
 	}
 	row, err := s.store.GetEmailVerificationCode(ctx, email, purpose)
@@ -1939,7 +1854,7 @@ func (s *AuthService) verifyEmailCode(ctx context.Context, email string, purpose
 		return connect.NewError(connect.CodeUnauthenticated, errors.New(errMsgInvalidEmailCode))
 	}
 	_ = s.store.DeleteEmailVerificationCodeIfMatch(ctx, email, purpose, row.CodeHash)
-	s.clearLoginAttempt(ctx, email, emailCodeAttemptPolicy)
+	s.clearLoginAttempt(ctx, email, storepb.LoginAttemptKind_EMAIL_CODE)
 	return nil
 }
 
@@ -1950,7 +1865,7 @@ func (s *AuthService) authenticateEmailCodeLogin(ctx context.Context, request *v
 	if request.Password != "" || request.GetIdpName() != "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email_code is mutually exclusive with password and idp_name"))
 	}
-	email := strings.ToLower(strings.TrimSpace(request.Email))
+	email := normalizeEmail(request.Email)
 	if email == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("email is required"))
 	}
@@ -1997,11 +1912,9 @@ func (s *AuthService) authenticateEmailCodeLogin(ctx context.Context, request *v
 	if !restriction.AllowEmailCodeSignin {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("email code login is not enabled for this workspace"))
 	}
-	// Signup is always allowed for SaaS
-	if !s.profile.SaaS {
-		if restriction.DisallowSignup {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed for this workspace"))
-		}
+	// Signup is always allowed for SaaS.
+	if !s.profile.SaaS && restriction.DisallowSignup {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed for this workspace"))
 	}
 
 	// Provision workspace BEFORE creating the user so retries are self-healing: if user
@@ -2073,59 +1986,4 @@ func (*AuthService) getAdditionalWorkspaceSettings() []store.AdditionalSetting {
 		}
 	}
 	return settings
-}
-
-// Every credential kind shares one attempt limit
-// (docs/design/login-attempt-lockout.md): loginAttemptMax slots per identity,
-// and a claim more than loginAttemptWindow after the latest restarts the
-// counter — so a lock lasts exactly loginAttemptWindow from the last slot.
-const (
-	loginAttemptMax    = 5
-	loginAttemptWindow = 10 * time.Minute
-)
-
-// loginAttemptPolicy names the bucket and the lockout answer for one
-// credential kind.
-type loginAttemptPolicy struct {
-	kind      storepb.LoginAttemptKind
-	lockedMsg string
-}
-
-var (
-	passwordAttemptPolicy  = loginAttemptPolicy{storepb.LoginAttemptKind_PASSWORD, errMsgTooManyPassword}
-	emailCodeAttemptPolicy = loginAttemptPolicy{storepb.LoginAttemptKind_EMAIL_CODE, errMsgTooManyEmailCode}
-	mfaAttemptPolicy       = loginAttemptPolicy{storepb.LoginAttemptKind_MFA, errMsgTooManyMFA}
-)
-
-// claimLoginAttempt claims one attempt slot for the identity under attack,
-// before the credential is checked (docs/design/login-attempt-lockout.md).
-// A locked identity gets ResourceExhausted without any credential comparison.
-// The identity must be server-resolved and globally unique, never optional
-// request context a caller can omit or forge. Size is bounded upstream: every
-// request field that becomes an identity carries a proto max_len, and the
-// store refuses structurally oversized or unkeyed rows as a backstop.
-func (s *AuthService) claimLoginAttempt(ctx context.Context, identity string, policy loginAttemptPolicy) error {
-	granted, err := s.store.ClaimLoginAttempt(ctx, identity, policy.kind, loginAttemptMax, loginAttemptWindow)
-	if err != nil {
-		return connect.NewError(connect.CodeInternal, err)
-	}
-	if !granted {
-		return connect.NewError(connect.CodeResourceExhausted, errors.New(policy.lockedMsg))
-	}
-	return nil
-}
-
-// clearLoginAttempt forgets the identity's failed attempts after a successful
-// verification. Taking the policy keeps the clear structurally paired with the
-// claim's kind. Success has already consumed a slot, so a swallowed failure
-// here would hold a lock against a proven credential — retry once, then log;
-// a still-standing counter expires on its own within the window.
-func (s *AuthService) clearLoginAttempt(ctx context.Context, identity string, policy loginAttemptPolicy) {
-	err := s.store.ClearLoginAttempt(ctx, identity, policy.kind)
-	if err != nil {
-		err = s.store.ClearLoginAttempt(ctx, identity, policy.kind)
-	}
-	if err != nil {
-		slog.Error("login attempt clear failed", slog.String("kind", policy.kind.String()), log.BBError(err))
-	}
 }

@@ -438,17 +438,17 @@ func getRequestResource(request any, method string) string {
 	case *v1pb.CreateUserRequest:
 		return r.GetUser().GetName()
 	case *v1pb.LoginRequest:
-		return strings.ToLower(strings.TrimSpace(r.GetEmail()))
+		return normalizeEmail(r.GetEmail())
 	case *v1pb.SignupRequest:
 		return r.GetEmail()
 	case *v1pb.ExchangeTokenRequest:
 		return r.GetEmail()
 	case *v1pb.RequestPasswordResetRequest:
-		return strings.ToLower(strings.TrimSpace(r.GetEmail()))
+		return normalizeEmail(r.GetEmail())
 	case *v1pb.ResetPasswordRequest:
-		return strings.ToLower(strings.TrimSpace(r.GetEmail()))
+		return normalizeEmail(r.GetEmail())
 	case *v1pb.SendEmailLoginCodeRequest:
-		return strings.ToLower(strings.TrimSpace(r.GetEmail()))
+		return normalizeEmail(r.GetEmail())
 	case *v1pb.CreateInstanceRequest:
 		if r.GetParent() == "" {
 			return common.FormatInstance(r.GetInstanceId())

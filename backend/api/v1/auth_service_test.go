@@ -236,14 +236,14 @@ func TestLoginEnforcesWorkspaceDomains(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("workspace admin", func(t *testing.T) {
-		err := service.validateLoginPermissions(ctx, blockedAdmin, workspaceID, &v1pb.LoginRequest{
+		_, err := service.validateLoginPermissions(ctx, blockedAdmin, workspaceID, &v1pb.LoginRequest{
 			Email:   blockedAdmin.Email,
 			IdpName: "idps/test",
 		})
 		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 		require.ErrorContains(t, err, "does not belong to allowed domains")
 
-		err = service.validateLoginPermissions(ctx, allowedAdmin, workspaceID, &v1pb.LoginRequest{
+		_, err = service.validateLoginPermissions(ctx, allowedAdmin, workspaceID, &v1pb.LoginRequest{
 			Email:    allowedAdmin.Email,
 			Password: "password",
 		})
