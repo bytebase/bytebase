@@ -14,7 +14,7 @@ export type ToastVariant = "success" | "info" | "warning" | "error";
 const toastRoot = [
   "absolute right-0 bottom-0",
   "w-(--toast-width) max-w-[calc(100vw-2rem)]",
-  "rounded-md border bg-background text-main shadow-md",
+  "rounded-sm border bg-background text-main shadow-md",
   "px-4 py-3 pr-10",
   // Base UI emits these CSS vars; we use them for the stack/expand transforms.
   "transform [transition:transform_250ms,opacity_250ms]",

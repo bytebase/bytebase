@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import {
   Sheet,
+  SheetBody,
   SheetContent,
   SheetHeader,
   SheetTitle,
@@ -27,20 +28,20 @@ export function HistoryPanel() {
       open={showHistoryDialog}
       onOpenChange={(open) => setShowHistoryDialog(open)}
     >
-      <SheetContent width="wide" className="w-[calc(100vw-8rem)] max-w-6xl p-0">
-        <SheetHeader className="px-4 py-3 border-b">
+      <SheetContent width="xlarge">
+        <SheetHeader>
           <SheetTitle>
             {t("plugin.ai.conversation.history-conversations")}
           </SheetTitle>
         </SheetHeader>
-        <div className="flex h-full">
-          <aside className="hidden lg:flex lg:flex-col w-[14em] border-l border-b">
+        <SheetBody className="flex-row gap-x-4 overflow-hidden">
+          <aside className="hidden w-56 shrink-0 border-control-border border-r pr-4 lg:flex lg:flex-col">
             <ConversationList />
           </aside>
-          <div className="flex-1 flex flex-col py-2 bg-gray-100 overflow-hidden">
+          <div className="flex min-w-0 flex-1 flex-col overflow-hidden rounded-sm bg-control-bg/50 py-2">
             <ChatView mode="VIEW" conversation={chat.selected} />
           </div>
-        </div>
+        </SheetBody>
       </SheetContent>
     </Sheet>
   );

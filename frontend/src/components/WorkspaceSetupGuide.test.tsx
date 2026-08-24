@@ -301,7 +301,7 @@ describe("WorkspaceSetupGuide", () => {
     });
   });
 
-  it("uses compact controls below 2xl and prominent controls at 2xl", async () => {
+  it("uses caller-owned responsive button sizing", async () => {
     await render(<WorkspaceSetupGuide />);
 
     expect(container.firstElementChild?.getAttribute("class")).toContain(
@@ -980,6 +980,15 @@ describe("WorkspaceSetupGuide", () => {
     expect(changeButton?.textContent).toContain(
       "workspace-setup-guide.actions.change"
     );
+    const secondaryAction = container.querySelector(
+      "[data-testid='secondary-action']"
+    );
+    expect(secondaryAction?.getAttribute("class")).toContain("h-9");
+    for (const testId of ["active-action", "dismiss-guide"]) {
+      const action = container.querySelector(`[data-testid='${testId}']`);
+      expect(action?.getAttribute("class")).toContain("h-7");
+      expect(action?.getAttribute("class")).toContain("2xl:h-9");
+    }
 
     await act(async () => {
       changeButton?.click();

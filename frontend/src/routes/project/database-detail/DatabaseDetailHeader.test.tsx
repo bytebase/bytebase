@@ -79,4 +79,23 @@ describe("DatabaseDetailHeader", () => {
     expect(resource?.getAttribute("class")).toContain("min-w-0");
     expect(resource?.getAttribute("class")).toContain("truncate");
   });
+
+  it("keeps the copy control adjacent to the database resource name", () => {
+    const databaseName = "bb_sample_0123456789abcdef";
+    const resourceName = `projects/project-a/instances/sample-0123456789abcdef/databases/${databaseName}`;
+
+    act(() => {
+      root.render(
+        <DatabaseDetailHeader
+          database={{ name: resourceName } as Database}
+        />
+      );
+    });
+
+    const resource = container.querySelector(`[title="${resourceName}"]`);
+    const resourceRow = resource?.parentElement;
+    expect(resourceRow?.getAttribute("class")).toContain("w-fit");
+    expect(resourceRow?.getAttribute("class")).toContain("max-w-full");
+    expect(resource?.getAttribute("class")).not.toContain("flex-1");
+  });
 });

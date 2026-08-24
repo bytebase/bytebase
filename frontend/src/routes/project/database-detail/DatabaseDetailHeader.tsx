@@ -100,8 +100,8 @@ export function DatabaseDetailHeader({ database }: { database: Database }) {
             {databaseName}
           </span>
         </div>
-        <div className="mt-1 flex w-full min-w-0 items-center gap-x-1 text-sm text-control-light">
-          <span className="min-w-0 flex-1 truncate" title={database.name}>
+        <div className="mt-1 flex w-fit max-w-full min-w-0 items-center gap-x-1 text-sm text-control-light">
+          <span className="min-w-0 truncate" title={database.name}>
             {database.name}
           </span>
           <button

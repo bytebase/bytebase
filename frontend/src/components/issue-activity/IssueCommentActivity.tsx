@@ -21,6 +21,7 @@ import { ReadonlyDiffMonaco } from "@/components/monaco";
 import { RouterLink } from "@/components/RouterLink";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
   diffEntryKey,
@@ -142,7 +143,7 @@ export function ActivityRowShell({
         {!isLast && (
           <span
             aria-hidden="true"
-            className="absolute left-4 -ml-px h-full w-0.5 bg-gray-200"
+            className="absolute left-4 -ml-px h-full w-0.5 bg-block-border"
           />
         )}
         <div className="relative flex items-start">
@@ -150,13 +151,13 @@ export function ActivityRowShell({
           <div className="min-w-0 flex-1">
             <div
               className={cn(
-                "overflow-hidden rounded-lg border",
+                "overflow-hidden rounded-sm border",
                 body
-                  ? "ml-3 border-gray-200 bg-white"
+                  ? "ml-3 border-block-border bg-background"
                   : "ml-1 border-transparent"
               )}
             >
-              <div className={cn("px-3 py-2", body && "bg-gray-50")}>
+              <div className={cn("px-3 py-2", body && "bg-control-bg/50")}>
                 <div className="flex items-center justify-between">
                   <div className="flex min-w-0 flex-wrap items-center gap-x-2 text-sm">
                     {header}
@@ -165,7 +166,7 @@ export function ActivityRowShell({
                 </div>
               </div>
               {body && (
-                <div className="wrap-break-word border-t border-gray-200 px-3 py-2 text-sm text-gray-700 [&_.markdown-body>div>:first-child]:mt-0 [&_.markdown-body>div>:last-child]:mb-0">
+                <div className="wrap-break-word border-block-border border-t px-3 py-2 text-control text-sm [&_.markdown-body>div>:first-child]:mt-0 [&_.markdown-body>div>:last-child]:mb-0">
                   {body}
                 </div>
               )}
@@ -222,10 +223,12 @@ function IssueCommentHeader({
         </Badge>
       )}
       {comment.createTime && (
-        <HumanizeTs className="text-gray-500" ts={createdTs / 1000} />
+        <HumanizeTs className="text-control-light" ts={createdTs / 1000} />
       )}
       {isEdited && (
-        <span className="text-xs text-gray-500">({t("common.edited")})</span>
+        <span className="text-control-light text-xs">
+          ({t("common.edited")})
+        </span>
       )}
     </>
   );
@@ -344,9 +347,9 @@ function IssueCommentActionIcon({ issue, plan, comment }: ActivityProps) {
 
   return (
     <div className="relative pl-0.5">
-      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-white ring-4 ring-white">
+      <div className="flex size-7 items-center justify-center rounded-full bg-background ring-4 ring-background">
         <UserAvatar
-          className="h-7 w-7 text-[0.8rem] font-medium"
+          className="font-medium"
           size="sm"
           title={user.title || user.email}
         />
@@ -366,7 +369,7 @@ export function CommentIconBadge({
     <div className="relative pl-0.5">
       <div
         className={cn(
-          "flex h-7 w-7 items-center justify-center rounded-full ring-4 ring-white",
+          "flex size-7 items-center justify-center rounded-full ring-4 ring-background",
           className
         )}
       >
@@ -423,21 +426,21 @@ function IssueCommentActionSentence({
     const { status } = comment.event.value;
     if (status === IssueComment_Approval_Status.APPROVED) {
       return (
-        <span className="wrap-break-word min-w-0 text-gray-600">
+        <span className="wrap-break-word min-w-0 text-control">
           {t("custom-approval.issue-review.approved-issue")}
         </span>
       );
     }
     if (status === IssueComment_Approval_Status.REJECTED) {
       return (
-        <span className="wrap-break-word min-w-0 text-gray-600">
+        <span className="wrap-break-word min-w-0 text-control">
           {t("custom-approval.issue-review.rejected-issue")}
         </span>
       );
     }
     if (status === IssueComment_Approval_Status.PENDING) {
       return (
-        <span className="wrap-break-word min-w-0 text-gray-600">
+        <span className="wrap-break-word min-w-0 text-control">
           {t("custom-approval.issue-review.re-requested-review")}
         </span>
       );
@@ -467,7 +470,7 @@ function IssueCommentActionSentence({
     } = comment.event.value;
     if (fromTitle !== undefined && toTitle !== undefined) {
       return (
-        <span className="wrap-break-word min-w-0 text-gray-600">
+        <span className="wrap-break-word min-w-0 text-control">
           {t("activity.sentence.changed-from-to", {
             name: t("issue.issue-name").toLowerCase(),
             newValue: toTitle,
@@ -478,7 +481,7 @@ function IssueCommentActionSentence({
     }
     if (fromDescription !== undefined && toDescription !== undefined) {
       return (
-        <span className="wrap-break-word min-w-0 text-gray-600">
+        <span className="wrap-break-word min-w-0 text-control">
           {t("activity.sentence.changed-description")}
         </span>
       );
@@ -503,7 +506,7 @@ function IssueCommentActionSentence({
                 : t("activity.sentence.review-skipped-rollout-created");
 
           return (
-            <span className="wrap-break-word min-w-0 text-gray-600">
+            <span className="wrap-break-word min-w-0 text-control">
               {sentence}
               {planUID && planRoute && (
                 <>
@@ -520,21 +523,21 @@ function IssueCommentActionSentence({
           );
         }
         return (
-          <span className="wrap-break-word min-w-0 text-gray-600">
+          <span className="wrap-break-word min-w-0 text-control">
             {t("activity.sentence.resolved-issue")}
           </span>
         );
       }
       if (toStatus === IssueStatus.CANCELED) {
         return (
-          <span className="wrap-break-word min-w-0 text-gray-600">
+          <span className="wrap-break-word min-w-0 text-control">
             {t("activity.sentence.canceled-issue")}
           </span>
         );
       }
       if (toStatus === IssueStatus.OPEN) {
         return (
-          <span className="wrap-break-word min-w-0 text-gray-600">
+          <span className="wrap-break-word min-w-0 text-control">
             {t("activity.sentence.reopened-issue")}
           </span>
         );
@@ -542,7 +545,7 @@ function IssueCommentActionSentence({
     }
     if (fromLabels.length !== 0 || toLabels.length !== 0) {
       return (
-        <span className="wrap-break-word min-w-0 text-gray-600">
+        <span className="wrap-break-word min-w-0 text-control">
           {t("activity.sentence.changed-labels")}
         </span>
       );
@@ -585,7 +588,7 @@ function IssueCommentActionSentence({
     );
   }
 
-  return <span className="wrap-break-word min-w-0 text-gray-600" />;
+  return <span className="wrap-break-word min-w-0 text-control" />;
 }
 
 function SpecDiffRow({
@@ -817,7 +820,7 @@ function SpecChangeRow({
   );
 
   return (
-    <span className="inline-flex items-center gap-1 whitespace-nowrap text-gray-600">
+    <span className="inline-flex items-center gap-1 whitespace-nowrap text-control">
       {children}{" "}
       {specRoute != null ? (
         <RouterLink
@@ -900,13 +903,14 @@ function IssueStatementUpdateButton({
 
   return (
     <>
-      <button
-        className="inline-flex items-center text-accent hover:underline"
+      <Button
+        appearance="link"
         onClick={() => setOpen(true)}
+        size="xs"
         type="button"
       >
         {t("common.view-details")}
-      </button>
+      </Button>
       <Dialog onOpenChange={setOpen} open={open}>
         <DialogContent className="max-w-none border-0 p-0 sm:w-[calc(100vw-9rem)] 2xl:max-w-none">
           <div className="px-6 pt-5">
@@ -925,7 +929,7 @@ function IssueStatementUpdateButton({
               if (isLoading) {
                 return (
                   <div
-                    className="flex w-full items-center justify-center rounded-md border"
+                    className="flex w-full items-center justify-center rounded-sm border"
                     style={{ height }}
                   >
                     <Loader2 className="h-6 w-6 animate-spin text-control-light" />

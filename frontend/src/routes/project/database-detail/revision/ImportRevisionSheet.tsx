@@ -27,6 +27,14 @@ import {
   StepIndicator,
   type StepIndicatorStep,
 } from "@/components/ui/step-indicator";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -633,33 +641,35 @@ function ReleaseSelector({
         }}
         className="block overflow-x-auto rounded-sm border border-control-border"
       >
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-control-border bg-control-bg text-left">
-              <th className="w-10 px-4 py-2" />
-              <th className="px-4 py-2 font-medium">{t("common.name")}</th>
-              <th className="px-4 py-2 font-medium">{t("release.files")}</th>
-            </tr>
-          </thead>
-          <tbody>
+        <Table>
+          <TableHeader className="bg-control-bg">
+            <TableRow>
+              <TableHead className="w-10" />
+              <TableHead>{t("common.name")}</TableHead>
+              <TableHead>{t("release.files")}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody striped={false}>
             {releases.map((release) => (
-              <tr
+              <TableRow
                 key={release.name}
-                className="cursor-pointer border-b border-control-border last:border-b-0 hover:bg-control-bg"
+                className="cursor-pointer"
                 onClick={() => onSelectedReleaseChange(release)}
               >
-                <td className="px-4 py-2">
+                <TableCell className="py-2">
                   <RadioGroupItem
                     value={release.name}
                     aria-label={release.name.split("/").pop()}
                   />
-                </td>
-                <td className="px-4 py-2">{release.name.split("/").pop()}</td>
-                <td className="px-4 py-2">{release.files.length}</td>
-              </tr>
+                </TableCell>
+                <TableCell className="py-2">
+                  {release.name.split("/").pop()}
+                </TableCell>
+                <TableCell className="py-2">{release.files.length}</TableCell>
+              </TableRow>
             ))}
-          </tbody>
-        </table>
+          </TableBody>
+        </Table>
       </RadioGroup>
     </div>
   );

@@ -47,5 +47,12 @@ describe("IDPsPage create SSO layout", () => {
     expect(providerConfigSource).toContain("FormTitle");
     expect(providerConfigSource).not.toContain("FormLabel");
     expect(fieldMappingSource).toContain("FormFieldGroup");
+    expect(createWizardSource.match(/selectionCardVariants\(/g)).toHaveLength(
+      2
+    );
+    expect(createWizardSource).toContain('width="large"');
+    expect(createWizardSource).toContain("<SheetHeader>");
+    expect(createWizardSource).toContain("<SheetBody");
+    expect(createWizardSource).toContain("<SheetFooter>");
   });
 });

@@ -757,11 +757,7 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
 
   return (
     <PageLayout>
-      {/* Header */}
-      <PageToolbar>
-        <h2 className="text-lg font-medium leading-7 text-main">
-          {t("settings.members.service-accounts")}
-        </h2>
+      <PageToolbar align="end">
         <PermissionGuard
           permissions={["bb.serviceAccounts.create"]}
           project={project}
