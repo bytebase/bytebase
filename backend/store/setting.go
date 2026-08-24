@@ -440,7 +440,27 @@ func (s *Store) EnsureSettingRow(ctx context.Context, workspace string, name sto
 // back with that value silently deleted. A caller that must not do that reads
 // the raw bytes, and reads them from the locked row rather than a pre-flight, so
 // there is no window for a concurrent writer to slip a value in between.
+//
+// A row this build cannot parse is refused: the only message this could hand
+// apply is the zero value, and a merging apply would write that back — a
+// caller that sets one field on current and returns it (RotateDirectorySyncToken)
+// would erase everything else the row held.
 func (s *Store) UpdateSettingAtomic(ctx context.Context, workspace string, name storepb.SettingName, apply func(current proto.Message, raw []byte) (proto.Message, error), postCommit func(current *SettingMessage)) (*SettingMessage, error) {
+	return s.writeSettingAtomic(ctx, workspace, name, func(raw string) (proto.Message, error) {
+		current, err := getSettingMessage(name)
+		if err != nil {
+			return nil, err
+		}
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(raw), current); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal setting %s", name)
+		}
+		return apply(current, []byte(raw))
+	}, postCommit)
+}
+
+// writeSettingAtomic locks the row, asks next for the value to store, and
+// writes it in the same transaction.
+func (s *Store) writeSettingAtomic(ctx context.Context, workspace string, name storepb.SettingName, next func(raw string) (proto.Message, error), postCommit func(current *SettingMessage)) (*SettingMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to begin transaction")
@@ -461,20 +481,12 @@ func (s *Store) UpdateSettingAtomic(ctx context.Context, workspace string, name 
 		}
 		return nil, errors.Wrapf(err, "failed to lock setting %s", name)
 	}
-	current, err := getSettingMessage(name)
-	if err != nil {
-		return nil, err
-	}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(valueString), current); err != nil {
-		return nil, errors.Wrapf(err, "failed to unmarshal setting %s", name)
-	}
-
-	next, err := apply(current, []byte(valueString))
+	value, err := next(valueString)
 	if err != nil {
 		return nil, err
 	}
 
-	nextBytes, err := protojson.Marshal(next)
+	nextBytes, err := protojson.Marshal(value)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to marshal setting value")
 	}
@@ -498,7 +510,7 @@ func (s *Store) UpdateSettingAtomic(ctx context.Context, workspace string, name 
 		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
 	s.publishSetting(ctx, workspace, name, postCommit)
-	return &SettingMessage{Name: name, Workspace: workspace, Value: next}, nil
+	return &SettingMessage{Name: name, Workspace: workspace, Value: value}, nil
 }
 
 // publishSetting refreshes the served state for a setting after a committed
@@ -735,6 +747,15 @@ func UnknownSettingKeys(raw string, m proto.Message) ([]string, error) {
 // rejects an explicit UNSPECIFIED, so no Bytebase write produces this key with
 // that value — only a hand-edited row does, and there it is indistinguishable
 // from a typo.
+//
+// Read with encoding/json rather than the shared protojson unmarshaler, and
+// that is forced, not legacy: this recovers what protojson DISCARDED.
+// common.ProtojsonUnmarshaler sets DiscardUnknown, so an enum name this build
+// does not know leaves no trace in the message, and protojson exposes no way to
+// ask what token a field carried. A strict unmarshaler is not the alternative —
+// it does reject the unknown enum name, but it rejects an unknown FIELD with
+// the same error, and tolerating a field a newer replica wrote is the rolling
+// upgrade this build has to survive.
 func RawMCPCapability(value string) (string, error) {
 	var fields map[string]json.RawMessage
 	if err := json.Unmarshal([]byte(value), &fields); err != nil {

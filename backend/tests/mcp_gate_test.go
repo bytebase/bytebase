@@ -46,14 +46,17 @@ func TestMCPGateServesAndRefusesByClass(t *testing.T) {
 	a.NoError(err)
 	projectName := project.Msg.Name
 
+	// Pinned so this test does not depend on the resolved default: the WRITE
+	// arm below is about what the gate serves at READ_WRITE.
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
+
 	session := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
 	defer session.Close()
 
 	// READ: served under every ceiling that admits a connection at all.
 	a.Equal(http.StatusOK, callAPIStatus(ctx, t, session, "WorkspaceService/ListWorkspaces", nil))
 
-	// WRITE: served because the workspace ceiling is unset, which resolves
-	// READ_WRITE.
+	// WRITE: served because the ceiling above is READ_WRITE.
 	sheet := callAPIOnSession(ctx, t, session, "SheetService/CreateSheet", map[string]any{
 		"parent": projectName,
 		"sheet":  map[string]any{"content": base64.StdEncoding.EncodeToString([]byte("SELECT 1;"))},
@@ -101,6 +104,11 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	}))
 	a.NoError(err)
 	projectName := project.Msg.Name
+
+	// CreateIssue is WRITE and the refusal under test is the one the class
+	// cannot express. Pinned so this test does not depend on the resolved
+	// default.
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
 
 	session := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
 	defer session.Close()
@@ -197,6 +205,11 @@ func TestMCPCannotRunAnIssuelessRollout(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
+	// CreateRollout is WRITE and the refusal under test is the
+	// issueless-rollout guard. Pinned so this test does not depend on the
+	// resolved default.
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
+
 	pgContainer, err := provisionPgInstance(ctx, t)
 	a.NoError(err)
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
@@ -264,4 +277,48 @@ func TestMCPCannotRunAnIssuelessRollout(t *testing.T) {
 	}))
 	a.NoError(err, "the guard binds MCP sessions and nothing else")
 	a.NotEmpty(consoleRollout.Msg.Name)
+}
+
+// TestMCPAbsentRowResolvesReadWrite pins the one permissive default the
+// resolver has: a workspace that never configured MCP serves WRITE.
+//
+// Every other gate test now sets a ceiling explicitly, which is right — each is
+// about what a NAMED ceiling serves, and depending on the default made them say
+// less than their names claimed. That left nothing exercising the unset case on
+// the live path, so changing store.GetMCPSettingsUncached's whenUnset would
+// silently refuse writes for every workspace that has not configured MCP —
+// which today is all of them — with no test to say so.
+func TestMCPAbsentRowResolvesReadWrite(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	project, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
+		ProjectId: "mcp-unset",
+		Project:   &v1pb.Project{Title: "MCP unset ceiling"},
+	}))
+	a.NoError(err)
+
+	// No setMCPCapability anywhere in this test: the absence IS the fixture.
+	setting, err := ctl.getMCPSetting(ctx)
+	a.NoError(err)
+	a.Equal(v1pb.MCPSetting_CAPABILITY_UNSPECIFIED, setting.GetCapability(),
+		"this test is about a workspace that never configured MCP")
+	a.False(setting.GetCapabilityUnreadable(),
+		"absent, not unreadable — the two resolve to opposite ceilings")
+
+	session := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
+	defer session.Close()
+
+	sheet := callAPIOnSession(ctx, t, session, "SheetService/CreateSheet", map[string]any{
+		"parent": project.Msg.Name,
+		"sheet":  map[string]any{"content": base64.StdEncoding.EncodeToString([]byte("SELECT 1;"))},
+	})
+	a.Equal(http.StatusOK, sheet.Status,
+		"an unconfigured workspace resolves READ_WRITE, so a WRITE method is served: %s", sheet.Error)
 }

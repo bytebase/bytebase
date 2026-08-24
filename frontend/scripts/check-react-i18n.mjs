@@ -53,6 +53,14 @@ const DYNAMIC_PREFIXES = [
   // Role-grant expiration presets, rendered via t(preset.labelKey) in
   // MembersPage.tsx (EXPIRATION_PRESETS), not as literal t("…") calls.
   "project.members.expiration-presets.",
+  // MCP mode cards and the broken-ceiling banner, rendered via
+  // t(`settings.mcp.policy.mode.${key}.title`) and a ternary over two key
+  // strings in MCPAccessPolicySection.tsx, not as literal t("…") calls.
+  "settings.mcp.policy.mode.",
+  "settings.mcp.policy.unreadable.description",
+  "settings.mcp.policy.unreadable.title",
+  "settings.mcp.policy.unserved.description",
+  "settings.mcp.policy.unserved.title",
   // Keys consumed by SHARED non-React `.ts` modules that translate via
   // `@/lib/i18n` (the same react-i18next instance — vue-i18n is gone), but
   // live OUTSIDE this checker's React-only scan, so they read as unused. They
