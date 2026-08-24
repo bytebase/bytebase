@@ -215,9 +215,9 @@ function StatusDot({
     <div
       className={cn(
         "flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-medium",
-        status === "approved" && "bg-success text-white",
-        status === "rejected" && "bg-error text-white",
-        status === "current" && "bg-accent text-white",
+        status === "approved" && "bg-success text-accent-text",
+        status === "rejected" && "bg-error text-accent-text",
+        status === "current" && "bg-accent text-accent-text",
         status === "pending" && "bg-control-bg text-control"
       )}
     >
@@ -285,7 +285,7 @@ function FlowNode({
             {roleName}
           </span>
           {step.status === "current" && (
-            <Badge className="px-1.5 py-0 text-[10px]" variant="secondary">
+            <Badge className="px-1.5 py-0 text-xs" variant="secondary">
               {t("plan.review.approval-flow.current")}
             </Badge>
           )}
@@ -353,17 +353,17 @@ function NodeReviewers({
         nativeButton={false}
         openOnHover
         render={
-          <div className="mt-1 flex h-4 w-fit cursor-default items-center gap-x-1.5">
-            <div className="flex items-center -space-x-1">
+          <div className="mt-1 flex h-5 w-fit cursor-default items-center gap-x-1.5">
+            <div className="flex items-center">
               {visible.map((user) => (
                 <InitialsAvatar
-                  className="size-4 text-[9px] ring-2 ring-white"
+                  className="-ml-1 size-5 text-xs ring-2 ring-background first:ml-0"
                   key={user.name}
                   user={user}
                 />
               ))}
               {overflow > 0 && (
-                <span className="flex size-4 items-center justify-center rounded-full bg-control-bg text-[9px] font-medium text-control ring-2 ring-white">
+                <span className="-ml-1 flex size-5 items-center justify-center rounded-full bg-control-bg font-medium text-control text-xs ring-2 ring-background first:ml-0">
                   +{overflow}
                 </span>
               )}
@@ -380,7 +380,7 @@ function NodeReviewers({
         <div className="flex max-h-64 flex-col gap-y-2 overflow-y-auto">
           {listed.map((user) => (
             <div className="flex items-center gap-x-2" key={user.name}>
-              <InitialsAvatar className="size-6 text-[10px]" user={user} />
+              <InitialsAvatar className="size-6 text-xs" user={user} />
               <div className="min-w-0">
                 <div className="truncate text-sm text-main">
                   {user.title || user.email.split("@")[0]}
@@ -412,14 +412,14 @@ function ApprovedChip({ steps }: { steps: FlowStep[] }) {
         openOnHover
         render={
           <div className="flex shrink-0 cursor-default items-start gap-x-2">
-            <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-success text-white">
+            <div className="flex size-6 shrink-0 items-center justify-center rounded-full bg-success text-accent-text">
               <Check className="size-3.5" />
             </div>
             <div className="min-w-0">
               <span className="text-sm font-medium text-control">
                 {t("plan.review.approval-flow.n-approved", { n: steps.length })}
               </span>
-              <div className="mt-1 flex h-4 items-center">
+              <div className="mt-1 flex h-5 items-center">
                 <ChipAvatars principals={steps.map((s) => s.approver ?? "")} />
               </div>
             </div>
@@ -427,7 +427,7 @@ function ApprovedChip({ steps }: { steps: FlowStep[] }) {
         }
       />
       <PopoverContent align="start" className="w-64" side="bottom">
-        <div className="flex flex-col gap-y-2.5">
+        <div className="flex flex-col gap-y-2">
           {steps.map((step) => (
             <ApprovedPopoverRow key={step.index} step={step} />
           ))}
@@ -447,16 +447,13 @@ function ApprovedPopoverRow({ step }: { step: FlowStep }) {
   const roleName = displayRoleTitleFromList(step.role, roleList);
   return (
     <div className="flex items-start gap-x-2">
-      <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-success text-white">
+      <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-success text-accent-text">
         <Check className="size-3" />
       </span>
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-medium text-main">{roleName}</div>
         <div className="mt-0.5 flex items-center gap-x-1 text-xs text-control-light">
-          <InitialsAvatar
-            className="size-4 shrink-0 text-[8px]"
-            user={approver}
-          />
+          <InitialsAvatar className="size-5 shrink-0 text-xs" user={approver} />
           <span className="truncate">
             {t("plan.review.approval-flow.approved-by", {
               user: approver.title,
@@ -481,7 +478,7 @@ function InitialsAvatar({
   return (
     <span
       className={cn(
-        "flex items-center justify-center rounded-full font-medium text-white",
+        "flex items-center justify-center rounded-full font-medium text-accent-text",
         className
       )}
       style={{ backgroundColor: getAvatarColor(name) }}
@@ -494,10 +491,10 @@ function InitialsAvatar({
 function ChipAvatars({ principals }: { principals: string[] }) {
   const getUserByIdentifier = useAppStore((state) => state.getUserByIdentifier);
   return (
-    <span className="flex items-center -space-x-1">
+    <span className="flex items-center">
       {principals.slice(0, 3).map((principal, i) => (
         <InitialsAvatar
-          className="size-4 text-[9px] ring-1 ring-white"
+          className="-ml-1 size-5 text-xs ring-1 ring-background first:ml-0"
           key={`${principal}-${i}`}
           user={getUserByIdentifier(principal) ?? unknownUser(principal)}
         />
@@ -524,7 +521,7 @@ function PendingChip({ issue, steps }: { issue: Issue; steps: FlowStep[] }) {
         }
       />
       <PopoverContent align="start" className="w-64" side="bottom">
-        <div className="flex flex-col gap-y-2.5">
+        <div className="flex flex-col gap-y-2">
           {steps.map((step) => (
             <PendingPopoverRow issue={issue} key={step.index} step={step} />
           ))}
@@ -551,23 +548,23 @@ function PendingPopoverRow({ issue, step }: { issue: Issue; step: FlowStep }) {
 
   return (
     <div className="flex items-start gap-x-2">
-      <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-control-bg text-[10px] font-medium text-control">
+      <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-control-bg font-medium text-control text-xs">
         {step.index + 1}
       </span>
       <div className="min-w-0 flex-1">
         <div className="truncate text-sm font-medium text-main">{roleName}</div>
         {candidates.length > 0 && (
           <div className="mt-1 flex items-center gap-x-1.5">
-            <div className="flex items-center -space-x-1">
+            <div className="flex items-center">
               {visible.map((user) => (
                 <InitialsAvatar
-                  className="size-4 text-[8px] ring-2 ring-background"
+                  className="-ml-1 size-5 text-xs ring-2 ring-background first:ml-0"
                   key={user.name}
                   user={user}
                 />
               ))}
               {overflow > 0 && (
-                <span className="flex size-4 items-center justify-center rounded-full bg-control-bg text-[8px] text-control ring-2 ring-background">
+                <span className="-ml-1 flex size-5 items-center justify-center rounded-full bg-control-bg text-control text-xs ring-2 ring-background first:ml-0">
                   +{overflow}
                 </span>
               )}

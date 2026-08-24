@@ -102,7 +102,7 @@ function Alert({
         <button
           type="button"
           aria-label="Dismiss"
-          className="shrink-0 rounded-xs p-0.5 text-control-light hover:bg-black/5 hover:text-control"
+          className="shrink-0 rounded-xs p-0.5 text-control-light hover:bg-overlay/5 hover:text-control"
           onClick={onDismiss}
         >
           <X className="size-4" />

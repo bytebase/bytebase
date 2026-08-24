@@ -67,13 +67,15 @@ export function ReviewCommentComposer({ issueName }: { issueName: string }) {
             title={currentUser.title || currentUser.email}
           />
         </div>
-        <button
-          className="min-w-0 flex-1 rounded-md border px-3 py-1.5 text-left text-sm text-control-placeholder hover:border-control-border"
+        <Button
+          appearance="outline"
+          className="min-w-0 flex-1 justify-start text-control-placeholder"
           onClick={() => setExpanded(true)}
+          size="md"
           type="button"
         >
           {t("plan.review.activity.add-a-comment")}
-        </button>
+        </Button>
       </div>
     );
   }

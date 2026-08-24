@@ -154,6 +154,11 @@ psql -U bbdev bbdev
 
 The product frontend is built in React. **All product UI code is React** — use the stack and component patterns below. The only Vue runtime is the isolated `pev2` adapter under `frontend/src/apps/explain-visualizer/`.
 
+The canonical design foundations and workflow recipes are in
+[`docs/agents/frontend-ux.md`](docs/agents/frontend-ux.md). New and directly
+modified UI must follow it; unrelated legacy UI is governed by its incremental
+baseline and must not gain new violations.
+
 The canonical frontend ownership map is in `./frontend/AGENTS.md`. In summary:
 
 - `frontend/src/app/` owns bootstrap, layouts, and router infrastructure.

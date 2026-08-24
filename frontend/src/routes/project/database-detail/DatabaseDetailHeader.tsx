@@ -95,11 +95,15 @@ export function DatabaseDetailHeader({ database }: { database: Database }) {
   return (
     <div className="flex min-w-0 flex-1 shrink-0 flex-col gap-y-2">
       <div className="flex w-full min-w-0 flex-col">
-        <div className="flex items-center gap-x-2 truncate text-xl font-bold text-main">
-          {databaseName}
+        <div className="flex min-w-0 items-center gap-x-2 text-xl font-bold text-main">
+          <span className="min-w-0 truncate" title={databaseName}>
+            {databaseName}
+          </span>
         </div>
-        <div className="mt-1 flex w-full min-w-0 items-center gap-x-1 text-sm text-control-light">
-          <span className="truncate">{database.name}</span>
+        <div className="mt-1 flex w-fit max-w-full min-w-0 items-center gap-x-1 text-sm text-control-light">
+          <span className="min-w-0 truncate" title={database.name}>
+            {database.name}
+          </span>
           <button
             type="button"
             className="inline-flex shrink-0 items-center p-0.5 text-control-light hover:text-main"

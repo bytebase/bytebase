@@ -1,14 +1,15 @@
 import { cloneDeep } from "lodash-es";
-import { Loader2, Maximize2, Minimize2, X } from "lucide-react";
+import { Loader2, Maximize2, Minimize2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Combobox } from "@/components/ui/combobox";
 import {
   Sheet,
-  SheetClose,
+  SheetBody,
   SheetContent,
   SheetFooter,
+  SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
 import { SchemaEditorLite } from "@/modules/schema-editor";
@@ -54,16 +55,14 @@ export function SchemaEditorSheet({
         width={maximized ? "huge" : "xlarge"}
         className="flex flex-col"
       >
-        {open && (
-          <SchemaEditorSheetBody
-            databaseNames={databaseNames}
-            project={project}
-            onInsert={onInsert}
-            onCancel={() => handleOpenChange(false)}
-            maximized={maximized}
-            onMaximizedChange={setMaximized}
-          />
-        )}
+        <SchemaEditorSheetBody
+          databaseNames={databaseNames}
+          project={project}
+          onInsert={onInsert}
+          onCancel={() => handleOpenChange(false)}
+          maximized={maximized}
+          onMaximizedChange={setMaximized}
+        />
       </SheetContent>
     </Sheet>
   );
@@ -229,71 +228,62 @@ function SchemaEditorSheetBody({
 
   return (
     <>
-      {/* Compact single-row toolbar — title, template-database picker, and
-          window controls share one line so the editor below gets back the
-          ~50px we used to spend on a separate combobox row. */}
-      <div className="flex items-center gap-x-3 border-b border-control-border px-4 py-2">
-        <SheetTitle className="text-base font-semibold">
-          {t("schema-editor.self")}
-        </SheetTitle>
-        {databaseNames.length > 1 && (
-          <div className="flex min-w-0 items-center gap-x-2">
-            <span className="shrink-0 text-xs text-control-light">
-              {t("schema-editor.template-database")}:
-            </span>
-            <Combobox
-              value={selectedDatabaseName}
-              onChange={setSelectedDatabaseName}
-              options={databaseOptions}
-              disabled={isPreparingMetadata}
-              clearable={false}
-              size="sm"
-              className="w-56"
-              portal
-            />
-          </div>
-        )}
-        <div className="ml-auto flex items-center gap-x-1">
-          <button
-            type="button"
+      <SheetHeader
+        className="items-center px-4 py-2"
+        actions={
+          <Button
+            appearance="secondary"
+            size="xs"
             aria-label={maximizeLabel}
             title={maximizeLabel}
             onClick={() => onMaximizedChange(!maximized)}
-            className="shrink-0 cursor-pointer rounded-xs p-1 text-control hover:bg-control-bg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
           >
             <MaximizeIcon className="size-4" />
-          </button>
-          <SheetClose
-            aria-label={t("common.close")}
-            className="shrink-0 cursor-pointer rounded-xs p-1 text-control hover:bg-control-bg focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent"
-          >
-            <X className="size-4" />
-          </SheetClose>
+          </Button>
+        }
+      >
+        <div className="flex min-w-0 items-center gap-x-3">
+          <SheetTitle className="text-base font-semibold">
+            {t("schema-editor.self")}
+          </SheetTitle>
+          {databaseNames.length > 1 && (
+            <div className="flex min-w-0 items-center gap-x-2">
+              <span className="shrink-0 text-xs text-control-light">
+                {t("schema-editor.template-database")}:
+              </span>
+              <Combobox
+                value={selectedDatabaseName}
+                onChange={setSelectedDatabaseName}
+                options={databaseOptions}
+                disabled={isPreparingMetadata}
+                clearable={false}
+                size="sm"
+                className="w-56"
+                portal
+              />
+            </div>
+          )}
         </div>
-      </div>
-      <div className="relative flex-1 overflow-hidden px-4 pt-2 pb-2">
+      </SheetHeader>
+      <SheetBody className="relative overflow-hidden px-4 py-2">
         <SchemaEditorLite
           ref={schemaEditorRef}
           project={project}
           targets={targets}
           loading={isPreparingMetadata}
         />
-      </div>
+      </SheetBody>
       <SheetFooter>
-        <div className="flex w-full items-center justify-end gap-x-2">
-          <Button appearance="outline" onClick={onCancel}>
-            {t("common.cancel")}
-          </Button>
-          <Button
-            disabled={
-              isPreparingMetadata || isInserting || targets.length === 0
-            }
-            onClick={() => void handleInsert()}
-          >
-            {isInserting && <Loader2 className="size-4 animate-spin" />}
-            {t("schema-editor.insert-sql")}
-          </Button>
-        </div>
+        <Button appearance="outline" onClick={onCancel}>
+          {t("common.cancel")}
+        </Button>
+        <Button
+          disabled={isPreparingMetadata || isInserting || targets.length === 0}
+          onClick={() => void handleInsert()}
+        >
+          {isInserting && <Loader2 className="size-4 animate-spin" />}
+          {t("schema-editor.insert-sql")}
+        </Button>
       </SheetFooter>
     </>
   );

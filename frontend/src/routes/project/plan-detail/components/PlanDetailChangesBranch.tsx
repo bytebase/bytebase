@@ -66,6 +66,14 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Switch } from "@/components/ui/switch";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Tooltip } from "@/components/ui/tooltip";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { useOnKeyChange } from "@/hooks/useOnKeyChange";
@@ -1806,10 +1814,10 @@ function DatabaseSelector({
         </div>
       ) : (
         <>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left text-control-light">
-                <th className="w-8 py-2 pr-2">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-10">
                   <Checkbox
                     checked={someSelected ? "indeterminate" : allSelected}
                     onCheckedChange={() =>
@@ -1820,63 +1828,57 @@ function DatabaseSelector({
                       )
                     }
                   />
-                </th>
-                <th className="py-2 pr-4 font-medium">
-                  {t("common.database")}
-                </th>
-                <th className="py-2 pr-4 font-medium">
-                  {t("common.instance")}
-                </th>
-                <th className="py-2 pr-4 font-medium">
-                  {t("common.environment")}
-                </th>
-                <th className="py-2 pr-4 font-medium whitespace-nowrap">
+                </TableHead>
+                <TableHead>{t("common.database")}</TableHead>
+                <TableHead>{t("common.instance")}</TableHead>
+                <TableHead>{t("common.environment")}</TableHead>
+                <TableHead className="whitespace-nowrap">
                   {t("common.status")}
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody striped={false}>
               {databases.map((db) => {
                 const { databaseName } = extractDatabaseResourceName(db.name);
                 const inst = getInstanceResource(db);
                 const env = getDatabaseEnvironment(db);
                 const isSelected = selectedNames.has(db.name);
                 return (
-                  <tr
+                  <TableRow
                     key={db.name}
                     className={cn(
-                      "cursor-pointer border-b hover:bg-control-bg",
+                      "cursor-pointer",
                       isSelected && "bg-accent/5"
                     )}
                     onClick={() => toggleDatabase(db.name)}
                   >
-                    <td className="py-2 pr-2">
+                    <TableCell className="py-2">
                       <Checkbox checked={isSelected} />
-                    </td>
-                    <td className="py-2 pr-4">
+                    </TableCell>
+                    <TableCell className="py-2">
                       <div className="flex items-center gap-x-1.5">
                         {inst && (
                           <EngineIcon engine={inst.engine} className="size-4" />
                         )}
                         <span>{databaseName}</span>
                       </div>
-                    </td>
-                    <td className="py-2 pr-4">{inst?.title}</td>
-                    <td className="py-2 pr-4">
+                    </TableCell>
+                    <TableCell className="py-2">{inst?.title}</TableCell>
+                    <TableCell className="py-2">
                       {env && <EnvironmentLabel environmentName={env.name} />}
-                    </td>
-                    <td className="py-2 pr-4">
+                    </TableCell>
+                    <TableCell className="py-2">
                       {db.syncStatus === SyncStatus.FAILED ? (
                         <XCircle className="size-4 text-error" />
                       ) : (
                         <CheckCircle className="size-4 text-success" />
                       )}
-                    </td>
-                  </tr>
+                    </TableCell>
+                  </TableRow>
                 );
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
           {hasMore && (
             <div className="flex justify-center">
               <Button
@@ -1939,43 +1941,38 @@ function DatabaseGroupSelector({
       onValueChange={(value) => onSelectedGroupChange(String(value))}
       className="block"
     >
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b text-left text-control-light">
-            <th className="w-8 py-2 pr-2" />
-            <th className="py-2 pr-4 font-medium">
-              {t("common.database-group")}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead className="w-10" />
+            <TableHead>{t("common.database-group")}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody striped={false}>
           {groups.map((group) => {
             const isSelected = selectedGroup === group.name;
             return (
-              <tr
+              <TableRow
                 key={group.name}
-                className={cn(
-                  "cursor-pointer border-b hover:bg-control-bg",
-                  isSelected && "bg-accent/5"
-                )}
+                className={cn("cursor-pointer", isSelected && "bg-accent/5")}
                 onClick={() =>
                   onSelectedGroupChange(isSelected ? undefined : group.name)
                 }
               >
-                <td className="py-2 pr-2">
+                <TableCell className="py-2">
                   <RadioGroupItem value={group.name} aria-label={group.title} />
-                </td>
-                <td className="py-2 pr-4">
+                </TableCell>
+                <TableCell className="py-2">
                   <div className="flex items-center gap-x-1.5">
                     <FolderTree className="size-4 shrink-0 text-control-light" />
                     <span>{group.title}</span>
                   </div>
-                </td>
-              </tr>
+                </TableCell>
+              </TableRow>
             );
           })}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </RadioGroup>
   );
 }

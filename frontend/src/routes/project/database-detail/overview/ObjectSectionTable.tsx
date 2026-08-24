@@ -1,5 +1,13 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export interface ObjectSectionRow {
   key: string;
@@ -22,7 +30,7 @@ export function ObjectSectionTable({
 
   if (loading) {
     return (
-      <div className="rounded border border-dashed border-block-border px-4 py-6 text-sm text-control-light">
+      <div className="rounded-sm border border-dashed border-block-border px-4 py-6 text-sm text-control-light">
         {t("common.loading")}
       </div>
     );
@@ -30,29 +38,27 @@ export function ObjectSectionTable({
 
   if (rows.length === 0) {
     return (
-      <div className="rounded border border-dashed border-block-border px-4 py-6 text-sm text-control-light">
+      <div className="rounded-sm border border-dashed border-block-border px-4 py-6 text-sm text-control-light">
         {emptyText || "-"}
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded border border-block-border">
-      <table className="min-w-full divide-y divide-block-border">
-        <thead className="bg-control-bg">
-          <tr className="text-left text-sm text-control-light">
-            <th className="px-4 py-2 font-medium">{t("common.name")}</th>
-            <th className="px-4 py-2 font-medium">{t("common.definition")}</th>
-            <th className="px-4 py-2 font-medium">{t("common.comment")}</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-block-border bg-background">
+    <div className="overflow-hidden rounded-sm border border-block-border">
+      <Table>
+        <TableHeader className="bg-control-bg">
+          <TableRow>
+            <TableHead>{t("common.name")}</TableHead>
+            <TableHead>{t("common.definition")}</TableHead>
+            <TableHead>{t("common.comment")}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody striped={false} className="bg-background">
           {rows.map((row) => (
-            <tr
+            <TableRow
               key={row.key}
-              className={
-                row.onClick ? "cursor-pointer hover:bg-control-bg" : ""
-              }
+              className={row.onClick ? "cursor-pointer" : undefined}
               role={row.onClick ? "button" : undefined}
               tabIndex={row.onClick ? 0 : undefined}
               onClick={row.onClick}
@@ -67,17 +73,13 @@ export function ObjectSectionTable({
                   : undefined
               }
             >
-              <td className="px-4 py-3 text-sm text-main">{row.name}</td>
-              <td className="px-4 py-3 text-sm text-control">
-                {row.description}
-              </td>
-              <td className="px-4 py-3 text-sm text-control">
-                {row.comment || "-"}
-              </td>
-            </tr>
+              <TableCell className="text-main">{row.name}</TableCell>
+              <TableCell>{row.description}</TableCell>
+              <TableCell>{row.comment || "-"}</TableCell>
+            </TableRow>
           ))}
-        </tbody>
-      </table>
+        </TableBody>
+      </Table>
     </div>
   );
 }

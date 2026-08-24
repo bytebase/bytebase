@@ -358,11 +358,7 @@ export function WorkloadIdentitiesPage({ projectId }: { projectId?: string }) {
 
   return (
     <PageLayout>
-      {/* Header */}
-      <PageToolbar>
-        <p className="text-lg font-medium leading-7 text-main">
-          {t("settings.members.workload-identities")}
-        </p>
+      <PageToolbar align="end">
         <PermissionGuard
           permissions={["bb.workloadIdentities.create"]}
           project={project}

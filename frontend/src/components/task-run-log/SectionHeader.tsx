@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronRight } from "lucide-react";
-import type { ButtonHTMLAttributes } from "react";
+import { Button, type ButtonProps } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Section } from "./types";
 
@@ -18,8 +18,7 @@ export function SectionStatusIcon({ section }: { section: Section }) {
   );
 }
 
-export interface SectionHeaderProps
-  extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, "onClick"> {
+export interface SectionHeaderProps extends Omit<ButtonProps, "onClick"> {
   section: Section;
   isExpanded: boolean;
   indent?: boolean;
@@ -35,11 +34,13 @@ export function SectionHeader({
   ...props
 }: SectionHeaderProps) {
   return (
-    <button
+    <Button
       type="button"
       aria-expanded={isExpanded}
+      appearance="secondary"
+      size="sm"
       className={cn(
-        "flex w-full items-center gap-x-2 py-1.5 bg-background hover:bg-control-bg cursor-pointer select-none text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2",
+        "w-full justify-start rounded-none bg-background text-left hover:bg-control-bg",
         indent ? "px-6" : "px-3",
         className
       )}
@@ -62,7 +63,7 @@ export function SectionHeader({
           {section.duration}
         </span>
       ) : null}
-    </button>
+    </Button>
   );
 }
 

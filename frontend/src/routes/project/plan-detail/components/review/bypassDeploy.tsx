@@ -221,10 +221,7 @@ export function BypassAndDeploySheet({
       }}
       open={confirmOpen}
     >
-      <SheetContent
-        className="w-[28rem] max-w-[calc(100vw-2rem)]"
-        width="standard"
-      >
+      <SheetContent width="narrow">
         <SheetHeader>
           <SheetTitle>{t("plan.review.footer.bypass-and-deploy")}</SheetTitle>
         </SheetHeader>
@@ -263,7 +260,7 @@ export function BypassAndDeploySheet({
             <h3 className="textlabel uppercase">
               {t("plan.navigator.review")}
             </h3>
-            <div className="rounded-md border">
+            <div className="rounded-sm border">
               <ReviewApprovalFlow issue={issue} />
             </div>
           </div>

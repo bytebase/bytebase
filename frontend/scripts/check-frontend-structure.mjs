@@ -82,6 +82,7 @@ const agentFiles = [
   resolve(repoRoot, "AGENTS.md"),
   resolve(repoRoot, "CLAUDE.md"),
   resolve(repoRoot, "docs/superpowers/AGENTS.md"),
+  resolve(repoRoot, "docs/agents/frontend-ux.md"),
   resolve(frontendRoot, "AGENTS.md"),
   resolve(frontendRoot, "CLAUDE.md"),
   resolve(frontendRoot, "components.json"),

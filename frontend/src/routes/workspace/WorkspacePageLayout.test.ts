@@ -128,6 +128,23 @@ describe("workspace list page layout", () => {
     }
   });
 
+  test("keeps machine identity toolbars action-only", () => {
+    for (const file of [
+      "ServiceAccountsPage.tsx",
+      "WorkloadIdentitiesPage.tsx",
+    ] as const) {
+      const source = readSettingsPage(file);
+
+      expect(source, file).toContain('<PageToolbar align="end">');
+      expect(source, file).not.toContain(
+        't("settings.members.service-accounts")'
+      );
+      expect(source, file).not.toContain(
+        't("settings.members.workload-identities")'
+      );
+    }
+  });
+
   test("uses shared workspace info surfaces for persistent page descriptions", () => {
     for (const file of workspaceInfoPages) {
       const source = readSettingsPage(file);
