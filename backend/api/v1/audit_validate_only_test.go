@@ -91,13 +91,12 @@ func TestValidateOnlyAuditSkipAppliesOnlyToSuccess(t *testing.T) {
 		require.Equal(t, int32(connect.CodePermissionDenied), rows[0].Payload.GetStatus().GetCode(),
 			"the row must carry the denial, not a blank status")
 
-		// The newly-logged row goes through the same getRequestString
+		// The newly-logged row goes through the same marshalAuditPayload
 		// redaction as every other UpdateDataSource row — that is why
 		// narrowing the skip exposes no field the plain path did not already
-		// write. It pins that the path runs, not that redactDataSource covers
-		// every secret: the iam_extension oneof and
-		// authentication_private_key_passphrase are unmasked there today, on
-		// this row and on every UpdateDataSource row that preceded it.
+		// write. It pins that the path runs on a row the skip used to swallow;
+		// which fields the redaction covers is the annotation's job, pinned by
+		// TestAuditRedactionCoversEveryAnnotatedField.
 		request := rows[0].Payload.GetRequest()
 		require.NotEmpty(t, request)
 		require.NotContains(t, request, storedPassword,

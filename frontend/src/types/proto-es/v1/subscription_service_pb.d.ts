@@ -124,6 +124,12 @@ export declare const PurchaseResponseSchema: GenMessage<PurchaseResponse>;
  */
 export declare type VerifyCheckoutSessionRequest = Message<"bytebase.v1.VerifyCheckoutSessionRequest"> & {
   /**
+   * The same Stripe Checkout Session ID PurchaseResponse mints, arriving back
+   * the other way, so it carries the same classification. VerifyCheckoutSession
+   * is EXCLUDED, and the MCP gate records a row for every method it refuses, so
+   * leaving this unannotated would write the id into a denial row while the
+   * response that produced it was redacted.
+   *
    * @generated from field: string session_id = 1;
    */
   sessionId: string;

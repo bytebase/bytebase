@@ -1,6 +1,6 @@
 # Audit payload redaction from proto annotations
 
-Status: proposal · 2026-08-20 · addresses BYT-10090
+Status: implemented · 2026-08-21 · addresses BYT-10090
 
 ## Background
 
@@ -157,7 +157,8 @@ lints are the whole enforcement story, and an annotation implying otherwise is w
 
 ### Redaction
 
-The hook point is `getRequestString` and `getResponseString` themselves, not `WrapUnary`. Unary and
+The hook point is `marshalAuditPayload` (originally two functions, `getRequestString` and
+`getResponseString`), not `WrapUnary`. Unary and
 streaming rows reach redaction only through those two: `auditConnectStreamingConn.Send`
 (`audit.go:171-193`) builds its own `auditEntry` and calls `createAuditLog` directly. `AdminExecute`
 is the only streaming RPC, is audited, and its response carries every row of an admin-mode query, so
@@ -253,7 +254,7 @@ Constraints:
 - **Every `Any` that reaches the row is registered and redacted.** The descriptor walk sees
   `type_url` and `value`, never the packed message, so an annotated field inside one is invisible
   to the redactor, the coverage lint and the inventory alike. Three paths put an `Any` on an audit
-  row and none passes `getRequestString` or `getResponseString`:
+  row and none passes `marshalAuditPayload`:
 
   | source | call sites today | packed types |
   |---|---|---|
@@ -361,8 +362,8 @@ walking each of the ten rebuilds for what it newly admits, is a precondition for
 - **Inventory** — the half that makes goal 4 real. A sentinel sweep cannot distinguish an
   unannotated credential from an ordinary field the audit row intentionally keeps; both survive
   redaction identically, so the sweep alone has no oracle. The oracle is a checked-in inventory of
-  every string and bytes field reachable from a message that can reach `getRequestString` or
-  `getResponseString`. A field missing from it fails the build; clearing that failure means
+  every string and bytes field reachable from a message that can reach `marshalAuditPayload`.
+  A field missing from it fails the build; clearing that failure means
   annotating the field or recording that it is not a credential. Same shape as
   `mcpDenialRequestsUnderReview` (`mcp_gate_test.go:1322`), which it replaces once the population
   matches.
@@ -494,3 +495,95 @@ darwin/arm64, one run, with `INPUT_ONLY` standing in for the annotation set.
 - **AIP-147** prescribes patterns, not an annotation: `INPUT_ONLY` plus `OUTPUT_ONLY bool
   <name>_set`. We follow it inconsistently — `ssl_ca_set` does, `directory_sync_token_configured`
   does not, and that field is in no tagged release yet.
+
+## Implementation
+
+- **Annotation** — `AuditBehavior` and `audit_behavior = 100010` in
+  `proto/v1/v1/annotation.proto`; 77 fields annotated across 17 service protos.
+  `OMIT` is defined as "must not be recorded, for any reason", which is the
+  reading the rest of this design assumes: it carries `User.phone`, `groups` and
+  `profile`, `MaskingReason.semantic_type_icon` and `AIChatRequest.messages`
+  alongside the bulk content fields, so deleting the ten rebuilds admits nothing
+  new.
+- **Redactor** — `backend/api/v1/audit_redact.go`. Plan per message type, cached
+  on descriptor identity, with `descend` arms holding the sub-descriptor rather
+  than a nested plan so a cycle is followed lazily to any depth; copy-and-share
+  by `Range`; maps and repeated messages rebuilt; `SENSITIVE` oneof arms blanked
+  and `OMIT` ones dropped. All 35 hand-written redactors are gone. With nothing
+  left to switch on, `getRequestString` and `getResponseString` collapse into one
+  `marshalAuditPayload`: the annotation says what to do with a field, and which
+  side of the call it arrived on does not change that. The hook point is
+  unchanged — it is still called from `createAuditLog`, not `WrapUnary`, which is
+  what keeps the streaming path covered. The row itself is **not** walked as a
+  whole: `service_data` and `status` are redacted where they are assigned, by
+  `redactAuditServiceData` and `redactAuditStatus`, and `request_metadata` and
+  `mcp_delegation` are assigned untouched because nothing under them is
+  annotated. `TestAuditRowNeedsNoRedactionBeyondTheAnyPayloads` asserts that
+  stays true.
+- **`Any` registry** — `backend/api/v1/audit_redact.go`, keyed by
+  destination field rather than by type, so `Status.details` and `service_data`
+  permit different things. `TestLintAuditAnyFieldsAreRegistered` enforces the
+  descriptor half: a new `Any` field reaching the row must name what may be
+  packed in it. The other half — a new type packed into an existing field —
+  changes no descriptor, so it is caught at runtime instead, by the `slog.Warn`
+  `redactPackedAny` emits naming the type it dropped.
+- **Coverage** — the redactor owes the row two things, and the tests are split
+  on that line rather than by message type, and both halves live in
+  `audit_redact_test.go`. `TestAuditRedactionCoversEveryAnnotatedField`
+  sweeps 567 annotated field paths across 321 request/response types, one
+  message per field so every oneof arm is exercised on its own rather than only
+  the last-numbered one — that is the whole of "the secret leaves", so the
+  hand-written per-credential tables that used to assert it by example are gone.
+  `TestAuditRowKeepsItsSubstance` in the same file is the other half
+  and has to stay hand-written: the sweep asserts absence, so a redactor that
+  blanked the entire row would pass it. Mutation-checked in both directions —
+  disabling redaction fails 91 subtests, replacing the output with an empty
+  message fails all 13 survival rows and leaves the sweep green.
+- **Inventory** — `audit_redact_inventory_test.go` holds the declaration lints,
+  as against `audit_redact_test.go` which tests the code: 866 recorded
+  `(message, string-or-bytes field)` pairs. Annotated fields are absent by
+  design, so the list reads as "what the audit row writes down" and a new
+  credential lands in it as one line of diff.
+- **Read path** — `assertNoInputOnlyValues` is generalized to
+  `assertNoSensitiveValues` (INPUT_ONLY ∪ SENSITIVE, traversing map values) and
+  runs unconditionally on the converters a test can construct. A static
+  call-graph lint over every `v1pb`-producing function in `backend/api/v1` was
+  prototyped and dropped: the read path is a different surface from the audit
+  row, and a Go AST check that reports a credential leak when a converter is
+  merely *renamed* is the wrong price to pay inside this change. If we want it,
+  it belongs in its own PR.
+- **Kept, not replaced** — `mcpDenialRequestsUnderReview` stays alongside the
+  inventory. It is per `(method, field)` and covers the message-typed request
+  fields the inventory's scalar scope does not: `DiffMetadata.target_metadata`
+  is a whole schema, and no string field names it.
+- **Deliberately not fail-open** — `AWSCredential.role_arn` and `external_id`
+  are annotated `SENSITIVE`. They are not credentials, and the Redaction section
+  above notes that deleting `redactIAMExtension` would start recording them;
+  annotating them keeps today's behavior instead of taking that trade silently.
+- **Widened on purpose, recorded here rather than discovered later** —
+  `redactDataSource` used to replace the whole `external_secret` submessage with
+  an empty one; only its credential leaves are annotated, so
+  `DataSourceExternalSecret`'s `url`, `engine_name`, `secret_name`,
+  `password_key_name`, `mount_path` and the type enums now reach the row. Those
+  say WHERE a secret lives, not what it is, and knowing which Vault path an
+  instance was pointed at is the kind of thing the row exists for — but a
+  customer's internal Vault endpoint and secret path are newly readable by
+  anyone with `bb.auditLogs.search`, so this is a sign-off, not a side effect.
+- **`QueryResult.messages` is `OMIT`** — the deleted `redactQueryResponse` was
+  an allowlist that predated the field, so it dropped it by omission. Engine
+  output (`RAISE NOTICE`, `PRINT`, `DBMS_OUTPUT`) is a result-data channel like
+  `rows`, and column masking does not reach it.
+- **`v1.AuditLog.service_data` is `OMIT`** — otherwise SearchAuditLogs' own
+  audit row unpacks, redacts and re-transcribes the before-image of every row
+  the caller read, which is the one place cost scaled with payload size.
+- **A SENSITIVE scalar with explicit presence is blanked, not dropped.** The
+  Redaction section above argues for blanking a oneof arm so the row still
+  records which credential was supplied; a proto3 `optional` credential is the
+  same question, and `LoginRequest.otp_code` is the case that matters — a failed
+  login has to stay distinguishable from one where no second factor was
+  presented. Non-optional scalars are still dropped, which protojson renders
+  identically.
+- **Still uncovered** — `Status.message`, exactly as the Redaction section says.
+  `idp_service.go:283` still interpolates an oauth2 error whose `Error()` can
+  embed the IdP's raw response body. It has no descriptor, so nothing here
+  reaches it; fixing it means deciding what that error should say instead.

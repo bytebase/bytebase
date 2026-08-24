@@ -3576,32 +3576,32 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\venvironment\x18\a \x01(\v2\x1f.bytebase.v1.EnvironmentSettingH\x00R\venvironment\x121\n" +
 	"\x05email\x18\b \x01(\v2\x19.bytebase.v1.EmailSettingH\x00R\x05email\x12+\n" +
 	"\x03mcp\x18\t \x01(\v2\x17.bytebase.v1.MCPSettingH\x00R\x03mcpB\a\n" +
-	"\x05value\"\x82\b\n" +
+	"\x05value\"\x9a\b\n" +
 	"\fAppIMSetting\x12?\n" +
-	"\bsettings\x18\x01 \x03(\v2#.bytebase.v1.AppIMSetting.IMSettingR\bsettings\x1a\"\n" +
-	"\x05Slack\x12\x19\n" +
-	"\x05token\x18\x01 \x01(\tB\x03\xe0A\x04R\x05token\x1aH\n" +
+	"\bsettings\x18\x01 \x03(\v2#.bytebase.v1.AppIMSetting.IMSettingR\bsettings\x1a&\n" +
+	"\x05Slack\x12\x1d\n" +
+	"\x05token\x18\x01 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\x05token\x1aL\n" +
 	"\x06Feishu\x12\x1a\n" +
-	"\x06app_id\x18\x01 \x01(\tB\x03\xe0A\x04R\x05appId\x12\"\n" +
+	"\x06app_id\x18\x01 \x01(\tB\x03\xe0A\x04R\x05appId\x12&\n" +
 	"\n" +
-	"app_secret\x18\x02 \x01(\tB\x03\xe0A\x04R\tappSecret\x1ab\n" +
+	"app_secret\x18\x02 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\tappSecret\x1af\n" +
 	"\x05Wecom\x12\x1c\n" +
 	"\acorp_id\x18\x01 \x01(\tB\x03\xe0A\x04R\x06corpId\x12\x1e\n" +
-	"\bagent_id\x18\x02 \x01(\tB\x03\xe0A\x04R\aagentId\x12\x1b\n" +
-	"\x06secret\x18\x03 \x01(\tB\x03\xe0A\x04R\x06secret\x1aF\n" +
+	"\bagent_id\x18\x02 \x01(\tB\x03\xe0A\x04R\aagentId\x12\x1f\n" +
+	"\x06secret\x18\x03 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\x06secret\x1aJ\n" +
 	"\x04Lark\x12\x1a\n" +
-	"\x06app_id\x18\x01 \x01(\tB\x03\xe0A\x04R\x05appId\x12\"\n" +
+	"\x06app_id\x18\x01 \x01(\tB\x03\xe0A\x04R\x05appId\x12&\n" +
 	"\n" +
-	"app_secret\x18\x02 \x01(\tB\x03\xe0A\x04R\tappSecret\x1az\n" +
+	"app_secret\x18\x02 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\tappSecret\x1a~\n" +
 	"\bDingTalk\x12 \n" +
-	"\tclient_id\x18\x01 \x01(\tB\x03\xe0A\x04R\bclientId\x12(\n" +
-	"\rclient_secret\x18\x02 \x01(\tB\x03\xe0A\x04R\fclientSecret\x12\"\n" +
+	"\tclient_id\x18\x01 \x01(\tB\x03\xe0A\x04R\bclientId\x12,\n" +
+	"\rclient_secret\x18\x02 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\fclientSecret\x12\"\n" +
 	"\n" +
-	"robot_code\x18\x03 \x01(\tB\x03\xe0A\x04R\trobotCode\x1au\n" +
+	"robot_code\x18\x03 \x01(\tB\x03\xe0A\x04R\trobotCode\x1ay\n" +
 	"\x05Teams\x12 \n" +
 	"\ttenant_id\x18\x01 \x01(\tB\x03\xe0A\x04R\btenantId\x12 \n" +
-	"\tclient_id\x18\x02 \x01(\tB\x03\xe0A\x04R\bclientId\x12(\n" +
-	"\rclient_secret\x18\x03 \x01(\tB\x03\xe0A\x04R\fclientSecret\x1a\xa3\x03\n" +
+	"\tclient_id\x18\x02 \x01(\tB\x03\xe0A\x04R\bclientId\x12,\n" +
+	"\rclient_secret\x18\x03 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\fclientSecret\x1a\xa3\x03\n" +
 	"\tIMSetting\x12,\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x18.bytebase.v1.WebhookTypeR\x04type\x127\n" +
 	"\x05slack\x18\x02 \x01(\v2\x1f.bytebase.v1.AppIMSetting.SlackH\x00R\x05slack\x12:\n" +
@@ -3743,12 +3743,12 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x15MASK_TYPE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05INNER\x10\x01\x12\t\n" +
 	"\x05OUTER\x10\x02B\x06\n" +
-	"\x04mask\"\xa4\x02\n" +
+	"\x04mask\"\xaa\x02\n" +
 	"\tAISetting\x12\x18\n" +
 	"\aenabled\x18\x01 \x01(\bR\aenabled\x12;\n" +
 	"\bprovider\x18\x02 \x01(\x0e2\x1f.bytebase.v1.AISetting.ProviderR\bprovider\x12\x1a\n" +
-	"\bendpoint\x18\x03 \x01(\tR\bendpoint\x12\x17\n" +
-	"\aapi_key\x18\x04 \x01(\tR\x06apiKey\x12\x14\n" +
+	"\bendpoint\x18\x03 \x01(\tR\bendpoint\x12\x1d\n" +
+	"\aapi_key\x18\x04 \x01(\tB\x04\xd0\xea0\x01R\x06apiKey\x12\x14\n" +
 	"\x05model\x18\x05 \x01(\tR\x05model\x12\x18\n" +
 	"\aversion\x18\x06 \x01(\tR\aversion\"[\n" +
 	"\bProvider\x12\x18\n" +
@@ -3769,18 +3769,18 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x05color\x18\x05 \x01(\v2\x12.google.type.ColorR\x05color\x1a7\n" +
 	"\tTagsEntry\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xcc\x05\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01\"\xd0\x05\n" +
 	"\fEmailSetting\x12\x12\n" +
 	"\x04from\x18\x01 \x01(\tR\x04from\x12\x1b\n" +
 	"\tfrom_name\x18\x02 \x01(\tR\bfromName\x122\n" +
 	"\x04type\x18\x03 \x01(\x0e2\x1e.bytebase.v1.EmailSetting.TypeR\x04type\x12:\n" +
-	"\x04smtp\x18\x04 \x01(\v2$.bytebase.v1.EmailSetting.SMTPConfigH\x00R\x04smtp\x1a\xe8\x03\n" +
+	"\x04smtp\x18\x04 \x01(\v2$.bytebase.v1.EmailSetting.SMTPConfigH\x00R\x04smtp\x1a\xec\x03\n" +
 	"\n" +
 	"SMTPConfig\x12\x12\n" +
 	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\x02 \x01(\x05R\x04port\x12\x1a\n" +
-	"\busername\x18\x03 \x01(\tR\busername\x12\x1f\n" +
-	"\bpassword\x18\x04 \x01(\tB\x03\xe0A\x04R\bpassword\x12O\n" +
+	"\busername\x18\x03 \x01(\tR\busername\x12#\n" +
+	"\bpassword\x18\x04 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\bpassword\x12O\n" +
 	"\n" +
 	"encryption\x18\x05 \x01(\x0e2/.bytebase.v1.EmailSetting.SMTPConfig.EncryptionR\n" +
 	"encryption\x12[\n" +

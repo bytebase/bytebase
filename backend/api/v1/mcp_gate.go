@@ -314,7 +314,8 @@ func mcpSettingsFromContext(ctx context.Context) (store.MCPSettings, bool) {
 // EXCLUDED ones — and TestEmailSetting and TestIdentityProvider are the rows an
 // operator would most want, since each would have carried a stored secret to an
 // address the agent chose. Recording requests that were never recorded is why
-// getRequestString grew redactors in the same change (audit.go).
+// redaction has to cover more than the audited RPCs (audit.go): a denial must
+// not transcribe the secret it refused.
 //
 // A ceiling the gate cannot act on splits in two, and the split is the same one
 // the /mcp connection gate makes. A stored value this build cannot interpret —

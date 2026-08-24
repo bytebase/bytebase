@@ -4,10 +4,12 @@
 ## Table of Contents
 
 - [v1/annotation.proto](#v1_annotation-proto)
+    - [AuditBehavior](#bytebase-v1-AuditBehavior)
     - [AuthMethod](#bytebase-v1-AuthMethod)
     - [MCPDenialReason](#bytebase-v1-MCPDenialReason)
     - [MCPMethodClass](#bytebase-v1-MCPMethodClass)
   
+    - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
     - [File-level Extensions](#v1_annotation-proto-extensions)
@@ -33,6 +35,7 @@
 - [v1/actuator_service.proto](#v1_actuator_service-proto)
     - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
+    - [SampleInfo](#bytebase-v1-SampleInfo)
     - [SetupSampleRequest](#bytebase-v1-SetupSampleRequest)
   
     - [ActuatorService](#bytebase-v1-ActuatorService)
@@ -807,6 +810,20 @@
  
 
 
+<a name="bytebase-v1-AuditBehavior"></a>
+
+### AuditBehavior
+What an audit payload may carry for a field. One enum rather than a bool per
+behavior, because a field has exactly one classification.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AUDIT_BEHAVIOR_UNSPECIFIED | 0 | Recorded as sent. This is a denylist default, so an unannotated secret is written; the inventory lint turns that into a build failure. |
+| SENSITIVE | 1 | A credential. It must not reach an audit payload, and the API may return it only on the response that mints it — never on a read path. |
+| OMIT | 2 | Must not be recorded, for any reason other than being a credential: unbounded bodies, base64 blobs, bearer capabilities, and personal data. Unlike SENSITIVE it says nothing about the API contract. |
+
+
+
 <a name="bytebase-v1-AuthMethod"></a>
 
 ### AuthMethod
@@ -894,6 +911,7 @@ The line against FORBIDDEN is reversibility. An admin-capable ceiling, if one is
 ### File-level Extensions
 | Extension | Type | Base | Number | Description |
 | --------- | ---- | ---- | ------ | ----------- |
+| audit_behavior | AuditBehavior | .google.protobuf.FieldOptions | 100010 | How the audit log treats this field. |
 | allow_without_credential | bool | .google.protobuf.MethodOptions | 100000 | Whether the method allows access without authentication credentials. |
 | audit | bool | .google.protobuf.MethodOptions | 100003 | Whether to audit calls to this method. |
 | auth_method | AuthMethod | .google.protobuf.MethodOptions | 100002 | The authorization method to use for this RPC. |
@@ -1141,12 +1159,12 @@ Actuator concept is similar to the Spring Boot Actuator.
 | unlicensed_features | [string](#string) | repeated | List of features that are not licensed. |
 | activated_instance_count | [int32](#int32) |  | The number of activated database instances. |
 | total_instance_count | [int32](#int32) |  | The total number of database instances. |
-| enable_sample | [bool](#bool) |  | Whether sample data setup is enabled. |
 | external_url_from_flag | [bool](#bool) |  | Whether the external URL is set via command-line flag (and thus cannot be changed via UI). |
 | replica_count | [int32](#int32) |  | The number of active replicas (servers sharing the same database). |
 | default_project | [string](#string) |  | The default project for unassigned databases. Format: projects/{id} |
 | user_count_in_iam | [int32](#int32) |  | The number of users in the workspace IAM (for seat limit display). |
 | active_vcs_user_count | [int32](#int32) |  | The number of active VCS users seen in the active window. |
+| sample | [SampleInfo](#bytebase-v1-SampleInfo) |  | Sample setup availability and provisioned resources. |
 
 
 
@@ -1157,6 +1175,23 @@ Actuator concept is similar to the Spring Boot Actuator.
 
 ### GetActuatorInfoRequest
 Request message for getting actuator information.
+
+
+
+
+
+
+<a name="bytebase-v1-SampleInfo"></a>
+
+### SampleInfo
+SampleInfo describes sample setup availability and provisioned resources.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| available | [bool](#bool) |  | Whether sample setup is currently available. |
+| instances | [string](#string) | repeated | The provisioned sample instances. Format: instances/{instance} |
+| expire_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time when the provisioned sample resources expire. |
 
 
 
@@ -5530,7 +5565,6 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | email | [string](#string) |  | The email address of the user, used for login and notifications. |
 | title | [string](#string) |  | The display title or full name of the user. |
 | password | [string](#string) |  | The password for authentication. Only used during user creation or password updates. |
-| service_key | [string](#string) |  | The service key for service account authentication. |
 | mfa_enabled | [bool](#bool) |  | The mfa_enabled flag means if the user has enabled MFA. |
 | temp_otp_secret | [string](#string) |  | Temporary OTP secret used during MFA setup and regeneration. |
 | temp_recovery_codes | [string](#string) | repeated | Temporary recovery codes used during MFA setup and regeneration. |
@@ -12117,7 +12151,7 @@ PlanLimitConfig represents a single plan&#39;s configuration
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| session_id | [string](#string) |  |  |
+| session_id | [string](#string) |  | The same Stripe Checkout Session ID PurchaseResponse mints, arriving back the other way, so it carries the same classification. VerifyCheckoutSession is EXCLUDED, and the MCP gate records a row for every method it refuses, so leaving this unannotated would write the id into a denial row while the response that produced it was redacted. |
 
 
 

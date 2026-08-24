@@ -8386,10 +8386,6 @@ components:
           title: total_instance_count
           format: int32
           description: The total number of database instances.
-        enableSample:
-          type: boolean
-          title: enable_sample
-          description: Whether sample data setup is enabled.
         externalUrlFromFlag:
           type: boolean
           title: external_url_from_flag
@@ -8415,6 +8411,10 @@ components:
           title: active_vcs_user_count
           format: int32
           description: The number of active VCS users seen in the active window.
+        sample:
+          title: sample
+          description: Sample setup availability and provisioned resources.
+          $ref: '#/components/schemas/bytebase.v1.SampleInfo'
       title: ActuatorInfo
       additionalProperties: false
       description: |-
@@ -8905,6 +8905,16 @@ components:
           description: The comment explaining the approval decision.
       title: ApproveIssueRequest
       additionalProperties: false
+    bytebase.v1.AuditBehavior:
+      type: string
+      title: AuditBehavior
+      enum:
+        - AUDIT_BEHAVIOR_UNSPECIFIED
+        - SENSITIVE
+        - OMIT
+      description: |-
+        What an audit payload may carry for a field. One enum rather than a bool per
+         behavior, because a field has exactly one classification.
     bytebase.v1.AuditData:
       type: object
       properties:
@@ -18123,6 +18133,28 @@ components:
         - BUILTIN_WALK_THROUGH_CHECK
         - STATEMENT_DISALLOW_TRUNCATE
         - BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE
+    bytebase.v1.SampleInfo:
+      type: object
+      properties:
+        available:
+          type: boolean
+          title: available
+          description: Whether sample setup is currently available.
+        instances:
+          type: array
+          items:
+            type: string
+          title: instances
+          description: |-
+            The provisioned sample instances.
+             Format: instances/{instance}
+        expireTime:
+          title: expire_time
+          description: The time when the provisioned sample resources expire.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+      title: SampleInfo
+      additionalProperties: false
+      description: SampleInfo describes sample setup availability and provisioned resources.
     bytebase.v1.SavedQuery:
       type: object
       properties:
@@ -21339,10 +21371,6 @@ components:
           type: string
           title: password
           description: The password for authentication. Only used during user creation or password updates.
-        serviceKey:
-          type: string
-          title: service_key
-          description: The service key for service account authentication.
         mfaEnabled:
           type: boolean
           title: mfa_enabled
@@ -21437,6 +21465,12 @@ components:
         sessionId:
           type: string
           title: session_id
+          description: |-
+            The same Stripe Checkout Session ID PurchaseResponse mints, arriving back
+             the other way, so it carries the same classification. VerifyCheckoutSession
+             is EXCLUDED, and the MCP gate records a row for every method it refuses, so
+             leaving this unannotated would write the id into a denial row while the
+             response that produced it was redacted.
       title: VerifyCheckoutSessionRequest
       additionalProperties: false
     bytebase.v1.VerifyCheckoutSessionResponse:

@@ -192,7 +192,7 @@ message LoginRequest {
   string email = 1;
 
   // User's password for authentication.
-  string password = 2;
+  string password = 2 [(bytebase.v1.audit_behavior) = SENSITIVE];
 
   // If true, sets access token and refresh token as HTTP-only cookies instead of
   // returning the token in the response body. Use for browser-based clients.
@@ -206,17 +206,17 @@ message LoginRequest {
   IdentityProviderContext idp_context = 5;
 
   // The otp_code is used to verify the user's identity by MFA.
-  optional string otp_code = 6;
+  optional string otp_code = 6 [(bytebase.v1.audit_behavior) = SENSITIVE];
 
   // The recovery_code is used to recovery the user's identity with MFA.
-  optional string recovery_code = 7;
+  optional string recovery_code = 7 [(bytebase.v1.audit_behavior) = SENSITIVE];
 
   // The mfa_temp_token is used to verify the user's identity by MFA.
-  optional string mfa_temp_token = 8;
+  optional string mfa_temp_token = 8 [(bytebase.v1.audit_behavior) = SENSITIVE];
 
   // 6-digit code from email for passwordless login/signup.
   // Pairs with `email`. Mutually exclusive with `password` and `idp_name`.
-  optional string email_code = 9;
+  optional string email_code = 9 [(bytebase.v1.audit_behavior) = SENSITIVE];
 
   // Preferred workspace to land in after login. If the user is a member of this
   // workspace, the token is issued for it; otherwise falls back to the default
@@ -239,22 +239,22 @@ message IdentityProviderContext {
 // OAuth2 authentication context.
 message OAuth2IdentityProviderContext {
   // Authorization code from OAuth2 provider.
-  string code = 1;
+  string code = 1 [(bytebase.v1.audit_behavior) = SENSITIVE];
 }
 
 // OpenID Connect authentication context.
 message OIDCIdentityProviderContext {
   // Authorization code from OIDC provider.
-  string code = 1;
+  string code = 1 [(bytebase.v1.audit_behavior) = SENSITIVE];
 }
 
 message LoginResponse {
   // Access token for authenticated requests.
   // Only returned when web=false. For web=true, the token is set as an HTTP-only cookie.
-  string token = 1;
+  string token = 1 [(bytebase.v1.audit_behavior) = SENSITIVE];
 
   // Temporary token for MFA verification.
-  optional string mfa_temp_token = 2;
+  optional string mfa_temp_token = 2 [(bytebase.v1.audit_behavior) = SENSITIVE];
 
   // Whether user must reset password before continuing.
   bool require_reset_password = 3;
@@ -268,7 +268,7 @@ message LogoutRequest {}
 
 message ExchangeTokenRequest {
   // External OIDC token (JWT) from CI/CD platform.
-  string token = 1;
+  string token = 1 [(bytebase.v1.audit_behavior) = SENSITIVE];
 
   // Workload Identity email for identifying which identity to authenticate as.
   // Format: {name}@workload.bytebase.com
@@ -277,7 +277,7 @@ message ExchangeTokenRequest {
 
 message ExchangeTokenResponse {
   // Bytebase access token.
-  string access_token = 1;
+  string access_token = 1 [(bytebase.v1.audit_behavior) = SENSITIVE];
 }
 
 message SignupRequest {
@@ -285,7 +285,7 @@ message SignupRequest {
   string email = 1;
 
   // The password for the new account.
-  string password = 2;
+  string password = 2 [(bytebase.v1.audit_behavior) = SENSITIVE];
 
   // The display name of the user.
   string title = 3;
@@ -311,9 +311,9 @@ message ResetPasswordRequest {
   // The email address of the account.
   string email = 1;
   // The 6-digit code from the reset email.
-  string code = 2;
+  string code = 2 [(bytebase.v1.audit_behavior) = SENSITIVE];
   // The new password to set.
-  string new_password = 3;
+  string new_password = 3 [(bytebase.v1.audit_behavior) = SENSITIVE];
 }
 
 message SendEmailLoginCodeRequest {
@@ -335,11 +335,11 @@ message SwitchWorkspaceRequest {
   bool web = 2;
 
   // OTP code for MFA verification. Required if the target workspace enforces MFA.
-  optional string otp_code = 3;
+  optional string otp_code = 3 [(bytebase.v1.audit_behavior) = SENSITIVE];
 
   // Recovery code for MFA verification (alternative to otp_code).
-  optional string recovery_code = 4;
+  optional string recovery_code = 4 [(bytebase.v1.audit_behavior) = SENSITIVE];
 
   // Temporary MFA token from a previous SwitchWorkspace call that returned mfa_temp_token.
-  optional string mfa_temp_token = 5;
+  optional string mfa_temp_token = 5 [(bytebase.v1.audit_behavior) = SENSITIVE];
 }

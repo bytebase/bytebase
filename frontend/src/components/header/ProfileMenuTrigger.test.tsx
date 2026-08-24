@@ -134,7 +134,7 @@ vi.mock("@/hooks/useAppState", () => ({
     email: "alice@example.com",
   }),
   useServerInfo: () => ({
-    enableSample: true,
+    sample: { available: true },
     userCountInIam: 1,
   }),
   useSubscription: () => ({

@@ -1450,14 +1450,14 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"\x0eoauth2_context\x18\x02 \x01(\v25.bytebase.v1.OAuth2IdentityProviderTestRequestContextH\x00R\roauth2Context\x12X\n" +
 	"\foidc_context\x18\x03 \x01(\v23.bytebase.v1.OIDCIdentityProviderTestRequestContextH\x00R\voidcContext\x12X\n" +
 	"\fldap_context\x18\x04 \x01(\v23.bytebase.v1.LDAPIdentityProviderTestRequestContextH\x00R\vldapContextB\t\n" +
-	"\acontext\">\n" +
-	"(OAuth2IdentityProviderTestRequestContext\x12\x12\n" +
-	"\x04code\x18\x01 \x01(\tR\x04code\"<\n" +
-	"&OIDCIdentityProviderTestRequestContext\x12\x12\n" +
-	"\x04code\x18\x01 \x01(\tR\x04code\"`\n" +
+	"\acontext\"D\n" +
+	"(OAuth2IdentityProviderTestRequestContext\x12\x18\n" +
+	"\x04code\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\x04code\"B\n" +
+	"&OIDCIdentityProviderTestRequestContext\x12\x18\n" +
+	"\x04code\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\x04code\"f\n" +
 	"&LDAPIdentityProviderTestRequestContext\x12\x1a\n" +
-	"\busername\x18\x01 \x01(\tR\busername\x12\x1a\n" +
-	"\bpassword\x18\x02 \x01(\tR\bpassword\"\xbb\x02\n" +
+	"\busername\x18\x01 \x01(\tR\busername\x12 \n" +
+	"\bpassword\x18\x02 \x01(\tB\x04\xd0\xea0\x01R\bpassword\"\xbb\x02\n" +
 	"\x1cTestIdentityProviderResponse\x12M\n" +
 	"\x06claims\x18\x01 \x03(\v25.bytebase.v1.TestIdentityProviderResponse.ClaimsEntryR\x06claims\x12T\n" +
 	"\tuser_info\x18\x02 \x03(\v27.bytebase.v1.TestIdentityProviderResponse.UserInfoEntryR\buserInfo\x1a9\n" +
@@ -1481,34 +1481,34 @@ const file_v1_idp_service_proto_rawDesc = "" +
 	"oidcConfig\x12J\n" +
 	"\vldap_config\x18\x03 \x01(\v2'.bytebase.v1.LDAPIdentityProviderConfigH\x00R\n" +
 	"ldapConfigB\b\n" +
-	"\x06config\"\xf9\x02\n" +
+	"\x06config\"\xff\x02\n" +
 	"\x1cOAuth2IdentityProviderConfig\x12\x19\n" +
 	"\bauth_url\x18\x01 \x01(\tR\aauthUrl\x12\x1b\n" +
 	"\ttoken_url\x18\x02 \x01(\tR\btokenUrl\x12\"\n" +
 	"\ruser_info_url\x18\x03 \x01(\tR\vuserInfoUrl\x12\x1b\n" +
-	"\tclient_id\x18\x04 \x01(\tR\bclientId\x12#\n" +
-	"\rclient_secret\x18\x05 \x01(\tR\fclientSecret\x12\x16\n" +
+	"\tclient_id\x18\x04 \x01(\tR\bclientId\x12)\n" +
+	"\rclient_secret\x18\x05 \x01(\tB\x04\xd0\xea0\x01R\fclientSecret\x12\x16\n" +
 	"\x06scopes\x18\x06 \x03(\tR\x06scopes\x12>\n" +
 	"\rfield_mapping\x18\a \x01(\v2\x19.bytebase.v1.FieldMappingR\ffieldMapping\x12&\n" +
 	"\x0fskip_tls_verify\x18\b \x01(\bR\rskipTlsVerify\x12;\n" +
 	"\n" +
-	"auth_style\x18\t \x01(\x0e2\x1c.bytebase.v1.OAuth2AuthStyleR\tauthStyle\"\xdd\x02\n" +
+	"auth_style\x18\t \x01(\x0e2\x1c.bytebase.v1.OAuth2AuthStyleR\tauthStyle\"\xe3\x02\n" +
 	"\x1aOIDCIdentityProviderConfig\x12\x16\n" +
 	"\x06issuer\x18\x01 \x01(\tR\x06issuer\x12\x1b\n" +
-	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12#\n" +
-	"\rclient_secret\x18\x03 \x01(\tR\fclientSecret\x12\x16\n" +
+	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12)\n" +
+	"\rclient_secret\x18\x03 \x01(\tB\x04\xd0\xea0\x01R\fclientSecret\x12\x16\n" +
 	"\x06scopes\x18\x04 \x03(\tR\x06scopes\x12>\n" +
 	"\rfield_mapping\x18\x05 \x01(\v2\x19.bytebase.v1.FieldMappingR\ffieldMapping\x12&\n" +
 	"\x0fskip_tls_verify\x18\x06 \x01(\bR\rskipTlsVerify\x12;\n" +
 	"\n" +
 	"auth_style\x18\a \x01(\x0e2\x1c.bytebase.v1.OAuth2AuthStyleR\tauthStyle\x12(\n" +
-	"\rauth_endpoint\x18\b \x01(\tB\x03\xe0A\x03R\fauthEndpoint\"\xdc\x03\n" +
+	"\rauth_endpoint\x18\b \x01(\tB\x03\xe0A\x03R\fauthEndpoint\"\xe2\x03\n" +
 	"\x1aLDAPIdentityProviderConfig\x12\x12\n" +
 	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\x02 \x01(\x05R\x04port\x12&\n" +
 	"\x0fskip_tls_verify\x18\x03 \x01(\bR\rskipTlsVerify\x12\x17\n" +
-	"\abind_dn\x18\x04 \x01(\tR\x06bindDn\x12#\n" +
-	"\rbind_password\x18\x05 \x01(\tR\fbindPassword\x12\x17\n" +
+	"\abind_dn\x18\x04 \x01(\tR\x06bindDn\x12)\n" +
+	"\rbind_password\x18\x05 \x01(\tB\x04\xd0\xea0\x01R\fbindPassword\x12\x17\n" +
 	"\abase_dn\x18\x06 \x01(\tR\x06baseDn\x12\x1f\n" +
 	"\vuser_filter\x18\a \x01(\tR\n" +
 	"userFilter\x12e\n" +

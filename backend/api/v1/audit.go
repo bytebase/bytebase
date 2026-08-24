@@ -11,7 +11,6 @@ import (
 	"connectrpc.com/connect"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/anypb"
 	"google.golang.org/protobuf/types/known/durationpb"
 
@@ -29,9 +28,10 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// used for replacing sensitive fields.
-var (
-	maskedString string
+const (
+	// unencodablePayload stands in for a payload protojson refused, so the row
+	// records that something was there and could not be written down.
+	unencodablePayload = `{"_bytebase":"payload could not be encoded"}`
 )
 
 // AuditInterceptor is the v1 audit interceptor for gRPC server.
@@ -82,10 +82,12 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 		// and a refused agent is interesting either way. Only the internal MCP
 		// chain runs the gate, so the public chain is unaffected.
 		//
-		// Recording a request that was never recorded is why getRequestString
-		// grew redactors below: a denial must not transcribe the secret it
-		// refused. The rule for a new one is the population above, not the four
-		// named methods.
+		// Recording a request that was never recorded is why redaction has to
+		// cover more than the audited RPCs: a denial must not transcribe the
+		// secret it refused. Since redaction is driven by the field annotation
+		// rather than by a per-RPC redactor, a gate-refused method is covered
+		// the moment its fields are annotated — the population is the one above,
+		// not the four named methods.
 		mcpPolicyDenied := false
 		ctx = common.WithSetMCPPolicyDenied(ctx, func() { mcpPolicyDenied = true })
 
@@ -231,14 +233,8 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 		return nil
 	}
 
-	requestString, err := getRequestString(e.request)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get request string")
-	}
-	responseString, err := getResponseString(e.response)
-	if err != nil {
-		return errors.Wrapf(err, "failed to get response string")
-	}
+	requestString := marshalAuditPayload(e.request)
+	responseString := marshalAuditPayload(e.response)
 
 	var user string
 	if u, ok := GetUserFromContext(ctx); ok {
@@ -343,6 +339,23 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 		}
 	}
 
+	// service_data and status.details are the only fields on the row that need
+	// redacting, and neither passes marshalAuditPayload. Both carry
+	// google.protobuf.Any values whose packed type the descriptor cannot see:
+	// service_data holds a before-image Setting or an IAM policy delta, and
+	// status.details holds whatever a failing handler attached.
+	//
+	// The rest of the row is left alone deliberately. request_metadata and
+	// mcp_delegation are ordinary store messages with nothing annotated under
+	// them, and request and response are already redacted strings.
+	// TestAuditRowNeedsNoRedactionBeyondTheAnyPayloads fails if that stops
+	// being true.
+	//
+	// Computed once: none of the three varies by parent.
+	serviceData := redactAuditServiceData(e.serviceData)
+	auditStatus := redactAuditStatus(convertErrToStatus(e.rerr))
+	mcpDelegation := mcpDelegationFromAuthContext(authContext)
+
 	createAuditLogCtx := context.WithoutCancel(ctx)
 	for _, ap := range parents {
 		resource := getRequestResource(e.request, e.method)
@@ -367,11 +380,11 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 			User:            user,
 			Request:         requestString,
 			Response:        responseString,
-			Status:          convertErrToStatus(e.rerr),
+			Status:          auditStatus,
 			Latency:         durationpb.New(e.latency),
-			ServiceData:     e.serviceData,
+			ServiceData:     serviceData,
 			RequestMetadata: requestMetadata,
-			McpDelegation:   mcpDelegationFromAuthContext(authContext),
+			McpDelegation:   mcpDelegation,
 		}
 		// Resolve workspace for audit log.
 		workspaceIDForAudit := ap.auditWorkspaceID
@@ -460,843 +473,44 @@ func getRequestResource(request any, method string) string {
 	return getResourceFromSingleRequest(message.ProtoReflect(), shortMethod)
 }
 
-func getRequestString(request any) (string, error) {
-	m := func() protoreflect.ProtoMessage {
-		if request == nil || reflect.ValueOf(request).IsNil() {
-			return nil
-		}
-		if redacted, ok := redactMCPDenialRequest(request); ok {
-			return redacted
-		}
-		switch r := request.(type) {
-		case *v1pb.ExportRequest:
-			return redactExportRequest(r)
-		case *v1pb.CreateUserRequest:
-			return redactCreateUserRequest(r)
-		case *v1pb.UpdateUserRequest:
-			return redactUpdateUserRequest(r)
-		case *v1pb.LoginRequest:
-			return redactLoginRequest(r)
-		case *v1pb.SignupRequest:
-			return redactSignupRequest(r)
-		case *v1pb.ExchangeTokenRequest:
-			return redactExchangeTokenRequest(r)
-		case *v1pb.ResetPasswordRequest:
-			return redactResetPasswordRequest(r)
-		case *v1pb.UploadLicenseRequest:
-			return redactUploadLicenseRequest(r)
-		case *v1pb.CreateProjectRequest:
-			r = proto.CloneOf(r)
-			r.Project = redactProject(r.Project)
-			return r
-		case *v1pb.UpdateProjectRequest:
-			r = proto.CloneOf(r)
-			r.Project = redactProject(r.Project)
-			return r
-		case *v1pb.AddWebhookRequest:
-			r = proto.CloneOf(r)
-			r.Webhook = redactWebhook(r.Webhook)
-			return r
-		case *v1pb.UpdateWebhookRequest:
-			r = proto.CloneOf(r)
-			r.Webhook = redactWebhook(r.Webhook)
-			return r
-		case *v1pb.RemoveWebhookRequest:
-			r = proto.CloneOf(r)
-			r.Webhook = redactWebhook(r.Webhook)
-			return r
-		case *v1pb.CreateReleaseRequest:
-			r = proto.CloneOf(r)
-			r.Release = redactRelease(r.Release)
-			return r
-		case *v1pb.UpdateReleaseRequest:
-			r = proto.CloneOf(r)
-			r.Release = redactRelease(r.Release)
-			return r
-		case *v1pb.CreateSavedQueryRequest:
-			r = proto.CloneOf(r)
-			r.SavedQuery = redactSavedQuery(r.SavedQuery)
-			return r
-		case *v1pb.UpdateSavedQueryRequest:
-			r = proto.CloneOf(r)
-			r.SavedQuery = redactSavedQuery(r.SavedQuery)
-			return r
-
-		case *v1pb.CreateInstanceRequest:
-			r = proto.CloneOf(r)
-			r.Instance = redactInstance(r.Instance)
-			return r
-		case *v1pb.UpdateInstanceRequest:
-			r = proto.CloneOf(r)
-			r.Instance = redactInstance(r.Instance)
-			return r
-		case *v1pb.BatchUpdateInstancesRequest:
-			r = proto.CloneOf(r)
-			for _, ur := range r.Requests {
-				ur.Instance = redactInstance(ur.Instance)
-			}
-			return r
-		case *v1pb.AddDataSourceRequest:
-			r = proto.CloneOf(r)
-			r.DataSource = redactDataSource(r.DataSource)
-			return r
-		case *v1pb.UpdateDataSourceRequest:
-			r = proto.CloneOf(r)
-			r.DataSource = redactDataSource(r.DataSource)
-			return r
-		case *v1pb.RemoveDataSourceRequest:
-			r = proto.CloneOf(r)
-			r.DataSource = redactDataSource(r.DataSource)
-			return r
-		case *v1pb.UpdateSettingRequest:
-			r = proto.CloneOf(r)
-			r.Setting = redactSetting(r.Setting)
-			return r
-		case *v1pb.CreateIdentityProviderRequest:
-			r = proto.CloneOf(r)
-			r.IdentityProvider = redactIdentityProvider(r.IdentityProvider)
-			return r
-		case *v1pb.CreateSheetRequest:
-			// The clone is already private; drop the content in place instead
-			// of cloning the potentially large sheet a second time.
-			r = proto.CloneOf(r)
-			if r.Sheet != nil {
-				r.Sheet.Content = nil
-			}
-			return r
-		case *v1pb.BatchCreateSheetsRequest:
-			r = proto.CloneOf(r)
-			for _, cr := range r.Requests {
-				if cr.Sheet != nil {
-					cr.Sheet.Content = nil
-				}
-			}
-			return r
-		case *v1pb.UpdateIdentityProviderRequest:
-			r = proto.CloneOf(r)
-			r.IdentityProvider = redactIdentityProvider(r.IdentityProvider)
-			return r
-		default:
-			if p, ok := r.(protoreflect.ProtoMessage); ok {
-				return p
-			}
-			return nil
-		}
-	}()
-	if m == nil {
-		return "", nil
+// marshalAuditPayload renders one side of an audited call. Redaction is driven
+// by the (bytebase.v1.audit_behavior) annotation on the message's own
+// descriptor — see audit_redact.go — so nothing here switches on a type, and a
+// field is protected on every RPC that carries it rather than on the ones
+// someone wrote a redactor for.
+//
+// One function for both directions: the annotation says what to do with a
+// field, and which side of the call it arrived on does not change that. It is
+// called from createAuditLog rather than from WrapUnary because the streaming
+// path builds its own auditEntry and calls createAuditLog directly, so a walk
+// that lived in the unary interceptor would skip AdminExecute entirely.
+func marshalAuditPayload(payload any) string {
+	if payload == nil {
+		return ""
 	}
-
-	b, err := protojson.Marshal(m)
+	// IsNil panics on a kind that cannot be nil, and Receive/Send stash
+	// whatever the stream hands them, so the kind is checked first.
+	if value := reflect.ValueOf(payload); value.Kind() == reflect.Pointer && value.IsNil() {
+		return ""
+	}
+	message, ok := payload.(proto.Message)
+	if !ok {
+		return ""
+	}
+	b, err := protojson.Marshal(redactForAudit(message))
 	if err != nil {
-		return "", err
-	}
-	return string(b), nil
-}
-
-// redactMCPDenialRequest handles the requests that reach the audit log only
-// because MCP denials are recorded. The methods themselves are unaudited; what
-// arrives here is a refusal, and a refusal that transcribed the secret it
-// refused would be worse than the silence it replaced. Every secret masked here
-// is already masked on a sibling method that has always been audited.
-//
-// It is a function rather than six more arms of getRequestString's switch
-// because it is one population with one reason for existing, and that reason is
-// worth stating once where a reader can find it.
-//
-// Which six is not a judgment to repeat by eye — the first pass of it missed
-// ListInstanceDatabase, whose request carries a whole Instance and therefore
-// every data-source credential the product has. The population is derived from
-// the descriptors instead, and TestLintDenialRequestsAreReviewedForRedaction
-// fails when a method joins it.
-//
-// The bool reports whether this was one of them, so an unrelated request falls
-// through to the main switch untouched.
-func redactMCPDenialRequest(request any) (protoreflect.ProtoMessage, bool) {
-	switch r := request.(type) {
-	case *v1pb.TestWebhookRequest:
-		r = proto.CloneOf(r)
-		r.Webhook = redactWebhook(r.Webhook)
-		return r, true
-	case *v1pb.TestEmailSettingRequest:
-		r = proto.CloneOf(r)
-		r.EmailSetting = redactEmailSetting(r.EmailSetting)
-		return r, true
-	case *v1pb.TestIdentityProviderRequest:
-		return redactTestIdentityProviderRequest(r), true
-	case *v1pb.SwitchWorkspaceRequest:
-		return redactSwitchWorkspaceRequest(r), true
-	case *v1pb.AIChatRequest:
-		return redactAIChatRequest(r), true
-	case *v1pb.ListInstanceDatabaseRequest:
-		// The request carries a whole Instance — "we need to set this
-		// field if the target instance is not created yet" — so it holds
-		// every data-source credential: password, ssl_key,
-		// ssh_private_key, the Kerberos keytab, the AWS/Azure/GCP
-		// credentials, the external-secret token and master_password.
-		// redactInstance is the same helper CreateInstance and
-		// UpdateInstance already use.
-		r = proto.CloneOf(r)
-		r.Instance = redactInstance(r.Instance)
-		return r, true
-	default:
-		return nil, false
-	}
-}
-
-func getResponseString(response any) (string, error) {
-	m := func() protoreflect.ProtoMessage {
-		if response == nil || reflect.ValueOf(response).IsNil() {
-			return nil
-		}
-		switch r := response.(type) {
-		case *v1pb.QueryResponse:
-			return redactQueryResponse(r)
-		case *v1pb.AdminExecuteResponse:
-			return redactAdminExecuteResponse(r)
-		case *v1pb.ExportResponse:
-			return redactExportResponse(r)
-		case *v1pb.LoginResponse:
-			return redactLoginResponse(r)
-		case *v1pb.ExchangeTokenResponse:
-			return redactExchangeTokenResponse(r)
-		case *v1pb.RotateDirectorySyncTokenResponse:
-			return redactRotateDirectorySyncTokenResponse(r)
-		case *v1pb.ServiceAccount:
-			return redactServiceAccount(r)
-		case *v1pb.Setting:
-			return redactSetting(r)
-		case *v1pb.IdentityProvider:
-			return redactIdentityProvider(r)
-		case *v1pb.User:
-			return redactUser(r)
-		case *v1pb.Instance:
-			return redactInstance(r)
-		case *v1pb.Project:
-			return redactProject(r)
-		case *v1pb.Release:
-			return redactRelease(r)
-		case *v1pb.SavedQuery:
-			return redactSavedQuery(r)
-		case *v1pb.PurchaseResponse:
-			return redactPurchaseResponse(r)
-		case *v1pb.ExportVCSProviderUsersResponse:
-			return redactExportVCSProviderUsersResponse(r)
-		case *v1pb.ExportAuditLogsResponse:
-			return redactExportAuditLogsResponse(r)
-		case *v1pb.Sheet:
-			return redactSheet(r)
-		case *v1pb.BatchCreateSheetsResponse:
-			n := &v1pb.BatchCreateSheetsResponse{}
-			for _, sheet := range r.Sheets {
-				n.Sheets = append(n.Sheets, redactSheet(sheet))
-			}
-			return n
-		case *v1pb.BatchUpdateInstancesResponse:
-			n := &v1pb.BatchUpdateInstancesResponse{}
-			for _, instance := range r.Instances {
-				n.Instances = append(n.Instances, redactInstance(instance))
-			}
-			return n
-		default:
-			if p, ok := r.(protoreflect.ProtoMessage); ok {
-				return p
-			}
-			return nil
-		}
-	}()
-	if m == nil {
-		return "", nil
-	}
-	b, err := protojson.Marshal(m)
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
-}
-
-func redactResetPasswordRequest(r *v1pb.ResetPasswordRequest) *v1pb.ResetPasswordRequest {
-	if r == nil {
-		return nil
-	}
-	cloned := proto.CloneOf(r)
-	cloned.Code = maskedString
-	cloned.NewPassword = maskedString
-	return cloned
-}
-
-func redactUploadLicenseRequest(r *v1pb.UploadLicenseRequest) *v1pb.UploadLicenseRequest {
-	if r == nil {
-		return nil
-	}
-	return &v1pb.UploadLicenseRequest{License: maskedString}
-}
-
-func redactPurchaseResponse(r *v1pb.PurchaseResponse) *v1pb.PurchaseResponse {
-	if r == nil {
-		return nil
-	}
-	return &v1pb.PurchaseResponse{}
-}
-
-func redactExportVCSProviderUsersResponse(r *v1pb.ExportVCSProviderUsersResponse) *v1pb.ExportVCSProviderUsersResponse {
-	if r == nil {
-		return nil
-	}
-	return &v1pb.ExportVCSProviderUsersResponse{}
-}
-
-func redactExportAuditLogsResponse(r *v1pb.ExportAuditLogsResponse) *v1pb.ExportAuditLogsResponse {
-	if r == nil {
-		return nil
-	}
-	return &v1pb.ExportAuditLogsResponse{NextPageToken: r.NextPageToken}
-}
-
-func redactExportRequest(r *v1pb.ExportRequest) *v1pb.ExportRequest {
-	if r == nil {
-		return nil
-	}
-	r = proto.CloneOf(r)
-	if r.Password != "" {
-		r.Password = maskedString
-	}
-	return r
-}
-
-// redactExportResponse drops the exported file content but keeps the applied
-// access grant so audit logs record which grant authorized the export.
-func redactExportResponse(r *v1pb.ExportResponse) *v1pb.ExportResponse {
-	if r == nil || r.AppliedAccessGrant == "" {
-		return nil
-	}
-	return &v1pb.ExportResponse{
-		AppliedAccessGrant: r.AppliedAccessGrant,
-	}
-}
-
-func redactLoginRequest(r *v1pb.LoginRequest) *v1pb.LoginRequest {
-	if r == nil {
-		return nil
-	}
-
-	// Clone to avoid mutating original
-	r = proto.CloneOf(r)
-
-	// Mask sensitive fields.
-	if r.Password != "" {
-		r.Password = maskedString
-	}
-	maskOptionalString(&r.OtpCode)
-	maskOptionalString(&r.RecoveryCode)
-	maskOptionalString(&r.MfaTempToken)
-	maskOptionalString(&r.EmailCode)
-	if r.IdpContext != nil {
-		r.IdpContext = nil
-	}
-	return r
-}
-
-func redactSignupRequest(r *v1pb.SignupRequest) *v1pb.SignupRequest {
-	if r == nil {
-		return nil
-	}
-	r = proto.CloneOf(r)
-	if r.Password != "" {
-		r.Password = maskedString
-	}
-	return r
-}
-
-// redactExchangeTokenRequest masks the external OIDC JWT. The token is a
-// credential — it could be replayed against the original IdP or, if logged,
-// reveal workload identity claims. The caller's email is kept for audit
-// correlation.
-func redactExchangeTokenRequest(r *v1pb.ExchangeTokenRequest) *v1pb.ExchangeTokenRequest {
-	if r == nil {
-		return nil
-	}
-	r = proto.CloneOf(r)
-	if r.Token != "" {
-		r.Token = maskedString
-	}
-	return r
-}
-
-// redactExchangeTokenResponse drops the issued Bytebase access token. Logging
-// it would give anyone with audit-log read access a valid API token for the
-// workload identity. Returns an empty response so the audit entry still
-// records that the call happened.
-func redactExchangeTokenResponse(r *v1pb.ExchangeTokenResponse) *v1pb.ExchangeTokenResponse {
-	if r == nil {
-		return nil
-	}
-	return &v1pb.ExchangeTokenResponse{}
-}
-
-// redactRotateDirectorySyncTokenResponse drops the newly minted SCIM token. The
-// whole point of hashing it at rest is that the plaintext exists only in the
-// single response to the admin who rotated it; writing it to the audit log would
-// hand a working credential to anyone who can read that log. Returns an empty
-// response so the audit entry still records that the rotation happened.
-func redactRotateDirectorySyncTokenResponse(r *v1pb.RotateDirectorySyncTokenResponse) *v1pb.RotateDirectorySyncTokenResponse {
-	if r == nil {
-		return nil
-	}
-	return &v1pb.RotateDirectorySyncTokenResponse{}
-}
-
-// redactServiceAccount drops the API key. Create and key rotation are the only
-// responses that carry it — the read path never populates it — and it is a live
-// credential, so logging it would hand a working key to anyone who can read the
-// audit log or its stdout stream.
-func redactServiceAccount(r *v1pb.ServiceAccount) *v1pb.ServiceAccount {
-	if r == nil {
-		return nil
-	}
-	r = proto.CloneOf(r)
-	if r.ServiceKey != "" {
-		r.ServiceKey = maskedString
-	}
-	return r
-}
-
-// redactIdentityProvider masks the IdP credentials. The read path already blanks
-// these (convertToIdentityProvider), so they only reach the audit log through
-// the create/update request payload.
-func redactIdentityProvider(r *v1pb.IdentityProvider) *v1pb.IdentityProvider {
-	if r == nil {
-		return nil
-	}
-	r = proto.CloneOf(r)
-	switch config := r.GetConfig().GetConfig().(type) {
-	case *v1pb.IdentityProviderConfig_Oauth2Config:
-		if config.Oauth2Config.GetClientSecret() != "" {
-			config.Oauth2Config.ClientSecret = maskedString
-		}
-	case *v1pb.IdentityProviderConfig_OidcConfig:
-		if config.OidcConfig.GetClientSecret() != "" {
-			config.OidcConfig.ClientSecret = maskedString
-		}
-	case *v1pb.IdentityProviderConfig_LdapConfig:
-		if config.LdapConfig.GetBindPassword() != "" {
-			config.LdapConfig.BindPassword = maskedString
-		}
-	default:
-	}
-	return r
-}
-
-// redactEmailSetting masks the SMTP password, the same field redactSetting
-// masks when the same value arrives through UpdateSetting.
-func redactEmailSetting(e *v1pb.EmailSetting) *v1pb.EmailSetting {
-	if e == nil {
-		return nil
-	}
-	e = proto.CloneOf(e)
-	if smtp := e.GetSmtp(); smtp.GetPassword() != "" {
-		smtp.Password = maskedString
-	}
-	return e
-}
-
-// redactTestIdentityProviderRequest masks both halves of a connection test: the
-// provider's own client secret or LDAP bind password, which redactIdentityProvider
-// already masks on Create and Update, and the credential supplied to run the
-// test — an authorization code, or a directory user's password. Each arm checks
-// the wrapped message: a oneof wrapper can be set with a nil payload, and this
-// runs on the audit path, where a panic would cost the row.
-func redactTestIdentityProviderRequest(r *v1pb.TestIdentityProviderRequest) *v1pb.TestIdentityProviderRequest {
-	if r == nil {
-		return nil
-	}
-	r = proto.CloneOf(r)
-	r.IdentityProvider = redactIdentityProvider(r.IdentityProvider)
-	switch context := r.GetContext().(type) {
-	case *v1pb.TestIdentityProviderRequest_Oauth2Context:
-		if context.Oauth2Context != nil {
-			context.Oauth2Context.Code = maskedString
-		}
-	case *v1pb.TestIdentityProviderRequest_OidcContext:
-		if context.OidcContext != nil {
-			context.OidcContext.Code = maskedString
-		}
-	case *v1pb.TestIdentityProviderRequest_LdapContext:
-		if context.LdapContext != nil {
-			context.LdapContext.Password = maskedString
-		}
-	default:
-	}
-	return r
-}
-
-// redactSwitchWorkspaceRequest masks the MFA proofs, the same three fields
-// redactLoginRequest masks when they arrive on Login.
-func redactSwitchWorkspaceRequest(r *v1pb.SwitchWorkspaceRequest) *v1pb.SwitchWorkspaceRequest {
-	if r == nil {
-		return nil
-	}
-	r = proto.CloneOf(r)
-	maskOptionalString(&r.OtpCode)
-	maskOptionalString(&r.RecoveryCode)
-	maskOptionalString(&r.MfaTempToken)
-	return r
-}
-
-// redactAIChatRequest drops the conversation instead of masking a field. The
-// request has no secret in it; it has an unbounded body — every message the
-// caller sent, plus the tool definitions — and the audit row stores it whole
-// (the size cap applies to the stdout logger only). AIService/Chat is EXCLUDED
-// and unaudited, so the only rows it ever produces are the gate's denials, and
-// a denial needs the fact of the call, not its transcript.
-func redactAIChatRequest(r *v1pb.AIChatRequest) *v1pb.AIChatRequest {
-	if r == nil {
-		return nil
-	}
-	return &v1pb.AIChatRequest{}
-}
-
-// maskOptionalString masks an optional string field in place when it is set,
-// so the several credential fields spelled `optional string` mask the same way
-// wherever they appear.
-func maskOptionalString(field **string) {
-	if *field != nil {
-		*field = &maskedString
-	}
-}
-
-func redactWebhook(w *v1pb.Webhook) *v1pb.Webhook {
-	if w == nil {
-		return nil
-	}
-	cloned := proto.CloneOf(w)
-	if cloned.Url != "" {
-		cloned.Url = maskedString
-	}
-	return cloned
-}
-
-func redactProject(p *v1pb.Project) *v1pb.Project {
-	if p == nil {
-		return nil
-	}
-	cloned := proto.CloneOf(p)
-	for i, webhook := range cloned.Webhooks {
-		cloned.Webhooks[i] = redactWebhook(webhook)
-	}
-	return cloned
-}
-
-func redactRelease(r *v1pb.Release) *v1pb.Release {
-	if r == nil {
-		return nil
-	}
-	cloned := proto.CloneOf(r)
-	for _, file := range cloned.Files {
-		if file != nil {
-			file.Statement = nil
-		}
-	}
-	return cloned
-}
-
-func redactSavedQuery(r *v1pb.SavedQuery) *v1pb.SavedQuery {
-	if r == nil {
-		return nil
-	}
-	cloned := proto.CloneOf(r)
-	cloned.Content = nil
-	return cloned
-}
-
-// redactSetting masks every credential a settings payload can carry. The read
-// path blanks these, so they reach the audit log only through UpdateSetting's
-// request. Each secret is masked rather than dropped so the log still records
-// that the field was being written.
-func redactSetting(r *v1pb.Setting) *v1pb.Setting {
-	if r == nil {
-		return nil
-	}
-	r = proto.CloneOf(r)
-	switch value := r.GetValue().GetValue().(type) {
-	case *v1pb.SettingValue_Email:
-		if smtp := value.Email.GetSmtp(); smtp.GetPassword() != "" {
-			smtp.Password = maskedString
-		}
-	case *v1pb.SettingValue_Ai:
-		if value.Ai.GetApiKey() != "" {
-			value.Ai.ApiKey = maskedString
-		}
-	case *v1pb.SettingValue_AppIm:
-		maskAppIMSecrets(value.AppIm)
-	default:
-	}
-	return r
-}
-
-func maskAppIMSecrets(s *v1pb.AppIMSetting) {
-	for _, setting := range s.GetSettings() {
-		if v := setting.GetSlack(); v.GetToken() != "" {
-			v.Token = maskedString
-		}
-		if v := setting.GetFeishu(); v.GetAppSecret() != "" {
-			v.AppSecret = maskedString
-		}
-		if v := setting.GetWecom(); v.GetSecret() != "" {
-			v.Secret = maskedString
-		}
-		if v := setting.GetLark(); v.GetAppSecret() != "" {
-			v.AppSecret = maskedString
-		}
-		if v := setting.GetDingtalk(); v.GetClientSecret() != "" {
-			v.ClientSecret = maskedString
-		}
-		if v := setting.GetTeams(); v.GetClientSecret() != "" {
-			v.ClientSecret = maskedString
-		}
-	}
-}
-
-func redactCreateUserRequest(r *v1pb.CreateUserRequest) *v1pb.CreateUserRequest {
-	if r == nil {
-		return nil
-	}
-	return &v1pb.CreateUserRequest{
-		User: redactUser(r.User),
-	}
-}
-
-func redactUpdateUserRequest(r *v1pb.UpdateUserRequest) *v1pb.UpdateUserRequest {
-	if r == nil {
-		return nil
-	}
-	return &v1pb.UpdateUserRequest{
-		User:                    redactUser(r.User),
-		UpdateMask:              r.UpdateMask,
-		OtpCode:                 r.OtpCode,
-		RegenerateTempMfaSecret: r.RegenerateTempMfaSecret,
-		RegenerateRecoveryCodes: r.RegenerateRecoveryCodes,
-	}
-}
-
-func redactUser(r *v1pb.User) *v1pb.User {
-	if r == nil {
-		return nil
-	}
-	return &v1pb.User{
-		Name:  r.Name,
-		Email: r.Email,
-		Title: r.Title,
-	}
-}
-
-// redactSheet strips the sheet content from audit payloads. Sheets carry full
-// SQL statements (potentially megabytes); the audit record keeps the resource
-// name and content size.
-func redactSheet(s *v1pb.Sheet) *v1pb.Sheet {
-	if s == nil {
-		return nil
-	}
-	cloned := proto.CloneOf(s)
-	cloned.Content = nil
-	return cloned
-}
-
-func redactInstance(i *v1pb.Instance) *v1pb.Instance {
-	if i == nil {
-		return nil
-	}
-	// Clone the instance to avoid modifying the original response
-	cloned := proto.CloneOf(i)
-	var dataSources []*v1pb.DataSource
-	for _, d := range cloned.DataSources {
-		dataSources = append(dataSources, redactDataSource(d))
-	}
-	cloned.DataSources = dataSources
-	return cloned
-}
-
-func redactDataSource(d *v1pb.DataSource) *v1pb.DataSource {
-	if d == nil {
-		return nil
-	}
-	// Clone the datasource to avoid modifying the original
-	cloned := proto.CloneOf(d)
-	if cloned.Password != "" {
-		cloned.Password = maskedString
-	}
-	if cloned.SslCa != "" {
-		cloned.SslCa = maskedString
-	}
-	if cloned.SslCaPath != "" {
-		cloned.SslCaPath = maskedString
-	}
-	if cloned.SslCert != "" {
-		cloned.SslCert = maskedString
-	}
-	if cloned.SslCertPath != "" {
-		cloned.SslCertPath = maskedString
-	}
-	if cloned.SslKey != "" {
-		cloned.SslKey = maskedString
-	}
-	if cloned.SslKeyPath != "" {
-		cloned.SslKeyPath = maskedString
-	}
-	if cloned.SshPassword != "" {
-		cloned.SshPassword = maskedString
-	}
-	if cloned.SshPrivateKey != "" {
-		cloned.SshPrivateKey = maskedString
-	}
-	if cloned.AuthenticationPrivateKey != "" {
-		cloned.AuthenticationPrivateKey = maskedString
-	}
-	if cloned.AuthenticationPrivateKeyPassphrase != "" {
-		cloned.AuthenticationPrivateKeyPassphrase = maskedString
-	}
-	redactIAMExtension(cloned)
-	if cloned.ExternalSecret != nil {
-		cloned.ExternalSecret = new(v1pb.DataSourceExternalSecret)
-	}
-	if cloned.SaslConfig != nil {
-		if krbConf := cloned.SaslConfig.GetKrbConfig(); krbConf != nil {
-			krbConf.Keytab = []byte(maskedString)
-			cloned.SaslConfig.Mechanism = &v1pb.SASLConfig_KrbConfig{KrbConfig: krbConf}
-		}
-	}
-	if cloned.MasterPassword != "" {
-		cloned.MasterPassword = maskedString
-	}
-	return cloned
-}
-
-// redactIAMExtension strips the IAM credential while keeping the variant that
-// was set, so the row still records which credential type the caller supplied.
-// It keys off the oneof rather than authentication_type, which a request is
-// free to leave unset or contradict.
-//
-// What survives mirrors the read path (instance_service_converter.go): the
-// Azure tenant and client IDs name the principal and are not INPUT_ONLY, so
-// they stay; every AWSCredential field is, including the role ARN, so none
-// does; and the GCP content is a whole service-account key.
-//
-// Keeping the ARN was considered — it names a principal rather than
-// authenticating as one, and the row could then answer which role a data
-// source was pointed at. It is dropped anyway, because "no INPUT_ONLY field
-// survives redaction" is an invariant a descriptor walk can check forever
-// (TestAuditRedactsEveryInputOnlyDataSourceField), and a hand-kept exception
-// list is the drift this function exists to stop.
-func redactIAMExtension(d *v1pb.DataSource) {
-	switch extension := d.GetIamExtension().(type) {
-	case *v1pb.DataSource_AzureCredential_:
-		d.IamExtension = &v1pb.DataSource_AzureCredential_{
-			AzureCredential: &v1pb.DataSource_AzureCredential{
-				TenantId: extension.AzureCredential.GetTenantId(),
-				ClientId: extension.AzureCredential.GetClientId(),
-			},
-		}
-	case *v1pb.DataSource_AwsCredential:
-		d.IamExtension = &v1pb.DataSource_AwsCredential{
-			AwsCredential: &v1pb.DataSource_AWSCredential{},
-		}
-	case *v1pb.DataSource_GcpCredential:
-		d.IamExtension = &v1pb.DataSource_GcpCredential{
-			GcpCredential: &v1pb.DataSource_GCPCredential{},
-		}
-	default:
-		// A variant added to the oneof after this function was written is
-		// dropped whole rather than logged. Unset lands here too and stays nil.
-		d.IamExtension = nil
-	}
-}
-
-func redactAdminExecuteResponse(r *v1pb.AdminExecuteResponse) *v1pb.AdminExecuteResponse {
-	if r == nil {
-		return nil
-	}
-	n := &v1pb.AdminExecuteResponse{
-		Results: nil,
-	}
-	for _, result := range r.Results {
-		if result == nil {
-			n.Results = append(n.Results, &v1pb.QueryResult{})
-			continue
-		}
-		n.Results = append(n.Results, &v1pb.QueryResult{
-			ColumnNames:     result.ColumnNames,
-			ColumnTypeNames: result.ColumnTypeNames,
-			Rows:            nil, // Redacted
-			Error:           result.Error,
-			Latency:         result.Latency,
-			Statement:       result.Statement,
-			DetailedError:   result.DetailedError,
-			Masked:          redactMaskingReasons(result.Masked), // Redact icon data
-		})
-	}
-
-	return n
-}
-
-func redactQueryResponse(r *v1pb.QueryResponse) *v1pb.QueryResponse {
-	if r == nil {
-		return nil
-	}
-	n := &v1pb.QueryResponse{
-		Results:            nil,
-		AppliedAccessGrant: r.AppliedAccessGrant,
-	}
-	for _, result := range r.Results {
-		n.Results = append(n.Results, &v1pb.QueryResult{
-			ColumnNames:     result.ColumnNames,
-			ColumnTypeNames: result.ColumnTypeNames,
-			Rows:            nil, // Redacted
-			RowsCount:       result.RowsCount,
-			Error:           result.Error,
-			Latency:         result.Latency,
-			Statement:       result.Statement,
-			DetailedError:   result.DetailedError,
-			Masked:          redactMaskingReasons(result.Masked), // Redact icon data
-		})
-	}
-	return n
-}
-
-func redactMaskingReasons(reasons []*v1pb.MaskingReason) []*v1pb.MaskingReason {
-	if reasons == nil {
-		return nil
-	}
-	var redacted []*v1pb.MaskingReason
-	for _, reason := range reasons {
-		if reason == nil {
-			redacted = append(redacted, nil)
-			continue
-		}
-		redacted = append(redacted, &v1pb.MaskingReason{
-			SemanticTypeId:      reason.SemanticTypeId,
-			SemanticTypeTitle:   reason.SemanticTypeTitle,
-			MaskingRuleId:       reason.MaskingRuleId,
-			Algorithm:           reason.Algorithm,
-			Context:             reason.Context,
-			ClassificationLevel: reason.ClassificationLevel,
-			// Omit SemanticTypeIcon to avoid polluting audit logs with base64 data
-		})
-	}
-	return redacted
-}
-
-func redactLoginResponse(r *v1pb.LoginResponse) *v1pb.LoginResponse {
-	if r == nil {
-		return nil
-	}
-
-	n := &v1pb.LoginResponse{
-		RequireResetPassword: r.RequireResetPassword,
-	}
-	if r.User != nil {
-		n.User = redactUser(r.User)
-	}
-	return n
+		// A payload that will not encode must not cost the record. protojson
+		// rejects invalid UTF-8, and QueryResult.error and .statement are
+		// filled straight from the driver — so one bad byte from an Oracle or
+		// MySQL connection in a non-UTF-8 charset used to mean either no audit
+		// row at all (unary, where WrapUnary swallows the error) or a killed
+		// AdminExecute stream. Degrade the payload instead; everything else on
+		// the row, including the method and the outcome, still gets written.
+		slog.Warn("audit: payload could not be encoded, recording a placeholder",
+			log.BBError(err), slog.String("type", string(message.ProtoReflect().Descriptor().FullName())))
+		return unencodablePayload
+	}
+	return string(b)
 }
 
 func needAudit(ctx context.Context) bool {

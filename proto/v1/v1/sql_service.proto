@@ -198,7 +198,7 @@ message QueryResult {
   repeated string column_type_names = 2;
 
   // Rows of the query result.
-  repeated QueryRow rows = 3;
+  repeated QueryRow rows = 3 [(bytebase.v1.audit_behavior) = OMIT];
 
   int64 rows_count = 4;
 
@@ -284,7 +284,7 @@ message QueryResult {
 
   // Informational or debug messages returned by the database engine during query execution.
   // Examples include PostgreSQL's RAISE NOTICE, MSSQL's PRINT, or Oracle's DBMS_OUTPUT.PUT_LINE.
-  repeated Message messages = 11;
+  repeated Message messages = 11 [(bytebase.v1.audit_behavior) = OMIT];
 
   // Masking reasons for each column (empty for non-masked columns).
   repeated MaskingReason masked = 12;
@@ -310,7 +310,7 @@ message MaskingReason {
   int32 classification_level = 6;
 
   // Icon associated with the semantic type (if any).
-  string semantic_type_icon = 7;
+  string semantic_type_icon = 7 [(bytebase.v1.audit_behavior) = OMIT];
 }
 
 message QueryRow {
@@ -430,7 +430,7 @@ message ExportRequest {
   bool admin = 5;
 
   // The zip password provide by users.
-  string password = 6;
+  string password = 6 [(bytebase.v1.audit_behavior) = SENSITIVE];
 
   // The id of data source.
   // If omitted, Export resolves the data source server-side by using the
@@ -450,7 +450,7 @@ message ExportRequest {
 
 message ExportResponse {
   // The export file content.
-  bytes content = 1;
+  bytes content = 1 [(bytebase.v1.audit_behavior) = OMIT];
 
   // The just-in-time access grant applied to this export, if any.
   // Format: projects/{project}/accessGrants/{accessGrant}.

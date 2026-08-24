@@ -5,6 +5,7 @@ package bytebase.v1;
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
@@ -43,10 +44,26 @@ message SetupSampleRequest {}
 // Request message for getting actuator information.
 message GetActuatorInfoRequest {}
 
+// SampleInfo describes sample setup availability and provisioned resources.
+message SampleInfo {
+  // Whether sample setup is currently available.
+  bool available = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The provisioned sample instances.
+  // Format: instances/{instance}
+  repeated string instances = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.resource_reference) = {type: "bytebase.com/Instance"}
+  ];
+
+  // The time when the provisioned sample resources expire.
+  google.protobuf.Timestamp expire_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
 // System information and configuration for the Bytebase instance.
 // Actuator concept is similar to the Spring Boot Actuator.
 message ActuatorInfo {
-  reserved 3, 5 to 7, 9, 10, 12, 14, 16 to 19, 25;
+  reserved 3, 5 to 7, 9, 10, 12, 14, 16 to 19, 22, 25;
 
   // The Bytebase server version.
   string version = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
@@ -76,9 +93,6 @@ message ActuatorInfo {
   // The total number of database instances.
   int32 total_instance_count = 21 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Whether sample data setup is enabled.
-  bool enable_sample = 22 [(google.api.field_behavior) = OUTPUT_ONLY];
-
   // Whether the external URL is set via command-line flag (and thus cannot be changed via UI).
   bool external_url_from_flag = 23 [(google.api.field_behavior) = OUTPUT_ONLY];
 
@@ -94,4 +108,7 @@ message ActuatorInfo {
 
   // The number of active VCS users seen in the active window.
   int32 active_vcs_user_count = 28 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Sample setup availability and provisioned resources.
+  SampleInfo sample = 29 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

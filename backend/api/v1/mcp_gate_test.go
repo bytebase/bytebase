@@ -590,8 +590,8 @@ func TestForbiddenClassLeavesReadsAlone(t *testing.T) {
 //     (project_service_converter.go), which copied the incoming-webhook URL out
 //     verbatim. That URL is a bearer credential — whoever holds it posts into
 //     the customer's Slack, Feishu, WeCom or Teams as Bytebase — and this repo
-//     already treated it as one: redactWebhook masks it in audit rows
-//     (audit.go) beside the OIDC client secret and the LDAP bind password.
+//     already treated it as one: it is annotated SENSITIVE, so audit rows drop
+//     it beside the OIDC client secret and the LDAP bind password.
 //     ListProjects pages the whole workspace, so one call took the lot. The url
 //     is write-only now, the way a data source's password is: reads leave it
 //     empty. TestWebhook takes the stored url when the request names a webhook
@@ -1348,27 +1348,27 @@ var mcpDenialRequestsUnderReview = map[string]mcpDenialRequestReview{
 	// masks, and the gate refuses before dispatch, so it was never even used.
 	v1connect.AIServiceChatProcedure: {
 		[]string{"messages", "tool_definitions"},
-		"redactAIChatRequest drops the conversation body, which is unbounded and stored untruncated",
+		"messages and tool_definitions are annotated OMIT, so the unbounded conversation body is dropped",
 	},
 	v1connect.AuthServiceSwitchWorkspaceProcedure: {
 		[]string{"mfa_temp_token", "otp_code", "recovery_code", "web", "workspace"},
-		"redactSwitchWorkspaceRequest masks the three MFA proofs; the workspace it targeted and the cookie flag stay",
+		"the three MFA proofs are annotated SENSITIVE; the workspace it targeted and the cookie flag stay",
 	},
 	v1connect.IdentityProviderServiceTestIdentityProviderProcedure: {
 		[]string{"identity_provider", "ldap_context", "oauth2_context", "oidc_context"},
-		"redactTestIdentityProviderRequest masks the provider secret and the test credential",
+		"the provider secret and the test credential are annotated SENSITIVE, wherever they appear",
 	},
 	v1connect.InstanceServiceListInstanceDatabaseProcedure: {
 		[]string{"instance"},
-		"redactInstance masks every data-source credential; pinned by TestAuditRedactsEveryInputOnlyDataSourceField",
+		"every data-source credential is annotated SENSITIVE; pinned by TestAuditRedactionCoversEveryAnnotatedField",
 	},
 	v1connect.ProjectServiceTestWebhookProcedure: {
 		[]string{"project", "webhook"},
-		"redactWebhook masks the URL, which is a bearer credential; the project stays",
+		"Webhook.url is annotated SENSITIVE because it is a bearer credential; the project stays",
 	},
 	v1connect.SettingServiceTestEmailSettingProcedure: {
 		[]string{"email_setting", "to"},
-		"redactEmailSetting masks the SMTP password; the address the agent chose to mail stays, which is the point of the row",
+		"the SMTP password is annotated SENSITIVE; the address the agent chose to mail stays, which is the point of the row",
 	},
 
 	// Recorded as sent. None of it is a credential, and what the row keeps is
@@ -1420,7 +1420,7 @@ var mcpDenialRequestsUnderReview = map[string]mcpDenialRequestReview{
 	},
 	v1connect.SubscriptionServiceVerifyCheckoutSessionProcedure: {
 		[]string{"session_id"},
-		"recorded: an opaque checkout id the caller supplied; reaching the payment provider with it needs Bytebase's own key",
+		"session_id is annotated SENSITIVE: it is the handle inside the Stripe Checkout URL, and the response that mints it is redacted the same way",
 	},
 	v1connect.DatabaseServiceBatchGetDatabasesProcedure: {
 		[]string{"names"}, "recorded: resource names",
@@ -1488,11 +1488,16 @@ func mcpRequestFieldNeedsReview(field protoreflect.FieldDescriptor) bool {
 // on one, joins the population above without anyone deciding what its denial
 // row may carry.
 //
-// It cannot check that a redactor exists — getRequestString's type switch is
-// not readable from here — so it checks the thing that failed twice: that
-// somebody looked, at each field rather than at the method as a whole. A new
-// unaudited RPC, or a new field on one already reviewed, breaks the build; the
-// fix is a redactor plus a row here, or a row here saying why none is needed.
+// It checks the thing that failed twice: that somebody looked, at each field
+// rather than at the method as a whole. A new unaudited RPC, or a new field on
+// one already reviewed, breaks the build; the fix is an audit_behavior
+// annotation plus a row here, or a row here saying why none is needed.
+//
+// It sits alongside the inventory in audit_redact_inventory_test.go rather than
+// being replaced by it. The inventory is per (message, string-or-bytes field)
+// across the whole audited surface; this is per (method, field) and covers the
+// message-typed fields the inventory's scalar scope does not — DiffMetadata's
+// target_metadata is a whole schema, and no string field names it.
 func TestLintDenialRequestsAreReviewedForRedaction(t *testing.T) {
 	needsReview := map[string][]string{}
 	for _, row := range mcpClassificationsFromDescriptors(t) {

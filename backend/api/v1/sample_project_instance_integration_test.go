@@ -301,12 +301,13 @@ func newSampleProjectInstanceFixture(t *testing.T, clock func() time.Time) (cont
 	sampleTarget, err := sampleprojectinstance.NewTarget(targetURL)
 	require.NoError(t, err)
 	inspector := newSampleTargetInspector(t, targetURL)
-	manager := sampleprojectinstance.NewManagerFromURL(
+	manager, err := sampleprojectinstance.NewManagerFromURL(
 		stores,
 		targetURL,
 		syncer,
 		sampleprojectinstance.ManagerOptions{Clock: clock, ReplicaID: "replica-a"},
 	)
+	require.NoError(t, err)
 	return context.WithValue(ctx, common.WorkspaceIDContextKey, "sample-workspace"), &sampleProjectInstanceFixture{
 		store: stores,
 		service: &InstanceService{

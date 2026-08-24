@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"slices"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
@@ -13,6 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/sampleprojectinstance"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -38,7 +40,14 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 		GitCommit:   "sensitive-commit",
 		ExternalURL: "https://bytebase.example.com",
 	}
-	actuatorService := NewActuatorService(stores, profile, nil, licenseService, nil)
+	sampleProjectManager, err := sampleprojectinstance.NewManagerFromURL(
+		nil,
+		fmt.Sprintf("postgresql://postgres:root-password@%s:%s/postgres?sslmode=disable", container.GetHost(), container.GetPort()),
+		nil,
+		sampleprojectinstance.ManagerOptions{},
+	)
+	require.NoError(t, err)
+	actuatorService := NewActuatorService(stores, profile, nil, licenseService, nil, sampleProjectManager)
 	authService := NewAuthService(stores, "test-secret", licenseService, profile, nil)
 
 	publicResponse, err := authService.GetAuthenticationRestriction(ctx, connect.NewRequest(&v1pb.GetAuthenticationRestrictionRequest{}))
@@ -90,6 +99,23 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	require.NoError(t, err)
 	authenticatedCtx := context.WithValue(ctx, common.UserContextKey, user)
 	authenticatedCtx = context.WithValue(authenticatedCtx, common.WorkspaceIDContextKey, workspaceID)
+	defaultProjectID, err := stores.GetDefaultProjectID(ctx, workspaceID)
+	require.NoError(t, err)
+	reservation, created, err := stores.ReserveSampleProjectInstance(ctx, &store.SampleProjectInstanceMessage{
+		WorkspaceID: workspaceID,
+		ProjectID:   defaultProjectID,
+		InstanceID:  "sample-instance",
+		DBName:      "sample-database",
+		RoleName:    "sample-role",
+		ReplicaID:   "replica-a",
+	})
+	require.NoError(t, err)
+	require.True(t, created)
+	expiresAt := time.Now().Add(7 * 24 * time.Hour).Truncate(time.Microsecond)
+	activated, err := stores.ActivateSampleProjectInstance(ctx, workspaceID, reservation.InstanceID, reservation.ReplicaID, expiresAt)
+	require.NoError(t, err)
+	require.True(t, activated)
+	profile.SaaS = true
 
 	privateResponse, err := actuatorService.GetActuatorInfo(authenticatedCtx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
 	require.NoError(t, err)
@@ -97,4 +123,7 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	require.Equal(t, "sensitive-commit", privateResponse.Msg.GitCommit)
 	require.Equal(t, common.FormatWorkspace(workspaceID), privateResponse.Msg.Workspace)
 	require.NotEmpty(t, privateResponse.Msg.DefaultProject)
+	require.True(t, privateResponse.Msg.Sample.Available)
+	require.Equal(t, []string{common.FormatInstance(reservation.InstanceID)}, privateResponse.Msg.Sample.Instances)
+	require.True(t, expiresAt.Equal(privateResponse.Msg.Sample.ExpireTime.AsTime()))
 }

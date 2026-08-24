@@ -82,10 +82,10 @@ message AIChatToolCall {
 // Request message for AIService.Chat.
 message AIChatRequest {
   // The conversation messages.
-  repeated AIChatMessage messages = 1;
+  repeated AIChatMessage messages = 1 [(bytebase.v1.audit_behavior) = OMIT];
 
   // The tool definitions available to the AI.
-  repeated AIChatToolDefinition tool_definitions = 2;
+  repeated AIChatToolDefinition tool_definitions = 2 [(bytebase.v1.audit_behavior) = OMIT];
 }
 
 // Token usage for a single AI provider call.

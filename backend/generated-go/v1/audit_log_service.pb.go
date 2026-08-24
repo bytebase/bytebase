@@ -791,10 +791,10 @@ const file_v1_audit_log_service_proto_rawDesc = "" +
 	"\x06format\x18\x03 \x01(\x0e2\x19.bytebase.v1.ExportFormatR\x06format\x12\x1b\n" +
 	"\tpage_size\x18\x05 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
-	"page_token\x18\x06 \x01(\tR\tpageToken\"[\n" +
-	"\x17ExportAuditLogsResponse\x12\x18\n" +
-	"\acontent\x18\x01 \x01(\fR\acontent\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xd2\x05\n" +
+	"page_token\x18\x06 \x01(\tR\tpageToken\"a\n" +
+	"\x17ExportAuditLogsResponse\x12\x1e\n" +
+	"\acontent\x18\x01 \x01(\fB\x04\xd0\xea0\x02R\acontent\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xd8\x05\n" +
 	"\bAuditLog\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12@\n" +
 	"\vcreate_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
@@ -807,8 +807,8 @@ const file_v1_audit_log_service_proto_rawDesc = "" +
 	"\bresponse\x18\b \x01(\tR\bresponse\x12*\n" +
 	"\x06status\x18\t \x01(\v2\x12.google.rpc.StatusR\x06status\x123\n" +
 	"\alatency\x18\n" +
-	" \x01(\v2\x19.google.protobuf.DurationR\alatency\x127\n" +
-	"\fservice_data\x18\v \x01(\v2\x14.google.protobuf.AnyR\vserviceData\x12G\n" +
+	" \x01(\v2\x19.google.protobuf.DurationR\alatency\x12=\n" +
+	"\fservice_data\x18\v \x01(\v2\x14.google.protobuf.AnyB\x04\xd0\xea0\x02R\vserviceData\x12G\n" +
 	"\x10request_metadata\x18\f \x01(\v2\x1c.bytebase.v1.RequestMetadataR\x0frequestMetadata\x12F\n" +
 	"\x0emcp_delegation\x18\r \x01(\v2\x1a.bytebase.v1.MCPDelegationB\x03\xe0A\x03R\rmcpDelegation\"\x85\x01\n" +
 	"\bSeverity\x12\x18\n" +

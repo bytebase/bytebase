@@ -626,9 +626,15 @@ message DataSourceExternalSecret {
 
   message AppRoleAuthOption {
     // The role ID for Vault AppRole authentication.
-    string role_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
+    string role_id = 1 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
     // the secret id for the role without ttl.
-    string secret_id = 2 [(google.api.field_behavior) = INPUT_ONLY];
+    string secret_id = 2 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
 
     enum SecretType {
       // Unspecified secret type.
@@ -665,7 +671,10 @@ message DataSourceExternalSecret {
     // Token for direct authentication. Interpreted according to token_type:
     // the literal token (PLAIN), an environment variable name (ENVIRONMENT),
     // or a file path (FILE).
-    string token = 5 [(google.api.field_behavior) = INPUT_ONLY];
+    string token = 5 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
   }
 
   // How to interpret the token field when auth_type is TOKEN.
@@ -685,11 +694,20 @@ message DataSourceExternalSecret {
   // Only set to true for development or when certificates cannot be properly validated.
   bool skip_vault_tls_verification = 9;
   // CA certificate for Vault server verification.
-  string vault_ssl_ca = 10 [(google.api.field_behavior) = INPUT_ONLY];
+  string vault_ssl_ca = 10 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
   // Client certificate for mutual TLS authentication with Vault.
-  string vault_ssl_cert = 11 [(google.api.field_behavior) = INPUT_ONLY];
+  string vault_ssl_cert = 11 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
   // Client private key for mutual TLS authentication with Vault.
-  string vault_ssl_key = 12 [(google.api.field_behavior) = INPUT_ONLY];
+  string vault_ssl_key = 12 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
 }
 
 message DataSource {
@@ -701,21 +719,42 @@ message DataSource {
   // The username for database authentication.
   string username = 3;
   // The password for database authentication.
-  string password = 4 [(google.api.field_behavior) = INPUT_ONLY];
+  string password = 4 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
   // Use SSL to connect to the data source. By default, we use system default SSL configuration.
   bool use_ssl = 30;
   // The SSL certificate authority certificate.
-  string ssl_ca = 5 [(google.api.field_behavior) = INPUT_ONLY];
+  string ssl_ca = 5 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
   // The SSL client certificate.
-  string ssl_cert = 6 [(google.api.field_behavior) = INPUT_ONLY];
+  string ssl_cert = 6 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
   // The SSL client private key.
-  string ssl_key = 7 [(google.api.field_behavior) = INPUT_ONLY];
+  string ssl_key = 7 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
   // The local filesystem path to the SSL certificate authority certificate.
-  string ssl_ca_path = 41 [(google.api.field_behavior) = INPUT_ONLY];
+  string ssl_ca_path = 41 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
   // The local filesystem path to the SSL client certificate.
-  string ssl_cert_path = 42 [(google.api.field_behavior) = INPUT_ONLY];
+  string ssl_cert_path = 42 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
   // The local filesystem path to the SSL client private key.
-  string ssl_key_path = 43 [(google.api.field_behavior) = INPUT_ONLY];
+  string ssl_key_path = 43 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
   // Whether an SSL certificate authority certificate has been configured.
   bool ssl_ca_set = 44 [(google.api.field_behavior) = OUTPUT_ONLY];
   // Whether an SSL client certificate has been configured.
@@ -762,14 +801,26 @@ message DataSource {
   // Required.
   string ssh_user = 17;
   // The password to login the server. If it's empty string, no password is required.
-  string ssh_password = 18 [(google.api.field_behavior) = INPUT_ONLY];
+  string ssh_password = 18 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
   // The private key to login the server. If it's empty string, we will use the system default private key from os.Getenv("SSH_AUTH_SOCK").
-  string ssh_private_key = 19 [(google.api.field_behavior) = INPUT_ONLY];
+  string ssh_private_key = 19 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
   // PKCS#8 private key in PEM format. If it's empty string, no private key is required.
   // Used for authentication when connecting to the data source.
-  string authentication_private_key = 20 [(google.api.field_behavior) = INPUT_ONLY];
+  string authentication_private_key = 20 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
   // Passphrase for the encrypted PKCS#8 private key. Only used when the private key is encrypted.
-  string authentication_private_key_passphrase = 40 [(google.api.field_behavior) = INPUT_ONLY];
+  string authentication_private_key_passphrase = 40 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
 
   DataSourceExternalSecret external_secret = 21;
 
@@ -796,21 +847,42 @@ message DataSource {
   message AzureCredential {
     string tenant_id = 1;
     string client_id = 2;
-    string client_secret = 3 [(google.api.field_behavior) = INPUT_ONLY];
+    string client_secret = 3 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
   }
   message AWSCredential {
-    string access_key_id = 1 [(google.api.field_behavior) = INPUT_ONLY];
-    string secret_access_key = 2 [(google.api.field_behavior) = INPUT_ONLY];
-    string session_token = 3 [(google.api.field_behavior) = INPUT_ONLY];
+    string access_key_id = 1 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
+    string secret_access_key = 2 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
+    string session_token = 3 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
     // ARN of IAM role to assume for cross-account access.
     // See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_use.html
-    string role_arn = 4 [(google.api.field_behavior) = INPUT_ONLY];
+    string role_arn = 4 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
     // Optional external ID for additional security when assuming role.
     // See: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_create_for-user_externalid.html
-    string external_id = 5 [(google.api.field_behavior) = INPUT_ONLY];
+    string external_id = 5 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
   }
   message GCPCredential {
-    string content = 1 [(google.api.field_behavior) = INPUT_ONLY];
+    string content = 1 [
+      (google.api.field_behavior) = INPUT_ONLY,
+      (bytebase.v1.audit_behavior) = SENSITIVE
+    ];
   }
   oneof iam_extension {
     AzureCredential azure_credential = 23;
@@ -841,7 +913,10 @@ message DataSource {
 
   // master_username and master_password are master credentials used by redis sentinel mode.
   string master_username = 32;
-  string master_password = 33 [(google.api.field_behavior) = INPUT_ONLY];
+  string master_password = 33 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
 
   enum RedisType {
     REDIS_TYPE_UNSPECIFIED = 0;
@@ -913,7 +988,10 @@ message KerberosConfig {
   // The Kerberos realm.
   string realm = 3;
   // The keytab file contents for authentication.
-  bytes keytab = 4 [(google.api.field_behavior) = INPUT_ONLY];
+  bytes keytab = 4 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
   // The hostname of the Key Distribution Center (KDC).
   string kdc_host = 5;
   // The port of the Key Distribution Center (KDC).

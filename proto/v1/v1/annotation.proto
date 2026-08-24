@@ -31,6 +31,30 @@ extend google.protobuf.MethodOptions {
   // it read a confident wrong answer instead of nothing.
 }
 
+// Extends FieldOptions to declare what an audit payload may carry. The audit
+// interceptor walks the descriptor of every request and response it records, so
+// a field marked here is redacted wherever it appears, at any depth, on every
+// RPC.
+extend google.protobuf.FieldOptions {
+  // How the audit log treats this field.
+  AuditBehavior audit_behavior = 100010;
+}
+
+// What an audit payload may carry for a field. One enum rather than a bool per
+// behavior, because a field has exactly one classification.
+enum AuditBehavior {
+  // Recorded as sent. This is a denylist default, so an unannotated secret is
+  // written; the inventory lint turns that into a build failure.
+  AUDIT_BEHAVIOR_UNSPECIFIED = 0;
+  // A credential. It must not reach an audit payload, and the API may return it
+  // only on the response that mints it — never on a read path.
+  SENSITIVE = 1;
+  // Must not be recorded, for any reason other than being a credential:
+  // unbounded bodies, base64 blobs, bearer capabilities, and personal data.
+  // Unlike SENSITIVE it says nothing about the API contract.
+  OMIT = 2;
+}
+
 // Authorization method for RPC calls.
 enum AuthMethod {
   // Unspecified authorization method.

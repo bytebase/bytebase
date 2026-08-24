@@ -178,6 +178,12 @@ const mocks = vi.hoisted(() => {
     routeNames: {
       databaseDetail: "workspace.project.database.detail",
     },
+    serverInfo: {} as {
+      sample?: {
+        instances: string[];
+        expireTime?: { seconds: bigint; nanos: number };
+      };
+    },
   };
 });
 
@@ -280,7 +286,8 @@ vi.mock("@/stores", () => ({
 // working unchanged.
 vi.mock("@/stores/app", () => ({
   useAppStore: Object.assign(
-    (selector: (s: unknown) => unknown) => selector(mocks.dbSchemaStore()),
+    (selector: (s: unknown) => unknown) =>
+      selector({ ...mocks.dbSchemaStore(), serverInfo: mocks.serverInfo }),
     {
       getState: () => ({
         ...mocks.dbSchemaStore(),
@@ -467,6 +474,7 @@ beforeEach(() => {
     fullPath: "/sql-editor/projects/proj1",
   });
   mocks.useProjectDatabaseDetail.mockReset();
+  mocks.serverInfo = {};
   mocks.LoaderCircle.mockClear();
   mocks.TabsList.mockClear();
   mocks.TabsTrigger.mockClear();
@@ -542,6 +550,50 @@ beforeEach(() => {
 });
 
 describe("ProjectDatabaseDetailPage", () => {
+  test("shows the sample expiration warning for a sample database", async () => {
+    mocks.serverInfo = {
+      sample: {
+        instances: ["instances/inst1"],
+        expireTime: {
+          seconds: BigInt(Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60),
+          nanos: 0,
+        },
+      },
+    };
+    mocks.useProjectDatabaseDetail.mockReturnValue({
+      database: {
+        name: "instances/inst1/databases/db1",
+        project: "projects/proj1",
+        effectiveEnvironment: "environments/prod",
+        instanceResource: {
+          name: "projects/proj1/instances/inst1",
+          title: "Sample instance",
+        },
+      },
+      databaseName: "instances/inst1/databases/db1",
+      loading: false,
+      ready: true,
+      allowAlterSchema: true,
+      isDefaultProject: false,
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(ProjectDatabaseDetailPage, {
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
+      })
+    );
+
+    render();
+
+    expect(container.textContent).toContain(
+      "instance.sample-expiration-future"
+    );
+
+    unmount();
+  });
+
   test("shows a spinner while the shared database hook is loading", async () => {
     mocks.useProjectDatabaseDetail.mockReturnValue({
       database: undefined,

@@ -3231,14 +3231,15 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
 	"\x05value\x18\x02 \x01(\tR\x05value:\x028\x01:Y\xeaAV\n" +
 	"\x15bytebase.com/Instance\x12\x14instances/{instance}\x12'projects/{project}/instances/{instance}B\x0e\n" +
-	"\f_environmentJ\x04\b\x02\x10\x03J\x04\b\r\x10\x0e\"\xf2\t\n" +
+	"\f_environmentJ\x04\b\x02\x10\x03J\x04\b\r\x10\x0e\"\x8a\n" +
+	"\n" +
 	"\x18DataSourceExternalSecret\x12Q\n" +
 	"\vsecret_type\x18\x01 \x01(\x0e20.bytebase.v1.DataSourceExternalSecret.SecretTypeR\n" +
 	"secretType\x12\x10\n" +
 	"\x03url\x18\x02 \x01(\tR\x03url\x12K\n" +
 	"\tauth_type\x18\x03 \x01(\x0e2..bytebase.v1.DataSourceExternalSecret.AuthTypeR\bauthType\x12T\n" +
-	"\bapp_role\x18\x04 \x01(\v27.bytebase.v1.DataSourceExternalSecret.AppRoleAuthOptionH\x00R\aappRole\x12\x1b\n" +
-	"\x05token\x18\x05 \x01(\tB\x03\xe0A\x04H\x00R\x05token\x12N\n" +
+	"\bapp_role\x18\x04 \x01(\v27.bytebase.v1.DataSourceExternalSecret.AppRoleAuthOptionH\x00R\aappRole\x12\x1f\n" +
+	"\x05token\x18\x05 \x01(\tB\a\xe0A\x04\xd0\xea0\x01H\x00R\x05token\x12N\n" +
 	"\n" +
 	"token_type\x18\r \x01(\x0e2/.bytebase.v1.DataSourceExternalSecret.TokenTypeR\ttokenType\x12\x1f\n" +
 	"\vengine_name\x18\x06 \x01(\tR\n" +
@@ -3246,15 +3247,15 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\vsecret_name\x18\a \x01(\tR\n" +
 	"secretName\x12*\n" +
 	"\x11password_key_name\x18\b \x01(\tR\x0fpasswordKeyName\x12=\n" +
-	"\x1bskip_vault_tls_verification\x18\t \x01(\bR\x18skipVaultTlsVerification\x12%\n" +
+	"\x1bskip_vault_tls_verification\x18\t \x01(\bR\x18skipVaultTlsVerification\x12)\n" +
 	"\fvault_ssl_ca\x18\n" +
-	" \x01(\tB\x03\xe0A\x04R\n" +
-	"vaultSslCa\x12)\n" +
-	"\x0evault_ssl_cert\x18\v \x01(\tB\x03\xe0A\x04R\fvaultSslCert\x12'\n" +
-	"\rvault_ssl_key\x18\f \x01(\tB\x03\xe0A\x04R\vvaultSslKey\x1a\x91\x02\n" +
-	"\x11AppRoleAuthOption\x12\x1c\n" +
-	"\arole_id\x18\x01 \x01(\tB\x03\xe0A\x04R\x06roleId\x12 \n" +
-	"\tsecret_id\x18\x02 \x01(\tB\x03\xe0A\x04R\bsecretId\x12V\n" +
+	" \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\n" +
+	"vaultSslCa\x12-\n" +
+	"\x0evault_ssl_cert\x18\v \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\fvaultSslCert\x12+\n" +
+	"\rvault_ssl_key\x18\f \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\vvaultSslKey\x1a\x99\x02\n" +
+	"\x11AppRoleAuthOption\x12 \n" +
+	"\arole_id\x18\x01 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\x06roleId\x12$\n" +
+	"\tsecret_id\x18\x02 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\bsecretId\x12V\n" +
 	"\x04type\x18\x03 \x01(\x0e2B.bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption.SecretTypeR\x04type\x12\x1d\n" +
 	"\n" +
 	"mount_path\x18\x04 \x01(\tR\tmountPath\"E\n" +
@@ -3279,20 +3280,20 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\x05PLAIN\x10\x01\x12\x0f\n" +
 	"\vENVIRONMENT\x10\x02\x12\b\n" +
 	"\x04FILE\x10\x03B\r\n" +
-	"\vauth_option\"\xf4\x18\n" +
+	"\vauth_option\"\xc0\x19\n" +
 	"\n" +
 	"DataSource\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12/\n" +
 	"\x04type\x18\x02 \x01(\x0e2\x1b.bytebase.v1.DataSourceTypeR\x04type\x12\x1a\n" +
-	"\busername\x18\x03 \x01(\tR\busername\x12\x1f\n" +
-	"\bpassword\x18\x04 \x01(\tB\x03\xe0A\x04R\bpassword\x12\x17\n" +
-	"\ause_ssl\x18\x1e \x01(\bR\x06useSsl\x12\x1a\n" +
-	"\x06ssl_ca\x18\x05 \x01(\tB\x03\xe0A\x04R\x05sslCa\x12\x1e\n" +
-	"\bssl_cert\x18\x06 \x01(\tB\x03\xe0A\x04R\asslCert\x12\x1c\n" +
-	"\assl_key\x18\a \x01(\tB\x03\xe0A\x04R\x06sslKey\x12#\n" +
-	"\vssl_ca_path\x18) \x01(\tB\x03\xe0A\x04R\tsslCaPath\x12'\n" +
-	"\rssl_cert_path\x18* \x01(\tB\x03\xe0A\x04R\vsslCertPath\x12%\n" +
-	"\fssl_key_path\x18+ \x01(\tB\x03\xe0A\x04R\n" +
+	"\busername\x18\x03 \x01(\tR\busername\x12#\n" +
+	"\bpassword\x18\x04 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\bpassword\x12\x17\n" +
+	"\ause_ssl\x18\x1e \x01(\bR\x06useSsl\x12\x1e\n" +
+	"\x06ssl_ca\x18\x05 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\x05sslCa\x12\"\n" +
+	"\bssl_cert\x18\x06 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\asslCert\x12 \n" +
+	"\assl_key\x18\a \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\x06sslKey\x12'\n" +
+	"\vssl_ca_path\x18) \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\tsslCaPath\x12+\n" +
+	"\rssl_cert_path\x18* \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\vsslCertPath\x12)\n" +
+	"\fssl_key_path\x18+ \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\n" +
 	"sslKeyPath\x12!\n" +
 	"\n" +
 	"ssl_ca_set\x18, \x01(\bB\x03\xe0A\x03R\bsslCaSet\x12%\n" +
@@ -3315,11 +3316,11 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\fservice_name\x18\x0e \x01(\tR\vserviceName\x12\x19\n" +
 	"\bssh_host\x18\x0f \x01(\tR\asshHost\x12\x19\n" +
 	"\bssh_port\x18\x10 \x01(\tR\asshPort\x12\x19\n" +
-	"\bssh_user\x18\x11 \x01(\tR\asshUser\x12&\n" +
-	"\fssh_password\x18\x12 \x01(\tB\x03\xe0A\x04R\vsshPassword\x12+\n" +
-	"\x0fssh_private_key\x18\x13 \x01(\tB\x03\xe0A\x04R\rsshPrivateKey\x12A\n" +
-	"\x1aauthentication_private_key\x18\x14 \x01(\tB\x03\xe0A\x04R\x18authenticationPrivateKey\x12V\n" +
-	"%authentication_private_key_passphrase\x18( \x01(\tB\x03\xe0A\x04R\"authenticationPrivateKeyPassphrase\x12N\n" +
+	"\bssh_user\x18\x11 \x01(\tR\asshUser\x12*\n" +
+	"\fssh_password\x18\x12 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\vsshPassword\x12/\n" +
+	"\x0fssh_private_key\x18\x13 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\rsshPrivateKey\x12E\n" +
+	"\x1aauthentication_private_key\x18\x14 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\x18authenticationPrivateKey\x12Z\n" +
+	"%authentication_private_key_passphrase\x18( \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\"authenticationPrivateKeyPassphrase\x12N\n" +
 	"\x0fexternal_secret\x18\x15 \x01(\v2%.bytebase.v1.DataSourceExternalSecretR\x0eexternalSecret\x12[\n" +
 	"\x13authentication_type\x18\x16 \x01(\x0e2*.bytebase.v1.DataSource.AuthenticationTypeR\x12authenticationType\x12Q\n" +
 	"\x11cloud_sql_ip_type\x188 \x01(\x0e2&.bytebase.v1.DataSource.CloudSQLIPTypeR\x0ecloudSqlIpType\x12T\n" +
@@ -3334,28 +3335,28 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"\fwarehouse_id\x18\x1d \x01(\tR\vwarehouseId\x12\x1f\n" +
 	"\vmaster_name\x18\x1f \x01(\tR\n" +
 	"masterName\x12'\n" +
-	"\x0fmaster_username\x18  \x01(\tR\x0emasterUsername\x12,\n" +
-	"\x0fmaster_password\x18! \x01(\tB\x03\xe0A\x04R\x0emasterPassword\x12@\n" +
+	"\x0fmaster_username\x18  \x01(\tR\x0emasterUsername\x120\n" +
+	"\x0fmaster_password\x18! \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\x0emasterPassword\x12@\n" +
 	"\n" +
 	"redis_type\x18\" \x01(\x0e2!.bytebase.v1.DataSource.RedisTypeR\tredisType\x12v\n" +
 	"\x1bextra_connection_parameters\x18$ \x03(\v26.bytebase.v1.DataSource.ExtraConnectionParametersEntryR\x19extraConnectionParameters\x12\x1d\n" +
 	"\n" +
 	"project_id\x189 \x01(\tR\tprojectId\x12\x1f\n" +
 	"\vinstance_id\x18: \x01(\tR\n" +
-	"instanceId\x1au\n" +
+	"instanceId\x1ay\n" +
 	"\x0fAzureCredential\x12\x1b\n" +
 	"\ttenant_id\x18\x01 \x01(\tR\btenantId\x12\x1b\n" +
-	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12(\n" +
-	"\rclient_secret\x18\x03 \x01(\tB\x03\xe0A\x04R\fclientSecret\x1a\xd9\x01\n" +
-	"\rAWSCredential\x12'\n" +
-	"\raccess_key_id\x18\x01 \x01(\tB\x03\xe0A\x04R\vaccessKeyId\x12/\n" +
-	"\x11secret_access_key\x18\x02 \x01(\tB\x03\xe0A\x04R\x0fsecretAccessKey\x12(\n" +
-	"\rsession_token\x18\x03 \x01(\tB\x03\xe0A\x04R\fsessionToken\x12\x1e\n" +
-	"\brole_arn\x18\x04 \x01(\tB\x03\xe0A\x04R\aroleArn\x12$\n" +
-	"\vexternal_id\x18\x05 \x01(\tB\x03\xe0A\x04R\n" +
-	"externalId\x1a.\n" +
-	"\rGCPCredential\x12\x1d\n" +
-	"\acontent\x18\x01 \x01(\tB\x03\xe0A\x04R\acontent\x1a1\n" +
+	"\tclient_id\x18\x02 \x01(\tR\bclientId\x12,\n" +
+	"\rclient_secret\x18\x03 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\fclientSecret\x1a\xed\x01\n" +
+	"\rAWSCredential\x12+\n" +
+	"\raccess_key_id\x18\x01 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\vaccessKeyId\x123\n" +
+	"\x11secret_access_key\x18\x02 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\x0fsecretAccessKey\x12,\n" +
+	"\rsession_token\x18\x03 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\fsessionToken\x12\"\n" +
+	"\brole_arn\x18\x04 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\aroleArn\x12(\n" +
+	"\vexternal_id\x18\x05 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\n" +
+	"externalId\x1a2\n" +
+	"\rGCPCredential\x12!\n" +
+	"\acontent\x18\x01 \x01(\tB\a\xe0A\x04\xd0\xea0\x01R\acontent\x1a1\n" +
 	"\aAddress\x12\x12\n" +
 	"\x04host\x18\x01 \x01(\tR\x04host\x12\x12\n" +
 	"\x04port\x18\x02 \x01(\tR\x04port\x1aL\n" +
@@ -3396,12 +3397,12 @@ const file_v1_instance_service_proto_rawDesc = "" +
 	"SASLConfig\x12<\n" +
 	"\n" +
 	"krb_config\x18\x01 \x01(\v2\x1b.bytebase.v1.KerberosConfigH\x00R\tkrbConfigB\v\n" +
-	"\tmechanism\"\xe5\x01\n" +
+	"\tmechanism\"\xe9\x01\n" +
 	"\x0eKerberosConfig\x12\x18\n" +
 	"\aprimary\x18\x01 \x01(\tR\aprimary\x12\x1a\n" +
 	"\binstance\x18\x02 \x01(\tR\binstance\x12\x14\n" +
-	"\x05realm\x18\x03 \x01(\tR\x05realm\x12\x1b\n" +
-	"\x06keytab\x18\x04 \x01(\fB\x03\xe0A\x04R\x06keytab\x12\x19\n" +
+	"\x05realm\x18\x03 \x01(\tR\x05realm\x12\x1f\n" +
+	"\x06keytab\x18\x04 \x01(\fB\a\xe0A\x04\xd0\xea0\x01R\x06keytab\x12\x19\n" +
 	"\bkdc_host\x18\x05 \x01(\tR\akdcHost\x12\x19\n" +
 	"\bkdc_port\x18\x06 \x01(\tR\akdcPort\x124\n" +
 	"\x16kdc_transport_protocol\x18\a \x01(\tR\x14kdcTransportProtocol*G\n" +

@@ -219,7 +219,7 @@ message UpdateUserRequest {
   google.protobuf.FieldMask update_mask = 2;
 
   // The otp_code is used to verify the user's identity by MFA.
-  optional string otp_code = 3;
+  optional string otp_code = 3 [(bytebase.v1.audit_behavior) = SENSITIVE];
 
   // The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user.
   // This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response.
@@ -265,7 +265,7 @@ message UpdateEmailRequest {
 }
 
 message User {
-  reserved 5, 15;
+  reserved 5, 7, 15;
 
   option (google.api.resource) = {
     type: "bytebase.com/User"
@@ -286,26 +286,26 @@ message User {
   string title = 4 [(buf.validate.field).string.max_len = 200];
 
   // The password for authentication. Only used during user creation or password updates.
-  string password = 6 [(google.api.field_behavior) = INPUT_ONLY];
-
-  // The service key for service account authentication.
-  string service_key = 7;
+  string password = 6 [
+    (google.api.field_behavior) = INPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
 
   // The mfa_enabled flag means if the user has enabled MFA.
   bool mfa_enabled = 8;
 
   // Temporary OTP secret used during MFA setup and regeneration.
-  string temp_otp_secret = 9;
+  string temp_otp_secret = 9 [(bytebase.v1.audit_behavior) = SENSITIVE];
 
   // Temporary recovery codes used during MFA setup and regeneration.
-  repeated string temp_recovery_codes = 10;
+  repeated string temp_recovery_codes = 10 [(bytebase.v1.audit_behavior) = SENSITIVE];
 
   // Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
   google.protobuf.Timestamp temp_otp_secret_created_time = 11;
 
   // Should be a valid E.164 compliant phone number.
   // Could be empty.
-  string phone = 12;
+  string phone = 12 [(bytebase.v1.audit_behavior) = OMIT];
 
   message Profile {
     // The last time the user successfully logged in.
@@ -317,11 +317,14 @@ message User {
   }
 
   // User profile metadata.
-  Profile profile = 13;
+  Profile profile = 13 [(bytebase.v1.audit_behavior) = OMIT];
 
   // The groups for the user.
   // Format: groups/{email}
-  repeated string groups = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+  repeated string groups = 14 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (bytebase.v1.audit_behavior) = OMIT
+  ];
 
   // The current workspace.
   // Format: workspaces/{id}

@@ -285,7 +285,10 @@ message RotateDirectorySyncTokenRequest {
 
 message RotateDirectorySyncTokenResponse {
   // The new token, in plaintext. This is the only time it is ever returned.
-  string token = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
+  string token = 1 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (bytebase.v1.audit_behavior) = SENSITIVE
+  ];
 }
 
 message ListWorkspacesRequest {}

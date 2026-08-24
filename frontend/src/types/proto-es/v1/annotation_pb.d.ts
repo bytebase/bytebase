@@ -3,12 +3,50 @@
 /* eslint-disable */
 
 import type { GenEnum, GenExtension, GenFile } from "@bufbuild/protobuf/codegenv2";
-import type { MethodOptions } from "@bufbuild/protobuf/wkt";
+import type { FieldOptions, MethodOptions } from "@bufbuild/protobuf/wkt";
 
 /**
  * Describes the file v1/annotation.proto.
  */
 export declare const file_v1_annotation: GenFile;
+
+/**
+ * What an audit payload may carry for a field. One enum rather than a bool per
+ * behavior, because a field has exactly one classification.
+ *
+ * @generated from enum bytebase.v1.AuditBehavior
+ */
+export enum AuditBehavior {
+  /**
+   * Recorded as sent. This is a denylist default, so an unannotated secret is
+   * written; the inventory lint turns that into a build failure.
+   *
+   * @generated from enum value: AUDIT_BEHAVIOR_UNSPECIFIED = 0;
+   */
+  AUDIT_BEHAVIOR_UNSPECIFIED = 0,
+
+  /**
+   * A credential. It must not reach an audit payload, and the API may return it
+   * only on the response that mints it — never on a read path.
+   *
+   * @generated from enum value: SENSITIVE = 1;
+   */
+  SENSITIVE = 1,
+
+  /**
+   * Must not be recorded, for any reason other than being a credential:
+   * unbounded bodies, base64 blobs, bearer capabilities, and personal data.
+   * Unlike SENSITIVE it says nothing about the API contract.
+   *
+   * @generated from enum value: OMIT = 2;
+   */
+  OMIT = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.AuditBehavior.
+ */
+export declare const AuditBehaviorSchema: GenEnum<AuditBehavior>;
 
 /**
  * Authorization method for RPC calls.
@@ -333,4 +371,11 @@ export declare const mcp_method_class: GenExtension<MethodOptions, MCPMethodClas
  * @generated from extension: bytebase.v1.MCPDenialReason mcp_denial_reason = 100005;
  */
 export declare const mcp_denial_reason: GenExtension<MethodOptions, MCPDenialReason>;
+
+/**
+ * How the audit log treats this field.
+ *
+ * @generated from extension: bytebase.v1.AuditBehavior audit_behavior = 100010;
+ */
+export declare const audit_behavior: GenExtension<FieldOptions, AuditBehavior>;
 
