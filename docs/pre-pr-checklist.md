@@ -67,6 +67,12 @@ task run can share a `created_at` microsecond — BYT-10035), but it is equally
 project-scoped: every predicate on it must include `project` alongside
 `task_run_id`.
 
+`email_verification_code (email, purpose)` and `login_attempt (identity, kind)`
+are composite-PK but not project-scoped: the email/identity column is itself the
+scope. Their store methods must still predicate on the full PK; collision
+coverage is table-specific (`TestCollision_LoginAttempt` in `backend/tests/`)
+rather than via the shared project fixture.
+
 Always verify against LATEST.sql — tables may have been added since this list was
 last updated. Cross-reference with the tables your diff touches.
 

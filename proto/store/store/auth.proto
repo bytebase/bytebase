@@ -11,3 +11,12 @@ enum EmailVerificationCodePurpose {
   LOGIN = 1;
   PASSWORD_RESET = 2;
 }
+
+// LoginAttemptKind names which credential's attempt limit a login_attempt row
+// tracks. Stored as the enum name string in login_attempt.kind column.
+enum LoginAttemptKind {
+  LOGIN_ATTEMPT_KIND_UNSPECIFIED = 0;
+  PASSWORD = 1;
+  EMAIL_CODE = 2;
+  MFA = 3;
+}

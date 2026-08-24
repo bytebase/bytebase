@@ -6,6 +6,10 @@ the two counters that fail today: the audit-log count, which reads zero on Cloud
 `attempts` column, which an attacker resets by exhausting it. Closes T9 in
 [`v1-api-audit-2026-08.md`](v1-api-audit-2026-08.md).
 
+**Implemented** in [#21234](https://github.com/bytebase/bytebase/pull/21234) (2026-08-24). Migration
+`3.22/0012##login_attempt.sql`; the store owns the atomic claim, `backend/api/v1/auth_service_lockout.go`
+owns the kinds and limits, and the claim sites live with the credential each verifies.
+
 ## Background
 
 Guessing is throttled at three points by three mechanisms:
@@ -41,7 +45,8 @@ Guessing is throttled at three points by three mechanisms:
 - **G3** No existence oracle: unknown and known emails lock at the same attempt with the same error.
 - **G4** Locks expire on their own; no admin unlock.
 - **G5** Correct under replicas: state in the metadata database, one atomic statement per attempt.
-- **G6** Password and MFA thresholds, error codes, and messages unchanged.
+- **G6** Lockout error codes and messages unchanged; one shared threshold — five attempts per
+  ten minutes — replaces the three historical ones.
 
 ### Non-goals
 
@@ -75,11 +80,7 @@ belongs to. No `ip` column: the caller IP is forgeable, and per-source throttlin
 
 ### Semantics
 
-| Kind | Attempts `N` | Duration `D` |
-|---|---|---|
-| `PASSWORD` | 10 | 10 min |
-| `EMAIL_CODE` | 5 | 10 min |
-| `MFA` | 5 | 5 min |
+Every kind shares one limit: `N` = 5 attempts, `D` = 10 minutes.
 
 1. **An attempt claims a slot before the credential is checked.** `N` attempts are granted. If
    the identity already holds `N` and the latest was under `D` ago, the next gets no slot:
@@ -93,13 +94,18 @@ cannot merge two identities into one bucket or split one across buckets (G1):
 
 - local password and emailed code: the normalized email;
 - MFA: the email inside the signed temp token;
-- LDAP: the resolved identity-provider ID joined with the submitted username. The same username in
-  another directory is a different person and must be a different row — the point sharpened by
-  success deleting the row: keyed by bare username, an attacker who controls that username in a
-  directory of their own could clear a victim's counter by logging in there.
+- LDAP: the resolved identity-provider ID joined with the submitted username, verbatim. The same
+  username in another directory is a different person and must be a different row — the point
+  sharpened by success deleting the row: keyed by bare username, an attacker who controls that
+  username in a directory of their own could clear a victim's counter by logging in there. The
+  username is not normalized either, since a case-exact directory attribute can name two accounts
+  differing only by case, and merging them would let either lock — or clear — the other; one
+  bucket per submitted form is the accepted trade below.
 
-Identities over 254 characters — and, where the identity is an email, invalid syntax — are rejected
-before the claim, so garbage never writes a row.
+Every request field that becomes an identity is bounded at the proto edge (emails at 254
+characters, `string.max_len` enforced by the validate interceptor), invalid email syntax is
+rejected before the claim, and the store refuses structurally oversized keys — so garbage never
+writes a row.
 
 This is Vault's threshold / duration / counter-reset model with the last two collapsed, as Vault's
 own defaults do. It is at least as strict as a sliding window everywhere, and stricter against an
@@ -126,8 +132,9 @@ RETURNING 1;
 
 A row back is a slot; no row is a lockout. The row lock serializes concurrent claims, so the
 `N`th slot goes to exactly one of them (G5). `now()` is database time, so replicas cannot
-disagree. A slot spent on a non-credential error (database failure mid-verification) is not
-refunded.
+disagree. A slot spent on a non-credential error (database failure mid-verification, an
+unreachable LDAP directory) is not refunded — during such an outage login fails regardless, and
+the residual lock expires on its own within `D`.
 
 The store exposes exactly three operations: claim an attempt, clear on success, purge stale rows.
 
@@ -136,9 +143,10 @@ The store exposes exactly three operations: claim an attempt, clear on success, 
 Password login claims `PASSWORD` once, before the credential is checked — under the email for a
 local password, under the provider-scoped identity for an LDAP bind — and clears it on success. Verifying an emailed code claims `EMAIL_CODE` before the code row is even loaded, for
 login and password-reset codes alike, and clears it on a match. Completing MFA — during login or
-when switching workspaces — claims `MFA` for the email inside the signed temp token and clears it
-on success. A successful password reset also clears `PASSWORD`, as Grafana and Mattermost do, so
-a user who locked themselves out is not still locked with the new password. The three
+when switching workspaces — claims `MFA` for the email inside the signed temp token, and refuses a
+request carrying no code at all before claiming, since nothing is compared. A successful password
+reset also clears `PASSWORD` — the API path and the recovery CLI alike, as Grafana and Mattermost
+do — so a user who locked themselves out is not still locked with the new password. The three
 audit-counting checks they replace are deleted.
 
 ### `email_verification_code`
@@ -159,7 +167,8 @@ resend cooldown.
   password policy and the audit workspace come from the user's own memberships — the singleton on
   self-hosted. Email-code signup: the gates that run before creating a new user check the singleton on
   self-hosted, or on SaaS the workspace whose invitation the email holds — the same lookup
-  provisioning already uses; a brand-new signup has neither and gets the SaaS defaults, as today.
+  provisioning already uses, preferring the requested workspace when it is one of the email's own
+  invitations, as login does for existing users; a brand-new signup has neither and gets the SaaS defaults, as today.
   Existing users are checked after authentication against their resolved workspace, as today.
 
 ### Audit log and cleanup
@@ -184,16 +193,18 @@ it.
 
 **Performance: net improvement.** An indexed single-row upsert replaces an audit-log scan per
 attempt, locked attempts return before bcrypt, and one identifier's attempts serialize on its own
-row, throttling only that attacker. The one new cost — a small row per distinct identifier
+row, throttling only that attacker. A successful login holds its slot only for the verification's
+duration, so more than `N` concurrent correct-credential logins for one identity can see transient
+refusals until the first completes — accepted; a retry succeeds. The one new cost — a small row per distinct identifier
 attempted, an unauthenticated write path Cloud did not have — is bounded by pre-claim validation,
 the hourly purge, and edge rate caps.
 
 **Edge rules (configuration, not code).** Cloudflare does nothing for these paths until rules
 exist. `Login` / `ResetPassword`: ~30 per 10 min per IP, counting only `401`/`429` responses, so
 service accounts and CI logging in successfully from shared IPs never trip it. For that filter to
-catch LDAP spraying, an invalid-credential bind must surface as `Unauthenticated`, not the
-`Internal` (500) it returns today — a small pre-existing fix, without which the edge misses failed
-LDAP binds and the per-username rows they write. The two send paths, which always answer OK to
+catch LDAP spraying, an invalid-credential bind surfaces as `Unauthenticated` rather than the
+`Internal` (500) it used to return (shipped with this change; the directory's own diagnostic is
+logged and kept for the admin test-sign-in flow). The two send paths, which always answer OK to
 avoid enumeration: the same limit on all requests — tolerates an office NAT, caps single-IP
 mail-bombing. No challenges on auth paths; CLI and CI cannot solve them.
 Preconditions: origin locked to Cloudflare's ranges, `CF-Connecting-IP` as the audit caller IP.

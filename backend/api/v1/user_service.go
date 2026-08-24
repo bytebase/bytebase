@@ -443,7 +443,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 		if isMFATempSecretExpired(user.MFAConfig) {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("MFA setup has expired, please regenerate the temporary secret"))
 		}
-		isValid := validateWithCodeAndSecret(*request.Msg.OtpCode, user.MFAConfig.TempOtpSecret)
+		isValid := totp.Validate(*request.Msg.OtpCode, user.MFAConfig.TempOtpSecret)
 		if !isValid {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid OTP code"))
 		}

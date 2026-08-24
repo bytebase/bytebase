@@ -15,7 +15,6 @@ noted. Nothing here is patched yet. Fixed findings are removed and listed at the
 | T15 | Rotating a leaked cloud credential can silently do nothing | HIGH |
 | T13 | "Waiting for my approval" can show an empty page with a live Load More | HIGH |
 | T14 | Paging through issues across projects skips some and repeats others | HIGH |
-| T9 | On Cloud, login codes and 2FA codes can be guessed without limit | HIGH |
 | T18a | Test-environment rights can cancel a running production migration | MED |
 | T12 | Anonymous callers can enumerate emails, relay mail, and read your LDAP config | MED |
 | T16 | Four `BatchGet` RPCs behave four different ways when an item is missing | MED |
@@ -27,40 +26,6 @@ noted. Nothing here is patched yet. Fixed findings are removed and listed at the
 ---
 
 ## Getting in, and staying in
-
-### T9 · On Cloud, login codes and 2FA codes can be guessed without limit — HIGH
-
-The password and MFA lockouts count failed-login rows in the audit log, and a failed login's audit
-row needs a workspace to be written under. Self-hosted always has one — the singleton
-(`resolveAuthenticationWorkspaceID`, `auth_service.go:167-190`). On Cloud the only source is the
-request's own `workspace` field, which an attacker omits; with none the interceptor skips the row
-(`audit.go:398-400`), the counter reads zero forever, and the limits never fire. A lockout keyed on
-something the caller controls is not a lockout.
-
-**This does not expose passwords on Cloud.** SaaS forces `DisallowPasswordSignin = true`
-(`auth_service.go:1624-1627`) and Cloud accounts carry a random 32-byte bcrypt hash (`:2049-2056`).
-**What is exposed is the second factor.** `completeMFALogin` gates on `checkMFALockout` (`:1076`) —
-inert on Cloud — and the MFA temp token is a reusable five-minute JWT, so an attacker who has passed
-the email-code step (i.e. holds the inbox, the situation the second factor exists to survive) can
-guess TOTP or recovery codes for the whole window with nothing counting the misses.
-
-Self-hosted is fixed and tested ([#21189](https://github.com/bytebase/bytebase/pull/21189)), but the
-control still reads the audit log. The email-code path, traced for the fix, has its own hole: the
-resend cooldown is a predicate on the code row and the row is deleted on attempt exhaustion, so the
-cooldown can be bypassed and the Cloud primary factor guessed at request rate. That raises the
-finding to HIGH: it is the first factor of every MFA-less Cloud account, not a second factor behind
-a compromised inbox.
-
-**Fix:** [`login-attempt-lockout.md`](login-attempt-lockout.md) — one `login_attempt` table for
-password, email-code, and MFA failures, replacing both the audit-log counter and the per-code
-attempt column. Re-verified 2026-08-23 against `37339d73c8`.
-
-**Accepted, not fixed:** no per-tenant failed-login record on Cloud (a control, not a record, is what
-the fix adds; SIEM consumers are self-hosted, where rows already exist, and attribution is ambiguous
-once a user spans workspaces), and lockout-as-denial-of-service (inherent to per-identity lockout —
-with the fix it covers Cloud's email-code factor too, where the same denial is already reachable by
-burning a victim's codes; bounded by the short window; the remedy is per-IP throttling, scoped out
-with password spraying in BYT-10068).
 
 ### T10 · A borrowed session becomes permanent account takeover — HIGH
 
@@ -255,16 +220,13 @@ constraints.
 
 ## What I'd do, in order
 
-1. **Bound credential guessing (T9)** per [`login-attempt-lockout.md`](login-attempt-lockout.md):
-   one attempt table for password, email-code, and MFA failures on both deployments. It needs no
-   stolen session, only a target email, and the design is ready to implement.
-2. **Require re-authentication for password change and 2FA disable (T10).** The one finding that
+1. **Require re-authentication for password change and 2FA disable (T10).** The one finding that
    turns a temporary compromise into a permanent one, and it affects both deployments.
-3. **Fix the ACL class, not the instance (T2).** Teach the interceptor to collect every annotated
+2. **Fix the ACL class, not the instance (T2).** Teach the interceptor to collect every annotated
    resource field, then annotate `DiffSchema`. Otherwise the next second-resource field reopens it.
-4. **Make credential rotation fail loudly (T15).** A security operation that returns 200 and does
+3. **Make credential rotation fail loudly (T15).** A security operation that returns 200 and does
    nothing is worse than one that errors.
-5. **Fail closed on auth annotations, and put api-linter in CI.** Reject
+4. **Fail closed on auth annotations, and put api-linter in CI.** Reject
    `AUTH_METHOD_UNSPECIFIED` at startup; make a `permission` on a CUSTOM RPC either enforced or a
    build error, since 15 are decorative. None of Tier 5 was visible to `buf lint`'s BASIC profile,
    which is why it accumulated.
@@ -283,7 +245,7 @@ constraints.
 | T12 `GetActuatorInfo` | [#21184](https://github.com/bytebase/bytebase/pull/21184) — anonymous access and the `name` field removed; workspace now comes from the token (the narrower surface that replaced it is T12) |
 | T13 `SearchWorksheets` | [#21160](https://github.com/bytebase/bytebase/pull/21160) + [#21178](https://github.com/bytebase/bytebase/pull/21178) — visibility predicate pushed into SQL before `LIMIT` |
 | T18 worksheet write/delete | [#21169](https://github.com/bytebase/bytebase/pull/21169) + [#21181](https://github.com/bytebase/bytebase/pull/21181) — per-verb permissions; SQL Editor Read User can no longer rewrite or delete |
-| T9 (self-hosted) | [#21189](https://github.com/bytebase/bytebase/pull/21189) — failed logins are audited and the lockout is tested end-to-end (SaaS remainder above) |
+| T9 | [#21189](https://github.com/bytebase/bytebase/pull/21189) (self-hosted audit rows) + [#21234](https://github.com/bytebase/bytebase/pull/21234) — one `login_attempt` table bounds password, email-code, and MFA guessing per identity on both deployments, replacing the audit-log counter and the per-code attempt column (which bypassed the resend cooldown). Accepted with it: no per-tenant failed-login record on Cloud, and lockout-as-denial-of-service — see [`login-attempt-lockout.md`](login-attempt-lockout.md) |
 
 **`AIService.Chat` — accepted, not fixed** (2026-08-18). `Chat` requires an authenticated workspace
 principal and touches no database or sheet, so the only exposure is LLM spend. On Cloud the feature

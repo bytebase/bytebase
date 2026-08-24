@@ -7,6 +7,7 @@
 package v1
 
 import (
+	_ "buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go/buf/validate"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
@@ -211,8 +212,12 @@ func (x *Restriction) GetPasswordResetEnabled() bool {
 type LoginRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// User's email address.
+	// Bounded so an oversized identity is refused at the edge before any
+	// handler runs; the login-attempt lockout keys rows by this value.
 	Email string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
-	// User's password for authentication.
+	// User's password for authentication. Bounded for abuse only: LDAP
+	// directories may accept passwords beyond bcrypt's 72-byte limit, and the
+	// local-password path rejects longer inputs itself.
 	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
 	// If true, sets access token and refresh token as HTTP-only cookies instead of
 	// returning the token in the response body. Use for browser-based clients.
@@ -731,6 +736,8 @@ func (x *ExchangeTokenResponse) GetAccessToken() string {
 type SignupRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The email for the new account.
+	// Bounded so an oversized identity is refused at the edge before any
+	// handler runs; the login-attempt lockout keys rows by this value.
 	Email string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
 	// The password for the new account.
 	Password string `protobuf:"bytes,2,opt,name=password,proto3" json:"password,omitempty"`
@@ -868,6 +875,8 @@ func (*RefreshResponse) Descriptor() ([]byte, []int) {
 type RequestPasswordResetRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The email address of the account to reset.
+	// Bounded so an oversized identity is refused at the edge before any
+	// handler runs; the login-attempt lockout keys rows by this value.
 	Email string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
 	// Optional workspace context captured at send time, used to locate the EMAIL setting,
 	// and later (at verify time) for signup gate checks and workspace assignment.
@@ -925,6 +934,8 @@ func (x *RequestPasswordResetRequest) GetWorkspace() string {
 type ResetPasswordRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The email address of the account.
+	// Bounded so an oversized identity is refused at the edge before any
+	// handler runs; the login-attempt lockout keys rows by this value.
 	Email string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
 	// The 6-digit code from the reset email.
 	Code string `protobuf:"bytes,2,opt,name=code,proto3" json:"code,omitempty"`
@@ -988,6 +999,8 @@ func (x *ResetPasswordRequest) GetNewPassword() string {
 type SendEmailLoginCodeRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The email address to send the code to.
+	// Bounded so an oversized identity is refused at the edge before any
+	// handler runs; the login-attempt lockout keys rows by this value.
 	Email string `protobuf:"bytes,1,opt,name=email,proto3" json:"email,omitempty"`
 	// Optional workspace context captured at send time, used to locate the EMAIL setting,
 	// and later (at verify time) for signup gate checks and workspace assignment.
@@ -1128,7 +1141,7 @@ var File_v1_auth_service_proto protoreflect.FileDescriptor
 
 const file_v1_auth_service_proto_rawDesc = "" +
 	"\n" +
-	"\x15v1/auth_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x13v1/annotation.proto\x1a\x18v1/setting_service.proto\x1a\x15v1/user_service.proto\"`\n" +
+	"\x15v1/auth_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x13v1/annotation.proto\x1a\x18v1/setting_service.proto\x1a\x15v1/user_service.proto\"`\n" +
 	"#GetAuthenticationRestrictionRequest\x129\n" +
 	"\tworkspace\x18\x01 \x01(\tB\x1b\xfaA\x18\n" +
 	"\x16bytebase.com/WorkspaceR\tworkspace\"x\n" +
@@ -1140,21 +1153,21 @@ const file_v1_auth_service_proto_rawDesc = "" +
 	"\x18disallow_password_signin\x18\x02 \x01(\bB\x03\xe0A\x03R\x16disallowPasswordSignin\x12p\n" +
 	"\x14password_restriction\x18\x03 \x01(\v28.bytebase.v1.WorkspaceProfileSetting.PasswordRestrictionB\x03\xe0A\x03R\x13passwordRestriction\x12:\n" +
 	"\x17allow_email_code_signin\x18\x04 \x01(\bB\x03\xe0A\x03R\x14allowEmailCodeSignin\x129\n" +
-	"\x16password_reset_enabled\x18\x05 \x01(\bB\x03\xe0A\x03R\x14passwordResetEnabled\"\xdd\x03\n" +
-	"\fLoginRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\x12 \n" +
-	"\bpassword\x18\x02 \x01(\tB\x04\xd0\xea0\x01R\bpassword\x12\x10\n" +
-	"\x03web\x18\x03 \x01(\bR\x03web\x12\x19\n" +
-	"\bidp_name\x18\x04 \x01(\tR\aidpName\x12E\n" +
+	"\x16password_reset_enabled\x18\x05 \x01(\bB\x03\xe0A\x03R\x14passwordResetEnabled\"\xa0\x04\n" +
+	"\fLoginRequest\x12\x1e\n" +
+	"\x05email\x18\x01 \x01(\tB\b\xbaH\x05r\x03\x18\xfe\x01R\x05email\x12(\n" +
+	"\bpassword\x18\x02 \x01(\tB\f\xbaH\x05r\x03(\x80\x04\xd0\xea0\x01R\bpassword\x12\x10\n" +
+	"\x03web\x18\x03 \x01(\bR\x03web\x12#\n" +
+	"\bidp_name\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\aidpName\x12E\n" +
 	"\vidp_context\x18\x05 \x01(\v2$.bytebase.v1.IdentityProviderContextR\n" +
-	"idpContext\x12$\n" +
-	"\botp_code\x18\x06 \x01(\tB\x04\xd0\xea0\x01H\x00R\aotpCode\x88\x01\x01\x12.\n" +
-	"\rrecovery_code\x18\a \x01(\tB\x04\xd0\xea0\x01H\x01R\frecoveryCode\x88\x01\x01\x12/\n" +
-	"\x0emfa_temp_token\x18\b \x01(\tB\x04\xd0\xea0\x01H\x02R\fmfaTempToken\x88\x01\x01\x12(\n" +
+	"idpContext\x12+\n" +
+	"\botp_code\x18\x06 \x01(\tB\v\xbaH\x04r\x02\x18@\xd0\xea0\x01H\x00R\aotpCode\x88\x01\x01\x125\n" +
+	"\rrecovery_code\x18\a \x01(\tB\v\xbaH\x04r\x02\x18@\xd0\xea0\x01H\x01R\frecoveryCode\x88\x01\x01\x127\n" +
+	"\x0emfa_temp_token\x18\b \x01(\tB\f\xbaH\x05r\x03\x18\x80 \xd0\xea0\x01H\x02R\fmfaTempToken\x88\x01\x01\x12/\n" +
 	"\n" +
-	"email_code\x18\t \x01(\tB\x04\xd0\xea0\x01H\x03R\temailCode\x88\x01\x01\x12!\n" +
+	"email_code\x18\t \x01(\tB\v\xbaH\x04r\x02\x18@\xd0\xea0\x01H\x03R\temailCode\x88\x01\x01\x12+\n" +
 	"\tworkspace\x18\n" +
-	" \x01(\tH\x04R\tworkspace\x88\x01\x01B\v\n" +
+	" \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02H\x04R\tworkspace\x88\x01\x01B\v\n" +
 	"\t_otp_codeB\x10\n" +
 	"\x0e_recovery_codeB\x11\n" +
 	"\x0f_mfa_temp_tokenB\r\n" +
@@ -1164,49 +1177,49 @@ const file_v1_auth_service_proto_rawDesc = "" +
 	"\x17IdentityProviderContext\x12S\n" +
 	"\x0eoauth2_context\x18\x01 \x01(\v2*.bytebase.v1.OAuth2IdentityProviderContextH\x00R\roauth2Context\x12M\n" +
 	"\foidc_context\x18\x02 \x01(\v2(.bytebase.v1.OIDCIdentityProviderContextH\x00R\voidcContextB\t\n" +
-	"\acontext\"9\n" +
-	"\x1dOAuth2IdentityProviderContext\x12\x18\n" +
-	"\x04code\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\x04code\"7\n" +
-	"\x1bOIDCIdentityProviderContext\x12\x18\n" +
-	"\x04code\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\x04code\"\xcc\x01\n" +
+	"\acontext\"A\n" +
+	"\x1dOAuth2IdentityProviderContext\x12 \n" +
+	"\x04code\x18\x01 \x01(\tB\f\xbaH\x05r\x03\x18\x80 \xd0\xea0\x01R\x04code\"?\n" +
+	"\x1bOIDCIdentityProviderContext\x12 \n" +
+	"\x04code\x18\x01 \x01(\tB\f\xbaH\x05r\x03\x18\x80 \xd0\xea0\x01R\x04code\"\xcc\x01\n" +
 	"\rLoginResponse\x12\x1a\n" +
 	"\x05token\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\x05token\x12/\n" +
 	"\x0emfa_temp_token\x18\x02 \x01(\tB\x04\xd0\xea0\x01H\x00R\fmfaTempToken\x88\x01\x01\x124\n" +
 	"\x16require_reset_password\x18\x03 \x01(\bR\x14requireResetPassword\x12%\n" +
 	"\x04user\x18\x04 \x01(\v2\x11.bytebase.v1.UserR\x04userB\x11\n" +
 	"\x0f_mfa_temp_token\"\x0f\n" +
-	"\rLogoutRequest\"H\n" +
-	"\x14ExchangeTokenRequest\x12\x1a\n" +
-	"\x05token\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\x05token\x12\x14\n" +
-	"\x05email\x18\x02 \x01(\tR\x05email\"@\n" +
+	"\rLogoutRequest\"[\n" +
+	"\x14ExchangeTokenRequest\x12#\n" +
+	"\x05token\x18\x01 \x01(\tB\r\xbaH\x06r\x04\x18\x80\x80\x04\xd0\xea0\x01R\x05token\x12\x1e\n" +
+	"\x05email\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\xfe\x01R\x05email\"@\n" +
 	"\x15ExchangeTokenResponse\x12'\n" +
-	"\faccess_token\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\vaccessToken\"]\n" +
-	"\rSignupRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\x12 \n" +
-	"\bpassword\x18\x02 \x01(\tB\x04\xd0\xea0\x01R\bpassword\x12\x14\n" +
-	"\x05title\x18\x03 \x01(\tR\x05title\"\x10\n" +
+	"\faccess_token\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\vaccessToken\"x\n" +
+	"\rSignupRequest\x12\x1e\n" +
+	"\x05email\x18\x01 \x01(\tB\b\xbaH\x05r\x03\x18\xfe\x01R\x05email\x12'\n" +
+	"\bpassword\x18\x02 \x01(\tB\v\xbaH\x04r\x02(H\xd0\xea0\x01R\bpassword\x12\x1e\n" +
+	"\x05title\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\"\x10\n" +
 	"\x0eRefreshRequest\"\x11\n" +
-	"\x0fRefreshResponse\"d\n" +
-	"\x1bRequestPasswordResetRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\x12!\n" +
-	"\tworkspace\x18\x02 \x01(\tH\x00R\tworkspace\x88\x01\x01B\f\n" +
+	"\x0fRefreshResponse\"x\n" +
+	"\x1bRequestPasswordResetRequest\x12\x1e\n" +
+	"\x05email\x18\x01 \x01(\tB\b\xbaH\x05r\x03\x18\xfe\x01R\x05email\x12+\n" +
+	"\tworkspace\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02H\x00R\tworkspace\x88\x01\x01B\f\n" +
 	"\n" +
-	"_workspace\"o\n" +
-	"\x14ResetPasswordRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\x12\x18\n" +
-	"\x04code\x18\x02 \x01(\tB\x04\xd0\xea0\x01R\x04code\x12'\n" +
-	"\fnew_password\x18\x03 \x01(\tB\x04\xd0\xea0\x01R\vnewPassword\"b\n" +
-	"\x19SendEmailLoginCodeRequest\x12\x14\n" +
-	"\x05email\x18\x01 \x01(\tR\x05email\x12!\n" +
-	"\tworkspace\x18\x02 \x01(\tH\x00R\tworkspace\x88\x01\x01B\f\n" +
+	"_workspace\"\x87\x01\n" +
+	"\x14ResetPasswordRequest\x12\x1e\n" +
+	"\x05email\x18\x01 \x01(\tB\b\xbaH\x05r\x03\x18\xfe\x01R\x05email\x12\x1f\n" +
+	"\x04code\x18\x02 \x01(\tB\v\xbaH\x04r\x02\x18@\xd0\xea0\x01R\x04code\x12.\n" +
+	"\fnew_password\x18\x03 \x01(\tB\v\xbaH\x04r\x02(H\xd0\xea0\x01R\vnewPassword\"v\n" +
+	"\x19SendEmailLoginCodeRequest\x12\x1e\n" +
+	"\x05email\x18\x01 \x01(\tB\b\xbaH\x05r\x03\x18\xfe\x01R\x05email\x12+\n" +
+	"\tworkspace\x18\x02 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02H\x00R\tworkspace\x88\x01\x01B\f\n" +
 	"\n" +
-	"_workspace\"\x81\x02\n" +
-	"\x16SwitchWorkspaceRequest\x12\x1c\n" +
-	"\tworkspace\x18\x01 \x01(\tR\tworkspace\x12\x10\n" +
-	"\x03web\x18\x02 \x01(\bR\x03web\x12$\n" +
-	"\botp_code\x18\x03 \x01(\tB\x04\xd0\xea0\x01H\x00R\aotpCode\x88\x01\x01\x12.\n" +
-	"\rrecovery_code\x18\x04 \x01(\tB\x04\xd0\xea0\x01H\x01R\frecoveryCode\x88\x01\x01\x12/\n" +
-	"\x0emfa_temp_token\x18\x05 \x01(\tB\x04\xd0\xea0\x01H\x02R\fmfaTempToken\x88\x01\x01B\v\n" +
+	"_workspace\"\xa1\x02\n" +
+	"\x16SwitchWorkspaceRequest\x12&\n" +
+	"\tworkspace\x18\x01 \x01(\tB\b\xbaH\x05r\x03\x18\x80\x02R\tworkspace\x12\x10\n" +
+	"\x03web\x18\x02 \x01(\bR\x03web\x12+\n" +
+	"\botp_code\x18\x03 \x01(\tB\v\xbaH\x04r\x02\x18@\xd0\xea0\x01H\x00R\aotpCode\x88\x01\x01\x125\n" +
+	"\rrecovery_code\x18\x04 \x01(\tB\v\xbaH\x04r\x02\x18@\xd0\xea0\x01H\x01R\frecoveryCode\x88\x01\x01\x127\n" +
+	"\x0emfa_temp_token\x18\x05 \x01(\tB\f\xbaH\x05r\x03\x18\x80 \xd0\xea0\x01H\x02R\fmfaTempToken\x88\x01\x01B\v\n" +
 	"\t_otp_codeB\x10\n" +
 	"\x0e_recovery_codeB\x11\n" +
 	"\x0f_mfa_temp_token2\xc2\n" +

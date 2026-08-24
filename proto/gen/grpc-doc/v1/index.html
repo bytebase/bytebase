@@ -16359,14 +16359,18 @@ the deployment-level defaults. </p></td>
                   <td>email</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>User&#39;s email address. </p></td>
+                  <td><p>User&#39;s email address.
+Bounded so an oversized identity is refused at the edge before any
+handler runs; the login-attempt lockout keys rows by this value. </p></td>
                 </tr>
               
                 <tr>
                   <td>password</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>User&#39;s password for authentication. </p></td>
+                  <td><p>User&#39;s password for authentication. Bounded for abuse only: LDAP
+directories may accept passwords beyond bcrypt&#39;s 72-byte limit, and the
+local-password path rejects longer inputs itself. </p></td>
                 </tr>
               
                 <tr>
@@ -16568,7 +16572,9 @@ Only returned when web=false. For web=true, the token is set as an HTTP-only coo
                   <td>email</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The email address of the account to reset. </p></td>
+                  <td><p>The email address of the account to reset.
+Bounded so an oversized identity is refused at the edge before any
+handler runs; the login-attempt lockout keys rows by this value. </p></td>
                 </tr>
               
                 <tr>
@@ -16602,7 +16608,9 @@ Format: workspaces/{workspace} </p></td>
                   <td>email</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The email address of the account. </p></td>
+                  <td><p>The email address of the account.
+Bounded so an oversized identity is refused at the edge before any
+handler runs; the login-attempt lockout keys rows by this value. </p></td>
                 </tr>
               
                 <tr>
@@ -16693,7 +16701,9 @@ True when the workspace (or deployment) has an email setting configured. </p></t
                   <td>email</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The email address to send the code to. </p></td>
+                  <td><p>The email address to send the code to.
+Bounded so an oversized identity is refused at the edge before any
+handler runs; the login-attempt lockout keys rows by this value. </p></td>
                 </tr>
               
                 <tr>
@@ -16727,7 +16737,9 @@ Format: workspaces/{workspace} </p></td>
                   <td>email</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The email for the new account. </p></td>
+                  <td><p>The email for the new account.
+Bounded so an oversized identity is refused at the edge before any
+handler runs; the login-attempt lockout keys rows by this value. </p></td>
                 </tr>
               
                 <tr>
