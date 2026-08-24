@@ -1561,6 +1561,31 @@
       "error-load-failed": "加载客户端信息失败",
       "error-missing-params": "缺少必需的 OAuth2 参数",
       "error-switch-failed": "切换工作空间失败",
+      "mcp": {
+        "disabled": {
+          "ask-admin": "认为这里应该开启？请咨询工作空间管理员的 MCP 访问策略。",
+          "description": "工作空间管理员已关闭 {{workspace}} 的 MCP 访问。未建立任何连接。",
+          "description-no-workspace": "工作空间管理员已关闭本工作空间的 MCP 访问。未建立任何连接。",
+          "line": {
+            "no-session": "任何 AI 会话都无法连接到本工作空间",
+            "recorded": "若仍尝试连接，该次尝试会记录在审计日志中"
+          },
+          "policy-label": "工作空间策略",
+          "title": "MCP 访问已关闭"
+        },
+        "line": {
+          "audit": "被审计的操作会带上 MCP 标记，策略拒绝的操作也会被记录",
+          "capped": "以你本人的 Bytebase 权限为上限",
+          "masking": "你的脱敏豁免对此会话不生效",
+          "no-write": "不能修改任何数据或模式",
+          "read": "浏览模式并执行只读查询",
+          "workflow": "创建工单、计划和发布，以及导出查询结果",
+          "write": "在你的权限范围内修改数据和模式"
+        },
+        "see-contents": "查看此工作区策略允许的范围",
+        "title": "此会话可以",
+        "write-caution": "具有写权限的 AI 会话会造成真实变更。请仅在你可控的机器上批准。"
+      },
       "permission-access": "使用您的权限访问您的 Bytebase 账户",
       "permissions": "此应用程序将能够:",
       "title": "授权请求",
@@ -2526,6 +2551,12 @@
         "description": "首次连接需要 OAuth 身份验证。请确保您拥有相应的 Bytebase 权限。",
         "title": "需要身份验证"
       },
+      "connect": {
+        "description": "将 Bytebase 添加到你的 AI 客户端，在浏览器中批准访问，然后开始提问。",
+        "desktop-note": "Claude Desktop 从你的 Claude 账户读取远程服务器，而不是配置文件。请在 claude.ai 的 Customize > Connectors 中将此 URL 添加为自定义连接器，随后它会出现在 Claude Desktop 中。",
+        "json-note": "这是 mcpServers 格式。各客户端的配置格式并不相同：例如 VS Code 在自己的 mcp.json 中使用 servers，此时请改用 VS Code 标签页。",
+        "title": "连接客户端"
+      },
       "contents": {
         "depth": {
           "description": "只读上限在每个引擎上的执行强度。",
@@ -2563,9 +2594,6 @@
         "description": "连接后，尝试向 AI 助手提问：",
         "example": "列出我的 Bytebase 实例中的所有项目",
         "title": "您的第一个提示"
-      },
-      "general-config": {
-        "title": "方式一：JSON 配置"
       },
       "policy": {
         "audit": "MCP 策略拒绝会记录在审计日志中。",
@@ -2615,13 +2643,6 @@
           "description": "本工作空间存储的值为 {{stored}}，当前版本不提供该上限。所有 MCP 连接都会被拒绝。请选择一种模式并保存以修复。",
           "title": "当前版本不提供已存储的访问策略"
         }
-      },
-      "quick-start": {
-        "description": "或者使用以下 CLI 命令。",
-        "title": "方式二：CLI 命令"
-      },
-      "setup": {
-        "add-to-config": "将此 JSON 添加到您的 MCP 客户端配置文件。"
       },
       "title": "MCP 集成"
     },

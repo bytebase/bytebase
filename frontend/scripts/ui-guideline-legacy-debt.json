@@ -1843,18 +1843,6 @@
       "count": 1
     },
     {
-      "path": "src/routes/auth/OAuth2ConsentPage.tsx",
-      "rule": "no-space-between",
-      "token": "space-y-1",
-      "count": 1
-    },
-    {
-      "path": "src/routes/auth/OAuth2ConsentPage.tsx",
-      "rule": "no-space-between",
-      "token": "space-y-6",
-      "count": 1
-    },
-    {
       "path": "src/routes/auth/PasswordForgotPage.tsx",
       "rule": "no-raw-color",
       "token": "bg-white",
