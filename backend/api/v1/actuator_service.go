@@ -136,6 +136,9 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 			if sample != nil && sample.ExpiresAt != nil && sample.DeletedAt == nil {
 				serverInfo.Sample.ExpireTime = timestamppb.New(*sample.ExpiresAt)
 			}
+		} else {
+			hasSampleInstances, _ := s.store.HasSampleInstances(ctx, workspaceID)
+			serverInfo.Sample.Available = hasSampleInstances
 		}
 
 		defaultProjectID, err := s.store.GetDefaultProjectID(ctx, workspaceID)
