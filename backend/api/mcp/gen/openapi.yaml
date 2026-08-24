@@ -17920,13 +17920,11 @@ components:
           type: boolean
           title: available
           description: Whether sample setup is currently available.
-        instances:
-          type: array
-          items:
-            type: string
-          title: instances
+        instance:
+          type: string
+          title: instance
           description: |-
-            The provisioned sample instances.
+            The provisioned sample instance.
              Format: instances/{instance}
         expireTime:
           title: expire_time

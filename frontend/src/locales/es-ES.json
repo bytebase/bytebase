@@ -3470,7 +3470,7 @@
       "query": "Ir a SQL Editor"
     },
     "descriptions": {
-      "database": "Crea o transfiere una base de datos a un proyecto antes de consultar datos.",
+      "database": "Consulta una base de datos existente en tu proyecto o una base de datos de ejemplo, o crea o transfiere una cuando sea necesario.",
       "instance": "Conecta una instancia para que Bytebase pueda sincronizar tus bases de datos.",
       "project": "Crea un proyecto para organizar bases de datos y cambios.",
       "sql-editor": "Consulta datos en SQL Editor o crea un cambio de base de datos gobernado."
@@ -3490,7 +3490,7 @@
     "previous-step-required": "Debes terminar el paso anterior.",
     "self": "Configurar Bytebase",
     "steps": {
-      "database": "Preparar base de datos",
+      "database": "Explorar bases de datos",
       "instance": "Conectar instancia",
       "project": "Crear proyecto",
       "query": "Consultar datos"

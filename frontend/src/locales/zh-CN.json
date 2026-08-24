@@ -3470,7 +3470,7 @@
       "query": "前往 SQL Editor"
     },
     "descriptions": {
-      "database": "创建数据库或将数据库转移到项目中，然后查询数据。",
+      "database": "查看项目中现有的数据库或示例数据库；如有需要，可创建或转移数据库。",
       "instance": "连接实例，让 Bytebase 可以同步你的数据库。",
       "project": "创建项目来管理数据库和变更。",
       "sql-editor": "在 SQL Editor 中查询数据，或创建受管数据库变更。"
@@ -3490,7 +3490,7 @@
     "previous-step-required": "你需要先完成上一步。",
     "self": "设置 Bytebase",
     "steps": {
-      "database": "准备数据库",
+      "database": "浏览数据库",
       "instance": "连接实例",
       "project": "创建项目",
       "query": "查询数据"

@@ -1182,7 +1182,7 @@ SampleInfo describes sample setup availability and provisioned resources.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | available | [bool](#bool) |  | Whether sample setup is currently available. |
-| instances | [string](#string) | repeated | The provisioned sample instances. Format: instances/{instance} |
+| instance | [string](#string) |  | The provisioned sample instance. Format: instances/{instance} |
 | expire_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time when the provisioned sample resources expire. |
 
 

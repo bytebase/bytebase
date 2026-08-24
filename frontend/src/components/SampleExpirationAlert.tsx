@@ -18,7 +18,7 @@ export function SampleExpirationAlert({
   const expireTime = sample?.expireTime;
   const canonicalInstanceName = `instances/${extractInstanceResourceName(instanceName)}`;
 
-  if (!expireTime || !sample.instances.includes(canonicalInstanceName)) {
+  if (!expireTime || sample.instance !== canonicalInstanceName) {
     return null;
   }
 

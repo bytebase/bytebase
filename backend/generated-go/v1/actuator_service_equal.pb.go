@@ -33,13 +33,8 @@ func (x *SampleInfo) Equal(y *SampleInfo) bool {
 	if x.Available != y.Available {
 		return false
 	}
-	if len(x.Instances) != len(y.Instances) {
+	if x.Instance != y.Instance {
 		return false
-	}
-	for i := 0; i < len(x.Instances); i++ {
-		if x.Instances[i] != y.Instances[i] {
-			return false
-		}
 	}
 	if p, q := x.ExpireTime, y.ExpireTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false

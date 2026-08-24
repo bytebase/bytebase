@@ -99,6 +99,16 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	require.NoError(t, err)
 	authenticatedCtx := context.WithValue(ctx, common.UserContextKey, user)
 	authenticatedCtx = context.WithValue(authenticatedCtx, common.WorkspaceIDContextKey, workspaceID)
+	nonSaaSResponse, err := actuatorService.GetActuatorInfo(authenticatedCtx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
+	require.NoError(t, err)
+	require.False(t, nonSaaSResponse.Msg.Sample.Available)
+
+	profile.SaaS = true
+
+	availableResponse, err := actuatorService.GetActuatorInfo(authenticatedCtx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
+	require.NoError(t, err)
+	require.True(t, availableResponse.Msg.Sample.Available)
+
 	defaultProjectID, err := stores.GetDefaultProjectID(ctx, workspaceID)
 	require.NoError(t, err)
 	reservation, created, err := stores.ReserveSampleProjectInstance(ctx, &store.SampleProjectInstanceMessage{
@@ -115,8 +125,6 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	activated, err := stores.ActivateSampleProjectInstance(ctx, workspaceID, reservation.InstanceID, reservation.ReplicaID, expiresAt)
 	require.NoError(t, err)
 	require.True(t, activated)
-	profile.SaaS = true
-
 	privateResponse, err := actuatorService.GetActuatorInfo(authenticatedCtx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
 	require.NoError(t, err)
 	require.Equal(t, "9.9.9", privateResponse.Msg.Version)
@@ -124,6 +132,23 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	require.Equal(t, common.FormatWorkspace(workspaceID), privateResponse.Msg.Workspace)
 	require.NotEmpty(t, privateResponse.Msg.DefaultProject)
 	require.True(t, privateResponse.Msg.Sample.Available)
-	require.Equal(t, []string{common.FormatInstance(reservation.InstanceID)}, privateResponse.Msg.Sample.Instances)
+	require.Equal(t, common.FormatInstance(reservation.InstanceID), privateResponse.Msg.Sample.Instance)
 	require.True(t, expiresAt.Equal(privateResponse.Msg.Sample.ExpireTime.AsTime()))
+
+	cleanupNow := expiresAt.Add(time.Second)
+	cleanupResult, err := stores.WithLockedSampleProjectInstanceCleanupRecord(
+		ctx,
+		cleanupNow,
+		cleanupNow.Add(-time.Hour),
+		"",
+		func(context.Context, *store.SampleProjectInstanceTx, *store.SampleProjectInstanceMessage) error {
+			return nil
+		},
+	)
+	require.NoError(t, err)
+	require.True(t, cleanupResult.Found)
+	deletedResponse, err := actuatorService.GetActuatorInfo(authenticatedCtx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
+	require.NoError(t, err)
+	require.True(t, deletedResponse.Msg.Sample.Available)
+	require.Equal(t, common.FormatInstance(reservation.InstanceID), deletedResponse.Msg.Sample.Instance)
 }

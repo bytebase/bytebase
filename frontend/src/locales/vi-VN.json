@@ -3470,7 +3470,7 @@
       "query": "Đi tới SQL Editor"
     },
     "descriptions": {
-      "database": "Tạo hoặc chuyển cơ sở dữ liệu vào dự án trước khi truy vấn dữ liệu.",
+      "database": "Xem cơ sở dữ liệu hiện có trong dự án hoặc cơ sở dữ liệu mẫu, hoặc tạo hay chuyển một cơ sở dữ liệu khi cần.",
       "instance": "Kết nối instance để Bytebase có thể đồng bộ cơ sở dữ liệu của bạn.",
       "project": "Tạo dự án để quản lý cơ sở dữ liệu và thay đổi.",
       "sql-editor": "Truy vấn dữ liệu trong SQL Editor hoặc tạo thay đổi cơ sở dữ liệu được quản trị."
@@ -3490,7 +3490,7 @@
     "previous-step-required": "Bạn cần hoàn thành bước trước đó.",
     "self": "Thiết lập Bytebase",
     "steps": {
-      "database": "Chuẩn bị cơ sở dữ liệu",
+      "database": "Khám phá cơ sở dữ liệu",
       "instance": "Kết nối instance",
       "project": "Tạo dự án",
       "query": "Truy vấn dữ liệu"

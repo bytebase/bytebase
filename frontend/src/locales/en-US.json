@@ -3470,7 +3470,7 @@
       "query": "Go to SQL Editor"
     },
     "descriptions": {
-      "database": "Create or transfer a database into a project before querying data.",
+      "database": "View an existing database in your project or a sample database, or create or transfer one when needed.",
       "instance": "Connect an instance so Bytebase can sync your databases.",
       "project": "Create a project to organize databases and changes.",
       "sql-editor": "Query data in SQL Editor, or create a governed database change."
@@ -3490,7 +3490,7 @@
     "previous-step-required": "You need to finish the previous step.",
     "self": "Set up Bytebase",
     "steps": {
-      "database": "Prepare database",
+      "database": "Explore databases",
       "instance": "Connect instance",
       "project": "Create project",
       "query": "Query data"
