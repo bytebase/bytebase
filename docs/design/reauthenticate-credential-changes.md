@@ -333,6 +333,24 @@ issuance acquires whatever lock it needs next and either re-authenticates agains
 credential or finds the token it means to consume already gone, and fails closed instead of silently
 minting a session that outlives the revocation meant to end it.
 
+Holding that lock through the rest of the flow surfaces [one more standalone write in the same
+sequence](https://github.com/bytebase/bytebase/pull/21235): `finalizeLogin` (shared by `Login`/`Signup`,
+`auth_service.go:1044-1054`) and `switchWorkspaceInternal` (`:970-980`) both bump
+`LastLoginTime`/`LastLoginWorkspace` via their own `s.store.UpdateUser` call, on `Store.UpdateUser`'s own
+freshly-opened transaction (`principal.go:465`) — a second connection, not the one the surrounding lock
+was just acquired on, so once that lock is held throughout authentication this call blocks on it exactly
+like `challengeRecoveryCode` did. Moving it to after commit doesn't fix it either: `Store.UpdateUser`
+replaces the whole `profile` column with whatever `Profile` message it's given
+(`principal.go:446-451`), and both call sites build that message from `user.Profile` — the copy read
+*before* the lock — carrying `LastChangePasswordTime` forward from that stale snapshot. A `ChangePassword`
+that commits while this login is in flight would have its `LastChangePasswordTime` silently reverted to
+the pre-lock value the moment this call lands afterward, which is exactly the field
+[`email_code` eligibility](#design) is keyed on — turning a completed password change back into an
+`email_code`-eligible account without ever touching `PasswordHash` again. Both writes move inside the
+already-open transaction, built from the locked, re-read profile rather than the pre-lock one, so they
+either land before the same commit the session insert does or lose to a concurrent credential change the
+same way the rest of this sequence now does.
+
 That same root cause [reaches OAuth token exchange too](https://github.com/bytebase/bytebase/pull/21235),
 unfixed by any of the above: `handleAuthorizationCodeGrant` and `handleRefreshTokenGrant`
 (`backend/api/oauth2/token.go:129-145,271-286`) each consume their existing child row — an
@@ -377,11 +395,29 @@ deadlock surface, so both need the same correction: lock every existing
 `oauth2_authorization_code`/`oauth2_refresh_token` row referencing the client (in primary-key order) —
 and for the bulk expiry path, every such row across every client being deleted, clients themselves also
 in primary-key order — before locking and deleting the client rows, matching the child-before-parent
-rule this doc already applies everywhere else. Needs the deterministic real-PostgreSQL regression test
-this repo's row-lock-ordering convention requires for new multi-row coordination paths, in both
-directions: a token exchange started first should let a racing client deletion proceed after it commits,
-and a client deletion started first should let a racing token exchange fail closed (invalid_grant, its
-row already gone) rather than deadlock either way.
+rule this doc already applies everywhere else.
+
+Naming that correction "child-before-parent" is necessary but
+[not sufficient on its own](https://github.com/bytebase/bytebase/pull/21235): it fixes ordering between
+each child table and the client, but says nothing about the order *between* the two child tables, and
+a user/client pair with both an authorization-code and a refresh-token row outstanding can still deadlock
+if one transaction locks them in the opposite order from another. Revocation and the `UpdateEmail` fix
+above already committed to "the three tables themselves in one fixed order" without ever pinning down
+what that order is; this is where it stops being safe to leave implicit. One shared order, named once
+and reused everywhere rows from more than one of these tables are locked together:
+`oauth2_authorization_code`, then `oauth2_refresh_token`, then `web_refresh_token` — the order every
+mixed-table mention in this doc has already been listing them in, now load-bearing rather than
+incidental. G7's revocation, the `UpdateEmail` fix, `DeleteOAuth2Client`, and `DeleteExpiredOAuth2Clients`
+all lock rows from more than one of these tables and must all use this exact order — not just each
+internally consistent in primary-key order within its own table, but agreeing with every other path on
+which table goes first. Needs the deterministic real-PostgreSQL regression test this repo's
+row-lock-ordering convention requires for new multi-row coordination paths, covering both the
+client-vs-grant direction above and this table-vs-table one: a token exchange started first should let a
+racing client deletion proceed after it commits, a client deletion started first should let a racing
+token exchange fail closed (invalid_grant, its row already gone) rather than deadlock either way, and a
+revocation racing a client deletion for a user/client pair holding both an authorization-code and a
+refresh-token row must resolve the same way, not deadlock on the two child tables disagreeing about which
+comes first.
 
 That fix closes the race around *exchanging* an existing grant, but not [a separate gap one step
 earlier](https://github.com/bytebase/bytebase/pull/21235): `handleAuthorizePost`
