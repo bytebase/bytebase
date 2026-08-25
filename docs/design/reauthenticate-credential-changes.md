@@ -6,10 +6,10 @@ Status: proposal · 2026-08-24
 codes without proving they still control the credential being replaced. Closes T10 in
 [`v1-api-audit-2026-08.md`](v1-api-audit-2026-08.md) for every path `UpdateUser` and its neighbors
 expose today: password and MFA lifecycle both move off `UpdateUser` onto their own methods, not just a
-field addition — see [Resource design](#resource-design). One residual instance of the same threat
-shape survives in OAuth-enabled workspaces — a still-valid stolen access token minting a brand-new,
-indefinitely renewable OAuth grant at `/authorize` — and is carried forward as a named follow-up, not
-closed here; see G7 and Non-goals.
+field addition — see [Resource design](#resource-design). A stolen access token may keep answering
+requests until it expires (≤1h), but this design also stops it being *spent* on a replacement: every
+path that mints a new token from an existing one is bound to the account's credential generation. See
+G7 and Verification → Token-minting paths.
 
 ## Background
 
@@ -74,12 +74,13 @@ A fix scoped to literally the two audited lines leaves both of these open. All f
   closes the ability to mint fresh access tokens afterward (the 7-day exposure window for web, 30 days
   for OAuth), not the access tokens already issued — those are self-contained JWTs `APIAuthInterceptor`
   accepts until they expire regardless of refresh-token state, so a stolen one already in use keeps
-  working for up to `access_token_duration` (default 1h) after any of these four actions. For web
-  sessions that hour is a hard ceiling: the token answers requests and then is worthless, since `Login`/
-  `Refresh` both require the credential this design just changed. It is not an equal ceiling for
-  OAuth-enabled workspaces — see Verification — where the same still-valid hour can instead be spent
-  minting a brand-new, independently 30-day-lived grant; that gap is carried forward as a named
-  follow-up, not closed by this design (see Non-goals). The atomicity, and the revocation coverage
+  working for up to `access_token_duration` (default 1h) after any of these four actions. That hour is a
+  real ceiling only because this design makes it one: a stolen token may keep *answering* requests until
+  it expires, but it may not be spent on a replacement. Every path that mints a new token from an existing
+  one — `SwitchWorkspace` and its two `workspace_service.go` callers, the MFA temp-token completion, and
+  OAuth `/authorize` — is bound to `LastCredentialChangeTime` and refuses a token stamped before the
+  change (see Verification, "Token-minting paths"). Without that, the hour is not a ceiling but a renewal
+  interval, and G7's own sentence would be false. The atomicity, and the revocation coverage
   across all three OAuth/web token tables, are not carried forward unchanged — both are tightened here,
   not merely copied.
 
@@ -104,23 +105,14 @@ A fix scoped to literally the two audited lines leaves both of these open. All f
   MFA enrollment (see API → Messages, `email_code`'s own limits). Real, not closed by this design;
   needs its own integration with whatever OIDC/SAML flow already handles login, not a reuse of
   existing infrastructure the way `email_code` is.
-- **Blocking a still-valid access token from authorizing a brand-new OAuth grant.**
-  `handleAuthorizePost` (`backend/api/oauth2/authorize.go:126,168-171`) accepts any unexpired, correctly
-  signed access-token JWT as sufficient proof to mint a fresh `oauth2_authorization_code` — it never
-  checks the account's current credential state, only that the token verifies and the user still
-  exists. G7's revocation clears every *existing* OAuth grant, but a stolen access token still in its
-  ≤1h window can be used once, at `/authorize`, to mint a *new* one — and because refresh-token rotation
-  has no absolute cap (each successful refresh reissues 30 days out, `token.go:503-523`), that single
-  use converts a bounded hour into a credential that survives indefinitely, past every revocation this
-  design performs, for as long as the client keeps refreshing it. Real, and worse than the caveat this
-  design otherwise inherits from password change (see G7) — but closing it means checking JWTs against
-  state that changes after they're signed, which this design's `CredentialProof` mechanism doesn't
-  touch and self-contained JWTs don't carry today. The two directions worth a follow-up: reject
-  `/authorize` unless the presented token is fresher than the account's last credential-revocation event
-  (a generation counter in the JWT claims, checked at `parseSessionClaims`), or require the same
-  `CredentialProof` re-authentication this design already built, at consent time, before any new grant
-  is issued — closer to RFC 9470 step-up than to anything else in this doc, and scoped to one endpoint
-  rather than session infrastructure generally.
+- ~~**Blocking a still-valid access token from authorizing a brand-new OAuth grant.**~~ *Promoted into
+  scope* — see Design → Verification, "Token-minting paths." This was a Non-goal on the grounds that
+  closing it required a credential-generation claim in JWTs, which nothing else in the design needed.
+  Two later findings removed that reasoning: `LastCredentialChangeTime` had to exist anyway for the MFA
+  temp token, and `SwitchWorkspace` turned out to mint fresh access tokens off a stale JWT with *no*
+  bound at all, which is strictly worse than the `/authorize` case and not deferrable. Once the claim
+  has to be in access tokens for one, checking it in the other is a line of code, and leaving either
+  open would keep G7's own sentence false.
 
 ## Resource design
 
@@ -536,10 +528,11 @@ transactions, and the fence is correctly released when the first commits.
 This one is not a caveat to accept alongside the access-token window (see G7). That window is about
 already-issued tokens continuing to answer for ≤1h; this *mints a new session after the revocation*, which
 is precisely the thing G7 claims to close, so leaving it would make G7's own sentence false for a
-five-minute window on every MFA account. It's also in scope in a way the `/authorize` gap (see Non-goals)
-isn't: that one needs a credential-generation signal threaded through system-wide JWT issuance, whereas
+five-minute window on every MFA account. It is also the cheapest place to introduce the generation stamp:
 this token is short-lived, single-purpose, minted by `Login` itself, and already carries account-specific
-claims — one more is a local change to a flow this doc is already modifying.
+claims, so one more is a local change to a flow this doc already modifies. (At the time, the `/authorize`
+gap was still a Non-goal precisely because *it* would have needed the stamp threaded through system-wide
+JWT issuance. Token-minting paths, below, is where that stopped being avoidable.)
 
 The temp token carries the credential generation it was issued against, and step two rejects it on
 mismatch, re-read inside its own fence. Generation means *any* of the mutations that revoke sessions, not
@@ -553,6 +546,42 @@ luck, but `ChangePassword` and `ResetPassword` leave `MFAConfig` untouched, so t
 perfectly against a credential the account no longer authenticates with. Needs the interleaving in the
 regression tests: a temp token issued, a credential mutation committed, and step two attempted after —
 which must fail, not mint.
+
+**Token-minting paths.** The temp-token fix above is one instance of a question this design had never
+asked systematically: *what, besides `Login`, can produce a fresh access token from something an attacker
+might already hold?* Asking it turned up
+[the one that matters most](https://github.com/bytebase/bytebase/pull/21235). `SwitchWorkspace`
+(`auth_service.go:889-910`) authenticates from nothing but the interceptor-validated JWT — `user, ok :=
+GetUserFromContext(ctx)` — checks workspace membership, and calls `switchWorkspaceInternal`, whose
+`web == false` branch returns `response.Token = token` (`:1008-1010`): a brand-new access token minted
+by `generateLoginToken` with a full `GetAccessTokenDuration` (`:743-749`). No refresh token is consumed,
+no credential is proven, and `rejectMCPOriginatedTokenMint` blocks only MCP-origin requests, not a stolen
+ordinary API token. `workspace_service.go:317,426` reach the same mint by two more routes.
+
+So a stolen non-web access token can be spent, before it expires, on a fresh one with a fresh full
+lifetime — and then again, and again. The ≤1h ceiling G7 claims is not a ceiling at all for a non-web
+token; it is a renewal interval. That is worse than the `/authorize` case that was a Non-goal: that one
+needs an OAuth client and yields a grant this design's revocation can at least delete, whereas this needs
+nothing, leaves no row anywhere to revoke, and renews indefinitely. The account fence does not touch it —
+fencing serializes the issuance, it does not ask whether the JWT presenting itself is still entitled to
+one.
+
+Fixing it is now cheap for a reason that did not hold when `/authorize` was deferred:
+`Profile.LastCredentialChangeTime` already has to exist for the MFA temp token, so the remaining work is
+to stamp it into access tokens at issuance and compare it against the account row at every path that mints
+a *new* token from an *existing* one — `SwitchWorkspace` and its two `workspace_service.go` callers,
+plus `/authorize`, which the same check closes for free. A token whose stamp is older than the account's
+current value is refused; the holder must authenticate again. Ordinary API calls are deliberately *not*
+in this set: rejecting those would turn every credential change into an immediate hard cutoff for
+in-flight work, which is the caveat G7 knowingly accepts. The line is minting, not use.
+
+Two rollout details this needs and the temp-token version does not. Access tokens minted before the
+upgrade carry no stamp, so a missing claim has to mean something: treat it as *refuse to mint* rather
+than *allow*, since the alternative leaves the hole open for a full token lifetime after deploy and the
+cost is one extra login for tokens already near expiry. And `LastCredentialChangeTime` is now load-bearing
+for both this and the temp token, so the six mutations that bump it — the four here plus `ResetPassword`
+and the admin-assisted reset — must bump it inside their fenced transaction, not before or after, or a
+token minted mid-mutation could carry a stamp that never matches anything.
 
 `UpdateEmail` earns membership without deleting anything: it scans and locks the child rows that exist,
 then runs `UPDATE principal SET email = ?`, whose `ON UPDATE CASCADE` re-derives and locks whatever child
@@ -808,10 +837,13 @@ token's signature and expiry and confirming the user row still exists (`:212,221
 the lock ordering, it's what "the user still exists" is being asked to
 stand in for — proof the account's *credentials* haven't changed, which a still-valid JWT cannot carry,
 since it was signed before whatever credential change just happened and self-contained JWTs are exactly
-as valid the second after a revocation as the second before. This is the mechanism behind the G7 caveat
-correction above, and it's out of scope for the same reason named there (see Non-goals): closing it
-means teaching `/authorize` to check a credential-generation signal that doesn't exist in a JWT today,
-which is a change to token issuance across this system, not a fifth method alongside the other four.
+as valid the second after a revocation as the second before. This was carried as a Non-goal for a while,
+on the grounds that closing it meant teaching `/authorize` to check a credential-generation signal no JWT
+carried. That reasoning expired: the signal now exists for the MFA temp token, and `SwitchWorkspace`
+forced it into access tokens regardless. `/authorize` performs the same
+`LastCredentialChangeTime` check as every other mint-from-token path (see Token-minting paths above) —
+which is why the account fence it takes is necessary but never sufficient on its own: the fence decides
+*when* the mint may run, the stamp decides *whether* it may run at all.
 
 "No existing row to lock" wasn't the whole picture either —
 [caught in a later round](https://github.com/bytebase/bytebase/pull/21235): the new
