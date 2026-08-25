@@ -191,8 +191,17 @@ has that inner update wait on a lock its own outer call is holding — a session
 indistinguishable from a hang until `statement_timeout` fires, not a false positive to code around.
 `CredentialProof`'s recovery-code path needs its own transaction-aware compare-and-consume: match and
 delete the code, and write `mfa_config`, against the already-open transaction directly, instead of
-routing through the top-level helper. `challengeRecoveryCode` itself stays as-is for `Login`, which
-never holds this lock and has no reason to. Reusing T9's table
+routing through the top-level helper. This isn't only a `CredentialProof` problem, though — [a ninth
+finding](https://github.com/bytebase/bytebase/pull/21235) against the claim just made: `Login`'s own
+recovery-code completion (`completeMFALogin` → `challengeMFAAndClear` →
+`s.challengeRecoveryCode`, `auth_service_lockout.go:78-88`) is not exempt either, because `Login`
+already holds this same principal lock by the time it gets there — the session-issuance-fencing fix
+above put it there deliberately ("the entire authenticate-or-consume-then-issue sequence runs while
+holding it"), and `authenticateLogin` → `completeMFALogin` is exactly that authentication step for an
+MFA-second-step login. A recovery-code login would hang the same way a `CredentialProof` recovery-code
+check would. Both call sites need the same fix: the transaction-aware compare-and-consume replaces
+`challengeRecoveryCode` everywhere it would otherwise run inside this lock, not just in the four new
+methods — `challengeMFACode` is still fine everywhere, since it never writes. Reusing T9's table
 for all three means an attacker with a stolen session but no credential gets the same
 five-guesses-per-ten-minutes bound as at login on every channel — not a fresh oracle, and no new
 lockout kind to build; `RequestReauthCode`'s send side reuses the same table's existing resend
