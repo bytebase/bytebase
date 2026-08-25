@@ -128,6 +128,20 @@ attacker's write lands. The lock removes the window: only one verify-and-write p
 flight at a time, so a credential that stopped being current mid-flight fails the re-check the lock
 forces before the write, not after.
 
+That lock isn't only for the four proof-consuming methods, though — [a fifth
+finding](https://github.com/bytebase/bytebase/pull/21235) caught that `StartMfaEnrollment` and
+`RegenerateRecoveryCodes` need it too, for a reason that has nothing to do with proof freshness.
+`Store.UpdateUser` writes the entire `mfa_config` JSONB column, not individual fields
+(`principal.go:439-444`), so both mint methods have to read the account's current live `OtpSecret`/
+`RecoveryCodes` and copy them into their own patch just to avoid clobbering them while only meaning to
+touch the temp fields (`user_service.go:462-470` today). Without a lock, that read can happen *before*
+a concurrent `ConfirmRecoveryCodes` promotes a rotation, and the mint's write can still land *after* —
+resurrecting the exact live codes the owner just rotated away from, no credential needed to trigger it
+at all. Locking and proof are answering different questions — is this row safe to read-then-write
+concurrently, versus is the caller who they claim to be — and they only happen to overlap on four of
+the six methods that touch this row. `StartMfaEnrollment`/`RegenerateRecoveryCodes` need the lock for
+their own read-modify-write of `mfa_config`, same discipline, zero `CredentialProof` involved.
+
 The lockout claim itself, though, has to stay *outside* that locked transaction, not inside it —
 [a third finding](https://github.com/bytebase/bytebase/pull/21235) against an earlier version of this
 paragraph, which said the opposite. A failed `CredentialProof` means the handler returns an error, and
@@ -157,6 +171,20 @@ added, and all four need it atomic rather than copying that log-and-continue pat
 this forces re-login, including the caller's own current session, the next time a refresh token would
 have minted a new access token — it doesn't revoke an access token already in someone's hands, which
 keeps working until it expires regardless (see G7).
+
+Ordered wrong, though, as first written — [a sixth finding](https://github.com/bytebase/bytebase/pull/21235):
+locking the principal row and only then deleting its `web_refresh_token` rows is parent-then-child,
+backwards from this repo's mandatory rule of locking existing related rows child-to-parent
+(`backend/store/README.md#transaction-row-lock-ordering`), and `web_refresh_token.user_email` is a
+real foreign key to `principal.email` (`LATEST.sql:715-720`) — a `DELETE` on those rows counts as
+acquiring a lock on them, same as an explicit `SELECT ... FOR UPDATE` would. Corrected order: lock the
+account's *existing* `web_refresh_token` rows first (in primary-key order, if there's more than one),
+then the principal row, then verify/mutate/delete within that same transaction. This is deliberately
+the opposite of how session *issuance* orders its lock (principal first, since it's about to insert a
+child row that doesn't exist yet — the `nextProjectID` shape, not the child-before-parent one)
+— existing rows and not-yet-existing rows follow different rules in this repo's own convention, and
+revocation and issuance land on opposite sides of that split for exactly that reason, not
+inconsistently.
 
 Locking the account row for the mutation closes the credential-vs-credential race above, but not a
 [separate one](https://github.com/bytebase/bytebase/pull/21235) between revocation and session
@@ -367,7 +395,9 @@ service UserService {
   // Mints a new TOTP secret and recovery codes, persists them as the
   // account's temporary MFA state (store-level only — see API → Messages),
   // and returns them for the caller to confirm. Not yet live, so no proof
-  // is required here. name must be the caller's own — see What's exempt.
+  // is required here, but the account row is still locked for the read of
+  // current live MFAConfig fields and the write that preserves them — see
+  // Design → Verification. name must be the caller's own — see What's exempt.
   rpc StartMfaEnrollment(StartMfaEnrollmentRequest) returns (MfaEnrollment) {
     option (google.api.http) = {
       post: "/v1/{name=users/*}:startMfaEnrollment"
@@ -422,11 +452,14 @@ service UserService {
   // set (storepb.MFAConfig.TempRecoveryCodes — reused, not new) alongside
   // the still-live old ones, and returns them, with a version token, for
   // the caller to save. Not yet live, so no proof is required here, same as
-  // StartMfaEnrollment. Requires a live MFAConfig.OtpSecret already —
-  // recovery codes back up an existing factor, so an account with none
-  // should enroll via StartMfaEnrollment instead, same precondition the
-  // current regenerate_recovery_codes flag enforces (user_service.go:475-477).
-  // name must be the caller's own — no admin path.
+  // StartMfaEnrollment — but the account row is locked for the same reason
+  // StartMfaEnrollment's is: this also reads and rewrites live MFAConfig
+  // fields, not just temp ones (see Design → Verification). Requires a live
+  // MFAConfig.OtpSecret already — recovery codes back up an existing
+  // factor, so an account with none should enroll via StartMfaEnrollment
+  // instead, same precondition the current regenerate_recovery_codes flag
+  // enforces (user_service.go:475-477). name must be the caller's own — no
+  // admin path.
   rpc RegenerateRecoveryCodes(RegenerateRecoveryCodesRequest) returns (RegenerateRecoveryCodesResponse) {
     option (google.api.http) = {
       post: "/v1/{name=users/*}:regenerateRecoveryCodes"
