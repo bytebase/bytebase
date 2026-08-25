@@ -44,7 +44,8 @@ A fix scoped to literally the two audited lines leaves both of these open. All f
 
 - **G1** Every mutation that rewrites live authentication material — password hash, permanent TOTP
   secret, or permanent recovery codes — requires proof the caller currently holds a credential on the
-  account: the current password, or, where the account has MFA, a live MFA code instead.
+  account: the current password, a live MFA code where the account has MFA, or a one-time email code
+  where neither exists yet (Cloud, SSO, or a self-hosted account enrolling in MFA for the first time).
 - **G2** Password change gets the same treatment as MFA: its own method, not a field plus a flag on
   a generic `Update` — matching this repo's own precedent. `UpdateEmail` already left `UpdateUser`
   for exactly this reason (it "changes the identity the person signs in with," per
@@ -100,22 +101,26 @@ for the admin-assisted path, where G6 means no proof is needed anyway.
 
 ## Design
 
-**Verification.** `ChangePassword`, `DisableMfa`, and `RegenerateRecoveryCodes` each take a
-`CredentialProof` — either the current password or, when the account has MFA, a live OTP or recovery
-code — and check it before touching anything: claim the matching slot (`PASSWORD` or `MFA`) in the T9
-`login_attempt` table for the account ([`login-attempt-lockout.md`](login-attempt-lockout.md)),
-verify with `bcrypt.CompareHashAndPassword` or the existing `challengeMFACode`/`challengeRecoveryCode`
-helpers, clear the slot on success. Reusing T9's table means an attacker with a stolen session but no
-credential gets the same five-guesses-per-ten-minutes bound as at login — not a fresh oracle, and no
-new lockout kind to build. `EnableMfa` takes the same `CredentialProof` as the other three — accepting
-the old device's code (or a recovery code) as an alternative to password matters most exactly when
-replacing a lost device, and password isn't always available as the fallback (see Cloud vs.
-self-hosted). Because each method requires its proof in its own request message, whether it needs
-re-authentication is visible in its schema — nothing to audit across a shared patch. On success, all
-four call `DeleteWebRefreshTokensByUser` — today only `ChangePassword` inherits this from
-`UpdateUser`'s existing password branch (`user_service.go:436`); `EnableMfa`/`DisableMfa`/
-`RegenerateRecoveryCodes` need the same call added, forcing re-login everywhere, including the
-caller's own current session (G7).
+**Verification.** `ChangePassword`, `EnableMfa`, `DisableMfa`, and `RegenerateRecoveryCodes` each take
+a `CredentialProof` — the current password, a live OTP or recovery code where the account has MFA, or
+an emailed code where neither exists — and check it before touching anything: claim the matching slot
+(`PASSWORD`, `MFA`, or `EMAIL_CODE`) in the T9 `login_attempt` table for the account
+([`login-attempt-lockout.md`](login-attempt-lockout.md)), verify with `bcrypt.CompareHashAndPassword`,
+the existing `challengeMFACode`/`challengeRecoveryCode` helpers, or a lookup against
+`email_verification_code` for the new `REAUTH` purpose, clear the slot on success. Reusing T9's table
+for all three means an attacker with a stolen session but no credential gets the same
+five-guesses-per-ten-minutes bound as at login on every channel — not a fresh oracle, and no new
+lockout kind to build; `RequestReauthCode`'s send side reuses the same table's existing resend
+cooldown, so it can't be used to mail-bomb an account either. Accepting the old device's code (or a
+recovery code) as an alternative to password on `EnableMfa` matters most exactly when replacing a lost
+device; `email_code` covers the case neither of those helps — first-time enrollment, where nothing
+prior exists to prove control of at all (see Cloud vs. self-hosted). Because each method requires its
+proof in its own request message, whether it needs re-authentication is visible in its schema —
+nothing to audit across a shared patch. On success, all four state-changing methods call
+`DeleteWebRefreshTokensByUser` — today only `ChangePassword` inherits this from `UpdateUser`'s
+existing password branch (`user_service.go:436`); `EnableMfa`/`DisableMfa`/`RegenerateRecoveryCodes`
+need the same call added, forcing re-login everywhere, including the caller's own current session
+(G7).
 
 Sharing T9's lockout buckets has one accepted side effect worth naming, not just inheriting silently:
 a `PASSWORD` or `MFA` claim from a failed `CredentialProof` counts against the same budget a login
@@ -127,7 +132,10 @@ telling them when it clears.
 
 **What's exempt.** `title`/`phone` on `UpdateUser` aren't authentication material.
 `StartMfaEnrollment` mints a secret but changes nothing live, so it needs no proof — same as AWS's
-`CreateVirtualMFADevice` needing none while `EnableMFADevice` does. `UpdateUser`'s `password` field
+`CreateVirtualMFADevice` needing none while `EnableMFADevice` does. `RequestReauthCode` needs no proof
+either, for a different reason: it's what *produces* a proof, not a consumer of one. It's still
+bounded — by the resend cooldown on the send side, by the `EMAIL_CODE` lockout on redeeming it — same
+split `RequestPasswordReset` already has between sending and verifying. `UpdateUser`'s `password` field
 becomes admin-only: a self-service call (`callerUser.ID == user.ID`) that sets it is rejected,
 pointing at `ChangePassword`. `ChangePassword` has no admin path at all (see its `name` field comment
 in API). Admin-assisted resets of another user's password or MFA stay on `UpdateUser`'s `password`
@@ -145,15 +153,23 @@ therefore rejects any call when that restriction is set, reusing the flag `Login
 check rather than a separate `s.profile.SaaS` branch — the same behavior falls out for a self-hosted
 deployment that goes SSO-only. This also closes a gap in today's code: `UpdateUser`'s password branch
 has no SaaS check at all, harmless only because `Login` independently blocks the result. MFA is
-unaffected either way — it's a second factor on top of whichever primary method a workspace allows,
-so `Require_2Fa` and all four MFA methods behave identically on both deployments, and `EnableMfa`
-needing `CredentialProof` rather than password-only is exactly what makes device replacement possible
-for a Cloud account that has no password to fall back to.
+unaffected either way — it's a second factor on top of whichever primary method a workspace allows, so
+`Require_2Fa` and all four MFA methods behave identically on both deployments. `EnableMfa` needing
+`CredentialProof` rather than password-only handles *replacing* a factor on a Cloud account, but not
+enrolling the *first* one: a Cloud or SSO account has no password, and first-time enrollment by
+definition has no existing OTP or recovery code either, so all three `CredentialProof` options are
+simultaneously unsatisfiable — exactly the account `guard.ts:265-275` hard-redirects into MFA setup
+with no escape route when the workspace requires it. `CredentialProof` gains a fourth option,
+`email_code`, for this: a one-time code to the account's own registered email via a new
+`RequestReauthCode`, reusing the `email_verification_code` table T9 already built for `LOGIN` and
+`PASSWORD_RESET` — a third purpose, not new infrastructure.
 
 **Frontend.** The four call sites in `AccountSettingsPage.tsx`, `TwoFactorSetupPage`, and
 `RegenerateRecoveryCodesView` move to their matching new method and gain a credential-proof field —
 no new dialogs, since [`split-profile-self-service-vs-admin.md`](split-profile-self-service-vs-admin.md)
-already gives password and 2FA changes their own confirmations. This is a breaking proto change;
+already gives password and 2FA changes their own confirmations. That field needs a way to reach for
+`email_code` when the account has no password and no MFA yet — a "email me a code" link inline with the
+proof field, calling `RequestReauthCode`, rather than a fifth dialog. This is a breaking proto change;
 frontend and backend ship as one rollout on both Cloud and self-hosted (a single `go:embed`'d image,
 confirmed against `scripts/Dockerfile` and the Cloud deploy workflow — no separate frontend pipeline),
 same as the other breaking changes already in flight this cycle (#21181, #21234). One residual edge,
@@ -165,14 +181,30 @@ around for a field that's disappearing anyway.
 
 ## API
 
-Five new methods on `UserService` (same service `UpdateEmail` already lives in, rather than a new
-service), one per credential state transition. Full proto below, then what each piece is doing.
+Six new methods on `UserService` (same service `UpdateEmail` already lives in, rather than a new
+service): one per credential state transition, plus `RequestReauthCode`, the send side of the fourth
+`CredentialProof` option. Full proto below, then what each piece is doing.
 
 ### Service methods
 
 ```protobuf
 service UserService {
   // ...existing RPCs...
+
+  // Sends a one-time code to the caller's own registered email, usable as
+  // CredentialProof.email_code. The one channel that works when neither a
+  // usable password nor an existing MFA factor exists yet — Cloud, SSO, or
+  // first-time MFA enrollment anywhere.
+  rpc RequestReauthCode(RequestReauthCodeRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/{name=users/*}:requestReauthCode"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = RESETS_CREDENTIAL;
+  }
 
   // Changes the caller's own password. Rejected if the workspace disallows
   // password sign-in (Cloud always does) — see Design → Cloud vs. self-hosted.
@@ -244,12 +276,16 @@ service UserService {
 }
 ```
 
-`mcp_denial_reason` isn't the same value on every method, even though all five are `FORBIDDEN`: the
-enum distinguishes "rewrites credentials, response carries none" (`TAKES_OVER_ACCOUNT`) from "puts a
-usable secret directly in the response body" (`MINTS_CREDENTIAL`). `StartMfaEnrollment` returns a
-fresh TOTP secret; `RegenerateRecoveryCodes` returns fresh, immediately-live codes — both get
-`MINTS_CREDENTIAL`. The other three return only `User`, so they get `TAKES_OVER_ACCOUNT`, matching
-what `UpdateUser` already carries today for the same operations.
+`mcp_denial_reason` isn't the same value across all six methods, even though all six are `FORBIDDEN`:
+the enum distinguishes "rewrites credentials, response carries none" (`TAKES_OVER_ACCOUNT`), "puts a
+usable secret directly in the response body" (`MINTS_CREDENTIAL`), and "drives the out-of-band flow
+that delivers the secret a login accepts" (`RESETS_CREDENTIAL`). `StartMfaEnrollment` returns a fresh
+TOTP secret; `RegenerateRecoveryCodes` returns fresh, immediately-live codes — both get
+`MINTS_CREDENTIAL`. `ChangePassword`/`EnableMfa`/`DisableMfa` return only `User`, so they get
+`TAKES_OVER_ACCOUNT`, matching what `UpdateUser` already carries today for the same operations.
+`RequestReauthCode` returns nothing but *sends* a credential-proving secret out of band — the same
+shape `RequestPasswordReset` already carries this reason for — so it gets `RESETS_CREDENTIAL`, the one
+value none of the other five use.
 
 ### Messages
 
@@ -277,7 +313,26 @@ message CredentialProof {
       (bytebase.v1.audit_behavior) = SENSITIVE,
       (buf.validate.field).string.max_len = 64
     ];
+
+    // A one-time code from RequestReauthCode, sent to the account's own
+    // registered email. The only option that works when neither of the
+    // above exists yet — Cloud, SSO, or first-time MFA enrollment.
+    string email_code = 4 [
+      (bytebase.v1.audit_behavior) = SENSITIVE,
+      (buf.validate.field).string.max_len = 64
+    ];
   }
+}
+
+message RequestReauthCodeRequest {
+  // Format: users/{email}. Must be the caller's own name — the code is
+  // delivered to that account's own registered email, so requesting one for
+  // someone else would only prove the target can read their own mail, not
+  // anything about the caller.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/User"}
+  ];
 }
 
 message ChangePasswordRequest {
@@ -349,7 +404,14 @@ message DisableMfaRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/User"}
   ];
-  CredentialProof credential = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Required only when name is the caller's own. On an admin-assisted call
+  // (name is someone else's), unset and unchecked — this is the one method
+  // in this file with a real admin path, so its requirement is conditional
+  // on caller identity, which a blanket proto REQUIRED can't express; the
+  // conditionality is enforced in the handler, same as every other
+  // identity-dependent check in this design.
+  CredentialProof credential = 2;
 }
 
 message RegenerateRecoveryCodesRequest {
@@ -370,13 +432,24 @@ message RegenerateRecoveryCodesResponse {
 
 `current_password`/`new_password` are bounded at `max_bytes = 72` — bcrypt's real limit, matching
 `User.password` — not `LoginRequest.password`'s `max_bytes = 512`, which is wider only because `Login`
-also serves LDAP bind; nothing reachable from these five methods ever touches an LDAP-bound principal.
-`otp_code`/`recovery_code` take `max_len = 64`, matching `LoginRequest`'s existing fields of the same
-name.
+also serves LDAP bind; nothing reachable from these six methods ever touches an LDAP-bound principal.
+`otp_code`/`recovery_code`/`email_code` take `max_len = 64`, matching `LoginRequest`'s existing fields
+of the same name.
 
 `RegenerateRecoveryCodes` collapses today's mint-then-promote pair into one call: recovery codes have
 no client-side proof step the way a TOTP code does (nothing to "verify you can compute"), so the
 two-step shape in the current code was only ever an accident of sharing plumbing with TOTP enrollment.
+
+`email_code` verifies against a new `REAUTH` purpose on `email_verification_code`
+(`storepb.EmailVerificationCodePurpose`), alongside the existing `LOGIN` and `PASSWORD_RESET` —
+that table was already built to hold more than one purpose, so this is a third row shape, not new
+storage. Without it, `EnableMfaRequest.credential` had exactly the failure mode
+[a Codex review on this doc's own PR](https://github.com/bytebase/bytebase/pull/21235) caught: a Cloud
+or SSO account has no password, and first-time enrollment has no existing OTP or recovery code either,
+so all three original options were simultaneously unsatisfiable for precisely the accounts
+`guard.ts:265-275` force-redirects into MFA setup under a `require_2fa` policy — a hard lockout, not
+an edge case. `email_code` closes it by giving every account type at least one proof it can always
+produce.
 
 ### Existing messages
 
@@ -423,6 +496,20 @@ today's `regenerate_recovery_codes` field name and `RegenerateRecoveryCodesView`
 
 ## Alternatives
 
+- **Skip the proof entirely for first-time MFA enrollment**, on the theory that there's nothing live
+  yet to take over. Rejected: an attacker with a stolen session who enrolls their own device on a
+  victim's account doesn't just add a factor — once `MFAConfig.OtpSecret` is non-empty, `Login`
+  challenges it on *every* future login, including the real owner's, who never set it up and can't
+  produce the attacker's code. Different shape of harm than a full impersonation, same severity: the
+  real owner is locked out of their own account. Caught by
+  [Codex's review](https://github.com/bytebase/bytebase/pull/21235) of this doc's own PR, which is what
+  `email_code` closes.
+- **Reuse `ResetPassword`'s existing send/verify flow directly for MFA enrollment**, instead of a new
+  `RequestReauthCode` and a `REAUTH` purpose. Rejected: `ResetPassword`'s code is scoped to setting a
+  new password, not to generic identity proof, and folding a second meaning into it is the same
+  field-overload mistake `otp_code` already made once in the original `UpdateUser`. A third purpose on
+  the same table costs one enum value; a second meaning on an existing purpose costs a code path that
+  has to explain both.
 - **Password only, no `CredentialProof` alternative** — the doc's own starting point, for all four
   methods and then, briefly, for `EnableMfa` alone even after the others got `CredentialProof`.
   Dropped on both counts: it forces an MFA-enabled user to produce the one factor they might
