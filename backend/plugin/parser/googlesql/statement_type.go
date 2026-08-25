@@ -26,15 +26,9 @@ func (a *AST) ASTStartPosition() *storepb.Position {
 // ParseStatements splits the input with the dialect's splitter and parses each
 // statement into an omni AST node.
 //
-// A statement omni cannot parse carries an AST with a nil Node, so
-// GetStatementTypes reports it as STATEMENT_TYPE_UNSPECIFIED. It must not be
-// dropped: base.ExtractASTs keeps only non-nil ASTs, so a dropped statement
-// disappears from classification entirely, and a sheet mixing one statement
-// omni rejects with one it accepts would be classified from the accepted one
-// alone. An approval rule naming statement.sql_type would then never see the
-// rejected statement, which is the silent skip BYT-10131 reported.
-//
-// Empty statements still carry no AST; they are separators, not changes.
+// A statement omni cannot parse carries an AST with a nil Node rather than no
+// AST: base.ExtractASTs keeps only non-nil ASTs, so no AST means the statement
+// disappears from classification instead of reporting UNSPECIFIED.
 func ParseStatements(statement string, cfg Config) ([]base.ParsedStatement, error) {
 	stmts, err := SplitSQL(statement, cfg)
 	if err != nil {
@@ -43,10 +37,6 @@ func ParseStatements(statement string, cfg Config) ([]base.ParsedStatement, erro
 
 	var result []base.ParsedStatement
 	for _, stmt := range stmts {
-		if stmt.Empty {
-			result = append(result, base.ParsedStatement{Statement: stmt})
-			continue
-		}
 		file, errs := parser.Parse(stmt.Text)
 		if len(errs) > 0 || file == nil || len(file.Stmts) == 0 {
 			result = append(result, base.ParsedStatement{
@@ -95,12 +85,6 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 // access policies, generic entities (CAPACITY / RESERVATION / ASSIGNMENT),
 // scripting bodies, and the Spanner-only DDL set (change streams, roles,
 // GRANT / REVOKE, proto bundles), none of which write rows.
-//
-// An acceptance test against omni's analysis.ClassifySQL cannot catch the
-// row-writing members: omni also classifies them Unknown, so both sides agree
-// vacuously. Closing the gap needs the evaluator to treat an unclassified
-// statement as indeterminate rather than as a definite non-DML value; adding
-// more enum values cannot cover EXECUTE IMMEDIATE.
 func statementType(node ast.Node) storepb.StatementType {
 	switch n := node.(type) {
 	// DML.

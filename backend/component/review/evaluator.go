@@ -739,12 +739,9 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 			SheetSHA256:  target.sheetSha256,
 		}]
 		if !ok || result.GetSqlSummaryReport() == nil {
-			// Engines outside common.EngineSupportStatementReport produce no
-			// summary report, so statement.sql_type would be absent from the
-			// activation. cel-go resolves a declared-but-absent variable to an
-			// unknown, and matchRulesForSource drops an unknown as a non-match,
-			// so any approval rule naming statement.sql_type silently never
-			// fires. Classify from the parser instead when the engine has one.
+			// statement.sql_type must be set even with no summary report:
+			// cel-go resolves a declared-but-absent variable to an unknown,
+			// which matchRulesForSource drops as a non-match.
 			statementTypes := statementTypesFromParser(target.database.Engine, taskStatement)
 			celVarsList = append(celVarsList, expandCELVars(celVars, statementTypes, nil)...)
 			continue

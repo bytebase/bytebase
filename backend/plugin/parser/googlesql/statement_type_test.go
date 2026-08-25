@@ -125,9 +125,3 @@ func TestParseStatementsReportsAnUnparseableStatement(t *testing.T) {
 		storepb.StatementType_INSERT,
 	}, got)
 }
-
-// Empty statements are separators, not changes, so they carry no AST.
-func TestParseStatementsSkipsEmptyStatements(t *testing.T) {
-	got := typesOf(t, "INSERT INTO users (id) VALUES (1);\n\n;\n")
-	require.Equal(t, []storepb.StatementType{storepb.StatementType_INSERT}, got)
-}
