@@ -422,24 +422,48 @@ strictly first: **every** participating transaction acquires it as its opening s
 entire child-before-parent ordering rather than inside it — that ordering governs which *row* locks come
 in which sequence, and this governs that no participant touches rows at all until it holds the account.
 
-The participants are every transaction that reads-then-writes this account's token rows: G7's revocation
-on all four credential-mutating methods; `Login`/`Signup`, `Refresh`, and `switchWorkspaceInternal`;
-the OAuth mint (`handleAuthorizePost`) and both exchange paths; and — [easy to miss, since it isn't a
-credential path at all](https://github.com/bytebase/bytebase/pull/21235) — `UpdateEmail`. `UpdateEmail`
-has the identical absent-child gap for the identical reason: it scans and locks the child rows that
-exist, then runs `UPDATE principal SET email = ?`, whose `ON UPDATE CASCADE` re-derives and locks
-whatever child rows exist *at that moment*, including any a login committed in between. A third-party
-`Refresh` holding one of those new rows and waiting on the principal deadlocks against the cascade
-holding the principal and waiting on the row — the same three-party shape, just with the email cascade
-where revocation's delete was. It takes the fence first too, before its own child scan.
+Who participates is a **rule, not a list** — stated that way deliberately, because the enumerated version
+of this paragraph was wrong twice in a row, each time by naming the paths that had come up so far and
+[missing ones found the round after](https://github.com/bytebase/bytebase/pull/21235). The rule: *any
+transaction that reads or scans this account's token rows and then writes based on what it found, and any
+transaction that inserts one, takes the fence as its first statement.* Both halves matter — a scanner
+without the fence can have rows appear underneath it, and an inserter without the fence is what makes
+them appear. A path that satisfies the ordered-lock contract but skips the fence is still broken: ordering
+governs rows that exist, the fence governs rows that don't exist yet, and every finding in this section
+has been one or the other.
 
-With the fence held from the top by all of them, `Login` can't commit a new session while a revocation or
-an email change is anywhere between its scan and its commit, so there's no window left for a third party
-to grab a row the scanning side hasn't accounted for; and neither revocation nor `UpdateEmail` can start
-its scan while a new session is mid-insert, so neither undercounts what it's about to delete or rewrite.
-Needs a deterministic real-PostgreSQL regression test for this specific three-transaction interleaving —
-in both the revocation and `UpdateEmail` variants — not just the two-party cases already required
-elsewhere in this doc.
+By that rule the participants are: G7's revocation on all four credential-mutating methods;
+`Login`/`Signup`, `Refresh`, and `switchWorkspaceInternal`; the OAuth mint (`handleAuthorizePost`) and
+both exchange paths; `UpdateEmail`; `handleReauthorize`; and both retained `DeleteWebRefreshTokensByUser`
+callers, `ResetPassword` and `UpdateUser`'s admin-assisted password path. The last three are the ones the
+enumerated version missed, and each was missed the same way — it had already been given the ordered-lock
+fix in an earlier round, which reads like the whole treatment but is only half of it.
+
+`UpdateEmail` earns membership without deleting anything: it scans and locks the child rows that exist,
+then runs `UPDATE principal SET email = ?`, whose `ON UPDATE CASCADE` re-derives and locks whatever child
+rows exist *at that moment*, including any a login committed in between. A third-party `Refresh` holding
+one of those new rows and waiting on the principal deadlocks against the cascade holding the principal and
+waiting on the row — the same three-party shape, with the email cascade where revocation's delete was.
+
+For the three deleters, the fence closes a second failure the ordering fix leaves wide open, and it is
+the more serious one: a row inserted after the scan is not in the deleting statement's snapshot, so it
+simply *survives*. `handleReauthorize` returns success while a refresh grant minted mid-flight by a
+concurrent OAuth exchange stays usable; `ResetPassword` and the admin password path report a completed
+reset while a session created mid-flight stays live. Each is the exact guarantee the caller just told the
+user it had made. So for those three the fence isn't only deadlock avoidance — and for the two password
+paths it composes with the correctness fix above: fence first, then the password write and the revocation
+in that same fenced transaction, so "the password changed but the sessions didn't" cannot be a reachable
+state by either route.
+
+With the fence held from the top by all of them, `Login` can't commit a new session while a revocation, an
+email change, or a reset is anywhere between its scan and its commit, so there's no window left for a
+third party to grab a row the scanning side hasn't accounted for, and no window for a row to slip past a
+delete entirely; and none of the scanning paths can start while a new session or grant is mid-insert, so
+none undercounts what it's about to delete or rewrite. Needs a deterministic real-PostgreSQL regression
+test for this three-transaction interleaving across the variants that differ in *kind*, not merely in
+caller — a deleting one (revocation), the cascading one (`UpdateEmail`), and one whose failure mode is
+survival-not-deadlock (`handleReauthorize` or `ResetPassword`) — not just the two-party cases already
+required elsewhere in this doc.
 
 Holding that lock through the rest of the flow surfaces [one more standalone write in the same
 sequence](https://github.com/bytebase/bytebase/pull/21235): `finalizeLogin` (shared by `Login`/`Signup`,
@@ -568,7 +592,10 @@ holding those same rows in primary-key order. Identical root cause to the cleane
 lock the matching rows in primary-key order before deleting, inside the same contract and the same
 two-direction tests. Worth naming separately because it's a user-triggered path rather than a background
 one, so its overlap with a credential change isn't a rare scheduling coincidence — a user reauthorizing
-an MCP client *because* they just changed a credential is the expected sequence, not an unlucky one.
+an MCP client *because* they just changed a credential is the expected sequence, not an unlucky one. It
+also takes the account fence, per the rule above — ordered locking alone would still let an OAuth exchange
+mint a replacement grant after the scan, outside the deleting statement's snapshot, so `reauthorize` would
+report success on a grant that is still live.
 
 The last unordered deleter is the one this design otherwise *keeps* —
 [found the round after](https://github.com/bytebase/bytebase/pull/21235):
@@ -592,6 +619,15 @@ multi-row deleter here, and both should stop treating the revocation as best-eff
 revoke is a reset that did not do what it told the user it did. That is the same argument G7 already
 makes for the four new methods — it applies just as well to the two paths G7 leaves alone, which is why
 this shows up as a lock-ordering finding and a correctness one at once.
+
+Ordering and error-handling still aren't the whole fix here, for the same reason they weren't for
+`handleReauthorize` — per the fence rule above, both paths take the account fence first, and run the
+password write and the revocation inside that one fenced transaction. Without the fence, a login that
+commits a new session after the reset's scan is invisible to the reset's own delete statement, so the
+session outlives the password change that was supposed to end it — the failure survives even if the
+delete succeeds and its error is checked, because there was never an error to check. Fenced, with both
+writes in one transaction, "password changed, sessions didn't" stops being reachable by either the
+deadlock route or the snapshot route.
 
 That fix closes the race around *exchanging* an existing grant, but not [a separate gap one step
 earlier](https://github.com/bytebase/bytebase/pull/21235): `handleAuthorizePost`
