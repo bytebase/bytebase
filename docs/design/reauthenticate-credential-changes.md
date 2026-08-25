@@ -313,6 +313,30 @@ this doc already applies to the issuance-vs-revocation race, with `UpdateEmail` 
 four methods first means it holds the current email's child locks for the rest of its own transaction,
 so `UpdateEmail`'s own child-lock step simply blocks behind them instead of racing past unlocked.
 
+"Retry against the new email" is right for most proofs and [catastrophically wrong for
+one](https://github.com/bytebase/bytebase/pull/21235), so the mismatch branch has to split by what the
+proof was bound to. `current_password`, `otp_code`, and `recovery_code` are bound to the *account*: a
+rename says nothing about whether the caller still holds them, so retrying against the account's new
+address is correct and the caller is none the wiser. `email_code` is bound to a *mailbox address* — it
+proves only that someone can read mail sent to the address it was mailed to. If the account has since
+been renamed, that proof says nothing whatsoever about the account as it now exists, and retrying would
+let control of the *former* address authorize a credential change on the renamed account. So: on
+mismatch, account-bound proofs retry, `email_code` proofs **reject** — the caller must request a fresh
+code, which will necessarily go to the account's current address.
+
+The same split applies with more force to `ResetPassword`, which is `email_code`-shaped end to end and
+otherwise exempt from this design. Its `PASSWORD_RESET` code proves control of one mailbox; if
+`UpdateEmail` commits between that proof and the fenced write, proceeding by stable principal ID hands
+control of the *old* mailbox a password reset on the renamed account. That is not a hypothetical ordering
+nicety: renaming away from a compromised address is exactly why someone changes their email, and this
+would let the attacker they were fleeing complete a reset afterward. Moving the write and revocation
+inside the fence — the fix given for `ResetPassword` further below — does not address it at all, since
+the problem is *which account* the transaction is entitled to act on, not whether its writes are atomic. After acquiring the
+fence, `ResetPassword` re-reads the principal and proceeds only if its current email still equals the one
+the code proved; otherwise it rejects, unconsumed work already done notwithstanding. Same rule as the
+OAuth grant re-read below, with the opposite resolution — there a rename means "same grant, new address,
+carry on," here it means "different account than the one that was proven, stop."
+
 Finding all three tables here turned out to matter for more than lock ordering — [G7's revocation
 scope was too narrow](https://github.com/bytebase/bytebase/pull/21235): `DeleteWebRefreshTokensByUser`
 only ever touches `web_refresh_token`, so a stolen OAuth/MCP grant sails through every one of these
