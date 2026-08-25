@@ -126,11 +126,20 @@ so the owner's own password change could be silently undone by a request the att
 *before* the owner's committed, using a credential that's supposed to already be dead by the time the
 attacker's write lands. The lock removes the window: only one verify-and-write per account can be in
 flight at a time, so a credential that stopped being current mid-flight fails the re-check the lock
-forces before the write, not after. Inside that same locked transaction: claim the matching slot
-(`PASSWORD`, `MFA`, or `EMAIL_CODE`) in the T9 `login_attempt` table for the account
-([`login-attempt-lockout.md`](login-attempt-lockout.md)), verify with `bcrypt.CompareHashAndPassword`,
-the existing `challengeMFACode`/`challengeRecoveryCode` helpers, or a lookup against
-`email_verification_code` for the new `REAUTH` purpose, clear the slot on success. Reusing T9's table
+forces before the write, not after.
+
+The lockout claim itself, though, has to stay *outside* that locked transaction, not inside it —
+[a third finding](https://github.com/bytebase/bytebase/pull/21235) against an earlier version of this
+paragraph, which said the opposite. A failed `CredentialProof` means the handler returns an error, and
+an error inside the locked transaction rolls it back — if the claim were inside too, the rollback
+would erase it right along with the abandoned mutation, so every wrong guess would vanish without a
+trace and G5's five-attempt bound would never actually apply. T9's own design already has the right
+shape for this, matching how login itself works: claim the matching slot (`PASSWORD`, `MFA`, or
+`EMAIL_CODE`) in the `login_attempt` table for the account
+([`login-attempt-lockout.md`](login-attempt-lockout.md)) as its own statement, committed unconditionally,
+*before* the locked transaction opens — then verify with `bcrypt.CompareHashAndPassword`, the existing
+`challengeMFACode`/`challengeRecoveryCode` helpers, or a lookup against `email_verification_code` for
+the new `REAUTH` purpose, inside the lock, clearing the already-committed slot on success. Reusing T9's table
 for all three means an attacker with a stolen session but no credential gets the same
 five-guesses-per-ten-minutes bound as at login on every channel — not a fresh oracle, and no new
 lockout kind to build; `RequestReauthCode`'s send side reuses the same table's existing resend
@@ -149,6 +158,27 @@ this forces re-login, including the caller's own current session, the next time 
 have minted a new access token — it doesn't revoke an access token already in someone's hands, which
 keeps working until it expires regardless (see G7).
 
+Locking the account row for the mutation closes the credential-vs-credential race above, but not a
+[separate one](https://github.com/bytebase/bytebase/pull/21235) between revocation and the *existing*
+`Refresh` RPC, which never acquires that lock at all today: it consumes the caller's old refresh token,
+does its own work, and only inserts the replacement at the end (`auth_service.go:479` through `:543`,
+`issueSessionCookies` at `:1077`). An attacker's `Refresh` can consume its old token before a
+concurrent `DeleteWebRefreshTokensByUser` runs and insert its replacement after that revocation has
+already committed — leaving a token that looks freshly issued but was never covered by the sweep that
+was supposed to end their access. This is the same shape AGENTS.md's row-lock-ordering section already
+names for `nextProjectID`: locking prevents wait-for cycles on *existing* rows, but can't by itself
+protect a child row that doesn't exist yet, so the writer of that new row has to serialize and
+validate against the parent itself. `Refresh` needs the same treatment `nextProjectID` gives project
+creation: acquire the same account-row lock for its whole consume-then-reissue sequence, not just
+locking without re-checking anything. Two outcomes, both correct, depending on which side gets the
+lock first: `Refresh` acquires it first and finishes (consumes old, inserts new, commits) before a
+concurrent revocation starts — the revocation then runs, sees the newly-inserted token like any other,
+and deletes it, since `DeleteWebRefreshTokensByUser` deletes whatever is a row at the time it runs, not
+a snapshot from when it started; or the revocation acquires the lock first, deletes everything
+including the token `Refresh` was about to consume, commits, and `Refresh` then finds its old token
+already gone and fails closed instead of silently minting a replacement for a session that's supposed
+to be over.
+
 `email_code`'s eligibility is a server-side check, not a UI affordance — otherwise an attacker with a
 stolen session and separate mailbox access could use it against an *already*-MFA-protected account,
 weaker than the factor actually protecting it (a
@@ -159,8 +189,19 @@ per-method, so it can't be forgotten on a future caller of the same helper. Acco
 `restriction.disallow_password_signin` (this doc's own earlier version, also
 [caught by Codex](https://github.com/bytebase/bytebase/pull/21235) as too coarse: a self-hosted
 workspace can allow both SSO and local password login at once, and the workspace-wide flag can't see
-that one specific SSO-provisioned user in that mix still has no usable password). `ResetPassword`
-never had this problem: it only ever touches the password, MFA stays live regardless of how it's
+that one specific SSO-provisioned user in that mix still has no usable password). The rule leans
+entirely on `LastChangePasswordTime` meaning what it says, which took a second
+[Codex finding](https://github.com/bytebase/bytebase/pull/21235) to get right: `CreateUser` and
+`Signup` both construct a brand-new local account with an empty `Profile{}` even when the caller
+supplies a real, self-chosen password (`auth_service.go:344-349`, `user_service.go:263-268`) — so
+every local account starts out looking exactly like a passwordless one until its first subsequent
+password change, which is backwards from what this rule needs. Both must set
+`Profile.LastChangePasswordTime` at creation whenever the password came from the caller, not the
+server — leaving it unset only for the genuinely passwordless creation paths, SSO auto-provisioning
+(`auth_service_idp.go:119-127`) and Cloud email-code auto-provisioning
+(`auth_service_email_code.go:252-258`), both of which generate the password themselves and never hand
+it to anyone. `ResetPassword` never had this problem: it only ever touches the password, MFA stays
+live regardless of how it's
 reached.
 
 Three checks `UpdateUser` enforces today have to move with their fields, not just the credential
@@ -427,9 +468,10 @@ message CredentialProof {
     // A one-time code from RequestReauthCode, sent to the account's own
     // registered email. Valid only when this account's own
     // Profile.LastChangePasswordTime is unset (no password was ever
-    // legitimately written for it — see Design → Cloud vs. self-hosted) AND
-    // it has no live MFA factor — bootstrap proof for an account with
-    // nothing else yet, never a substitute for a factor that already
+    // legitimately written for it — see Design → Cloud vs. self-hosted, and
+    // note CreateUser/Signup must set this field at creation for it to mean
+    // that) AND it has no live MFA factor — bootstrap proof for an account
+    // with nothing else yet, never a substitute for a factor that already
     // exists. Account-level, not the workspace-wide disallow_password_signin
     // restriction: a self-hosted workspace can run SSO and local password
     // login side by side, and an individual SSO-provisioned user in that mix
