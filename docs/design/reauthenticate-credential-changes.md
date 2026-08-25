@@ -557,6 +557,19 @@ way: each cleaner locks its matching expired rows in primary-key order before de
 the same deterministic-ordering contract and its two-direction regression tests as every other path that
 touches these tables.
 
+Scheduled cleanup isn't the only unordered multi-row deleter left, either — [one more of the same
+shape](https://github.com/bytebase/bytebase/pull/21235), reachable on demand rather than hourly: the MCP
+`reauthorize` tool. `handleReauthorize` (`backend/api/mcp/tool_reauthorize.go:35`) calls
+`DeleteOAuth2RefreshTokensByUserAndClient`, a plain `DELETE ... WHERE user_email = ? AND client_id = ?`
+with no ordering and no lock step (`oauth2_refresh_token.go:138-152`). A user/client pair holding two or
+more refresh grants — ordinary for a long-lived MCP integration that has refreshed since its last
+cleanup — gives it two rows to lock in scan order, against a credential revocation or client deletion
+holding those same rows in primary-key order. Identical root cause to the cleaners, and identical fix:
+lock the matching rows in primary-key order before deleting, inside the same contract and the same
+two-direction tests. Worth naming separately because it's a user-triggered path rather than a background
+one, so its overlap with a credential change isn't a rare scheduling coincidence — a user reauthorizing
+an MCP client *because* they just changed a credential is the expected sequence, not an unlucky one.
+
 That fix closes the race around *exchanging* an existing grant, but not [a separate gap one step
 earlier](https://github.com/bytebase/bytebase/pull/21235): `handleAuthorizePost`
 (`authorize.go:103-171`) mints a brand-new `oauth2_authorization_code` — a grant that didn't exist
@@ -657,25 +670,34 @@ least have G6's admin-assisted reset as a recovery route, which Cloud has no equ
 narrower residual is the wider version of the already-accepted SMTP-less gap (see Non-goals), not a new
 kind of gap.
 
-Everything above assumes `LastChangePasswordTime`, once set, stays set — and one existing writer can
-clear it [without ever meaning to](https://github.com/bytebase/bytebase/pull/21235):
+Everything above assumes `LastChangePasswordTime`, once set, stays set — and the SCIM directory-sync
+surface can clear it [without ever meaning to](https://github.com/bytebase/bytebase/pull/21235):
 `updateUserFromSCIM` (`backend/api/directory-sync/webhook.go:930-943`) wants to change one subfield,
 `Profile.Source`, but passes the whole `user.Profile` it read earlier into `Store.UpdateUser`, which
 replaces the entire `profile` JSONB column (`principal.go:446-451`) — the same whole-column-replace
 hazard already found in `finalizeLogin`, in a writer this doc hadn't looked at because SCIM has nothing
-to do with credentials. A SCIM PUT/PATCH that reads a profile with `LastChangePasswordTime` unset, then
+to do with credentials. A SCIM write that reads a profile with `LastChangePasswordTime` unset, then
 loses the race to a `ChangePassword` that sets it, writes the stale profile back afterward and clears it
 — leaving an account that genuinely has a password looking passwordless, which is precisely the state
 that makes `email_code` eligible. The consequence is worse here than the login-timestamp version: that
 one reverted a field to a stale value, this one reverts it to *unset*, straight into the eligibility
-condition. Two acceptable fixes, and this design doesn't need to pick between them:
-`updateUserFromSCIM` can update only the `source` subfield (a targeted `jsonb_set`, leaving every other
-field untouched by construction), or it can join the same lock-and-re-read discipline every other
-profile writer in this doc now follows — read the profile inside the locked transaction, patch `source`
-on *that* copy, write it back before commit. The subfield update is the smaller change and doesn't put a
-directory-sync webhook behind a per-account lock; either one closes it. What isn't acceptable is leaving
-a whole-profile writer outside the coordination that the entire `email_code` eligibility rule depends
-on.
+condition.
+
+Fixing `updateUserFromSCIM` alone doesn't cover the surface, though — [a second SCIM writer, found the
+round after](https://github.com/bytebase/bytebase/pull/21235): the `PATCH` handler
+(`webhook.go:335-348,433`) never calls `updateUserFromSCIM` at all. It builds its own
+`UpdateUserMessage` from the same previously-read `user.Profile` (`:343-345`), applies its operations,
+and calls `Store.UpdateUser` directly (`:433`) — the identical whole-column replace, reached by a
+different path. Both handlers need the same treatment; fixing only the shared-looking helper would leave
+the standalone one open, which is exactly the shape of mistake this doc keeps finding.
+
+Two acceptable fixes, and this design doesn't need to pick between them: each writer can update only the
+`source` subfield (a targeted `jsonb_set`, leaving every other field untouched by construction), or it
+can join the same lock-and-re-read discipline every other profile writer in this doc now follows — read
+the profile inside the locked transaction, patch `source` on *that* copy, write it back before commit.
+The subfield update is the smaller change and doesn't put a directory-sync webhook behind a per-account
+lock; either one closes it. What isn't acceptable is leaving a whole-profile writer — either of them —
+outside the coordination that the entire `email_code` eligibility rule depends on.
 
 Three checks `UpdateUser` enforces today have to move with their fields, not just the credential
 proof — existing behavior this design must carry forward, not decisions it makes new. `ChangePassword`
