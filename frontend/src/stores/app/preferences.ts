@@ -64,10 +64,15 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
     if (!email) return;
     const key = storageKeyIntroState(getWorkspaceCacheScope(get), email);
     const previous = readJson<Record<string, boolean>>(key, {});
-    const next = {
+    const next: Record<string, boolean> = {
       ...previous,
       "workspace-setup-guide.dismissed": false,
     };
+    for (const introStateKey of Object.keys(next)) {
+      if (introStateKey.startsWith("workspace-setup-guide.")) {
+        next[introStateKey] = false;
+      }
+    }
     writeJson(key, next);
     set((state) => ({ introStateVersion: state.introStateVersion + 1 }));
   },

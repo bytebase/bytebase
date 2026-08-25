@@ -2,6 +2,12 @@ import type { ReactElement, ReactNode } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  DATABASE_ROUTE_DASHBOARD,
+  INSTANCE_ROUTE_DATABASE_DETAIL,
+  PROJECT_V1_ROUTE_DATABASE_DETAIL,
+  SQL_EDITOR_DATABASE_MODULE,
+} from "@/app/router/handles";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 
 (
@@ -44,16 +50,22 @@ const mocks = vi.hoisted(() => ({
   },
   hasWorkspacePermissionV2: vi.fn(() => true),
   preCreateIssue: vi.fn(),
-  currentRoute: { name: "workspace.home" } as { name?: string },
+  currentRoute: { name: "workspace.home" } as {
+    name?: string;
+    params?: Record<string, string | undefined>;
+  },
   routerPush: vi.fn(),
   captureMetric: vi.fn(),
   defaultProjectName: "projects/default",
-  sampleInstanceName: "",
+  sampleInstances: [] as { instance: string }[],
   userCountInIam: 1,
   hideQuickStart: false,
 }));
 
 const dismissedIntroStateKey = "workspace-setup-guide.dismissed";
+const databaseExploredIntroStateKey =
+  "workspace-setup-guide.database-explored";
+const queryExecutedIntroStateKey = "workspace-setup-guide.query-executed";
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
@@ -122,7 +134,7 @@ vi.mock("@/stores/app", () => {
     hasWorkspacePermission: mocks.hasWorkspacePermissionV2,
     serverInfo: {
       defaultProject: mocks.defaultProjectName,
-      sample: { instance: mocks.sampleInstanceName },
+      sample: { instances: mocks.sampleInstances },
     },
     introStateVersion: mocks.introStateVersion,
     getIntroStateByKey: mocks.getIntroStateByKey,
@@ -227,7 +239,7 @@ beforeEach(() => {
   mocks.hasWorkspacePermissionV2.mockReturnValue(true);
   mocks.currentRoute = { name: "workspace.home" };
   mocks.defaultProjectName = "projects/default";
-  mocks.sampleInstanceName = "";
+  mocks.sampleInstances = [];
   mocks.userCountInIam = 1;
   mocks.hideQuickStart = false;
   container = document.createElement("div");
@@ -663,6 +675,7 @@ describe("WorkspaceSetupGuide", () => {
   });
 
   it("does not use the default project as the setup project", async () => {
+    mocks.introState[databaseExploredIntroStateKey] = true;
     mocks.fetchProjectList.mockResolvedValue({
       projects: [
         { name: "projects/default" },
@@ -705,7 +718,11 @@ describe("WorkspaceSetupGuide", () => {
     ]);
   });
 
-  it("counts the self-host sample project without completing real-database activation", async () => {
+  it("counts self-host sample resources as project and instance readiness", async () => {
+    mocks.sampleInstances = [
+      { instance: "instances/sample-one" },
+      { instance: "instances/sample-two" },
+    ];
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-sample" }],
       nextPageToken: "",
@@ -713,6 +730,7 @@ describe("WorkspaceSetupGuide", () => {
     mocks.fetchInstanceList.mockResolvedValue({
       instances: [
         { name: "instances/sample-one" },
+        { name: "instances/sample-two" },
       ],
       nextPageToken: "",
     });
@@ -720,6 +738,10 @@ describe("WorkspaceSetupGuide", () => {
       databases: [
         {
           name: "instances/sample-one/databases/employee",
+          project: "projects/project-sample",
+        },
+        {
+          name: "instances/sample-two/databases/employee",
           project: "projects/project-sample",
         },
       ],
@@ -744,8 +766,10 @@ describe("WorkspaceSetupGuide", () => {
     }
   });
 
-  it("counts a SaaS project but not its sample resources", async () => {
-    mocks.sampleInstanceName = "projects/app/instances/saas-sample";
+  it("counts SaaS sample resources as project and instance readiness", async () => {
+    mocks.sampleInstances = [
+      { instance: "projects/app/instances/saas-sample" },
+    ];
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/app" }],
       nextPageToken: "",
@@ -766,16 +790,14 @@ describe("WorkspaceSetupGuide", () => {
 
     await render(<WorkspaceSetupGuide />);
 
-    expect(
-      container
-        .querySelector("[data-testid='setup-step-hasProject']")
-        ?.querySelector(".lucide-circle-check-big")
-    ).not.toBeNull();
-    for (const key of [
-      "hasInstance",
-      "hasProjectDatabase",
-      "hasFirstQuery",
-    ]) {
+    for (const key of ["hasProject", "hasInstance"]) {
+      expect(
+        container
+          .querySelector(`[data-testid='setup-step-${key}']`)
+          ?.querySelector(".lucide-circle-check-big")
+      ).not.toBeNull();
+    }
+    for (const key of ["hasProjectDatabase", "hasFirstQuery"]) {
       expect(
         container
           .querySelector(`[data-testid='setup-step-${key}']`)
@@ -784,8 +806,9 @@ describe("WorkspaceSetupGuide", () => {
     }
   });
 
-  it("finds user resources after sample-only first pages", async () => {
-    mocks.sampleInstanceName = "instances/sample";
+  it("uses sample resources from the first accessible pages", async () => {
+    mocks.introState[databaseExploredIntroStateKey] = true;
+    mocks.sampleInstances = [{ instance: "instances/sample" }];
     mocks.fetchProjectList.mockImplementation(async ({ pageToken } = {}) =>
       pageToken === "project-page-2"
         ? { projects: [{ name: "projects/app" }], nextPageToken: "" }
@@ -840,8 +863,126 @@ describe("WorkspaceSetupGuide", () => {
       container.querySelector("[data-testid='active-action']")
     ).toHaveAttribute(
       "data-route-params",
-      JSON.stringify({ project: "app", instance: "prod", database: "main" })
+      JSON.stringify({
+        project: "project-sample",
+        instance: "sample",
+        database: "employee",
+      })
     );
+  });
+
+  it.each([
+    {
+      name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+      params: {
+        projectId: "project-sample",
+        instanceId: "sample-one",
+        databaseName: "employee",
+      },
+    },
+    {
+      name: INSTANCE_ROUTE_DATABASE_DETAIL,
+      params: {
+        instanceId: "sample-one",
+        databaseName: "employee",
+      },
+    },
+    {
+      name: SQL_EDITOR_DATABASE_MODULE,
+      params: {
+        project: "project-sample",
+        instance: "sample-one",
+        database: "employee",
+      },
+    },
+  ])("persists database exploration on $name", async (route) => {
+    mocks.currentRoute = route;
+    mocks.fetchProjectList.mockResolvedValue({
+      projects: [{ name: "projects/project-sample" }],
+      nextPageToken: "",
+    });
+    mocks.fetchInstanceList.mockResolvedValue({
+      instances: [{ name: "instances/sample-one" }],
+      nextPageToken: "",
+    });
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [
+        {
+          name: "instances/sample-one/databases/employee",
+          project: "projects/project-sample",
+        },
+      ],
+      nextPageToken: "",
+    });
+
+    await render(<WorkspaceSetupGuide />);
+
+    expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
+      key: databaseExploredIntroStateKey,
+      newState: true,
+    });
+  });
+
+  it("does not count the workspace database list as exploration", async () => {
+    mocks.currentRoute = { name: DATABASE_ROUTE_DASHBOARD };
+    mocks.fetchProjectList.mockResolvedValue({
+      projects: [{ name: "projects/project-a" }],
+      nextPageToken: "",
+    });
+    mocks.fetchInstanceList.mockResolvedValue({
+      instances: [{ name: "instances/instance-a" }],
+      nextPageToken: "",
+    });
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [
+        {
+          name: "instances/instance-a/databases/db-a",
+          project: "projects/project-a",
+        },
+      ],
+      nextPageToken: "",
+    });
+
+    await render(<WorkspaceSetupGuide />);
+
+    expect(mocks.saveIntroStateByKey).not.toHaveBeenCalledWith({
+      key: databaseExploredIntroStateKey,
+      newState: true,
+    });
+    expect(
+      container
+        .querySelector("[data-testid='setup-step-hasProjectDatabase']")
+        ?.querySelector(".lucide-circle-check-big")
+    ).toBeNull();
+  });
+
+  it("keeps database exploration complete after it is persisted", async () => {
+    mocks.introState[databaseExploredIntroStateKey] = true;
+    mocks.fetchProjectList.mockResolvedValue({
+      projects: [{ name: "projects/project-a" }],
+      nextPageToken: "",
+    });
+    mocks.fetchInstanceList.mockResolvedValue({
+      instances: [{ name: "instances/instance-a" }],
+      nextPageToken: "",
+    });
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [
+        {
+          name: "instances/instance-a/databases/db-a",
+          project: "projects/project-a",
+        },
+      ],
+      nextPageToken: "",
+    });
+
+    await render(<WorkspaceSetupGuide />);
+
+    expect(
+      container
+        .querySelector("[data-testid='setup-step-hasProjectDatabase']")
+        ?.querySelector(".lucide-circle-check-big")
+    ).not.toBeNull();
   });
 
   it("does not show the active guide action when already on its route", async () => {
@@ -892,7 +1033,14 @@ describe("WorkspaceSetupGuide", () => {
   });
 
   it("highlights the active query step on project database pages", async () => {
-    mocks.currentRoute = { name: "workspace.project.database" };
+    mocks.currentRoute = {
+      name: PROJECT_V1_ROUTE_DATABASE_DETAIL,
+      params: {
+        projectId: "project-a",
+        instanceId: "instance-a",
+        databaseName: "db-a",
+      },
+    };
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-a" }],
       nextPageToken: "",
@@ -961,30 +1109,6 @@ describe("WorkspaceSetupGuide", () => {
     expect(container.querySelector("[data-testid='active-action']")).toBeNull();
   });
 
-  it("scopes the query history check to the found project", async () => {
-    mocks.fetchProjectList.mockResolvedValue({
-      projects: [{ name: "projects/project-a" }],
-      nextPageToken: "",
-    });
-    mocks.fetchDatabases.mockImplementation(async ({ parent } = {}) => ({
-      databases:
-        parent === "projects/project-a"
-          ? [{ name: "instances/instance-a/databases/db-a" }]
-          : [],
-      nextPageToken: "",
-    }));
-    mocks.searchQueryHistories.mockResolvedValue({
-      queryHistories: [{ name: "projects/project-a/queryHistories/h1" }],
-      nextPageToken: "",
-    });
-
-    await render(<WorkspaceSetupGuide />);
-
-    expect(mocks.searchQueryHistories).toHaveBeenCalledWith(
-      expect.objectContaining({ parent: "projects/project-a" })
-    );
-  });
-
   it("asks users to create a database when the connected instance has no databases", async () => {
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-a" }],
@@ -1033,6 +1157,7 @@ describe("WorkspaceSetupGuide", () => {
   });
 
   it("opens SQL Editor as the primary action after a database is connected", async () => {
+    mocks.introState[databaseExploredIntroStateKey] = true;
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-a" }],
       nextPageToken: "",
@@ -1051,13 +1176,6 @@ describe("WorkspaceSetupGuide", () => {
     expect(container.textContent).toContain(
       "workspace-setup-guide.steps.query"
     );
-    expect(mocks.searchQueryHistories).toHaveBeenCalledWith(
-      expect.objectContaining({
-        pageSize: 10,
-        filter: 'type == "QUERY"',
-      })
-    );
-
     const actionLink = container.querySelector(
       "[data-testid='active-action']"
     );
@@ -1077,6 +1195,19 @@ describe("WorkspaceSetupGuide", () => {
     expect(actionLink?.querySelector(".lucide-square-terminal")).not.toBeNull();
     expect(actionLink).toHaveAttribute("target", "_blank");
     expect(actionLink).toHaveAttribute("rel", "noopener noreferrer");
+    expect(
+      container
+        .querySelector("[data-testid='setup-step-hasFirstQuery']")
+        ?.querySelector(".lucide-circle-check-big")
+    ).toBeNull();
+
+    act(() => {
+      (actionLink as HTMLAnchorElement | null)?.click();
+    });
+    expect(mocks.saveIntroStateByKey).not.toHaveBeenCalledWith({
+      key: queryExecutedIntroStateKey,
+      newState: true,
+    });
 
     const secondaryAction = container.querySelector(
       "[data-testid='secondary-action']"
@@ -1099,8 +1230,9 @@ describe("WorkspaceSetupGuide", () => {
   });
 
   it("completes Query data only after SQL execution finishes", async () => {
-    mocks.currentRoute = { name: "sql-editor.database" };
-    mocks.sampleInstanceName = "projects/app/instances/saas-sample";
+    mocks.sampleInstances = [
+      { instance: "projects/app/instances/saas-sample" },
+    ];
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-a" }],
       nextPageToken: "",
@@ -1123,40 +1255,128 @@ describe("WorkspaceSetupGuide", () => {
 
     await act(async () => {
       await sqlEditorEvents.emit("query-executed", {
-        database: "projects/app/instances/saas-sample/databases/employee",
+        database: "",
         project: "projects/project-a",
       });
     });
 
     expect(queryStep?.querySelector(".lucide-circle-check-big")).toBeNull();
+    expect(mocks.saveIntroStateByKey).not.toHaveBeenCalledWith({
+      key: queryExecutedIntroStateKey,
+      newState: true,
+    });
 
     await act(async () => {
       await sqlEditorEvents.emit("query-executed", {
-        database: "instances/instance-a/databases/db-a",
-        project: "projects/default",
-      });
-      await sqlEditorEvents.emit("query-executed", {
-        database: "instances/instance-a/databases/db-a",
+        database: "projects/app/instances/saas-sample/databases/employee",
         project: "projects/project-sample",
       });
     });
 
-    expect(queryStep?.querySelector(".lucide-circle-check-big")).toBeNull();
-
-    await act(async () => {
-      await sqlEditorEvents.emit("query-executed", {
-        database: "instances/instance-a/databases/db-a",
-        project: "projects/project-a",
-      });
+    expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
+      key: databaseExploredIntroStateKey,
+      newState: true,
     });
-
+    expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
+      key: queryExecutedIntroStateKey,
+      newState: true,
+    });
     expect(
       queryStep?.querySelector(".lucide-circle-check-big")
     ).not.toBeNull();
   });
 
-  it("ignores sample-only query history", async () => {
-    mocks.sampleInstanceName = "instances/sample";
+  it("keeps query progress and its event target while resource scans finish", async () => {
+    type ProjectResponse = {
+      projects: { name: string }[];
+      nextPageToken: string;
+    };
+    let resolveFirstScan: ((value: ProjectResponse) => void) | undefined;
+    let resolveSecondScan: ((value: ProjectResponse) => void) | undefined;
+    mocks.fetchProjectList
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveFirstScan = resolve;
+          })
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            resolveSecondScan = resolve;
+          })
+      );
+    mocks.fetchInstanceList.mockResolvedValue({
+      instances: [{ name: "instances/discovered-instance" }],
+      nextPageToken: "",
+    });
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [
+        {
+          name: "instances/discovered-instance/databases/discovered-db",
+          project: "projects/discovered-project",
+        },
+      ],
+      nextPageToken: "",
+    });
+
+    await render(<WorkspaceSetupGuide />);
+    expect(mocks.fetchProjectList).toHaveBeenCalledTimes(1);
+
+    await act(async () => {
+      await sqlEditorEvents.emit("query-executed", {
+        database: "instances/event-instance/databases/event-db",
+        project: "projects/event-project",
+      });
+    });
+    expect(mocks.fetchProjectList).toHaveBeenCalledTimes(2);
+
+    const assertInteractionState = () => {
+      for (const key of ["hasProjectDatabase", "hasFirstQuery"]) {
+        expect(
+          container
+            .querySelector(`[data-testid='setup-step-${key}']`)
+            ?.querySelector(".lucide-circle-check-big")
+        ).not.toBeNull();
+      }
+      expect(
+        container.querySelector("[data-testid='active-action']")
+      ).toHaveAttribute(
+        "data-route-params",
+        JSON.stringify({
+          project: "event-project",
+          instance: "event-instance",
+          database: "event-db",
+        })
+      );
+    };
+
+    await act(async () => {
+      resolveFirstScan?.({
+        projects: [{ name: "projects/discovered-project" }],
+        nextPageToken: "",
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    assertInteractionState();
+
+    await act(async () => {
+      resolveSecondScan?.({
+        projects: [{ name: "projects/discovered-project" }],
+        nextPageToken: "",
+      });
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    assertInteractionState();
+  });
+
+  it("does not reconstruct query completion from query history", async () => {
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/app" }],
       nextPageToken: "",
@@ -1172,7 +1392,7 @@ describe("WorkspaceSetupGuide", () => {
     });
     mocks.searchQueryHistories.mockResolvedValue({
       queryHistories: [
-        { database: "instances/sample/databases/employee" },
+        { database: "instances/prod/databases/main" },
       ],
       nextPageToken: "",
     });
@@ -1186,8 +1406,7 @@ describe("WorkspaceSetupGuide", () => {
     ).toBeNull();
   });
 
-  it("finds a real query after a sample-only history page", async () => {
-    mocks.sampleInstanceName = "instances/sample";
+  it("does not search query history for guide progress", async () => {
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/app" }],
       nextPageToken: "",
@@ -1201,33 +1420,13 @@ describe("WorkspaceSetupGuide", () => {
       ],
       nextPageToken: "",
     });
-    mocks.searchQueryHistories.mockImplementation(async (request) =>
-      request?.pageToken === "history-page-2"
-        ? {
-            queryHistories: [
-              { database: "instances/prod/databases/main" },
-            ],
-            nextPageToken: "",
-          }
-        : {
-            queryHistories: [
-              { database: "instances/sample/databases/employee" },
-            ],
-            nextPageToken: "history-page-2",
-          }
-    );
-
     await render(<WorkspaceSetupGuide />);
 
-    expect(mocks.searchQueryHistories).toHaveBeenCalledTimes(2);
-    expect(
-      container
-        .querySelector("[data-testid='setup-step-hasFirstQuery']")
-        ?.querySelector(".lucide-circle-check-big")
-    ).not.toBeNull();
+    expect(mocks.searchQueryHistories).not.toHaveBeenCalled();
   });
 
   it("activates the query step when users click it after visiting another step", async () => {
+    mocks.introState[databaseExploredIntroStateKey] = true;
     mocks.currentRoute = { name: "workspace.database" };
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-a" }],
@@ -1278,6 +1477,7 @@ describe("WorkspaceSetupGuide", () => {
   });
 
   it("opens the first database change flow as a secondary action", async () => {
+    mocks.introState[databaseExploredIntroStateKey] = true;
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-a" }],
       nextPageToken: "",
@@ -1321,6 +1521,8 @@ describe("WorkspaceSetupGuide", () => {
   });
 
   it("stays visible after the first query exists", async () => {
+    mocks.introState[databaseExploredIntroStateKey] = true;
+    mocks.introState[queryExecutedIntroStateKey] = true;
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-a" }],
       nextPageToken: "",
@@ -1333,11 +1535,6 @@ describe("WorkspaceSetupGuide", () => {
       databases: [{ name: "instances/instance-a/databases/db-a" }],
       nextPageToken: "",
     });
-    mocks.searchQueryHistories.mockResolvedValue({
-      queryHistories: [{ name: "projects/project-a/queryHistories/1" }],
-      nextPageToken: "",
-    });
-
     await render(<WorkspaceSetupGuide />);
 
     expect(container.textContent).toContain(
@@ -1468,6 +1665,7 @@ describe("WorkspaceSetupGuide", () => {
   });
 
   it("refreshes when a database is added to the app store", async () => {
+    mocks.introState[databaseExploredIntroStateKey] = true;
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-a" }],
       nextPageToken: "",
@@ -1504,6 +1702,7 @@ describe("WorkspaceSetupGuide", () => {
   });
 
   it("refreshes when the route changes after setup progress changes elsewhere", async () => {
+    mocks.introState[databaseExploredIntroStateKey] = true;
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-a" }],
       nextPageToken: "",

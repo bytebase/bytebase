@@ -2475,6 +2475,44 @@ describe("useAppStore", () => {
     ).toEqual({ "workspace-setup-guide.dismissed": false });
   });
 
+  test("resets all workspace setup guide progress", () => {
+    const store = createAppStore();
+    store.setState({ currentUser: user });
+
+    store.getState().saveIntroStateByKey({
+      key: "workspace-setup-guide.dismissed",
+      newState: true,
+    });
+    store.getState().saveIntroStateByKey({
+      key: "workspace-setup-guide.database-explored",
+      newState: true,
+    });
+    store.getState().saveIntroStateByKey({
+      key: "workspace-setup-guide.query-executed",
+      newState: true,
+    });
+    store
+      .getState()
+      .saveIntroStateByKey({ key: "unrelated.intro", newState: true });
+
+    store.getState().resetWorkspaceSetupGuide();
+
+    expect(
+      store.getState().getIntroStateByKey("workspace-setup-guide.dismissed")
+    ).toBe(false);
+    expect(
+      store
+        .getState()
+        .getIntroStateByKey("workspace-setup-guide.database-explored")
+    ).toBe(false);
+    expect(
+      store
+        .getState()
+        .getIntroStateByKey("workspace-setup-guide.query-executed")
+    ).toBe(false);
+    expect(store.getState().getIntroStateByKey("unrelated.intro")).toBe(true);
+  });
+
   test("scopes recent projects by workspace in SaaS mode", () => {
     const store = createAppStore();
     // SaaS mode scopes cache keys by workspace.

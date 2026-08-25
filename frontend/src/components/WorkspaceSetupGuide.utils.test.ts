@@ -1,63 +1,20 @@
 import { describe, expect, test, vi } from "vitest";
 import {
   findFirstPageItem,
-  isSampleDatabaseName,
   isSetupProjectName,
-  isUserProjectName,
 } from "./WorkspaceSetupGuide.utils";
 
 describe("WorkspaceSetupGuide utilities", () => {
   test.each([
     ["projects/app", "projects/default", true],
     ["projects/default", "projects/default", false],
-    ["projects/project-sample", "projects/default", false],
+    ["projects/project-sample", "projects/default", true],
   ])(
     "classifies project %s against default %s",
     (name, defaultProject, expected) => {
-      expect(isUserProjectName(name, defaultProject)).toBe(expected);
+      expect(isSetupProjectName(name, defaultProject)).toBe(expected);
     }
   );
-
-  test("counts the legacy sample project as setup progress", () => {
-    expect(
-      isSetupProjectName("projects/project-sample", "projects/default")
-    ).toBe(true);
-    expect(isSetupProjectName("projects/default", "projects/default")).toBe(
-      false
-    );
-  });
-
-  test("classifies sample databases by exact instance resource name", () => {
-    const samples = new Set([
-      "instances/self-host-sample",
-      "projects/app/instances/saas-sample",
-    ]);
-
-    expect(
-      isSampleDatabaseName(
-        "instances/self-host-sample/databases/employee",
-        samples
-      )
-    ).toBe(true);
-    expect(
-      isSampleDatabaseName(
-        "projects/app/instances/saas-sample/databases/employee",
-        samples
-      )
-    ).toBe(true);
-    expect(
-      isSampleDatabaseName(
-        "projects/app/instances/production/databases/main",
-        samples
-      )
-    ).toBe(false);
-    expect(
-      isSampleDatabaseName(
-        "projects/app/instances/sample-production/databases/main",
-        samples
-      )
-    ).toBe(false);
-  });
 
   test("finds a matching item on a later page", async () => {
     const fetchPage = vi
