@@ -700,15 +700,20 @@ service UserService {
   // Validates otp_code and pending_version against the temporary state
   // StartMfaEnrollment persisted for this account (re-read from the store
   // by name, not carried in this request). Replacing an existing factor
-  // (the account already has a live OtpSecret) promotes *only* the secret
-  // here — recovery codes stay pending until a separate ConfirmRecoveryCodes
-  // call, safely, since the old set keeps working as a fallback in the
-  // meantime (see Design → Verification). First-time enrollment (no live
-  // OtpSecret yet) has no such fallback, so this call verifies otp_code and
-  // credential but does *not* promote anything — promotion of the secret
-  // moves to ConfirmRecoveryCodes, atomically with the recovery codes, so
-  // the account is never left MFA-required with zero usable codes (see
-  // Design → Verification). Also rejects a pending set past its expiry
+  // (the account already has a live OtpSecret) requires credential and
+  // promotes *only* the secret here — recovery codes stay pending until a
+  // separate ConfirmRecoveryCodes call, safely, since the old set keeps
+  // working as a fallback in the meantime (see Design → Verification).
+  // First-time enrollment (no live OtpSecret yet) has no such fallback, so
+  // this call verifies otp_code but does *not* promote anything — promotion
+  // of the secret moves to ConfirmRecoveryCodes, atomically with the
+  // recovery codes, so the account is never left MFA-required with zero
+  // usable codes (see Design → Verification). credential is required here
+  // too for that branch, *unless* the account has neither a password nor
+  // live MFA — email_code would be its only option, and email_code is
+  // single-use, so it's checked once, at ConfirmRecoveryCodes, where the
+  // mutation actually happens (see Design → Verification and
+  // EnableMfaRequest.credential). Also rejects a pending set past its expiry
   // (isMFATempSecretExpired, checked today both before OTP verification and
   // before promotion — both carry forward, inside the locked transaction)
   // — pending_version alone only detects a *replaced* pending set, not one
@@ -719,7 +724,7 @@ service UserService {
       post: "/v1/{name=users/*}:enableMfa"
       body: "*"
     };
-    option (google.api.method_signature) = "name,otp_code,credential,pending_version";
+    option (google.api.method_signature) = "name,otp_code,pending_version";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
@@ -962,8 +967,13 @@ message EnableMfaRequest {
 
   // Proof for the *existing* factor being replaced, if any. Not the code
   // above — that proves the new enrollment, this proves the caller still
-  // owns the account before the swap.
-  CredentialProof credential = 3 [(google.api.field_behavior) = REQUIRED];
+  // owns the account before the swap. Required whenever a reusable proof
+  // exists — a rotation (there's a live factor to prove), or a first-time
+  // enrollment where the account already has a password. Omitted only when
+  // `email_code` would be the sole option: a first-time enrollment on an
+  // account with neither a password nor live MFA — see Design → Verification
+  // for why this call must not consume that code itself.
+  CredentialProof credential = 3 [(google.api.field_behavior) = OPTIONAL];
 
   // Echoed from MfaEnrollment.pending_version. otp_code alone only proves
   // the caller knows the current TempOtpSecret; it says nothing about
@@ -1124,6 +1134,25 @@ replacement minted, the same gap `pending_version` alone was already established
 (see `EnableMfa` above). `ConfirmRecoveryCodes`'s enrollment branch runs the identical
 `isMFATempSecretExpired` check itself, immediately before promoting, rather than trusting whatever
 `EnableMfa` may or may not have already checked.
+
+Requiring `credential` on both `EnableMfa` and `ConfirmRecoveryCodes` is fine for a rotation, or for
+enrollment on an account that already has a password — both proofs are pure comparisons or a spendable-
+but-plentiful recovery code, reusable or numerous enough to supply twice in one flow. It breaks
+[precisely the account this whole mechanism exists for](https://github.com/bytebase/bytebase/pull/21235):
+a passwordless first-time enrollment, where `email_code` is the *only* available proof. `EnableMfa`
+already requires and atomically consumes one `REAUTH` code there — even though, per the fix above, it
+promotes nothing — so `ConfirmRecoveryCodes`'s own required `credential` demands a second code
+immediately afterward, and `RequestReauthCode` silently no-ops for its full resend cooldown
+(`auth_service_email_code.go:392-393`), stalling the flow this design built `email_code` to unblock in
+the first place. The fix isn't a longer cooldown or a second exemption on the resend path — it's not
+asking twice: `EnableMfaRequest.credential` becomes optional, required only when a reusable proof exists
+(a rotation, or enrollment where the account has a password); omitted when the account has neither a
+password nor live MFA, since `email_code` would be the only option and this call doesn't mutate anything
+in that branch anyway. The actual gate moves entirely to `ConfirmRecoveryCodes`, which already requires
+`credential` unconditionally and is the point where promotion — the thing worth gating — actually
+happens. `otp_code` still runs in `EnableMfa` regardless of branch: it isn't the credential proof, it's
+confirmation the caller correctly configured the new device, and skipping it would leave a typo'd
+authenticator app undetected until the user is already locked out at their next login.
 
 `email_code` verifies against a new `REAUTH` purpose on `email_verification_code`
 (`storepb.EmailVerificationCodePurpose`), alongside the existing `LOGIN` and `PASSWORD_RESET` —
