@@ -405,19 +405,41 @@ reaching for the principal — the row that breaks it is one neither transaction
 against, because a still-uncommitted `Login` created it in between.
 
 Ordering alone can't close this — the row genuinely didn't exist yet when revocation did its own
-child-locking pass, so no fixed table order helps. Closing it needs a lock revocation and *every*
-child-row-inserting issuance path share before either one goes near the account's tokens: one
-account-scoped advisory lock (keyed on the principal's stable ID), held for the rest of the transaction
-that acquires it and released automatically on commit or rollback, no separate unlock to forget.
-Revocation acquires it first, before its child-row scan even runs. Every path that inserts a brand-new
-child row — `Login`/`Signup`'s session insert, the trailing insert `Refresh`/`switchWorkspaceInternal`
-do after re-authenticating, and the OAuth mint/exchange paths this doc already covers — acquires the
-same lock immediately before that insert. With it held, `Login` can't commit a new session while a
-revocation is anywhere between its scan and its commit, so there's no window left for a third party to
-grab a row revocation hasn't accounted for; a revocation can't start its scan while a new session is
-mid-insert either, so it never undercounts what it's about to delete. Needs a deterministic
-real-PostgreSQL regression test for this specific three-transaction interleaving, not just the two-party
-cases already required elsewhere in this doc.
+child-locking pass, so no fixed table order helps. Closing it needs a lock that every participant shares
+*before* it goes near the account's rows at all: one account-scoped advisory lock (keyed on the
+principal's stable ID), held for the rest of the transaction that acquires it and released automatically
+on commit or rollback, no separate unlock to forget.
+
+Where in the transaction it's acquired is the whole point, and [getting that wrong reintroduces the
+deadlock it exists to remove](https://github.com/bytebase/bytebase/pull/21235): an earlier version of
+this paragraph had the inserting paths take it "immediately before that insert," which is *after*
+`Login`/`Signup` has already locked the principal and after `Refresh`/`switchWorkspaceInternal` has
+locked its old token row and the principal. That's a plain lock-order inversion against revocation, which
+takes the fence first and reaches for rows second — issuance holding the principal while waiting for the
+fence, revocation holding the fence while waiting for the principal. The fence is only a fence if it is
+strictly first: **every** participating transaction acquires it as its opening statement, before any
+`SELECT ... FOR UPDATE`, any consume, any insert, and any authentication step. It sits above this doc's
+entire child-before-parent ordering rather than inside it — that ordering governs which *row* locks come
+in which sequence, and this governs that no participant touches rows at all until it holds the account.
+
+The participants are every transaction that reads-then-writes this account's token rows: G7's revocation
+on all four credential-mutating methods; `Login`/`Signup`, `Refresh`, and `switchWorkspaceInternal`;
+the OAuth mint (`handleAuthorizePost`) and both exchange paths; and — [easy to miss, since it isn't a
+credential path at all](https://github.com/bytebase/bytebase/pull/21235) — `UpdateEmail`. `UpdateEmail`
+has the identical absent-child gap for the identical reason: it scans and locks the child rows that
+exist, then runs `UPDATE principal SET email = ?`, whose `ON UPDATE CASCADE` re-derives and locks
+whatever child rows exist *at that moment*, including any a login committed in between. A third-party
+`Refresh` holding one of those new rows and waiting on the principal deadlocks against the cascade
+holding the principal and waiting on the row — the same three-party shape, just with the email cascade
+where revocation's delete was. It takes the fence first too, before its own child scan.
+
+With the fence held from the top by all of them, `Login` can't commit a new session while a revocation or
+an email change is anywhere between its scan and its commit, so there's no window left for a third party
+to grab a row the scanning side hasn't accounted for; and neither revocation nor `UpdateEmail` can start
+its scan while a new session is mid-insert, so neither undercounts what it's about to delete or rewrite.
+Needs a deterministic real-PostgreSQL regression test for this specific three-transaction interleaving —
+in both the revocation and `UpdateEmail` variants — not just the two-party cases already required
+elsewhere in this doc.
 
 Holding that lock through the rest of the flow surfaces [one more standalone write in the same
 sequence](https://github.com/bytebase/bytebase/pull/21235): `finalizeLogin` (shared by `Login`/`Signup`,
