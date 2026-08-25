@@ -15,10 +15,12 @@ export function SampleExpirationAlert({
 }: SampleExpirationAlertProps) {
   const { t } = useTranslation();
   const sample = useAppStore((state) => state.serverInfo?.sample);
-  const expireTime = sample?.expireTime;
   const canonicalInstanceName = `instances/${extractInstanceResourceName(instanceName)}`;
+  const expireTime = sample?.instances.find(
+    ({ instance }) => instance === canonicalInstanceName
+  )?.expireTime;
 
-  if (!expireTime || sample.instance !== canonicalInstanceName) {
+  if (!expireTime) {
     return null;
   }
 

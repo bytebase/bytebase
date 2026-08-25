@@ -180,8 +180,10 @@ const mocks = vi.hoisted(() => {
     },
     serverInfo: {} as {
       sample?: {
-        instance: string;
-        expireTime?: { seconds: bigint; nanos: number };
+        instances: {
+          instance: string;
+          expireTime?: { seconds: bigint; nanos: number };
+        }[];
       };
     },
   };
@@ -553,11 +555,17 @@ describe("ProjectDatabaseDetailPage", () => {
   test("shows the sample expiration warning for a sample database", async () => {
     mocks.serverInfo = {
       sample: {
-        instance: "instances/inst1",
-        expireTime: {
-          seconds: BigInt(Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60),
-          nanos: 0,
-        },
+        instances: [
+          {
+            instance: "instances/inst1",
+            expireTime: {
+              seconds: BigInt(
+                Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60
+              ),
+              nanos: 0,
+            },
+          },
+        ],
       },
     };
     mocks.useProjectDatabaseDetail.mockReturnValue({

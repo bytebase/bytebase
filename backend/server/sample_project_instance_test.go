@@ -9,13 +9,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestConfigureSampleProjectManagerDisablesInvalidTarget(t *testing.T) {
+func TestConfigureSampleManagerDisablesInvalidTarget(t *testing.T) {
 	var output bytes.Buffer
 	originalLogger := slog.Default()
 	slog.SetDefault(slog.New(slog.NewTextHandler(&output, nil)))
 	t.Cleanup(func() { slog.SetDefault(originalLogger) })
 
-	manager := configureSampleProjectManager(
+	manager := configureSampleManager(
 		context.Background(),
 		"postgresql://control:secret@127.0.0.1:5432/postgres?sslmode=prefer",
 		nil,
@@ -28,25 +28,25 @@ func TestConfigureSampleProjectManagerDisablesInvalidTarget(t *testing.T) {
 	require.NotContains(t, output.String(), "secret")
 }
 
-func TestConfigureSampleProjectManagerIgnoresEmptyTarget(t *testing.T) {
+func TestConfigureSampleManagerIgnoresEmptyTarget(t *testing.T) {
 	var output bytes.Buffer
 	originalLogger := slog.Default()
 	slog.SetDefault(slog.New(slog.NewTextHandler(&output, nil)))
 	t.Cleanup(func() { slog.SetDefault(originalLogger) })
 
-	manager := configureSampleProjectManager(context.Background(), "", nil, nil, "replica")
+	manager := configureSampleManager(context.Background(), "", nil, nil, "replica")
 
 	require.Nil(t, manager)
 	require.Empty(t, output.String())
 }
 
-func TestConfigureSampleProjectManagerRetainsTemporarilyUnavailableTarget(t *testing.T) {
+func TestConfigureSampleManagerRetainsTemporarilyUnavailableTarget(t *testing.T) {
 	var output bytes.Buffer
 	originalLogger := slog.Default()
 	slog.SetDefault(slog.New(slog.NewTextHandler(&output, nil)))
 	t.Cleanup(func() { slog.SetDefault(originalLogger) })
 
-	manager := configureSampleProjectManager(
+	manager := configureSampleManager(
 		context.Background(),
 		"postgresql://control:secret@127.0.0.1:1/postgres",
 		nil,

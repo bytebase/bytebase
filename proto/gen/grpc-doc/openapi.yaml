@@ -29209,6 +29209,19 @@ components:
           title: available
           description: Whether sample setup is currently available.
           readOnly: true
+        instances:
+          type: array
+          items:
+            $ref: '#/components/schemas/bytebase.v1.SampleInfo.Instance'
+          title: instances
+          description: The provisioned sample instances.
+          readOnly: true
+      title: SampleInfo
+      additionalProperties: false
+      description: SampleInfo describes sample setup availability and provisioned resources.
+    bytebase.v1.SampleInfo.Instance:
+      type: object
+      properties:
         instance:
           type: string
           title: instance
@@ -29218,12 +29231,12 @@ components:
           readOnly: true
         expireTime:
           title: expire_time
-          description: The time when the provisioned sample resources expire.
+          description: The time when the provisioned sample instance expires.
           readOnly: true
           $ref: '#/components/schemas/google.protobuf.Timestamp'
-      title: SampleInfo
+      title: Instance
       additionalProperties: false
-      description: SampleInfo describes sample setup availability and provisioned resources.
+      description: Instance describes one provisioned sample instance.
     bytebase.v1.SavedQuery:
       type: object
       properties:

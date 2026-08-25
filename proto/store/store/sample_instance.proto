@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+message SaaSSampleInstanceSetupPayload {
+  string project_id = 1;
+  string instance_id = 2;
+  string title = 3;
+  optional string environment_id = 4;
+  string database_name = 5;
+  string role_name = 6;
+}
+
+message SelfHostSampleInstanceSetupPayload {
+  message Instance {
+    string instance_id = 1;
+    string title = 2;
+    optional string environment_id = 3;
+    int32 port_offset = 4;
+    string database_name = 5;
+    string role_name = 6;
+  }
+
+  string database_project_id = 1;
+  repeated Instance instances = 2;
+}

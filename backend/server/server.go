@@ -27,8 +27,9 @@ import (
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/component/productmetrics"
 	"github.com/bytebase/bytebase/backend/component/review"
-	"github.com/bytebase/bytebase/backend/component/sampleinstance"
-	"github.com/bytebase/bytebase/backend/component/sampleprojectinstance"
+	"github.com/bytebase/bytebase/backend/component/sample"
+	"github.com/bytebase/bytebase/backend/component/sample/saas"
+	"github.com/bytebase/bytebase/backend/component/sample/selfhost"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/telemetry"
 	"github.com/bytebase/bytebase/backend/component/webhook"
@@ -42,7 +43,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/monitor"
 	"github.com/bytebase/bytebase/backend/runner/notifylistener"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
-	sampleprojectinstancerunner "github.com/bytebase/bytebase/backend/runner/sampleprojectinstance"
+	samplerunner "github.com/bytebase/bytebase/backend/runner/sample"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
 	"github.com/bytebase/bytebase/backend/store"
@@ -60,20 +61,19 @@ const (
 // Server is the Bytebase server.
 type Server struct {
 	// Asynchronous runners.
-	taskScheduler       *taskrun.Scheduler
-	planCheckScheduler  *plancheck.Scheduler
-	schemaSyncer        *schemasync.Syncer
-	approvalRunner      *review.Runner
-	notifyListener      *notifylistener.Listener
-	dataCleaner         *cleaner.DataCleaner
-	heartbeatRunner     *heartbeat.Runner
-	sampleProjectRunner *sampleprojectinstancerunner.Runner
-	runnerWG            sync.WaitGroup
+	taskScheduler      *taskrun.Scheduler
+	planCheckScheduler *plancheck.Scheduler
+	schemaSyncer       *schemasync.Syncer
+	approvalRunner     *review.Runner
+	notifyListener     *notifylistener.Listener
+	dataCleaner        *cleaner.DataCleaner
+	heartbeatRunner    *heartbeat.Runner
+	sampleRunner       *samplerunner.Runner
+	runnerWG           sync.WaitGroup
 
-	webhookManager        *webhook.Manager
-	iamManager            *iam.Manager
-	sampleInstanceManager *sampleinstance.Manager
-	sampleProjectManager  *sampleprojectinstance.Manager
+	webhookManager *webhook.Manager
+	iamManager     *iam.Manager
+	sampleManager  sample.Manager
 
 	licenseService *enterprise.LicenseService
 
@@ -159,16 +159,10 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	}
 	var workspaceID string
 	if !s.profile.SaaS {
-		s.sampleInstanceManager = sampleinstance.NewManager(stores, profile)
-
 		// Load workspace-dependent settings if workspace exists.
 		// On first boot (no workspace yet), these remain at defaults and get
 		// initialized when the workspace is created and settings are updated via API.
 		if workspaceID, _ = stores.GetWorkspaceID(ctx); workspaceID != "" {
-			if err := s.sampleInstanceManager.StartIfExist(ctx, workspaceID); err != nil {
-				slog.Warn("failed to start sample instances", log.BBError(err))
-			}
-
 			if workspaceProfileSetting, err := s.store.GetWorkspaceProfileSetting(ctx, workspaceID); err == nil {
 				logSetup = workspaceProfileSetting
 				if logSetup.GetEnableAuditLogStdout() && s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_AUDIT_LOG) == nil {
@@ -218,21 +212,25 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	// Configure echo server.
 	s.echoServer = echo.New()
 
-	var productMetrics *productmetrics.ProductMetrics
-	if !profile.SaaS {
-		productMetrics = productmetrics.New(stores, s.licenseService)
-	}
+	productMetrics := productmetrics.New(stores, s.licenseService)
 	s.schemaSyncer = schemasync.NewSyncer(stores, s.dbFactory, s.licenseService, productMetrics)
 	if profile.SaaS {
-		s.sampleProjectManager = configureSampleProjectManager(
+		s.sampleManager = configureSampleManager(
 			ctx,
 			profile.SampleProjectInstancePgURL,
 			stores,
 			s.schemaSyncer,
 			profile.ReplicaID,
 		)
-		if s.sampleProjectManager != nil {
-			s.sampleProjectRunner = sampleprojectinstancerunner.NewRunner(s.sampleProjectManager)
+	} else {
+		s.sampleManager = selfhost.NewManager(stores, profile, s.schemaSyncer, sample.ManagerOptions{ReplicaID: profile.ReplicaID})
+	}
+	if s.sampleManager != nil {
+		s.sampleRunner = samplerunner.NewRunner(s.sampleManager)
+		if workspaceID != "" {
+			if err := s.sampleManager.Start(ctx, workspaceID); err != nil {
+				slog.Warn("failed to start sample instances", log.BBError(err))
+			}
 		}
 	}
 	s.approvalRunner = review.NewRunner(stores, s.bus, s.webhookManager, s.licenseService)
@@ -259,7 +257,7 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	stripeWebhookHandler := stripeapi.NewWebhookHandler(s.store, s.licenseService, profile.StripeWebhookSecret)
 
-	internalMCPHandler, err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.bus, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleInstanceManager, s.sampleProjectManager)
+	internalMCPHandler, err := configureGrpcRouters(ctx, s.echoServer, s.store, sheetManager, s.dbFactory, s.licenseService, s.profile, s.bus, s.schemaSyncer, s.webhookManager, s.iamManager, secret, s.sampleManager)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to configure gRPC routers")
 	}
@@ -273,28 +271,28 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 	return s, nil
 }
 
-func configureSampleProjectManager(
+func configureSampleManager(
 	ctx context.Context,
 	targetURL string,
 	stores *store.Store,
 	syncer *schemasync.Syncer,
 	replicaID string,
-) *sampleprojectinstance.Manager {
+) sample.Manager {
 	if targetURL == "" {
 		return nil
 	}
-	manager, err := sampleprojectinstance.NewManagerFromURL(
+	manager, err := saas.NewManager(
 		stores,
 		targetURL,
 		syncer,
-		sampleprojectinstance.ManagerOptions{ReplicaID: replicaID},
+		sample.ManagerOptions{ReplicaID: replicaID},
 	)
 	if err != nil {
 		slog.Warn("invalid SAMPLE_PROJECT_INSTANCE_PG_URL; Sample Project Instance is disabled", log.BBError(err))
 		return nil
 	}
-	if err := manager.ValidateTarget(ctx); err != nil {
-		slog.Warn("Sample Project Instance target is temporarily unavailable", log.BBError(err))
+	if !manager.Available(ctx) {
+		slog.Warn("Sample Project Instance target is temporarily unavailable")
 	}
 	return manager
 }
@@ -320,9 +318,9 @@ func (s *Server) Run(ctx context.Context, port int) error {
 	s.runnerWG.Add(1)
 	go s.heartbeatRunner.Run(ctx, &s.runnerWG)
 
-	if s.sampleProjectRunner != nil {
+	if s.sampleRunner != nil {
 		s.runnerWG.Add(1)
-		go s.sampleProjectRunner.Run(ctx, &s.runnerWG)
+		go s.sampleRunner.Run(ctx, &s.runnerWG)
 	}
 
 	s.runnerWG.Add(1)
@@ -390,8 +388,8 @@ func (s *Server) Shutdown(ctx context.Context) error {
 	}
 
 	// Shutdown sample instances
-	if s.sampleInstanceManager != nil {
-		s.sampleInstanceManager.Stop()
+	if s.sampleManager != nil {
+		s.sampleManager.Stop()
 	}
 
 	// Shutdown postgres instances.

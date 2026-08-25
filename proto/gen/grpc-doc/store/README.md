@@ -244,6 +244,11 @@
 - [store/role.proto](#store_role-proto)
     - [RolePermissions](#bytebase-store-RolePermissions)
   
+- [store/sample_instance.proto](#store_sample_instance-proto)
+    - [SaaSSampleInstanceSetupPayload](#bytebase-store-SaaSSampleInstanceSetupPayload)
+    - [SelfHostSampleInstanceSetupPayload](#bytebase-store-SelfHostSampleInstanceSetupPayload)
+    - [SelfHostSampleInstanceSetupPayload.Instance](#bytebase-store-SelfHostSampleInstanceSetupPayload-Instance)
+  
 - [store/saved_query.proto](#store_saved_query-proto)
     - [SavedQueryBinding](#bytebase-store-SavedQueryBinding)
     - [SavedQueryPayload](#bytebase-store-SavedQueryPayload)
@@ -4142,6 +4147,78 @@ The severity level for SQL review rules.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | permissions | [string](#string) | repeated |  |
+
+
+
+
+
+ 
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_sample_instance-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/sample_instance.proto
+
+
+
+<a name="bytebase-store-SaaSSampleInstanceSetupPayload"></a>
+
+### SaaSSampleInstanceSetupPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| project_id | [string](#string) |  |  |
+| instance_id | [string](#string) |  |  |
+| title | [string](#string) |  |  |
+| environment_id | [string](#string) | optional |  |
+| database_name | [string](#string) |  |  |
+| role_name | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-store-SelfHostSampleInstanceSetupPayload"></a>
+
+### SelfHostSampleInstanceSetupPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| database_project_id | [string](#string) |  |  |
+| instances | [SelfHostSampleInstanceSetupPayload.Instance](#bytebase-store-SelfHostSampleInstanceSetupPayload-Instance) | repeated |  |
+
+
+
+
+
+
+<a name="bytebase-store-SelfHostSampleInstanceSetupPayload-Instance"></a>
+
+### SelfHostSampleInstanceSetupPayload.Instance
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| instance_id | [string](#string) |  |  |
+| title | [string](#string) |  |  |
+| environment_id | [string](#string) | optional |  |
+| port_offset | [int32](#int32) |  |  |
+| database_name | [string](#string) |  |  |
+| role_name | [string](#string) |  |  |
 
 
 

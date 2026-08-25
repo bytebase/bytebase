@@ -1,6 +1,4 @@
-// Package sampleprojectinstance manages Cloud PostgreSQL targets for sample
-// project instances.
-package sampleprojectinstance
+package saas
 
 import (
 	"context"
@@ -13,28 +11,23 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/pkg/errors"
 
+	"github.com/bytebase/bytebase/backend/component/sample"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db/util"
-	"github.com/bytebase/bytebase/backend/resources/postgres"
 )
 
-// Allocation identifies the physical PostgreSQL resources for one sample
-// project instance.
-type Allocation struct {
-	Database string
-	Role     string
-	Password string
+type allocation struct {
+	database string
+	role     string
+	password string
 }
 
-// InstanceConfig describes the registered instance connection and the exact
-// database that must be discovered before preparation succeeds.
-type InstanceConfig struct {
-	AdminDataSource   *storepb.DataSource
-	SyncDatabaseNames []string
+type instanceConfig struct {
+	adminDataSource   *storepb.DataSource
+	syncDatabaseNames []string
 }
 
-// Target manages direct PostgreSQL operations for sample project instances.
-type Target struct {
+type postgresTarget struct {
 	config        *pgx.ConnConfig
 	useSSL        bool
 	verifyTLS     bool
@@ -55,18 +48,10 @@ type staticTargetFailure struct {
 	err error
 }
 
-func (e *staticTargetFailure) Error() string {
-	return e.err.Error()
-}
+func (e *staticTargetFailure) Error() string { return e.err.Error() }
+func (e *staticTargetFailure) Unwrap() error { return e.err }
 
-func (e *staticTargetFailure) Unwrap() error {
-	return e.err
-}
-
-// NewTarget parses a direct PostgreSQL target URL. It intentionally accepts
-// only URL-form password authentication so the configured target cannot use
-// passfiles, service files, or credential rotation indirection.
-func NewTarget(targetURL string) (*Target, error) {
+func newPostgresTarget(targetURL string) (*postgresTarget, error) {
 	u, err := url.Parse(targetURL)
 	if err != nil || (u.Scheme != "postgres" && u.Scheme != "postgresql") {
 		return nil, staticTargetError("sample project instance target must be a PostgreSQL URL")
@@ -116,43 +101,17 @@ func NewTarget(targetURL string) (*Target, error) {
 	}
 	var sslCA string
 	if path := query.Get("sslrootcert"); path != "" {
-		resolved, err := util.ResolveTLSMaterial(&storepb.DataSource{
-			UseSsl:    true,
-			SslCaPath: path,
-		})
+		resolved, err := util.ResolveTLSMaterial(&storepb.DataSource{UseSsl: true, SslCaPath: path})
 		if err != nil {
 			return nil, staticTargetError("invalid sample project instance target sslrootcert")
 		}
 		sslCA = resolved.GetSslCa()
 	}
-	return newTargetFromConfig(config, sslMode == "verify-full", sslCA), nil
+	return newPostgresTargetFromConfig(config, sslMode == "verify-full", sslCA), nil
 }
 
-// InstanceConfig builds the persisted admin datasource and its exact discovery
-// filter for an allocation.
-func (t *Target) InstanceConfig(allocation Allocation) (*InstanceConfig, error) {
-	if err := validateProvisionAllocation(allocation); err != nil {
-		return nil, err
-	}
-	return &InstanceConfig{
-		AdminDataSource: &storepb.DataSource{
-			Id:                   "admin",
-			Type:                 storepb.DataSourceType_ADMIN,
-			Host:                 t.config.Host,
-			Port:                 fmt.Sprint(t.config.Port),
-			Database:             allocation.Database,
-			Username:             allocation.Role,
-			Password:             allocation.Password,
-			UseSsl:               t.useSSL,
-			VerifyTlsCertificate: t.verifyTLS,
-			SslCa:                t.sslCA,
-		},
-		SyncDatabaseNames: []string{allocation.Database},
-	}, nil
-}
-
-func newTargetFromConfig(config *pgx.ConnConfig, verifyTLS bool, sslCA string) *Target {
-	return &Target{
+func newPostgresTargetFromConfig(config *pgx.ConnConfig, verifyTLS bool, sslCA string) *postgresTarget {
+	return &postgresTarget{
 		config:    config,
 		useSSL:    config.TLSConfig != nil,
 		verifyTLS: verifyTLS,
@@ -160,18 +119,36 @@ func newTargetFromConfig(config *pgx.ConnConfig, verifyTLS bool, sslCA string) *
 	}
 }
 
-// Validate verifies the target is reachable and can allocate sample databases.
-func (t *Target) Validate(ctx context.Context) error {
+func (t *postgresTarget) instanceConfig(allocation allocation) (*instanceConfig, error) {
+	if err := validateProvisionAllocation(allocation); err != nil {
+		return nil, err
+	}
+	return &instanceConfig{
+		adminDataSource: &storepb.DataSource{
+			Id:                   "admin",
+			Type:                 storepb.DataSourceType_ADMIN,
+			Host:                 t.config.Host,
+			Port:                 fmt.Sprint(t.config.Port),
+			Database:             allocation.database,
+			Username:             allocation.role,
+			Password:             allocation.password,
+			UseSsl:               t.useSSL,
+			VerifyTlsCertificate: t.verifyTLS,
+			SslCa:                t.sslCA,
+		},
+		syncDatabaseNames: []string{allocation.database},
+	}, nil
+}
+
+func (t *postgresTarget) validate(ctx context.Context) error {
 	return t.validateCapabilities(ctx, true)
 }
 
-// ValidateForCleanup verifies the connectivity and target capabilities needed
-// to remove existing allocations. Cleanup does not require CREATEDB.
-func (t *Target) ValidateForCleanup(ctx context.Context) error {
+func (t *postgresTarget) validateForCleanup(ctx context.Context) error {
 	return t.validateCapabilities(ctx, false)
 }
 
-func (t *Target) validateCapabilities(ctx context.Context, requireCreateDB bool) error {
+func (t *postgresTarget) validateCapabilities(ctx context.Context, requireCreateDB bool) error {
 	conn, err := t.connect(ctx, "", "", "")
 	if err != nil {
 		return errors.New("failed to connect to sample project instance target")
@@ -195,14 +172,10 @@ func (t *Target) validateCapabilities(ctx context.Context, requireCreateDB bool)
 	return nil
 }
 
-// Provision creates a sample role and database, applies the isolation policy,
-// and seeds the employee data as the sample role. On failure, callers clean up
-// any resources created by this attempt with Remove.
-func (t *Target) Provision(ctx context.Context, allocation Allocation) error {
+func (t *postgresTarget) provision(ctx context.Context, allocation allocation) error {
 	if err := validateProvisionAllocation(allocation); err != nil {
 		return err
 	}
-
 	admin, err := t.connect(ctx, "", "", "")
 	if err != nil {
 		return errors.New("failed to connect to sample project instance target")
@@ -211,35 +184,33 @@ func (t *Target) Provision(ctx context.Context, allocation Allocation) error {
 
 	if _, err := admin.Exec(ctx, fmt.Sprintf(
 		"CREATE ROLE %s LOGIN NOSUPERUSER NOCREATEDB NOCREATEROLE NOREPLICATION NOBYPASSRLS PASSWORD %s",
-		quoteIdentifier(allocation.Role),
-		quoteLiteral(allocation.Password),
+		quoteIdentifier(allocation.role), quoteLiteral(allocation.password),
 	)); err != nil {
 		return errors.New("failed to create sample project instance role")
 	}
 	if err := t.runProvisionHook(provisionStageRoleCreated); err != nil {
 		return errors.New("failed after creating sample project instance role")
 	}
-	if _, err := admin.Exec(ctx, fmt.Sprintf("CREATE DATABASE %s WITH ALLOW_CONNECTIONS false", quoteIdentifier(allocation.Database))); err != nil {
+	if _, err := admin.Exec(ctx, fmt.Sprintf("CREATE DATABASE %s WITH ALLOW_CONNECTIONS false", quoteIdentifier(allocation.database))); err != nil {
 		return errors.New("failed to create sample project instance database")
 	}
 	if err := t.runProvisionHook(provisionStageDatabaseCreated); err != nil {
 		return errors.New("failed after creating sample project instance database")
 	}
-	if _, err := admin.Exec(ctx, fmt.Sprintf("REVOKE ALL PRIVILEGES ON DATABASE %s FROM PUBLIC", quoteIdentifier(allocation.Database))); err != nil {
+	if _, err := admin.Exec(ctx, fmt.Sprintf("REVOKE ALL PRIVILEGES ON DATABASE %s FROM PUBLIC", quoteIdentifier(allocation.database))); err != nil {
 		return errors.New("failed to revoke PUBLIC database privileges")
 	}
 	if _, err := admin.Exec(ctx, fmt.Sprintf(
 		"GRANT CONNECT, CREATE, TEMPORARY ON DATABASE %s TO %s",
-		quoteIdentifier(allocation.Database),
-		quoteIdentifier(allocation.Role),
+		quoteIdentifier(allocation.database), quoteIdentifier(allocation.role),
 	)); err != nil {
 		return errors.New("failed to grant sample project instance database privileges")
 	}
-	if _, err := admin.Exec(ctx, fmt.Sprintf("ALTER DATABASE %s ALLOW_CONNECTIONS true", quoteIdentifier(allocation.Database))); err != nil {
+	if _, err := admin.Exec(ctx, fmt.Sprintf("ALTER DATABASE %s ALLOW_CONNECTIONS true", quoteIdentifier(allocation.database))); err != nil {
 		return errors.New("failed to enable sample project instance database connections")
 	}
 
-	sampleAdmin, err := t.connect(ctx, allocation.Database, "", "")
+	sampleAdmin, err := t.connect(ctx, allocation.database, "", "")
 	if err != nil {
 		return errors.New("failed to connect to sample project instance database")
 	}
@@ -247,21 +218,20 @@ func (t *Target) Provision(ctx context.Context, allocation Allocation) error {
 	if _, err := sampleAdmin.Exec(ctx, "REVOKE CREATE ON SCHEMA public FROM PUBLIC"); err != nil {
 		return errors.New("failed to revoke PUBLIC schema creation")
 	}
-	if _, err := sampleAdmin.Exec(ctx, fmt.Sprintf("GRANT USAGE, CREATE ON SCHEMA public TO %s", quoteIdentifier(allocation.Role))); err != nil {
+	if _, err := sampleAdmin.Exec(ctx, fmt.Sprintf("GRANT USAGE, CREATE ON SCHEMA public TO %s", quoteIdentifier(allocation.role))); err != nil {
 		return errors.New("failed to grant sample project instance schema privileges")
 	}
 
-	sample, err := t.connect(ctx, allocation.Database, allocation.Role, allocation.Password)
+	sampleConn, err := t.connect(ctx, allocation.database, allocation.role, allocation.password)
 	if err != nil {
 		return errors.New("failed to connect as sample project instance role")
 	}
-	defer sample.Close(ctx)
-
-	seed, err := postgres.LoadSampleData()
+	defer sampleConn.Close(ctx)
+	seed, err := sample.LoadSeedData()
 	if err != nil {
 		return errors.New("failed to load sample project instance seed data")
 	}
-	tx, err := sample.Begin(ctx)
+	tx, err := sampleConn.Begin(ctx)
 	if err != nil {
 		return errors.New("failed to begin sample project instance seed transaction")
 	}
@@ -275,45 +245,41 @@ func (t *Target) Provision(ctx context.Context, allocation Allocation) error {
 	return nil
 }
 
-func (t *Target) runProvisionHook(stage provisionStage) error {
+func (t *postgresTarget) runProvisionHook(stage provisionStage) error {
 	if t.provisionHook == nil {
 		return nil
 	}
 	return t.provisionHook(stage)
 }
 
-// Remove revokes access, terminates every role or database session, and drops
-// the allocation's database before its role. Missing resources are successful.
-func (t *Target) Remove(ctx context.Context, allocation Allocation) error {
+func (t *postgresTarget) remove(ctx context.Context, allocation allocation) error {
 	if err := validateCleanupAllocation(allocation); err != nil {
 		return err
 	}
-	if allocation.Database != "" && t.config.Database == allocation.Database {
+	if allocation.database != "" && t.config.Database == allocation.database {
 		return staticTargetError("sample project instance target cannot remove its configured database")
 	}
-
 	admin, err := t.connect(ctx, "", "", "")
 	if err != nil {
 		return errors.New("failed to connect to sample project instance target")
 	}
 	defer admin.Close(ctx)
 
-	roleExists, err := roleExists(ctx, admin, allocation.Role)
+	roleExists, err := roleExists(ctx, admin, allocation.role)
 	if err != nil {
 		return errors.New("failed to inspect sample project instance role")
 	}
 	if roleExists {
-		if _, err := admin.Exec(ctx, fmt.Sprintf("ALTER ROLE %s NOLOGIN", quoteIdentifier(allocation.Role))); err != nil {
+		if _, err := admin.Exec(ctx, fmt.Sprintf("ALTER ROLE %s NOLOGIN", quoteIdentifier(allocation.role))); err != nil {
 			return errors.New("failed to disable sample project instance role")
 		}
 	}
-
-	databaseExists, err := databaseExists(ctx, admin, allocation.Database)
+	databaseExists, err := databaseExists(ctx, admin, allocation.database)
 	if err != nil {
 		return errors.New("failed to inspect sample project instance database")
 	}
 	if databaseExists && roleExists {
-		if _, err := admin.Exec(ctx, fmt.Sprintf("REVOKE ALL PRIVILEGES ON DATABASE %s FROM %s", quoteIdentifier(allocation.Database), quoteIdentifier(allocation.Role))); err != nil {
+		if _, err := admin.Exec(ctx, fmt.Sprintf("REVOKE ALL PRIVILEGES ON DATABASE %s FROM %s", quoteIdentifier(allocation.database), quoteIdentifier(allocation.role))); err != nil {
 			return errors.New("failed to revoke sample project instance database privileges")
 		}
 	}
@@ -324,7 +290,7 @@ func (t *Target) Remove(ctx context.Context, allocation Allocation) error {
 		if err := t.runProvisionHook(provisionStageCleanupDatabase); err != nil {
 			return errors.New("failed while removing sample project instance database")
 		}
-		if _, err := admin.Exec(ctx, fmt.Sprintf("DROP DATABASE %s", quoteIdentifier(allocation.Database))); err != nil {
+		if _, err := admin.Exec(ctx, fmt.Sprintf("DROP DATABASE %s", quoteIdentifier(allocation.database))); err != nil {
 			return errors.New("failed to drop sample project instance database")
 		}
 	}
@@ -332,14 +298,14 @@ func (t *Target) Remove(ctx context.Context, allocation Allocation) error {
 		if err := t.runProvisionHook(provisionStageCleanupRole); err != nil {
 			return errors.New("failed while removing sample project instance role")
 		}
-		if _, err := admin.Exec(ctx, fmt.Sprintf("DROP ROLE %s", quoteIdentifier(allocation.Role))); err != nil {
+		if _, err := admin.Exec(ctx, fmt.Sprintf("DROP ROLE %s", quoteIdentifier(allocation.role))); err != nil {
 			return errors.New("failed to drop sample project instance role")
 		}
 	}
 	return nil
 }
 
-func (t *Target) connect(ctx context.Context, database, user, password string) (*pgx.Conn, error) {
+func (t *postgresTarget) connect(ctx context.Context, database, user, password string) (*pgx.Conn, error) {
 	config := t.config.Copy()
 	if database != "" {
 		config.Database = database
@@ -351,28 +317,24 @@ func (t *Target) connect(ctx context.Context, database, user, password string) (
 	return pgx.ConnectConfig(ctx, config)
 }
 
-func validateProvisionAllocation(allocation Allocation) error {
-	if allocation.Database == "" || allocation.Role == "" ||
-		strings.ContainsRune(allocation.Database, 0) || strings.ContainsRune(allocation.Role, 0) {
+func validateProvisionAllocation(value allocation) error {
+	if value.database == "" || value.role == "" || strings.ContainsRune(value.database, 0) || strings.ContainsRune(value.role, 0) {
 		return staticTargetError("sample project instance provisioning requires database and role")
 	}
-	if allocation.Password == "" || strings.ContainsRune(allocation.Password, 0) {
+	if value.password == "" || strings.ContainsRune(value.password, 0) {
 		return staticTargetError("sample project instance provisioning requires password")
 	}
 	return nil
 }
 
-func validateCleanupAllocation(allocation Allocation) error {
-	if (allocation.Database == "" && allocation.Role == "") ||
-		strings.ContainsRune(allocation.Database, 0) || strings.ContainsRune(allocation.Role, 0) {
+func validateCleanupAllocation(value allocation) error {
+	if (value.database == "" && value.role == "") || strings.ContainsRune(value.database, 0) || strings.ContainsRune(value.role, 0) {
 		return staticTargetError("sample project instance cleanup requires a database or role")
 	}
 	return nil
 }
 
-func quoteIdentifier(value string) string {
-	return pgx.Identifier{value}.Sanitize()
-}
+func quoteIdentifier(value string) string { return pgx.Identifier{value}.Sanitize() }
 
 func quoteLiteral(value string) string {
 	return "E'" + strings.NewReplacer(`\`, `\\`, `'`, `\'`).Replace(value) + "'"
@@ -399,14 +361,12 @@ func databaseExists(ctx context.Context, conn *pgx.Conn, database string) (bool,
 	return exists, err
 }
 
-func terminateAndDrain(ctx context.Context, conn *pgx.Conn, allocation Allocation) error {
+func terminateAndDrain(ctx context.Context, conn *pgx.Conn, value allocation) error {
 	for {
 		rows, err := conn.Query(ctx, `
-			SELECT pid
-			FROM pg_stat_activity
-			WHERE (usename = $1 OR datname = $2)
-				AND pid <> pg_backend_pid()
-		`, allocation.Role, allocation.Database)
+			SELECT pid FROM pg_stat_activity
+			WHERE (usename = $1 OR datname = $2) AND pid <> pg_backend_pid()
+		`, value.role, value.database)
 		if err != nil {
 			return errors.New("failed to list sample project instance sessions")
 		}
@@ -432,7 +392,6 @@ func terminateAndDrain(ctx context.Context, conn *pgx.Conn, allocation Allocatio
 				return errors.New("failed to terminate sample project instance session")
 			}
 		}
-
 		timer := time.NewTimer(250 * time.Millisecond)
 		select {
 		case <-ctx.Done():
