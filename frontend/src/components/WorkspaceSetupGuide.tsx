@@ -32,7 +32,7 @@ import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { useAppStore } from "@/stores/app";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { SearchQueryHistoriesRequestSchema } from "@/types/proto-es/v1/query_history_service_pb";
-import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
+import { extractProjectResourceName } from "@/utils";
 import {
   findFirstPageItem,
   isSampleDatabaseName,
@@ -98,6 +98,9 @@ export function WorkspaceSetupGuide() {
   const databaseCacheSize = useAppStore(
     (s) => Object.keys(s.databasesByName).length
   );
+  const canListInstances = useAppStore((s) =>
+    s.hasWorkspacePermission("bb.instances.list")
+  );
   const guideEnabled = useAppStore((s) => s.workspaceSetupGuideEnabled());
   const [loading, setLoading] = useState(true);
   const [selectedStepKey, setSelectedStepKey] = useState<keyof SetupKeys>();
@@ -149,7 +152,7 @@ export function WorkspaceSetupGuide() {
   };
 
   useEffect(() => {
-    if (dismissed || !guideEnabled) {
+    if (dismissed || !guideEnabled || !canListInstances) {
       setSetupState(initialSetupState);
       setLoading(false);
       return;
@@ -157,7 +160,6 @@ export function WorkspaceSetupGuide() {
 
     void (async () => {
       const store = useAppStore.getState();
-      const canListInstances = hasWorkspacePermissionV2("bb.instances.list");
       let projectName = "";
       let fallbackProjectName = "";
       let projectWithInstanceName = "";
@@ -349,6 +351,7 @@ export function WorkspaceSetupGuide() {
     })();
   }, [
     databaseCacheSize,
+    canListInstances,
     defaultProject,
     dismissed,
     guideEnabled,
@@ -478,7 +481,7 @@ export function WorkspaceSetupGuide() {
     });
   };
 
-  if (dismissed || !guideEnabled || loading) {
+  if (dismissed || !guideEnabled || !canListInstances || loading) {
     return null;
   }
 

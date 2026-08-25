@@ -3,6 +3,7 @@ import {
   PROJECT_V1_ROUTE_WEBHOOK_CREATE,
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
   PROJECT_V1_ROUTE_WEBHOOKS,
+  SQL_EDITOR_HOME_MODULE,
 } from "./handles";
 import { resolveRouteName, router } from "./index";
 import { setAppRouter, setRouteNameIndex } from "./navigation";
@@ -72,5 +73,16 @@ describe("router named route params", () => {
     expect(resolveRouteName("/projects/project-sample/webhooks/hook-1")).toBe(
       PROJECT_V1_ROUTE_WEBHOOK_DETAIL
     );
+  });
+
+  it("prefers the leaf route name when parent and index routes share a path", () => {
+    setRouteNameIndex(
+      new Map<string, string>([
+        ["sql-editor", "/sql-editor"],
+        [SQL_EDITOR_HOME_MODULE, "/sql-editor"],
+      ])
+    );
+
+    expect(resolveRouteName("/sql-editor")).toBe(SQL_EDITOR_HOME_MODULE);
   });
 });

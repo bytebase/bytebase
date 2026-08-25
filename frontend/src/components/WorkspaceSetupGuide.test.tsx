@@ -119,6 +119,7 @@ vi.mock("@/stores/app", () => {
     },
     workspace: { name: "workspaces/default" },
     workspacePolicy: mocks.workspacePolicy,
+    hasWorkspacePermission: mocks.hasWorkspacePermissionV2,
     serverInfo: {
       defaultProject: mocks.defaultProjectName,
       sample: { instance: mocks.sampleInstanceName },
@@ -373,6 +374,17 @@ describe("WorkspaceSetupGuide", () => {
 
     expect(container.textContent).toBe("");
     expect(mocks.fetchProjectList).not.toHaveBeenCalled();
+  });
+
+  it("hides when the user cannot list instances", async () => {
+    mocks.hasWorkspacePermissionV2.mockReturnValue(false);
+
+    await render(<WorkspaceSetupGuide />);
+
+    expect(container.textContent).toBe("");
+    expect(mocks.fetchProjectList).not.toHaveBeenCalled();
+    expect(mocks.fetchInstanceList).not.toHaveBeenCalled();
+    expect(mocks.fetchDatabases).not.toHaveBeenCalled();
   });
 
   it("shows setup step descriptions in tooltips", async () => {
