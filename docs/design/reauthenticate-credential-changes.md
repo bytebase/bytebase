@@ -498,6 +498,38 @@ happens next. Needs its own interleaving test: an admin deactivation or reset is
 mid-signup must either lose cleanly (user not yet visible) or win cleanly (signup rolls back), never
 observe the account and miss its session.
 
+A fence per transaction still doesn't make MFA login *one* authenticate-and-issue sequence, which is what
+this section has been assuming all along — [the round after](https://github.com/bytebase/bytebase/pull/21235).
+An MFA login is two HTTP requests: the first verifies the first factor and returns a signed
+`mfaTempToken` good for five minutes (`auth_service.go:36,731`), committing and releasing its fence; the
+second presents that token plus an OTP or recovery code, and `completeMFALogin`
+(`:645-672`) re-reads the account but verifies *only* the second factor — it never revisits the password
+that got the temp token issued. So a `ChangePassword` or `ResetPassword` can commit in between, revoke
+everything, and the holder of a temp token minted against the **old** password still completes step two
+and walks away with a brand-new session. No fence closes this: the two requests are separate
+transactions, and the fence is correctly released when the first commits.
+
+This one is not a caveat to accept alongside the access-token window (see G7). That window is about
+already-issued tokens continuing to answer for ≤1h; this *mints a new session after the revocation*, which
+is precisely the thing G7 claims to close, so leaving it would make G7's own sentence false for a
+five-minute window on every MFA account. It's also in scope in a way the `/authorize` gap (see Non-goals)
+isn't: that one needs a credential-generation signal threaded through system-wide JWT issuance, whereas
+this token is short-lived, single-purpose, minted by `Login` itself, and already carries account-specific
+claims — one more is a local change to a flow this doc is already modifying.
+
+The temp token carries the credential generation it was issued against, and step two rejects it on
+mismatch, re-read inside its own fence. Generation means *any* of the mutations that revoke sessions, not
+just the password: all four methods here, plus `ResetPassword` and the admin-assisted reset, already write
+the principal row inside the fence, so they bump one monotonic `Profile.LastCredentialChangeTime` while
+they're there. `LastChangePasswordTime` is not reusable for this — it deliberately means "has this account
+ever had a caller-chosen password" for `email_code` eligibility (see below), and MFA mutations must not
+move it. A stale temp token then fails closed at step two rather than completing. Note the second factor
+alone does not cover this even incidentally: `EnableMfa` rotating the secret would fail the OTP check by
+luck, but `ChangePassword` and `ResetPassword` leave `MFAConfig` untouched, so the OTP still validates
+perfectly against a credential the account no longer authenticates with. Needs the interleaving in the
+regression tests: a temp token issued, a credential mutation committed, and step two attempted after —
+which must fail, not mint.
+
 `UpdateEmail` earns membership without deleting anything: it scans and locks the child rows that exist,
 then runs `UPDATE principal SET email = ?`, whose `ON UPDATE CASCADE` re-derives and locks whatever child
 rows exist *at that moment*, including any a login committed in between. A third-party `Refresh` holding
@@ -575,6 +607,26 @@ waiting on the lock and still get consumed and exchanged once it's finally acqui
 re-checks. Same shape as the REAUTH fix above: add `AND expires_at > now()` to both consume queries
 directly, rather than a separate re-check step, so a grant that expired mid-wait fails the consume itself
 instead of relying on a check that already ran before the wait began.
+
+Expiry isn't the only thing that can move during that wait —
+[the same shape, one field over](https://github.com/bytebase/bytebase/pull/21235): both handlers keep
+using the `authCode`/`refreshToken` struct they read *before* the fence, and after consuming the row they
+resolve the account with `GetUserByEmail(authCode.UserEmail)` / `GetUserByEmail(refreshToken.UserEmail)`
+(`token.go:149,290`). If `UpdateEmail` wins the fence first, its cascade rewrites `user_email` on that very
+grant row. The exchange then resumes, consumes successfully — the consume matches on `code`/`token_hash`
+and `client_id`, none of which changed — and looks the user up by an email that no longer exists. The
+grant is burned, the client is told `invalid_grant`, and the user is forced to re-authorize, all because
+they renamed their account mid-refresh. Nothing is left insecure, but a valid credential is destroyed by a
+race the user can't see, and the retry has nothing to retry with.
+
+The pre-fence read is a snapshot, so once the fence is held the row has to be read again rather than
+trusted: re-read the locked grant inside the fence and use *its* `user_email`, not the copy from before
+the wait. That resolves correctly — a cascaded rename leaves the same grant belonging to the same account
+under its new address, so the exchange should simply succeed. Detecting the mismatch and refusing without
+consuming would also be safe, but it's the worse behavior: it turns a rename into a spurious re-authorize
+for a grant that is still perfectly valid. This is the general form of the rule the rest of this section
+keeps applying to rows — anything read before a lock must be re-read after it — and it applies to the
+grant's own columns just as much as to the set of rows a scan returned.
 
 Putting `issueTokens` itself inside that transaction isn't quite right either — [a seventh
 finding](https://github.com/bytebase/bytebase/pull/21235): `issueTokens` (`token.go:489-535`) writes the
@@ -1515,6 +1567,25 @@ message UpdateUserRequest {
   bool allow_missing = 6;
   // `password` in update_mask is now admin-assisted only (callerUser.ID != user.ID);
   // a self-service caller is rejected and pointed at ChangePassword.
+}
+```
+
+One store-level message changes too — `storepb.UserProfile` (`proto/store/store/user.proto:37-47`) gains
+the credential-generation stamp the MFA temp token is validated against (see Design → Verification). Field
+6, not the reserved 4:
+
+```protobuf
+message UserProfile {
+  // ... last_login_time = 1, last_change_password_time = 2, source = 3,
+  //     reserved 4, last_login_workspace = 5 ...
+
+  // Bumped by every mutation that revokes this account's sessions:
+  // ChangePassword, EnableMfa, DisableMfa, ConfirmRecoveryCodes, ResetPassword,
+  // and the admin-assisted password reset. Distinct from
+  // last_change_password_time, which means "this account has had a
+  // caller-chosen password" for email_code eligibility and must not move on
+  // MFA-only changes.
+  google.protobuf.Timestamp last_credential_change_time = 6;
 }
 ```
 
