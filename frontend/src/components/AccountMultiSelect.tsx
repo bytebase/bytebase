@@ -424,7 +424,7 @@ export function AccountMultiSelect({
             placeholder={t("common.search-for-more")}
           />
 
-          <div className="overflow-auto">
+          <div className="overflow-auto" role="listbox" aria-multiselectable>
             {/* allUsers option */}
             {includeAllUsers && (
               <div
@@ -520,7 +520,8 @@ export function AccountMultiSelect({
                   return (
                     <div
                       key={group.name}
-                      role="button"
+                      role="option"
+                      aria-selected={selected}
                       tabIndex={0}
                       className={cn(
                         "flex items-center gap-x-3 px-3 py-2 cursor-pointer hover:bg-control-bg",
