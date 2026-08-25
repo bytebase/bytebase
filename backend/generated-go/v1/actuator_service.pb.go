@@ -103,11 +103,8 @@ type SampleInfo struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Whether sample setup is currently available.
 	Available bool `protobuf:"varint,1,opt,name=available,proto3" json:"available,omitempty"`
-	// The provisioned sample instance.
-	// Format: instances/{instance}
-	Instance string `protobuf:"bytes,2,opt,name=instance,proto3" json:"instance,omitempty"`
-	// The time when the provisioned sample resources expire.
-	ExpireTime    *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=expire_time,json=expireTime,proto3" json:"expire_time,omitempty"`
+	// The provisioned sample instances.
+	Instances     []*SampleInfo_Instance `protobuf:"bytes,2,rep,name=instances,proto3" json:"instances,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -149,16 +146,9 @@ func (x *SampleInfo) GetAvailable() bool {
 	return false
 }
 
-func (x *SampleInfo) GetInstance() string {
+func (x *SampleInfo) GetInstances() []*SampleInfo_Instance {
 	if x != nil {
-		return x.Instance
-	}
-	return ""
-}
-
-func (x *SampleInfo) GetExpireTime() *timestamppb.Timestamp {
-	if x != nil {
-		return x.ExpireTime
+		return x.Instances
 	}
 	return nil
 }
@@ -338,19 +328,77 @@ func (x *ActuatorInfo) GetSample() *SampleInfo {
 	return nil
 }
 
+// Instance describes one provisioned sample instance.
+type SampleInfo_Instance struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The provisioned sample instance.
+	// Format: instances/{instance}
+	Instance string `protobuf:"bytes,1,opt,name=instance,proto3" json:"instance,omitempty"`
+	// The time when the provisioned sample instance expires.
+	ExpireTime    *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=expire_time,json=expireTime,proto3" json:"expire_time,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SampleInfo_Instance) Reset() {
+	*x = SampleInfo_Instance{}
+	mi := &file_v1_actuator_service_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SampleInfo_Instance) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SampleInfo_Instance) ProtoMessage() {}
+
+func (x *SampleInfo_Instance) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_actuator_service_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SampleInfo_Instance.ProtoReflect.Descriptor instead.
+func (*SampleInfo_Instance) Descriptor() ([]byte, []int) {
+	return file_v1_actuator_service_proto_rawDescGZIP(), []int{2, 0}
+}
+
+func (x *SampleInfo_Instance) GetInstance() string {
+	if x != nil {
+		return x.Instance
+	}
+	return ""
+}
+
+func (x *SampleInfo_Instance) GetExpireTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ExpireTime
+	}
+	return nil
+}
+
 var File_v1_actuator_service_proto protoreflect.FileDescriptor
 
 const file_v1_actuator_service_proto_rawDesc = "" +
 	"\n" +
 	"\x19v1/actuator_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x14\n" +
 	"\x12SetupSampleRequest\"\x18\n" +
-	"\x16GetActuatorInfoRequest\"\xac\x01\n" +
+	"\x16GetActuatorInfoRequest\"\xfe\x01\n" +
 	"\n" +
 	"SampleInfo\x12!\n" +
-	"\tavailable\x18\x01 \x01(\bB\x03\xe0A\x03R\tavailable\x129\n" +
-	"\binstance\x18\x02 \x01(\tB\x1d\xe0A\x03\xfaA\x17\n" +
+	"\tavailable\x18\x01 \x01(\bB\x03\xe0A\x03R\tavailable\x12C\n" +
+	"\tinstances\x18\x02 \x03(\v2 .bytebase.v1.SampleInfo.InstanceB\x03\xe0A\x03R\tinstances\x1a\x87\x01\n" +
+	"\bInstance\x129\n" +
+	"\binstance\x18\x01 \x01(\tB\x1d\xe0A\x03\xfaA\x17\n" +
 	"\x15bytebase.com/InstanceR\binstance\x12@\n" +
-	"\vexpire_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
+	"\vexpire_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
 	"expireTime\"\x92\x06\n" +
 	"\fActuatorInfo\x12\x1d\n" +
 	"\aversion\x18\x01 \x01(\tB\x03\xe0A\x03R\aversion\x12\"\n" +
@@ -388,28 +436,30 @@ func file_v1_actuator_service_proto_rawDescGZIP() []byte {
 	return file_v1_actuator_service_proto_rawDescData
 }
 
-var file_v1_actuator_service_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_v1_actuator_service_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
 var file_v1_actuator_service_proto_goTypes = []any{
 	(*SetupSampleRequest)(nil),     // 0: bytebase.v1.SetupSampleRequest
 	(*GetActuatorInfoRequest)(nil), // 1: bytebase.v1.GetActuatorInfoRequest
 	(*SampleInfo)(nil),             // 2: bytebase.v1.SampleInfo
 	(*ActuatorInfo)(nil),           // 3: bytebase.v1.ActuatorInfo
-	(*timestamppb.Timestamp)(nil),  // 4: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),          // 5: google.protobuf.Empty
+	(*SampleInfo_Instance)(nil),    // 4: bytebase.v1.SampleInfo.Instance
+	(*timestamppb.Timestamp)(nil),  // 5: google.protobuf.Timestamp
+	(*emptypb.Empty)(nil),          // 6: google.protobuf.Empty
 }
 var file_v1_actuator_service_proto_depIdxs = []int32{
-	4, // 0: bytebase.v1.SampleInfo.expire_time:type_name -> google.protobuf.Timestamp
-	4, // 1: bytebase.v1.ActuatorInfo.last_active_time:type_name -> google.protobuf.Timestamp
+	4, // 0: bytebase.v1.SampleInfo.instances:type_name -> bytebase.v1.SampleInfo.Instance
+	5, // 1: bytebase.v1.ActuatorInfo.last_active_time:type_name -> google.protobuf.Timestamp
 	2, // 2: bytebase.v1.ActuatorInfo.sample:type_name -> bytebase.v1.SampleInfo
-	1, // 3: bytebase.v1.ActuatorService.GetActuatorInfo:input_type -> bytebase.v1.GetActuatorInfoRequest
-	0, // 4: bytebase.v1.ActuatorService.SetupSample:input_type -> bytebase.v1.SetupSampleRequest
-	3, // 5: bytebase.v1.ActuatorService.GetActuatorInfo:output_type -> bytebase.v1.ActuatorInfo
-	5, // 6: bytebase.v1.ActuatorService.SetupSample:output_type -> google.protobuf.Empty
-	5, // [5:7] is the sub-list for method output_type
-	3, // [3:5] is the sub-list for method input_type
-	3, // [3:3] is the sub-list for extension type_name
-	3, // [3:3] is the sub-list for extension extendee
-	0, // [0:3] is the sub-list for field type_name
+	5, // 3: bytebase.v1.SampleInfo.Instance.expire_time:type_name -> google.protobuf.Timestamp
+	1, // 4: bytebase.v1.ActuatorService.GetActuatorInfo:input_type -> bytebase.v1.GetActuatorInfoRequest
+	0, // 5: bytebase.v1.ActuatorService.SetupSample:input_type -> bytebase.v1.SetupSampleRequest
+	3, // 6: bytebase.v1.ActuatorService.GetActuatorInfo:output_type -> bytebase.v1.ActuatorInfo
+	6, // 7: bytebase.v1.ActuatorService.SetupSample:output_type -> google.protobuf.Empty
+	6, // [6:8] is the sub-list for method output_type
+	4, // [4:6] is the sub-list for method input_type
+	4, // [4:4] is the sub-list for extension type_name
+	4, // [4:4] is the sub-list for extension extendee
+	0, // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_v1_actuator_service_proto_init() }
@@ -424,7 +474,7 @@ func file_v1_actuator_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_actuator_service_proto_rawDesc), len(file_v1_actuator_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   4,
+			NumMessages:   5,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -301,6 +301,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.SampleInfo.Instance"><span class="badge">M</span>SampleInfo.Instance</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.SetupSampleRequest"><span class="badge">M</span>SetupSampleRequest</a>
                 </li>
               
@@ -4334,6 +4338,30 @@ Format: projects/{id} </p></td>
                 </tr>
               
                 <tr>
+                  <td>instances</td>
+                  <td><a href="#bytebase.v1.SampleInfo.Instance">SampleInfo.Instance</a></td>
+                  <td>repeated</td>
+                  <td><p>The provisioned sample instances. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.SampleInfo.Instance">SampleInfo.Instance</h3>
+        <p>Instance describes one provisioned sample instance.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
                   <td>instance</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
@@ -4345,7 +4373,7 @@ Format: instances/{instance} </p></td>
                   <td>expire_time</td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
-                  <td><p>The time when the provisioned sample resources expire. </p></td>
+                  <td><p>The time when the provisioned sample instance expires. </p></td>
                 </tr>
               
             </tbody>

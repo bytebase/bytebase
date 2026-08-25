@@ -36,6 +36,7 @@
     - [ActuatorInfo](#bytebase-v1-ActuatorInfo)
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
     - [SampleInfo](#bytebase-v1-SampleInfo)
+    - [SampleInfo.Instance](#bytebase-v1-SampleInfo-Instance)
     - [SetupSampleRequest](#bytebase-v1-SetupSampleRequest)
   
     - [ActuatorService](#bytebase-v1-ActuatorService)
@@ -1190,8 +1191,23 @@ SampleInfo describes sample setup availability and provisioned resources.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | available | [bool](#bool) |  | Whether sample setup is currently available. |
+| instances | [SampleInfo.Instance](#bytebase-v1-SampleInfo-Instance) | repeated | The provisioned sample instances. |
+
+
+
+
+
+
+<a name="bytebase-v1-SampleInfo-Instance"></a>
+
+### SampleInfo.Instance
+Instance describes one provisioned sample instance.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
 | instance | [string](#string) |  | The provisioned sample instance. Format: instances/{instance} |
-| expire_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time when the provisioned sample resources expire. |
+| expire_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time when the provisioned sample instance expires. |
 
 
 

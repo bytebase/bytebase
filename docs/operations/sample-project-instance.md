@@ -1,6 +1,11 @@
-# Operate Bytebase Cloud Sample Project Instances
+# Operate Sample Instances
 
-Sample Project Instances are SaaS-only temporary-evaluation aggregates. Each aggregate has one Bytebase Project Instance and one dedicated database and login role on the configured PostgreSQL target. A Workspace receives one lifetime entitlement. Do not provide reset tooling or expose a separate user-visible expired state.
+Self-host and SaaS sample instances use separate implementations behind one
+application lifecycle interface. Self-host creates an atomic pair of permanent
+workspace-level Test and Prod instances. SaaS creates one project-level
+instance with a seven-day lifetime and one lifetime entitlement per Workspace.
+The shared persistence envelope can also represent future self-host expiration
+without coupling the two implementations' provisioning details.
 
 ## Configure the target
 
@@ -19,9 +24,25 @@ An absent or syntactically invalid target configuration must not block server st
 
 The service provisions a new dedicated role and creates its database with connections disabled. It revokes `PUBLIC` database access, grants access to the dedicated role, and only then enables connections before hardening the `public` schema and seeding as that role. It then registers the Project Instance and synchronously discovers its database. Seven-day eligibility starts only after all of those readiness steps succeed.
 
-The independent control-plane record is the Workspace's lifetime entitlement fence. It persists a random instance ID, its owning replica, and the database and role names deterministically derived from it in the `bb_sample_*` namespace. That namespace and every persisted instance, database, and role name are exclusively reserved for the reservation, including retained entitlement records after cleanup. Its lifecycle state is derived only from `created_at`, `expires_at`, and `deleted_at`. It has no foreign keys so that normal deletion or retention of Workspace, Project, Project Instance, and Database metadata cannot erase the cleanup obligation or restore entitlement.
+The independent control-plane setup is the Workspace's entitlement and atomic
+activation fence. `sample_instance_setup` stores the replica owner, an opaque
+implementation-specific JSONB payload, activation,
+expiration, and deletion. The SaaS and self-host payloads are separate store
+protocol messages, and each concrete manager decodes only its own payload.
+`activated_at` distinguishes a permanent active setup from a pending setup; an
+active setup with no `expires_at` is never selected merely because it is old.
 
-The Manager owns compensation. It commits the pending reservation before contacting the target, so a provisioning attempt never monopolizes a metadata connection. If another request sees a healthy owner it waits with bounded backoff. After the three-minute lifecycle window, the same replica may retry its own attempt; a different replica may atomically take over only when the previous owner's heartbeat is stale or missing. A successful takeover receives a fresh three-minute lifecycle budget. The original owner cannot activate or delete after that takeover because those transitions are fenced by Workspace, instance ID, and replica ID. If preparation fails after reserving the entitlement, it removes partial Bytebase metadata and the physical resources allocated to that reservation, then removes the pending reservation when compensation succeeds. If compensation fails or the process crashes, the pending reservation remains and a later Manager preparation request or cleanup pass compensates using its deterministically derived names. Operators should investigate repeated reconciliation failures through redacted structured logs rather than editing entitlement records directly.
+Each concrete manager owns compensation. It commits the pending reservation
+before contacting its target, so a provisioning attempt never monopolizes a
+metadata connection. If another request sees a healthy owner it waits with
+bounded backoff. After the three-minute lifecycle window, the same replica may
+retry its own attempt; a different replica may atomically take over only when
+the previous owner's heartbeat is stale or missing. The original owner cannot
+activate or delete after takeover because those transitions are fenced by
+Workspace and replica ID. If preparation fails, the
+manager removes partial Bytebase metadata and the exact physical resources
+recorded in its payload before deleting the pending reservation. Failed
+compensation leaves the reservation for a later request or cleanup pass.
 
 ## Cleanup
 
@@ -29,7 +50,20 @@ Every replica runs cleanup once at startup and then hourly. Each pass scans elig
 
 For an expired aggregate, cleanup fences the dedicated role with `NOLOGIN`, revokes its database access, terminates its sessions using the required `pg_signal_backend` capability, and waits for sessions to drain. Only then does it drop the database and finally the role. The cleanup record is marked complete only after physical removal succeeds; failures and crashes leave the expired row eligible for a later Manager pass without retaining a row lock between attempts.
 
-Cleanup removes only the dedicated Cloud SQL database and role. It retains Bytebase Workspace, Project, Project Instance, and Database metadata, and it never resets the Workspace's lifetime entitlement.
+For an expired SaaS setup, cleanup removes the physical database and role and
+soft-deletes the Bytebase Instance. Database metadata remains retained under
+the archived Instance, and the setup row is marked deleted so the Workspace
+entitlement is not reset. A later restore is rejected because the physical
+resources no longer exist. Stale pending setup compensation instead hard-purges
+only partial Instance metadata, removes physical resources, and deletes the
+pending setup so the user can retry.
+
+For self-host, permanent active setups are not eligible for cleanup. Archiving
+one instance leaves the managed pair running while the other remains active;
+archiving both stops the pair without deleting its data directories. Restoring
+either starts the pair again. Existing `test-sample-instance` and
+`prod-sample-instance` resources keep the same pair-level behavior and are not
+migrated into managed setup rows.
 
 ## Logging and credential hygiene
 

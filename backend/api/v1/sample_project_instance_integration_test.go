@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"net/http/httptest"
 	"net/url"
+	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -15,6 +17,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/permission"
@@ -22,14 +25,15 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	"github.com/bytebase/bytebase/backend/component/sampleprojectinstance"
+	"github.com/bytebase/bytebase/backend/component/sample"
+	"github.com/bytebase/bytebase/backend/component/sample/saas"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/migrator"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
-	sampleprojectinstancerunner "github.com/bytebase/bytebase/backend/runner/sampleprojectinstance"
+	samplerunner "github.com/bytebase/bytebase/backend/runner/sample"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -37,9 +41,7 @@ import (
 func TestPrepareSampleProjectInstanceLifecycle(t *testing.T) {
 	now := time.Date(2026, time.August, 17, 12, 0, 0, 0, time.UTC)
 	ctx, fixture := newSampleProjectInstanceFixture(t, func() time.Time { return now })
-	runner := sampleprojectinstancerunner.NewRunner(fixture.manager, sampleprojectinstancerunner.Options{
-		Clock: func() time.Time { return now },
-	})
+	runner := samplerunner.NewRunner(fixture.manager)
 
 	prepared, err := fixture.service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
 		Parent: common.FormatProject(fixture.projectID),
@@ -105,16 +107,40 @@ func TestPrepareSampleProjectInstanceLifecycle(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.NotNil(t, instance)
-	require.False(t, instance.Deleted)
-	database, err = fixture.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+	require.True(t, instance.Deleted)
+	instances, err := fixture.store.ListInstances(ctx, &store.FindInstanceMessage{
+		Workspace:  fixture.workspaceID,
+		ResourceID: &record.instance,
+	})
+	require.NoError(t, err)
+	require.Empty(t, instances)
+	databases, err := fixture.store.ListDatabases(ctx, &store.FindDatabaseMessage{
 		Workspace:    fixture.workspaceID,
 		ProjectID:    &fixture.projectID,
 		InstanceID:   &record.instance,
 		DatabaseName: &record.database,
 	})
 	require.NoError(t, err)
+	require.Empty(t, databases)
+	database, err = fixture.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		Workspace:    fixture.workspaceID,
+		ProjectID:    &fixture.projectID,
+		InstanceID:   &record.instance,
+		DatabaseName: &record.database,
+		ShowDeleted:  true,
+	})
+	require.NoError(t, err)
 	require.NotNil(t, database)
 	require.False(t, database.Deleted)
+	_, err = fixture.service.UndeleteInstance(ctx, connect.NewRequest(&v1pb.UndeleteInstanceRequest{Name: prepared.Msg.Name}))
+	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+	archived, err := fixture.store.GetInstance(ctx, &store.FindInstanceMessage{
+		Workspace:   fixture.workspaceID,
+		ResourceID:  &record.instance,
+		ShowDeleted: true,
+	})
+	require.NoError(t, err)
+	require.True(t, archived.Deleted)
 
 	_, err = fixture.service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
 		Parent: common.FormatProject(fixture.projectID),
@@ -125,9 +151,7 @@ func TestPrepareSampleProjectInstanceLifecycle(t *testing.T) {
 func TestPrepareSampleProjectInstanceAdditionalLifecycleCoverage(t *testing.T) {
 	now := time.Date(2026, time.August, 17, 12, 0, 0, 0, time.UTC)
 	ctx, fixture := newSampleProjectInstanceFixture(t, func() time.Time { return now })
-	runner := sampleprojectinstancerunner.NewRunner(fixture.manager, sampleprojectinstancerunner.Options{
-		Clock: func() time.Time { return now },
-	})
+	runner := samplerunner.NewRunner(fixture.manager)
 
 	t.Run("ACL denies callers without project permission", func(t *testing.T) {
 		iamManager, err := iam.NewManager(fixture.store, nil, true)
@@ -163,6 +187,23 @@ func TestPrepareSampleProjectInstanceAdditionalLifecycleCoverage(t *testing.T) {
 		}))
 		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
 		fixture.service.profile.SaaS = true
+	})
+
+	t.Run("workspace without environments still prepares a sample", func(t *testing.T) {
+		workspaceID := "sample-workspace-no-environment"
+		projectID := "sample-project-no-environment"
+		_, err := fixture.store.GetDB().ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ($1)`, workspaceID)
+		require.NoError(t, err)
+		_, err = fixture.store.GetDB().ExecContext(ctx, `
+			INSERT INTO project (resource_id, workspace, name) VALUES ($1, $2, 'No environment sample')
+		`, projectID, workspaceID)
+		require.NoError(t, err)
+		requestCtx := context.WithValue(ctx, common.WorkspaceIDContextKey, workspaceID)
+		prepared, err := fixture.service.PrepareSampleProjectInstance(requestCtx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
+			Parent: common.FormatProject(projectID),
+		}))
+		require.NoError(t, err)
+		require.Empty(t, prepared.Msg.GetEnvironment())
 	})
 
 	concurrentCtx, concurrentProjectID := fixture.newWorkspaceProject(ctx, t, "concurrent")
@@ -205,7 +246,7 @@ func TestPrepareSampleProjectInstanceAdditionalLifecycleCoverage(t *testing.T) {
 		staleCtx, staleProjectID := fixture.newWorkspaceProject(ctx, t, "stale")
 		allocation := fixture.createPartialReservation(staleCtx, t, "sample-workspace-stale", staleProjectID, now.Add(-time.Hour-time.Second))
 		require.NoError(t, runner.RunOnce(staleCtx))
-		record, err := fixture.store.GetSampleProjectInstance(staleCtx, "sample-workspace-stale")
+		record, err := fixture.store.GetSampleInstanceSetup(staleCtx, "sample-workspace-stale")
 		require.NoError(t, err)
 		require.Nil(t, record)
 		require.False(t, fixture.target.databaseExists(staleCtx, allocation.Database))
@@ -226,7 +267,7 @@ func TestPrepareSampleProjectInstanceAdditionalLifecycleCoverage(t *testing.T) {
 		}))
 		require.NoError(t, err)
 		record := fixture.sampleRecordFor(missingCtx, t, "sample-workspace-missing")
-		require.NoError(t, fixture.target.dropResources(missingCtx, sampleprojectinstance.Allocation{
+		require.NoError(t, fixture.target.dropResources(missingCtx, testAllocation{
 			Database: record.database,
 			Role:     record.role,
 		}))
@@ -243,7 +284,7 @@ func TestPrepareSampleProjectInstanceAdditionalLifecycleCoverage(t *testing.T) {
 		}))
 		require.NoError(t, err)
 		record := fixture.sampleRecordFor(sessionCtx, t, "sample-workspace-external-session")
-		allocation := sampleprojectinstance.Allocation{
+		allocation := testAllocation{
 			Database: record.database,
 			Role:     record.role,
 			Password: fixture.allocationFor(sessionCtx, t, "sample-workspace-external-session").Password,
@@ -260,13 +301,12 @@ func TestPrepareSampleProjectInstanceAdditionalLifecycleCoverage(t *testing.T) {
 }
 
 type sampleProjectInstanceFixture struct {
-	store        *store.Store
-	service      *InstanceService
-	manager      *sampleprojectinstance.Manager
-	sampleTarget *sampleprojectinstance.Target
-	target       *sampleTargetInspector
-	workspaceID  string
-	projectID    string
+	store       *store.Store
+	service     *InstanceService
+	manager     *saas.Manager
+	target      *sampleTargetInspector
+	workspaceID string
+	projectID   string
 }
 
 func newSampleProjectInstanceFixture(t *testing.T, clock func() time.Time) (context.Context, *sampleProjectInstanceFixture) {
@@ -298,31 +338,28 @@ func newSampleProjectInstanceFixture(t *testing.T, clock func() time.Time) (cont
 	syncer := schemasync.NewSyncer(stores, dbFactory, licenseService, nil)
 	require.NoError(t, prepareSampleTargetBaseline(ctx, target.GetDB()))
 	targetURL := tlsPostgresTestURL(target)
-	sampleTarget, err := sampleprojectinstance.NewTarget(targetURL)
-	require.NoError(t, err)
 	inspector := newSampleTargetInspector(t, targetURL)
-	manager, err := sampleprojectinstance.NewManagerFromURL(
+	manager, err := saas.NewManager(
 		stores,
 		targetURL,
 		syncer,
-		sampleprojectinstance.ManagerOptions{Clock: clock, ReplicaID: "replica-a"},
+		sample.ManagerOptions{Clock: clock, ReplicaID: "replica-a"},
 	)
 	require.NoError(t, err)
 	return context.WithValue(ctx, common.WorkspaceIDContextKey, "sample-workspace"), &sampleProjectInstanceFixture{
 		store: stores,
 		service: &InstanceService{
-			store:                stores,
-			profile:              &config.Profile{SaaS: true},
-			licenseService:       &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 0},
-			dbFactory:            dbFactory,
-			schemaSyncer:         syncer,
-			sampleProjectManager: manager,
+			store:          stores,
+			profile:        &config.Profile{SaaS: true},
+			licenseService: &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 0},
+			dbFactory:      dbFactory,
+			schemaSyncer:   syncer,
+			sampleManager:  manager,
 		},
-		manager:      manager,
-		sampleTarget: sampleTarget,
-		target:       inspector,
-		workspaceID:  "sample-workspace",
-		projectID:    "sample-project",
+		manager:     manager,
+		target:      inspector,
+		workspaceID: "sample-workspace",
+		projectID:   "sample-project",
 	}
 }
 
@@ -359,21 +396,22 @@ func (f *sampleProjectInstanceFixture) sampleRecord(ctx context.Context, t *test
 
 func (f *sampleProjectInstanceFixture) sampleRecordFor(ctx context.Context, t *testing.T, workspaceID string) sampleProjectInstanceRecord {
 	t.Helper()
-	record := sampleProjectInstanceRecord{}
-	require.NoError(t, f.store.GetDB().QueryRowContext(ctx, `
-		SELECT workspace, project, instance, db_name, role_name, created_at, expires_at, deleted_at
-		FROM sample_project_instance
-		WHERE workspace = $1
-	`, workspaceID).Scan(
-		&record.workspace,
-		&record.project,
-		&record.instance,
-		&record.database,
-		&record.role,
-		&record.createdAt,
-		&record.expiresAt,
-		&record.deletedAt,
-	))
+	setup, err := f.store.GetSampleInstanceSetup(ctx, workspaceID)
+	require.NoError(t, err)
+	require.NotNil(t, setup)
+	payload := &storepb.SaaSSampleInstanceSetupPayload{}
+	require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal(setup.Payload, payload))
+	require.NotNil(t, setup.ExpiresAt)
+	record := sampleProjectInstanceRecord{
+		workspace: workspaceID,
+		project:   payload.ProjectId,
+		instance:  payload.InstanceId,
+		database:  payload.DatabaseName,
+		role:      payload.RoleName,
+		createdAt: setup.CreatedAt,
+		expiresAt: *setup.ExpiresAt,
+		deletedAt: setup.DeletedAt,
+	}
 	return record
 }
 
@@ -384,7 +422,7 @@ func (f *sampleProjectInstanceFixture) sampleRecordCount(ctx context.Context, t 
 func (f *sampleProjectInstanceFixture) sampleRecordCountFor(ctx context.Context, t *testing.T, workspaceID string) int {
 	t.Helper()
 	var count int
-	query := "SELECT COUNT(*) FROM sample_project_instance"
+	query := "SELECT COUNT(*) FROM sample_instance_setup"
 	args := []any{}
 	if workspaceID != "" {
 		query += " WHERE workspace = $1"
@@ -394,7 +432,14 @@ func (f *sampleProjectInstanceFixture) sampleRecordCountFor(ctx context.Context,
 	return count
 }
 
-func (f *sampleProjectInstanceFixture) allocation(ctx context.Context, t *testing.T) sampleprojectinstance.Allocation {
+type testAllocation struct {
+	InstanceID string
+	Database   string
+	Role       string
+	Password   string
+}
+
+func (f *sampleProjectInstanceFixture) allocation(ctx context.Context, t *testing.T) testAllocation {
 	return f.allocationFor(ctx, t, f.workspaceID)
 }
 
@@ -402,7 +447,7 @@ func (f *sampleProjectInstanceFixture) allocationFor(
 	ctx context.Context,
 	t *testing.T,
 	workspaceID string,
-) sampleprojectinstance.Allocation {
+) testAllocation {
 	record := f.sampleRecordFor(ctx, t, workspaceID)
 	instance, err := f.store.GetInstance(ctx, &store.FindInstanceMessage{
 		Workspace:   workspaceID,
@@ -413,15 +458,16 @@ func (f *sampleProjectInstanceFixture) allocationFor(
 	require.NotNil(t, instance)
 	for _, dataSource := range instance.Metadata.GetDataSources() {
 		if dataSource.GetId() == "admin" {
-			return sampleprojectinstance.Allocation{
-				Database: record.database,
-				Role:     record.role,
-				Password: dataSource.GetPassword(),
+			return testAllocation{
+				InstanceID: record.instance,
+				Database:   record.database,
+				Role:       record.role,
+				Password:   dataSource.GetPassword(),
 			}
 		}
 	}
 	require.FailNow(t, "sample instance has no admin data source")
-	return sampleprojectinstance.Allocation{}
+	return testAllocation{}
 }
 
 func (f *sampleProjectInstanceFixture) newWorkspaceProject(ctx context.Context, t *testing.T, suffix string) (context.Context, string) {
@@ -480,39 +526,47 @@ func (f *sampleProjectInstanceFixture) createPartialReservation(
 	t *testing.T,
 	workspaceID, projectID string,
 	createdAt time.Time,
-) sampleprojectinstance.Allocation {
+) testAllocation {
 	t.Helper()
-	record, created, err := f.store.ReserveSampleProjectInstance(ctx, &store.SampleProjectInstanceMessage{
+	payload := &storepb.SaaSSampleInstanceSetupPayload{
+		ProjectId:     projectID,
+		InstanceId:    sampleInstanceID(workspaceID),
+		Title:         "Sample Project Instance",
+		EnvironmentId: ptr("test"),
+		DatabaseName:  sampleDatabaseName(workspaceID),
+		RoleName:      sampleRoleName(workspaceID),
+	}
+	encoded, err := protojson.Marshal(payload)
+	require.NoError(t, err)
+	_, created, err := f.store.ReserveSampleInstanceSetup(ctx, &store.SampleInstanceSetupMessage{
 		WorkspaceID: workspaceID,
-		ProjectID:   projectID,
-		InstanceID:  sampleInstanceID(workspaceID),
-		DBName:      sampleDatabaseName(workspaceID),
-		RoleName:    sampleRoleName(workspaceID),
 		ReplicaID:   "replica-a",
+		Payload:     encoded,
 	})
 	require.NoError(t, err)
 	require.True(t, created)
-	allocation := sampleprojectinstance.Allocation{
-		Database: record.DBName,
-		Role:     record.RoleName,
-		Password: "sample-partial-password",
+	allocation := testAllocation{
+		InstanceID: payload.InstanceId,
+		Database:   payload.DatabaseName,
+		Role:       payload.RoleName,
+		Password:   "sample-partial-password",
 	}
-	require.NoError(t, f.sampleTarget.Provision(ctx, allocation))
-	config, err := f.sampleTarget.InstanceConfig(allocation)
-	require.NoError(t, err)
+	require.NoError(t, f.target.provision(ctx, allocation))
 	instance, err := f.store.CreateInstance(ctx, &store.InstanceMessage{
 		Workspace:     workspaceID,
 		ProjectID:     &projectID,
 		EnvironmentID: ptr("test"),
-		ResourceID:    record.InstanceID,
+		ResourceID:    payload.InstanceId,
 		Metadata: &storepb.Instance{
 			Title:      "Sample Project Instance",
 			Engine:     storepb.Engine_POSTGRES,
 			Activation: false,
-			DataSources: []*storepb.DataSource{
-				config.AdminDataSource,
-			},
-			SyncDatabases: &storepb.SyncDatabases{Databases: config.SyncDatabaseNames},
+			DataSources: []*storepb.DataSource{{
+				Id: "admin", Type: storepb.DataSourceType_ADMIN, Host: f.target.config.Host,
+				Port: fmt.Sprint(f.target.config.Port), Database: allocation.Database,
+				Username: allocation.Role, Password: allocation.Password, UseSsl: true, VerifyTlsCertificate: true, SslCa: f.target.sslCA,
+			}},
+			SyncDatabases: &storepb.SyncDatabases{Databases: []string{allocation.Database}},
 		},
 	})
 	require.NoError(t, err)
@@ -520,8 +574,8 @@ func (f *sampleProjectInstanceFixture) createPartialReservation(
 	require.NoError(t, err)
 	require.Len(t, databases, 1)
 	_, err = f.store.GetDB().ExecContext(ctx, `
-		UPDATE sample_project_instance
-		SET created_at = $1
+		UPDATE sample_instance_setup
+		SET updated_at = $1
 		WHERE workspace = $2
 	`, createdAt, workspaceID)
 	require.NoError(t, err)
@@ -547,13 +601,18 @@ func sampleRoleName(workspaceID string) string {
 
 type sampleTargetInspector struct {
 	config *pgx.ConnConfig
+	sslCA  string
 }
 
 func newSampleTargetInspector(t *testing.T, targetURL string) *sampleTargetInspector {
 	t.Helper()
 	config, err := pgx.ParseConfig(targetURL)
 	require.NoError(t, err)
-	return &sampleTargetInspector{config: config}
+	parsed, err := url.Parse(targetURL)
+	require.NoError(t, err)
+	sslCA, err := os.ReadFile(parsed.Query().Get("sslrootcert"))
+	require.NoError(t, err)
+	return &sampleTargetInspector{config: config, sslCA: string(sslCA)}
 }
 
 func prepareSampleTargetBaseline(ctx context.Context, db *sql.DB) error {
@@ -600,14 +659,53 @@ func (t *sampleTargetInspector) databaseExists(ctx context.Context, database str
 	return conn.QueryRow(ctx, "SELECT EXISTS (SELECT 1 FROM pg_database WHERE datname = $1)", database).Scan(&exists) == nil && exists
 }
 
-func (t *sampleTargetInspector) sampleConnection(ctx context.Context, tst *testing.T, allocation sampleprojectinstance.Allocation) *pgx.Conn {
+func (t *sampleTargetInspector) provision(ctx context.Context, allocation testAllocation) error {
+	admin, err := t.connect(ctx, "", "", "")
+	if err != nil {
+		return err
+	}
+	defer admin.Close(ctx)
+	if _, err := admin.Exec(ctx, fmt.Sprintf(
+		"CREATE ROLE %s LOGIN PASSWORD %s",
+		pgx.Identifier{allocation.Role}.Sanitize(),
+		quoteTestLiteral(allocation.Password),
+	)); err != nil {
+		return err
+	}
+	if _, err := admin.Exec(ctx, fmt.Sprintf("CREATE DATABASE %s", pgx.Identifier{allocation.Database}.Sanitize())); err != nil {
+		return err
+	}
+	if _, err := admin.Exec(ctx, fmt.Sprintf(
+		"GRANT CONNECT, CREATE, TEMPORARY ON DATABASE %s TO %s",
+		pgx.Identifier{allocation.Database}.Sanitize(),
+		pgx.Identifier{allocation.Role}.Sanitize(),
+	)); err != nil {
+		return err
+	}
+	database, err := t.connect(ctx, allocation.Database, "", "")
+	if err != nil {
+		return err
+	}
+	defer database.Close(ctx)
+	_, err = database.Exec(ctx, fmt.Sprintf(
+		"GRANT USAGE, CREATE ON SCHEMA public TO %s",
+		pgx.Identifier{allocation.Role}.Sanitize(),
+	))
+	return err
+}
+
+func quoteTestLiteral(value string) string {
+	return "'" + strings.ReplaceAll(value, "'", "''") + "'"
+}
+
+func (t *sampleTargetInspector) sampleConnection(ctx context.Context, tst *testing.T, allocation testAllocation) *pgx.Conn {
 	tst.Helper()
 	conn, err := t.connect(ctx, allocation.Database, allocation.Role, allocation.Password)
 	require.NoError(tst, err)
 	return conn
 }
 
-func (t *sampleTargetInspector) sampleEmployeeCount(ctx context.Context, allocation sampleprojectinstance.Allocation, assert func(int) bool) error {
+func (t *sampleTargetInspector) sampleEmployeeCount(ctx context.Context, allocation testAllocation, assert func(int) bool) error {
 	conn, err := t.connect(ctx, allocation.Database, allocation.Role, allocation.Password)
 	if err != nil {
 		return errors.New("sample target cannot be inspected")
@@ -623,7 +721,7 @@ func (t *sampleTargetInspector) sampleEmployeeCount(ctx context.Context, allocat
 func (t *sampleTargetInspector) assertSeededOwnershipAndDDL(
 	ctx context.Context,
 	tst *testing.T,
-	allocation sampleprojectinstance.Allocation,
+	allocation testAllocation,
 ) {
 	tst.Helper()
 	sample := t.sampleConnection(ctx, tst, allocation)
@@ -652,7 +750,7 @@ func (t *sampleTargetInspector) assertSeededOwnershipAndDDL(
 	}
 }
 
-func (t *sampleTargetInspector) assertIsolation(ctx context.Context, tst *testing.T, allocation sampleprojectinstance.Allocation) {
+func (t *sampleTargetInspector) assertIsolation(ctx context.Context, tst *testing.T, allocation testAllocation) {
 	tst.Helper()
 	admin, err := t.connect(ctx, "", "", "")
 	require.NoError(tst, err)
@@ -695,7 +793,7 @@ func (t *sampleTargetInspector) assertIsolation(ctx context.Context, tst *testin
 	require.True(tst, publicCreate)
 }
 
-func (t *sampleTargetInspector) dropResources(ctx context.Context, allocation sampleprojectinstance.Allocation) error {
+func (t *sampleTargetInspector) dropResources(ctx context.Context, allocation testAllocation) error {
 	admin, err := t.connect(ctx, "", "", "")
 	if err != nil {
 		return err
@@ -714,7 +812,7 @@ func (t *sampleTargetInspector) dropResources(ctx context.Context, allocation sa
 	return nil
 }
 
-func (t *sampleTargetInspector) externalRoleConnection(ctx context.Context, tst *testing.T, allocation sampleprojectinstance.Allocation) *pgx.Conn {
+func (t *sampleTargetInspector) externalRoleConnection(ctx context.Context, tst *testing.T, allocation testAllocation) *pgx.Conn {
 	tst.Helper()
 	admin, err := t.connect(ctx, "", "", "")
 	require.NoError(tst, err)

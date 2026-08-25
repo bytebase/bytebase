@@ -53,19 +53,11 @@ export declare type SampleInfo = Message<"bytebase.v1.SampleInfo"> & {
   available: boolean;
 
   /**
-   * The provisioned sample instance.
-   * Format: instances/{instance}
+   * The provisioned sample instances.
    *
-   * @generated from field: string instance = 2;
+   * @generated from field: repeated bytebase.v1.SampleInfo.Instance instances = 2;
    */
-  instance: string;
-
-  /**
-   * The time when the provisioned sample resources expire.
-   *
-   * @generated from field: google.protobuf.Timestamp expire_time = 3;
-   */
-  expireTime?: Timestamp | undefined;
+  instances: SampleInfo_Instance[];
 };
 
 /**
@@ -73,6 +65,34 @@ export declare type SampleInfo = Message<"bytebase.v1.SampleInfo"> & {
  * Use `create(SampleInfoSchema)` to create a new message.
  */
 export declare const SampleInfoSchema: GenMessage<SampleInfo>;
+
+/**
+ * Instance describes one provisioned sample instance.
+ *
+ * @generated from message bytebase.v1.SampleInfo.Instance
+ */
+export declare type SampleInfo_Instance = Message<"bytebase.v1.SampleInfo.Instance"> & {
+  /**
+   * The provisioned sample instance.
+   * Format: instances/{instance}
+   *
+   * @generated from field: string instance = 1;
+   */
+  instance: string;
+
+  /**
+   * The time when the provisioned sample instance expires.
+   *
+   * @generated from field: google.protobuf.Timestamp expire_time = 2;
+   */
+  expireTime?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.SampleInfo.Instance.
+ * Use `create(SampleInfo_InstanceSchema)` to create a new message.
+ */
+export declare const SampleInfo_InstanceSchema: GenMessage<SampleInfo_Instance>;
 
 /**
  * System information and configuration for the Bytebase instance.

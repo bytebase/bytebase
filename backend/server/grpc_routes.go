@@ -27,8 +27,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
-	"github.com/bytebase/bytebase/backend/component/sampleinstance"
-	"github.com/bytebase/bytebase/backend/component/sampleprojectinstance"
+	"github.com/bytebase/bytebase/backend/component/sample"
 	"github.com/bytebase/bytebase/backend/component/sheet"
 	"github.com/bytebase/bytebase/backend/component/webhook"
 	"github.com/bytebase/bytebase/backend/enterprise"
@@ -51,8 +50,7 @@ func configureGrpcRouters(
 	webhookManager *webhook.Manager,
 	iamManager *iam.Manager,
 	secret string,
-	sampleInstanceManager *sampleinstance.Manager,
-	sampleProjectManager *sampleprojectinstance.Manager,
+	sampleManager sample.Manager,
 ) (http.Handler, error) {
 	// Note: the gateway response modifier takes the token duration on server startup. If the value is changed,
 	// the user has to restart the server to take the latest value.
@@ -94,7 +92,7 @@ func configureGrpcRouters(
 	)
 	aiService := apiv1.NewAIService(stores)
 	accessGrantService := apiv1.NewAccessGrantService(stores, licenseService, webhookManager, bus)
-	actuatorService := apiv1.NewActuatorService(stores, profile, schemaSyncer, licenseService, sampleInstanceManager, sampleProjectManager)
+	actuatorService := apiv1.NewActuatorService(stores, profile, schemaSyncer, licenseService, sampleManager)
 	auditLogService := apiv1.NewAuditLogService(stores, licenseService)
 	authService := apiv1.NewAuthService(stores, secret, licenseService, profile, iamManager)
 	celService := apiv1.NewCelService()
@@ -105,7 +103,7 @@ func configureGrpcRouters(
 	groupService := apiv1.NewGroupService(stores, iamManager, licenseService)
 	identityProviderService := apiv1.NewIdentityProviderService(stores, licenseService, profile)
 	instanceRoleService := apiv1.NewInstanceRoleService(stores)
-	instanceService := apiv1.NewInstanceService(stores, profile, licenseService, dbFactory, schemaSyncer, sampleInstanceManager, sampleProjectManager)
+	instanceService := apiv1.NewInstanceService(stores, profile, licenseService, dbFactory, schemaSyncer, sampleManager)
 	issueService := apiv1.NewIssueService(stores, webhookManager, bus, licenseService, iamManager)
 	orgPolicyService := apiv1.NewOrgPolicyService(stores, licenseService, iamManager)
 	planService := apiv1.NewPlanService(stores, bus, iamManager, webhookManager, licenseService)

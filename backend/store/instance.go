@@ -846,20 +846,6 @@ func (s *Store) deobfuscateInstances(ctx context.Context, instances []*InstanceM
 	return nil
 }
 
-// HasSampleInstances checks if there are sample instances in the database.
-func (s *Store) HasSampleInstances(ctx context.Context, workspaceID string) (bool, error) {
-	instances, err := s.ListInstances(ctx, &FindInstanceMessage{
-		Workspace:     workspaceID,
-		WorkspaceOnly: true,
-		ResourceIDs:   &[]string{"test-sample-instance", "prod-sample-instance"},
-		ShowDeleted:   false,
-	})
-	if err != nil {
-		return false, err
-	}
-	return len(instances) > 0, nil
-}
-
 // DeleteInstance permanently purges a soft-deleted instance and all related resources.
 // This operation is irreversible and should only be used for:
 // - Administrative cleanup of old soft-deleted instances
