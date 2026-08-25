@@ -159,25 +159,31 @@ have minted a new access token — it doesn't revoke an access token already in 
 keeps working until it expires regardless (see G7).
 
 Locking the account row for the mutation closes the credential-vs-credential race above, but not a
-[separate one](https://github.com/bytebase/bytebase/pull/21235) between revocation and the *existing*
-`Refresh` RPC, which never acquires that lock at all today: it consumes the caller's old refresh token,
-does its own work, and only inserts the replacement at the end (`auth_service.go:479` through `:543`,
-`issueSessionCookies` at `:1077`). An attacker's `Refresh` can consume its old token before a
-concurrent `DeleteWebRefreshTokensByUser` runs and insert its replacement after that revocation has
-already committed — leaving a token that looks freshly issued but was never covered by the sweep that
-was supposed to end their access. This is the same shape AGENTS.md's row-lock-ordering section already
-names for `nextProjectID`: locking prevents wait-for cycles on *existing* rows, but can't by itself
-protect a child row that doesn't exist yet, so the writer of that new row has to serialize and
-validate against the parent itself. `Refresh` needs the same treatment `nextProjectID` gives project
-creation: acquire the same account-row lock for its whole consume-then-reissue sequence, not just
-locking without re-checking anything. Two outcomes, both correct, depending on which side gets the
-lock first: `Refresh` acquires it first and finishes (consumes old, inserts new, commits) before a
-concurrent revocation starts — the revocation then runs, sees the newly-inserted token like any other,
-and deletes it, since `DeleteWebRefreshTokensByUser` deletes whatever is a row at the time it runs, not
-a snapshot from when it started; or the revocation acquires the lock first, deletes everything
-including the token `Refresh` was about to consume, commits, and `Refresh` then finds its old token
-already gone and fails closed instead of silently minting a replacement for a session that's supposed
-to be over.
+[separate one](https://github.com/bytebase/bytebase/pull/21235) between revocation and session
+issuance, which never acquires that lock today. First found against `Refresh` specifically (it
+consumes the caller's old refresh token, does its own work, and only inserts the replacement at the
+end, `auth_service.go:479` through `:543`) — but [the same gap exists](https://github.com/bytebase/bytebase/pull/21235)
+everywhere else a session gets minted: `Login`/`Signup` (`finalizeLogin`, `auth_service.go:1036`) and
+`switchWorkspaceInternal` (`:1005`) call the identical `issueSessionCookies` (`:1071`) with no lock
+either. All four are one root cause, not four separate ones: an attacker's request authenticates or
+consumes its old token before a concurrent `DeleteWebRefreshTokensByUser` runs, then inserts its new
+refresh token after that revocation has already committed — leaving a token that looks freshly issued
+but was never covered by the sweep that was supposed to end their access, regardless of which of the
+four paths it came through. This is the same shape AGENTS.md's row-lock-ordering section already names
+for `nextProjectID`: locking prevents wait-for cycles on *existing* rows, but can't by itself protect a
+child row that doesn't exist yet, so the writer of that new row has to serialize and validate against
+the parent itself. Rather than fixing `Refresh`, `finalizeLogin`, and `switchWorkspaceInternal`
+separately — three chances to fix three, or forget a fourth caller later — the fix belongs in
+`issueSessionCookies` itself, the one place all of them already funnel through: acquire the account row
+lock as part of minting the refresh token, not just locking without re-checking anything. Two outcomes,
+both correct, depending on which side gets the lock first: session issuance acquires it first and
+finishes (consumes any old token, inserts the new one, commits) before a concurrent revocation starts —
+the revocation then runs, sees the newly-inserted token like any other, and deletes it, since
+`DeleteWebRefreshTokensByUser` deletes whatever exists when it runs, not a snapshot from when it
+started; or the revocation acquires the lock first, deletes everything including whatever token
+`Refresh` was about to consume, commits, and issuance then finds its old token already gone (or simply
+proceeds, for `Login`/`Signup`/`switchWorkspaceInternal`, which don't consume an old token to begin
+with) rather than silently minting a session that survives a revocation that already ran.
 
 `email_code`'s eligibility is a server-side check, not a UI affordance — otherwise an attacker with a
 stolen session and separate mailbox access could use it against an *already*-MFA-protected account,
@@ -358,8 +364,13 @@ service UserService {
   // StartMfaEnrollment persisted for this account (re-read from the store
   // by name, not carried in this request) and promotes it — the secret and
   // whatever recovery codes are currently pending alongside it — to the
-  // caller's live MFA factor, replacing any existing one. name must be the
-  // caller's own — no admin path, same reason as ChangePassword.
+  // caller's live MFA factor, replacing any existing one. Also rejects a
+  // pending set past its expiry (isMFATempSecretExpired, checked today both
+  // before OTP verification and before promotion — both carry forward,
+  // inside the locked transaction) — pending_version alone only detects a
+  // *replaced* pending set, not one that's simply gone stale with no
+  // replacement ever minted. name must be the caller's own — no admin path,
+  // same reason as ChangePassword.
   rpc EnableMfa(EnableMfaRequest) returns (User) {
     option (google.api.http) = {
       post: "/v1/{name=users/*}:enableMfa"
@@ -391,7 +402,11 @@ service UserService {
   // set (storepb.MFAConfig.TempRecoveryCodes — reused, not new) alongside
   // the still-live old ones, and returns them, with a version token, for
   // the caller to save. Not yet live, so no proof is required here, same as
-  // StartMfaEnrollment. name must be the caller's own — no admin path.
+  // StartMfaEnrollment. Requires a live MFAConfig.OtpSecret already —
+  // recovery codes back up an existing factor, so an account with none
+  // should enroll via StartMfaEnrollment instead, same precondition the
+  // current regenerate_recovery_codes flag enforces (user_service.go:475-477).
+  // name must be the caller's own — no admin path.
   rpc RegenerateRecoveryCodes(RegenerateRecoveryCodesRequest) returns (RegenerateRecoveryCodesResponse) {
     option (google.api.http) = {
       post: "/v1/{name=users/*}:regenerateRecoveryCodes"
@@ -408,7 +423,13 @@ service UserService {
   // invalidating the old set — but only the *exact* pending set named by
   // pending_version; a mismatch (superseded by a later RegenerateRecoveryCodes
   // call, own or someone else's) is rejected rather than silently promoting
-  // whatever is currently pending. The caller's acknowledgment that they
+  // whatever is currently pending. Also re-checks MFAConfig.OtpSecret is
+  // still live, inside the same locked transaction — pending_version alone
+  // doesn't catch DisableMfa running in between, since disabling clears
+  // MFAConfig entirely without touching the recovery-code temp state or its
+  // version, so a stale confirmation after MFA was turned off must still
+  // fail rather than write live recovery codes onto an account with no
+  // factor left for them to back up. The caller's acknowledgment that they
   // saved the new codes, not a proof step on its own — but promotion is
   // exactly the moment the old codes stop working, so it's gated like every
   // other promotion in this design. name must be the caller's own.
