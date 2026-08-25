@@ -570,6 +570,29 @@ two-direction tests. Worth naming separately because it's a user-triggered path 
 one, so its overlap with a credential change isn't a rare scheduling coincidence — a user reauthorizing
 an MCP client *because* they just changed a credential is the expected sequence, not an unlucky one.
 
+The last unordered deleter is the one this design otherwise *keeps* —
+[found the round after](https://github.com/bytebase/bytebase/pull/21235):
+`DeleteWebRefreshTokensByUser` itself (`web_refresh_token.go:103-118`) is a plain
+`DELETE ... WHERE user_email = ?`, and while G7 moves it inside the locked transaction for the four new
+methods, two callers deliberately stay outside that: `ResetPassword`
+(`auth_service_email_code.go:123`), exempt because mailbox possession is its own proof channel, and
+`UpdateUser`'s surviving admin-assisted password path (`user_service.go:436`), exempt under G6. Both
+still call it unordered, on the store's own connection, against an account that can hold several
+sessions — so both can deadlock against the primary-key-ordered revocation this design introduces, the
+same way the cleaners could.
+
+Here the deadlock is not the worst part. Both callers already committed the password write before this
+delete runs, and both swallow its error and continue (`slog.Warn` at
+`auth_service_email_code.go:124`, `slog.Error` at `user_service.go:437` — the very log-and-continue
+pattern G7 exists to replace). If PostgreSQL picks one of them as the deadlock victim, the password
+change stands, the delete is rolled back, and the caller reports success with every pre-reset session
+still live — a silent failure of exactly the recovery path a locked-out user reaches for, and one that
+looks identical to a clean reset from the outside. Both get the same ordered-lock fix as every other
+multi-row deleter here, and both should stop treating the revocation as best-effort: a reset that cannot
+revoke is a reset that did not do what it told the user it did. That is the same argument G7 already
+makes for the four new methods — it applies just as well to the two paths G7 leaves alone, which is why
+this shows up as a lock-ordering finding and a correctness one at once.
+
 That fix closes the race around *exchanging* an existing grant, but not [a separate gap one step
 earlier](https://github.com/bytebase/bytebase/pull/21235): `handleAuthorizePost`
 (`authorize.go:103-171`) mints a brand-new `oauth2_authorization_code` — a grant that didn't exist
