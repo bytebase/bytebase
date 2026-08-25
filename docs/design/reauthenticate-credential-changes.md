@@ -207,15 +207,32 @@ the first thing it does, regardless of whether a revocation ran concurrently —
 a signal about revocation at all. The lock has to move to *before* authentication/consumption, not just
 before the insert, so the entire authenticate-or-consume-then-issue sequence runs while holding it —
 matching how `nextProjectID` locks the project and requires it active *before* allocating an ID, not
-after. With that ordering, whichever side — issuance or revocation — acquires the lock first now
-determines the outcome correctly: issuance first means it authenticates against the still-current
-credential, issues a session, and commits — then revocation runs and deletes that session along with
-everything else, since `DeleteWebRefreshTokensByUser` deletes whatever exists when it runs, not a
-snapshot from when the request started; revocation first means it changes the credential and clears
-all tokens first — then issuance acquires the lock and re-authenticates against the *now-changed*
-credential (or, for `Refresh`/`switchWorkspaceInternal`, finds the token it means to consume already
-gone), and fails closed instead of silently minting a session that outlives the revocation meant to end
-it.
+after.
+
+That "lock the principal first" framing was itself only half right, and the half that was wrong
+[deadlocks against the revocation fix above](https://github.com/bytebase/bytebase/pull/21235):
+`Login`/`Signup` have no existing token to consume, so locking the principal first before inserting a
+brand-new child row is the correct `nextProjectID` shape. `Refresh` and `switchWorkspaceInternal`
+aren't in that shape at all — both call `GetAndDeleteWebRefreshToken` (`auth_service.go:479,990`),
+which deletes an *existing* `web_refresh_token` row, the same child-before-parent case revocation is.
+Locking the principal before that delete, as issuance originally specified, is backwards for exactly
+the reason it was backwards for revocation — and now the two disagree with each other in a way that
+can deadlock: issuance holding the principal while waiting for the old-token row a concurrent
+revocation is holding, revocation holding that row while waiting for the principal issuance is
+holding. Split by whether there's an existing row to touch, matching revocation's own split: `Login`/
+`Signup` lock the principal first (no existing child, `nextProjectID` shape); `Refresh`/
+`switchWorkspaceInternal` lock their existing old-token row first, *then* the principal, consume the
+token, re-authenticate against the now-current credential, and only then insert the new token (child,
+then parent, then a fresh child — consistent with revocation's ordering, not opposed to it). With that
+correction, whichever side — issuance or revocation — reaches the shared row first now determines the
+outcome correctly without either one blocking the other indefinitely: issuance first means it
+authenticates or consumes against the still-current credential, issues a session, and commits — then
+revocation runs and deletes that session along with everything else, since
+`DeleteWebRefreshTokensByUser` deletes whatever exists when it runs, not a snapshot from when the
+request started; revocation first means it changes the credential and clears all tokens first — then
+issuance acquires whatever lock it needs next and either re-authenticates against the *now-changed*
+credential or finds the token it means to consume already gone, and fails closed instead of silently
+minting a session that outlives the revocation meant to end it.
 
 `email_code`'s eligibility is a server-side check, not a UI affordance — otherwise an attacker with a
 stolen session and separate mailbox access could use it against an *already*-MFA-protected account,
