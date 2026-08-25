@@ -60,10 +60,13 @@ A fix scoped to literally the two audited lines leaves both of these open. All f
 - **G6** Admin-assisted recovery (self-hosted only) is untouched: an admin resetting a locked-out
   user's password or MFA must not need the credential being replaced
   ([`split-profile-self-service-vs-admin.md`](split-profile-self-service-vs-admin.md)).
-- **G7** All four state-changing methods revoke the account's other sessions on success, same as
-  password change already does — not just closing the credential-rewrite path, but not leaving a
-  second stolen token (a refresh token in particular, valid up to 7 days) sitting live after the
-  account owner has acted.
+- **G7** All four state-changing methods revoke the account's other *refresh tokens* on success, same
+  as password change already does. Scoped precisely: this closes the ability to mint fresh access
+  tokens afterward (the 7-day exposure window), not the access tokens already issued — those are
+  self-contained JWTs `APIAuthInterceptor` accepts until they expire regardless of refresh-token
+  state, so a stolen one already in use keeps working for up to `access_token_duration` (default 1h)
+  after any of these four actions. Unchanged from today's password change, which has carried this
+  same caveat since Problem; not something this design newly introduces or newly closes.
 
 ### Non-goals
 
@@ -80,6 +83,12 @@ A fix scoped to literally the two audited lines leaves both of these open. All f
   codebase today; the only email path near this code is the verification-code send for
   `RequestPasswordReset`. Detection, not prevention: T10 is closed by `CredentialProof` regardless of
   whether the owner is notified. Worth a follow-up, not bundled into this fix.
+- **A `CredentialProof` channel that doesn't depend on SMTP** — most plausibly, re-authenticating
+  against the account's own upstream IdP. Without it, a self-hosted, SSO-only workspace with
+  `require_2fa` on and no mail server configured still has no way for a user to complete first-time
+  MFA enrollment (see API → Messages, `email_code`'s own limits). Real, not closed by this design;
+  needs its own integration with whatever OIDC/SAML flow already handles login, not a reuse of
+  existing infrastructure the way `email_code` is.
 
 ## Resource design
 
@@ -119,8 +128,9 @@ proof in its own request message, whether it needs re-authentication is visible 
 nothing to audit across a shared patch. On success, all four state-changing methods call
 `DeleteWebRefreshTokensByUser` — today only `ChangePassword` inherits this from `UpdateUser`'s
 existing password branch (`user_service.go:436`); `EnableMfa`/`DisableMfa`/`RegenerateRecoveryCodes`
-need the same call added, forcing re-login everywhere, including the caller's own current session
-(G7).
+need the same call added (G7). Precisely: this forces re-login, including the caller's own current
+session, the next time a refresh token would have minted a new access token — it doesn't revoke an
+access token already in someone's hands, which keeps working until it expires regardless (see G7).
 
 Sharing T9's lockout buckets has one accepted side effect worth naming, not just inheriting silently:
 a `PASSWORD` or `MFA` claim from a failed `CredentialProof` counts against the same budget a login
@@ -221,8 +231,10 @@ service UserService {
     option (bytebase.v1.mcp_denial_reason) = TAKES_OVER_ACCOUNT;
   }
 
-  // Mints a new TOTP secret and recovery codes for the caller to confirm.
-  // Inert until EnableMfa promotes it, so no proof is required here.
+  // Mints a new TOTP secret and recovery codes, persists them as the
+  // account's temporary MFA state (store-level only — see API → Messages),
+  // and returns them for the caller to confirm. Not yet live, so no proof
+  // is required here.
   rpc StartMfaEnrollment(StartMfaEnrollmentRequest) returns (MfaEnrollment) {
     option (google.api.http) = {
       post: "/v1/{name=users/*}:startMfaEnrollment"
@@ -234,8 +246,10 @@ service UserService {
     option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
   }
 
-  // Confirms the code from a started enrollment and promotes it to the
-  // caller's live MFA factor, replacing any existing one.
+  // Validates otp_code against the temporary secret StartMfaEnrollment
+  // persisted for this account (re-read from the store by name, not carried
+  // in this request) and promotes it to the caller's live MFA factor,
+  // replacing any existing one.
   rpc EnableMfa(EnableMfaRequest) returns (User) {
     option (google.api.http) = {
       post: "/v1/{name=users/*}:enableMfa"
@@ -360,10 +374,17 @@ message StartMfaEnrollmentRequest {
   ];
 }
 
-// Enrollment-flow-local; never persisted as such. Returned only by
-// StartMfaEnrollment, consumed only by EnableMfa. Replaces
-// User.temp_otp_secret / temp_recovery_codes / temp_otp_secret_created_time,
-// which had no reason to be permanent fields on the account resource.
+// The API-facing shape of an in-progress enrollment. What it's NOT is a claim
+// about storage: EnableMfa still needs something server-side to validate
+// otp_code against between the two calls, and that's the same store-level
+// storepb.MFAConfig.TempOtpSecret / TempRecoveryCodes / TempOtpSecretCreatedTime
+// StartMfaEnrollment already writes today (user_service.go's
+// regenerate_temp_mfa_secret branch) — untouched by this design, a different
+// proto package from v1pb.User, never itself exposed over the API. What
+// changes is only the *API-facing* surface: those three fields disappear from
+// User (see Existing messages) and reappear here, returned once by
+// StartMfaEnrollment and never carried back into EnableMfaRequest — EnableMfa
+// re-reads them from the account's store row instead.
 message MfaEnrollment {
   string otp_secret = 1 [
     (google.api.field_behavior) = OUTPUT_ONLY,
@@ -448,8 +469,26 @@ storage. Without it, `EnableMfaRequest.credential` had exactly the failure mode
 or SSO account has no password, and first-time enrollment has no existing OTP or recovery code either,
 so all three original options were simultaneously unsatisfiable for precisely the accounts
 `guard.ts:265-275` force-redirects into MFA setup under a `require_2fa` policy — a hard lockout, not
-an edge case. `email_code` closes it by giving every account type at least one proof it can always
-produce.
+an edge case. `email_code` closes it for every Cloud account, and for self-hosted deployments with
+mail configured, by giving them a proof they can always produce.
+
+It doesn't close it for every account, though — a second
+[Codex finding](https://github.com/bytebase/bytebase/pull/21235) on the same review caught the
+remainder: `resolvePreLoginEmailSetting` returns `nil` with no workspace `EMAIL` setting and no
+`EMAIL_CONFIG` env var (`auth_service_email_code.go:319-342`), and `sendEmailVerificationCode` then
+fails outright rather than degrading (`:366-374`) — so a self-hosted, SSO-only workspace with
+`require_2fa` on and no SMTP configured leaves an enrolling user with no password, no existing MFA,
+*and* no deliverable code. Narrower than the original gap (self-hosted, SSO-only, no SMTP, all
+required together) but real, and not something this design closes. Two things worth doing regardless
+of that gap, both applied here: `RequestReauthCode` surfaces the send failure rather than swallowing
+it like `ResetPassword` does — there's no existence-oracle reason to hide it, since the caller is
+already authenticated as the only account it could possibly be about — so the failure is at least
+diagnosable ("no email configured, contact your workspace admin") instead of a silent dead end. The
+full fix — a proof channel that doesn't depend on SMTP, most plausibly re-authenticating against the
+account's own upstream IdP for SSO deployments — is real scope beyond this doc: it means integrating
+with whatever OIDC/SAML flow already exists for login, not reusing something already built the way
+`email_code` reuses T9's table. Tracked as a follow-up, not silently left for someone to discover
+later.
 
 ### Existing messages
 
@@ -476,7 +515,9 @@ if a real reader shows up for it.)
 message User {
   reserved 5, 7, 9, 10, 11, 15;
   // 9, 10, 11: temp_otp_secret / temp_recovery_codes / temp_otp_secret_created_time
-  //    — superseded by MfaEnrollment, which is where that data actually belongs.
+  //    — API-facing removal only; the underlying storepb.MFAConfig columns
+  //    these were read from are untouched (see MfaEnrollment's comment).
+  //    Enrollment now returns this data via MfaEnrollment instead of here.
 
   // ...name, state, email, title, password, phone, profile, groups, workspace unchanged...
 
