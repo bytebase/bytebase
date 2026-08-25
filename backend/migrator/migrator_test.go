@@ -63,7 +63,7 @@ func TestMigration3_22_12MigratesSampleProjectInstance(t *testing.T) {
 		) VALUES ('workspace-a', 'project-a', 'sample-a', 'db-a', 'role-a', 'replica-a', $1, $2)
 	`, createdAt, expiresAt)
 	require.NoError(t, err)
-	statement, err = migrationFS.ReadFile("migration/3.22/0012##sample_instance_setup.sql")
+	statement, err = migrationFS.ReadFile("migration/3.22/0013##sample_instance_setup.sql")
 	require.NoError(t, err)
 	_, err = db.ExecContext(ctx, string(statement))
 	require.NoError(t, err)
