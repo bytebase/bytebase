@@ -26,10 +26,15 @@ func (a *AST) ASTStartPosition() *storepb.Position {
 // ParseStatements splits the input with the dialect's splitter and parses each
 // statement into an omni AST node.
 //
-// A statement omni cannot parse keeps its position with a nil AST rather than
-// failing the whole script: GetStatementTypes reports it as
-// STATEMENT_TYPE_UNSPECIFIED, which approval rules treat as "not a known type"
-// instead of losing the classification of every other statement in the sheet.
+// A statement omni cannot parse carries an AST with a nil Node, so
+// GetStatementTypes reports it as STATEMENT_TYPE_UNSPECIFIED. It must not be
+// dropped: base.ExtractASTs keeps only non-nil ASTs, so a dropped statement
+// disappears from classification entirely, and a sheet mixing one statement
+// omni rejects with one it accepts would be classified from the accepted one
+// alone. An approval rule naming statement.sql_type would then never see the
+// rejected statement, which is the silent skip BYT-10131 reported.
+//
+// Empty statements still carry no AST; they are separators, not changes.
 func ParseStatements(statement string, cfg Config) ([]base.ParsedStatement, error) {
 	stmts, err := SplitSQL(statement, cfg)
 	if err != nil {
@@ -44,7 +49,10 @@ func ParseStatements(statement string, cfg Config) ([]base.ParsedStatement, erro
 		}
 		file, errs := parser.Parse(stmt.Text)
 		if len(errs) > 0 || file == nil || len(file.Stmts) == 0 {
-			result = append(result, base.ParsedStatement{Statement: stmt})
+			result = append(result, base.ParsedStatement{
+				Statement: stmt,
+				AST:       &AST{Text: stmt.Text, StartPosition: stmt.Start},
+			})
 			continue
 		}
 		for _, node := range file.Stmts {
@@ -78,12 +86,21 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 
 // statementType maps one omni GoogleSQL node to a storepb.StatementType.
 //
-// Deferral: statements GoogleSQL has and the enum does not report UNSPECIFIED,
-// which a rule excluding DML treats as "approve" and a rule selecting DML
-// treats as "skip". That is safe only because none of them write rows: ALTER
-// SCHEMA, row access policies, and generic entities (CAPACITY / RESERVATION /
-// ASSIGNMENT). Any new row-writing statement needs its own enum value before it
-// lands here, or a DML approval rule will silently miss it.
+// Deferral: every GoogleSQL statement the enum has no value for reports
+// UNSPECIFIED. A rule excluding DML then treats it as "approve", and a rule
+// selecting DML treats it as "skip", so the second direction is a gap, not a
+// safe default. The gap covers statements that do write rows: LOAD DATA INTO,
+// CLONE DATA INTO, and EXECUTE IMMEDIATE (whose text is only known at run
+// time, so no static value can be right). It also covers ALTER SCHEMA, row
+// access policies, generic entities (CAPACITY / RESERVATION / ASSIGNMENT),
+// scripting bodies, and the Spanner-only DDL set (change streams, roles,
+// GRANT / REVOKE, proto bundles), none of which write rows.
+//
+// An acceptance test against omni's analysis.ClassifySQL cannot catch the
+// row-writing members: omni also classifies them Unknown, so both sides agree
+// vacuously. Closing the gap needs the evaluator to treat an unclassified
+// statement as indeterminate rather than as a definite non-DML value; adding
+// more enum values cannot cover EXECUTE IMMEDIATE.
 func statementType(node ast.Node) storepb.StatementType {
 	switch n := node.(type) {
 	// DML.

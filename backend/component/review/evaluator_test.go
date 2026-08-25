@@ -16,6 +16,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/migrator"
+
 	// Registers the BigQuery parser handlers the same way backend/server
 	// ultimate.go does for the server binary; statementTypesFromParser resolves
 	// through that registry.

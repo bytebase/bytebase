@@ -12,13 +12,13 @@ import (
 // (the differential corpus and the leak pins drive the exact functions
 // production uses).
 type Handlers struct {
-	SplitSQL        base.SplitMultiSQLFunc
-	GetQuerySpan    base.GetQuerySpanFunc
-	ParseStatements base.ParseStatementsFunc
+	SplitSQL     base.SplitMultiSQLFunc
+	GetQuerySpan base.GetQuerySpanFunc
 }
 
-// Register registers the splitter, diagnose, and query-span handlers for one
-// GoogleSQL engine with the given dialect configuration.
+// Register registers the splitter, diagnose, query-span, statement-parser, and
+// statement-type handlers for one GoogleSQL engine with the given dialect
+// configuration.
 func Register(engine storepb.Engine, cfg Config) Handlers {
 	h := Handlers{
 		SplitSQL: func(statement string) ([]base.Statement, error) {
@@ -27,16 +27,15 @@ func Register(engine storepb.Engine, cfg Config) Handlers {
 		GetQuerySpan: func(ctx context.Context, gCtx base.GetQuerySpanContext, stmt base.Statement, database, _ string, _ bool) (*base.QuerySpan, error) {
 			return NewQuerySpanExtractor(cfg, database, gCtx).GetQuerySpan(ctx, stmt.Text)
 		},
-		ParseStatements: func(statement string) ([]base.ParsedStatement, error) {
-			return ParseStatements(statement, cfg)
-		},
 	}
 	base.RegisterSplitterFunc(engine, h.SplitSQL)
 	base.RegisterDiagnoseFunc(engine, func(_ context.Context, _ base.DiagnoseContext, statement string) ([]base.Diagnostic, error) {
 		return Diagnose(statement), nil
 	})
 	base.RegisterGetQuerySpan(engine, h.GetQuerySpan)
-	base.RegisterParseStatementsFunc(engine, h.ParseStatements)
+	base.RegisterParseStatementsFunc(engine, func(statement string) ([]base.ParsedStatement, error) {
+		return ParseStatements(statement, cfg)
+	})
 	base.RegisterGetStatementTypes(engine, GetStatementTypes)
 	return h
 }

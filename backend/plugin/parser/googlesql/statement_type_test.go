@@ -114,9 +114,20 @@ func TestParseStatementsMultiStatement(t *testing.T) {
 	}, got)
 }
 
-// An unparseable statement keeps its position with a nil AST rather than
-// failing the sheet, so the statements around it stay classified.
-func TestParseStatementsKeepsGoingPastAnUnparseableStatement(t *testing.T) {
+// An unparseable statement must survive as UNSPECIFIED rather than vanish.
+// base.ExtractASTs drops entries with a nil AST, so dropping it here would hide
+// the statement from approval rules entirely and reopen the BYT-10131 skip
+// through a parse gap.
+func TestParseStatementsReportsAnUnparseableStatement(t *testing.T) {
 	got := typesOf(t, "THIS IS NOT SQL;\nINSERT INTO users (id) VALUES (1);")
+	require.Equal(t, []storepb.StatementType{
+		storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED,
+		storepb.StatementType_INSERT,
+	}, got)
+}
+
+// Empty statements are separators, not changes, so they carry no AST.
+func TestParseStatementsSkipsEmptyStatements(t *testing.T) {
+	got := typesOf(t, "INSERT INTO users (id) VALUES (1);\n\n;\n")
 	require.Equal(t, []storepb.StatementType{storepb.StatementType_INSERT}, got)
 }
