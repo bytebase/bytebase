@@ -60,16 +60,20 @@ A fix scoped to literally the two audited lines leaves both of these open. All f
 - **G6** Admin-assisted recovery (self-hosted only) is untouched: an admin resetting a locked-out
   user's password or MFA must not need the credential being replaced
   ([`split-profile-self-service-vs-admin.md`](split-profile-self-service-vs-admin.md)).
-- **G7** All four state-changing methods revoke the account's other *refresh tokens* on success, same
+- **G7** All four state-changing methods revoke the account's other refresh tokens on success, same
   as password change already does, and — unlike password change today — atomically: the credential
   mutation and the revocation commit in one transaction, so a revocation failure fails the whole
   request instead of silently leaving refresh tokens live the way `UpdateUser`'s log-and-continue
-  (`user_service.go:436-438`) does today. Scoped precisely: this closes the ability to mint fresh
-  access tokens afterward (the 7-day exposure window), not the access tokens already issued — those
-  are self-contained JWTs `APIAuthInterceptor` accepts until they expire regardless of refresh-token
-  state, so a stolen one already in use keeps working for up to `access_token_duration` (default 1h)
-  after any of these four actions. That access-token caveat is unchanged from today's password change
-  and carried since Problem; the atomicity is not — it's tightened here, not merely copied.
+  (`user_service.go:436-438`) does today. *Every* refresh token, not just web sessions — `web_refresh_token`
+  and the OAuth2/MCP `oauth2_refresh_token` grants, plus outstanding `oauth2_authorization_code` rows
+  that could still mint one, since G7's own claim is about what a stolen credential can do afterward,
+  and an OAuth grant is exactly as persistent a credential as a web session is. Scoped precisely: this
+  closes the ability to mint fresh access tokens afterward (the 7-day exposure window for web, 30 days
+  for OAuth), not the access tokens already issued — those are self-contained JWTs `APIAuthInterceptor`
+  accepts until they expire regardless of refresh-token state, so a stolen one already in use keeps
+  working for up to `access_token_duration` (default 1h) after any of these four actions. That
+  access-token caveat is unchanged from today's password change and carried since Problem; the
+  atomicity, and the OAuth coverage, are not — both are tightened here, not merely copied.
 
 ### Non-goals
 
@@ -210,6 +214,21 @@ existing rows in all three — `oauth2_authorization_code`, `oauth2_refresh_toke
 `web_refresh_token` — not just the one this doc had already been discussing, each internally in
 primary-key order and the three tables themselves in one fixed order, before running the `UPDATE
 principal` that would otherwise cascade-lock them afterward.
+
+Finding all three tables here turned out to matter for more than lock ordering — [G7's revocation
+scope was too narrow](https://github.com/bytebase/bytebase/pull/21235): `DeleteWebRefreshTokensByUser`
+only ever touches `web_refresh_token`, so a stolen OAuth/MCP grant sails through every one of these
+four methods untouched. `handleRefreshTokenGrant` consumes an `oauth2_refresh_token` row and issues a
+replacement valid 30 days (`backend/api/oauth2/token.go:265-310,503-523`), and an unconsumed
+`oauth2_authorization_code` can still be exchanged for a fresh one — neither participates in G7's
+revocation at all today, so G7's own claim ("closes the ability to mint fresh access tokens
+afterward") was false for exactly the credential class this table-discovery exercise was already
+looking at. No bulk per-user delete exists yet for either table — `DeleteOAuth2RefreshTokensByUser`
+needs writing (the existing `DeleteOAuth2RefreshTokensByUserAndClient` is scoped to one client, not
+all of them) alongside an equivalent for `oauth2_authorization_code`. Revocation now locks and deletes
+existing rows in all three tables — the same set, the same fixed cross-table order, as the
+`UpdateEmail` fix above, so the two don't end up disagreeing with each other the way issuance and
+revocation almost did.
 
 Locking the account row for the mutation closes the credential-vs-credential race above, but not a
 [separate one](https://github.com/bytebase/bytebase/pull/21235) between revocation and session
@@ -382,7 +401,10 @@ already gives password and 2FA changes their own confirmations.
 `RegenerateRecoveryCodesView`'s existing shape barely changes: it already calls one RPC on mount
 (mint) and a second when the user confirms they've downloaded the codes (promote) — `credential` just
 moves onto the second call (`ConfirmRecoveryCodes`), where the download-confirmation button already
-lives. That field needs a way to reach for
+lives. `TwoFactorSetupPage` gains that same second call: it already shows recovery codes and gates
+advancing on a download confirmation (`:146-160,185-195,210-213`) — that confirmation now drives a real
+`ConfirmRecoveryCodes` call instead of being purely client-side, since `EnableMfa` no longer promotes
+recovery codes itself. That field needs a way to reach for
 `email_code` when the account has no password and no MFA yet — a "email me a code" link inline with the
 proof field, calling `RequestReauthCode`, rather than a fifth dialog. This is a breaking proto change;
 frontend and backend ship as one rollout on both Cloud and self-hosted (a single `go:embed`'d image,
@@ -462,9 +484,10 @@ service UserService {
 
   // Validates otp_code and pending_version against the temporary state
   // StartMfaEnrollment persisted for this account (re-read from the store
-  // by name, not carried in this request) and promotes it — the secret and
-  // whatever recovery codes are currently pending alongside it — to the
-  // caller's live MFA factor, replacing any existing one. Also rejects a
+  // by name, not carried in this request) and promotes *only* the secret to
+  // the caller's live MFA factor, replacing any existing one — recovery
+  // codes stay pending until a separate ConfirmRecoveryCodes call, same as
+  // an ordinary rotation (see Design → Verification). Also rejects a
   // pending set past its expiry (isMFATempSecretExpired, checked today both
   // before OTP verification and before promotion — both carry forward,
   // inside the locked transaction) — pending_version alone only detects a
@@ -794,21 +817,32 @@ echoed back and matched exactly — plays that role instead: it doesn't prove th
 (`CredentialProof` still does that), it proves the caller is confirming the *specific* set they
 actually received, so a set superseded by any later mint is rejected rather than silently promoted.
 
-That "fails closed" claim about `otp_code` turned out to only cover half of what `EnableMfa` promotes
-— [caught in the same review round](https://github.com/bytebase/bytebase/pull/21235):
+That "fails closed" claim about `otp_code` turned out to only cover half of what `EnableMfa` used to
+promote — [caught in the same review round](https://github.com/bytebase/bytebase/pull/21235):
 `StartMfaEnrollment` mints `TempOtpSecret` *and* `TempRecoveryCodes` together, and `EnableMfa`
-promotes both together, but only `otp_code` was bound to anything. A stolen-session caller with no
-credential could call the still-proof-free `RegenerateRecoveryCodes` mid-enrollment, overwriting
-`TempRecoveryCodes` with a set only they know, while `TempOtpSecret` stays untouched — so the real
-owner's `otp_code` still validates fine, `EnableMfa` still succeeds, and it promotes the attacker's
-recovery codes right alongside the owner's legitimate TOTP secret. `pending_version` closes this the
-same way: `StartMfaEnrollment` and `RegenerateRecoveryCodes` mint into the *same* underlying temp
-state and share one version (`MfaEnrollment.pending_version` and
-`RegenerateRecoveryCodesResponse.pending_version` are the same read), so an intervening call to either
-one — not just `RegenerateRecoveryCodes` — invalidates any outstanding `EnableMfa`/
-`ConfirmRecoveryCodes` request in flight, regardless of which of the two temp fields it actually
-touched. A verified-but-stale `otp_code` no longer implies "promote whatever's currently pending
-alongside it."
+originally promoted both together in one call, but only `otp_code` was bound to anything. A
+stolen-session caller with no credential could call the still-proof-free `RegenerateRecoveryCodes`
+mid-enrollment, overwriting `TempRecoveryCodes` with a set only they know, while `TempOtpSecret` stays
+untouched — so the real owner's `otp_code` still validates fine, `EnableMfa` still succeeds, and it
+would have promoted the attacker's recovery codes right alongside the owner's legitimate TOTP secret.
+
+A [later finding](https://github.com/bytebase/bytebase/pull/21235) made the fix simpler than patching
+that race in place: `EnableMfa` shouldn't have been promoting recovery codes at all. The existing
+enrollment UI validates the OTP, shows the recovery codes, and only promotes them after the user
+confirms downloading — the exact same receipt-confirmation shape `RegenerateRecoveryCodesView.tsx`
+already has for rotation, which is what motivated `ConfirmRecoveryCodes`'s own `pending_version` gate
+above. `EnableMfa` combining OTP validation with recovery-code promotion in one atomic call had the
+identical lost-response problem: if the response never arrives or the tab closes right after, the
+account has live MFA and recovery codes the owner never actually saw, no different from the rotation
+bug already fixed. So `EnableMfa` now promotes *only* the secret; the recovery codes it minted
+alongside stay pending until a separate `ConfirmRecoveryCodes{name, pending_version}` call — reusing
+the method already built for rotation rather than inventing a second confirmation mechanism, since
+enrollment and rotation turn out to be the same "confirm receipt before the old thing goes away"
+shape once the OTP-specific part is factored out. (For enrollment there's no "old thing" — the check
+`ConfirmRecoveryCodes` already has, requiring a live `OtpSecret`, is satisfied by the `EnableMfa` call
+that necessarily already ran.) `EnableMfaRequest.pending_version` still guards `StartMfaEnrollment`
+against being silently superseded before `EnableMfa` runs — general temp-state freshness, not
+specifically a recovery-codes protection anymore, since `EnableMfa` no longer touches them at all.
 
 `email_code` verifies against a new `REAUTH` purpose on `email_verification_code`
 (`storepb.EmailVerificationCodePurpose`), alongside the existing `LOGIN` and `PASSWORD_RESET` —
