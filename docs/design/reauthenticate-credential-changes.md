@@ -71,9 +71,14 @@ A fix scoped to literally the two audited lines leaves both of these open. All f
   closes the ability to mint fresh access tokens afterward (the 7-day exposure window for web, 30 days
   for OAuth), not the access tokens already issued — those are self-contained JWTs `APIAuthInterceptor`
   accepts until they expire regardless of refresh-token state, so a stolen one already in use keeps
-  working for up to `access_token_duration` (default 1h) after any of these four actions. That
-  access-token caveat is unchanged from today's password change and carried since Problem; the
-  atomicity, and the OAuth coverage, are not — both are tightened here, not merely copied.
+  working for up to `access_token_duration` (default 1h) after any of these four actions. For web
+  sessions that hour is a hard ceiling: the token answers requests and then is worthless, since `Login`/
+  `Refresh` both require the credential this design just changed. It is not an equal ceiling for
+  OAuth-enabled workspaces — see Verification — where the same still-valid hour can instead be spent
+  minting a brand-new, independently 30-day-lived grant; that gap is carried forward as a named
+  follow-up, not closed by this design (see Non-goals). The atomicity, and the revocation coverage
+  across all three OAuth/web token tables, are not carried forward unchanged — both are tightened here,
+  not merely copied.
 
 ### Non-goals
 
@@ -96,6 +101,23 @@ A fix scoped to literally the two audited lines leaves both of these open. All f
   MFA enrollment (see API → Messages, `email_code`'s own limits). Real, not closed by this design;
   needs its own integration with whatever OIDC/SAML flow already handles login, not a reuse of
   existing infrastructure the way `email_code` is.
+- **Blocking a still-valid access token from authorizing a brand-new OAuth grant.**
+  `handleAuthorizePost` (`backend/api/oauth2/authorize.go:126,168-171`) accepts any unexpired, correctly
+  signed access-token JWT as sufficient proof to mint a fresh `oauth2_authorization_code` — it never
+  checks the account's current credential state, only that the token verifies and the user still
+  exists. G7's revocation clears every *existing* OAuth grant, but a stolen access token still in its
+  ≤1h window can be used once, at `/authorize`, to mint a *new* one — and because refresh-token rotation
+  has no absolute cap (each successful refresh reissues 30 days out, `token.go:503-523`), that single
+  use converts a bounded hour into a credential that survives indefinitely, past every revocation this
+  design performs, for as long as the client keeps refreshing it. Real, and worse than the caveat this
+  design otherwise inherits from password change (see G7) — but closing it means checking JWTs against
+  state that changes after they're signed, which this design's `CredentialProof` mechanism doesn't
+  touch and self-contained JWTs don't carry today. The two directions worth a follow-up: reject
+  `/authorize` unless the presented token is fresher than the account's last credential-revocation event
+  (a generation counter in the JWT claims, checked at `parseSessionClaims`), or require the same
+  `CredentialProof` re-authentication this design already built, at consent time, before any new grant
+  is issued — closer to RFC 9470 step-up than to anything else in this doc, and scoped to one endpoint
+  rather than session infrastructure generally.
 
 ## Resource design
 
@@ -230,6 +252,17 @@ existing rows in all three tables — the same set, the same fixed cross-table o
 `UpdateEmail` fix above, so the two don't end up disagreeing with each other the way issuance and
 revocation almost did.
 
+Both new bulk-delete methods land on tables with [no index that serves
+them](https://github.com/bytebase/bytebase/pull/21235): `oauth2_authorization_code` and
+`oauth2_refresh_token` carry only their primary key and an `expires_at` index (`LATEST.sql:709-710`) —
+no index on `user_email` for either. `web_refresh_token`, by contrast, already has
+`idx_web_refresh_token_user_email` (`LATEST.sql:721`), which is exactly why
+`DeleteWebRefreshTokensByUser` was cheap to add in the first place; `DeleteOAuth2RefreshTokensByUser`
+and its authorization-code equivalent would be sequential scans without the same index, on tables an
+active MCP integration can populate continuously. Add `idx_oauth2_authorization_code_user_email` and
+`idx_oauth2_refresh_token_user_email` alongside the two new store methods, not as a follow-up — the
+methods only exist because of this design, so there's no pre-existing caller to stay compatible with.
+
 Locking the account row for the mutation closes the credential-vs-credential race above, but not a
 [separate one](https://github.com/bytebase/bytebase/pull/21235) between revocation and session
 issuance, which never acquires that lock today. First found against `Refresh` specifically (it
@@ -277,6 +310,36 @@ request started; revocation first means it changes the credential and clears all
 issuance acquires whatever lock it needs next and either re-authenticates against the *now-changed*
 credential or finds the token it means to consume already gone, and fails closed instead of silently
 minting a session that outlives the revocation meant to end it.
+
+That same root cause [reaches OAuth token exchange too](https://github.com/bytebase/bytebase/pull/21235),
+unfixed by any of the above: `handleAuthorizationCodeGrant` and `handleRefreshTokenGrant`
+(`backend/api/oauth2/token.go:129-145,271-286`) each consume their existing child row — an
+`oauth2_authorization_code` or `oauth2_refresh_token` — via an atomic single-use delete with no lock on
+the account row at all, then call `issueTokens` (`:490-523`) afterward to insert the replacement, on the
+opposite side of the same gap `Refresh`/`switchWorkspaceInternal` had before the fix above: the code or
+token was already consumed, and the new one already queued for insertion, by the time a concurrent
+revocation could have locked anything. `refuseIssuanceByCeiling`, called just before each consume
+(`:129,271`), guards a different thing — the workspace's MCP capability toggle, not a
+per-account credential race — and doesn't lock the principal row either, so it provides no fencing here.
+Same fix, same shape: lock the existing `oauth2_authorization_code`/`oauth2_refresh_token` row first,
+then the principal row, consume, and only then call `issueTokens` — inside the transaction, not around
+it — so a concurrent G7 revocation and a concurrent token exchange land in the same deterministic order
+this doc already established for web sessions, instead of a fifth, OAuth-shaped version of the same race
+surviving because the fix stopped one call site short.
+
+That fix closes the race around *exchanging* an existing grant, but not [a separate gap one step
+earlier](https://github.com/bytebase/bytebase/pull/21235): `handleAuthorizePost`
+(`authorize.go:103-171`) mints a brand-new `oauth2_authorization_code` — a grant that didn't exist
+before the request — off nothing but `resolveConsentingUser` (`:200-228`) verifying a bearer access
+token's signature and expiry and confirming the user row still exists (`:212,221-227`). No lock, because
+there's no existing row to lock: this is the `nextProjectID` shape, not the child-before-parent one, and
+correctly so. The problem isn't the lock ordering, it's what "the user still exists" is being asked to
+stand in for — proof the account's *credentials* haven't changed, which a still-valid JWT cannot carry,
+since it was signed before whatever credential change just happened and self-contained JWTs are exactly
+as valid the second after a revocation as the second before. This is the mechanism behind the G7 caveat
+correction above, and it's out of scope for the same reason named there (see Non-goals): closing it
+means teaching `/authorize` to check a credential-generation signal that doesn't exist in a JWT today,
+which is a change to token issuance across this system, not a fifth method alongside the other four.
 
 `email_code`'s eligibility is a server-side check, not a UI affordance — otherwise an attacker with a
 stolen session and separate mailbox access could use it against an *already*-MFA-protected account,
