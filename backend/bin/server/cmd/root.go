@@ -58,12 +58,13 @@ ________________________________________________________________________________
 var (
 	flags struct {
 		// Used for Bytebase command line config
-		port        int
-		externalURL string
-		dataDir     string
-		ha          bool
-		saas        bool
-		debug       bool
+		port                int
+		externalURL         string
+		dataDir             string
+		ha                  bool
+		saas                bool
+		metricsRemoteAccess bool
+		debug               bool
 		// output logs in json format
 		enableJSONLogging bool
 		// memoryProfileThreshold is the threshold of memory usage in bytes to trigger a memory profile.
@@ -106,6 +107,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&flags.dataDir, "data", defaultDataDir, "not recommended for production. Directory where Bytebase stores data if PG_URL is not specified. If relative path is supplied, then the path is relative to the directory where Bytebase is under")
 	rootCmd.PersistentFlags().BoolVar(&flags.ha, "ha", false, "run in HA mode")
 	rootCmd.PersistentFlags().BoolVar(&flags.saas, "saas", false, "run in SaaS mode")
+	rootCmd.PersistentFlags().BoolVar(&flags.metricsRemoteAccess, "metrics-remote-access", false, "allow remote clients to access /metrics; enable only when protected by a gateway, firewall, or NetworkPolicy")
 	rootCmd.PersistentFlags().BoolVar(&flags.debug, "debug", false, "enable debug level log")
 	rootCmd.PersistentFlags().BoolVar(&flags.enableJSONLogging, "enable-json-logging", false, "enable output logs in bytebase in json format")
 	rootCmd.PersistentFlags().Uint64Var(&flags.memoryProfileThreshold, "memory-profile-threshold", 0, "the threshold of memory usage in bytes to trigger a memory profile")

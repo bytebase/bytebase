@@ -66,6 +66,7 @@ func newMetricsTestEchoWithCollector(t *testing.T) (*echo.Echo, *store.Store, *e
 func scrapeMetrics(t *testing.T, e *echo.Echo, wantStatus int) string {
 	t.Helper()
 	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	req.RemoteAddr = "127.0.0.1:12345"
 	rec := httptest.NewRecorder()
 	e.ServeHTTP(rec, req)
 	require.Equal(t, wantStatus, rec.Code, rec.Body.String())
@@ -197,6 +198,7 @@ func TestMetricsEventsAreServerLocal(t *testing.T) {
 		wg.Go(func() {
 			metrics1.RecordRunnerRun(productmetrics.RunnerPlanCheck, productmetrics.ResultSuccess, time.Millisecond)
 			req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+			req.RemoteAddr = "127.0.0.1:12345"
 			rec := httptest.NewRecorder()
 			e1.ServeHTTP(rec, req)
 			if rec.Code != http.StatusOK {
@@ -212,6 +214,7 @@ func TestMetricsEventsAreServerLocal(t *testing.T) {
 
 	format := expfmt.NewFormat(expfmt.TypeProtoDelim)
 	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+	req.RemoteAddr = "127.0.0.1:12345"
 	req.Header.Set("Accept", string(format))
 	rec := httptest.NewRecorder()
 	e1.ServeHTTP(rec, req)
@@ -231,6 +234,90 @@ func TestMetricsEventsAreServerLocal(t *testing.T) {
 		}
 	}
 	require.True(t, foundNative)
+}
+
+func TestMetricsAccessHandler(t *testing.T) {
+	tests := []struct {
+		name         string
+		remoteAccess bool
+		remoteAddr   string
+		forwardedFor string
+		forwarded    string
+		wantStatus   int
+		wantCalls    int
+	}{
+		{
+			name:       "IPv4 loopback",
+			remoteAddr: "127.0.0.1:12345",
+			wantStatus: http.StatusNoContent,
+			wantCalls:  1,
+		},
+		{
+			name:       "IPv6 loopback",
+			remoteAddr: "[::1]:12345",
+			wantStatus: http.StatusNoContent,
+			wantCalls:  1,
+		},
+		{
+			name:       "IPv4-mapped IPv6 loopback",
+			remoteAddr: "[::ffff:127.0.0.1]:12345",
+			wantStatus: http.StatusNoContent,
+			wantCalls:  1,
+		},
+		{
+			name:       "remote IPv4",
+			remoteAddr: "192.0.2.1:12345",
+			wantStatus: http.StatusNotFound,
+		},
+		{
+			name:       "remote IPv6",
+			remoteAddr: "[2001:db8::1]:12345",
+			wantStatus: http.StatusNotFound,
+		},
+		{
+			name:       "empty remote address",
+			wantStatus: http.StatusNotFound,
+		},
+		{
+			name:       "malformed remote address",
+			remoteAddr: "not-an-address",
+			wantStatus: http.StatusNotFound,
+		},
+		{
+			name:         "spoofed forwarding headers",
+			remoteAddr:   "192.0.2.1:12345",
+			forwardedFor: "127.0.0.1",
+			forwarded:    "for=127.0.0.1",
+			wantStatus:   http.StatusNotFound,
+		},
+		{
+			name:         "remote access bypasses peer parsing",
+			remoteAccess: true,
+			remoteAddr:   "not-an-address",
+			wantStatus:   http.StatusNoContent,
+			wantCalls:    1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			calls := 0
+			handler := metricsAccessHandler(tt.remoteAccess, http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+				calls++
+				w.WriteHeader(http.StatusNoContent)
+			}))
+			req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+			req.RemoteAddr = tt.remoteAddr
+			req.Header.Set("X-Forwarded-For", tt.forwardedFor)
+			req.Header.Set("Forwarded", tt.forwarded)
+			rec := httptest.NewRecorder()
+
+			handler.ServeHTTP(rec, req)
+
+			require.Equal(t, tt.wantStatus, rec.Code)
+			require.Equal(t, tt.wantCalls, calls, "collection handler calls")
+		})
+	}
 }
 
 func metricTextLine(body, name string) string {

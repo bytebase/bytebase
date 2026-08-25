@@ -21,6 +21,8 @@ type Profile struct {
 	Port int
 	// When we are running in SaaS mode, some features are not allowed to edit by users.
 	SaaS bool
+	// MetricsRemoteAccess allows non-loopback clients to scrape /metrics.
+	MetricsRemoteAccess bool
 	// Stripe configuration for SaaS subscription purchase. Only used when SaaS is true.
 	StripeAPISecret     string
 	StripeWebhookSecret string

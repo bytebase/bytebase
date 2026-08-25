@@ -72,42 +72,34 @@ func TestSecurityHeadersMiddleware_SaaSAllowsPostHogHosts(t *testing.T) {
 	}
 }
 
-func TestMetricsRouteDisabledInSaaS(t *testing.T) {
+func TestMetricsRouteSaaSParity(t *testing.T) {
 	tests := []struct {
-		name       string
-		saas       bool
-		wantStatus int
+		name string
+		saas bool
 	}{
 		{
-			name:       "self-host exposes metrics",
-			saas:       false,
-			wantStatus: http.StatusOK,
+			name: "self-host exposes metrics",
+			saas: false,
 		},
 		{
-			name:       "SaaS does not expose metrics",
-			saas:       true,
-			wantStatus: http.StatusNotFound,
+			name: "SaaS exposes metrics",
+			saas: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			e := echo.New()
-			if tt.saas {
-				registerMetricsRoute(e, &config.Profile{SaaS: true}, nil)
-			} else {
-				// Self-host: use a real store and license service so the
-				// product-level license gauges are registered and collected.
-				_, st, licenseService := newMetricsTestEcho(t)
-				registerMetricsRoute(e, &config.Profile{SaaS: false}, productmetrics.New(st, licenseService))
-			}
+			_, st, licenseService := newMetricsTestEcho(t)
+			registerMetricsRoute(e, &config.Profile{SaaS: tt.saas}, productmetrics.New(st, licenseService))
 
 			req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
+			req.RemoteAddr = "127.0.0.1:12345"
 			rec := httptest.NewRecorder()
 			e.ServeHTTP(rec, req)
 
-			if rec.Code != tt.wantStatus {
-				t.Fatalf("GET /metrics status = %d, want %d", rec.Code, tt.wantStatus)
+			if rec.Code != http.StatusOK {
+				t.Fatalf("GET /metrics status = %d, want %d", rec.Code, http.StatusOK)
 			}
 		})
 	}

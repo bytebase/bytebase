@@ -16,6 +16,7 @@ func getBaseProfile(dataDir string) *config.Profile {
 		DatastorePort:              flags.port + 2, // Using flags.port + 2 as our datastore port.
 		HA:                         flags.ha,
 		SaaS:                       flags.saas,
+		MetricsRemoteAccess:        flags.metricsRemoteAccess,
 		Debug:                      flags.debug,
 		IsDocker:                   isDocker(),
 		DataDir:                    dataDir,

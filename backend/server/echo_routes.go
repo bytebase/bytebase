@@ -95,10 +95,6 @@ func configureEchoRouters(
 }
 
 func registerMetricsRoute(e *echo.Echo, profile *config.Profile, productMetrics *productmetrics.ProductMetrics) {
-	if profile.SaaS {
-		return
-	}
-
 	// Prometheus metrics - use custom registry to avoid duplicate registration in tests
 	registry := prometheus.NewRegistry()
 	e.Use(echoprometheus.NewMiddlewareWithConfig(echoprometheus.MiddlewareConfig{
@@ -123,7 +119,7 @@ func registerMetricsRoute(e *echo.Echo, profile *config.Profile, productMetrics 
 	// for self-instrumentation; pass the Gatherers fold as the gather
 	// source. Both observability surfaces preserved.
 	registry.MustRegister(productMetrics)
-	e.GET("/metrics", echo.WrapHandler(newMetricsHandler(registry)))
+	e.GET("/metrics", echo.WrapHandler(metricsAccessHandler(profile.MetricsRemoteAccess, newMetricsHandler(registry))))
 }
 
 func recoverMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
