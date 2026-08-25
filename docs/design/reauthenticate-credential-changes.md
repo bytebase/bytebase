@@ -439,6 +439,36 @@ callers, `ResetPassword` and `UpdateUser`'s admin-assisted password path. The la
 enumerated version missed, and each was missed the same way — it had already been given the ordered-lock
 fix in an earlier round, which reads like the whole treatment but is only half of it.
 
+**One account fence is not enough**, though — [the rule above is right and its
+single scope is wrong](https://github.com/bytebase/bytebase/pull/21235). OAuth grants hang off two
+parents, and client deletion is a scan-then-write over the *client's* children with the identical
+absent-child gap: `DeleteOAuth2Client`/`DeleteExpiredOAuth2Clients` scan the client's existing grants,
+then `DELETE FROM oauth2_client` cascades and re-derives locks over whatever grants exist at that moment
+— including an authorization code `/authorize` committed in between. A token exchange holding that unseen
+code and waiting on the client row deadlocks against the deletion holding the client and cascade-waiting
+for the code. The account fence cannot close it, and not just because client deletion wasn't listed: a
+client's grants span *many* accounts, and `DeleteExpiredOAuth2Clients` spans many clients, so no
+principal-keyed lock serializes a deletion against a mint for a different account on the same client —
+including a client that had no grants at all when the scan ran.
+
+So there are two fences, one per parent: the account fence keyed on `principal.id`, and a **client fence**
+keyed on `oauth2_client.client_id`. A transaction takes whichever the rule implicates — and a transaction
+touching grants implicates both, since every grant row has both parents. `handleAuthorizePost` and both
+exchange paths take both; `handleReauthorize` takes both (it deletes by user *and* client);
+`DeleteOAuth2Client`/`DeleteExpiredOAuth2Clients` take the client fence, before their own scan; the
+web-session-only paths (`Login`/`Signup`, `Refresh`, `switchWorkspaceInternal`, `ResetPassword`,
+`UpdateEmail`, the credential-mutating four) take the account fence, and also the client fence when their
+revocation reaches OAuth grants — which G7's does, so in practice all four credential-mutating methods
+take both.
+
+Two fences means an ordering problem *between the fences*, which is the same failure this whole section
+keeps rediscovering one level up, so it gets a fixed order rather than being left to chance: **account
+fence first, then client fence**, always, by every path that takes both. For the bulk paths, the same
+rule that governs rows governs fences — `DeleteExpiredOAuth2Clients` takes its client fences in
+`client_id` order, and a revocation spanning several of an account's clients takes those in `client_id`
+order too, after the account fence. Arbitrary but fixed is the whole requirement; picking account-first
+just matches the order the rest of this doc already reads in.
+
 `UpdateEmail` earns membership without deleting anything: it scans and locks the child rows that exist,
 then runs `UPDATE principal SET email = ?`, whose `ON UPDATE CASCADE` re-derives and locks whatever child
 rows exist *at that moment*, including any a login committed in between. A third-party `Refresh` holding
@@ -459,11 +489,16 @@ With the fence held from the top by all of them, `Login` can't commit a new sess
 email change, or a reset is anywhere between its scan and its commit, so there's no window left for a
 third party to grab a row the scanning side hasn't accounted for, and no window for a row to slip past a
 delete entirely; and none of the scanning paths can start while a new session or grant is mid-insert, so
-none undercounts what it's about to delete or rewrite. Needs a deterministic real-PostgreSQL regression
-test for this three-transaction interleaving across the variants that differ in *kind*, not merely in
-caller — a deleting one (revocation), the cascading one (`UpdateEmail`), and one whose failure mode is
-survival-not-deadlock (`handleReauthorize` or `ResetPassword`) — not just the two-party cases already
-required elsewhere in this doc.
+none undercounts what it's about to delete or rewrite — and with the client fence, the same holds for a
+client's grants across every account that has one, which the account fence alone could never cover. Needs
+a deterministic real-PostgreSQL regression test for this three-transaction interleaving across the
+variants that differ in *kind*, not merely in caller — a deleting one (revocation), the cascading one
+(`UpdateEmail`), one whose failure mode is survival-not-deadlock (`handleReauthorize` or `ResetPassword`),
+and one that turns on the client fence specifically: a client deletion racing an `/authorize` mint for an
+account the deletion never touches, which no account-keyed fence can serialize. Plus one for the fence
+order itself — a path taking both fences against a path taking them in the opposite order is precisely
+the deadlock the fixed order exists to prevent, so the test has to prove the order is actually held, not
+just that each fence works alone.
 
 Holding that lock through the rest of the flow surfaces [one more standalone write in the same
 sequence](https://github.com/bytebase/bytebase/pull/21235): `finalizeLogin` (shared by `Login`/`Signup`,
@@ -540,7 +575,9 @@ deadlock surface, so both need the same correction: lock every existing
 `oauth2_authorization_code`/`oauth2_refresh_token` row referencing the client (in primary-key order) —
 and for the bulk expiry path, every such row across every client being deleted, clients themselves also
 in primary-key order — before locking and deleting the client rows, matching the child-before-parent
-rule this doc already applies everywhere else.
+rule this doc already applies everywhere else. Both also take the client fence before that scan (see the
+fence rule above): the ordering fixes rows that exist when they look, and only the fence stops
+`/authorize` from committing one they never saw.
 
 Naming that correction "child-before-parent" is necessary but
 [not sufficient on its own](https://github.com/bytebase/bytebase/pull/21235): it fixes ordering between
@@ -1266,7 +1303,11 @@ message ConfirmRecoveryCodesRequest {
   // never arrives. Left unset for an ordinary rotation, where EnableMfa
   // already promoted the secret and this call only confirms recovery-code
   // receipt.
-  string otp_code = 4 [(google.api.field_behavior) = OPTIONAL];
+  string otp_code = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (bytebase.v1.audit_behavior) = SENSITIVE,
+    (buf.validate.field).string.max_len = 64
+  ];
 }
 
 message RegenerateRecoveryCodesResponse {
