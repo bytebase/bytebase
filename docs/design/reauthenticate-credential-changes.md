@@ -486,6 +486,23 @@ revocation racing a client deletion for a user/client pair holding both an autho
 refresh-token row must resolve the same way, not deadlock on the two child tables disagreeing about which
 comes first.
 
+Naming `DeleteExpiredOAuth2Clients` doesn't cover the token tables' own expiry cleaners —
+[caught in a later round](https://github.com/bytebase/bytebase/pull/21235):
+`DeleteExpiredOAuth2AuthorizationCodes`, `DeleteExpiredOAuth2RefreshTokens`, and
+`DeleteExpiredWebRefreshTokens` (`backend/runner/cleaner/data_cleaner.go:137-160`) each run today as a
+single unordered bulk `DELETE ... WHERE expires_at < ?` — harmless before this design, since nothing else
+ever locked more than one row across these tables at a time. Now that revocation, `UpdateEmail`, and
+client deletion all lock multiple existing rows per table in primary-key order, an unordered bulk delete
+overlapping any of them on two or more expired rows can lock those same rows in whatever order its own
+scan (an `expires_at` index, most plausibly) happens to visit them — the opposite order from the other
+side often enough to deadlock, for exactly the reason every other multi-row fix in this doc locks in
+primary-key order in the first place. These three cleaners predate this doc and are otherwise untouched
+by it, but so were `DeleteOAuth2Client`/`DeleteExpiredOAuth2Clients` before the finding above — same root
+cause, a previously-harmless bulk operation turned live by this design's own new locking. Fixed the same
+way: each cleaner locks its matching expired rows in primary-key order before deleting, folding them into
+the same deterministic-ordering contract and its two-direction regression tests as every other path that
+touches these tables.
+
 That fix closes the race around *exchanging* an existing grant, but not [a separate gap one step
 earlier](https://github.com/bytebase/bytebase/pull/21235): `handleAuthorizePost`
 (`authorize.go:103-171`) mints a brand-new `oauth2_authorization_code` — a grant that didn't exist
