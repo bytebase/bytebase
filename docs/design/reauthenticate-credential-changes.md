@@ -603,6 +603,33 @@ already-open transaction, built from the locked, re-read profile rather than the
 either land before the same commit the session insert does or lose to a concurrent credential change the
 same way the rest of this sequence now does.
 
+That is now the third separate finding of one pattern — `challengeRecoveryCode`, then these profile
+writes, then [SSO auto-undelete](https://github.com/bytebase/bytebase/pull/21235) — so it is worth stating
+as a rule and closing by audit rather than waiting for a fourth. The rule: **once a flow holds the
+principal lock, every write to that principal inside it must go through the enclosing transaction.**
+`Store.UpdateUser` opens its own (`principal.go:465`), so any call to it from inside a fenced flow is a
+transaction waiting on a lock its own caller holds — a hang until `statement_timeout`, not an error, and
+not something a retry helps.
+
+The new instance: `getOrCreateUserWithIDP` reactivates a deactivated account on SSO login via a
+standalone `Store.UpdateUser` (`auth_service_idp.go:179-186`), and that call *is* part of SSO's
+authentication step, which this design now runs under the principal lock — so SSO login for a previously
+deactivated user would stop working entirely. It moves into the enclosing transaction like the others.
+
+Auditing every `Store.UpdateUser`/`CreateUser`/`UpdateUserEmail` call site under `backend/api/` rather
+than pattern-matching on the ones already found, the complete set reachable from a lock-holding flow is:
+`challengeRecoveryCode` (`auth_service.go:606`), `switchWorkspaceInternal` (`:971`) and `finalizeLogin`
+(`:1045`), the three account-creation paths (`auth_service.go:345`, `auth_service_idp.go:129`,
+`auth_service_email_code.go:267`), `ResetPassword`'s own password write
+(`auth_service_email_code.go:116`), the SSO undelete (`auth_service_idp.go:184`), `UpdateUser`/
+`UpdateEmail` themselves (`user_service.go:487,703`), and the two SCIM profile writers
+(`webhook.go:433,942`). All are addressed above. The remaining call sites — admin
+`DeleteUser`/`UndeleteUser` (`user_service.go:558,637`) and the SCIM create/delete pair
+(`webhook.go:141,270`) — are lifecycle operations that never run inside a login or credential flow, so
+they cannot self-deadlock; they take the account fence under the rule above, and admin deactivation's
+separate problem (it revokes no sessions at all today) is the one named in the account-creation
+paragraph.
+
 That same root cause [reaches OAuth token exchange too](https://github.com/bytebase/bytebase/pull/21235),
 unfixed by any of the above: `handleAuthorizationCodeGrant` and `handleRefreshTokenGrant`
 (`backend/api/oauth2/token.go:129-145,271-286`) each consume their existing child row — an
