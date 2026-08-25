@@ -172,6 +172,18 @@ replaced. `CreateUser`/`Signup` have no prior credential to prove. `ResetPasswor
 already has its own proof channel — mailbox possession — including for SSO accounts whose
 `PasswordHash` they never saw.
 
+Ownership is enforced explicitly, not assumed. All seven methods are `auth_method = CUSTOM`, which
+means the ACL interceptor's automatic IAM check is skipped entirely (`doIAMPermissionCheck` returns
+true unconditionally for non-IAM methods, `acl.go:252-253`) — the same gap T11 in the original audit
+flagged for 15 other CUSTOM RPCs whose declared `permission` is never enforced. `DisableMfa` is the
+one method here with a real admin path, gated on `bb.users.update`; every other method —
+`ChangePassword`, `StartMfaEnrollment`, `EnableMfa`, `RegenerateRecoveryCodes`, `ConfirmRecoveryCodes`,
+`RequestReauthCode` — must independently reject any `name` other than the caller's own, since nothing
+upstream of the handler does it for them. Without that check explicitly stated per method, a future
+implementation reading only the proto could plausibly ship one of them missing it — silently letting
+any authenticated workspace member read another account's freshly-minted MFA secret, or overwrite
+their pending recovery codes.
+
 **Cloud vs. self-hosted.** Cloud users never know their own local password — email-code signup and
 SSO both assign a random, unseen one (`auth_service_email_code.go:252-258`,
 `auth_service_idp.go:119-127`), and `Login` itself refuses the password path via
@@ -227,7 +239,8 @@ service UserService {
   // Sends a one-time code to the caller's own registered email, usable as
   // CredentialProof.email_code. The one channel that works when neither a
   // usable password nor an existing MFA factor exists yet — Cloud, SSO, or
-  // first-time MFA enrollment anywhere.
+  // first-time MFA enrollment anywhere. name must be the caller's own — see
+  // What's exempt.
   rpc RequestReauthCode(RequestReauthCodeRequest) returns (google.protobuf.Empty) {
     option (google.api.http) = {
       post: "/v1/{name=users/*}:requestReauthCode"
@@ -235,6 +248,7 @@ service UserService {
     };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = RESETS_CREDENTIAL;
   }
@@ -259,7 +273,7 @@ service UserService {
   // Mints a new TOTP secret and recovery codes, persists them as the
   // account's temporary MFA state (store-level only — see API → Messages),
   // and returns them for the caller to confirm. Not yet live, so no proof
-  // is required here.
+  // is required here. name must be the caller's own — see What's exempt.
   rpc StartMfaEnrollment(StartMfaEnrollmentRequest) returns (MfaEnrollment) {
     option (google.api.http) = {
       post: "/v1/{name=users/*}:startMfaEnrollment"
@@ -267,6 +281,7 @@ service UserService {
     };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
   }
@@ -274,7 +289,8 @@ service UserService {
   // Validates otp_code against the temporary secret StartMfaEnrollment
   // persisted for this account (re-read from the store by name, not carried
   // in this request) and promotes it to the caller's live MFA factor,
-  // replacing any existing one.
+  // replacing any existing one. name must be the caller's own — no admin
+  // path, same reason as ChangePassword.
   rpc EnableMfa(EnableMfaRequest) returns (User) {
     option (google.api.http) = {
       post: "/v1/{name=users/*}:enableMfa"
@@ -304,8 +320,9 @@ service UserService {
 
   // Mints a new set of recovery codes, persisted as the account's pending
   // set (storepb.MFAConfig.TempRecoveryCodes — reused, not new) alongside
-  // the still-live old ones, and returns them for the caller to save. Not
-  // yet live, so no proof is required here, same as StartMfaEnrollment.
+  // the still-live old ones, and returns them, with a version token, for
+  // the caller to save. Not yet live, so no proof is required here, same as
+  // StartMfaEnrollment. name must be the caller's own — no admin path.
   rpc RegenerateRecoveryCodes(RegenerateRecoveryCodesRequest) returns (RegenerateRecoveryCodesResponse) {
     option (google.api.http) = {
       post: "/v1/{name=users/*}:regenerateRecoveryCodes"
@@ -313,15 +330,19 @@ service UserService {
     };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
   }
 
   // Promotes the pending set RegenerateRecoveryCodes minted to live,
-  // invalidating the old set. The caller's acknowledgment that they saved
-  // the new codes, not a proof step — but promotion is exactly the moment
-  // the old codes stop working, so it's gated like every other promotion
-  // in this design.
+  // invalidating the old set — but only the *exact* pending set named by
+  // pending_version; a mismatch (superseded by a later RegenerateRecoveryCodes
+  // call, own or someone else's) is rejected rather than silently promoting
+  // whatever is currently pending. The caller's acknowledgment that they
+  // saved the new codes, not a proof step on its own — but promotion is
+  // exactly the moment the old codes stop working, so it's gated like every
+  // other promotion in this design. name must be the caller's own.
   rpc ConfirmRecoveryCodes(ConfirmRecoveryCodesRequest) returns (User) {
     option (google.api.http) = {
       post: "/v1/{name=users/*}:confirmRecoveryCodes"
@@ -501,6 +522,13 @@ message ConfirmRecoveryCodesRequest {
     (google.api.resource_reference) = {type: "bytebase.com/User"}
   ];
   CredentialProof credential = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Echoed from RegenerateRecoveryCodesResponse.pending_version. Must match
+  // the account's current pending set exactly, or this is rejected — a
+  // mismatch means a later RegenerateRecoveryCodes call (the caller's own,
+  // in a second tab, or someone else's) has already superseded the set this
+  // request thinks it's confirming.
+  google.protobuf.Timestamp pending_version = 3 [(google.api.field_behavior) = REQUIRED];
 }
 
 message RegenerateRecoveryCodesResponse {
@@ -508,6 +536,10 @@ message RegenerateRecoveryCodesResponse {
     (google.api.field_behavior) = OUTPUT_ONLY,
     (bytebase.v1.audit_behavior) = SENSITIVE
   ];
+
+  // Identifies this specific pending set — the store's own mint timestamp
+  // for it, not a newly invented token. Pass back to ConfirmRecoveryCodes.
+  google.protobuf.Timestamp pending_version = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 ```
 
@@ -528,6 +560,19 @@ response, a closed tab, or a crash between mint and promote can't leave someone 
 saved recovery codes. Splitting the RPC preserves that property structurally: the old codes stay valid
 through `RegenerateRecoveryCodes` (mint) and only stop working once `ConfirmRecoveryCodes` runs, so a
 client that never gets a chance to call `ConfirmRecoveryCodes` — for any reason — has lost nothing.
+
+That split alone still had a hole, caught the same review pass: since `RegenerateRecoveryCodes` needs
+no proof (matching `StartMfaEnrollment`), and `TempRecoveryCodes` is one mutable slot per account, a
+stolen-session caller with no credential could mint *after* the real owner, overwriting the pending
+set with one only the attacker knows — the owner's own, correctly-proofed `ConfirmRecoveryCodes` call
+would then promote the attacker's set, not theirs, without the attacker ever needing to produce a
+credential at all. TOTP enrollment doesn't have this hole: `EnableMfa`'s `otp_code` is itself proof of
+which secret the caller actually has, so an overwritten `TempOtpSecret` just makes the legitimate
+call fail closed (wrong code) rather than silently promote the wrong thing. Recovery codes have
+nothing equivalent to check computation against, so `pending_version` — the mint's own timestamp,
+echoed back and matched exactly — plays that role instead: it doesn't prove the caller's identity
+(`CredentialProof` still does that), it proves the caller is confirming the *specific* set they
+actually received, so a set superseded by any later mint is rejected rather than silently promoted.
 
 `email_code` verifies against a new `REAUTH` purpose on `email_verification_code`
 (`storepb.EmailVerificationCodePurpose`), alongside the existing `LOGIN` and `PASSWORD_RESET` —
