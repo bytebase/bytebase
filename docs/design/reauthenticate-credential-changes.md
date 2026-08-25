@@ -115,7 +115,18 @@ for the admin-assisted path, where G6 means no proof is needed anyway.
 
 **Verification.** `ChangePassword`, `EnableMfa`, `DisableMfa`, and `ConfirmRecoveryCodes` each take
 a `CredentialProof` — the current password, a live OTP or recovery code where the account has MFA, or
-an emailed code where neither exists — and check it before touching anything: claim the matching slot
+an emailed code where neither exists — and check it before touching anything. "Check, then mutate"
+has to be one transaction with the account row locked (`SELECT ... FOR UPDATE`) from before the check
+to after the write, per this repo's own [row-lock ordering](../../backend/store/README.md#transaction-row-lock-ordering)
+convention — not a read-verify-then-later-write sequence against a row nothing is holding. Without the
+lock, two concurrent calls against the *same* still-current credential (an attacker who separately
+obtained it, and the legitimate owner racing to rotate away from it) can both pass verification before
+either commits; whichever write lands second overwrites the first regardless of who verified when —
+so the owner's own password change could be silently undone by a request the attacker verified
+*before* the owner's committed, using a credential that's supposed to already be dead by the time the
+attacker's write lands. The lock removes the window: only one verify-and-write per account can be in
+flight at a time, so a credential that stopped being current mid-flight fails the re-check the lock
+forces before the write, not after. Inside that same locked transaction: claim the matching slot
 (`PASSWORD`, `MFA`, or `EMAIL_CODE`) in the T9 `login_attempt` table for the account
 ([`login-attempt-lockout.md`](login-attempt-lockout.md)), verify with `bcrypt.CompareHashAndPassword`,
 the existing `challengeMFACode`/`challengeRecoveryCode` helpers, or a lookup against
@@ -142,18 +153,28 @@ keeps working until it expires regardless (see G7).
 stolen session and separate mailbox access could use it against an *already*-MFA-protected account,
 weaker than the factor actually protecting it (a
 [Codex finding](https://github.com/bytebase/bytebase/pull/21235) against an earlier draft that
-accepted it unconditionally on all four methods). The rule — `restriction.disallow_password_signin`
-true and no live `MFAConfig.OtpSecret` — is checked once, in `CredentialProof` verification itself,
-not per-method, so it can't be forgotten on a future caller of the same helper. `ResetPassword` never
-had this problem: it only ever touches the password, MFA stays live regardless of how it's reached.
+accepted it unconditionally on all four methods). The rule — `Profile.LastChangePasswordTime` unset
+and no live `MFAConfig.OtpSecret` — is checked once, in `CredentialProof` verification itself, not
+per-method, so it can't be forgotten on a future caller of the same helper. Account-level rather than
+`restriction.disallow_password_signin` (this doc's own earlier version, also
+[caught by Codex](https://github.com/bytebase/bytebase/pull/21235) as too coarse: a self-hosted
+workspace can allow both SSO and local password login at once, and the workspace-wide flag can't see
+that one specific SSO-provisioned user in that mix still has no usable password). `ResetPassword`
+never had this problem: it only ever touches the password, MFA stays live regardless of how it's
+reached.
 
-Two workspace-policy checks `UpdateUser` enforces today have to move with their fields, not just the
-credential proof: `ChangePassword` still calls `s.validatePassword` (`user_service.go:282-295`) on
-`new_password` before hashing — the proof gates *who* can set it, not *what's* an acceptable value,
-and workspace password-complexity policy is orthogonal to this doc's threat model. `DisableMfa` still
-checks `Require_2Fa` (`user_service.go:399-408`): a non-admin caller, self-service or admin-assisted,
-cannot turn MFA off for anyone while the workspace requires it — only a workspace admin can, unchanged
-from today. Both are existing behavior this design must carry forward, not decisions it makes new.
+Three checks `UpdateUser` enforces today have to move with their fields, not just the credential
+proof — existing behavior this design must carry forward, not decisions it makes new. `ChangePassword`
+still calls `s.validatePassword` (`user_service.go:282-295`) on `new_password` before hashing — the
+proof gates *who* can set it, not *what's* an acceptable value, and workspace password-complexity
+policy is orthogonal to this doc's threat model. It also still rejects `new_password` matching the
+*current* password (`bcrypt.CompareHashAndPassword`, `user_service.go:423-426`) — not just a UX nicety:
+`Store.UpdateUser` bumps `Profile.LastChangePasswordTime` on any write to `PasswordHash`
+(`principal.go:429-433`), whether or not the resulting hash represents an actual change, so skipping
+this check would let a workspace's password-rotation deadline be reset by "changing" to the same
+password. `DisableMfa` still checks `Require_2Fa` (`user_service.go:399-408`): a non-admin caller,
+self-service or admin-assisted, cannot turn MFA off for anyone while the workspace requires it — only
+a workspace admin can, unchanged from today.
 
 Sharing T9's lockout buckets has one accepted side effect worth naming, not just inheriting silently:
 a `PASSWORD` or `MFA` claim from a failed `CredentialProof` counts against the same budget a login
@@ -404,13 +425,19 @@ message CredentialProof {
     ];
 
     // A one-time code from RequestReauthCode, sent to the account's own
-    // registered email. Valid only when the workspace disallows password
-    // sign-in AND the account has no live MFA factor — bootstrap proof for
-    // an account with nothing else yet, never a substitute for a factor
-    // that already exists. The handler checks this eligibility itself; it
-    // is not just a frontend choice of which field to show. That condition
-    // is never true for DisableMfa or ConfirmRecoveryCodes (both imply live
-    // MFA), so email_code is only ever actually usable on ChangePassword or
+    // registered email. Valid only when this account's own
+    // Profile.LastChangePasswordTime is unset (no password was ever
+    // legitimately written for it — see Design → Cloud vs. self-hosted) AND
+    // it has no live MFA factor — bootstrap proof for an account with
+    // nothing else yet, never a substitute for a factor that already
+    // exists. Account-level, not the workspace-wide disallow_password_signin
+    // restriction: a self-hosted workspace can run SSO and local password
+    // login side by side, and an individual SSO-provisioned user in that mix
+    // still has no usable password even though the workspace itself allows
+    // one. The handler checks this eligibility itself; it is not just a
+    // frontend choice of which field to show. The condition is never true
+    // for DisableMfa or ConfirmRecoveryCodes (both imply live MFA), so
+    // email_code is only ever actually usable on ChangePassword or
     // first-time EnableMfa.
     string email_code = 4 [
       (bytebase.v1.audit_behavior) = SENSITIVE,
@@ -622,8 +649,9 @@ storage. Without it, `EnableMfaRequest.credential` had exactly the failure mode
 or SSO account has no password, and first-time enrollment has no existing OTP or recovery code either,
 so all three original options were simultaneously unsatisfiable for precisely the accounts
 `guard.ts:265-275` force-redirects into MFA setup under a `require_2fa` policy — a hard lockout, not
-an edge case. `email_code` closes it for every Cloud account, and for self-hosted deployments with
-mail configured, by giving them a proof they can always produce.
+an edge case. `email_code` closes it for every Cloud account, and for any self-hosted account with no
+password of its own — including a mixed-mode SSO user in a workspace that still allows local password
+login generally — with mail configured, by giving them a proof they can always produce.
 
 It doesn't close it for every account, though — a second
 [Codex finding](https://github.com/bytebase/bytebase/pull/21235) on the same review caught the
