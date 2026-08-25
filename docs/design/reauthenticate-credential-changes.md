@@ -132,6 +132,23 @@ need the same call added (G7). Precisely: this forces re-login, including the ca
 session, the next time a refresh token would have minted a new access token — it doesn't revoke an
 access token already in someone's hands, which keeps working until it expires regardless (see G7).
 
+`email_code`'s eligibility is a server-side check, not a UI affordance — otherwise an attacker with a
+stolen session and separate mailbox access could use it against an *already*-MFA-protected account,
+weaker than the factor actually protecting it (a
+[Codex finding](https://github.com/bytebase/bytebase/pull/21235) against an earlier draft that
+accepted it unconditionally on all four methods). The rule — `restriction.disallow_password_signin`
+true and no live `MFAConfig.OtpSecret` — is checked once, in `CredentialProof` verification itself,
+not per-method, so it can't be forgotten on a future caller of the same helper. `ResetPassword` never
+had this problem: it only ever touches the password, MFA stays live regardless of how it's reached.
+
+Two workspace-policy checks `UpdateUser` enforces today have to move with their fields, not just the
+credential proof: `ChangePassword` still calls `s.validatePassword` (`user_service.go:282-295`) on
+`new_password` before hashing — the proof gates *who* can set it, not *what's* an acceptable value,
+and workspace password-complexity policy is orthogonal to this doc's threat model. `DisableMfa` still
+checks `Require_2Fa` (`user_service.go:399-408`): a non-admin caller, self-service or admin-assisted,
+cannot turn MFA off for anyone while the workspace requires it — only a workspace admin can, unchanged
+from today. Both are existing behavior this design must carry forward, not decisions it makes new.
+
 Sharing T9's lockout buckets has one accepted side effect worth naming, not just inheriting silently:
 a `PASSWORD` or `MFA` claim from a failed `CredentialProof` counts against the same budget a login
 attempt would. A user who fumbles their password a few times inside `ChangePassword` can lock
@@ -218,6 +235,8 @@ service UserService {
 
   // Changes the caller's own password. Rejected if the workspace disallows
   // password sign-in (Cloud always does) — see Design → Cloud vs. self-hosted.
+  // new_password still runs through the workspace's password-complexity
+  // policy before hashing, same as UpdateUser does today.
   // Permissions required: none beyond being signed in as `name`.
   rpc ChangePassword(ChangePasswordRequest) returns (User) {
     option (google.api.http) = {
@@ -262,7 +281,9 @@ service UserService {
     option (bytebase.v1.mcp_denial_reason) = TAKES_OVER_ACCOUNT;
   }
 
-  // Turns the caller's MFA off.
+  // Turns MFA off for `name`. Rejected for any non-admin caller while the
+  // workspace requires MFA (Require_2Fa), self-service or admin-assisted
+  // alike, same as UpdateUser enforces today.
   rpc DisableMfa(DisableMfaRequest) returns (User) {
     option (google.api.http) = {
       post: "/v1/{name=users/*}:disableMfa"
@@ -329,8 +350,14 @@ message CredentialProof {
     ];
 
     // A one-time code from RequestReauthCode, sent to the account's own
-    // registered email. The only option that works when neither of the
-    // above exists yet — Cloud, SSO, or first-time MFA enrollment.
+    // registered email. Valid only when the workspace disallows password
+    // sign-in AND the account has no live MFA factor — bootstrap proof for
+    // an account with nothing else yet, never a substitute for a factor
+    // that already exists. The handler checks this eligibility itself; it
+    // is not just a frontend choice of which field to show. That condition
+    // is never true for DisableMfa or RegenerateRecoveryCodes (both imply
+    // live MFA), so email_code is only ever actually usable on
+    // ChangePassword or first-time EnableMfa.
     string email_code = 4 [
       (bytebase.v1.audit_behavior) = SENSITIVE,
       (buf.validate.field).string.max_len = 64
