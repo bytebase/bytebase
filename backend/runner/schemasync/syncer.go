@@ -4,6 +4,7 @@ package schemasync
 import (
 	"bytes"
 	"context"
+	"database/sql"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -121,7 +122,24 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 		}
 	}()
 
-	lock, acquired, err := store.TryAdvisoryLock(ctx, s.store.GetDB(), store.AdvisoryLockKeySchemaSyncer)
+	tx, err := s.store.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		slog.Error("Failed to begin schema syncer transaction", log.BBError(err))
+		return
+	}
+	defer func() {
+		if err := tx.Rollback(); err != nil && !errors.Is(err, sql.ErrTxDone) {
+			result = productmetrics.ResultFailure
+			slog.Error("Failed to rollback schema syncer transaction", log.BBError(err))
+		}
+	}()
+
+	if _, err := tx.ExecContext(ctx, "SET LOCAL idle_in_transaction_session_timeout = 0"); err != nil {
+		slog.Error("Failed to configure schema syncer transaction", log.BBError(err))
+		return
+	}
+
+	acquired, err := store.TryAdvisoryXactLock(ctx, tx, store.AdvisoryLockKeySchemaSyncer)
 	if err != nil {
 		slog.Error("Failed to acquire schema syncer advisory lock", log.BBError(err))
 		return
@@ -131,12 +149,6 @@ func (s *Syncer) trySyncAll(ctx context.Context) {
 		result = productmetrics.ResultSkipped
 		return
 	}
-	defer func() {
-		if err := lock.Release(); err != nil {
-			result = productmetrics.ResultFailure
-			slog.Error("Failed to release schema syncer advisory lock", log.BBError(err))
-		}
-	}()
 
 	wp := pool.New().WithMaxGoroutines(MaximumOutstanding)
 	var syncFailed atomic.Bool
