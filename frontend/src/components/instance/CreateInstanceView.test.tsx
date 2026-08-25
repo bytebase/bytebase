@@ -15,7 +15,7 @@ const mocks = vi.hoisted(() => ({
   pushNotification: vi.fn(),
   isSaaSMode: false,
   sampleAvailable: true,
-  sampleInstance: "",
+  sampleInstances: [] as { instance: string }[],
   totalInstanceCount: 0,
   instanceCountLimit: 10,
   activatedInstanceCount: 0,
@@ -67,7 +67,7 @@ vi.mock("@/stores/app", () => ({
         serverInfo: {
           sample: {
             available: mocks.sampleAvailable,
-            instance: mocks.sampleInstance,
+            instances: mocks.sampleInstances,
           },
         },
         totalInstanceCount: () => mocks.totalInstanceCount,
@@ -130,7 +130,7 @@ beforeEach(async () => {
   vi.clearAllMocks();
   mocks.isSaaSMode = false;
   mocks.sampleAvailable = true;
-  mocks.sampleInstance = "";
+  mocks.sampleInstances = [];
   mocks.totalInstanceCount = 0;
   mocks.instanceCountLimit = 10;
   mocks.activatedInstanceCount = 0;
@@ -380,7 +380,7 @@ describe("CreateInstanceView", () => {
 
   test("hides sample instance creation when a sample was already provisioned", () => {
     mocks.isSaaSMode = true;
-    mocks.sampleInstance = "instances/sample";
+    mocks.sampleInstances = [{ instance: "instances/sample" }];
     const container = document.createElement("div");
     const root = createRoot(container);
 

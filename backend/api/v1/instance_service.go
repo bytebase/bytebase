@@ -25,9 +25,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
-
-	"github.com/bytebase/bytebase/backend/component/sampleinstance"
-	"github.com/bytebase/bytebase/backend/component/sampleprojectinstance"
+	"github.com/bytebase/bytebase/backend/component/sample"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -40,13 +38,18 @@ import (
 // InstanceService implements the instance service.
 type InstanceService struct {
 	v1connect.UnimplementedInstanceServiceHandler
-	store                 *store.Store
-	profile               *config.Profile
-	licenseService        instanceLicenseService
-	dbFactory             *dbfactory.DBFactory
-	schemaSyncer          *schemasync.Syncer
-	sampleInstanceManager *sampleinstance.Manager
-	sampleProjectManager  *sampleprojectinstance.Manager
+	store          *store.Store
+	profile        *config.Profile
+	licenseService instanceLicenseService
+	dbFactory      *dbfactory.DBFactory
+	schemaSyncer   *schemasync.Syncer
+	sampleManager  instanceSampleManager
+}
+
+type instanceSampleManager interface {
+	SetupSample(context.Context, sample.SetupRequest) (*sample.SetupResult, error)
+	ValidateInstanceRestore(context.Context, string, string) error
+	HandleInstanceLifecycle(context.Context, string, string, bool) error
 }
 
 type instanceLicenseService interface {
@@ -200,15 +203,14 @@ func (s *InstanceService) checkAndLogInstanceConnection(ctx context.Context, met
 }
 
 // NewInstanceService creates a new InstanceService.
-func NewInstanceService(store *store.Store, profile *config.Profile, licenseService *enterprise.LicenseService, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, sampleInstanceManager *sampleinstance.Manager, sampleProjectManager *sampleprojectinstance.Manager) *InstanceService {
+func NewInstanceService(store *store.Store, profile *config.Profile, licenseService *enterprise.LicenseService, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, sampleManager instanceSampleManager) *InstanceService {
 	return &InstanceService{
-		store:                 store,
-		profile:               profile,
-		licenseService:        licenseService,
-		dbFactory:             dbFactory,
-		schemaSyncer:          schemaSyncer,
-		sampleInstanceManager: sampleInstanceManager,
-		sampleProjectManager:  sampleProjectManager,
+		store:          store,
+		profile:        profile,
+		licenseService: licenseService,
+		dbFactory:      dbFactory,
+		schemaSyncer:   schemaSyncer,
+		sampleManager:  sampleManager,
 	}
 }
 
@@ -480,61 +482,37 @@ func (s *InstanceService) PrepareSampleProjectInstance(ctx context.Context, req 
 	if projectID == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("Sample Project Instance parent is required"))
 	}
-	if s.profile == nil || !s.profile.SaaS || s.sampleProjectManager == nil {
+	if s.profile == nil || !s.profile.SaaS || s.sampleManager == nil {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("Sample Project Instance is available only in SaaS deployments with a configured target"))
 	}
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	result, err := s.sampleProjectManager.Prepare(ctx, sampleprojectinstance.PrepareRequest{
+	if err := s.instanceCountGuard(ctx); err != nil {
+		return nil, err
+	}
+	result, err := s.sampleManager.SetupSample(ctx, sample.SetupRequest{
 		WorkspaceID: workspaceID,
 		ProjectID:   *projectID,
-		CheckCreatePolicy: func(ctx context.Context) (sampleprojectinstance.CreatePolicyResult, error) {
-			return s.sampleProjectInstanceCreatePolicy(ctx, workspaceID)
-		},
 	})
 	if err != nil {
 		return nil, sampleProjectInstanceConnectError(err)
 	}
-	if result.PolicyDenied != nil {
-		return nil, connect.NewError(connect.CodeResourceExhausted, result.PolicyDenied)
+	if len(result.Instances) != 1 {
+		return nil, connect.NewError(connect.CodeInternal, errors.New("Sample Project Instance preparation must return exactly one instance"))
 	}
-	if result.Instance == nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("Sample Project Instance preparation returned no instance"))
-	}
-	return connect.NewResponse(s.convertToV1Instance(ctx, result.Instance)), nil
-}
-
-func (s *InstanceService) sampleProjectInstanceCreatePolicy(ctx context.Context, _ string) (sampleprojectinstance.CreatePolicyResult, error) {
-	if err := s.instanceCountGuard(ctx); err != nil {
-		if connect.CodeOf(err) == connect.CodeResourceExhausted {
-			return sampleprojectinstance.CreatePolicyResult{DeniedReason: transportNeutralError(err)}, nil
-		}
-		return sampleprojectinstance.CreatePolicyResult{}, transportNeutralError(err)
-	}
-	return sampleprojectinstance.CreatePolicyResult{}, nil
+	return connect.NewResponse(s.convertToV1Instance(ctx, result.Instances[0])), nil
 }
 
 func sampleProjectInstanceConnectError(err error) error {
-	switch sampleprojectinstance.FailureKindOf(err) {
-	case sampleprojectinstance.FailureFailedPrecondition:
+	switch sample.FailureKindOf(err) {
+	case sample.FailureFailedPrecondition:
 		return connect.NewError(connect.CodeFailedPrecondition, err)
-	case sampleprojectinstance.FailureUnavailable:
+	case sample.FailureUnavailable:
 		return connect.NewError(connect.CodeUnavailable, err)
-	case sampleprojectinstance.FailureDeadlineExceeded:
+	case sample.FailureDeadlineExceeded:
 		return connect.NewError(connect.CodeDeadlineExceeded, err)
 	default:
 		return connect.NewError(connect.CodeInternal, err)
 	}
-}
-
-func transportNeutralError(err error) error {
-	var connectErr *connect.Error
-	if errors.As(err, &connectErr) {
-		if cause := connectErr.Unwrap(); cause != nil {
-			return cause
-		}
-		return errors.New(connectErr.Message())
-	}
-	return err
 }
 
 func (s *InstanceService) getSampleProjectInstanceParent(ctx context.Context, parent *string) (*string, error) {
@@ -542,15 +520,15 @@ func (s *InstanceService) getSampleProjectInstanceParent(ctx context.Context, pa
 	if err == nil || connect.CodeOf(err) != connect.CodeNotFound || parent == nil {
 		return projectID, err
 	}
-	missingProjectID, parseErr := common.GetProjectID(*parent)
+	_, parseErr := common.GetProjectID(*parent)
 	if parseErr != nil {
 		return nil, err
 	}
-	reservation, storeErr := s.store.GetSampleProjectInstance(ctx, common.GetWorkspaceIDFromContext(ctx))
+	reservation, storeErr := s.store.GetSampleInstanceSetup(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if storeErr != nil {
 		return nil, connect.NewError(connect.CodeInternal, storeErr)
 	}
-	if reservation != nil && reservation.ProjectID == missingProjectID {
+	if reservation != nil {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("Sample Project Instance entitlement is already consumed"))
 	}
 	return nil, err
@@ -1068,8 +1046,8 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 	}
 
 	// Handle sample instance deletion if applicable
-	if !alreadyDeleted && s.sampleInstanceManager != nil {
-		if err := s.sampleInstanceManager.HandleInstanceDeletion(ctx, common.GetWorkspaceIDFromContext(ctx), instance.ResourceID); err != nil {
+	if !alreadyDeleted && s.sampleManager != nil {
+		if err := s.sampleManager.HandleInstanceLifecycle(ctx, common.GetWorkspaceIDFromContext(ctx), instance.ResourceID, true); err != nil {
 			slog.Warn("failed to handle sample instance deletion", log.BBError(err), slog.String("instance", instance.ResourceID))
 		}
 	}
@@ -1087,6 +1065,11 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 	if !instance.Deleted {
 		result := s.convertToV1Instance(ctx, instance)
 		return connect.NewResponse(result), nil
+	}
+	if s.sampleManager != nil {
+		if err := s.sampleManager.ValidateInstanceRestore(ctx, instance.Workspace, instance.ResourceID); err != nil {
+			return nil, sampleProjectInstanceConnectError(err)
+		}
 	}
 	activeTaskRunCount, err := s.store.GetActiveTaskRunCountForInstance(ctx, instance.ResourceID)
 	if err != nil {
@@ -1115,8 +1098,8 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 	}
 
 	// Handle sample instance undelete (restart) if applicable
-	if s.sampleInstanceManager != nil {
-		if err := s.sampleInstanceManager.HandleInstanceCreation(ctx, ins.ResourceID); err != nil {
+	if s.sampleManager != nil {
+		if err := s.sampleManager.HandleInstanceLifecycle(ctx, ins.Workspace, ins.ResourceID, false); err != nil {
 			slog.Warn("failed to handle sample instance undelete", log.BBError(err), slog.String("instance", ins.ResourceID))
 		}
 	}

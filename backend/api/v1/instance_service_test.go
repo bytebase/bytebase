@@ -9,10 +9,11 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
-	"github.com/bytebase/bytebase/backend/component/sampleprojectinstance"
+	"github.com/bytebase/bytebase/backend/component/sample"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
@@ -26,10 +27,10 @@ func TestPrepareSampleProjectInstanceValidatesParentAndDeployment(t *testing.T) 
 
 	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
 	service = &InstanceService{
-		store:                stores,
-		profile:              &config.Profile{},
-		licenseService:       &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 10},
-		sampleProjectManager: &sampleprojectinstance.Manager{},
+		store:          stores,
+		profile:        &config.Profile{},
+		licenseService: &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 10},
+		sampleManager:  &instanceSampleManagerStub{},
 	}
 	_, err = service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
 		Parent: common.FormatProject(projectID),
@@ -43,16 +44,77 @@ func TestPrepareSampleProjectInstanceValidatesParentAndDeployment(t *testing.T) 
 	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
 }
 
+func TestPrepareSampleProjectInstanceRequiresSingleManagerResult(t *testing.T) {
+	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
+	manager := &instanceSampleManagerStub{
+		setupResult: &sample.SetupResult{Instances: []*store.InstanceMessage{
+			{ResourceID: "sample-one"},
+			{ResourceID: "sample-two"},
+		}},
+	}
+	service := &InstanceService{
+		store:          stores,
+		profile:        &config.Profile{SaaS: true},
+		licenseService: &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 10},
+		sampleManager:  manager,
+	}
+
+	_, err := service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
+		Parent: common.FormatProject(projectID),
+	}))
+	require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
+	require.Len(t, manager.setupRequests, 1)
+}
+
+func TestSampleInstanceLifecycleHooksWrapMetadataUpdate(t *testing.T) {
+	ctx, stores, projectID, instanceID, _ := setupProjectInstanceLifecycleAPITest(t)
+	manager := &instanceSampleManagerStub{}
+	manager.validate = func(ctx context.Context, workspaceID, gotInstanceID string) error {
+		require.Equal(t, "default", workspaceID)
+		require.Equal(t, instanceID, gotInstanceID)
+		instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{Workspace: workspaceID, ResourceID: &gotInstanceID, ShowDeleted: true})
+		require.NoError(t, err)
+		require.True(t, instance.Deleted)
+		return nil
+	}
+	manager.lifecycle = func(ctx context.Context, workspaceID, gotInstanceID string, deleted bool) error {
+		instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{Workspace: workspaceID, ResourceID: &gotInstanceID, ShowDeleted: true})
+		require.NoError(t, err)
+		require.Equal(t, deleted, instance.Deleted)
+		return nil
+	}
+	service := &InstanceService{
+		store:          stores,
+		licenseService: &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 10},
+		sampleManager:  manager,
+	}
+	instanceName := common.FormatProjectInstance(projectID, instanceID)
+
+	_, err := service.DeleteInstance(ctx, connect.NewRequest(&v1pb.DeleteInstanceRequest{Name: instanceName}))
+	require.NoError(t, err)
+	require.Equal(t, []bool{true}, manager.lifecycleCalls)
+
+	_, err = service.UndeleteInstance(ctx, connect.NewRequest(&v1pb.UndeleteInstanceRequest{Name: instanceName}))
+	require.NoError(t, err)
+	require.Equal(t, 1, manager.validateCalls)
+	require.Equal(t, []bool{true, false}, manager.lifecycleCalls)
+}
+
 func TestPrepareSampleProjectInstanceRejectsConsumedEntitlementAfterProjectDeletion(t *testing.T) {
 	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	_, _, err := stores.ReserveSampleProjectInstance(ctx, &store.SampleProjectInstanceMessage{
+	payload, err := protojson.Marshal(&storepb.SaaSSampleInstanceSetupPayload{
+		ProjectId:    projectID,
+		InstanceId:   "sample-deleted-project",
+		Title:        "Sample Project Instance",
+		DatabaseName: "bb_sample_deleted_project",
+		RoleName:     "bb_sample_role_deleted_project",
+	})
+	require.NoError(t, err)
+	_, _, err = stores.ReserveSampleInstanceSetup(ctx, &store.SampleInstanceSetupMessage{
 		WorkspaceID: workspaceID,
-		ProjectID:   projectID,
-		InstanceID:  "sample-deleted-project",
-		DBName:      "bb_sample_deleted_project",
-		RoleName:    "bb_sample_role_deleted_project",
 		ReplicaID:   "replica-a",
+		Payload:     payload,
 	})
 	require.NoError(t, err)
 	_, err = stores.GetDB().ExecContext(ctx, `
@@ -62,10 +124,10 @@ func TestPrepareSampleProjectInstanceRejectsConsumedEntitlementAfterProjectDelet
 	`, workspaceID, projectID)
 	require.NoError(t, err)
 	service := &InstanceService{
-		store:                stores,
-		profile:              &config.Profile{SaaS: true},
-		licenseService:       &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 10},
-		sampleProjectManager: &sampleprojectinstance.Manager{},
+		store:          stores,
+		profile:        &config.Profile{SaaS: true},
+		licenseService: &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 10},
+		sampleManager:  &instanceSampleManagerStub{},
 	}
 
 	_, err = service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
@@ -79,36 +141,56 @@ func TestSampleProjectInstanceConnectErrorMapsUnknownFailure(t *testing.T) {
 	require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
 }
 
-func TestSampleProjectInstanceCreatePolicyMapsCapacityDenial(t *testing.T) {
+func TestSampleProjectInstanceCapacityGuardMapsCapacityDenial(t *testing.T) {
 	ctx, stores, _, _, _ := setupProjectInstanceLifecycleAPITest(t)
 	service := &InstanceService{
 		store:          stores,
 		profile:        &config.Profile{SaaS: true},
 		licenseService: &instanceLicenseServiceStub{instanceLimit: 1, activatedInstanceLimit: 10},
 	}
-	policy, err := service.sampleProjectInstanceCreatePolicy(ctx, common.GetWorkspaceIDFromContext(ctx))
-	require.NoError(t, err)
-	require.Error(t, policy.DeniedReason)
-	require.Equal(t, connect.CodeUnknown, connect.CodeOf(policy.DeniedReason))
+	err := service.instanceCountGuard(ctx)
+	require.Equal(t, connect.CodeResourceExhausted, connect.CodeOf(err))
 }
 
-func TestSampleProjectInstanceCreatePolicyDoesNotConsumeActivationQuota(t *testing.T) {
+func TestSampleProjectInstanceCapacityGuardDoesNotConsumeActivationQuota(t *testing.T) {
 	ctx, stores, _, _, _ := setupProjectInstanceLifecycleAPITest(t)
 	service := &InstanceService{
 		store:          stores,
 		profile:        &config.Profile{SaaS: true},
 		licenseService: &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 0},
 	}
-	policy, err := service.sampleProjectInstanceCreatePolicy(ctx, common.GetWorkspaceIDFromContext(ctx))
-	require.NoError(t, err)
-	require.Nil(t, policy.DeniedReason)
+	require.NoError(t, service.instanceCountGuard(ctx))
 }
 
-func TestTransportNeutralErrorRemovesConnectType(t *testing.T) {
-	neutral := transportNeutralError(connect.NewError(connect.CodeResourceExhausted, errors.New("instance limit reached")))
-	var connectErr *connect.Error
-	require.NotErrorAs(t, neutral, &connectErr)
-	require.EqualError(t, neutral, "instance limit reached")
+type instanceSampleManagerStub struct {
+	setupResult    *sample.SetupResult
+	setupErr       error
+	setupRequests  []sample.SetupRequest
+	validate       func(context.Context, string, string) error
+	lifecycle      func(context.Context, string, string, bool) error
+	validateCalls  int
+	lifecycleCalls []bool
+}
+
+func (s *instanceSampleManagerStub) SetupSample(_ context.Context, request sample.SetupRequest) (*sample.SetupResult, error) {
+	s.setupRequests = append(s.setupRequests, request)
+	return s.setupResult, s.setupErr
+}
+
+func (s *instanceSampleManagerStub) ValidateInstanceRestore(ctx context.Context, workspaceID, instanceID string) error {
+	s.validateCalls++
+	if s.validate != nil {
+		return s.validate(ctx, workspaceID, instanceID)
+	}
+	return nil
+}
+
+func (s *instanceSampleManagerStub) HandleInstanceLifecycle(ctx context.Context, workspaceID, instanceID string, deleted bool) error {
+	s.lifecycleCalls = append(s.lifecycleCalls, deleted)
+	if s.lifecycle != nil {
+		return s.lifecycle(ctx, workspaceID, instanceID, deleted)
+	}
+	return nil
 }
 
 func TestValidateIAMCredentialForSaaS(t *testing.T) {

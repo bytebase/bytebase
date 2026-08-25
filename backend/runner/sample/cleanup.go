@@ -1,6 +1,6 @@
-// Package sampleprojectinstance periodically expires Cloud sample Project
-// Instances. Every replica runs this worker; row locking makes passes safe.
-package sampleprojectinstance
+// Package sample periodically reconciles stale or expired sample instance
+// setups. Every replica runs this worker; row locking makes passes safe.
+package sample
 
 import (
 	"context"
@@ -11,20 +11,18 @@ import (
 
 const interval = time.Hour
 
-// Runner performs startup and hourly sample Project Instance cleanup.
+// Runner performs startup and hourly sample instance cleanup.
 type Runner struct {
 	manager cleanupManager
-	clock   func() time.Time
 	logger  *slog.Logger
 }
 
 type cleanupManager interface {
-	Cleanup(context.Context, time.Time) error
+	Cleanup(context.Context) error
 }
 
 // Options configures a cleanup runner.
 type Options struct {
-	Clock  func() time.Time
 	Logger *slog.Logger
 }
 
@@ -34,15 +32,11 @@ func NewRunner(manager cleanupManager, options ...Options) *Runner {
 	if len(options) > 0 {
 		option = options[0]
 	}
-	if option.Clock == nil {
-		option.Clock = time.Now
-	}
 	if option.Logger == nil {
 		option.Logger = slog.Default()
 	}
 	return &Runner{
 		manager: manager,
-		clock:   option.Clock,
 		logger:  option.Logger,
 	}
 }
@@ -64,13 +58,13 @@ func (r *Runner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	}
 }
 
-// RunOnce performs one Sample Project Instance cleanup pass.
+// RunOnce performs one Sample instance cleanup pass.
 func (r *Runner) RunOnce(ctx context.Context) error {
-	return r.manager.Cleanup(ctx, r.clock())
+	return r.manager.Cleanup(ctx)
 }
 
 func (r *Runner) runOnceAndLog(ctx context.Context) {
 	if err := r.RunOnce(ctx); err != nil {
-		r.logger.ErrorContext(ctx, "Sample Project Instance cleanup failed", "error", err)
+		r.logger.ErrorContext(ctx, "Sample instance cleanup failed", "error", err)
 	}
 }

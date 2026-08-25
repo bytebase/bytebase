@@ -44,7 +44,7 @@ export function CreateInstanceView({
     (state) => state.serverInfo?.sample?.available ?? false
   );
   const sampleProvisioned = useAppStore(
-    (state) => !!state.serverInfo?.sample?.instance
+    (state) => (state.serverInfo?.sample?.instances.length ?? 0) > 0
   );
   const totalInstanceCount = useAppStore((state) => state.totalInstanceCount());
   const canPrepareSampleProjectInstance =

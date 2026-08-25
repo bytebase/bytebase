@@ -9,12 +9,14 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
-	"github.com/bytebase/bytebase/backend/component/sampleprojectinstance"
+	"github.com/bytebase/bytebase/backend/component/sample"
+	"github.com/bytebase/bytebase/backend/component/sample/saas"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -40,14 +42,14 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 		GitCommit:   "sensitive-commit",
 		ExternalURL: "https://bytebase.example.com",
 	}
-	sampleProjectManager, err := sampleprojectinstance.NewManagerFromURL(
-		nil,
+	sampleManager, err := saas.NewManager(
+		stores,
 		fmt.Sprintf("postgresql://postgres:root-password@%s:%s/postgres?sslmode=disable", container.GetHost(), container.GetPort()),
 		nil,
-		sampleprojectinstance.ManagerOptions{},
+		sample.ManagerOptions{ReplicaID: "replica-a"},
 	)
 	require.NoError(t, err)
-	actuatorService := NewActuatorService(stores, profile, nil, licenseService, nil, sampleProjectManager)
+	actuatorService := NewActuatorService(stores, profile, nil, licenseService, sampleManager)
 	authService := NewAuthService(stores, "test-secret", licenseService, profile, nil)
 
 	publicResponse, err := authService.GetAuthenticationRestriction(ctx, connect.NewRequest(&v1pb.GetAuthenticationRestrictionRequest{}))
@@ -99,11 +101,13 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	require.NoError(t, err)
 	authenticatedCtx := context.WithValue(ctx, common.UserContextKey, user)
 	authenticatedCtx = context.WithValue(authenticatedCtx, common.WorkspaceIDContextKey, workspaceID)
+	actuatorService.sampleManager = nil
 	nonSaaSResponse, err := actuatorService.GetActuatorInfo(authenticatedCtx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
 	require.NoError(t, err)
 	require.False(t, nonSaaSResponse.Msg.Sample.Available)
 
 	profile.SaaS = true
+	actuatorService.sampleManager = sampleManager
 
 	availableResponse, err := actuatorService.GetActuatorInfo(authenticatedCtx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
 	require.NoError(t, err)
@@ -111,18 +115,25 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 
 	defaultProjectID, err := stores.GetDefaultProjectID(ctx, workspaceID)
 	require.NoError(t, err)
-	reservation, created, err := stores.ReserveSampleProjectInstance(ctx, &store.SampleProjectInstanceMessage{
+	projectID := defaultProjectID
+	payload, err := protojson.Marshal(&storepb.SaaSSampleInstanceSetupPayload{
+		ProjectId:    projectID,
+		InstanceId:   "sample-instance",
+		Title:        "Sample Project Instance",
+		DatabaseName: "sample-database",
+		RoleName:     "sample-role",
+	})
+	require.NoError(t, err)
+	reservation, created, err := stores.ReserveSampleInstanceSetup(ctx, &store.SampleInstanceSetupMessage{
 		WorkspaceID: workspaceID,
-		ProjectID:   defaultProjectID,
-		InstanceID:  "sample-instance",
-		DBName:      "sample-database",
-		RoleName:    "sample-role",
 		ReplicaID:   "replica-a",
+		Payload:     payload,
 	})
 	require.NoError(t, err)
 	require.True(t, created)
 	expiresAt := time.Now().Add(7 * 24 * time.Hour).Truncate(time.Microsecond)
-	activated, err := stores.ActivateSampleProjectInstance(ctx, workspaceID, reservation.InstanceID, reservation.ReplicaID, expiresAt)
+	activatedAt := expiresAt.Add(-7 * 24 * time.Hour)
+	activated, err := stores.ActivateSampleInstanceSetup(ctx, workspaceID, reservation.ReplicaID, []string{projectID}, activatedAt, &expiresAt)
 	require.NoError(t, err)
 	require.True(t, activated)
 	privateResponse, err := actuatorService.GetActuatorInfo(authenticatedCtx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
@@ -132,17 +143,18 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	require.Equal(t, common.FormatWorkspace(workspaceID), privateResponse.Msg.Workspace)
 	require.NotEmpty(t, privateResponse.Msg.DefaultProject)
 	require.True(t, privateResponse.Msg.Sample.Available)
-	require.Equal(t, common.FormatInstance(reservation.InstanceID), privateResponse.Msg.Sample.Instance)
-	require.True(t, expiresAt.Equal(privateResponse.Msg.Sample.ExpireTime.AsTime()))
+	require.Len(t, privateResponse.Msg.Sample.Instances, 1)
+	require.Equal(t, common.FormatInstance("sample-instance"), privateResponse.Msg.Sample.Instances[0].Instance)
+	require.True(t, expiresAt.Equal(privateResponse.Msg.Sample.Instances[0].ExpireTime.AsTime()))
 
 	cleanupNow := expiresAt.Add(time.Second)
-	cleanupResult, err := stores.WithLockedSampleProjectInstanceCleanupRecord(
+	cleanupResult, err := stores.WithLockedSampleInstanceSetupForCleanup(
 		ctx,
 		cleanupNow,
 		cleanupNow.Add(-time.Hour),
 		"",
-		func(context.Context, *store.SampleProjectInstanceTx, *store.SampleProjectInstanceMessage) error {
-			return nil
+		func(ctx context.Context, tx *store.SampleInstanceSetupTx, _ *store.SampleInstanceSetupMessage) error {
+			return tx.MarkDeleted(ctx, cleanupNow)
 		},
 	)
 	require.NoError(t, err)
@@ -150,5 +162,76 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	deletedResponse, err := actuatorService.GetActuatorInfo(authenticatedCtx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
 	require.NoError(t, err)
 	require.True(t, deletedResponse.Msg.Sample.Available)
-	require.Equal(t, common.FormatInstance(reservation.InstanceID), deletedResponse.Msg.Sample.Instance)
+	require.Len(t, deletedResponse.Msg.Sample.Instances, 1)
+	require.Equal(t, common.FormatInstance("sample-instance"), deletedResponse.Msg.Sample.Instances[0].Instance)
+	require.Nil(t, deletedResponse.Msg.Sample.Instances[0].ExpireTime)
 }
+
+func TestSetupSampleUsesUnifiedManagerAndAcceptsPair(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+	require.NoError(t, migrator.MigrateSchema(ctx, container.GetDB()))
+
+	stores, err := store.New(ctx, fmt.Sprintf(
+		"host=%s port=%s user=postgres password=root-password database=postgres",
+		container.GetHost(), container.GetPort(),
+	), false)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, stores.Close()) })
+	const workspaceID = "setup-sample"
+	_, err = stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
+		ResourceID: workspaceID,
+		Payload:    &storepb.WorkspacePayload{Title: "Setup sample"},
+	}, "admin@example.com")
+	require.NoError(t, err)
+	user, err := stores.CreateUser(ctx, &store.UserMessage{
+		Email:   "admin@example.com",
+		Name:    "Admin",
+		Profile: &storepb.UserProfile{},
+	})
+	require.NoError(t, err)
+
+	manager := &actuatorSampleManagerStub{}
+	service := &ActuatorService{
+		store:         stores,
+		profile:       &config.Profile{},
+		sampleManager: manager,
+	}
+	requestCtx := context.WithValue(ctx, common.WorkspaceIDContextKey, workspaceID)
+	requestCtx = context.WithValue(requestCtx, common.UserContextKey, user)
+	_, err = service.SetupSample(requestCtx, connect.NewRequest(&v1pb.SetupSampleRequest{}))
+	require.NoError(t, err)
+	require.Equal(t, []sample.SetupRequest{{WorkspaceID: workspaceID, ProjectID: "project-sample"}}, manager.requests)
+	projectID := "project-sample"
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{Workspace: workspaceID, ResourceID: &projectID})
+	require.NoError(t, err)
+	require.NotNil(t, project)
+}
+
+type actuatorSampleManagerStub struct {
+	requests []sample.SetupRequest
+}
+
+func (s *actuatorSampleManagerStub) SetupSample(_ context.Context, request sample.SetupRequest) (*sample.SetupResult, error) {
+	s.requests = append(s.requests, request)
+	return &sample.SetupResult{Instances: []*store.InstanceMessage{{ResourceID: "sample-one"}, {ResourceID: "sample-two"}}}, nil
+}
+
+func (*actuatorSampleManagerStub) Info(context.Context, string) (*sample.Info, error) {
+	return &sample.Info{}, nil
+}
+
+func (*actuatorSampleManagerStub) Start(context.Context, string) error { return nil }
+
+func (*actuatorSampleManagerStub) Cleanup(context.Context) error { return nil }
+
+func (*actuatorSampleManagerStub) ValidateInstanceRestore(context.Context, string, string) error {
+	return nil
+}
+
+func (*actuatorSampleManagerStub) HandleInstanceLifecycle(context.Context, string, string, bool) error {
+	return nil
+}
+
+func (*actuatorSampleManagerStub) Stop() {}

@@ -46,18 +46,24 @@ message GetActuatorInfoRequest {}
 
 // SampleInfo describes sample setup availability and provisioned resources.
 message SampleInfo {
+  // Instance describes one provisioned sample instance.
+  message Instance {
+    // The provisioned sample instance.
+    // Format: instances/{instance}
+    string instance = 1 [
+      (google.api.field_behavior) = OUTPUT_ONLY,
+      (google.api.resource_reference) = {type: "bytebase.com/Instance"}
+    ];
+
+    // The time when the provisioned sample instance expires.
+    google.protobuf.Timestamp expire_time = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+  }
+
   // Whether sample setup is currently available.
   bool available = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The provisioned sample instance.
-  // Format: instances/{instance}
-  string instance = 2 [
-    (google.api.field_behavior) = OUTPUT_ONLY,
-    (google.api.resource_reference) = {type: "bytebase.com/Instance"}
-  ];
-
-  // The time when the provisioned sample resources expire.
-  google.protobuf.Timestamp expire_time = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+  // The provisioned sample instances.
+  repeated Instance instances = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 // System information and configuration for the Bytebase instance.

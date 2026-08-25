@@ -22,7 +22,7 @@ func TestLatestVersion(t *testing.T) {
 	files, err := getSortedVersionedFiles()
 	require.NoError(t, err)
 	require.Equal(t, semver.MustParse("3.22.12"), *files[len(files)-1].version)
-	require.Equal(t, "migration/3.22/0012##login_attempt.sql", files[len(files)-1].path)
+	require.Equal(t, "migration/3.22/0013##sample_instance_setup.sql", files[len(files)-1].path)
 }
 
 func TestVersionUnique(t *testing.T) {
@@ -38,6 +38,50 @@ func TestVersionUnique(t *testing.T) {
 		}
 		versions[file.version.String()] = struct{}{}
 	}
+}
+
+func TestMigration3_22_12MigratesSampleProjectInstance(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+	db := container.GetDB()
+	_, err := db.ExecContext(ctx, `
+		CREATE TABLE workspace (resource_id text PRIMARY KEY);
+		INSERT INTO workspace (resource_id) VALUES ('workspace-a');
+	`)
+	require.NoError(t, err)
+	statement, err := migrationFS.ReadFile("migration/3.22/0011##sample_project_instance.sql")
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, string(statement))
+	require.NoError(t, err)
+	createdAt := time.Date(2026, time.August, 1, 12, 0, 0, 0, time.UTC)
+	expiresAt := createdAt.Add(7 * 24 * time.Hour)
+	_, err = db.ExecContext(ctx, `
+		INSERT INTO sample_project_instance (
+			workspace, project, instance, db_name, role_name, replica_id,
+			created_at, expires_at
+		) VALUES ('workspace-a', 'project-a', 'sample-a', 'db-a', 'role-a', 'replica-a', $1, $2)
+	`, createdAt, expiresAt)
+	require.NoError(t, err)
+	statement, err = migrationFS.ReadFile("migration/3.22/0012##sample_instance_setup.sql")
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, string(statement))
+	require.NoError(t, err)
+
+	var instance string
+	var activatedAt time.Time
+	err = db.QueryRowContext(ctx, `
+		SELECT activated_at, payload->>'instanceId'
+		FROM sample_instance_setup
+		WHERE workspace = 'workspace-a'
+	`).Scan(&activatedAt, &instance)
+	require.NoError(t, err)
+	require.Equal(t, createdAt, activatedAt)
+	require.Equal(t, "sample-a", instance)
+
+	var oldTable *string
+	require.NoError(t, db.QueryRowContext(ctx, "SELECT to_regclass('sample_project_instance')").Scan(&oldTable))
+	require.Nil(t, oldTable)
 }
 
 // TestMigration3_16_2_TaskRunLogDuplicateTimestamps verifies that the 3.16.2

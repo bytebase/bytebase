@@ -16,8 +16,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
-	"github.com/bytebase/bytebase/backend/component/sampleinstance"
-	"github.com/bytebase/bytebase/backend/component/sampleprojectinstance"
+	"github.com/bytebase/bytebase/backend/component/sample"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -29,12 +28,11 @@ import (
 // ActuatorService implements the Connect RPC interface for ActuatorService.
 type ActuatorService struct {
 	v1connect.UnimplementedActuatorServiceHandler
-	store                        *store.Store
-	profile                      *config.Profile
-	licenseService               *enterprise.LicenseService
-	schemaSyncer                 *schemasync.Syncer
-	sampleInstanceManager        *sampleinstance.Manager
-	sampleProjectInstanceManager *sampleprojectinstance.Manager
+	store          *store.Store
+	profile        *config.Profile
+	licenseService *enterprise.LicenseService
+	schemaSyncer   *schemasync.Syncer
+	sampleManager  sample.Manager
 
 	activeVCSUserCountSnapshot *expirable.LRU[string, int]
 }
@@ -47,17 +45,15 @@ func NewActuatorService(
 	profile *config.Profile,
 	schemaSyncer *schemasync.Syncer,
 	licenseService *enterprise.LicenseService,
-	sampleInstanceManager *sampleinstance.Manager,
-	sampleProjectInstanceManager *sampleprojectinstance.Manager,
+	sampleManager sample.Manager,
 ) *ActuatorService {
 	return &ActuatorService{
-		store:                        store,
-		profile:                      profile,
-		licenseService:               licenseService,
-		schemaSyncer:                 schemaSyncer,
-		sampleInstanceManager:        sampleInstanceManager,
-		sampleProjectInstanceManager: sampleProjectInstanceManager,
-		activeVCSUserCountSnapshot:   expirable.NewLRU[string, int](1024, nil, activeVCSUserCountSnapshotTTL),
+		store:                      store,
+		profile:                    profile,
+		licenseService:             licenseService,
+		schemaSyncer:               schemaSyncer,
+		sampleManager:              sampleManager,
+		activeVCSUserCountSnapshot: expirable.NewLRU[string, int](1024, nil, activeVCSUserCountSnapshotTTL),
 	}
 }
 
@@ -99,8 +95,22 @@ func (s *ActuatorService) SetupSample(
 		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
 	}
 
-	if s.sampleInstanceManager != nil {
-		if err := s.sampleInstanceManager.GenerateOnboardingData(ctx, common.GetWorkspaceIDFromContext(ctx), user, s.schemaSyncer); err != nil {
+	if s.sampleManager != nil {
+		workspaceID := common.GetWorkspaceIDFromContext(ctx)
+		projectID := "project-sample"
+		project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: workspaceID, ResourceID: &projectID})
+		if err == nil && project == nil {
+			project, err = s.store.CreateProject(ctx, &store.ProjectMessage{
+				Workspace:  workspaceID,
+				ResourceID: projectID,
+				Title:      "Sample Project",
+				Setting:    &storepb.Project{},
+			}, user)
+		}
+		if err == nil {
+			_, err = s.sampleManager.SetupSample(ctx, sample.SetupRequest{WorkspaceID: workspaceID, ProjectID: project.ResourceID})
+		}
+		if err != nil {
 			// When running inside docker on mac, we sometimes get database does not exist error.
 			// This is due to the docker overlay storage incompatibility with mac OS file system.
 			// Onboarding error is not critical, so we just emit an error log.
@@ -124,21 +134,19 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 
 	if workspaceID != "" {
 		serverInfo.Workspace = common.FormatWorkspace(workspaceID)
-		if s.profile.SaaS {
-			sample, err := s.store.GetSampleProjectInstance(ctx, workspaceID)
+		if s.sampleManager != nil {
+			sampleInfo, err := s.sampleManager.Info(ctx, workspaceID)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get sample information"))
 			}
-			serverInfo.Sample.Available = s.sampleProjectInstanceManager != nil && s.sampleProjectInstanceManager.Available(ctx)
-			if sample != nil {
-				serverInfo.Sample.Instance = common.FormatInstance(sample.InstanceID)
+			serverInfo.Sample.Available = sampleInfo.Available
+			for _, instance := range sampleInfo.Instances {
+				item := &v1pb.SampleInfo_Instance{Instance: instance.Instance}
+				if instance.ExpireTime != nil {
+					item.ExpireTime = timestamppb.New(*instance.ExpireTime)
+				}
+				serverInfo.Sample.Instances = append(serverInfo.Sample.Instances, item)
 			}
-			if sample != nil && sample.ExpiresAt != nil && sample.DeletedAt == nil {
-				serverInfo.Sample.ExpireTime = timestamppb.New(*sample.ExpiresAt)
-			}
-		} else {
-			hasSampleInstances, _ := s.store.HasSampleInstances(ctx, workspaceID)
-			serverInfo.Sample.Available = hasSampleInstances
 		}
 
 		defaultProjectID, err := s.store.GetDefaultProjectID(ctx, workspaceID)
