@@ -50,6 +50,7 @@ const DML_STATEMENT_TYPES = [
   StatementType.INSERT,
   StatementType.UPDATE,
   StatementType.DELETE,
+  StatementType.MERGE,
 ] as const;
 
 // Helper to convert enum values to their string names for display/comparison

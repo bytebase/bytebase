@@ -738,16 +738,19 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 			DatabaseName: target.database.DatabaseName,
 			SheetSHA256:  target.sheetSha256,
 		}]
-		if !ok {
-			celVarsList = append(celVarsList, celVars)
+		if !ok || result.GetSqlSummaryReport() == nil {
+			// Engines outside common.EngineSupportStatementReport produce no
+			// summary report, so statement.sql_type would be absent from the
+			// activation. cel-go resolves a declared-but-absent variable to an
+			// unknown, and matchRulesForSource drops an unknown as a non-match,
+			// so any approval rule naming statement.sql_type silently never
+			// fires. Classify from the parser instead when the engine has one.
+			statementTypes := statementTypesFromParser(target.database.Engine, taskStatement)
+			celVarsList = append(celVarsList, expandCELVars(celVars, statementTypes, nil)...)
 			continue
 		}
 
 		report := result.GetSqlSummaryReport()
-		if report == nil {
-			celVarsList = append(celVarsList, celVars)
-			continue
-		}
 
 		// Calculate table rows from changed resources
 		var tableRows int64
@@ -1104,6 +1107,33 @@ func getApprovalSourceFromIssue(ctx context.Context, stores *store.Store, issue 
 	default:
 		return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, errors.Errorf("unknown issue type %v", issue.Type)
 	}
+}
+
+// statementTypesFromParser classifies a sheet directly, for engines that never
+// produce a SQL summary report. Returns nil when the engine has no registered
+// parser or the sheet does not parse, which leaves statement.sql_type absent
+// exactly as before.
+//
+// The size guard mirrors the statement report check, which skips sheets over
+// common.MaxSheetCheckSize; parsing runs on the approval path, so a sheet the
+// report check declined to read must not be parsed here either.
+func statementTypesFromParser(engine storepb.Engine, statement string) []storepb.StatementType {
+	if statement == "" || len(statement) > common.MaxSheetCheckSize {
+		return nil
+	}
+	stmts, err := parserbase.ParseStatements(engine, statement)
+	if err != nil {
+		return nil
+	}
+	asts := parserbase.ExtractASTs(stmts)
+	if len(asts) == 0 {
+		return nil
+	}
+	statementTypes, err := parserbase.GetStatementTypes(engine, asts)
+	if err != nil {
+		return nil
+	}
+	return statementTypes
 }
 
 // expandCELVars creates CEL variable maps for each combination of statement types and table names.

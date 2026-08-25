@@ -1620,6 +1620,7 @@ StatementType represents the type of SQL statement.
 | INSERT | 60 | DML statements |
 | UPDATE | 61 |  |
 | DELETE | 62 |  |
+| MERGE | 63 |  |
 
 
 
