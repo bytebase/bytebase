@@ -269,6 +269,32 @@ existing rows in all three — `oauth2_authorization_code`, `oauth2_refresh_toke
 primary-key order and the three tables themselves in one fixed order, before running the `UPDATE
 principal` that would otherwise cascade-lock them afterward.
 
+That fixed order still has a gap when the email itself moves mid-sequence —
+[a seventh finding](https://github.com/bytebase/bytebase/pull/21235): every child-row lock above runs
+`WHERE user_email = ?` against whatever email the caller resolved *before* opening this locking
+sequence — read once, from the account row a credential handler fetched to authorize the request, before
+any lock is held. If a concurrent `UpdateEmail` commits between that read and these child-lock queries,
+its cascade has already moved every matching row in `oauth2_authorization_code`, `oauth2_refresh_token`,
+and `web_refresh_token` to the new email by the time `WHERE user_email = <old email>` runs — locking
+nothing, not the rows this design needs held. Locking the principal row afterward by its stable ID still
+finds the right account, so the credential mutation itself succeeds — but the child-table locks taken
+moments earlier locked the wrong, now-vacated key, and any delete keyed off that same stale email (G7's
+revocation included) deletes nothing: the tokens it exists to revoke survive, silently, on an account
+that just proved it still controls its own credential. Re-deriving the email from *inside* the lock
+doesn't avoid this, only moves it — the child rows still have to be located by some email before the
+principal is locked, and that read is exactly what can go stale.
+
+The fix is a check, not a different lock order: immediately after locking the principal row by ID,
+compare its current `email` against the email the child-row locks were just taken under. A mismatch
+means a concurrent `UpdateEmail` won the race and every child lock this sequence is holding is stale —
+abort and retry the whole sequence from the top, re-reading the account's current email and re-locking
+its child rows under it, rather than proceeding to mutate or delete against a key that no longer matches
+any row. This is the same "whichever side reaches the shared row first determines the outcome" principle
+this doc already applies to the issuance-vs-revocation race, with `UpdateEmail` as a third contender:
+`UpdateEmail` first means it wins outright and the retry picks up the new email cleanly; one of these
+four methods first means it holds the current email's child locks for the rest of its own transaction,
+so `UpdateEmail`'s own child-lock step simply blocks behind them instead of racing past unlocked.
+
 Finding all three tables here turned out to matter for more than lock ordering — [G7's revocation
 scope was too narrow](https://github.com/bytebase/bytebase/pull/21235): `DeleteWebRefreshTokensByUser`
 only ever touches `web_refresh_token`, so a stolen OAuth/MCP grant sails through every one of these
@@ -673,16 +699,21 @@ service UserService {
 
   // Validates otp_code and pending_version against the temporary state
   // StartMfaEnrollment persisted for this account (re-read from the store
-  // by name, not carried in this request) and promotes *only* the secret to
-  // the caller's live MFA factor, replacing any existing one — recovery
-  // codes stay pending until a separate ConfirmRecoveryCodes call, same as
-  // an ordinary rotation (see Design → Verification). Also rejects a
-  // pending set past its expiry (isMFATempSecretExpired, checked today both
-  // before OTP verification and before promotion — both carry forward,
-  // inside the locked transaction) — pending_version alone only detects a
-  // *replaced* pending set, not one that's simply gone stale with no
-  // replacement ever minted. name must be the caller's own — no admin path,
-  // same reason as ChangePassword.
+  // by name, not carried in this request). Replacing an existing factor
+  // (the account already has a live OtpSecret) promotes *only* the secret
+  // here — recovery codes stay pending until a separate ConfirmRecoveryCodes
+  // call, safely, since the old set keeps working as a fallback in the
+  // meantime (see Design → Verification). First-time enrollment (no live
+  // OtpSecret yet) has no such fallback, so this call verifies otp_code and
+  // credential but does *not* promote anything — promotion of the secret
+  // moves to ConfirmRecoveryCodes, atomically with the recovery codes, so
+  // the account is never left MFA-required with zero usable codes (see
+  // Design → Verification). Also rejects a pending set past its expiry
+  // (isMFATempSecretExpired, checked today both before OTP verification and
+  // before promotion — both carry forward, inside the locked transaction)
+  // — pending_version alone only detects a *replaced* pending set, not one
+  // that's simply gone stale with no replacement ever minted. name must be
+  // the caller's own — no admin path, same reason as ChangePassword.
   rpc EnableMfa(EnableMfaRequest) returns (User) {
     option (google.api.http) = {
       post: "/v1/{name=users/*}:enableMfa"
@@ -741,14 +772,20 @@ service UserService {
   // invalidating the old set — but only the *exact* pending set named by
   // pending_version; a mismatch (superseded by a later RegenerateRecoveryCodes
   // call, own or someone else's) is rejected rather than silently promoting
-  // whatever is currently pending. Also re-checks MFAConfig.OtpSecret is
-  // still live, inside the same locked transaction — pending_version alone
+  // whatever is currently pending. For a rotation (the account already had a
+  // live OtpSecret before this pending set), also re-checks MFAConfig.OtpSecret
+  // is still live, inside the same locked transaction — pending_version alone
   // doesn't catch DisableMfa running in between, since disabling clears
   // MFAConfig entirely without touching the recovery-code temp state or its
   // version, so a stale confirmation after MFA was turned off must still
   // fail rather than write live recovery codes onto an account with no
-  // factor left for them to back up. The caller's acknowledgment that they
-  // saved the new codes, not a proof step on its own — but promotion is
+  // factor left for them to back up. For first-time enrollment (no live
+  // OtpSecret when StartMfaEnrollment minted this pending set — see
+  // EnableMfa), that precondition doesn't apply; instead this call requires
+  // otp_code and promotes the secret alongside the recovery codes, atomically,
+  // completing what EnableMfa already verified but deliberately left
+  // unpromoted (see Design → Verification). The caller's acknowledgment that
+  // they saved the new codes, not a proof step on its own — but promotion is
   // exactly the moment the old codes stop working, so it's gated like every
   // other promotion in this design. name must be the caller's own.
   rpc ConfirmRecoveryCodes(ConfirmRecoveryCodesRequest) returns (User) {
@@ -965,6 +1002,16 @@ message ConfirmRecoveryCodesRequest {
   // in a second tab, or someone else's) has already superseded the set this
   // request thinks it's confirming.
   google.protobuf.Timestamp pending_version = 3 [(google.api.field_behavior) = REQUIRED];
+
+  // Required only for first-time MFA enrollment (the account has no live
+  // OtpSecret yet) — rejected if set otherwise. Re-verified against the same
+  // pending TempOtpSecret EnableMfa already validated, and promoted alongside
+  // the recovery codes in this call rather than in EnableMfa, so the account
+  // is never left MFA-required with zero usable recovery codes if this call
+  // never arrives (see Design → Verification). Left unset for an ordinary
+  // rotation, where EnableMfa already promoted the secret and this call only
+  // confirms recovery-code receipt.
+  string otp_code = 4 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message RegenerateRecoveryCodesResponse {
@@ -1034,11 +1081,30 @@ bug already fixed. So `EnableMfa` now promotes *only* the secret; the recovery c
 alongside stay pending until a separate `ConfirmRecoveryCodes{name, pending_version}` call — reusing
 the method already built for rotation rather than inventing a second confirmation mechanism, since
 enrollment and rotation turn out to be the same "confirm receipt before the old thing goes away"
-shape once the OTP-specific part is factored out. (For enrollment there's no "old thing" — the check
-`ConfirmRecoveryCodes` already has, requiring a live `OtpSecret`, is satisfied by the `EnableMfa` call
-that necessarily already ran.) `EnableMfaRequest.pending_version` still guards `StartMfaEnrollment`
+shape once the OTP-specific part is factored out.
+
+That "no old thing" framing for enrollment was itself the bug —
+[caught in a later review round](https://github.com/bytebase/bytebase/pull/21235): rotation's safety
+net is precisely that old thing — the previous live recovery codes keep working right up until
+`ConfirmRecoveryCodes` runs, so a lost response or a closed tab costs nothing. First-time enrollment has
+no such fallback by construction: nothing was live before this flow started, so if `EnableMfa` promotes
+the secret and `ConfirmRecoveryCodes` never runs, the account is left MFA-required with zero usable
+recovery codes — worse than the two problems the split was built to fix, not equivalent to them. This
+is also the point `email_code` eligibility can't rescue: it requires no live `OtpSecret`
+(see Design → Verification), which `EnableMfa` promoting the secret already ruled out. Fixed by
+splitting `EnableMfa` itself along the same line as before, one level deeper: for a rotation (the
+account already had a live `OtpSecret`), it promotes the secret as already described, unaffected. For
+first-time enrollment, it verifies `otp_code` and `credential` but promotes nothing — the account stays
+exactly as unenrolled as before the call — and the actual promotion of *both* `TempOtpSecret` and
+`TempRecoveryCodes` moves to `ConfirmRecoveryCodes`, atomically, gated on the same `otp_code` re-verified
+there (`ConfirmRecoveryCodesRequest.otp_code`, required only in the enrollment case — see API →
+Messages). A client that never gets a chance to call `ConfirmRecoveryCodes` after enrolling has, once
+again, lost nothing: no secret went live, no recovery codes exist to lose track of, and a retried
+`EnableMfa` against the same still-pending `pending_version` is exactly as harmless as the first attempt,
+since it never wrote anything either. `EnableMfaRequest.pending_version` still guards `StartMfaEnrollment`
 against being silently superseded before `EnableMfa` runs — general temp-state freshness, not
-specifically a recovery-codes protection anymore, since `EnableMfa` no longer touches them at all.
+specifically a recovery-codes protection, and for enrollment now doubles as the token that ties
+`EnableMfa`'s verification to `ConfirmRecoveryCodes`'s promotion of the exact same pending set.
 
 `email_code` verifies against a new `REAUTH` purpose on `email_verification_code`
 (`storepb.EmailVerificationCodePurpose`), alongside the existing `LOGIN` and `PASSWORD_RESET` —
