@@ -1009,23 +1009,39 @@ sites a sweep for the pattern turns up — each one a security-relevant write th
 reports success:
 
 - `Logout` (`auth_service.go:459-463`, also reached from `workspace_service.go:312,421`) logs a
-  `DeleteWebRefreshToken` failure and returns `Empty` with the cookies cleared, so a transient error
-  leaves the server-side session live for its full remaining lifetime while the user believes they logged
-  out — the one moment a user is explicitly asking for revocation. (`DeleteWebRefreshToken` also discards
-  `RowsAffected`, so a silent no-op is equally invisible; the result-checked-delete rule applies here
-  too.)
+  `DeleteWebRefreshToken` failure and returns `Empty` with the cookies cleared, so a real transient DB
+  error leaves the server-side session live for its full remaining lifetime while the user believes they
+  logged out — the one moment a user is explicitly asking for revocation. The fix is to propagate the SQL
+  *error*, not to treat a zero-row delete as failure: for `Logout` an absent row is the *normal success*
+  case (a credential change, the expiry cleaner, or an earlier logout already removed it), and the
+  desired end state — no server-side session — is already met. So `Logout` diverges from the
+  single-use-consume rule deliberately: a consume needs exactly one row (the row *is* the single-use
+  gate), but an idempotent revoke-if-present is satisfied by zero. Keep an absent row successful,
+  surface only genuine errors, and *always* expire the cookies (never return before that), so a user can
+  clear a stale browser session even when the server row is already gone.
 - The OAuth2 revoke endpoint (`revoke.go:60-65`) logs a `DeleteOAuth2RefreshToken` failure and returns
   `200`, telling an MCP client its compromised grant is dead while the row survives up to 30 days. RFC 7009
   wants `200` for an *unknown* token, not a *failed* revocation (`503` is allowed); the two are conflated.
-- The audit interceptor (`audit.go:114-116`) logs a `createAuditLog` failure and returns the response, so
-  an audited call — including a `DisableMfa` or an admin-assisted reset — can succeed leaving nothing in
-  `audit_log`. This one undercuts a claim this design leans on: that "the `bb.users.update` permission
-  check and audit log are the correct control" for the admin recovery paths. A control that silently
-  no-ops on write failure isn't one. The audit write for these methods should fail the request, not be
-  best-effort.
+  Same idempotency caveat as `Logout`: an already-absent token is a legitimate `200`, only a real
+  storage error becomes `503`.
+- The audit interceptor (`audit.go:94-119`) is the deeper of the three, and "return the error instead of
+  swallowing it" is *not* a sufficient fix — because the interceptor runs the handler first (`:94-96`)
+  and writes the audit row afterward (`:98-119`), the credential mutation has **already committed** by
+  the time `createAuditLog` fails, so returning an error only hands the client a misleading failure for a
+  change that did happen, still with no audit record. The ordering is the problem, not the error
+  handling. For the security-sensitive mutations that lean on audit as their control (`DisableMfa`, the
+  admin-assisted resets), the audit row has to be written *inside the handler's own fenced transaction*,
+  so the mutation and its record commit or roll back together — the generic post-hoc interceptor cannot
+  provide that, because it does not share the handler's transaction. This is a real departure from how
+  auditing works for ordinary RPCs, and it is the price of the doc's claim that "the `bb.users.update`
+  permission check and audit log are the correct control": a control that can silently no-op on a write
+  failure after the fact is not one. (An outbox/precommit record is the alternative if threading the
+  audit write through every such handler's transaction proves too invasive; either gives atomicity, which
+  the interceptor alone does not.)
 
 None of the three is introduced by this design, but all three sit on paths it now depends on for its own
-guarantees, so it names them rather than inheriting them silently.
+guarantees, so it names them rather than inheriting them silently — and the audit one in particular is a
+correctness change, not just a stricter error check.
 
 That fix closes the race around *exchanging* an existing grant, but not [a separate gap one step
 earlier](https://github.com/bytebase/bytebase/pull/21235): `handleAuthorizePost`
