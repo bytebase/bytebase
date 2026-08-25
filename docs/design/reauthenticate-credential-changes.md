@@ -870,17 +870,17 @@ stolen session and separate mailbox access could use it against an *already*-MFA
 weaker than the factor actually protecting it (a
 [Codex finding](https://github.com/bytebase/bytebase/pull/21235) against an earlier draft that
 accepted it unconditionally on all four methods). The rule — no live `MFAConfig.OtpSecret`, and either
-`Profile.LastChangePasswordTime` is unset or the workspace's `restriction.disallow_password_signin` is
-set (added by the fourth finding above, once the backfill made the account-level signal alone
-insufficient for pre-existing accounts) — is checked once, in `CredentialProof` verification itself,
-not per-method, so it can't be forgotten on a future caller of the same helper.
-`restriction.disallow_password_signin` *alone*, unconditionally, is still wrong on its own — this doc's
-own earlier version, [caught by Codex](https://github.com/bytebase/bytebase/pull/21235) as too coarse: a
-self-hosted workspace can allow both SSO and local password login at once, and the workspace-wide flag
-can't see that one specific SSO-provisioned user in that mix still has no usable password. The `or`
-clause only adds the flag back in as an alternative path to eligibility, not a replacement for the
-account-level check, and only fires when the flag is affirmatively true — a state where, unlike the
-mixed case Codex caught, every account in the workspace genuinely is passwordless. The account-level
+`Profile.LastChangePasswordTime` is unset or the deployment is SaaS (added by the fourth finding below,
+once the backfill made the account-level signal alone insufficient for pre-existing accounts) — is
+checked once, in `CredentialProof` verification itself, not per-method, so it can't be forgotten on a
+future caller of the same helper. Both halves of that `or` are deliberately principal-scoped:
+`restriction.disallow_password_signin` was tried in the second position twice and is wrong there both
+times — first unconditionally
+([caught by Codex](https://github.com/bytebase/bytebase/pull/21235) as too coarse: a self-hosted
+workspace can allow SSO and local password login at once, and a workspace-wide flag can't see that one
+specific SSO-provisioned user in that mix has no usable password), then as an affirmative-only clause,
+[caught again](https://github.com/bytebase/bytebase/pull/21235) because a workspace flag cannot speak
+for a global principal at all (see the fourth finding below). The account-level
 half leans entirely on `LastChangePasswordTime` meaning what it says, which took a second
 [Codex finding](https://github.com/bytebase/bytebase/pull/21235) to get right: `CreateUser` and
 `Signup` both construct a brand-new local account with an empty `Profile{}` even when the caller
@@ -916,18 +916,34 @@ vs. self-hosted), so "until they change something that legitimately sets the fie
 for exactly the accounts most likely to need one. Combined with `require_2fa`, an existing passwordless
 account with no MFA yet is redirected into an enrollment it now has no self-service way to complete. The
 eligibility rule needs a second, durable clause, not just the account-level one: `LastChangePasswordTime`
-unset **or** the workspace's `restriction.disallow_password_signin` is set. That flag was rejected
-earlier in this doc as an eligibility signal on its own — correctly, since a self-hosted workspace that
-allows *both* SSO and local password login can't use a workspace-wide flag to identify which specific
-users are the passwordless ones. This is different: it only fires when the flag is affirmatively true,
-which means the *entire* workspace has no local passwords — Cloud, unconditionally (SaaS forces the flag
-on), and any self-hosted workspace deliberately configured SSO-only. In both cases every account in the
-workspace genuinely is passwordless, so there's no mixed population left to misidentify, and the clause
-restores eligibility for exactly the accounts the migration would otherwise lock out forever. The
-residual gap narrows to pre-existing passwordless accounts in a *mixed* self-hosted workspace (SSO and
-password both allowed, flag off) — those still have no self-service path back, but unlike Cloud they at
-least have G6's admin-assisted reset as a recovery route, which Cloud has no equivalent of. That
-narrower residual is the wider version of the already-accepted SMTP-less gap (see Non-goals), not a new
+unset **or** the deployment is SaaS (`s.profile.SaaS`).
+
+The obvious candidate for that second clause was the workspace's own `restriction.disallow_password_signin`,
+and [that was unsound](https://github.com/bytebase/bytebase/pull/21235) — worth recording, because the
+reasoning behind it looked airtight and was wrong by one scope level. The argument was: the flag only
+fires when affirmatively set, which means the entire *workspace* has no local passwords, so there's no
+mixed population left to misidentify. True about the workspace, and irrelevant to the principal.
+`getAccountRestriction` is workspace-scoped (`auth_service.go:1147-1153`), while `principal` has no
+workspace column at all — one global account row per person, across every workspace. So in a self-hosted
+multi-workspace deployment, a user with a real, caller-chosen password they use in workspace A becomes
+`email_code`-eligible merely by being evaluated through workspace B, which happens to be SSO-only. That
+is the precise downgrade this rule exists to prevent: a stolen session plus mailbox access, standing in
+for a password the account genuinely has, ending in a replaced MFA configuration.
+
+`s.profile.SaaS` is the same intent at the right scope. It is deployment-wide, not per-workspace, so
+there is no other workspace for a password to hide in; SaaS forces `disallow_password_signin` on every
+workspace and `ChangePassword` refuses to run at all there, so no caller-chosen password can exist on the
+deployment in the first place. That is a property of the whole principal, which is what the rule needs.
+Note this doc uses the workspace flag *elsewhere*, in `ChangePassword`'s own rejection, and that stays —
+the two directions are not symmetric. Refusing to set a password is a safety judgment where being
+over-broad costs a user an operation they can retry; granting `email_code` eligibility is a permission
+judgment where being over-broad is a vulnerability. Same flag, opposite consequences of imprecision.
+
+Self-hosted therefore keeps only the per-principal clause, and its residual gap is pre-existing
+passwordless accounts anywhere self-hosted (not merely in mixed workspaces): they have no self-service
+path back until something legitimately sets the field. Unlike Cloud they do have G6's admin-assisted
+reset as a recovery route, which is exactly the asymmetry that justified giving Cloud a clause of its
+own. That residual is the wider version of the already-accepted SMTP-less gap (see Non-goals), not a new
 kind of gap.
 
 Everything above assumes `LastChangePasswordTime`, once set, stays set — and the SCIM directory-sync
@@ -1286,19 +1302,20 @@ message CredentialProof {
     // AND either its own Profile.LastChangePasswordTime is unset (no password
     // was ever legitimately written for it — see Design → Cloud vs.
     // self-hosted, and note CreateUser/Signup must set this field at creation
-    // for it to mean that) OR the workspace's restriction.disallow_password_signin
-    // is set — bootstrap proof for an account with nothing else yet, never a
-    // substitute for a factor that already exists. The workspace-wide flag is
-    // an alternative path to eligibility, not a replacement for the
-    // account-level check: on its own, an unconditional workspace-wide flag is
-    // too coarse (a self-hosted workspace can run SSO and local password login
-    // side by side, and an individual SSO-provisioned user in that mix still
-    // has no usable password even though the workspace itself allows one) —
-    // but when the flag is affirmatively set, the whole workspace has no local
-    // passwords, so that coarseness doesn't apply, and the flag is what
-    // restores eligibility for pre-existing Cloud/SSO accounts the
-    // LastChangePasswordTime backfill migration would otherwise lock out
-    // permanently (see Design → Verification). The handler checks this
+    // for it to mean that) OR the deployment is SaaS — bootstrap proof for an
+    // account with nothing else yet, never a substitute for a factor that
+    // already exists. The SaaS clause is an alternative path to eligibility,
+    // not a replacement for the account-level check, and restores eligibility
+    // for pre-existing Cloud/SSO accounts the LastChangePasswordTime backfill
+    // migration would otherwise lock out permanently. It is deliberately NOT
+    // the workspace's restriction.disallow_password_signin: principal has no
+    // workspace column, so a workspace-scoped flag cannot speak for a global
+    // account, and in a self-hosted multi-workspace deployment a user with a
+    // real password in one workspace would become eligible via another that
+    // happens to be SSO-only. SaaS is deployment-wide, forces that flag on
+    // every workspace, and rejects ChangePassword outright, so no
+    // caller-chosen password can exist there at all (see Design →
+    // Verification). The handler checks this
     // eligibility itself; it is not just a
     // frontend choice of which field to show. The condition is never true for
     // DisableMfa, or for a rotation's ConfirmRecoveryCodes (both imply live
