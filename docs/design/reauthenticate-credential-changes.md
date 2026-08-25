@@ -4,9 +4,12 @@ Status: proposal · 2026-08-24
 
 `UpdateUser` lets an authenticated caller rewrite their own password, TOTP secret, and recovery
 codes without proving they still control the credential being replaced. Closes T10 in
-[`v1-api-audit-2026-08.md`](v1-api-audit-2026-08.md) entirely: password and MFA lifecycle both move
-off `UpdateUser` onto their own methods, not just a field addition — see
-[Resource design](#resource-design).
+[`v1-api-audit-2026-08.md`](v1-api-audit-2026-08.md) for every path `UpdateUser` and its neighbors
+expose today: password and MFA lifecycle both move off `UpdateUser` onto their own methods, not just a
+field addition — see [Resource design](#resource-design). One residual instance of the same threat
+shape survives in OAuth-enabled workspaces — a still-valid stolen access token minting a brand-new,
+indefinitely renewable OAuth grant at `/authorize` — and is carried forward as a named follow-up, not
+closed here; see G7 and Non-goals.
 
 ## Background
 
@@ -178,8 +181,18 @@ shape for this, matching how login itself works: claim the matching slot (`PASSW
 `EMAIL_CODE`) in the `login_attempt` table for the account
 ([`login-attempt-lockout.md`](login-attempt-lockout.md)) as its own statement, committed unconditionally,
 *before* the locked transaction opens — then verify with `bcrypt.CompareHashAndPassword`, the existing
-`challengeMFACode`/`challengeRecoveryCode` helpers, or a lookup against `email_verification_code` for
-the new `REAUTH` purpose, inside the lock, clearing the already-committed slot on success. Reusing T9's table
+`challengeMFACode` helper (a pure comparison, no DB write, safe to call as-is), or a lookup against
+`email_verification_code` for the new `REAUTH` purpose, inside the lock, clearing the already-committed
+slot on success. `challengeRecoveryCode` (`auth_service.go:601-619`) is not reusable as-is the same
+way — [a sixth finding](https://github.com/bytebase/bytebase/pull/21235): it consumes the code via
+`s.store.UpdateUser`, a standalone statement on the store's own connection, not the transaction the lock
+was just acquired on. Calling it while already holding `SELECT ... FOR UPDATE` on the same principal row
+has that inner update wait on a lock its own outer call is holding — a session waiting on itself,
+indistinguishable from a hang until `statement_timeout` fires, not a false positive to code around.
+`CredentialProof`'s recovery-code path needs its own transaction-aware compare-and-consume: match and
+delete the code, and write `mfa_config`, against the already-open transaction directly, instead of
+routing through the top-level helper. `challengeRecoveryCode` itself stays as-is for `Login`, which
+never holds this lock and has no reason to. Reusing T9's table
 for all three means an attacker with a stolen session but no credential gets the same
 five-guesses-per-ten-minutes bound as at login on every channel — not a fresh oracle, and no new
 lockout kind to build; `RequestReauthCode`'s send side reuses the same table's existing resend
@@ -322,10 +335,44 @@ revocation could have locked anything. `refuseIssuanceByCeiling`, called just be
 (`:129,271`), guards a different thing — the workspace's MCP capability toggle, not a
 per-account credential race — and doesn't lock the principal row either, so it provides no fencing here.
 Same fix, same shape: lock the existing `oauth2_authorization_code`/`oauth2_refresh_token` row first,
-then the principal row, consume, and only then call `issueTokens` — inside the transaction, not around
-it — so a concurrent G7 revocation and a concurrent token exchange land in the same deterministic order
-this doc already established for web sessions, instead of a fifth, OAuth-shaped version of the same race
-surviving because the fix stopped one call site short.
+then the principal row, consume, and only then call `issueTokens`'s store writes — inside the
+transaction, not around it — so a concurrent G7 revocation and a concurrent token exchange land in the
+same deterministic order this doc already established for web sessions, instead of a fifth, OAuth-shaped
+version of the same race surviving because the fix stopped one call site short.
+
+Putting `issueTokens` itself inside that transaction isn't quite right either — [a seventh
+finding](https://github.com/bytebase/bytebase/pull/21235): `issueTokens` (`token.go:489-535`) writes the
+HTTP response via `c.JSON` as its last step, in the same function that does the DB insert. Calling the
+whole function from inside the open transaction means the response goes out with the transaction still
+uncommitted; if the commit then fails, the insert rolls back but the client already has an access token
+response describing a refresh token that no longer exists in the database — self-contained enough to
+answer requests for up to an hour on a grant the server no longer believes it issued. `issueTokens` needs
+splitting: the token generation and the `CreateOAuth2RefreshToken`/`UpdateOAuth2ClientLastActiveAt`
+writes stay inside the transaction; the `c.JSON` response write moves to after it commits, using the
+values the in-transaction part returns rather than writing the response itself.
+
+That same transaction also has to be ordered against a table this design hasn't touched yet — [an eighth
+finding](https://github.com/bytebase/bytebase/pull/21235): `DeleteOAuth2Client`
+(`oauth2_client.go:107-120`) and `DeleteExpiredOAuth2Clients` (`:124-138`) both `DELETE FROM
+oauth2_client` directly, and `oauth2_authorization_code.client_id`/`oauth2_refresh_token.client_id` are
+both `REFERENCES oauth2_client(client_id) ON DELETE CASCADE` — so either delete locks the client row
+first and cascades into locking and deleting its authorization-code and refresh-token rows afterward,
+parent-then-child. The token-exchange fix above holds an existing authorization-code or refresh-token
+row first, then reaches for the client row too — `CreateOAuth2RefreshToken`'s FK reference and
+`UpdateOAuth2ClientLastActiveAt`'s own update both require a lock on `oauth2_client` — child-then-parent,
+the opposite order. A token exchange racing either client-deletion path can deadlock: exchange holding
+the grant row waiting on the client, deletion holding the client waiting on the grant row it's about to
+cascade into. `DeleteOAuth2Client`/`DeleteExpiredOAuth2Clients` predate this doc and are otherwise
+untouched by it, but the new transaction above is what turns a previously-harmless ordering into a live
+deadlock surface, so both need the same correction: lock every existing
+`oauth2_authorization_code`/`oauth2_refresh_token` row referencing the client (in primary-key order) —
+and for the bulk expiry path, every such row across every client being deleted, clients themselves also
+in primary-key order — before locking and deleting the client rows, matching the child-before-parent
+rule this doc already applies everywhere else. Needs the deterministic real-PostgreSQL regression test
+this repo's row-lock-ordering convention requires for new multi-row coordination paths, in both
+directions: a token exchange started first should let a racing client deletion proceed after it commits,
+and a client deletion started first should let a racing token exchange fail closed (invalid_grant, its
+row already gone) rather than deadlock either way.
 
 That fix closes the race around *exchanging* an existing grant, but not [a separate gap one step
 earlier](https://github.com/bytebase/bytebase/pull/21235): `handleAuthorizePost`
@@ -345,14 +392,19 @@ which is a change to token issuance across this system, not a fifth method along
 stolen session and separate mailbox access could use it against an *already*-MFA-protected account,
 weaker than the factor actually protecting it (a
 [Codex finding](https://github.com/bytebase/bytebase/pull/21235) against an earlier draft that
-accepted it unconditionally on all four methods). The rule — `Profile.LastChangePasswordTime` unset
-and no live `MFAConfig.OtpSecret` — is checked once, in `CredentialProof` verification itself, not
-per-method, so it can't be forgotten on a future caller of the same helper. Account-level rather than
-`restriction.disallow_password_signin` (this doc's own earlier version, also
-[caught by Codex](https://github.com/bytebase/bytebase/pull/21235) as too coarse: a self-hosted
-workspace can allow both SSO and local password login at once, and the workspace-wide flag can't see
-that one specific SSO-provisioned user in that mix still has no usable password). The rule leans
-entirely on `LastChangePasswordTime` meaning what it says, which took a second
+accepted it unconditionally on all four methods). The rule — no live `MFAConfig.OtpSecret`, and either
+`Profile.LastChangePasswordTime` is unset or the workspace's `restriction.disallow_password_signin` is
+set (added by the fourth finding above, once the backfill made the account-level signal alone
+insufficient for pre-existing accounts) — is checked once, in `CredentialProof` verification itself,
+not per-method, so it can't be forgotten on a future caller of the same helper.
+`restriction.disallow_password_signin` *alone*, unconditionally, is still wrong on its own — this doc's
+own earlier version, [caught by Codex](https://github.com/bytebase/bytebase/pull/21235) as too coarse: a
+self-hosted workspace can allow both SSO and local password login at once, and the workspace-wide flag
+can't see that one specific SSO-provisioned user in that mix still has no usable password. The `or`
+clause only adds the flag back in as an alternative path to eligibility, not a replacement for the
+account-level check, and only fires when the flag is affirmatively true — a state where, unlike the
+mixed case Codex caught, every account in the workspace genuinely is passwordless. The account-level
+half leans entirely on `LastChangePasswordTime` meaning what it says, which took a second
 [Codex finding](https://github.com/bytebase/bytebase/pull/21235) to get right: `CreateUser` and
 `Signup` both construct a brand-new local account with an empty `Profile{}` even when the caller
 supplies a real, self-chosen password (`auth_service.go:344-349`, `user_service.go:263-268`) — so
@@ -375,12 +427,31 @@ a migration, not just a forward fix: backfill `LastChangePasswordTime` to a non-
 own `created_at` is enough) for every existing `END_USER` row that doesn't already have one set. This
 is deliberately the conservative direction — it can't distinguish, for any given pre-existing row,
 "real password never changed" from "SSO/Cloud placeholder never disclosed," so it treats every unknown
-row as *has* a real password, at the cost of leaving pre-existing passwordless accounts unable to
-self-serve `email_code` until they change something that legitimately sets the field (or the IdP
-step-up follow-up ships) — a wider version of the already-accepted SMTP-less gap, not a new kind of
-gap. The alternative default — treat unknowns as passwordless — is the one that actually matters
-here: it would reopen the downgrade this whole mechanism exists to prevent for every real password
-that predates the migration.
+row as *has* a real password. The alternative default — treat unknowns as passwordless — is the one
+that actually matters here: it would reopen the downgrade this whole mechanism exists to prevent for
+every real password that predates the migration.
+
+Left there, the backfill is one-way and permanent for exactly the population `email_code` exists to
+serve — [a fourth finding](https://github.com/bytebase/bytebase/pull/21235): once
+`LastChangePasswordTime` is non-null, nothing ever unsets it again, and a pre-existing Cloud/SSO account
+has no path back to eligibility — `ChangePassword` itself is rejected on Cloud (see Cloud
+vs. self-hosted), so "until they change something that legitimately sets the field" was never an escape
+for exactly the accounts most likely to need one. Combined with `require_2fa`, an existing passwordless
+account with no MFA yet is redirected into an enrollment it now has no self-service way to complete. The
+eligibility rule needs a second, durable clause, not just the account-level one: `LastChangePasswordTime`
+unset **or** the workspace's `restriction.disallow_password_signin` is set. That flag was rejected
+earlier in this doc as an eligibility signal on its own — correctly, since a self-hosted workspace that
+allows *both* SSO and local password login can't use a workspace-wide flag to identify which specific
+users are the passwordless ones. This is different: it only fires when the flag is affirmatively true,
+which means the *entire* workspace has no local passwords — Cloud, unconditionally (SaaS forces the flag
+on), and any self-hosted workspace deliberately configured SSO-only. In both cases every account in the
+workspace genuinely is passwordless, so there's no mixed population left to misidentify, and the clause
+restores eligibility for exactly the accounts the migration would otherwise lock out forever. The
+residual gap narrows to pre-existing passwordless accounts in a *mixed* self-hosted workspace (SSO and
+password both allowed, flag off) — those still have no self-service path back, but unlike Cloud they at
+least have G6's admin-assisted reset as a recovery route, which Cloud has no equivalent of. That
+narrower residual is the wider version of the already-accepted SMTP-less gap (see Non-goals), not a new
+kind of gap.
 
 Three checks `UpdateUser` enforces today have to move with their fields, not just the credential
 proof — existing behavior this design must carry forward, not decisions it makes new. `ChangePassword`
@@ -679,17 +750,24 @@ message CredentialProof {
     ];
 
     // A one-time code from RequestReauthCode, sent to the account's own
-    // registered email. Valid only when this account's own
-    // Profile.LastChangePasswordTime is unset (no password was ever
-    // legitimately written for it — see Design → Cloud vs. self-hosted, and
-    // note CreateUser/Signup must set this field at creation for it to mean
-    // that) AND it has no live MFA factor — bootstrap proof for an account
-    // with nothing else yet, never a substitute for a factor that already
-    // exists. Account-level, not the workspace-wide disallow_password_signin
-    // restriction: a self-hosted workspace can run SSO and local password
-    // login side by side, and an individual SSO-provisioned user in that mix
-    // still has no usable password even though the workspace itself allows
-    // one. The handler checks this eligibility itself; it is not just a
+    // registered email. Valid only when this account has no live MFA factor,
+    // AND either its own Profile.LastChangePasswordTime is unset (no password
+    // was ever legitimately written for it — see Design → Cloud vs.
+    // self-hosted, and note CreateUser/Signup must set this field at creation
+    // for it to mean that) OR the workspace's restriction.disallow_password_signin
+    // is set — bootstrap proof for an account with nothing else yet, never a
+    // substitute for a factor that already exists. The workspace-wide flag is
+    // an alternative path to eligibility, not a replacement for the
+    // account-level check: on its own, an unconditional workspace-wide flag is
+    // too coarse (a self-hosted workspace can run SSO and local password login
+    // side by side, and an individual SSO-provisioned user in that mix still
+    // has no usable password even though the workspace itself allows one) —
+    // but when the flag is affirmatively set, the whole workspace has no local
+    // passwords, so that coarseness doesn't apply, and the flag is what
+    // restores eligibility for pre-existing Cloud/SSO accounts the
+    // LastChangePasswordTime backfill migration would otherwise lock out
+    // permanently (see Design → Verification). The handler checks this
+    // eligibility itself; it is not just a
     // frontend choice of which field to show. The condition is never true
     // for DisableMfa or ConfirmRecoveryCodes (both imply live MFA), so
     // email_code is only ever actually usable on ChangePassword or
