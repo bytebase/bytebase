@@ -641,6 +641,12 @@ describe("SavedQueryGrantEditor", () => {
       })
     );
     expect(mocks.getSavedQueryPolicy).toHaveBeenCalledTimes(2);
+    // The conflict reload must hand the controls back for a retry.
+    expect(
+      container.querySelector<HTMLButtonElement>(
+        '[data-testid="account-picker"]'
+      )?.disabled
+    ).toBe(false);
     unmount();
   });
 

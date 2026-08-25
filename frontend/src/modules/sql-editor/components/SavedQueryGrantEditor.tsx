@@ -219,6 +219,9 @@ export function SavedQueryGrantEditor({ savedQuery, canManage }: Props) {
           style: "WARN",
           title: t("sql-editor.saved-query-share.policy-changed"),
         });
+        // The write is over; clear saving before the reload, whose own
+        // generation bump makes the guarded finally skip it.
+        setSaving(false);
         await load();
         return false;
       }
