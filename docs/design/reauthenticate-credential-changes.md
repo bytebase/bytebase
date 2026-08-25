@@ -451,10 +451,12 @@ has been one or the other.
 
 By that rule the participants are: G7's revocation on all four credential-mutating methods;
 `Login`/`Signup`, `Refresh`, and `switchWorkspaceInternal`; the OAuth mint (`handleAuthorizePost`) and
-both exchange paths; `UpdateEmail`; `handleReauthorize`; and both retained `DeleteWebRefreshTokensByUser`
-callers, `ResetPassword` and `UpdateUser`'s admin-assisted password path. The last three are the ones the
-enumerated version missed, and each was missed the same way — it had already been given the ordered-lock
-fix in an earlier round, which reads like the whole treatment but is only half of it.
+both exchange paths; `UpdateEmail`; `handleReauthorize`; the three retained password resets —
+`ResetPassword`, `UpdateUser`'s admin-assisted path, and the `bytebase recovery` CLI
+(`backend/component/recovery/service.go:361-368`, see Token-minting paths for why it was the easiest to
+miss and the worst to have missed). Several of these were missed by earlier enumerations the same way —
+each had already been given the ordered-lock fix in an earlier round, which reads like the whole
+treatment but is only half of it.
 
 **One account fence is not enough**, though — [the rule above is right and its
 single scope is wrong](https://github.com/bytebase/bytebase/pull/21235). OAuth grants hang off two
@@ -579,9 +581,22 @@ Two rollout details this needs and the temp-token version does not. Access token
 upgrade carry no stamp, so a missing claim has to mean something: treat it as *refuse to mint* rather
 than *allow*, since the alternative leaves the hole open for a full token lifetime after deploy and the
 cost is one extra login for tokens already near expiry. And `LastCredentialChangeTime` is now load-bearing
-for both this and the temp token, so the six mutations that bump it — the four here plus `ResetPassword`
-and the admin-assisted reset — must bump it inside their fenced transaction, not before or after, or a
-token minted mid-mutation could carry a stamp that never matches anything.
+for both this and the temp token, so the seven mutations that bump it — the four here plus `ResetPassword`,
+the admin-assisted reset, and the `bytebase recovery` CLI reset (below) — must bump it inside their fenced
+transaction, not before or after, or a token minted mid-mutation could carry a stamp that never matches
+anything.
+
+The seventh is the one a `backend/api/`-scoped search cannot see —
+[caught by Codex](https://github.com/bytebase/bytebase/pull/21235): the self-hosted operator recovery CLI
+(`backend/component/recovery/service.go:361-368`) writes `PasswordHash` through the same `Store.UpdateUser`,
+and today it revokes nothing at all — not even the best-effort web-token delete the other two retained
+resets have. A break-glass reset is the *most* adversarial context this design serves: the operator is
+resetting the password precisely because the account may be compromised, and today every session, OAuth
+grant, and MFA temp token the attacker holds survives it. It joins the other resets fully: account fence
+first, password write, all-three-table revocation, and the generation bump, in one fenced transaction.
+(Its `LastChangePasswordTime` was already handled — `Store.UpdateUser` bumps that automatically on any
+`PasswordHash` write, `principal.go:429-434` — which is exactly why the *other* stamp has to be verified
+per-writer rather than assumed to tag along.)
 
 `UpdateEmail` earns membership without deleting anything: it scans and locks the child rows that exist,
 then runs `UPDATE principal SET email = ?`, whose `ON UPDATE CASCADE` re-derives and locks whatever child
@@ -645,19 +660,24 @@ standalone `Store.UpdateUser` (`auth_service_idp.go:179-186`), and that call *is
 authentication step, which this design now runs under the principal lock — so SSO login for a previously
 deactivated user would stop working entirely. It moves into the enclosing transaction like the others.
 
-Auditing every `Store.UpdateUser`/`CreateUser`/`UpdateUserEmail` call site under `backend/api/` rather
-than pattern-matching on the ones already found, the complete set reachable from a lock-holding flow is:
+Auditing every `Store.UpdateUser`/`CreateUser`/`UpdateUserEmail` call site — across the whole `backend/`
+tree, a scope [that itself had to be corrected](https://github.com/bytebase/bytebase/pull/21235): the
+first version of this audit searched only `backend/api/`, and the `bytebase recovery` CLI's password
+writer lives in `backend/component/recovery/`, which is precisely how it went unlisted — rather than
+pattern-matching on the ones already found, the complete set reachable from a lock-holding flow is:
 `challengeRecoveryCode` (`auth_service.go:606`), `switchWorkspaceInternal` (`:971`) and `finalizeLogin`
 (`:1045`), the three account-creation paths (`auth_service.go:345`, `auth_service_idp.go:129`,
 `auth_service_email_code.go:267`), `ResetPassword`'s own password write
 (`auth_service_email_code.go:116`), the SSO undelete (`auth_service_idp.go:184`), `UpdateUser`/
 `UpdateEmail` themselves (`user_service.go:487,703`), and the two SCIM profile writers
 (`webhook.go:433,942`). All are addressed above. The remaining call sites — admin
-`DeleteUser`/`UndeleteUser` (`user_service.go:558,637`) and the SCIM create/delete pair
-(`webhook.go:141,270`) — are lifecycle operations that never run inside a login or credential flow, so
-they cannot self-deadlock; they take the account fence under the rule above, and admin deactivation's
-separate problem (it revokes no sessions at all today) is the one named in the account-creation
-paragraph.
+`DeleteUser`/`UndeleteUser` (`user_service.go:558,637`), the SCIM create/delete pair
+(`webhook.go:141,270`), and the recovery CLI's password write
+(`backend/component/recovery/service.go:366`, a standalone process run while no server flow holds any
+lock) — are operations that never run inside a login or credential flow, so they cannot self-deadlock;
+they take the account fence under the rule above. Admin deactivation's separate problem (it revokes no
+sessions at all today) is the one named in the account-creation paragraph, and the recovery CLI's
+(it revokes nothing either, in the most adversarial context of all) is covered in Token-minting paths.
 
 That same root cause [reaches OAuth token exchange too](https://github.com/bytebase/bytebase/pull/21235),
 unfixed by any of the above: `handleAuthorizationCodeGrant` and `handleRefreshTokenGrant`
@@ -1175,7 +1195,16 @@ service UserService {
     option (bytebase.v1.mcp_denial_reason) = TAKES_OVER_ACCOUNT;
   }
 
-  // Turns MFA off for `name`. Rejected for any non-admin caller while the
+  // Turns MFA off for `name` by clearing the ENTIRE MFAConfig — the live
+  // secret and recovery codes, and equally TempOtpSecret/TempRecoveryCodes
+  // and their timestamps. Any pending enrollment or rotation dies with the
+  // disable, deliberately: "turn MFA off" moots whatever was in flight, and
+  // preserving pending state would let a later ConfirmRecoveryCodes
+  // re-enable MFA through its first-time-enrollment branch, silently undoing
+  // this call (see ConfirmRecoveryCodes). Matches what UpdateUser's
+  // mfa_enabled=false already does today (patch.MFAConfig = &MFAConfig{},
+  // user_service.go:410) — stated here because it is now load-bearing, not
+  // incidental. Rejected for any non-admin caller while the
   // workspace requires MFA (Require_2Fa), self-service or admin-assisted
   // alike, same as UpdateUser enforces today. The admin path itself
   // (name != caller) is self-hosted only: SaaS rejects any cross-user call
@@ -1221,14 +1250,21 @@ service UserService {
   // invalidating the old set — but only the *exact* pending set named by
   // pending_version; a mismatch (superseded by a later RegenerateRecoveryCodes
   // call, own or someone else's) is rejected rather than silently promoting
-  // whatever is currently pending. For a rotation (the account already had a
-  // live OtpSecret before this pending set), also re-checks MFAConfig.OtpSecret
-  // is still live, inside the same locked transaction — pending_version alone
-  // doesn't catch DisableMfa running in between, since disabling clears
-  // MFAConfig entirely without touching the recovery-code temp state or its
-  // version, so a stale confirmation after MFA was turned off must still
-  // fail rather than write live recovery codes onto an account with no
-  // factor left for them to back up. For first-time enrollment (no live
+  // whatever is currently pending. A DisableMfa in between is caught the same
+  // way, because DisableMfa wipes the ENTIRE MFAConfig — pending temp state
+  // included, see DisableMfa — so a stale confirmation finds no pending set
+  // at all and fails on the pending_version check in either branch. That
+  // wipe is load-bearing for the branch selector below: without it, an
+  // account after a mid-rotation disable (no live OtpSecret, pending state
+  // surviving) would be indistinguishable from a first-time enrollment
+  // mid-flight, and this call would promote the pending secret down the
+  // enrollment branch — silently re-enabling the MFA the owner just proved
+  // they wanted off. The rotation branch still re-checks MFAConfig.OtpSecret
+  // is live inside the locked transaction, as a structural guard: the branch
+  // split's meaning depends on no path ever clearing the live secret while
+  // leaving pending state behind, and this check is what turns a future
+  // violation of that into a visible failure instead of a silent promote.
+  // For first-time enrollment (no live
   // OtpSecret when StartMfaEnrollment minted this pending set — see
   // EnableMfa), that precondition doesn't apply; instead this call requires
   // otp_code and promotes the secret alongside the recovery codes, atomically,
