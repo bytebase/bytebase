@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { AccountMultiSelect } from "@/components/AccountMultiSelect";
 import { UserCell } from "@/components/UserCell";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -381,9 +382,7 @@ export function SavedQueryGrantEditor({ savedQuery, canManage }: Props) {
                     currentUserEmail &&
                     creatorMember ===
                       getUserEmailInBinding(currentUserEmail) ? (
-                      <span className="text-xs text-control-light bg-control-bg rounded-xs px-1">
-                        {t("common.you")}
-                      </span>
+                      <Badge className="text-xs">{t("common.you")}</Badge>
                     ) : undefined
                   }
                 />
@@ -464,11 +463,11 @@ function LevelSelect({
   size = "md",
   className,
 }: {
-  value: SavedQueryBinding_Level;
-  onChange: (level: SavedQueryBinding_Level) => void;
-  disabled?: boolean;
-  size?: "sm" | "md";
-  className?: string;
+  readonly value: SavedQueryBinding_Level;
+  readonly onChange: (level: SavedQueryBinding_Level) => void;
+  readonly disabled?: boolean;
+  readonly size?: "sm" | "md";
+  readonly className?: string;
 }) {
   const { t } = useTranslation();
   return (
@@ -504,7 +503,13 @@ const levelLabel = (t: TFunction, level: SavedQueryBinding_Level) =>
     ? t("sql-editor.saved-query-share.editor")
     : t("sql-editor.saved-query-share.viewer");
 
-function GranteeCell({ member, badge }: { member: string; badge?: ReactNode }) {
+function GranteeCell({
+  member,
+  badge,
+}: {
+  readonly member: string;
+  readonly badge?: ReactNode;
+}) {
   const isGroup = member.startsWith(groupBindingPrefix);
   // Subscribe to the store slice behind this row so it repaints when the
   // prefetch lands; the display projection itself is the shared members

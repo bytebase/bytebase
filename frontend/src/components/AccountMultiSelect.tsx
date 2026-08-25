@@ -520,11 +520,19 @@ export function AccountMultiSelect({
                   return (
                     <div
                       key={group.name}
+                      role="button"
+                      tabIndex={0}
                       className={cn(
                         "flex items-center gap-x-3 px-3 py-2 cursor-pointer hover:bg-control-bg",
                         selected && "bg-accent/5"
                       )}
                       onClick={() => toggle(group.name)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          toggle(group.name);
+                        }
+                      }}
                     >
                       <SelectionCheckbox selected={selected} />
                       <div className="size-7 rounded-full bg-control-bg-hover flex items-center justify-center shrink-0">
