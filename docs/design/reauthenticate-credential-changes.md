@@ -217,7 +217,19 @@ holding it"), and `authenticateLogin` → `completeMFALogin` is exactly that aut
 MFA-second-step login. A recovery-code login would hang the same way a `CredentialProof` recovery-code
 check would. Both call sites need the same fix: the transaction-aware compare-and-consume replaces
 `challengeRecoveryCode` everywhere it would otherwise run inside this lock, not just in the four new
-methods — `challengeMFACode` is still fine everywhere, since it never writes. Reusing T9's table
+methods — `challengeMFACode` is still fine everywhere, since it never writes.
+
+Consuming a recovery code as `EnableMfa`'s own proof, specifically for a rotation, creates one more
+place the whole-column-replace rule above already warned about —
+[caught in a later round](https://github.com/bytebase/bytebase/pull/21235): a rotation's `CredentialProof`
+can itself be `recovery_code` (see below), so the same request both consumes one live recovery code (the
+proof) and promotes `TempOtpSecret` to `OtpSecret` (the mutation) — two writes to the same `mfa_config`
+column, in the same transaction. Building the promotion's patch from the snapshot this transaction locked
+at the *start* — before the proof consumed anything — would write back a `RecoveryCodes` list that still
+contains the code the proof step just used, resurrecting a single-use credential the same request just
+spent. The two writes have to be one: consume the code and promote the secret against a single patch
+built from the post-consumption state (or folded into the same `UPDATE ... SET mfa_config = ?` as one
+statement), never two sequential writes to a column `Store.UpdateUser` always replaces whole. Reusing T9's table
 for all three means an attacker with a stolen session but no credential gets the same
 five-guesses-per-ten-minutes bound as at login on every channel — not a fresh oracle, and no new
 lockout kind to build; `RequestReauthCode`'s send side reuses the same table's existing resend
@@ -408,6 +420,19 @@ then the principal row, consume, and only then call `issueTokens`'s store writes
 transaction, not around it — so a concurrent G7 revocation and a concurrent token exchange land in the
 same deterministic order this doc already established for web sessions, instead of a fifth, OAuth-shaped
 version of the same race surviving because the fix stopped one call site short.
+
+Inserting that principal-lock wait ahead of the consume opens a narrower gap of its own —
+[caught in a later round](https://github.com/bytebase/bytebase/pull/21235): `validateAuthorizationCode`/
+`validateRefreshTokenGrant` check `expires_at` before this fix's lock is ever acquired, and
+`ConsumeOAuth2AuthorizationCode`/`ConsumeOAuth2RefreshToken` (`oauth2_authorization_code.go:97-117`,
+similarly for refresh tokens) match only on `code`/`token_hash` and `client_id` — no `expires_at`
+predicate at all. Before this fix, the gap between that validation and the consume was negligible; now
+it's however long the principal lock stays contended, which a concurrent revocation or another exchange
+can stretch arbitrarily. A code or token that validated as not-yet-expired can cross its expiry while
+waiting on the lock and still get consumed and exchanged once it's finally acquired, since nothing
+re-checks. Same shape as the REAUTH fix above: add `AND expires_at > now()` to both consume queries
+directly, rather than a separate re-check step, so a grant that expired mid-wait fails the consume itself
+instead of relying on a check that already ran before the wait began.
 
 Putting `issueTokens` itself inside that transaction isn't quite right either — [a seventh
 finding](https://github.com/bytebase/bytebase/pull/21235): `issueTokens` (`token.go:489-535`) writes the
