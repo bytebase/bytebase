@@ -162,28 +162,32 @@ Locking the account row for the mutation closes the credential-vs-credential rac
 [separate one](https://github.com/bytebase/bytebase/pull/21235) between revocation and session
 issuance, which never acquires that lock today. First found against `Refresh` specifically (it
 consumes the caller's old refresh token, does its own work, and only inserts the replacement at the
-end, `auth_service.go:479` through `:543`) — but [the same gap exists](https://github.com/bytebase/bytebase/pull/21235)
-everywhere else a session gets minted: `Login`/`Signup` (`finalizeLogin`, `auth_service.go:1036`) and
-`switchWorkspaceInternal` (`:1005`) call the identical `issueSessionCookies` (`:1071`) with no lock
-either. All four are one root cause, not four separate ones: an attacker's request authenticates or
-consumes its old token before a concurrent `DeleteWebRefreshTokensByUser` runs, then inserts its new
-refresh token after that revocation has already committed — leaving a token that looks freshly issued
-but was never covered by the sweep that was supposed to end their access, regardless of which of the
-four paths it came through. This is the same shape AGENTS.md's row-lock-ordering section already names
-for `nextProjectID`: locking prevents wait-for cycles on *existing* rows, but can't by itself protect a
-child row that doesn't exist yet, so the writer of that new row has to serialize and validate against
-the parent itself. Rather than fixing `Refresh`, `finalizeLogin`, and `switchWorkspaceInternal`
-separately — three chances to fix three, or forget a fourth caller later — the fix belongs in
-`issueSessionCookies` itself, the one place all of them already funnel through: acquire the account row
-lock as part of minting the refresh token, not just locking without re-checking anything. Two outcomes,
-both correct, depending on which side gets the lock first: session issuance acquires it first and
-finishes (consumes any old token, inserts the new one, commits) before a concurrent revocation starts —
-the revocation then runs, sees the newly-inserted token like any other, and deletes it, since
-`DeleteWebRefreshTokensByUser` deletes whatever exists when it runs, not a snapshot from when it
-started; or the revocation acquires the lock first, deletes everything including whatever token
-`Refresh` was about to consume, commits, and issuance then finds its old token already gone (or simply
-proceeds, for `Login`/`Signup`/`switchWorkspaceInternal`, which don't consume an old token to begin
-with) rather than silently minting a session that survives a revocation that already ran.
+end, `auth_service.go:479` through `:543`) — the same gap exists everywhere else a session gets minted:
+`Login`/`Signup` (`finalizeLogin`, `auth_service.go:1036`) and `switchWorkspaceInternal` (`:1005`) call
+the identical `issueSessionCookies` (`:1071`) with no lock either, and all four are one root cause, not
+four separate ones.
+
+Putting the lock only around `issueSessionCookies`'s own insert — this doc's own first attempt at this
+fix — [turned out not to actually close it](https://github.com/bytebase/bytebase/pull/21235):
+authentication (`Login`) and old-token consumption (`Refresh`, `switchWorkspaceInternal`) all happen
+*before* `issueSessionCookies` is ever called, unlocked, so by the time the lock is finally acquired
+there's nothing left for it to protect — the proof that justified issuing a session was already
+established against whatever the row looked like earlier, and locking the insert doesn't retroactively
+re-check it. The earlier reasoning that `Refresh` "finds its old token already gone" if a revocation
+won the race was wrong for the same reason: `Refresh` consumes its own old token unconditionally, as
+the first thing it does, regardless of whether a revocation ran concurrently — that consumption isn't
+a signal about revocation at all. The lock has to move to *before* authentication/consumption, not just
+before the insert, so the entire authenticate-or-consume-then-issue sequence runs while holding it —
+matching how `nextProjectID` locks the project and requires it active *before* allocating an ID, not
+after. With that ordering, whichever side — issuance or revocation — acquires the lock first now
+determines the outcome correctly: issuance first means it authenticates against the still-current
+credential, issues a session, and commits — then revocation runs and deletes that session along with
+everything else, since `DeleteWebRefreshTokensByUser` deletes whatever exists when it runs, not a
+snapshot from when the request started; revocation first means it changes the credential and clears
+all tokens first — then issuance acquires the lock and re-authenticates against the *now-changed*
+credential (or, for `Refresh`/`switchWorkspaceInternal`, finds the token it means to consume already
+gone), and fails closed instead of silently minting a session that outlives the revocation meant to end
+it.
 
 `email_code`'s eligibility is a server-side check, not a UI affordance — otherwise an attacker with a
 stolen session and separate mailbox access could use it against an *already*-MFA-protected account,
@@ -209,6 +213,22 @@ server — leaving it unset only for the genuinely passwordless creation paths, 
 it to anyone. `ResetPassword` never had this problem: it only ever touches the password, MFA stays
 live regardless of how it's
 reached.
+
+Setting it going forward isn't enough on its own —
+[a third finding](https://github.com/bytebase/bytebase/pull/21235): every local account that already
+exists at rollout, including ones with a real password its owner has simply never changed since
+signup, still has `LastChangePasswordTime` unset today, and this design would newly classify every one
+of them as eligible for `email_code` alongside the accounts that actually are passwordless. This needs
+a migration, not just a forward fix: backfill `LastChangePasswordTime` to a non-null value (the row's
+own `created_at` is enough) for every existing `END_USER` row that doesn't already have one set. This
+is deliberately the conservative direction — it can't distinguish, for any given pre-existing row,
+"real password never changed" from "SSO/Cloud placeholder never disclosed," so it treats every unknown
+row as *has* a real password, at the cost of leaving pre-existing passwordless accounts unable to
+self-serve `email_code` until they change something that legitimately sets the field (or the IdP
+step-up follow-up ships) — a wider version of the already-accepted SMTP-less gap, not a new kind of
+gap. The alternative default — treat unknowns as passwordless — is the one that actually matters
+here: it would reopen the downgrade this whole mechanism exists to prevent for every real password
+that predates the migration.
 
 Three checks `UpdateUser` enforces today have to move with their fields, not just the credential
 proof — existing behavior this design must carry forward, not decisions it makes new. `ChangePassword`
