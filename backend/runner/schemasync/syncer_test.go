@@ -27,11 +27,6 @@ func TestSyncCyclesRecordEmptySuccess(t *testing.T) {
 
 	syncer.trySyncAll(ctx)
 	require.NoError(t, syncer.syncQueuedDatabases(ctx))
-	lock, acquired, err := store.TryAdvisoryLock(ctx, stores.GetDB(), store.AdvisoryLockKeySchemaSyncer)
-	require.NoError(t, err)
-	require.True(t, acquired)
-	syncer.trySyncAll(ctx)
-	require.NoError(t, lock.Release())
 	panicSyncer := &Syncer{productMetrics: metrics}
 	panicSyncer.trySyncAll(ctx)
 	require.Error(t, panicSyncer.syncQueuedDatabases(ctx))
@@ -39,7 +34,45 @@ func TestSyncCyclesRecordEmptySuccess(t *testing.T) {
 	require.Equal(t, uint64(1), runnerRunCount(t, metrics, productmetrics.RunnerDatabaseSync, productmetrics.ResultSuccess))
 	require.Equal(t, uint64(1), runnerRunCount(t, metrics, productmetrics.RunnerInstanceSync, productmetrics.ResultFailure))
 	require.Equal(t, uint64(1), runnerRunCount(t, metrics, productmetrics.RunnerDatabaseSync, productmetrics.ResultFailure))
+}
+
+func TestTrySyncAllSkipsWhenAdvisoryLockHeld(t *testing.T) {
+	ctx := context.Background()
+	stores := setupSyncerStore(ctx, t)
+	metrics := productmetrics.New(nil, nil)
+	syncer := NewSyncer(stores, nil, nil, metrics)
+
+	lockTx, err := stores.GetDB().BeginTx(ctx, nil)
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, lockTx.Rollback())
+	}()
+	acquired, err := store.TryAdvisoryXactLock(ctx, lockTx, store.AdvisoryLockKeySchemaSyncer)
+	require.NoError(t, err)
+	require.True(t, acquired)
+
+	syncer.trySyncAll(ctx)
 	require.Equal(t, uint64(1), runnerRunCount(t, metrics, productmetrics.RunnerInstanceSync, productmetrics.ResultSkipped))
+	require.Zero(t, runnerRunCount(t, metrics, productmetrics.RunnerInstanceSync, productmetrics.ResultSuccess))
+}
+
+func TestTrySyncAllReleasesAdvisoryLockAfterRollback(t *testing.T) {
+	ctx := context.Background()
+	stores := setupSyncerStore(ctx, t)
+	metrics := productmetrics.New(nil, nil)
+	syncer := NewSyncer(stores, nil, nil, metrics)
+
+	syncer.trySyncAll(ctx)
+	require.Equal(t, uint64(1), runnerRunCount(t, metrics, productmetrics.RunnerInstanceSync, productmetrics.ResultSuccess))
+
+	tx, err := stores.GetDB().BeginTx(ctx, nil)
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, tx.Rollback())
+	}()
+	acquired, err := store.TryAdvisoryXactLock(ctx, tx, store.AdvisoryLockKeySchemaSyncer)
+	require.NoError(t, err)
+	require.True(t, acquired)
 }
 
 func TestSyncInstancePanicRecordsFailure(t *testing.T) {
