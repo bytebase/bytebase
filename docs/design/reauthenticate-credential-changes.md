@@ -387,6 +387,38 @@ issuance acquires whatever lock it needs next and either re-authenticates agains
 credential or finds the token it means to consume already gone, and fails closed instead of silently
 minting a session that outlives the revocation meant to end it.
 
+That "whichever side reaches the shared row first" framing only holds for two parties —
+[a genuine three-party gap found in a later round](https://github.com/bytebase/bytebase/pull/21235):
+`Login`/`Signup` locks the principal, inserts its new `web_refresh_token` row, and commits, releasing
+the principal lock — but revocation's own child-row lock step ran *earlier*, against whatever rows
+existed *before* that insert, so the newly-committed session isn't among the rows revocation already
+locked. Revocation still has to catch it — "deletes whatever exists when it runs, not a snapshot from
+when the request started" is the whole point of the paragraph above — so its actual deletion, run after
+it finally acquires the principal lock, re-derives the current row set and reaches for that new row too.
+If a *third* transaction — an ordinary `Refresh` against that same brand-new session — locks it first
+(the correct child-before-parent order for an *existing* row, same as any other `Refresh`), the two
+sides now deadlock exactly like the two-party case above, just assembled by three transactions instead
+of two: revocation holds the principal, waiting on the row `Refresh` holds; `Refresh` holds the row,
+waiting on the principal revocation holds. Neither one used the wrong order — revocation locked every
+row that existed at scan time before touching the principal, and `Refresh` locked its row before
+reaching for the principal — the row that breaks it is one neither transaction had anything to order
+against, because a still-uncommitted `Login` created it in between.
+
+Ordering alone can't close this — the row genuinely didn't exist yet when revocation did its own
+child-locking pass, so no fixed table order helps. Closing it needs a lock revocation and *every*
+child-row-inserting issuance path share before either one goes near the account's tokens: one
+account-scoped advisory lock (keyed on the principal's stable ID), held for the rest of the transaction
+that acquires it and released automatically on commit or rollback, no separate unlock to forget.
+Revocation acquires it first, before its child-row scan even runs. Every path that inserts a brand-new
+child row — `Login`/`Signup`'s session insert, the trailing insert `Refresh`/`switchWorkspaceInternal`
+do after re-authenticating, and the OAuth mint/exchange paths this doc already covers — acquires the
+same lock immediately before that insert. With it held, `Login` can't commit a new session while a
+revocation is anywhere between its scan and its commit, so there's no window left for a third party to
+grab a row revocation hasn't accounted for; a revocation can't start its scan while a new session is
+mid-insert either, so it never undercounts what it's about to delete. Needs a deterministic
+real-PostgreSQL regression test for this specific three-transaction interleaving, not just the two-party
+cases already required elsewhere in this doc.
+
 Holding that lock through the rest of the flow surfaces [one more standalone write in the same
 sequence](https://github.com/bytebase/bytebase/pull/21235): `finalizeLogin` (shared by `Login`/`Signup`,
 `auth_service.go:1044-1054`) and `switchWorkspaceInternal` (`:970-980`) both bump
@@ -602,6 +634,26 @@ password both allowed, flag off) — those still have no self-service path back,
 least have G6's admin-assisted reset as a recovery route, which Cloud has no equivalent of. That
 narrower residual is the wider version of the already-accepted SMTP-less gap (see Non-goals), not a new
 kind of gap.
+
+Everything above assumes `LastChangePasswordTime`, once set, stays set — and one existing writer can
+clear it [without ever meaning to](https://github.com/bytebase/bytebase/pull/21235):
+`updateUserFromSCIM` (`backend/api/directory-sync/webhook.go:930-943`) wants to change one subfield,
+`Profile.Source`, but passes the whole `user.Profile` it read earlier into `Store.UpdateUser`, which
+replaces the entire `profile` JSONB column (`principal.go:446-451`) — the same whole-column-replace
+hazard already found in `finalizeLogin`, in a writer this doc hadn't looked at because SCIM has nothing
+to do with credentials. A SCIM PUT/PATCH that reads a profile with `LastChangePasswordTime` unset, then
+loses the race to a `ChangePassword` that sets it, writes the stale profile back afterward and clears it
+— leaving an account that genuinely has a password looking passwordless, which is precisely the state
+that makes `email_code` eligible. The consequence is worse here than the login-timestamp version: that
+one reverted a field to a stale value, this one reverts it to *unset*, straight into the eligibility
+condition. Two acceptable fixes, and this design doesn't need to pick between them:
+`updateUserFromSCIM` can update only the `source` subfield (a targeted `jsonb_set`, leaving every other
+field untouched by construction), or it can join the same lock-and-re-read discipline every other
+profile writer in this doc now follows — read the profile inside the locked transaction, patch `source`
+on *that* copy, write it back before commit. The subfield update is the smaller change and doesn't put a
+directory-sync webhook behind a per-account lock; either one closes it. What isn't acceptable is leaving
+a whole-profile writer outside the coordination that the entire `email_code` eligibility rule depends
+on.
 
 Three checks `UpdateUser` enforces today have to move with their fields, not just the credential
 proof — existing behavior this design must carry forward, not decisions it makes new. `ChangePassword`
