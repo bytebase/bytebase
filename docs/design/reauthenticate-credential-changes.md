@@ -186,6 +186,20 @@ child row that doesn't exist yet — the `nextProjectID` shape, not the child-be
 revocation and issuance land on opposite sides of that split for exactly that reason, not
 inconsistently.
 
+One more consequence of the same fix, [caught in the next round](https://github.com/bytebase/bytebase/pull/21235):
+before this design, nothing in this codebase ever locked `web_refresh_token` before `principal` — this
+new child-before-parent ordering is the first, so it has to be checked against every *existing* code
+path that touches both tables, not just the ones this doc otherwise redesigns. There's exactly one:
+`UpdateUserEmail` (`UpdateEmail`, unrelated to T10, untouched everywhere else in this doc) runs
+`UPDATE principal SET email = ?` (`principal.go:496`), and `web_refresh_token.user_email` is declared
+`ON UPDATE CASCADE` (`LATEST.sql:715-720`) — changing the email principal locks first, then cascades
+into locking and rewriting every `web_refresh_token` row referencing it, parent-then-child, opposite of
+what revocation now does. `Store.UpdateUser` — the generic patch method all four state-changing
+methods in this doc actually use — never sets `email` (`principal.go:419-450`), so this is the one
+other path, not an open-ended search. `UpdateUserEmail` needs the same child-first fix: lock the
+account's existing `web_refresh_token` rows explicitly (`SELECT ... FOR UPDATE`) before running the
+`UPDATE principal` that would otherwise cascade-lock them afterward.
+
 Locking the account row for the mutation closes the credential-vs-credential race above, but not a
 [separate one](https://github.com/bytebase/bytebase/pull/21235) between revocation and session
 issuance, which never acquires that lock today. First found against `Refresh` specifically (it
