@@ -26,7 +26,7 @@ import { convertMemberToFullname, hasWorkspacePermissionV2 } from "@/utils";
 // recreate the static ESM cycle the SQL editor connection move fixed.
 // Members surfaces are React-only, so a React-side location is natural.
 
-const getMemberBinding = (
+export const getMemberBinding = (
   member: string,
   searchText: string
 ): MemberBinding | undefined => {

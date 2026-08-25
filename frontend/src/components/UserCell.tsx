@@ -85,7 +85,7 @@ export function UserCell({
   ) : (
     <span
       className={cn(
-        "font-medium text-main",
+        "font-medium text-main truncate",
         size === "sm" && "text-sm",
         nameClassName
       )}
@@ -106,13 +106,15 @@ export function UserCell({
     <div className={cn("flex items-center gap-x-3", className)}>
       {showAvatar &&
         (avatar ?? <UserAvatar title={title || subtitle || "?"} size={size} />)}
-      <div className="flex flex-col">
-        <div className="flex items-center gap-x-1.5">
+      <div className="flex flex-col min-w-0">
+        <div className="flex items-center gap-x-1.5 min-w-0">
           {hoverableNameEl}
           {badges}
         </div>
         {subtitle && (
-          <span className="text-control-light text-xs">{subtitle}</span>
+          <span className="text-control-light text-xs truncate">
+            {subtitle}
+          </span>
         )}
       </div>
     </div>

@@ -137,4 +137,153 @@ describe("AccountMultiSelect", () => {
 
     act(() => root.unmount());
   });
+
+  test("hides excluded accounts from the dropdown", async () => {
+    mocks.listUsers.mockResolvedValue({
+      users: [
+        {
+          name: "users/alice@example.com",
+          email: "alice@example.com",
+          title: "Alice",
+        },
+        {
+          name: "users/bob@example.com",
+          email: "bob@example.com",
+          title: "Bob",
+        },
+      ],
+      nextPageToken: "",
+    });
+    mocks.listGroups.mockResolvedValue({
+      groups: [
+        {
+          name: "groups/g1@example.com",
+          email: "g1@example.com",
+          title: "G1",
+          members: [],
+        },
+        {
+          name: "groups/g2@example.com",
+          email: "g2@example.com",
+          title: "G2",
+          members: [],
+        },
+      ],
+      nextPageToken: "",
+    });
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <AccountMultiSelect
+          value={[]}
+          onChange={() => {}}
+          excludeAccounts={["user:alice@example.com", "group:g1@example.com"]}
+        />
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      container.firstElementChild?.firstElementChild?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      );
+    });
+
+    const rendered = Array.from(container.querySelectorAll("b")).map(
+      (element) => element.textContent
+    );
+    expect(rendered).toContain("Bob");
+    expect(rendered).toContain("G2");
+    expect(rendered).not.toContain("Alice");
+    expect(rendered).not.toContain("G1");
+
+    // The fetch over-fetches by the exclusion count so filtering cannot
+    // shrink the pickable page below the default.
+    expect(mocks.listUsers).toHaveBeenCalledWith(
+      expect.objectContaining({ pageSize: 52 })
+    );
+
+    act(() => root.unmount());
+  });
+
+  test("shows the no-data state when every fetched account is excluded", async () => {
+    mocks.listGroups.mockResolvedValue({ groups: [], nextPageToken: "" });
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(
+        <AccountMultiSelect
+          value={[]}
+          onChange={() => {}}
+          excludeAccounts={["user:alice@example.com"]}
+        />
+      );
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      container.firstElementChild?.firstElementChild?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      );
+    });
+
+    expect(container.textContent).toContain("common.no-data");
+    act(() => root.unmount());
+  });
+
+  test("Escape closes only the dropdown and does not bubble further", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    // Listen above the React root (React 18 delegates at the container, so a
+    // same-node listener would fire regardless of stopPropagation) — the real
+    // popover's Escape dismissal also listens at the document level.
+    const outerKeydown = vi.fn();
+    document.addEventListener("keydown", outerKeydown);
+    await act(async () => {
+      root.render(<AccountMultiSelect value={[]} onChange={() => {}} />);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+    await act(async () => {
+      container.firstElementChild?.firstElementChild?.dispatchEvent(
+        new MouseEvent("click", { bubbles: true })
+      );
+    });
+    const search = container.querySelector('[data-testid="search"]');
+    expect(search).not.toBeNull();
+
+    await act(async () => {
+      search?.dispatchEvent(
+        new KeyboardEvent("keydown", { key: "Escape", bubbles: true })
+      );
+    });
+
+    expect(container.querySelector('[data-testid="search"]')).toBeNull();
+    expect(outerKeydown).not.toHaveBeenCalled();
+    document.removeEventListener("keydown", outerKeydown);
+    act(() => root.unmount());
+  });
+
+  test("renders a caller-provided placeholder when empty", () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    act(() => {
+      root.render(
+        <AccountMultiSelect
+          value={[]}
+          onChange={() => {}}
+          placeholder="Add users or groups"
+        />
+      );
+    });
+    expect(container.textContent).toContain("Add users or groups");
+    act(() => root.unmount());
+  });
 });

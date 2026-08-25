@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
 import { SQL_EDITOR_SAVED_QUERY_MODULE } from "@/app/router/handles";
 import { Button } from "@/components/ui/button";
+import { Separator } from "@/components/ui/separator";
 import { writeTextToClipboard } from "@/lib/clipboard";
 import { useAppStore } from "@/stores/app";
 import type { SavedQuery } from "@/types/proto-es/v1/saved_query_service_pb";
@@ -63,16 +64,30 @@ export function SharePopoverBody({ savedQuery }: Props) {
   };
 
   return (
-    <div className="w-96 p-2 flex flex-col gap-y-4">
-      <section className="w-full flex flex-row justify-between items-center">
-        <div className="pr-4">
-          <h2 className="text-lg font-semibold">{t("common.share")}</h2>
-        </div>
-      </section>
+    <div className="w-96 flex flex-col gap-y-3">
+      {/* One compact header row: the action plus what it acts on. A popover
+          is not a dialog, so the 18px dialog-title role does not apply —
+          14px medium, with the saved query's title carrying the context the
+          bare word "Share" lacks. */}
+      <div className="flex items-baseline gap-x-1.5 min-w-0">
+        <h2 className="text-sm font-medium shrink-0">{t("common.share")}</h2>
+        {savedQuery?.title && (
+          <span className="text-sm text-control-light truncate">
+            {t("sql-editor.saved-query-share.share-title", {
+              title: savedQuery.title,
+            })}
+          </span>
+        )}
+      </div>
 
       {savedQuery && (
         <SavedQueryGrantEditor savedQuery={savedQuery} canManage={canManage} />
       )}
+
+      {/* The grants above carry access; the link below carries location. The
+          separator makes that split structural instead of another heading —
+          and only exists when the grant editor above it does. */}
+      {savedQuery && <Separator />}
 
       {/* Link input + copy button — single bordered container with rounded
           inner corners. No group-level focus ring; only the input shows a
@@ -80,7 +95,7 @@ export function SharePopoverBody({ savedQuery }: Props) {
       <div className="flex items-center h-8 rounded-xs border border-control-border overflow-hidden">
         {/* Link icon prefix (gray addon) */}
         <div className="flex items-center justify-center h-full px-2 bg-control-bg text-control-light border-r border-control-border">
-          <Link2 className="size-5" />
+          <Link2 className="size-4" />
         </div>
         {/* URL input — always read-only; the link itself is not editable. */}
         <input

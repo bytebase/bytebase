@@ -3105,13 +3105,16 @@
     "rows-upper-limit": "クエリ結果の数が上限に達しました",
     "save-sheet": "クエリを保存",
     "saved-query-share": {
+      "add-people": "ユーザーまたはグループを追加",
       "editor": "編集者",
-      "granted-at-other-level": "他のレベルで {{count}} 件付与されています。",
+      "load-failed": "共有設定を読み込めませんでした。",
       "not-shared": "誰にも共有されていません。",
       "only-users-and-groups": "アクセス権を付与できるのはユーザーとグループのみです。",
+      "owner": "オーナー",
+      "people-with-access": "アクセスできるユーザー",
       "policy-changed": "共有設定が別の場所で変更されました。最新の状態を再読み込みしました。",
       "private-hint": "この保存済みクエリを開けるのは、あなたとワークスペース管理者のみです。",
-      "shared-with": "共有先",
+      "share-title": "「{{title}}」",
       "viewer": "閲覧者"
     },
     "scroll-to-bottom": "末尾へスクロール",
