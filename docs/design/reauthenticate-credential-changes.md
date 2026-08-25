@@ -784,7 +784,14 @@ service UserService {
   // EnableMfa), that precondition doesn't apply; instead this call requires
   // otp_code and promotes the secret alongside the recovery codes, atomically,
   // completing what EnableMfa already verified but deliberately left
-  // unpromoted (see Design → Verification). The caller's acknowledgment that
+  // unpromoted (see Design → Verification). That branch also runs
+  // isMFATempSecretExpired before promoting, the same check EnableMfa itself
+  // runs — EnableMfa's own pass over it protects nothing here, since it
+  // records no state ConfirmRecoveryCodes can see and this call may run
+  // arbitrarily later, or without EnableMfa ever having run at all; a TOTP
+  // code stays computable from a stale secret indefinitely, so otp_code
+  // matching and pending_version matching together still say nothing about
+  // whether the enrollment window has closed. The caller's acknowledgment that
   // they saved the new codes, not a proof step on its own — but promotion is
   // exactly the moment the old codes stop working, so it's gated like every
   // other promotion in this design. name must be the caller's own.
@@ -1105,6 +1112,18 @@ since it never wrote anything either. `EnableMfaRequest.pending_version` still g
 against being silently superseded before `EnableMfa` runs — general temp-state freshness, not
 specifically a recovery-codes protection, and for enrollment now doubles as the token that ties
 `EnableMfa`'s verification to `ConfirmRecoveryCodes`'s promotion of the exact same pending set.
+
+Deferring promotion to `ConfirmRecoveryCodes` also deferred the expiry check without saying so —
+[caught in a later round](https://github.com/bytebase/bytebase/pull/21235): `EnableMfa` still runs
+`isMFATempSecretExpired` before it verifies `otp_code`, but for enrollment that check now protects
+nothing, since `EnableMfa` writes no state `ConfirmRecoveryCodes` can see and the two calls can be
+separated by however long the user takes to save their codes — or `ConfirmRecoveryCodes` can be called
+directly, `EnableMfa` never having run at all. A TOTP code stays computable from a stale secret
+indefinitely; only `isMFATempSecretExpired` catches a pending set that's simply gone stale with no
+replacement minted, the same gap `pending_version` alone was already established not to cover
+(see `EnableMfa` above). `ConfirmRecoveryCodes`'s enrollment branch runs the identical
+`isMFATempSecretExpired` check itself, immediately before promoting, rather than trusting whatever
+`EnableMfa` may or may not have already checked.
 
 `email_code` verifies against a new `REAUTH` purpose on `email_verification_code`
 (`storepb.EmailVerificationCodePurpose`), alongside the existing `LOGIN` and `PASSWORD_RESET` —
