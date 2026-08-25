@@ -61,12 +61,15 @@ A fix scoped to literally the two audited lines leaves both of these open. All f
   user's password or MFA must not need the credential being replaced
   ([`split-profile-self-service-vs-admin.md`](split-profile-self-service-vs-admin.md)).
 - **G7** All four state-changing methods revoke the account's other *refresh tokens* on success, same
-  as password change already does. Scoped precisely: this closes the ability to mint fresh access
-  tokens afterward (the 7-day exposure window), not the access tokens already issued — those are
-  self-contained JWTs `APIAuthInterceptor` accepts until they expire regardless of refresh-token
+  as password change already does, and — unlike password change today — atomically: the credential
+  mutation and the revocation commit in one transaction, so a revocation failure fails the whole
+  request instead of silently leaving refresh tokens live the way `UpdateUser`'s log-and-continue
+  (`user_service.go:436-438`) does today. Scoped precisely: this closes the ability to mint fresh
+  access tokens afterward (the 7-day exposure window), not the access tokens already issued — those
+  are self-contained JWTs `APIAuthInterceptor` accepts until they expire regardless of refresh-token
   state, so a stolen one already in use keeps working for up to `access_token_duration` (default 1h)
-  after any of these four actions. Unchanged from today's password change, which has carried this
-  same caveat since Problem; not something this design newly introduces or newly closes.
+  after any of these four actions. That access-token caveat is unchanged from today's password change
+  and carried since Problem; the atomicity is not — it's tightened here, not merely copied.
 
 ### Non-goals
 
@@ -126,11 +129,14 @@ device; `email_code` covers the case neither of those helps — first-time enrol
 prior exists to prove control of at all (see Cloud vs. self-hosted). Because each method requires its
 proof in its own request message, whether it needs re-authentication is visible in its schema —
 nothing to audit across a shared patch. On success, all four state-changing methods call
-`DeleteWebRefreshTokensByUser` — today only `ChangePassword` inherits this from `UpdateUser`'s
-existing password branch (`user_service.go:436`); `EnableMfa`/`DisableMfa`/`ConfirmRecoveryCodes`
-need the same call added (G7). Precisely: this forces re-login, including the caller's own current
-session, the next time a refresh token would have minted a new access token — it doesn't revoke an
-access token already in someone's hands, which keeps working until it expires regardless (see G7).
+`DeleteWebRefreshTokensByUser` in the same transaction as the credential mutation itself — today only
+`ChangePassword` inherits a call to it at all, from `UpdateUser`'s existing password branch
+(`user_service.go:436`), and even there it's best-effort (`:437-438` logs and continues on error, the
+password change commits regardless); `EnableMfa`/`DisableMfa`/`ConfirmRecoveryCodes` need the call
+added, and all four need it atomic rather than copying that log-and-continue pattern (G7). Precisely:
+this forces re-login, including the caller's own current session, the next time a refresh token would
+have minted a new access token — it doesn't revoke an access token already in someone's hands, which
+keeps working until it expires regardless (see G7).
 
 `email_code`'s eligibility is a server-side check, not a UI affordance — otherwise an attacker with a
 stolen session and separate mailbox access could use it against an *already*-MFA-protected account,
@@ -286,17 +292,18 @@ service UserService {
     option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
   }
 
-  // Validates otp_code against the temporary secret StartMfaEnrollment
-  // persisted for this account (re-read from the store by name, not carried
-  // in this request) and promotes it to the caller's live MFA factor,
-  // replacing any existing one. name must be the caller's own — no admin
-  // path, same reason as ChangePassword.
+  // Validates otp_code and pending_version against the temporary state
+  // StartMfaEnrollment persisted for this account (re-read from the store
+  // by name, not carried in this request) and promotes it — the secret and
+  // whatever recovery codes are currently pending alongside it — to the
+  // caller's live MFA factor, replacing any existing one. name must be the
+  // caller's own — no admin path, same reason as ChangePassword.
   rpc EnableMfa(EnableMfaRequest) returns (User) {
     option (google.api.http) = {
       post: "/v1/{name=users/*}:enableMfa"
       body: "*"
     };
-    option (google.api.method_signature) = "name,otp_code,credential";
+    option (google.api.method_signature) = "name,otp_code,credential,pending_version";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
@@ -348,7 +355,7 @@ service UserService {
       post: "/v1/{name=users/*}:confirmRecoveryCodes"
       body: "*"
     };
-    option (google.api.method_signature) = "name,credential";
+    option (google.api.method_signature) = "name,credential,pending_version";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
@@ -473,6 +480,12 @@ message MfaEnrollment {
     (bytebase.v1.audit_behavior) = SENSITIVE
   ];
   google.protobuf.Timestamp expire_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Same shared temp-state version RegenerateRecoveryCodesResponse.pending_version
+  // identifies (see its comment) — StartMfaEnrollment and RegenerateRecoveryCodes
+  // both mint into the same account's temp MFA state, so they share one version.
+  // Echo to EnableMfa.
+  google.protobuf.Timestamp pending_version = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message EnableMfaRequest {
@@ -492,6 +505,14 @@ message EnableMfaRequest {
   // above — that proves the new enrollment, this proves the caller still
   // owns the account before the swap.
   CredentialProof credential = 3 [(google.api.field_behavior) = REQUIRED];
+
+  // Echoed from MfaEnrollment.pending_version. otp_code alone only proves
+  // the caller knows the current TempOtpSecret; it says nothing about
+  // whether TempRecoveryCodes — minted alongside it, promoted alongside it
+  // — has since been overwritten by an intervening RegenerateRecoveryCodes
+  // call. A mismatch here is rejected for the same reason a mismatched
+  // ConfirmRecoveryCodesRequest.pending_version is.
+  google.protobuf.Timestamp pending_version = 4 [(google.api.field_behavior) = REQUIRED];
 }
 
 message DisableMfaRequest {
@@ -537,8 +558,11 @@ message RegenerateRecoveryCodesResponse {
     (bytebase.v1.audit_behavior) = SENSITIVE
   ];
 
-  // Identifies this specific pending set — the store's own mint timestamp
-  // for it, not a newly invented token. Pass back to ConfirmRecoveryCodes.
+  // Identifies the account's current temp-MFA-state generation — the
+  // store's own mint timestamp, not a newly invented token, shared with
+  // MfaEnrollment.pending_version because StartMfaEnrollment and this
+  // method mint into the same underlying temp state. Pass back to
+  // ConfirmRecoveryCodes.
   google.protobuf.Timestamp pending_version = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 ```
@@ -573,6 +597,22 @@ nothing equivalent to check computation against, so `pending_version` — the mi
 echoed back and matched exactly — plays that role instead: it doesn't prove the caller's identity
 (`CredentialProof` still does that), it proves the caller is confirming the *specific* set they
 actually received, so a set superseded by any later mint is rejected rather than silently promoted.
+
+That "fails closed" claim about `otp_code` turned out to only cover half of what `EnableMfa` promotes
+— [caught in the same review round](https://github.com/bytebase/bytebase/pull/21235):
+`StartMfaEnrollment` mints `TempOtpSecret` *and* `TempRecoveryCodes` together, and `EnableMfa`
+promotes both together, but only `otp_code` was bound to anything. A stolen-session caller with no
+credential could call the still-proof-free `RegenerateRecoveryCodes` mid-enrollment, overwriting
+`TempRecoveryCodes` with a set only they know, while `TempOtpSecret` stays untouched — so the real
+owner's `otp_code` still validates fine, `EnableMfa` still succeeds, and it promotes the attacker's
+recovery codes right alongside the owner's legitimate TOTP secret. `pending_version` closes this the
+same way: `StartMfaEnrollment` and `RegenerateRecoveryCodes` mint into the *same* underlying temp
+state and share one version (`MfaEnrollment.pending_version` and
+`RegenerateRecoveryCodesResponse.pending_version` are the same read), so an intervening call to either
+one — not just `RegenerateRecoveryCodes` — invalidates any outstanding `EnableMfa`/
+`ConfirmRecoveryCodes` request in flight, regardless of which of the two temp fields it actually
+touched. A verified-but-stale `otp_code` no longer implies "promote whatever's currently pending
+alongside it."
 
 `email_code` verifies against a new `REAUTH` purpose on `email_verification_code`
 (`storepb.EmailVerificationCodePurpose`), alongside the existing `LOGIN` and `PASSWORD_RESET` —
