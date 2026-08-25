@@ -428,7 +428,8 @@ of this paragraph was wrong twice in a row, each time by naming the paths that h
 transaction that reads or scans this account's token rows and then writes based on what it found, and any
 transaction that inserts one, takes the fence as its first statement.* Both halves matter — a scanner
 without the fence can have rows appear underneath it, and an inserter without the fence is what makes
-them appear. A path that satisfies the ordered-lock contract but skips the fence is still broken: ordering
+them appear. (The one case that cannot take a fence first is an account that doesn't exist yet; see
+account creation below, where the uncommitted principal row does the same job.) A path that satisfies the ordered-lock contract but skips the fence is still broken: ordering
 governs rows that exist, the fence governs rows that don't exist yet, and every finding in this section
 has been one or the other.
 
@@ -468,6 +469,34 @@ rule that governs rows governs fences — `DeleteExpiredOAuth2Clients` takes its
 `client_id` order, and a revocation spanning several of an account's clients takes those in `client_id`
 order too, after the account fence. Arbitrary but fixed is the whole requirement; picking account-first
 just matches the order the rest of this doc already reads in.
+
+One participant *cannot* obey "as its first statement," and saying so is the fix rather than an exception
+to wave at — [caught the round after](https://github.com/bytebase/bytebase/pull/21235): account creation.
+`Signup` (`auth_service.go:345,361`) calls `Store.CreateUser` and then `finalizeLogin` as two separate
+calls, and `CreateUser` runs a bare `QueryRowContext` on the store's own handle (`principal.go`,
+`INSERT INTO principal ... RETURNING id`) — autocommit. The same shape covers the other two creation
+paths, SSO auto-provisioning (`auth_service_idp.go:129`) and Cloud email-code auto-provisioning
+(`auth_service_email_code.go:267`), both of which flow into the same `finalizeLogin` (`:223`). The account
+fence is keyed on `principal.id`, which does not exist until that insert commits, so a newborn account
+literally has nothing to take a fence on when its flow begins.
+
+The gap that leaves is not theoretical: the principal is committed and visible for the whole window
+between `CreateUser` returning and `finalizeLogin` inserting the session. An admin deactivation or
+admin-assisted password reset landing in that window finds a real account with zero sessions, revokes
+nothing, and reports success — and then the original signup inserts its refresh token afterward, leaving
+a live session on an account that was just deactivated or had its password reset out from under it. No
+fence ordering helps, because the fence didn't exist yet on one side.
+
+Creation and session issuance become one transaction: insert the principal, take the account fence on the
+id that insert returns, insert the session, commit. Inside it the uncommitted parent does the fence's job
+by itself — no other transaction can see the row at all, so none can act on the account in the window,
+and an admin path racing it fails to find the user rather than half-succeeding against it. That is the
+correct outcome: creation either happens completely, session and all, or not at all. This also folds the
+creation paths into the same `nextProjectID`-shaped discipline the rest of this section uses — lock (or
+here, own) the parent before writing the child, rather than committing the parent and hoping nothing
+happens next. Needs its own interleaving test: an admin deactivation or reset issued against an account
+mid-signup must either lose cleanly (user not yet visible) or win cleanly (signup rolls back), never
+observe the account and miss its session.
 
 `UpdateEmail` earns membership without deleting anything: it scans and locks the child rows that exist,
 then runs `UPDATE principal SET email = ?`, whose `ON UPDATE CASCADE` re-derives and locks whatever child
