@@ -735,6 +735,72 @@ describe("SavedQueryGrantEditor", () => {
     readOnly.unmount();
   });
 
+  test("a write finishing after a saved-query switch cannot touch the new editor", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    // Query A: start a remove whose write resolves under our control.
+    await act(async () => {
+      root.render(
+        <SavedQueryGrantEditor savedQuery={mockSavedQuery} canManage={true} />
+      );
+    });
+    let finish: () => void = () => {};
+    mocks.setSavedQueryPolicy.mockImplementationOnce(
+      (_name, policy) =>
+        new Promise((resolve) => {
+          finish = () => resolve(policy as SavedQueryPolicy);
+        })
+    );
+    const editorRow = rowFor(container, "user:editor@x.com");
+    await act(async () => {
+      editorRow
+        ?.querySelector<HTMLButtonElement>('button[aria-label="common.remove"]')
+        ?.click();
+    });
+
+    // Switch to query B while A's write is still in flight.
+    mocks.getSavedQueryPolicy.mockImplementation(async () =>
+      makePolicy({
+        bindings: [
+          { level: SavedQueryBinding_Level.VIEWER, members: ["user:b@x.com"] },
+        ],
+        etag: "b1",
+      })
+    );
+    await act(async () => {
+      root.render(
+        <SavedQueryGrantEditor
+          savedQuery={
+            {
+              ...(mockSavedQuery as object),
+              name: "projects/proj1/savedQueries/2",
+            } as never
+          }
+          canManage={true}
+        />
+      );
+    });
+    expect(rowFor(container, "user:b@x.com")).not.toBeNull();
+    // B's controls are live, not held hostage by A's in-flight write.
+    expect(
+      container.querySelector<HTMLButtonElement>(
+        '[data-testid="account-picker"]'
+      )?.disabled
+    ).toBe(false);
+
+    // A's write resolves late: B's rows must be untouched by its echo.
+    await act(async () => {
+      finish();
+    });
+    expect(rowFor(container, "user:b@x.com")).not.toBeNull();
+    expect(rowFor(container, "user:editor@x.com")).toBeNull();
+
+    act(() => root.unmount());
+    container.remove();
+  });
+
   test("bindings at unknown levels pass through rewrites untouched", async () => {
     mocks.getSavedQueryPolicy.mockImplementation(async () =>
       makePolicy({

@@ -134,6 +134,7 @@ export function SavedQueryGrantEditor({ savedQuery, canManage }: Props) {
     setPolicy(undefined);
     setPending([]);
     setInviteLevel(SavedQueryBinding_Level.VIEWER);
+    setSaving(false);
     void load();
   }, [load]);
 
@@ -176,6 +177,10 @@ export function SavedQueryGrantEditor({ savedQuery, canManage }: Props) {
   // Whether the write succeeded — Add keeps its staged chips on failure.
   const writeGrants = async (next: Grant[]): Promise<boolean> => {
     if (!policy) return false;
+    // The write belongs to the editor state it started from; once a switch to
+    // another saved query bumps the generation, its completion must neither
+    // replace the new policy nor reload/toast for the old query.
+    const generation = loadGeneration.current;
     const bindings = [
       ...GRANTABLE_LEVELS.map((level) =>
         createProto(SavedQueryBindingSchema, {
@@ -201,9 +206,11 @@ export function SavedQueryGrantEditor({ savedQuery, canManage }: Props) {
         savedQuery.name,
         createProto(SavedQueryPolicySchema, { bindings, etag: policy.etag })
       );
+      if (generation !== loadGeneration.current) return false;
       setPolicy(updated);
       return true;
     } catch (error) {
+      if (generation !== loadGeneration.current) return false;
       if (error instanceof ConnectError && error.code === Code.Aborted) {
         // Somebody else changed the grants between the read and this write.
         // Reload rather than retrying, so their change is not overwritten.
@@ -223,7 +230,7 @@ export function SavedQueryGrantEditor({ savedQuery, canManage }: Props) {
       });
       return false;
     } finally {
-      setSaving(false);
+      if (generation === loadGeneration.current) setSaving(false);
     }
   };
 
