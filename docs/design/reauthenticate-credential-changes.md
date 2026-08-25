@@ -110,7 +110,7 @@ for the admin-assisted path, where G6 means no proof is needed anyway.
 
 ## Design
 
-**Verification.** `ChangePassword`, `EnableMfa`, `DisableMfa`, and `RegenerateRecoveryCodes` each take
+**Verification.** `ChangePassword`, `EnableMfa`, `DisableMfa`, and `ConfirmRecoveryCodes` each take
 a `CredentialProof` — the current password, a live OTP or recovery code where the account has MFA, or
 an emailed code where neither exists — and check it before touching anything: claim the matching slot
 (`PASSWORD`, `MFA`, or `EMAIL_CODE`) in the T9 `login_attempt` table for the account
@@ -127,7 +127,7 @@ prior exists to prove control of at all (see Cloud vs. self-hosted). Because eac
 proof in its own request message, whether it needs re-authentication is visible in its schema —
 nothing to audit across a shared patch. On success, all four state-changing methods call
 `DeleteWebRefreshTokensByUser` — today only `ChangePassword` inherits this from `UpdateUser`'s
-existing password branch (`user_service.go:436`); `EnableMfa`/`DisableMfa`/`RegenerateRecoveryCodes`
+existing password branch (`user_service.go:436`); `EnableMfa`/`DisableMfa`/`ConfirmRecoveryCodes`
 need the same call added (G7). Precisely: this forces re-login, including the caller's own current
 session, the next time a refresh token would have minted a new access token — it doesn't revoke an
 access token already in someone's hands, which keeps working until it expires regardless (see G7).
@@ -194,7 +194,11 @@ with no escape route when the workspace requires it. `CredentialProof` gains a f
 **Frontend.** The four call sites in `AccountSettingsPage.tsx`, `TwoFactorSetupPage`, and
 `RegenerateRecoveryCodesView` move to their matching new method and gain a credential-proof field —
 no new dialogs, since [`split-profile-self-service-vs-admin.md`](split-profile-self-service-vs-admin.md)
-already gives password and 2FA changes their own confirmations. That field needs a way to reach for
+already gives password and 2FA changes their own confirmations.
+`RegenerateRecoveryCodesView`'s existing shape barely changes: it already calls one RPC on mount
+(mint) and a second when the user confirms they've downloaded the codes (promote) — `credential` just
+moves onto the second call (`ConfirmRecoveryCodes`), where the download-confirmation button already
+lives. That field needs a way to reach for
 `email_code` when the account has no password and no MFA yet — a "email me a code" link inline with the
 proof field, calling `RequestReauthCode`, rather than a fifth dialog. This is a breaking proto change;
 frontend and backend ship as one rollout on both Cloud and self-hosted (a single `go:embed`'d image,
@@ -208,9 +212,11 @@ around for a field that's disappearing anyway.
 
 ## API
 
-Six new methods on `UserService` (same service `UpdateEmail` already lives in, rather than a new
-service): one per credential state transition, plus `RequestReauthCode`, the send side of the fourth
-`CredentialProof` option. Full proto below, then what each piece is doing.
+Seven new methods on `UserService` (same service `UpdateEmail` already lives in, rather than a new
+service): one per credential state transition, `RequestReauthCode` (the send side of the fourth
+`CredentialProof` option), and `ConfirmRecoveryCodes` (recovery codes mint-then-confirm the same way
+MFA enrollment does, for a different reason — see Alternatives). Full proto below, then what each
+piece is doing.
 
 ### Service methods
 
@@ -296,31 +302,51 @@ service UserService {
     option (bytebase.v1.mcp_denial_reason) = TAKES_OVER_ACCOUNT;
   }
 
-  // Replaces the caller's recovery codes.
+  // Mints a new set of recovery codes, persisted as the account's pending
+  // set (storepb.MFAConfig.TempRecoveryCodes — reused, not new) alongside
+  // the still-live old ones, and returns them for the caller to save. Not
+  // yet live, so no proof is required here, same as StartMfaEnrollment.
   rpc RegenerateRecoveryCodes(RegenerateRecoveryCodesRequest) returns (RegenerateRecoveryCodesResponse) {
     option (google.api.http) = {
       post: "/v1/{name=users/*}:regenerateRecoveryCodes"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
+  }
+
+  // Promotes the pending set RegenerateRecoveryCodes minted to live,
+  // invalidating the old set. The caller's acknowledgment that they saved
+  // the new codes, not a proof step — but promotion is exactly the moment
+  // the old codes stop working, so it's gated like every other promotion
+  // in this design.
+  rpc ConfirmRecoveryCodes(ConfirmRecoveryCodesRequest) returns (User) {
+    option (google.api.http) = {
+      post: "/v1/{name=users/*}:confirmRecoveryCodes"
       body: "*"
     };
     option (google.api.method_signature) = "name,credential";
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
+    option (bytebase.v1.mcp_denial_reason) = TAKES_OVER_ACCOUNT;
   }
 }
 ```
 
-`mcp_denial_reason` isn't the same value across all six methods, even though all six are `FORBIDDEN`:
-the enum distinguishes "rewrites credentials, response carries none" (`TAKES_OVER_ACCOUNT`), "puts a
-usable secret directly in the response body" (`MINTS_CREDENTIAL`), and "drives the out-of-band flow
-that delivers the secret a login accepts" (`RESETS_CREDENTIAL`). `StartMfaEnrollment` returns a fresh
-TOTP secret; `RegenerateRecoveryCodes` returns fresh, immediately-live codes — both get
-`MINTS_CREDENTIAL`. `ChangePassword`/`EnableMfa`/`DisableMfa` return only `User`, so they get
-`TAKES_OVER_ACCOUNT`, matching what `UpdateUser` already carries today for the same operations.
-`RequestReauthCode` returns nothing but *sends* a credential-proving secret out of band — the same
-shape `RequestPasswordReset` already carries this reason for — so it gets `RESETS_CREDENTIAL`, the one
-value none of the other five use.
+`mcp_denial_reason` isn't the same value across all seven methods, even though all seven are
+`FORBIDDEN`: the enum distinguishes "rewrites credentials, response carries none"
+(`TAKES_OVER_ACCOUNT`), "puts a usable secret directly in the response body" (`MINTS_CREDENTIAL`), and
+"drives the out-of-band flow that delivers the secret a login accepts" (`RESETS_CREDENTIAL`).
+`StartMfaEnrollment` returns a fresh TOTP secret; `RegenerateRecoveryCodes` returns fresh codes that
+aren't live yet — both put a secret in the response body before anything is decided, so both get
+`MINTS_CREDENTIAL`. `ChangePassword`/`EnableMfa`/`DisableMfa`/`ConfirmRecoveryCodes` return only
+`User`, so they get `TAKES_OVER_ACCOUNT`, matching what `UpdateUser` already carries today for the
+same operations. `RequestReauthCode` returns nothing but *sends* a credential-proving secret out of
+band — the same shape `RequestPasswordReset` already carries this reason for — so it gets
+`RESETS_CREDENTIAL`, the one value none of the other six use.
 
 ### Messages
 
@@ -355,9 +381,9 @@ message CredentialProof {
     // an account with nothing else yet, never a substitute for a factor
     // that already exists. The handler checks this eligibility itself; it
     // is not just a frontend choice of which field to show. That condition
-    // is never true for DisableMfa or RegenerateRecoveryCodes (both imply
-    // live MFA), so email_code is only ever actually usable on
-    // ChangePassword or first-time EnableMfa.
+    // is never true for DisableMfa or ConfirmRecoveryCodes (both imply live
+    // MFA), so email_code is only ever actually usable on ChangePassword or
+    // first-time EnableMfa.
     string email_code = 4 [
       (bytebase.v1.audit_behavior) = SENSITIVE,
       (buf.validate.field).string.max_len = 64
@@ -467,6 +493,13 @@ message RegenerateRecoveryCodesRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/User"}
   ];
+}
+
+message ConfirmRecoveryCodesRequest {
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/User"}
+  ];
   CredentialProof credential = 2 [(google.api.field_behavior) = REQUIRED];
 }
 
@@ -484,9 +517,17 @@ also serves LDAP bind; nothing reachable from these six methods ever touches an 
 `otp_code`/`recovery_code`/`email_code` take `max_len = 64`, matching `LoginRequest`'s existing fields
 of the same name.
 
-`RegenerateRecoveryCodes` collapses today's mint-then-promote pair into one call: recovery codes have
-no client-side proof step the way a TOTP code does (nothing to "verify you can compute"), so the
-two-step shape in the current code was only ever an accident of sharing plumbing with TOTP enrollment.
+`RegenerateRecoveryCodes`/`ConfirmRecoveryCodes` keep today's mint-then-promote shape — an earlier
+draft of this doc collapsed it into one call, reasoning that recovery codes have no client-side proof
+step the way a TOTP code does (nothing to "verify you can compute"), so the two-step shape looked like
+an accident of sharing plumbing with TOTP enrollment. Wrong, per a
+[Codex finding](https://github.com/bytebase/bytebase/pull/21235): the two steps aren't about proving
+computation, they're about confirming *receipt* — `RegenerateRecoveryCodesView.tsx:60-75` already
+disables the promote button until the user reports downloading the codes, precisely so a lost
+response, a closed tab, or a crash between mint and promote can't leave someone with live MFA and zero
+saved recovery codes. Splitting the RPC preserves that property structurally: the old codes stay valid
+through `RegenerateRecoveryCodes` (mint) and only stop working once `ConfirmRecoveryCodes` runs, so a
+client that never gets a chance to call `ConfirmRecoveryCodes` — for any reason — has lost nothing.
 
 `email_code` verifies against a new `REAUTH` purpose on `email_verification_code`
 (`storepb.EmailVerificationCodePurpose`), alongside the existing `LOGIN` and `PASSWORD_RESET` —
@@ -561,9 +602,18 @@ account's live MFA state, which `EnableMfa`/`DisableMfa` name directly as a matc
 existing `handleEnable2FA`/`handleDisable2FA` vocabulary in `AccountSettingsPage.tsx`. `ChangePassword`
 and `RegenerateRecoveryCodes` need no qualifier — recovery codes only ever mean the MFA kind, matching
 today's `regenerate_recovery_codes` field name and `RegenerateRecoveryCodesView` component.
+`ConfirmRecoveryCodes` isn't `EnableRecoveryCodes` — recovery codes aren't a feature with an on/off
+state the way MFA is, they're always live once any exist, so "confirm" names what the caller is
+actually doing (acknowledging receipt), not a state transition that doesn't exist.
 
 ## Alternatives
 
+- **Collapse recovery-code regeneration into one call** (this doc's own earlier draft) rather than
+  the `RegenerateRecoveryCodes`/`ConfirmRecoveryCodes` pair. Reasoned that recovery codes have no
+  client-side proof step the way a TOTP code does, so the existing two-step shape looked accidental.
+  Wrong: the two steps aren't about proof, they're about confirming receipt before the old codes stop
+  working — `RegenerateRecoveryCodesView.tsx` already disables its promote button until the user
+  reports downloading the codes, and one call would have silently dropped that safety property.
 - **Skip the proof entirely for first-time MFA enrollment**, on the theory that there's nothing live
   yet to take over. Rejected: an attacker with a stolen session who enrolls their own device on a
   victim's account doesn't just add a factor — once `MFAConfig.OtpSecret` is non-empty, `Login`
