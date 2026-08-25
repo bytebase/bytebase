@@ -191,8 +191,14 @@ exactly that: it reads the row (`:429`) and deletes it (`:443`) as two separate 
 own connection, and discards the delete's own success (`_ = s.store.DeleteEmailVerificationCodeIfMatch`)
 — nothing stops two concurrent proofs from both reading the row before either deletes it, and both being
 told they matched. `CredentialProof`'s `email_code` path needs the same shape as the recovery-code fix
-below: a `DELETE ... WHERE email = ? AND purpose = ? AND code_hash = ?` against the open transaction,
-required to affect a row, not read-then-delete-and-ignore. `challengeRecoveryCode`
+below: a `DELETE ... WHERE email = ? AND purpose = ? AND code_hash = ? AND expires_at > now()` against
+the open transaction, required to affect a row, not read-then-delete-and-ignore.
+The `expires_at` clause isn't optional —
+[caught in a later round](https://github.com/bytebase/bytebase/pull/21235): matching only on
+email/purpose/hash would let an already-expired row still consume successfully for as long as it
+survives until the hourly cleanup job removes it, `verifyEmailCode` itself checks `row.ExpiresAt` before
+ever deleting (`:436-438`), and dropping that check here would leave an intercepted, expired code usable
+against a credential change for up to that same hour. `challengeRecoveryCode`
 (`auth_service.go:601-619`) is not reusable as-is the same
 way — [a sixth finding](https://github.com/bytebase/bytebase/pull/21235): it consumes the code via
 `s.store.UpdateUser`, a standalone statement on the store's own connection, not the transaction the lock
@@ -619,7 +625,10 @@ moves onto the second call (`ConfirmRecoveryCodes`), where the download-confirma
 lives. `TwoFactorSetupPage` gains that same second call: it already shows recovery codes and gates
 advancing on a download confirmation (`:146-160,185-195,210-213`) — that confirmation now drives a real
 `ConfirmRecoveryCodes` call instead of being purely client-side, since `EnableMfa` no longer promotes
-recovery codes itself. That field needs a way to reach for
+recovery codes itself. For first-time enrollment specifically, that confirmation screen also gains a
+fresh OTP input: the code entered earlier for `EnableMfa` has long since expired by the time the user
+finishes saving their codes, so `ConfirmRecoveryCodes` needs its own, not a resend of the first (see
+Design → Verification). That field needs a way to reach for
 `email_code` when the account has no password and no MFA yet — a "email me a code" link inline with the
 proof field, calling `RequestReauthCode`, rather than a fifth dialog. This is a breaking proto change;
 frontend and backend ship as one rollout on both Cloud and self-hosted (a single `go:embed`'d image,
@@ -872,10 +881,17 @@ message CredentialProof {
     // LastChangePasswordTime backfill migration would otherwise lock out
     // permanently (see Design → Verification). The handler checks this
     // eligibility itself; it is not just a
-    // frontend choice of which field to show. The condition is never true
-    // for DisableMfa or ConfirmRecoveryCodes (both imply live MFA), so
-    // email_code is only ever actually usable on ChangePassword or
-    // first-time EnableMfa.
+    // frontend choice of which field to show. The condition is never true for
+    // DisableMfa, or for a rotation's ConfirmRecoveryCodes (both imply live
+    // MFA already). It also is not the credential path for first-time
+    // EnableMfa: that call omits credential entirely when the account has
+    // neither a password nor live MFA (see EnableMfaRequest.credential), so
+    // email_code is never consumed there. First-time ConfirmRecoveryCodes is
+    // exactly where it's needed and used instead — that call still has no
+    // live MFA at the time it runs, since promotion of the secret is deferred
+    // to it precisely for this account shape (see Design → Verification) —
+    // so email_code is only ever actually usable on ChangePassword or
+    // first-time ConfirmRecoveryCodes.
     string email_code = 4 [
       (bytebase.v1.audit_behavior) = SENSITIVE,
       (buf.validate.field).string.max_len = 64
@@ -1021,13 +1037,17 @@ message ConfirmRecoveryCodesRequest {
   google.protobuf.Timestamp pending_version = 3 [(google.api.field_behavior) = REQUIRED];
 
   // Required only for first-time MFA enrollment (the account has no live
-  // OtpSecret yet) — rejected if set otherwise. Re-verified against the same
-  // pending TempOtpSecret EnableMfa already validated, and promoted alongside
-  // the recovery codes in this call rather than in EnableMfa, so the account
-  // is never left MFA-required with zero usable recovery codes if this call
-  // never arrives (see Design → Verification). Left unset for an ordinary
-  // rotation, where EnableMfa already promoted the secret and this call only
-  // confirms recovery-code receipt.
+  // OtpSecret yet) — rejected if set otherwise. A *fresh* code, not the one
+  // already submitted to EnableMfa — TOTP codes are only valid for one ~30s
+  // period, and the recovery-code download screen in between routinely takes
+  // longer than that, so resending the earlier value would just fail (see
+  // Design → Verification and Frontend). Verified against the same pending
+  // TempOtpSecret EnableMfa already validated, and promoted alongside the
+  // recovery codes in this call rather than in EnableMfa, so the account is
+  // never left MFA-required with zero usable recovery codes if this call
+  // never arrives. Left unset for an ordinary rotation, where EnableMfa
+  // already promoted the secret and this call only confirms recovery-code
+  // receipt.
   string otp_code = 4 [(google.api.field_behavior) = OPTIONAL];
 }
 
@@ -1111,11 +1131,12 @@ is also the point `email_code` eligibility can't rescue: it requires no live `Ot
 (see Design → Verification), which `EnableMfa` promoting the secret already ruled out. Fixed by
 splitting `EnableMfa` itself along the same line as before, one level deeper: for a rotation (the
 account already had a live `OtpSecret`), it promotes the secret as already described, unaffected. For
-first-time enrollment, it verifies `otp_code` and `credential` but promotes nothing — the account stays
-exactly as unenrolled as before the call — and the actual promotion of *both* `TempOtpSecret` and
-`TempRecoveryCodes` moves to `ConfirmRecoveryCodes`, atomically, gated on the same `otp_code` re-verified
-there (`ConfirmRecoveryCodesRequest.otp_code`, required only in the enrollment case — see API →
-Messages). A client that never gets a chance to call `ConfirmRecoveryCodes` after enrolling has, once
+first-time enrollment, it verifies `otp_code` (and `credential`, when the account has a password to
+prove — see EnableMfaRequest.credential) but promotes nothing — the account stays exactly as unenrolled
+as before the call — and the actual promotion of *both* `TempOtpSecret` and `TempRecoveryCodes` moves to
+`ConfirmRecoveryCodes`, atomically, gated on a fresh `otp_code` verified there
+(`ConfirmRecoveryCodesRequest.otp_code`, required only in the enrollment case — see API → Messages).
+A client that never gets a chance to call `ConfirmRecoveryCodes` after enrolling has, once
 again, lost nothing: no secret went live, no recovery codes exist to lose track of, and a retried
 `EnableMfa` against the same still-pending `pending_version` is exactly as harmless as the first attempt,
 since it never wrote anything either. `EnableMfaRequest.pending_version` still guards `StartMfaEnrollment`
@@ -1134,6 +1155,18 @@ replacement minted, the same gap `pending_version` alone was already established
 (see `EnableMfa` above). `ConfirmRecoveryCodes`'s enrollment branch runs the identical
 `isMFATempSecretExpired` check itself, immediately before promoting, rather than trusting whatever
 `EnableMfa` may or may not have already checked.
+
+Requiring `otp_code` again at `ConfirmRecoveryCodes` only works if it's a *different* code from the one
+`EnableMfa` already validated — [caught in a later round](https://github.com/bytebase/bytebase/pull/21235):
+a TOTP code is only valid for roughly one 30-second period, and the time between the two calls is
+however long the user takes to read, download, and put away their recovery codes on
+`TwoFactorSetupPage` — routinely longer than that. Resubmitting the value the client already has from
+the `EnableMfa` step (`TwoFactorSetupPage.tsx:146-160` stores it before advancing to the recovery-code
+screen) would fail almost every time, not occasionally. The frontend needs a real second input here, not
+a replay: the confirm step prompts for a fresh code from the authenticator app immediately before
+submitting `ConfirmRecoveryCodes`, the same way `EnableMfa`'s own step did — a second, deliberate proof
+of live possession, not friction for its own sake, since it's standing in for the same `otp_code` gate
+`EnableMfa` already carries for the accounts where a rotation's version of this call needs none.
 
 Requiring `credential` on both `EnableMfa` and `ConfirmRecoveryCodes` is fine for a rotation, or for
 enrollment on an account that already has a password — both proofs are pure comparisons or a spendable-
