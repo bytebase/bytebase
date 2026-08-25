@@ -26,6 +26,8 @@ const mocks = vi.hoisted(() => ({
   },
   resetQuickstart: vi.fn(),
   hideQuickStart: false,
+  userCountInIam: 1,
+  sampleAvailable: true,
   isDev: false,
 }));
 
@@ -42,7 +44,7 @@ vi.mock("react-i18next", () => ({
       ({
         "common.language": "Language",
         "common.license": "License",
-        "quick-start.self": "Quick Start",
+        "workspace-setup-guide.quick-start": "Quick Start",
         "common.logout": "Logout",
         "settings.general.workspace.default-landing-page.go-to-workspace":
           "Go to workspace",
@@ -134,8 +136,8 @@ vi.mock("@/hooks/useAppState", () => ({
     email: "alice@example.com",
   }),
   useServerInfo: () => ({
-    sample: { available: true },
-    userCountInIam: 1,
+    sample: { available: mocks.sampleAvailable },
+    userCountInIam: mocks.userCountInIam,
   }),
   useSubscription: () => ({
     subscription: { plan: PlanType.FREE },
@@ -145,15 +147,22 @@ vi.mock("@/hooks/useAppState", () => ({
     logo: "",
   }),
   useAppFeature: () => mocks.hideQuickStart,
-  useQuickstartReset: () => mocks.resetQuickstart,
+  useWorkspaceSetupGuideReset: () => mocks.resetQuickstart,
 }));
 
 vi.mock("@/stores/app", () => ({
-  useAppStore: {
-    getState: () => ({
-      logout: mocks.logout,
-    }),
-  },
+  useAppStore: Object.assign(
+    (selector: (state: unknown) => unknown) =>
+      selector({
+        workspaceSetupGuideEnabled: () =>
+          !mocks.hideQuickStart && mocks.userCountInIam === 1,
+      }),
+    {
+      getState: () => ({
+        logout: mocks.logout,
+      }),
+    }
+  ),
 }));
 
 vi.mock("@/utils/util", () => ({
@@ -184,6 +193,8 @@ const renderIntoContainer = (element: ReactElement) => {
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.hideQuickStart = false;
+  mocks.userCountInIam = 1;
+  mocks.sampleAvailable = true;
   mocks.isDev = false;
   mocks.currentRoute.name = "sql-editor.home";
   window.open = vi.fn();
@@ -264,6 +275,35 @@ describe("ProfileMenuTrigger", () => {
 
   test("hides quick start when the app feature disables it", () => {
     mocks.hideQuickStart = true;
+    const { container, render, unmount } = renderIntoContainer(
+      <ProfileMenuTrigger size="medium" link />
+    );
+
+    render();
+
+    expect(container.textContent).not.toContain("Quick Start");
+    unmount();
+  });
+
+  test("restores the unified guide even when no sample is available", () => {
+    mocks.sampleAvailable = false;
+    const { container, render, unmount } = renderIntoContainer(
+      <ProfileMenuTrigger size="medium" link />
+    );
+
+    render();
+
+    const quickStartButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) => button.textContent === "Quick Start");
+    expect(quickStartButton).not.toBeUndefined();
+    act(() => quickStartButton?.click());
+    expect(mocks.resetQuickstart).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
+  test.each([0, 2])("hides quick start for IAM user count %s", (count) => {
+    mocks.userCountInIam = count;
     const { container, render, unmount } = renderIntoContainer(
       <ProfileMenuTrigger size="medium" link />
     );

@@ -2036,21 +2036,6 @@
     "create-project": "Crear proyecto",
     "new-project": "Nuevo Proyecto"
   },
-  "quick-start": {
-    "guide": "haga clic en el paso para probarlo",
-    "notice": {
-      "desc": "Todavía puede volver a abrirla más tarde desde el menú en la parte superior derecha",
-      "title": "Guía de inicio rápido omitida"
-    },
-    "query-data": "Consultar datos",
-    "self": "Inicio rápido",
-    "view-an-issue": "Ver una incidencia",
-    "visit-database": "Visitar Bases de datos",
-    "visit-environment": "Visitar Entornos",
-    "visit-instance": "Visitar Instancias",
-    "visit-member": "Visitar Miembros",
-    "visit-project": "Visitar Proyectos"
-  },
   "refresh-remind": {},
   "release": {
     "and-n-more-files": "y {{count}} archivos más",
@@ -3470,7 +3455,7 @@
       "query": "Ir a SQL Editor"
     },
     "descriptions": {
-      "database": "Consulta una base de datos existente en tu proyecto o una base de datos de ejemplo, o crea o transfiere una cuando sea necesario.",
+      "database": "Consulta una base de datos de tu instancia conectada, o crea o transfiere una cuando sea necesario.",
       "instance": "Conecta una instancia para que Bytebase pueda sincronizar tus bases de datos.",
       "project": "Crea un proyecto para organizar bases de datos y cambios.",
       "sql-editor": "Consulta datos en SQL Editor o crea un cambio de base de datos gobernado."
@@ -3488,6 +3473,7 @@
     },
     "prepare-database-tip": "Selecciona las bases de datos para transferirlas al proyecto.",
     "previous-step-required": "Debes terminar el paso anterior.",
+    "quick-start": "Inicio rápido",
     "self": "Configurar Bytebase",
     "steps": {
       "database": "Explorar bases de datos",

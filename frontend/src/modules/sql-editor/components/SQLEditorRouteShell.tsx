@@ -639,7 +639,7 @@ export function SQLEditorRouteShell() {
       return;
     }
 
-    let stored: AsidePanelTab = "SAVED_QUERY";
+    let stored: AsidePanelTab | undefined;
     try {
       const raw = window.localStorage.getItem(
         storageKeySqlEditorSidebarTab(project)
@@ -657,14 +657,20 @@ export function SQLEditorRouteShell() {
       // ignore — fall back to default
     }
 
+    const defaultTab =
+      router.currentRoute.value.name === SQL_EDITOR_DATABASE_MODULE
+        ? "SCHEMA"
+        : "SAVED_QUERY";
+    const fallbackTab = stored ?? defaultTab;
+
     const panelQuery = router.currentRoute.value.query.panel;
     if (typeof panelQuery === "string" && panelQuery) {
       const raw = panelQuery.toUpperCase();
       // Pre-rename links used ?panel=worksheet.
       const tab = (raw === "WORKSHEET" ? "SAVED_QUERY" : raw) as AsidePanelTab;
-      setAsidePanelTab(ASIDE_PANEL_TABS.includes(tab) ? tab : stored);
+      setAsidePanelTab(ASIDE_PANEL_TABS.includes(tab) ? tab : fallbackTab);
     } else {
-      setAsidePanelTab(stored);
+      setAsidePanelTab(fallbackTab);
     }
     sidebarRestoredProjectRef.current = project;
   };

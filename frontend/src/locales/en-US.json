@@ -2036,21 +2036,6 @@
     "create-project": "Create project",
     "new-project": "New Project"
   },
-  "quick-start": {
-    "guide": "click on the step to try it out",
-    "notice": {
-      "desc": "You can still bring it back later from the top right menu",
-      "title": "Quickstart guide dismissed"
-    },
-    "query-data": "Query data",
-    "self": "Quick Start",
-    "view-an-issue": "View an issue",
-    "visit-database": "Visit Databases",
-    "visit-environment": "Visit Environments",
-    "visit-instance": "Visit Instances",
-    "visit-member": "Visit Members",
-    "visit-project": "Visit Projects"
-  },
   "refresh-remind": {},
   "release": {
     "and-n-more-files": "and {{count}} more files",
@@ -3470,7 +3455,7 @@
       "query": "Go to SQL Editor"
     },
     "descriptions": {
-      "database": "View an existing database in your project or a sample database, or create or transfer one when needed.",
+      "database": "View a database from your connected instance, or create or transfer one when needed.",
       "instance": "Connect an instance so Bytebase can sync your databases.",
       "project": "Create a project to organize databases and changes.",
       "sql-editor": "Query data in SQL Editor, or create a governed database change."
@@ -3488,6 +3473,7 @@
     },
     "prepare-database-tip": "Select databases to transfer to the project.",
     "previous-step-required": "You need to finish the previous step.",
+    "quick-start": "Quick Start",
     "self": "Set up Bytebase",
     "steps": {
       "database": "Explore databases",

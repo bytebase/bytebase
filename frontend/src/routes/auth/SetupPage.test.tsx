@@ -20,7 +20,7 @@ const mocks = vi.hoisted(() => ({
   createProject: vi.fn(),
   setupSample: vi.fn(),
   updateWorkspaceProfile: vi.fn(),
-  resetQuickstartProgress: vi.fn(),
+  resetWorkspaceSetupGuide: vi.fn(),
 }));
 
 vi.mock("@/app/router", async (importOriginal) => ({
@@ -43,7 +43,7 @@ vi.mock("@/stores/app", () => {
     createProject: mocks.createProject,
     setupSample: mocks.setupSample,
     updateWorkspaceProfile: mocks.updateWorkspaceProfile,
-    resetQuickstartProgress: mocks.resetQuickstartProgress,
+    resetWorkspaceSetupGuide: mocks.resetWorkspaceSetupGuide,
   };
   return {
     useAppStore: Object.assign(
@@ -185,7 +185,7 @@ describe("SetupPage", () => {
     expect(mocks.routerPush).toHaveBeenLastCalledWith({
       name: "workspace.landing",
     });
-    expect(mocks.resetQuickstartProgress).toHaveBeenCalledTimes(1);
+    expect(mocks.resetWorkspaceSetupGuide).toHaveBeenCalledTimes(1);
 
     unmount();
   });

@@ -19,25 +19,16 @@ export type BehaviorAnalyticsConfig = {
 
 // PostHog recommends "[object] [verb]" event names.
 // https://posthog.com/docs/product-analytics/capture-events
-export const behaviorMetricDefinitions = new Map([
-  ["page session", {}],
-  ["page navigated", {}],
-  ["connect database clicked", {}],
-  ["instance connection test clicked", {}],
-  ["instance create clicked", {}],
-  ["locked feature clicked", {}],
-  ["setup guide action clicked", {}],
-  ["setup guide dismissed", {}],
-  ["post sync first change clicked", {}],
-  ["post sync sql editor clicked", {}],
-  ["trust guidance viewed", {}],
-  ["sample database started", {}],
-] as const);
-
 export type BehaviorMetricName =
-  typeof behaviorMetricDefinitions extends ReadonlyMap<infer Name, unknown>
-    ? Name
-    : never;
+  | "page session"
+  | "connect database clicked"
+  | "instance connection test clicked"
+  | "instance create clicked"
+  | "locked feature clicked"
+  | "setup guide action clicked"
+  | "setup guide dismissed"
+  | "post sync first change clicked"
+  | "post sync sql editor clicked";
 
 export type BehaviorMetric = {
   event: BehaviorMetricName;
@@ -58,6 +49,7 @@ export function buildBehaviorAnalyticsConfig(params: {
   posthogHost?: string;
   gitCommit?: string;
   recordingSampleRate: number;
+  resolveRouteId?: (url: string) => string | undefined;
 }): BehaviorAnalyticsConfig | null {
   const apiKey = params.posthogKey?.trim();
   const apiHost = params.posthogHost?.trim();
@@ -97,10 +89,23 @@ export function buildBehaviorAnalyticsConfig(params: {
       sanitize_properties: (
         eventProperties: Record<string, unknown>,
         eventName?: string
-      ) => ({
-        ...sanitizeBehaviorProperties(eventProperties, eventName),
-        ...properties,
-      }),
+      ) => {
+        const sanitized = sanitizeBehaviorProperties(
+          eventProperties,
+          eventName
+        );
+        const currentUrl = eventProperties.$current_url;
+        const routeId =
+          sanitized.route_id ??
+          (typeof currentUrl === "string"
+            ? params.resolveRouteId?.(currentUrl)
+            : undefined);
+        return {
+          ...sanitized,
+          ...(routeId ? { route_id: routeId } : {}),
+          ...properties,
+        };
+      },
       session_recording: {
         maskAllInputs: true,
         blockClass: "ph-no-capture",
@@ -145,9 +150,6 @@ export function createBehaviorMetric(
   event: BehaviorMetricName,
   input: BehaviorMetricInput = {}
 ): BehaviorMetric {
-  if (!behaviorMetricDefinitions.has(event)) {
-    throw new Error(`Unsupported behavior metric: ${event}`);
-  }
   const customProperties = sanitizeBehaviorProperties(input.properties ?? {});
   const standardProperties = sanitizeBehaviorProperties({
     route_id: input.routeId,
@@ -172,6 +174,7 @@ function isForbiddenPropertyKey(key: string): boolean {
     normalized === "$el_text" ||
     normalized === "$elements" ||
     normalized === "$elements_chain" ||
+    normalized === "title" ||
     normalized.includes("url") ||
     normalized.includes("path") ||
     normalized.includes("referrer") ||

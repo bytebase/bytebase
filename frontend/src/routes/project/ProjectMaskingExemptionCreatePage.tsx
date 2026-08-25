@@ -227,14 +227,20 @@ export function ProjectMaskingExemptionCreatePage({
 
                 <RadioGroupItem value="EXPRESSION" disabled={!project}>
                   <div className="flex items-center gap-x-1">
-                    <FeatureBadge feature={PlanFeature.FEATURE_DATA_MASKING} />
+                    <FeatureBadge
+                      feature={PlanFeature.FEATURE_DATA_MASKING}
+                      clickable={false}
+                    />
                     <span>{t("issue.role-grant.use-cel")}</span>
                   </div>
                 </RadioGroupItem>
 
                 <RadioGroupItem value="SELECT" disabled={!project}>
                   <div className="flex items-center gap-x-1">
-                    <FeatureBadge feature={PlanFeature.FEATURE_DATA_MASKING} />
+                    <FeatureBadge
+                      feature={PlanFeature.FEATURE_DATA_MASKING}
+                      clickable={false}
+                    />
                     <span>{t("issue.role-grant.manually-select")}</span>
                   </div>
                 </RadioGroupItem>

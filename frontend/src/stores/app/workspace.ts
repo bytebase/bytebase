@@ -688,15 +688,9 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
 
     enableOnboarding: () => get().userCountInIam() === 1 && !get().isSaaSMode(),
 
-    quickStartEnabled: () => {
-      if (get().appFeatures["bb.feature.hide-quick-start"]) {
-        return false;
-      }
-      if (!get().serverInfo?.sample?.available) {
-        return false;
-      }
-      return get().userCountInIam() <= 1;
-    },
+    workspaceSetupGuideEnabled: () =>
+      !get().appFeatures["bb.feature.hide-quick-start"] &&
+      get().userCountInIam() === 1,
 
     setupSample: async () => {
       await actuatorServiceClientConnect.setupSample({});

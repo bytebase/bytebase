@@ -133,10 +133,6 @@ export function EditorAction({ onExecute }: Props) {
       explain: false,
       selection: currentTab.editorState.selection,
     });
-    useAppStore.getState().saveIntroStateByKey({
-      key: "data.query",
-      newState: true,
-    });
   };
 
   const exitAdminMode = () => {

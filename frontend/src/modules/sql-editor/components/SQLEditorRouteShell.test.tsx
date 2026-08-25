@@ -610,7 +610,7 @@ describe("SQLEditorRouteShell", () => {
   test("restores the sidebar tab from project-scoped localStorage", async () => {
     localStorage.setItem(
       "bb.sql-editor.sidebar.last-visited-tab.projects/proj1",
-      JSON.stringify("SCHEMA")
+      JSON.stringify("SAVED_QUERY")
     );
 
     const { unmount } = renderShell();
@@ -622,7 +622,52 @@ describe("SQLEditorRouteShell", () => {
       await new Promise((resolve) => requestAnimationFrame(resolve));
     });
 
-    expect(mocks.setAsidePanelTab).toHaveBeenCalledWith("SCHEMA");
+    expect(mocks.setAsidePanelTab).toHaveBeenCalledWith("SAVED_QUERY");
+
+    unmount();
+  });
+
+  test("defaults the sidebar to schema for a database route", async () => {
+    const { unmount } = renderShell();
+
+    mocks.setAsidePanelTab.mockClear();
+    await act(async () => {
+      await sqlEditorEvents.emit("project-context-ready", {
+        project: "projects/proj1",
+      });
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    });
+
+    expect(mocks.setAsidePanelTab).toHaveBeenLastCalledWith("SCHEMA");
+
+    unmount();
+  });
+
+  test("defaults the sidebar to saved queries for a project route", async () => {
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      name: "sql-editor.project",
+      params: { project: "proj1" },
+      query: {},
+    };
+    mocks.currentRoute = {
+      ...mocks.currentRoute,
+      name: "sql-editor.project",
+      params: { project: "proj1" },
+      query: {},
+    };
+
+    const { unmount } = renderShell();
+
+    mocks.setAsidePanelTab.mockClear();
+    await act(async () => {
+      await sqlEditorEvents.emit("project-context-ready", {
+        project: "projects/proj1",
+      });
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    });
+
+    expect(mocks.setAsidePanelTab).toHaveBeenLastCalledWith("SAVED_QUERY");
 
     unmount();
   });

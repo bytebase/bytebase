@@ -2,6 +2,7 @@ import type { ReactElement, ReactNode } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -12,25 +13,29 @@ const mocks = vi.hoisted(() => ({
   projectsByName: {} as Record<string, unknown>,
   instancesByName: {} as Record<string, unknown>,
   databasesByName: {} as Record<string, unknown>,
-  fetchProjectList: vi.fn(async () => ({
+  fetchProjectList: vi.fn(async (_?: { pageToken?: string }) => ({
     projects: [] as unknown[],
     nextPageToken: "",
   })),
-  fetchInstanceList: vi.fn(async () => ({
-    instances: [] as unknown[],
-    nextPageToken: "",
-  })),
-  fetchDatabases: vi.fn(async (_?: { parent?: string }) => ({
-    databases: [] as unknown[],
-    nextPageToken: "",
-  })),
+  fetchInstanceList: vi.fn(
+    async (_?: { parent?: string; pageToken?: string }) => ({
+      instances: [] as unknown[],
+      nextPageToken: "",
+    })
+  ),
+  fetchDatabases: vi.fn(
+    async (_?: { parent?: string; pageToken?: string }) => ({
+      databases: [] as unknown[],
+      nextPageToken: "",
+    })
+  ),
   introState: {} as Record<string, boolean>,
   getIntroStateByKey: vi.fn((_key: string) => false),
   saveIntroStateByKey: vi.fn(
     (_: { key: string; newState: boolean }) => undefined
   ),
   introStateVersion: 0,
-  searchQueryHistories: vi.fn(async () => ({
+  searchQueryHistories: vi.fn(async (_?: { pageToken?: string }) => ({
     queryHistories: [] as unknown[],
     nextPageToken: "",
   })),
@@ -43,6 +48,9 @@ const mocks = vi.hoisted(() => ({
   routerPush: vi.fn(),
   captureMetric: vi.fn(),
   defaultProjectName: "projects/default",
+  sampleInstanceName: "",
+  userCountInIam: 1,
+  hideQuickStart: false,
 }));
 
 const dismissedIntroStateKey = "workspace-setup-guide.dismissed";
@@ -111,9 +119,14 @@ vi.mock("@/stores/app", () => {
     },
     workspace: { name: "workspaces/default" },
     workspacePolicy: mocks.workspacePolicy,
-    serverInfo: { defaultProject: mocks.defaultProjectName },
+    serverInfo: {
+      defaultProject: mocks.defaultProjectName,
+      sample: { instance: mocks.sampleInstanceName },
+    },
     introStateVersion: mocks.introStateVersion,
     getIntroStateByKey: mocks.getIntroStateByKey,
+    workspaceSetupGuideEnabled: () =>
+      !mocks.hideQuickStart && mocks.userCountInIam === 1,
   });
   const useAppStore = (selector?: (s: ReturnType<typeof getState>) => unknown) =>
     selector ? selector(getState()) : getState();
@@ -151,10 +164,13 @@ vi.mock("@/utils", () => ({
     };
   },
   extractDatabaseResourceName: (name: string) => {
-    const match = name.match(/^instances\/([^/]+)\/databases\/([^/]+)$/);
+    const match = name.match(
+      /^(?<instance>(?:projects\/[^/]+\/)?instances\/(?<instanceName>[^/]+))\/databases\/(?<databaseName>[^/]+)$/
+    );
     return {
-      instanceName: match?.[1] ?? "",
-      databaseName: match?.[2] ?? "",
+      instance: match?.groups?.instance ?? "",
+      instanceName: match?.groups?.instanceName ?? "",
+      databaseName: match?.groups?.databaseName ?? "",
     };
   },
   extractInstanceResourceName: (name: string) =>
@@ -210,6 +226,9 @@ beforeEach(() => {
   mocks.hasWorkspacePermissionV2.mockReturnValue(true);
   mocks.currentRoute = { name: "workspace.home" };
   mocks.defaultProjectName = "projects/default";
+  mocks.sampleInstanceName = "";
+  mocks.userCountInIam = 1;
+  mocks.hideQuickStart = false;
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -330,14 +349,25 @@ describe("WorkspaceSetupGuide", () => {
   });
 
   it("hides when the workspace has more than one member", async () => {
-    mocks.workspacePolicy = {
-      bindings: [
-        {
-          role: "roles/workspaceAdmin",
-          members: ["user@example.com", "teammate@example.com"],
-        },
-      ],
-    };
+    mocks.userCountInIam = 2;
+
+    await render(<WorkspaceSetupGuide />);
+
+    expect(container.textContent).toBe("");
+    expect(mocks.fetchProjectList).not.toHaveBeenCalled();
+  });
+
+  it.each([0, 2])("hides when IAM user count is %s", async (count) => {
+    mocks.userCountInIam = count;
+
+    await render(<WorkspaceSetupGuide />);
+
+    expect(container.textContent).toBe("");
+    expect(mocks.fetchProjectList).not.toHaveBeenCalled();
+  });
+
+  it("hides when the quick-start feature is disabled", async () => {
+    mocks.hideQuickStart = true;
 
     await render(<WorkspaceSetupGuide />);
 
@@ -642,11 +672,12 @@ describe("WorkspaceSetupGuide", () => {
 
     await render(<WorkspaceSetupGuide />);
 
-    expect(mocks.fetchDatabases).toHaveBeenCalledWith({
-      parent: "projects/project-a",
-      pageSize: 1,
-      silent: true,
-    });
+    expect(mocks.fetchDatabases).toHaveBeenCalledWith(
+      expect.objectContaining({
+        parent: "projects/project-a",
+        pageSize: 10,
+      })
+    );
 
     const actionButton = container.querySelector(
       "[data-testid='secondary-action']"
@@ -660,6 +691,145 @@ describe("WorkspaceSetupGuide", () => {
     expect(mocks.preCreateIssue).toHaveBeenCalledWith("projects/project-a", [
       "instances/instance-a/databases/db-a",
     ]);
+  });
+
+  it("counts the self-host sample project without completing real-database activation", async () => {
+    mocks.fetchProjectList.mockResolvedValue({
+      projects: [{ name: "projects/project-sample" }],
+      nextPageToken: "",
+    });
+    mocks.fetchInstanceList.mockResolvedValue({
+      instances: [
+        { name: "instances/sample-one" },
+      ],
+      nextPageToken: "",
+    });
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [
+        {
+          name: "instances/sample-one/databases/employee",
+          project: "projects/project-sample",
+        },
+      ],
+      nextPageToken: "",
+    });
+
+    await render(<WorkspaceSetupGuide />);
+
+    for (const key of ["hasProject", "hasInstance"]) {
+      expect(
+        container
+          .querySelector(`[data-testid='setup-step-${key}']`)
+          ?.querySelector(".lucide-circle-check-big")
+      ).not.toBeNull();
+    }
+    for (const key of ["hasProjectDatabase", "hasFirstQuery"]) {
+      expect(
+        container
+          .querySelector(`[data-testid='setup-step-${key}']`)
+          ?.querySelector(".lucide-circle-check-big")
+      ).toBeNull();
+    }
+  });
+
+  it("counts a SaaS project but not its sample resources", async () => {
+    mocks.sampleInstanceName = "projects/app/instances/saas-sample";
+    mocks.fetchProjectList.mockResolvedValue({
+      projects: [{ name: "projects/app" }],
+      nextPageToken: "",
+    });
+    mocks.fetchInstanceList.mockResolvedValue({
+      instances: [{ name: "projects/app/instances/saas-sample" }],
+      nextPageToken: "",
+    });
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [
+        {
+          name: "projects/app/instances/saas-sample/databases/employee",
+          project: "projects/app",
+        },
+      ],
+      nextPageToken: "",
+    });
+
+    await render(<WorkspaceSetupGuide />);
+
+    expect(
+      container
+        .querySelector("[data-testid='setup-step-hasProject']")
+        ?.querySelector(".lucide-circle-check-big")
+    ).not.toBeNull();
+    for (const key of [
+      "hasInstance",
+      "hasProjectDatabase",
+      "hasFirstQuery",
+    ]) {
+      expect(
+        container
+          .querySelector(`[data-testid='setup-step-${key}']`)
+          ?.querySelector(".lucide-circle-check-big")
+      ).toBeNull();
+    }
+  });
+
+  it("finds user resources after sample-only first pages", async () => {
+    mocks.sampleInstanceName = "instances/sample";
+    mocks.fetchProjectList.mockImplementation(async ({ pageToken } = {}) =>
+      pageToken === "project-page-2"
+        ? { projects: [{ name: "projects/app" }], nextPageToken: "" }
+        : {
+            projects: [{ name: "projects/project-sample" }],
+            nextPageToken: "project-page-2",
+          }
+    );
+    mocks.fetchInstanceList.mockImplementation(async ({ pageToken } = {}) =>
+      pageToken === "instance-page-2"
+        ? { instances: [{ name: "instances/prod" }], nextPageToken: "" }
+        : {
+            instances: [{ name: "instances/sample" }],
+            nextPageToken: "instance-page-2",
+          }
+    );
+    mocks.fetchDatabases.mockImplementation(
+      async ({ parent, pageToken } = {}) => {
+        if (parent !== "-") {
+          return { databases: [], nextPageToken: "" };
+        }
+        return pageToken === "database-page-2"
+          ? {
+              databases: [
+                {
+                  name: "instances/prod/databases/main",
+                  project: "projects/app",
+                },
+              ],
+              nextPageToken: "",
+            }
+          : {
+              databases: [
+                {
+                  name: "instances/sample/databases/employee",
+                  project: "projects/project-sample",
+                },
+              ],
+              nextPageToken: "database-page-2",
+            };
+      }
+    );
+
+    await render(<WorkspaceSetupGuide />);
+
+    expect(
+      container
+        .querySelector("[data-testid='setup-step-hasProjectDatabase']")
+        ?.querySelector(".lucide-circle-check-big")
+    ).not.toBeNull();
+    expect(
+      container.querySelector("[data-testid='active-action']")
+    ).toHaveAttribute(
+      "data-route-params",
+      JSON.stringify({ project: "app", instance: "prod", database: "main" })
+    );
   });
 
   it("does not show the active guide action when already on its route", async () => {
@@ -871,7 +1041,7 @@ describe("WorkspaceSetupGuide", () => {
     );
     expect(mocks.searchQueryHistories).toHaveBeenCalledWith(
       expect.objectContaining({
-        pageSize: 1,
+        pageSize: 10,
         filter: 'type == "QUERY"',
       })
     );
@@ -893,6 +1063,8 @@ describe("WorkspaceSetupGuide", () => {
       "workspace-setup-guide.actions.query"
     );
     expect(actionLink?.querySelector(".lucide-square-terminal")).not.toBeNull();
+    expect(actionLink).toHaveAttribute("target", "_blank");
+    expect(actionLink).toHaveAttribute("rel", "noopener noreferrer");
 
     const secondaryAction = container.querySelector(
       "[data-testid='secondary-action']"
@@ -905,6 +1077,142 @@ describe("WorkspaceSetupGuide", () => {
       secondaryAction!.compareDocumentPosition(actionLink as Node) &
         Node.DOCUMENT_POSITION_FOLLOWING
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+
+    act(() => {
+      (secondaryAction as HTMLButtonElement).click();
+    });
+    expect(mocks.preCreateIssue).toHaveBeenCalledWith("projects/project-a", [
+      "instances/instance-a/databases/db-a",
+    ]);
+  });
+
+  it("completes Query data only after SQL execution finishes", async () => {
+    mocks.currentRoute = { name: "sql-editor.database" };
+    mocks.sampleInstanceName = "projects/app/instances/saas-sample";
+    mocks.fetchProjectList.mockResolvedValue({
+      projects: [{ name: "projects/project-a" }],
+      nextPageToken: "",
+    });
+    mocks.fetchInstanceList.mockResolvedValue({
+      instances: [{ name: "instances/instance-a" }],
+      nextPageToken: "",
+    });
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [{ name: "instances/instance-a/databases/db-a" }],
+      nextPageToken: "",
+    });
+
+    await render(<WorkspaceSetupGuide />);
+
+    const queryStep = container.querySelector(
+      "[data-testid='setup-step-hasFirstQuery']"
+    );
+    expect(queryStep?.querySelector(".lucide-circle-check-big")).toBeNull();
+
+    await act(async () => {
+      await sqlEditorEvents.emit("query-executed", {
+        database: "projects/app/instances/saas-sample/databases/employee",
+        project: "projects/project-a",
+      });
+    });
+
+    expect(queryStep?.querySelector(".lucide-circle-check-big")).toBeNull();
+
+    await act(async () => {
+      await sqlEditorEvents.emit("query-executed", {
+        database: "instances/instance-a/databases/db-a",
+        project: "projects/default",
+      });
+      await sqlEditorEvents.emit("query-executed", {
+        database: "instances/instance-a/databases/db-a",
+        project: "projects/project-sample",
+      });
+    });
+
+    expect(queryStep?.querySelector(".lucide-circle-check-big")).toBeNull();
+
+    await act(async () => {
+      await sqlEditorEvents.emit("query-executed", {
+        database: "instances/instance-a/databases/db-a",
+        project: "projects/project-a",
+      });
+    });
+
+    expect(
+      queryStep?.querySelector(".lucide-circle-check-big")
+    ).not.toBeNull();
+  });
+
+  it("ignores sample-only query history", async () => {
+    mocks.sampleInstanceName = "instances/sample";
+    mocks.fetchProjectList.mockResolvedValue({
+      projects: [{ name: "projects/app" }],
+      nextPageToken: "",
+    });
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [
+        {
+          name: "instances/prod/databases/main",
+          project: "projects/app",
+        },
+      ],
+      nextPageToken: "",
+    });
+    mocks.searchQueryHistories.mockResolvedValue({
+      queryHistories: [
+        { database: "instances/sample/databases/employee" },
+      ],
+      nextPageToken: "",
+    });
+
+    await render(<WorkspaceSetupGuide />);
+
+    expect(
+      container
+        .querySelector("[data-testid='setup-step-hasFirstQuery']")
+        ?.querySelector(".lucide-circle-check-big")
+    ).toBeNull();
+  });
+
+  it("finds a real query after a sample-only history page", async () => {
+    mocks.sampleInstanceName = "instances/sample";
+    mocks.fetchProjectList.mockResolvedValue({
+      projects: [{ name: "projects/app" }],
+      nextPageToken: "",
+    });
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [
+        {
+          name: "instances/prod/databases/main",
+          project: "projects/app",
+        },
+      ],
+      nextPageToken: "",
+    });
+    mocks.searchQueryHistories.mockImplementation(async (request) =>
+      request?.pageToken === "history-page-2"
+        ? {
+            queryHistories: [
+              { database: "instances/prod/databases/main" },
+            ],
+            nextPageToken: "",
+          }
+        : {
+            queryHistories: [
+              { database: "instances/sample/databases/employee" },
+            ],
+            nextPageToken: "history-page-2",
+          }
+    );
+
+    await render(<WorkspaceSetupGuide />);
+
+    expect(mocks.searchQueryHistories).toHaveBeenCalledTimes(2);
+    expect(
+      container
+        .querySelector("[data-testid='setup-step-hasFirstQuery']")
+        ?.querySelector(".lucide-circle-check-big")
+    ).not.toBeNull();
   });
 
   it("activates the query step when users click it after visiting another step", async () => {

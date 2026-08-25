@@ -4,7 +4,7 @@ import {
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
   PROJECT_V1_ROUTE_WEBHOOKS,
 } from "./handles";
-import { router } from "./index";
+import { resolveRouteName, router } from "./index";
 import { setAppRouter, setRouteNameIndex } from "./navigation";
 
 beforeEach(() => {
@@ -63,5 +63,14 @@ describe("router named route params", () => {
         params: { webhookResourceId: "hook-1" },
       }).fullPath
     ).toBe("/projects/project-sample/webhooks/hook-1");
+  });
+
+  it("resolves a pathname to the most specific registered route name", () => {
+    expect(resolveRouteName("/projects/project-sample/webhooks/new")).toBe(
+      PROJECT_V1_ROUTE_WEBHOOK_CREATE
+    );
+    expect(resolveRouteName("/projects/project-sample/webhooks/hook-1")).toBe(
+      PROJECT_V1_ROUTE_WEBHOOK_DETAIL
+    );
   });
 });

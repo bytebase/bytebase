@@ -23,7 +23,6 @@ import {
   getSQLEditorTabsState,
   useSQLEditorTabState,
 } from "@/modules/sql-editor/store/tab";
-import { useAppStore } from "@/stores/app";
 import {
   dialectOfEngineV1,
   isValidDatabaseName,
@@ -210,10 +209,6 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
         selection: newTab ? null : tab.editorState.selection,
       };
       onExecuteRef.current(params, newTab);
-      useAppStore.getState().saveIntroStateByKey({
-        key: "data.query",
-        newState: true,
-      });
     },
     [getActiveStatement]
   );

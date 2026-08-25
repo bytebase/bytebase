@@ -381,7 +381,10 @@ export const useExecuteSQL = () => {
           /* nothing */
         })
         .finally(() => {
-          void sqlEditorEvents.emit("query-executed");
+          void sqlEditorEvents.emit("query-executed", {
+            database: database.name,
+            project: database.project,
+          });
         });
 
       if (isDisallowChangeDatabaseError(resultSet)) {

@@ -176,7 +176,9 @@ vi.mock("@/components/FeatureAttention", () => ({
 }));
 
 vi.mock("@/components/FeatureBadge", () => ({
-  FeatureBadge: () => <div data-testid="feature-badge" />,
+  FeatureBadge: ({ clickable }: { clickable?: boolean }) => (
+    <div data-clickable={String(clickable)} data-testid="feature-badge" />
+  ),
 }));
 
 vi.mock("@/components/ui/feature-modal", () => ({
@@ -375,6 +377,19 @@ describe("GrantAccessDialog", () => {
     mocks.batchConvertCELStringToParsedExpr.mockClear();
     mocks.resolveCELExpr.mockClear();
     mocks.stringifyConditionExpression.mockClear();
+  });
+
+  test("keeps badges inside modal-opening radio controls non-clickable", async () => {
+    const { container, unmount } = renderGrantAccessDialog();
+    await flush();
+
+    const badges = container.querySelectorAll('[data-testid="feature-badge"]');
+    expect(badges).toHaveLength(2);
+    for (const badge of badges) {
+      expect(badge.getAttribute("data-clickable")).toBe("false");
+    }
+
+    unmount();
   });
 
   test("preserves selected scope when switching from select to expression mode", async () => {

@@ -1978,6 +1978,29 @@ describe("useAppStore", () => {
     expect(store.getState().appFeatures["bb.feature.hide-trial"]).toBe(false);
   });
 
+  test("enables the workspace setup guide only for a sole IAM user", () => {
+    const store = createAppStore();
+
+    for (const [userCountInIam, expected] of [
+      [0, false],
+      [1, true],
+      [2, false],
+    ] as const) {
+      store.setState({
+        serverInfo: createProto(ActuatorInfoSchema, { userCountInIam }),
+      });
+      expect(store.getState().workspaceSetupGuideEnabled()).toBe(expected);
+    }
+
+    store.setState((state) => ({
+      appFeatures: {
+        ...state.appFeatures,
+        "bb.feature.hide-quick-start": true,
+      },
+    }));
+    expect(store.getState().workspaceSetupGuideEnabled()).toBe(false);
+  });
+
   test("derives actuator state for React consumers", () => {
     const store = createAppStore();
     store.setState({
@@ -2432,7 +2455,11 @@ describe("useAppStore", () => {
     store.getState().recordRecentVisit("/projects/a?tab=1");
     store.getState().recordRecentVisit("/projects/a?tab=2");
     store.getState().removeRecentVisit("/missing");
-    store.getState().resetQuickstartProgress();
+    store.getState().saveIntroStateByKey({
+      key: "workspace-setup-guide.dismissed",
+      newState: true,
+    });
+    store.getState().resetWorkspaceSetupGuide();
 
     // Not SaaS in this test, so keys are workspace-agnostic (scope "").
     expect(
@@ -2445,11 +2472,7 @@ describe("useAppStore", () => {
     ).toEqual(["/projects/a?tab=2"]);
     expect(
       JSON.parse(localStorage.getItem(storageKeyIntroState("", user.email))!)
-    ).toMatchObject({
-      hidden: false,
-      "project.visit": false,
-      "data.query": false,
-    });
+    ).toEqual({ "workspace-setup-guide.dismissed": false });
   });
 
   test("scopes recent projects by workspace in SaaS mode", () => {
@@ -2524,26 +2547,24 @@ describe("useAppStore", () => {
       serverInfo: createProto(ActuatorInfoSchema, { saas: true }),
     });
     store.setState({ currentUser: { ...user, workspace: "workspaces/a" } });
-    store
-      .getState()
-      .saveIntroStateByKey({ key: "project.visit", newState: true });
+    store.getState().saveIntroStateByKey({ key: "some.intro", newState: true });
 
     store.setState({ currentUser: { ...user, workspace: "workspaces/b" } });
-    expect(store.getState().getIntroStateByKey("project.visit")).toBe(false);
+    expect(store.getState().getIntroStateByKey("some.intro")).toBe(false);
     store
       .getState()
-      .saveIntroStateByKey({ key: "database.visit", newState: true });
+      .saveIntroStateByKey({ key: "another.intro", newState: true });
 
     expect(
       JSON.parse(
         localStorage.getItem(storageKeyIntroState("workspaces/a", user.email))!
       )
-    ).toEqual({ "project.visit": true });
+    ).toEqual({ "some.intro": true });
     expect(
       JSON.parse(
         localStorage.getItem(storageKeyIntroState("workspaces/b", user.email))!
       )
-    ).toEqual({ "database.visit": true });
+    ).toEqual({ "another.intro": true });
   });
 
   test("keeps intro state workspace-agnostic in self-host mode", () => {
@@ -2557,17 +2578,17 @@ describe("useAppStore", () => {
     store.setState({ currentUser: user });
     localStorage.setItem(
       storageKeyIntroState("", user.email),
-      JSON.stringify({ "project.visit": true })
+      JSON.stringify({ "some.intro": true })
     );
 
-    expect(store.getState().getIntroStateByKey("project.visit")).toBe(true);
+    expect(store.getState().getIntroStateByKey("some.intro")).toBe(true);
     store
       .getState()
-      .saveIntroStateByKey({ key: "database.visit", newState: true });
+      .saveIntroStateByKey({ key: "another.intro", newState: true });
 
     expect(
       JSON.parse(localStorage.getItem(storageKeyIntroState("", user.email))!)
-    ).toEqual({ "project.visit": true, "database.visit": true });
+    ).toEqual({ "some.intro": true, "another.intro": true });
   });
 
   test("caches database metadata and reuses inflight request", async () => {

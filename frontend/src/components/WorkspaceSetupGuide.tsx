@@ -28,9 +28,17 @@ import {
   PRODUCT_INTRO_TIP_QUERY_KEY,
 } from "@/lib/productIntro";
 import { cn } from "@/lib/utils";
+import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { useAppStore } from "@/stores/app";
+import { State } from "@/types/proto-es/v1/common_pb";
 import { SearchQueryHistoriesRequestSchema } from "@/types/proto-es/v1/query_history_service_pb";
 import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
+import {
+  findFirstPageItem,
+  isSampleDatabaseName,
+  isSetupProjectName,
+  isUserProjectName,
+} from "./WorkspaceSetupGuide.utils";
 
 type SetupKeys = {
   hasProject: boolean;
@@ -74,7 +82,13 @@ export function WorkspaceSetupGuide() {
   const { t } = useTranslation();
   const currentRoute = useCurrentRoute();
   const dismissed = useIntroStateByKey(WORKSPACE_SETUP_GUIDE_DISMISSED_KEY);
-  const defaultProject = useAppStore((s) => s.serverInfo?.defaultProject ?? "");
+  const serverInfo = useAppStore((s) => s.serverInfo);
+  const defaultProject = serverInfo?.defaultProject ?? "";
+  const sampleInstanceNames = useMemo(
+    () =>
+      new Set(serverInfo?.sample?.instance ? [serverInfo.sample.instance] : []),
+    [serverInfo?.sample?.instance]
+  );
   const projectCacheSize = useAppStore(
     (s) => Object.keys(s.projectsByName).length
   );
@@ -84,16 +98,37 @@ export function WorkspaceSetupGuide() {
   const databaseCacheSize = useAppStore(
     (s) => Object.keys(s.databasesByName).length
   );
-  const workspaceMemberCount = useAppStore((s) =>
-    (s.workspacePolicy?.bindings ?? []).reduce(
-      (count, binding) => count + binding.members.length,
-      0
-    )
-  );
-  const hasSingleWorkspaceMember = workspaceMemberCount === 1;
+  const guideEnabled = useAppStore((s) => s.workspaceSetupGuideEnabled());
   const [loading, setLoading] = useState(true);
   const [selectedStepKey, setSelectedStepKey] = useState<keyof SetupKeys>();
   const [setupState, setSetupState] = useState<SetupState>(initialSetupState);
+
+  useEffect(() => {
+    const off = sqlEditorEvents.on(
+      "query-executed",
+      ({ data: { database, project } }) => {
+        if (
+          !database ||
+          !isUserProjectName(project, defaultProject) ||
+          isSampleDatabaseName(database, sampleInstanceNames)
+        ) {
+          return;
+        }
+        setSetupState({
+          hasProject: true,
+          hasInstance: true,
+          hasWorkspaceDatabase: true,
+          hasProjectDatabase: true,
+          hasFirstQuery: true,
+          projectName: project,
+          databaseName: database,
+        });
+      }
+    );
+    return () => {
+      off();
+    };
+  }, [defaultProject, sampleInstanceNames]);
 
   useEffect(() => {
     setSelectedStepKey(undefined);
@@ -114,7 +149,7 @@ export function WorkspaceSetupGuide() {
   };
 
   useEffect(() => {
-    if (dismissed || !hasSingleWorkspaceMember) {
+    if (dismissed || !guideEnabled) {
       setSetupState(initialSetupState);
       setLoading(false);
       return;
@@ -122,102 +157,187 @@ export function WorkspaceSetupGuide() {
 
     void (async () => {
       const store = useAppStore.getState();
-      const [projectResult, instanceResult] = await Promise.allSettled([
-        useAppStore.getState().fetchProjectList({
-          pageSize: 1,
-          silent: true,
-          filter: {
-            excludeDefault: true,
-          },
-        }),
-        hasWorkspacePermissionV2("bb.instances.list")
-          ? useAppStore.getState().fetchInstanceList({
-              pageSize: 1,
-              silent: true,
-            })
-          : Promise.resolve({ instances: [] }),
-      ]);
-
-      const projectName =
-        projectResult.status === "fulfilled"
-          ? (projectResult.value.projects.find(
-              (project) => project.name !== defaultProject
-            )?.name ?? "")
-          : "";
-      const hasProject = !!projectName;
-      let hasInstance =
-        instanceCacheSize > 0 ||
-        (instanceResult.status === "fulfilled" &&
-          instanceResult.value.instances.length > 0);
-      if (
-        !hasInstance &&
-        projectName &&
-        hasWorkspacePermissionV2("bb.instances.list")
-      ) {
-        try {
-          const projectInstanceResult = await store.fetchInstanceList({
-            parent: projectName,
-            pageSize: 1,
-            silent: true,
-          });
-          hasInstance = projectInstanceResult.instances.length > 0;
-        } catch {
-          hasInstance = false;
-        }
-      }
+      const canListInstances = hasWorkspacePermissionV2("bb.instances.list");
+      let projectName = "";
+      let fallbackProjectName = "";
+      let projectWithInstanceName = "";
+      let hasInstance = false;
       let databaseName = "";
-      let hasWorkspaceDatabase = databaseCacheSize > 0;
+      let hasWorkspaceDatabase = false;
       let hasFirstQuery = false;
 
-      if (projectName || hasInstance) {
-        const [projectDatabaseResult, workspaceDatabaseResult] =
-          await Promise.allSettled([
-            projectName
-              ? store.fetchDatabases({
-                  parent: projectName,
-                  pageSize: 1,
-                  silent: true,
-                })
-              : Promise.resolve({ databases: [] }),
-            hasInstance
-              ? store.fetchDatabases({
-                  parent: "-",
-                  pageSize: 1,
-                  silent: true,
-                })
-              : Promise.resolve({ databases: [] }),
-          ]);
-        if (projectDatabaseResult.status === "fulfilled") {
-          databaseName = projectDatabaseResult.value.databases[0]?.name ?? "";
+      try {
+        const projectDatabase = await findFirstPageItem(
+          async (pageToken) => {
+            const response = await store.fetchDatabases({
+              parent: "-",
+              pageSize: 10,
+              pageToken,
+              silent: true,
+            });
+            return {
+              items: response.databases,
+              nextPageToken: response.nextPageToken,
+            };
+          },
+          (database) => {
+            if (isSampleDatabaseName(database.name, sampleInstanceNames)) {
+              return false;
+            }
+            hasWorkspaceDatabase = true;
+            return isUserProjectName(database.project, defaultProject);
+          }
+        );
+        if (projectDatabase) {
+          projectName = projectDatabase.project;
+          databaseName = projectDatabase.name;
         }
-        if (workspaceDatabaseResult.status === "fulfilled") {
-          hasWorkspaceDatabase =
-            hasWorkspaceDatabase ||
-            workspaceDatabaseResult.value.databases.length > 0;
+      } catch {
+        // Unknown or unauthorized resource state must not complete a step.
+      }
+
+      try {
+        let pageToken = "";
+        while (true) {
+          const response = await store.fetchProjectList({
+            pageSize: 10,
+            pageToken,
+            silent: true,
+            filter: {
+              excludeDefault: true,
+              state: State.ACTIVE,
+            },
+          });
+          const projects = response.projects.filter((project) =>
+            isSetupProjectName(project.name, defaultProject)
+          );
+
+          for (const project of projects) {
+            fallbackProjectName ||= project.name;
+            if (!isUserProjectName(project.name, defaultProject)) {
+              continue;
+            }
+
+            if (!databaseName) {
+              try {
+                const database = await findFirstPageItem(
+                  async (databasePageToken) => {
+                    const databaseResponse = await store.fetchDatabases({
+                      parent: project.name,
+                      pageSize: 10,
+                      pageToken: databasePageToken,
+                      silent: true,
+                    });
+                    return {
+                      items: databaseResponse.databases,
+                      nextPageToken: databaseResponse.nextPageToken,
+                    };
+                  },
+                  (database) =>
+                    !isSampleDatabaseName(database.name, sampleInstanceNames)
+                );
+                if (database) {
+                  projectName = project.name;
+                  databaseName = database.name;
+                  hasWorkspaceDatabase = true;
+                }
+              } catch {
+                // Keep scanning projects when one project is unauthorized.
+              }
+            }
+
+            if (canListInstances && !projectWithInstanceName) {
+              try {
+                const instance = await findFirstPageItem(
+                  async (instancePageToken) => {
+                    const instanceResponse = await store.fetchInstanceList({
+                      parent: project.name,
+                      pageSize: 10,
+                      pageToken: instancePageToken,
+                      filter: { state: State.ACTIVE },
+                      silent: true,
+                    });
+                    return {
+                      items: instanceResponse.instances,
+                      nextPageToken: instanceResponse.nextPageToken,
+                    };
+                  },
+                  (instance) => !sampleInstanceNames.has(instance.name)
+                );
+                if (instance) {
+                  projectWithInstanceName = project.name;
+                  hasInstance = true;
+                }
+              } catch {
+                // Keep scanning projects when one project is unauthorized.
+              }
+            }
+          }
+
+          if (!response.nextPageToken) break;
+          pageToken = response.nextPageToken;
+        }
+      } catch {
+        // Unknown or unauthorized resource state must not complete a step.
+      }
+
+      if (canListInstances) {
+        try {
+          const instance = await findFirstPageItem(
+            async (pageToken) => {
+              const response = await store.fetchInstanceList({
+                pageSize: 10,
+                pageToken,
+                filter: { state: State.ACTIVE },
+                silent: true,
+              });
+              return {
+                items: response.instances,
+                nextPageToken: response.nextPageToken,
+              };
+            },
+            (instance) => !sampleInstanceNames.has(instance.name)
+          );
+          hasInstance ||= !!instance;
+        } catch {
+          // Unknown or unauthorized resource state must not complete a step.
         }
       }
 
+      projectName ||= projectWithInstanceName || fallbackProjectName;
+
       if (databaseName) {
-        // databaseName is only set from the project database lookup, so
-        // projectName is always concrete here — which SearchQueryHistories
-        // requires (it has no cross-project wildcard).
+        // A coherent database selection always carries its concrete project;
+        // SearchQueryHistories has no cross-project wildcard.
         try {
-          const queryHistoryResult =
-            await queryHistoryServiceClientConnect.searchQueryHistories(
-              create(SearchQueryHistoriesRequestSchema, {
-                parent: projectName,
-                pageSize: 1,
-                filter: 'type == "QUERY"',
-              })
-            );
-          hasFirstQuery = queryHistoryResult.queryHistories.length > 0;
+          const queryHistory = await findFirstPageItem(
+            async (pageToken) => {
+              const response =
+                await queryHistoryServiceClientConnect.searchQueryHistories(
+                  create(SearchQueryHistoriesRequestSchema, {
+                    parent: projectName,
+                    pageSize: 10,
+                    pageToken,
+                    filter: 'type == "QUERY"',
+                  })
+                );
+              return {
+                items: response.queryHistories,
+                nextPageToken: response.nextPageToken,
+              };
+            },
+            (history) =>
+              !!history.database &&
+              !isSampleDatabaseName(history.database, sampleInstanceNames)
+          );
+          hasFirstQuery = !!queryHistory;
         } catch {
           hasFirstQuery = false;
         }
       }
 
       setSetupState({
-        hasProject,
+        hasProject: !!projectName,
         hasInstance,
         hasWorkspaceDatabase,
         hasProjectDatabase: !!databaseName,
@@ -231,10 +351,11 @@ export function WorkspaceSetupGuide() {
     databaseCacheSize,
     defaultProject,
     dismissed,
-    hasSingleWorkspaceMember,
+    guideEnabled,
     instanceCacheSize,
     projectCacheSize,
     currentRoute.name,
+    sampleInstanceNames,
   ]);
 
   const sqlEditorDatabase = useMemo(() => {
@@ -357,7 +478,7 @@ export function WorkspaceSetupGuide() {
     });
   };
 
-  if (dismissed || !hasSingleWorkspaceMember || loading) {
+  if (dismissed || !guideEnabled || loading) {
     return null;
   }
 
@@ -438,6 +559,7 @@ export function WorkspaceSetupGuide() {
           <SQLEditorButton
             data-testid="active-action"
             database={sqlEditorDatabase}
+            openInNewTab
             size="sm"
             className="2xl:h-9 2xl:gap-1.5 2xl:px-3 2xl:text-sm 2xl:leading-5"
             label={t("workspace-setup-guide.actions.query")}

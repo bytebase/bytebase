@@ -274,21 +274,25 @@ const bindStreamingLogic = (session: WebTerminalQuerySession) => {
     // post-exec history refresh here. `mergeLatest` prepends the
     // just-run statement without resetting the user's pagination.
     const database = tail?.params?.connection.database;
+    const project = getSQLEditorEditorState().project;
     if (database) {
       useSQLEditorReactStore
         .getState()
         .mergeLatest({
-          project: getSQLEditorEditorState().project,
+          project,
           database,
         })
         .catch(() => {
           /* nothing */
         })
         .finally(() => {
-          void sqlEditorEvents.emit("query-executed");
+          void sqlEditorEvents.emit("query-executed", { database, project });
         });
     } else {
-      void sqlEditorEvents.emit("query-executed");
+      void sqlEditorEvents.emit("query-executed", {
+        database: "",
+        project,
+      });
     }
     // Finish the current item and append a fresh one for the next prompt.
     const finishedTail = activeItem();

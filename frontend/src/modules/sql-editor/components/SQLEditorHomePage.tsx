@@ -10,12 +10,12 @@ import {
 import { useNavigate } from "@/app/router";
 import { buildPlanCreateRoute } from "@/app/router/routeHelpers";
 import { IAMRemindDialog } from "@/components/IAMRemindDialog";
-import { Quickstart } from "@/components/Quickstart";
 import {
   getLayerRoot,
   LAYER_BACKDROP_CLASS,
   LAYER_SURFACE_CLASS,
 } from "@/components/ui/layer";
+import { WorkspaceSetupGuide } from "@/components/WorkspaceSetupGuide";
 import { useAppProject } from "@/hooks/useAppProject";
 import { applyPlanTitleToQuery } from "@/lib/plan/title";
 import { cn } from "@/lib/utils";
@@ -245,7 +245,7 @@ export function SQLEditorHomePage() {
         </Panel>
       </PanelGroup>
 
-      <Quickstart />
+      <WorkspaceSetupGuide />
       {projectContextReady && project && <IAMRemindDialog project={project} />}
 
       <ConnectionPanel />

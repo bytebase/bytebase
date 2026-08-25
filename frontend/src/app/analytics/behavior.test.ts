@@ -1,7 +1,5 @@
 import { describe, expect, test } from "vitest";
-import type { BehaviorMetricInput } from "./behavior";
 import {
-  behaviorMetricDefinitions,
   buildBehaviorAnalyticsConfig,
   classifyBehaviorRoute,
   createBehaviorMetric,
@@ -80,6 +78,10 @@ describe("behavior analytics config", () => {
       posthogHost: "https://us.i.posthog.com",
       recordingSampleRate: 0.25,
       gitCommit: "abc123",
+      resolveRouteId: (url) =>
+        url.includes("/projects/acme/")
+          ? "workspace.project.database"
+          : undefined,
     });
 
     if (!config) {
@@ -97,12 +99,15 @@ describe("behavior analytics config", () => {
     expect(
       sanitizeProperties(
         {
-          $current_url: "https://cloud.bytebase.com/projects/acme?token=secret",
+          $current_url:
+            "https://cloud.bytebase.com/projects/acme/databases?token=secret",
+          title: "Acme production - Bytebase",
         },
         "$pageview"
       )
     ).toEqual({
       git_commit: "abc123",
+      route_id: "workspace.project.database",
     });
   });
 });
@@ -205,20 +210,6 @@ describe("behavior analytics privacy helpers", () => {
 });
 
 describe("behavior analytics metrics", () => {
-  test("defines metric names in one map", () => {
-    expect([...behaviorMetricDefinitions.keys()]).toContain("page session");
-    expect([...behaviorMetricDefinitions.keys()]).toContain("page navigated");
-    expect([...behaviorMetricDefinitions.keys()]).toContain(
-      "locked feature clicked"
-    );
-    expect([...behaviorMetricDefinitions.keys()]).not.toContain(
-      "locked feature viewed"
-    );
-    expect([...behaviorMetricDefinitions.keys()]).not.toContain(
-      "locked feature upgrade clicked"
-    );
-  });
-
   test("creates allowlisted page session metrics with route context", () => {
     expect(
       createBehaviorMetric("page session", {
@@ -235,34 +226,6 @@ describe("behavior analytics metrics", () => {
         visible_duration_ms: 9_000,
         is_bounce: false,
       },
-    });
-  });
-
-  test("creates allowlisted page navigation metrics with route transition context", () => {
-    expect(
-      createBehaviorMetric("page navigated", {
-        properties: {
-          from_route_id: "workspace.landing",
-          to_route_id: "workspace.instance.create",
-        },
-      })
-    ).toEqual({
-      event: "page navigated",
-      properties: {
-        from_route_id: "workspace.landing",
-        to_route_id: "workspace.instance.create",
-      },
-    });
-  });
-
-  test("keeps route transition context out of the shared metric input fields", () => {
-    const routeTransitionInput = {
-      // @ts-expect-error route transitions should use event-specific properties.
-      fromRouteId: "workspace.landing",
-    } satisfies BehaviorMetricInput;
-
-    expect(routeTransitionInput).toEqual({
-      fromRouteId: "workspace.landing",
     });
   });
 

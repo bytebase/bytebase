@@ -599,17 +599,6 @@ export function InstanceDashboard({
     [searchParams]
   );
 
-  // Mark instance visit on mount
-  useEffect(() => {
-    const store = useAppStore.getState();
-    if (!store.getIntroStateByKey("instance.visit")) {
-      store.saveIntroStateByKey({
-        key: "instance.visit",
-        newState: true,
-      });
-    }
-  }, []);
-
   // Instance count warning
   const instanceCountLimit = useAppStore((s) => s.instanceCountLimit());
   const totalInstanceCount = useAppStore((s) => s.totalInstanceCount());

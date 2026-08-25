@@ -484,8 +484,8 @@ export function useNotify() {
   return useAppStore((state) => state.notify);
 }
 
-export function useQuickstartReset() {
-  return useAppStore((state) => state.resetQuickstartProgress);
+export function useWorkspaceSetupGuideReset() {
+  return useAppStore((state) => state.resetWorkspaceSetupGuide);
 }
 
 export function useIntroStateByKey(key: string) {
