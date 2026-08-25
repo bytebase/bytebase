@@ -72,16 +72,17 @@ A fix scoped to literally the two audited lines leaves both of these open. All f
   and the OAuth2/MCP `oauth2_refresh_token` grants, plus outstanding `oauth2_authorization_code` rows
   that could still mint one, since G7's own claim is about what a stolen credential can do afterward,
   and an OAuth grant is exactly as persistent a credential as a web session is. Scoped precisely: this
-  closes the ability to mint fresh access tokens afterward (the 7-day exposure window for web, 30 days
-  for OAuth), not the access tokens already issued — those are self-contained JWTs `APIAuthInterceptor`
-  accepts until they expire regardless of refresh-token state, so a stolen one already in use keeps
-  working for up to `access_token_duration` (default 1h) after any of these four actions. That hour is a
-  real ceiling only because this design makes it one: a stolen token may keep *answering* requests until
-  it expires, but it may not be spent on a replacement. Every path that mints a new token from an existing
-  one — `SwitchWorkspace` and its two `workspace_service.go` callers, the MFA temp-token completion, and
-  OAuth `/authorize` — is bound to `LastCredentialChangeTime` and refuses a token stamped before the
-  change (see Verification, "Token-minting paths"). Without that, the hour is not a ceiling but a renewal
-  interval, and G7's own sentence would be false. The atomicity, and the revocation coverage
+  closes the ability to mint fresh access tokens afterward, not the access tokens already issued — those
+  are self-contained JWTs `APIAuthInterceptor` accepts until they expire regardless of refresh-token
+  state, so a stolen one already in use keeps answering requests for up to the workspace-configured
+  access-token lifetime (default 1h, but see Verification → Token-minting paths — it has only a
+  one-minute floor and no upper bound, so this window is not a fixed ceiling). What this design *does*
+  bound is the *reuse* of that token to obtain a replacement: every path that mints a new token from an
+  existing one — `SwitchWorkspace` and its two `workspace_service.go` callers, the MFA temp-token
+  completion (`checkMFARequired`), and OAuth `/authorize` — is bound to `LastCredentialChangeTime` and
+  refuses a token stamped before the change. Without that, the window is not an exposure ceiling but a
+  renewal interval (unbounded for OAuth, which re-issues a full lifetime on every refresh), and G7's own
+  sentence would be false. The atomicity, and the revocation coverage
   across all three OAuth/web token tables, are not carried forward unchanged — both are tightened here,
   not merely copied.
 
@@ -205,7 +206,15 @@ The `expires_at` clause isn't optional —
 email/purpose/hash would let an already-expired row still consume successfully for as long as it
 survives until the hourly cleanup job removes it, `verifyEmailCode` itself checks `row.ExpiresAt` before
 ever deleting (`:436-438`), and dropping that check here would leave an intercepted, expired code usable
-against a credential change for up to that same hour. `challengeRecoveryCode`
+against a credential change for up to that same hour. The atomic, expiry-checked, result-checked consume
+is not `REAUTH`-only, either: `verifyEmailCode`'s read-then-delete-and-ignore shape is the *existing*
+consume for the `LOGIN` and `PASSWORD_RESET` purposes too, so the same two-concurrent-proofs race lets an
+attacker who intercepts a password-reset code race the legitimate owner and have *both* resets succeed.
+The fix therefore replaces `verifyEmailCode` for all three purposes rather than adding a parallel path for
+`REAUTH`, and it needs a store method that can report an affected-row count —
+`DeleteEmailVerificationCodeIfMatch` (`email_verification_code.go:91-105`) uses `ExecContext` and discards
+`RowsAffected` entirely, so a new `ConsumeEmailVerificationCode` returning the count (or a `RETURNING`
+row) is a prerequisite for "required to affect a row" to be implementable at all. `challengeRecoveryCode`
 (`auth_service.go:601-619`) is not reusable as-is the same
 way — [a sixth finding](https://github.com/bytebase/bytebase/pull/21235): it consumes the code via
 `s.store.UpdateUser`, a standalone statement on the store's own connection, not the transaction the lock
@@ -222,9 +231,17 @@ already holds this same principal lock by the time it gets there — the session
 above put it there deliberately ("the entire authenticate-or-consume-then-issue sequence runs while
 holding it"), and `authenticateLogin` → `completeMFALogin` is exactly that authentication step for an
 MFA-second-step login. A recovery-code login would hang the same way a `CredentialProof` recovery-code
-check would. Both call sites need the same fix: the transaction-aware compare-and-consume replaces
-`challengeRecoveryCode` everywhere it would otherwise run inside this lock, not just in the four new
-methods — `challengeMFACode` is still fine everywhere, since it never writes.
+check would. And `Login` is not the only such caller: `SwitchWorkspace`'s own MFA second step
+(`auth_service.go:895-898`) reaches `challengeMFAAndClear` → `challengeRecoveryCode` too, *before*
+`switchWorkspaceInternal` runs — so it consumes a recovery code outside every fence and lock this design
+places on the switch path, with the same blind last-write-wins overwrite (two concurrent presentations of
+the same recovery code each match their own `MFAConfig` snapshot, both write, the code is spent twice and
+the later write resurrects whatever the earlier removed; a correct code clears the lockout, so T9 does not
+bound it). All three call sites need the same fix: the transaction-aware compare-and-consume replaces
+`challengeRecoveryCode` everywhere it would otherwise run inside — or, for `SwitchWorkspace`'s second
+step, alongside — this lock, not just in the four new methods; and `SwitchWorkspace`'s MFA step joins the
+fenced sequence rather than running ahead of it. `challengeMFACode` is still fine everywhere, since it
+never writes.
 
 Consuming a recovery code as `EnableMfa`'s own proof, specifically for a rotation, creates one more
 place the whole-column-replace rule above already warned about —
@@ -381,6 +398,13 @@ and its authorization-code equivalent would be sequential scans without the same
 active MCP integration can populate continuously. Add `idx_oauth2_authorization_code_user_email` and
 `idx_oauth2_refresh_token_user_email` alongside the two new store methods, not as a follow-up — the
 methods only exist because of this design, so there's no pre-existing caller to stay compatible with.
+The *same two tables also lack a `client_id` index* — a gap that predates this design but that its new
+client-fence locking turns from latent to load-bearing: `DeleteOAuth2Client`'s existing `ON DELETE
+CASCADE` already fires an unindexed `DELETE … WHERE client_id = ?` per client (a locking sequential scan),
+and the client-fence step this design adds ("lock every grant row referencing the client in primary-key
+order") is a second unindexed locking scan, now run while holding the client fence — the worst place for
+one. Add `idx_oauth2_authorization_code_client_id` and `idx_oauth2_refresh_token_client_id` in the same
+migration.
 
 Locking the account row for the mutation closes the credential-vs-credential race above, but not a
 [separate one](https://github.com/bytebase/bytebase/pull/21235) between revocation and session
@@ -625,6 +649,46 @@ first, password write, all-three-table revocation, and the generation bump, in o
 `PasswordHash` write, `principal.go:429-434` — which is exactly why the *other* stamp has to be verified
 per-writer rather than assumed to tag along.)
 
+Four corrections to the paragraphs above, from a systematic sweep of every token-minting path (not the
+one-at-a-time discovery that found `SwitchWorkspace`):
+
+- *The MFA temp token has two mint sites, not one.* The temp-token fix says it is "minted by `Login`
+  itself"; it is not. `checkMFARequired` (`auth_service.go:718-739`) is called from `Login` (`:209`) **and
+  from `SwitchWorkspace` (`:903`)**, both reaching `GenerateMFATempToken` at `:731`. The
+  `SwitchWorkspace` route is worse: it needs only the stolen access token, no password, to obtain a temp
+  token, which then completes a full `Login` after the victim's credential change. The stamp is written
+  and checked inside `checkMFARequired`, not at the `Login` call site, or the second door stays open.
+- *`SwitchWorkspace` doesn't even expiry-check the session it consumes.* `switchWorkspaceInternal`
+  consumes the web refresh token via `GetAndDeleteWebRefreshToken`, which carries no `expires_at`
+  predicate (`web_refresh_token.go:62-84`); `Refresh` compensates by checking the returned row's expiry
+  (`auth_service.go:488-490`), but `switchWorkspaceInternal` never does (`:994` nil-check and `:997`
+  email-check only) and reuses the already-past `ExpiresAt` for the new session (`:1000`). So a session
+  past its 7-day absolute lifetime still mints a fresh full-lifetime token through
+  `SwitchWorkspace`/`LeaveWorkspace`/`DeleteWorkspace` until the hourly sweep removes the row — the
+  absolute web-session cap is bypassed independently of the credential stamp. Both paths must check
+  expiry at consume time, the same `expires_at > now()`-at-consume rule the credential codes get below.
+- *"≤1h" and "30 days" are not real ceilings.* `access_token_duration` has only a one-minute *floor*
+  (`setting_service.go:769-775`); a workspace with `FEATURE_TOKEN_DURATION_CONTROL` can set it to 90
+  days, and every minted replacement inherits that (`generateLoginToken` reads it live). And OAuth refresh
+  writes a *fresh* full `refreshTokenExpiry` on every rotation (`token.go:522`) with no absolute cap, so
+  30 days is the maximum *idle* gap, not a lifetime. Only the web refresh token has a true absolute cap
+  (`Refresh`/`switchWorkspaceInternal` pass the original `ExpiresAt` through). G7's exposure-window
+  numbers are restated as "up to the workspace-configured access-token lifetime, unbounded above" and
+  "renewable indefinitely for OAuth," and closing the *renewal* is what the stamp does regardless of the
+  window's size. An absolute cap on both is a worthwhile follow-up but not required for G7.
+- *The stamp has nowhere to live for non-`END_USER` principals.* `SwitchWorkspace` itself guards
+  `Type != END_USER` (`:850`), but its two `workspace_service.go` callers do not, and
+  `generateLoginToken` has a live `SERVICE_ACCOUNT` branch (`:751`). Service accounts and workload
+  identities are not in `principal` and have no `profile`, so `LastCredentialChangeTime` cannot exist for
+  them and "refuse to mint on a missing stamp" would permanently break service-account-driven
+  `LeaveWorkspace`/`DeleteWorkspace`. The stamp check applies to `END_USER` principals only, stated
+  explicitly so it is a typed rule rather than a silent type-conditional bypass — non-`END_USER`
+  credentials are not credential-changeable through any path this design touches, so there is nothing for
+  the stamp to protect there anyway. (For the same reason, `RotateDirectorySyncToken`, service-account
+  keys, and workload-identity config — the repo's `MINTS_CREDENTIAL_FOR_OTHERS` class — survive every
+  revocation here and are correctly out of scope: they establish *other* principals' credentials, not a
+  replacement for the acting account's.)
+
 `UpdateEmail` earns membership without deleting anything: it scans and locks the child rows that exist,
 then runs `UPDATE principal SET email = ?`, whose `ON UPDATE CASCADE` re-derives and locks whatever child
 rows exist *at that moment*, including any a login committed in between. A third-party `Refresh` holding
@@ -687,6 +751,20 @@ standalone `Store.UpdateUser` (`auth_service_idp.go:179-186`), and that call *is
 authentication step, which this design now runs under the principal lock — so SSO login for a previously
 deactivated user would stop working entirely. It moves into the enclosing transaction like the others.
 
+That same SSO flow forces one bound on *how* the lock-before-authentication rule applies, or it becomes a
+denial-of-service surface: `getOrCreateUserWithIDP` performs an outbound round-trip to the identity
+provider (`auth_service_idp.go:55-64`, dispatching to `oauth2UserInfo`/`oidcUserInfo`/`ldapUserInfo`)
+as part of "authentication," and the earlier rule ("move the lock before authentication") read literally
+would hold the account's `FOR UPDATE` across that unbounded external call — a slow or hung IdP would pin
+one account's row lock, blocking every concurrent login, refresh, and credential change for that account
+until it times out. The resolution is that the IdP round-trip authenticates against the *provider*, not
+against local mutable credential state, so it belongs *before* the lock, not inside it: resolve the
+external identity first, unlocked, and take the fence and the principal lock only for the local
+verify-consume-mutate-issue sequence that actually reads and writes rows. "Lock before authentication"
+means before the part of authentication that inspects state the lock protects — never around a network
+call to a third party. The same applies to `bcrypt` and `totp` verification, which are CPU-bound and
+already pure, but the IdP call is the one that could hold the lock for seconds.
+
 Auditing every `Store.UpdateUser`/`CreateUser`/`UpdateUserEmail` call site — across the whole `backend/`
 tree, a scope [that itself had to be corrected](https://github.com/bytebase/bytebase/pull/21235): the
 first version of this audit searched only `backend/api/`, and the `bytebase recovery` CLI's password
@@ -721,6 +799,28 @@ then the principal row, consume, and only then call `issueTokens`'s store writes
 transaction, not around it — so a concurrent G7 revocation and a concurrent token exchange land in the
 same deterministic order this doc already established for web sessions, instead of a fifth, OAuth-shaped
 version of the same race surviving because the fix stopped one call site short.
+
+**Store-layer prerequisite.** Every "inside the transaction," "before the insert," and "in one fenced
+transaction" instruction in this section assumes the writes involved *can* join a caller-held
+transaction. Today they cannot: `CreateWebRefreshToken` (`web_refresh_token.go:19-33`),
+`CreateOAuth2AuthorizationCode` (`oauth2_authorization_code.go:30-51`), and `CreateOAuth2RefreshToken`
+(`oauth2_refresh_token.go:32-53`) each run on `s.GetDB().ExecContext` — an autocommit statement on a
+pooled connection — with no `*sql.Tx`-accepting variant, and the same is true of the `principal` writers
+`Store.UpdateUser`/`CreateUser` open their own `BeginTx`. So the design's own prescriptions are not just
+unimplemented but *unimplementable as written*, and in the worst way: because `web_refresh_token.user_email`
+is a foreign key to `principal`, the autocommit `INSERT` takes a `FOR KEY SHARE` on the principal row —
+which **conflicts with the `FOR UPDATE` the same request's outer transaction is already holding, on a
+different pooled connection.** PostgreSQL sees no cycle (the outer transaction is idle-in-transaction,
+blocked on the application, not on the database), so it does not abort — the insert simply hangs until
+`statement_timeout`, and every web login, signup, refresh, and workspace switch hangs with it. This is
+the same self-deadlock shape the doc flags for `challengeRecoveryCode`, one layer down, and it is why the
+fence and the ordering are necessary but not sufficient on their own. The prerequisite for this whole
+design is a `Tx`-accepting variant of each of these store writers (`CreateWebRefreshTokenTx(ctx, tx, …)`
+and the two OAuth equivalents, plus the transaction-aware `Store.UpdateUser` the profile-write fixes
+already require), so a handler can open one transaction, take the fence and the row locks, and do the
+consume, the mutation, the revocation, and the insert all on that one connection. Without it, the OAuth
+mint's "lock `principal` then `oauth2_client` before the insert" is inert — the insert runs on another
+connection and orders against nothing — and the web paths hang outright.
 
 Inserting that principal-lock wait ahead of the consume opens a narrower gap of its own —
 [caught in a later round](https://github.com/bytebase/bytebase/pull/21235): `validateAuthorizationCode`/
@@ -826,6 +926,22 @@ way: each cleaner locks its matching expired rows in primary-key order before de
 the same deterministic-ordering contract and its two-direction regression tests as every other path that
 touches these tables.
 
+Two *more* cleaners of the same shape were missed even after that fix, for a mechanical reason worth
+recording: the cited cleaner range (`data_cleaner.go:137-160`) ends exactly one function before
+`cleanupLoginAttempts` (`:168`) and `cleanupEmailVerificationCodes` (`:176`), so `DeleteStaleLoginAttempts`
+(`login_attempt.go:83-97`) and `DeleteExpiredEmailVerificationCodes` (`email_verification_code.go:109-124`)
+— both unordered bulk `DELETE`s — fell just outside the window and went unlisted. `login_attempt` and
+`email_verification_code` have no foreign keys, so nothing *cascades* them into the token-table order; on
+their own they would be a stall, not a deadlock, since the design moves a single-row `email_verification_code`
+consume and `ClearLoginAttempt` inside the fenced transaction and either can queue behind the hourly bulk
+delete while the fence and every token-row lock are held. But `login_attempt` becomes a genuine deadlock
+surface the moment one fenced transaction holds *two* of its rows — and `ResetPassword` does exactly that
+once folded into a single transaction: it clears `(email, EMAIL_CODE)` inside `verifyEmailCode`
+(`auth_service_email_code.go:444`) and then `(email, PASSWORD)` (`:129`) in the same request, and the login
+side clears a third kind (`MFA`) through `challengeMFAAndClear`. So both cleaners join the ordered-lock
+contract, and the in-transaction `login_attempt` clears take their rows in primary-key (`identity, kind`)
+order like everything else.
+
 Scheduled cleanup isn't the only unordered multi-row deleter left, either — [one more of the same
 shape](https://github.com/bytebase/bytebase/pull/21235), reachable on demand rather than hourly: the MCP
 `reauthorize` tool. `handleReauthorize` (`backend/api/mcp/tool_reauthorize.go:35`) calls
@@ -874,6 +990,29 @@ delete succeeds and its error is checked, because there was never an error to ch
 writes in one transaction, "password changed, sessions didn't" stops being reachable by either the
 deadlock route or the snapshot route.
 
+"Stop treating revocation as best-effort" generalizes past the two resets, to three more swallowed-error
+sites a sweep for the pattern turns up — each one a security-relevant write that logs its failure and
+reports success:
+
+- `Logout` (`auth_service.go:459-463`, also reached from `workspace_service.go:312,421`) logs a
+  `DeleteWebRefreshToken` failure and returns `Empty` with the cookies cleared, so a transient error
+  leaves the server-side session live for its full remaining lifetime while the user believes they logged
+  out — the one moment a user is explicitly asking for revocation. (`DeleteWebRefreshToken` also discards
+  `RowsAffected`, so a silent no-op is equally invisible; the result-checked-delete rule applies here
+  too.)
+- The OAuth2 revoke endpoint (`revoke.go:60-65`) logs a `DeleteOAuth2RefreshToken` failure and returns
+  `200`, telling an MCP client its compromised grant is dead while the row survives up to 30 days. RFC 7009
+  wants `200` for an *unknown* token, not a *failed* revocation (`503` is allowed); the two are conflated.
+- The audit interceptor (`audit.go:114-116`) logs a `createAuditLog` failure and returns the response, so
+  an audited call — including a `DisableMfa` or an admin-assisted reset — can succeed leaving nothing in
+  `audit_log`. This one undercuts a claim this design leans on: that "the `bb.users.update` permission
+  check and audit log are the correct control" for the admin recovery paths. A control that silently
+  no-ops on write failure isn't one. The audit write for these methods should fail the request, not be
+  best-effort.
+
+None of the three is introduced by this design, but all three sit on paths it now depends on for its own
+guarantees, so it names them rather than inheriting them silently.
+
 That fix closes the race around *exchanging* an existing grant, but not [a separate gap one step
 earlier](https://github.com/bytebase/bytebase/pull/21235): `handleAuthorizePost`
 (`authorize.go:103-171`) mints a brand-new `oauth2_authorization_code` — a grant that didn't exist
@@ -910,7 +1049,14 @@ leaving the order to whatever the FK constraints happen to check first — foldi
 shared order this doc already names for every other path that touches more than one of these tables.
 Needs the same deterministic real-PostgreSQL regression test as the other lock-ordering fixes, covering
 both directions: a mint racing an in-flight token exchange for the same user/client, and a mint racing
-`DeleteOAuth2Client`/`DeleteExpiredOAuth2Clients`.
+`DeleteOAuth2Client`/`DeleteExpiredOAuth2Clients`. (Strictly there is a *third* parent —
+`oauth2_authorization_code.workspace REFERENCES workspace(resource_id)`, `LATEST.sql:690` — so the insert
+also takes `FOR KEY SHARE` on the workspace row. It is benign today, because the only `workspace` writers
+(`UpdateWorkspace`, `DeleteWorkspace`) take `FOR NO KEY UPDATE`, which `FOR KEY SHARE` is compatible with,
+and nothing anywhere takes `FOR UPDATE` on a workspace row. It stops being benign the instant any path
+does, so the fixed order is stated as principal → workspace → `oauth2_client`, with the workspace lock
+noted as currently uncontended rather than omitted — an omission is how the two-parent framing missed it
+in the first place.)
 
 `email_code`'s eligibility is a server-side check, not a UI affordance — otherwise an attacker with a
 stolen session and separate mailbox access could use it against an *already*-MFA-protected account,
@@ -1042,6 +1188,18 @@ themselves out of *logging in* too, not just out of changing it — a narrower v
 lockout-as-availability-cost trade [`login-attempt-lockout.md`](login-attempt-lockout.md) already
 accepted for a different reason. Anyone locked out this way still has the request's own error message
 telling them when it clears.
+
+Every `CredentialProof` channel must actually claim a slot, which is not automatic — today's
+`UpdateUser` has an unbounded one to avoid inheriting: its `otp_code` branch runs
+`totp.Validate(..., TempOtpSecret)` (`user_service.go:442-450`) with no `claimLoginAttempt`, an
+unbounded guessing oracle against the pending TOTP seed (bounded in *impact* only because the minted
+secret is returned solely to the same self-caller and cross-user reach needs `bb.users.update`, blocked
+in SaaS — so it is an oracle, not a takeover). The design must not carry that forward: `EnableMfa` and
+`ConfirmRecoveryCodes` verify `otp_code` too, and the enrollment branch of `EnableMfa` takes *no*
+`CredentialProof` at all — so unless each `otp_code` verification claims the `MFA` bucket on its own
+(independently of whether a `CredentialProof` is present), first-time enrollment would ship the same
+unbounded oracle. `otp_code` verification claims `MFA`; the enrollment path claims it despite having no
+`CredentialProof`, precisely so the oracle is closed there rather than reopened.
 
 **What's exempt.** `title`/`phone` on `UpdateUser` aren't authentication material.
 `StartMfaEnrollment` mints a secret but changes nothing live, so it needs no proof — same as AWS's
@@ -1412,7 +1570,8 @@ message RequestReauthCodeRequest {
   // anything about the caller.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/User"}
+    (google.api.resource_reference) = {type: "bytebase.com/User"},
+    (buf.validate.field).string.max_len = 260
   ];
 }
 
@@ -1422,7 +1581,8 @@ message ChangePasswordRequest {
   // else, so this is never valid on an admin-assisted call.
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/User"}
+    (google.api.resource_reference) = {type: "bytebase.com/User"},
+    (buf.validate.field).string.max_len = 260
   ];
 
   string new_password = 2 [
@@ -1437,7 +1597,8 @@ message ChangePasswordRequest {
 message StartMfaEnrollmentRequest {
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/User"}
+    (google.api.resource_reference) = {type: "bytebase.com/User"},
+    (buf.validate.field).string.max_len = 260
   ];
 }
 
@@ -1477,7 +1638,8 @@ message MfaEnrollment {
 message EnableMfaRequest {
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/User"}
+    (google.api.resource_reference) = {type: "bytebase.com/User"},
+    (buf.validate.field).string.max_len = 260
   ];
 
   // The code computed from the enrollment StartMfaEnrollment returned.
@@ -1509,7 +1671,8 @@ message EnableMfaRequest {
 message DisableMfaRequest {
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/User"}
+    (google.api.resource_reference) = {type: "bytebase.com/User"},
+    (buf.validate.field).string.max_len = 260
   ];
 
   // Required only when name is the caller's own. On an admin-assisted call
@@ -1517,21 +1680,26 @@ message DisableMfaRequest {
   // in this file with a real admin path, so its requirement is conditional
   // on caller identity, which a blanket proto REQUIRED can't express; the
   // conditionality is enforced in the handler, same as every other
-  // identity-dependent check in this design.
-  CredentialProof credential = 2;
+  // identity-dependent check in this design. Also constrained by factor: on
+  // a self-service call against an account with live MFA, the handler
+  // accepts only otp_code/recovery_code, never current_password/email_code
+  // (see CredentialProof.current_password and Design → Verification).
+  CredentialProof credential = 2 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message RegenerateRecoveryCodesRequest {
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/User"}
+    (google.api.resource_reference) = {type: "bytebase.com/User"},
+    (buf.validate.field).string.max_len = 260
   ];
 }
 
 message ConfirmRecoveryCodesRequest {
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference) = {type: "bytebase.com/User"}
+    (google.api.resource_reference) = {type: "bytebase.com/User"},
+    (buf.validate.field).string.max_len = 260
   ];
   CredentialProof credential = 2 [(google.api.field_behavior) = REQUIRED];
 
@@ -1578,9 +1746,17 @@ message RegenerateRecoveryCodesResponse {
 
 `current_password`/`new_password` are bounded at `max_bytes = 72` — bcrypt's real limit, matching
 `User.password` — not `LoginRequest.password`'s `max_bytes = 512`, which is wider only because `Login`
-also serves LDAP bind; nothing reachable from these six methods ever touches an LDAP-bound principal.
-`otp_code`/`recovery_code`/`email_code` take `max_len = 64`, matching `LoginRequest`'s existing fields
-of the same name.
+also serves LDAP bind; nothing reachable from the password-bearing methods here ever touches an
+LDAP-bound principal. `otp_code`/`recovery_code`/`email_code` take `max_len = 64`, matching
+`LoginRequest`'s existing fields of the same name. Each `name` field takes `max_len = 260` (`"users/"` +
+a 254-char email; the workspace-wide 256-byte resource-name bound would reject a legal maximum-length
+email), because every one of these methods turns `name` into a T9 lockout identity — the validate
+interceptor must refuse an oversized identity before any handler claims a slot, the rule
+`TestAuthEmailFieldsAreLengthBounded` already pins for every `email` field in `auth_service.proto`. That
+test's inventory, and the audit-payload inventory `TestLintAuditPayloadInventory` pins, both have to gain
+the seven new `name` fields, and `TestForbiddenClassMembership` has to gain all seven new procedures with
+their `mcp_denial_reason`s — three enumerated lints that fail closed on anything unlisted, so they are
+part of this change, not a follow-up.
 
 `RegenerateRecoveryCodes`/`ConfirmRecoveryCodes` keep today's mint-then-promote shape — an earlier
 draft of this doc collapsed it into one call, reasoning that recovery codes have no client-side proof
@@ -1740,7 +1916,7 @@ message UpdateUserRequest {
 }
 ```
 
-One store-level message changes too — `storepb.UserProfile` (`proto/store/store/user.proto:37-47`) gains
+One store-level message changes too — `storepb.UserProfile` (`proto/store/store/user.proto:38-47`) gains
 the credential-generation stamp the MFA temp token is validated against (see Design → Verification). Field
 6, not the reserved 4:
 
@@ -1793,6 +1969,34 @@ today's `regenerate_recovery_codes` field name and `RegenerateRecoveryCodesView`
 `ConfirmRecoveryCodes` isn't `EnableRecoveryCodes` — recovery codes aren't a feature with an on/off
 state the way MFA is, they're always live once any exist, so "confirm" names what the caller is
 actually doing (acknowledging receipt), not a state transition that doesn't exist.
+
+Four conformance points where the proposal above still has to be brought into line with the repo's own
+pinned conventions, none of which changes the design, all of which a lint or a reviewer will otherwise
+catch:
+
+- **`StartMfaEnrollment` returns a bare `MfaEnrollment`, which AIP-136 doesn't allow.** A custom method
+  returns `<Rpc>Response` unless it returns an actual resource, and `MfaEnrollment` has no
+  `google.api.resource` and no `name` — it is a response object, not a resource (the Alternatives section
+  deliberately declines to model MFA as a `users/{email}/mfaFactors/{id}` collection). Rename it
+  `StartMfaEnrollmentResponse`, matching `LoginResponse`/`ExchangeTokenResponse` in the same package.
+- **Acronym casing: `Mfa` vs `MFA`.** Every acronym in the v1 protos is uppercase
+  (`OIDCIdentityProviderContext`, `LDAPIdentityProviderConfig`, `AIChatMessage`), and the store side is
+  already `MFAConfig`. `Mfa`/`EnableMfa`/`DisableMfa` would be the only lowercase-acronym names in the
+  tree. Recommendation is to uppercase to `EnableMFA`/`DisableMFA`/`StartMFAEnrollment`/`MFAEnrollment`
+  for consistency; flagged as a deliberate call rather than silently drifting, since it touches every
+  MFA-named symbol and the HTTP verbs (`:enableMFA`).
+- **`RESETS_CREDENTIAL` on `RequestReauthCode` contradicts the enum's own text**, which defines it as
+  driving "the out-of-band reset flow that sets or delivers the secret a login accepts" — and the
+  `REAUTH` code is deliberately *not* login-accepted. The enum comment in `annotation.proto` must be
+  widened ("the secret a login *or a credential change* accepts") in the same change, or the reason is
+  self-contradictory against `TestLintReasonsMatchTheClass`.
+- **The prose paraphrases of `MINTS_CREDENTIAL`/`TAKES_OVER_ACCOUNT` don't match `annotation.proto`.**
+  The real definitions are "puts a *token* for the caller's own principal in the response" and "rewrites
+  an account's own credentials, which would let the session log in as that account" — nothing about
+  whether the response body carries a secret. A not-yet-live TOTP secret or pending recovery-code set is
+  neither a token nor a live credential, so `StartMfaEnrollment`/`RegenerateRecoveryCodes` fit
+  `MINTS_CREDENTIAL` only once the enum comment is widened to name pending/enrollment material
+  explicitly; do that alongside, since the reason-per-method mapping is lint-pinned.
 
 ## Alternatives
 
