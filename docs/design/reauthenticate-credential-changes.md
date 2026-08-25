@@ -332,7 +332,15 @@ pointing at `ChangePassword`. `ChangePassword` has no admin path at all (see its
 in API). Admin-assisted resets of another user's password or MFA stay on `UpdateUser`'s `password`
 field and `DisableMfa` respectively, both exempt: the `bb.users.update` permission check and audit log are the
 correct control there, and an admin recovering a locked-out user cannot know the credential being
-replaced. `CreateUser`/`Signup` have no prior credential to prove. `ResetPassword` (emailed code)
+replaced. Both also carry forward the *other* half of `UpdateUser`'s existing cross-user gate, not just
+the permission check —
+[worth stating explicitly](https://github.com/bytebase/bytebase/pull/21235), since it's easy to
+carry over only the part that reads as "the interesting check": `callerUser.ID != user.ID` is rejected
+outright in SaaS mode, unconditionally, checked *before* `bb.users.update` is even evaluated
+(`user_service.go:347-359`) — "the principal is global," per the comment already on that check today.
+`DisableMfa`'s admin path is self-hosted only for the same reason `UpdateUser`'s already is, not a new
+decision; a SaaS workspace admin gets exactly as little cross-user reach here as anywhere else.
+`CreateUser`/`Signup` have no prior credential to prove. `ResetPassword` (emailed code)
 already has its own proof channel — mailbox possession — including for SSO accounts whose
 `PasswordHash` they never saw.
 
@@ -477,7 +485,10 @@ service UserService {
 
   // Turns MFA off for `name`. Rejected for any non-admin caller while the
   // workspace requires MFA (Require_2Fa), self-service or admin-assisted
-  // alike, same as UpdateUser enforces today.
+  // alike, same as UpdateUser enforces today. The admin path itself
+  // (name != caller) is self-hosted only: SaaS rejects any cross-user call
+  // outright before bb.users.update is even checked, same as UpdateUser's
+  // existing cross-user gate.
   rpc DisableMfa(DisableMfaRequest) returns (User) {
     option (google.api.http) = {
       post: "/v1/{name=users/*}:disableMfa"
