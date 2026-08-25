@@ -628,10 +628,24 @@ current value is refused; the holder must authenticate again. Ordinary API calls
 in this set: rejecting those would turn every credential change into an immediate hard cutoff for
 in-flight work, which is the caveat G7 knowingly accepts. The line is minting, not use.
 
-Two rollout details this needs and the temp-token version does not. Access tokens minted before the
-upgrade carry no stamp, so a missing claim has to mean something: treat it as *refuse to mint* rather
-than *allow*, since the alternative leaves the hole open for a full token lifetime after deploy and the
-cost is one extra login for tokens already near expiry. And `LastCredentialChangeTime` is now load-bearing
+Two rollout details this needs and the temp-token version does not. The first is a distinction the
+naive version of "refuse on a missing stamp" gets fatally wrong — [caught in
+review](https://github.com/bytebase/bytebase/pull/21235): there are *two* different things that can be
+absent, and only one of them may cause a refusal. A **token** with no generation claim is a pre-upgrade
+token, and refusing to let it mint is correct. But the **account row** also has no generation until its
+first credential mutation — `LastCredentialChangeTime` starts nil on every account that exists today and
+every account created after the upgrade — so a token freshly and legitimately minted *after* the upgrade,
+for an account that has simply never changed a credential, would carry whatever that nil stamps to. If a
+nil account value produces a missing claim and a missing claim is refused, `SwitchWorkspace` and
+`/authorize` reject brand-new, perfectly valid tokens until the user happens to change a credential —
+breaking normal operation for the entire existing user base on day one. The account's generation must
+therefore always be *defined*, never nil: the same migration that backfills `LastChangePasswordTime`
+(see Cloud vs. self-hosted) backfills `LastCredentialChangeTime` to the row's `created_at` for every
+existing `END_USER`, and account creation sets it going forward. With that, the rule is a clean
+comparison — a token is refused only when its claim is *strictly older* than the account's current
+generation (a real credential change has happened since it was minted), a fresh token carries the
+account's current generation and matches, and the only truly-missing *claim* is a pre-upgrade token,
+refused as its own explicit case. And `LastCredentialChangeTime` is now load-bearing
 for both this and the temp token, so the seven mutations that bump it — the four here plus `ResetPassword`,
 the admin-assisted reset, and the `bytebase recovery` CLI reset (below) — must bump it inside their fenced
 transaction, not before or after, or a token minted mid-mutation could carry a stamp that never matches
@@ -1099,7 +1113,10 @@ is deliberately the conservative direction — it can't distinguish, for any giv
 "real password never changed" from "SSO/Cloud placeholder never disclosed," so it treats every unknown
 row as *has* a real password. The alternative default — treat unknowns as passwordless — is the one
 that actually matters here: it would reopen the downgrade this whole mechanism exists to prevent for
-every real password that predates the migration.
+every real password that predates the migration. The same migration backfills `LastCredentialChangeTime`
+to `created_at` for every existing `END_USER` (for a different reason — see Token-minting paths, where a
+nil generation would otherwise make every fresh post-upgrade token unmintable): two columns, one
+backfill, both to `created_at`, both then maintained forward.
 
 Left there, the backfill is one-way and permanent for exactly the population `email_code` exists to
 serve — [a fourth finding](https://github.com/bytebase/bytebase/pull/21235): once
