@@ -63,7 +63,8 @@ A fix scoped to literally the two audited lines leaves both of these open. All f
 - **G6** Admin-assisted recovery (self-hosted only) is untouched: an admin resetting a locked-out
   user's password or MFA must not need the credential being replaced
   ([`split-profile-self-service-vs-admin.md`](split-profile-self-service-vs-admin.md)).
-- **G7** All four state-changing methods revoke the account's other refresh tokens on success, same
+- **G7** Every mutation that actually changes live authentication material revokes the account's other
+  refresh tokens (see Verification for why "actually changes" excludes the no-op enrollment check), same
   as password change already does, and — unlike password change today — atomically: the credential
   mutation and the revocation commit in one transaction, so a revocation failure fails the whole
   request instead of silently leaving refresh tokens live the way `UpdateUser`'s log-and-continue
@@ -136,7 +137,21 @@ for the admin-assisted path, where G6 means no proof is needed anyway.
 
 **Verification.** `ChangePassword`, `EnableMfa`, `DisableMfa`, and `ConfirmRecoveryCodes` each take
 a `CredentialProof` — the current password, a live OTP or recovery code where the account has MFA, or
-an emailed code where neither exists — and check it before touching anything. "Check, then mutate"
+an emailed code where neither exists — and check it before touching anything. One constraint on that
+menu is not optional, and getting it wrong reopens the exact takeover `email_code`'s eligibility rule
+exists to close: **when the account has a live MFA factor, a mutation that touches that factor must be
+proven with the factor, not with `current_password`.** `DisableMfa`, and `EnableMfa`/`ConfirmRecoveryCodes`
+when they replace an existing factor, therefore accept only `otp_code` or `recovery_code` while
+`MFAConfig.OtpSecret` is live — never `current_password` or `email_code`. The reason is that
+`current_password` is not a second, independent thing the caller knows: `ResetPassword` mints it from
+mailbox possession alone, leaving MFA untouched (it "only ever touches the password," see below), so an
+attacker with a stolen session and the account's mailbox could reset the password, then present that
+fresh password as `CredentialProof` to strip the MFA the reset left standing. That is precisely the
+mailbox-plus-session downgrade `email_code` refuses by requiring no-live-MFA; allowing
+`current_password` against live MFA would leave the front door open beside the locked window. Requiring
+the factor itself to change the factor closes both. (`ChangePassword` is unaffected — it accepts
+`current_password` with or without MFA, since changing the password is not touching the factor, and a
+password change already revokes sessions so it cannot be a step toward one.) "Check, then mutate"
 has to be one transaction with the account row locked (`SELECT ... FOR UPDATE`) from before the check
 to after the write, per this repo's own [row-lock ordering](../../backend/store/README.md#transaction-row-lock-ordering)
 convention — not a read-verify-then-later-write sequence against a row nothing is holding. Without the
@@ -230,8 +245,20 @@ recovery code) as an alternative to password on `EnableMfa` matters most exactly
 device; `email_code` covers the case neither of those helps — first-time enrollment, where nothing
 prior exists to prove control of at all (see Cloud vs. self-hosted). Because each method requires its
 proof in its own request message, whether it needs re-authentication is visible in its schema —
-nothing to audit across a shared patch. On success, all four state-changing methods call
-`DeleteWebRefreshTokensByUser` in the same transaction as the credential mutation itself — today only
+nothing to audit across a shared patch. On success — meaning a success that *actually changed live
+credential material*, which is not every accepted call — the mutating methods call
+`DeleteWebRefreshTokensByUser` and bump `LastCredentialChangeTime` in the same transaction as the
+mutation itself. The qualifier is load-bearing for exactly one branch: `EnableMfa` on a first-time
+passwordless enrollment requires no `CredentialProof` and promotes nothing (it only verifies the OTP and
+leaves the account as unenrolled as it found it — see `EnableMfa` and the receipt-confirmation split), so
+revoking sessions or bumping the generation there would let any stolen session run
+`StartMfaEnrollment`+`EnableMfa` and knock the victim out of every session without holding any credential
+at all — a no-credential griefing lever, and a direct contradiction of that branch's own "writes nothing,
+harmless to retry" guarantee. Revocation and the bump follow the *mutation*, not the method name: they
+fire in `EnableMfa` only on a rotation (a live secret is actually replaced), and for enrollment they
+move to `ConfirmRecoveryCodes`, which is where the secret and codes actually go live and which does
+require proof. `DisableMfa`, `ChangePassword`, and every rotation path change live material by
+definition, so they always revoke — today only
 `ChangePassword` inherits a call to it at all, from `UpdateUser`'s existing password branch
 (`user_service.go:436`), and even there it's best-effort (`:437-438` logs and continues on error, the
 password change commits regardless); `EnableMfa`/`DisableMfa`/`ConfirmRecoveryCodes` need the call
@@ -1315,7 +1342,14 @@ band — the same shape `RequestPasswordReset` already carries this reason for �
 // constraint, so this doesn't introduce a second convention for it.
 message CredentialProof {
   oneof proof {
-    // The account's current password.
+    // The account's current password. Accepted for ChangePassword always,
+    // and for a factor-touching method (DisableMfa, or EnableMfa/
+    // ConfirmRecoveryCodes when replacing an existing factor) ONLY when the
+    // account has no live MFA — the handler rejects it while
+    // MFAConfig.OtpSecret is set, because ResetPassword mints a password from
+    // mailbox possession alone, so accepting it against live MFA would let a
+    // stolen session plus mailbox strip the factor (see Design →
+    // Verification).
     string current_password = 1 [
       (bytebase.v1.audit_behavior) = SENSITIVE,
       (buf.validate.field).string.max_bytes = 72
