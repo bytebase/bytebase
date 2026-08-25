@@ -180,10 +180,20 @@ trace and G5's five-attempt bound would never actually apply. T9's own design al
 shape for this, matching how login itself works: claim the matching slot (`PASSWORD`, `MFA`, or
 `EMAIL_CODE`) in the `login_attempt` table for the account
 ([`login-attempt-lockout.md`](login-attempt-lockout.md)) as its own statement, committed unconditionally,
-*before* the locked transaction opens — then verify with `bcrypt.CompareHashAndPassword`, the existing
-`challengeMFACode` helper (a pure comparison, no DB write, safe to call as-is), or a lookup against
-`email_verification_code` for the new `REAUTH` purpose, inside the lock, clearing the already-committed
-slot on success. `challengeRecoveryCode` (`auth_service.go:601-619`) is not reusable as-is the same
+*before* the locked transaction opens — then verify with `bcrypt.CompareHashAndPassword` or the existing
+`challengeMFACode` helper, both pure comparisons with no DB write and safe to call as-is, inside the lock,
+clearing the already-committed slot on success. The `email_code` case is not a pure comparison, and
+[not just a lookup either](https://github.com/bytebase/bytebase/pull/21235): a `REAUTH` code is a
+one-time credential the same way a recovery code is, so verifying it has to *consume* it, atomically, in
+the same transaction — an unconsumed match leaves the code valid for anyone who intercepts it again
+before it expires. `verifyEmailCode` (`auth_service_email_code.go:420-446`) isn't reusable as-is for
+exactly that: it reads the row (`:429`) and deletes it (`:443`) as two separate statements on the store's
+own connection, and discards the delete's own success (`_ = s.store.DeleteEmailVerificationCodeIfMatch`)
+— nothing stops two concurrent proofs from both reading the row before either deletes it, and both being
+told they matched. `CredentialProof`'s `email_code` path needs the same shape as the recovery-code fix
+below: a `DELETE ... WHERE email = ? AND purpose = ? AND code_hash = ?` against the open transaction,
+required to affect a row, not read-then-delete-and-ignore. `challengeRecoveryCode`
+(`auth_service.go:601-619`) is not reusable as-is the same
 way — [a sixth finding](https://github.com/bytebase/bytebase/pull/21235): it consumes the code via
 `s.store.UpdateUser`, a standalone statement on the store's own connection, not the transaction the lock
 was just acquired on. Calling it while already holding `SELECT ... FOR UPDATE` on the same principal row
