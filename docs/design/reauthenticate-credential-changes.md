@@ -490,15 +490,36 @@ That fix closes the race around *exchanging* an existing grant, but not [a separ
 earlier](https://github.com/bytebase/bytebase/pull/21235): `handleAuthorizePost`
 (`authorize.go:103-171`) mints a brand-new `oauth2_authorization_code` — a grant that didn't exist
 before the request — off nothing but `resolveConsentingUser` (`:200-228`) verifying a bearer access
-token's signature and expiry and confirming the user row still exists (`:212,221-227`). No lock, because
-there's no existing row to lock: this is the `nextProjectID` shape, not the child-before-parent one, and
-correctly so. The problem isn't the lock ordering, it's what "the user still exists" is being asked to
+token's signature and expiry and confirming the user row still exists (`:212,221-227`). No lock on an
+*existing* row, because there's no existing `oauth2_authorization_code` row to lock: this part of the
+`nextProjectID` shape, not the child-before-parent one, is correct as far as it goes. The problem isn't
+the lock ordering, it's what "the user still exists" is being asked to
 stand in for — proof the account's *credentials* haven't changed, which a still-valid JWT cannot carry,
 since it was signed before whatever credential change just happened and self-contained JWTs are exactly
 as valid the second after a revocation as the second before. This is the mechanism behind the G7 caveat
 correction above, and it's out of scope for the same reason named there (see Non-goals): closing it
 means teaching `/authorize` to check a credential-generation signal that doesn't exist in a JWT today,
 which is a change to token issuance across this system, not a fifth method alongside the other four.
+
+"No existing row to lock" wasn't the whole picture either —
+[caught in a later round](https://github.com/bytebase/bytebase/pull/21235): the new
+`oauth2_authorization_code` row this insert creates still has two *parents*, not zero, and
+`CreateOAuth2AuthorizationCode` acquires both through its own foreign keys — `client_id` against
+`oauth2_client`, `user_email` against `principal` — as part of the insert itself, the same way any FK
+reference locks the row it points to. The `nextProjectID` pattern this doc keeps citing for "no existing
+child" cases doesn't skip locking on that basis; it explicitly locks its one parent *first*. This insert
+has two, and nothing says which one the FK checks reach first — if that's `oauth2_client` before
+`principal`, it's the opposite of the order the token-exchange fix above already commits to (principal,
+then `oauth2_client`, via `issueTokens`/`UpdateOAuth2ClientLastActiveAt`), and the two can deadlock: the
+mint holding `oauth2_client` while waiting on `principal`, an in-flight exchange holding `principal` while
+waiting on `oauth2_client`. The fix is the same discipline as every other multi-table lock in this doc:
+`handleAuthorizePost` explicitly locks `principal` then `oauth2_client` (`SELECT ... FOR KEY SHARE`, the
+weakest lock that still orders against the FK check, taken in that order before the insert) rather than
+leaving the order to whatever the FK constraints happen to check first — folding the mint into the same
+shared order this doc already names for every other path that touches more than one of these tables.
+Needs the same deterministic real-PostgreSQL regression test as the other lock-ordering fixes, covering
+both directions: a mint racing an in-flight token exchange for the same user/client, and a mint racing
+`DeleteOAuth2Client`/`DeleteExpiredOAuth2Clients`.
 
 `email_code`'s eligibility is a server-side check, not a UI affordance — otherwise an attacker with a
 stolen session and separate mailbox access could use it against an *already*-MFA-protected account,
