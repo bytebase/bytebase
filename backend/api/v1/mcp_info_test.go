@@ -422,6 +422,27 @@ func TestGetMCPInfoHandler(t *testing.T) {
 		require.NotEmpty(t, info.Engines)
 	})
 
+	// Codex, #21254: the subtest above covers only a mistyped enum NAME, which
+	// unmarshals away to unset. A wrong-TYPED value fails the whole unmarshal
+	// instead, and the store wraps both in ErrMCPCapabilityUnreadable — so this
+	// field is wider than MCPSetting.capability_unreadable, which never
+	// describes these rows because GetSetting refuses them outright
+	// (backend/tests/mcp_capability_setting_test.go). Untested, that difference
+	// is invisible until someone reads the field as if the two were the same.
+	t.Run("a row that does not unmarshal is described the same way", func(t *testing.T) {
+		for _, token := range []string{`{}`, `true`, `1.5`, `[]`} {
+			setCeiling(t, `{"capability":`+token+`}`)
+			info, err := get(workspaceCtx())
+			require.NoError(t, err, "%s: the mode contents do not come from the stored row", token)
+			require.True(t, info.CapabilityUnreadable,
+				"%s: no ceiling can be resolved from this row", token)
+			require.Equal(t, v1pb.MCPSetting_CAPABILITY_UNSPECIFIED, info.Capability, token)
+			require.Len(t, info.Modes, 3, "%s: the comparison this page exists for", token)
+			require.Equal(t, len(mcpServedMethods(protoregistry.GlobalFiles)), len(info.Methods), token)
+			require.NotEmpty(t, info.Engines, token)
+		}
+	})
+
 	t.Run("a ceiling no mode serves is described by the value nobody serves", func(t *testing.T) {
 		// The reserved 2, or a value a newer release wrote. It parses, so the
 		// number is the answer and needs no field of its own: modes has no row

@@ -1603,7 +1603,7 @@
           },
           "unreadable": {
             "description": "Không gian làm việc này lưu một giá trị chính sách mà Bytebase không hiểu. Mọi kết nối MCP đang bị từ chối.",
-            "line": "Không phiên AI nào kết nối được cho tới khi quản trị viên đặt lại chính sách",
+            "line": "Không phiên AI nào kết nối được cho tới khi chính sách MCP của không gian làm việc này được sửa",
             "title": "Không đọc được chính sách MCP của không gian làm việc này"
           },
           "unserved": {

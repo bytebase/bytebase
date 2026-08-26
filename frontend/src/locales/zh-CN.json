@@ -1603,7 +1603,7 @@
           },
           "unreadable": {
             "description": "本工作空间存储了 Bytebase 无法理解的策略值。所有 MCP 连接都在被拒绝。",
-            "line": "在管理员重新设置策略之前，任何 AI 会话都无法连接",
+            "line": "在修复此工作空间的 MCP 策略之前，任何 AI 会话都无法连接",
             "title": "无法读取本工作空间的 MCP 策略"
           },
           "unserved": {

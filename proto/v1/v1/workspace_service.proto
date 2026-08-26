@@ -191,10 +191,20 @@ message MCPInfo {
   // true here is the workspace answer, not a promise about every instance.
   bool data_masking_available = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // True when this workspace stores a capability key this build cannot resolve
-  // to a ceiling, which is refused every MCP connection. Same state, same
-  // representation as MCPSetting.capability_unreadable, and reachable the same
-  // two ways: an enum name a newer release wrote, or a hand edit.
+  // True when this build cannot resolve a ceiling from the stored row, which is
+  // refused every MCP connection. Three rows reach it: an enum name a newer
+  // release wrote, a hand-edited token, and a value of the wrong JSON type.
+  //
+  // Wider than MCPSetting.capability_unreadable despite the shared name, and
+  // not interchangeable with it. GetSetting fails outright on a row that does
+  // not unmarshal, so that field only ever describes rows that parsed; this one
+  // also covers the rows GetSetting refuses, because this method answers the
+  // mode contents for them rather than refusing.
+  //
+  // So a client cannot infer from this field how the row gets repaired: some of
+  // these an admin fixes in the workspace settings, and some need an operator
+  // to correct the stored value directly. The settings API is where that
+  // distinction is drawn.
   //
   // modes, methods and engines are answered anyway: they come from the compiled
   // descriptors and the enforcement code, never from the stored row (BOT-106).

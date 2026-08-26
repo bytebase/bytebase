@@ -1603,7 +1603,7 @@
           },
           "unreadable": {
             "description": "Este espacio de trabajo almacena un valor de política que Bytebase no entiende. Se está rechazando toda conexión MCP.",
-            "line": "Ninguna sesión de IA puede conectarse hasta que un administrador vuelva a establecer la política",
+            "line": "Ninguna sesión de IA puede conectarse hasta que se repare la política MCP de este espacio de trabajo",
             "title": "No se puede leer la política MCP de este espacio de trabajo"
           },
           "unserved": {

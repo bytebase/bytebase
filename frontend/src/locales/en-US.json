@@ -1603,7 +1603,7 @@
           },
           "unreadable": {
             "description": "This workspace stores a policy value Bytebase cannot understand. Every MCP connection is being refused.",
-            "line": "No AI session can connect until an admin sets the policy again",
+            "line": "No AI session can connect until this workspace's MCP policy is repaired",
             "title": "This workspace's MCP policy cannot be read"
           },
           "unserved": {

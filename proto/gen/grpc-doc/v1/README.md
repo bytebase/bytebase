@@ -12710,7 +12710,11 @@ Being listed is necessary, not sufficient. The caller still needs the permission
 | engines | [MCPEngineEnforcement](#bytebase-v1-MCPEngineEnforcement) | repeated | What a read-only session and the masking toggle actually reach, per engine. Both are engine-conditional in ways the ceiling alone does not show. |
 | ignore_masking_exemptions | [bool](#bool) |  | Whether this workspace stops applying the caller&#39;s own unmasking provisioning to MCP requests. It decides which branch of each engine&#39;s masking state a caller is in, and no other API tells an MCP session: SettingService/GetSetting is served by no ceiling. |
 | data_masking_available | [bool](#bool) |  | Whether data masking is licensed for this workspace. When false nothing is masked whatever an engine supports, so the masking states below describe a mechanism that does not run. Licensing can also be set per instance, so a true here is the workspace answer, not a promise about every instance. |
-| capability_unreadable | [bool](#bool) |  | True when this workspace stores a capability key this build cannot resolve to a ceiling, which is refused every MCP connection. Same state, same representation as MCPSetting.capability_unreadable, and reachable the same two ways: an enum name a newer release wrote, or a hand edit.
+| capability_unreadable | [bool](#bool) |  | True when this build cannot resolve a ceiling from the stored row, which is refused every MCP connection. Three rows reach it: an enum name a newer release wrote, a hand-edited token, and a value of the wrong JSON type.
+
+Wider than MCPSetting.capability_unreadable despite the shared name, and not interchangeable with it. GetSetting fails outright on a row that does not unmarshal, so that field only ever describes rows that parsed; this one also covers the rows GetSetting refuses, because this method answers the mode contents for them rather than refusing.
+
+So a client cannot infer from this field how the row gets repaired: some of these an admin fixes in the workspace settings, and some need an operator to correct the stored value directly. The settings API is where that distinction is drawn.
 
 modes, methods and engines are answered anyway: they come from the compiled descriptors and the enforcement code, never from the stored row (BOT-106).
 
