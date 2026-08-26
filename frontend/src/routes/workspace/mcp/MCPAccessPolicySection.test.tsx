@@ -290,10 +290,9 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
-  // Codex, #21236: this warning used to be gated on GetMCPInfo, which refuses
-  // outright under an unreadable or unserved ceiling (BOT-106) — the state an
-  // admin is on this page to repair. Hiding it there lets them arm a toggle
-  // that does nothing while believing they tightened masking.
+  // Codex, #21236: this warning used to be gated on GetMCPInfo, which can still
+  // fail through an outage. Hiding it there lets an admin arm a toggle that
+  // does nothing while believing they tightened masking.
   test("says masking is unlicensed even when the mode data fails", async () => {
     mocks.hasFeature.mockReturnValue(false);
     mocks.getMCPInfo.mockRejectedValue(new Error("the ceiling cannot be read"));
@@ -312,11 +311,11 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
-  // Codex, #21236: the drawer's info is a required prop now, so a pending or
-  // refused GetMCPInfo cannot render as a mode that serves nothing — "0 of 0"
-  // over the workspace whose ceiling the drawer exists to explain. GetMCPInfo
-  // refuses outright under an unreadable ceiling (BOT-106), which is the state
-  // an admin is on this page to repair.
+  // Codex, #21236: the drawer's info is a required prop, so a pending or failed
+  // GetMCPInfo cannot render as a mode that serves nothing — "0 of 0" over the
+  // workspace whose ceiling the drawer exists to explain. Since BOT-106 that
+  // failure is an outage rather than a broken ceiling; the test below covers
+  // the ceiling case, which now answers.
   test("no mode-contents drawer while the mode data is missing", async () => {
     mocks.getMCPInfo.mockRejectedValue(new Error("the ceiling cannot be read"));
 
@@ -329,6 +328,55 @@ describe("MCPAccessPolicySection", () => {
     // The policy itself still reads, so the page is up and editable.
     expect(container.textContent).toContain("settings.mcp.policy.in-force");
     expect(mocks.sheetProps).toHaveLength(0);
+
+    unmount();
+  });
+
+  // BOT-106, the settings half. GetMCPInfo used to refuse whole under an
+  // unreadable ceiling, so the mode cards lost their "See what Read-only
+  // serves" links on the one page whose job is repairing that row — the admin
+  // who most needs to compare the modes was the only one who could not. None of
+  // the mode contents ever depended on the stored row, and the server now
+  // answers them under a broken ceiling, which is the response mocked here.
+  test("the mode-contents drawer is available while repairing an unreadable ceiling", async () => {
+    mocks.mcpSetting.value = {
+      capability: 0,
+      ignoreMaskingExemptions: false,
+      capabilityUnreadable: true,
+    };
+    mocks.getMCPInfo.mockResolvedValue({
+      capability: 0,
+      capabilityUnreadable: true,
+      ignoreMaskingExemptions: false,
+      dataMaskingAvailable: true,
+      modes: [{ capability: 1 }, { capability: 3 }, { capability: 4 }],
+      methods: [],
+      engines: [],
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+
+    // The repair banner, so this is the state under test and not a healthy row.
+    expect(container.textContent).toContain(
+      "settings.mcp.policy.unreadable.title"
+    );
+
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+
+    const contents = [...container.querySelectorAll("button")].filter((b) =>
+      b.textContent?.includes("settings.mcp.policy.mode.contents")
+    );
+    // One per ceiling that serves something; DISABLED has no contents to show.
+    expect(contents).toHaveLength(2);
+
+    act(() => contents[0].click());
+    await flush();
+    expect(mocks.sheetProps.at(-1)?.open).toBe(true);
 
     unmount();
   });

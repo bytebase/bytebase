@@ -1584,10 +1584,36 @@
         },
         "see-contents": "Ver lo que permite la política de este espacio de trabajo",
         "title": "Esta sesión puede",
+        "undisclosed": {
+          "line": {
+            "nothing-approved": "No se ha aprobado nada y no hay nada conectado"
+          },
+          "outdated": {
+            "description": "La política MCP de este espacio de trabajo es más reciente que la página que tiene abierta, así que aquí no se puede mostrar lo que una sesión puede hacer.",
+            "line": "Recargue para obtener la política actual antes de aprobar nada",
+            "retry": "Recargar",
+            "title": "Esta página es más antigua que la política MCP de este espacio de trabajo"
+          },
+          "policy-label": "Política del espacio de trabajo",
+          "unknown": {
+            "description": "Bytebase no ha podido leer la política de acceso MCP de este espacio de trabajo en este momento.",
+            "line": "No se puede mostrar lo que esta sesión tendría permitido hacer",
+            "retry": "Comprobar de nuevo",
+            "title": "No se pudo comprobar la política MCP"
+          },
+          "unreadable": {
+            "description": "Este espacio de trabajo almacena un valor de política que Bytebase no entiende. Se está rechazando toda conexión MCP.",
+            "line": "Ninguna sesión de IA puede conectarse hasta que un administrador vuelva a establecer la política",
+            "title": "No se puede leer la política MCP de este espacio de trabajo"
+          },
+          "unserved": {
+            "description": "Este espacio de trabajo almacena un valor de política que esta versión de Bytebase no sirve. Se está rechazando toda conexión MCP.",
+            "line": "Ninguna sesión de IA puede conectarse hasta que un administrador elija una política admitida",
+            "title": "La política MCP de este espacio de trabajo no es una que sirva esta versión"
+          }
+        },
         "write-caution": "Una sesión de IA con acceso de escritura hace cambios reales. Apruébela solo en una máquina que usted controle."
       },
-      "permission-access": "Acceder a tu cuenta de Bytebase con tus permisos",
-      "permissions": "Esta aplicación podrá:",
       "title": "Solicitud de autorización",
       "workspace-label": "Concediendo acceso al workspace"
     }

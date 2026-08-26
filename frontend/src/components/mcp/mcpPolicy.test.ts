@@ -11,6 +11,7 @@ import {
   MCPEngineEnforcement_Masking,
   MCPEngineEnforcement_ReadOnlyDepth,
   MCPEngineEnforcementSchema,
+  MCPInfoSchema,
   MCPMethodSchema,
 } from "@/types/proto-es/v1/workspace_service_pb";
 import {
@@ -20,6 +21,7 @@ import {
   groupMethodsByService,
   initialCapabilityPick,
   methodsServedBy,
+  readConsentCeiling,
   readStoredCeiling,
   serviceOfMethod,
 } from "./mcpPolicy";
@@ -269,5 +271,66 @@ describe("grouping", () => {
       MCPEngineEnforcement_Masking.DOCUMENT,
       MCPEngineEnforcement_Masking.NONE,
     ]);
+  });
+});
+
+// The serving table every real response carries, one row per ceiling the gate
+// evaluates. DISABLED is a row rather than an omission: it is a mode that
+// decided to serve nothing, which is not the same as a mode nobody decided
+// about (backend/api/v1/mcp_gate.go, mcpServingClasses).
+const SERVED_MODES = [1, 3, 4];
+
+const infoWith = (
+  fields: Partial<{ capability: number; unreadable: boolean; modes: number[] }>
+) =>
+  create(MCPInfoSchema, {
+    capability: fields.capability ?? MCPSetting_Capability.READ_ONLY,
+    capabilityUnreadable: fields.unreadable ?? false,
+    modes: (fields.modes ?? SERVED_MODES).map((capability) =>
+      create(MCPCapabilityModeSchema, { capability })
+    ),
+  });
+
+describe("readConsentCeiling", () => {
+  test("no response is the policy being unknown, not absent", () => {
+    expect(readConsentCeiling(undefined)).toEqual({ kind: "unknown" });
+  });
+
+  test("a served ceiling carries the response the disclosure needs", () => {
+    const info = infoWith({ capability: 4 });
+    expect(readConsentCeiling(info)).toEqual({ kind: "mode", info });
+  });
+
+  test("disabled is a policy, so it reaches its own screen", () => {
+    // Not undisclosed: an admin turned MCP off, which is a decision this page
+    // can name and the one refusing ceiling with a screen of its own.
+    const info = infoWith({ capability: 1 });
+    expect(readConsentCeiling(info)).toEqual({ kind: "mode", info });
+  });
+
+  test("unreadable outranks the serving table", () => {
+    // The capability arrives unspecified when the stored value cannot be
+    // resolved, and unspecified has no row, so both rules would fire. Only the
+    // first says what an admin has to do about it.
+    expect(
+      readConsentCeiling(infoWith({ capability: 0, unreadable: true }))
+    ).toEqual({ kind: "unreadable" });
+  });
+
+  test("a value with no row in the serving table is unserved", () => {
+    expect(readConsentCeiling(infoWith({ capability: 2 }))).toEqual({
+      kind: "unserved",
+    });
+  });
+
+  test("a served ceiling this bundle cannot name is outdated, not unserved", () => {
+    // The difference decides the instruction on screen: reload, or find an
+    // admin. The server serves this one, so there is nothing for an admin to
+    // repair.
+    expect(
+      readConsentCeiling(
+        infoWith({ capability: 5, modes: [...SERVED_MODES, 5] })
+      )
+    ).toEqual({ kind: "outdated" });
   });
 });

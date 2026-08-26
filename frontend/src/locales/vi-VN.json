@@ -1584,10 +1584,36 @@
         },
         "see-contents": "Xem những gì chính sách của không gian làm việc này cho phép",
         "title": "Phiên này có thể",
+        "undisclosed": {
+          "line": {
+            "nothing-approved": "Chưa có gì được phê duyệt và chưa có gì được kết nối"
+          },
+          "outdated": {
+            "description": "Chính sách MCP của không gian làm việc này mới hơn trang bạn đang mở, nên không thể hiển thị ở đây những gì một phiên được phép làm.",
+            "line": "Hãy tải lại để lấy chính sách hiện tại trước khi phê duyệt bất kỳ điều gì",
+            "retry": "Tải lại",
+            "title": "Trang này cũ hơn chính sách MCP của không gian làm việc"
+          },
+          "policy-label": "Chính sách không gian làm việc",
+          "unknown": {
+            "description": "Bytebase hiện chưa đọc được chính sách truy cập MCP của không gian làm việc này.",
+            "line": "Không thể hiển thị những gì phiên này sẽ được phép làm",
+            "retry": "Kiểm tra lại",
+            "title": "Không kiểm tra được chính sách MCP"
+          },
+          "unreadable": {
+            "description": "Không gian làm việc này lưu một giá trị chính sách mà Bytebase không hiểu. Mọi kết nối MCP đang bị từ chối.",
+            "line": "Không phiên AI nào kết nối được cho tới khi quản trị viên đặt lại chính sách",
+            "title": "Không đọc được chính sách MCP của không gian làm việc này"
+          },
+          "unserved": {
+            "description": "Không gian làm việc này lưu một giá trị chính sách mà phiên bản Bytebase này không phục vụ. Mọi kết nối MCP đang bị từ chối.",
+            "line": "Không phiên AI nào kết nối được cho tới khi quản trị viên chọn một chính sách được hỗ trợ",
+            "title": "Chính sách MCP của không gian làm việc này không được phiên bản này phục vụ"
+          }
+        },
         "write-caution": "Phiên AI có quyền ghi sẽ tạo ra thay đổi thật. Chỉ phê duyệt trên máy bạn kiểm soát."
       },
-      "permission-access": "Truy cập tài khoản Bytebase của bạn với quyền hạn của bạn",
-      "permissions": "Ứng dụng này sẽ có thể:",
       "title": "Yêu cầu ủy quyền",
       "workspace-label": "Cấp quyền truy cập vào workspace"
     }

@@ -73,10 +73,10 @@ export function MCPAccessPolicySection() {
   const { t } = useTranslation();
 
   const settingsByName = useAppStore((s) => s.settingsByName);
-  // Read from the licence, not from GetMCPInfo. That request refuses outright
-  // under an unreadable or unserved ceiling (BOT-106), which is exactly when an
-  // admin is on this page — and hiding this line there lets them arm a toggle
-  // that does nothing while believing they tightened masking.
+  // Read from the licence, not from GetMCPInfo. That request can still fail —
+  // it answers under a broken ceiling now, but not through an outage — and
+  // hiding this line lets an admin arm a toggle that does nothing while
+  // believing they tightened masking.
   const dataMaskingAvailable = useAppStore((s) =>
     s.hasFeature(PlanFeature.FEATURE_DATA_MASKING)
   );
@@ -105,9 +105,10 @@ export function MCPAccessPolicySection() {
   // is re-read after a save rather than patched: the ceiling in force is part
   // of the same answer.
   //
-  // Silent: a ceiling this build cannot read refuses this call, and the banner
-  // below already says so in the words an admin can act on. The interceptor's
-  // toast would put the same fact on screen twice, once as a status code.
+  // Silent: this read fails only on an outage now, and the card below already
+  // says the page could not be read in words an admin can act on. The
+  // interceptor's toast would put the same fact on screen twice, once as a
+  // status code.
   // Both reads carry a generation, and the effect retires them on unmount. A
   // response has no way of knowing it was overtaken, and the store it writes is
   // shared: a read left flying by a visit the admin navigated away from would

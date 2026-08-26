@@ -36,10 +36,10 @@ interface Props {
   readonly capability: MCPSetting_Capability;
   /**
    * Required, and every caller gates its trigger on having it. An optional one
-   * would let a pending or refused GetMCPInfo render as a mode that serves
+   * would let a pending or failed GetMCPInfo render as a mode that serves
    * nothing — "0 of 0" over a workspace whose ceiling this drawer exists to
-   * explain. GetMCPInfo refuses outright under an unreadable or unserved
-   * ceiling (BOT-106), which is exactly when an admin opens this.
+   * explain. A broken ceiling is answered rather than refused (BOT-106), so
+   * the drawer is available on the repair path; an outage still is not.
    */
   readonly info: MCPInfo;
   readonly modeLabel: string;
