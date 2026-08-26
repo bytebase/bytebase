@@ -50,6 +50,7 @@ import {
   PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
   useProductIntro,
 } from "@/lib/productIntro";
+import { normalizeInstanceName } from "@/lib/resourceName";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
@@ -238,7 +239,9 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     : undefined;
 
   const instanceVal = getValueFromScopes(searchParams, "instance");
-  const selectedInstance = instanceVal || undefined;
+  const selectedInstance = instanceVal
+    ? normalizeInstanceName(instanceVal)
+    : undefined;
 
   const selectedEngines = useMemo(
     () =>

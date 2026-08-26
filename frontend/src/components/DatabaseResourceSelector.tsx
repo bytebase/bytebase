@@ -17,6 +17,7 @@ import {
 } from "@/components/AdvancedSearch";
 import { DatabaseTargetDisplay } from "@/components/DatabaseTargetDisplay";
 import { Checkbox } from "@/components/ui/checkbox";
+import { normalizeInstanceName } from "@/lib/resourceName";
 import { useAppStore } from "@/stores/app";
 import type { DatabaseResource } from "@/types";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -243,7 +244,7 @@ export function DatabaseResourceSelector({
       environment: environmentId
         ? `${environmentNamePrefix}${environmentId}`
         : undefined,
-      instance: instanceId || undefined,
+      instance: instanceId ? normalizeInstanceName(instanceId) : undefined,
       labels: labels.length > 0 ? labels : undefined,
       engines: engines.length > 0 ? engines : undefined,
       table: table || undefined,
