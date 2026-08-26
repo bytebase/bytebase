@@ -372,43 +372,19 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 			if user.Type != storepb.PrincipalType_END_USER {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password can be mutated for end users only"))
 			}
+			if callerUser.ID == user.ID {
+				// Changing your own password is ChangePassword's job: it is the
+				// method that knows the old one mattered.
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("use ChangePassword to change your own password"))
+			}
 			if err := s.validatePassword(ctx, common.GetWorkspaceIDFromContext(ctx), request.Msg.User.Password); err != nil {
 				return nil, err
 			}
 			passwordPatch = &request.Msg.User.Password
 		case "mfa_enabled":
-			if request.Msg.User.MfaEnabled {
-				if user.MFAConfig.TempOtpSecret == "" || len(user.MFAConfig.TempRecoveryCodes) == 0 {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("MFA is not setup yet"))
-				}
-				if isMFATempSecretExpired(user.MFAConfig) {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("MFA setup has expired, please regenerate the temporary secret"))
-				}
-				// Promote temp secrets to permanent and clear temp fields to prevent reuse
-				patch.MFAConfig = &storepb.MFAConfig{
-					OtpSecret:                user.MFAConfig.TempOtpSecret,
-					RecoveryCodes:            user.MFAConfig.TempRecoveryCodes,
-					TempOtpSecret:            "",
-					TempRecoveryCodes:        nil,
-					TempOtpSecretCreatedTime: nil,
-				}
-			} else {
-				setting, err := s.store.GetWorkspaceProfileSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
-				if err != nil {
-					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting"))
-				}
-				if setting.Require_2Fa {
-					isWorkspaceAdmin, err := isUserWorkspaceAdmin(ctx, s.store, callerUser, common.GetWorkspaceIDFromContext(ctx))
-					if err != nil {
-						return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check user roles"))
-					}
-					// Allow workspace admin to disable 2FA even if it is required.
-					if !isWorkspaceAdmin {
-						return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("2FA is required and cannot be disabled"))
-					}
-				}
-				patch.MFAConfig = &storepb.MFAConfig{}
-			}
+			// MFA is enrolled and disabled through its own methods, which can
+			// state what they write; a boolean on an update mask cannot.
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("use EnableMFA, ConfirmRecoveryCodes or DisableMFA to change MFA"))
 		case "phone":
 			if request.Msg.User.Phone != "" {
 				if err := common.ValidatePhone(request.Msg.User.Phone); err != nil {
@@ -437,69 +413,12 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 			slog.Error("failed to revoke refresh tokens on password change", log.BBError(err), slog.String("user", user.Email))
 		}
 	}
-	// This flag is mainly used for validating OTP code when user setup MFA.
-	// We only validate OTP code but not update user.
-	if request.Msg.OtpCode != nil {
-		if isMFATempSecretExpired(user.MFAConfig) {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("MFA setup has expired, please regenerate the temporary secret"))
-		}
-		isValid := totp.Validate(*request.Msg.OtpCode, user.MFAConfig.TempOtpSecret)
-		if !isValid {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid OTP code"))
-		}
-	}
-	// This flag will regenerate temp secret and temp recovery codes.
-	// It will be used when user setup MFA and regenerating recovery codes.
-	if request.Msg.RegenerateTempMfaSecret {
-		tempSecret, err := generateRandSecret(user.Email)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate MFA secret"))
-		}
-		tempRecoveryCodes, err := generateRecoveryCodes(10)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate recovery codes"))
-		}
-		patch.MFAConfig = &storepb.MFAConfig{
-			TempOtpSecret:            tempSecret,
-			TempRecoveryCodes:        tempRecoveryCodes,
-			TempOtpSecretCreatedTime: timestamppb.Now(),
-		}
-		if user.MFAConfig != nil {
-			patch.MFAConfig.OtpSecret = user.MFAConfig.OtpSecret
-			patch.MFAConfig.RecoveryCodes = user.MFAConfig.RecoveryCodes
-		}
-	}
-	// This flag will update user's recovery codes with temp recovery codes.
-	// It will be used when user regenerate recovery codes after two phase commit.
-	if request.Msg.RegenerateRecoveryCodes {
-		if user.MFAConfig.OtpSecret == "" {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("MFA is not enabled"))
-		}
-		if len(user.MFAConfig.TempRecoveryCodes) == 0 {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("No recovery codes to update"))
-		}
-		patch.MFAConfig = &storepb.MFAConfig{
-			OtpSecret:     user.MFAConfig.OtpSecret,
-			RecoveryCodes: user.MFAConfig.TempRecoveryCodes,
-		}
-	}
-
 	user, err = s.store.UpdateUser(ctx, user, patch)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update user"))
 	}
 
-	// Only the two requests that drive MFA enrollment answer with the
-	// enrollment secrets. regenerate_temp_mfa_secret mints them, and the
-	// otp_code verification is the step the console moves to the recovery-code
-	// screen from, reading the codes out of that response. A title, phone or
-	// password update happening to land inside an open enrollment window has no
-	// business carrying a TOTP seed back.
-	convertResponse := convertToUser
-	if request.Msg.RegenerateTempMfaSecret || request.Msg.OtpCode != nil {
-		convertResponse = convertToUserMintingMFAEnrollment
-	}
-	userResponse, err := convertResponse(ctx, s.iamManager, user)
+	userResponse, err := convertToUser(ctx, s.iamManager, user)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
 	}
@@ -717,6 +636,283 @@ func (s *UserService) UpdateEmail(ctx context.Context, request *connect.Request[
 // codes that get past the second factor, and a response that carries either
 // hands a reader the account's second factor. Every caller but one is a read,
 // so this is the default and the exception has to be asked for by name.
+var errSupersededPendingMFAState = connect.NewError(connect.CodeFailedPrecondition,
+	errors.New("the pending MFA state has been superseded; restart from the mint step"))
+
+// Self-service credential methods. These replace the UpdateUser field masks
+// and flags that used to drive password changes and MFA enrollment — same
+// operations, addressed as methods rather than as a mask plus three booleans,
+// so each one states who may call it and what it writes.
+//
+// They are auth_method=CUSTOM: the ACL interceptor enforces nothing for them,
+// so every handler checks the caller itself. DisableMFA is the one method with
+// an administrator path.
+
+// ChangePassword changes the caller's own password.
+func (s *UserService) ChangePassword(ctx context.Context, request *connect.Request[v1pb.ChangePasswordRequest]) (*connect.Response[v1pb.User], error) {
+	caller, err := s.resolveSelfUser(ctx, request.Msg.Name)
+	if err != nil {
+		return nil, err
+	}
+	if caller.Type != storepb.PrincipalType_END_USER {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password can be mutated for end users only"))
+	}
+	if err := s.validatePassword(ctx, common.GetWorkspaceIDFromContext(ctx), request.Msg.NewPassword); err != nil {
+		return nil, err
+	}
+	if bcrypt.CompareHashAndPassword([]byte(caller.PasswordHash), []byte(request.Msg.NewPassword)) == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password cannot be the same"))
+	}
+	passwordHash, err := bcrypt.GenerateFromPassword([]byte(request.Msg.NewPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate password hash"))
+	}
+
+	hash := string(passwordHash)
+	user, err := s.store.UpdateUser(ctx, caller, &store.UpdateUserMessage{PasswordHash: &hash})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update user"))
+	}
+	// Every session of this account, the caller's own included, has to be
+	// re-established with the new password.
+	if err := s.store.DeleteWebRefreshTokensByUser(ctx, user.Email); err != nil {
+		slog.Error("failed to revoke refresh tokens on password change", log.BBError(err), slog.String("user", user.Email))
+	}
+	return s.convertUserResponse(ctx, user)
+}
+
+// StartMFAEnrollment mints a pending TOTP secret and recovery codes and hands
+// them back. Any live factor is preserved: an enrollment that is abandoned, or
+// superseded by a later one, changes nothing about how the account signs in.
+func (s *UserService) StartMFAEnrollment(ctx context.Context, request *connect.Request[v1pb.StartMFAEnrollmentRequest]) (*connect.Response[v1pb.StartMFAEnrollmentResponse], error) {
+	caller, err := s.resolveSelfUser(ctx, request.Msg.Name)
+	if err != nil {
+		return nil, err
+	}
+	tempSecret, err := generateRandSecret(caller.Email)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate MFA secret"))
+	}
+	tempRecoveryCodes, err := generateRecoveryCodes(10)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate recovery codes"))
+	}
+	// Truncated to the microsecond the database stores, so the version the
+	// caller echoes back matches the stored one exactly.
+	createdTime := timestamppb.New(time.Now().UTC().Truncate(time.Microsecond))
+
+	// Writes only the pending fields: copying the live factor forward from the
+	// read above would resurrect it if an administrator disabled MFA while
+	// this mint was in flight.
+	if err := s.store.SetPendingMFAState(ctx, caller.ID, tempSecret, tempRecoveryCodes, createdTime.AsTime()); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update user"))
+	}
+
+	return connect.NewResponse(&v1pb.StartMFAEnrollmentResponse{
+		OtpSecret:      tempSecret,
+		RecoveryCodes:  tempRecoveryCodes,
+		ExpireTime:     timestamppb.New(createdTime.AsTime().Add(mfaTempSecretExpiration)),
+		PendingVersion: createdTime,
+	}), nil
+}
+
+// EnableMFA verifies an otp_code against the pending enrollment and writes
+// nothing. It exists to catch a mistyped authenticator before the caller is
+// handed recovery codes; ConfirmRecoveryCodes is what makes the factor live.
+func (s *UserService) EnableMFA(ctx context.Context, request *connect.Request[v1pb.EnableMFARequest]) (*connect.Response[v1pb.User], error) {
+	caller, err := s.resolveSelfUser(ctx, request.Msg.Name)
+	if err != nil {
+		return nil, err
+	}
+	// Verification only, so a read is enough: this writes nothing, and the
+	// promotion re-checks the version against the row it updates.
+	if err := checkPendingMFAState(caller, request.Msg.PendingVersion); err != nil {
+		return nil, err
+	}
+	if isMFATempSecretExpired(caller.MFAConfig) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("MFA setup has expired, please restart the enrollment"))
+	}
+	if !totp.Validate(request.Msg.OtpCode, caller.MFAConfig.GetTempOtpSecret()) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid OTP code"))
+	}
+	return s.convertUserResponse(ctx, caller)
+}
+
+// DisableMFA clears the account's entire MFA config, live and pending alike, so
+// a confirmation left open cannot silently re-enable it.
+func (s *UserService) DisableMFA(ctx context.Context, request *connect.Request[v1pb.DisableMFARequest]) (*connect.Response[v1pb.User], error) {
+	callerUser, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("failed to get caller user"))
+	}
+	email, err := common.GetUserEmail(request.Msg.Name)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if err := validateEndUserEmail(email); err != nil {
+		return nil, err
+	}
+	user, err := s.store.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
+	}
+	if user == nil || user.MemberDeleted {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %q not found", email))
+	}
+
+	if callerUser.ID != user.ID {
+		// Same cross-user gate as UpdateUser: the principal is global, so a
+		// SaaS workspace admin gets no cross-user reach here either.
+		if s.profile.SaaS {
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("updating other users is not allowed in SaaS mode"))
+		}
+		hasPermission, err := s.iamManager.CheckPermission(ctx, permission.UsersUpdate, callerUser, common.GetWorkspaceIDFromContext(ctx))
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
+		}
+		if !hasPermission {
+			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.UsersUpdate))
+		}
+	}
+
+	// A non-admin caller cannot turn MFA off while the workspace requires it,
+	// self-service or admin-assisted alike — unchanged from UpdateUser.
+	setting, err := s.store.GetWorkspaceProfileSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace setting"))
+	}
+	if setting.Require_2Fa {
+		isWorkspaceAdmin, err := isUserWorkspaceAdmin(ctx, s.store, callerUser, common.GetWorkspaceIDFromContext(ctx))
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check user roles"))
+		}
+		if !isWorkspaceAdmin {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("2FA is required and cannot be disabled"))
+		}
+	}
+
+	updatedUser, err := s.store.UpdateUser(ctx, user, &store.UpdateUserMessage{MFAConfig: &storepb.MFAConfig{}})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update user"))
+	}
+	return s.convertUserResponse(ctx, updatedUser)
+}
+
+// RegenerateRecoveryCodes mints a pending recovery-code set beside the live
+// one. The old codes keep working until ConfirmRecoveryCodes promotes these.
+func (s *UserService) RegenerateRecoveryCodes(ctx context.Context, request *connect.Request[v1pb.RegenerateRecoveryCodesRequest]) (*connect.Response[v1pb.RegenerateRecoveryCodesResponse], error) {
+	caller, err := s.resolveSelfUser(ctx, request.Msg.Name)
+	if err != nil {
+		return nil, err
+	}
+	if caller.MFAConfig.GetOtpSecret() == "" {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("MFA is not enabled"))
+	}
+	tempRecoveryCodes, err := generateRecoveryCodes(10)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate recovery codes"))
+	}
+	version := timestamppb.New(time.Now().UTC().Truncate(time.Microsecond))
+
+	// Same targeted write, and the empty pending secret is deliberate: these
+	// codes belong to the live factor, so confirming them must not also
+	// promote a secret left behind by an abandoned enrollment.
+	if err := s.store.SetPendingMFAState(ctx, caller.ID, "", tempRecoveryCodes, version.AsTime()); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update user"))
+	}
+
+	return connect.NewResponse(&v1pb.RegenerateRecoveryCodesResponse{
+		RecoveryCodes:  tempRecoveryCodes,
+		PendingVersion: version,
+	}), nil
+}
+
+// ConfirmRecoveryCodes promotes the pending recovery codes. On a first-time
+// enrollment the pending TOTP secret goes live in the same write, so the factor
+// and the codes that recover it start existing together.
+func (s *UserService) ConfirmRecoveryCodes(ctx context.Context, request *connect.Request[v1pb.ConfirmRecoveryCodesRequest]) (*connect.Response[v1pb.User], error) {
+	caller, err := s.resolveSelfUser(ctx, request.Msg.Name)
+	if err != nil {
+		return nil, err
+	}
+	if len(caller.MFAConfig.GetTempRecoveryCodes()) == 0 {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("no pending recovery codes to confirm"))
+	}
+
+	mfaConfig := &storepb.MFAConfig{
+		OtpSecret:     caller.MFAConfig.GetOtpSecret(),
+		RecoveryCodes: caller.MFAConfig.GetTempRecoveryCodes(),
+	}
+	// A pending secret means an enrollment — the account's first factor, or a
+	// replacement for the one it already has — and either way that secret is
+	// the one the caller just proved they can generate codes from, so it is
+	// the one that goes live. Only RegenerateRecoveryCodes leaves no pending
+	// secret, and only there does the live factor survive untouched.
+	if pendingSecret := caller.MFAConfig.GetTempOtpSecret(); pendingSecret != "" {
+		if isMFATempSecretExpired(caller.MFAConfig) {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("MFA setup has expired, please restart the enrollment"))
+		}
+		mfaConfig.OtpSecret = pendingSecret
+	} else if mfaConfig.OtpSecret == "" {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("no MFA enrollment in progress, call StartMFAEnrollment first"))
+	}
+
+	// The pending state is one shared slot, so two flows can race for it, and
+	// the version predicate rides on the write rather than sitting in front of
+	// it: a mint from another tab, or an administrator's DisableMFA, can land
+	// between a check and an unconditional write, and this request would then
+	// promote a secret the caller never saw or revive a factor that
+	// administrator just cleared.
+	user, err := s.store.UpdateUserMFAConfigIfPending(ctx, caller.ID, request.Msg.PendingVersion.AsTime(), mfaConfig)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update user"))
+	}
+	if user == nil {
+		return nil, errSupersededPendingMFAState
+	}
+	return s.convertUserResponse(ctx, user)
+}
+
+// checkPendingMFAState rejects a confirmation whose pending_version is no
+// longer the account's pending state — a later mint superseded the enrollment
+// or code set this request thinks it is confirming, or a DisableMFA cleared it.
+func checkPendingMFAState(user *store.UserMessage, pendingVersion *timestamppb.Timestamp) error {
+	stored := user.MFAConfig.GetTempOtpSecretCreatedTime()
+	if stored == nil || !stored.AsTime().Equal(pendingVersion.AsTime()) {
+		return errSupersededPendingMFAState
+	}
+	return nil
+}
+
+// resolveSelfUser parses name and requires it to be the caller's own account.
+// Nothing upstream enforces this for CUSTOM methods, so every self-service
+// method goes through here.
+func (*UserService) resolveSelfUser(ctx context.Context, name string) (*store.UserMessage, error) {
+	caller, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("failed to get caller user"))
+	}
+	email, err := common.GetUserEmail(name)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	if err := validateEndUserEmail(email); err != nil {
+		return nil, err
+	}
+	if caller.Email != email {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("name must be the caller's own account"))
+	}
+	return caller, nil
+}
+
+func (s *UserService) convertUserResponse(ctx context.Context, user *store.UserMessage) (*connect.Response[v1pb.User], error) {
+	v1User, err := convertToUser(ctx, s.iamManager, user)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
+	}
+	return connect.NewResponse(v1User), nil
+}
+
 func convertToUser(ctx context.Context, iamManager *iam.Manager, user *store.UserMessage) (*v1pb.User, error) {
 	groups, err := iamManager.GetUserGroups(ctx, common.GetWorkspaceIDFromContext(ctx), user.Email)
 	if err != nil {
@@ -741,52 +937,8 @@ func convertToUser(ctx context.Context, iamManager *iam.Manager, user *store.Use
 
 	if user.MFAConfig != nil {
 		convertedUser.MfaEnabled = user.MFAConfig.OtpSecret != ""
-		// Only expose MFA enrollment state to the user themselves.
-		if currentUser, ok := GetUserFromContext(ctx); ok && currentUser.ID == user.ID {
-			// The created time is not a secret. It says an enrollment is open
-			// and when it expires, which is what the console counts down from,
-			// and it is what tells a client the two fields below are missing
-			// because they were redacted rather than because there is nothing
-			// to enroll.
-			//
-			// An expired enrollment is not an open one, so it does not come
-			// back. Nothing clears the stored timestamp when the window runs
-			// out — the two writes are a commit, which nils it, and a
-			// regenerate, which moves it — so an abandoned setup would
-			// otherwise keep answering "still open" forever, and a client
-			// holding the secrets from it would go on holding them. The rule
-			// for what counts as expired stays in isMFATempSecretExpired, the
-			// same one that refuses to verify against a stale seed.
-			if !isMFATempSecretExpired(user.MFAConfig) {
-				convertedUser.TempOtpSecretCreatedTime = user.MFAConfig.TempOtpSecretCreatedTime
-			}
-		}
 	}
 	return convertedUser, nil
-}
-
-// convertToUserMintingMFAEnrollment is that exception: UpdateUser generates the
-// temporary TOTP seed and recovery codes, and its response is the only place
-// the human ever sees them — the console renders the QR code and the
-// recovery-code list straight from it, and the server keeps no other way to
-// hand them over. UpdateUser is FORBIDDEN to MCP, so an intact response here
-// adds nothing an agent can reach.
-//
-// It adds the secrets exactly where the read exposed the created time, and asks
-// nothing else. The read already decided who may see this enrollment and
-// whether there is one: it sets the created time only when the subject is the
-// caller and the window is open. Re-deriving that here would be a second copy
-// of a rule that has to give the same answer.
-func convertToUserMintingMFAEnrollment(ctx context.Context, iamManager *iam.Manager, user *store.UserMessage) (*v1pb.User, error) {
-	converted, err := convertToUser(ctx, iamManager, user)
-	if err != nil {
-		return nil, err
-	}
-	if converted.TempOtpSecretCreatedTime != nil {
-		converted.TempOtpSecret = user.MFAConfig.TempOtpSecret
-		converted.TempRecoveryCodes = user.MFAConfig.TempRecoveryCodes
-	}
-	return converted, nil
 }
 
 func validateEndUserEmail(email string) error {

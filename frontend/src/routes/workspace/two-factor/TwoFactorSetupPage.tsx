@@ -1,9 +1,10 @@
 import { create } from "@bufbuild/protobuf";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import type { ConnectError } from "@connectrpc/connect";
 import { QRCodeSVG } from "qrcode.react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { userServiceClientConnect } from "@/api";
 import { router } from "@/app/router";
 import { ACCOUNT_ROUTE, AUTH_2FA_SETUP_MODULE } from "@/app/router/handles";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
@@ -13,13 +14,28 @@ import { StepIndicator } from "@/components/ui/step-indicator";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
-import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
+import {
+  ConfirmRecoveryCodesRequestSchema,
+  EnableMFARequestSchema,
+  StartMFAEnrollmentRequestSchema,
+} from "@/types/proto-es/v1/user_service_pb";
 import { RecoveryCodesView } from "./RecoveryCodesView";
 import { TwoFactorSecretModal } from "./TwoFactorSecretModal";
 
 const ISSUER_NAME = "Bytebase";
 const DIGITS = 6;
-const MFA_TEMP_SECRET_EXPIRATION = 5 * 60 * 1000; // 5 minutes
+
+// What StartMFAEnrollment handed back. Nothing here is on the User resource:
+// the secret and the codes exist only in that response, and the expiry is the
+// server's, not a duration this page assumes.
+interface Enrollment {
+  otpSecret: string;
+  recoveryCodes: string[];
+  expireTime: Timestamp | undefined;
+  // Identifies this mint. Confirming with it is what keeps a mint from
+  // another tab from being promoted in place of the one on screen.
+  pendingVersion: Timestamp | undefined;
+}
 
 const SETUP_AUTH_APP_STEP = 0;
 const DOWNLOAD_RECOVERY_CODES_STEP = 1;
@@ -31,9 +47,9 @@ interface TwoFactorSetupPageProps {
 
 export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   const { t } = useTranslation();
-  const updateUser = useAppStore((state) => state.updateUser);
-  const legacyCurrentUser = useCurrentUser();
-  const [currentUser, setCurrentUser] = useState(legacyCurrentUser);
+  const currentUser = useCurrentUser();
+  const setCurrentUser = useAppStore((state) => state.setCurrentUser);
+  const [enrollment, setEnrollment] = useState<Enrollment | undefined>();
 
   const [currentStep, setCurrentStep] = useState<Step>(SETUP_AUTH_APP_STEP);
   const [showSecretModal, setShowSecretModal] = useState(false);
@@ -44,13 +60,9 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   const [isExpiringSoon, setIsExpiringSoon] = useState(false);
 
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Keep a ref to currentUser so the interval callback always reads fresh state
-  const currentUserRef = useRef(currentUser);
-  currentUserRef.current = currentUser;
-
-  useEffect(() => {
-    setCurrentUser(legacyCurrentUser);
-  }, [legacyCurrentUser]);
+  // Keep a ref to the enrollment so the interval callback always reads fresh state
+  const enrollmentRef = useRef(enrollment);
+  enrollmentRef.current = enrollment;
 
   const stopCountdown = useCallback(() => {
     if (countdownRef.current) {
@@ -60,15 +72,14 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   }, []);
 
   const updateCountdown = useCallback(() => {
-    const cu = currentUserRef.current;
-    if (!cu.tempOtpSecretCreatedTime) {
+    const expireTime = enrollmentRef.current?.expireTime;
+    if (!expireTime) {
       setIsExpired(true);
       setTimeRemaining("0:00");
       return;
     }
 
-    const createdAt = Number(cu.tempOtpSecretCreatedTime.seconds) * 1000;
-    const remaining = MFA_TEMP_SECRET_EXPIRATION - (Date.now() - createdAt);
+    const remaining = Number(expireTime.seconds) * 1000 - Date.now();
 
     if (remaining <= 0) {
       setIsExpired(true);
@@ -90,46 +101,38 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
     countdownRef.current = setInterval(updateCountdown, 1000);
   }, [updateCountdown, stopCountdown]);
 
-  const regenerateTempMfaSecret = useCallback(async () => {
-    const user = await updateUser(
-      create(UpdateUserRequestSchema, {
-        user: {
-          name: currentUser.name,
-        },
-        updateMask: create(FieldMaskSchema, {
-          paths: [],
-        }),
-        regenerateTempMfaSecret: true,
-      })
+  const startEnrollment = useCallback(async () => {
+    const response = await userServiceClientConnect.startMFAEnrollment(
+      create(StartMFAEnrollmentRequestSchema, { name: currentUser.name })
     );
-    setCurrentUser(user);
-  }, [currentUser.name, updateUser]);
+    setEnrollment({
+      otpSecret: response.otpSecret,
+      recoveryCodes: [...response.recoveryCodes],
+      expireTime: response.expireTime,
+      pendingVersion: response.pendingVersion,
+    });
+  }, [currentUser.name]);
 
-  // On mount: regenerate secret and start countdown
+  // On mount: mint an enrollment and start counting down to its expiry
   useEffect(() => {
-    regenerateTempMfaSecret().then(() => {
+    startEnrollment().then(() => {
       startCountdown();
     });
     return stopCountdown;
-  }, [regenerateTempMfaSecret, startCountdown, stopCountdown]);
+  }, [startEnrollment, startCountdown, stopCountdown]);
 
-  const otpauthUrl = `otpauth://totp/${ISSUER_NAME}:${currentUser.email}?algorithm=SHA1&digits=${DIGITS}&issuer=${ISSUER_NAME}&period=30&secret=${currentUser.tempOtpSecret}`;
+  const otpauthUrl = `otpauth://totp/${ISSUER_NAME}:${currentUser.email}?algorithm=SHA1&digits=${DIGITS}&issuer=${ISSUER_NAME}&period=30&secret=${enrollment?.otpSecret ?? ""}`;
 
   const verifyOTPCode = useCallback(
     async (codes: string[]) => {
       try {
-        const user = await updateUser(
-          create(UpdateUserRequestSchema, {
-            user: {
-              name: currentUser.name,
-            },
-            updateMask: create(FieldMaskSchema, {
-              paths: [],
-            }),
+        await userServiceClientConnect.enableMFA(
+          create(EnableMFARequestSchema, {
+            name: currentUser.name,
             otpCode: codes.join(""),
+            pendingVersion: enrollment?.pendingVersion,
           })
         );
-        setCurrentUser(user);
       } catch (error) {
         pushNotification({
           module: "bytebase",
@@ -140,7 +143,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
       }
       return true;
     },
-    [currentUser.name, updateUser]
+    [currentUser.name, enrollment?.pendingVersion]
   );
 
   const handleOtpFinish = useCallback(
@@ -168,9 +171,9 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
 
   const handleRegenerateSecret = useCallback(async () => {
     setOtpCodes([]);
-    await regenerateTempMfaSecret();
+    await startEnrollment();
     startCountdown();
-  }, [regenerateTempMfaSecret, startCountdown]);
+  }, [startEnrollment, startCountdown]);
 
   const cancelSetup = useCallback(() => {
     if (cancelAction) {
@@ -183,17 +186,19 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   }, [cancelAction]);
 
   const tryFinishSetup = useCallback(async () => {
-    await updateUser(
-      create(UpdateUserRequestSchema, {
-        user: {
-          name: currentUser.name,
-          mfaEnabled: true,
-        },
-        updateMask: create(FieldMaskSchema, {
-          paths: ["mfa_enabled"],
-        }),
+    // Confirming the codes is what makes the factor live: the secret and the
+    // codes that recover it start existing in the same write.
+    const enabled = await userServiceClientConnect.confirmRecoveryCodes(
+      create(ConfirmRecoveryCodesRequestSchema, {
+        name: currentUser.name,
+        pendingVersion: enrollment?.pendingVersion,
       })
     );
+    // Adopt the response rather than refetching. The navigation below runs
+    // through the router guard, which sends an account without a live factor
+    // back here; a refetch that failed would leave the store saying exactly
+    // that and mint a second enrollment for a factor already enabled.
+    setCurrentUser(enabled);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -205,7 +210,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
     } else {
       router.replace({ name: ACCOUNT_ROUTE });
     }
-  }, [currentUser.name, t, updateUser]);
+  }, [currentUser.name, enrollment?.pendingVersion, setCurrentUser, t]);
 
   const allowNext =
     currentStep === SETUP_AUTH_APP_STEP
@@ -319,7 +324,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
       {currentStep === DOWNLOAD_RECOVERY_CODES_STEP && (
         <div className="w-full max-w-2xl mx-auto">
           <RecoveryCodesView
-            recoveryCodes={[...currentUser.tempRecoveryCodes]}
+            recoveryCodes={enrollment?.recoveryCodes ?? []}
             onDownload={() => setRecoveryCodesDownloaded(true)}
           />
         </div>
@@ -350,7 +355,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
       </div>
 
       <TwoFactorSecretModal
-        secret={currentUser.tempOtpSecret}
+        secret={enrollment?.otpSecret ?? ""}
         open={showSecretModal}
         onClose={() => setShowSecretModal(false)}
       />

@@ -17128,26 +17128,6 @@ paths:
              `INVALID_ARGUMENT` error if any path is unmappable.
           schema:
             type: string
-        - name: otpCode
-          in: query
-          description: The otp_code is used to verify the user's identity by MFA.
-          schema:
-            type: string
-            title: otp_code
-        - name: regenerateTempMfaSecret
-          in: query
-          description: |-
-            The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user.
-             This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response.
-          schema:
-            type: boolean
-            title: regenerate_temp_mfa_secret
-        - name: regenerateRecoveryCodes
-          in: query
-          description: The regenerate_recovery_codes flag means to regenerate recovery codes for user.
-          schema:
-            type: boolean
-            title: regenerate_recovery_codes
         - name: allowMissing
           in: query
           description: |-
@@ -17179,6 +17159,216 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.User'
+  /v1/users/{user}:changePassword:
+    post:
+      tags:
+        - UserService
+      summary: ChangePassword
+      description: |-
+        Changes the caller's own password. An administrator resetting someone
+         else's password uses UpdateUser with the `password` mask instead — that
+         is a different operation with a different audit story, even though both
+         end in a new password hash.
+         Permissions required: None beyond being signed in as `name`.
+      operationId: UserService_ChangePassword
+      parameters:
+        - name: user
+          in: path
+          description: The user id.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newPassword:
+                  type: string
+                  title: new_password
+                  description: |
+                    string.max_bytes = 72
+              title: ChangePasswordRequest
+              required:
+                - newPassword
+              additionalProperties: false
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.User'
+  /v1/users/{user}:confirmRecoveryCodes:
+    post:
+      tags:
+        - UserService
+      summary: ConfirmRecoveryCodes
+      description: |-
+        Promotes the pending recovery codes. During first-time enrollment this is
+         also where the pending TOTP secret goes live, so the factor and the codes
+         that recover it start existing in the same write.
+         Permissions required: None beyond being signed in as `name`.
+      operationId: UserService_ConfirmRecoveryCodes
+      parameters:
+        - name: user
+          in: path
+          description: The user id.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pendingVersion:
+                  title: pending_version
+                  description: |-
+                    The pending_version of the codes being confirmed. Confirming promotes
+                     exactly the set this version identifies, or nothing.
+                  $ref: '#/components/schemas/google.protobuf.Timestamp'
+              title: ConfirmRecoveryCodesRequest
+              required:
+                - pendingVersion
+              additionalProperties: false
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.User'
+  /v1/users/{user}:disableMFA:
+    post:
+      tags:
+        - UserService
+      summary: DisableMFA
+      description: |-
+        Turns MFA off, clearing the entire MFA config — live and pending state
+         alike. Callers may disable their own; an administrator may disable
+         another user's with bb.users.update, which is how a locked-out user is
+         recovered.
+         Permissions required: bb.users.update, unless `name` is the caller's own.
+      operationId: UserService_DisableMFA
+      parameters:
+        - name: user
+          in: path
+          description: The user id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.User'
+  /v1/users/{user}:enableMFA:
+    post:
+      tags:
+        - UserService
+      summary: EnableMFA
+      description: |-
+        Verifies an otp_code against the pending enrollment. Nothing is written:
+         this is the step that catches a mistyped authenticator before the caller
+         is shown recovery codes, and promotion happens at ConfirmRecoveryCodes so
+         an account is never MFA-required with codes its owner never saved.
+         Permissions required: None beyond being signed in as `name`.
+         It writes nothing itself, but it is a required step of installing a
+         factor on the account, which is why it is denied on the same grounds as
+         the promotion it precedes.
+      operationId: UserService_EnableMFA
+      parameters:
+        - name: user
+          in: path
+          description: The user id.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                otpCode:
+                  type: string
+                  title: otp_code
+                  maxLength: 64
+                  description: A code from the authenticator the pending secret was just added to.
+                pendingVersion:
+                  title: pending_version
+                  description: The pending_version this enrollment was minted with.
+                  $ref: '#/components/schemas/google.protobuf.Timestamp'
+              title: EnableMFARequest
+              required:
+                - otpCode
+                - pendingVersion
+              additionalProperties: false
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.User'
+  /v1/users/{user}:regenerateRecoveryCodes:
+    post:
+      tags:
+        - UserService
+      summary: RegenerateRecoveryCodes
+      description: |-
+        Mints a pending recovery-code set beside the live one and returns it.
+         The old codes keep working until ConfirmRecoveryCodes promotes these, so
+         a caller who closes the page mid-way is not left without any.
+         Permissions required: None beyond being signed in as `name`.
+      operationId: UserService_RegenerateRecoveryCodes
+      parameters:
+        - name: user
+          in: path
+          description: The user id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.RegenerateRecoveryCodesResponse'
+  /v1/users/{user}:startMFAEnrollment:
+    post:
+      tags:
+        - UserService
+      summary: StartMFAEnrollment
+      description: |-
+        Mints a pending TOTP secret and recovery codes for the caller's own
+         account and returns them. Nothing goes live until ConfirmRecoveryCodes,
+         so an abandoned enrollment leaves the account exactly as it was.
+         Permissions required: None beyond being signed in as `name`.
+      operationId: UserService_StartMFAEnrollment
+      parameters:
+        - name: user
+          in: path
+          description: The user id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.StartMFAEnrollmentResponse'
   /v1/users/{user}:undelete:
     post:
       tags:
@@ -20353,6 +20543,24 @@ components:
           description: Optional free-form comment. Max 500 chars (Stripe limit).
       title: CancelPurchaseRequest
       additionalProperties: false
+    bytebase.v1.ChangePasswordRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          maxLength: 260
+          description: 'Format: users/{email}. Must be the caller''s own name.'
+        newPassword:
+          type: string
+          title: new_password
+          description: |
+            string.max_bytes = 72
+      title: ChangePasswordRequest
+      required:
+        - name
+        - newPassword
+      additionalProperties: false
     bytebase.v1.Changelog:
       type: object
       properties:
@@ -20724,6 +20932,25 @@ components:
           title: comment
           description: The comment describing the composite type.
       title: CompositeTypeMetadata
+      additionalProperties: false
+    bytebase.v1.ConfirmRecoveryCodesRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          maxLength: 260
+          description: 'Format: users/{email}. Must be the caller''s own name.'
+        pendingVersion:
+          title: pending_version
+          description: |-
+            The pending_version of the codes being confirmed. Confirming promotes
+             exactly the set this version identifies, or nothing.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+      title: ConfirmRecoveryCodesRequest
+      required:
+        - name
+        - pendingVersion
       additionalProperties: false
     bytebase.v1.CreateAccessGrantRequest:
       type: object
@@ -22389,6 +22616,20 @@ components:
       title: DimensionalConfig
       additionalProperties: false
       description: DimensionalConfig defines dimensional and constraint parameters for spatial indexes.
+    bytebase.v1.DisableMFARequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          maxLength: 260
+          description: |-
+            Format: users/{email}. The caller's own, or another user's with
+             bb.users.update.
+      title: DisableMFARequest
+      required:
+        - name
+      additionalProperties: false
     bytebase.v1.EmailSetting:
       type: object
       allOf:
@@ -22461,6 +22702,29 @@ components:
       enum:
         - TYPE_UNSPECIFIED
         - SMTP
+    bytebase.v1.EnableMFARequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          maxLength: 260
+          description: 'Format: users/{email}. Must be the caller''s own name.'
+        otpCode:
+          type: string
+          title: otp_code
+          maxLength: 64
+          description: A code from the authenticator the pending secret was just added to.
+        pendingVersion:
+          title: pending_version
+          description: The pending_version this enrollment was minted with.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+      title: EnableMFARequest
+      required:
+        - name
+        - otpCode
+        - pendingVersion
+      additionalProperties: false
     bytebase.v1.Engine:
       type: string
       title: Engine
@@ -28210,6 +28474,33 @@ components:
       title: RefreshResponse
       additionalProperties: false
       description: Response from refreshing the access token.
+    bytebase.v1.RegenerateRecoveryCodesRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          maxLength: 260
+          description: 'Format: users/{email}. Must be the caller''s own name.'
+      title: RegenerateRecoveryCodesRequest
+      required:
+        - name
+      additionalProperties: false
+    bytebase.v1.RegenerateRecoveryCodesResponse:
+      type: object
+      properties:
+        recoveryCodes:
+          type: array
+          items:
+            type: string
+          title: recovery_codes
+          description: The pending recovery codes, shown once for the caller to save.
+        pendingVersion:
+          title: pending_version
+          description: Identifies this mint; see StartMFAEnrollmentResponse.pending_version.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+      title: RegenerateRecoveryCodesResponse
+      additionalProperties: false
     bytebase.v1.RejectIssueRequest:
       type: object
       properties:
@@ -30395,6 +30686,47 @@ components:
           description: The tasks within this stage.
       title: Stage
       additionalProperties: false
+    bytebase.v1.StartMFAEnrollmentRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          maxLength: 260
+          description: 'Format: users/{email}. Must be the caller''s own name.'
+      title: StartMFAEnrollmentRequest
+      required:
+        - name
+      additionalProperties: false
+    bytebase.v1.StartMFAEnrollmentResponse:
+      type: object
+      properties:
+        otpSecret:
+          type: string
+          title: otp_secret
+          description: |-
+            The pending TOTP secret. The only response that carries it — it is never
+             readable from the User resource.
+        recoveryCodes:
+          type: array
+          items:
+            type: string
+          title: recovery_codes
+          description: The pending recovery codes, shown once for the caller to save.
+        expireTime:
+          title: expire_time
+          description: When this enrollment stops being confirmable.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        pendingVersion:
+          title: pending_version
+          description: |-
+            Identifies this mint. Echo it back to EnableMFA and
+             ConfirmRecoveryCodes; a mint from another tab or device replaces the
+             pending state, and those methods refuse a version that is no longer the
+             pending one rather than promoting something this caller never saw.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+      title: StartMFAEnrollmentResponse
+      additionalProperties: false
     bytebase.v1.State:
       type: string
       title: State
@@ -32521,22 +32853,6 @@ components:
           title: update_mask
           description: The list of fields to update.
           $ref: '#/components/schemas/google.protobuf.FieldMask'
-        otpCode:
-          type:
-            - string
-            - "null"
-          title: otp_code
-          description: The otp_code is used to verify the user's identity by MFA.
-        regenerateTempMfaSecret:
-          type: boolean
-          title: regenerate_temp_mfa_secret
-          description: |-
-            The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user.
-             This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response.
-        regenerateRecoveryCodes:
-          type: boolean
-          title: regenerate_recovery_codes
-          description: The regenerate_recovery_codes flag means to regenerate recovery codes for user.
         allowMissing:
           type: boolean
           title: allow_missing
@@ -32645,21 +32961,10 @@ components:
         mfaEnabled:
           type: boolean
           title: mfa_enabled
-          description: The mfa_enabled flag means if the user has enabled MFA.
-        tempOtpSecret:
-          type: string
-          title: temp_otp_secret
-          description: Temporary OTP secret used during MFA setup and regeneration.
-        tempRecoveryCodes:
-          type: array
-          items:
-            type: string
-          title: temp_recovery_codes
-          description: Temporary recovery codes used during MFA setup and regeneration.
-        tempOtpSecretCreatedTime:
-          title: temp_otp_secret_created_time
-          description: Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
-          $ref: '#/components/schemas/google.protobuf.Timestamp'
+          description: |-
+            Whether the user has a live MFA factor. Set by ConfirmRecoveryCodes and
+             DisableMFA, never by an update.
+          readOnly: true
         phone:
           type: string
           title: phone

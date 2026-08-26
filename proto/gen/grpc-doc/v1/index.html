@@ -1358,11 +1358,27 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ChangePasswordRequest"><span class="badge">M</span>ChangePasswordRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ConfirmRecoveryCodesRequest"><span class="badge">M</span>ConfirmRecoveryCodesRequest</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.CreateUserRequest"><span class="badge">M</span>CreateUserRequest</a>
                 </li>
               
                 <li>
                   <a href="#bytebase.v1.DeleteUserRequest"><span class="badge">M</span>DeleteUserRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.DisableMFARequest"><span class="badge">M</span>DisableMFARequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.EnableMFARequest"><span class="badge">M</span>EnableMFARequest</a>
                 </li>
               
                 <li>
@@ -1375,6 +1391,22 @@
               
                 <li>
                   <a href="#bytebase.v1.ListUsersResponse"><span class="badge">M</span>ListUsersResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.RegenerateRecoveryCodesRequest"><span class="badge">M</span>RegenerateRecoveryCodesRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.RegenerateRecoveryCodesResponse"><span class="badge">M</span>RegenerateRecoveryCodesResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.StartMFAEnrollmentRequest"><span class="badge">M</span>StartMFAEnrollmentRequest</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.StartMFAEnrollmentResponse"><span class="badge">M</span>StartMFAEnrollmentResponse</a>
                 </li>
               
                 <li>
@@ -15598,6 +15630,69 @@ Format: users/{email} </p></td>
 
         
       
+        <h3 id="bytebase.v1.ChangePasswordRequest">ChangePasswordRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: users/{email}. Must be the caller&#39;s own name. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>new_password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.ConfirmRecoveryCodesRequest">ConfirmRecoveryCodesRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: users/{email}. Must be the caller&#39;s own name. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pending_version</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The pending_version of the codes being confirmed. Confirming promotes
+exactly the set this version identifies, or nothing. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.CreateUserRequest">CreateUserRequest</h3>
         <p></p>
 
@@ -15638,6 +15733,69 @@ Format: users/{email} </p></td>
                   <td></td>
                   <td><p>The name of the user to delete.
 Format: users/{email} </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.DisableMFARequest">DisableMFARequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: users/{email}. The caller&#39;s own, or another user&#39;s with
+bb.users.update. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.EnableMFARequest">EnableMFARequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: users/{email}. Must be the caller&#39;s own name. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>otp_code</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A code from the authenticator the pending secret was just added to. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pending_version</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The pending_version this enrollment was minted with. </p></td>
                 </tr>
               
             </tbody>
@@ -15774,6 +15932,134 @@ If this field is omitted, there are no subsequent pages. </p></td>
 
         
       
+        <h3 id="bytebase.v1.RegenerateRecoveryCodesRequest">RegenerateRecoveryCodesRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: users/{email}. Must be the caller&#39;s own name. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.RegenerateRecoveryCodesResponse">RegenerateRecoveryCodesResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>recovery_codes</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The pending recovery codes, shown once for the caller to save. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pending_version</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>Identifies this mint; see StartMFAEnrollmentResponse.pending_version. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.StartMFAEnrollmentRequest">StartMFAEnrollmentRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: users/{email}. Must be the caller&#39;s own name. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.StartMFAEnrollmentResponse">StartMFAEnrollmentResponse</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>otp_secret</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The pending TOTP secret. The only response that carries it — it is never
+readable from the User resource. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>recovery_codes</td>
+                  <td><a href="#string">string</a></td>
+                  <td>repeated</td>
+                  <td><p>The pending recovery codes, shown once for the caller to save. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>expire_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>When this enrollment stops being confirmable. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pending_version</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>Identifies this mint. Echo it back to EnableMFA and
+ConfirmRecoveryCodes; a mint from another tab or device replaces the
+pending state, and those methods refuse a version that is no longer the
+pending one rather than promoting something this caller never saw. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.UndeleteUserRequest">UndeleteUserRequest</h3>
         <p></p>
 
@@ -15860,28 +16146,6 @@ Format: users/{email} </p></td>
                 </tr>
               
                 <tr>
-                  <td>otp_code</td>
-                  <td><a href="#string">string</a></td>
-                  <td>optional</td>
-                  <td><p>The otp_code is used to verify the user&#39;s identity by MFA. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>regenerate_temp_mfa_secret</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user.
-This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>regenerate_recovery_codes</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>The regenerate_recovery_codes flag means to regenerate recovery codes for user. </p></td>
-                </tr>
-              
-                <tr>
                   <td>allow_missing</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
@@ -15946,28 +16210,8 @@ Format: users/{email} </p></td>
                   <td>mfa_enabled</td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
-                  <td><p>The mfa_enabled flag means if the user has enabled MFA. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>temp_otp_secret</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Temporary OTP secret used during MFA setup and regeneration. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>temp_recovery_codes</td>
-                  <td><a href="#string">string</a></td>
-                  <td>repeated</td>
-                  <td><p>Temporary recovery codes used during MFA setup and regeneration. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>temp_otp_secret_created_time</td>
-                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
-                  <td></td>
-                  <td><p>Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer. </p></td>
+                  <td><p>Whether the user has a live MFA factor. Set by ConfirmRecoveryCodes and
+DisableMFA, never by an update. </p></td>
                 </tr>
               
                 <tr>
@@ -16137,6 +16381,72 @@ Permissions required: bb.users.undelete</p></td>
 Permissions required: bb.users.updateEmail</p></td>
               </tr>
             
+              <tr>
+                <td>ChangePassword</td>
+                <td><a href="#bytebase.v1.ChangePasswordRequest">ChangePasswordRequest</a></td>
+                <td><a href="#bytebase.v1.User">User</a></td>
+                <td><p>Changes the caller&#39;s own password. An administrator resetting someone
+else&#39;s password uses UpdateUser with the `password` mask instead — that
+is a different operation with a different audit story, even though both
+end in a new password hash.
+Permissions required: None beyond being signed in as `name`.</p></td>
+              </tr>
+            
+              <tr>
+                <td>StartMFAEnrollment</td>
+                <td><a href="#bytebase.v1.StartMFAEnrollmentRequest">StartMFAEnrollmentRequest</a></td>
+                <td><a href="#bytebase.v1.StartMFAEnrollmentResponse">StartMFAEnrollmentResponse</a></td>
+                <td><p>Mints a pending TOTP secret and recovery codes for the caller&#39;s own
+account and returns them. Nothing goes live until ConfirmRecoveryCodes,
+so an abandoned enrollment leaves the account exactly as it was.
+Permissions required: None beyond being signed in as `name`.</p></td>
+              </tr>
+            
+              <tr>
+                <td>EnableMFA</td>
+                <td><a href="#bytebase.v1.EnableMFARequest">EnableMFARequest</a></td>
+                <td><a href="#bytebase.v1.User">User</a></td>
+                <td><p>Verifies an otp_code against the pending enrollment. Nothing is written:
+this is the step that catches a mistyped authenticator before the caller
+is shown recovery codes, and promotion happens at ConfirmRecoveryCodes so
+an account is never MFA-required with codes its owner never saved.
+Permissions required: None beyond being signed in as `name`.
+It writes nothing itself, but it is a required step of installing a
+factor on the account, which is why it is denied on the same grounds as
+the promotion it precedes.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DisableMFA</td>
+                <td><a href="#bytebase.v1.DisableMFARequest">DisableMFARequest</a></td>
+                <td><a href="#bytebase.v1.User">User</a></td>
+                <td><p>Turns MFA off, clearing the entire MFA config — live and pending state
+alike. Callers may disable their own; an administrator may disable
+another user&#39;s with bb.users.update, which is how a locked-out user is
+recovered.
+Permissions required: bb.users.update, unless `name` is the caller&#39;s own.</p></td>
+              </tr>
+            
+              <tr>
+                <td>RegenerateRecoveryCodes</td>
+                <td><a href="#bytebase.v1.RegenerateRecoveryCodesRequest">RegenerateRecoveryCodesRequest</a></td>
+                <td><a href="#bytebase.v1.RegenerateRecoveryCodesResponse">RegenerateRecoveryCodesResponse</a></td>
+                <td><p>Mints a pending recovery-code set beside the live one and returns it.
+The old codes keep working until ConfirmRecoveryCodes promotes these, so
+a caller who closes the page mid-way is not left without any.
+Permissions required: None beyond being signed in as `name`.</p></td>
+              </tr>
+            
+              <tr>
+                <td>ConfirmRecoveryCodes</td>
+                <td><a href="#bytebase.v1.ConfirmRecoveryCodesRequest">ConfirmRecoveryCodesRequest</a></td>
+                <td><a href="#bytebase.v1.User">User</a></td>
+                <td><p>Promotes the pending recovery codes. During first-time enrollment this is
+also where the pending TOTP secret goes live, so the factor and the codes
+that recover it start existing in the same write.
+Permissions required: None beyond being signed in as `name`.</p></td>
+              </tr>
+            
           </tbody>
         </table>
 
@@ -16241,6 +16551,66 @@ Permissions required: bb.users.updateEmail</p></td>
                 <td>UpdateEmail</td>
                 <td>POST</td>
                 <td>/v1/{name=users/*}:updateEmail</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ChangePassword</td>
+                <td>POST</td>
+                <td>/v1/{name=users/*}:changePassword</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>StartMFAEnrollment</td>
+                <td>POST</td>
+                <td>/v1/{name=users/*}:startMFAEnrollment</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>EnableMFA</td>
+                <td>POST</td>
+                <td>/v1/{name=users/*}:enableMFA</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>DisableMFA</td>
+                <td>POST</td>
+                <td>/v1/{name=users/*}:disableMFA</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>RegenerateRecoveryCodes</td>
+                <td>POST</td>
+                <td>/v1/{name=users/*}:regenerateRecoveryCodes</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>ConfirmRecoveryCodes</td>
+                <td>POST</td>
+                <td>/v1/{name=users/*}:confirmRecoveryCodes</td>
                 <td>*</td>
               </tr>
               

@@ -1,0 +1,127 @@
+package store_test
+
+import (
+	"context"
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/migrator"
+	"github.com/bytebase/bytebase/backend/store"
+
+	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
+)
+
+func newMFAPendingTestStore(t *testing.T) *store.Store {
+	t.Helper()
+	ctx := context.Background()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+
+	db := container.GetDB()
+	require.NoError(t, migrator.MigrateSchema(ctx, db))
+
+	pgURL := fmt.Sprintf(
+		"host=%s port=%s user=postgres password=root-password database=postgres",
+		container.GetHost(), container.GetPort(),
+	)
+	s, err := store.New(ctx, pgURL, false)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, s.Close()) })
+	return s
+}
+
+// TestUpdateUserMFAConfigIfPending pins the compare-and-swap the confirming
+// methods promote through. The version has to be part of the write: a caller
+// that checked a user it read moments ago would otherwise still commit, and
+// the two states worth protecting are a newer enrollment from another tab and
+// an administrator's disable — reviving a factor that was just cleared.
+func TestUpdateUserMFAConfigIfPending(t *testing.T) {
+	ctx := context.Background()
+	s := newMFAPendingTestStore(t)
+
+	user, err := s.CreateUser(ctx, &store.UserMessage{
+		Email:        "pending@example.com",
+		Name:         "Pending",
+		PasswordHash: "unused",
+	})
+	require.NoError(t, err)
+
+	version := timestamppb.New(time.Now().UTC().Truncate(time.Microsecond))
+	_, err = s.UpdateUser(ctx, user, &store.UpdateUserMessage{
+		MFAConfig: &storepb.MFAConfig{
+			TempOtpSecret:            "pending-secret",
+			TempRecoveryCodes:        []string{"code-a"},
+			TempOtpSecretCreatedTime: version,
+		},
+	})
+	require.NoError(t, err)
+
+	promoted := &storepb.MFAConfig{OtpSecret: "pending-secret", RecoveryCodes: []string{"code-a"}}
+
+	stale := version.AsTime().Add(-time.Second)
+	refused, err := s.UpdateUserMFAConfigIfPending(ctx, user.ID, stale, promoted)
+	require.NoError(t, err)
+	require.Nil(t, refused, "a version that is not the pending one must not commit")
+	unchanged, err := s.GetUserByEmail(ctx, user.Email)
+	require.NoError(t, err)
+	require.Empty(t, unchanged.MFAConfig.GetOtpSecret(), "the refused write must leave the account alone")
+
+	updated, err := s.UpdateUserMFAConfigIfPending(ctx, user.ID, version.AsTime(), promoted)
+	require.NoError(t, err)
+	require.NotNil(t, updated)
+	require.Equal(t, "pending-secret", updated.MFAConfig.GetOtpSecret())
+
+	// Promotion clears the pending slot, so replaying the same confirmation —
+	// a double-submit, or a tab that never learned it already went through —
+	// finds nothing to promote rather than rewriting the factor.
+	replayed, err := s.UpdateUserMFAConfigIfPending(ctx, user.ID, version.AsTime(), promoted)
+	require.NoError(t, err)
+	require.Nil(t, replayed, "a consumed pending version must not promote twice")
+}
+
+// TestSetPendingMFAStateLeavesTheLiveFactor pins that minting pending state
+// never writes the live factor. The mint reads the account, generates secrets,
+// then writes — and an administrator disabling MFA in that window used to be
+// undone by the write, silently re-enabling the factor they had cleared for a
+// locked-out user.
+func TestSetPendingMFAStateLeavesTheLiveFactor(t *testing.T) {
+	ctx := context.Background()
+	s := newMFAPendingTestStore(t)
+
+	user, err := s.CreateUser(ctx, &store.UserMessage{
+		Email:        "mint@example.com",
+		Name:         "Mint",
+		PasswordHash: "unused",
+	})
+	require.NoError(t, err)
+	live, err := s.UpdateUser(ctx, user, &store.UpdateUserMessage{
+		MFAConfig: &storepb.MFAConfig{
+			OtpSecret:     "live-secret",
+			RecoveryCodes: []string{"live-a", "live-b"},
+		},
+	})
+	require.NoError(t, err)
+
+	// What a mint holds: the account as it was before the concurrent change.
+	stale := live
+
+	_, err = s.UpdateUser(ctx, stale, &store.UpdateUserMessage{MFAConfig: &storepb.MFAConfig{}})
+	require.NoError(t, err)
+
+	// The mint lands afterwards, still holding the stale read.
+	require.NoError(t, s.SetPendingMFAState(ctx, stale.ID, "pending-secret", []string{"code-a"}, time.Now()))
+
+	after, err := s.GetUserByEmail(ctx, user.Email)
+	require.NoError(t, err)
+	require.Empty(t, after.MFAConfig.GetOtpSecret(), "a mint must not bring back a disabled factor")
+	require.Empty(t, after.MFAConfig.GetRecoveryCodes(), "nor the codes that went with it")
+	require.Equal(t, "pending-secret", after.MFAConfig.GetTempOtpSecret())
+	require.Equal(t, []string{"code-a"}, after.MFAConfig.GetTempRecoveryCodes())
+	require.NotNil(t, after.MFAConfig.GetTempOtpSecretCreatedTime(), "the version must round-trip through protojson")
+}

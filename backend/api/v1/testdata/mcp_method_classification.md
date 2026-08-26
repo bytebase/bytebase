@@ -19,9 +19,9 @@ served by no ceiling.
 | READ | 57 | served to a read-only session and above |
 | WRITE | 40 | served to a read-write session only |
 | EXCLUDED | 86 | served by no ceiling this phase ships |
-| FORBIDDEN | 28 | never served, whatever the ceiling |
+| FORBIDDEN | 34 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
-| **total** | **211** | |
+| **total** | **217** | |
 
 | Method | Class | Reason | Permission |
 |---|---|---|---|
@@ -213,11 +213,17 @@ served by no ceiling.
 | SubscriptionService/UploadLicense | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.subscription.manage |
 | SubscriptionService/VerifyCheckoutSession | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.subscription.manage |
 | UserService/BatchGetUsers | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.users.get |
+| UserService/ChangePassword | FORBIDDEN | TAKES_OVER_ACCOUNT | — |
+| UserService/ConfirmRecoveryCodes | FORBIDDEN | TAKES_OVER_ACCOUNT | — |
 | UserService/CreateUser | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.users.create |
 | UserService/DeleteUser | EXCLUDED | ADMINISTERS_THE_WORKSPACE | — |
+| UserService/DisableMFA | FORBIDDEN | TAKES_OVER_ACCOUNT | — |
+| UserService/EnableMFA | FORBIDDEN | TAKES_OVER_ACCOUNT | — |
 | UserService/GetCurrentUser | READ | — | — |
 | UserService/GetUser | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.users.get |
 | UserService/ListUsers | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.users.list |
+| UserService/RegenerateRecoveryCodes | FORBIDDEN | MINTS_CREDENTIAL | — |
+| UserService/StartMFAEnrollment | FORBIDDEN | MINTS_CREDENTIAL | — |
 | UserService/UndeleteUser | EXCLUDED | ADMINISTERS_THE_WORKSPACE | — |
 | UserService/UpdateEmail | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.users.updateEmail |
 | UserService/UpdateUser | FORBIDDEN | TAKES_OVER_ACCOUNT | — |

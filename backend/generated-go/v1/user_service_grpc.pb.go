@@ -20,15 +20,21 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	UserService_GetUser_FullMethodName        = "/bytebase.v1.UserService/GetUser"
-	UserService_BatchGetUsers_FullMethodName  = "/bytebase.v1.UserService/BatchGetUsers"
-	UserService_GetCurrentUser_FullMethodName = "/bytebase.v1.UserService/GetCurrentUser"
-	UserService_ListUsers_FullMethodName      = "/bytebase.v1.UserService/ListUsers"
-	UserService_CreateUser_FullMethodName     = "/bytebase.v1.UserService/CreateUser"
-	UserService_UpdateUser_FullMethodName     = "/bytebase.v1.UserService/UpdateUser"
-	UserService_DeleteUser_FullMethodName     = "/bytebase.v1.UserService/DeleteUser"
-	UserService_UndeleteUser_FullMethodName   = "/bytebase.v1.UserService/UndeleteUser"
-	UserService_UpdateEmail_FullMethodName    = "/bytebase.v1.UserService/UpdateEmail"
+	UserService_GetUser_FullMethodName                 = "/bytebase.v1.UserService/GetUser"
+	UserService_BatchGetUsers_FullMethodName           = "/bytebase.v1.UserService/BatchGetUsers"
+	UserService_GetCurrentUser_FullMethodName          = "/bytebase.v1.UserService/GetCurrentUser"
+	UserService_ListUsers_FullMethodName               = "/bytebase.v1.UserService/ListUsers"
+	UserService_CreateUser_FullMethodName              = "/bytebase.v1.UserService/CreateUser"
+	UserService_UpdateUser_FullMethodName              = "/bytebase.v1.UserService/UpdateUser"
+	UserService_DeleteUser_FullMethodName              = "/bytebase.v1.UserService/DeleteUser"
+	UserService_UndeleteUser_FullMethodName            = "/bytebase.v1.UserService/UndeleteUser"
+	UserService_UpdateEmail_FullMethodName             = "/bytebase.v1.UserService/UpdateEmail"
+	UserService_ChangePassword_FullMethodName          = "/bytebase.v1.UserService/ChangePassword"
+	UserService_StartMFAEnrollment_FullMethodName      = "/bytebase.v1.UserService/StartMFAEnrollment"
+	UserService_EnableMFA_FullMethodName               = "/bytebase.v1.UserService/EnableMFA"
+	UserService_DisableMFA_FullMethodName              = "/bytebase.v1.UserService/DisableMFA"
+	UserService_RegenerateRecoveryCodes_FullMethodName = "/bytebase.v1.UserService/RegenerateRecoveryCodes"
+	UserService_ConfirmRecoveryCodes_FullMethodName    = "/bytebase.v1.UserService/ConfirmRecoveryCodes"
 )
 
 // UserServiceClient is the client API for UserService service.
@@ -69,6 +75,42 @@ type UserServiceClient interface {
 	// Updates a user's email address.
 	// Permissions required: bb.users.updateEmail
 	UpdateEmail(ctx context.Context, in *UpdateEmailRequest, opts ...grpc.CallOption) (*User, error)
+	// Changes the caller's own password. An administrator resetting someone
+	// else's password uses UpdateUser with the `password` mask instead — that
+	// is a different operation with a different audit story, even though both
+	// end in a new password hash.
+	// Permissions required: None beyond being signed in as `name`.
+	ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*User, error)
+	// Mints a pending TOTP secret and recovery codes for the caller's own
+	// account and returns them. Nothing goes live until ConfirmRecoveryCodes,
+	// so an abandoned enrollment leaves the account exactly as it was.
+	// Permissions required: None beyond being signed in as `name`.
+	StartMFAEnrollment(ctx context.Context, in *StartMFAEnrollmentRequest, opts ...grpc.CallOption) (*StartMFAEnrollmentResponse, error)
+	// Verifies an otp_code against the pending enrollment. Nothing is written:
+	// this is the step that catches a mistyped authenticator before the caller
+	// is shown recovery codes, and promotion happens at ConfirmRecoveryCodes so
+	// an account is never MFA-required with codes its owner never saved.
+	// Permissions required: None beyond being signed in as `name`.
+	// It writes nothing itself, but it is a required step of installing a
+	// factor on the account, which is why it is denied on the same grounds as
+	// the promotion it precedes.
+	EnableMFA(ctx context.Context, in *EnableMFARequest, opts ...grpc.CallOption) (*User, error)
+	// Turns MFA off, clearing the entire MFA config — live and pending state
+	// alike. Callers may disable their own; an administrator may disable
+	// another user's with bb.users.update, which is how a locked-out user is
+	// recovered.
+	// Permissions required: bb.users.update, unless `name` is the caller's own.
+	DisableMFA(ctx context.Context, in *DisableMFARequest, opts ...grpc.CallOption) (*User, error)
+	// Mints a pending recovery-code set beside the live one and returns it.
+	// The old codes keep working until ConfirmRecoveryCodes promotes these, so
+	// a caller who closes the page mid-way is not left without any.
+	// Permissions required: None beyond being signed in as `name`.
+	RegenerateRecoveryCodes(ctx context.Context, in *RegenerateRecoveryCodesRequest, opts ...grpc.CallOption) (*RegenerateRecoveryCodesResponse, error)
+	// Promotes the pending recovery codes. During first-time enrollment this is
+	// also where the pending TOTP secret goes live, so the factor and the codes
+	// that recover it start existing in the same write.
+	// Permissions required: None beyond being signed in as `name`.
+	ConfirmRecoveryCodes(ctx context.Context, in *ConfirmRecoveryCodesRequest, opts ...grpc.CallOption) (*User, error)
 }
 
 type userServiceClient struct {
@@ -169,6 +211,66 @@ func (c *userServiceClient) UpdateEmail(ctx context.Context, in *UpdateEmailRequ
 	return out, nil
 }
 
+func (c *userServiceClient) ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*User, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(User)
+	err := c.cc.Invoke(ctx, UserService_ChangePassword_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) StartMFAEnrollment(ctx context.Context, in *StartMFAEnrollmentRequest, opts ...grpc.CallOption) (*StartMFAEnrollmentResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(StartMFAEnrollmentResponse)
+	err := c.cc.Invoke(ctx, UserService_StartMFAEnrollment_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) EnableMFA(ctx context.Context, in *EnableMFARequest, opts ...grpc.CallOption) (*User, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(User)
+	err := c.cc.Invoke(ctx, UserService_EnableMFA_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) DisableMFA(ctx context.Context, in *DisableMFARequest, opts ...grpc.CallOption) (*User, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(User)
+	err := c.cc.Invoke(ctx, UserService_DisableMFA_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) RegenerateRecoveryCodes(ctx context.Context, in *RegenerateRecoveryCodesRequest, opts ...grpc.CallOption) (*RegenerateRecoveryCodesResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RegenerateRecoveryCodesResponse)
+	err := c.cc.Invoke(ctx, UserService_RegenerateRecoveryCodes_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *userServiceClient) ConfirmRecoveryCodes(ctx context.Context, in *ConfirmRecoveryCodesRequest, opts ...grpc.CallOption) (*User, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(User)
+	err := c.cc.Invoke(ctx, UserService_ConfirmRecoveryCodes_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // UserServiceServer is the server API for UserService service.
 // All implementations must embed UnimplementedUserServiceServer
 // for forward compatibility.
@@ -207,6 +309,42 @@ type UserServiceServer interface {
 	// Updates a user's email address.
 	// Permissions required: bb.users.updateEmail
 	UpdateEmail(context.Context, *UpdateEmailRequest) (*User, error)
+	// Changes the caller's own password. An administrator resetting someone
+	// else's password uses UpdateUser with the `password` mask instead — that
+	// is a different operation with a different audit story, even though both
+	// end in a new password hash.
+	// Permissions required: None beyond being signed in as `name`.
+	ChangePassword(context.Context, *ChangePasswordRequest) (*User, error)
+	// Mints a pending TOTP secret and recovery codes for the caller's own
+	// account and returns them. Nothing goes live until ConfirmRecoveryCodes,
+	// so an abandoned enrollment leaves the account exactly as it was.
+	// Permissions required: None beyond being signed in as `name`.
+	StartMFAEnrollment(context.Context, *StartMFAEnrollmentRequest) (*StartMFAEnrollmentResponse, error)
+	// Verifies an otp_code against the pending enrollment. Nothing is written:
+	// this is the step that catches a mistyped authenticator before the caller
+	// is shown recovery codes, and promotion happens at ConfirmRecoveryCodes so
+	// an account is never MFA-required with codes its owner never saved.
+	// Permissions required: None beyond being signed in as `name`.
+	// It writes nothing itself, but it is a required step of installing a
+	// factor on the account, which is why it is denied on the same grounds as
+	// the promotion it precedes.
+	EnableMFA(context.Context, *EnableMFARequest) (*User, error)
+	// Turns MFA off, clearing the entire MFA config — live and pending state
+	// alike. Callers may disable their own; an administrator may disable
+	// another user's with bb.users.update, which is how a locked-out user is
+	// recovered.
+	// Permissions required: bb.users.update, unless `name` is the caller's own.
+	DisableMFA(context.Context, *DisableMFARequest) (*User, error)
+	// Mints a pending recovery-code set beside the live one and returns it.
+	// The old codes keep working until ConfirmRecoveryCodes promotes these, so
+	// a caller who closes the page mid-way is not left without any.
+	// Permissions required: None beyond being signed in as `name`.
+	RegenerateRecoveryCodes(context.Context, *RegenerateRecoveryCodesRequest) (*RegenerateRecoveryCodesResponse, error)
+	// Promotes the pending recovery codes. During first-time enrollment this is
+	// also where the pending TOTP secret goes live, so the factor and the codes
+	// that recover it start existing in the same write.
+	// Permissions required: None beyond being signed in as `name`.
+	ConfirmRecoveryCodes(context.Context, *ConfirmRecoveryCodesRequest) (*User, error)
 	mustEmbedUnimplementedUserServiceServer()
 }
 
@@ -243,6 +381,24 @@ func (UnimplementedUserServiceServer) UndeleteUser(context.Context, *UndeleteUse
 }
 func (UnimplementedUserServiceServer) UpdateEmail(context.Context, *UpdateEmailRequest) (*User, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateEmail not implemented")
+}
+func (UnimplementedUserServiceServer) ChangePassword(context.Context, *ChangePasswordRequest) (*User, error) {
+	return nil, status.Error(codes.Unimplemented, "method ChangePassword not implemented")
+}
+func (UnimplementedUserServiceServer) StartMFAEnrollment(context.Context, *StartMFAEnrollmentRequest) (*StartMFAEnrollmentResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method StartMFAEnrollment not implemented")
+}
+func (UnimplementedUserServiceServer) EnableMFA(context.Context, *EnableMFARequest) (*User, error) {
+	return nil, status.Error(codes.Unimplemented, "method EnableMFA not implemented")
+}
+func (UnimplementedUserServiceServer) DisableMFA(context.Context, *DisableMFARequest) (*User, error) {
+	return nil, status.Error(codes.Unimplemented, "method DisableMFA not implemented")
+}
+func (UnimplementedUserServiceServer) RegenerateRecoveryCodes(context.Context, *RegenerateRecoveryCodesRequest) (*RegenerateRecoveryCodesResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RegenerateRecoveryCodes not implemented")
+}
+func (UnimplementedUserServiceServer) ConfirmRecoveryCodes(context.Context, *ConfirmRecoveryCodesRequest) (*User, error) {
+	return nil, status.Error(codes.Unimplemented, "method ConfirmRecoveryCodes not implemented")
 }
 func (UnimplementedUserServiceServer) mustEmbedUnimplementedUserServiceServer() {}
 func (UnimplementedUserServiceServer) testEmbeddedByValue()                     {}
@@ -427,6 +583,114 @@ func _UserService_UpdateEmail_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_ChangePassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ChangePasswordRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ChangePassword(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ChangePassword_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ChangePassword(ctx, req.(*ChangePasswordRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_StartMFAEnrollment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(StartMFAEnrollmentRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).StartMFAEnrollment(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_StartMFAEnrollment_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).StartMFAEnrollment(ctx, req.(*StartMFAEnrollmentRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_EnableMFA_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EnableMFARequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).EnableMFA(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_EnableMFA_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).EnableMFA(ctx, req.(*EnableMFARequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_DisableMFA_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DisableMFARequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).DisableMFA(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_DisableMFA_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).DisableMFA(ctx, req.(*DisableMFARequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_RegenerateRecoveryCodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RegenerateRecoveryCodesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).RegenerateRecoveryCodes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_RegenerateRecoveryCodes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).RegenerateRecoveryCodes(ctx, req.(*RegenerateRecoveryCodesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _UserService_ConfirmRecoveryCodes_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConfirmRecoveryCodesRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).ConfirmRecoveryCodes(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_ConfirmRecoveryCodes_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).ConfirmRecoveryCodes(ctx, req.(*ConfirmRecoveryCodesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // UserService_ServiceDesc is the grpc.ServiceDesc for UserService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -469,6 +733,30 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateEmail",
 			Handler:    _UserService_UpdateEmail_Handler,
+		},
+		{
+			MethodName: "ChangePassword",
+			Handler:    _UserService_ChangePassword_Handler,
+		},
+		{
+			MethodName: "StartMFAEnrollment",
+			Handler:    _UserService_StartMFAEnrollment_Handler,
+		},
+		{
+			MethodName: "EnableMFA",
+			Handler:    _UserService_EnableMFA_Handler,
+		},
+		{
+			MethodName: "DisableMFA",
+			Handler:    _UserService_DisableMFA_Handler,
+		},
+		{
+			MethodName: "RegenerateRecoveryCodes",
+			Handler:    _UserService_RegenerateRecoveryCodes_Handler,
+		},
+		{
+			MethodName: "ConfirmRecoveryCodes",
+			Handler:    _UserService_ConfirmRecoveryCodes_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

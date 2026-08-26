@@ -55,6 +55,22 @@ const (
 	UserServiceUndeleteUserProcedure = "/bytebase.v1.UserService/UndeleteUser"
 	// UserServiceUpdateEmailProcedure is the fully-qualified name of the UserService's UpdateEmail RPC.
 	UserServiceUpdateEmailProcedure = "/bytebase.v1.UserService/UpdateEmail"
+	// UserServiceChangePasswordProcedure is the fully-qualified name of the UserService's
+	// ChangePassword RPC.
+	UserServiceChangePasswordProcedure = "/bytebase.v1.UserService/ChangePassword"
+	// UserServiceStartMFAEnrollmentProcedure is the fully-qualified name of the UserService's
+	// StartMFAEnrollment RPC.
+	UserServiceStartMFAEnrollmentProcedure = "/bytebase.v1.UserService/StartMFAEnrollment"
+	// UserServiceEnableMFAProcedure is the fully-qualified name of the UserService's EnableMFA RPC.
+	UserServiceEnableMFAProcedure = "/bytebase.v1.UserService/EnableMFA"
+	// UserServiceDisableMFAProcedure is the fully-qualified name of the UserService's DisableMFA RPC.
+	UserServiceDisableMFAProcedure = "/bytebase.v1.UserService/DisableMFA"
+	// UserServiceRegenerateRecoveryCodesProcedure is the fully-qualified name of the UserService's
+	// RegenerateRecoveryCodes RPC.
+	UserServiceRegenerateRecoveryCodesProcedure = "/bytebase.v1.UserService/RegenerateRecoveryCodes"
+	// UserServiceConfirmRecoveryCodesProcedure is the fully-qualified name of the UserService's
+	// ConfirmRecoveryCodes RPC.
+	UserServiceConfirmRecoveryCodesProcedure = "/bytebase.v1.UserService/ConfirmRecoveryCodes"
 )
 
 // UserServiceClient is a client for the bytebase.v1.UserService service.
@@ -91,6 +107,42 @@ type UserServiceClient interface {
 	// Updates a user's email address.
 	// Permissions required: bb.users.updateEmail
 	UpdateEmail(context.Context, *connect.Request[v1.UpdateEmailRequest]) (*connect.Response[v1.User], error)
+	// Changes the caller's own password. An administrator resetting someone
+	// else's password uses UpdateUser with the `password` mask instead — that
+	// is a different operation with a different audit story, even though both
+	// end in a new password hash.
+	// Permissions required: None beyond being signed in as `name`.
+	ChangePassword(context.Context, *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.User], error)
+	// Mints a pending TOTP secret and recovery codes for the caller's own
+	// account and returns them. Nothing goes live until ConfirmRecoveryCodes,
+	// so an abandoned enrollment leaves the account exactly as it was.
+	// Permissions required: None beyond being signed in as `name`.
+	StartMFAEnrollment(context.Context, *connect.Request[v1.StartMFAEnrollmentRequest]) (*connect.Response[v1.StartMFAEnrollmentResponse], error)
+	// Verifies an otp_code against the pending enrollment. Nothing is written:
+	// this is the step that catches a mistyped authenticator before the caller
+	// is shown recovery codes, and promotion happens at ConfirmRecoveryCodes so
+	// an account is never MFA-required with codes its owner never saved.
+	// Permissions required: None beyond being signed in as `name`.
+	// It writes nothing itself, but it is a required step of installing a
+	// factor on the account, which is why it is denied on the same grounds as
+	// the promotion it precedes.
+	EnableMFA(context.Context, *connect.Request[v1.EnableMFARequest]) (*connect.Response[v1.User], error)
+	// Turns MFA off, clearing the entire MFA config — live and pending state
+	// alike. Callers may disable their own; an administrator may disable
+	// another user's with bb.users.update, which is how a locked-out user is
+	// recovered.
+	// Permissions required: bb.users.update, unless `name` is the caller's own.
+	DisableMFA(context.Context, *connect.Request[v1.DisableMFARequest]) (*connect.Response[v1.User], error)
+	// Mints a pending recovery-code set beside the live one and returns it.
+	// The old codes keep working until ConfirmRecoveryCodes promotes these, so
+	// a caller who closes the page mid-way is not left without any.
+	// Permissions required: None beyond being signed in as `name`.
+	RegenerateRecoveryCodes(context.Context, *connect.Request[v1.RegenerateRecoveryCodesRequest]) (*connect.Response[v1.RegenerateRecoveryCodesResponse], error)
+	// Promotes the pending recovery codes. During first-time enrollment this is
+	// also where the pending TOTP secret goes live, so the factor and the codes
+	// that recover it start existing in the same write.
+	// Permissions required: None beyond being signed in as `name`.
+	ConfirmRecoveryCodes(context.Context, *connect.Request[v1.ConfirmRecoveryCodesRequest]) (*connect.Response[v1.User], error)
 }
 
 // NewUserServiceClient constructs a client for the bytebase.v1.UserService service. By default, it
@@ -158,20 +210,62 @@ func NewUserServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(userServiceMethods.ByName("UpdateEmail")),
 			connect.WithClientOptions(opts...),
 		),
+		changePassword: connect.NewClient[v1.ChangePasswordRequest, v1.User](
+			httpClient,
+			baseURL+UserServiceChangePasswordProcedure,
+			connect.WithSchema(userServiceMethods.ByName("ChangePassword")),
+			connect.WithClientOptions(opts...),
+		),
+		startMFAEnrollment: connect.NewClient[v1.StartMFAEnrollmentRequest, v1.StartMFAEnrollmentResponse](
+			httpClient,
+			baseURL+UserServiceStartMFAEnrollmentProcedure,
+			connect.WithSchema(userServiceMethods.ByName("StartMFAEnrollment")),
+			connect.WithClientOptions(opts...),
+		),
+		enableMFA: connect.NewClient[v1.EnableMFARequest, v1.User](
+			httpClient,
+			baseURL+UserServiceEnableMFAProcedure,
+			connect.WithSchema(userServiceMethods.ByName("EnableMFA")),
+			connect.WithClientOptions(opts...),
+		),
+		disableMFA: connect.NewClient[v1.DisableMFARequest, v1.User](
+			httpClient,
+			baseURL+UserServiceDisableMFAProcedure,
+			connect.WithSchema(userServiceMethods.ByName("DisableMFA")),
+			connect.WithClientOptions(opts...),
+		),
+		regenerateRecoveryCodes: connect.NewClient[v1.RegenerateRecoveryCodesRequest, v1.RegenerateRecoveryCodesResponse](
+			httpClient,
+			baseURL+UserServiceRegenerateRecoveryCodesProcedure,
+			connect.WithSchema(userServiceMethods.ByName("RegenerateRecoveryCodes")),
+			connect.WithClientOptions(opts...),
+		),
+		confirmRecoveryCodes: connect.NewClient[v1.ConfirmRecoveryCodesRequest, v1.User](
+			httpClient,
+			baseURL+UserServiceConfirmRecoveryCodesProcedure,
+			connect.WithSchema(userServiceMethods.ByName("ConfirmRecoveryCodes")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // userServiceClient implements UserServiceClient.
 type userServiceClient struct {
-	getUser        *connect.Client[v1.GetUserRequest, v1.User]
-	batchGetUsers  *connect.Client[v1.BatchGetUsersRequest, v1.BatchGetUsersResponse]
-	getCurrentUser *connect.Client[emptypb.Empty, v1.User]
-	listUsers      *connect.Client[v1.ListUsersRequest, v1.ListUsersResponse]
-	createUser     *connect.Client[v1.CreateUserRequest, v1.User]
-	updateUser     *connect.Client[v1.UpdateUserRequest, v1.User]
-	deleteUser     *connect.Client[v1.DeleteUserRequest, emptypb.Empty]
-	undeleteUser   *connect.Client[v1.UndeleteUserRequest, v1.User]
-	updateEmail    *connect.Client[v1.UpdateEmailRequest, v1.User]
+	getUser                 *connect.Client[v1.GetUserRequest, v1.User]
+	batchGetUsers           *connect.Client[v1.BatchGetUsersRequest, v1.BatchGetUsersResponse]
+	getCurrentUser          *connect.Client[emptypb.Empty, v1.User]
+	listUsers               *connect.Client[v1.ListUsersRequest, v1.ListUsersResponse]
+	createUser              *connect.Client[v1.CreateUserRequest, v1.User]
+	updateUser              *connect.Client[v1.UpdateUserRequest, v1.User]
+	deleteUser              *connect.Client[v1.DeleteUserRequest, emptypb.Empty]
+	undeleteUser            *connect.Client[v1.UndeleteUserRequest, v1.User]
+	updateEmail             *connect.Client[v1.UpdateEmailRequest, v1.User]
+	changePassword          *connect.Client[v1.ChangePasswordRequest, v1.User]
+	startMFAEnrollment      *connect.Client[v1.StartMFAEnrollmentRequest, v1.StartMFAEnrollmentResponse]
+	enableMFA               *connect.Client[v1.EnableMFARequest, v1.User]
+	disableMFA              *connect.Client[v1.DisableMFARequest, v1.User]
+	regenerateRecoveryCodes *connect.Client[v1.RegenerateRecoveryCodesRequest, v1.RegenerateRecoveryCodesResponse]
+	confirmRecoveryCodes    *connect.Client[v1.ConfirmRecoveryCodesRequest, v1.User]
 }
 
 // GetUser calls bytebase.v1.UserService.GetUser.
@@ -219,6 +313,36 @@ func (c *userServiceClient) UpdateEmail(ctx context.Context, req *connect.Reques
 	return c.updateEmail.CallUnary(ctx, req)
 }
 
+// ChangePassword calls bytebase.v1.UserService.ChangePassword.
+func (c *userServiceClient) ChangePassword(ctx context.Context, req *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.User], error) {
+	return c.changePassword.CallUnary(ctx, req)
+}
+
+// StartMFAEnrollment calls bytebase.v1.UserService.StartMFAEnrollment.
+func (c *userServiceClient) StartMFAEnrollment(ctx context.Context, req *connect.Request[v1.StartMFAEnrollmentRequest]) (*connect.Response[v1.StartMFAEnrollmentResponse], error) {
+	return c.startMFAEnrollment.CallUnary(ctx, req)
+}
+
+// EnableMFA calls bytebase.v1.UserService.EnableMFA.
+func (c *userServiceClient) EnableMFA(ctx context.Context, req *connect.Request[v1.EnableMFARequest]) (*connect.Response[v1.User], error) {
+	return c.enableMFA.CallUnary(ctx, req)
+}
+
+// DisableMFA calls bytebase.v1.UserService.DisableMFA.
+func (c *userServiceClient) DisableMFA(ctx context.Context, req *connect.Request[v1.DisableMFARequest]) (*connect.Response[v1.User], error) {
+	return c.disableMFA.CallUnary(ctx, req)
+}
+
+// RegenerateRecoveryCodes calls bytebase.v1.UserService.RegenerateRecoveryCodes.
+func (c *userServiceClient) RegenerateRecoveryCodes(ctx context.Context, req *connect.Request[v1.RegenerateRecoveryCodesRequest]) (*connect.Response[v1.RegenerateRecoveryCodesResponse], error) {
+	return c.regenerateRecoveryCodes.CallUnary(ctx, req)
+}
+
+// ConfirmRecoveryCodes calls bytebase.v1.UserService.ConfirmRecoveryCodes.
+func (c *userServiceClient) ConfirmRecoveryCodes(ctx context.Context, req *connect.Request[v1.ConfirmRecoveryCodesRequest]) (*connect.Response[v1.User], error) {
+	return c.confirmRecoveryCodes.CallUnary(ctx, req)
+}
+
 // UserServiceHandler is an implementation of the bytebase.v1.UserService service.
 type UserServiceHandler interface {
 	// Get the user.
@@ -253,6 +377,42 @@ type UserServiceHandler interface {
 	// Updates a user's email address.
 	// Permissions required: bb.users.updateEmail
 	UpdateEmail(context.Context, *connect.Request[v1.UpdateEmailRequest]) (*connect.Response[v1.User], error)
+	// Changes the caller's own password. An administrator resetting someone
+	// else's password uses UpdateUser with the `password` mask instead — that
+	// is a different operation with a different audit story, even though both
+	// end in a new password hash.
+	// Permissions required: None beyond being signed in as `name`.
+	ChangePassword(context.Context, *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.User], error)
+	// Mints a pending TOTP secret and recovery codes for the caller's own
+	// account and returns them. Nothing goes live until ConfirmRecoveryCodes,
+	// so an abandoned enrollment leaves the account exactly as it was.
+	// Permissions required: None beyond being signed in as `name`.
+	StartMFAEnrollment(context.Context, *connect.Request[v1.StartMFAEnrollmentRequest]) (*connect.Response[v1.StartMFAEnrollmentResponse], error)
+	// Verifies an otp_code against the pending enrollment. Nothing is written:
+	// this is the step that catches a mistyped authenticator before the caller
+	// is shown recovery codes, and promotion happens at ConfirmRecoveryCodes so
+	// an account is never MFA-required with codes its owner never saved.
+	// Permissions required: None beyond being signed in as `name`.
+	// It writes nothing itself, but it is a required step of installing a
+	// factor on the account, which is why it is denied on the same grounds as
+	// the promotion it precedes.
+	EnableMFA(context.Context, *connect.Request[v1.EnableMFARequest]) (*connect.Response[v1.User], error)
+	// Turns MFA off, clearing the entire MFA config — live and pending state
+	// alike. Callers may disable their own; an administrator may disable
+	// another user's with bb.users.update, which is how a locked-out user is
+	// recovered.
+	// Permissions required: bb.users.update, unless `name` is the caller's own.
+	DisableMFA(context.Context, *connect.Request[v1.DisableMFARequest]) (*connect.Response[v1.User], error)
+	// Mints a pending recovery-code set beside the live one and returns it.
+	// The old codes keep working until ConfirmRecoveryCodes promotes these, so
+	// a caller who closes the page mid-way is not left without any.
+	// Permissions required: None beyond being signed in as `name`.
+	RegenerateRecoveryCodes(context.Context, *connect.Request[v1.RegenerateRecoveryCodesRequest]) (*connect.Response[v1.RegenerateRecoveryCodesResponse], error)
+	// Promotes the pending recovery codes. During first-time enrollment this is
+	// also where the pending TOTP secret goes live, so the factor and the codes
+	// that recover it start existing in the same write.
+	// Permissions required: None beyond being signed in as `name`.
+	ConfirmRecoveryCodes(context.Context, *connect.Request[v1.ConfirmRecoveryCodesRequest]) (*connect.Response[v1.User], error)
 }
 
 // NewUserServiceHandler builds an HTTP handler from the service implementation. It returns the path
@@ -316,6 +476,42 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(userServiceMethods.ByName("UpdateEmail")),
 		connect.WithHandlerOptions(opts...),
 	)
+	userServiceChangePasswordHandler := connect.NewUnaryHandler(
+		UserServiceChangePasswordProcedure,
+		svc.ChangePassword,
+		connect.WithSchema(userServiceMethods.ByName("ChangePassword")),
+		connect.WithHandlerOptions(opts...),
+	)
+	userServiceStartMFAEnrollmentHandler := connect.NewUnaryHandler(
+		UserServiceStartMFAEnrollmentProcedure,
+		svc.StartMFAEnrollment,
+		connect.WithSchema(userServiceMethods.ByName("StartMFAEnrollment")),
+		connect.WithHandlerOptions(opts...),
+	)
+	userServiceEnableMFAHandler := connect.NewUnaryHandler(
+		UserServiceEnableMFAProcedure,
+		svc.EnableMFA,
+		connect.WithSchema(userServiceMethods.ByName("EnableMFA")),
+		connect.WithHandlerOptions(opts...),
+	)
+	userServiceDisableMFAHandler := connect.NewUnaryHandler(
+		UserServiceDisableMFAProcedure,
+		svc.DisableMFA,
+		connect.WithSchema(userServiceMethods.ByName("DisableMFA")),
+		connect.WithHandlerOptions(opts...),
+	)
+	userServiceRegenerateRecoveryCodesHandler := connect.NewUnaryHandler(
+		UserServiceRegenerateRecoveryCodesProcedure,
+		svc.RegenerateRecoveryCodes,
+		connect.WithSchema(userServiceMethods.ByName("RegenerateRecoveryCodes")),
+		connect.WithHandlerOptions(opts...),
+	)
+	userServiceConfirmRecoveryCodesHandler := connect.NewUnaryHandler(
+		UserServiceConfirmRecoveryCodesProcedure,
+		svc.ConfirmRecoveryCodes,
+		connect.WithSchema(userServiceMethods.ByName("ConfirmRecoveryCodes")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/bytebase.v1.UserService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case UserServiceGetUserProcedure:
@@ -336,6 +532,18 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 			userServiceUndeleteUserHandler.ServeHTTP(w, r)
 		case UserServiceUpdateEmailProcedure:
 			userServiceUpdateEmailHandler.ServeHTTP(w, r)
+		case UserServiceChangePasswordProcedure:
+			userServiceChangePasswordHandler.ServeHTTP(w, r)
+		case UserServiceStartMFAEnrollmentProcedure:
+			userServiceStartMFAEnrollmentHandler.ServeHTTP(w, r)
+		case UserServiceEnableMFAProcedure:
+			userServiceEnableMFAHandler.ServeHTTP(w, r)
+		case UserServiceDisableMFAProcedure:
+			userServiceDisableMFAHandler.ServeHTTP(w, r)
+		case UserServiceRegenerateRecoveryCodesProcedure:
+			userServiceRegenerateRecoveryCodesHandler.ServeHTTP(w, r)
+		case UserServiceConfirmRecoveryCodesProcedure:
+			userServiceConfirmRecoveryCodesHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -379,4 +587,28 @@ func (UnimplementedUserServiceHandler) UndeleteUser(context.Context, *connect.Re
 
 func (UnimplementedUserServiceHandler) UpdateEmail(context.Context, *connect.Request[v1.UpdateEmailRequest]) (*connect.Response[v1.User], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.UserService.UpdateEmail is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) ChangePassword(context.Context, *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.User], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.UserService.ChangePassword is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) StartMFAEnrollment(context.Context, *connect.Request[v1.StartMFAEnrollmentRequest]) (*connect.Response[v1.StartMFAEnrollmentResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.UserService.StartMFAEnrollment is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) EnableMFA(context.Context, *connect.Request[v1.EnableMFARequest]) (*connect.Response[v1.User], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.UserService.EnableMFA is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) DisableMFA(context.Context, *connect.Request[v1.DisableMFARequest]) (*connect.Response[v1.User], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.UserService.DisableMFA is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) RegenerateRecoveryCodes(context.Context, *connect.Request[v1.RegenerateRecoveryCodesRequest]) (*connect.Response[v1.RegenerateRecoveryCodesResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.UserService.RegenerateRecoveryCodes is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) ConfirmRecoveryCodes(context.Context, *connect.Request[v1.ConfirmRecoveryCodesRequest]) (*connect.Response[v1.User], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.UserService.ConfirmRecoveryCodes is not implemented"))
 }

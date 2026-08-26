@@ -130,15 +130,6 @@ func (x *UpdateUserRequest) Equal(y *UpdateUserRequest) bool {
 	} else if !proto.Equal(x.UpdateMask, y.UpdateMask) {
 		return false
 	}
-	if p, q := x.OtpCode, y.OtpCode; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
-		return false
-	}
-	if x.RegenerateTempMfaSecret != y.RegenerateTempMfaSecret {
-		return false
-	}
-	if x.RegenerateRecoveryCodes != y.RegenerateRecoveryCodes {
-		return false
-	}
 	if x.AllowMissing != y.AllowMissing {
 		return false
 	}
@@ -187,6 +178,144 @@ func (x *UpdateEmailRequest) Equal(y *UpdateEmailRequest) bool {
 	return true
 }
 
+func (x *ChangePasswordRequest) Equal(y *ChangePasswordRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if x.NewPassword != y.NewPassword {
+		return false
+	}
+	return true
+}
+
+func (x *StartMFAEnrollmentRequest) Equal(y *StartMFAEnrollmentRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	return true
+}
+
+func (x *StartMFAEnrollmentResponse) Equal(y *StartMFAEnrollmentResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.OtpSecret != y.OtpSecret {
+		return false
+	}
+	if len(x.RecoveryCodes) != len(y.RecoveryCodes) {
+		return false
+	}
+	for i := 0; i < len(x.RecoveryCodes); i++ {
+		if x.RecoveryCodes[i] != y.RecoveryCodes[i] {
+			return false
+		}
+	}
+	if p, q := x.ExpireTime, y.ExpireTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	if p, q := x.PendingVersion, y.PendingVersion; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	return true
+}
+
+func (x *EnableMFARequest) Equal(y *EnableMFARequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if x.OtpCode != y.OtpCode {
+		return false
+	}
+	if p, q := x.PendingVersion, y.PendingVersion; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	return true
+}
+
+func (x *DisableMFARequest) Equal(y *DisableMFARequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	return true
+}
+
+func (x *RegenerateRecoveryCodesRequest) Equal(y *RegenerateRecoveryCodesRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	return true
+}
+
+func (x *RegenerateRecoveryCodesResponse) Equal(y *RegenerateRecoveryCodesResponse) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if len(x.RecoveryCodes) != len(y.RecoveryCodes) {
+		return false
+	}
+	for i := 0; i < len(x.RecoveryCodes); i++ {
+		if x.RecoveryCodes[i] != y.RecoveryCodes[i] {
+			return false
+		}
+	}
+	if p, q := x.PendingVersion, y.PendingVersion; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	return true
+}
+
+func (x *ConfirmRecoveryCodesRequest) Equal(y *ConfirmRecoveryCodesRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if p, q := x.PendingVersion, y.PendingVersion; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	return true
+}
+
 func (x *User_Profile) Equal(y *User_Profile) bool {
 	if x == y {
 		return true
@@ -229,20 +358,6 @@ func (x *User) Equal(y *User) bool {
 		return false
 	}
 	if x.MfaEnabled != y.MfaEnabled {
-		return false
-	}
-	if x.TempOtpSecret != y.TempOtpSecret {
-		return false
-	}
-	if len(x.TempRecoveryCodes) != len(y.TempRecoveryCodes) {
-		return false
-	}
-	for i := 0; i < len(x.TempRecoveryCodes); i++ {
-		if x.TempRecoveryCodes[i] != y.TempRecoveryCodes[i] {
-			return false
-		}
-	}
-	if p, q := x.TempOtpSecretCreatedTime, y.TempOtpSecretCreatedTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
 	if x.Phone != y.Phone {

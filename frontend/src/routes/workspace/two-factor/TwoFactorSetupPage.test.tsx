@@ -7,28 +7,26 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-const currentTimestamp = () => ({
-  seconds: BigInt(Math.floor(Date.now() / 1000)),
+const expireTimestamp = () => ({
+  seconds: BigInt(Math.floor(Date.now() / 1000) + 300),
   nanos: 0,
 });
 
-const legacyCurrentUser = {
+const currentUser = {
   name: "users/alice@example.com",
   email: "alice@example.com",
-  tempOtpSecret: "old-secret",
-  tempOtpSecretCreatedTime: currentTimestamp(),
-  tempRecoveryCodes: [],
 };
 
-const regeneratedCurrentUser = {
-  ...legacyCurrentUser,
-  tempOtpSecret: "new-secret",
-  tempOtpSecretCreatedTime: currentTimestamp(),
+const mintedEnrollment = {
+  otpSecret: "new-secret",
+  recoveryCodes: ["code-1", "code-2"],
+  expireTime: expireTimestamp(),
 };
 
 const mocks = vi.hoisted(() => ({
-  useCurrentUser: vi.fn(() => legacyCurrentUser),
-  updateUser: vi.fn(async () => regeneratedCurrentUser),
+  useCurrentUser: vi.fn(() => currentUser),
+  startMFAEnrollment: vi.fn(async () => mintedEnrollment),
+  setCurrentUser: vi.fn(),
   pushNotification: vi.fn(),
   routerReplace: vi.fn(),
   currentRoute: {
@@ -43,8 +41,14 @@ vi.mock("@/hooks/useAppState", () => ({
 vi.mock("@/stores/app", () => ({
   useAppStore: (selector: (state: unknown) => unknown) =>
     selector({
-      updateUser: mocks.updateUser,
+      setCurrentUser: mocks.setCurrentUser,
     }),
+}));
+
+vi.mock("@/api", () => ({
+  userServiceClientConnect: {
+    startMFAEnrollment: mocks.startMFAEnrollment,
+  },
 }));
 
 vi.mock("@/stores", () => ({
@@ -74,7 +78,9 @@ vi.mock("@/types/proto-es/v1/user_service_pb", async (importOriginal) => {
     >();
   return {
     ...actual,
-    UpdateUserRequestSchema: {},
+    StartMFAEnrollmentRequestSchema: {},
+    EnableMFARequestSchema: {},
+    ConfirmRecoveryCodesRequestSchema: {},
   };
 });
 
@@ -146,17 +152,15 @@ beforeEach(async () => {
 });
 
 describe("TwoFactorSetupPage", () => {
-  test("renders regenerated MFA secret from the update response", async () => {
+  test("renders the secret from the enrollment response, not from the user", async () => {
     const { container, render, unmount } = renderIntoContainer(
       <TwoFactorSetupPage />
     );
 
     await render();
 
-    expect(mocks.updateUser).toHaveBeenCalledWith(
-      expect.objectContaining({
-        regenerateTempMfaSecret: true,
-      })
+    expect(mocks.startMFAEnrollment).toHaveBeenCalledWith(
+      expect.objectContaining({ name: currentUser.name })
     );
     expect(
       container
