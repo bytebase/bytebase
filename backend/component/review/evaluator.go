@@ -703,6 +703,11 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 		statementSummaryResults = buildStatementSummaryResultMap(planCheckRun.Result.GetResults())
 	}
 
+	// A database group expands one sheet across every target, so classify each
+	// (engine, sheet) once. Sheets run to common.MaxSheetCheckSize and this
+	// path is synchronous on issue submission.
+	statementTypeCache := map[statementTypeKey][]storepb.StatementType{}
+
 	var celVarsList []map[string]any
 	for _, target := range targets {
 		taskStatement := ""
@@ -742,7 +747,12 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 			// Set statement.sql_type wherever the engine can classify:
 			// cel-go resolves a declared-but-absent variable to an unknown,
 			// which matchRulesForSource drops as a non-match.
-			statementTypes := statementTypesFromParser(target.database.Engine, taskStatement)
+			cacheKey := statementTypeKey{engine: target.database.Engine, sheetSHA256: target.sheetSha256}
+			statementTypes, cached := statementTypeCache[cacheKey]
+			if !cached {
+				statementTypes = statementTypesFromParser(target.database.Engine, taskStatement)
+				statementTypeCache[cacheKey] = statementTypes
+			}
 			celVarsList = append(celVarsList, expandCELVars(celVars, statementTypes, nil)...)
 			continue
 		}
@@ -1104,6 +1114,15 @@ func getApprovalSourceFromIssue(ctx context.Context, stores *store.Store, issue 
 	default:
 		return storepb.WorkspaceApprovalSetting_Rule_SOURCE_UNSPECIFIED, errors.Errorf("unknown issue type %v", issue.Type)
 	}
+}
+
+// statementTypeKey covers both inputs statementTypesFromParser reads: the
+// engine, because an issue's targets can span instances of different engines,
+// and the sheet digest, which determines the statement text the caller loaded
+// from it.
+type statementTypeKey struct {
+	engine      storepb.Engine
+	sheetSHA256 string
 }
 
 // statementTypesFromParser classifies a sheet directly, for engines that never
