@@ -4,6 +4,7 @@ import type { ConnectError } from "@connectrpc/connect";
 import { Ellipsis } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { userServiceClientConnect } from "@/api";
 import { router } from "@/app/router";
 import { ACCOUNT_ROUTE_TWO_FACTOR } from "@/app/router/handles";
 import { FeatureBadge } from "@/components/FeatureBadge";
@@ -32,7 +33,11 @@ import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { AccountType, getAccountTypeByEmail } from "@/types";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
+import {
+  ChangePasswordRequestSchema,
+  DisableMFARequestSchema,
+  UpdateUserRequestSchema,
+} from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2, setDocumentTitle } from "@/utils";
 import { SettingsCard, SettingsRow } from "./SettingsCard";
 import { getPasswordErrors, UserPasswordSection } from "./UserPasswordSection";
@@ -161,10 +166,10 @@ export function AccountSettingsPage() {
     if (!allowSavePassword) return;
     setSavingPassword(true);
     try {
-      const updated = await updateUser(
-        create(UpdateUserRequestSchema, {
-          user: { ...user, password },
-          updateMask: create(FieldMaskSchema, { paths: ["password"] }),
+      const updated = await userServiceClientConnect.changePassword(
+        create(ChangePasswordRequestSchema, {
+          name: user.name,
+          newPassword: password,
         })
       );
       setCurrentUser(updated);
@@ -177,14 +182,7 @@ export function AccountSettingsPage() {
     } finally {
       setSavingPassword(false);
     }
-  }, [
-    allowSavePassword,
-    password,
-    user,
-    updateUser,
-    notifyUpdated,
-    notifyError,
-  ]);
+  }, [allowSavePassword, password, user.name, notifyUpdated, notifyError]);
 
   const handleEnable2FA = useCallback(() => {
     if (!has2FAFeature) {
@@ -212,11 +210,8 @@ export function AccountSettingsPage() {
     if (disabling2FA) return;
     setDisabling2FA(true);
     try {
-      const updated = await updateUser(
-        create(UpdateUserRequestSchema, {
-          user: { name: user.name, mfaEnabled: false },
-          updateMask: create(FieldMaskSchema, { paths: ["mfa_enabled"] }),
-        })
+      const updated = await userServiceClientConnect.disableMFA(
+        create(DisableMFARequestSchema, { name: user.name })
       );
       setCurrentUser(updated);
       setShowDisable2FAConfirm(false);
@@ -231,7 +226,7 @@ export function AccountSettingsPage() {
     } finally {
       setDisabling2FA(false);
     }
-  }, [disabling2FA, user.name, updateUser, notifyError, t]);
+  }, [disabling2FA, user.name, notifyError, t]);
 
   return (
     <WorkspacePageLayout>
@@ -393,7 +388,6 @@ export function AccountSettingsPage() {
                 to regenerate recovery codes the account no longer has. */}
             {isMFAEnabled && showRegenerateView && (
               <RegenerateRecoveryCodesView
-                recoveryCodes={currentUser.tempRecoveryCodes}
                 onClose={() => setShowRegenerateView(false)}
               />
             )}

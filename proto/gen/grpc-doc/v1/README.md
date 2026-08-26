@@ -311,11 +311,19 @@
 - [v1/user_service.proto](#v1_user_service-proto)
     - [BatchGetUsersRequest](#bytebase-v1-BatchGetUsersRequest)
     - [BatchGetUsersResponse](#bytebase-v1-BatchGetUsersResponse)
+    - [ChangePasswordRequest](#bytebase-v1-ChangePasswordRequest)
+    - [ConfirmRecoveryCodesRequest](#bytebase-v1-ConfirmRecoveryCodesRequest)
     - [CreateUserRequest](#bytebase-v1-CreateUserRequest)
     - [DeleteUserRequest](#bytebase-v1-DeleteUserRequest)
+    - [DisableMFARequest](#bytebase-v1-DisableMFARequest)
+    - [EnableMFARequest](#bytebase-v1-EnableMFARequest)
     - [GetUserRequest](#bytebase-v1-GetUserRequest)
     - [ListUsersRequest](#bytebase-v1-ListUsersRequest)
     - [ListUsersResponse](#bytebase-v1-ListUsersResponse)
+    - [RegenerateRecoveryCodesRequest](#bytebase-v1-RegenerateRecoveryCodesRequest)
+    - [RegenerateRecoveryCodesResponse](#bytebase-v1-RegenerateRecoveryCodesResponse)
+    - [StartMFAEnrollmentRequest](#bytebase-v1-StartMFAEnrollmentRequest)
+    - [StartMFAEnrollmentResponse](#bytebase-v1-StartMFAEnrollmentResponse)
     - [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest)
     - [UpdateEmailRequest](#bytebase-v1-UpdateEmailRequest)
     - [UpdateUserRequest](#bytebase-v1-UpdateUserRequest)
@@ -5439,6 +5447,37 @@ SettingService manages workspace-level settings and configurations.
 
 
 
+<a name="bytebase-v1-ChangePasswordRequest"></a>
+
+### ChangePasswordRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: users/{email}. Must be the caller&#39;s own name. |
+| new_password | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ConfirmRecoveryCodesRequest"></a>
+
+### ConfirmRecoveryCodesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: users/{email}. Must be the caller&#39;s own name. |
+
+
+
+
+
+
 <a name="bytebase-v1-CreateUserRequest"></a>
 
 ### CreateUserRequest
@@ -5463,6 +5502,37 @@ SettingService manages workspace-level settings and configurations.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the user to delete. Format: users/{email} |
+
+
+
+
+
+
+<a name="bytebase-v1-DisableMFARequest"></a>
+
+### DisableMFARequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: users/{email}. The caller&#39;s own, or another user&#39;s with bb.users.update. |
+
+
+
+
+
+
+<a name="bytebase-v1-EnableMFARequest"></a>
+
+### EnableMFARequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: users/{email}. Must be the caller&#39;s own name. |
+| otp_code | [string](#string) |  | A code from the authenticator the pending secret was just added to. |
 
 
 
@@ -5524,6 +5594,68 @@ For example: name == &#34;ed&#34; name.contains(&#34;ed&#34;) email == &#34;ed@b
 
 
 
+<a name="bytebase-v1-RegenerateRecoveryCodesRequest"></a>
+
+### RegenerateRecoveryCodesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: users/{email}. Must be the caller&#39;s own name. |
+
+
+
+
+
+
+<a name="bytebase-v1-RegenerateRecoveryCodesResponse"></a>
+
+### RegenerateRecoveryCodesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| recovery_codes | [string](#string) | repeated | The pending recovery codes, shown once for the caller to save. |
+
+
+
+
+
+
+<a name="bytebase-v1-StartMFAEnrollmentRequest"></a>
+
+### StartMFAEnrollmentRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: users/{email}. Must be the caller&#39;s own name. |
+
+
+
+
+
+
+<a name="bytebase-v1-StartMFAEnrollmentResponse"></a>
+
+### StartMFAEnrollmentResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| otp_secret | [string](#string) |  | The pending TOTP secret. The only response that carries it — it is never readable from the User resource. |
+| recovery_codes | [string](#string) | repeated | The pending recovery codes, shown once for the caller to save. |
+| expire_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When this enrollment stops being confirmable. |
+
+
+
+
+
+
 <a name="bytebase-v1-UndeleteUserRequest"></a>
 
 ### UndeleteUserRequest
@@ -5567,9 +5699,6 @@ For example: name == &#34;ed&#34; name.contains(&#34;ed&#34;) email == &#34;ed@b
 
 The user&#39;s `name` field is used to identify the user to update. Format: users/{email} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| otp_code | [string](#string) | optional | The otp_code is used to verify the user&#39;s identity by MFA. |
-| regenerate_temp_mfa_secret | [bool](#bool) |  | The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user. This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response. |
-| regenerate_recovery_codes | [bool](#bool) |  | The regenerate_recovery_codes flag means to regenerate recovery codes for user. |
 | allow_missing | [bool](#bool) |  | If set to true, and the user is not found, a new user will be created. In this situation, `update_mask` is ignored. |
 
 
@@ -5590,10 +5719,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | email | [string](#string) |  | The email address of the user, used for login and notifications. |
 | title | [string](#string) |  | The display title or full name of the user. |
 | password | [string](#string) |  | The password for authentication. Only used during user creation or password updates. |
-| mfa_enabled | [bool](#bool) |  | The mfa_enabled flag means if the user has enabled MFA. |
-| temp_otp_secret | [string](#string) |  | Temporary OTP secret used during MFA setup and regeneration. |
-| temp_recovery_codes | [string](#string) | repeated | Temporary recovery codes used during MFA setup and regeneration. |
-| temp_otp_secret_created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer. |
+| mfa_enabled | [bool](#bool) |  | Whether the user has a live MFA factor. Set by ConfirmRecoveryCodes and DisableMFA, never by an update. |
 | phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
 | profile | [User.Profile](#bytebase-v1-User-Profile) |  | User profile metadata. |
 | groups | [string](#string) | repeated | The groups for the user. Format: groups/{email} |
@@ -5643,6 +5769,12 @@ UserService manages user accounts and authentication.
 | DeleteUser | [DeleteUserRequest](#bytebase-v1-DeleteUserRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted. Permissions required: bb.users.delete |
 | UndeleteUser | [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest) | [User](#bytebase-v1-User) | Restores a deleted user. Permissions required: bb.users.undelete |
 | UpdateEmail | [UpdateEmailRequest](#bytebase-v1-UpdateEmailRequest) | [User](#bytebase-v1-User) | Updates a user&#39;s email address. Permissions required: bb.users.updateEmail |
+| ChangePassword | [ChangePasswordRequest](#bytebase-v1-ChangePasswordRequest) | [User](#bytebase-v1-User) | Changes the caller&#39;s own password. An administrator resetting someone else&#39;s password uses UpdateUser with the `password` mask instead — that is a different operation with a different audit story, even though both end in a new password hash. Permissions required: None beyond being signed in as `name`. |
+| StartMFAEnrollment | [StartMFAEnrollmentRequest](#bytebase-v1-StartMFAEnrollmentRequest) | [StartMFAEnrollmentResponse](#bytebase-v1-StartMFAEnrollmentResponse) | Mints a pending TOTP secret and recovery codes for the caller&#39;s own account and returns them. Nothing goes live until ConfirmRecoveryCodes, so an abandoned enrollment leaves the account exactly as it was. Permissions required: None beyond being signed in as `name`. |
+| EnableMFA | [EnableMFARequest](#bytebase-v1-EnableMFARequest) | [User](#bytebase-v1-User) | Verifies an otp_code against the pending enrollment. Nothing is written: this is the step that catches a mistyped authenticator before the caller is shown recovery codes, and promotion happens at ConfirmRecoveryCodes so an account is never MFA-required with codes its owner never saved. Permissions required: None beyond being signed in as `name`. |
+| DisableMFA | [DisableMFARequest](#bytebase-v1-DisableMFARequest) | [User](#bytebase-v1-User) | Turns MFA off, clearing the entire MFA config — live and pending state alike. Callers may disable their own; an administrator may disable another user&#39;s with bb.users.update, which is how a locked-out user is recovered. Permissions required: bb.users.update, unless `name` is the caller&#39;s own. |
+| RegenerateRecoveryCodes | [RegenerateRecoveryCodesRequest](#bytebase-v1-RegenerateRecoveryCodesRequest) | [RegenerateRecoveryCodesResponse](#bytebase-v1-RegenerateRecoveryCodesResponse) | Mints a pending recovery-code set beside the live one and returns it. The old codes keep working until ConfirmRecoveryCodes promotes these, so a caller who closes the page mid-way is not left without any. Permissions required: None beyond being signed in as `name`. |
+| ConfirmRecoveryCodes | [ConfirmRecoveryCodesRequest](#bytebase-v1-ConfirmRecoveryCodesRequest) | [User](#bytebase-v1-User) | Promotes the pending recovery codes. During first-time enrollment this is also where the pending TOTP secret goes live, so the factor and the codes that recover it start existing in the same write. Permissions required: None beyond being signed in as `name`. |
 
  
 

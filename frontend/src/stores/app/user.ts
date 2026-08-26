@@ -25,7 +25,6 @@ import {
 } from "@/types/proto-es/v1/user_service_pb";
 import { ensureUserFullName } from "@/utils/v1/user";
 import type { AppSliceCreator, UserFilter, UserSlice } from "./types";
-import { keepMfaEnrollment } from "./utils";
 
 const UNKNOWN_PROJECT_NAME_LEGACY = "projects/-";
 
@@ -205,9 +204,6 @@ export const createUserSlice: AppSliceCreator<UserSlice> = (set, get) => {
         createProto(UpdateUserRequestSchema, {
           user: request.user,
           updateMask: request.updateMask,
-          otpCode: request.otpCode,
-          regenerateTempMfaSecret: request.regenerateTempMfaSecret,
-          regenerateRecoveryCodes: request.regenerateRecoveryCodes,
           allowMissing: request.allowMissing,
         })
       );
@@ -215,7 +211,7 @@ export const createUserSlice: AppSliceCreator<UserSlice> = (set, get) => {
         usersByName: { ...state.usersByName, [response.name]: response },
         currentUser:
           state.currentUser?.name === response.name
-            ? keepMfaEnrollment(response, state.currentUser)
+            ? response
             : state.currentUser,
       }));
       return response;

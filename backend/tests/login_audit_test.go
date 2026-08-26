@@ -42,18 +42,19 @@ func TestLoginFailureLockout(t *testing.T) {
 	a.NoError(err)
 	defer metadataDB.Close()
 	userName := common.FormatUserEmail("demo@example.com")
-	mfaSetup, err := ctl.userServiceClient.UpdateUser(ctx, connect.NewRequest(&v1pb.UpdateUserRequest{
-		User:                    &v1pb.User{Name: userName},
-		UpdateMask:              &fieldmaskpb.FieldMask{},
-		RegenerateTempMfaSecret: true,
+	mfaSetup, err := ctl.userServiceClient.StartMFAEnrollment(ctx, connect.NewRequest(&v1pb.StartMFAEnrollmentRequest{
+		Name: userName,
 	}))
 	a.NoError(err)
-	validOTP, err := totp.GenerateCode(mfaSetup.Msg.TempOtpSecret, time.Now())
+	validOTP, err := totp.GenerateCode(mfaSetup.Msg.OtpSecret, time.Now())
 	a.NoError(err)
-	_, err = ctl.userServiceClient.UpdateUser(ctx, connect.NewRequest(&v1pb.UpdateUserRequest{
-		User:       &v1pb.User{Name: userName, MfaEnabled: true},
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"mfa_enabled"}},
-		OtpCode:    &validOTP,
+	_, err = ctl.userServiceClient.EnableMFA(ctx, connect.NewRequest(&v1pb.EnableMFARequest{
+		Name:    userName,
+		OtpCode: validOTP,
+	}))
+	a.NoError(err)
+	_, err = ctl.userServiceClient.ConfirmRecoveryCodes(ctx, connect.NewRequest(&v1pb.ConfirmRecoveryCodesRequest{
+		Name: userName,
 	}))
 	a.NoError(err)
 

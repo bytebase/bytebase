@@ -369,13 +369,6 @@ type UpdateUserRequest struct {
 	User *User `protobuf:"bytes,1,opt,name=user,proto3" json:"user,omitempty"`
 	// The list of fields to update.
 	UpdateMask *fieldmaskpb.FieldMask `protobuf:"bytes,2,opt,name=update_mask,json=updateMask,proto3" json:"update_mask,omitempty"`
-	// The otp_code is used to verify the user's identity by MFA.
-	OtpCode *string `protobuf:"bytes,3,opt,name=otp_code,json=otpCode,proto3,oneof" json:"otp_code,omitempty"`
-	// The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user.
-	// This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response.
-	RegenerateTempMfaSecret bool `protobuf:"varint,4,opt,name=regenerate_temp_mfa_secret,json=regenerateTempMfaSecret,proto3" json:"regenerate_temp_mfa_secret,omitempty"`
-	// The regenerate_recovery_codes flag means to regenerate recovery codes for user.
-	RegenerateRecoveryCodes bool `protobuf:"varint,5,opt,name=regenerate_recovery_codes,json=regenerateRecoveryCodes,proto3" json:"regenerate_recovery_codes,omitempty"`
 	// If set to true, and the user is not found, a new user will be created.
 	// In this situation, `update_mask` is ignored.
 	AllowMissing  bool `protobuf:"varint,6,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
@@ -425,27 +418,6 @@ func (x *UpdateUserRequest) GetUpdateMask() *fieldmaskpb.FieldMask {
 		return x.UpdateMask
 	}
 	return nil
-}
-
-func (x *UpdateUserRequest) GetOtpCode() string {
-	if x != nil && x.OtpCode != nil {
-		return *x.OtpCode
-	}
-	return ""
-}
-
-func (x *UpdateUserRequest) GetRegenerateTempMfaSecret() bool {
-	if x != nil {
-		return x.RegenerateTempMfaSecret
-	}
-	return false
-}
-
-func (x *UpdateUserRequest) GetRegenerateRecoveryCodes() bool {
-	if x != nil {
-		return x.RegenerateRecoveryCodes
-	}
-	return false
 }
 
 func (x *UpdateUserRequest) GetAllowMissing() bool {
@@ -603,6 +575,403 @@ func (x *UpdateEmailRequest) GetEmail() string {
 	return ""
 }
 
+type ChangePasswordRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Format: users/{email}. Must be the caller's own name.
+	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	NewPassword   string `protobuf:"bytes,2,opt,name=new_password,json=newPassword,proto3" json:"new_password,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ChangePasswordRequest) Reset() {
+	*x = ChangePasswordRequest{}
+	mi := &file_v1_user_service_proto_msgTypes[10]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ChangePasswordRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ChangePasswordRequest) ProtoMessage() {}
+
+func (x *ChangePasswordRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_user_service_proto_msgTypes[10]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ChangePasswordRequest.ProtoReflect.Descriptor instead.
+func (*ChangePasswordRequest) Descriptor() ([]byte, []int) {
+	return file_v1_user_service_proto_rawDescGZIP(), []int{10}
+}
+
+func (x *ChangePasswordRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ChangePasswordRequest) GetNewPassword() string {
+	if x != nil {
+		return x.NewPassword
+	}
+	return ""
+}
+
+type StartMFAEnrollmentRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Format: users/{email}. Must be the caller's own name.
+	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StartMFAEnrollmentRequest) Reset() {
+	*x = StartMFAEnrollmentRequest{}
+	mi := &file_v1_user_service_proto_msgTypes[11]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StartMFAEnrollmentRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartMFAEnrollmentRequest) ProtoMessage() {}
+
+func (x *StartMFAEnrollmentRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_user_service_proto_msgTypes[11]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StartMFAEnrollmentRequest.ProtoReflect.Descriptor instead.
+func (*StartMFAEnrollmentRequest) Descriptor() ([]byte, []int) {
+	return file_v1_user_service_proto_rawDescGZIP(), []int{11}
+}
+
+func (x *StartMFAEnrollmentRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type StartMFAEnrollmentResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The pending TOTP secret. The only response that carries it — it is never
+	// readable from the User resource.
+	OtpSecret string `protobuf:"bytes,1,opt,name=otp_secret,json=otpSecret,proto3" json:"otp_secret,omitempty"`
+	// The pending recovery codes, shown once for the caller to save.
+	RecoveryCodes []string `protobuf:"bytes,2,rep,name=recovery_codes,json=recoveryCodes,proto3" json:"recovery_codes,omitempty"`
+	// When this enrollment stops being confirmable.
+	ExpireTime    *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=expire_time,json=expireTime,proto3" json:"expire_time,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *StartMFAEnrollmentResponse) Reset() {
+	*x = StartMFAEnrollmentResponse{}
+	mi := &file_v1_user_service_proto_msgTypes[12]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *StartMFAEnrollmentResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*StartMFAEnrollmentResponse) ProtoMessage() {}
+
+func (x *StartMFAEnrollmentResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_user_service_proto_msgTypes[12]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use StartMFAEnrollmentResponse.ProtoReflect.Descriptor instead.
+func (*StartMFAEnrollmentResponse) Descriptor() ([]byte, []int) {
+	return file_v1_user_service_proto_rawDescGZIP(), []int{12}
+}
+
+func (x *StartMFAEnrollmentResponse) GetOtpSecret() string {
+	if x != nil {
+		return x.OtpSecret
+	}
+	return ""
+}
+
+func (x *StartMFAEnrollmentResponse) GetRecoveryCodes() []string {
+	if x != nil {
+		return x.RecoveryCodes
+	}
+	return nil
+}
+
+func (x *StartMFAEnrollmentResponse) GetExpireTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ExpireTime
+	}
+	return nil
+}
+
+type EnableMFARequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Format: users/{email}. Must be the caller's own name.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// A code from the authenticator the pending secret was just added to.
+	OtpCode       string `protobuf:"bytes,2,opt,name=otp_code,json=otpCode,proto3" json:"otp_code,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *EnableMFARequest) Reset() {
+	*x = EnableMFARequest{}
+	mi := &file_v1_user_service_proto_msgTypes[13]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *EnableMFARequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*EnableMFARequest) ProtoMessage() {}
+
+func (x *EnableMFARequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_user_service_proto_msgTypes[13]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use EnableMFARequest.ProtoReflect.Descriptor instead.
+func (*EnableMFARequest) Descriptor() ([]byte, []int) {
+	return file_v1_user_service_proto_rawDescGZIP(), []int{13}
+}
+
+func (x *EnableMFARequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *EnableMFARequest) GetOtpCode() string {
+	if x != nil {
+		return x.OtpCode
+	}
+	return ""
+}
+
+type DisableMFARequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Format: users/{email}. The caller's own, or another user's with
+	// bb.users.update.
+	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DisableMFARequest) Reset() {
+	*x = DisableMFARequest{}
+	mi := &file_v1_user_service_proto_msgTypes[14]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DisableMFARequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DisableMFARequest) ProtoMessage() {}
+
+func (x *DisableMFARequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_user_service_proto_msgTypes[14]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DisableMFARequest.ProtoReflect.Descriptor instead.
+func (*DisableMFARequest) Descriptor() ([]byte, []int) {
+	return file_v1_user_service_proto_rawDescGZIP(), []int{14}
+}
+
+func (x *DisableMFARequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type RegenerateRecoveryCodesRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Format: users/{email}. Must be the caller's own name.
+	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegenerateRecoveryCodesRequest) Reset() {
+	*x = RegenerateRecoveryCodesRequest{}
+	mi := &file_v1_user_service_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegenerateRecoveryCodesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegenerateRecoveryCodesRequest) ProtoMessage() {}
+
+func (x *RegenerateRecoveryCodesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_user_service_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegenerateRecoveryCodesRequest.ProtoReflect.Descriptor instead.
+func (*RegenerateRecoveryCodesRequest) Descriptor() ([]byte, []int) {
+	return file_v1_user_service_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *RegenerateRecoveryCodesRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+type RegenerateRecoveryCodesResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The pending recovery codes, shown once for the caller to save.
+	RecoveryCodes []string `protobuf:"bytes,1,rep,name=recovery_codes,json=recoveryCodes,proto3" json:"recovery_codes,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RegenerateRecoveryCodesResponse) Reset() {
+	*x = RegenerateRecoveryCodesResponse{}
+	mi := &file_v1_user_service_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RegenerateRecoveryCodesResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RegenerateRecoveryCodesResponse) ProtoMessage() {}
+
+func (x *RegenerateRecoveryCodesResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_user_service_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RegenerateRecoveryCodesResponse.ProtoReflect.Descriptor instead.
+func (*RegenerateRecoveryCodesResponse) Descriptor() ([]byte, []int) {
+	return file_v1_user_service_proto_rawDescGZIP(), []int{16}
+}
+
+func (x *RegenerateRecoveryCodesResponse) GetRecoveryCodes() []string {
+	if x != nil {
+		return x.RecoveryCodes
+	}
+	return nil
+}
+
+type ConfirmRecoveryCodesRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Format: users/{email}. Must be the caller's own name.
+	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ConfirmRecoveryCodesRequest) Reset() {
+	*x = ConfirmRecoveryCodesRequest{}
+	mi := &file_v1_user_service_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConfirmRecoveryCodesRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConfirmRecoveryCodesRequest) ProtoMessage() {}
+
+func (x *ConfirmRecoveryCodesRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_v1_user_service_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConfirmRecoveryCodesRequest.ProtoReflect.Descriptor instead.
+func (*ConfirmRecoveryCodesRequest) Descriptor() ([]byte, []int) {
+	return file_v1_user_service_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ConfirmRecoveryCodesRequest) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
 type User struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name of the user.
@@ -616,14 +985,9 @@ type User struct {
 	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`
 	// The password for authentication. Only used during user creation or password updates.
 	Password string `protobuf:"bytes,6,opt,name=password,proto3" json:"password,omitempty"`
-	// The mfa_enabled flag means if the user has enabled MFA.
+	// Whether the user has a live MFA factor. Set by ConfirmRecoveryCodes and
+	// DisableMFA, never by an update.
 	MfaEnabled bool `protobuf:"varint,8,opt,name=mfa_enabled,json=mfaEnabled,proto3" json:"mfa_enabled,omitempty"`
-	// Temporary OTP secret used during MFA setup and regeneration.
-	TempOtpSecret string `protobuf:"bytes,9,opt,name=temp_otp_secret,json=tempOtpSecret,proto3" json:"temp_otp_secret,omitempty"`
-	// Temporary recovery codes used during MFA setup and regeneration.
-	TempRecoveryCodes []string `protobuf:"bytes,10,rep,name=temp_recovery_codes,json=tempRecoveryCodes,proto3" json:"temp_recovery_codes,omitempty"`
-	// Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
-	TempOtpSecretCreatedTime *timestamppb.Timestamp `protobuf:"bytes,11,opt,name=temp_otp_secret_created_time,json=tempOtpSecretCreatedTime,proto3" json:"temp_otp_secret_created_time,omitempty"`
 	// Should be a valid E.164 compliant phone number.
 	// Could be empty.
 	Phone string `protobuf:"bytes,12,opt,name=phone,proto3" json:"phone,omitempty"`
@@ -641,7 +1005,7 @@ type User struct {
 
 func (x *User) Reset() {
 	*x = User{}
-	mi := &file_v1_user_service_proto_msgTypes[10]
+	mi := &file_v1_user_service_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -653,7 +1017,7 @@ func (x *User) String() string {
 func (*User) ProtoMessage() {}
 
 func (x *User) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_user_service_proto_msgTypes[10]
+	mi := &file_v1_user_service_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -666,7 +1030,7 @@ func (x *User) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use User.ProtoReflect.Descriptor instead.
 func (*User) Descriptor() ([]byte, []int) {
-	return file_v1_user_service_proto_rawDescGZIP(), []int{10}
+	return file_v1_user_service_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *User) GetName() string {
@@ -711,27 +1075,6 @@ func (x *User) GetMfaEnabled() bool {
 	return false
 }
 
-func (x *User) GetTempOtpSecret() string {
-	if x != nil {
-		return x.TempOtpSecret
-	}
-	return ""
-}
-
-func (x *User) GetTempRecoveryCodes() []string {
-	if x != nil {
-		return x.TempRecoveryCodes
-	}
-	return nil
-}
-
-func (x *User) GetTempOtpSecretCreatedTime() *timestamppb.Timestamp {
-	if x != nil {
-		return x.TempOtpSecretCreatedTime
-	}
-	return nil
-}
-
 func (x *User) GetPhone() string {
 	if x != nil {
 		return x.Phone
@@ -774,7 +1117,7 @@ type User_Profile struct {
 
 func (x *User_Profile) Reset() {
 	*x = User_Profile{}
-	mi := &file_v1_user_service_proto_msgTypes[11]
+	mi := &file_v1_user_service_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -786,7 +1129,7 @@ func (x *User_Profile) String() string {
 func (*User_Profile) ProtoMessage() {}
 
 func (x *User_Profile) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_user_service_proto_msgTypes[11]
+	mi := &file_v1_user_service_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -799,7 +1142,7 @@ func (x *User_Profile) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use User_Profile.ProtoReflect.Descriptor instead.
 func (*User_Profile) Descriptor() ([]byte, []int) {
-	return file_v1_user_service_proto_rawDescGZIP(), []int{10, 0}
+	return file_v1_user_service_proto_rawDescGZIP(), []int{18, 0}
 }
 
 func (x *User_Profile) GetLastLoginTime() *timestamppb.Timestamp {
@@ -846,16 +1189,12 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x05users\x18\x01 \x03(\v2\x11.bytebase.v1.UserR\x05users\x12&\n" +
 	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"?\n" +
 	"\x11CreateUserRequest\x12*\n" +
-	"\x04user\x18\x01 \x01(\v2\x11.bytebase.v1.UserB\x03\xe0A\x02R\x04user\"\xcd\x02\n" +
+	"\x04user\x18\x01 \x01(\v2\x11.bytebase.v1.UserB\x03\xe0A\x02R\x04user\"\xf4\x01\n" +
 	"\x11UpdateUserRequest\x12*\n" +
 	"\x04user\x18\x01 \x01(\v2\x11.bytebase.v1.UserB\x03\xe0A\x02R\x04user\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMask\x12$\n" +
-	"\botp_code\x18\x03 \x01(\tB\x04\xd0\xea0\x01H\x00R\aotpCode\x88\x01\x01\x12;\n" +
-	"\x1aregenerate_temp_mfa_secret\x18\x04 \x01(\bR\x17regenerateTempMfaSecret\x12:\n" +
-	"\x19regenerate_recovery_codes\x18\x05 \x01(\bR\x17regenerateRecoveryCodes\x12#\n" +
-	"\rallow_missing\x18\x06 \x01(\bR\fallowMissingB\v\n" +
-	"\t_otp_code\"B\n" +
+	"updateMask\x12#\n" +
+	"\rallow_missing\x18\x06 \x01(\bR\fallowMissingJ\x04\b\x03\x10\x04J\x04\b\x04\x10\x05J\x04\b\x05\x10\x06R\botp_codeR\x1aregenerate_temp_mfa_secretR\x19regenerate_recovery_codes\"B\n" +
 	"\x11DeleteUserRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/UserR\x04name\"D\n" +
@@ -865,19 +1204,43 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x12UpdateEmailRequest\x12-\n" +
 	"\x04name\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/UserR\x04name\x12!\n" +
-	"\x05email\x18\x02 \x01(\tB\v\xe0A\x02\xbaH\x05r\x03\x18\xfe\x01R\x05email\"\xa9\x06\n" +
+	"\x05email\x18\x02 \x01(\tB\v\xe0A\x02\xbaH\x05r\x03\x18\xfe\x01R\x05email\"\x81\x01\n" +
+	"\x15ChangePasswordRequest\x125\n" +
+	"\x04name\x18\x01 \x01(\tB!\xe0A\x02\xfaA\x13\n" +
+	"\x11bytebase.com/User\xbaH\x05r\x03\x18\x84\x02R\x04name\x121\n" +
+	"\fnew_password\x18\x02 \x01(\tB\x0e\xe0A\x02\xbaH\x04r\x02(H\xd0\xea0\x01R\vnewPassword\"R\n" +
+	"\x19StartMFAEnrollmentRequest\x125\n" +
+	"\x04name\x18\x01 \x01(\tB!\xe0A\x02\xfaA\x13\n" +
+	"\x11bytebase.com/User\xbaH\x05r\x03\x18\x84\x02R\x04name\"\xab\x01\n" +
+	"\x1aStartMFAEnrollmentResponse\x12#\n" +
+	"\n" +
+	"otp_secret\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\totpSecret\x12+\n" +
+	"\x0erecovery_codes\x18\x02 \x03(\tB\x04\xd0\xea0\x01R\rrecoveryCodes\x12;\n" +
+	"\vexpire_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"expireTime\"t\n" +
+	"\x10EnableMFARequest\x125\n" +
+	"\x04name\x18\x01 \x01(\tB!\xe0A\x02\xfaA\x13\n" +
+	"\x11bytebase.com/User\xbaH\x05r\x03\x18\x84\x02R\x04name\x12)\n" +
+	"\botp_code\x18\x02 \x01(\tB\x0e\xe0A\x02\xbaH\x04r\x02\x18@\xd0\xea0\x01R\aotpCode\"J\n" +
+	"\x11DisableMFARequest\x125\n" +
+	"\x04name\x18\x01 \x01(\tB!\xe0A\x02\xfaA\x13\n" +
+	"\x11bytebase.com/User\xbaH\x05r\x03\x18\x84\x02R\x04name\"W\n" +
+	"\x1eRegenerateRecoveryCodesRequest\x125\n" +
+	"\x04name\x18\x01 \x01(\tB!\xe0A\x02\xfaA\x13\n" +
+	"\x11bytebase.com/User\xbaH\x05r\x03\x18\x84\x02R\x04name\"N\n" +
+	"\x1fRegenerateRecoveryCodesResponse\x12+\n" +
+	"\x0erecovery_codes\x18\x01 \x03(\tB\x04\xd0\xea0\x01R\rrecoveryCodes\"T\n" +
+	"\x1bConfirmRecoveryCodesRequest\x125\n" +
+	"\x04name\x18\x01 \x01(\tB!\xe0A\x02\xfaA\x13\n" +
+	"\x11bytebase.com/User\xbaH\x05r\x03\x18\x84\x02R\x04name\"\xc4\x05\n" +
 	"\x04User\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x1e\n" +
 	"\x05email\x18\x03 \x01(\tB\b\xbaH\x05r\x03\x18\xfe\x01R\x05email\x12\x1e\n" +
 	"\x05title\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12*\n" +
-	"\bpassword\x18\x06 \x01(\tB\x0e\xe0A\x04\xbaH\x04r\x02(H\xd0\xea0\x01R\bpassword\x12\x1f\n" +
-	"\vmfa_enabled\x18\b \x01(\bR\n" +
-	"mfaEnabled\x12,\n" +
-	"\x0ftemp_otp_secret\x18\t \x01(\tB\x04\xd0\xea0\x01R\rtempOtpSecret\x124\n" +
-	"\x13temp_recovery_codes\x18\n" +
-	" \x03(\tB\x04\xd0\xea0\x01R\x11tempRecoveryCodes\x12Z\n" +
-	"\x1ctemp_otp_secret_created_time\x18\v \x01(\v2\x1a.google.protobuf.TimestampR\x18tempOtpSecretCreatedTime\x12\x1a\n" +
+	"\bpassword\x18\x06 \x01(\tB\x0e\xe0A\x04\xbaH\x04r\x02(H\xd0\xea0\x01R\bpassword\x12$\n" +
+	"\vmfa_enabled\x18\b \x01(\bB\x03\xe0A\x03R\n" +
+	"mfaEnabled\x12\x1a\n" +
 	"\x05phone\x18\f \x01(\tB\x04\xd0\xea0\x02R\x05phone\x129\n" +
 	"\aprofile\x18\r \x01(\v2\x19.bytebase.v1.User.ProfileB\x04\xd0\xea0\x02R\aprofile\x12\x1f\n" +
 	"\x06groups\x18\x0e \x03(\tB\a\xe0A\x03\xd0\xea0\x02R\x06groups\x12!\n" +
@@ -886,7 +1249,9 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x0flast_login_time\x18\x01 \x01(\v2\x1a.google.protobuf.TimestampR\rlastLoginTime\x12U\n" +
 	"\x19last_change_password_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x16lastChangePasswordTime\x12\x16\n" +
 	"\x06source\x18\x03 \x01(\tR\x06source:%\xeaA\"\n" +
-	"\x11bytebase.com/User\x12\rusers/{email}J\x04\b\x05\x10\x06J\x04\b\a\x10\bJ\x04\b\x0f\x10\x102\xa8\t\n" +
+	"\x11bytebase.com/User\x12\rusers/{email}J\x04\b\x05\x10\x06J\x04\b\a\x10\bJ\x04\b\x0f\x10\x10J\x04\b\t\x10\n" +
+	"J\x04\b\n" +
+	"\x10\vJ\x04\b\v\x10\fR\x0ftemp_otp_secretR\x13temp_recovery_codesR\x1ctemp_otp_secret_created_time2\xe7\x10\n" +
 	"\vUserService\x12x\n" +
 	"\aGetUser\x12\x1b.bytebase.v1.GetUserRequest\x1a\x11.bytebase.v1.User\"=\xdaA\x04name\x8a\xea0\fbb.users.get\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/{name=users/*}\x12\x8e\x01\n" +
 	"\rBatchGetUsers\x12!.bytebase.v1.BatchGetUsersRequest\x1a\".bytebase.v1.BatchGetUsersResponse\"6\x8a\xea0\fbb.users.get\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x14\x12\x12/v1/users:batchGet\x12]\n" +
@@ -900,7 +1265,14 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"DeleteUser\x12\x1e.bytebase.v1.DeleteUserRequest\x1a\x16.google.protobuf.Empty\"1\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x14*\x12/v1/{name=users/*}\x12{\n" +
 	"\fUndeleteUser\x12 .bytebase.v1.UndeleteUserRequest\x1a\x11.bytebase.v1.User\"6\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02 :\x01*\"\x1b/v1/{name=users/*}:undelete\x12\xa1\x01\n" +
 	"\vUpdateEmail\x12\x1f.bytebase.v1.UpdateEmailRequest\x1a\x11.bytebase.v1.User\"^\xdaA\n" +
-	"name,email\x8a\xea0\x14bb.users.updateEmail\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x06\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/v1/{name=users/*}:updateEmailB\xa6\x01\n" +
+	"name,email\x8a\xea0\x14bb.users.updateEmail\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x06\x82\xd3\xe4\x93\x02#:\x01*\"\x1e/v1/{name=users/*}:updateEmail\x12\x99\x01\n" +
+	"\x0eChangePassword\x12\".bytebase.v1.ChangePasswordRequest\x1a\x11.bytebase.v1.User\"P\xdaA\x11name,new_password\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x02\x82\xd3\xe4\x93\x02&:\x01*\"!/v1/{name=users/*}:changePassword\x12\xae\x01\n" +
+	"\x12StartMFAEnrollment\x12&.bytebase.v1.StartMFAEnrollmentRequest\x1a'.bytebase.v1.StartMFAEnrollmentResponse\"G\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x01\x82\xd3\xe4\x93\x02*:\x01*\"%/v1/{name=users/*}:startMFAEnrollment\x12\x86\x01\n" +
+	"\tEnableMFA\x12\x1d.bytebase.v1.EnableMFARequest\x1a\x11.bytebase.v1.User\"G\xdaA\rname,otp_code\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x01\x82\xd3\xe4\x93\x02!:\x01*\"\x1c/v1/{name=users/*}:enableMFA\x12\x80\x01\n" +
+	"\n" +
+	"DisableMFA\x12\x1e.bytebase.v1.DisableMFARequest\x1a\x11.bytebase.v1.User\"?\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x02\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/v1/{name=users/*}:disableMFA\x12\xc2\x01\n" +
+	"\x17RegenerateRecoveryCodes\x12+.bytebase.v1.RegenerateRecoveryCodesRequest\x1a,.bytebase.v1.RegenerateRecoveryCodesResponse\"L\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x01\x82\xd3\xe4\x93\x02/:\x01*\"*/v1/{name=users/*}:regenerateRecoveryCodes\x12\x9e\x01\n" +
+	"\x14ConfirmRecoveryCodes\x12(.bytebase.v1.ConfirmRecoveryCodesRequest\x1a\x11.bytebase.v1.User\"I\xdaA\x04name\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x01\x82\xd3\xe4\x93\x02,:\x01*\"'/v1/{name=users/*}:confirmRecoveryCodesB\xa6\x01\n" +
 	"\x0fcom.bytebase.v1B\x10UserServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
@@ -915,56 +1287,76 @@ func file_v1_user_service_proto_rawDescGZIP() []byte {
 	return file_v1_user_service_proto_rawDescData
 }
 
-var file_v1_user_service_proto_msgTypes = make([]protoimpl.MessageInfo, 12)
+var file_v1_user_service_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_v1_user_service_proto_goTypes = []any{
-	(*GetUserRequest)(nil),        // 0: bytebase.v1.GetUserRequest
-	(*BatchGetUsersRequest)(nil),  // 1: bytebase.v1.BatchGetUsersRequest
-	(*BatchGetUsersResponse)(nil), // 2: bytebase.v1.BatchGetUsersResponse
-	(*ListUsersRequest)(nil),      // 3: bytebase.v1.ListUsersRequest
-	(*ListUsersResponse)(nil),     // 4: bytebase.v1.ListUsersResponse
-	(*CreateUserRequest)(nil),     // 5: bytebase.v1.CreateUserRequest
-	(*UpdateUserRequest)(nil),     // 6: bytebase.v1.UpdateUserRequest
-	(*DeleteUserRequest)(nil),     // 7: bytebase.v1.DeleteUserRequest
-	(*UndeleteUserRequest)(nil),   // 8: bytebase.v1.UndeleteUserRequest
-	(*UpdateEmailRequest)(nil),    // 9: bytebase.v1.UpdateEmailRequest
-	(*User)(nil),                  // 10: bytebase.v1.User
-	(*User_Profile)(nil),          // 11: bytebase.v1.User.Profile
-	(*fieldmaskpb.FieldMask)(nil), // 12: google.protobuf.FieldMask
-	(State)(0),                    // 13: bytebase.v1.State
-	(*timestamppb.Timestamp)(nil), // 14: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),         // 15: google.protobuf.Empty
+	(*GetUserRequest)(nil),                  // 0: bytebase.v1.GetUserRequest
+	(*BatchGetUsersRequest)(nil),            // 1: bytebase.v1.BatchGetUsersRequest
+	(*BatchGetUsersResponse)(nil),           // 2: bytebase.v1.BatchGetUsersResponse
+	(*ListUsersRequest)(nil),                // 3: bytebase.v1.ListUsersRequest
+	(*ListUsersResponse)(nil),               // 4: bytebase.v1.ListUsersResponse
+	(*CreateUserRequest)(nil),               // 5: bytebase.v1.CreateUserRequest
+	(*UpdateUserRequest)(nil),               // 6: bytebase.v1.UpdateUserRequest
+	(*DeleteUserRequest)(nil),               // 7: bytebase.v1.DeleteUserRequest
+	(*UndeleteUserRequest)(nil),             // 8: bytebase.v1.UndeleteUserRequest
+	(*UpdateEmailRequest)(nil),              // 9: bytebase.v1.UpdateEmailRequest
+	(*ChangePasswordRequest)(nil),           // 10: bytebase.v1.ChangePasswordRequest
+	(*StartMFAEnrollmentRequest)(nil),       // 11: bytebase.v1.StartMFAEnrollmentRequest
+	(*StartMFAEnrollmentResponse)(nil),      // 12: bytebase.v1.StartMFAEnrollmentResponse
+	(*EnableMFARequest)(nil),                // 13: bytebase.v1.EnableMFARequest
+	(*DisableMFARequest)(nil),               // 14: bytebase.v1.DisableMFARequest
+	(*RegenerateRecoveryCodesRequest)(nil),  // 15: bytebase.v1.RegenerateRecoveryCodesRequest
+	(*RegenerateRecoveryCodesResponse)(nil), // 16: bytebase.v1.RegenerateRecoveryCodesResponse
+	(*ConfirmRecoveryCodesRequest)(nil),     // 17: bytebase.v1.ConfirmRecoveryCodesRequest
+	(*User)(nil),                            // 18: bytebase.v1.User
+	(*User_Profile)(nil),                    // 19: bytebase.v1.User.Profile
+	(*fieldmaskpb.FieldMask)(nil),           // 20: google.protobuf.FieldMask
+	(*timestamppb.Timestamp)(nil),           // 21: google.protobuf.Timestamp
+	(State)(0),                              // 22: bytebase.v1.State
+	(*emptypb.Empty)(nil),                   // 23: google.protobuf.Empty
 }
 var file_v1_user_service_proto_depIdxs = []int32{
-	10, // 0: bytebase.v1.BatchGetUsersResponse.users:type_name -> bytebase.v1.User
-	10, // 1: bytebase.v1.ListUsersResponse.users:type_name -> bytebase.v1.User
-	10, // 2: bytebase.v1.CreateUserRequest.user:type_name -> bytebase.v1.User
-	10, // 3: bytebase.v1.UpdateUserRequest.user:type_name -> bytebase.v1.User
-	12, // 4: bytebase.v1.UpdateUserRequest.update_mask:type_name -> google.protobuf.FieldMask
-	13, // 5: bytebase.v1.User.state:type_name -> bytebase.v1.State
-	14, // 6: bytebase.v1.User.temp_otp_secret_created_time:type_name -> google.protobuf.Timestamp
-	11, // 7: bytebase.v1.User.profile:type_name -> bytebase.v1.User.Profile
-	14, // 8: bytebase.v1.User.Profile.last_login_time:type_name -> google.protobuf.Timestamp
-	14, // 9: bytebase.v1.User.Profile.last_change_password_time:type_name -> google.protobuf.Timestamp
+	18, // 0: bytebase.v1.BatchGetUsersResponse.users:type_name -> bytebase.v1.User
+	18, // 1: bytebase.v1.ListUsersResponse.users:type_name -> bytebase.v1.User
+	18, // 2: bytebase.v1.CreateUserRequest.user:type_name -> bytebase.v1.User
+	18, // 3: bytebase.v1.UpdateUserRequest.user:type_name -> bytebase.v1.User
+	20, // 4: bytebase.v1.UpdateUserRequest.update_mask:type_name -> google.protobuf.FieldMask
+	21, // 5: bytebase.v1.StartMFAEnrollmentResponse.expire_time:type_name -> google.protobuf.Timestamp
+	22, // 6: bytebase.v1.User.state:type_name -> bytebase.v1.State
+	19, // 7: bytebase.v1.User.profile:type_name -> bytebase.v1.User.Profile
+	21, // 8: bytebase.v1.User.Profile.last_login_time:type_name -> google.protobuf.Timestamp
+	21, // 9: bytebase.v1.User.Profile.last_change_password_time:type_name -> google.protobuf.Timestamp
 	0,  // 10: bytebase.v1.UserService.GetUser:input_type -> bytebase.v1.GetUserRequest
 	1,  // 11: bytebase.v1.UserService.BatchGetUsers:input_type -> bytebase.v1.BatchGetUsersRequest
-	15, // 12: bytebase.v1.UserService.GetCurrentUser:input_type -> google.protobuf.Empty
+	23, // 12: bytebase.v1.UserService.GetCurrentUser:input_type -> google.protobuf.Empty
 	3,  // 13: bytebase.v1.UserService.ListUsers:input_type -> bytebase.v1.ListUsersRequest
 	5,  // 14: bytebase.v1.UserService.CreateUser:input_type -> bytebase.v1.CreateUserRequest
 	6,  // 15: bytebase.v1.UserService.UpdateUser:input_type -> bytebase.v1.UpdateUserRequest
 	7,  // 16: bytebase.v1.UserService.DeleteUser:input_type -> bytebase.v1.DeleteUserRequest
 	8,  // 17: bytebase.v1.UserService.UndeleteUser:input_type -> bytebase.v1.UndeleteUserRequest
 	9,  // 18: bytebase.v1.UserService.UpdateEmail:input_type -> bytebase.v1.UpdateEmailRequest
-	10, // 19: bytebase.v1.UserService.GetUser:output_type -> bytebase.v1.User
-	2,  // 20: bytebase.v1.UserService.BatchGetUsers:output_type -> bytebase.v1.BatchGetUsersResponse
-	10, // 21: bytebase.v1.UserService.GetCurrentUser:output_type -> bytebase.v1.User
-	4,  // 22: bytebase.v1.UserService.ListUsers:output_type -> bytebase.v1.ListUsersResponse
-	10, // 23: bytebase.v1.UserService.CreateUser:output_type -> bytebase.v1.User
-	10, // 24: bytebase.v1.UserService.UpdateUser:output_type -> bytebase.v1.User
-	15, // 25: bytebase.v1.UserService.DeleteUser:output_type -> google.protobuf.Empty
-	10, // 26: bytebase.v1.UserService.UndeleteUser:output_type -> bytebase.v1.User
-	10, // 27: bytebase.v1.UserService.UpdateEmail:output_type -> bytebase.v1.User
-	19, // [19:28] is the sub-list for method output_type
-	10, // [10:19] is the sub-list for method input_type
+	10, // 19: bytebase.v1.UserService.ChangePassword:input_type -> bytebase.v1.ChangePasswordRequest
+	11, // 20: bytebase.v1.UserService.StartMFAEnrollment:input_type -> bytebase.v1.StartMFAEnrollmentRequest
+	13, // 21: bytebase.v1.UserService.EnableMFA:input_type -> bytebase.v1.EnableMFARequest
+	14, // 22: bytebase.v1.UserService.DisableMFA:input_type -> bytebase.v1.DisableMFARequest
+	15, // 23: bytebase.v1.UserService.RegenerateRecoveryCodes:input_type -> bytebase.v1.RegenerateRecoveryCodesRequest
+	17, // 24: bytebase.v1.UserService.ConfirmRecoveryCodes:input_type -> bytebase.v1.ConfirmRecoveryCodesRequest
+	18, // 25: bytebase.v1.UserService.GetUser:output_type -> bytebase.v1.User
+	2,  // 26: bytebase.v1.UserService.BatchGetUsers:output_type -> bytebase.v1.BatchGetUsersResponse
+	18, // 27: bytebase.v1.UserService.GetCurrentUser:output_type -> bytebase.v1.User
+	4,  // 28: bytebase.v1.UserService.ListUsers:output_type -> bytebase.v1.ListUsersResponse
+	18, // 29: bytebase.v1.UserService.CreateUser:output_type -> bytebase.v1.User
+	18, // 30: bytebase.v1.UserService.UpdateUser:output_type -> bytebase.v1.User
+	23, // 31: bytebase.v1.UserService.DeleteUser:output_type -> google.protobuf.Empty
+	18, // 32: bytebase.v1.UserService.UndeleteUser:output_type -> bytebase.v1.User
+	18, // 33: bytebase.v1.UserService.UpdateEmail:output_type -> bytebase.v1.User
+	18, // 34: bytebase.v1.UserService.ChangePassword:output_type -> bytebase.v1.User
+	12, // 35: bytebase.v1.UserService.StartMFAEnrollment:output_type -> bytebase.v1.StartMFAEnrollmentResponse
+	18, // 36: bytebase.v1.UserService.EnableMFA:output_type -> bytebase.v1.User
+	18, // 37: bytebase.v1.UserService.DisableMFA:output_type -> bytebase.v1.User
+	16, // 38: bytebase.v1.UserService.RegenerateRecoveryCodes:output_type -> bytebase.v1.RegenerateRecoveryCodesResponse
+	18, // 39: bytebase.v1.UserService.ConfirmRecoveryCodes:output_type -> bytebase.v1.User
+	25, // [25:40] is the sub-list for method output_type
+	10, // [10:25] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name
 	10, // [10:10] is the sub-list for extension extendee
 	0,  // [0:10] is the sub-list for field type_name
@@ -977,14 +1369,13 @@ func file_v1_user_service_proto_init() {
 	}
 	file_v1_annotation_proto_init()
 	file_v1_common_proto_init()
-	file_v1_user_service_proto_msgTypes[6].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_user_service_proto_rawDesc), len(file_v1_user_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   12,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

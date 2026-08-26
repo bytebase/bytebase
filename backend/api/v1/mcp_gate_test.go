@@ -127,6 +127,12 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.IssueServiceApproveIssueProcedure,
 		v1connect.IssueServiceRejectIssueProcedure,
 		v1connect.IssueServiceRetryIssueApprovalProcedure,
+		v1connect.UserServiceChangePasswordProcedure,
+		v1connect.UserServiceStartMFAEnrollmentProcedure,
+		v1connect.UserServiceEnableMFAProcedure,
+		v1connect.UserServiceDisableMFAProcedure,
+		v1connect.UserServiceRegenerateRecoveryCodesProcedure,
+		v1connect.UserServiceConfirmRecoveryCodesProcedure,
 	}
 	got := forbiddenProceduresFromDescriptors(t)
 
@@ -160,6 +166,12 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.WorkspaceServiceRotateDirectorySyncTokenProcedure:      v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
 		v1connect.UserServiceCreateUserProcedure:                         v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
 		v1connect.UserServiceUpdateEmailProcedure:                        v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
+		v1connect.UserServiceChangePasswordProcedure:                     v1pb.MCPDenialReason_RESETS_CREDENTIAL,
+		v1connect.UserServiceStartMFAEnrollmentProcedure:                 v1pb.MCPDenialReason_MINTS_CREDENTIAL,
+		v1connect.UserServiceEnableMFAProcedure:                          v1pb.MCPDenialReason_MINTS_CREDENTIAL,
+		v1connect.UserServiceDisableMFAProcedure:                         v1pb.MCPDenialReason_RESETS_CREDENTIAL,
+		v1connect.UserServiceRegenerateRecoveryCodesProcedure:            v1pb.MCPDenialReason_MINTS_CREDENTIAL,
+		v1connect.UserServiceConfirmRecoveryCodesProcedure:               v1pb.MCPDenialReason_MINTS_CREDENTIAL,
 		v1connect.IdentityProviderServiceCreateIdentityProviderProcedure: v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
 		v1connect.IdentityProviderServiceUpdateIdentityProviderProcedure: v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
 		v1connect.IdentityProviderServiceTestIdentityProviderProcedure:   v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,

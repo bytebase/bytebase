@@ -180,9 +180,19 @@ func TestAuditRowKeepsItsSubstance(t *testing.T) {
 		},
 		{
 			// A failed validation neither consumes the code nor suppresses the
-			// row, so this used to write a still-live OTP.
+			// row, so an intact OTP here used to be a still-live one.
+			name:  "enable MFA retains who enrolled but not the code",
+			value: &v1pb.EnableMFARequest{Name: "users/user@example.com", OtpCode: otpCode},
+			want:  []string{"users/user@example.com"},
+		},
+		{
+			name:  "change password retains who changed it but not the password",
+			value: &v1pb.ChangePasswordRequest{Name: "users/user@example.com", NewPassword: secretSentinel},
+			want:  []string{"users/user@example.com"},
+		},
+		{
 			name:  "user update retains who was updated",
-			value: &v1pb.UpdateUserRequest{User: &v1pb.User{Name: "users/user@example.com"}, OtpCode: &otpCode},
+			value: &v1pb.UpdateUserRequest{User: &v1pb.User{Name: "users/user@example.com"}},
 			want:  []string{"users/user@example.com"},
 		},
 		{

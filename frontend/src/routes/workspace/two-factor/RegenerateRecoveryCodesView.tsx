@@ -1,53 +1,42 @@
 import { create } from "@bufbuild/protobuf";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { userServiceClientConnect } from "@/api";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { pushNotification } from "@/stores";
-import { useAppStore } from "@/stores/app";
-import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
+import {
+  ConfirmRecoveryCodesRequestSchema,
+  RegenerateRecoveryCodesRequestSchema,
+} from "@/types/proto-es/v1/user_service_pb";
 import { RecoveryCodesView } from "./RecoveryCodesView";
 
 interface RegenerateRecoveryCodesViewProps {
-  recoveryCodes: string[];
   onClose: () => void;
 }
 
 export function RegenerateRecoveryCodesView({
-  recoveryCodes,
   onClose,
 }: RegenerateRecoveryCodesViewProps) {
   const { t } = useTranslation();
-  const updateUser = useAppStore((state) => state.updateUser);
   const currentUser = useCurrentUser();
+  const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
   const [recoveryCodesDownloaded, setRecoveryCodesDownloaded] = useState(false);
 
+  // The codes exist only in the minting response, so this view fetches its own
+  // rather than reading them off the user. The live set keeps working until
+  // they are confirmed below.
   useEffect(() => {
-    updateUser(
-      create(UpdateUserRequestSchema, {
-        user: {
-          name: currentUser.name,
-        },
-        updateMask: create(FieldMaskSchema, {
-          paths: [],
-        }),
-        regenerateTempMfaSecret: true,
-      })
-    );
-  }, []);
+    userServiceClientConnect
+      .regenerateRecoveryCodes(
+        create(RegenerateRecoveryCodesRequestSchema, { name: currentUser.name })
+      )
+      .then((response) => setRecoveryCodes([...response.recoveryCodes]));
+  }, [currentUser.name]);
 
-  const regenerateRecoveryCodes = useCallback(async () => {
-    await updateUser(
-      create(UpdateUserRequestSchema, {
-        user: {
-          name: currentUser.name,
-        },
-        updateMask: create(FieldMaskSchema, {
-          paths: [],
-        }),
-        regenerateRecoveryCodes: true,
-      })
+  const confirmRecoveryCodes = useCallback(async () => {
+    await userServiceClientConnect.confirmRecoveryCodes(
+      create(ConfirmRecoveryCodesRequestSchema, { name: currentUser.name })
     );
     pushNotification({
       module: "bytebase",
@@ -55,7 +44,7 @@ export function RegenerateRecoveryCodesView({
       title: t("two-factor.messages.recovery-codes-regenerated"),
     });
     onClose();
-  }, [currentUser.name, onClose, t, updateUser]);
+  }, [currentUser.name, onClose, t]);
 
   return (
     <>
@@ -69,7 +58,7 @@ export function RegenerateRecoveryCodesView({
         </Button>
         <Button
           disabled={!recoveryCodesDownloaded}
-          onClick={regenerateRecoveryCodes}
+          onClick={confirmRecoveryCodes}
         >
           {t("two-factor.setup-steps.recovery-codes-saved")}
         </Button>

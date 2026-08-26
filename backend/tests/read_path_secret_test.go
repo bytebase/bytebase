@@ -100,18 +100,14 @@ func TestReadPathHidesTheWebhookURL(t *testing.T) {
 	}
 }
 
-// TestReadPathHidesTheMFAEnrollmentSecrets covers the third leak and the
-// constraint that makes it awkward: one converter serves both the reads and the
-// RPC that mints the enrollment. The mint has to keep the secrets — the console
-// renders the QR code and the recovery codes out of that response and the
-// server keeps no other copy to hand over — and every read has to lose them.
-//
-// GetUser is here beside GetCurrentUser because the leak was never
-// GetCurrentUser's: the converter exposed the fields to any read whose subject
-// was the caller, so reading your own profile through GetUser leaked the same
-// TOTP seed. GetUser stays EXCLUDED for MCP on other grounds, which is exactly
-// why the fix could not live in one RPC.
-func TestReadPathHidesTheMFAEnrollmentSecrets(t *testing.T) {
+// TestEnrollmentSecretsLiveOnlyInTheMintingResponses covers the third leak and
+// what replaced the fix for it. The secrets used to ride on the User resource,
+// where every read had to remember to drop them; they now exist only in the
+// responses of the two methods that mint them, and the User message has no
+// field left to leak. This asserts the half a type cannot: that the minting
+// responses do carry them, and that enrollment still completes against the
+// seed the caller was handed.
+func TestEnrollmentSecretsLiveOnlyInTheMintingResponses(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
@@ -121,63 +117,33 @@ func TestReadPathHidesTheMFAEnrollmentSecrets(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	userName := common.FormatUserEmail("demo@example.com")
-	minted, err := ctl.userServiceClient.UpdateUser(ctx, connect.NewRequest(&v1pb.UpdateUserRequest{
-		User:                    &v1pb.User{Name: userName},
-		UpdateMask:              &fieldmaskpb.FieldMask{},
-		RegenerateTempMfaSecret: true,
+	minted, err := ctl.userServiceClient.StartMFAEnrollment(ctx, connect.NewRequest(&v1pb.StartMFAEnrollmentRequest{
+		Name: userName,
 	}))
 	a.NoError(err)
-	a.NotEmpty(minted.Msg.TempOtpSecret, "the minting response is the only place the console can read the TOTP seed")
-	a.NotEmpty(minted.Msg.TempRecoveryCodes, "and the only place it can read the recovery codes")
-	a.NotNil(minted.Msg.TempOtpSecretCreatedTime, "the countdown needs the moment the window opened")
+	a.NotEmpty(minted.Msg.OtpSecret, "the minting response is the only place the console can read the TOTP seed")
+	a.NotEmpty(minted.Msg.RecoveryCodes, "and the only place it can read the recovery codes")
+	a.NotNil(minted.Msg.ExpireTime, "the countdown needs to know when the window closes")
+
+	// The enrollment completes against the seed the console was handed, which
+	// is what makes it safe for the reads to carry nothing.
+	otp, err := totp.GenerateCode(minted.Msg.OtpSecret, time.Now())
+	a.NoError(err)
+	_, err = ctl.userServiceClient.EnableMFA(ctx, connect.NewRequest(&v1pb.EnableMFARequest{
+		Name:    userName,
+		OtpCode: otp,
+	}))
+	a.NoError(err)
+
+	confirmed, err := ctl.userServiceClient.ConfirmRecoveryCodes(ctx, connect.NewRequest(&v1pb.ConfirmRecoveryCodesRequest{
+		Name: userName,
+	}))
+	a.NoError(err)
+	a.True(confirmed.Msg.MfaEnabled, "confirming the codes is what makes the factor live")
 
 	current, err := ctl.userServiceClient.GetCurrentUser(ctx, connect.NewRequest(&emptypb.Empty{}))
 	a.NoError(err)
-	self, err := ctl.userServiceClient.GetUser(ctx, connect.NewRequest(&v1pb.GetUserRequest{Name: userName}))
-	a.NoError(err)
-
-	for rpc, user := range map[string]*v1pb.User{"GetCurrentUser": current.Msg, "GetUser": self.Msg} {
-		a.Empty(user.TempOtpSecret, "%s returns the TOTP seed of an open enrollment", rpc)
-		a.Empty(user.TempRecoveryCodes, "%s returns the recovery codes of an open enrollment", rpc)
-		a.NotNil(user.TempOtpSecretCreatedTime,
-			"%s must still say an enrollment is open and when it expires; that is not a secret", rpc)
-	}
-
-	// An update that mints nothing does not answer with the enrollment either,
-	// even though the window is open. UpdateUser is one RPC doing several jobs,
-	// and only the two that drive the enrollment carry it back.
-	renamed, err := ctl.userServiceClient.UpdateUser(ctx, connect.NewRequest(&v1pb.UpdateUserRequest{
-		User:       &v1pb.User{Name: userName, Title: "Demo Renamed"},
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"title"}},
-	}))
-	a.NoError(err)
-	a.Equal("Demo Renamed", renamed.Msg.Title)
-	a.Empty(renamed.Msg.TempOtpSecret, "a title update mints nothing and must carry nothing")
-	a.Empty(renamed.Msg.TempRecoveryCodes)
-
-	// The enrollment still completes, which is the whole point of leaving the
-	// minting response alone: the seed the console was handed is the seed the
-	// server validates against. The otp_code verification is the other request
-	// that answers with the enrollment, because it is the step the console
-	// moves to the recovery-code screen from.
-	otp, err := totp.GenerateCode(minted.Msg.TempOtpSecret, time.Now())
-	a.NoError(err)
-	verified, err := ctl.userServiceClient.UpdateUser(ctx, connect.NewRequest(&v1pb.UpdateUserRequest{
-		User:       &v1pb.User{Name: userName},
-		UpdateMask: &fieldmaskpb.FieldMask{},
-		OtpCode:    &otp,
-	}))
-	a.NoError(err)
-	a.NotEmpty(verified.Msg.TempRecoveryCodes,
-		"the console reads the recovery codes it asks the user to save out of this response")
-
-	enabled, err := ctl.userServiceClient.UpdateUser(ctx, connect.NewRequest(&v1pb.UpdateUserRequest{
-		User:       &v1pb.User{Name: userName, MfaEnabled: true},
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"mfa_enabled"}},
-		OtpCode:    &otp,
-	}))
-	a.NoError(err)
-	a.True(enabled.Msg.MfaEnabled)
+	a.True(current.Msg.MfaEnabled, "the read still reports that a factor exists")
 }
 
 // TestMCPServesTheReadsTheRedactionFreed is the regression this batch exists to
@@ -217,10 +183,8 @@ func TestMCPServesTheReadsTheRedactionFreed(t *testing.T) {
 	}))
 	a.NoError(err)
 
-	_, err = ctl.userServiceClient.UpdateUser(ctx, connect.NewRequest(&v1pb.UpdateUserRequest{
-		User:                    &v1pb.User{Name: common.FormatUserEmail("demo@example.com")},
-		UpdateMask:              &fieldmaskpb.FieldMask{},
-		RegenerateTempMfaSecret: true,
+	_, err = ctl.userServiceClient.StartMFAEnrollment(ctx, connect.NewRequest(&v1pb.StartMFAEnrollmentRequest{
+		Name: common.FormatUserEmail("demo@example.com"),
 	}))
 	a.NoError(err)
 
