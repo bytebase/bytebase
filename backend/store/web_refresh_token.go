@@ -14,6 +14,9 @@ type WebRefreshTokenMessage struct {
 	TokenHash string
 	UserEmail string
 	ExpiresAt time.Time
+	// CreatedAt is when the session was issued, filled in by the database.
+	// Ignored on create.
+	CreatedAt time.Time
 }
 
 func (s *Store) CreateWebRefreshToken(ctx context.Context, create *WebRefreshTokenMessage) error {
@@ -35,7 +38,7 @@ func (s *Store) CreateWebRefreshToken(ctx context.Context, create *WebRefreshTok
 
 func (s *Store) GetWebRefreshToken(ctx context.Context, tokenHash string) (*WebRefreshTokenMessage, error) {
 	q := qb.Q().Space(`
-		SELECT token_hash, user_email, expires_at
+		SELECT token_hash, user_email, expires_at, created_at
 		FROM web_refresh_token
 		WHERE token_hash = ?
 	`, tokenHash)
@@ -47,7 +50,7 @@ func (s *Store) GetWebRefreshToken(ctx context.Context, tokenHash string) (*WebR
 
 	msg := &WebRefreshTokenMessage{}
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&msg.TokenHash, &msg.UserEmail, &msg.ExpiresAt,
+		&msg.TokenHash, &msg.UserEmail, &msg.ExpiresAt, &msg.CreatedAt,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
@@ -63,7 +66,7 @@ func (s *Store) GetAndDeleteWebRefreshToken(ctx context.Context, tokenHash strin
 	q := qb.Q().Space(`
 		DELETE FROM web_refresh_token
 		WHERE token_hash = ?
-		RETURNING token_hash, user_email, expires_at
+		RETURNING token_hash, user_email, expires_at, created_at
 	`, tokenHash)
 
 	query, args, err := q.ToSQL()
@@ -73,7 +76,7 @@ func (s *Store) GetAndDeleteWebRefreshToken(ctx context.Context, tokenHash strin
 
 	msg := &WebRefreshTokenMessage{}
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&msg.TokenHash, &msg.UserEmail, &msg.ExpiresAt,
+		&msg.TokenHash, &msg.UserEmail, &msg.ExpiresAt, &msg.CreatedAt,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil
