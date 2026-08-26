@@ -2516,6 +2516,10 @@ describe("useAppStore", () => {
       key: "workspace-setup-guide.query-executed",
       newState: true,
     });
+    store.getState().saveIntroStateByKey({
+      key: "workspace-setup-guide.product-model-seen",
+      newState: true,
+    });
     store
       .getState()
       .saveIntroStateByKey({ key: "unrelated.intro", newState: true });
@@ -2534,6 +2538,11 @@ describe("useAppStore", () => {
       store
         .getState()
         .getIntroStateByKey("workspace-setup-guide.query-executed")
+    ).toBe(false);
+    expect(
+      store
+        .getState()
+        .getIntroStateByKey("workspace-setup-guide.product-model-seen")
     ).toBe(false);
     expect(store.getState().getIntroStateByKey("unrelated.intro")).toBe(true);
   });

@@ -61,6 +61,7 @@ const mocks = vi.hoisted(() => ({
   userCountInIam: 1,
   hideQuickStart: false,
   workspaceName: "workspaces/default",
+  productModelContent: "guide content" as string | undefined,
 }));
 
 const dismissedIntroStateKey = "workspace-setup-guide.dismissed";
@@ -72,6 +73,7 @@ vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({
     t: (key: string) => key,
+    i18n: { resolvedLanguage: "en-US" },
   }),
 }));
 
@@ -203,6 +205,28 @@ vi.mock("@/lib/plan/issue", () => ({
   preCreateIssue: mocks.preCreateIssue,
 }));
 
+vi.mock("@/components/HowBytebaseWorksSheet", () => ({
+  getHowBytebaseWorksGuideContent: () => mocks.productModelContent,
+  HowBytebaseWorksSheet: ({
+    open,
+    onOpenChange,
+  }: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+  }) =>
+    open ? (
+      <div data-testid="product-model-sheet">
+        <button
+          data-testid="close-product-model"
+          type="button"
+          onClick={() => onOpenChange(false)}
+        >
+          Close
+        </button>
+      </div>
+    ) : null,
+}));
+
 import { WorkspaceSetupGuide } from "./WorkspaceSetupGuide";
 
 let container: HTMLDivElement;
@@ -249,6 +273,7 @@ beforeEach(() => {
   mocks.userCountInIam = 1;
   mocks.hideQuickStart = false;
   mocks.workspaceName = "workspaces/default";
+  mocks.productModelContent = "guide content";
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -273,6 +298,85 @@ const render = async (element: ReactElement) => {
 };
 
 describe("WorkspaceSetupGuide", () => {
+  it("opens the product model once for a new eligible guide", async () => {
+    await render(<WorkspaceSetupGuide />);
+
+    expect(
+      container.querySelector('[data-testid="product-model-sheet"]')
+    ).not.toBeNull();
+  });
+
+  it("does not auto-open a product model that was already seen", async () => {
+    mocks.introState["workspace-setup-guide.product-model-seen"] = true;
+
+    await render(<WorkspaceSetupGuide />);
+
+    expect(
+      container.querySelector('[data-testid="product-model-sheet"]')
+    ).toBeNull();
+  });
+
+  it("disables the product model drawer when localized content is missing", async () => {
+    mocks.productModelContent = undefined;
+
+    await render(<WorkspaceSetupGuide />);
+
+    expect(
+      container.querySelector('[data-testid="open-product-model"]')
+    ).toBeNull();
+    expect(
+      container.querySelector('[data-testid="product-model-sheet"]')
+    ).toBeNull();
+  });
+
+  it("persists seen state when the product model closes", async () => {
+    await render(<WorkspaceSetupGuide />);
+
+    act(() => {
+      container
+        .querySelector<HTMLButtonElement>(
+          '[data-testid="close-product-model"]'
+        )
+        ?.click();
+    });
+
+    expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
+      key: "workspace-setup-guide.product-model-seen",
+      newState: true,
+    });
+  });
+
+  it("uses the shared product model label for the guide control", async () => {
+    await render(<WorkspaceSetupGuide />);
+
+    expect(
+      container.querySelector('[data-testid="open-product-model"]')
+    ).toHaveAttribute("aria-label", "workspace-setup-guide.product-model");
+  });
+
+  it("reopens the product model from the guide control", async () => {
+    mocks.introState["workspace-setup-guide.product-model-seen"] = true;
+
+    await render(<WorkspaceSetupGuide />);
+
+    act(() => {
+      container
+        .querySelector<HTMLButtonElement>('[data-testid="open-product-model"]')
+        ?.click();
+    });
+
+    expect(
+      container.querySelector('[data-testid="product-model-sheet"]')
+    ).not.toBeNull();
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "setup guide action clicked",
+      properties: {
+        action: "product_model_open",
+        source: "guide_bar",
+      },
+    });
+  });
+
   it("renders outside SaaS mode", async () => {
     mocks.isSaaSMode.mockReturnValue(false);
 

@@ -3477,6 +3477,7 @@
     },
     "prepare-database-tip": "プロジェクトに転送するデータベースを選択します。",
     "previous-step-required": "前のステップを先に完了する必要があります。",
+    "product-model": "Bytebase の仕組み",
     "self": "Bytebase をセットアップ",
     "steps": {
       "database": "データベースを探索",

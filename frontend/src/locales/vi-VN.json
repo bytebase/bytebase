@@ -3477,6 +3477,7 @@
     },
     "prepare-database-tip": "Chọn cơ sở dữ liệu để chuyển vào dự án.",
     "previous-step-required": "Bạn cần hoàn thành bước trước đó.",
+    "product-model": "Cách Bytebase hoạt động",
     "self": "Thiết lập Bytebase",
     "steps": {
       "database": "Khám phá cơ sở dữ liệu",

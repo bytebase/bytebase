@@ -3477,6 +3477,7 @@
     },
     "prepare-database-tip": "选择数据库并转移到项目。",
     "previous-step-required": "你需要先完成上一步。",
+    "product-model": "Bytebase 的运作方式",
     "self": "设置 Bytebase",
     "steps": {
       "database": "浏览数据库",
