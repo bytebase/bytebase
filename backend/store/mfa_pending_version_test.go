@@ -84,3 +84,44 @@ func TestUpdateUserMFAConfigIfPending(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, replayed, "a consumed pending version must not promote twice")
 }
+
+// TestSetPendingMFAStateLeavesTheLiveFactor pins that minting pending state
+// never writes the live factor. The mint reads the account, generates secrets,
+// then writes — and an administrator disabling MFA in that window used to be
+// undone by the write, silently re-enabling the factor they had cleared for a
+// locked-out user.
+func TestSetPendingMFAStateLeavesTheLiveFactor(t *testing.T) {
+	ctx := context.Background()
+	s := newMFAPendingTestStore(t)
+
+	user, err := s.CreateUser(ctx, &store.UserMessage{
+		Email:        "mint@example.com",
+		Name:         "Mint",
+		PasswordHash: "unused",
+	})
+	require.NoError(t, err)
+	live, err := s.UpdateUser(ctx, user, &store.UpdateUserMessage{
+		MFAConfig: &storepb.MFAConfig{
+			OtpSecret:     "live-secret",
+			RecoveryCodes: []string{"live-a", "live-b"},
+		},
+	})
+	require.NoError(t, err)
+
+	// What a mint holds: the account as it was before the concurrent change.
+	stale := live
+
+	_, err = s.UpdateUser(ctx, stale, &store.UpdateUserMessage{MFAConfig: &storepb.MFAConfig{}})
+	require.NoError(t, err)
+
+	// The mint lands afterwards, still holding the stale read.
+	require.NoError(t, s.SetPendingMFAState(ctx, stale.ID, "pending-secret", []string{"code-a"}, time.Now()))
+
+	after, err := s.GetUserByEmail(ctx, user.Email)
+	require.NoError(t, err)
+	require.Empty(t, after.MFAConfig.GetOtpSecret(), "a mint must not bring back a disabled factor")
+	require.Empty(t, after.MFAConfig.GetRecoveryCodes(), "nor the codes that went with it")
+	require.Equal(t, "pending-secret", after.MFAConfig.GetTempOtpSecret())
+	require.Equal(t, []string{"code-a"}, after.MFAConfig.GetTempRecoveryCodes())
+	require.NotNil(t, after.MFAConfig.GetTempOtpSecretCreatedTime(), "the version must round-trip through protojson")
+}

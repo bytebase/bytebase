@@ -697,17 +697,14 @@ func (s *UserService) StartMFAEnrollment(ctx context.Context, request *connect.R
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate recovery codes"))
 	}
-	createdTime := timestamppb.Now()
+	// Truncated to the microsecond the database stores, so the version the
+	// caller echoes back matches the stored one exactly.
+	createdTime := timestamppb.New(time.Now().UTC().Truncate(time.Microsecond))
 
-	if _, err := s.store.UpdateUser(ctx, caller, &store.UpdateUserMessage{
-		MFAConfig: &storepb.MFAConfig{
-			OtpSecret:                caller.MFAConfig.GetOtpSecret(),
-			RecoveryCodes:            caller.MFAConfig.GetRecoveryCodes(),
-			TempOtpSecret:            tempSecret,
-			TempRecoveryCodes:        tempRecoveryCodes,
-			TempOtpSecretCreatedTime: createdTime,
-		},
-	}); err != nil {
+	// Writes only the pending fields: copying the live factor forward from the
+	// read above would resurrect it if an administrator disabled MFA while
+	// this mint was in flight.
+	if err := s.store.SetPendingMFAState(ctx, caller.ID, tempSecret, tempRecoveryCodes, createdTime.AsTime()); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update user"))
 	}
 
@@ -815,16 +812,12 @@ func (s *UserService) RegenerateRecoveryCodes(ctx context.Context, request *conn
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate recovery codes"))
 	}
-	version := timestamppb.Now()
+	version := timestamppb.New(time.Now().UTC().Truncate(time.Microsecond))
 
-	if _, err := s.store.UpdateUser(ctx, caller, &store.UpdateUserMessage{
-		MFAConfig: &storepb.MFAConfig{
-			OtpSecret:                caller.MFAConfig.GetOtpSecret(),
-			RecoveryCodes:            caller.MFAConfig.GetRecoveryCodes(),
-			TempRecoveryCodes:        tempRecoveryCodes,
-			TempOtpSecretCreatedTime: version,
-		},
-	}); err != nil {
+	// Same targeted write, and the empty pending secret is deliberate: these
+	// codes belong to the live factor, so confirming them must not also
+	// promote a secret left behind by an abandoned enrollment.
+	if err := s.store.SetPendingMFAState(ctx, caller.ID, "", tempRecoveryCodes, version.AsTime()); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update user"))
 	}
 
