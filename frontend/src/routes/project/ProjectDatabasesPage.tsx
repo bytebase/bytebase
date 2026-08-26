@@ -164,7 +164,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         hasWorkspacePermissionV2("bb.instances.list")
           ? useAppStore.getState().fetchInstanceList(params)
           : Promise.resolve({ instances: [], nextPageToken: "" }),
-        canListProjectInstances
+        canListProjectInstances && !isDefault
           ? useAppStore
               .getState()
               .fetchInstanceList({ ...params, parent: projectName })
@@ -180,7 +180,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         return { value: i.name, keywords: [id, i.title] };
       });
     },
-    [canListProjectInstances, projectName]
+    [canListProjectInstances, isDefault, projectName]
   );
 
   const scopeOptions: ScopeOption[] = useMemo(() => {

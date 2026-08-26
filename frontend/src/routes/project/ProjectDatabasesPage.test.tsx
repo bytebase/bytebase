@@ -84,7 +84,27 @@ vi.mock("@/app/analytics/provider", () => ({
 }));
 
 vi.mock("@/components/AdvancedSearch", () => ({
-  AdvancedSearch: () => <div data-testid="advanced-search" />,
+  AdvancedSearch: ({
+    scopeOptions,
+  }: {
+    scopeOptions: {
+      id: string;
+      onSearch?: (keyword: string) => Promise<unknown>;
+    }[];
+  }) => (
+    <div data-testid="advanced-search">
+      <span
+        data-testid="search-instances"
+        onClick={() => {
+          void scopeOptions
+            .find((option) => option.id === "instance")
+            ?.onSearch?.("");
+        }}
+      >
+        search instances
+      </span>
+    </div>
+  ),
   getValueFromScopes: () => undefined,
 }));
 
@@ -414,6 +434,43 @@ describe("ProjectDatabasesPage", () => {
     expect(mocks.fetchInstanceList).toHaveBeenCalledWith({ pageSize: 2 });
     expect(container.textContent).toContain("project.add-database");
     expect(container.textContent).not.toContain("project.connect-instance");
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("only searches workspace instances for the default project", async () => {
+    mocks.fetchInstanceList.mockImplementation(async (params) => {
+      if (params?.parent) {
+        throw new Error("the default project cannot own instances");
+      }
+      return {
+        instances: [{ name: "instances/prod", title: "Prod" }],
+      };
+    });
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="default" />);
+      await Promise.resolve();
+    });
+    mocks.fetchInstanceList.mockClear();
+
+    const button = container.querySelector(
+      '[data-testid="search-instances"]'
+    ) as HTMLElement;
+    await act(async () => {
+      button.click();
+      await Promise.resolve();
+    });
+
+    expect(mocks.fetchInstanceList).toHaveBeenCalledTimes(1);
+    expect(mocks.fetchInstanceList).toHaveBeenCalledWith({
+      pageSize: 1000,
+      filter: undefined,
+    });
 
     act(() => {
       root.unmount();
