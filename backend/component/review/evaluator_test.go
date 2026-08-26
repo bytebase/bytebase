@@ -948,6 +948,9 @@ func setupApprovalDatabaseGroupFixture(ctx context.Context, t *testing.T, s *sto
 func TestApprovalTemplateMatchesOnEngineWithoutStatementReport(t *testing.T) {
 	const ddlRule = `!(statement.sql_type in ["INSERT", "UPDATE", "DELETE"]) && resource.environment_id == "prod"`
 	const dmlRule = `statement.sql_type in ["INSERT", "UPDATE", "DELETE"] && resource.environment_id == "prod"`
+	const mergeRule = `statement.sql_type in ["INSERT", "UPDATE", "DELETE", "MERGE"] && resource.environment_id == "prod"`
+	const ddlRuleWithMerge = `!(statement.sql_type in ["INSERT", "UPDATE", "DELETE", "MERGE"]) && resource.environment_id == "prod"`
+	const mergeStatement = "MERGE INTO `users` t USING `staging` s ON t.id = s.id WHEN MATCHED THEN UPDATE SET t.name = s.name;"
 
 	tests := []struct {
 		name       string
@@ -959,6 +962,10 @@ func TestApprovalTemplateMatchesOnEngineWithoutStatementReport(t *testing.T) {
 		{"ddl rule skips INSERT", ddlRule, "INSERT INTO `users` (id) VALUES (1);", false},
 		{"dml rule matches INSERT", dmlRule, "INSERT INTO `users` (id) VALUES (1);", true},
 		{"dml rule skips ALTER TABLE", dmlRule, "ALTER TABLE `users` ADD COLUMN status STRING;", false},
+		// MERGE writes rows, so a DML rule that names it must fire and the
+		// DDL rule must not. Only the googlesql engines emit MERGE today.
+		{"dml rule matches MERGE when named", mergeRule, mergeStatement, true},
+		{"ddl rule skips MERGE when named", ddlRuleWithMerge, mergeStatement, false},
 	}
 
 	for _, tt := range tests {
