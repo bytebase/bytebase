@@ -45,12 +45,16 @@ const DDL_STATEMENT_TYPES = [
   StatementType.COMMENT,
 ] as const;
 
-// DML statement types
+// DML statement types.
+// MERGE is deliberately absent: the picker is engine-agnostic, and only the
+// GoogleSQL engines classify a MERGE today. Postgres, SQL Server and Oracle
+// still let MergeStmt fall through to STATEMENT_TYPE_UNSPECIFIED, so a rule
+// naming MERGE would silently never fire on them and skip the approval the
+// author intended. Restore it with BOT-112, which adds those mappings.
 const DML_STATEMENT_TYPES = [
   StatementType.INSERT,
   StatementType.UPDATE,
   StatementType.DELETE,
-  StatementType.MERGE,
 ] as const;
 
 // Helper to convert enum values to their string names for display/comparison

@@ -1163,9 +1163,26 @@ func expandCELVars(base map[string]any, statementTypes []storepb.StatementType, 
 		tableNames = []string{""}
 	}
 
+	// Both producers return one entry per statement, so a sheet of N statements
+	// yields N identical activations for the same type. Rule matching asks
+	// whether ANY activation matches, so duplicates cannot change the answer,
+	// and every rule is evaluated against every activation: a 2 MiB sheet of
+	// short statements is tens of thousands of pointless evaluations per target.
+	type activation struct {
+		statementType storepb.StatementType
+		tableName     string
+	}
+	seen := make(map[activation]bool, len(statementTypes))
+
 	var result []map[string]any
 	for _, statementType := range statementTypes {
 		for _, tableName := range tableNames {
+			key := activation{statementType: statementType, tableName: tableName}
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+
 			vars := maps.Clone(base)
 			vars[common.CELAttributeStatementSQLType] = statementType.String()
 			if tableName != "" {

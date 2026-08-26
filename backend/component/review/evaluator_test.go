@@ -1000,3 +1000,40 @@ func TestApprovalTemplateMatchesOnEngineWithoutStatementReport(t *testing.T) {
 		})
 	}
 }
+
+// A sheet of N statements yields N type entries, all identical when the sheet
+// repeats one statement. Every rule is evaluated against every activation, so
+// without deduplication a large sheet costs tens of thousands of pointless
+// evaluations per target, multiplied again by a database group's target count.
+func TestExpandCELVarsDeduplicatesActivations(t *testing.T) {
+	a := require.New(t)
+	base := map[string]any{common.CELAttributeResourceProjectID: "project"}
+
+	repeated := make([]storepb.StatementType, 10000)
+	for i := range repeated {
+		repeated[i] = storepb.StatementType_INSERT
+	}
+	a.Len(expandCELVars(base, repeated, nil), 1)
+
+	// Distinct types survive, in first-seen order.
+	mixed := []storepb.StatementType{
+		storepb.StatementType_INSERT,
+		storepb.StatementType_ALTER_TABLE,
+		storepb.StatementType_INSERT,
+	}
+	got := expandCELVars(base, mixed, nil)
+	a.Len(got, 2)
+	a.Equal("INSERT", got[0][common.CELAttributeStatementSQLType])
+	a.Equal("ALTER_TABLE", got[1][common.CELAttributeStatementSQLType])
+
+	// Deduplication is over the (type, table) pair, not the type alone.
+	pairs := expandCELVars(base, mixed, []string{"users", "users", "orders"})
+	a.Len(pairs, 4)
+
+	// UNSPECIFIED collapses like any other value.
+	unspecified := []storepb.StatementType{
+		storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED,
+		storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED,
+	}
+	a.Len(expandCELVars(base, unspecified, nil), 1)
+}
