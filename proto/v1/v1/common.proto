@@ -256,6 +256,7 @@ enum StatementType {
   INSERT = 60;
   UPDATE = 61;
   DELETE = 62;
+  MERGE = 63;
 }
 
 // PermissionDeniedDetail provides structured information about permission failures.

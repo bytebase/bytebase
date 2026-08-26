@@ -1037,8 +1037,8 @@ func computeNeedDump(taskType storepb.Task_Type, engine storepb.Engine, statemen
 	//exhaustive:enforce
 	switch taskType {
 	case storepb.Task_DATABASE_MIGRATE:
-		// For DATABASE_MIGRATE, skip dump if all statements are DML
-		// (INSERT, UPDATE, DELETE) since they don't change schema.
+		// For DATABASE_MIGRATE, skip dump if all statements are DML since they
+		// don't change schema. IsAllDML owns the type list.
 		return !parserbase.IsAllDML(engine, statement)
 	case storepb.Task_DATABASE_CREATE:
 		return true

@@ -30780,6 +30780,7 @@ components:
         - INSERT
         - UPDATE
         - DELETE
+        - MERGE
       description: StatementType represents the type of SQL statement.
     bytebase.v1.StorageConfig:
       type: object

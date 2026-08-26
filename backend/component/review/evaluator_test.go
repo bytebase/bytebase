@@ -16,6 +16,11 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/migrator"
+
+	// Registers the BigQuery parser handlers the same way backend/server
+	// ultimate.go does for the server binary; statementTypesFromParser resolves
+	// through that registry.
+	_ "github.com/bytebase/bytebase/backend/plugin/parser/bigquery"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -931,4 +936,104 @@ func setupApprovalDatabaseGroupFixture(ctx context.Context, t *testing.T, s *sto
 	allDatabases, err := s.ListDatabases(ctx, &store.FindDatabaseMessage{ProjectID: &projectID})
 	require.NoError(t, err)
 	return allDatabases
+}
+
+// TestApprovalTemplateMatchesOnEngineWithoutStatementReport is the BYT-10131
+// regression. BigQuery is outside common.EngineSupportStatementReport, so no
+// SQL summary report exists and statement.sql_type used to be absent from the
+// activation; cel-go resolved it to an unknown and the rule was dropped as a
+// non-match, so the issue reported "No approval required". Both polarities are
+// covered: before the fix the DDL rule wrongly skipped approval, and the DML
+// rule would still skip it under a plain "UNKNOWN" default.
+func TestApprovalTemplateMatchesOnEngineWithoutStatementReport(t *testing.T) {
+	const ddlRule = `!(statement.sql_type in ["INSERT", "UPDATE", "DELETE"]) && resource.environment_id == "prod"`
+	const dmlRule = `statement.sql_type in ["INSERT", "UPDATE", "DELETE"] && resource.environment_id == "prod"`
+	const mergeRule = `statement.sql_type in ["INSERT", "UPDATE", "DELETE", "MERGE"] && resource.environment_id == "prod"`
+	const ddlRuleWithMerge = `!(statement.sql_type in ["INSERT", "UPDATE", "DELETE", "MERGE"]) && resource.environment_id == "prod"`
+	const mergeStatement = "MERGE INTO `users` t USING `staging` s ON t.id = s.id WHEN MATCHED THEN UPDATE SET t.name = s.name;"
+
+	tests := []struct {
+		name       string
+		expression string
+		statement  string
+		wantMatch  bool
+	}{
+		{"ddl rule matches ALTER TABLE", ddlRule, "ALTER TABLE `users` ADD COLUMN status STRING;", true},
+		{"ddl rule skips INSERT", ddlRule, "INSERT INTO `users` (id) VALUES (1);", false},
+		{"dml rule matches INSERT", dmlRule, "INSERT INTO `users` (id) VALUES (1);", true},
+		{"dml rule skips ALTER TABLE", dmlRule, "ALTER TABLE `users` ADD COLUMN status STRING;", false},
+		// MERGE writes rows, so a DML rule that names it must fire and the
+		// DDL rule must not. Only the googlesql engines emit MERGE today.
+		{"dml rule matches MERGE when named", mergeRule, mergeStatement, true},
+		{"ddl rule skips MERGE when named", ddlRuleWithMerge, mergeStatement, false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			a := require.New(t)
+			statementTypes := statementTypesFromParser(storepb.Engine_BIGQUERY, tt.statement)
+			a.NotEmpty(statementTypes, "BigQuery must classify the statement without a summary report")
+
+			celVars := expandCELVars(map[string]any{
+				common.CELAttributeResourceEnvironmentID: "prod",
+				common.CELAttributeResourceProjectID:     "project",
+				common.CELAttributeResourceDBEngine:      storepb.Engine_BIGQUERY.String(),
+				common.CELAttributeStatementText:         tt.statement,
+			}, statementTypes, nil)
+
+			template, err := getApprovalTemplate(&storepb.WorkspaceApprovalSetting{
+				Rules: []*storepb.WorkspaceApprovalSetting_Rule{
+					{
+						Source:    storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE,
+						Condition: &expr.Expr{Expression: tt.expression},
+						Template:  &storepb.ApprovalTemplate{Title: "DDL Prod"},
+					},
+				},
+			}, storepb.WorkspaceApprovalSetting_Rule_CHANGE_DATABASE, celVars)
+			a.NoError(err)
+			if tt.wantMatch {
+				a.NotNil(template)
+				a.Equal("DDL Prod", template.Title)
+			} else {
+				a.Nil(template)
+			}
+		})
+	}
+}
+
+// A sheet of N statements yields N type entries, all identical when the sheet
+// repeats one statement. Every rule is evaluated against every activation, so
+// without deduplication a large sheet costs tens of thousands of pointless
+// evaluations per target, multiplied again by a database group's target count.
+func TestExpandCELVarsDeduplicatesActivations(t *testing.T) {
+	a := require.New(t)
+	base := map[string]any{common.CELAttributeResourceProjectID: "project"}
+
+	repeated := make([]storepb.StatementType, 10000)
+	for i := range repeated {
+		repeated[i] = storepb.StatementType_INSERT
+	}
+	a.Len(expandCELVars(base, repeated, nil), 1)
+
+	// Distinct types survive, in first-seen order.
+	mixed := []storepb.StatementType{
+		storepb.StatementType_INSERT,
+		storepb.StatementType_ALTER_TABLE,
+		storepb.StatementType_INSERT,
+	}
+	got := expandCELVars(base, mixed, nil)
+	a.Len(got, 2)
+	a.Equal("INSERT", got[0][common.CELAttributeStatementSQLType])
+	a.Equal("ALTER_TABLE", got[1][common.CELAttributeStatementSQLType])
+
+	// Deduplication is over the (type, table) pair, not the type alone.
+	pairs := expandCELVars(base, mixed, []string{"users", "users", "orders"})
+	a.Len(pairs, 4)
+
+	// UNSPECIFIED collapses like any other value.
+	unspecified := []storepb.StatementType{
+		storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED,
+		storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED,
+	}
+	a.Len(expandCELVars(base, unspecified, nil), 1)
 }
