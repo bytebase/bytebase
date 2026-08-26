@@ -2459,25 +2459,6 @@
             "self": "Tamaño máximo del resultado de SQL"
           }
         },
-        "mcp": {
-          "capability": {
-            "description": "La capacidad máxima disponible para las sesiones MCP (Model Context Protocol) en este espacio de trabajo. Los cambios se aplican de inmediato a la siguiente solicitud MCP.",
-            "disabled": {
-              "description": "Se rechazan todas las conexiones MCP.",
-              "self": "Deshabilitado"
-            },
-            "read-only": {
-              "description": "Las sesiones MCP pueden inspeccionar metadatos y ejecutar consultas de solo lectura, siempre limitadas por los permisos de cada usuario. Se rechaza la solicitud completa si Bytebase clasifica alguna de sus instrucciones como escritura o no puede determinar que solo lee.",
-              "self": "Solo lectura"
-            },
-            "read-write": {
-              "description": "Las sesiones MCP pueden leer y escribir, siempre limitadas por los permisos de cada usuario. Es el valor predeterminado cuando no está configurado.",
-              "self": "Lectura y escritura"
-            },
-            "self": "Acceso MCP"
-          },
-          "self": "MCP"
-        },
         "no-limit": "No hay límite cuando el valor <= 0",
         "password-restriction": {
           "min-length": "La longitud mínima de la contraseña no debe ser inferior a {{min}} caracteres",
@@ -2545,6 +2526,38 @@
         "description": "Se requiere autenticación OAuth en la primera conexión. Asegúrese de tener los permisos apropiados en Bytebase.",
         "title": "Autenticación requerida"
       },
+      "contents": {
+        "depth": {
+          "description": "Hasta dónde se aplica el techo de solo lectura en cada motor.",
+          "not-a-proof": "Ninguna de las dos profundidades es una prueba. Una sentencia clasificada como lectura todavía puede llamar a una función que vuelva a desactivar el ajuste de sesión.",
+          "statement": "Cada sentencia se clasifica antes de ejecutarse. El controlador no abre la sesión de base de datos en solo lectura.",
+          "statement-and-session": "Cada sentencia se clasifica y el controlador abre la sesión de base de datos en solo lectura.",
+          "title": "Profundidad de solo lectura por motor",
+          "unspecified": "Esta versión no lo informa.",
+          "unsupported": "No hay clasificador de solo lectura, así que se rechaza cada sentencia, incluido un SELECT simple."
+        },
+        "masking": {
+          "column": "Enmascaramiento de columnas. Las exenciones deciden quién ve el valor real, así que ignorarlas cambia lo que lee una sesión.",
+          "description-off": "Este espacio de trabajo aplica las exenciones de enmascaramiento de cada usuario a las sesiones MCP. Ignorarlas solo alcanzaría a los motores de abajo que consultan exenciones.",
+          "description-on": "Este espacio de trabajo ignora las exenciones de enmascaramiento, así que lo que lee una sesión depende de cómo enmascara Bytebase cada motor.",
+          "document": "Enmascaramiento de documentos. Aquí nunca se consultan las exenciones, así que ignorarlas no cambia nada.",
+          "none": "Bytebase no enmascara en este motor. Ignorar las exenciones no cambia nada.",
+          "title": "Enmascaramiento por motor",
+          "unspecified": "Esta versión no lo informa."
+        },
+        "methods": {
+          "count": "{{served}} de {{total}} métodos que MCP puede alcanzar. Estar en la lista no es un permiso: el usuario que se conecta sigue necesitando el suyo.",
+          "handler": "Sin permiso de IAM declarado",
+          "none": "Este modo no ofrece ningún método de la API.",
+          "write-legend": "Los {{count}} resaltados son lo que este modo añade sobre Solo lectura."
+        },
+        "notes": {
+          "redshift": "Fuera de una base de datos datashare, el controlador también abre la sesión en solo lectura. Una base de datos datashare no puede ejecutar una transacción de solo lectura, así que allí solo hay clasificación de sentencias.",
+          "title": "Dónde la respuesta de arriba es el mínimo",
+          "unavailable": "Este motor tiene una salvedad que esta página aún no puede mostrar. Recargue para obtener la versión actual."
+        },
+        "title": "{{mode}}: qué ofrece este modo"
+      },
       "description": "Conecte asistentes de IA a Bytebase usando el Model Context Protocol.",
       "first-prompt": {
         "description": "Una vez conectado, intente preguntar a su asistente de IA:",
@@ -2553,6 +2566,55 @@
       },
       "general-config": {
         "title": "Opción 1: Configuración JSON"
+      },
+      "policy": {
+        "audit": "Las denegaciones de la política MCP se registran en el registro de auditoría.",
+        "description": "Lo máximo que puede hacer cualquier sesión MCP en este espacio de trabajo. Cada sesión está además limitada por los permisos del propio usuario que se conecta.",
+        "edit": "Editar política",
+        "in-force": "En vigor",
+        "loading": "Leyendo la política de acceso…",
+        "masking": {
+          "badge": "Exenciones de enmascaramiento ignoradas",
+          "description": "Los datos enmascarados siguen enmascarados en las sesiones MCP. Las exenciones de enmascaramiento concedidas a un usuario, y el desenmascarado que lleva una concesión de acceso, dejan de aplicarse a sus solicitudes MCP. El mismo usuario no se ve afectado en la consola de Bytebase.",
+          "limits": "La cobertura del enmascaramiento depende del motor. Donde Bytebase no enmascara, o enmascara sin consultar las exenciones, esto no cambia nada.",
+          "title": "Ignorar las exenciones de enmascaramiento",
+          "unavailable": "El enmascaramiento de datos no está licenciado para este espacio de trabajo, así que no se enmascara nada sea cual sea este ajuste."
+        },
+        "mode": {
+          "contents": "Ver qué ofrece {{mode}}",
+          "disabled": {
+            "best-for": "Ideal para: mantener MCP apagado hasta que esté listo para activarlo.",
+            "description": "Ninguna sesión MCP puede conectarse a este espacio de trabajo.",
+            "title": "Desactivado"
+          },
+          "read-only": {
+            "best-for": "Ideal para: consultar y explorar datos, incluso por personas que no escriben SQL.",
+            "description": "Las sesiones pueden explorar esquemas y ejecutar consultas de solo lectura. Bytebase clasifica cada sentencia antes de ejecutarla y rechaza la solicitud entera si alguna no es una lectura. Donde el controlador del motor lo permite, la sesión de base de datos también se abre en solo lectura. Hasta dónde llega esto varía según el motor.",
+            "title": "Solo lectura"
+          },
+          "read-write": {
+            "best-for": "Ideal para: hacer cambios en la base de datos a través de un agente de IA, siempre limitado por los permisos de cada usuario.",
+            "description": "Las sesiones también pueden cambiar datos y esquemas, hasta donde permitan los permisos del propio usuario que se conecta.",
+            "title": "Lectura y escritura"
+          }
+        },
+        "read-failed": {
+          "description": "Recargue para reintentar. Si sigue fallando, la política almacenada es una que Bytebase no puede analizar y un operador debe reparar la fila directamente. Mientras no se pueda leer, se rechaza toda conexión MCP.",
+          "title": "No se pudo leer la política de acceso"
+        },
+        "save": "Guardar política",
+        "saved": "Política guardada. {{mode}} se aplica a la siguiente solicitud de cada sesión.",
+        "tightening": "Un cambio de techo se aplica a la siguiente solicitud de cada sesión en curso. El trabajo que un agente ya tiene admitido termina de ejecutarse.",
+        "title": "Política de acceso",
+        "unreadable": {
+          "description": "Este espacio de trabajo almacena un valor de capacidad que esta versión no entiende. Se rechaza toda conexión MCP. Elija un modo y guarde para corregirlo.",
+          "pick": "Elija un modo para guardar esta política.",
+          "title": "No se puede leer la política de acceso almacenada"
+        },
+        "unserved": {
+          "description": "Este espacio de trabajo almacena {{stored}}, que no es un techo que esta versión ofrezca. Se está rechazando cada conexión MCP. Elija un modo y guarde para corregirlo.",
+          "title": "La política de acceso almacenada no es una que esta versión ofrezca"
+        }
       },
       "quick-start": {
         "description": "Alternativamente, use uno de estos comandos CLI.",

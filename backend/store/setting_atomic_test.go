@@ -491,3 +491,60 @@ func TestListSettingsSkipsNamesThisBuildDoesNotKnow(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, profile)
 }
+
+// TestListSettingsRefusesAnUnparsedRow pins that a row this build cannot parse
+// fails the read rather than reading back absent.
+//
+// GetSettingUncached reads through this, so a skipped row would reach 24
+// callers as "no such setting" — which resolves to the setting's default, and
+// enforcement would then run one policy while the console showed another. That
+// is BOT-100's defect widened to every setting.
+func TestListSettingsRefusesAnUnparsedRow(t *testing.T) {
+	// Cache off: the fixture's own write would otherwise serve every read from
+	// memory, and the point is what the database hands back.
+	ctx, db, s := newSettingAtomicFixtureWithCache(t, false)
+
+	// By hand, because no store call writes a value its own message rejects.
+	_, err := db.ExecContext(ctx,
+		`UPDATE setting SET value = '{"externalUrl": 5}' WHERE name = 'WORKSPACE_PROFILE' AND workspace = 'default'`)
+	require.NoError(t, err)
+
+	_, err = s.ListSettings(ctx, &store.FindSettingMessage{Workspace: "default"})
+	require.Error(t, err, "an unparseable row fails the list")
+
+	setting, err := s.GetSettingUncached(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE)
+	require.Error(t, err, "the read must not report a row it cannot parse as absent")
+	require.Nil(t, setting)
+}
+
+// TestUpdateSettingAtomicRefusesAnUnparsedRow pins that a row this build cannot
+// parse never reaches apply.
+//
+// apply merges onto the message it is handed, and for such a row the only
+// message available is the zero value. RotateDirectorySyncToken sets one field
+// on current and returns it, so letting it through would write back a
+// WorkspaceProfileSetting with the signup settings, password restrictions and
+// announcements erased.
+func TestUpdateSettingAtomicRefusesAnUnparsedRow(t *testing.T) {
+	// Cache off: the point is what the locked row hands the writer.
+	ctx, db, s := newSettingAtomicFixtureWithCache(t, false)
+
+	// By hand, because no store call writes a value its own message rejects.
+	_, err := db.ExecContext(ctx,
+		`UPDATE setting SET value = '{"externalUrl": 5}' WHERE name = 'WORKSPACE_PROFILE' AND workspace = 'default'`)
+	require.NoError(t, err)
+
+	applied := false
+	_, err = s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE,
+		func(current proto.Message, _ []byte) (proto.Message, error) {
+			applied = true
+			return current, nil
+		}, nil)
+	require.Error(t, err, "a row this build cannot parse must not reach a merging apply")
+	require.False(t, applied, "apply must not be called at all")
+
+	var stored string
+	require.NoError(t, db.QueryRowContext(ctx,
+		`SELECT value::text FROM setting WHERE name = 'WORKSPACE_PROFILE' AND workspace = 'default'`).Scan(&stored))
+	require.Contains(t, stored, "externalUrl", "the refused write must leave the row as it found it")
+}

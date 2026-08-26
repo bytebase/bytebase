@@ -2459,25 +2459,6 @@
             "self": "最大 SQL 结果大小"
           }
         },
-        "mcp": {
-          "capability": {
-            "description": "此工作空间中 MCP(Model Context Protocol)会话可用的最高能力上限。变更对下一个 MCP 请求立即生效。",
-            "disabled": {
-              "description": "拒绝所有 MCP 连接。",
-              "self": "禁用"
-            },
-            "read-only": {
-              "description": "MCP 会话可以查看元数据并执行只读查询，仍受每个用户自身权限的约束。如果 Bytebase 将其中任一语句判定为写入，或无法确认其仅执行读取，整个请求都会被拒绝。",
-              "self": "只读"
-            },
-            "read-write": {
-              "description": "MCP 会话可以读写,仍受每个用户自身权限的约束。未配置时默认为此项。",
-              "self": "读写"
-            },
-            "self": "MCP 访问"
-          },
-          "self": "MCP"
-        },
         "no-limit": "当值 <= 0 时无限制",
         "password-restriction": {
           "min-length": "密码最小长度不得少于 {{min}} 个字符",
@@ -2545,6 +2526,38 @@
         "description": "首次连接需要 OAuth 身份验证。请确保您拥有相应的 Bytebase 权限。",
         "title": "需要身份验证"
       },
+      "contents": {
+        "depth": {
+          "description": "只读上限在每个引擎上的执行强度。",
+          "not-a-proof": "两种强度都不是证明。被判定为读取的语句仍可能调用某个函数，把会话设置改回去。",
+          "statement": "每条语句在执行前都会被分类。驱动不会以只读方式打开数据库会话。",
+          "statement-and-session": "每条语句都会被分类，并且驱动会以只读方式打开数据库会话。",
+          "title": "各引擎的只读强度",
+          "unspecified": "当前版本未报告。",
+          "unsupported": "没有只读分类器，因此每条语句都会被拒绝，包括普通的 SELECT。"
+        },
+        "masking": {
+          "column": "列级脱敏。豁免决定谁能看到真实值，因此忽略豁免会改变会话读到的内容。",
+          "description-off": "本工作空间在 MCP 会话中仍应用每位用户的脱敏豁免。忽略这些豁免只会影响下列会查询豁免的引擎。",
+          "description-on": "本工作空间忽略脱敏豁免，因此会话能读到什么，取决于 Bytebase 在各引擎上的脱敏方式。",
+          "document": "文档级脱敏。此路径从不查询豁免，因此忽略豁免不产生任何变化。",
+          "none": "Bytebase 在该引擎上不做脱敏。忽略豁免不产生任何变化。",
+          "title": "各引擎的脱敏方式",
+          "unspecified": "当前版本未报告。"
+        },
+        "methods": {
+          "count": "MCP 可访问的 {{total}} 个方法中的 {{served}} 个。列出并不等于授权：连接用户仍需具备自身权限。",
+          "handler": "未声明 IAM 权限",
+          "none": "该模式不提供任何 API 方法。",
+          "write-legend": "其中高亮的 {{count}} 个是该模式相较只读新增的部分。"
+        },
+        "notes": {
+          "redshift": "在非 datashare 数据库中，驱动还会以只读方式打开会话。datashare 数据库无法运行只读事务，因此在那里仅有语句分类。",
+          "title": "上述答案只是下限的情况",
+          "unavailable": "此引擎有一条本页面尚无法显示的注意事项。请重新加载以获取当前版本。"
+        },
+        "title": "{{mode}} — 该模式提供的内容"
+      },
       "description": "使用模型上下文协议将 AI 助手连接到 Bytebase。",
       "first-prompt": {
         "description": "连接后，尝试向 AI 助手提问：",
@@ -2553,6 +2566,55 @@
       },
       "general-config": {
         "title": "方式一：JSON 配置"
+      },
+      "policy": {
+        "audit": "MCP 策略拒绝会记录在审计日志中。",
+        "description": "本工作空间中任何 MCP 会话所能执行操作的上限。每个会话还会受到连接用户自身权限的限制。",
+        "edit": "编辑策略",
+        "in-force": "当前生效",
+        "loading": "正在读取访问策略…",
+        "masking": {
+          "badge": "已忽略脱敏豁免",
+          "description": "在 MCP 会话中，脱敏数据保持脱敏。授予用户的脱敏豁免，以及访问授权所携带的解除脱敏，都不再对其 MCP 请求生效。同一用户在 Bytebase 控制台中不受影响。",
+          "limits": "脱敏覆盖范围取决于引擎。若 Bytebase 在该引擎上不做脱敏，或者脱敏时不查询豁免，此项不产生任何变化。",
+          "title": "忽略脱敏豁免",
+          "unavailable": "本工作空间未授权数据脱敏功能，因此无论此项如何设置都不会脱敏。"
+        },
+        "mode": {
+          "contents": "查看 {{mode}} 提供的内容",
+          "disabled": {
+            "best-for": "适用于：在准备好开启之前先关闭 MCP。",
+            "description": "任何 MCP 会话都无法连接到本工作空间。",
+            "title": "禁用"
+          },
+          "read-only": {
+            "best-for": "适用于：查询和探索数据，包括不写 SQL 的人。",
+            "description": "会话可以浏览模式并执行只读查询。Bytebase 会在每条语句执行前对其分类，只要其中有一条不是读取，就整体拒绝该请求。若引擎的驱动支持，还会以只读方式打开数据库会话。具体强度因引擎而异。",
+            "title": "只读"
+          },
+          "read-write": {
+            "best-for": "适用于：通过 AI 代理执行数据库变更，仍受每位用户自身权限的限制。",
+            "description": "会话还可以修改数据和模式，范围以连接用户自身的权限为限。",
+            "title": "读写"
+          }
+        },
+        "read-failed": {
+          "description": "请重新加载重试。如果持续失败，说明已存储的策略是 Bytebase 无法解析的，需要运维人员直接修复该行。在无法读取期间，所有 MCP 连接都会被拒绝。",
+          "title": "无法读取访问策略"
+        },
+        "save": "保存策略",
+        "saved": "策略已保存。{{mode}} 将对每个会话的下一次请求生效。",
+        "tightening": "上限变更会对每个运行中会话的下一次请求生效。代理已被放行的工作会继续执行完毕。",
+        "title": "访问策略",
+        "unreadable": {
+          "description": "此工作区存储的能力值是当前构建无法理解的。所有 MCP 连接都会被拒绝。请选择一种模式并保存以修正。",
+          "pick": "请选择一种模式后再保存此策略。",
+          "title": "无法读取已存储的访问策略"
+        },
+        "unserved": {
+          "description": "本工作空间存储的值为 {{stored}}，当前版本不提供该上限。所有 MCP 连接都会被拒绝。请选择一种模式并保存以修复。",
+          "title": "当前版本不提供已存储的访问策略"
+        }
       },
       "quick-start": {
         "description": "或者使用以下 CLI 命令。",

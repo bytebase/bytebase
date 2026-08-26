@@ -2459,25 +2459,6 @@
             "self": "Maximum SQL result size"
           }
         },
-        "mcp": {
-          "capability": {
-            "description": "The maximum capability available to MCP (Model Context Protocol) sessions in this workspace. Changes apply to the next MCP request immediately.",
-            "disabled": {
-              "description": "All MCP connections are rejected.",
-              "self": "Disabled"
-            },
-            "read-only": {
-              "description": "MCP sessions can inspect metadata and run read-only queries, still bounded by each user's own permissions. A request is refused whole if Bytebase classifies any statement in it as a write, or cannot determine that it only reads.",
-              "self": "Read-only"
-            },
-            "read-write": {
-              "description": "MCP sessions can read and write, still bounded by each user's own permissions. This is the default when not configured.",
-              "self": "Read-write"
-            },
-            "self": "MCP access"
-          },
-          "self": "MCP"
-        },
         "no-limit": "No limit when the value <= 0",
         "password-restriction": {
           "min-length": "Minimum length for password should no less than {{min}} characters",
@@ -2545,6 +2526,38 @@
         "description": "OAuth authentication is required on first connection. Ensure you have appropriate Bytebase permissions.",
         "title": "Authentication Required"
       },
+      "contents": {
+        "depth": {
+          "description": "How far the read-only ceiling is enforced on each engine.",
+          "not-a-proof": "Neither depth is a proof. A statement that classifies as a read can still call a function that turns the session setting back off.",
+          "statement": "Every statement is classified before it runs. The driver does not open a read-only database session.",
+          "statement-and-session": "Every statement is classified, and the driver opens the database session read-only.",
+          "title": "Read-only depth by engine",
+          "unspecified": "Not reported by this build.",
+          "unsupported": "No read-only classifier, so every statement is refused, including a plain SELECT."
+        },
+        "masking": {
+          "column": "Column masking. Exemptions decide who sees the real value, so ignoring them changes what a session reads.",
+          "description-off": "This workspace applies each user's masking exemptions to MCP sessions. Ignoring them would reach only the engines below that consult exemptions.",
+          "description-on": "This workspace ignores masking exemptions, so what a session reads depends on how Bytebase masks each engine.",
+          "document": "Document masking. Exemptions are never consulted here, so ignoring them changes nothing.",
+          "none": "Bytebase does not mask on this engine. Ignoring exemptions changes nothing.",
+          "title": "Masking by engine",
+          "unspecified": "Not reported by this build."
+        },
+        "methods": {
+          "count": "{{served}} of {{total}} methods MCP can reach. Being listed is not permission: the connecting user still needs their own.",
+          "handler": "No declared IAM permission",
+          "none": "This mode serves no API method.",
+          "write-legend": "The {{count}} highlighted are what this mode adds over Read-only."
+        },
+        "notes": {
+          "redshift": "Outside a datashare database the driver also opens the session read-only. A datashare database cannot run a read-only transaction, so there it is statement classification alone.",
+          "title": "Where the answer above is the floor",
+          "unavailable": "This engine has a caveat this page cannot show yet. Reload to pick up the current version."
+        },
+        "title": "{{mode}} — what this mode serves"
+      },
       "description": "Connect AI assistants to Bytebase using the Model Context Protocol.",
       "first-prompt": {
         "description": "Once connected, try asking your AI assistant:",
@@ -2553,6 +2566,55 @@
       },
       "general-config": {
         "title": "Option 1: JSON Configuration"
+      },
+      "policy": {
+        "audit": "MCP policy denials are recorded in the audit log.",
+        "description": "The most any MCP session may do in this workspace. Every session is also capped by the connecting user's own permissions.",
+        "edit": "Edit policy",
+        "in-force": "In force",
+        "loading": "Reading the access policy…",
+        "masking": {
+          "badge": "Masking exemptions ignored",
+          "description": "Masked data stays masked in MCP sessions. The masking exemptions granted to a user, and the unmask carried by an access grant, stop applying to their MCP requests. The same user is unaffected in the Bytebase console.",
+          "limits": "Masking coverage depends on the engine. Where Bytebase does not mask, or masks without consulting exemptions, this changes nothing.",
+          "title": "Ignore masking exemptions",
+          "unavailable": "Data masking is not licensed for this workspace, so nothing is masked whatever this is set to."
+        },
+        "mode": {
+          "contents": "See what {{mode}} serves",
+          "disabled": {
+            "best-for": "Best for: keeping MCP off until you are ready to turn it on.",
+            "description": "No MCP session can connect to this workspace.",
+            "title": "Disabled"
+          },
+          "read-only": {
+            "best-for": "Best for: querying and exploring data, including by people who do not write SQL.",
+            "description": "Sessions can explore schemas and run read-only queries. Bytebase classifies every statement before it runs and refuses a request whole if any statement is not a read. Where the engine's driver has one, the database session is opened read-only as well. How deep this goes varies by engine.",
+            "title": "Read-only"
+          },
+          "read-write": {
+            "best-for": "Best for: making database changes through an AI agent, still capped by each user's own permissions.",
+            "description": "Sessions can also change data and schemas, as far as the connecting user's own permissions allow.",
+            "title": "Read-write"
+          }
+        },
+        "read-failed": {
+          "description": "Reload to try again. If it keeps failing, the stored policy is one Bytebase cannot parse and an operator has to repair the row directly. Until it can be read, every MCP connection is refused.",
+          "title": "The access policy could not be read"
+        },
+        "save": "Save policy",
+        "saved": "Policy saved. {{mode}} applies to every session's next request.",
+        "tightening": "A ceiling change applies to the next request of every running session. Work an agent has already been admitted to runs to completion.",
+        "title": "Access policy",
+        "unreadable": {
+          "description": "This workspace stores a capability value this build does not understand. Every MCP connection is being refused. Pick a mode and save to set it right.",
+          "pick": "Pick a mode to save this policy.",
+          "title": "The stored access policy cannot be read"
+        },
+        "unserved": {
+          "description": "This workspace stores {{stored}}, which is not a ceiling this build serves. Every MCP connection is being refused. Pick a mode and save to set it right.",
+          "title": "The stored access policy is not one this build serves"
+        }
       },
       "quick-start": {
         "description": "Alternatively, use one of these CLI commands.",

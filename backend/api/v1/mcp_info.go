@@ -236,6 +236,15 @@ func mcpMaskingSupport(engine storepb.Engine) v1pb.MCPEngineEnforcement_Masking 
 
 // mcpEngineNote carries the cases where a per-engine answer is the floor rather
 // than the whole story.
+//
+// The console does not render this string: it keys off the engine and reads
+// settings.mcp.contents.notes.<engine> so the caveat is translated. Reword here
+// and the locale files need the same edit. Adding a note for a new engine
+// without its locale entry degrades to a line saying a caveat exists and to
+// reload, which is also what an older bundle shows against a newer server — it
+// never puts this English in a non-English console. An agent reading
+// GetMCPInfo does get this text, which is why it stays prose rather than
+// becoming an enum.
 func mcpEngineNote(engine storepb.Engine) string {
 	if engine == storepb.Engine_REDSHIFT {
 		return "Outside a datashare database the driver also opens the session read-only. " +

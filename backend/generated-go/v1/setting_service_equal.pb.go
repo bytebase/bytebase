@@ -425,6 +425,9 @@ func (x *MCPSetting) Equal(y *MCPSetting) bool {
 	if x.IgnoreMaskingExemptions != y.IgnoreMaskingExemptions {
 		return false
 	}
+	if x.CapabilityUnreadable != y.CapabilityUnreadable {
+		return false
+	}
 	return true
 }
 

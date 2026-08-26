@@ -28,6 +28,18 @@ interface SwitchProps {
   disabled?: boolean;
   className?: string;
   size?: SwitchSize;
+  /**
+   * Accessible name for the control. A switch renders no text of its own, so
+   * without this — or a `<label>` wrapping it — assistive technology announces
+   * an unnamed switch and the person cannot tell which setting they are
+   * toggling. Pass it whenever the visible title sits in a sibling element.
+   *
+   * `id` alone does not substitute: Base UI renders the switch as a `<span>`,
+   * and `<label for>` cannot name a span.
+   */
+  "aria-label"?: string;
+  "aria-labelledby"?: string;
+  id?: string;
 }
 
 function Switch({
@@ -36,6 +48,9 @@ function Switch({
   disabled,
   className,
   size = "md",
+  id,
+  "aria-label": ariaLabel,
+  "aria-labelledby": ariaLabelledBy,
 }: SwitchProps) {
   const sizeClasses = SWITCH_SIZES[size];
 
@@ -44,6 +59,9 @@ function Switch({
       checked={checked}
       onCheckedChange={onCheckedChange}
       disabled={disabled}
+      id={id}
+      aria-label={ariaLabel}
+      aria-labelledby={ariaLabelledBy}
       className={cn(
         "relative inline-flex cursor-pointer items-center rounded-full transition-colors",
         sizeClasses.root,

@@ -55,6 +55,10 @@ func TestMCPAuditProvenance(t *testing.T) {
 	workspace := memberLogin.Msg.GetUser().GetWorkspace()
 	a.NotEmpty(workspace)
 
+	// CreateSheet below is a WRITE method. Pinned so this test does not depend
+	// on the resolved default; it is about what an audit row carries.
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
+
 	// The member consents a real OAuth grant; every audit row the session
 	// produces must carry this grant's stored scope and resource verbatim.
 	mcpToken, clientID := mintMCPOAuthToken(t, ctl, memberLogin.Msg.Token)

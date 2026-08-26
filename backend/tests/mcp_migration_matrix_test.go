@@ -185,6 +185,10 @@ func TestMCPMigrationGrantStateMatrix(t *testing.T) {
 		Project:   &v1pb.Project{Title: "MCP grant matrix"},
 	}))
 	a.NoError(err)
+	// The probe below is a WRITE method. Pinned so this test does not depend on
+	// the resolved default; it is about which grant state a token carries.
+	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
+
 	createSheet := func(sql string) map[string]any {
 		return map[string]any{
 			"parent": project.Msg.Name,
