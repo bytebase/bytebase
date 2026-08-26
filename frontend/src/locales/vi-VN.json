@@ -2459,25 +2459,6 @@
             "self": "Kích thước kết quả SQL tối đa"
           }
         },
-        "mcp": {
-          "capability": {
-            "description": "Khả năng tối đa dành cho các phiên MCP (Model Context Protocol) trong không gian làm việc này. Thay đổi áp dụng ngay cho yêu cầu MCP tiếp theo.",
-            "disabled": {
-              "description": "Từ chối tất cả kết nối MCP.",
-              "self": "Tắt"
-            },
-            "read-only": {
-              "description": "Các phiên MCP có thể xem siêu dữ liệu và chạy truy vấn chỉ đọc, vẫn bị giới hạn bởi quyền của từng người dùng. Toàn bộ yêu cầu sẽ bị từ chối nếu Bytebase xác định bất kỳ câu lệnh nào trong đó là ghi, hoặc không thể xác nhận rằng nó chỉ đọc.",
-              "self": "Chỉ đọc"
-            },
-            "read-write": {
-              "description": "Các phiên MCP có thể đọc và ghi, vẫn bị giới hạn bởi quyền của từng người dùng. Đây là mặc định khi chưa cấu hình.",
-              "self": "Đọc và ghi"
-            },
-            "self": "Truy cập MCP"
-          },
-          "self": "MCP"
-        },
         "no-limit": "Không giới hạn khi giá trị <= 0",
         "password-restriction": {
           "min-length": "Độ dài tối thiểu cho mật khẩu không được ít hơn {{min}} ký tự",
@@ -2545,6 +2526,38 @@
         "description": "Xác thực OAuth được yêu cầu khi kết nối lần đầu. Đảm bảo bạn có quyền Bytebase phù hợp.",
         "title": "Yêu cầu xác thực"
       },
+      "contents": {
+        "depth": {
+          "description": "Mức trần chỉ đọc được thực thi sâu tới đâu trên mỗi công cụ.",
+          "not-a-proof": "Không mức nào trong hai mức là một bằng chứng. Một câu lệnh được phân loại là đọc vẫn có thể gọi một hàm tắt lại thiết lập phiên.",
+          "statement": "Mọi câu lệnh đều được phân loại trước khi chạy. Trình điều khiển không mở phiên cơ sở dữ liệu ở chế độ chỉ đọc.",
+          "statement-and-session": "Mọi câu lệnh đều được phân loại, và trình điều khiển mở phiên cơ sở dữ liệu ở chế độ chỉ đọc.",
+          "title": "Mức độ chỉ đọc theo công cụ",
+          "unspecified": "Bản dựng này không báo cáo.",
+          "unsupported": "Không có bộ phân loại chỉ đọc, nên mọi câu lệnh đều bị từ chối, kể cả một câu SELECT đơn giản."
+        },
+        "masking": {
+          "column": "Che theo cột. Miễn trừ quyết định ai thấy giá trị thật, nên bỏ qua chúng sẽ thay đổi những gì một phiên đọc được.",
+          "description-off": "Không gian làm việc này vẫn áp dụng miễn trừ che dữ liệu của từng người dùng cho phiên MCP. Bỏ qua chúng chỉ ảnh hưởng tới các công cụ bên dưới có tra cứu miễn trừ.",
+          "description-on": "Không gian làm việc này bỏ qua miễn trừ che dữ liệu, nên một phiên đọc được gì tuỳ thuộc vào cách Bytebase che trên từng công cụ.",
+          "document": "Che theo tài liệu. Đường đi này không bao giờ tra cứu miễn trừ, nên bỏ qua chúng không thay đổi gì.",
+          "none": "Bytebase không che trên công cụ này. Bỏ qua miễn trừ không thay đổi gì.",
+          "title": "Che dữ liệu theo công cụ",
+          "unspecified": "Bản dựng này không báo cáo."
+        },
+        "methods": {
+          "count": "{{served}} trong {{total}} phương thức MCP có thể gọi. Có tên trong danh sách không phải là quyền: người dùng kết nối vẫn cần quyền của chính họ.",
+          "handler": "Không khai báo quyền IAM",
+          "none": "Chế độ này không phục vụ phương thức API nào.",
+          "write-legend": "{{count}} mục được làm nổi bật là phần chế độ này thêm so với Chỉ đọc."
+        },
+        "notes": {
+          "redshift": "Ngoài cơ sở dữ liệu datashare, trình điều khiển còn mở phiên ở chế độ chỉ đọc. Cơ sở dữ liệu datashare không chạy được giao dịch chỉ đọc, nên ở đó chỉ có phân loại câu lệnh.",
+          "title": "Nơi câu trả lời ở trên chỉ là mức sàn",
+          "unavailable": "Công cụ này có một lưu ý mà trang này chưa hiển thị được. Hãy tải lại để lấy phiên bản hiện tại."
+        },
+        "title": "{{mode}} — chế độ này phục vụ những gì"
+      },
       "description": "Kết nối trợ lý AI với Bytebase bằng Model Context Protocol.",
       "first-prompt": {
         "description": "Sau khi kết nối, hãy thử hỏi trợ lý AI của bạn:",
@@ -2553,6 +2566,55 @@
       },
       "general-config": {
         "title": "Cách 1: Cấu hình JSON"
+      },
+      "policy": {
+        "audit": "Các lần từ chối theo chính sách MCP được ghi vào nhật ký kiểm toán.",
+        "description": "Mức tối đa mà một phiên MCP được phép làm trong không gian làm việc này. Mỗi phiên còn bị giới hạn thêm bởi quyền của chính người dùng đang kết nối.",
+        "edit": "Sửa chính sách",
+        "in-force": "Đang áp dụng",
+        "loading": "Đang đọc chính sách truy cập…",
+        "masking": {
+          "badge": "Đã bỏ qua miễn trừ che dữ liệu",
+          "description": "Dữ liệu được che vẫn bị che trong phiên MCP. Các miễn trừ che dữ liệu cấp cho người dùng, và việc bỏ che đi kèm một cấp quyền truy cập, đều ngừng áp dụng cho yêu cầu MCP của họ. Cũng người dùng đó không bị ảnh hưởng trong bảng điều khiển Bytebase.",
+          "limits": "Phạm vi che dữ liệu tuỳ theo công cụ. Ở nơi Bytebase không che, hoặc che mà không tra cứu miễn trừ, thiết lập này không thay đổi gì.",
+          "title": "Bỏ qua miễn trừ che dữ liệu",
+          "unavailable": "Không gian làm việc này chưa có giấy phép che dữ liệu, nên sẽ không có gì bị che dù thiết lập này ra sao."
+        },
+        "mode": {
+          "contents": "Xem {{mode}} phục vụ những gì",
+          "disabled": {
+            "best-for": "Phù hợp khi: giữ MCP tắt cho tới khi bạn sẵn sàng bật.",
+            "description": "Không phiên MCP nào có thể kết nối tới không gian làm việc này.",
+            "title": "Tắt"
+          },
+          "read-only": {
+            "best-for": "Phù hợp khi: truy vấn và khám phá dữ liệu, kể cả với người không viết SQL.",
+            "description": "Phiên có thể khám phá lược đồ và chạy truy vấn chỉ đọc. Bytebase phân loại từng câu lệnh trước khi chạy và từ chối trọn yêu cầu nếu có bất kỳ câu lệnh nào không phải là đọc. Nơi trình điều khiển của công cụ hỗ trợ, phiên cơ sở dữ liệu cũng được mở ở chế độ chỉ đọc. Mức độ sâu tới đâu tuỳ theo công cụ.",
+            "title": "Chỉ đọc"
+          },
+          "read-write": {
+            "best-for": "Phù hợp khi: thực hiện thay đổi cơ sở dữ liệu qua tác nhân AI, vẫn bị giới hạn bởi quyền của từng người dùng.",
+            "description": "Phiên còn có thể thay đổi dữ liệu và lược đồ, trong phạm vi quyền của chính người dùng đang kết nối.",
+            "title": "Đọc và ghi"
+          }
+        },
+        "read-failed": {
+          "description": "Hãy tải lại để thử lần nữa. Nếu vẫn lỗi, chính sách đã lưu là loại Bytebase không phân tích được và cần người vận hành sửa trực tiếp bản ghi. Trong lúc chưa đọc được, mọi kết nối MCP đều bị từ chối.",
+          "title": "Không đọc được chính sách truy cập"
+        },
+        "save": "Lưu chính sách",
+        "saved": "Đã lưu chính sách. {{mode}} áp dụng cho yêu cầu kế tiếp của mọi phiên.",
+        "tightening": "Thay đổi mức trần áp dụng cho yêu cầu kế tiếp của mọi phiên đang chạy. Công việc mà tác nhân đã được cho phép vẫn chạy đến khi xong.",
+        "title": "Chính sách truy cập",
+        "unreadable": {
+          "description": "Không gian làm việc này lưu một giá trị năng lực mà bản dựng hiện tại không hiểu. Mọi kết nối MCP đều bị từ chối. Hãy chọn một chế độ và lưu để sửa lại.",
+          "pick": "Hãy chọn một chế độ để lưu chính sách này.",
+          "title": "Không đọc được chính sách truy cập đã lưu"
+        },
+        "unserved": {
+          "description": "Không gian làm việc này lưu {{stored}}, không phải mức trần mà bản dựng này phục vụ. Mọi kết nối MCP đang bị từ chối. Hãy chọn một chế độ và lưu để sửa lại.",
+          "title": "Chính sách truy cập đã lưu không phải loại bản dựng này phục vụ"
+        }
       },
       "quick-start": {
         "description": "Hoặc sử dụng một trong các lệnh CLI sau.",

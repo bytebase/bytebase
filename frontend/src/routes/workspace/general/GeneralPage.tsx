@@ -7,7 +7,7 @@ import { WorkspacePageLayout } from "@/components/WorkspacePageLayout";
 import { useServerState } from "@/hooks/useAppState";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { pushNotification } from "@/stores";
-import { hasWorkspacePermissionV2, isDev } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 import { AccountSection } from "./AccountSection";
 import { AIAugmentationSection } from "./AIAugmentationSection";
 import { AnnouncementSection } from "./AnnouncementSection";
@@ -15,7 +15,6 @@ import { AuditLogSection } from "./AuditLogSection";
 import { BrandingSection } from "./BrandingSection";
 import { DangerZoneSection } from "./DangerZoneSection";
 import { GeneralSection } from "./GeneralSection";
-import { MCPSection } from "./MCPSection";
 import { ProductImprovementSection } from "./ProductImprovementSection";
 import { SecuritySection } from "./SecuritySection";
 import { SQLEditorSection } from "./SQLEditorSection";
@@ -34,7 +33,6 @@ export function GeneralPage() {
   const securityRef = useRef<SectionHandle>(null);
   const sqlEditorRef = useRef<SectionHandle>(null);
   const aiRef = useRef<SectionHandle>(null);
-  const mcpRef = useRef<SectionHandle>(null);
   const announcementRef = useRef<SectionHandle>(null);
   const productImprovementRef = useRef<SectionHandle>(null);
   const auditLogRef = useRef<SectionHandle>(null);
@@ -51,7 +49,6 @@ export function GeneralPage() {
     securityRef,
     sqlEditorRef,
     aiRef,
-    mcpRef,
     announcementRef,
     productImprovementRef,
     auditLogRef,
@@ -91,12 +88,6 @@ export function GeneralPage() {
         handle: announcementRef.current!,
       },
     ];
-    if (mcpRef.current) {
-      sections.push({
-        name: t("settings.general.workspace.mcp.self"),
-        handle: mcpRef.current,
-      });
-    }
     if (productImprovementRef.current) {
       sections.push({
         name: t("settings.general.workspace.product-improvement.self"),
@@ -185,15 +176,6 @@ export function GeneralPage() {
         title={t("settings.general.workspace.ai-assistant.self")}
         onDirtyChange={onDirtyChange}
       />
-      {/* Hidden in prod builds until release readiness; the settings API and
-          server-side enforcement stay live intentionally. */}
-      {isDev() && (
-        <MCPSection
-          ref={mcpRef}
-          title={t("settings.general.workspace.mcp.self")}
-          onDirtyChange={onDirtyChange}
-        />
-      )}
       <AnnouncementSection
         ref={announcementRef}
         title={t("settings.general.workspace.announcement.self")}

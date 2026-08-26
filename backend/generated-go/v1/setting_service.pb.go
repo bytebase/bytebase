@@ -1346,8 +1346,33 @@ type MCPSetting struct {
 	// It narrows what an agent reads through the paths Bytebase masks; it is not
 	// a confidentiality boundary.
 	IgnoreMaskingExemptions bool `protobuf:"varint,2,opt,name=ignore_masking_exemptions,json=ignoreMaskingExemptions,proto3" json:"ignore_masking_exemptions,omitempty"`
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	// True when the row carries a capability key that this build cannot resolve
+	// to a ceiling. An enum name a newer release wrote is the legitimate trigger,
+	// during a rolling upgrade; a hand-edited token reaches the same state.
+	// False for every readable row, including one that was never configured.
+	//
+	// The capability field cannot carry this on its own: the unmarshaler discards
+	// an enum name it does not know, so an unreadable row and a never-configured
+	// one both arrive as CAPABILITY_UNSPECIFIED, while MCP is refused for the
+	// first and served at READ_WRITE for the second. A client reading only the
+	// capability shows the most permissive ceiling over a workspace where every
+	// MCP connection is being refused.
+	//
+	// A row protojson cannot parse at all is NOT this state. There is no ceiling
+	// in it to describe, so the read fails instead, and repairing it needs an
+	// operator rather than this field.
+	//
+	// The stored token itself is deliberately not returned. Telling a typo apart
+	// from a value a newer release wrote would only pay off if this enum grew,
+	// and it has not: its one reserved slot held a tier removed before any
+	// release shipped it.
+	//
+	// Set the row right by writing value.mcp.capability. Any other path is
+	// refused while this is true, because the merge that saved it would erase the
+	// value nobody could read.
+	CapabilityUnreadable bool `protobuf:"varint,3,opt,name=capability_unreadable,json=capabilityUnreadable,proto3" json:"capability_unreadable,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
 }
 
 func (x *MCPSetting) Reset() {
@@ -1390,6 +1415,13 @@ func (x *MCPSetting) GetCapability() MCPSetting_Capability {
 func (x *MCPSetting) GetIgnoreMaskingExemptions() bool {
 	if x != nil {
 		return x.IgnoreMaskingExemptions
+	}
+	return false
+}
+
+func (x *MCPSetting) GetCapabilityUnreadable() bool {
+	if x != nil {
+		return x.CapabilityUnreadable
 	}
 	return false
 }
@@ -3646,13 +3678,14 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x18require_uppercase_letter\x18\x04 \x01(\bR\x16requireUppercaseLetter\x12:\n" +
 	"\x19require_special_character\x18\x05 \x01(\bR\x17requireSpecialCharacter\x12Q\n" +
 	"&require_reset_password_for_first_login\x18\x06 \x01(\bR!requireResetPasswordForFirstLogin\x12F\n" +
-	"\x11password_rotation\x18\a \x01(\v2\x19.google.protobuf.DurationR\x10passwordRotationJ\x04\b\x0f\x10\x10J\x04\b\x1a\x10\x1bJ\x04\b\x10\x10\x11R\x0emcp_capability\"\xe9\x01\n" +
+	"\x11password_rotation\x18\a \x01(\v2\x19.google.protobuf.DurationR\x10passwordRotationJ\x04\b\x0f\x10\x10J\x04\b\x1a\x10\x1bJ\x04\b\x10\x10\x11R\x0emcp_capability\"\xa3\x02\n" +
 	"\n" +
 	"MCPSetting\x12B\n" +
 	"\n" +
 	"capability\x18\x01 \x01(\x0e2\".bytebase.v1.MCPSetting.CapabilityR\n" +
 	"capability\x12:\n" +
-	"\x19ignore_masking_exemptions\x18\x02 \x01(\bR\x17ignoreMaskingExemptions\"[\n" +
+	"\x19ignore_masking_exemptions\x18\x02 \x01(\bR\x17ignoreMaskingExemptions\x128\n" +
+	"\x15capability_unreadable\x18\x03 \x01(\bB\x03\xe0A\x03R\x14capabilityUnreadable\"[\n" +
 	"\n" +
 	"Capability\x12\x1a\n" +
 	"\x16CAPABILITY_UNSPECIFIED\x10\x00\x12\f\n" +
