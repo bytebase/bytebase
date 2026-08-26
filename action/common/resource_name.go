@@ -26,12 +26,16 @@ func GetProjectIDDatabaseGroupID(name string) (string, string, error) {
 
 // GetInstanceDatabaseID returns the instance ID and database ID from a resource name.
 func GetInstanceDatabaseID(name string) (string, string, error) {
-	// the instance request should be instances/{instance-id}/databases/{database-id}
-	tokens, err := GetNameParentTokens(name, InstanceNamePrefix, DatabaseIDPrefix)
+	// Database targets can refer to either a workspace instance or a project instance.
+	if tokens, err := GetNameParentTokens(name, InstanceNamePrefix, DatabaseIDPrefix); err == nil {
+		return tokens[0], tokens[1], nil
+	}
+
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, InstanceNamePrefix, DatabaseIDPrefix)
 	if err != nil {
 		return "", "", err
 	}
-	return tokens[0], tokens[1], nil
+	return tokens[1], tokens[2], nil
 }
 
 // GetNameParentTokens returns the tokens from a resource name.
@@ -45,6 +49,9 @@ func GetNameParentTokens(name string, tokenPrefixes ...string) ([]string, error)
 	for i, tokenPrefix := range tokenPrefixes {
 		if fmt.Sprintf("%s/", parts[2*i]) != tokenPrefix {
 			return nil, errors.Errorf("invalid prefix %q in request %q", tokenPrefix, name)
+		}
+		if parts[2*i+1] == "" {
+			return nil, errors.Errorf("empty token for prefix %q in request %q", tokenPrefix, name)
 		}
 		tokens = append(tokens, parts[2*i+1])
 	}

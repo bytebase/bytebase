@@ -13642,6 +13642,7 @@ paths:
                      Format:
                      projects/{project}/databaseGroups/{databaseGroup}
                      instances/{instance}/databases/{database}
+                     projects/{project}/instances/{instance}/databases/{database}
                 customRules:
                   type: string
                   title: custom_rules
@@ -20438,6 +20439,7 @@ components:
              Format:
              projects/{project}/databaseGroups/{databaseGroup}
              instances/{instance}/databases/{database}
+             projects/{project}/instances/{instance}/databases/{database}
         customRules:
           type: string
           title: custom_rules
@@ -20491,7 +20493,8 @@ components:
           title: target
           description: |-
             The target that the check is performed on.
-             Should be a database. Format: instances/{instance}/databases/{database}
+             Should be a database.
+             Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
         advices:
           type: array
           items:

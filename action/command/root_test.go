@@ -1,6 +1,7 @@
 package command
 
 import (
+	"bytes"
 	"context"
 	"io"
 	"log/slog"
@@ -118,6 +119,20 @@ func TestCheckVersionCompatibility(t *testing.T) {
 			require.Contains(t, err.Error(), tt.wantError)
 		})
 	}
+}
+
+func TestRootTargetsHelp(t *testing.T) {
+	t.Parallel()
+
+	var output bytes.Buffer
+	cmd := NewRootCommand(&world.World{})
+	cmd.SetArgs([]string{"--help"})
+	cmd.SetOut(&output)
+	cmd.SetErr(&output)
+
+	require.NoError(t, cmd.Execute())
+	require.Contains(t, output.String(), "workspace or project-instance databases")
+	require.Contains(t, output.String(), "single project database group")
 }
 
 func TestRecommendedActionTag(t *testing.T) {

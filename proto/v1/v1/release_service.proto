@@ -223,6 +223,7 @@ message CheckReleaseRequest {
   // Format:
   // projects/{project}/databaseGroups/{databaseGroup}
   // instances/{instance}/databases/{database}
+  // projects/{project}/instances/{instance}/databases/{database}
   repeated string targets = 3;
 
   // Custom linting rules in natural language for AI-powered validation.
@@ -250,7 +251,8 @@ message CheckReleaseResponse {
     string file = 1;
 
     // The target that the check is performed on.
-    // Should be a database. Format: instances/{instance}/databases/{database}
+    // Should be a database.
+    // Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
     string target = 2;
 
     // The list of advice for the file and the target.

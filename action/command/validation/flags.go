@@ -71,14 +71,14 @@ func validateTargets(targets []string) error {
 		} else if _, _, err := common.GetProjectIDDatabaseGroupID(target); err == nil {
 			databaseGroupTarget++
 		} else {
-			return errors.Errorf("invalid target format, must be instances/{instance}/databases/{database} or projects/{project}/databaseGroups/{databaseGroup}")
+			return errors.Errorf("invalid target format %q; must be instances/{instance}/databases/{database}, projects/{project}/instances/{instance}/databases/{database}, or projects/{project}/databaseGroups/{databaseGroup}", target)
 		}
 	}
 	if databaseTarget > 0 && databaseGroupTarget > 0 {
-		return errors.Errorf("targets must be either databases or databaseGroups")
+		return errors.Errorf("targets must be either database targets or a database group target")
 	}
 	if databaseGroupTarget > 1 {
-		return errors.Errorf("targets must be a single databaseGroup")
+		return errors.Errorf("targets must contain a single database group target")
 	}
 	return nil
 }
