@@ -148,7 +148,8 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   }, [targetTab, selectedDatabaseGroupName, selectedDatabaseNames]);
 
   const targetsPlaceholder =
-    targetsString || "instances/{instance}/databases/{database}";
+    targetsString ||
+    `projects/${projectId}/instances/{instance}/databases/{database}`;
   const runsOn = useSelfhostRunner ? "self-hosted" : "ubuntu-latest";
 
   const handleTargetTabChange = (tab: "GROUP" | "DATABASE") => {

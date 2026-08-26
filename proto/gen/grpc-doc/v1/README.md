@@ -10176,7 +10176,7 @@ ProjectService manages projects that group databases and changes.
 | ----- | ---- | ----- | ----------- |
 | parent | [string](#string) |  | Format: projects/{project} |
 | release | [Release](#bytebase-v1-Release) |  | The release to check. |
-| targets | [string](#string) | repeated | The targets to dry-run the release. Can be database or databaseGroup. Format: projects/{project}/databaseGroups/{databaseGroup} instances/{instance}/databases/{database} |
+| targets | [string](#string) | repeated | The targets to dry-run the release. Can be database or databaseGroup. Format: projects/{project}/databaseGroups/{databaseGroup} instances/{instance}/databases/{database} projects/{project}/instances/{instance}/databases/{database} |
 | custom_rules | [string](#string) |  | Custom linting rules in natural language for AI-powered validation. Each rule should be a clear statement describing the desired schema constraint. Example: &#34;All tables must have a primary key&#34; Example: &#34;VARCHAR columns should specify a maximum length&#34; |
 | vcs_user | [VCSUser](#bytebase-v1-VCSUser) |  | The non-bot VCS pull request or merge request creator observed by bytebase-release. If absent, Bytebase skips VCS user tracking and VCS user limit enforcement. |
 
@@ -10211,7 +10211,7 @@ Check result for a single release file on a target database.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | file | [string](#string) |  | The file path that is being checked. |
-| target | [string](#string) |  | The target that the check is performed on. Should be a database. Format: instances/{instance}/databases/{database} |
+| target | [string](#string) |  | The target that the check is performed on. Should be a database. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | advices | [Advice](#bytebase-v1-Advice) | repeated | The list of advice for the file and the target. |
 | affected_rows | [int64](#int64) |  | The count of affected rows of the statement on the target. |
 | risk_level | [RiskLevel](#bytebase-v1-RiskLevel) |  | The risk level of the statement on the target. |

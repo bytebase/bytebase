@@ -506,6 +506,7 @@ type CheckReleaseRequest struct {
 	// Format:
 	// projects/{project}/databaseGroups/{databaseGroup}
 	// instances/{instance}/databases/{database}
+	// projects/{project}/instances/{instance}/databases/{database}
 	Targets []string `protobuf:"bytes,3,rep,name=targets,proto3" json:"targets,omitempty"`
 	// Custom linting rules in natural language for AI-powered validation.
 	// Each rule should be a clear statement describing the desired schema constraint.
@@ -919,7 +920,8 @@ type CheckReleaseResponse_CheckResult struct {
 	// The file path that is being checked.
 	File string `protobuf:"bytes,1,opt,name=file,proto3" json:"file,omitempty"`
 	// The target that the check is performed on.
-	// Should be a database. Format: instances/{instance}/databases/{database}
+	// Should be a database.
+	// Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
 	Target string `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
 	// The list of advice for the file and the target.
 	Advices []*Advice `protobuf:"bytes,3,rep,name=advices,proto3" json:"advices,omitempty"`

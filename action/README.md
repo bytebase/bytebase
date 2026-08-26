@@ -58,7 +58,8 @@ These flags apply to the main `bytebase-action` command and its subcommands (`ch
     -   Used when `--plan` is not specified for the `rollout` command.
     -   Can specify a database group or individual databases.
     -   Formats:
-        -   Database: `instances/{instance}/databases/{database}`
+        -   Workspace-instance database: `instances/{instance}/databases/{database}`
+        -   Project-instance database: `projects/{project}/instances/{instance}/databases/{database}`
         -   Database Group: `projects/{project}/databaseGroups/{databaseGroup}`
     -   Default: `instances/test-sample-instance/databases/hr_test,instances/prod-sample-instance/databases/hr_prod`
 

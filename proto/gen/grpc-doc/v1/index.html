@@ -29048,7 +29048,8 @@ Permissions required: bb.projects.update</p></td>
 Can be database or databaseGroup.
 Format:
 projects/{project}/databaseGroups/{databaseGroup}
-instances/{instance}/databases/{database} </p></td>
+instances/{instance}/databases/{database}
+projects/{project}/instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
@@ -29136,7 +29137,8 @@ If absent, Bytebase skips VCS user tracking and VCS user limit enforcement. </p>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The target that the check is performed on.
-Should be a database. Format: instances/{instance}/databases/{database} </p></td>
+Should be a database.
+Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} </p></td>
                 </tr>
               
                 <tr>
