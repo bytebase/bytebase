@@ -686,7 +686,7 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
 
     activeVcsUserCount: () => get().serverInfo?.activeVcsUserCount ?? 0,
 
-    enableOnboarding: () => get().userCountInIam() === 1 && !get().isSaaSMode(),
+    enableOnboarding: () => get().userCountInIam() === 1,
 
     workspaceSetupGuideEnabled: () =>
       !get().appFeatures["bb.feature.hide-quick-start"] &&
@@ -694,10 +694,6 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
       get().hasWorkspacePermission("bb.projects.list") &&
       get().hasWorkspacePermission("bb.instances.list") &&
       get().hasWorkspacePermission("bb.databases.list"),
-
-    setupSample: async () => {
-      await actuatorServiceClientConnect.setupSample({});
-    },
 
     fetchServerInfo: async () => {
       const info = await actuatorServiceClientConnect.getActuatorInfo({});

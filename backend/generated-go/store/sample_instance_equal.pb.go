@@ -56,6 +56,9 @@ func (x *SelfHostSampleInstanceSetupPayload_Instance) Equal(y *SelfHostSampleIns
 	if x.RoleName != y.RoleName {
 		return false
 	}
+	if p, q := x.ProjectId, y.ProjectId; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
 	return true
 }
 
@@ -65,9 +68,6 @@ func (x *SelfHostSampleInstanceSetupPayload) Equal(y *SelfHostSampleInstanceSetu
 	}
 	if x == nil || y == nil {
 		return x == nil && y == nil
-	}
-	if x.DatabaseProjectId != y.DatabaseProjectId {
-		return false
 	}
 	if len(x.Instances) != len(y.Instances) {
 		return false

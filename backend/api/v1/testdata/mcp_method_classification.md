@@ -33,7 +33,6 @@ served by no ceiling.
 | AccessGrantService/RevokeAccessGrant | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.revoke |
 | AccessGrantService/SearchMyAccessGrants | READ | — | bb.accessGrants.get |
 | ActuatorService/GetActuatorInfo | READ | — | — |
-| ActuatorService/SetupSample | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.create |
 | AuditLogService/ExportAuditLogs | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.auditLogs.export |
 | AuditLogService/SearchAuditLogs | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.auditLogs.search |
 | AuthService/ExchangeToken | FORBIDDEN | MINTS_CREDENTIAL | — |

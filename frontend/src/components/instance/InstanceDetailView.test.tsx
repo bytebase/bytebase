@@ -349,6 +349,19 @@ describe("InstanceDetailView", () => {
     );
   });
 
+  it("does not show an expiration warning without sample expiration metadata", async () => {
+    mocks.serverInfo = {
+      defaultProject: "projects/default",
+      sample: {
+        instances: [{ instance: "instances/prod" }],
+      },
+    };
+
+    await render(<InstanceDetailView instanceName="instances/prod" />);
+
+    expect(container.textContent).not.toContain("instance.sample-expiration");
+  });
+
   it("does not show the post-sync transfer action when there is no user project", async () => {
     await render(<InstanceDetailView instanceName="instances/prod" />);
 

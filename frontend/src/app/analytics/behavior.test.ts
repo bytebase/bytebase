@@ -116,10 +116,10 @@ describe("behavior analytics routes", () => {
   test("allows page sessions on any named route", () => {
     expect(
       classifyBehaviorRoute({
-        name: "auth.profile.setup",
+        name: "auth.setup",
       })
     ).toMatchObject({
-      routeId: "auth.profile.setup",
+      routeId: "auth.setup",
       recording: "allow",
     });
 

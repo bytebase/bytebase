@@ -1221,6 +1221,7 @@
     "sample-expiration-future_one": "示例实例将在 {{count}} 天后的 {{time}} 被移除。",
     "sample-expiration-future_other": "示例实例将在 {{count}} 天后的 {{time}} 被移除。",
     "sample-project-instance-description": "使用示例项目实例探索 Bytebase，并在 7 天内使用预配置的数据库。",
+    "sample-project-instance-description-self-host": "使用带有预配置数据库的示例项目实例探索 Bytebase。",
     "sample-project-instance-title": "试用示例项目实例",
     "scan-interval": {
       "default-never": "默认（永不）",
@@ -1317,6 +1318,7 @@
     "type-or-paste-credentials-write-only": "输入或粘贴 CREDENTIALS - 仅写入",
     "unable-to-connect": "Bytebase 无法使用这些设置连接数据库。请检查上方指引，或继续操作并稍后更新连接。\n\n技术详情：{{0}}",
     "use-sample-instance": "使用示例实例（可用 7 天）",
+    "use-sample-instance-self-host": "使用示例实例",
     "users": "用户",
     "your-snowflake-account-locator": "您的 Snowflake 账户定位符"
   },
@@ -2949,26 +2951,6 @@
         "user-information-mapping": "用户信息映射",
         "user-information-mapping-description": "字段映射保存了来自 API 用户信息的字段名。"
       }
-    }
-  },
-  "setup": {
-    "basic-info": "基本信息",
-    "data": {
-      "built-in": "使用内置示例",
-      "built-in-desc": "生成示例项目和实例",
-      "self-setup": "设置项目"
-    },
-    "purposes": {
-      "alter-schema": "变更 Schema",
-      "query-data": "查询数据",
-      "self": "您使用 Bytebase 的主要目的是什么？"
-    },
-    "self": "设置",
-    "skip-setup": "跳过设置",
-    "workflow": {
-      "self": "您使用数据库的工作流程是怎样的？",
-      "simple": "无需复杂的工作流程，需要 UI 工具",
-      "team": "与队友合作，需要 CI/CD 工作流"
     }
   },
   "sheet": {

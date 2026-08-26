@@ -140,6 +140,8 @@ export function WorkspaceSetupGuide() {
   const productModelAvailable = !!getHowBytebaseWorksGuideContent(
     i18n.resolvedLanguage ?? "en-US"
   );
+  const hasContextualProductIntro =
+    typeof currentRoute.query?.[PRODUCT_INTRO_QUERY_KEY] === "string";
   const [loading, setLoading] = useState(true);
   const [productModelOpen, setProductModelOpen] = useState(false);
   const [selectedStepKey, setSelectedStepKey] = useState<keyof SetupKeys>();
@@ -228,6 +230,7 @@ export function WorkspaceSetupGuide() {
       dismissed ||
       !guideEnabled ||
       !productModelAvailable ||
+      hasContextualProductIntro ||
       !workspaceResourceName ||
       productModelAutoOpenedScopeRef.current === workspaceResourceName
     ) {
@@ -238,6 +241,7 @@ export function WorkspaceSetupGuide() {
   }, [
     dismissed,
     guideEnabled,
+    hasContextualProductIntro,
     loading,
     productModelAvailable,
     productModelSeen,
@@ -268,34 +272,47 @@ export function WorkspaceSetupGuide() {
     void (async () => {
       const store = useAppStore.getState();
       try {
-        const [projectResponse, instanceResponse] = await Promise.all([
-          store.fetchProjectList({
-            pageSize: 1,
-            silent: true,
-            filter: {
-              excludeDefault: true,
-              state: State.ACTIVE,
-            },
-          }),
+        const projectResponse = await store.fetchProjectList({
+          pageSize: 1,
+          silent: true,
+          filter: {
+            excludeDefault: true,
+            state: State.ACTIVE,
+          },
+        });
+        const project = projectResponse.projects.find(
+          ({ name }) => !!name && name !== defaultProject
+        );
+        const [
+          workspaceInstanceResponse,
+          projectInstanceResponse,
+          databaseResponse,
+        ] = await Promise.all([
           store.fetchInstanceList({
             pageSize: 1,
             filter: { state: State.ACTIVE },
             silent: true,
           }),
-        ]);
-        const project = projectResponse.projects.find(
-          ({ name }) => !!name && name !== defaultProject
-        );
-        const instance = instanceResponse.instances[0];
-        const databaseResponse =
+          project
+            ? store.fetchInstanceList({
+                parent: project.name,
+                pageSize: 1,
+                filter: { state: State.ACTIVE },
+                silent: true,
+              })
+            : Promise.resolve({ instances: [], nextPageToken: "" }),
           project && workspaceResourceName
-            ? await store.fetchDatabases({
+            ? store.fetchDatabases({
                 parent: workspaceResourceName,
                 pageSize: 1,
                 filter: { project: project.name },
                 silent: true,
               })
-            : undefined;
+            : Promise.resolve(undefined),
+        ]);
+        const instance =
+          workspaceInstanceResponse.instances[0] ??
+          projectInstanceResponse.instances[0];
         const database = databaseResponse?.databases.find(
           ({ name, project }) => !!name && !!project
         );
@@ -610,7 +627,7 @@ export function WorkspaceSetupGuide() {
       </div>
       {productModelAvailable && (
         <HowBytebaseWorksSheet
-          open={productModelOpen}
+          open={productModelOpen && !hasContextualProductIntro}
           onOpenChange={handleProductModelOpenChange}
         />
       )}

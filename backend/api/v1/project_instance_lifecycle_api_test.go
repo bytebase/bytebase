@@ -20,7 +20,15 @@ import (
 
 func TestProjectInstanceLifecycleAPIGatesArchivedProjectDescendants(t *testing.T) {
 	ctx, stores, projectID, instanceID, databaseName := setupProjectInstanceLifecycleAPITest(t)
-	licenseService := &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 10}
+	_, err := stores.UpdateInstance(ctx, &store.UpdateInstanceMessage{
+		ResourceID: &instanceID,
+		Workspace:  "default",
+		Metadata: &storepb.Instance{
+			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+		},
+	})
+	require.NoError(t, err)
+	licenseService := newInstanceServiceTestLicenseService(t, stores)
 	databaseLicenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
 	require.NoError(t, err)
 	projectService := NewProjectService(stores, nil, nil)
@@ -40,7 +48,7 @@ func TestProjectInstanceLifecycleAPIGatesArchivedProjectDescendants(t *testing.T
 	require.NoError(t, err)
 	undeleted, err := instanceService.UndeleteInstance(ctx, connect.NewRequest(&v1pb.UndeleteInstanceRequest{Name: instanceName}))
 	require.NoError(t, err)
-	require.True(t, undeleted.Msg.Activation)
+	require.False(t, undeleted.Msg.Activation)
 	_, err = instanceService.DeleteInstance(ctx, connect.NewRequest(&v1pb.DeleteInstanceRequest{Name: instanceName, Force: true}))
 	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 
@@ -65,37 +73,22 @@ func TestProjectInstanceLifecycleAPIGatesArchivedProjectDescendants(t *testing.T
 	require.NoError(t, err)
 	undeleted, err = instanceService.UndeleteInstance(ctx, connect.NewRequest(&v1pb.UndeleteInstanceRequest{Name: instanceName}))
 	require.NoError(t, err)
-	require.True(t, undeleted.Msg.Activation)
+	require.False(t, undeleted.Msg.Activation)
 
 	_, err = projectService.UndeleteProject(ctx, connect.NewRequest(&v1pb.UndeleteProjectRequest{Name: projectName}))
 	require.NoError(t, err)
 	got, err := instanceService.GetInstance(ctx, connect.NewRequest(&v1pb.GetInstanceRequest{Name: instanceName}))
 	require.NoError(t, err)
-	require.True(t, got.Msg.Activation)
+	require.False(t, got.Msg.Activation)
 }
 
 func TestUndeleteProjectInstanceChecksActivationLimit(t *testing.T) {
 	ctx, stores, projectID, instanceID, _ := setupProjectInstanceLifecycleAPITest(t)
-	licenseService := &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 1}
+	licenseService := newInstanceServiceTestLicenseService(t, stores)
 	instanceService := &InstanceService{store: stores, licenseService: licenseService}
 	instanceName := common.FormatProjectInstance(projectID, instanceID)
 
 	_, err := instanceService.DeleteInstance(ctx, connect.NewRequest(&v1pb.DeleteInstanceRequest{Name: instanceName}))
-	require.NoError(t, err)
-
-	otherProjectID := "project-b"
-	_, err = stores.CreateInstance(ctx, &store.InstanceMessage{
-		ResourceID: "other-project-instance",
-		Workspace:  "default",
-		ProjectID:  &otherProjectID,
-		Metadata: &storepb.Instance{
-			Activation: true,
-			DataSources: []*storepb.DataSource{{
-				Id:   "admin",
-				Type: storepb.DataSourceType_ADMIN,
-			}},
-		},
-	})
 	require.NoError(t, err)
 
 	_, err = instanceService.UndeleteInstance(ctx, connect.NewRequest(&v1pb.UndeleteInstanceRequest{Name: instanceName}))
@@ -107,29 +100,11 @@ func TestUndeleteProjectInstanceChecksActivationLimit(t *testing.T) {
 	require.True(t, instance.Metadata.GetActivation())
 }
 
-type instanceLicenseServiceStub struct {
-	instanceLimit          int
-	activatedInstanceLimit int
-}
-
-func (s *instanceLicenseServiceStub) GetActivatedInstanceLimit(context.Context, string) int {
-	return s.activatedInstanceLimit
-}
-
-func (s *instanceLicenseServiceStub) GetInstanceLimit(context.Context, string) int {
-	return s.instanceLimit
-}
-
-func (*instanceLicenseServiceStub) IsFeatureEnabledForInstance(context.Context, string, v1pb.PlanFeature, *store.InstanceMessage) error {
-	return nil
-}
-
-func (s *instanceLicenseServiceStub) IsInstanceEffectivelyActivated(_ context.Context, _ string, instance *store.InstanceMessage) bool {
-	return instance.Metadata.GetActivation() || s.instanceLimit <= s.activatedInstanceLimit
-}
-
-func (s *instanceLicenseServiceStub) IsUnifiedInstanceLicense(context.Context, string) bool {
-	return s.instanceLimit <= s.activatedInstanceLimit
+func newInstanceServiceTestLicenseService(t *testing.T, stores *store.Store) *enterprise.LicenseService {
+	t.Helper()
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
+	require.NoError(t, err)
+	return licenseService
 }
 
 func setupProjectInstanceLifecycleAPITest(t *testing.T) (context.Context, *store.Store, string, string, string) {

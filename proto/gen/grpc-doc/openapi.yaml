@@ -141,22 +141,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ActuatorInfo'
-  /v1/actuator:setupSample:
-    post:
-      tags:
-        - ActuatorService
-      summary: SetupSample
-      description: |-
-        Sets up sample data for demonstration and testing purposes.
-         Permissions required: bb.projects.create
-      operationId: ActuatorService_SetupSample
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/google.protobuf.Empty'
   /v1/ai/chat:
     post:
       tags:
@@ -30282,11 +30266,6 @@ components:
       title: SettingValue
       additionalProperties: false
       description: The data in setting value.
-    bytebase.v1.SetupSampleRequest:
-      type: object
-      title: SetupSampleRequest
-      additionalProperties: false
-      description: Request message for setting up sample data.
     bytebase.v1.Sheet:
       type: object
       properties:

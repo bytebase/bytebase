@@ -27,6 +27,8 @@ export type BehaviorMetricName =
   | "locked feature clicked"
   | "setup guide action clicked"
   | "setup guide dismissed"
+  | "workspace setup completed"
+  | "workspace setup skipped"
   | "post sync first change clicked"
   | "post sync sql editor clicked";
 

@@ -15,7 +15,6 @@ import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  isSaaSMode: vi.fn(() => true),
   projectsByName: {} as Record<string, unknown>,
   instancesByName: {} as Record<string, unknown>,
   databasesByName: {} as Record<string, unknown>,
@@ -53,11 +52,11 @@ const mocks = vi.hoisted(() => ({
   currentRoute: { name: "workspace.home" } as {
     name?: string;
     params?: Record<string, string | undefined>;
+    query?: Record<string, string | undefined>;
   },
   routerPush: vi.fn(),
   captureMetric: vi.fn(),
   defaultProjectName: "projects/default",
-  sampleInstances: [] as { instance: string }[],
   userCountInIam: 1,
   hideQuickStart: false,
   workspaceName: "workspaces/default",
@@ -122,7 +121,6 @@ vi.mock("@/app/analytics/provider", () => ({
 
 vi.mock("@/stores/app", () => {
   const getState = () => ({
-    isSaaSMode: mocks.isSaaSMode,
     projectsByName: mocks.projectsByName,
     instancesByName: mocks.instancesByName,
     databasesByName: mocks.databasesByName,
@@ -138,7 +136,6 @@ vi.mock("@/stores/app", () => {
     hasWorkspacePermission: mocks.hasWorkspacePermissionV2,
     serverInfo: {
       defaultProject: mocks.defaultProjectName,
-      sample: { instances: mocks.sampleInstances },
     },
     introStateVersion: mocks.introStateVersion,
     getIntroStateByKey: mocks.getIntroStateByKey,
@@ -243,7 +240,6 @@ beforeEach(() => {
     mocks.introState[key] = newState;
     mocks.introStateVersion += 1;
   });
-  mocks.isSaaSMode.mockReturnValue(true);
   mocks.projectsByName = {};
   mocks.instancesByName = {};
   mocks.databasesByName = {};
@@ -269,7 +265,6 @@ beforeEach(() => {
   mocks.hasWorkspacePermissionV2.mockReturnValue(true);
   mocks.currentRoute = { name: "workspace.home" };
   mocks.defaultProjectName = "projects/default";
-  mocks.sampleInstances = [];
   mocks.userCountInIam = 1;
   mocks.hideQuickStart = false;
   mocks.workspaceName = "workspaces/default";
@@ -304,6 +299,19 @@ describe("WorkspaceSetupGuide", () => {
     expect(
       container.querySelector('[data-testid="product-model-sheet"]')
     ).not.toBeNull();
+  });
+
+  it("does not auto-open the product model over a contextual intro", async () => {
+    mocks.currentRoute = {
+      name: "workspace.project.database",
+      query: { intro: "connect-database" },
+    };
+
+    await render(<WorkspaceSetupGuide />);
+
+    expect(
+      container.querySelector('[data-testid="product-model-sheet"]')
+    ).toBeNull();
   });
 
   it("does not auto-open a product model that was already seen", async () => {
@@ -377,18 +385,7 @@ describe("WorkspaceSetupGuide", () => {
     });
   });
 
-  it("renders outside SaaS mode", async () => {
-    mocks.isSaaSMode.mockReturnValue(false);
-
-    await render(<WorkspaceSetupGuide />);
-
-    expect(container.textContent).toContain(
-      "workspace-setup-guide.self"
-    );
-    expect(mocks.fetchProjectList).toHaveBeenCalled();
-  });
-
-  it("shows the first incomplete setup action for SaaS workspaces", async () => {
+  it("shows the first incomplete setup action", async () => {
     await render(<WorkspaceSetupGuide />);
 
     expect(container.textContent).toContain(
@@ -896,11 +893,7 @@ describe("WorkspaceSetupGuide", () => {
     ]);
   });
 
-  it("counts self-host sample resources as project and instance readiness", async () => {
-    mocks.sampleInstances = [
-      { instance: "instances/sample-one" },
-      { instance: "instances/sample-two" },
-    ];
+  it("counts workspace-owned instances as project and instance readiness", async () => {
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-sample" }],
       nextPageToken: "",
@@ -944,22 +937,19 @@ describe("WorkspaceSetupGuide", () => {
     }
   });
 
-  it("counts SaaS sample resources as project and instance readiness", async () => {
-    mocks.sampleInstances = [
-      { instance: "projects/app/instances/saas-sample" },
-    ];
+  it("counts project-owned instances as project and instance readiness", async () => {
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/app" }],
       nextPageToken: "",
     });
     mocks.fetchInstanceList.mockResolvedValue({
-      instances: [{ name: "projects/app/instances/saas-sample" }],
+      instances: [{ name: "projects/app/instances/project-sample" }],
       nextPageToken: "",
     });
     mocks.fetchDatabases.mockResolvedValue({
       databases: [
         {
-          name: "projects/app/instances/saas-sample/databases/employee",
+          name: "projects/app/instances/project-sample/databases/employee",
           project: "projects/app",
         },
       ],
@@ -986,7 +976,6 @@ describe("WorkspaceSetupGuide", () => {
 
   it("uses only the first resource page", async () => {
     mocks.introState[databaseExploredIntroStateKey] = true;
-    mocks.sampleInstances = [{ instance: "instances/sample" }];
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-sample" }],
       nextPageToken: "project-page-2",
@@ -1023,13 +1012,13 @@ describe("WorkspaceSetupGuide", () => {
       })
     );
     expect(mocks.fetchProjectList).toHaveBeenCalledTimes(1);
-    expect(mocks.fetchInstanceList).toHaveBeenCalledTimes(1);
+    expect(mocks.fetchInstanceList).toHaveBeenCalledTimes(2);
     expect(mocks.fetchDatabases).toHaveBeenCalledTimes(1);
     expect(mocks.fetchProjectList).toHaveBeenCalledWith(
       expect.objectContaining({ pageSize: 1 })
     );
     expect(mocks.fetchInstanceList).toHaveBeenCalledWith(
-      expect.objectContaining({ pageSize: 1 })
+      expect.objectContaining({ pageSize: 1, parent: "projects/project-sample" })
     );
     expect(mocks.fetchDatabases).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -1426,9 +1415,6 @@ describe("WorkspaceSetupGuide", () => {
   });
 
   it("completes Query data only after SQL execution finishes", async () => {
-    mocks.sampleInstances = [
-      { instance: "projects/app/instances/saas-sample" },
-    ];
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-a" }],
       nextPageToken: "",
@@ -1469,8 +1455,8 @@ describe("WorkspaceSetupGuide", () => {
 
     await act(async () => {
       await sqlEditorEvents.emit("query-executed", {
-        database: "projects/app/instances/saas-sample/databases/employee",
-        project: "projects/project-sample",
+        database: "projects/project-a/instances/instance-a/databases/db-a",
+        project: "projects/project-a",
       });
     });
 
@@ -1844,6 +1830,31 @@ describe("WorkspaceSetupGuide", () => {
     expect(container.textContent).toContain(
       "workspace-setup-guide.steps.database"
     );
+  });
+
+  it("completes the instance step for an instance owned by the project", async () => {
+    mocks.fetchProjectList.mockResolvedValue({
+      projects: [{ name: "projects/project-a" }],
+      nextPageToken: "",
+    });
+    mocks.fetchInstanceList.mockImplementation(async (params) => ({
+      instances:
+        params?.parent === "projects/project-a"
+          ? [{ name: "projects/project-a/instances/sample" }]
+          : [],
+      nextPageToken: "",
+    }));
+
+    await render(<WorkspaceSetupGuide />);
+
+    expect(mocks.fetchInstanceList).toHaveBeenCalledWith(
+      expect.objectContaining({ parent: "projects/project-a", pageSize: 1 })
+    );
+    expect(
+      container
+        .querySelector("[data-testid='setup-step-hasInstance']")
+        ?.querySelector(".lucide-circle-check-big")
+    ).not.toBeNull();
   });
 
   it("keeps the guide visible while progress is refreshing", async () => {

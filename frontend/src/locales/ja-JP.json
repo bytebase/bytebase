@@ -1221,6 +1221,7 @@
     "sample-expiration-future_one": "サンプルインスタンスは {{count}} 日後の {{time}} に削除されます。",
     "sample-expiration-future_other": "サンプルインスタンスは {{count}} 日後の {{time}} に削除されます。",
     "sample-project-instance-description": "すぐに使えるデータベースを備えたサンプルプロジェクトインスタンスを 7 日間使用して、Bytebase を試すことができます。",
+    "sample-project-instance-description-self-host": "すぐに使えるデータベースを備えたサンプルプロジェクトインスタンスを使用して、Bytebase を試すことができます。",
     "sample-project-instance-title": "サンプルプロジェクトインスタンスを試す",
     "scan-interval": {
       "default-never": "デフォルト (なし)",
@@ -1317,6 +1318,7 @@
     "type-or-paste-credentials-write-only": "資格情報を入力または貼り付けます - 書き込みのみ",
     "unable-to-connect": "この設定では Bytebase から接続できませんでした。上のガイダンスを確認するか、そのまま続行して後で接続を更新してください。\n\n技術的な詳細: {{0}}",
     "use-sample-instance": "サンプルインスタンスを使用する（7日間利用可能）",
+    "use-sample-instance-self-host": "サンプルインスタンスを使用する",
     "users": "ユーザー",
     "your-snowflake-account-locator": "Snowflake アカウント ロケーター"
   },
@@ -2949,26 +2951,6 @@
         "user-information-mapping": "ユーザー情報のマッピング",
         "user-information-mapping-description": "フィールド マップには、API ユーザー情報のフィールド名が保持されます。"
       }
-    }
-  },
-  "setup": {
-    "basic-info": "基本情報",
-    "data": {
-      "built-in": "組み込みサンプルを使用する",
-      "built-in-desc": "サンプルプロジェクトとインスタンスを生成する",
-      "self-setup": "プロジェクトのセットアップ"
-    },
-    "purposes": {
-      "alter-schema": "スキーマの変更",
-      "query-data": "クエリデータ",
-      "self": "Bytebase の主な目的は何ですか?"
-    },
-    "self": "設定",
-    "skip-setup": "セットアップをスキップ",
-    "workflow": {
-      "self": "データベースのワークフローは何ですか?",
-      "simple": "複雑なワークフローは不要、UIツールだけが必要です",
-      "team": "チームメイトと協力し、CI/CD パイプラインが必要"
     }
   },
   "sheet": {

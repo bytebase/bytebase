@@ -38,12 +38,15 @@ vi.mock("react-i18next", () => ({
         ({
         "instance.use-sample-instance":
           "Use sample instance (Available for 7 days)",
+        "instance.use-sample-instance-self-host": "Use sample instance",
         "instance.preparing-sample-instance":
           "Preparing Sample Project Instance…",
         "instance.prepare-sample-instance-failed":
           "Failed to prepare Sample Project Instance.",
         "instance.sample-project-instance-description":
           "Use a Sample Project Instance to explore Bytebase with a ready-to-use database for 7 days.",
+        "instance.sample-project-instance-description-self-host":
+          "Use a Sample Project Instance to explore Bytebase with a ready-to-use database.",
         "instance.sample-project-instance-title":
           "Try a Sample Project Instance",
         "subscription.usage.instance-count.title": "Instance quota reached",
@@ -534,7 +537,7 @@ describe("CreateInstanceView", () => {
     });
   });
 
-  test("keeps sample instance creation out of self-hosted project and SaaS workspace creation", () => {
+  test("shows permanent sample creation for a self-hosted project", () => {
     const container = document.createElement("div");
     const root = createRoot(container);
 
@@ -548,9 +551,45 @@ describe("CreateInstanceView", () => {
       );
     });
 
-    expect(container.textContent).not.toContain("Use sample instance");
+    expect(container.textContent).toContain("Use sample instance");
+    expect(container.textContent).toContain("ready-to-use database.");
+    expect(container.textContent).not.toContain("7 days");
 
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("keeps seven-day sample copy for SaaS", () => {
     mocks.isSaaSMode = true;
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    act(() => {
+      root.render(
+        <CreateInstanceView
+          parent="projects/demo"
+          onDismiss={mocks.onDismiss}
+          onCreated={mocks.onCreated}
+        />
+      );
+    });
+
+    expect(container.textContent).toContain(
+      "Use sample instance (Available for 7 days)"
+    );
+    expect(container.textContent).toContain("ready-to-use database for 7 days.");
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("keeps sample creation out of workspace-owned instance creation", () => {
+    mocks.isSaaSMode = true;
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
     act(() => {
       root.render(
         <CreateInstanceView

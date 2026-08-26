@@ -2,6 +2,8 @@ import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { createBehaviorMetric } from "@/app/analytics/behavior";
+import { behaviorAnalytics } from "@/app/analytics/provider";
 import { router } from "@/app/router";
 import {
   PROJECT_V1_ROUTE_DASHBOARD,
@@ -38,7 +40,7 @@ import {
 } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/connect";
 
-export function ProfileSetupPage() {
+export function WorkspaceSetupPage() {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
   const updateUser = useAppStore((state) => state.updateUser);
@@ -48,6 +50,9 @@ export function ProfileSetupPage() {
   );
   const sampleAvailable = useAppStore(
     (state) => state.serverInfo?.sample?.available ?? false
+  );
+  const deployment = useAppStore((state) =>
+    state.isSaaSMode() ? "cloud" : "self-host"
   );
   const { createProject, setRecentProject } = useCreateProject();
   const workspace = useWorkspace();
@@ -87,7 +92,11 @@ export function ProfileSetupPage() {
     useState(false);
   const [enableSampleDatabases, setEnableSampleDatabases] = useState(true);
   const [saving, setSaving] = useState(false);
-  const shouldCreateProject = canCreateProject && !!projectResourceId;
+  const shouldCreateProject =
+    canCreateProject && !!projectTitle.trim() && !!projectResourceId;
+  const sampleRequested =
+    shouldCreateProject && enableSampleDatabases && sampleAvailable;
+  const canEnableSample = !!projectTitle.trim() && !!projectResourceId;
 
   const validateProjectResourceId = useCallback(
     async (id: string): Promise<ValidatedMessage[]> => {
@@ -137,6 +146,7 @@ export function ProfileSetupPage() {
       }
       let createdProjectName = "";
       let sampleInstanceName = "";
+      let sampleSucceeded = false;
       if (shouldCreateProject) {
         const createdProject = await createProject(
           projectTitle.trim(),
@@ -144,12 +154,13 @@ export function ProfileSetupPage() {
         );
         setRecentProject(createdProject.name);
         createdProjectName = createdProject.name;
-        if (enableSampleDatabases && sampleAvailable && createdProject.name) {
+        if (sampleRequested && createdProject.name) {
           try {
             const sampleInstance = await prepareSampleProjectInstance(
               createdProject.name
             );
             sampleInstanceName = sampleInstance.name;
+            sampleSucceeded = true;
           } catch (error) {
             pushNotification({
               module: "bytebase",
@@ -165,6 +176,16 @@ export function ProfileSetupPage() {
         style: "SUCCESS",
         title: t("settings.profile.setup-success"),
       });
+      behaviorAnalytics.captureMetric(
+        createBehaviorMetric("workspace setup completed", {
+          properties: {
+            deployment,
+            project_created: !!createdProjectName,
+            sample_requested: sampleRequested,
+            sample_succeeded: sampleSucceeded,
+          },
+        })
+      );
       if (createdProjectName) {
         const sampleInstanceId =
           extractInstanceResourceName(sampleInstanceName);
@@ -202,6 +223,15 @@ export function ProfileSetupPage() {
       name: PROJECT_V1_ROUTE_DASHBOARD,
       query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO },
     });
+  };
+
+  const handleSkip = () => {
+    behaviorAnalytics.captureMetric(
+      createBehaviorMetric("workspace setup skipped", {
+        properties: { deployment },
+      })
+    );
+    goToDashboard();
   };
 
   const displayName = name.trim() || currentUser?.email || "?";
@@ -243,7 +273,7 @@ export function ProfileSetupPage() {
               <Input
                 data-testid="profile-workspace-title"
                 value={workspaceTitle}
-                onChange={(e) => setWorkspaceTitle(e.target.value)}
+                onChange={(event) => setWorkspaceTitle(event.target.value)}
                 placeholder={t("settings.profile.workspace-name-placeholder")}
               />
             </FormField>
@@ -254,40 +284,41 @@ export function ProfileSetupPage() {
               <Input
                 data-testid="profile-project-title"
                 value={projectTitle}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  setProjectTitle(value);
-                }}
-                placeholder={t("quick-action.new-project")}
-              />
-              <ResourceIdField
-                suffix
-                value={projectResourceId}
-                resourceName={t("common.project")}
-                resourceTitle={projectTitle}
-                validate={validateProjectResourceId}
-                onChange={(val) => {
-                  setProjectResourceId(val);
-                  if (!val) {
-                    setEnableSampleDatabases(false);
+                onChange={(event) => {
+                  const title = event.target.value;
+                  setProjectTitle(title);
+                  if (!title.trim()) {
+                    setProjectResourceId("");
+                    setIsProjectResourceIdValid(false);
                   }
                 }}
-                onValidationChange={setIsProjectResourceIdValid}
+                placeholder={t("project.create-modal.project-name")}
               />
+              {!!projectTitle.trim() && (
+                <ResourceIdField
+                  suffix
+                  value={projectResourceId}
+                  resourceName={t("common.project")}
+                  resourceTitle={projectTitle}
+                  validate={validateProjectResourceId}
+                  onChange={setProjectResourceId}
+                  onValidationChange={setIsProjectResourceIdValid}
+                />
+              )}
               {sampleAvailable && (
                 <div className="flex items-center gap-x-2 pt-1">
                   <Checkbox
                     id="enable-sample-databases"
                     data-testid="enable-sample-databases"
-                    checked={enableSampleDatabases}
-                    disabled={!shouldCreateProject}
+                    checked={canEnableSample && enableSampleDatabases}
+                    disabled={!canEnableSample}
                     onCheckedChange={setEnableSampleDatabases}
                   />
                   <label
                     htmlFor="enable-sample-databases"
                     className={cn(
                       "cursor-pointer",
-                      !shouldCreateProject &&
+                      !canEnableSample &&
                         "cursor-not-allowed text-control-placeholder"
                     )}
                   >
@@ -308,7 +339,7 @@ export function ProfileSetupPage() {
             </Button>
             <Button
               appearance="secondary"
-              onClick={goToDashboard}
+              onClick={handleSkip}
               className="w-full"
             >
               {t("settings.profile.setup-skip")}

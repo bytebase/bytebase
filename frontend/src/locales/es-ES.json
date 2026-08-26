@@ -1221,6 +1221,7 @@
     "sample-expiration-future_one": "La instancia de muestra se eliminará en {{count}} día, a las {{time}}.",
     "sample-expiration-future_other": "La instancia de muestra se eliminará en {{count}} días, a las {{time}}.",
     "sample-project-instance-description": "Use una instancia de proyecto de muestra para explorar Bytebase con una base de datos lista para usar durante 7 días.",
+    "sample-project-instance-description-self-host": "Use una instancia de proyecto de muestra para explorar Bytebase con una base de datos lista para usar.",
     "sample-project-instance-title": "Pruebe una instancia de proyecto de muestra",
     "scan-interval": {
       "default-never": "Predeterminado (nunca)",
@@ -1317,6 +1318,7 @@
     "type-or-paste-credentials-write-only": "Escriba o pegue las CREDENCIALES - solo escritura",
     "unable-to-connect": "Bytebase no pudo conectarse con esta configuración. Revisa las indicaciones anteriores o continúa y actualiza la conexión más tarde.\n\nDetalles técnicos: {{0}}",
     "use-sample-instance": "Usar instancia de ejemplo (Disponible durante 7 días)",
+    "use-sample-instance-self-host": "Usar instancia de ejemplo",
     "users": "Usuarios",
     "your-snowflake-account-locator": "Su localizador de cuentas Snowflake"
   },
@@ -2949,26 +2951,6 @@
         "user-information-mapping": "Mapeo de información del usuario",
         "user-information-mapping-description": "Mapea los nombres de campo de la API de información del usuario al usuario Bytebase."
       }
-    }
-  },
-  "setup": {
-    "basic-info": "Información básica",
-    "data": {
-      "built-in": "Utilice la muestra incorporada",
-      "built-in-desc": "Generar proyecto de muestra e instancias",
-      "self-setup": "Configurar el proyecto"
-    },
-    "purposes": {
-      "alter-schema": "Alterar esquema",
-      "query-data": "Consultar datos",
-      "self": "¿Cuál es su propósito principal con Bytebase?"
-    },
-    "self": "Configuración",
-    "skip-setup": "Saltar configuración",
-    "workflow": {
-      "self": "¿Cuál es su flujo de trabajo con la base de datos?",
-      "simple": "No hay un flujo de trabajo complejo, solo se necesitan herramientas de interfaz de usuario",
-      "team": "Trabajar con compañeros de equipo, necesita una canalización de CI/CD"
     }
   },
   "sheet": {

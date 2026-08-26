@@ -19,6 +19,64 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 )
 
+func TestCreateWorkspaceInitializesDefaults(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+	db := container.GetDB()
+	require.NoError(t, migrator.MigrateSchema(ctx, db))
+
+	pgURL := fmt.Sprintf(
+		"host=%s port=%s user=postgres password=root-password database=postgres",
+		container.GetHost(), container.GetPort(),
+	)
+	stores, err := store.New(ctx, pgURL, false)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, stores.Close()) })
+
+	const workspaceID = "workspace-defaults"
+	_, err = stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
+		ResourceID: workspaceID,
+		AdditionalSettings: []store.AdditionalSetting{{
+			Name:    storepb.SettingName_AI,
+			Payload: &storepb.AISetting{},
+		}},
+	}, "admin@example.com")
+	require.NoError(t, err)
+
+	settings, err := stores.ListSettings(ctx, &store.FindSettingMessage{Workspace: workspaceID})
+	require.NoError(t, err)
+	var names []storepb.SettingName
+	for _, setting := range settings {
+		names = append(names, setting.Name)
+	}
+	for _, name := range []storepb.SettingName{
+		storepb.SettingName_SYSTEM,
+		storepb.SettingName_APP_IM,
+		storepb.SettingName_DATA_CLASSIFICATION,
+		storepb.SettingName_WORKSPACE_APPROVAL,
+		storepb.SettingName_WORKSPACE_PROFILE,
+		storepb.SettingName_ENVIRONMENT,
+		storepb.SettingName_AI,
+	} {
+		require.Truef(t, slices.Contains(names, name), "missing setting %s", name)
+	}
+
+	environmentSetting, err := stores.GetSetting(ctx, workspaceID, storepb.SettingName_ENVIRONMENT)
+	require.NoError(t, err)
+	environments, ok := environmentSetting.Value.(*storepb.EnvironmentSetting)
+	require.True(t, ok)
+	require.Equal(t, []string{common.DefaultTestEnvironmentID, common.DefaultProdEnvironmentID}, []string{
+		environments.Environments[0].Id,
+		environments.Environments[1].Id,
+	})
+
+	defaultProjectID := common.DefaultProjectID(workspaceID)
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{Workspace: workspaceID, ResourceID: &defaultProjectID})
+	require.NoError(t, err)
+	require.NotNil(t, project)
+}
+
 func TestListWorkspacesByEmailEvaluatesBindingConditions(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.GetTestPgContainer(ctx, t)

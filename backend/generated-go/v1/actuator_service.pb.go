@@ -10,7 +10,6 @@ import (
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
@@ -24,43 +23,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// Request message for setting up sample data.
-type SetupSampleRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *SetupSampleRequest) Reset() {
-	*x = SetupSampleRequest{}
-	mi := &file_v1_actuator_service_proto_msgTypes[0]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *SetupSampleRequest) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*SetupSampleRequest) ProtoMessage() {}
-
-func (x *SetupSampleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_actuator_service_proto_msgTypes[0]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use SetupSampleRequest.ProtoReflect.Descriptor instead.
-func (*SetupSampleRequest) Descriptor() ([]byte, []int) {
-	return file_v1_actuator_service_proto_rawDescGZIP(), []int{0}
-}
-
 // Request message for getting actuator information.
 type GetActuatorInfoRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
@@ -70,7 +32,7 @@ type GetActuatorInfoRequest struct {
 
 func (x *GetActuatorInfoRequest) Reset() {
 	*x = GetActuatorInfoRequest{}
-	mi := &file_v1_actuator_service_proto_msgTypes[1]
+	mi := &file_v1_actuator_service_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -82,7 +44,7 @@ func (x *GetActuatorInfoRequest) String() string {
 func (*GetActuatorInfoRequest) ProtoMessage() {}
 
 func (x *GetActuatorInfoRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_actuator_service_proto_msgTypes[1]
+	mi := &file_v1_actuator_service_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -95,7 +57,7 @@ func (x *GetActuatorInfoRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetActuatorInfoRequest.ProtoReflect.Descriptor instead.
 func (*GetActuatorInfoRequest) Descriptor() ([]byte, []int) {
-	return file_v1_actuator_service_proto_rawDescGZIP(), []int{1}
+	return file_v1_actuator_service_proto_rawDescGZIP(), []int{0}
 }
 
 // SampleInfo describes sample setup availability and provisioned resources.
@@ -111,7 +73,7 @@ type SampleInfo struct {
 
 func (x *SampleInfo) Reset() {
 	*x = SampleInfo{}
-	mi := &file_v1_actuator_service_proto_msgTypes[2]
+	mi := &file_v1_actuator_service_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -123,7 +85,7 @@ func (x *SampleInfo) String() string {
 func (*SampleInfo) ProtoMessage() {}
 
 func (x *SampleInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_actuator_service_proto_msgTypes[2]
+	mi := &file_v1_actuator_service_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -136,7 +98,7 @@ func (x *SampleInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SampleInfo.ProtoReflect.Descriptor instead.
 func (*SampleInfo) Descriptor() ([]byte, []int) {
-	return file_v1_actuator_service_proto_rawDescGZIP(), []int{2}
+	return file_v1_actuator_service_proto_rawDescGZIP(), []int{1}
 }
 
 func (x *SampleInfo) GetAvailable() bool {
@@ -195,7 +157,7 @@ type ActuatorInfo struct {
 
 func (x *ActuatorInfo) Reset() {
 	*x = ActuatorInfo{}
-	mi := &file_v1_actuator_service_proto_msgTypes[3]
+	mi := &file_v1_actuator_service_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -207,7 +169,7 @@ func (x *ActuatorInfo) String() string {
 func (*ActuatorInfo) ProtoMessage() {}
 
 func (x *ActuatorInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_actuator_service_proto_msgTypes[3]
+	mi := &file_v1_actuator_service_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -220,7 +182,7 @@ func (x *ActuatorInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ActuatorInfo.ProtoReflect.Descriptor instead.
 func (*ActuatorInfo) Descriptor() ([]byte, []int) {
-	return file_v1_actuator_service_proto_rawDescGZIP(), []int{3}
+	return file_v1_actuator_service_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *ActuatorInfo) GetVersion() string {
@@ -342,7 +304,7 @@ type SampleInfo_Instance struct {
 
 func (x *SampleInfo_Instance) Reset() {
 	*x = SampleInfo_Instance{}
-	mi := &file_v1_actuator_service_proto_msgTypes[4]
+	mi := &file_v1_actuator_service_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -354,7 +316,7 @@ func (x *SampleInfo_Instance) String() string {
 func (*SampleInfo_Instance) ProtoMessage() {}
 
 func (x *SampleInfo_Instance) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_actuator_service_proto_msgTypes[4]
+	mi := &file_v1_actuator_service_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -367,7 +329,7 @@ func (x *SampleInfo_Instance) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SampleInfo_Instance.ProtoReflect.Descriptor instead.
 func (*SampleInfo_Instance) Descriptor() ([]byte, []int) {
-	return file_v1_actuator_service_proto_rawDescGZIP(), []int{2, 0}
+	return file_v1_actuator_service_proto_rawDescGZIP(), []int{1, 0}
 }
 
 func (x *SampleInfo_Instance) GetInstance() string {
@@ -388,8 +350,7 @@ var File_v1_actuator_service_proto protoreflect.FileDescriptor
 
 const file_v1_actuator_service_proto_rawDesc = "" +
 	"\n" +
-	"\x19v1/actuator_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x14\n" +
-	"\x12SetupSampleRequest\"\x18\n" +
+	"\x19v1/actuator_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x18\n" +
 	"\x16GetActuatorInfoRequest\"\xfe\x01\n" +
 	"\n" +
 	"SampleInfo\x12!\n" +
@@ -418,10 +379,9 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\x15active_vcs_user_count\x18\x1c \x01(\x05B\x03\xe0A\x03R\x12activeVcsUserCount\x124\n" +
 	"\x06sample\x18\x1d \x01(\v2\x17.bytebase.v1.SampleInfoB\x03\xe0A\x03R\x06sampleJ\x04\b\x03\x10\x04J\x04\b\x05\x10\bJ\x04\b\t\x10\n" +
 	"J\x04\b\n" +
-	"\x10\vJ\x04\b\f\x10\rJ\x04\b\x0e\x10\x0fJ\x04\b\x10\x10\x14J\x04\b\x16\x10\x17J\x04\b\x19\x10\x1a2\x97\x02\n" +
+	"\x10\vJ\x04\b\f\x10\rJ\x04\b\x0e\x10\x0fJ\x04\b\x10\x10\x14J\x04\b\x16\x10\x17J\x04\b\x19\x10\x1a2\x86\x01\n" +
 	"\x0fActuatorService\x12s\n" +
-	"\x0fGetActuatorInfo\x12#.bytebase.v1.GetActuatorInfoRequest\x1a\x19.bytebase.v1.ActuatorInfo\" \xdaA\x00\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/actuator/info\x12\x8e\x01\n" +
-	"\vSetupSample\x12\x1f.bytebase.v1.SetupSampleRequest\x1a\x16.google.protobuf.Empty\"F\x8a\xea0\x12bb.projects.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x1a\"\x18/v1/actuator:setupSampleB\xaa\x01\n" +
+	"\x0fGetActuatorInfo\x12#.bytebase.v1.GetActuatorInfoRequest\x1a\x19.bytebase.v1.ActuatorInfo\" \xdaA\x00\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x13\x12\x11/v1/actuator/infoB\xaa\x01\n" +
 	"\x0fcom.bytebase.v1B\x14ActuatorServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (
@@ -436,27 +396,23 @@ func file_v1_actuator_service_proto_rawDescGZIP() []byte {
 	return file_v1_actuator_service_proto_rawDescData
 }
 
-var file_v1_actuator_service_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_v1_actuator_service_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_v1_actuator_service_proto_goTypes = []any{
-	(*SetupSampleRequest)(nil),     // 0: bytebase.v1.SetupSampleRequest
-	(*GetActuatorInfoRequest)(nil), // 1: bytebase.v1.GetActuatorInfoRequest
-	(*SampleInfo)(nil),             // 2: bytebase.v1.SampleInfo
-	(*ActuatorInfo)(nil),           // 3: bytebase.v1.ActuatorInfo
-	(*SampleInfo_Instance)(nil),    // 4: bytebase.v1.SampleInfo.Instance
-	(*timestamppb.Timestamp)(nil),  // 5: google.protobuf.Timestamp
-	(*emptypb.Empty)(nil),          // 6: google.protobuf.Empty
+	(*GetActuatorInfoRequest)(nil), // 0: bytebase.v1.GetActuatorInfoRequest
+	(*SampleInfo)(nil),             // 1: bytebase.v1.SampleInfo
+	(*ActuatorInfo)(nil),           // 2: bytebase.v1.ActuatorInfo
+	(*SampleInfo_Instance)(nil),    // 3: bytebase.v1.SampleInfo.Instance
+	(*timestamppb.Timestamp)(nil),  // 4: google.protobuf.Timestamp
 }
 var file_v1_actuator_service_proto_depIdxs = []int32{
-	4, // 0: bytebase.v1.SampleInfo.instances:type_name -> bytebase.v1.SampleInfo.Instance
-	5, // 1: bytebase.v1.ActuatorInfo.last_active_time:type_name -> google.protobuf.Timestamp
-	2, // 2: bytebase.v1.ActuatorInfo.sample:type_name -> bytebase.v1.SampleInfo
-	5, // 3: bytebase.v1.SampleInfo.Instance.expire_time:type_name -> google.protobuf.Timestamp
-	1, // 4: bytebase.v1.ActuatorService.GetActuatorInfo:input_type -> bytebase.v1.GetActuatorInfoRequest
-	0, // 5: bytebase.v1.ActuatorService.SetupSample:input_type -> bytebase.v1.SetupSampleRequest
-	3, // 6: bytebase.v1.ActuatorService.GetActuatorInfo:output_type -> bytebase.v1.ActuatorInfo
-	6, // 7: bytebase.v1.ActuatorService.SetupSample:output_type -> google.protobuf.Empty
-	6, // [6:8] is the sub-list for method output_type
-	4, // [4:6] is the sub-list for method input_type
+	3, // 0: bytebase.v1.SampleInfo.instances:type_name -> bytebase.v1.SampleInfo.Instance
+	4, // 1: bytebase.v1.ActuatorInfo.last_active_time:type_name -> google.protobuf.Timestamp
+	1, // 2: bytebase.v1.ActuatorInfo.sample:type_name -> bytebase.v1.SampleInfo
+	4, // 3: bytebase.v1.SampleInfo.Instance.expire_time:type_name -> google.protobuf.Timestamp
+	0, // 4: bytebase.v1.ActuatorService.GetActuatorInfo:input_type -> bytebase.v1.GetActuatorInfoRequest
+	2, // 5: bytebase.v1.ActuatorService.GetActuatorInfo:output_type -> bytebase.v1.ActuatorInfo
+	5, // [5:6] is the sub-list for method output_type
+	4, // [4:5] is the sub-list for method input_type
 	4, // [4:4] is the sub-list for extension type_name
 	4, // [4:4] is the sub-list for extension extendee
 	0, // [0:4] is the sub-list for field type_name
@@ -474,7 +430,7 @@ func file_v1_actuator_service_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_actuator_service_proto_rawDesc), len(file_v1_actuator_service_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

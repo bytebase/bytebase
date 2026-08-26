@@ -180,15 +180,6 @@ func TestPrepareSampleProjectInstanceAdditionalLifecycleCoverage(t *testing.T) {
 		require.Zero(t, fixture.sampleRecordCount(ctx, t))
 	})
 
-	t.Run("Cloud-only gating", func(t *testing.T) {
-		fixture.service.profile.SaaS = false
-		_, err := fixture.service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
-			Parent: common.FormatProject(fixture.projectID),
-		}))
-		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
-		fixture.service.profile.SaaS = true
-	})
-
 	t.Run("workspace without environments still prepares a sample", func(t *testing.T) {
 		workspaceID := "sample-workspace-no-environment"
 		projectID := "sample-project-no-environment"
@@ -351,7 +342,7 @@ func newSampleProjectInstanceFixture(t *testing.T, clock func() time.Time) (cont
 		service: &InstanceService{
 			store:          stores,
 			profile:        &config.Profile{SaaS: true},
-			licenseService: &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 0},
+			licenseService: licenseService,
 			dbFactory:      dbFactory,
 			schemaSyncer:   syncer,
 			sampleManager:  manager,
