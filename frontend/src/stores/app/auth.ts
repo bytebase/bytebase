@@ -156,6 +156,9 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
     }
   },
 
+  setCurrentUser: (user) =>
+    set({ currentUser: user, currentUserName: user.name }),
+
   // sometimes we have to redirect users even if we don't want to redirect them.
   // for example, the user is forced to reset their password,
   // or the user is using the LDAP to signin.

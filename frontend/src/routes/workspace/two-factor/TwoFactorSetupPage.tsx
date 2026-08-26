@@ -48,7 +48,7 @@ interface TwoFactorSetupPageProps {
 export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
-  const fetchCurrentUser = useAppStore((state) => state.fetchCurrentUser);
+  const setCurrentUser = useAppStore((state) => state.setCurrentUser);
   const [enrollment, setEnrollment] = useState<Enrollment | undefined>();
 
   const [currentStep, setCurrentStep] = useState<Step>(SETUP_AUTH_APP_STEP);
@@ -188,13 +188,17 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   const tryFinishSetup = useCallback(async () => {
     // Confirming the codes is what makes the factor live: the secret and the
     // codes that recover it start existing in the same write.
-    await userServiceClientConnect.confirmRecoveryCodes(
+    const enabled = await userServiceClientConnect.confirmRecoveryCodes(
       create(ConfirmRecoveryCodesRequestSchema, {
         name: currentUser.name,
         pendingVersion: enrollment?.pendingVersion,
       })
     );
-    await fetchCurrentUser();
+    // Adopt the response rather than refetching. The navigation below runs
+    // through the router guard, which sends an account without a live factor
+    // back here; a refetch that failed would leave the store saying exactly
+    // that and mint a second enrollment for a factor already enabled.
+    setCurrentUser(enabled);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -206,7 +210,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
     } else {
       router.replace({ name: ACCOUNT_ROUTE });
     }
-  }, [currentUser.name, enrollment?.pendingVersion, fetchCurrentUser, t]);
+  }, [currentUser.name, enrollment?.pendingVersion, setCurrentUser, t]);
 
   const allowNext =
     currentStep === SETUP_AUTH_APP_STEP

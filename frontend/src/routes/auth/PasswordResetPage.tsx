@@ -152,13 +152,13 @@ export function PasswordResetPage() {
 
     // Forced-reset mode
     if (!currentUser) return;
-    await userServiceClientConnect.changePassword(
+    const updated = await userServiceClientConnect.changePassword(
       create(ChangePasswordRequestSchema, {
         name: currentUser.name,
         newPassword: password,
       })
     );
-    await useAppStore.getState().fetchCurrentUser();
+    useAppStore.getState().setCurrentUser(updated);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

@@ -218,7 +218,7 @@ export function AccountSettingsPage() {
       // page's copy: a workspace admin who turns their own factor off while
       // the workspace requires MFA has to be sent back to enrollment now,
       // not whenever the session next revalidates.
-      await useAppStore.getState().fetchCurrentUser();
+      useAppStore.getState().setCurrentUser(updated);
       setShowDisable2FAConfirm(false);
       setShowRegenerateView(false);
       pushNotification({

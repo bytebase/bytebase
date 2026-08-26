@@ -506,6 +506,20 @@ describe("useAppStore", () => {
     expect(store.getState().isLoggedIn()).toBe(true);
   });
 
+  // Mutations that answer with the updated user adopt it directly: the router
+  // guard reads this state, and a refetch that failed would leave it stale
+  // while fetchCurrentUser swallowed the error.
+  test("adopts a user handed to setCurrentUser", () => {
+    const store = createAppStore();
+    const enabled = createProto(UserSchema, { ...user, mfaEnabled: true });
+
+    store.getState().setCurrentUser(enabled);
+
+    expect(store.getState().currentUser?.mfaEnabled).toBe(true);
+    expect(store.getState().currentUserName).toBe(enabled.name);
+    expect(store.getState().isLoggedIn()).toBe(true);
+  });
+
   test("fetches the current user silently when requested", async () => {
     mocks.getCurrentUser.mockResolvedValue(user);
     const store = createAppStore();

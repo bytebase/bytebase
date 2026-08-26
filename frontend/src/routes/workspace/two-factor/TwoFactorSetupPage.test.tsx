@@ -26,7 +26,7 @@ const mintedEnrollment = {
 const mocks = vi.hoisted(() => ({
   useCurrentUser: vi.fn(() => currentUser),
   startMFAEnrollment: vi.fn(async () => mintedEnrollment),
-  fetchCurrentUser: vi.fn(async () => currentUser),
+  setCurrentUser: vi.fn(),
   pushNotification: vi.fn(),
   routerReplace: vi.fn(),
   currentRoute: {
@@ -41,7 +41,7 @@ vi.mock("@/hooks/useAppState", () => ({
 vi.mock("@/stores/app", () => ({
   useAppStore: (selector: (state: unknown) => unknown) =>
     selector({
-      fetchCurrentUser: mocks.fetchCurrentUser,
+      setCurrentUser: mocks.setCurrentUser,
     }),
 }));
 
