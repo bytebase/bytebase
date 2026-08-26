@@ -262,7 +262,13 @@ export function OAuth2ConsentPage() {
   const retryFor = (reason: UndisclosedReason): (() => void) | undefined => {
     switch (reason) {
       case "unknown":
-        return retryCeiling;
+        // Wrapped rather than passed: retryCeiling is async, and handing a
+        // Promise-returning function to a `() => void` prop floats the promise
+        // (SonarCloud S6544). readCeiling swallows its own failures, so there
+        // is no rejection to route anywhere.
+        return () => {
+          void retryCeiling();
+        };
       case "outdated":
         // Only a fresh bundle can name this ceiling. Re-reading the policy
         // would return the same value this page has no word for.
