@@ -37,21 +37,24 @@ func (s *WorkspaceService) GetMCPInfo(ctx context.Context, _ *connect.Request[v1
 		return nil, connect.NewError(connect.CodeInternal, errors.New("no workspace on the request"))
 	}
 	settings, err := s.mcpSettingsForInfo(ctx, workspaceID)
-	// Every verdict is decided here, not only the read failures. DISABLED is
-	// the one refusing ceiling this still answers under, deliberately: an admin
-	// looking at a workspace with MCP off is exactly who needs to see what the
-	// other modes contain. A ceiling this build does not serve is different —
-	// reporting it as "in force" would describe a state the build does not run,
-	// beside a modes list with no row for it.
+	// Every verdict but an outage is answered, the three refusing ceilings
+	// included: the mode contents do not come from the stored row, so a broken
+	// one still owes the admin repairing it the comparison, and the consent page
+	// a policy to disclose. capability_unreadable carries the refusal (BOT-106).
+	var unreadable bool
 	switch verdict := auth.ClassifyMCPCeiling(settings.Capability, err); verdict {
-	case auth.MCPCeilingServes, auth.MCPCeilingDisabled:
-	case auth.MCPCeilingUnreadable, auth.MCPCeilingUnserved:
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New(verdict.Refusal()))
+	case auth.MCPCeilingServes, auth.MCPCeilingDisabled, auth.MCPCeilingUnserved:
+	case auth.MCPCeilingUnreadable:
+		unreadable = true
 	default:
 		// The store error stays in the log. This method is served to MCP
 		// sessions and the tool layer renders a connect message into what the
 		// model reads, so a driver error text would leave the metadata
 		// database's shape in an agent's context.
+		//
+		// An outage is the one verdict with no ceiling to describe. Answering
+		// with an empty one would read as a stored value nobody can resolve,
+		// which an admin repairs rather than a retry clearing it.
 		slog.Error("failed to read the MCP setting", slog.String("workspace", workspaceID), log.BBError(err))
 		return nil, connect.NewError(connect.CodeUnavailable, errors.New(verdict.Refusal()))
 	}
@@ -59,6 +62,7 @@ func (s *WorkspaceService) GetMCPInfo(ctx context.Context, _ *connect.Request[v1
 	return connect.NewResponse(&v1pb.MCPInfo{
 		Workspace:               common.FormatWorkspace(workspaceID),
 		Capability:              convertToV1MCPCapability(settings.Capability),
+		CapabilityUnreadable:    unreadable,
 		Modes:                   mcpCapabilityModes(),
 		Methods:                 mcpServedMethods(protoregistry.GlobalFiles),
 		Engines:                 mcpEngineEnforcement(),

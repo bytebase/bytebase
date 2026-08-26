@@ -365,6 +365,8 @@ func TestGetMCPInfoHandler(t *testing.T) {
 		require.Equal(t, "workspaces/"+workspaceID, info.Workspace)
 		require.Equal(t, v1pb.MCPSetting_READ_WRITE, info.Capability)
 		require.False(t, info.IgnoreMaskingExemptions)
+		require.False(t, info.CapabilityUnreadable,
+			"a workspace that never configured MCP is readable, not broken")
 
 		// The list is the live registry's, not a fixture: every entry must be a
 		// method this build actually compiled, and the count must match what
@@ -402,20 +404,40 @@ func TestGetMCPInfoHandler(t *testing.T) {
 			"an admin with MCP off is exactly who needs to see what the other modes contain")
 	})
 
-	t.Run("a ceiling this build cannot read fails closed", func(t *testing.T) {
+	// The two subtests below are BOT-106. Both ceilings refuse every MCP
+	// connection and both used to refuse this call whole, which took the mode
+	// comparison away from the admin repairing the row and left the consent
+	// page with no policy to disclose.
+	t.Run("a ceiling this build cannot read is described, not refused", func(t *testing.T) {
 		setCeiling(t, `{"capability":"READ_ONLYY"}`)
-		_, err := get(workspaceCtx())
-		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
-		require.Contains(t, err.Error(), "not one this build understands")
+		info, err := get(workspaceCtx())
+		require.NoError(t, err, "none of the mode contents come from the stored row")
+		require.True(t, info.CapabilityUnreadable)
+		require.Equal(t, v1pb.MCPSetting_CAPABILITY_UNSPECIFIED, info.Capability,
+			"a ceiling nobody can resolve must not arrive as a mode, least of all the permissive one")
+		require.False(t, info.IgnoreMaskingExemptions,
+			"no MCP request runs under this ceiling, so the toggle carries neither the row's value nor a decision")
+		require.Len(t, info.Modes, 3, "the comparison this page exists for")
+		require.Equal(t, len(mcpServedMethods(protoregistry.GlobalFiles)), len(info.Methods))
+		require.NotEmpty(t, info.Engines)
 	})
 
-	t.Run("a ceiling this build does not serve fails closed", func(t *testing.T) {
-		// The reserved 2, or a value a newer release wrote. It parses, so
-		// nothing but the verdict catches it.
+	t.Run("a ceiling no mode serves is described by the value nobody serves", func(t *testing.T) {
+		// The reserved 2, or a value a newer release wrote. It parses, so the
+		// number is the answer and needs no field of its own: modes has no row
+		// for it, which is what tells a client this ceiling serves nothing.
 		setCeiling(t, `{"capability":2}`)
-		_, err := get(workspaceCtx())
-		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
-		require.Contains(t, err.Error(), "not one this build serves")
+		info, err := get(workspaceCtx())
+		require.NoError(t, err)
+		require.False(t, info.CapabilityUnreadable, "it parsed; nothing failed to read it")
+		require.Equal(t, v1pb.MCPSetting_Capability(2), info.Capability)
+		// Len first: the loop below passes vacuously on an empty table, and an
+		// empty table is what turns every consent page into this same card.
+		require.Len(t, info.Modes, 3, "the comparison this page exists for")
+		for _, mode := range info.Modes {
+			require.NotEqual(t, v1pb.MCPSetting_Capability(2), mode.Capability)
+		}
+		require.NotEmpty(t, info.Engines)
 	})
 
 	t.Run("the gate's resolution wins over a second read", func(t *testing.T) {

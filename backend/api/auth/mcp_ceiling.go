@@ -9,9 +9,11 @@ import (
 
 // MCPCeilingVerdict is what a read of a workspace's MCP capability ceiling
 // means to a caller deciding whether to proceed. Every reader of the setting
-// decides from it and says so with Refusal — the consent, the token endpoint,
-// the /mcp connection gate, the per-request gate, and the mode-contents read —
-// so no two can disagree about a workspace or describe it two ways.
+// decides from it — the consent, the token endpoint, the /mcp connection gate,
+// the per-request gate, and the mode-contents read — so no two can disagree
+// about a workspace. Every door but the mode-contents read says so with
+// Refusal; that one answers the policy verdicts in its response body and keeps
+// Refusal for the outage (BOT-106).
 type MCPCeilingVerdict int
 
 // Each value names what an admin would have to do about it, which is what the

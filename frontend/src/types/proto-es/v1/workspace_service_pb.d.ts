@@ -53,6 +53,13 @@ export declare type MCPInfo = Message<"bytebase.v1.MCPInfo"> & {
    * The ceiling in force for this workspace. A workspace that never configured
    * MCP resolves to READ_WRITE.
    *
+   * Read capability_unreadable before this field, and decide the rest from
+   * modes rather than from this number. CAPABILITY_UNSPECIFIED, which protojson
+   * omits, is not a ceiling: it means the stored value could not be resolved.
+   * Otherwise the ceiling serves nothing exactly when modes carries no row for
+   * it. A number a client's own generated enum cannot name is a different case
+   * — a newer release added it — and modes still says whether it serves.
+   *
    * @generated from field: bytebase.v1.MCPSetting.Capability capability = 2;
    */
   capability: MCPSetting_Capability;
@@ -107,6 +114,29 @@ export declare type MCPInfo = Message<"bytebase.v1.MCPInfo"> & {
    * @generated from field: bool data_masking_available = 7;
    */
   dataMaskingAvailable: boolean;
+
+  /**
+   * True when this workspace stores a capability key this build cannot resolve
+   * to a ceiling, which is refused every MCP connection. Same state, same
+   * representation as MCPSetting.capability_unreadable, and reachable the same
+   * two ways: an enum name a newer release wrote, or a hand edit.
+   *
+   * modes, methods and engines are answered anyway: they come from the compiled
+   * descriptors and the enforcement code, never from the stored row (BOT-106).
+   *
+   * capability is CAPABILITY_UNSPECIFIED whenever this is true, and never
+   * otherwise: a workspace that never configured MCP resolves to READ_WRITE.
+   * ignore_masking_exemptions is served as false, which is its permissive
+   * direction — do not read it as a masking decision. Neither field carries
+   * what the row holds, because no MCP request runs under this ceiling for
+   * either to apply to.
+   *
+   * A ceiling that parsed but no mode serves is the neighbouring state: the
+   * number arrives on capability and modes has no row for it.
+   *
+   * @generated from field: bool capability_unreadable = 8;
+   */
+  capabilityUnreadable: boolean;
 };
 
 /**
