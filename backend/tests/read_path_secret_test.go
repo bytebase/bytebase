@@ -267,3 +267,68 @@ func TestMCPServesTheReadsTheRedactionFreed(t *testing.T) {
 			"%s must still be refused for what it does; got %q", tc.operation, got.Error)
 	}
 }
+
+// TestMFAReplacementPromotesTheNewAuthenticator covers the enrollment the
+// account page reaches through Edit rather than Enable: a user who already has
+// a factor scans a new authenticator, and it is the new one that has to be live
+// afterwards. Confirming only the recovery codes while leaving the old secret in
+// place reports success and then rejects every code from the authenticator the
+// user just set up — a lockout as soon as they delete the old entry.
+func TestMFAReplacementPromotesTheNewAuthenticator(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	userName := common.FormatUserEmail("demo@example.com")
+	enroll := func() string {
+		t.Helper()
+		minted, err := ctl.userServiceClient.StartMFAEnrollment(ctx, connect.NewRequest(&v1pb.StartMFAEnrollmentRequest{
+			Name: userName,
+		}))
+		a.NoError(err)
+		otp, err := totp.GenerateCode(minted.Msg.OtpSecret, time.Now())
+		a.NoError(err)
+		_, err = ctl.userServiceClient.EnableMFA(ctx, connect.NewRequest(&v1pb.EnableMFARequest{
+			Name:    userName,
+			OtpCode: otp,
+		}))
+		a.NoError(err)
+		_, err = ctl.userServiceClient.ConfirmRecoveryCodes(ctx, connect.NewRequest(&v1pb.ConfirmRecoveryCodesRequest{
+			Name: userName,
+		}))
+		a.NoError(err)
+		return minted.Msg.OtpSecret
+	}
+
+	firstSecret := enroll()
+	replacementSecret := enroll()
+	a.NotEqual(firstSecret, replacementSecret)
+
+	// Sign in with the replacement authenticator. This is the assertion that
+	// matters: the login path validates against the stored live secret, so it
+	// passes only if the enrollment promoted the one just scanned.
+	adminToken := ctl.authInterceptor.token
+	ctl.authInterceptor.token = ""
+	defer func() { ctl.authInterceptor.token = adminToken }()
+
+	mfaStart, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:    "demo@example.com",
+		Password: "1024bytebase",
+	}))
+	a.NoError(err)
+	mfaTempToken := mfaStart.Msg.GetMfaTempToken()
+	a.NotEmpty(mfaTempToken, "the account must still require a second factor")
+
+	otp, err := totp.GenerateCode(replacementSecret, time.Now())
+	a.NoError(err)
+	loggedIn, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		OtpCode:      &otp,
+		MfaTempToken: &mfaTempToken,
+	}))
+	a.NoError(err, "a code from the newly enrolled authenticator must be accepted")
+	a.NotEmpty(loggedIn.Msg.Token)
+}

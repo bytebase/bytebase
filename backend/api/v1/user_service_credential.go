@@ -219,16 +219,18 @@ func (s *UserService) ConfirmRecoveryCodes(ctx context.Context, request *connect
 		OtpSecret:     caller.MFAConfig.GetOtpSecret(),
 		RecoveryCodes: caller.MFAConfig.GetTempRecoveryCodes(),
 	}
-	if mfaConfig.OtpSecret == "" {
-		// First-time enrollment: the pending secret goes live too, and the
-		// window it was minted in still has to be open.
-		if caller.MFAConfig.GetTempOtpSecret() == "" {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("no MFA enrollment in progress, call StartMFAEnrollment first"))
-		}
+	// A pending secret means an enrollment — the account's first factor, or a
+	// replacement for the one it already has — and either way that secret is
+	// the one the caller just proved they can generate codes from, so it is
+	// the one that goes live. Only RegenerateRecoveryCodes leaves no pending
+	// secret, and only there does the live factor survive untouched.
+	if pendingSecret := caller.MFAConfig.GetTempOtpSecret(); pendingSecret != "" {
 		if isMFATempSecretExpired(caller.MFAConfig) {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("MFA setup has expired, please restart the enrollment"))
 		}
-		mfaConfig.OtpSecret = caller.MFAConfig.GetTempOtpSecret()
+		mfaConfig.OtpSecret = pendingSecret
+	} else if mfaConfig.OtpSecret == "" {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("no MFA enrollment in progress, call StartMFAEnrollment first"))
 	}
 
 	user, err := s.store.UpdateUser(ctx, caller, &store.UpdateUserMessage{MFAConfig: mfaConfig})
