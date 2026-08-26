@@ -8,13 +8,10 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// AST wraps one omni GoogleSQL statement node so it satisfies base.AST.
+// AST wraps one omni GoogleSQL statement node so it satisfies base.AST. Node is
+// nil when omni could not parse the statement.
 type AST struct {
-	// Node is the omni AST node (e.g. *ast.InsertStmt, *ast.CreateTableStmt).
-	Node ast.Node
-	// Text is the original SQL text of this statement.
-	Text string
-	// StartPosition is the 1-based position where this statement starts.
+	Node          ast.Node
 	StartPosition *storepb.Position
 }
 
@@ -41,18 +38,14 @@ func ParseStatements(statement string, cfg Config) ([]base.ParsedStatement, erro
 		if len(errs) > 0 || file == nil || len(file.Stmts) == 0 {
 			result = append(result, base.ParsedStatement{
 				Statement: stmt,
-				AST:       &AST{Text: stmt.Text, StartPosition: stmt.Start},
+				AST:       &AST{StartPosition: stmt.Start},
 			})
 			continue
 		}
 		for _, node := range file.Stmts {
 			result = append(result, base.ParsedStatement{
 				Statement: stmt,
-				AST: &AST{
-					Node:          node,
-					Text:          stmt.Text,
-					StartPosition: stmt.Start,
-				},
+				AST:       &AST{Node: node, StartPosition: stmt.Start},
 			})
 		}
 	}
@@ -77,17 +70,18 @@ func GetStatementTypes(asts []base.AST) ([]storepb.StatementType, error) {
 // statementType maps one omni GoogleSQL node to a storepb.StatementType.
 //
 // Deferral: every GoogleSQL statement the enum has no value for reports
-// UNSPECIFIED. A rule excluding DML then treats it as "approve", and a rule
-// selecting DML treats it as "skip", so the second direction is a gap, not a
-// safe default. The gap covers statements that do write rows: LOAD DATA INTO,
-// CLONE DATA INTO, and EXECUTE IMMEDIATE (whose text is only known at run
-// time, so no static value can be right). It also covers ALTER SCHEMA, row
-// access policies, generic entities (CAPACITY / RESERVATION / ASSIGNMENT),
-// scripting bodies, and the Spanner-only DDL set (change streams, roles,
-// GRANT / REVOKE, proto bundles), none of which write rows.
+// UNSPECIFIED, so a rule selecting DML skips it. The gap includes statements
+// that do write rows — LOAD DATA INTO, CLONE DATA INTO, scripting bodies
+// (BEGIN…END, CALL, FOR, WHILE, each of which parses as one statement), and
+// EXECUTE IMMEDIATE, whose text is only known at run time. It also includes
+// ALTER SCHEMA, row access policies, generic entities, and the Spanner-only
+// DDL set (change streams, roles, GRANT / REVOKE, proto bundles), which do
+// not write rows.
+//
+// A new row-writing statement needs its own enum value before it lands here.
+// analysis.ClassifySQL returns Unknown for these too, so it cannot gate the list.
 func statementType(node ast.Node) storepb.StatementType {
 	switch n := node.(type) {
-	// DML.
 	case *ast.InsertStmt:
 		return storepb.StatementType_INSERT
 	case *ast.UpdateStmt:
@@ -99,7 +93,6 @@ func statementType(node ast.Node) storepb.StatementType {
 	case *ast.TruncateStmt:
 		return storepb.StatementType_TRUNCATE
 
-	// DDL - CREATE.
 	case *ast.CreateTableStmt:
 		return storepb.StatementType_CREATE_TABLE
 	case *ast.CreateViewStmt:
@@ -123,7 +116,6 @@ func statementType(node ast.Node) storepb.StatementType {
 	case *ast.CreateSnapshotStmt:
 		return storepb.StatementType_CREATE_TABLE
 
-	// DDL - ALTER / DROP carry the object kind on the node.
 	case *ast.AlterStmt:
 		return alterStatementType(n.Object)
 	case *ast.DropStmt:

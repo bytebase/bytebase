@@ -152,8 +152,7 @@ func ContainsDDL(engine storepb.Engine, parsedStatements []base.ParsedStatement)
 		case storepb.StatementType_STATEMENT_TYPE_UNSPECIFIED,
 			storepb.StatementType_INSERT,
 			storepb.StatementType_UPDATE,
-			storepb.StatementType_DELETE,
-			storepb.StatementType_MERGE:
+			storepb.StatementType_DELETE:
 		default:
 			return true
 		}

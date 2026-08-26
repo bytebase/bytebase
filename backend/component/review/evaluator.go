@@ -739,7 +739,7 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 			SheetSHA256:  target.sheetSha256,
 		}]
 		if !ok || result.GetSqlSummaryReport() == nil {
-			// statement.sql_type must be set even with no summary report:
+			// Set statement.sql_type wherever the engine can classify:
 			// cel-go resolves a declared-but-absent variable to an unknown,
 			// which matchRulesForSource drops as a non-match.
 			statementTypes := statementTypesFromParser(target.database.Engine, taskStatement)
@@ -1107,9 +1107,9 @@ func getApprovalSourceFromIssue(ctx context.Context, stores *store.Store, issue 
 }
 
 // statementTypesFromParser classifies a sheet directly, for engines that never
-// produce a SQL summary report. Returns nil when the engine has no registered
-// parser or the sheet does not parse, which leaves statement.sql_type absent
-// exactly as before.
+// produce a SQL summary report. Returns nil when the engine has no statement-type
+// handler, when the sheet does not parse, or when it is over the size guard,
+// which leaves statement.sql_type absent for those engines exactly as before.
 //
 // The size guard mirrors the statement report check, which skips sheets over
 // common.MaxSheetCheckSize; parsing runs on the approval path, so a sheet the
