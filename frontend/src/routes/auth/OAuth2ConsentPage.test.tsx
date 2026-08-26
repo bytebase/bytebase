@@ -34,6 +34,7 @@ const mocks = vi.hoisted(() => ({
     },
   },
   fetchImpl: vi.fn(),
+  getMCPInfo: vi.fn(),
 }));
 mocks.useAuthStore.mockImplementation(() => ({
   get isLoggedIn() {
@@ -125,11 +126,18 @@ vi.mock("@/components/BytebaseLogo", () => ({
   BytebaseLogo: () => null,
 }));
 
+vi.mock("@/api", () => ({
+  workspaceServiceClientConnect: { getMCPInfo: mocks.getMCPInfo },
+}));
+
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string, vars?: Record<string, string>) =>
       vars ? `${key}:${JSON.stringify(vars)}` : key,
   }),
+  // The page now reaches the connect client for GetMCPInfo, and @/api's error
+  // middleware imports the shared i18n instance, which registers this.
+  initReactI18next: { type: "3rdParty", init: () => {} },
 }));
 
 let OAuth2ConsentPage: typeof import("./OAuth2ConsentPage").OAuth2ConsentPage;
@@ -171,6 +179,9 @@ beforeEach(async () => {
   mocks.currentRoute.value.fullPath = "/oauth2/consent";
   globalThis.fetch = mocks.fetchImpl as typeof fetch;
   mocks.fetchImpl.mockReset();
+  mocks.getMCPInfo.mockReset();
+  // Default: the ceiling read fails, which is the pre-1b-6 shape of the card.
+  mocks.getMCPInfo.mockRejectedValue(new Error("no ceiling"));
   ({ OAuth2ConsentPage } = await import("./OAuth2ConsentPage"));
 });
 
@@ -484,6 +495,193 @@ describe("OAuth2ConsentPage", () => {
     expect(denyFields.resource).toBe("https://bb.example.com/mcp");
     expect(denyFields.scope).toBe("mcp:read-only");
     submitSpy.mockRestore();
+    unmount();
+  });
+
+  // The ceiling states. The same ceiling refuses the POST server-side, so what
+  // these pin is that the page says the same thing first — including the one
+  // state where there is nothing to approve.
+  const consentQuery = () => ({
+    client_id: "c1",
+    redirect_uri: "https://app/callback",
+    state: "s",
+    code_challenge: "ch",
+    code_challenge_method: "S256",
+  });
+
+  const renderWithCeiling = async (info: unknown) => {
+    mocks.currentRoute.value.query = consentQuery();
+    mocks.fetchImpl.mockResolvedValue({
+      ok: true,
+      json: async () => ({ client_name: "Acme" }),
+    });
+    mocks.getMCPInfo.mockResolvedValue(info);
+    const handle = renderIntoContainer(<OAuth2ConsentPage />);
+    handle.render();
+    await flushPromises();
+    return handle;
+  };
+
+  // Codex, #21237: the !response.ok branch returned, its sibling catch did not.
+  // The render checks loading before error, so a failed client lookup sat
+  // behind the spinner until an optional policy request it no longer needed
+  // finally settled.
+  test("a failed client lookup shows its error without waiting on the policy", async () => {
+    mocks.currentRoute.value.query = consentQuery();
+    mocks.fetchImpl.mockRejectedValue(new Error("network down"));
+    // Never settles: if the error waits on this, the test sees the spinner.
+    mocks.getMCPInfo.mockReturnValue(new Promise(() => {}));
+
+    const handle = renderIntoContainer(<OAuth2ConsentPage />);
+    handle.render();
+    await flushPromises();
+
+    expect(handle.container.textContent).toContain(
+      "oauth2.consent.error-load-failed"
+    );
+    expect(handle.container.querySelector(".animate-spin")).toBeNull();
+    handle.unmount();
+  });
+
+  test("a read-only ceiling says what the session may not do", async () => {
+    const { container, unmount } = await renderWithCeiling({
+      capability: 3,
+      ignoreMaskingExemptions: false,
+      modes: [],
+      methods: [],
+      engines: [],
+    });
+    expect(container.textContent).toContain("oauth2.consent.mcp.line.read");
+    expect(container.textContent).toContain("oauth2.consent.mcp.line.no-write");
+    expect(container.textContent).not.toContain("oauth2.consent.mcp.line.write");
+    // The masking line is the toggle's, not the ceiling's.
+    expect(container.textContent).not.toContain(
+      "oauth2.consent.mcp.line.masking"
+    );
+    expect(container.textContent).toContain("common.allow");
+    unmount();
+  });
+
+  test("a read-write ceiling adds the write line and the caution", async () => {
+    const { container, unmount } = await renderWithCeiling({
+      capability: 4,
+      ignoreMaskingExemptions: true,
+      dataMaskingAvailable: true,
+      modes: [],
+      methods: [],
+      engines: [],
+    });
+    expect(container.textContent).toContain("oauth2.consent.mcp.line.write");
+    expect(container.textContent).toContain("oauth2.consent.mcp.write-caution");
+    expect(container.textContent).toContain("oauth2.consent.mcp.line.masking");
+    unmount();
+  });
+
+  // The masking line promises a restriction. The toggle withholds unmasking
+  // exemptions from MCP sessions, which restricts nothing on a workspace where
+  // masking does not run — and this card is read at the moment someone decides
+  // whether to hand over access.
+  test("the masking line is not promised where masking does not run", async () => {
+    const { container, unmount } = await renderWithCeiling({
+      capability: 4,
+      ignoreMaskingExemptions: true,
+      dataMaskingAvailable: false,
+      modes: [],
+      methods: [],
+      engines: [],
+    });
+    // The rest of the card is unchanged, so this is the line and not the card.
+    expect(container.textContent).toContain("oauth2.consent.mcp.line.write");
+    expect(container.textContent).not.toContain(
+      "oauth2.consent.mcp.line.masking"
+    );
+    unmount();
+  });
+
+  // Codex, #21237: the disabled screen's only action was router.back(), so the
+  // OAuth client sat waiting on a callback that never came. A deny POST returns
+  // access_denied to the registered redirect_uri, which is the answer it is
+  // blocked on.
+  test("dismissing a disabled ceiling denies the request instead of going back", async () => {
+    const { container, unmount } = await renderWithCeiling({
+      capability: 1,
+      ignoreMaskingExemptions: false,
+      dataMaskingAvailable: true,
+      modes: [],
+      methods: [],
+      engines: [],
+    });
+
+    const submitted: HTMLFormElement[] = [];
+    const realSubmit = HTMLFormElement.prototype.submit;
+    HTMLFormElement.prototype.submit = function submit(this: HTMLFormElement) {
+      submitted.push(this);
+    };
+    try {
+      const close = [...container.querySelectorAll("button")].find((b) =>
+        b.textContent?.includes("common.close")
+      );
+      act(() => (close as HTMLButtonElement)?.click());
+    } finally {
+      HTMLFormElement.prototype.submit = realSubmit;
+    }
+
+    expect(mocks.routerBack).not.toHaveBeenCalled();
+    expect(submitted).toHaveLength(1);
+    const action = submitted[0].querySelector('input[name="action"]');
+    expect((action as HTMLInputElement)?.value).toBe("deny");
+    unmount();
+  });
+
+  // Codex, #21237: a SaaS user whose current workspace has MCP off could not
+  // switch to one that permits it without abandoning the OAuth flow.
+  test("the disabled screen keeps the workspace switcher", async () => {
+    const { container, unmount } = await renderWithCeiling({
+      capability: 1,
+      ignoreMaskingExemptions: false,
+      dataMaskingAvailable: true,
+      modes: [],
+      methods: [],
+      engines: [],
+    });
+    expect(container.textContent).toContain("oauth2.consent.workspace-label");
+    unmount();
+  });
+
+  test("a disabled ceiling offers nothing to approve", async () => {
+    const { container, unmount } = await renderWithCeiling({
+      capability: 1,
+      ignoreMaskingExemptions: false,
+      modes: [],
+      methods: [],
+      engines: [],
+    });
+    expect(container.textContent).toContain("oauth2.consent.mcp.disabled.title");
+    expect(container.textContent).toContain(
+      "oauth2.consent.mcp.disabled.ask-admin"
+    );
+    // Nothing to approve and nothing to deny: the grant is not on offer.
+    expect(container.textContent).not.toContain("common.allow");
+    expect(container.textContent).not.toContain("common.deny");
+    unmount();
+  });
+
+  test("an unreadable ceiling leaves the card as it was", async () => {
+    // GetMCPInfo refuses under a ceiling this build cannot read. The backend
+    // still refuses the POST with its own page, so the card falls back rather
+    // than blocking a consent on a read this page does not own.
+    mocks.currentRoute.value.query = consentQuery();
+    mocks.fetchImpl.mockResolvedValue({
+      ok: true,
+      json: async () => ({ client_name: "Acme" }),
+    });
+    const { container, render, unmount } = renderIntoContainer(
+      <OAuth2ConsentPage />
+    );
+    render();
+    await flushPromises();
+    expect(container.textContent).toContain("oauth2.consent.permission-access");
+    expect(container.textContent).toContain("common.allow");
     unmount();
   });
 });

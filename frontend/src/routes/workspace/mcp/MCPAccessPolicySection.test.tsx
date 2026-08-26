@@ -45,7 +45,7 @@ vi.mock("@/components/PermissionGuard", () => ({
 
 // Stubbed to record its props: the drawer is rendered unconditionally, so this
 // captures what the section hands it on every render without opening it.
-vi.mock("./MCPModeContentsSheet", () => ({
+vi.mock("@/components/mcp/MCPModeContentsSheet", () => ({
   MCPModeContentsSheet: (props: Record<string, unknown>) => {
     mocks.sheetProps.push(props);
     return null;
