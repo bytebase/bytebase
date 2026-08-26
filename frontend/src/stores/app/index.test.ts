@@ -507,6 +507,17 @@ describe("useAppStore", () => {
     expect(store.getState().isLoggedIn()).toBe(true);
   });
 
+  test("fetches the current user silently when requested", async () => {
+    mocks.getCurrentUser.mockResolvedValue(user);
+    const store = createAppStore();
+
+    await store.getState().fetchCurrentUser(true);
+
+    expect(
+      mocks.getCurrentUser.mock.calls[0][1]?.contextValues.get(silentContextKey)
+    ).toBe(true);
+  });
+
   // The MFA enrollment secrets ride out only on the UpdateUser response that
   // mints them; the read the session revalidation makes no longer carries them.
   // That revalidation fires every five minutes, which is the whole enrollment
