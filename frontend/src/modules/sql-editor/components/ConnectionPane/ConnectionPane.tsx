@@ -23,7 +23,7 @@ import { useAppDatabase } from "@/hooks/useAppDatabase";
 import { useAppProject } from "@/hooks/useAppProject";
 import { useCurrentUser } from "@/hooks/useAppState";
 import type { DatabaseFilter } from "@/lib/databaseFilter";
-import { instanceNamePrefix } from "@/lib/resourceName";
+import { normalizeInstanceName } from "@/lib/resourceName";
 import { getConnectionForSQLEditorTab } from "@/lib/sqlEditorConnection";
 import { cn } from "@/lib/utils";
 import { useSQLEditorFeature } from "@/modules/sql-editor/hooks/useSQLEditorState";
@@ -270,11 +270,10 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
     () => getValuesFromSearchParams(searchParams, "label"),
     [searchParams]
   );
-  const selectedInstance = useMemo(
-    () =>
-      getValueFromSearchParams(searchParams, "instance", instanceNamePrefix),
-    [searchParams]
-  );
+  const selectedInstance = useMemo(() => {
+    const value = getValueFromSearchParams(searchParams, "instance");
+    return value ? normalizeInstanceName(value) : "";
+  }, [searchParams]);
   const selectedEngines = useMemo<Engine[]>(
     () =>
       getValuesFromSearchParams(searchParams, "engine")
