@@ -26,6 +26,7 @@ const mocks = vi.hoisted(() => ({
   },
   resetQuickstart: vi.fn(),
   hideQuickStart: false,
+  canReadSetupResources: true,
   userCountInIam: 1,
   sampleAvailable: true,
   isDev: false,
@@ -44,7 +45,7 @@ vi.mock("react-i18next", () => ({
       ({
         "common.language": "Language",
         "common.license": "License",
-        "workspace-setup-guide.quick-start": "Quick Start",
+        "workspace-setup-guide.getting-started": "Getting started",
         "common.logout": "Logout",
         "settings.general.workspace.default-landing-page.go-to-workspace":
           "Go to workspace",
@@ -155,7 +156,9 @@ vi.mock("@/stores/app", () => ({
     (selector: (state: unknown) => unknown) =>
       selector({
         workspaceSetupGuideEnabled: () =>
-          !mocks.hideQuickStart && mocks.userCountInIam === 1,
+          !mocks.hideQuickStart &&
+          mocks.canReadSetupResources &&
+          mocks.userCountInIam === 1,
       }),
     {
       getState: () => ({
@@ -193,6 +196,7 @@ const renderIntoContainer = (element: ReactElement) => {
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.hideQuickStart = false;
+  mocks.canReadSetupResources = true;
   mocks.userCountInIam = 1;
   mocks.sampleAvailable = true;
   mocks.isDev = false;
@@ -273,7 +277,7 @@ describe("ProfileMenuTrigger", () => {
     unmount();
   });
 
-  test("hides quick start when the app feature disables it", () => {
+  test("hides getting started when the app feature disables it", () => {
     mocks.hideQuickStart = true;
     const { container, render, unmount } = renderIntoContainer(
       <ProfileMenuTrigger size="medium" link />
@@ -281,7 +285,7 @@ describe("ProfileMenuTrigger", () => {
 
     render();
 
-    expect(container.textContent).not.toContain("Quick Start");
+    expect(container.textContent).not.toContain("Getting started");
     unmount();
   });
 
@@ -293,16 +297,16 @@ describe("ProfileMenuTrigger", () => {
 
     render();
 
-    const quickStartButton = Array.from(
+    const gettingStartedButton = Array.from(
       container.querySelectorAll("button")
-    ).find((button) => button.textContent === "Quick Start");
-    expect(quickStartButton).not.toBeUndefined();
-    act(() => quickStartButton?.click());
+    ).find((button) => button.textContent === "Getting started");
+    expect(gettingStartedButton).not.toBeUndefined();
+    act(() => gettingStartedButton?.click());
     expect(mocks.resetQuickstart).toHaveBeenCalledTimes(1);
     unmount();
   });
 
-  test.each([0, 2])("hides quick start for IAM user count %s", (count) => {
+  test.each([0, 2])("hides getting started for IAM user count %s", (count) => {
     mocks.userCountInIam = count;
     const { container, render, unmount } = renderIntoContainer(
       <ProfileMenuTrigger size="medium" link />
@@ -310,7 +314,19 @@ describe("ProfileMenuTrigger", () => {
 
     render();
 
-    expect(container.textContent).not.toContain("Quick Start");
+    expect(container.textContent).not.toContain("Getting started");
+    unmount();
+  });
+
+  test("hides getting started without setup resource permissions", () => {
+    mocks.canReadSetupResources = false;
+    const { container, render, unmount } = renderIntoContainer(
+      <ProfileMenuTrigger size="medium" link />
+    );
+
+    render();
+
+    expect(container.textContent).not.toContain("Getting started");
     unmount();
   });
 

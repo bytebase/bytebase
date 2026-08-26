@@ -3461,6 +3461,7 @@
       "sql-editor": "Truy vấn dữ liệu trong SQL Editor hoặc tạo thay đổi cơ sở dữ liệu được quản trị."
     },
     "dismiss": "Đóng hướng dẫn",
+    "getting-started": "Bắt đầu",
     "intro": {
       "database-description": "Tạo cơ sở dữ liệu trong instance đã kết nối.",
       "database-title": "Tạo cơ sở dữ liệu",
@@ -3473,7 +3474,6 @@
     },
     "prepare-database-tip": "Chọn cơ sở dữ liệu để chuyển vào dự án.",
     "previous-step-required": "Bạn cần hoàn thành bước trước đó.",
-    "quick-start": "Bắt đầu nhanh",
     "self": "Thiết lập Bytebase",
     "steps": {
       "database": "Khám phá cơ sở dữ liệu",

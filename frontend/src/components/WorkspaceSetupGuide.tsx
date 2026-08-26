@@ -11,6 +11,7 @@ import {
   PROJECT_V1_ROUTE_DASHBOARD,
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
+  PROJECT_V1_ROUTE_INSTANCES,
   SQL_EDITOR_DATABASE_MODULE,
 } from "@/app/router/handles";
 import { SQLEditorButton } from "@/components/SQLEditorButton";
@@ -19,34 +20,30 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useIntroStateByKey } from "@/hooks/useAppState";
 import { preCreateIssue } from "@/lib/plan/issue";
 import {
-  CONNECT_DATABASE_PRODUCT_INTRO,
   CREATE_INSTANCE_PRODUCT_INTRO,
   CREATE_PROJECT_PRODUCT_INTRO,
   PREPARE_DATABASE_PRODUCT_INTRO,
   PREPARE_DATABASE_TRANSFER_TIP,
   PRODUCT_INTRO_QUERY_KEY,
   PRODUCT_INTRO_TIP_QUERY_KEY,
+  PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
 } from "@/lib/productIntro";
 import { cn } from "@/lib/utils";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { useAppStore } from "@/stores/app";
 import { State } from "@/types/proto-es/v1/common_pb";
 import { extractProjectResourceName } from "@/utils";
-import {
-  findFirstPageItem,
-  isSetupProjectName,
-} from "./WorkspaceSetupGuide.utils";
 
 type SetupKeys = {
   hasProject: boolean;
   hasInstance: boolean;
-  hasProjectDatabase: boolean;
+  hasExploredDatabase: boolean;
   hasFirstQuery: boolean;
 };
 
 type SetupState = SetupKeys & {
-  hasWorkspaceDatabase: boolean;
   projectName: string;
+  databaseProjectName: string;
   databaseName: string;
 };
 
@@ -63,10 +60,10 @@ type SetupStep = {
 const initialSetupState: SetupState = {
   hasProject: false,
   hasInstance: false,
-  hasWorkspaceDatabase: false,
-  hasProjectDatabase: false,
+  hasExploredDatabase: false,
   hasFirstQuery: false,
   projectName: "",
+  databaseProjectName: "",
   databaseName: "",
 };
 
@@ -129,9 +126,7 @@ export function WorkspaceSetupGuide() {
   const databaseCacheSize = useAppStore(
     (s) => Object.keys(s.databasesByName).length
   );
-  const canListInstances = useAppStore((s) =>
-    s.hasWorkspacePermission("bb.instances.list")
-  );
+  const workspaceResourceName = useAppStore((s) => s.workspaceResourceName());
   const guideEnabled = useAppStore((s) => s.workspaceSetupGuideEnabled());
   const [loading, setLoading] = useState(true);
   const [selectedStepKey, setSelectedStepKey] = useState<keyof SetupKeys>();
@@ -167,10 +162,9 @@ export function WorkspaceSetupGuide() {
         }
         setSetupState((state) => ({
           ...state,
-          hasWorkspaceDatabase: true,
-          hasProjectDatabase: true,
+          hasExploredDatabase: true,
           hasFirstQuery: true,
-          projectName: project,
+          databaseProjectName: project,
           databaseName: database,
         }));
       }
@@ -184,7 +178,6 @@ export function WorkspaceSetupGuide() {
     if (
       dismissed ||
       !guideEnabled ||
-      !canListInstances ||
       databaseExplored ||
       !isConcreteDatabaseRoute(currentRoute.name, currentRoute.params ?? {})
     ) {
@@ -197,10 +190,9 @@ export function WorkspaceSetupGuide() {
     });
     setSetupState((state) => ({
       ...state,
-      hasProjectDatabase: true,
+      hasExploredDatabase: true,
     }));
   }, [
-    canListInstances,
     currentRoute.name,
     currentRoute.params,
     databaseExplored,
@@ -227,7 +219,7 @@ export function WorkspaceSetupGuide() {
   };
 
   useEffect(() => {
-    if (dismissed || !guideEnabled || !canListInstances) {
+    if (dismissed || !guideEnabled) {
       setSetupState(initialSetupState);
       setLoading(false);
       return;
@@ -235,184 +227,66 @@ export function WorkspaceSetupGuide() {
 
     void (async () => {
       const store = useAppStore.getState();
-      let projectName = "";
-      let fallbackProjectName = "";
-      let projectWithInstanceName = "";
-      let hasProject = false;
-      let hasInstance = false;
-      let databaseName = "";
-      let hasWorkspaceDatabase = false;
-
       try {
-        let fallbackDatabaseName = "";
-        let fallbackDatabaseProjectName = "";
-        const projectDatabase = await findFirstPageItem(
-          async (pageToken) => {
-            const response = await store.fetchDatabases({
-              parent: "-",
-              pageSize: 10,
-              pageToken,
-              silent: true,
-            });
-            return {
-              items: response.databases,
-              nextPageToken: response.nextPageToken,
-            };
-          },
-          (database) => {
-            if (!database.name || !database.project) {
-              return false;
-            }
-            fallbackDatabaseName ||= database.name;
-            fallbackDatabaseProjectName ||= database.project;
-            return isSetupProjectName(database.project, defaultProject);
-          }
-        );
-        if (projectDatabase) {
-          projectName = projectDatabase.project;
-          databaseName = projectDatabase.name;
-        } else if (fallbackDatabaseName && fallbackDatabaseProjectName) {
-          projectName = fallbackDatabaseProjectName;
-          databaseName = fallbackDatabaseName;
-        }
-        hasWorkspaceDatabase = !!databaseName;
-      } catch {
-        // Unknown or unauthorized resource state must not complete a step.
-      }
-
-      try {
-        let pageToken = "";
-        while (true) {
-          const response = await store.fetchProjectList({
-            pageSize: 10,
-            pageToken,
+        const [projectResponse, instanceResponse] = await Promise.all([
+          store.fetchProjectList({
+            pageSize: 1,
             silent: true,
             filter: {
               excludeDefault: true,
               state: State.ACTIVE,
             },
-          });
-          const projects = response.projects.filter((project) =>
-            isSetupProjectName(project.name, defaultProject)
-          );
-          hasProject ||= projects.length > 0;
-
-          for (const project of projects) {
-            fallbackProjectName ||= project.name;
-            if (!isSetupProjectName(projectName, defaultProject)) {
-              try {
-                const database = await findFirstPageItem(
-                  async (databasePageToken) => {
-                    const databaseResponse = await store.fetchDatabases({
-                      parent: project.name,
-                      pageSize: 10,
-                      pageToken: databasePageToken,
-                      silent: true,
-                    });
-                    return {
-                      items: databaseResponse.databases,
-                      nextPageToken: databaseResponse.nextPageToken,
-                    };
-                  },
-                  (database) => !!database.name
-                );
-                if (database) {
-                  projectName = project.name;
-                  databaseName = database.name;
-                  hasWorkspaceDatabase = true;
-                }
-              } catch {
-                // Keep scanning projects when one project is unauthorized.
-              }
-            }
-
-            if (canListInstances && !projectWithInstanceName) {
-              try {
-                const instance = await findFirstPageItem(
-                  async (instancePageToken) => {
-                    const instanceResponse = await store.fetchInstanceList({
-                      parent: project.name,
-                      pageSize: 10,
-                      pageToken: instancePageToken,
-                      filter: { state: State.ACTIVE },
-                      silent: true,
-                    });
-                    return {
-                      items: instanceResponse.instances,
-                      nextPageToken: instanceResponse.nextPageToken,
-                    };
-                  },
-                  () => true
-                );
-                if (instance) {
-                  projectWithInstanceName = project.name;
-                  hasInstance = true;
-                }
-              } catch {
-                // Keep scanning projects when one project is unauthorized.
-              }
-            }
-          }
-
-          if (!response.nextPageToken) break;
-          pageToken = response.nextPageToken;
-        }
-      } catch {
-        // Unknown or unauthorized resource state must not complete a step.
-      }
-
-      if (canListInstances) {
-        try {
-          const instance = await findFirstPageItem(
-            async (pageToken) => {
-              const response = await store.fetchInstanceList({
-                pageSize: 10,
-                pageToken,
-                filter: { state: State.ACTIVE },
+          }),
+          store.fetchInstanceList({
+            pageSize: 1,
+            filter: { state: State.ACTIVE },
+            silent: true,
+          }),
+        ]);
+        const project = projectResponse.projects.find(
+          ({ name }) => !!name && name !== defaultProject
+        );
+        const instance = instanceResponse.instances[0];
+        const databaseResponse =
+          project && workspaceResourceName
+            ? await store.fetchDatabases({
+                parent: workspaceResourceName,
+                pageSize: 1,
+                filter: { project: project.name },
                 silent: true,
-              });
-              return {
-                items: response.instances,
-                nextPageToken: response.nextPageToken,
-              };
-            },
-            () => true
-          );
-          hasInstance ||= !!instance;
-        } catch {
-          // Unknown or unauthorized resource state must not complete a step.
-        }
+              })
+            : undefined;
+        const database = databaseResponse?.databases.find(
+          ({ name, project }) => !!name && !!project
+        );
+
+        const latestDatabaseExplored = store.getIntroStateByKey(
+          WORKSPACE_SETUP_GUIDE_DATABASE_EXPLORED_KEY
+        );
+        const latestQueryExecuted = store.getIntroStateByKey(
+          WORKSPACE_SETUP_GUIDE_QUERY_EXECUTED_KEY
+        );
+        const queryTarget = latestQueryExecuted
+          ? queryTargetRef.current
+          : undefined;
+
+        setSetupState({
+          hasProject: !!project,
+          hasInstance: !!instance,
+          hasExploredDatabase: latestDatabaseExplored,
+          hasFirstQuery: latestQueryExecuted,
+          projectName: project?.name ?? "",
+          databaseProjectName:
+            queryTarget?.projectName ?? database?.project ?? "",
+          databaseName: queryTarget?.databaseName ?? database?.name ?? "",
+        });
+      } catch {
+        // Keep the current progress when resource discovery is unavailable.
       }
-
-      if (!databaseName) {
-        projectName = projectWithInstanceName || fallbackProjectName;
-      }
-
-      const latestDatabaseExplored = store.getIntroStateByKey(
-        WORKSPACE_SETUP_GUIDE_DATABASE_EXPLORED_KEY
-      );
-      const latestQueryExecuted = store.getIntroStateByKey(
-        WORKSPACE_SETUP_GUIDE_QUERY_EXECUTED_KEY
-      );
-      const queryTarget = latestQueryExecuted
-        ? queryTargetRef.current
-        : undefined;
-
-      setSetupState({
-        hasProject,
-        hasInstance,
-        hasWorkspaceDatabase:
-          hasWorkspaceDatabase || !!queryTarget?.databaseName,
-        hasProjectDatabase: latestDatabaseExplored,
-        hasFirstQuery: latestQueryExecuted,
-        projectName: queryTarget?.projectName ?? projectName,
-        databaseName: queryTarget?.databaseName ?? databaseName,
-      });
       setLoading(false);
     })();
   }, [
     databaseCacheSize,
-    canListInstances,
     databaseExplored,
     defaultProject,
     dismissed,
@@ -421,17 +295,18 @@ export function WorkspaceSetupGuide() {
     projectCacheSize,
     queryExecuted,
     currentRoute.name,
+    workspaceResourceName,
   ]);
 
   const sqlEditorDatabase = useMemo(() => {
-    if (!setupState.databaseName || !setupState.projectName) {
+    if (!setupState.databaseName || !setupState.databaseProjectName) {
       return undefined;
     }
     return {
       name: setupState.databaseName,
-      project: setupState.projectName,
+      project: setupState.databaseProjectName,
     };
-  }, [setupState.databaseName, setupState.projectName]);
+  }, [setupState.databaseName, setupState.databaseProjectName]);
 
   const steps = useMemo<SetupStep[]>(
     () => [
@@ -439,10 +314,14 @@ export function WorkspaceSetupGuide() {
         key: "hasProject",
         label: t("workspace-setup-guide.steps.project"),
         description: t("workspace-setup-guide.descriptions.project"),
-        link: {
-          name: PROJECT_V1_ROUTE_DASHBOARD,
-          query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO },
-        },
+        link: setupState.hasProject
+          ? undefined
+          : {
+              name: PROJECT_V1_ROUTE_DASHBOARD,
+              query: {
+                [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO,
+              },
+            },
         done: setupState.hasProject,
         matchesRoute: (routeName) => routeName === PROJECT_V1_ROUTE_DASHBOARD,
       },
@@ -450,15 +329,16 @@ export function WorkspaceSetupGuide() {
         key: "hasInstance",
         label: t("workspace-setup-guide.steps.instance"),
         description: t("workspace-setup-guide.descriptions.instance"),
-        link:
-          !setupState.hasInstance && setupState.projectName
+        link: setupState.hasInstance
+          ? undefined
+          : setupState.projectName
             ? {
-                name: PROJECT_V1_ROUTE_DATABASES,
+                name: PROJECT_V1_ROUTE_INSTANCES,
                 params: {
                   projectId: extractProjectResourceName(setupState.projectName),
                 },
                 query: {
-                  [PRODUCT_INTRO_QUERY_KEY]: CONNECT_DATABASE_PRODUCT_INTRO,
+                  [PRODUCT_INTRO_QUERY_KEY]: CREATE_INSTANCE_PRODUCT_INTRO,
                 },
               }
             : {
@@ -469,39 +349,51 @@ export function WorkspaceSetupGuide() {
               },
         done: setupState.hasInstance,
         matchesRoute: (routeName) =>
-          isRouteInside(routeName, INSTANCE_ROUTE_DASHBOARD),
+          isRouteInside(routeName, INSTANCE_ROUTE_DASHBOARD) ||
+          isRouteInside(routeName, PROJECT_V1_ROUTE_INSTANCES),
       },
       {
-        key: "hasProjectDatabase",
+        key: "hasExploredDatabase",
         label: t("workspace-setup-guide.steps.database"),
         description: t("workspace-setup-guide.descriptions.database"),
-        link: {
-          name: DATABASE_ROUTE_DASHBOARD,
-          query: !setupState.hasWorkspaceDatabase
-            ? {
+        link: sqlEditorDatabase
+          ? {
+              name: PROJECT_V1_ROUTE_DATABASES,
+              params: {
+                projectId: extractProjectResourceName(
+                  setupState.databaseProjectName
+                ),
+              },
+              query: {
+                [PRODUCT_INTRO_QUERY_KEY]:
+                  PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+              },
+            }
+          : {
+              name: DATABASE_ROUTE_DASHBOARD,
+              query: {
                 [PRODUCT_INTRO_QUERY_KEY]: PREPARE_DATABASE_PRODUCT_INTRO,
                 [PRODUCT_INTRO_TIP_QUERY_KEY]: PREPARE_DATABASE_TRANSFER_TIP,
-              }
-            : {
-                [PRODUCT_INTRO_QUERY_KEY]: PREPARE_DATABASE_PRODUCT_INTRO,
               },
-        },
-        done: setupState.hasProjectDatabase,
+            },
+        done: setupState.hasExploredDatabase,
         disabled: !setupState.hasProject || !setupState.hasInstance,
         matchesRoute: (routeName) =>
-          isRouteInside(routeName, DATABASE_ROUTE_DASHBOARD),
+          isRouteInside(routeName, DATABASE_ROUTE_DASHBOARD) ||
+          isRouteInside(routeName, PROJECT_V1_ROUTE_DATABASES) ||
+          routeName === INSTANCE_ROUTE_DATABASE_DETAIL,
       },
       {
         key: "hasFirstQuery",
         label: t("workspace-setup-guide.steps.query"),
         description: t("workspace-setup-guide.descriptions.sql-editor"),
         done: setupState.hasFirstQuery,
-        disabled: !setupState.hasProjectDatabase,
+        disabled: !setupState.hasExploredDatabase,
         matchesRoute: (routeName) =>
           isRouteInside(routeName, SQL_EDITOR_DATABASE_MODULE),
       },
     ],
-    [setupState, t]
+    [setupState, sqlEditorDatabase, t]
   );
 
   const activeStep = steps.find((step) => !step.done) ?? steps.at(-1)!;
@@ -510,11 +402,7 @@ export function WorkspaceSetupGuide() {
     (step) => step.matchesRoute?.(currentRoute.name) ?? false
   );
   const highlightedStep =
-    selectedStep ??
-    routeMatchedStep ??
-    (isRouteInside(currentRoute.name, PROJECT_V1_ROUTE_DATABASES)
-      ? activeStep
-      : undefined);
+    selectedStep ?? (routeMatchedStep?.done ? activeStep : routeMatchedStep);
   const actionStep =
     highlightedStep && !highlightedStep.done ? highlightedStep : activeStep;
 
@@ -526,7 +414,9 @@ export function WorkspaceSetupGuide() {
         },
       })
     );
-    void preCreateIssue(setupState.projectName, [setupState.databaseName]);
+    void preCreateIssue(setupState.databaseProjectName, [
+      setupState.databaseName,
+    ]);
   };
 
   const handleDismiss = () => {
@@ -543,7 +433,7 @@ export function WorkspaceSetupGuide() {
     });
   };
 
-  if (dismissed || !guideEnabled || !canListInstances || loading) {
+  if (dismissed || !guideEnabled || loading) {
     return null;
   }
 
@@ -607,7 +497,7 @@ export function WorkspaceSetupGuide() {
       </div>
       <div className="ml-auto flex shrink-0 items-center gap-x-2">
         {actionStep.key === "hasFirstQuery" &&
-          setupState.projectName &&
+          setupState.databaseProjectName &&
           setupState.databaseName && (
             <Button
               type="button"

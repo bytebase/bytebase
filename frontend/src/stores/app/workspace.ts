@@ -690,7 +690,10 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
 
     workspaceSetupGuideEnabled: () =>
       !get().appFeatures["bb.feature.hide-quick-start"] &&
-      get().userCountInIam() === 1,
+      get().userCountInIam() === 1 &&
+      get().hasWorkspacePermission("bb.projects.list") &&
+      get().hasWorkspacePermission("bb.instances.list") &&
+      get().hasWorkspacePermission("bb.databases.list"),
 
     setupSample: async () => {
       await actuatorServiceClientConnect.setupSample({});

@@ -228,7 +228,7 @@ export function ProfileMenuTrigger({
                 setOpen(false);
               }}
             >
-              {t("workspace-setup-guide.quick-start")}
+              {t("workspace-setup-guide.getting-started")}
             </DropdownMenuItem>
           ) : null}
 

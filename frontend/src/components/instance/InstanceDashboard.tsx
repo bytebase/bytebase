@@ -895,7 +895,7 @@ export function InstanceDashboard({
     id: CREATE_INSTANCE_PRODUCT_INTRO,
     title: t("workspace-setup-guide.intro.instance-title"),
     description: t("workspace-setup-guide.intro.instance-description"),
-    disabled: layout === "project" || !canCreate,
+    disabled: !canCreate,
   });
   const allSelected =
     instances.length > 0 && selectedNames.size === instances.length;

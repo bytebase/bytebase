@@ -7,6 +7,7 @@ import type { AppSliceCreator, PreferencesSlice } from "./types";
 import {
   getCurrentUserEmail,
   getWorkspaceCacheScope,
+  getWorkspaceResourceScope,
   MAX_RECENT_PROJECT,
   MAX_RECENT_VISIT,
   readJson,
@@ -62,7 +63,7 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
   resetWorkspaceSetupGuide: () => {
     const email = getCurrentUserEmail(get);
     if (!email) return;
-    const key = storageKeyIntroState(getWorkspaceCacheScope(get), email);
+    const key = storageKeyIntroState(getWorkspaceResourceScope(get), email);
     const previous = readJson<Record<string, boolean>>(key, {});
     const next: Record<string, boolean> = {
       ...previous,
@@ -84,7 +85,7 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
     const email = getCurrentUserEmail(get);
     if (!email) return false;
     const map = readJson<Record<string, boolean>>(
-      storageKeyIntroState(getWorkspaceCacheScope(get), email),
+      storageKeyIntroState(getWorkspaceResourceScope(get), email),
       {}
     );
     return map[key] ?? false;
@@ -95,7 +96,10 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
   saveIntroStateByKey: ({ key, newState }) => {
     const email = getCurrentUserEmail(get);
     if (!email) return;
-    const storageKey = storageKeyIntroState(getWorkspaceCacheScope(get), email);
+    const storageKey = storageKeyIntroState(
+      getWorkspaceResourceScope(get),
+      email
+    );
     const previous = readJson<Record<string, boolean>>(storageKey, {});
     writeJson(storageKey, { ...previous, [key]: newState });
     set((state) => ({ introStateVersion: state.introStateVersion + 1 }));

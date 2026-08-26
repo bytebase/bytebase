@@ -46,6 +46,7 @@ import type { DatabaseFilter } from "@/lib/databaseFilter";
 import { preCreateIssue } from "@/lib/plan/issue";
 import {
   CONNECT_DATABASE_PRODUCT_INTRO,
+  PRODUCT_INTRO_QUERY_KEY,
   PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
   useProductIntro,
 } from "@/lib/productIntro";
@@ -505,8 +506,11 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const hasVisibleDatabase = visibleDatabases.length > 0;
   const showSyncingInstanceHint =
     !!syncingInstanceId && !hasVisibleDatabase && !syncingRefreshExhausted;
-  const showPostSyncNextAction =
-    workspaceInstanceCount === 1 && !!syncingInstanceId && hasVisibleDatabase;
+  const showDatabaseNextAction =
+    hasVisibleDatabase &&
+    ((workspaceInstanceCount === 1 && !!syncingInstanceId) ||
+      currentRoute.query[PRODUCT_INTRO_QUERY_KEY] ===
+        PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO);
   const checkingWorkspaceInstance =
     !hasVisibleDatabase &&
     !showSyncingInstanceHint &&
@@ -557,7 +561,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     id: PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
     title: t("db.project-instance-synced-title"),
     description: t("db.project-instance-synced-description"),
-    disabled: !showPostSyncNextAction,
+    disabled: !showDatabaseNextAction,
   });
 
   const handleCreateDatabaseAction = useCallback(() => {
@@ -664,7 +668,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         />
       )}
 
-      {showPostSyncNextAction && (
+      {showDatabaseNextAction && (
         <Alert
           variant="info"
           data-product-intro-target={PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO}

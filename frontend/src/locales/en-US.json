@@ -3455,12 +3455,13 @@
       "query": "Go to SQL Editor"
     },
     "descriptions": {
-      "database": "View a database from your connected instance, or create or transfer one when needed.",
+      "database": "Open a database to explore its schemas and tables, or create one when needed.",
       "instance": "Connect an instance so Bytebase can sync your databases.",
       "project": "Create a project to organize databases and changes.",
       "sql-editor": "Query data in SQL Editor, or create a governed database change."
     },
     "dismiss": "Dismiss guide",
+    "getting-started": "Getting started",
     "intro": {
       "database-description": "Create a database in your connected instance.",
       "database-title": "Create a database",
@@ -3473,7 +3474,6 @@
     },
     "prepare-database-tip": "Select databases to transfer to the project.",
     "previous-step-required": "You need to finish the previous step.",
-    "quick-start": "Quick Start",
     "self": "Set up Bytebase",
     "steps": {
       "database": "Explore databases",

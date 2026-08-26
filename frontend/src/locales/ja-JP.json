@@ -3461,6 +3461,7 @@
       "sql-editor": "SQL Editor でデータをクエリするか、ガバナンス付きデータベース変更を作成します。"
     },
     "dismiss": "ガイドを閉じる",
+    "getting-started": "はじめに",
     "intro": {
       "database-description": "接続済みインスタンスにデータベースを作成します。",
       "database-title": "データベースを作成",
@@ -3473,7 +3474,6 @@
     },
     "prepare-database-tip": "プロジェクトに転送するデータベースを選択します。",
     "previous-step-required": "前のステップを先に完了する必要があります。",
-    "quick-start": "クイックスタート",
     "self": "Bytebase をセットアップ",
     "steps": {
       "database": "データベースを探索",

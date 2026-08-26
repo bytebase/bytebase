@@ -60,6 +60,7 @@ const mocks = vi.hoisted(() => ({
   sampleInstances: [] as { instance: string }[],
   userCountInIam: 1,
   hideQuickStart: false,
+  workspaceName: "workspaces/default",
 }));
 
 const dismissedIntroStateKey = "workspace-setup-guide.dismissed";
@@ -130,6 +131,7 @@ vi.mock("@/stores/app", () => {
       workspace: "workspaces/default",
     },
     workspace: { name: "workspaces/default" },
+    workspaceResourceName: () => mocks.workspaceName,
     workspacePolicy: mocks.workspacePolicy,
     hasWorkspacePermission: mocks.hasWorkspacePermissionV2,
     serverInfo: {
@@ -139,7 +141,11 @@ vi.mock("@/stores/app", () => {
     introStateVersion: mocks.introStateVersion,
     getIntroStateByKey: mocks.getIntroStateByKey,
     workspaceSetupGuideEnabled: () =>
-      !mocks.hideQuickStart && mocks.userCountInIam === 1,
+      !mocks.hideQuickStart &&
+      mocks.userCountInIam === 1 &&
+      ["bb.projects.list", "bb.instances.list", "bb.databases.list"].every(
+        mocks.hasWorkspacePermissionV2
+      ),
   });
   const useAppStore = (selector?: (s: ReturnType<typeof getState>) => unknown) =>
     selector ? selector(getState()) : getState();
@@ -242,6 +248,7 @@ beforeEach(() => {
   mocks.sampleInstances = [];
   mocks.userCountInIam = 1;
   mocks.hideQuickStart = false;
+  mocks.workspaceName = "workspaces/default";
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -299,7 +306,7 @@ describe("WorkspaceSetupGuide", () => {
       container.querySelector("[data-testid='setup-step-hasInstance']")?.tagName
     ).toBe("BUTTON");
     expect(
-      container.querySelector("[data-testid='setup-step-hasProjectDatabase']")
+      container.querySelector("[data-testid='setup-step-hasExploredDatabase']")
         ?.tagName
     ).toBe("BUTTON");
     expect(
@@ -430,7 +437,7 @@ describe("WorkspaceSetupGuide", () => {
     await render(<WorkspaceSetupGuide />);
 
     const prepareDatabaseStep = container.querySelector(
-      "[data-testid='setup-step-hasProjectDatabase']"
+      "[data-testid='setup-step-hasExploredDatabase']"
     ) as HTMLButtonElement | null;
 
     expect(prepareDatabaseStep).toBeDisabled();
@@ -510,7 +517,7 @@ describe("WorkspaceSetupGuide", () => {
     expect(mocks.fetchProjectList).not.toHaveBeenCalled();
   });
 
-  it("advances to the project database connection step after a project exists", async () => {
+  it("connects an instance from the selected project's instance page", async () => {
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-a" }],
       nextPageToken: "",
@@ -528,9 +535,9 @@ describe("WorkspaceSetupGuide", () => {
       await Promise.resolve();
     });
     expect(mocks.routerPush).toHaveBeenCalledWith({
-      name: "workspace.project.database",
+      name: "workspace.project.instance",
       params: { projectId: "project-a" },
-      query: { intro: "connect-database" },
+      query: { intro: "create-instance" },
     });
     expect(
       container.querySelector("[data-testid='setup-step-hasFirstQuery']")
@@ -538,12 +545,45 @@ describe("WorkspaceSetupGuide", () => {
     ).toBe("BUTTON");
   });
 
+  it("keeps the setup project when the first database belongs elsewhere", async () => {
+    mocks.fetchProjectList.mockResolvedValue({
+      projects: [{ name: "projects/project-a" }],
+      nextPageToken: "",
+    });
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [
+        {
+          name: "instances/sample/databases/employee",
+          project: "projects/default",
+        },
+      ],
+      nextPageToken: "",
+    });
+
+    await render(<WorkspaceSetupGuide />);
+
+    await act(async () => {
+      (
+        container.querySelector(
+          "[data-testid='setup-step-hasInstance']"
+        ) as HTMLButtonElement | null
+      )?.click();
+      await Promise.resolve();
+    });
+
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "workspace.project.instance",
+      params: { projectId: "project-a" },
+      query: { intro: "create-instance" },
+    });
+  });
+
   it("disables the prepare database step until a project and instance exist", async () => {
     await render(<WorkspaceSetupGuide />);
 
     expect(
       container.querySelector(
-        "[data-testid='setup-step-hasProjectDatabase']"
+        "[data-testid='setup-step-hasExploredDatabase']"
       )
     ).toBeDisabled();
 
@@ -556,12 +596,12 @@ describe("WorkspaceSetupGuide", () => {
 
     expect(
       container.querySelector(
-        "[data-testid='setup-step-hasProjectDatabase']"
+        "[data-testid='setup-step-hasExploredDatabase']"
       )
     ).toBeDisabled();
   });
 
-  it("routes prepare database with transfer context for the database page to resolve after loading", async () => {
+  it("opens workspace databases with transfer guidance when the project has no databases", async () => {
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-a" }],
       nextPageToken: "",
@@ -578,7 +618,7 @@ describe("WorkspaceSetupGuide", () => {
     await render(<WorkspaceSetupGuide />);
 
     const prepareStep = container.querySelector(
-      "[data-testid='setup-step-hasProjectDatabase']"
+      "[data-testid='setup-step-hasExploredDatabase']"
     ) as HTMLButtonElement | null;
 
     expect(prepareStep).not.toBeDisabled();
@@ -597,7 +637,7 @@ describe("WorkspaceSetupGuide", () => {
     });
   });
 
-  it("routes prepare database with a transfer tip when workspace databases exist outside the project", async () => {
+  it("opens project databases with query and change guidance when the project has a database", async () => {
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-a" }],
       nextPageToken: "",
@@ -606,18 +646,20 @@ describe("WorkspaceSetupGuide", () => {
       instances: [{ name: "instances/instance-a" }],
       nextPageToken: "",
     });
-    mocks.fetchDatabases.mockImplementation(async ({ parent } = {}) => ({
-      databases:
-        parent === "-"
-          ? [{ name: "instances/instance-a/databases/db-a" }]
-          : [],
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [
+        {
+          name: "instances/instance-a/databases/db-a",
+          project: "projects/project-a",
+        },
+      ],
       nextPageToken: "",
-    }));
+    });
 
     await render(<WorkspaceSetupGuide />);
 
     const prepareStep = container.querySelector(
-      "[data-testid='setup-step-hasProjectDatabase']"
+      "[data-testid='setup-step-hasExploredDatabase']"
     ) as HTMLButtonElement | null;
 
     expect(prepareStep).not.toBeDisabled();
@@ -628,12 +670,36 @@ describe("WorkspaceSetupGuide", () => {
     });
 
     expect(mocks.routerPush).toHaveBeenCalledWith({
-      name: "workspace.database",
+      name: "workspace.project.database",
+      params: { projectId: "project-a" },
       query: {
-        intro: "prepare-database",
-        tip: "transfer-databases-to-project",
+        intro: "project-instance-synced",
       },
     });
+  });
+
+  it("does not replay create guidance from completed steps", async () => {
+    mocks.fetchProjectList.mockResolvedValue({
+      projects: [{ name: "projects/project-a" }],
+      nextPageToken: "",
+    });
+    mocks.fetchInstanceList.mockResolvedValue({
+      instances: [{ name: "instances/instance-a" }],
+      nextPageToken: "",
+    });
+
+    await render(<WorkspaceSetupGuide />);
+
+    await act(async () => {
+      (
+        container.querySelector(
+          "[data-testid='setup-step-hasProject']"
+        ) as HTMLButtonElement | null
+      )?.click();
+      await Promise.resolve();
+    });
+
+    expect(mocks.routerPush).not.toHaveBeenCalled();
   });
 
   it("highlights the setup step matching the current route", async () => {
@@ -661,7 +727,12 @@ describe("WorkspaceSetupGuide", () => {
       nextPageToken: "",
     });
     mocks.fetchDatabases.mockResolvedValue({
-      databases: [{ name: "instances/instance-a/databases/db-a" }],
+      databases: [
+        {
+          name: "instances/instance-a/databases/db-a",
+          project: "projects/default",
+        },
+      ],
       nextPageToken: "",
     });
 
@@ -687,20 +758,23 @@ describe("WorkspaceSetupGuide", () => {
       instances: [{ name: "instances/instance-a" }],
       nextPageToken: "",
     });
-    mocks.fetchDatabases.mockImplementation(async ({ parent } = {}) => ({
-      databases:
-        parent === "projects/project-a"
-          ? [{ name: "instances/instance-a/databases/db-a" }]
-          : [],
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [
+        {
+          name: "instances/instance-a/databases/db-a",
+          project: "projects/project-a",
+        },
+      ],
       nextPageToken: "",
-    }));
+    });
 
     await render(<WorkspaceSetupGuide />);
 
     expect(mocks.fetchDatabases).toHaveBeenCalledWith(
       expect.objectContaining({
-        parent: "projects/project-a",
-        pageSize: 10,
+        parent: "workspaces/default",
+        pageSize: 1,
+        filter: { project: "projects/project-a" },
       })
     );
 
@@ -757,7 +831,7 @@ describe("WorkspaceSetupGuide", () => {
           ?.querySelector(".lucide-circle-check-big")
       ).not.toBeNull();
     }
-    for (const key of ["hasProjectDatabase", "hasFirstQuery"]) {
+    for (const key of ["hasExploredDatabase", "hasFirstQuery"]) {
       expect(
         container
           .querySelector(`[data-testid='setup-step-${key}']`)
@@ -797,7 +871,7 @@ describe("WorkspaceSetupGuide", () => {
           ?.querySelector(".lucide-circle-check-big")
       ).not.toBeNull();
     }
-    for (const key of ["hasProjectDatabase", "hasFirstQuery"]) {
+    for (const key of ["hasExploredDatabase", "hasFirstQuery"]) {
       expect(
         container
           .querySelector(`[data-testid='setup-step-${key}']`)
@@ -806,57 +880,32 @@ describe("WorkspaceSetupGuide", () => {
     }
   });
 
-  it("uses sample resources from the first accessible pages", async () => {
+  it("uses only the first resource page", async () => {
     mocks.introState[databaseExploredIntroStateKey] = true;
     mocks.sampleInstances = [{ instance: "instances/sample" }];
-    mocks.fetchProjectList.mockImplementation(async ({ pageToken } = {}) =>
-      pageToken === "project-page-2"
-        ? { projects: [{ name: "projects/app" }], nextPageToken: "" }
-        : {
-            projects: [{ name: "projects/project-sample" }],
-            nextPageToken: "project-page-2",
-          }
-    );
-    mocks.fetchInstanceList.mockImplementation(async ({ pageToken } = {}) =>
-      pageToken === "instance-page-2"
-        ? { instances: [{ name: "instances/prod" }], nextPageToken: "" }
-        : {
-            instances: [{ name: "instances/sample" }],
-            nextPageToken: "instance-page-2",
-          }
-    );
-    mocks.fetchDatabases.mockImplementation(
-      async ({ parent, pageToken } = {}) => {
-        if (parent !== "-") {
-          return { databases: [], nextPageToken: "" };
-        }
-        return pageToken === "database-page-2"
-          ? {
-              databases: [
-                {
-                  name: "instances/prod/databases/main",
-                  project: "projects/app",
-                },
-              ],
-              nextPageToken: "",
-            }
-          : {
-              databases: [
-                {
-                  name: "instances/sample/databases/employee",
-                  project: "projects/project-sample",
-                },
-              ],
-              nextPageToken: "database-page-2",
-            };
-      }
-    );
+    mocks.fetchProjectList.mockResolvedValue({
+      projects: [{ name: "projects/project-sample" }],
+      nextPageToken: "project-page-2",
+    });
+    mocks.fetchInstanceList.mockResolvedValue({
+      instances: [{ name: "instances/sample" }],
+      nextPageToken: "instance-page-2",
+    });
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [
+        {
+          name: "instances/sample/databases/employee",
+          project: "projects/project-sample",
+        },
+      ],
+      nextPageToken: "database-page-2",
+    });
 
     await render(<WorkspaceSetupGuide />);
 
     expect(
       container
-        .querySelector("[data-testid='setup-step-hasProjectDatabase']")
+        .querySelector("[data-testid='setup-step-hasExploredDatabase']")
         ?.querySelector(".lucide-circle-check-big")
     ).not.toBeNull();
     expect(
@@ -869,6 +918,44 @@ describe("WorkspaceSetupGuide", () => {
         database: "employee",
       })
     );
+    expect(mocks.fetchProjectList).toHaveBeenCalledTimes(1);
+    expect(mocks.fetchInstanceList).toHaveBeenCalledTimes(1);
+    expect(mocks.fetchDatabases).toHaveBeenCalledTimes(1);
+    expect(mocks.fetchProjectList).toHaveBeenCalledWith(
+      expect.objectContaining({ pageSize: 1 })
+    );
+    expect(mocks.fetchInstanceList).toHaveBeenCalledWith(
+      expect.objectContaining({ pageSize: 1 })
+    );
+    expect(mocks.fetchDatabases).toHaveBeenCalledWith(
+      expect.objectContaining({
+        parent: "workspaces/default",
+        pageSize: 1,
+        filter: { project: "projects/project-sample" },
+      })
+    );
+  });
+
+  it.each([
+    "fetchProjectList",
+    "fetchInstanceList",
+    "fetchDatabases",
+  ] as const)("keeps the guide available when %s fails", async (key) => {
+    if (key === "fetchDatabases") {
+      mocks.fetchProjectList.mockResolvedValue({
+        projects: [{ name: "projects/project-a" }],
+        nextPageToken: "",
+      });
+    }
+    mocks[key].mockRejectedValueOnce(new Error("permission denied"));
+
+    await render(<WorkspaceSetupGuide />);
+
+    expect(mocks[key]).toHaveBeenCalled();
+    expect(container.textContent).toContain("workspace-setup-guide.self");
+    expect(
+      container.querySelector("[data-testid='setup-step-hasProject']")
+    ).not.toBeNull();
   });
 
   it.each([
@@ -951,7 +1038,7 @@ describe("WorkspaceSetupGuide", () => {
     });
     expect(
       container
-        .querySelector("[data-testid='setup-step-hasProjectDatabase']")
+        .querySelector("[data-testid='setup-step-hasExploredDatabase']")
         ?.querySelector(".lucide-circle-check-big")
     ).toBeNull();
   });
@@ -980,7 +1067,7 @@ describe("WorkspaceSetupGuide", () => {
 
     expect(
       container
-        .querySelector("[data-testid='setup-step-hasProjectDatabase']")
+        .querySelector("[data-testid='setup-step-hasExploredDatabase']")
         ?.querySelector(".lucide-circle-check-big")
     ).not.toBeNull();
   });
@@ -1001,7 +1088,7 @@ describe("WorkspaceSetupGuide", () => {
     expect(container.querySelector("[data-testid='dismiss-guide']")).not.toBeNull();
   });
 
-  it("highlights the setup step matching the current route", async () => {
+  it("highlights the next incomplete step when the current route step is done", async () => {
     mocks.currentRoute = { name: "workspace.project" };
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-a" }],
@@ -1022,12 +1109,12 @@ describe("WorkspaceSetupGuide", () => {
       container
         .querySelector("[data-testid='setup-step-hasProject']")
         ?.getAttribute("class")
-    ).toContain("bg-accent/10");
+    ).not.toContain("bg-accent/10");
     expect(
       container
-        .querySelector("[data-testid='setup-step-hasProjectDatabase']")
+        .querySelector("[data-testid='setup-step-hasExploredDatabase']")
         ?.getAttribute("class")
-    ).not.toContain("bg-accent/10");
+    ).toContain("bg-accent/10");
 
     expect(container.querySelector("[data-testid='active-action']")).toBeNull();
   });
@@ -1045,24 +1132,24 @@ describe("WorkspaceSetupGuide", () => {
       projects: [{ name: "projects/project-a" }],
       nextPageToken: "",
     });
-    mocks.fetchInstanceList.mockImplementation(
-      async (params?: { parent?: string }) => ({
-        instances:
-          params?.parent === "projects/project-a"
-            ? [{ name: "projects/project-a/instances/instance-a" }]
-            : [],
-        nextPageToken: "",
-      })
-    );
+    mocks.fetchInstanceList.mockResolvedValue({
+      instances: [{ name: "projects/project-a/instances/instance-a" }],
+      nextPageToken: "",
+    });
     mocks.fetchDatabases.mockResolvedValue({
-      databases: [{ name: "instances/instance-a/databases/db-a" }],
+      databases: [
+        {
+          name: "instances/instance-a/databases/db-a",
+          project: "projects/project-a",
+        },
+      ],
       nextPageToken: "",
     });
 
     await render(<WorkspaceSetupGuide />);
 
     expect(mocks.fetchInstanceList).toHaveBeenCalledWith(
-      expect.objectContaining({ parent: "projects/project-a" })
+      expect.objectContaining({ pageSize: 1 })
     );
     expect(
       container
@@ -1096,7 +1183,7 @@ describe("WorkspaceSetupGuide", () => {
     for (const key of [
       "hasProject",
       "hasInstance",
-      "hasProjectDatabase",
+      "hasExploredDatabase",
       "hasFirstQuery",
     ]) {
       expect(
@@ -1167,7 +1254,12 @@ describe("WorkspaceSetupGuide", () => {
       nextPageToken: "",
     });
     mocks.fetchDatabases.mockResolvedValue({
-      databases: [{ name: "instances/instance-a/databases/db-a" }],
+      databases: [
+        {
+          name: "instances/instance-a/databases/db-a",
+          project: "projects/project-a",
+        },
+      ],
       nextPageToken: "",
     });
 
@@ -1242,7 +1334,12 @@ describe("WorkspaceSetupGuide", () => {
       nextPageToken: "",
     });
     mocks.fetchDatabases.mockResolvedValue({
-      databases: [{ name: "instances/instance-a/databases/db-a" }],
+      databases: [
+        {
+          name: "instances/instance-a/databases/db-a",
+          project: "projects/project-a",
+        },
+      ],
       nextPageToken: "",
     });
 
@@ -1332,7 +1429,7 @@ describe("WorkspaceSetupGuide", () => {
     expect(mocks.fetchProjectList).toHaveBeenCalledTimes(2);
 
     const assertInteractionState = () => {
-      for (const key of ["hasProjectDatabase", "hasFirstQuery"]) {
+      for (const key of ["hasExploredDatabase", "hasFirstQuery"]) {
         expect(
           container
             .querySelector(`[data-testid='setup-step-${key}']`)
@@ -1437,7 +1534,12 @@ describe("WorkspaceSetupGuide", () => {
       nextPageToken: "",
     });
     mocks.fetchDatabases.mockResolvedValue({
-      databases: [{ name: "instances/instance-a/databases/db-a" }],
+      databases: [
+        {
+          name: "instances/instance-a/databases/db-a",
+          project: "projects/project-a",
+        },
+      ],
       nextPageToken: "",
     });
 
@@ -1445,21 +1547,21 @@ describe("WorkspaceSetupGuide", () => {
 
     expect(
       container
-        .querySelector("[data-testid='setup-step-hasProjectDatabase']")
+        .querySelector("[data-testid='setup-step-hasExploredDatabase']")
         ?.getAttribute("class")
-    ).toContain("bg-accent/10");
+    ).not.toContain("bg-accent/10");
     expect(
       container
         .querySelector("[data-testid='setup-step-hasFirstQuery']")
         ?.getAttribute("class")
-    ).not.toContain("bg-accent/10");
+    ).toContain("bg-accent/10");
 
     const queryStep = container.querySelector(
       "[data-testid='setup-step-hasFirstQuery']"
     );
 
     expect(queryStep?.tagName).toBe("BUTTON");
-    expect(queryStep?.getAttribute("class")).not.toContain("bg-accent/10");
+    expect(queryStep?.getAttribute("class")).toContain("bg-accent/10");
 
     await act(async () => {
       (queryStep as HTMLButtonElement | null)?.click();
@@ -1487,7 +1589,12 @@ describe("WorkspaceSetupGuide", () => {
       nextPageToken: "",
     });
     mocks.fetchDatabases.mockResolvedValue({
-      databases: [{ name: "instances/instance-a/databases/db-a" }],
+      databases: [
+        {
+          name: "instances/instance-a/databases/db-a",
+          project: "projects/project-a",
+        },
+      ],
       nextPageToken: "",
     });
 
@@ -1532,7 +1639,12 @@ describe("WorkspaceSetupGuide", () => {
       nextPageToken: "",
     });
     mocks.fetchDatabases.mockResolvedValue({
-      databases: [{ name: "instances/instance-a/databases/db-a" }],
+      databases: [
+        {
+          name: "instances/instance-a/databases/db-a",
+          project: "projects/project-a",
+        },
+      ],
       nextPageToken: "",
     });
     await render(<WorkspaceSetupGuide />);
@@ -1686,13 +1798,15 @@ describe("WorkspaceSetupGuide", () => {
     mocks.databasesByName = {
       "instances/instance-a/databases/db-a": {},
     };
-    mocks.fetchDatabases.mockImplementation(async ({ parent } = {}) => ({
-      databases:
-        parent === "projects/project-a"
-          ? [{ name: "instances/instance-a/databases/db-a" }]
-          : [],
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [
+        {
+          name: "instances/instance-a/databases/db-a",
+          project: "projects/project-a",
+        },
+      ],
       nextPageToken: "",
-    }));
+    });
 
     await render(<WorkspaceSetupGuide />);
 
@@ -1721,13 +1835,15 @@ describe("WorkspaceSetupGuide", () => {
     expect(container.querySelector("[data-testid='active-action']")).toBeNull();
 
     mocks.currentRoute = { name: "workspace.member" };
-    mocks.fetchDatabases.mockImplementation(async ({ parent } = {}) => ({
-      databases:
-        parent === "projects/project-a"
-          ? [{ name: "instances/instance-a/databases/db-a" }]
-          : [],
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [
+        {
+          name: "instances/instance-a/databases/db-a",
+          project: "projects/project-a",
+        },
+      ],
       nextPageToken: "",
-    }));
+    });
 
     await render(<WorkspaceSetupGuide />);
 

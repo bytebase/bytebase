@@ -3461,6 +3461,7 @@
       "sql-editor": "Consulta datos en SQL Editor o crea un cambio de base de datos gobernado."
     },
     "dismiss": "Cerrar guía",
+    "getting-started": "Primeros pasos",
     "intro": {
       "database-description": "Crea una base de datos en tu instancia conectada.",
       "database-title": "Crear base de datos",
@@ -3473,7 +3474,6 @@
     },
     "prepare-database-tip": "Selecciona las bases de datos para transferirlas al proyecto.",
     "previous-step-required": "Debes terminar el paso anterior.",
-    "quick-start": "Inicio rápido",
     "self": "Configurar Bytebase",
     "steps": {
       "database": "Explorar bases de datos",
