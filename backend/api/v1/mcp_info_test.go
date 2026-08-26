@@ -365,7 +365,7 @@ func TestGetMCPInfoHandler(t *testing.T) {
 		require.Equal(t, "workspaces/"+workspaceID, info.Workspace)
 		require.Equal(t, v1pb.MCPSetting_READ_WRITE, info.Capability)
 		require.False(t, info.IgnoreMaskingExemptions)
-		require.False(t, info.CapabilityUnreadable,
+		require.False(t, info.PolicyUnreadable,
 			"a workspace that never configured MCP is readable, not broken")
 
 		// The list is the live registry's, not a fixture: every entry must be a
@@ -412,7 +412,7 @@ func TestGetMCPInfoHandler(t *testing.T) {
 		setCeiling(t, `{"capability":"READ_ONLYY"}`)
 		info, err := get(workspaceCtx())
 		require.NoError(t, err, "none of the mode contents come from the stored row")
-		require.True(t, info.CapabilityUnreadable)
+		require.True(t, info.PolicyUnreadable)
 		require.Equal(t, v1pb.MCPSetting_CAPABILITY_UNSPECIFIED, info.Capability,
 			"a ceiling nobody can resolve must not arrive as a mode, least of all the permissive one")
 		require.False(t, info.IgnoreMaskingExemptions,
@@ -429,12 +429,24 @@ func TestGetMCPInfoHandler(t *testing.T) {
 	// describes these rows because GetSetting refuses them outright
 	// (backend/tests/mcp_capability_setting_test.go). Untested, that difference
 	// is invisible until someone reads the field as if the two were the same.
+	//
+	// The last two rows are why the field is policy_unreadable rather than
+	// capability_unreadable: the capability is readable and a sibling field is
+	// not, and one failed unmarshal takes the whole row with it.
 	t.Run("a row that does not unmarshal is described the same way", func(t *testing.T) {
-		for _, token := range []string{`{}`, `true`, `1.5`, `[]`} {
-			setCeiling(t, `{"capability":`+token+`}`)
+		for _, row := range []string{
+			`{"capability":{}}`,
+			`{"capability":true}`,
+			`{"capability":1.5}`,
+			`{"capability":[]}`,
+			`{"capability":"READ_ONLY","ignoreMaskingExemptions":[]}`,
+			`{"capability":"READ_ONLY","ignoreMaskingExemptions":"yes"}`,
+		} {
+			token := row
+			setCeiling(t, row)
 			info, err := get(workspaceCtx())
 			require.NoError(t, err, "%s: the mode contents do not come from the stored row", token)
-			require.True(t, info.CapabilityUnreadable,
+			require.True(t, info.PolicyUnreadable,
 				"%s: no ceiling can be resolved from this row", token)
 			require.Equal(t, v1pb.MCPSetting_CAPABILITY_UNSPECIFIED, info.Capability, token)
 			require.Len(t, info.Modes, 3, "%s: the comparison this page exists for", token)
@@ -450,7 +462,7 @@ func TestGetMCPInfoHandler(t *testing.T) {
 		setCeiling(t, `{"capability":2}`)
 		info, err := get(workspaceCtx())
 		require.NoError(t, err)
-		require.False(t, info.CapabilityUnreadable, "it parsed; nothing failed to read it")
+		require.False(t, info.PolicyUnreadable, "it parsed; nothing failed to read it")
 		require.Equal(t, v1pb.MCPSetting_Capability(2), info.Capability)
 		// Len first: the loop below passes vacuously on an empty table, and an
 		// empty table is what turns every consent page into this same card.

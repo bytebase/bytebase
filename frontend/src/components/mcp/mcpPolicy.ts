@@ -249,7 +249,7 @@ export const readConsentCeiling = (
   if (!info) {
     return { kind: "unknown" };
   }
-  if (info.capabilityUnreadable) {
+  if (info.policyUnreadable) {
     return { kind: "unreadable" };
   }
   if (!modeFor(info, info.capability)) {

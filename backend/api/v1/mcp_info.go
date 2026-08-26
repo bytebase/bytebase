@@ -62,7 +62,7 @@ func (s *WorkspaceService) GetMCPInfo(ctx context.Context, _ *connect.Request[v1
 	return connect.NewResponse(&v1pb.MCPInfo{
 		Workspace:               common.FormatWorkspace(workspaceID),
 		Capability:              convertToV1MCPCapability(settings.Capability),
-		CapabilityUnreadable:    unreadable,
+		PolicyUnreadable:        unreadable,
 		Modes:                   mcpCapabilityModes(),
 		Methods:                 mcpServedMethods(protoregistry.GlobalFiles),
 		Engines:                 mcpEngineEnforcement(),

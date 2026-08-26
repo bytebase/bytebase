@@ -53,7 +53,7 @@ export declare type MCPInfo = Message<"bytebase.v1.MCPInfo"> & {
    * The ceiling in force for this workspace. A workspace that never configured
    * MCP resolves to READ_WRITE.
    *
-   * Read capability_unreadable before this field, and decide the rest from
+   * Read policy_unreadable before this field, and decide the rest from
    * modes rather than from this number. CAPABILITY_UNSPECIFIED, which protojson
    * omits, is not a ceiling: it means the stored value could not be resolved.
    * Otherwise the ceiling serves nothing exactly when modes carries no row for
@@ -117,11 +117,17 @@ export declare type MCPInfo = Message<"bytebase.v1.MCPInfo"> & {
 
   /**
    * True when this build cannot resolve a ceiling from the stored row, which is
-   * refused every MCP connection. Three rows reach it: an enum name a newer
-   * release wrote, a hand-edited token, and a value of the wrong JSON type.
+   * refused every MCP connection. Anything that leaves the row unresolvable
+   * reaches it, whether or not the capability is at fault: a wrong JSON type on
+   * any field fails the whole unmarshal, so a malformed
+   * ignore_masking_exemptions sets this over a perfectly readable capability.
    *
-   * Wider than MCPSetting.capability_unreadable despite the shared name, and
-   * not interchangeable with it. GetSetting fails outright on a row that does
+   * Named for the consequence, not the cause. Deliberately not
+   * capability_unreadable, which would claim the capability is the unreadable
+   * part when that is one case of several.
+   *
+   * Wider than MCPSetting.capability_unreadable despite the neighbouring names,
+   * and not interchangeable with it. GetSetting fails outright on a row that does
    * not unmarshal, so that field only ever describes rows that parsed; this one
    * also covers the rows GetSetting refuses, because this method answers the
    * mode contents for them rather than refusing.
@@ -144,9 +150,9 @@ export declare type MCPInfo = Message<"bytebase.v1.MCPInfo"> & {
    * A ceiling that parsed but no mode serves is the neighbouring state: the
    * number arrives on capability and modes has no row for it.
    *
-   * @generated from field: bool capability_unreadable = 8;
+   * @generated from field: bool policy_unreadable = 8;
    */
-  capabilityUnreadable: boolean;
+  policyUnreadable: boolean;
 };
 
 /**

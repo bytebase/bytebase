@@ -199,7 +199,7 @@ type MCPInfo struct {
 	// The ceiling in force for this workspace. A workspace that never configured
 	// MCP resolves to READ_WRITE.
 	//
-	// Read capability_unreadable before this field, and decide the rest from
+	// Read policy_unreadable before this field, and decide the rest from
 	// modes rather than from this number. CAPABILITY_UNSPECIFIED, which protojson
 	// omits, is not a ceiling: it means the stored value could not be resolved.
 	// Otherwise the ceiling serves nothing exactly when modes carries no row for
@@ -233,11 +233,17 @@ type MCPInfo struct {
 	// true here is the workspace answer, not a promise about every instance.
 	DataMaskingAvailable bool `protobuf:"varint,7,opt,name=data_masking_available,json=dataMaskingAvailable,proto3" json:"data_masking_available,omitempty"`
 	// True when this build cannot resolve a ceiling from the stored row, which is
-	// refused every MCP connection. Three rows reach it: an enum name a newer
-	// release wrote, a hand-edited token, and a value of the wrong JSON type.
+	// refused every MCP connection. Anything that leaves the row unresolvable
+	// reaches it, whether or not the capability is at fault: a wrong JSON type on
+	// any field fails the whole unmarshal, so a malformed
+	// ignore_masking_exemptions sets this over a perfectly readable capability.
 	//
-	// Wider than MCPSetting.capability_unreadable despite the shared name, and
-	// not interchangeable with it. GetSetting fails outright on a row that does
+	// Named for the consequence, not the cause. Deliberately not
+	// capability_unreadable, which would claim the capability is the unreadable
+	// part when that is one case of several.
+	//
+	// Wider than MCPSetting.capability_unreadable despite the neighbouring names,
+	// and not interchangeable with it. GetSetting fails outright on a row that does
 	// not unmarshal, so that field only ever describes rows that parsed; this one
 	// also covers the rows GetSetting refuses, because this method answers the
 	// mode contents for them rather than refusing.
@@ -259,9 +265,9 @@ type MCPInfo struct {
 	//
 	// A ceiling that parsed but no mode serves is the neighbouring state: the
 	// number arrives on capability and modes has no row for it.
-	CapabilityUnreadable bool `protobuf:"varint,8,opt,name=capability_unreadable,json=capabilityUnreadable,proto3" json:"capability_unreadable,omitempty"`
-	unknownFields        protoimpl.UnknownFields
-	sizeCache            protoimpl.SizeCache
+	PolicyUnreadable bool `protobuf:"varint,8,opt,name=policy_unreadable,json=policyUnreadable,proto3" json:"policy_unreadable,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
 func (x *MCPInfo) Reset() {
@@ -343,9 +349,9 @@ func (x *MCPInfo) GetDataMaskingAvailable() bool {
 	return false
 }
 
-func (x *MCPInfo) GetCapabilityUnreadable() bool {
+func (x *MCPInfo) GetPolicyUnreadable() bool {
 	if x != nil {
-		return x.CapabilityUnreadable
+		return x.PolicyUnreadable
 	}
 	return false
 }
@@ -993,7 +999,7 @@ var File_v1_workspace_service_proto protoreflect.FileDescriptor
 const file_v1_workspace_service_proto_rawDesc = "" +
 	"\n" +
 	"\x1av1/workspace_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\x1a\x15v1/auth_service.proto\x1a\x0fv1/common.proto\x1a\x13v1/iam_policy.proto\x1a\x18v1/setting_service.proto\"\x13\n" +
-	"\x11GetMCPInfoRequest\"\xdf\x03\n" +
+	"\x11GetMCPInfoRequest\"\xd7\x03\n" +
 	"\aMCPInfo\x12!\n" +
 	"\tworkspace\x18\x01 \x01(\tB\x03\xe0A\x03R\tworkspace\x12G\n" +
 	"\n" +
@@ -1003,8 +1009,8 @@ const file_v1_workspace_service_proto_rawDesc = "" +
 	"\amethods\x18\x04 \x03(\v2\x16.bytebase.v1.MCPMethodB\x03\xe0A\x03R\amethods\x12@\n" +
 	"\aengines\x18\x05 \x03(\v2!.bytebase.v1.MCPEngineEnforcementB\x03\xe0A\x03R\aengines\x12?\n" +
 	"\x19ignore_masking_exemptions\x18\x06 \x01(\bB\x03\xe0A\x03R\x17ignoreMaskingExemptions\x129\n" +
-	"\x16data_masking_available\x18\a \x01(\bB\x03\xe0A\x03R\x14dataMaskingAvailable\x128\n" +
-	"\x15capability_unreadable\x18\b \x01(\bB\x03\xe0A\x03R\x14capabilityUnreadable\"\x9b\x01\n" +
+	"\x16data_masking_available\x18\a \x01(\bB\x03\xe0A\x03R\x14dataMaskingAvailable\x120\n" +
+	"\x11policy_unreadable\x18\b \x01(\bB\x03\xe0A\x03R\x10policyUnreadable\"\x9b\x01\n" +
 	"\x11MCPCapabilityMode\x12B\n" +
 	"\n" +
 	"capability\x18\x01 \x01(\x0e2\".bytebase.v1.MCPSetting.CapabilityR\n" +

@@ -285,7 +285,7 @@ const infoWith = (
 ) =>
   create(MCPInfoSchema, {
     capability: fields.capability ?? MCPSetting_Capability.READ_ONLY,
-    capabilityUnreadable: fields.unreadable ?? false,
+    policyUnreadable: fields.unreadable ?? false,
     modes: (fields.modes ?? SERVED_MODES).map((capability) =>
       create(MCPCapabilityModeSchema, { capability })
     ),
