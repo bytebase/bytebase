@@ -742,6 +742,9 @@ export declare const UserService: GenService<{
    * is shown recovery codes, and promotion happens at ConfirmRecoveryCodes so
    * an account is never MFA-required with codes its owner never saved.
    * Permissions required: None beyond being signed in as `name`.
+   * It writes nothing itself, but it is a required step of installing a
+   * factor on the account, which is why it is denied on the same grounds as
+   * the promotion it precedes.
    *
    * @generated from rpc bytebase.v1.UserService.EnableMFA
    */

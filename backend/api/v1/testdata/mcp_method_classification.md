@@ -213,12 +213,12 @@ served by no ceiling.
 | SubscriptionService/UploadLicense | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.subscription.manage |
 | SubscriptionService/VerifyCheckoutSession | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.subscription.manage |
 | UserService/BatchGetUsers | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.users.get |
-| UserService/ChangePassword | FORBIDDEN | RESETS_CREDENTIAL | — |
-| UserService/ConfirmRecoveryCodes | FORBIDDEN | MINTS_CREDENTIAL | — |
+| UserService/ChangePassword | FORBIDDEN | TAKES_OVER_ACCOUNT | — |
+| UserService/ConfirmRecoveryCodes | FORBIDDEN | TAKES_OVER_ACCOUNT | — |
 | UserService/CreateUser | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.users.create |
 | UserService/DeleteUser | EXCLUDED | ADMINISTERS_THE_WORKSPACE | — |
-| UserService/DisableMFA | FORBIDDEN | RESETS_CREDENTIAL | — |
-| UserService/EnableMFA | FORBIDDEN | MINTS_CREDENTIAL | — |
+| UserService/DisableMFA | FORBIDDEN | TAKES_OVER_ACCOUNT | — |
+| UserService/EnableMFA | FORBIDDEN | TAKES_OVER_ACCOUNT | — |
 | UserService/GetCurrentUser | READ | — | — |
 | UserService/GetUser | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.users.get |
 | UserService/ListUsers | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.users.list |

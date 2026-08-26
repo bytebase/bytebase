@@ -123,6 +123,9 @@ type UserServiceClient interface {
 	// is shown recovery codes, and promotion happens at ConfirmRecoveryCodes so
 	// an account is never MFA-required with codes its owner never saved.
 	// Permissions required: None beyond being signed in as `name`.
+	// It writes nothing itself, but it is a required step of installing a
+	// factor on the account, which is why it is denied on the same grounds as
+	// the promotion it precedes.
 	EnableMFA(context.Context, *connect.Request[v1.EnableMFARequest]) (*connect.Response[v1.User], error)
 	// Turns MFA off, clearing the entire MFA config — live and pending state
 	// alike. Callers may disable their own; an administrator may disable
@@ -390,6 +393,9 @@ type UserServiceHandler interface {
 	// is shown recovery codes, and promotion happens at ConfirmRecoveryCodes so
 	// an account is never MFA-required with codes its owner never saved.
 	// Permissions required: None beyond being signed in as `name`.
+	// It writes nothing itself, but it is a required step of installing a
+	// factor on the account, which is why it is denied on the same grounds as
+	// the promotion it precedes.
 	EnableMFA(context.Context, *connect.Request[v1.EnableMFARequest]) (*connect.Response[v1.User], error)
 	// Turns MFA off, clearing the entire MFA config — live and pending state
 	// alike. Callers may disable their own; an administrator may disable

@@ -145,7 +145,7 @@ service UserService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_denial_reason) = RESETS_CREDENTIAL;
+    option (bytebase.v1.mcp_denial_reason) = TAKES_OVER_ACCOUNT;
   }
 
   // Mints a pending TOTP secret and recovery codes for the caller's own
@@ -169,6 +169,9 @@ service UserService {
   // is shown recovery codes, and promotion happens at ConfirmRecoveryCodes so
   // an account is never MFA-required with codes its owner never saved.
   // Permissions required: None beyond being signed in as `name`.
+  // It writes nothing itself, but it is a required step of installing a
+  // factor on the account, which is why it is denied on the same grounds as
+  // the promotion it precedes.
   rpc EnableMFA(EnableMFARequest) returns (User) {
     option (google.api.http) = {
       post: "/v1/{name=users/*}:enableMFA"
@@ -178,7 +181,7 @@ service UserService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
+    option (bytebase.v1.mcp_denial_reason) = TAKES_OVER_ACCOUNT;
   }
 
   // Turns MFA off, clearing the entire MFA config — live and pending state
@@ -195,7 +198,7 @@ service UserService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_denial_reason) = RESETS_CREDENTIAL;
+    option (bytebase.v1.mcp_denial_reason) = TAKES_OVER_ACCOUNT;
   }
 
   // Mints a pending recovery-code set beside the live one and returns it.
@@ -227,7 +230,7 @@ service UserService {
     option (bytebase.v1.auth_method) = CUSTOM;
     option (bytebase.v1.audit) = true;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
-    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
+    option (bytebase.v1.mcp_denial_reason) = TAKES_OVER_ACCOUNT;
   }
 }
 
