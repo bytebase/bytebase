@@ -102,7 +102,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
       if (!store.isLoggedIn() || store.unauthenticatedOccurred) return;
       if (isAuthRoute || isPublicRoute) return;
       void (async () => {
-        const user = await store.fetchCurrentUser();
+        const user = await store.fetchCurrentUser(true);
         if (!user || !store.isLoggedIn() || store.unauthenticatedOccurred) {
           return;
         }

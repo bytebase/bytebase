@@ -2,7 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { Code, createContextValues } from "@connectrpc/connect";
 import { uniqueId } from "lodash-es";
 import { authServiceClientConnect, userServiceClientConnect } from "@/api";
-import { ignoredCodesContextKey } from "@/api/context-key";
+import { ignoredCodesContextKey, silentContextKey } from "@/api/context-key";
 import {
   AUTH_MFA_MODULE,
   AUTH_PASSWORD_RESET_MODULE,
@@ -144,9 +144,12 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
 
   // Force re-fetch (mirrors the Pinia `fetchCurrentUser`, which always hits
   // the server — login/signup need the fresh authenticated user).
-  fetchCurrentUser: async () => {
+  fetchCurrentUser: async (silent = false) => {
     try {
-      const fresh = await userServiceClientConnect.getCurrentUser({});
+      const fresh = await userServiceClientConnect.getCurrentUser(
+        {},
+        { contextValues: createContextValues().set(silentContextKey, silent) }
+      );
       const user = keepMfaEnrollment(fresh, get().currentUser);
       set({ currentUser: user, currentUserName: user.name });
       return user;

@@ -199,7 +199,7 @@ export type AuthSlice = {
   requireResetPassword: () => boolean;
   setRequireResetPassword: (value: boolean) => void;
   setUnauthenticatedOccurred: (value: boolean) => void;
-  fetchCurrentUser: () => Promise<User | undefined>;
+  fetchCurrentUser: (silent?: boolean) => Promise<User | undefined>;
   login: (params: {
     request: LoginRequest;
     redirect?: boolean;
