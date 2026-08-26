@@ -24,6 +24,7 @@ const mocks = vi.hoisted(() => ({
   updateUser: vi.fn(),
   changePassword: vi.fn(async () => ({ name: "users/1" })),
   fetchCurrentUser: vi.fn(async () => ({ name: "users/1" })),
+  setCurrentUser: vi.fn(),
   pushNotification: vi.fn(),
   routerReplace: vi.fn(),
   routerPush: vi.fn(),
@@ -51,6 +52,7 @@ vi.mock("@/stores/app", () => {
     ...mocks.appStoreState,
     updateUser: mocks.updateUser,
     fetchCurrentUser: mocks.fetchCurrentUser,
+    setCurrentUser: mocks.setCurrentUser,
     loadAuthenticationInfo: vi.fn().mockResolvedValue(undefined),
     login: mocks.login,
     setRequireResetPassword: mocks.setRequireResetPassword,
@@ -269,6 +271,9 @@ describe("PasswordResetPage", () => {
       expect.objectContaining({ name: "users/1", newPassword: "Passw0rd!" })
     );
     expect(mocks.updateUser).not.toHaveBeenCalled();
+    // The response is adopted rather than refetched, so the shared user the
+    // guards read is current before this page navigates away.
+    expect(mocks.setCurrentUser).toHaveBeenCalledWith({ name: "users/1" });
     unmount();
   });
 
