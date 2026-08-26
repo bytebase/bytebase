@@ -393,6 +393,33 @@ describe("ProjectDatabasesPage", () => {
     });
   });
 
+  test("only checks workspace instances for the default project", async () => {
+    mocks.fetchInstanceList.mockImplementation(async (params) => {
+      if (params?.parent) {
+        throw new Error("the default project cannot own instances");
+      }
+      return {
+        instances: [{ name: "instances/prod", title: "Prod" }],
+      };
+    });
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="default" />);
+      await Promise.resolve();
+    });
+
+    expect(mocks.fetchInstanceList).toHaveBeenCalledTimes(1);
+    expect(mocks.fetchInstanceList).toHaveBeenCalledWith({ pageSize: 2 });
+    expect(container.textContent).toContain("project.add-database");
+    expect(container.textContent).not.toContain("project.connect-instance");
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   test("opens the add database sheet when the project has a project instance", async () => {
     mocks.fetchInstanceList.mockImplementation(async (params) => ({
       instances:
