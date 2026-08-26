@@ -330,6 +330,55 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 	return userMessages, nil
 }
 
+// UpdateUserMFAConfigIfPending replaces the account's MFA config, but only
+// while the pending enrollment recorded on the row is still the one the caller
+// verified. Returns nil when it is not: another tab minted a fresh enrollment,
+// or an administrator disabled MFA, in between.
+//
+// The comparison has to happen in the same statement as the write. Checking a
+// user read moments earlier and then writing unconditionally leaves a window
+// where a confirmation promotes an enrollment nobody is waiting for — or
+// re-enables MFA the administrator just cleared for a locked-out user.
+func (s *Store) UpdateUserMFAConfigIfPending(ctx context.Context, userID int, expectedPendingVersion time.Time, mfaConfig *storepb.MFAConfig) (*UserMessage, error) {
+	mfaConfigBytes, err := protojson.Marshal(mfaConfig)
+	if err != nil {
+		return nil, err
+	}
+	// tempOtpSecretCreatedTime is protojson's camelCase spelling, and comparing
+	// as timestamptz rather than text keeps the match independent of how many
+	// fractional digits the value was serialized with. A cleared config has no
+	// such key, so the NULL comparison fails and the write is refused.
+	q := qb.Q().Space(`
+		UPDATE principal SET mfa_config = ?
+		WHERE id = ? AND (mfa_config->>'tempOtpSecretCreatedTime')::timestamptz = ?
+		RETURNING id, deleted, email, name, password_hash, mfa_config, phone, profile, created_at
+	`, mfaConfigBytes, userID, expectedPendingVersion)
+	sqlStr, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	updatedUser, err := scanPrincipalRow(ctx, tx, sqlStr, args)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, errors.Wrapf(err, "failed to update mfa config")
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	s.userEmailCache.Add(updatedUser.Email, updatedUser)
+	return updatedUser, nil
+}
+
 // scanPrincipalRow scans a principal row into a UserMessage (without groups).
 func scanPrincipalRow(ctx context.Context, tx *sql.Tx, sqlStr string, args []any) (*UserMessage, error) {
 	var user UserMessage

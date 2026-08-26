@@ -415,3 +415,52 @@ func TestSupersededPendingStateIsRefused(t *testing.T) {
 	a.NoError(err, "the authenticator the user actually enrolled must still work")
 	a.NotEmpty(loggedIn.Msg.Token)
 }
+
+// TestConfirmationCannotRevivePendingStateItRaced pins the promotion's version
+// predicate rather than the read in front of it. An administrator clearing a
+// locked-out user's factor, or another tab minting a fresh enrollment, can land
+// between a confirmation's check and its write; without the predicate on the
+// write itself, that confirmation still promotes what it read and brings back a
+// factor the administrator just removed.
+func TestConfirmationCannotRevivePendingStateItRaced(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	userName := common.FormatUserEmail("demo@example.com")
+	minted, err := ctl.userServiceClient.StartMFAEnrollment(ctx, connect.NewRequest(&v1pb.StartMFAEnrollmentRequest{
+		Name: userName,
+	}))
+	a.NoError(err)
+	otp, err := totp.GenerateCode(minted.Msg.OtpSecret, time.Now())
+	a.NoError(err)
+	_, err = ctl.userServiceClient.EnableMFA(ctx, connect.NewRequest(&v1pb.EnableMFARequest{
+		Name:           userName,
+		OtpCode:        otp,
+		PendingVersion: minted.Msg.PendingVersion,
+	}))
+	a.NoError(err)
+
+	// The pending state is cleared out from under the open enrollment, the way
+	// DisableMFA clears it for an account being recovered.
+	_, err = ctl.userServiceClient.DisableMFA(ctx, connect.NewRequest(&v1pb.DisableMFARequest{
+		Name: userName,
+	}))
+	a.NoError(err)
+
+	// The stale tab confirms with the version it was handed.
+	_, err = ctl.userServiceClient.ConfirmRecoveryCodes(ctx, connect.NewRequest(&v1pb.ConfirmRecoveryCodesRequest{
+		Name:           userName,
+		PendingVersion: minted.Msg.PendingVersion,
+	}))
+	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err),
+		"a confirmation whose pending state is gone must be refused")
+
+	current, err := ctl.userServiceClient.GetCurrentUser(ctx, connect.NewRequest(&emptypb.Empty{}))
+	a.NoError(err)
+	a.False(current.Msg.MfaEnabled, "MFA must stay off once it has been disabled")
+}
