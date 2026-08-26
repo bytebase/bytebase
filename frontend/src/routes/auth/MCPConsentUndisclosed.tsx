@@ -1,6 +1,7 @@
-import { ScrollText, X } from "lucide-react";
+import { ScrollText } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
 /** Why this page cannot say what approving would grant. */
@@ -52,15 +53,18 @@ export function MCPConsentUndisclosed({
 
       {workspaceCard}
 
+      {/* The status, not a detail: this line is the whole reason there is no
+          Allow, and it arrives after the policy read settles. Alert carries
+          role="alert" so a screen reader announces it when it appears, which a
+          styled div cannot do. Placed beside the details panel rather than
+          inside it, the way MCPConsentCeiling places its write caution. */}
+      <Alert variant="error" description={t(`${key}.line`)} />
+
       <div className="bg-control-bg rounded-sm p-4 flex flex-col gap-3">
         <p className="text-sm text-control-light">
           {t("oauth2.consent.mcp.undisclosed.policy-label")}
         </p>
         <ul className="text-sm text-main flex flex-col gap-2">
-          <li className="flex items-start gap-2">
-            <X className="mt-0.5 size-4 shrink-0 text-error" />
-            <span>{t(`${key}.line`)}</span>
-          </li>
           <li className="flex items-start gap-2">
             <ScrollText className="mt-0.5 size-4 shrink-0 text-control-light" />
             <span>

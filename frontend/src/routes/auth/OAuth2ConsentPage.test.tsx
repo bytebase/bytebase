@@ -745,6 +745,14 @@ describe("OAuth2ConsentPage", () => {
     );
     // The workspace row stays, so a SaaS user can switch to one that discloses.
     expect(container.textContent).toContain("oauth2.consent.workspace-label");
+    // Codex, #21254: the line that explains why there is no Allow arrives after
+    // the policy read settles, so it has to be announced rather than merely
+    // styled. A plain div renders identically and says nothing.
+    const status = container.querySelector('[role="alert"]');
+    expect(status).not.toBeNull();
+    expect(status?.textContent).toContain(
+      "oauth2.consent.mcp.undisclosed.unreadable.line"
+    );
     unmount();
   });
 
