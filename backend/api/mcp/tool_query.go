@@ -49,7 +49,7 @@ const queryDatabaseDescription = `Execute a SQL query against a Bytebase databas
 |-----------|----------|-------------|
 | database  | Yes      | Database name or substring (e.g., "employee_db" or "employee") |
 | statement | Yes      | SQL query to execute |
-| instance  | No       | Canonical instance name, or an instance ID paired with project |
+| instance  | No       | Workspace instance ID/name, or the full canonical name for a project instance |
 | project   | No       | Project name or ID to narrow resolution |
 | limit     | No       | Max rows (default: 100, max: 1000) |
 

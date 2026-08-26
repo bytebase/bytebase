@@ -378,6 +378,18 @@ func TestQueryDatabase_ProjectInstanceRequiresCanonicalInstanceFilter(t *testing
 	require.Equal(t, "DATABASE_NOT_FOUND", te.Code)
 }
 
+func TestQueryDatabase_WorkspaceInstanceWithProjectFilter(t *testing.T) {
+	databaseName := "instances/prod-pg/databases/employee_db"
+	databases := []map[string]any{
+		makeDatabase(databaseName, "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	s := newTestServerWithMock(t, mockListDatabases(databases))
+
+	resolved, err := s.resolveDatabase(testContext(), "employee_db", "prod-pg", "hr-system")
+	require.NoError(t, err)
+	require.Equal(t, databaseName, resolved.resourceName)
+}
+
 func TestQueryDatabase_ReadOnlyDatasource(t *testing.T) {
 	databases := []map[string]any{
 		makeDatabaseWithDualDS("instances/prod-pg/databases/employee_db", "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1", "ds-ro-1"),

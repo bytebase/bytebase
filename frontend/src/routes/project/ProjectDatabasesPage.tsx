@@ -82,6 +82,24 @@ import {
 } from "@/utils";
 import { extractProjectResourceName } from "@/utils/v1/project";
 
+const fetchAvailableInstanceCount = async (
+  projectName: string,
+  canListProjectInstances: boolean
+) => {
+  const results = await Promise.all([
+    hasWorkspacePermissionV2("bb.instances.list")
+      ? useAppStore.getState().fetchInstanceList({ pageSize: 2 })
+      : Promise.resolve({ instances: [], nextPageToken: "" }),
+    canListProjectInstances
+      ? useAppStore
+          .getState()
+          .fetchInstanceList({ parent: projectName, pageSize: 2 })
+      : Promise.resolve({ instances: [], nextPageToken: "" }),
+  ]);
+  const instances = results.flatMap((result) => result.instances);
+  return new Set(instances.map((instance) => instance.name)).size;
+};
+
 export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const currentRoute = useCurrentRoute();
@@ -314,23 +332,10 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   useEffect(() => {
     let cancelled = false;
     setAvailableInstanceCount(undefined);
-    Promise.all([
-      hasWorkspacePermissionV2("bb.instances.list")
-        ? useAppStore.getState().fetchInstanceList({ pageSize: 2 })
-        : Promise.resolve({ instances: [], nextPageToken: "" }),
-      canListProjectInstances
-        ? useAppStore
-            .getState()
-            .fetchInstanceList({ parent: projectName, pageSize: 2 })
-        : Promise.resolve({ instances: [], nextPageToken: "" }),
-    ])
-      .then((results) => {
+    fetchAvailableInstanceCount(projectName, canListProjectInstances)
+      .then((count) => {
         if (!cancelled) {
-          setAvailableInstanceCount(
-            new Set(
-              results.flatMap(({ instances }) => instances.map((i) => i.name))
-            ).size
-          );
+          setAvailableInstanceCount(count);
         }
       })
       .catch(() => {
