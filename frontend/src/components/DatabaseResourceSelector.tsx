@@ -27,6 +27,7 @@ import type {
   DatabaseMetadata,
   TableMetadata,
 } from "@/types/proto-es/v1/database_service_pb";
+import { isDefaultProject } from "@/types/v1/project";
 import {
   extractDatabaseResourceName,
   extractInstanceResourceName,
@@ -138,7 +139,9 @@ export function DatabaseResourceSelector({
         silent: true,
       };
       const results = await Promise.all([
-        project && hasProjectPermissionV2(project, "bb.instances.list")
+        project &&
+        !isDefaultProject(projectName) &&
+        hasProjectPermissionV2(project, "bb.instances.list")
           ? useAppStore
               .getState()
               .fetchInstanceList({ ...params, parent: projectName })

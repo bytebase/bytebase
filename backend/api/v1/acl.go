@@ -649,6 +649,11 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 		}
 		return resources, nil
 	}
+	if r, ok := request.(*v1pb.BatchSyncDatabasesRequest); ok {
+		// Batch schema sync has the same project-scoped authorization semantics
+		// as SyncDatabase. Resolve every database name to its owning project.
+		return r.Names, nil
+	}
 
 	if r, ok := request.(*v1pb.ListInstanceDatabaseRequest); ok && r.GetInstance() != nil {
 		// During instance creation, the request carries an inline instance so
