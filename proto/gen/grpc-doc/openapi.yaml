@@ -17219,6 +17219,23 @@ paths:
           required: true
           schema:
             type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                pendingVersion:
+                  title: pending_version
+                  description: |-
+                    The pending_version of the codes being confirmed. Confirming promotes
+                     exactly the set this version identifies, or nothing.
+                  $ref: '#/components/schemas/google.protobuf.Timestamp'
+              title: ConfirmRecoveryCodesRequest
+              required:
+                - pendingVersion
+              additionalProperties: false
+        required: true
       responses:
         "200":
           description: Success
@@ -17282,9 +17299,14 @@ paths:
                   title: otp_code
                   maxLength: 64
                   description: A code from the authenticator the pending secret was just added to.
+                pendingVersion:
+                  title: pending_version
+                  description: The pending_version this enrollment was minted with.
+                  $ref: '#/components/schemas/google.protobuf.Timestamp'
               title: EnableMFARequest
               required:
                 - otpCode
+                - pendingVersion
               additionalProperties: false
         required: true
       responses:
@@ -20916,9 +20938,16 @@ components:
           title: name
           maxLength: 260
           description: 'Format: users/{email}. Must be the caller''s own name.'
+        pendingVersion:
+          title: pending_version
+          description: |-
+            The pending_version of the codes being confirmed. Confirming promotes
+             exactly the set this version identifies, or nothing.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
       title: ConfirmRecoveryCodesRequest
       required:
         - name
+        - pendingVersion
       additionalProperties: false
     bytebase.v1.CreateAccessGrantRequest:
       type: object
@@ -22683,10 +22712,15 @@ components:
           title: otp_code
           maxLength: 64
           description: A code from the authenticator the pending secret was just added to.
+        pendingVersion:
+          title: pending_version
+          description: The pending_version this enrollment was minted with.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
       title: EnableMFARequest
       required:
         - name
         - otpCode
+        - pendingVersion
       additionalProperties: false
     bytebase.v1.Engine:
       type: string
@@ -28458,6 +28492,10 @@ components:
             type: string
           title: recovery_codes
           description: The pending recovery codes, shown once for the caller to save.
+        pendingVersion:
+          title: pending_version
+          description: Identifies this mint; see StartMFAEnrollmentResponse.pending_version.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
       title: RegenerateRecoveryCodesResponse
       additionalProperties: false
     bytebase.v1.RejectIssueRequest:
@@ -30675,6 +30713,14 @@ components:
         expireTime:
           title: expire_time
           description: When this enrollment stops being confirmable.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        pendingVersion:
+          title: pending_version
+          description: |-
+            Identifies this mint. Echo it back to EnableMFA and
+             ConfirmRecoveryCodes; a mint from another tab or device replaces the
+             pending state, and those methods refuse a version that is no longer the
+             pending one rather than promoting something this caller never saw.
           $ref: '#/components/schemas/google.protobuf.Timestamp'
       title: StartMFAEnrollmentResponse
       additionalProperties: false

@@ -15678,6 +15678,14 @@ Format: users/{email} </p></td>
                   <td><p>Format: users/{email}. Must be the caller&#39;s own name. </p></td>
                 </tr>
               
+                <tr>
+                  <td>pending_version</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The pending_version of the codes being confirmed. Confirming promotes
+exactly the set this version identifies, or nothing. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -15781,6 +15789,13 @@ bb.users.update. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>A code from the authenticator the pending secret was just added to. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pending_version</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>The pending_version this enrollment was minted with. </p></td>
                 </tr>
               
             </tbody>
@@ -15958,6 +15973,13 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><p>The pending recovery codes, shown once for the caller to save. </p></td>
                 </tr>
               
+                <tr>
+                  <td>pending_version</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>Identifies this mint; see StartMFAEnrollmentResponse.pending_version. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -16019,6 +16041,16 @@ readable from the User resource. </p></td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
                   <td><p>When this enrollment stops being confirmable. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>pending_version</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>Identifies this mint. Echo it back to EnableMFA and
+ConfirmRecoveryCodes; a mint from another tab or device replaces the
+pending state, and those methods refuse a version that is no longer the
+pending one rather than promoting something this caller never saw. </p></td>
                 </tr>
               
             </tbody>

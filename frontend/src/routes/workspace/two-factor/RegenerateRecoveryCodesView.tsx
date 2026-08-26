@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { userServiceClientConnect } from "@/api";
@@ -21,6 +22,7 @@ export function RegenerateRecoveryCodesView({
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
   const [recoveryCodes, setRecoveryCodes] = useState<string[]>([]);
+  const [pendingVersion, setPendingVersion] = useState<Timestamp | undefined>();
   const [recoveryCodesDownloaded, setRecoveryCodesDownloaded] = useState(false);
 
   // The codes exist only in the minting response, so this view fetches its own
@@ -31,12 +33,21 @@ export function RegenerateRecoveryCodesView({
       .regenerateRecoveryCodes(
         create(RegenerateRecoveryCodesRequestSchema, { name: currentUser.name })
       )
-      .then((response) => setRecoveryCodes([...response.recoveryCodes]));
+      .then((response) => {
+        setRecoveryCodes([...response.recoveryCodes]);
+        setPendingVersion(response.pendingVersion);
+      });
   }, [currentUser.name]);
 
   const confirmRecoveryCodes = useCallback(async () => {
+    // Confirm the set this view minted and displayed, never whatever is
+    // pending now: an enrollment started in another tab would otherwise be
+    // promoted here, swapping the factor along with it.
     await userServiceClientConnect.confirmRecoveryCodes(
-      create(ConfirmRecoveryCodesRequestSchema, { name: currentUser.name })
+      create(ConfirmRecoveryCodesRequestSchema, {
+        name: currentUser.name,
+        pendingVersion,
+      })
     );
     pushNotification({
       module: "bytebase",
@@ -44,7 +55,7 @@ export function RegenerateRecoveryCodesView({
       title: t("two-factor.messages.recovery-codes-regenerated"),
     });
     onClose();
-  }, [currentUser.name, onClose, t]);
+  }, [currentUser.name, onClose, pendingVersion, t]);
 
   return (
     <>

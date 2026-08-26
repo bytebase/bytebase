@@ -32,6 +32,9 @@ interface Enrollment {
   otpSecret: string;
   recoveryCodes: string[];
   expireTime: Timestamp | undefined;
+  // Identifies this mint. Confirming with it is what keeps a mint from
+  // another tab from being promoted in place of the one on screen.
+  pendingVersion: Timestamp | undefined;
 }
 
 const SETUP_AUTH_APP_STEP = 0;
@@ -106,6 +109,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
       otpSecret: response.otpSecret,
       recoveryCodes: [...response.recoveryCodes],
       expireTime: response.expireTime,
+      pendingVersion: response.pendingVersion,
     });
   }, [currentUser.name]);
 
@@ -126,6 +130,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
           create(EnableMFARequestSchema, {
             name: currentUser.name,
             otpCode: codes.join(""),
+            pendingVersion: enrollment?.pendingVersion,
           })
         );
       } catch (error) {
@@ -138,7 +143,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
       }
       return true;
     },
-    [currentUser.name]
+    [currentUser.name, enrollment?.pendingVersion]
   );
 
   const handleOtpFinish = useCallback(
@@ -184,7 +189,10 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
     // Confirming the codes is what makes the factor live: the secret and the
     // codes that recover it start existing in the same write.
     await userServiceClientConnect.confirmRecoveryCodes(
-      create(ConfirmRecoveryCodesRequestSchema, { name: currentUser.name })
+      create(ConfirmRecoveryCodesRequestSchema, {
+        name: currentUser.name,
+        pendingVersion: enrollment?.pendingVersion,
+      })
     );
     await fetchCurrentUser();
     pushNotification({
@@ -198,7 +206,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
     } else {
       router.replace({ name: ACCOUNT_ROUTE });
     }
-  }, [currentUser.name, fetchCurrentUser, t]);
+  }, [currentUser.name, enrollment?.pendingVersion, fetchCurrentUser, t]);
 
   const allowNext =
     currentStep === SETUP_AUTH_APP_STEP

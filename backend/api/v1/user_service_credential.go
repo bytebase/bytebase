@@ -91,9 +91,10 @@ func (s *UserService) StartMFAEnrollment(ctx context.Context, request *connect.R
 	}
 
 	return connect.NewResponse(&v1pb.StartMFAEnrollmentResponse{
-		OtpSecret:     tempSecret,
-		RecoveryCodes: tempRecoveryCodes,
-		ExpireTime:    timestamppb.New(createdTime.AsTime().Add(mfaTempSecretExpiration)),
+		OtpSecret:      tempSecret,
+		RecoveryCodes:  tempRecoveryCodes,
+		ExpireTime:     timestamppb.New(createdTime.AsTime().Add(mfaTempSecretExpiration)),
+		PendingVersion: createdTime,
 	}), nil
 }
 
@@ -103,6 +104,9 @@ func (s *UserService) StartMFAEnrollment(ctx context.Context, request *connect.R
 func (s *UserService) EnableMFA(ctx context.Context, request *connect.Request[v1pb.EnableMFARequest]) (*connect.Response[v1pb.User], error) {
 	caller, err := s.resolveSelfUser(ctx, request.Msg.Name)
 	if err != nil {
+		return nil, err
+	}
+	if err := checkPendingMFAState(caller, request.Msg.PendingVersion); err != nil {
 		return nil, err
 	}
 	if isMFATempSecretExpired(caller.MFAConfig) {
@@ -188,19 +192,23 @@ func (s *UserService) RegenerateRecoveryCodes(ctx context.Context, request *conn
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate recovery codes"))
 	}
+	version := timestamppb.Now()
 
 	if _, err := s.store.UpdateUser(ctx, caller, &store.UpdateUserMessage{
 		MFAConfig: &storepb.MFAConfig{
 			OtpSecret:                caller.MFAConfig.GetOtpSecret(),
 			RecoveryCodes:            caller.MFAConfig.GetRecoveryCodes(),
 			TempRecoveryCodes:        tempRecoveryCodes,
-			TempOtpSecretCreatedTime: timestamppb.Now(),
+			TempOtpSecretCreatedTime: version,
 		},
 	}); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update user"))
 	}
 
-	return connect.NewResponse(&v1pb.RegenerateRecoveryCodesResponse{RecoveryCodes: tempRecoveryCodes}), nil
+	return connect.NewResponse(&v1pb.RegenerateRecoveryCodesResponse{
+		RecoveryCodes:  tempRecoveryCodes,
+		PendingVersion: version,
+	}), nil
 }
 
 // ConfirmRecoveryCodes promotes the pending recovery codes. On a first-time
@@ -209,6 +217,14 @@ func (s *UserService) RegenerateRecoveryCodes(ctx context.Context, request *conn
 func (s *UserService) ConfirmRecoveryCodes(ctx context.Context, request *connect.Request[v1pb.ConfirmRecoveryCodesRequest]) (*connect.Response[v1pb.User], error) {
 	caller, err := s.resolveSelfUser(ctx, request.Msg.Name)
 	if err != nil {
+		return nil, err
+	}
+	// Bind the confirmation to the mint the caller was handed. The pending
+	// state is one shared slot, so a mint from another tab replaces it —
+	// without this check, confirming a regeneration after an enrollment
+	// started elsewhere would promote a secret this caller never saw and
+	// recovery codes it never displayed.
+	if err := checkPendingMFAState(caller, request.Msg.PendingVersion); err != nil {
 		return nil, err
 	}
 	if len(caller.MFAConfig.GetTempRecoveryCodes()) == 0 {
@@ -238,6 +254,17 @@ func (s *UserService) ConfirmRecoveryCodes(ctx context.Context, request *connect
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update user"))
 	}
 	return s.convertUserResponse(ctx, user)
+}
+
+// checkPendingMFAState rejects a confirmation whose pending_version is no
+// longer the account's pending state — a later mint superseded the enrollment
+// or code set this request thinks it is confirming, or a DisableMFA cleared it.
+func checkPendingMFAState(user *store.UserMessage, pendingVersion *timestamppb.Timestamp) error {
+	stored := user.MFAConfig.GetTempOtpSecretCreatedTime()
+	if stored == nil || !stored.AsTime().Equal(pendingVersion.AsTime()) {
+		return connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("the pending MFA state has been superseded; restart from the mint step"))
+	}
+	return nil
 }
 
 // resolveSelfUser parses name and requires it to be the caller's own account.

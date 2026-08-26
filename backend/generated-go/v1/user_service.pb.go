@@ -681,9 +681,14 @@ type StartMFAEnrollmentResponse struct {
 	// The pending recovery codes, shown once for the caller to save.
 	RecoveryCodes []string `protobuf:"bytes,2,rep,name=recovery_codes,json=recoveryCodes,proto3" json:"recovery_codes,omitempty"`
 	// When this enrollment stops being confirmable.
-	ExpireTime    *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=expire_time,json=expireTime,proto3" json:"expire_time,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	ExpireTime *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=expire_time,json=expireTime,proto3" json:"expire_time,omitempty"`
+	// Identifies this mint. Echo it back to EnableMFA and
+	// ConfirmRecoveryCodes; a mint from another tab or device replaces the
+	// pending state, and those methods refuse a version that is no longer the
+	// pending one rather than promoting something this caller never saw.
+	PendingVersion *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=pending_version,json=pendingVersion,proto3" json:"pending_version,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *StartMFAEnrollmentResponse) Reset() {
@@ -737,14 +742,23 @@ func (x *StartMFAEnrollmentResponse) GetExpireTime() *timestamppb.Timestamp {
 	return nil
 }
 
+func (x *StartMFAEnrollmentResponse) GetPendingVersion() *timestamppb.Timestamp {
+	if x != nil {
+		return x.PendingVersion
+	}
+	return nil
+}
+
 type EnableMFARequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: users/{email}. Must be the caller's own name.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// A code from the authenticator the pending secret was just added to.
-	OtpCode       string `protobuf:"bytes,2,opt,name=otp_code,json=otpCode,proto3" json:"otp_code,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	OtpCode string `protobuf:"bytes,2,opt,name=otp_code,json=otpCode,proto3" json:"otp_code,omitempty"`
+	// The pending_version this enrollment was minted with.
+	PendingVersion *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=pending_version,json=pendingVersion,proto3" json:"pending_version,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *EnableMFARequest) Reset() {
@@ -789,6 +803,13 @@ func (x *EnableMFARequest) GetOtpCode() string {
 		return x.OtpCode
 	}
 	return ""
+}
+
+func (x *EnableMFARequest) GetPendingVersion() *timestamppb.Timestamp {
+	if x != nil {
+		return x.PendingVersion
+	}
+	return nil
 }
 
 type DisableMFARequest struct {
@@ -886,8 +907,10 @@ type RegenerateRecoveryCodesResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The pending recovery codes, shown once for the caller to save.
 	RecoveryCodes []string `protobuf:"bytes,1,rep,name=recovery_codes,json=recoveryCodes,proto3" json:"recovery_codes,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// Identifies this mint; see StartMFAEnrollmentResponse.pending_version.
+	PendingVersion *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=pending_version,json=pendingVersion,proto3" json:"pending_version,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *RegenerateRecoveryCodesResponse) Reset() {
@@ -927,12 +950,22 @@ func (x *RegenerateRecoveryCodesResponse) GetRecoveryCodes() []string {
 	return nil
 }
 
+func (x *RegenerateRecoveryCodesResponse) GetPendingVersion() *timestamppb.Timestamp {
+	if x != nil {
+		return x.PendingVersion
+	}
+	return nil
+}
+
 type ConfirmRecoveryCodesRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Format: users/{email}. Must be the caller's own name.
-	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// The pending_version of the codes being confirmed. Confirming promotes
+	// exactly the set this version identifies, or nothing.
+	PendingVersion *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=pending_version,json=pendingVersion,proto3" json:"pending_version,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *ConfirmRecoveryCodesRequest) Reset() {
@@ -970,6 +1003,13 @@ func (x *ConfirmRecoveryCodesRequest) GetName() string {
 		return x.Name
 	}
 	return ""
+}
+
+func (x *ConfirmRecoveryCodesRequest) GetPendingVersion() *timestamppb.Timestamp {
+	if x != nil {
+		return x.PendingVersion
+	}
+	return nil
 }
 
 type User struct {
@@ -1211,28 +1251,32 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\fnew_password\x18\x02 \x01(\tB\x0e\xe0A\x02\xbaH\x04r\x02(H\xd0\xea0\x01R\vnewPassword\"R\n" +
 	"\x19StartMFAEnrollmentRequest\x125\n" +
 	"\x04name\x18\x01 \x01(\tB!\xe0A\x02\xfaA\x13\n" +
-	"\x11bytebase.com/User\xbaH\x05r\x03\x18\x84\x02R\x04name\"\xab\x01\n" +
+	"\x11bytebase.com/User\xbaH\x05r\x03\x18\x84\x02R\x04name\"\xf0\x01\n" +
 	"\x1aStartMFAEnrollmentResponse\x12#\n" +
 	"\n" +
 	"otp_secret\x18\x01 \x01(\tB\x04\xd0\xea0\x01R\totpSecret\x12+\n" +
 	"\x0erecovery_codes\x18\x02 \x03(\tB\x04\xd0\xea0\x01R\rrecoveryCodes\x12;\n" +
 	"\vexpire_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"expireTime\"t\n" +
+	"expireTime\x12C\n" +
+	"\x0fpending_version\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\x0ependingVersion\"\xc4\x01\n" +
 	"\x10EnableMFARequest\x125\n" +
 	"\x04name\x18\x01 \x01(\tB!\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/User\xbaH\x05r\x03\x18\x84\x02R\x04name\x12)\n" +
-	"\botp_code\x18\x02 \x01(\tB\x0e\xe0A\x02\xbaH\x04r\x02\x18@\xd0\xea0\x01R\aotpCode\"J\n" +
+	"\botp_code\x18\x02 \x01(\tB\x0e\xe0A\x02\xbaH\x04r\x02\x18@\xd0\xea0\x01R\aotpCode\x12N\n" +
+	"\x0fpending_version\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampB\t\xe0A\x02\xbaH\x03\xc8\x01\x01R\x0ependingVersion\"J\n" +
 	"\x11DisableMFARequest\x125\n" +
 	"\x04name\x18\x01 \x01(\tB!\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/User\xbaH\x05r\x03\x18\x84\x02R\x04name\"W\n" +
 	"\x1eRegenerateRecoveryCodesRequest\x125\n" +
 	"\x04name\x18\x01 \x01(\tB!\xe0A\x02\xfaA\x13\n" +
-	"\x11bytebase.com/User\xbaH\x05r\x03\x18\x84\x02R\x04name\"N\n" +
+	"\x11bytebase.com/User\xbaH\x05r\x03\x18\x84\x02R\x04name\"\x93\x01\n" +
 	"\x1fRegenerateRecoveryCodesResponse\x12+\n" +
-	"\x0erecovery_codes\x18\x01 \x03(\tB\x04\xd0\xea0\x01R\rrecoveryCodes\"T\n" +
+	"\x0erecovery_codes\x18\x01 \x03(\tB\x04\xd0\xea0\x01R\rrecoveryCodes\x12C\n" +
+	"\x0fpending_version\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x0ependingVersion\"\xa4\x01\n" +
 	"\x1bConfirmRecoveryCodesRequest\x125\n" +
 	"\x04name\x18\x01 \x01(\tB!\xe0A\x02\xfaA\x13\n" +
-	"\x11bytebase.com/User\xbaH\x05r\x03\x18\x84\x02R\x04name\"\xc4\x05\n" +
+	"\x11bytebase.com/User\xbaH\x05r\x03\x18\x84\x02R\x04name\x12N\n" +
+	"\x0fpending_version\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampB\t\xe0A\x02\xbaH\x03\xc8\x01\x01R\x0ependingVersion\"\xc4\x05\n" +
 	"\x04User\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x1e\n" +
@@ -1321,45 +1365,49 @@ var file_v1_user_service_proto_depIdxs = []int32{
 	18, // 3: bytebase.v1.UpdateUserRequest.user:type_name -> bytebase.v1.User
 	20, // 4: bytebase.v1.UpdateUserRequest.update_mask:type_name -> google.protobuf.FieldMask
 	21, // 5: bytebase.v1.StartMFAEnrollmentResponse.expire_time:type_name -> google.protobuf.Timestamp
-	22, // 6: bytebase.v1.User.state:type_name -> bytebase.v1.State
-	19, // 7: bytebase.v1.User.profile:type_name -> bytebase.v1.User.Profile
-	21, // 8: bytebase.v1.User.Profile.last_login_time:type_name -> google.protobuf.Timestamp
-	21, // 9: bytebase.v1.User.Profile.last_change_password_time:type_name -> google.protobuf.Timestamp
-	0,  // 10: bytebase.v1.UserService.GetUser:input_type -> bytebase.v1.GetUserRequest
-	1,  // 11: bytebase.v1.UserService.BatchGetUsers:input_type -> bytebase.v1.BatchGetUsersRequest
-	23, // 12: bytebase.v1.UserService.GetCurrentUser:input_type -> google.protobuf.Empty
-	3,  // 13: bytebase.v1.UserService.ListUsers:input_type -> bytebase.v1.ListUsersRequest
-	5,  // 14: bytebase.v1.UserService.CreateUser:input_type -> bytebase.v1.CreateUserRequest
-	6,  // 15: bytebase.v1.UserService.UpdateUser:input_type -> bytebase.v1.UpdateUserRequest
-	7,  // 16: bytebase.v1.UserService.DeleteUser:input_type -> bytebase.v1.DeleteUserRequest
-	8,  // 17: bytebase.v1.UserService.UndeleteUser:input_type -> bytebase.v1.UndeleteUserRequest
-	9,  // 18: bytebase.v1.UserService.UpdateEmail:input_type -> bytebase.v1.UpdateEmailRequest
-	10, // 19: bytebase.v1.UserService.ChangePassword:input_type -> bytebase.v1.ChangePasswordRequest
-	11, // 20: bytebase.v1.UserService.StartMFAEnrollment:input_type -> bytebase.v1.StartMFAEnrollmentRequest
-	13, // 21: bytebase.v1.UserService.EnableMFA:input_type -> bytebase.v1.EnableMFARequest
-	14, // 22: bytebase.v1.UserService.DisableMFA:input_type -> bytebase.v1.DisableMFARequest
-	15, // 23: bytebase.v1.UserService.RegenerateRecoveryCodes:input_type -> bytebase.v1.RegenerateRecoveryCodesRequest
-	17, // 24: bytebase.v1.UserService.ConfirmRecoveryCodes:input_type -> bytebase.v1.ConfirmRecoveryCodesRequest
-	18, // 25: bytebase.v1.UserService.GetUser:output_type -> bytebase.v1.User
-	2,  // 26: bytebase.v1.UserService.BatchGetUsers:output_type -> bytebase.v1.BatchGetUsersResponse
-	18, // 27: bytebase.v1.UserService.GetCurrentUser:output_type -> bytebase.v1.User
-	4,  // 28: bytebase.v1.UserService.ListUsers:output_type -> bytebase.v1.ListUsersResponse
-	18, // 29: bytebase.v1.UserService.CreateUser:output_type -> bytebase.v1.User
-	18, // 30: bytebase.v1.UserService.UpdateUser:output_type -> bytebase.v1.User
-	23, // 31: bytebase.v1.UserService.DeleteUser:output_type -> google.protobuf.Empty
-	18, // 32: bytebase.v1.UserService.UndeleteUser:output_type -> bytebase.v1.User
-	18, // 33: bytebase.v1.UserService.UpdateEmail:output_type -> bytebase.v1.User
-	18, // 34: bytebase.v1.UserService.ChangePassword:output_type -> bytebase.v1.User
-	12, // 35: bytebase.v1.UserService.StartMFAEnrollment:output_type -> bytebase.v1.StartMFAEnrollmentResponse
-	18, // 36: bytebase.v1.UserService.EnableMFA:output_type -> bytebase.v1.User
-	18, // 37: bytebase.v1.UserService.DisableMFA:output_type -> bytebase.v1.User
-	16, // 38: bytebase.v1.UserService.RegenerateRecoveryCodes:output_type -> bytebase.v1.RegenerateRecoveryCodesResponse
-	18, // 39: bytebase.v1.UserService.ConfirmRecoveryCodes:output_type -> bytebase.v1.User
-	25, // [25:40] is the sub-list for method output_type
-	10, // [10:25] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	21, // 6: bytebase.v1.StartMFAEnrollmentResponse.pending_version:type_name -> google.protobuf.Timestamp
+	21, // 7: bytebase.v1.EnableMFARequest.pending_version:type_name -> google.protobuf.Timestamp
+	21, // 8: bytebase.v1.RegenerateRecoveryCodesResponse.pending_version:type_name -> google.protobuf.Timestamp
+	21, // 9: bytebase.v1.ConfirmRecoveryCodesRequest.pending_version:type_name -> google.protobuf.Timestamp
+	22, // 10: bytebase.v1.User.state:type_name -> bytebase.v1.State
+	19, // 11: bytebase.v1.User.profile:type_name -> bytebase.v1.User.Profile
+	21, // 12: bytebase.v1.User.Profile.last_login_time:type_name -> google.protobuf.Timestamp
+	21, // 13: bytebase.v1.User.Profile.last_change_password_time:type_name -> google.protobuf.Timestamp
+	0,  // 14: bytebase.v1.UserService.GetUser:input_type -> bytebase.v1.GetUserRequest
+	1,  // 15: bytebase.v1.UserService.BatchGetUsers:input_type -> bytebase.v1.BatchGetUsersRequest
+	23, // 16: bytebase.v1.UserService.GetCurrentUser:input_type -> google.protobuf.Empty
+	3,  // 17: bytebase.v1.UserService.ListUsers:input_type -> bytebase.v1.ListUsersRequest
+	5,  // 18: bytebase.v1.UserService.CreateUser:input_type -> bytebase.v1.CreateUserRequest
+	6,  // 19: bytebase.v1.UserService.UpdateUser:input_type -> bytebase.v1.UpdateUserRequest
+	7,  // 20: bytebase.v1.UserService.DeleteUser:input_type -> bytebase.v1.DeleteUserRequest
+	8,  // 21: bytebase.v1.UserService.UndeleteUser:input_type -> bytebase.v1.UndeleteUserRequest
+	9,  // 22: bytebase.v1.UserService.UpdateEmail:input_type -> bytebase.v1.UpdateEmailRequest
+	10, // 23: bytebase.v1.UserService.ChangePassword:input_type -> bytebase.v1.ChangePasswordRequest
+	11, // 24: bytebase.v1.UserService.StartMFAEnrollment:input_type -> bytebase.v1.StartMFAEnrollmentRequest
+	13, // 25: bytebase.v1.UserService.EnableMFA:input_type -> bytebase.v1.EnableMFARequest
+	14, // 26: bytebase.v1.UserService.DisableMFA:input_type -> bytebase.v1.DisableMFARequest
+	15, // 27: bytebase.v1.UserService.RegenerateRecoveryCodes:input_type -> bytebase.v1.RegenerateRecoveryCodesRequest
+	17, // 28: bytebase.v1.UserService.ConfirmRecoveryCodes:input_type -> bytebase.v1.ConfirmRecoveryCodesRequest
+	18, // 29: bytebase.v1.UserService.GetUser:output_type -> bytebase.v1.User
+	2,  // 30: bytebase.v1.UserService.BatchGetUsers:output_type -> bytebase.v1.BatchGetUsersResponse
+	18, // 31: bytebase.v1.UserService.GetCurrentUser:output_type -> bytebase.v1.User
+	4,  // 32: bytebase.v1.UserService.ListUsers:output_type -> bytebase.v1.ListUsersResponse
+	18, // 33: bytebase.v1.UserService.CreateUser:output_type -> bytebase.v1.User
+	18, // 34: bytebase.v1.UserService.UpdateUser:output_type -> bytebase.v1.User
+	23, // 35: bytebase.v1.UserService.DeleteUser:output_type -> google.protobuf.Empty
+	18, // 36: bytebase.v1.UserService.UndeleteUser:output_type -> bytebase.v1.User
+	18, // 37: bytebase.v1.UserService.UpdateEmail:output_type -> bytebase.v1.User
+	18, // 38: bytebase.v1.UserService.ChangePassword:output_type -> bytebase.v1.User
+	12, // 39: bytebase.v1.UserService.StartMFAEnrollment:output_type -> bytebase.v1.StartMFAEnrollmentResponse
+	18, // 40: bytebase.v1.UserService.EnableMFA:output_type -> bytebase.v1.User
+	18, // 41: bytebase.v1.UserService.DisableMFA:output_type -> bytebase.v1.User
+	16, // 42: bytebase.v1.UserService.RegenerateRecoveryCodes:output_type -> bytebase.v1.RegenerateRecoveryCodesResponse
+	18, // 43: bytebase.v1.UserService.ConfirmRecoveryCodes:output_type -> bytebase.v1.User
+	29, // [29:44] is the sub-list for method output_type
+	14, // [14:29] is the sub-list for method input_type
+	14, // [14:14] is the sub-list for extension type_name
+	14, // [14:14] is the sub-list for extension extendee
+	0,  // [0:14] is the sub-list for field type_name
 }
 
 func init() { file_v1_user_service_proto_init() }

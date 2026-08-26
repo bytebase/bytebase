@@ -214,6 +214,11 @@ export function AccountSettingsPage() {
         create(DisableMFARequestSchema, { name: user.name })
       );
       setCurrentUser(updated);
+      // The router guard reads mfa_enabled off the shared store, not this
+      // page's copy: a workspace admin who turns their own factor off while
+      // the workspace requires MFA has to be sent back to enrollment now,
+      // not whenever the session next revalidates.
+      await useAppStore.getState().fetchCurrentUser();
       setShowDisable2FAConfirm(false);
       setShowRegenerateView(false);
       pushNotification({

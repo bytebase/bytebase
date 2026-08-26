@@ -343,6 +343,16 @@ export declare type StartMFAEnrollmentResponse = Message<"bytebase.v1.StartMFAEn
    * @generated from field: google.protobuf.Timestamp expire_time = 3;
    */
   expireTime?: Timestamp | undefined;
+
+  /**
+   * Identifies this mint. Echo it back to EnableMFA and
+   * ConfirmRecoveryCodes; a mint from another tab or device replaces the
+   * pending state, and those methods refuse a version that is no longer the
+   * pending one rather than promoting something this caller never saw.
+   *
+   * @generated from field: google.protobuf.Timestamp pending_version = 4;
+   */
+  pendingVersion?: Timestamp | undefined;
 };
 
 /**
@@ -368,6 +378,13 @@ export declare type EnableMFARequest = Message<"bytebase.v1.EnableMFARequest"> &
    * @generated from field: string otp_code = 2;
    */
   otpCode: string;
+
+  /**
+   * The pending_version this enrollment was minted with.
+   *
+   * @generated from field: google.protobuf.Timestamp pending_version = 3;
+   */
+  pendingVersion?: Timestamp | undefined;
 };
 
 /**
@@ -423,6 +440,13 @@ export declare type RegenerateRecoveryCodesResponse = Message<"bytebase.v1.Regen
    * @generated from field: repeated string recovery_codes = 1;
    */
   recoveryCodes: string[];
+
+  /**
+   * Identifies this mint; see StartMFAEnrollmentResponse.pending_version.
+   *
+   * @generated from field: google.protobuf.Timestamp pending_version = 2;
+   */
+  pendingVersion?: Timestamp | undefined;
 };
 
 /**
@@ -441,6 +465,14 @@ export declare type ConfirmRecoveryCodesRequest = Message<"bytebase.v1.ConfirmRe
    * @generated from field: string name = 1;
    */
   name: string;
+
+  /**
+   * The pending_version of the codes being confirmed. Confirming promotes
+   * exactly the set this version identifies, or nothing.
+   *
+   * @generated from field: google.protobuf.Timestamp pending_version = 2;
+   */
+  pendingVersion?: Timestamp | undefined;
 };
 
 /**

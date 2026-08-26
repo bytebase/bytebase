@@ -5472,6 +5472,7 @@ SettingService manages workspace-level settings and configurations.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: users/{email}. Must be the caller&#39;s own name. |
+| pending_version | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The pending_version of the codes being confirmed. Confirming promotes exactly the set this version identifies, or nothing. |
 
 
 
@@ -5533,6 +5534,7 @@ SettingService manages workspace-level settings and configurations.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: users/{email}. Must be the caller&#39;s own name. |
 | otp_code | [string](#string) |  | A code from the authenticator the pending secret was just added to. |
+| pending_version | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The pending_version this enrollment was minted with. |
 
 
 
@@ -5618,6 +5620,7 @@ For example: name == &#34;ed&#34; name.contains(&#34;ed&#34;) email == &#34;ed@b
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | recovery_codes | [string](#string) | repeated | The pending recovery codes, shown once for the caller to save. |
+| pending_version | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Identifies this mint; see StartMFAEnrollmentResponse.pending_version. |
 
 
 
@@ -5650,6 +5653,7 @@ For example: name == &#34;ed&#34; name.contains(&#34;ed&#34;) email == &#34;ed@b
 | otp_secret | [string](#string) |  | The pending TOTP secret. The only response that carries it — it is never readable from the User resource. |
 | recovery_codes | [string](#string) | repeated | The pending recovery codes, shown once for the caller to save. |
 | expire_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When this enrollment stops being confirmable. |
+| pending_version | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Identifies this mint. Echo it back to EnableMFA and ConfirmRecoveryCodes; a mint from another tab or device replaces the pending state, and those methods refuse a version that is no longer the pending one rather than promoting something this caller never saw. |
 
 
 

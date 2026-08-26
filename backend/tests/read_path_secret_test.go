@@ -130,13 +130,15 @@ func TestEnrollmentSecretsLiveOnlyInTheMintingResponses(t *testing.T) {
 	otp, err := totp.GenerateCode(minted.Msg.OtpSecret, time.Now())
 	a.NoError(err)
 	_, err = ctl.userServiceClient.EnableMFA(ctx, connect.NewRequest(&v1pb.EnableMFARequest{
-		Name:    userName,
-		OtpCode: otp,
+		Name:           userName,
+		OtpCode:        otp,
+		PendingVersion: minted.Msg.PendingVersion,
 	}))
 	a.NoError(err)
 
 	confirmed, err := ctl.userServiceClient.ConfirmRecoveryCodes(ctx, connect.NewRequest(&v1pb.ConfirmRecoveryCodesRequest{
-		Name: userName,
+		Name:           userName,
+		PendingVersion: minted.Msg.PendingVersion,
 	}))
 	a.NoError(err)
 	a.True(confirmed.Msg.MfaEnabled, "confirming the codes is what makes the factor live")
@@ -293,12 +295,14 @@ func TestMFAReplacementPromotesTheNewAuthenticator(t *testing.T) {
 		otp, err := totp.GenerateCode(minted.Msg.OtpSecret, time.Now())
 		a.NoError(err)
 		_, err = ctl.userServiceClient.EnableMFA(ctx, connect.NewRequest(&v1pb.EnableMFARequest{
-			Name:    userName,
-			OtpCode: otp,
+			Name:           userName,
+			OtpCode:        otp,
+			PendingVersion: minted.Msg.PendingVersion,
 		}))
 		a.NoError(err)
 		_, err = ctl.userServiceClient.ConfirmRecoveryCodes(ctx, connect.NewRequest(&v1pb.ConfirmRecoveryCodesRequest{
-			Name: userName,
+			Name:           userName,
+			PendingVersion: minted.Msg.PendingVersion,
 		}))
 		a.NoError(err)
 		return minted.Msg.OtpSecret
@@ -330,5 +334,84 @@ func TestMFAReplacementPromotesTheNewAuthenticator(t *testing.T) {
 		MfaTempToken: &mfaTempToken,
 	}))
 	a.NoError(err, "a code from the newly enrolled authenticator must be accepted")
+	a.NotEmpty(loggedIn.Msg.Token)
+}
+
+// TestSupersededPendingStateIsRefused covers two flows racing for the one
+// pending slot: a recovery-code regeneration open in one tab while an
+// enrollment starts in another. The regeneration's confirmation must not
+// promote the enrollment's secret — the caller never saw it, and the codes it
+// downloaded are not the ones that would go live. Both are lockouts, so the
+// stale confirmation is refused instead.
+func TestSupersededPendingStateIsRefused(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	userName := common.FormatUserEmail("demo@example.com")
+	enrolled, err := ctl.userServiceClient.StartMFAEnrollment(ctx, connect.NewRequest(&v1pb.StartMFAEnrollmentRequest{
+		Name: userName,
+	}))
+	a.NoError(err)
+	otp, err := totp.GenerateCode(enrolled.Msg.OtpSecret, time.Now())
+	a.NoError(err)
+	_, err = ctl.userServiceClient.EnableMFA(ctx, connect.NewRequest(&v1pb.EnableMFARequest{
+		Name:           userName,
+		OtpCode:        otp,
+		PendingVersion: enrolled.Msg.PendingVersion,
+	}))
+	a.NoError(err)
+	_, err = ctl.userServiceClient.ConfirmRecoveryCodes(ctx, connect.NewRequest(&v1pb.ConfirmRecoveryCodesRequest{
+		Name:           userName,
+		PendingVersion: enrolled.Msg.PendingVersion,
+	}))
+	a.NoError(err)
+
+	// Tab one opens the regeneration view and is shown a code set.
+	regenerated, err := ctl.userServiceClient.RegenerateRecoveryCodes(ctx, connect.NewRequest(&v1pb.RegenerateRecoveryCodesRequest{
+		Name: userName,
+	}))
+	a.NoError(err)
+
+	// Tab two starts replacing the authenticator, which takes over the one
+	// pending slot.
+	replacement, err := ctl.userServiceClient.StartMFAEnrollment(ctx, connect.NewRequest(&v1pb.StartMFAEnrollmentRequest{
+		Name: userName,
+	}))
+	a.NoError(err)
+	a.NotEqual(enrolled.Msg.OtpSecret, replacement.Msg.OtpSecret)
+
+	// Tab one saves its codes and confirms.
+	_, err = ctl.userServiceClient.ConfirmRecoveryCodes(ctx, connect.NewRequest(&v1pb.ConfirmRecoveryCodesRequest{
+		Name:           userName,
+		PendingVersion: regenerated.Msg.PendingVersion,
+	}))
+	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err),
+		"a confirmation whose pending state was superseded must be refused")
+
+	// The account still signs in with the authenticator it had, which is the
+	// point: nothing was promoted behind the user's back.
+	adminToken := ctl.authInterceptor.token
+	ctl.authInterceptor.token = ""
+	defer func() { ctl.authInterceptor.token = adminToken }()
+
+	mfaStart, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:    "demo@example.com",
+		Password: "1024bytebase",
+	}))
+	a.NoError(err)
+	mfaTempToken := mfaStart.Msg.GetMfaTempToken()
+	a.NotEmpty(mfaTempToken)
+	liveOTP, err := totp.GenerateCode(enrolled.Msg.OtpSecret, time.Now())
+	a.NoError(err)
+	loggedIn, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		OtpCode:      &liveOTP,
+		MfaTempToken: &mfaTempToken,
+	}))
+	a.NoError(err, "the authenticator the user actually enrolled must still work")
 	a.NotEmpty(loggedIn.Msg.Token)
 }

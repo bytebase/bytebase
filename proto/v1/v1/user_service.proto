@@ -395,6 +395,12 @@ message StartMFAEnrollmentResponse {
 
   // When this enrollment stops being confirmable.
   google.protobuf.Timestamp expire_time = 3;
+
+  // Identifies this mint. Echo it back to EnableMFA and
+  // ConfirmRecoveryCodes; a mint from another tab or device replaces the
+  // pending state, and those methods refuse a version that is no longer the
+  // pending one rather than promoting something this caller never saw.
+  google.protobuf.Timestamp pending_version = 4;
 }
 
 message EnableMFARequest {
@@ -410,6 +416,12 @@ message EnableMFARequest {
     (google.api.field_behavior) = REQUIRED,
     (bytebase.v1.audit_behavior) = SENSITIVE,
     (buf.validate.field).string.max_len = 64
+  ];
+
+  // The pending_version this enrollment was minted with.
+  google.protobuf.Timestamp pending_version = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
   ];
 }
 
@@ -435,6 +447,9 @@ message RegenerateRecoveryCodesRequest {
 message RegenerateRecoveryCodesResponse {
   // The pending recovery codes, shown once for the caller to save.
   repeated string recovery_codes = 1 [(bytebase.v1.audit_behavior) = SENSITIVE];
+
+  // Identifies this mint; see StartMFAEnrollmentResponse.pending_version.
+  google.protobuf.Timestamp pending_version = 2;
 }
 
 message ConfirmRecoveryCodesRequest {
@@ -443,6 +458,13 @@ message ConfirmRecoveryCodesRequest {
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/User"},
     (buf.validate.field).string.max_len = 260
+  ];
+
+  // The pending_version of the codes being confirmed. Confirming promotes
+  // exactly the set this version identifies, or nothing.
+  google.protobuf.Timestamp pending_version = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
   ];
 }
 

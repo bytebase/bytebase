@@ -228,6 +228,9 @@ func (x *StartMFAEnrollmentResponse) Equal(y *StartMFAEnrollmentResponse) bool {
 	if p, q := x.ExpireTime, y.ExpireTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
+	if p, q := x.PendingVersion, y.PendingVersion; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
 	return true
 }
 
@@ -242,6 +245,9 @@ func (x *EnableMFARequest) Equal(y *EnableMFARequest) bool {
 		return false
 	}
 	if x.OtpCode != y.OtpCode {
+		return false
+	}
+	if p, q := x.PendingVersion, y.PendingVersion; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
 	return true
@@ -288,6 +294,9 @@ func (x *RegenerateRecoveryCodesResponse) Equal(y *RegenerateRecoveryCodesRespon
 			return false
 		}
 	}
+	if p, q := x.PendingVersion, y.PendingVersion; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
 	return true
 }
 
@@ -299,6 +308,9 @@ func (x *ConfirmRecoveryCodesRequest) Equal(y *ConfirmRecoveryCodesRequest) bool
 		return x == nil && y == nil
 	}
 	if x.Name != y.Name {
+		return false
+	}
+	if p, q := x.PendingVersion, y.PendingVersion; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
 	return true
