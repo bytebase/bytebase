@@ -149,7 +149,7 @@ message QueryHistory {
   string name = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The database name to execute the query.
-  // Format: instances/{instance}/databases/{databaseName}
+  // Format: instances/{instance}/databases/{databaseName} or projects/{project}/instances/{instance}/databases/{databaseName}
   string database = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   string creator = 3 [(google.api.field_behavior) = OUTPUT_ONLY];

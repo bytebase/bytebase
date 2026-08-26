@@ -949,7 +949,7 @@ The line against FORBIDDEN is reversibility. An admin-capable ceiling, if one is
 | expire_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The expiration time of the access grant. |
 | ttl | [google.protobuf.Duration](#google-protobuf-Duration) |  | Input only. The time-to-live duration for the access grant. The server computes `expire_time` from this value at activation time. |
 | issue | [string](#string) |  | The issue associated with the access grant. Can be empty. Format: projects/{project}/issues/{issue} |
-| targets | [string](#string) | repeated | The target databases for this access grant. Format: instances/{instance}/databases/{database} |
+| targets | [string](#string) | repeated | The target databases for this access grant. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | query | [string](#string) |  | The query permission granted. |
 | unmask | [bool](#bool) |  | Whether the grant allows unmasking sensitive data. |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
@@ -1206,7 +1206,7 @@ Instance describes one provisioned sample instance.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| instance | [string](#string) |  | The provisioned sample instance. Format: instances/{instance} |
+| instance | [string](#string) |  | The provisioned sample instance. Format: instances/{instance} or projects/{project}/instances/{instance} |
 | expire_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time when the provisioned sample instance expires. |
 
 
@@ -1683,7 +1683,7 @@ Binding associates members with a role and optional conditions.
 | members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: user:{email} For groups, the member should be: group:{email} For service accounts, the member should be: serviceAccount:{email} For workload identities, the member should be: workloadIdentity:{email} |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding, only used in the project IAM policy. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Support variables: resource.database: the database full name in &#34;instances/{instance}/databases/{database}&#34; format, used by any role with SQL Editor read (e.g. &#34;roles/sqlEditorUser&#34;, &#34;roles/sqlEditorReadUser&#34;) or write (bb.sql.ddl / bb.sql.dml) access, support &#34;==&#34; operator. resource.schema_name: the schema name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator. resource.table_name: the table name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator. resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support &#34;in&#34; operator. request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)`.
+Support variables: resource.database: the canonical database full name in &#34;instances/{instance}/databases/{database}&#34; or &#34;projects/{project}/instances/{instance}/databases/{database}&#34; format, used by any role with SQL Editor read (e.g. &#34;roles/sqlEditorUser&#34;, &#34;roles/sqlEditorReadUser&#34;) or write (bb.sql.ddl / bb.sql.dml) access, support &#34;==&#34; operator. resource.schema_name: the schema name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator. resource.table_name: the table name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator. resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support &#34;in&#34; operator. request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)`.
 
 Known limitations of table/schema-scoped DDL/DML grants: - The scope only gates the write target, not the read sources of a write: e.g. `INSERT INTO granted_table SELECT * FROM other_table` may read `other_table` without a grant on it, so a table-scoped write grant is not an exfiltration boundary. - It must be paired with a database/project-level read grant: a table-scoped grant alone does not satisfy the SQL Editor query method permission (bb.databases.get). - A resource.schema_name-scoped grant only authorizes a write whose schema is unambiguous — qualify the table (schema.table) or select the schema for the SQL Editor session. An unqualified write whose effective schema cannot be determined ahead of execution is denied (qualify it, or use a table-only grant). - Multi-statement batches are authorized at the database level: an earlier statement can rebind the session&#39;s default schema or database mid-batch, so per-table/schema scoping is dropped and a table/schema-scoped grant requires a database-level grant. The database-level check is still per target database — a qualified cross-database write is gated by a grant on its own database, not the request database — but an unqualified write whose session default is rebound mid-batch is evaluated against the database it literally names, so qualify cross-database writes or run them as single statements. - A write target in a different project than the SQL-Editor session&#39;s database is denied: the per-target check evaluates the session project&#39;s IAM policy, so a cross-project write is failed closed (to write it, open the SQL Editor on a database in the target project). - Enforcement is on the statement&#39;s literal write target; writes routed elsewhere by a view/synonym, or into a temporary schema (e.g. pg_temp), are evaluated against what the statement names, not the ultimate base object. - Write-target gating uses an ALLOWLIST of statement types the resolver models. It does NOT cover every syntactically-identifiable cross-database write; statement types off the allowlist are authorized against the request database. The allowlist is: - Modeled table/data writes (per-table/schema-scopable): INSERT/UPDATE/DELETE/TRUNCATE/MERGE, LOAD DATA, IMPORT INTO, CREATE TABLE AS / SELECT INTO, and table-level CREATE/DROP/ALTER/RENAME/index. - Modeled non-table object DDL (gated at the DATABASE level by the object&#39;s own explicit database/schema qualifier; an unqualified name keeps the request-database check): CREATE/ALTER/DROP of view, procedure/function/routine, trigger, sequence, synonym, type, and (Oracle) package and cluster; plus Oracle ALTER/DROP MATERIALIZED VIEW (Oracle CREATE MATERIALIZED VIEW is not modeled — see below). NOT modeled (these fall back to the request-database check, so a qualified cross-database one is authorized against the request database): MySQL CREATE TRIGGER and CREATE/ALTER/DROP EVENT (bare-string AST names); MSSQL ALTER of view/procedure/function/trigger (no ALTER node in the grammar); Oracle CREATE MATERIALIZED VIEW and the niche object DDL — dimension, attribute dimension, hierarchy, analytic view, JSON duality view, materialized zonemap, operator, in-memory join group, property graph, vector index, index type, domain; COPY ... FROM; and engine-specific bulk-load / deprecated text writes. A structural &#34;write-target object database&#34; extraction layer to remove this allowlist dependence is tracked as a follow-up. - Out of scope (read sources / indirect effects): the tables a write READS (INSERT … SELECT, MERGE … USING, CREATE TABLE AS … SELECT) and objects reached indirectly via views/synonyms/function bodies/triggers are NOT gated. Invariant: for a statement ON the modeled allowlist that explicitly names a different database as its write target, the ACL uses that target database, not the request database. Statement types OFF the allowlist are authorized against the request database.
 
@@ -2312,7 +2312,7 @@ For example: update_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; task_type in 
 | status | [Task.Status](#bytebase-v1-Task-Status) |  | Status is the status of the task. |
 | skipped_reason | [string](#string) |  | The reason why the task was skipped. |
 | type | [Task.Type](#bytebase-v1-Task-Type) |  |  |
-| target | [string](#string) |  | Format: instances/{instance} if the task is DatabaseCreate. Format: instances/{instance}/databases/{database} |
+| target | [string](#string) |  | Format: instances/{instance} or projects/{project}/instances/{instance} if the task is DatabaseCreate. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | database_create | [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate) |  |  |
 | database_update | [Task.DatabaseUpdate](#bytebase-v1-Task-DatabaseUpdate) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The update_time is the update time of latest task run. If there are no task runs, it will be empty. |
@@ -2597,7 +2597,7 @@ Table information.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| database | [string](#string) |  | The database information. Format: instances/{instance}/databases/{database} |
+| database | [string](#string) |  | The database information. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | schema | [string](#string) |  | The schema name. |
 | table | [string](#string) |  | The table name. |
 
@@ -2914,7 +2914,7 @@ For example: creator == &#34;users/{email}&#34; |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name for the query history. Format: projects/{project}/queryHistories/{id} |
-| database | [string](#string) |  | The database name to execute the query. Format: instances/{instance}/databases/{databaseName} |
+| database | [string](#string) |  | The database name to execute the query. Format: instances/{instance}/databases/{databaseName} or projects/{project}/instances/{instance}/databases/{databaseName} |
 | creator | [string](#string) |  |  |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | statement | [string](#string) |  |  |
@@ -3014,7 +3014,7 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance}/databases/{databaseName} |
+| name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance}/databases/{databaseName} or projects/{project}/instances/{instance}/databases/{databaseName} |
 | statement | [string](#string) |  | The SQL statement to execute. |
 | limit | [int32](#int32) |  | The maximum number of rows to return. |
 | schema | [string](#string) | optional | The default schema to execute the statement. Equals to the current schema in Oracle and search path in Postgres. |
@@ -3069,7 +3069,7 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the resource name to execute the export against. Format: instances/{instance}/databases/{database} Format: instances/{instance} |
+| name | [string](#string) |  | The name is the resource name to execute the export against. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | statement | [string](#string) |  | The SQL statement to execute. |
 | limit | [int32](#int32) |  | The maximum number of rows to return. |
 | format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |
@@ -3145,7 +3145,7 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance}/databases/{databaseName} |
+| name | [string](#string) |  | The name is the database resource name to execute the query against. Format: instances/{instance}/databases/{databaseName} or projects/{project}/instances/{instance}/databases/{databaseName} |
 | statement | [string](#string) |  | The SQL statement to execute. |
 | limit | [int32](#int32) |  | The maximum number of rows to return. |
 | data_source_id | [string](#string) |  | The id of data source. If omitted, Query resolves the data source server-side by using the single read-only data source when exactly one exists, or the admin data source otherwise. It can also be set explicitly to query the admin data source or a specific read-only data source. |
@@ -3637,7 +3637,7 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| target | [string](#string) |  | The resource name of the instance on which the database is created. Format: instances/{instance} |
+| target | [string](#string) |  | The resource name of the instance on which the database is created. Format: instances/{instance} or projects/{project}/instances/{instance} |
 | database | [string](#string) |  | The name of the database to create. |
 | table | [string](#string) |  | table is the name of the table, if it is not empty, Bytebase should create a table after creating the database. For example, in MongoDB, it only creates the database when we first store data in that database. |
 | character_set | [string](#string) |  | character_set is the character set of the database. |
@@ -3747,7 +3747,7 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &
 | title | [string](#string) |  |  |
 | content | [string](#string) |  |  |
 | code | [int32](#int32) |  |  |
-| target | [string](#string) |  | Target identification for consolidated results. Format: instances/{instance}/databases/{database} |
+| target | [string](#string) |  | Target identification for consolidated results. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | type | [PlanCheckRun.Result.Type](#bytebase-v1-PlanCheckRun-Result-Type) |  |  |
 | sql_summary_report | [PlanCheckRun.Result.SqlSummaryReport](#bytebase-v1-PlanCheckRun-Result-SqlSummaryReport) |  |  |
 | sql_review_report | [PlanCheckRun.Result.SqlReviewReport](#bytebase-v1-PlanCheckRun-Result-SqlReviewReport) |  |  |
@@ -8186,9 +8186,9 @@ IndexMetadata is the metadata for indexes.
 When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
 | filter | [string](#string) |  | Filter is used to filter databases returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - environment: the environment full name in &#34;environments/{id}&#34; format, support &#34;==&#34; operator. - name: the database name, support &#34;.contains()&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - instance: the instance full name in &#34;instances/{id}&#34; format, support &#34;==&#34; operator. - engine: the database engine, check Engine enum for values. Support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator. - exclude_unassigned: should be &#34;true&#34; or &#34;false&#34;, will not show unassigned databases if it&#39;s true, support &#34;==&#34; operator. - table: filter by the database table, support &#34;==&#34; and &#34;.contains()&#34; operator. - labels.{key}: the database label, support &#34;==&#34; and &#34;in&#34; operators.
+Supported filter: - environment: the environment full name in &#34;environments/{id}&#34; format, support &#34;==&#34; operator. - name: the database name, support &#34;.contains()&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - instance: the instance full name in &#34;instances/{id}&#34; or &#34;projects/{project}/instances/{id}&#34; format, support &#34;==&#34; operator. - engine: the database engine, check Engine enum for values. Support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator. - exclude_unassigned: should be &#34;true&#34; or &#34;false&#34;, will not show unassigned databases if it&#39;s true, support &#34;==&#34; operator. - table: filter by the database table, support &#34;==&#34; and &#34;.contains()&#34; operator. - labels.{key}: the database label, support &#34;==&#34; and &#34;in&#34; operators.
 
-For example: environment == &#34;environments/{environment resource id}&#34; environment == &#34;&#34; (find databases which environment is not set) project == &#34;projects/{project resource id}&#34; instance == &#34;instances/{instance resource id}&#34; name.contains(&#34;database name&#34;) engine == &#34;MYSQL&#34; engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;] !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]) exclude_unassigned == true table == &#34;sample&#34; table.contains(&#34;sam&#34;) labels.environment == &#34;production&#34; labels.region == &#34;asia&#34; labels.region in [&#34;asia&#34;, &#34;europe&#34;]
+For example: environment == &#34;environments/{environment resource id}&#34; environment == &#34;&#34; (find databases which environment is not set) project == &#34;projects/{project resource id}&#34; instance == &#34;instances/{instance resource id}&#34; instance == &#34;projects/{project resource id}/instances/{instance resource id}&#34; name.contains(&#34;database name&#34;) engine == &#34;MYSQL&#34; engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;] !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]) exclude_unassigned == true table == &#34;sample&#34; table.contains(&#34;sam&#34;) labels.environment == &#34;production&#34; labels.region == &#34;asia&#34; labels.region in [&#34;asia&#34;, &#34;europe&#34;]
 
 You can combine filter conditions like: environment == &#34;environments/prod&#34; &amp;&amp; name.contains(&#34;employee&#34;) |
 | show_deleted | [bool](#bool) |  | Show deleted database if specified. |
@@ -11350,7 +11350,7 @@ For example: creator == &#34;users/alice@example.com&#34; |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Server-generated. Format: projects/{project}/savedQueries/{savedQuery} |
 | project | [string](#string) |  | Format: projects/{project} |
-| database | [string](#string) |  | The connected database, which must belong to the saved query&#39;s own project. Empty when none is connected, or when the database no longer exists. Format: instances/{instance}/databases/{database} |
+| database | [string](#string) |  | The connected database, which must belong to the saved query&#39;s own project. Empty when none is connected, or when the database no longer exists. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | title | [string](#string) |  | The title of the saved query. |
 | creator | [string](#string) |  | The owner. Ownership does not transfer. Format: users/{email} |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |

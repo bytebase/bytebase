@@ -80,6 +80,9 @@ vi.mock("@/stores/app", () => {
     fetchInstanceList: mocks.fetchInstanceList,
     fetchDatabases: mocks.fetchDatabases,
     environmentList: mocks.environmentStore.environmentList,
+    projectsByName: {
+      "projects/project": { name: "projects/project" },
+    },
   });
   return {
     useAppStore: Object.assign(
@@ -119,6 +122,8 @@ vi.mock("@/utils", () => ({
   extractDatabaseResourceName: mocks.extractDatabaseResourceName,
   extractInstanceResourceName: mocks.extractInstanceResourceName,
   getDefaultPagination: () => 100,
+  hasWorkspacePermissionV2: () => true,
+  hasProjectPermissionV2: () => true,
   supportedEngineV1List: () => [],
 }));
 

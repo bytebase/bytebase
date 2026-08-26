@@ -49,13 +49,14 @@ const queryDatabaseDescription = `Execute a SQL query against a Bytebase databas
 |-----------|----------|-------------|
 | database  | Yes      | Database name or substring (e.g., "employee_db" or "employee") |
 | statement | Yes      | SQL query to execute |
-| instance  | No       | Instance name to narrow resolution |
-| project   | No       | Project name to narrow resolution |
+| instance  | No       | Canonical instance name, or an instance ID paired with project |
+| project   | No       | Project name or ID to narrow resolution |
 | limit     | No       | Max rows (default: 100, max: 1000) |
 
 **Examples:**
 query_database(database="employee_db", statement="SELECT * FROM users LIMIT 10")
 query_database(database="employee", instance="prod-pg", statement="SELECT count(*) FROM orders")
+query_database(database="employee", instance="projects/hr/instances/prod-pg", statement="SELECT count(*) FROM orders")
 
 **Notes:**
 - Masked data: a masked column reads back as "******". That is a placeholder, not a value anything holds, so never write it back and never filter on it. Any statement containing it is refused.

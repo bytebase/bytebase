@@ -31,8 +31,13 @@ import { buildDatabaseFilter, toError } from "./utils";
 // Inlined to keep the app store's load graph free of the Pinia `@/stores`
 // barrel that `@/utils/v1/database` pulls in.
 function instanceResourceNameFromDatabase(databaseName: string): string {
-  const match = databaseName.match(/(?:^|\/)instances\/([^/]+)\/databases\//);
-  return match ? `instances/${match[1]}` : "";
+  const match = databaseName.match(
+    /^(?:(projects\/[^/]+)\/)?instances\/([^/]+)\/databases\//
+  );
+  if (!match) return "";
+  return match[1]
+    ? `${match[1]}/instances/${match[2]}`
+    : `instances/${match[2]}`;
 }
 
 export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
@@ -227,7 +232,10 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
           ),
         }
       );
-      if (parent.startsWith("instances/") && !skipCacheRemoval) {
+      if (
+        /^(?:projects\/[^/]+\/)?instances\/[^/]+$/.test(parent) &&
+        !skipCacheRemoval
+      ) {
         get().removeCacheByInstance(parent);
       }
       const composed = await upsertDatabases(
@@ -255,7 +263,7 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
     batchSyncDatabases: async (databases) => {
       await databaseServiceClientConnect.batchSyncDatabases(
         createProto(BatchSyncDatabasesRequestSchema, {
-          parent: "instances/-",
+          parent: "-",
           names: databases,
         })
       );

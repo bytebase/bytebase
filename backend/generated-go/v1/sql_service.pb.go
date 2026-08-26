@@ -364,7 +364,8 @@ func (Advice_RuleType) EnumDescriptor() ([]byte, []int) {
 type AdminExecuteRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name is the instance name to execute the query against.
-	// Format: instances/{instance}/databases/{databaseName}
+	// Format: instances/{instance}/databases/{databaseName} or
+	// projects/{project}/instances/{instance}/databases/{databaseName}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The SQL statement to execute.
 	Statement string `protobuf:"bytes,2,opt,name=statement,proto3" json:"statement,omitempty"`
@@ -492,8 +493,9 @@ func (x *AdminExecuteResponse) GetResults() []*QueryResult {
 
 type QueryRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The name is the instance name to execute the query against.
-	// Format: instances/{instance}/databases/{databaseName}
+	// The name is the database resource name to execute the query against.
+	// Format: instances/{instance}/databases/{databaseName} or
+	// projects/{project}/instances/{instance}/databases/{databaseName}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The SQL statement to execute.
 	Statement string `protobuf:"bytes,2,opt,name=statement,proto3" json:"statement,omitempty"`
@@ -1419,8 +1421,8 @@ func (x *Advice) GetRuleType() Advice_RuleType {
 type ExportRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The name is the resource name to execute the export against.
-	// Format: instances/{instance}/databases/{database}
-	// Format: instances/{instance}
+	// Format: instances/{instance}/databases/{database} or
+	// projects/{project}/instances/{instance}/databases/{database}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The SQL statement to execute.
 	Statement string `protobuf:"bytes,2,opt,name=statement,proto3" json:"statement,omitempty"`
@@ -2224,16 +2226,16 @@ const file_v1_sql_service_proto_rawDesc = "" +
 	"_container\"b\n" +
 	"\x0eExportResponse\x12\x1e\n" +
 	"\acontent\x18\x01 \x01(\fB\x04\xd0\xea0\x02R\acontent\x120\n" +
-	"\x14applied_access_grant\x18\x02 \x01(\tR\x12appliedAccessGrant2\xbd\x06\n" +
+	"\x14applied_access_grant\x18\x02 \x01(\tR\x12appliedAccessGrant2\xb4\a\n" +
 	"\n" +
-	"SQLService\x12\x93\x01\n" +
-	"\x05Query\x12\x19.bytebase.v1.QueryRequest\x1a\x1a.bytebase.v1.QueryResponse\"S\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02-:\x01*\"(/v1/{name=instances/*/databases/*}:query\x12\x91\x01\n" +
+	"SQLService\x12\xce\x01\n" +
+	"\x05Query\x12\x19.bytebase.v1.QueryRequest\x1a\x1a.bytebase.v1.QueryResponse\"\x8d\x01\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02g:\x01*Z8:\x01*\"3/v1/{name=projects/*/instances/*/databases/*}:query\"(/v1/{name=instances/*/databases/*}:query\x12\x91\x01\n" +
 	"\fAdminExecute\x12 .bytebase.v1.AdminExecuteRequest\x1a!.bytebase.v1.AdminExecuteResponse\"8\x8a\xea0\fbb.sql.admin\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\v\x82\xd3\xe4\x93\x02\x12\x12\x10/v1:adminExecute(\x010\x01\x12x\n" +
 	"\x14SearchQueryHistories\x12(.bytebase.v1.SearchQueryHistoriesRequest\x1a).bytebase.v1.SearchQueryHistoriesResponse\"\v\x90\xea0\x02\xa0\xea0\x01\x88\x02\x01\x12\x90\x01\n" +
 	"\x12ListQueryHistories\x12&.bytebase.v1.ListQueryHistoriesRequest\x1a'.bytebase.v1.ListQueryHistoriesResponse\")\x8a\xea0\x16bb.queryHistories.list\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\n" +
 	"\x88\x02\x01\x12^\n" +
-	"\x0fGetQueryHistory\x12#.bytebase.v1.GetQueryHistoryRequest\x1a\x19.bytebase.v1.QueryHistory\"\v\x90\xea0\x02\xa0\xea0\x01\x88\x02\x01\x12\x97\x01\n" +
-	"\x06Export\x12\x1a.bytebase.v1.ExportRequest\x1a\x1b.bytebase.v1.ExportResponse\"T\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02.:\x01*\")/v1/{name=instances/*/databases/*}:exportB\xa5\x01\n" +
+	"\x0fGetQueryHistory\x12#.bytebase.v1.GetQueryHistoryRequest\x1a\x19.bytebase.v1.QueryHistory\"\v\x90\xea0\x02\xa0\xea0\x01\x88\x02\x01\x12\xd3\x01\n" +
+	"\x06Export\x12\x1a.bytebase.v1.ExportRequest\x1a\x1b.bytebase.v1.ExportResponse\"\x8f\x01\x8a\xea0\x10bb.databases.get\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02i:\x01*Z9:\x01*\"4/v1/{name=projects/*/instances/*/databases/*}:export\")/v1/{name=instances/*/databases/*}:exportB\xa5\x01\n" +
 	"\x0fcom.bytebase.v1B\x0fSqlServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

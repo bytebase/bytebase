@@ -10,6 +10,8 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/pkg/errors"
+
+	"github.com/bytebase/bytebase/backend/common"
 )
 
 const resolveTimeout = 30 * time.Second
@@ -66,12 +68,29 @@ func buildDatabaseFilter(database, instance, project string) string {
 	// name.contains does substring matching server-side.
 	filter := fmt.Sprintf("name.contains(%q)", database)
 	if instance != "" {
-		filter += fmt.Sprintf(" && instance == %q", "instances/"+instance)
+		filter += fmt.Sprintf(" && instance == %q", formatInstanceFilter(instance))
 	}
 	if project != "" {
-		filter += fmt.Sprintf(" && project == %q", "projects/"+project)
+		filter += fmt.Sprintf(" && project == %q", formatProjectFilter(project))
 	}
 	return filter
+}
+
+// formatInstanceFilter preserves a canonical instance resource name. A bare ID
+// remains the workspace-instance shorthand for backwards compatibility; it
+// must not be used to address a project instance.
+func formatInstanceFilter(instance string) string {
+	if _, _, err := common.GetInstanceResourceName(instance); err == nil {
+		return instance
+	}
+	return common.FormatInstance(instance)
+}
+
+func formatProjectFilter(project string) string {
+	if _, err := common.GetProjectID(project); err == nil {
+		return project
+	}
+	return common.FormatProject(project)
 }
 
 // listDatabases lists databases matching the filter in the user's workspace.
@@ -292,11 +311,11 @@ func matchSubstring(databases []databaseEntry, name string) []databaseEntry {
 	return result
 }
 
-// extractDatabaseName extracts the database name from a resource name like "instances/prod-pg/databases/employee_db".
+// extractDatabaseName extracts the database ID from a canonical database resource name.
 func extractDatabaseName(resourceName string) string {
-	parts := strings.Split(resourceName, "/")
-	if len(parts) >= 4 {
-		return parts[3]
+	_, _, databaseName, err := common.GetDatabaseResourceName(resourceName)
+	if err == nil {
+		return databaseName
 	}
 	return resourceName
 }

@@ -13,7 +13,8 @@ Run SQL queries against databases managed by Bytebase.
 
 ## Prerequisites
 
-- Know the instance and database name
+- Know the database's exact canonical resource name. Preserve the `name`
+  returned by ListDatabases; do not shorten a project instance to `instances/{id}`.
 - Have `bb.sql.query` permission
 
 ## Workflow
@@ -34,7 +35,8 @@ Run SQL queries against databases managed by Bytebase.
    Filter examples:
    - `name.contains("employee")` - database name contains "employee"
    - `project == "projects/{project-id}"` - databases in a project
-   - `instance == "instances/{instance-id}"` - databases in an instance
+   - `instance == "instances/{instance-id}"` - databases in a workspace instance
+   - `instance == "projects/{project-id}/instances/{instance-id}"` - databases in a project instance
    - `engine == "MYSQL"` - MySQL databases only
    - `environment == "environments/prod" && name.contains("user")` - combine filters
 
@@ -43,7 +45,7 @@ Run SQL queries against databases managed by Bytebase.
 3. **Execute SQL**:
    ```
    call_api(operationId="SQLService/Query", body={
-     "name": "instances/{instance-id}/databases/{database-name}",
+     "name": "projects/{project-id}/instances/{instance-id}/databases/{database-name}",
      "dataSourceId": "{data-source-id}",
      "statement": "SELECT * FROM users LIMIT 10"
    })
@@ -63,6 +65,6 @@ Run SQL queries against databases managed by Bytebase.
 | Error | Cause | Fix |
 |-------|-------|-----|
 | data source id is required | Missing dataSourceId field | Get dataSourceId from instanceResource.dataSources in database listing |
-| database not found | Wrong instance/database name | List databases first |
+| database not found | Wrong instance/database name | List databases first and use its exact canonical `name` |
 | permission denied | Missing bb.sql.query | Check user permissions |
 | syntax error | Invalid SQL | Check SQL syntax for the database engine |

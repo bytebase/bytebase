@@ -136,8 +136,8 @@ Provide plain SQL — the tool handles database resolution, sheet creation, plan
 | database      | Yes      | Database name or substring |
 | sql           | Yes      | SQL statement(s) in plain text (NOT base64) |
 | title         | Yes      | Title for the issue/plan |
-| instance      | No       | Narrow database resolution |
-| project       | No       | Narrow to a specific project |
+| instance      | No       | Canonical instance name, or an instance ID paired with project |
+| project       | No       | Project name or ID to narrow resolution |
 | changeType    | No       | "MIGRATE" (default) or "SDL" |
 | createRollout | No       | If true, attempts rollout creation after issue |
 | reason        | No       | Context or ticket reference (max 1000 chars) |

@@ -29,6 +29,8 @@ import type {
 import {
   extractDatabaseResourceName,
   extractInstanceResourceName,
+  hasProjectPermissionV2,
+  hasWorkspacePermissionV2,
   supportedEngineV1List,
 } from "@/utils";
 
@@ -61,7 +63,6 @@ const tableKey = (dbName: string, schemaName: string, tableName: string) =>
   `${dbName}/schemas/${schemaName}/tables/${tableName}`;
 
 const environmentNamePrefix = "environments/";
-const instanceNamePrefix = "instances/";
 const UNKNOWN_ENVIRONMENT_ID = "-1";
 const UNKNOWN_ENVIRONMENT_NAME = `${environmentNamePrefix}${UNKNOWN_ENVIRONMENT_ID}`;
 
@@ -126,23 +127,41 @@ export function DatabaseResourceSelector({
     new Set()
   );
   const environments = useAppStore((s) => s.environmentList);
+  const project = useAppStore((s) => s.projectsByName[projectName]);
 
   const searchInstances = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
-      const result = await useAppStore.getState().fetchInstanceList({
+      const params = {
         pageSize: 1000,
         filter: keyword.trim() ? { query: keyword } : undefined,
         silent: true,
-      });
-      return result.instances.map((instance) => {
+      };
+      const results = await Promise.all([
+        project && hasProjectPermissionV2(project, "bb.instances.list")
+          ? useAppStore
+              .getState()
+              .fetchInstanceList({ ...params, parent: projectName })
+          : Promise.resolve({ instances: [], nextPageToken: "" }),
+        hasWorkspacePermissionV2("bb.instances.list")
+          ? useAppStore.getState().fetchInstanceList(params)
+          : Promise.resolve({ instances: [], nextPageToken: "" }),
+      ]);
+      const instances = [
+        ...new Map(
+          results
+            .flatMap((result) => result.instances)
+            .map((instance) => [instance.name, instance])
+        ).values(),
+      ];
+      return instances.map((instance) => {
         const id = extractInstanceResourceName(instance.name);
         return {
-          value: id,
+          value: instance.name,
           keywords: [id, instance.title],
         };
       });
     },
-    []
+    [project, projectName]
   );
 
   const scopeOptions: ScopeOption[] = useMemo(
@@ -224,7 +243,7 @@ export function DatabaseResourceSelector({
       environment: environmentId
         ? `${environmentNamePrefix}${environmentId}`
         : undefined,
-      instance: instanceId ? `${instanceNamePrefix}${instanceId}` : undefined,
+      instance: instanceId || undefined,
       labels: labels.length > 0 ? labels : undefined,
       engines: engines.length > 0 ? engines : undefined,
       table: table || undefined,

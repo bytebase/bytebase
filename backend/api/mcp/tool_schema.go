@@ -205,8 +205,8 @@ const getSchemaDescription = `Inspect a Bytebase database's schema.
 | Parameter | Required | Description |
 |-----------|----------|-------------|
 | database  | Yes      | Database name or substring (e.g., "employee_db" or "employee") |
-| instance  | No       | Instance name to narrow resolution |
-| project   | No       | Project name to narrow resolution |
+| instance  | No       | Canonical instance name, or an instance ID paired with project |
+| project   | No       | Project name or ID to narrow resolution |
 | schema    | No       | Schema name for multi-schema engines (PG/MSSQL/Oracle/Snowflake/Redshift/CockroachDB/Databricks/Trino/Spanner/Hive); ignored with a note on MySQL/TiDB/etc. |
 | table     | No       | Drill into a single table; implies include="details" |
 | include   | No       | Detail level: "summary" (default), "columns", "details" |

@@ -19,14 +19,18 @@ const mocks = vi.hoisted(() => ({
   captureMetric: vi.fn(),
   removeDatabaseMetadataCache: vi.fn(),
   fetchInstance: vi.fn(),
-  fetchInstanceList: vi.fn(async () => ({
+  fetchInstanceList: vi.fn(async (_params?: { parent?: string }) => ({
     instances: [] as { name: string; title: string }[],
   })),
   workspacePermissions: new Set<string>([
     "bb.instances.create",
     "bb.instances.list",
   ]),
-  projectPermissions: new Set<string>(["bb.instances.create"]),
+  projectPermissions: new Set<string>([
+    "bb.instances.create",
+    "bb.instances.get",
+    "bb.instances.list",
+  ]),
 }));
 
 let ProjectDatabasesPage: typeof import("./ProjectDatabasesPage").ProjectDatabasesPage;
@@ -212,7 +216,9 @@ vi.mock("@/stores/app", () => {
     get instancesByName() {
       return mocks.instancesByName;
     },
-    projectsByName: {},
+    projectsByName: {
+      "projects/demo": { name: "projects/demo", title: "Demo Project" },
+    },
     environmentList: [],
   };
   const useAppStore = (selector: (state: typeof appState) => unknown) =>
@@ -237,10 +243,9 @@ vi.mock("@/utils", async () => {
     ...actual,
     engineNameV1: () => "PostgreSQL",
     extractInstanceResourceName: (name: string) =>
-      name.replace(/^instances\//, ""),
+      name.match(/(?:^|\/)instances\/([^/]+)/)?.[1] ?? name,
     getDefaultPagination: () => 1000,
     hasProjectPermissionV2: (_project: unknown, permission: string) =>
-      permission !== "bb.instances.create" ||
       mocks.projectPermissions.has(permission),
     hasWorkspacePermissionV2: (permission: string) =>
       mocks.workspacePermissions.has(permission),
@@ -251,6 +256,7 @@ vi.mock("@/utils", async () => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  mocks.fetchInstanceList.mockImplementation(async () => ({ instances: [] }));
   mocks.visibleDatabases = [];
   mocks.databasesByName = {};
   mocks.instancesByName = {};
@@ -262,7 +268,11 @@ beforeEach(async () => {
     "bb.instances.get",
     "bb.instances.list",
   ]);
-  mocks.projectPermissions = new Set(["bb.instances.create"]);
+  mocks.projectPermissions = new Set([
+    "bb.instances.create",
+    "bb.instances.get",
+    "bb.instances.list",
+  ]);
   ({ ProjectDatabasesPage } = await import("./ProjectDatabasesPage"));
 });
 
@@ -273,6 +283,9 @@ describe("ProjectDatabasesPage", () => {
 
     await act(async () => {
       root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
     const toolbarButton = container.querySelector(
@@ -380,6 +393,38 @@ describe("ProjectDatabasesPage", () => {
     });
   });
 
+  test("opens the add database sheet when the project has a project instance", async () => {
+    mocks.fetchInstanceList.mockImplementation(async (params) => ({
+      instances:
+        params?.parent === "projects/demo"
+          ? [
+              {
+                name: "projects/demo/instances/prod",
+                title: "Project production",
+              },
+            ]
+          : [],
+    }));
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+      await Promise.resolve();
+    });
+
+    expect(container.textContent).toContain("project.add-database");
+    expect(container.textContent).not.toContain("project.connect-database");
+    expect(mocks.fetchInstanceList).toHaveBeenCalledWith({
+      parent: "projects/demo",
+      pageSize: 2,
+    });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   test("disables the empty project connect action without project instance creation permission", async () => {
     mocks.projectPermissions.delete("bb.instances.create");
     const container = document.createElement("div");
@@ -387,6 +432,9 @@ describe("ProjectDatabasesPage", () => {
 
     await act(async () => {
       root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
     const button = container.querySelector(
@@ -411,7 +459,10 @@ describe("ProjectDatabasesPage", () => {
   test("shows syncing guidance when redirected from project-aware instance creation", async () => {
     mocks.routerCurrentQuery = { syncingInstance: "prod" };
     mocks.instancesByName = {
-      "instances/prod": { name: "instances/prod", title: "Prod Instance" },
+      "projects/demo/instances/prod": {
+        name: "projects/demo/instances/prod",
+        title: "Prod Instance",
+      },
     };
     const container = document.createElement("div");
     const root = createRoot(container);
@@ -449,7 +500,10 @@ describe("ProjectDatabasesPage", () => {
 
   test("updates syncing guidance when the syncing instance query changes", async () => {
     mocks.instancesByName = {
-      "instances/prod": { name: "instances/prod", title: "Prod Instance" },
+      "projects/demo/instances/prod": {
+        name: "projects/demo/instances/prod",
+        title: "Prod Instance",
+      },
     };
     const container = document.createElement("div");
     const root = createRoot(container);
@@ -677,6 +731,7 @@ describe("ProjectDatabasesPage", () => {
 
   test("hides post-sync guidance without permission to list instances", async () => {
     mocks.workspacePermissions.delete("bb.instances.list");
+    mocks.projectPermissions.delete("bb.instances.list");
     mocks.routerCurrentQuery = { syncingInstance: "prod" };
     mocks.visibleDatabases = [
       {
