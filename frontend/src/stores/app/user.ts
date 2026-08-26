@@ -164,12 +164,16 @@ export const createUserSlice: AppSliceCreator<UserSlice> = (set, get) => {
     getUserByIdentifier: (identifier) => {
       if (!identifier) return undefined;
       const id = extractUserEmail(identifier);
+      // Direct map hit first: `user.name` is `users/{email}`, so the common
+      // email-shaped lookup needs no scan over the cache.
+      const direct = get().usersByName[`${userNamePrefix}${id}`];
+      if (direct) return direct;
       if (Number.isNaN(Number(id))) {
         return Object.values(get().usersByName).find(
           (user) => user.email === id
         );
       }
-      return get().usersByName[`${userNamePrefix}${id}`];
+      return undefined;
     },
 
     createUser: async (user) => {

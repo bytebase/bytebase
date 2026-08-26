@@ -3090,13 +3090,16 @@
     "rows-upper-limit": "reached the limit of query results",
     "save-sheet": "Save query",
     "saved-query-share": {
+      "add-people": "Add users or groups",
       "editor": "Editor",
-      "granted-at-other-level": "{{count}} more granted at another level.",
+      "load-failed": "Couldn't load sharing.",
       "not-shared": "Not shared with anyone.",
       "only-users-and-groups": "Only users and groups can be granted access.",
+      "owner": "Owner",
+      "people-with-access": "People with access",
       "policy-changed": "Sharing changed elsewhere. Reloaded the latest.",
       "private-hint": "Only you and workspace admins can open this saved query.",
-      "shared-with": "Shared with",
+      "share-title": "“{{title}}”",
       "viewer": "Viewer"
     },
     "scroll-to-bottom": "Scroll to the bottom",

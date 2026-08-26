@@ -3090,13 +3090,16 @@
     "rows-upper-limit": "se ha alcanzado el límite de resultados de la consulta",
     "save-sheet": "Guardar consulta",
     "saved-query-share": {
+      "add-people": "Agregar usuarios o grupos",
       "editor": "Editor",
-      "granted-at-other-level": "{{count}} más con acceso en otro nivel.",
+      "load-failed": "No se pudo cargar el uso compartido.",
       "not-shared": "No compartido con nadie.",
       "only-users-and-groups": "Solo se puede conceder acceso a usuarios y grupos.",
+      "owner": "Propietario",
+      "people-with-access": "Usuarios con acceso",
       "policy-changed": "El uso compartido cambió en otro lugar. Se recargó la versión más reciente.",
       "private-hint": "Solo tú y los administradores del espacio de trabajo pueden abrir esta consulta guardada.",
-      "shared-with": "Compartido con",
+      "share-title": "“{{title}}”",
       "viewer": "Lector"
     },
     "scroll-to-bottom": "Desplazarse hacia abajo",

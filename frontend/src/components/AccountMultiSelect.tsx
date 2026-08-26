@@ -191,11 +191,22 @@ export function AccountMultiSelect({
   onChange,
   disabled,
   includeAllUsers,
+  excludeAccounts,
+  placeholder,
 }: {
   value: string[];
   onChange: (value: string[]) => void;
   disabled?: boolean;
   includeAllUsers?: boolean;
+  /** Empty-state text in the trigger; defaults to the generic account label. */
+  placeholder?: string;
+  /**
+   * Binding strings ("user:{email}" / "group:{email}") to hide from the
+   * dropdown — accounts that cannot or need not be picked here, such as the
+   * caller themselves or accounts already holding a grant. Display-only:
+   * chips already in `value` keep rendering and stay removable.
+   */
+  excludeAccounts?: string[];
 }) {
   const { t } = useTranslation();
   const listUsers = useAppStore((state) => state.listUsers);
@@ -214,13 +225,17 @@ export function AccountMultiSelect({
 
   useEffect(() => {
     const query = search.trim();
-    listUsers({ pageSize: getDefaultPagination(), filter: { query } }).then(
-      ({ users: fetched }) => setUsers(fetched)
+    // Over-fetch by the exclusion count: filtering happens after server
+    // pagination, so without this a widely-shared exclusion list could
+    // consume the entire page and leave nothing pickable.
+    const pageSize = getDefaultPagination() + (excludeAccounts?.length ?? 0);
+    listUsers({ pageSize, filter: { query } }).then(({ users: fetched }) =>
+      setUsers(fetched)
     );
-    listGroups({ pageSize: getDefaultPagination(), filter: { query } }).then(
-      ({ groups: fetched }) => setGroups(fetched)
+    listGroups({ pageSize, filter: { query } }).then(({ groups: fetched }) =>
+      setGroups(fetched)
     );
-  }, [search, listUsers, listGroups]);
+  }, [search, listUsers, listGroups, excludeAccounts]);
 
   const handleClickOutside = useCallback(() => {
     setOpen(false);
@@ -232,6 +247,21 @@ export function AccountMultiSelect({
   const selectedFullnames = useMemo(
     () => new Set(value.map(bindingToFullname)),
     [value]
+  );
+
+  const excludedFullnames = useMemo(
+    () => new Set((excludeAccounts ?? []).map(bindingToFullname)),
+    [excludeAccounts]
+  );
+  // Filter the rendered lists only — `users`/`groups` stay complete so
+  // resolveLabel keeps labeling chips for any binding in `value`.
+  const visibleUsers = useMemo(
+    () => users.filter((user) => !excludedFullnames.has(`users/${user.email}`)),
+    [users, excludedFullnames]
+  );
+  const visibleGroups = useMemo(
+    () => groups.filter((group) => !excludedFullnames.has(group.name)),
+    [groups, excludedFullnames]
   );
 
   const toggle = (fullname: string) => {
@@ -296,6 +326,16 @@ export function AccountMultiSelect({
     return trimmed;
   }, [search, specialAccountMatch, users]);
 
+  const visibleSpecialAccountMatch =
+    specialAccountMatch && !excludedFullnames.has(specialAccountMatch.fullname)
+      ? specialAccountMatch
+      : null;
+  const visibleArbitraryEmailMatch =
+    arbitraryEmailMatch &&
+    !excludedFullnames.has(`users/${arbitraryEmailMatch}`)
+      ? arbitraryEmailMatch
+      : null;
+
   // Label for a selected binding chip — uses cache to survive search changes
   const chipLabel = (binding: string): string => {
     if (binding === ALL_USERS_USER_EMAIL) {
@@ -312,7 +352,19 @@ export function AccountMultiSelect({
   };
 
   return (
-    <div ref={containerRef} className="relative">
+    <div
+      ref={containerRef}
+      className="relative"
+      onKeyDown={(event) => {
+        if (event.key !== "Escape" || !open) return;
+        // Swallow Escape while the dropdown is open: it closes only the
+        // dropdown, not the popover (and staged state) around the picker.
+        event.stopPropagation();
+        event.preventDefault();
+        setOpen(false);
+        setSearch("");
+      }}
+    >
       {/* Trigger */}
       <div
         className={cn(
@@ -349,7 +401,7 @@ export function AccountMultiSelect({
         ))}
         {value.length === 0 && (
           <span className="text-control-placeholder">
-            {t("settings.members.select-account", { count: 2 })}
+            {placeholder ?? t("settings.members.select-account", { count: 2 })}
           </span>
         )}
         <ChevronDown className="ml-auto h-4 w-4 shrink-0 text-control-light" />
@@ -372,7 +424,7 @@ export function AccountMultiSelect({
             placeholder={t("common.search-for-more")}
           />
 
-          <div className="overflow-auto">
+          <div className="overflow-auto" role="listbox" aria-multiselectable>
             {/* allUsers option */}
             {includeAllUsers && (
               <div
@@ -401,12 +453,12 @@ export function AccountMultiSelect({
             )}
 
             {/* Users */}
-            {users.length > 0 && (
+            {visibleUsers.length > 0 && (
               <div>
                 <div className="px-3 py-1.5 text-xs font-medium text-control-light uppercase tracking-wide bg-control-bg border-b">
                   {t("common.users")}
                 </div>
-                {users.map((user) => {
+                {visibleUsers.map((user) => {
                   const fullname = `users/${user.email}`;
                   const selected = selectedFullnames.has(fullname);
                   const isCurrentUser = user.email === currentUser?.email;
@@ -458,21 +510,30 @@ export function AccountMultiSelect({
             )}
 
             {/* Groups */}
-            {groups.length > 0 && (
+            {visibleGroups.length > 0 && (
               <div>
                 <div className="px-3 py-1.5 text-xs font-medium text-control-light uppercase tracking-wide bg-control-bg border-b">
                   {t("common.groups")}
                 </div>
-                {groups.map((group) => {
+                {visibleGroups.map((group) => {
                   const selected = selectedFullnames.has(group.name);
                   return (
                     <div
                       key={group.name}
+                      role="option"
+                      aria-selected={selected}
+                      tabIndex={0}
                       className={cn(
                         "flex items-center gap-x-3 px-3 py-2 cursor-pointer hover:bg-control-bg",
                         selected && "bg-accent/5"
                       )}
                       onClick={() => toggle(group.name)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter" || event.key === " ") {
+                          event.preventDefault();
+                          toggle(group.name);
+                        }
+                      }}
                     >
                       <SelectionCheckbox selected={selected} />
                       <div className="size-7 rounded-full bg-control-bg-hover flex items-center justify-center shrink-0">
@@ -506,41 +567,44 @@ export function AccountMultiSelect({
             )}
 
             {/* Service account / workload identity match */}
-            {specialAccountMatch && (
+            {visibleSpecialAccountMatch && (
               <SpecialAccountOption
                 keyword={search}
-                match={specialAccountMatch}
-                selected={selectedFullnames.has(specialAccountMatch.fullname)}
-                onToggle={() => toggle(specialAccountMatch.fullname)}
+                match={visibleSpecialAccountMatch}
+                selected={selectedFullnames.has(
+                  visibleSpecialAccountMatch.fullname
+                )}
+                onToggle={() => toggle(visibleSpecialAccountMatch.fullname)}
               />
             )}
 
             {/* Arbitrary email fallback */}
-            {arbitraryEmailMatch && (
+            {visibleArbitraryEmailMatch && (
               <div
                 className={cn(
                   "flex items-center gap-x-3 px-3 py-2 cursor-pointer hover:bg-control-bg",
-                  selectedFullnames.has(`users/${arbitraryEmailMatch}`) &&
-                    "bg-accent/5"
+                  selectedFullnames.has(
+                    `users/${visibleArbitraryEmailMatch}`
+                  ) && "bg-accent/5"
                 )}
-                onClick={() => toggle(`users/${arbitraryEmailMatch}`)}
+                onClick={() => toggle(`users/${visibleArbitraryEmailMatch}`)}
               >
                 <SelectionCheckbox
                   selected={selectedFullnames.has(
-                    `users/${arbitraryEmailMatch}`
+                    `users/${visibleArbitraryEmailMatch}`
                   )}
                 />
                 <div
                   className="size-7 rounded-full flex items-center justify-center text-accent-text text-xs font-medium shrink-0"
                   style={{
-                    backgroundColor: getAvatarColor(arbitraryEmailMatch),
+                    backgroundColor: getAvatarColor(visibleArbitraryEmailMatch),
                   }}
                 >
-                  {getInitials(arbitraryEmailMatch.split("@")[0])}
+                  {getInitials(visibleArbitraryEmailMatch.split("@")[0])}
                 </div>
                 <div className="flex flex-col min-w-0">
                   <HighlightLabelText
-                    text={arbitraryEmailMatch}
+                    text={visibleArbitraryEmailMatch}
                     keyword={search}
                     className="text-sm font-medium truncate"
                   />
@@ -550,10 +614,10 @@ export function AccountMultiSelect({
 
             {/* Empty state */}
             {!includeAllUsers &&
-              users.length === 0 &&
-              groups.length === 0 &&
-              !specialAccountMatch &&
-              !arbitraryEmailMatch && (
+              visibleUsers.length === 0 &&
+              visibleGroups.length === 0 &&
+              !visibleSpecialAccountMatch &&
+              !visibleArbitraryEmailMatch && (
                 <div className="px-3 py-4 text-sm text-center text-control-light">
                   {t("common.no-data")}
                 </div>
