@@ -30,6 +30,18 @@ export function getCurrentUserEmail(get: () => AppStoreState): string {
   return get().currentUser?.email ?? "";
 }
 
+export function getWorkspaceResourceScope(
+  get: () => AppStoreState,
+  workspaceName?: string
+): string {
+  return (
+    workspaceName ||
+    get().currentUser?.workspace ||
+    get().serverInfo?.workspace ||
+    ""
+  );
+}
+
 // Workspace segment for localStorage cache keys — "" for self-host (keys stay
 // shared/unchanged), the workspace name for SaaS (keys are workspace-isolated).
 // Fall back to serverInfo while the current user is still hydrating.
@@ -37,11 +49,7 @@ export function getWorkspaceCacheScope(
   get: () => AppStoreState,
   workspaceName?: string
 ): string {
-  const scope =
-    workspaceName ||
-    get().currentUser?.workspace ||
-    get().serverInfo?.workspace ||
-    "";
+  const scope = getWorkspaceResourceScope(get, workspaceName);
   return workspaceCacheScope(get().isSaaSMode(), scope);
 }
 

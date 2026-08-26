@@ -22,12 +22,10 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-  useAppFeature,
   useOptionalCurrentUser,
-  useQuickstartReset,
-  useServerInfo,
   useSubscription,
   useWorkspace,
+  useWorkspaceSetupGuideReset,
 } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
@@ -46,13 +44,14 @@ export function ProfileMenuTrigger({
 }: ProfileMenuProps) {
   const { t, i18n } = useTranslation();
   const currentUser = useOptionalCurrentUser();
-  const serverInfo = useServerInfo();
   const { subscription, uploadLicense } = useSubscription();
   const workspace = useWorkspace();
   const route = useCurrentRoute();
   const navigate = useNavigate();
-  const resetQuickstartProgress = useQuickstartReset();
-  const hideQuickStart = useAppFeature("bb.feature.hide-quick-start");
+  const resetWorkspaceSetupGuide = useWorkspaceSetupGuideReset();
+  const workspaceSetupGuideEnabled = useAppStore((state) =>
+    state.workspaceSetupGuideEnabled()
+  );
   const currentPlan = subscription?.plan ?? PlanType.FREE;
   const devLicenseOptions = [
     {
@@ -71,10 +70,6 @@ export function ProfileMenuTrigger({
       plan: PlanType.ENTERPRISE,
     },
   ];
-  const quickStartEnabled =
-    !hideQuickStart &&
-    Boolean(serverInfo?.sample?.available) &&
-    (serverInfo?.userCountInIam ?? 0) <= 1;
   const customLogo = workspace?.logo ?? "";
   const [open, setOpen] = useState(false);
 
@@ -226,14 +221,14 @@ export function ProfileMenuTrigger({
             </DropdownMenuSubmenu>
           ) : null}
 
-          {quickStartEnabled ? (
+          {workspaceSetupGuideEnabled ? (
             <DropdownMenuItem
               onClick={() => {
-                resetQuickstartProgress();
+                resetWorkspaceSetupGuide();
                 setOpen(false);
               }}
             >
-              {t("quick-start.self")}
+              {t("workspace-setup-guide.getting-started")}
             </DropdownMenuItem>
           ) : null}
 

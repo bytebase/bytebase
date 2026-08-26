@@ -2036,21 +2036,6 @@
     "create-project": "Create project",
     "new-project": "New Project"
   },
-  "quick-start": {
-    "guide": "click on the step to try it out",
-    "notice": {
-      "desc": "You can still bring it back later from the top right menu",
-      "title": "Quickstart guide dismissed"
-    },
-    "query-data": "Query data",
-    "self": "Quick Start",
-    "view-an-issue": "View an issue",
-    "visit-database": "Visit Databases",
-    "visit-environment": "Visit Environments",
-    "visit-instance": "Visit Instances",
-    "visit-member": "Visit Members",
-    "visit-project": "Visit Projects"
-  },
   "refresh-remind": {},
   "release": {
     "and-n-more-files": "and {{count}} more files",
@@ -3470,12 +3455,13 @@
       "query": "Go to SQL Editor"
     },
     "descriptions": {
-      "database": "View an existing database in your project or a sample database, or create or transfer one when needed.",
+      "database": "Open a database to explore its schemas and tables, or create one when needed.",
       "instance": "Connect an instance so Bytebase can sync your databases.",
       "project": "Create a project to organize databases and changes.",
       "sql-editor": "Query data in SQL Editor, or create a governed database change."
     },
     "dismiss": "Dismiss guide",
+    "getting-started": "Getting started",
     "intro": {
       "database-description": "Create a database in your connected instance.",
       "database-title": "Create a database",

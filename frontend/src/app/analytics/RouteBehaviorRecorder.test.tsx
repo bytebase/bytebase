@@ -217,7 +217,7 @@ describe("RouteBehaviorRecorder", () => {
     });
   });
 
-  test("emits a route-level page navigation metric on route changes", async () => {
+  test("relies on built-in pageviews instead of custom navigation metrics", async () => {
     await act(async () => {
       root.render(<RouteBehaviorRecorder />);
     });
@@ -229,13 +229,10 @@ describe("RouteBehaviorRecorder", () => {
       root.render(<RouteBehaviorRecorder />);
     });
 
-    expect(mocks.analytics.captureMetric).toHaveBeenCalledWith({
-      event: "page navigated",
-      properties: {
-        from_route_id: "workspace.project.database",
-        to_route_id: "workspace.instance.create",
-      },
-    });
+    expect(mocks.analytics.captureMetric).toHaveBeenCalledOnce();
+    expect(mocks.analytics.captureMetric).toHaveBeenCalledWith(
+      expect.objectContaining({ event: "page session" })
+    );
   });
 
   test("keeps the current page session when only route query changes", async () => {

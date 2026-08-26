@@ -153,7 +153,7 @@ function SetupWizard() {
           paths: ["value.workspace_profile.database_change_mode"],
         }),
       });
-      useAppStore.getState().resetQuickstartProgress();
+      useAppStore.getState().resetWorkspaceSetupGuide();
       router.push(homePath(mode));
     } finally {
       setLoading(false);

@@ -605,6 +605,38 @@ describe("ProjectDatabasesPage", () => {
     });
   });
 
+  test("shows database next actions when requested by the setup guide", async () => {
+    mocks.routerCurrentQuery = { intro: "project-instance-synced" };
+    mocks.visibleDatabases = [
+      {
+        name: "projects/demo/instances/prod/databases/app",
+        project: "projects/demo",
+      },
+    ];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+
+    expect(
+      container
+        .querySelector("[role='alert']")
+        ?.getAttribute("data-product-intro-target")
+    ).toBe("project-instance-synced");
+    expect(mocks.useProductIntro).toHaveBeenCalledWith({
+      id: "project-instance-synced",
+      title: "db.project-instance-synced-title",
+      description: "db.project-instance-synced-description",
+      disabled: false,
+    });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   test("hides post-sync guidance when the workspace has multiple instances", async () => {
     mocks.routerCurrentQuery = { syncingInstance: "prod" };
     mocks.fetchInstanceList.mockResolvedValueOnce({

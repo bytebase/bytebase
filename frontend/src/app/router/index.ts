@@ -1,4 +1,5 @@
 import {
+  matchRoutes,
   useLocation,
   useNavigate as useReactRouterNavigate,
   useMatches,
@@ -228,6 +229,20 @@ function currentRouteSnapshot(): ReactRoute {
 export function resolveRoute(to: RouteTarget): ReactResolvedRoute {
   const fullPath = resolveTarget(to);
   return { href: fullPath, fullPath };
+}
+
+export function resolveRouteName(pathname: string): string | undefined {
+  const matches = matchRoutes(
+    // Index routes are registered after their parents and share the same path.
+    getRegisteredRoutes()
+      .reverse()
+      .map(({ name, path }) => ({
+        path,
+        handle: { name },
+      })),
+    pathname
+  );
+  return (matches?.at(-1)?.route.handle as RouteHandle | undefined)?.name;
 }
 
 type PushOptions = Omit<NavigationOptions, "replace">;

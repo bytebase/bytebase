@@ -2036,21 +2036,6 @@
     "create-project": "プロジェクトを作成",
     "new-project": "作成するプロジェクト"
   },
-  "quick-start": {
-    "guide": "クリックしてステップを試してみましょう",
-    "notice": {
-      "desc": "後から右上のメニューから元に戻すことができます",
-      "title": "クイックスタートガイドを終了しました"
-    },
-    "query-data": "クエリデータ",
-    "self": "クイックスタート",
-    "view-an-issue": "イシューを表示する",
-    "visit-database": "データベースにアクセスする",
-    "visit-environment": "環境にアクセスする",
-    "visit-instance": "インスタンスにアクセスする",
-    "visit-member": "メンバーにアクセスする",
-    "visit-project": "プロジェクトにアクセスする"
-  },
   "refresh-remind": {},
   "release": {
     "and-n-more-files": "他 {{count}} 件のファイル",
@@ -3470,12 +3455,13 @@
       "query": "SQL Editor に移動"
     },
     "descriptions": {
-      "database": "プロジェクト内またはサンプルの既存データベースを確認できます。必要に応じて、データベースを作成または転送してください。",
+      "database": "接続したインスタンスのデータベースを確認し、必要に応じて作成または転送します。",
       "instance": "インスタンスを接続して、Bytebase がデータベースを同期できるようにします。",
       "project": "データベースと変更を整理するプロジェクトを作成します。",
       "sql-editor": "SQL Editor でデータをクエリするか、ガバナンス付きデータベース変更を作成します。"
     },
     "dismiss": "ガイドを閉じる",
+    "getting-started": "はじめに",
     "intro": {
       "database-description": "接続済みインスタンスにデータベースを作成します。",
       "database-title": "データベースを作成",

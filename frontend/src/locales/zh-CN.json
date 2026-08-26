@@ -2036,21 +2036,6 @@
     "create-project": "创建项目",
     "new-project": "创建项目"
   },
-  "quick-start": {
-    "guide": "可点击步骤进行尝试",
-    "notice": {
-      "desc": "您稍后仍可以从右上角的菜单中再次打开新手任务",
-      "title": "新手任务已关闭"
-    },
-    "query-data": "查询数据",
-    "self": "快速开始",
-    "view-an-issue": "查看工单",
-    "visit-database": "访问数据库",
-    "visit-environment": "访问环境",
-    "visit-instance": "访问实例",
-    "visit-member": "访问成员",
-    "visit-project": "访问项目"
-  },
   "refresh-remind": {},
   "release": {
     "and-n-more-files": "以及另外 {{count}} 个文件",
@@ -3470,12 +3455,13 @@
       "query": "前往 SQL Editor"
     },
     "descriptions": {
-      "database": "查看项目中现有的数据库或示例数据库；如有需要，可创建或转移数据库。",
+      "database": "查看已连接实例中的数据库；如有需要，可创建或转移数据库。",
       "instance": "连接实例，让 Bytebase 可以同步你的数据库。",
       "project": "创建项目来管理数据库和变更。",
       "sql-editor": "在 SQL Editor 中查询数据，或创建受管数据库变更。"
     },
     "dismiss": "关闭指南",
+    "getting-started": "入门指南",
     "intro": {
       "database-description": "在已连接的实例中创建数据库。",
       "database-title": "创建数据库",

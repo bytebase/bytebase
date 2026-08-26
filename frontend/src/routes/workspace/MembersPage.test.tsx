@@ -12,16 +12,12 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const {
-  mockGetIntroStateByKey,
   mockPushNotification,
-  mockSaveIntroStateByKey,
   mockUpdateProjectIamPolicy,
   maximumRoleExpirationSeconds,
   maximumRequestExpirationSeconds,
 } = vi.hoisted(() => ({
-  mockGetIntroStateByKey: vi.fn(),
   mockPushNotification: vi.fn(),
-  mockSaveIntroStateByKey: vi.fn(),
   mockUpdateProjectIamPolicy: vi.fn(),
   maximumRoleExpirationSeconds: { value: undefined as number | undefined },
   maximumRequestExpirationSeconds: { value: undefined as number | undefined },
@@ -333,8 +329,6 @@ vi.mock("@/stores/app", () => {
           ? undefined
           : { seconds: BigInt(maximumRequestExpirationSeconds.value) },
     }),
-    getIntroStateByKey: mockGetIntroStateByKey,
-    saveIntroStateByKey: mockSaveIntroStateByKey,
   });
   const useAppStore = (selector?: (state: unknown) => unknown) =>
     selector ? selector(buildState()) : buildState();
@@ -365,7 +359,6 @@ beforeEach(() => {
   vi.clearAllMocks();
   maximumRoleExpirationSeconds.value = undefined;
   maximumRequestExpirationSeconds.value = undefined;
-  mockGetIntroStateByKey.mockReturnValue(false);
   projectIamPolicy.bindings = [];
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -394,16 +387,6 @@ async function flush(): Promise<void> {
 }
 
 describe("MembersPage project role grant drawer", () => {
-  it("marks the member quick-start item visited on mount", async () => {
-    await renderPage();
-
-    expect(mockGetIntroStateByKey).toHaveBeenCalledWith("member.visit");
-    expect(mockSaveIntroStateByKey).toHaveBeenCalledWith({
-      key: "member.visit",
-      newState: true,
-    });
-  });
-
   it("uses maximum role expiration instead of request expiration for direct role grants", async () => {
     maximumRequestExpirationSeconds.value = 30 * 24 * 60 * 60;
 

@@ -7,22 +7,12 @@ import type { AppSliceCreator, PreferencesSlice } from "./types";
 import {
   getCurrentUserEmail,
   getWorkspaceCacheScope,
+  getWorkspaceResourceScope,
   MAX_RECENT_PROJECT,
   MAX_RECENT_VISIT,
   readJson,
   writeJson,
 } from "./utils";
-
-const QUICKSTART_RESET_KEYS = [
-  "hidden",
-  "issue.visit",
-  "project.visit",
-  "environment.visit",
-  "instance.visit",
-  "database.visit",
-  "member.visit",
-  "data.query",
-];
 
 export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
   set,
@@ -70,15 +60,20 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
     );
   },
 
-  resetQuickstartProgress: () => {
+  resetWorkspaceSetupGuide: () => {
     const email = getCurrentUserEmail(get);
     if (!email) return;
-    const key = storageKeyIntroState(getWorkspaceCacheScope(get), email);
+    const key = storageKeyIntroState(getWorkspaceResourceScope(get), email);
     const previous = readJson<Record<string, boolean>>(key, {});
-    const next = {
+    const next: Record<string, boolean> = {
       ...previous,
-      ...Object.fromEntries(QUICKSTART_RESET_KEYS.map((key) => [key, false])),
+      "workspace-setup-guide.dismissed": false,
     };
+    for (const introStateKey of Object.keys(next)) {
+      if (introStateKey.startsWith("workspace-setup-guide.")) {
+        next[introStateKey] = false;
+      }
+    }
     writeJson(key, next);
     set((state) => ({ introStateVersion: state.introStateVersion + 1 }));
   },
@@ -90,18 +85,21 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
     const email = getCurrentUserEmail(get);
     if (!email) return false;
     const map = readJson<Record<string, boolean>>(
-      storageKeyIntroState(getWorkspaceCacheScope(get), email),
+      storageKeyIntroState(getWorkspaceResourceScope(get), email),
       {}
     );
     return map[key] ?? false;
   },
 
   // Mirrors the Pinia `useUIStateStore.saveIntroStateByKey`: persists a
-  // single intro flag (e.g. `data.query`) to the per-user localStorage map.
+  // single intro flag to the per-user localStorage map.
   saveIntroStateByKey: ({ key, newState }) => {
     const email = getCurrentUserEmail(get);
     if (!email) return;
-    const storageKey = storageKeyIntroState(getWorkspaceCacheScope(get), email);
+    const storageKey = storageKeyIntroState(
+      getWorkspaceResourceScope(get),
+      email
+    );
     const previous = readJson<Record<string, boolean>>(storageKey, {});
     writeJson(storageKey, { ...previous, [key]: newState });
     set((state) => ({ introStateVersion: state.introStateVersion + 1 }));

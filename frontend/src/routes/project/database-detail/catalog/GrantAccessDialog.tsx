@@ -432,6 +432,7 @@ export function GrantAccessDialog({
                       <FeatureBadge
                         feature={PlanFeature.FEATURE_DATA_MASKING}
                         instance={instance}
+                        clickable={false}
                       />
                       <span>{t("issue.role-grant.use-cel")}</span>
                     </div>
@@ -445,6 +446,7 @@ export function GrantAccessDialog({
                       <FeatureBadge
                         feature={PlanFeature.FEATURE_DATA_MASKING}
                         instance={instance}
+                        clickable={false}
                       />
                       <span>{t("issue.role-grant.manually-select")}</span>
                     </div>

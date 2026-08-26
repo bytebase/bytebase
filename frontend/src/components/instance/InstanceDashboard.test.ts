@@ -30,4 +30,16 @@ describe("InstanceDashboard", () => {
     expect(source).toContain("setSelectedNames(new Set());");
     expect(source).toContain("}, [parent]);");
   });
+
+  test("allows the connect-instance intro on project instance pages", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/components/instance/InstanceDashboard.tsx"),
+      "utf-8"
+    );
+
+    expect(source).toContain("disabled: !canCreate,");
+    expect(source).not.toContain(
+      'disabled: layout === "project" || !canCreate,'
+    );
+  });
 });

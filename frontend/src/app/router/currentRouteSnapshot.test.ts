@@ -3,8 +3,9 @@ import {
   PROJECT_V1_ROUTE_WEBHOOK_CREATE,
   PROJECT_V1_ROUTE_WEBHOOK_DETAIL,
   PROJECT_V1_ROUTE_WEBHOOKS,
+  SQL_EDITOR_HOME_MODULE,
 } from "./handles";
-import { router } from "./index";
+import { resolveRouteName, router } from "./index";
 import { setAppRouter, setRouteNameIndex } from "./navigation";
 
 beforeEach(() => {
@@ -63,5 +64,25 @@ describe("router named route params", () => {
         params: { webhookResourceId: "hook-1" },
       }).fullPath
     ).toBe("/projects/project-sample/webhooks/hook-1");
+  });
+
+  it("resolves a pathname to the most specific registered route name", () => {
+    expect(resolveRouteName("/projects/project-sample/webhooks/new")).toBe(
+      PROJECT_V1_ROUTE_WEBHOOK_CREATE
+    );
+    expect(resolveRouteName("/projects/project-sample/webhooks/hook-1")).toBe(
+      PROJECT_V1_ROUTE_WEBHOOK_DETAIL
+    );
+  });
+
+  it("prefers the leaf route name when parent and index routes share a path", () => {
+    setRouteNameIndex(
+      new Map<string, string>([
+        ["sql-editor", "/sql-editor"],
+        [SQL_EDITOR_HOME_MODULE, "/sql-editor"],
+      ])
+    );
+
+    expect(resolveRouteName("/sql-editor")).toBe(SQL_EDITOR_HOME_MODULE);
   });
 });

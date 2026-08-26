@@ -308,7 +308,7 @@ export type WorkspaceSlice = {
   userCountInIam: () => number;
   activeVcsUserCount: () => number;
   enableOnboarding: () => boolean;
-  quickStartEnabled: () => boolean;
+  workspaceSetupGuideEnabled: () => boolean;
   setupSample: () => Promise<void>;
   // Always returns a profile (never undefined), mirroring the Pinia
   // `workspaceProfile` getter so consumers read fields without null checks.
@@ -952,7 +952,7 @@ export type PreferencesSlice = {
   setRecentProject: (name: string) => void;
   recordRecentVisit: (path: string, workspaceName?: string) => void;
   removeRecentVisit: (path: string) => void;
-  resetQuickstartProgress: () => void;
+  resetWorkspaceSetupGuide: () => void;
   getIntroStateByKey: (key: string) => boolean;
   saveIntroStateByKey: (params: { key: string; newState: boolean }) => void;
 };

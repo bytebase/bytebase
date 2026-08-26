@@ -1,16 +1,17 @@
-import { create } from "@bufbuild/protobuf";
 import { CheckCircle, Circle, X } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { queryHistoryServiceClientConnect } from "@/api";
 import { createBehaviorMetric } from "@/app/analytics/behavior";
 import { behaviorAnalytics } from "@/app/analytics/provider";
 import { type RouteTarget, router, useCurrentRoute } from "@/app/router";
 import {
   DATABASE_ROUTE_DASHBOARD,
   INSTANCE_ROUTE_DASHBOARD,
+  INSTANCE_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DASHBOARD,
+  PROJECT_V1_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASES,
+  PROJECT_V1_ROUTE_INSTANCES,
   SQL_EDITOR_DATABASE_MODULE,
 } from "@/app/router/handles";
 import { SQLEditorButton } from "@/components/SQLEditorButton";
@@ -19,29 +20,30 @@ import { Tooltip } from "@/components/ui/tooltip";
 import { useIntroStateByKey } from "@/hooks/useAppState";
 import { preCreateIssue } from "@/lib/plan/issue";
 import {
-  CONNECT_DATABASE_PRODUCT_INTRO,
   CREATE_INSTANCE_PRODUCT_INTRO,
   CREATE_PROJECT_PRODUCT_INTRO,
   PREPARE_DATABASE_PRODUCT_INTRO,
   PREPARE_DATABASE_TRANSFER_TIP,
   PRODUCT_INTRO_QUERY_KEY,
   PRODUCT_INTRO_TIP_QUERY_KEY,
+  PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
 } from "@/lib/productIntro";
 import { cn } from "@/lib/utils";
+import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { useAppStore } from "@/stores/app";
-import { SearchQueryHistoriesRequestSchema } from "@/types/proto-es/v1/query_history_service_pb";
-import { extractProjectResourceName, hasWorkspacePermissionV2 } from "@/utils";
+import { State } from "@/types/proto-es/v1/common_pb";
+import { extractProjectResourceName } from "@/utils";
 
 type SetupKeys = {
   hasProject: boolean;
   hasInstance: boolean;
-  hasProjectDatabase: boolean;
+  hasExploredDatabase: boolean;
   hasFirstQuery: boolean;
 };
 
 type SetupState = SetupKeys & {
-  hasWorkspaceDatabase: boolean;
   projectName: string;
+  databaseProjectName: string;
   databaseName: string;
 };
 
@@ -58,23 +60,63 @@ type SetupStep = {
 const initialSetupState: SetupState = {
   hasProject: false,
   hasInstance: false,
-  hasWorkspaceDatabase: false,
-  hasProjectDatabase: false,
+  hasExploredDatabase: false,
   hasFirstQuery: false,
   projectName: "",
+  databaseProjectName: "",
   databaseName: "",
 };
 
 const WORKSPACE_SETUP_GUIDE_DISMISSED_KEY = "workspace-setup-guide.dismissed";
+const WORKSPACE_SETUP_GUIDE_DATABASE_EXPLORED_KEY =
+  "workspace-setup-guide.database-explored";
+const WORKSPACE_SETUP_GUIDE_QUERY_EXECUTED_KEY =
+  "workspace-setup-guide.query-executed";
 
 const isRouteInside = (routeName: string | undefined, parentName: string) =>
   routeName === parentName || !!routeName?.startsWith(`${parentName}.`);
+
+const hasRouteParams = (
+  params: Record<string, string | string[] | undefined>,
+  keys: string[]
+) =>
+  keys.every((key) => {
+    const value = params[key];
+    return typeof value === "string" && value.length > 0;
+  });
+
+const isConcreteDatabaseRoute = (
+  name: string | undefined,
+  params: Record<string, string | string[] | undefined>
+) => {
+  switch (name) {
+    case PROJECT_V1_ROUTE_DATABASE_DETAIL:
+      return hasRouteParams(params, [
+        "projectId",
+        "instanceId",
+        "databaseName",
+      ]);
+    case INSTANCE_ROUTE_DATABASE_DETAIL:
+      return hasRouteParams(params, ["instanceId", "databaseName"]);
+    case SQL_EDITOR_DATABASE_MODULE:
+      return hasRouteParams(params, ["project", "instance", "database"]);
+    default:
+      return false;
+  }
+};
 
 export function WorkspaceSetupGuide() {
   const { t } = useTranslation();
   const currentRoute = useCurrentRoute();
   const dismissed = useIntroStateByKey(WORKSPACE_SETUP_GUIDE_DISMISSED_KEY);
-  const defaultProject = useAppStore((s) => s.serverInfo?.defaultProject ?? "");
+  const databaseExplored = useIntroStateByKey(
+    WORKSPACE_SETUP_GUIDE_DATABASE_EXPLORED_KEY
+  );
+  const queryExecuted = useIntroStateByKey(
+    WORKSPACE_SETUP_GUIDE_QUERY_EXECUTED_KEY
+  );
+  const serverInfo = useAppStore((s) => s.serverInfo);
+  const defaultProject = serverInfo?.defaultProject ?? "";
   const projectCacheSize = useAppStore(
     (s) => Object.keys(s.projectsByName).length
   );
@@ -84,16 +126,79 @@ export function WorkspaceSetupGuide() {
   const databaseCacheSize = useAppStore(
     (s) => Object.keys(s.databasesByName).length
   );
-  const workspaceMemberCount = useAppStore((s) =>
-    (s.workspacePolicy?.bindings ?? []).reduce(
-      (count, binding) => count + binding.members.length,
-      0
-    )
-  );
-  const hasSingleWorkspaceMember = workspaceMemberCount === 1;
+  const workspaceResourceName = useAppStore((s) => s.workspaceResourceName());
+  const guideEnabled = useAppStore((s) => s.workspaceSetupGuideEnabled());
   const [loading, setLoading] = useState(true);
   const [selectedStepKey, setSelectedStepKey] = useState<keyof SetupKeys>();
   const [setupState, setSetupState] = useState<SetupState>(initialSetupState);
+  const queryTargetRef = useRef<
+    { projectName: string; databaseName: string } | undefined
+  >(undefined);
+
+  useEffect(() => {
+    const off = sqlEditorEvents.on(
+      "query-executed",
+      ({ data: { database, project } }) => {
+        if (!database) {
+          return;
+        }
+
+        queryTargetRef.current = {
+          projectName: project,
+          databaseName: database,
+        };
+        const store = useAppStore.getState();
+        if (!databaseExplored) {
+          store.saveIntroStateByKey({
+            key: WORKSPACE_SETUP_GUIDE_DATABASE_EXPLORED_KEY,
+            newState: true,
+          });
+        }
+        if (!queryExecuted) {
+          store.saveIntroStateByKey({
+            key: WORKSPACE_SETUP_GUIDE_QUERY_EXECUTED_KEY,
+            newState: true,
+          });
+        }
+        setSetupState((state) => ({
+          ...state,
+          hasExploredDatabase: true,
+          hasFirstQuery: true,
+          databaseProjectName: project,
+          databaseName: database,
+        }));
+      }
+    );
+    return () => {
+      off();
+    };
+  }, [databaseExplored, queryExecuted]);
+
+  useEffect(() => {
+    if (
+      dismissed ||
+      !guideEnabled ||
+      databaseExplored ||
+      !isConcreteDatabaseRoute(currentRoute.name, currentRoute.params ?? {})
+    ) {
+      return;
+    }
+
+    useAppStore.getState().saveIntroStateByKey({
+      key: WORKSPACE_SETUP_GUIDE_DATABASE_EXPLORED_KEY,
+      newState: true,
+    });
+    setSetupState((state) => ({
+      ...state,
+      hasExploredDatabase: true,
+    }));
+  }, [
+    currentRoute.name,
+    currentRoute.params,
+    databaseExplored,
+    dismissed,
+    guideEnabled,
+  ]);
 
   useEffect(() => {
     setSelectedStepKey(undefined);
@@ -114,7 +219,7 @@ export function WorkspaceSetupGuide() {
   };
 
   useEffect(() => {
-    if (dismissed || !hasSingleWorkspaceMember) {
+    if (dismissed || !guideEnabled) {
       setSetupState(initialSetupState);
       setLoading(false);
       return;
@@ -122,130 +227,86 @@ export function WorkspaceSetupGuide() {
 
     void (async () => {
       const store = useAppStore.getState();
-      const [projectResult, instanceResult] = await Promise.allSettled([
-        useAppStore.getState().fetchProjectList({
-          pageSize: 1,
-          silent: true,
-          filter: {
-            excludeDefault: true,
-          },
-        }),
-        hasWorkspacePermissionV2("bb.instances.list")
-          ? useAppStore.getState().fetchInstanceList({
-              pageSize: 1,
-              silent: true,
-            })
-          : Promise.resolve({ instances: [] }),
-      ]);
-
-      const projectName =
-        projectResult.status === "fulfilled"
-          ? (projectResult.value.projects.find(
-              (project) => project.name !== defaultProject
-            )?.name ?? "")
-          : "";
-      const hasProject = !!projectName;
-      let hasInstance =
-        instanceCacheSize > 0 ||
-        (instanceResult.status === "fulfilled" &&
-          instanceResult.value.instances.length > 0);
-      if (
-        !hasInstance &&
-        projectName &&
-        hasWorkspacePermissionV2("bb.instances.list")
-      ) {
-        try {
-          const projectInstanceResult = await store.fetchInstanceList({
-            parent: projectName,
+      try {
+        const [projectResponse, instanceResponse] = await Promise.all([
+          store.fetchProjectList({
             pageSize: 1,
             silent: true,
-          });
-          hasInstance = projectInstanceResult.instances.length > 0;
-        } catch {
-          hasInstance = false;
-        }
-      }
-      let databaseName = "";
-      let hasWorkspaceDatabase = databaseCacheSize > 0;
-      let hasFirstQuery = false;
-
-      if (projectName || hasInstance) {
-        const [projectDatabaseResult, workspaceDatabaseResult] =
-          await Promise.allSettled([
-            projectName
-              ? store.fetchDatabases({
-                  parent: projectName,
-                  pageSize: 1,
-                  silent: true,
-                })
-              : Promise.resolve({ databases: [] }),
-            hasInstance
-              ? store.fetchDatabases({
-                  parent: "-",
-                  pageSize: 1,
-                  silent: true,
-                })
-              : Promise.resolve({ databases: [] }),
-          ]);
-        if (projectDatabaseResult.status === "fulfilled") {
-          databaseName = projectDatabaseResult.value.databases[0]?.name ?? "";
-        }
-        if (workspaceDatabaseResult.status === "fulfilled") {
-          hasWorkspaceDatabase =
-            hasWorkspaceDatabase ||
-            workspaceDatabaseResult.value.databases.length > 0;
-        }
-      }
-
-      if (databaseName) {
-        // databaseName is only set from the project database lookup, so
-        // projectName is always concrete here — which SearchQueryHistories
-        // requires (it has no cross-project wildcard).
-        try {
-          const queryHistoryResult =
-            await queryHistoryServiceClientConnect.searchQueryHistories(
-              create(SearchQueryHistoriesRequestSchema, {
-                parent: projectName,
+            filter: {
+              excludeDefault: true,
+              state: State.ACTIVE,
+            },
+          }),
+          store.fetchInstanceList({
+            pageSize: 1,
+            filter: { state: State.ACTIVE },
+            silent: true,
+          }),
+        ]);
+        const project = projectResponse.projects.find(
+          ({ name }) => !!name && name !== defaultProject
+        );
+        const instance = instanceResponse.instances[0];
+        const databaseResponse =
+          project && workspaceResourceName
+            ? await store.fetchDatabases({
+                parent: workspaceResourceName,
                 pageSize: 1,
-                filter: 'type == "QUERY"',
+                filter: { project: project.name },
+                silent: true,
               })
-            );
-          hasFirstQuery = queryHistoryResult.queryHistories.length > 0;
-        } catch {
-          hasFirstQuery = false;
-        }
-      }
+            : undefined;
+        const database = databaseResponse?.databases.find(
+          ({ name, project }) => !!name && !!project
+        );
 
-      setSetupState({
-        hasProject,
-        hasInstance,
-        hasWorkspaceDatabase,
-        hasProjectDatabase: !!databaseName,
-        hasFirstQuery,
-        projectName,
-        databaseName,
-      });
+        const latestDatabaseExplored = store.getIntroStateByKey(
+          WORKSPACE_SETUP_GUIDE_DATABASE_EXPLORED_KEY
+        );
+        const latestQueryExecuted = store.getIntroStateByKey(
+          WORKSPACE_SETUP_GUIDE_QUERY_EXECUTED_KEY
+        );
+        const queryTarget = latestQueryExecuted
+          ? queryTargetRef.current
+          : undefined;
+
+        setSetupState({
+          hasProject: !!project,
+          hasInstance: !!instance,
+          hasExploredDatabase: latestDatabaseExplored,
+          hasFirstQuery: latestQueryExecuted,
+          projectName: project?.name ?? "",
+          databaseProjectName:
+            queryTarget?.projectName ?? database?.project ?? "",
+          databaseName: queryTarget?.databaseName ?? database?.name ?? "",
+        });
+      } catch {
+        // Keep the current progress when resource discovery is unavailable.
+      }
       setLoading(false);
     })();
   }, [
     databaseCacheSize,
+    databaseExplored,
     defaultProject,
     dismissed,
-    hasSingleWorkspaceMember,
+    guideEnabled,
     instanceCacheSize,
     projectCacheSize,
+    queryExecuted,
     currentRoute.name,
+    workspaceResourceName,
   ]);
 
   const sqlEditorDatabase = useMemo(() => {
-    if (!setupState.databaseName || !setupState.projectName) {
+    if (!setupState.databaseName || !setupState.databaseProjectName) {
       return undefined;
     }
     return {
       name: setupState.databaseName,
-      project: setupState.projectName,
+      project: setupState.databaseProjectName,
     };
-  }, [setupState.databaseName, setupState.projectName]);
+  }, [setupState.databaseName, setupState.databaseProjectName]);
 
   const steps = useMemo<SetupStep[]>(
     () => [
@@ -253,10 +314,14 @@ export function WorkspaceSetupGuide() {
         key: "hasProject",
         label: t("workspace-setup-guide.steps.project"),
         description: t("workspace-setup-guide.descriptions.project"),
-        link: {
-          name: PROJECT_V1_ROUTE_DASHBOARD,
-          query: { [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO },
-        },
+        link: setupState.hasProject
+          ? undefined
+          : {
+              name: PROJECT_V1_ROUTE_DASHBOARD,
+              query: {
+                [PRODUCT_INTRO_QUERY_KEY]: CREATE_PROJECT_PRODUCT_INTRO,
+              },
+            },
         done: setupState.hasProject,
         matchesRoute: (routeName) => routeName === PROJECT_V1_ROUTE_DASHBOARD,
       },
@@ -264,15 +329,16 @@ export function WorkspaceSetupGuide() {
         key: "hasInstance",
         label: t("workspace-setup-guide.steps.instance"),
         description: t("workspace-setup-guide.descriptions.instance"),
-        link:
-          !setupState.hasInstance && setupState.projectName
+        link: setupState.hasInstance
+          ? undefined
+          : setupState.projectName
             ? {
-                name: PROJECT_V1_ROUTE_DATABASES,
+                name: PROJECT_V1_ROUTE_INSTANCES,
                 params: {
                   projectId: extractProjectResourceName(setupState.projectName),
                 },
                 query: {
-                  [PRODUCT_INTRO_QUERY_KEY]: CONNECT_DATABASE_PRODUCT_INTRO,
+                  [PRODUCT_INTRO_QUERY_KEY]: CREATE_INSTANCE_PRODUCT_INTRO,
                 },
               }
             : {
@@ -283,39 +349,51 @@ export function WorkspaceSetupGuide() {
               },
         done: setupState.hasInstance,
         matchesRoute: (routeName) =>
-          isRouteInside(routeName, INSTANCE_ROUTE_DASHBOARD),
+          isRouteInside(routeName, INSTANCE_ROUTE_DASHBOARD) ||
+          isRouteInside(routeName, PROJECT_V1_ROUTE_INSTANCES),
       },
       {
-        key: "hasProjectDatabase",
+        key: "hasExploredDatabase",
         label: t("workspace-setup-guide.steps.database"),
         description: t("workspace-setup-guide.descriptions.database"),
-        link: {
-          name: DATABASE_ROUTE_DASHBOARD,
-          query: !setupState.hasProjectDatabase
-            ? {
+        link: sqlEditorDatabase
+          ? {
+              name: PROJECT_V1_ROUTE_DATABASES,
+              params: {
+                projectId: extractProjectResourceName(
+                  setupState.databaseProjectName
+                ),
+              },
+              query: {
+                [PRODUCT_INTRO_QUERY_KEY]:
+                  PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
+              },
+            }
+          : {
+              name: DATABASE_ROUTE_DASHBOARD,
+              query: {
                 [PRODUCT_INTRO_QUERY_KEY]: PREPARE_DATABASE_PRODUCT_INTRO,
                 [PRODUCT_INTRO_TIP_QUERY_KEY]: PREPARE_DATABASE_TRANSFER_TIP,
-              }
-            : {
-                [PRODUCT_INTRO_QUERY_KEY]: PREPARE_DATABASE_PRODUCT_INTRO,
               },
-        },
-        done: setupState.hasProjectDatabase,
+            },
+        done: setupState.hasExploredDatabase,
         disabled: !setupState.hasProject || !setupState.hasInstance,
         matchesRoute: (routeName) =>
-          isRouteInside(routeName, DATABASE_ROUTE_DASHBOARD),
+          isRouteInside(routeName, DATABASE_ROUTE_DASHBOARD) ||
+          isRouteInside(routeName, PROJECT_V1_ROUTE_DATABASES) ||
+          routeName === INSTANCE_ROUTE_DATABASE_DETAIL,
       },
       {
         key: "hasFirstQuery",
         label: t("workspace-setup-guide.steps.query"),
         description: t("workspace-setup-guide.descriptions.sql-editor"),
         done: setupState.hasFirstQuery,
-        disabled: !setupState.hasProjectDatabase,
+        disabled: !setupState.hasExploredDatabase,
         matchesRoute: (routeName) =>
           isRouteInside(routeName, SQL_EDITOR_DATABASE_MODULE),
       },
     ],
-    [setupState, t]
+    [setupState, sqlEditorDatabase, t]
   );
 
   const activeStep = steps.find((step) => !step.done) ?? steps.at(-1)!;
@@ -324,11 +402,7 @@ export function WorkspaceSetupGuide() {
     (step) => step.matchesRoute?.(currentRoute.name) ?? false
   );
   const highlightedStep =
-    selectedStep ??
-    routeMatchedStep ??
-    (isRouteInside(currentRoute.name, PROJECT_V1_ROUTE_DATABASES)
-      ? activeStep
-      : undefined);
+    selectedStep ?? (routeMatchedStep?.done ? activeStep : routeMatchedStep);
   const actionStep =
     highlightedStep && !highlightedStep.done ? highlightedStep : activeStep;
 
@@ -340,7 +414,9 @@ export function WorkspaceSetupGuide() {
         },
       })
     );
-    void preCreateIssue(setupState.projectName, [setupState.databaseName]);
+    void preCreateIssue(setupState.databaseProjectName, [
+      setupState.databaseName,
+    ]);
   };
 
   const handleDismiss = () => {
@@ -357,7 +433,7 @@ export function WorkspaceSetupGuide() {
     });
   };
 
-  if (dismissed || !hasSingleWorkspaceMember || loading) {
+  if (dismissed || !guideEnabled || loading) {
     return null;
   }
 
@@ -421,7 +497,7 @@ export function WorkspaceSetupGuide() {
       </div>
       <div className="ml-auto flex shrink-0 items-center gap-x-2">
         {actionStep.key === "hasFirstQuery" &&
-          setupState.projectName &&
+          setupState.databaseProjectName &&
           setupState.databaseName && (
             <Button
               type="button"
@@ -438,6 +514,7 @@ export function WorkspaceSetupGuide() {
           <SQLEditorButton
             data-testid="active-action"
             database={sqlEditorDatabase}
+            openInNewTab
             size="sm"
             className="2xl:h-9 2xl:gap-1.5 2xl:px-3 2xl:text-sm 2xl:leading-5"
             label={t("workspace-setup-guide.actions.query")}

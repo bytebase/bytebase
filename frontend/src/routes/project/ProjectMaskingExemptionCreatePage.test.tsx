@@ -106,7 +106,9 @@ vi.mock("@/components/FeatureAttention", () => ({
 }));
 
 vi.mock("@/components/FeatureBadge", () => ({
-  FeatureBadge: () => <div data-testid="feature-badge" />,
+  FeatureBadge: ({ clickable }: { clickable?: boolean }) => (
+    <div data-clickable={String(clickable)} data-testid="feature-badge" />
+  ),
 }));
 
 vi.mock("@/components/ui/feature-modal", () => ({
@@ -286,6 +288,18 @@ describe("ProjectMaskingExemptionCreatePage builder (BYT-9788)", () => {
 
   afterEach(() => {
     mocks.getExpressionsForDatabaseResource.mockReset();
+  });
+
+  test("keeps badges inside modal-opening radio controls non-clickable", () => {
+    const { container, unmount } = render();
+
+    const badges = container.querySelectorAll('[data-testid="feature-badge"]');
+    expect(badges).toHaveLength(2);
+    for (const badge of badges) {
+      expect(badge.getAttribute("data-clickable")).toBe("false");
+    }
+
+    unmount();
   });
 
   test("SELECT mode: wraps the OR-group so the expiration binds to every resource", async () => {

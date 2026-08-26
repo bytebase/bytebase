@@ -2036,21 +2036,6 @@
     "create-project": "Tạo dự án",
     "new-project": "Mới Dự án"
   },
-  "quick-start": {
-    "guide": "nhấp vào bước để thử",
-    "notice": {
-      "desc": "Bạn vẫn có thể mang nó trở lại sau từ menu trên cùng bên phải",
-      "title": "Đã bỏ qua hướng dẫn bắt đầu nhanh"
-    },
-    "query-data": "Truy vấn dữ liệu",
-    "self": "Bắt đầu nhanh",
-    "view-an-issue": "Xem một vấn đề",
-    "visit-database": "Truy cập Cơ sở dữ liệu",
-    "visit-environment": "Truy cập Môi trường",
-    "visit-instance": "Truy cập Phiên bản",
-    "visit-member": "Truy cập Thành viên",
-    "visit-project": "Truy cập Dự án"
-  },
   "refresh-remind": {},
   "release": {
     "and-n-more-files": "và {{count}} tệp khác",
@@ -3470,12 +3455,13 @@
       "query": "Đi tới SQL Editor"
     },
     "descriptions": {
-      "database": "Xem cơ sở dữ liệu hiện có trong dự án hoặc cơ sở dữ liệu mẫu, hoặc tạo hay chuyển một cơ sở dữ liệu khi cần.",
+      "database": "Xem cơ sở dữ liệu từ instance đã kết nối, hoặc tạo hay chuyển một cơ sở dữ liệu khi cần.",
       "instance": "Kết nối instance để Bytebase có thể đồng bộ cơ sở dữ liệu của bạn.",
       "project": "Tạo dự án để quản lý cơ sở dữ liệu và thay đổi.",
       "sql-editor": "Truy vấn dữ liệu trong SQL Editor hoặc tạo thay đổi cơ sở dữ liệu được quản trị."
     },
     "dismiss": "Đóng hướng dẫn",
+    "getting-started": "Bắt đầu",
     "intro": {
       "database-description": "Tạo cơ sở dữ liệu trong instance đã kết nối.",
       "database-title": "Tạo cơ sở dữ liệu",

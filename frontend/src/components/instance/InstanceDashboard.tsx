@@ -599,17 +599,6 @@ export function InstanceDashboard({
     [searchParams]
   );
 
-  // Mark instance visit on mount
-  useEffect(() => {
-    const store = useAppStore.getState();
-    if (!store.getIntroStateByKey("instance.visit")) {
-      store.saveIntroStateByKey({
-        key: "instance.visit",
-        newState: true,
-      });
-    }
-  }, []);
-
   // Instance count warning
   const instanceCountLimit = useAppStore((s) => s.instanceCountLimit());
   const totalInstanceCount = useAppStore((s) => s.totalInstanceCount());
@@ -906,7 +895,7 @@ export function InstanceDashboard({
     id: CREATE_INSTANCE_PRODUCT_INTRO,
     title: t("workspace-setup-guide.intro.instance-title"),
     description: t("workspace-setup-guide.intro.instance-description"),
-    disabled: layout === "project" || !canCreate,
+    disabled: !canCreate,
   });
   const allSelected =
     instances.length > 0 && selectedNames.size === instances.length;

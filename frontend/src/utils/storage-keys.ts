@@ -57,6 +57,8 @@ export const storageKeyLastActivity = (email: string) =>
   `bb.last-activity.${email}`;
 export const storageKeyCollapseState = (email: string) =>
   `bb.collapse-state.${email}`;
+// Always workspace-scoped, including self-host, because browser storage can
+// outlive the server data associated with a workspace id.
 export const storageKeyIntroState = (scope: string, email: string) =>
   withScope("bb.intro-state", scope, email);
 // Workspace-scoped: value keys embed project resource names.

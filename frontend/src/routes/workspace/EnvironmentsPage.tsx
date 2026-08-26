@@ -1357,17 +1357,6 @@ export function EnvironmentsPage() {
     void useAppStore.getState().fetchEnvironments();
   }, []);
 
-  // Initialize selected tab and intro state
-  useEffect(() => {
-    const store = useAppStore.getState();
-    if (!store.getIntroStateByKey("environment.visit")) {
-      store.saveIntroStateByKey({
-        key: "environment.visit",
-        newState: true,
-      });
-    }
-  }, []);
-
   // Select from hash or default to first
   useEffect(() => {
     const hash = window.location.hash.slice(1);
