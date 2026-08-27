@@ -399,6 +399,9 @@ func (m *Manager) ListInstances(ctx context.Context, workspaceID string) ([]*sam
 	if err != nil || setup == nil || setup.ActivatedAt == nil {
 		return nil, err
 	}
+	if setup.DeletedAt != nil {
+		return nil, nil
+	}
 	payload, err := decodePayload(setup)
 	if err != nil {
 		return nil, err
@@ -490,6 +493,37 @@ func (m *Manager) ValidateInstanceRestore(ctx context.Context, workspaceID, inst
 // HandleInstanceLifecycle is a no-op because user archive/restore does not
 // change external PostgreSQL resources before expiration.
 func (*Manager) HandleInstanceLifecycle(context.Context, string, string, bool) error { return nil }
+
+// HandleProjectPurge removes sample resources owned by a project before purge.
+func (m *Manager) HandleProjectPurge(ctx context.Context, workspaceID, projectID string) error {
+	if m == nil || m.store == nil || m.target == nil {
+		return errors.New("SaaS sample manager is not configured")
+	}
+	return m.store.WithLockedSampleInstanceSetup(ctx, workspaceID, func(callbackCtx context.Context, tx *store.SampleInstanceSetupTx, setup *store.SampleInstanceSetupMessage) error {
+		payload, err := decodePayload(setup)
+		if err != nil {
+			return err
+		}
+		if payload.ProjectId != projectID {
+			return nil
+		}
+		attemptCtx, cancel := context.WithTimeout(callbackCtx, cleanupAttemptDeadline)
+		defer cancel()
+		if setup.ActivatedAt == nil {
+			if err := m.reconcile(attemptCtx, setup, payload); err != nil {
+				return err
+			}
+			return tx.DeleteReservation(attemptCtx)
+		}
+		if err := m.target.remove(attemptCtx, allocation{database: payload.DatabaseName, role: payload.RoleName}); err != nil {
+			return err
+		}
+		if _, err := sample.ArchiveMetadata(attemptCtx, m.store, workspaceID, &projectID, payload.InstanceId); err != nil {
+			return err
+		}
+		return tx.MarkDeleted(attemptCtx, m.clock())
+	})
+}
 
 // Stop is a no-op for the external target.
 func (*Manager) Stop() {}

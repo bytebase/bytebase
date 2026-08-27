@@ -205,6 +205,8 @@ type sampleManagerStub struct {
 	checkAvailableErr   error
 	checkAvailableCalls int
 	listInstancesErr    error
+	projectPurge        func(context.Context, string, string) error
+	projectPurgeCalls   []string
 	validate            func(context.Context, string, string) error
 	lifecycle           func(context.Context, string, string, bool) error
 	validateCalls       int
@@ -218,6 +220,14 @@ func (s *sampleManagerStub) CheckAvailable(context.Context) error {
 
 func (s *sampleManagerStub) ListInstances(context.Context, string) ([]*sample.Instance, error) {
 	return nil, s.listInstancesErr
+}
+
+func (s *sampleManagerStub) HandleProjectPurge(ctx context.Context, workspaceID, projectID string) error {
+	s.projectPurgeCalls = append(s.projectPurgeCalls, projectID)
+	if s.projectPurge != nil {
+		return s.projectPurge(ctx, workspaceID, projectID)
+	}
+	return nil
 }
 
 func (*sampleManagerStub) Start(context.Context, string) error { return nil }

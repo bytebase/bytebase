@@ -34,6 +34,7 @@ type Manager interface {
 	Cleanup(context.Context) error
 	ValidateInstanceRestore(context.Context, string, string) error
 	HandleInstanceLifecycle(context.Context, string, string, bool) error
+	HandleProjectPurge(context.Context, string, string) error
 	Stop()
 }
 

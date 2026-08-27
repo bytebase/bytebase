@@ -384,6 +384,9 @@ func (m *Manager) ListInstances(ctx context.Context, workspaceID string) ([]*sam
 		return nil, err
 	}
 	if setup != nil {
+		if setup.DeletedAt != nil {
+			return nil, nil
+		}
 		payload, err := decode(setup)
 		if err != nil {
 			return nil, err
@@ -553,6 +556,38 @@ func (m *Manager) HandleInstanceLifecycle(ctx context.Context, workspaceID, inst
 		m.stopEntry(entry.InstanceId)
 	}
 	return nil
+}
+
+// HandleProjectPurge removes sample resources owned by a project before purge.
+func (m *Manager) HandleProjectPurge(ctx context.Context, workspaceID, projectID string) error {
+	if m == nil || m.store == nil || m.profile == nil {
+		return errors.New("self-host sample manager is not configured")
+	}
+	return m.store.WithLockedSampleInstanceSetup(ctx, workspaceID, func(callbackCtx context.Context, tx *store.SampleInstanceSetupTx, setup *store.SampleInstanceSetupMessage) error {
+		payload, err := decode(setup)
+		if err != nil {
+			return err
+		}
+		if len(payload.Instances) != 1 || payload.Instances[0].GetProjectId() != projectID {
+			return nil
+		}
+		if setup.ActivatedAt == nil {
+			if err := m.reconcile(callbackCtx, workspaceID, payload); err != nil {
+				return err
+			}
+			return tx.DeleteReservation(callbackCtx)
+		}
+		for _, entry := range payload.Instances {
+			m.stopEntry(entry.InstanceId)
+			if err := postgres.RemoveEmbeddedInstance(sampleConfig(m.profile, entry).DataDir); err != nil {
+				return err
+			}
+			if _, err := sample.ArchiveMetadata(callbackCtx, m.store, workspaceID, entry.ProjectId, entry.InstanceId); err != nil {
+				return err
+			}
+		}
+		return tx.MarkDeleted(callbackCtx, m.clock())
+	})
 }
 
 // Stop stops managed and legacy embedded sample processes.

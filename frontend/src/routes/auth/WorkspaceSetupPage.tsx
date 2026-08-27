@@ -92,8 +92,7 @@ export function WorkspaceSetupPage() {
     useState(false);
   const [enableSampleDatabases, setEnableSampleDatabases] = useState(true);
   const [saving, setSaving] = useState(false);
-  const shouldCreateProject =
-    canCreateProject && !!projectTitle.trim() && !!projectResourceId;
+  const shouldCreateProject = canCreateProject && !!projectTitle.trim();
   const sampleRequested =
     shouldCreateProject && enableSampleDatabases && sampleAvailable;
   const canEnableSample = !!projectTitle.trim() && !!projectResourceId;
@@ -123,7 +122,7 @@ export function WorkspaceSetupPage() {
   const canSave =
     !!name.trim() &&
     !saving &&
-    (!shouldCreateProject || isProjectResourceIdValid);
+    (!shouldCreateProject || (!!projectResourceId && isProjectResourceIdValid));
 
   const handleSave = async () => {
     if (!currentUser?.name || !canSave) return;

@@ -117,7 +117,16 @@ vi.mock("@/components/ResourceIdField", async () => {
         onChange?.("new-project");
         onValidationChange?.(true);
       }, [onChange, onValidationChange, resourceTitle]);
-      return <input data-testid="project-resource-id" readOnly value={value} />;
+      return (
+        <input
+          data-testid="project-resource-id"
+          value={value}
+          onChange={(event) => {
+            onChange?.(event.target.value);
+            onValidationChange?.(event.target.value.length > 0);
+          }}
+        />
+      );
     },
   };
 });
@@ -378,6 +387,27 @@ describe("WorkspaceSetupPage", () => {
       name: "workspace.project",
       query: { intro: "create-project" },
     });
+
+    page.unmount();
+  });
+
+  test("requires a project ID while the project title is present", async () => {
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
+
+    page.render();
+
+    const projectResourceIdInput = page.container.querySelector(
+      "[data-testid='project-resource-id']"
+    ) as HTMLInputElement;
+    await act(async () => {
+      fireEvent.change(projectResourceIdInput, { target: { value: "" } });
+      await Promise.resolve();
+    });
+
+    const save = Array.from(page.container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("Setup my workspace")
+    ) as HTMLButtonElement;
+    expect(save).toBeDisabled();
 
     page.unmount();
   });

@@ -181,7 +181,5 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	deletedResponse, err := actuatorService.GetActuatorInfo(authenticatedCtx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
 	require.NoError(t, err)
 	require.True(t, deletedResponse.Msg.Sample.Available)
-	require.Len(t, deletedResponse.Msg.Sample.Instances, 1)
-	require.Equal(t, common.FormatInstance("sample-instance"), deletedResponse.Msg.Sample.Instances[0].Instance)
-	require.Nil(t, deletedResponse.Msg.Sample.Instances[0].ExpireTime)
+	require.Empty(t, deletedResponse.Msg.Sample.Instances)
 }

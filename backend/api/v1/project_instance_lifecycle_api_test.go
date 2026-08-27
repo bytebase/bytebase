@@ -3,13 +3,20 @@ package v1
 import (
 	"context"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/sample"
+	"github.com/bytebase/bytebase/backend/component/sample/selfhost"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -31,7 +38,7 @@ func TestProjectInstanceLifecycleAPIGatesArchivedProjectDescendants(t *testing.T
 	licenseService := newInstanceServiceTestLicenseService(t, stores)
 	databaseLicenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
 	require.NoError(t, err)
-	projectService := NewProjectService(stores, nil, nil)
+	projectService := NewProjectService(stores, nil, nil, nil)
 	instanceService := &InstanceService{store: stores, licenseService: licenseService}
 	databaseService := NewDatabaseService(stores, nil, nil, nil, databaseLicenseService)
 	instanceName := common.FormatProjectInstance(projectID, instanceID)
@@ -80,6 +87,92 @@ func TestProjectInstanceLifecycleAPIGatesArchivedProjectDescendants(t *testing.T
 	got, err := instanceService.GetInstance(ctx, connect.NewRequest(&v1pb.GetInstanceRequest{Name: instanceName}))
 	require.NoError(t, err)
 	require.False(t, got.Msg.Activation)
+}
+
+func TestProjectPurgeCleansSampleBeforeDeletingMetadata(t *testing.T) {
+	ctx, stores, projectID, instanceID, _ := setupProjectInstanceLifecycleAPITest(t)
+	manager := &sampleManagerStub{}
+	manager.projectPurge = func(ctx context.Context, workspaceID, gotProjectID string) error {
+		require.Equal(t, "default", workspaceID)
+		require.Equal(t, projectID, gotProjectID)
+		instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
+			Workspace:  workspaceID,
+			ProjectID:  &gotProjectID,
+			ResourceID: &instanceID,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, instance)
+		return nil
+	}
+	projectService := NewProjectService(stores, nil, nil, manager)
+	projectName := common.FormatProject(projectID)
+
+	_, err := projectService.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: projectName}))
+	require.NoError(t, err)
+	_, err = projectService.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: projectName, Purge: true}))
+	require.NoError(t, err)
+	require.Equal(t, []string{projectID}, manager.projectPurgeCalls)
+
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:   "default",
+		ResourceID:  &projectID,
+		ShowDeleted: true,
+	})
+	require.NoError(t, err)
+	require.Nil(t, project)
+}
+
+func TestProjectPurgeRemovesSelfHostSample(t *testing.T) {
+	ctx, stores, projectID, instanceID, databaseName := setupProjectInstanceLifecycleAPITest(t)
+	payload, err := protojson.Marshal(&storepb.SelfHostSampleInstanceSetupPayload{
+		Instances: []*storepb.SelfHostSampleInstanceSetupPayload_Instance{{
+			InstanceId:   instanceID,
+			ProjectId:    &projectID,
+			Title:        "Sample Project Instance",
+			DatabaseName: databaseName,
+			RoleName:     "sample-role",
+		}},
+	})
+	require.NoError(t, err)
+	const replicaID = "replica-a"
+	_, created, err := stores.ReserveSampleInstanceSetup(ctx, &store.SampleInstanceSetupMessage{
+		WorkspaceID: "default",
+		ReplicaID:   replicaID,
+		Payload:     payload,
+	})
+	require.NoError(t, err)
+	require.True(t, created)
+	activated, err := stores.ActivateSampleInstanceSetup(ctx, "default", replicaID, []string{projectID}, time.Now(), nil)
+	require.NoError(t, err)
+	require.True(t, activated)
+
+	dataRoot := t.TempDir()
+	dataDir := filepath.Join(dataRoot, "pgdata-sample-managed", instanceID)
+	require.NoError(t, os.MkdirAll(dataDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dataDir, "sample-data"), []byte("sample"), 0o644))
+	manager := selfhost.NewManager(
+		stores,
+		&config.Profile{DataDir: dataRoot, Port: 8080},
+		nil,
+		sample.ManagerOptions{ReplicaID: replicaID},
+	)
+	projectService := NewProjectService(stores, nil, nil, manager)
+	projectName := common.FormatProject(projectID)
+
+	_, err = projectService.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: projectName}))
+	require.NoError(t, err)
+	_, err = projectService.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: projectName, Purge: true}))
+	require.NoError(t, err)
+
+	_, err = os.Stat(dataDir)
+	require.ErrorIs(t, err, os.ErrNotExist)
+	setup, err := stores.GetSampleInstanceSetup(ctx, "default")
+	require.NoError(t, err)
+	require.NotNil(t, setup)
+	require.NotNil(t, setup.DeletedAt)
+	instances, err := manager.ListInstances(ctx, "default")
+	require.NoError(t, err)
+	require.Empty(t, instances)
 }
 
 func TestUndeleteProjectInstanceChecksActivationLimit(t *testing.T) {
