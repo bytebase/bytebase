@@ -730,6 +730,11 @@ func (s *UserService) ChangePassword(ctx context.Context, request *connect.Reque
 	if err := s.verifyCredentialProof(ctx, caller, request.Msg.Credential, false); err != nil {
 		return nil, err
 	}
+	// Proven, so its bucket has done its job. Every refusal below this line is
+	// about the request, not the credential, and must not count against the
+	// bucket an ordinary login draws from.
+	s.clearCredentialProofClaims(ctx, caller.Email, claimed)
+	claimed = nil
 
 	if bcrypt.CompareHashAndPassword([]byte(caller.PasswordHash), []byte(request.Msg.NewPassword)) == nil {
 		// Not just UX: any PasswordHash write moves the password-rotation
@@ -740,10 +745,6 @@ func (s *UserService) ChangePassword(ctx context.Context, request *connect.Reque
 		// oracle: a stolen session exhausts the lockout bucket, then reads the
 		// answer off which error comes back for each candidate new_password.
 		//
-		// The claim is released because the credential *was* proven — the same
-		// reason the success path releases it. That is not the case where an
-		// unproven request gets its counter reset.
-		s.clearCredentialProofClaims(ctx, caller.Email, claimed)
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password cannot be the same"))
 	}
 
@@ -931,7 +932,7 @@ func (s *UserService) DisableMFA(ctx context.Context, request *connect.Request[v
 		if request.Msg.Credential == nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("credential is required"))
 		}
-		if err := checkFactorProofShape(user, request.Msg.Credential); err != nil {
+		if err := s.checkFactorProofShape(user, request.Msg.Credential); err != nil {
 			return nil, err
 		}
 		claimed, err = s.claimCredentialProof(ctx, user.Email, request.Msg.Credential, false)
@@ -945,6 +946,10 @@ func (s *UserService) DisableMFA(ctx context.Context, request *connect.Request[v
 		if err := s.verifyCredentialProof(ctx, user, request.Msg.Credential, true); err != nil {
 			return nil, err
 		}
+		// See ChangePassword: released the moment it is proven, so a failed
+		// write below cannot charge the caller for a correct proof.
+		s.clearCredentialProofClaims(ctx, user.Email, claimed)
+		claimed = nil
 	}
 	// The admin path stays idempotent: a retry, or a second admin racing the
 	// first, finds MFA already off and still reaches the desired state —
@@ -1032,7 +1037,7 @@ func (s *UserService) ConfirmRecoveryCodes(ctx context.Context, request *connect
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("no MFA enrollment in progress, call StartMFAEnrollment first"))
 	}
 
-	if err := checkFactorProofShape(caller, request.Msg.Credential); err != nil {
+	if err := s.checkFactorProofShape(caller, request.Msg.Credential); err != nil {
 		return nil, err
 	}
 	claimed, err := s.claimCredentialProof(ctx, caller.Email, request.Msg.Credential, request.Msg.OtpCode != "")
@@ -1055,8 +1060,15 @@ func (s *UserService) ConfirmRecoveryCodes(ctx context.Context, request *connect
 		if !totp.Validate(request.Msg.OtpCode, caller.MFAConfig.GetTempOtpSecret()) {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid OTP code"))
 		}
-	} else if err := s.verifyCredentialProof(ctx, caller, request.Msg.Credential, true); err != nil {
-		return nil, err
+	} else {
+		if err := s.verifyCredentialProof(ctx, caller, request.Msg.Credential, true); err != nil {
+			return nil, err
+		}
+		// Same release as the first-time branch above: the compare-and-set
+		// below can lose to another tab's mint or an administrator's
+		// DisableMFA, and losing that race is not a failed proof.
+		s.clearCredentialProofClaims(ctx, caller.Email, claimed)
+		claimed = nil
 	}
 
 	// The pending state is one shared slot, so two flows can race for it, and
@@ -1286,7 +1298,7 @@ func (s *UserService) checkEnableMFACredentialShape(user *store.UserMessage, cre
 		if credential == nil {
 			return errFirstTimeEnrollmentNeedsPassword
 		}
-		return checkFactorProofShape(user, credential)
+		return s.checkFactorProofShape(user, credential)
 	}
 	if credential != nil {
 		// Cloud passwordless enrollment: email_code would be the only
@@ -1304,16 +1316,31 @@ func (s *UserService) checkEnableMFACredentialShape(user *store.UserMessage, cre
 // too, but it does so after the claim — and a request naming a channel this
 // account cannot use has guessed at nothing, so five of them must not lock the
 // bucket ordinary password or email-code logins draw from.
-func checkFactorProofShape(user *store.UserMessage, credential *v1pb.CredentialProof) error {
-	if user.MFAConfig.GetOtpSecret() == "" {
+func (s *UserService) checkFactorProofShape(user *store.UserMessage, credential *v1pb.CredentialProof) error {
+	if credential == nil {
 		return nil
 	}
-	switch credential.GetProof().(type) {
-	case *v1pb.CredentialProof_OtpCode, *v1pb.CredentialProof_RecoveryCode:
-		return nil
-	default:
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("changing the MFA factor requires an OTP or recovery code, not the password"))
+	if user.MFAConfig.GetOtpSecret() != "" {
+		switch credential.GetProof().(type) {
+		case *v1pb.CredentialProof_OtpCode, *v1pb.CredentialProof_RecoveryCode:
+			return nil
+		default:
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("changing the MFA factor requires an OTP or recovery code, not the password"))
+		}
 	}
+	// No live factor, so exactly one channel can succeed and it is decided by
+	// the deployment: self-hosted accounts prove the password they have, Cloud
+	// accounts an emailed code because they never have a caller-chosen one.
+	if !s.profile.SaaS {
+		if _, ok := credential.GetProof().(*v1pb.CredentialProof_CurrentPassword); !ok {
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("this account has no MFA factor; prove it with your current password"))
+		}
+		return nil
+	}
+	if _, ok := credential.GetProof().(*v1pb.CredentialProof_EmailCode); !ok {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("this account has no MFA factor or password; prove it with an emailed code"))
+	}
+	return nil
 }
 
 // checkRecoveryCodesConfirmable refuses the state and argument shapes
