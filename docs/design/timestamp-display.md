@@ -4,7 +4,10 @@ Relative timestamps ("x days ago") hide exactly the precision an audit reading n
 ([BYT-10140](https://linear.app/bytebase/issue/BYT-10140)). The rule this doc lands on: **a surface
 is either a work queue or a history view, and that classification decides its time display** — work
 queues get GitHub-style relative time with a 30-day cap, history views get absolute date-time
-always. Frontend display only; no backend, no API, no stored preference.
+always. A third kind of time is future-pointing — scheduled rollouts and expirations
+([BYT-10023](https://linear.app/bytebase/issue/BYT-10023)) — and renders absolute with an explicit
+timezone. Frontend display only; no backend, no API, no stored preference. Time *input* (the
+schedule and expiration pickers) is explicitly out of scope for now.
 
 ## Problem
 
@@ -30,6 +33,14 @@ audit request.
 
 Surfaces that are neither literally a queue nor a record (activity feeds, "created N ago" meta,
 sync freshness, agent chat) are freshness-first readings and follow the work-queue rendering.
+
+The queue/history split covers *record* timestamps — times of things that already happened. A
+**future-pointing time** is a third kind:
+
+- **Operational time** — a scheduled rollout or an expiration, read in order to *act*: "exactly
+  when will this fire or lapse". Display: absolute date-time **with an explicit timezone**, never
+  relative-only. Relative wording ("in 7 hours") hides that the timezone question even exists;
+  see the incident evidence under Operational times below.
 
 ## Research — how other products display timestamps
 
@@ -85,6 +96,12 @@ GitHub behavior).
 The history views — database changelog, revision table, task-run history — flip to **absolute
 date-time always**, consistent with the audit log. They are records of execution, not queues.
 
+**D5 (proposed) — Operational times: absolute with explicit timezone, always.**
+Scheduled rollout times and expirations render `formatAbsoluteDateTime` (which carries the short
+timezone name) in the visible string, not just the tooltip. Driven by BYT-10023 — see Operational
+times below. Proposed, pending confirmation; the time *pickers* that write these values are
+explicitly deferred.
+
 ## Surface classification
 
 Every current `HumanizeTs` call site, classified under the principle:
@@ -97,13 +114,60 @@ Every current `HumanizeTs` call site, classified under the principle:
 | Issue comments & activity | `components/issue-activity/IssueCommentActivity.tsx`, `routes/project/issue-detail/components/IssueDetailCommentList.tsx` | Feed | 30d switch |
 | Review timeline / rejection banner | `routes/project/plan-detail/components/review/ReviewActivityTimeline.tsx`, `ReviewRejectionBanner.tsx` | Feed | 30d switch |
 | Plan detail "created" | `routes/project/plan-detail/components/PlanDetailMeta.tsx` | Meta | 30d switch |
-| Deploy current status | `routes/project/plan-detail/components/deploy/DeployTaskHeader.tsx`, `DeployLatestTaskRunInfo.tsx` | Freshness | 30d switch |
+| Deploy current status (latest-run times) | `routes/project/plan-detail/components/deploy/DeployTaskHeader.tsx`, `DeployLatestTaskRunInfo.tsx` | Freshness | 30d switch |
+| **Scheduled rollout pill** | `DeployTaskHeader.tsx` (task pinned to a run time) | **Operational** | **Absolute + timezone** |
 | Schema sync status | `modules/sql-editor/components/SchemaPane/SyncSchemaButton.tsx`, `routes/project/ProjectSyncSchemaPage.tsx`, `components/database/DatabaseOverviewInfo.tsx` | Freshness | 30d switch |
 | Agent chat | `modules/agent/components/AgentWindow.tsx` | Feed | 30d switch |
 | **Database changelog** | `routes/project/database-detail/changelog/DatabaseChangelogTable.tsx` | **History view** | **Absolute date-time always** |
 | **Database revisions** | `routes/project/database-detail/revision/DatabaseRevisionTable.tsx` | **History view** | **Absolute date-time always** |
 | **Task-run history** | `routes/project/plan-detail/components/deploy/DeployTaskRunHistorySheet.tsx`, `routes/project/issue-detail/components/IssueDetailTaskRunTable.tsx` | **History view** | **Absolute date-time always** |
 | Audit log | `components/AuditLogTable.tsx` | History view | Already absolute — unchanged |
+
+## Operational times (BYT-10023)
+
+The incident that motivates the third class: a customer scheduling a production rollout for that
+night asked which timezone the schedule uses. Nobody on their side could tell from the product;
+their two guesses — UTC+0 and the server's timezone — were both wrong (it is the operator's
+*browser* timezone), and acting on the UTC+0 guess would have fired the rollout seven hours early,
+mid-business-day. The product behavior is correct; the defect is that no visible surface says which
+timezone applies. The docs side was fixed in
+[bytebase.com#125](https://github.com/bytebase/bytebase.com/pull/125); this doc covers the display
+side. The picker itself (input side) is deliberately not designed here.
+
+Where operational times are displayed today:
+
+| Surface | File | Today | Gap |
+|---|---|---|---|
+| Scheduled rollout pill | `routes/project/plan-detail/components/deploy/DeployTaskHeader.tsx` (task pinned to a run time) | `HumanizeTs` — relative ("in 7 hours"), tz only in tooltip | **The BYT-10023 display gap**: the one surface showing when a rollout will fire hides the timezone question entirely |
+| Task-run waiting message | `frontend/src/lib/taskRun.ts` ("enqueued, will run at …") | `formatAbsoluteDateTime` | None — already absolute + tz |
+| Masking exemption expiration | `routes/project/ProjectMaskingExemptionPage.tsx` | dayjs `YYYY-MM-DD HH:mm` | No timezone, no seconds, not locale-aware |
+| Role-grant expiration detail | `routes/project/issue-detail/components/IssueDetailRoleGrantDetails.tsx` | dayjs `LLL` | No timezone |
+| Member expiration preview | `routes/workspace/MembersPage.tsx` (`formatExpirationDate`) | `toLocaleDateString` + hour/minute | No timezone, no seconds |
+| Member expiration table, access grants, IAM remind dialog, sample expiration, subscription expiry | `MembersPage.tsx`, `ProjectAccessGrantsPage.tsx`, `utils/accessGrant.ts`, `IAMRemindDialog.tsx`, `SampleExpirationAlert.tsx`, `stores/app/workspace.ts` | `formatAbsoluteDateTime` | None — already absolute + tz |
+
+Fixes under D5: the scheduled pill renders `formatAbsoluteDateTime` (relative age can move to the
+tooltip), and the three bare-format expirations converge on `formatAbsoluteDateTime`.
+
+## Current absolute-time display inventory
+
+For reference, absolute timestamps already appear in the product in three inconsistent families:
+
+1. **`formatAbsoluteDateTime`** — locale-aware, seconds + short timezone ("GMT+8"). The dominant
+   family: audit log, changelog detail page, revision detail panel, access grants, members
+   expiration table, IAM remind dialog, sample-expiration alert, subscription expiry, task-run
+   scheduled-time messages, SQL editor result panel, Monaco heartbeat, agent chat tooltip.
+2. **Fixed dayjs strings** — time but no timezone, not locale-aware: masking exemption
+   (`YYYY-MM-DD HH:mm`), role-grant details (`LLL`), SQL editor tab titles (`YYYY-MM-DD HH:mm:ss`).
+3. **Ad-hoc `toLocaleDateString`** with hour/minute — no seconds, no timezone: the members-page
+   expiration preview.
+
+Two half-built versions of this design already exist as dead code: the unused `humanizeTs()`
+30-day switch in `utils/util.ts`, and the never-passed `format="absolute"` branch of the date cell
+in `IssueDetailTaskRunTable.tsx`. Both are evidence the need was felt before; both get subsumed.
+
+Notably, the product's current pattern is *relative in the list, absolute in the detail* — the
+changelog detail page and revision detail panel already render `formatAbsoluteDateTime` while
+their list views render relative. D4 makes each list agree with its own detail view.
 
 ## Rendering specification
 
@@ -131,6 +195,11 @@ audit log's exact format (`formatAbsoluteDateTime`): "Aug 26, 2026, 2:03:22 PM G
 included, which is where the exact-time ask lands fully. Tooltip retained (GitHub also tooltips its
 absolute dates); it may additionally show the relative age — see defaults below.
 
+**Operational times** (scheduled rollouts, expirations): `formatAbsoluteDateTime`, with the
+timezone in the visible string — not only in the tooltip, because the reader is about to act on
+the value and must not have to discover that a timezone question exists. Relative age ("in 7
+hours") may accompany it in the tooltip.
+
 ## Implementation shape
 
 - `HumanizeTs` adopts the switching behavior. The logic already exists as dead code: `humanizeTs()`
@@ -141,6 +210,9 @@ absolute dates); it may additionally show the relative age — see defaults belo
   or `HumanizeTs` gains a `mode="absolute"` prop so the tooltip/i18n-resubscribe behavior stays
   shared. Prefer the prop — one canonical component, two declared modes, matching the principle
   one-to-one.
+- Operational times: the scheduled pill in `DeployTaskHeader.tsx` swaps `HumanizeTs` for the
+  absolute string; the three bare-format expiration call sites converge on
+  `formatAbsoluteDateTime` (default 6).
 - Tests: update `HumanizeTs.test.tsx` for the switch; sweep the `*.test.tsx` files that assert
   relative strings (`PlanDetailMeta.test.tsx`, `SchemaPane.test.tsx`,
   `DeployTaskRunHistorySheet.test.tsx`, `IssueCommentActivity.test.tsx`,
@@ -154,6 +226,9 @@ absolute dates); it may additionally show the relative age — see defaults belo
 - No user or workspace preference (revisit only if a customer asks for the opposite default —
   GitLab's model is the known shape for that).
 - No backend or proto change.
+- The time *pickers* (schedule rollout, expiration inputs — `datetime-local` fields writing browser
+  local time): BYT-10023's input side. Deferred to its own design; the docs-side fix already landed
+  in bytebase.com#125.
 
 ## Customer outcome check
 
@@ -174,3 +249,9 @@ absolute dates); it may additionally show the relative age — see defaults belo
    relative age instead (inverse tooltip).
 3. Release list classified as work queue (switch), not history.
 4. Comment/activity timelines classified as feed (switch) even on closed issues.
+5. Scheduled rollout pill shows the full `formatAbsoluteDateTime` string inline (wide, but the
+   pill only appears while a schedule is pending). Alternative: date + hh:mm + tz, seconds in
+   tooltip.
+6. The three bare-format expiration displays (masking exemption, role-grant details, member
+   preview) are normalized to `formatAbsoluteDateTime` in this effort. Alternative: file as
+   follow-up cleanup.
