@@ -37,7 +37,6 @@
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
     - [SampleInfo](#bytebase-v1-SampleInfo)
     - [SampleInfo.Instance](#bytebase-v1-SampleInfo-Instance)
-    - [SetupSampleRequest](#bytebase-v1-SetupSampleRequest)
   
     - [ActuatorService](#bytebase-v1-ActuatorService)
   
@@ -1221,16 +1220,6 @@ Instance describes one provisioned sample instance.
 
 
 
-
-<a name="bytebase-v1-SetupSampleRequest"></a>
-
-### SetupSampleRequest
-Request message for setting up sample data.
-
-
-
-
-
  
 
  
@@ -1246,7 +1235,6 @@ ActuatorService manages system health and operational information.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetActuatorInfo | [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Gets system information and health status of the Bytebase instance. The workspace is resolved from the authenticated session. Permissions required: None (authentication required) |
-| SetupSample | [SetupSampleRequest](#bytebase-v1-SetupSampleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sets up sample data for demonstration and testing purposes. Permissions required: bb.projects.create |
 
  
 

@@ -313,7 +313,6 @@ export type WorkspaceSlice = {
   activeVcsUserCount: () => number;
   enableOnboarding: () => boolean;
   workspaceSetupGuideEnabled: () => boolean;
-  setupSample: () => Promise<void>;
   // Always returns a profile (never undefined), mirroring the Pinia
   // `workspaceProfile` getter so consumers read fields without null checks.
   getWorkspaceProfile: () => WorkspaceProfileSetting;

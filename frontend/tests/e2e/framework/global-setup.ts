@@ -40,10 +40,10 @@ async function globalSetup() {
     throw err;
   }
 
-  const { baseURL, adminEmail, adminPassword } = server;
+  const { baseURL, adminEmail, adminPassword, project, instance } = server;
   saveTestEnv({
     baseURL, adminEmail, adminPassword,
-    project: "", instance: "", instanceId: "", database: "", databaseId: "",
+    project, instance, instanceId: instance.split("/").pop()!, database: "", databaseId: "",
   });
 }
 

@@ -1221,6 +1221,7 @@
     "sample-expiration-future_one": "The sample instance will be removed in {{count}} day, at {{time}}.",
     "sample-expiration-future_other": "The sample instance will be removed in {{count}} days, at {{time}}.",
     "sample-project-instance-description": "Use a Sample Project Instance to explore Bytebase with a ready-to-use database for 7 days.",
+    "sample-project-instance-description-self-host": "Use a Sample Project Instance to explore Bytebase with a ready-to-use database.",
     "sample-project-instance-title": "Try a Sample Project Instance",
     "scan-interval": {
       "default-never": "Default (never)",
@@ -1317,6 +1318,7 @@
     "type-or-paste-credentials-write-only": "Type or paste CREDENTIALS - write only",
     "unable-to-connect": "Bytebase couldn't connect with these settings. Review the guidance above, or continue and update the connection later.\n\nTechnical details: {{0}}",
     "use-sample-instance": "Use sample instance (Available for 7 days)",
+    "use-sample-instance-self-host": "Use sample instance",
     "users": "Users",
     "your-snowflake-account-locator": "Your Snowflake account locator"
   },
@@ -2972,26 +2974,6 @@
       }
     }
   },
-  "setup": {
-    "basic-info": "Basic info",
-    "data": {
-      "built-in": "Use built-in sample",
-      "built-in-desc": "Generate sample project and instances",
-      "self-setup": "Setup the project"
-    },
-    "purposes": {
-      "alter-schema": "Alter schema",
-      "query-data": "Query data",
-      "self": "What's your main purpose with Bytebase?"
-    },
-    "self": "Setup",
-    "skip-setup": "Skip setup",
-    "workflow": {
-      "self": "What's your workflow with database?",
-      "simple": "No complex workflow, just need UI tools",
-      "team": "Work with teammates, need CI/CD pipeline"
-    }
-  },
   "sheet": {
     "filter": {
       "only-show-starred": "Only show starred",
@@ -3560,6 +3542,7 @@
     },
     "prepare-database-tip": "Select databases to transfer to the project.",
     "previous-step-required": "You need to finish the previous step.",
+    "product-model": "How Bytebase works",
     "self": "Set up Bytebase",
     "steps": {
       "database": "Explore databases",

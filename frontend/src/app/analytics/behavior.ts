@@ -27,6 +27,8 @@ export type BehaviorMetricName =
   | "locked feature clicked"
   | "setup guide action clicked"
   | "setup guide dismissed"
+  | "workspace setup completed"
+  | "workspace setup skipped"
   | "post sync first change clicked"
   | "post sync sql editor clicked";
 
@@ -47,6 +49,7 @@ export type BehaviorMetricInput = {
 export function buildBehaviorAnalyticsConfig(params: {
   posthogKey?: string;
   posthogHost?: string;
+  deployment: "cloud" | "self-host";
   gitCommit?: string;
   recordingSampleRate: number;
   resolveRouteId?: (url: string) => string | undefined;
@@ -57,6 +60,7 @@ export function buildBehaviorAnalyticsConfig(params: {
     return null;
   }
   const properties = sanitizeBehaviorProperties({
+    deployment: params.deployment,
     git_commit: params.gitCommit?.trim() || undefined,
   });
 

@@ -626,6 +626,32 @@ describe("useAppStore", () => {
     expect(mocks.navigateToPath).toHaveBeenCalledWith("/", { replace: true });
   });
 
+  test("self-host first login uses the unified workspace setup route", async () => {
+    const firstLoginUser = createProto(UserSchema, {
+      ...user,
+      title: user.email,
+    });
+    mocks.login.mockResolvedValue({
+      requireResetPassword: false,
+      user: firstLoginUser,
+    });
+    mocks.getCurrentUser.mockResolvedValue(firstLoginUser);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: user.workspace,
+      saas: false,
+    });
+    mocks.getWorkspace.mockResolvedValue({ name: user.workspace });
+    const store = createAppStore();
+
+    await store.getState().login({
+      request: { email: user.email, password: "secret" } as never,
+    });
+
+    expect(mocks.navigateByName).toHaveBeenCalledWith("auth.setup", {
+      query: { redirect: "/" },
+    });
+  });
+
   // Regression guard: `signup()` used to override the destination with the SQL
   // Editor whenever the mode read EDITOR, with no check for an explicit
   // redirect. That branch was dead (signup always boots signed out, so the mode
@@ -661,6 +687,48 @@ describe("useAppStore", () => {
     } as never);
 
     expect(mocks.navigateToPath).toHaveBeenCalledWith("/projects/foo", {
+      replace: true,
+    });
+  });
+
+  test("self-host signup uses the unified workspace setup route", async () => {
+    mocks.signup.mockResolvedValue({});
+    mocks.getCurrentUser.mockResolvedValue(user);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: user.workspace,
+      userCountInIam: 1,
+      saas: false,
+    });
+    const store = createAppStore();
+
+    await store.getState().signup({
+      email: user.email,
+      name: "Test",
+      password: "secret",
+    } as never);
+
+    expect(mocks.navigateByName).toHaveBeenCalledWith("auth.setup", {
+      replace: true,
+    });
+  });
+
+  test("SaaS signup uses the unified workspace setup route", async () => {
+    mocks.signup.mockResolvedValue({});
+    mocks.getCurrentUser.mockResolvedValue(user);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: user.workspace,
+      userCountInIam: 1,
+      saas: true,
+    });
+    const store = createAppStore();
+
+    await store.getState().signup({
+      email: user.email,
+      name: "Test",
+      password: "secret",
+    } as never);
+
+    expect(mocks.navigateByName).toHaveBeenCalledWith("auth.setup", {
       replace: true,
     });
   });
@@ -2396,6 +2464,10 @@ describe("useAppStore", () => {
       key: "workspace-setup-guide.query-executed",
       newState: true,
     });
+    store.getState().saveIntroStateByKey({
+      key: "workspace-setup-guide.product-model-seen",
+      newState: true,
+    });
     store
       .getState()
       .saveIntroStateByKey({ key: "unrelated.intro", newState: true });
@@ -2414,6 +2486,11 @@ describe("useAppStore", () => {
       store
         .getState()
         .getIntroStateByKey("workspace-setup-guide.query-executed")
+    ).toBe(false);
+    expect(
+      store
+        .getState()
+        .getIntroStateByKey("workspace-setup-guide.product-model-seen")
     ).toBe(false);
     expect(store.getState().getIntroStateByKey("unrelated.intro")).toBe(true);
   });

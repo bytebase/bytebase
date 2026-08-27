@@ -106,11 +106,10 @@ func (x *SaaSSampleInstanceSetupPayload) GetRoleName() string {
 }
 
 type SelfHostSampleInstanceSetupPayload struct {
-	state             protoimpl.MessageState                         `protogen:"open.v1"`
-	DatabaseProjectId string                                         `protobuf:"bytes,1,opt,name=database_project_id,json=databaseProjectId,proto3" json:"database_project_id,omitempty"`
-	Instances         []*SelfHostSampleInstanceSetupPayload_Instance `protobuf:"bytes,2,rep,name=instances,proto3" json:"instances,omitempty"`
-	unknownFields     protoimpl.UnknownFields
-	sizeCache         protoimpl.SizeCache
+	state         protoimpl.MessageState                         `protogen:"open.v1"`
+	Instances     []*SelfHostSampleInstanceSetupPayload_Instance `protobuf:"bytes,1,rep,name=instances,proto3" json:"instances,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *SelfHostSampleInstanceSetupPayload) Reset() {
@@ -143,13 +142,6 @@ func (*SelfHostSampleInstanceSetupPayload) Descriptor() ([]byte, []int) {
 	return file_store_sample_instance_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *SelfHostSampleInstanceSetupPayload) GetDatabaseProjectId() string {
-	if x != nil {
-		return x.DatabaseProjectId
-	}
-	return ""
-}
-
 func (x *SelfHostSampleInstanceSetupPayload) GetInstances() []*SelfHostSampleInstanceSetupPayload_Instance {
 	if x != nil {
 		return x.Instances
@@ -165,6 +157,7 @@ type SelfHostSampleInstanceSetupPayload_Instance struct {
 	PortOffset    int32                  `protobuf:"varint,4,opt,name=port_offset,json=portOffset,proto3" json:"port_offset,omitempty"`
 	DatabaseName  string                 `protobuf:"bytes,5,opt,name=database_name,json=databaseName,proto3" json:"database_name,omitempty"`
 	RoleName      string                 `protobuf:"bytes,6,opt,name=role_name,json=roleName,proto3" json:"role_name,omitempty"`
+	ProjectId     *string                `protobuf:"bytes,7,opt,name=project_id,json=projectId,proto3,oneof" json:"project_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -241,6 +234,13 @@ func (x *SelfHostSampleInstanceSetupPayload_Instance) GetRoleName() string {
 	return ""
 }
 
+func (x *SelfHostSampleInstanceSetupPayload_Instance) GetProjectId() string {
+	if x != nil && x.ProjectId != nil {
+		return *x.ProjectId
+	}
+	return ""
+}
+
 var File_store_sample_instance_proto protoreflect.FileDescriptor
 
 const file_store_sample_instance_proto_rawDesc = "" +
@@ -255,10 +255,9 @@ const file_store_sample_instance_proto_rawDesc = "" +
 	"\x0eenvironment_id\x18\x04 \x01(\tH\x00R\renvironmentId\x88\x01\x01\x12#\n" +
 	"\rdatabase_name\x18\x05 \x01(\tR\fdatabaseName\x12\x1b\n" +
 	"\trole_name\x18\x06 \x01(\tR\broleNameB\x11\n" +
-	"\x0f_environment_id\"\x95\x03\n" +
-	"\"SelfHostSampleInstanceSetupPayload\x12.\n" +
-	"\x13database_project_id\x18\x01 \x01(\tR\x11databaseProjectId\x12Y\n" +
-	"\tinstances\x18\x02 \x03(\v2;.bytebase.store.SelfHostSampleInstanceSetupPayload.InstanceR\tinstances\x1a\xe3\x01\n" +
+	"\x0f_environment_id\"\x98\x03\n" +
+	"\"SelfHostSampleInstanceSetupPayload\x12Y\n" +
+	"\tinstances\x18\x01 \x03(\v2;.bytebase.store.SelfHostSampleInstanceSetupPayload.InstanceR\tinstances\x1a\x96\x02\n" +
 	"\bInstance\x12\x1f\n" +
 	"\vinstance_id\x18\x01 \x01(\tR\n" +
 	"instanceId\x12\x14\n" +
@@ -267,8 +266,11 @@ const file_store_sample_instance_proto_rawDesc = "" +
 	"\vport_offset\x18\x04 \x01(\x05R\n" +
 	"portOffset\x12#\n" +
 	"\rdatabase_name\x18\x05 \x01(\tR\fdatabaseName\x12\x1b\n" +
-	"\trole_name\x18\x06 \x01(\tR\broleNameB\x11\n" +
-	"\x0f_environment_idB\x96\x01\n" +
+	"\trole_name\x18\x06 \x01(\tR\broleName\x12\"\n" +
+	"\n" +
+	"project_id\x18\a \x01(\tH\x01R\tprojectId\x88\x01\x01B\x11\n" +
+	"\x0f_environment_idB\r\n" +
+	"\v_project_idB\x96\x01\n" +
 	"\x12com.bytebase.storeB\x13SampleInstanceProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (

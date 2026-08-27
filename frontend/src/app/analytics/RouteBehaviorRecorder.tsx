@@ -36,10 +36,18 @@ export function RouteBehaviorRecorder() {
     return null;
   }
 
-  return <EnabledRouteBehaviorRecorder />;
+  return (
+    <EnabledRouteBehaviorRecorder
+      deployment={isSaaSMode ? "cloud" : "self-host"}
+    />
+  );
 }
 
-function EnabledRouteBehaviorRecorder() {
+function EnabledRouteBehaviorRecorder({
+  deployment,
+}: {
+  deployment: "cloud" | "self-host";
+}) {
   const route = useCurrentRoute();
   const currentUserName = useAppStore((state) => state.currentUserName);
   const workspaceName = useAppStore((state) => state.workspaceResourceName());
@@ -51,13 +59,14 @@ function EnabledRouteBehaviorRecorder() {
       buildBehaviorAnalyticsConfig({
         posthogKey: import.meta.env.BB_POSTHOG_KEY as string | undefined,
         posthogHost: import.meta.env.BB_POSTHOG_HOST as string | undefined,
+        deployment,
         gitCommit: import.meta.env.GIT_COMMIT as string | undefined,
         recordingSampleRate: parseRecordingSampleRate(
           import.meta.env.BB_POSTHOG_RECORDING_SAMPLE_RATE as string | undefined
         ),
         resolveRouteId,
       }),
-    []
+    [deployment]
   );
 
   useEffect(() => {

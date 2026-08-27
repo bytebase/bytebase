@@ -2,15 +2,31 @@ import { test as setup, expect } from "@playwright/test";
 import * as fs from "fs";
 import * as path from "path";
 import { loadTestEnv, saveTestEnv } from "./env";
+import { execSql, execSqlScript, getInstancePgPort, querySql } from "./psql";
 import { seedTestData } from "./seed-test-data";
 
 const AUTH_FILE = path.join(__dirname, "../../../.auth/state.json");
+const SECONDARY_DATABASE_ID = "hr_prod";
+const PROD_ENVIRONMENT = "environments/prod";
+
+function loadSampleSeedData(): string {
+  const seedDir = path.join(
+    __dirname,
+    "../../../../backend/component/sample/seed",
+  );
+  return fs
+    .readdirSync(seedDir)
+    .filter((file) => file.endsWith(".sql"))
+    .sort()
+    .map((file) => fs.readFileSync(path.join(seedDir, file), "utf8"))
+    .join("\n");
+}
 
 setup("authenticate and discover", async ({ page }) => {
   const env = loadTestEnv();
   await env.api.login(env.adminEmail, env.adminPassword);
 
-  // Provision baseline data on top of the new bootstrap's setupSample:
+  // Provision baseline data on top of the project-scoped sample bootstrap:
   // silence the external-URL banner so its wrench-icon button doesn't
   // shadow the editor's admin wrench locator, and create a secondary
   // project so the project-switcher CUJ has an alternative target.
@@ -40,35 +56,68 @@ setup("authenticate and discover", async ({ page }) => {
     );
   });
 
-  // Discovery: find first Postgres instance, database, and project
-  const { instances } = await env.api.listInstances();
-  const pgInstance = instances?.find(
-    (i: { engine: string; name: string }) =>
-      i.engine === "POSTGRES" &&
-      !i.name.includes("deleted") &&
-      !i.name.includes("bytebase-meta")
-  );
-  if (!pgInstance) {
-    throw new Error("Discovery failed: no Postgres instance found");
-  }
-
-  const instance = pgInstance.name;
-  const instanceId = instance.split("/").pop()!;
+  // The global bootstrap records the project-scoped sample instance because
+  // the workspace-level ListInstances collection intentionally omits it.
+  const { project, instance, instanceId } = env;
 
   const { databases } = await env.api.listDatabases(instance);
-  const db = databases?.find(
-    (d: { name: string }) =>
-      !d.name.includes("/postgres") &&
-      !d.name.includes("/template") &&
-      !d.name.includes("/bbdev")
-  ) ?? databases?.[0];
+  const db = databases?.find((item) => item.name.endsWith("/hr_test"));
   if (!db) {
-    throw new Error(`Discovery failed: no suitable database in ${instance}`);
+    throw new Error(`Discovery failed: no hr_test database in ${instance}`);
   }
 
   const database = db.name;
   const databaseId = database.split("/").pop()!;
-  const project = (db as { project?: string }).project ?? "";
+  if ((db as { project?: string }).project !== project) {
+    throw new Error(`Discovery failed: database ${database} is not in ${project}`);
+  }
+
+  // Multi-database and multi-stage specs own an explicit second database
+  // fixture. The product sample itself remains one project-scoped instance
+  // with one hr_test database.
+  const pgPort = await getInstancePgPort(env);
+  if (
+    querySql(
+      databaseId,
+      pgPort,
+      `SELECT 1 FROM pg_database WHERE datname = '${SECONDARY_DATABASE_ID}'`,
+    ) !== "1"
+  ) {
+    execSql(
+      databaseId,
+      pgPort,
+      `CREATE DATABASE ${SECONDARY_DATABASE_ID}`,
+    );
+  }
+  if (
+    querySql(
+      SECONDARY_DATABASE_ID,
+      pgPort,
+      "SELECT to_regclass('public.employee')",
+    ) !== "employee"
+  ) {
+    execSqlScript(
+      SECONDARY_DATABASE_ID,
+      pgPort,
+      loadSampleSeedData(),
+    );
+  }
+  await env.api.syncInstance(instance);
+  const secondaryDatabase = `${instance}/databases/${SECONDARY_DATABASE_ID}`;
+  await expect
+    .poll(
+      async () => {
+        const result = await env.api.listDatabases(instance);
+        return result.databases?.some((item) => item.name === secondaryDatabase);
+      },
+      { timeout: 60_000, message: `${SECONDARY_DATABASE_ID} should be synced` },
+    )
+    .toBe(true);
+  await env.api.transferDatabaseToProject(secondaryDatabase, project);
+  await env.api.updateDatabaseEnvironment(
+    secondaryDatabase,
+    PROD_ENVIRONMENT,
+  );
 
   saveTestEnv({ ...env, project, instance, instanceId, database, databaseId });
 

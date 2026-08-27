@@ -48,7 +48,6 @@ export function CreateInstanceView({
   );
   const totalInstanceCount = useAppStore((state) => state.totalInstanceCount());
   const canPrepareSampleProjectInstance =
-    isSaaSMode &&
     sampleAvailable &&
     !sampleProvisioned &&
     totalInstanceCount === 0 &&
@@ -80,6 +79,7 @@ export function CreateInstanceView({
       >
         <CreateInstanceFormInner
           canPrepareSampleProjectInstance={canPrepareSampleProjectInstance}
+          isSaaSMode={isSaaSMode}
           onCreated={onCreated}
           parent={parent}
         />
@@ -90,10 +90,12 @@ export function CreateInstanceView({
 
 function CreateInstanceFormInner({
   canPrepareSampleProjectInstance,
+  isSaaSMode,
   onCreated,
   parent,
 }: {
   canPrepareSampleProjectInstance: boolean;
+  isSaaSMode: boolean;
   onCreated: (instance: Instance) => void;
   parent?: string;
 }) {
@@ -215,7 +217,13 @@ function CreateInstanceFormInner({
             {canPrepareSampleProjectInstance && (
               <Alert
                 title={t("instance.sample-project-instance-title")}
-                description={t("instance.sample-project-instance-description")}
+                description={
+                  isSaaSMode
+                    ? t("instance.sample-project-instance-description")
+                    : t(
+                        "instance.sample-project-instance-description-self-host"
+                      )
+                }
               >
                 <Button
                   className="mt-3"
@@ -226,7 +234,9 @@ function CreateInstanceFormInner({
                 >
                   {isPreparingSampleProjectInstance
                     ? t("instance.preparing-sample-instance")
-                    : t("instance.use-sample-instance")}
+                    : isSaaSMode
+                      ? t("instance.use-sample-instance")
+                      : t("instance.use-sample-instance-self-host")}
                 </Button>
               </Alert>
             )}

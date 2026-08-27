@@ -291,8 +291,8 @@ func configureSampleManager(
 		slog.Warn("invalid SAMPLE_PROJECT_INSTANCE_PG_URL; Sample Project Instance is disabled", log.BBError(err))
 		return nil
 	}
-	if !manager.Available(ctx) {
-		slog.Warn("Sample Project Instance target is temporarily unavailable")
+	if err := manager.CheckAvailable(ctx); err != nil {
+		slog.Warn("Sample Project Instance target is temporarily unavailable", log.BBError(err))
 	}
 	return manager
 }

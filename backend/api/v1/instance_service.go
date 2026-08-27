@@ -40,24 +40,10 @@ type InstanceService struct {
 	v1connect.UnimplementedInstanceServiceHandler
 	store          *store.Store
 	profile        *config.Profile
-	licenseService instanceLicenseService
+	licenseService *enterprise.LicenseService
 	dbFactory      *dbfactory.DBFactory
 	schemaSyncer   *schemasync.Syncer
-	sampleManager  instanceSampleManager
-}
-
-type instanceSampleManager interface {
-	SetupSample(context.Context, sample.SetupRequest) (*sample.SetupResult, error)
-	ValidateInstanceRestore(context.Context, string, string) error
-	HandleInstanceLifecycle(context.Context, string, string, bool) error
-}
-
-type instanceLicenseService interface {
-	GetActivatedInstanceLimit(context.Context, string) int
-	GetInstanceLimit(context.Context, string) int
-	IsFeatureEnabledForInstance(context.Context, string, v1pb.PlanFeature, *store.InstanceMessage) error
-	IsInstanceEffectivelyActivated(context.Context, string, *store.InstanceMessage) bool
-	IsUnifiedInstanceLicense(context.Context, string) bool
+	sampleManager  sample.Manager
 }
 
 const (
@@ -203,7 +189,7 @@ func (s *InstanceService) checkAndLogInstanceConnection(ctx context.Context, met
 }
 
 // NewInstanceService creates a new InstanceService.
-func NewInstanceService(store *store.Store, profile *config.Profile, licenseService *enterprise.LicenseService, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, sampleManager instanceSampleManager) *InstanceService {
+func NewInstanceService(store *store.Store, profile *config.Profile, licenseService *enterprise.LicenseService, dbFactory *dbfactory.DBFactory, schemaSyncer *schemasync.Syncer, sampleManager sample.Manager) *InstanceService {
 	return &InstanceService{
 		store:          store,
 		profile:        profile,
@@ -471,8 +457,8 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 	return connect.NewResponse(result), nil
 }
 
-// PrepareSampleProjectInstance provisions a Cloud Sample Project Instance for
-// the requested project. The lifetime entitlement itself is enforced by the
+// PrepareSampleProjectInstance provisions a Sample Project Instance for the
+// requested project. The lifetime entitlement itself is enforced by the
 // lifecycle manager under a workspace row lock.
 func (s *InstanceService) PrepareSampleProjectInstance(ctx context.Context, req *connect.Request[v1pb.PrepareSampleProjectInstanceRequest]) (*connect.Response[v1pb.Instance], error) {
 	projectID, err := s.getSampleProjectInstanceParent(ctx, &req.Msg.Parent)
@@ -482,24 +468,24 @@ func (s *InstanceService) PrepareSampleProjectInstance(ctx context.Context, req 
 	if projectID == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("Sample Project Instance parent is required"))
 	}
-	if s.profile == nil || !s.profile.SaaS || s.sampleManager == nil {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("Sample Project Instance is available only in SaaS deployments with a configured target"))
+	if s.sampleManager == nil {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("Sample Project Instance is not configured"))
+	}
+	if err := s.sampleManager.CheckAvailable(ctx); err != nil {
+		return nil, sampleProjectInstanceConnectError(err)
 	}
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	if err := s.instanceCountGuard(ctx); err != nil {
 		return nil, err
 	}
-	result, err := s.sampleManager.SetupSample(ctx, sample.SetupRequest{
+	instance, err := s.sampleManager.PrepareSampleProjectInstance(ctx, sample.PrepareRequest{
 		WorkspaceID: workspaceID,
 		ProjectID:   *projectID,
 	})
 	if err != nil {
 		return nil, sampleProjectInstanceConnectError(err)
 	}
-	if len(result.Instances) != 1 {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("Sample Project Instance preparation must return exactly one instance"))
-	}
-	return connect.NewResponse(s.convertToV1Instance(ctx, result.Instances[0])), nil
+	return connect.NewResponse(s.convertToV1Instance(ctx, instance)), nil
 }
 
 func sampleProjectInstanceConnectError(err error) error {

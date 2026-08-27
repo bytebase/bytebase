@@ -16,7 +16,7 @@ import { useAppStore } from "@/stores/app";
  * ready can use `usePermissionDataReady()` from ComponentPermissionGuard,
  * which awaits the same idempotent request.
  *
- * Auth-flow pages (SetupPage, ProfileSetupPage, OAuth2ConsentPage) render
+ * Auth-flow pages (WorkspaceSetupPage and OAuth2ConsentPage) render
  * outside any shell; they still handle their own loads because they need
  * a subset of this data before any shell would otherwise mount.
  *

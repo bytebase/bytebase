@@ -18,10 +18,10 @@ served by no ceiling.
 |---|---|---|
 | READ | 57 | served to a read-only session and above |
 | WRITE | 40 | served to a read-write session only |
-| EXCLUDED | 86 | served by no ceiling this phase ships |
+| EXCLUDED | 85 | served by no ceiling this phase ships |
 | FORBIDDEN | 34 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
-| **total** | **217** | |
+| **total** | **216** | |
 
 | Method | Class | Reason | Permission |
 |---|---|---|---|
@@ -33,7 +33,6 @@ served by no ceiling.
 | AccessGrantService/RevokeAccessGrant | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.accessGrants.revoke |
 | AccessGrantService/SearchMyAccessGrants | READ | — | bb.accessGrants.get |
 | ActuatorService/GetActuatorInfo | READ | — | — |
-| ActuatorService/SetupSample | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.projects.create |
 | AuditLogService/ExportAuditLogs | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.auditLogs.export |
 | AuditLogService/SearchAuditLogs | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.auditLogs.search |
 | AuthService/ExchangeToken | FORBIDDEN | MINTS_CREDENTIAL | — |
