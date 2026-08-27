@@ -46,6 +46,7 @@ const mocks = vi.hoisted(() => ({
   hasWorkspacePermissionV2: vi.fn(() => false),
   canCreateProject: true,
   sampleAvailable: true,
+  sampleInstances: [] as Array<{ instance: string }>,
   isSaaSMode: false,
 }));
 
@@ -75,7 +76,9 @@ vi.mock("@/stores/app", () => ({
       updateUser: typeof mocks.updateUser;
       updateWorkspace: typeof mocks.updateWorkspace;
       prepareSampleProjectInstance: typeof mocks.prepareSampleProjectInstance;
-      serverInfo: { sample: { available: boolean } };
+      serverInfo: {
+        sample: { available: boolean; instances: Array<{ instance: string }> };
+      };
       isSaaSMode: () => boolean;
     }) => unknown
   ) =>
@@ -85,7 +88,10 @@ vi.mock("@/stores/app", () => ({
       updateWorkspace: mocks.updateWorkspace,
       prepareSampleProjectInstance: mocks.prepareSampleProjectInstance,
       serverInfo: {
-        sample: { available: mocks.sampleAvailable },
+        sample: {
+          available: mocks.sampleAvailable,
+          instances: mocks.sampleInstances,
+        },
       },
       isSaaSMode: () => mocks.isSaaSMode,
     }),
@@ -191,6 +197,7 @@ beforeEach(async () => {
   mocks.canUpdateWorkspace = true;
   mocks.canCreateProject = true;
   mocks.sampleAvailable = true;
+  mocks.sampleInstances = [];
   mocks.isSaaSMode = false;
   mocks.workspacePolicy = {
     bindings: [
@@ -479,6 +486,21 @@ describe("WorkspaceSetupPage", () => {
 
   test("hides sample database setup when the target is unavailable", () => {
     mocks.sampleAvailable = false;
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
+
+    page.render();
+
+    expect(
+      page.container.querySelector(
+        "[data-testid='enable-sample-databases']"
+      )
+    ).toBeNull();
+
+    page.unmount();
+  });
+
+  test("hides sample database setup when the workspace already provisioned a sample", () => {
+    mocks.sampleInstances = [{ instance: "instances/sample" }];
     const page = renderIntoContainer(<WorkspaceSetupPage />);
 
     page.render();

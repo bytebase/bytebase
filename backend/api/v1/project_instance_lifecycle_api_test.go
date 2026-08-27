@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -92,6 +93,7 @@ func TestProjectInstanceLifecycleAPIGatesArchivedProjectDescendants(t *testing.T
 func TestProjectPurgeCleansSampleBeforeDeletingMetadata(t *testing.T) {
 	ctx, stores, projectID, instanceID, _ := setupProjectInstanceLifecycleAPITest(t)
 	manager := &sampleManagerStub{}
+	cleanupErr := errors.New("sample cleanup failed")
 	manager.projectPurge = func(ctx context.Context, workspaceID, gotProjectID string) error {
 		require.Equal(t, "default", workspaceID)
 		require.Equal(t, projectID, gotProjectID)
@@ -102,6 +104,9 @@ func TestProjectPurgeCleansSampleBeforeDeletingMetadata(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.NotNil(t, instance)
+		if cleanupErr != nil {
+			return cleanupErr
+		}
 		return nil
 	}
 	projectService := NewProjectService(stores, nil, nil, manager)
@@ -110,10 +115,21 @@ func TestProjectPurgeCleansSampleBeforeDeletingMetadata(t *testing.T) {
 	_, err := projectService.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: projectName}))
 	require.NoError(t, err)
 	_, err = projectService.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: projectName, Purge: true}))
-	require.NoError(t, err)
-	require.Equal(t, []string{projectID}, manager.projectPurgeCalls)
-
+	require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
 	project, err := stores.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:   "default",
+		ResourceID:  &projectID,
+		ShowDeleted: true,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, project)
+
+	cleanupErr = nil
+	_, err = projectService.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: projectName, Purge: true}))
+	require.NoError(t, err)
+	require.Equal(t, []string{projectID, projectID}, manager.projectPurgeCalls)
+
+	project, err = stores.GetProject(ctx, &store.FindProjectMessage{
 		Workspace:   "default",
 		ResourceID:  &projectID,
 		ShowDeleted: true,
@@ -172,7 +188,9 @@ func TestProjectPurgeRemovesSelfHostSample(t *testing.T) {
 	require.NotNil(t, setup.DeletedAt)
 	instances, err := manager.ListInstances(ctx, "default")
 	require.NoError(t, err)
-	require.Empty(t, instances)
+	require.Len(t, instances, 1)
+	require.Equal(t, common.FormatInstance(instanceID), instances[0].Name)
+	require.Nil(t, instances[0].ExpireTime)
 }
 
 func TestUndeleteProjectInstanceChecksActivationLimit(t *testing.T) {

@@ -399,9 +399,6 @@ func (m *Manager) ListInstances(ctx context.Context, workspaceID string) ([]*sam
 	if err != nil || setup == nil || setup.ActivatedAt == nil {
 		return nil, err
 	}
-	if setup.DeletedAt != nil {
-		return nil, nil
-	}
 	payload, err := decodePayload(setup)
 	if err != nil {
 		return nil, err
@@ -510,10 +507,7 @@ func (m *Manager) HandleProjectPurge(ctx context.Context, workspaceID, projectID
 		attemptCtx, cancel := context.WithTimeout(callbackCtx, cleanupAttemptDeadline)
 		defer cancel()
 		if setup.ActivatedAt == nil {
-			if err := m.reconcile(attemptCtx, setup, payload); err != nil {
-				return err
-			}
-			return tx.DeleteReservation(attemptCtx)
+			return errors.New("sample provisioning is still in progress")
 		}
 		if err := m.target.remove(attemptCtx, allocation{database: payload.DatabaseName, role: payload.RoleName}); err != nil {
 			return err

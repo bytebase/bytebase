@@ -148,6 +148,35 @@ func TestPrepareSampleProjectInstanceLifecycle(t *testing.T) {
 	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
 }
 
+func TestSampleProjectPurgeRejectsPendingReservation(t *testing.T) {
+	ctx, fixture := newSampleProjectInstanceFixture(t, time.Now)
+	payload := &storepb.SaaSSampleInstanceSetupPayload{
+		ProjectId:    fixture.projectID,
+		InstanceId:   "pending-sample",
+		Title:        "Sample Project Instance",
+		DatabaseName: "pending-database",
+		RoleName:     "pending-role",
+	}
+	encoded, err := protojson.Marshal(payload)
+	require.NoError(t, err)
+	_, created, err := fixture.store.ReserveSampleInstanceSetup(ctx, &store.SampleInstanceSetupMessage{
+		WorkspaceID: fixture.workspaceID,
+		ReplicaID:   "replica-a",
+		Payload:     encoded,
+	})
+	require.NoError(t, err)
+	require.True(t, created)
+
+	err = fixture.manager.HandleProjectPurge(ctx, fixture.workspaceID, fixture.projectID)
+	require.ErrorContains(t, err, "sample provisioning is still in progress")
+
+	setup, err := fixture.store.GetSampleInstanceSetup(ctx, fixture.workspaceID)
+	require.NoError(t, err)
+	require.NotNil(t, setup)
+	require.Nil(t, setup.ActivatedAt)
+	require.Nil(t, setup.DeletedAt)
+}
+
 func TestPrepareSampleProjectInstanceAdditionalLifecycleCoverage(t *testing.T) {
 	now := time.Date(2026, time.August, 17, 12, 0, 0, 0, time.UTC)
 	ctx, fixture := newSampleProjectInstanceFixture(t, func() time.Time { return now })

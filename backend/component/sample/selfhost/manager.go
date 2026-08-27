@@ -384,9 +384,6 @@ func (m *Manager) ListInstances(ctx context.Context, workspaceID string) ([]*sam
 		return nil, err
 	}
 	if setup != nil {
-		if setup.DeletedAt != nil {
-			return nil, nil
-		}
 		payload, err := decode(setup)
 		if err != nil {
 			return nil, err

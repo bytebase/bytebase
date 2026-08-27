@@ -51,6 +51,10 @@ export function WorkspaceSetupPage() {
   const sampleAvailable = useAppStore(
     (state) => state.serverInfo?.sample?.available ?? false
   );
+  const sampleProvisioned = useAppStore(
+    (state) => (state.serverInfo?.sample?.instances.length ?? 0) > 0
+  );
+  const canPrepareSample = sampleAvailable && !sampleProvisioned;
   const deployment = useAppStore((state) =>
     state.isSaaSMode() ? "cloud" : "self-host"
   );
@@ -94,7 +98,7 @@ export function WorkspaceSetupPage() {
   const [saving, setSaving] = useState(false);
   const shouldCreateProject = canCreateProject && !!projectTitle.trim();
   const sampleRequested =
-    shouldCreateProject && enableSampleDatabases && sampleAvailable;
+    shouldCreateProject && enableSampleDatabases && canPrepareSample;
   const canEnableSample = !!projectTitle.trim() && !!projectResourceId;
 
   const validateProjectResourceId = useCallback(
@@ -304,7 +308,7 @@ export function WorkspaceSetupPage() {
                   onValidationChange={setIsProjectResourceIdValid}
                 />
               )}
-              {sampleAvailable && (
+              {canPrepareSample && (
                 <div className="flex items-center gap-x-2 pt-1">
                   <Checkbox
                     id="enable-sample-databases"
