@@ -12700,11 +12700,9 @@ cannot describe the rules of the build before it.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | workspace | [string](#string) |  | The workspace this describes. Format: workspaces/{workspace}. Not this message&#39;s own resource name — MCPInfo is not a named resource and there is nothing to get it by. |
-| capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  | The ceiling in force for this workspace. A workspace that never configured MCP resolves to READ_WRITE.
+| capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  | The ceiling in force, resolved rather than stored: a workspace that never configured MCP resolves to READ_WRITE, so CAPABILITY_UNSPECIFIED never means unconfigured here. It means this build could not resolve a ceiling from the stored row, and every MCP connection is refused.
 
-Decide from this field and modes, in that order. CAPABILITY_UNSPECIFIED, which protojson omits, is not a ceiling: it means this build could not resolve one from the stored row, and every MCP connection is refused. A workspace that never configured MCP resolves to READ_WRITE instead, so unspecified never means unconfigured here.
-
-Otherwise the ceiling serves nothing exactly when modes carries no row for it. A number a client&#39;s own generated enum cannot name is a different case — a newer release added it — and modes still says whether it serves. |
+Otherwise modes decides: a ceiling serves nothing exactly when modes has no row for it. A number a client&#39;s own enum cannot name is a newer release&#39;s, and modes still says whether it serves. |
 | modes | [MCPCapabilityMode](#bytebase-v1-MCPCapabilityMode) | repeated | What each ceiling serves, including the one in force, so an admin can compare the choices rather than only read the current answer. |
 | methods | [MCPMethod](#bytebase-v1-MCPMethod) | repeated | Every API method some ceiling serves. A mode serves a method when the method&#39;s class is one of that mode&#39;s served_classes, which is the ceiling rule the gate evaluates. Methods no ceiling serves are absent.
 
