@@ -3188,18 +3188,6 @@
     },
     {
       "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
-      "rule": "no-native-control",
-      "token": "button",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-blue-600",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
       "rule": "no-raw-color",
       "token": "bg-red-50",
       "count": 1
@@ -3225,12 +3213,6 @@
     {
       "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
       "rule": "no-raw-color",
-      "token": "hover:bg-blue-700",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
-      "rule": "no-raw-color",
       "token": "text-blue-600",
       "count": 1
     },
@@ -3244,12 +3226,6 @@
       "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
       "rule": "no-raw-color",
       "token": "text-red-800",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-white",
       "count": 1
     },
     {

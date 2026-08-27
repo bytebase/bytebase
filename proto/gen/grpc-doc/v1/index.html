@@ -1366,6 +1366,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.CredentialProof"><span class="badge">M</span>CredentialProof</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.DeleteUserRequest"><span class="badge">M</span>DeleteUserRequest</a>
                 </li>
               
@@ -1395,6 +1399,10 @@
               
                 <li>
                   <a href="#bytebase.v1.RegenerateRecoveryCodesResponse"><span class="badge">M</span>RegenerateRecoveryCodesResponse</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.RequestReauthCodeRequest"><span class="badge">M</span>RequestReauthCodeRequest</a>
                 </li>
               
                 <li>
@@ -3343,7 +3351,7 @@ on a method classified FORBIDDEN or EXCLUDED.</p></td>
                 <td>RESETS_CREDENTIAL</td>
                 <td>2</td>
                 <td><p>Drives the out-of-band reset flow that sets or delivers the secret a
-login accepts.</p></td>
+login or a credential change accepts.</p></td>
               </tr>
             
               <tr>
@@ -15647,6 +15655,13 @@ Format: users/{email} </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>credential</td>
+                  <td><a href="#bytebase.v1.CredentialProof">CredentialProof</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -15679,6 +15694,21 @@ Format: users/{email} </p></td>
 exactly the set this version identifies, or nothing. </p></td>
                 </tr>
               
+                <tr>
+                  <td>credential</td>
+                  <td><a href="#bytebase.v1.CredentialProof">CredentialProof</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>otp_code</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Required for first-time enrollment, rejected otherwise. A *fresh* code,
+not the one EnableMFA took. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -15701,6 +15731,53 @@ exactly the set this version identifies, or nothing. </p></td>
                   <td><a href="#bytebase.v1.User">User</a></td>
                   <td></td>
                   <td><p>The user to create. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.CredentialProof">CredentialProof</h3>
+        <p>One proof that the caller currently controls a credential on the account.</p><p>Exactly one field must be set; enforced in the handler.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>current_password</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The account&#39;s current password. Refused by a factor-touching method
+while a live MFA factor exists. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>otp_code</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A live code from the account&#39;s enrolled TOTP authenticator. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>recovery_code</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A single-use MFA recovery code. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>email_code</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A one-time code from RequestReauthCode. Bytebase Cloud only, and only
+while the account has no live MFA factor. </p></td>
                 </tr>
               
             </tbody>
@@ -15753,6 +15830,14 @@ Format: users/{email} </p></td>
 bb.users.update. </p></td>
                 </tr>
               
+                <tr>
+                  <td>credential</td>
+                  <td><a href="#bytebase.v1.CredentialProof">CredentialProof</a></td>
+                  <td></td>
+                  <td><p>Required for a self-service call against a live factor, and then only
+otp_code or recovery_code. Unused on an admin-assisted call. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -15789,6 +15874,14 @@ bb.users.update. </p></td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
                   <td><p>The pending_version this enrollment was minted with. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>credential</td>
+                  <td><a href="#bytebase.v1.CredentialProof">CredentialProof</a></td>
+                  <td></td>
+                  <td><p>Proof of the *existing* factor, not the new device above. Required for a
+rotation, and for first-time enrollment on an account with a password. </p></td>
                 </tr>
               
             </tbody>
@@ -15971,6 +16064,30 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
                   <td></td>
                   <td><p>Identifies this mint; see StartMFAEnrollmentResponse.pending_version. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.RequestReauthCodeRequest">RequestReauthCodeRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: users/{email}. Must be the caller&#39;s own name. </p></td>
                 </tr>
               
             </tbody>
@@ -16375,6 +16492,17 @@ Permissions required: bb.users.updateEmail</p></td>
               </tr>
             
               <tr>
+                <td>RequestReauthCode</td>
+                <td><a href="#bytebase.v1.RequestReauthCodeRequest">RequestReauthCodeRequest</a></td>
+                <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
+                <td><p>Sends a one-time code to the caller&#39;s own email, usable as
+CredentialProof.email_code. Bytebase Cloud only, and only while the
+account has no live MFA factor. Not AuthService.SendEmailLoginCode: that
+one starts a session, this one proves an existing one.
+Permissions required: None beyond being signed in as `name`.</p></td>
+              </tr>
+            
+              <tr>
                 <td>ChangePassword</td>
                 <td><a href="#bytebase.v1.ChangePasswordRequest">ChangePasswordRequest</a></td>
                 <td><a href="#bytebase.v1.User">User</a></td>
@@ -16544,6 +16672,16 @@ Permissions required: None beyond being signed in as `name`.</p></td>
                 <td>UpdateEmail</td>
                 <td>POST</td>
                 <td>/v1/{name=users/*}:updateEmail</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>RequestReauthCode</td>
+                <td>POST</td>
+                <td>/v1/{name=users/*}:requestReauthCode</td>
                 <td>*</td>
               </tr>
               
@@ -17316,6 +17454,8 @@ The user must be a member of the target workspace.</p></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
                 <td><p>Requests a password reset email for the given email address.
 Always returns success to avoid leaking whether the email exists.
+Requires the workspace&#39;s SMTP mail delivery setting; without it the
+recovery route is an admin password reset.
 Permissions required: None</p></td>
               </tr>
             
@@ -17333,6 +17473,8 @@ Permissions required: None (validates via token)</p></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
                 <td><p>Sends a 6-digit verification code to the email for login/signup.
 Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+The signed-in counterpart is UserService.RequestReauthCode; LOGIN and
+REAUTH codes are not interchangeable.
 Permissions required: None</p></td>
               </tr>
             

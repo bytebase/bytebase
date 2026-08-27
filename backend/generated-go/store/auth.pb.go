@@ -29,6 +29,9 @@ const (
 	EmailVerificationCodePurpose_EMAIL_VERIFICATION_CODE_PURPOSE_UNSPECIFIED EmailVerificationCodePurpose = 0
 	EmailVerificationCodePurpose_LOGIN                                       EmailVerificationCodePurpose = 1
 	EmailVerificationCodePurpose_PASSWORD_RESET                              EmailVerificationCodePurpose = 2
+	// Re-authentication proof for a credential change
+	// (CredentialProof.email_code). Never accepted by Login.
+	EmailVerificationCodePurpose_REAUTH EmailVerificationCodePurpose = 3
 )
 
 // Enum value maps for EmailVerificationCodePurpose.
@@ -37,11 +40,13 @@ var (
 		0: "EMAIL_VERIFICATION_CODE_PURPOSE_UNSPECIFIED",
 		1: "LOGIN",
 		2: "PASSWORD_RESET",
+		3: "REAUTH",
 	}
 	EmailVerificationCodePurpose_value = map[string]int32{
 		"EMAIL_VERIFICATION_CODE_PURPOSE_UNSPECIFIED": 0,
 		"LOGIN":          1,
 		"PASSWORD_RESET": 2,
+		"REAUTH":         3,
 	}
 )
 
@@ -130,11 +135,13 @@ var File_store_auth_proto protoreflect.FileDescriptor
 
 const file_store_auth_proto_rawDesc = "" +
 	"\n" +
-	"\x10store/auth.proto\x12\x0ebytebase.store*n\n" +
+	"\x10store/auth.proto\x12\x0ebytebase.store*z\n" +
 	"\x1cEmailVerificationCodePurpose\x12/\n" +
 	"+EMAIL_VERIFICATION_CODE_PURPOSE_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05LOGIN\x10\x01\x12\x12\n" +
-	"\x0ePASSWORD_RESET\x10\x02*]\n" +
+	"\x0ePASSWORD_RESET\x10\x02\x12\n" +
+	"\n" +
+	"\x06REAUTH\x10\x03*]\n" +
 	"\x10LoginAttemptKind\x12\"\n" +
 	"\x1eLOGIN_ATTEMPT_KIND_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bPASSWORD\x10\x01\x12\x0e\n" +

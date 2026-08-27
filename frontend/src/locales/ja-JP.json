@@ -511,6 +511,16 @@
     "new-database-name": "新しいデータベース名",
     "reserved-db-error": "{{databaseName}} は予約された名前です"
   },
+  "credential-proof": {
+    "code-sent": "コードを送信しました。メールをご確認ください",
+    "email-label": "メール確認コード",
+    "email-me-a-code": "コードをメールで送信",
+    "email-placeholder": "6 桁のコード",
+    "factor-label": "確認コード",
+    "factor-placeholder": "認証アプリのコードまたはリカバリーコード",
+    "password-label": "現在のパスワード",
+    "resend-in": "{{seconds}} 秒後に再送信できます"
+  },
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "フォールバックルール",
@@ -3488,6 +3498,7 @@
     },
     "self": "二要素認証",
     "setup-steps": {
+      "confirm-code": "認証アプリの最新のコードを入力して完了します",
       "download-recovery-codes": {
         "keep-safe": {
           "description": "これらのコードは、2 要素認証コードを受信できない場合にアカウントにアクセスするために使用されます。これらのコードが見つからない場合は、アカウントにアクセスできなくなります。",

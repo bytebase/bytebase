@@ -86,6 +86,38 @@ func (s *Store) GetEmailVerificationCode(ctx context.Context, email string, purp
 	return msg, nil
 }
 
+// ConsumeEmailVerificationCode deletes the account's unexpired code for a
+// purpose, but only if it is the one whose hash was submitted, and reports
+// whether this call is the one that claimed it. Every condition rides on the
+// DELETE rather than on a preceding read: two requests submitting the same
+// valid code race here and exactly one observes consumed=true, so a code that
+// authorizes a credential change really is spendable once.
+//
+// RETURNING (not RowsAffected) for the same reason ConsumeOAuth2RefreshToken
+// gives. A false return means the code was wrong, already spent, or expired —
+// callers must not distinguish those to the caller.
+func (s *Store) ConsumeEmailVerificationCode(ctx context.Context, email string, purpose storepb.EmailVerificationCodePurpose, codeHash string) (bool, error) {
+	q := qb.Q().Space(`
+		DELETE FROM email_verification_code
+		WHERE email = ? AND purpose = ? AND code_hash = ? AND expires_at > NOW()
+		RETURNING email
+	`, email, purpose.String(), codeHash)
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return false, err
+	}
+
+	var consumedEmail string
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&consumedEmail); err != nil { // NOSONAR: query is parameterized via qb.Query
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, errors.Wrap(err, "failed to consume email verification code")
+	}
+	return true, nil
+}
+
 // DeleteEmailVerificationCodeIfMatch deletes the row only if it still has the given code hash.
 // Used to roll back on SMTP failure without wiping a newer code from a concurrent request.
 func (s *Store) DeleteEmailVerificationCodeIfMatch(ctx context.Context, email string, purpose storepb.EmailVerificationCodePurpose, codeHash string) error {

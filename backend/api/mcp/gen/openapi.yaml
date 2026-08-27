@@ -569,6 +569,8 @@ paths:
       description: |-
         Requests a password reset email for the given email address.
          Always returns success to avoid leaking whether the email exists.
+         Requires the workspace's SMTP mail delivery setting; without it the
+         recovery route is an admin password reset.
          Permissions required: None
       operationId: bytebase.v1.AuthService.RequestPasswordReset
       parameters:
@@ -646,6 +648,8 @@ paths:
       description: |-
         Sends a 6-digit verification code to the email for login/signup.
          Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+         The signed-in counterpart is UserService.RequestReauthCode; LOGIN and
+         REAUTH codes are not interchangeable.
          Permissions required: None
       operationId: bytebase.v1.AuthService.SendEmailLoginCode
       parameters:
@@ -7512,6 +7516,47 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.RegenerateRecoveryCodesResponse'
+  /bytebase.v1.UserService/RequestReauthCode:
+    post:
+      tags:
+        - bytebase.v1.UserService
+      summary: RequestReauthCode
+      description: |-
+        Sends a one-time code to the caller's own email, usable as
+         CredentialProof.email_code. Bytebase Cloud only, and only while the
+         account has no live MFA factor. Not AuthService.SendEmailLoginCode: that
+         one starts a session, this one proves an existing one.
+         Permissions required: None beyond being signed in as `name`.
+      operationId: bytebase.v1.UserService.RequestReauthCode
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.RequestReauthCodeRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
   /bytebase.v1.UserService/StartMFAEnrollment:
     post:
       tags:
@@ -9874,7 +9919,12 @@ components:
           title: new_password
           description: |
             string.max_bytes = 72
+        credential:
+          title: credential
+          $ref: '#/components/schemas/bytebase.v1.CredentialProof'
       title: ChangePasswordRequest
+      required:
+        - credential
       additionalProperties: false
     bytebase.v1.Changelog:
       type: object
@@ -10258,9 +10308,20 @@ components:
             The pending_version of the codes being confirmed. Confirming promotes
              exactly the set this version identifies, or nothing.
           $ref: '#/components/schemas/google.protobuf.Timestamp'
+        credential:
+          title: credential
+          $ref: '#/components/schemas/bytebase.v1.CredentialProof'
+        otpCode:
+          type: string
+          title: otp_code
+          maxLength: 64
+          description: |-
+            Required for first-time enrollment, rejected otherwise. A *fresh* code,
+             not the one EnableMFA took.
       title: ConfirmRecoveryCodesRequest
       required:
         - pendingVersion
+        - credential
       additionalProperties: false
     bytebase.v1.CreateAccessGrantRequest:
       type: object
@@ -10647,6 +10708,58 @@ components:
       title: CreateWorkloadIdentityRequest
       additionalProperties: false
       description: Request message for creating a workload identity.
+    bytebase.v1.CredentialProof:
+      type: object
+      oneOf:
+        - type: object
+          properties:
+            currentPassword:
+              type: string
+              title: current_password
+              description: |
+                The account's current password. Refused by a factor-touching method
+                 while a live MFA factor exists.
+                string.max_bytes = 72
+          title: current_password
+          required:
+            - currentPassword
+        - type: object
+          properties:
+            emailCode:
+              type: string
+              title: email_code
+              maxLength: 64
+              description: |-
+                A one-time code from RequestReauthCode. Bytebase Cloud only, and only
+                 while the account has no live MFA factor.
+          title: email_code
+          required:
+            - emailCode
+        - type: object
+          properties:
+            otpCode:
+              type: string
+              title: otp_code
+              maxLength: 64
+              description: A live code from the account's enrolled TOTP authenticator.
+          title: otp_code
+          required:
+            - otpCode
+        - type: object
+          properties:
+            recoveryCode:
+              type: string
+              title: recovery_code
+              maxLength: 64
+              description: A single-use MFA recovery code.
+          title: recovery_code
+          required:
+            - recoveryCode
+      title: CredentialProof
+      additionalProperties: false
+      description: |-
+        One proof that the caller currently controls a credential on the account.
+         Exactly one field must be set; enforced in the handler.
     bytebase.v1.DataClassificationSetting:
       type: object
       properties:
@@ -11805,6 +11918,12 @@ components:
           description: |-
             Format: users/{email}. The caller's own, or another user's with
              bb.users.update.
+        credential:
+          title: credential
+          description: |-
+            Required for a self-service call against a live factor, and then only
+             otp_code or recovery_code. Unused on an admin-assisted call.
+          $ref: '#/components/schemas/bytebase.v1.CredentialProof'
       title: DisableMFARequest
       additionalProperties: false
     bytebase.v1.EmailSetting:
@@ -11895,6 +12014,12 @@ components:
           title: pending_version
           description: The pending_version this enrollment was minted with.
           $ref: '#/components/schemas/google.protobuf.Timestamp'
+        credential:
+          title: credential
+          description: |-
+            Proof of the *existing* factor, not the new device above. Required for a
+             rotation, and for first-time enrollment on an account with a password.
+          $ref: '#/components/schemas/bytebase.v1.CredentialProof'
       title: EnableMFARequest
       required:
         - pendingVersion
@@ -17699,6 +17824,16 @@ components:
              Unset for SaaS brand-new signup (no workspace exists yet).
              Format: workspaces/{workspace}
       title: RequestPasswordResetRequest
+      additionalProperties: false
+    bytebase.v1.RequestReauthCodeRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          maxLength: 260
+          description: 'Format: users/{email}. Must be the caller''s own name.'
+      title: RequestReauthCodeRequest
       additionalProperties: false
     bytebase.v1.ResetPasswordRequest:
       type: object

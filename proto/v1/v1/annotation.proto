@@ -135,7 +135,7 @@ enum MCPDenialReason {
   // Puts a token for the caller's own principal in the response body.
   MINTS_CREDENTIAL = 1;
   // Drives the out-of-band reset flow that sets or delivers the secret a
-  // login accepts.
+  // login or a credential change accepts.
   RESETS_CREDENTIAL = 2;
   // Rewrites an account's own credentials, which would let the session log in
   // as that account.

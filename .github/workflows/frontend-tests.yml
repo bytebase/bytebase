@@ -17,17 +17,25 @@ concurrency:
 
 jobs:
   static-checks:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-        with:
-          version: '11.17.0'
       - uses: actions/setup-node@v7
         with:
           node-version: '24.18.1'
-          cache: pnpm
-          cache-dependency-path: "frontend/pnpm-lock.yaml"
+          # The runner's pnpm store persists between runs, so the Actions
+          # cache adds nothing and downloading it is slow.
+          cache: ''
+      - uses: pnpm/action-setup@v6
+        with:
+          version: '11.17.0'
+          # Fetch the pnpm binary instead of running the npm-based
+          # self-installer: the self-hosted runner's bundled npm
+          # (externals/node24) is missing lib/cli.js, so the installer dies
+          # before pnpm exists. Ordering setup-node first also keeps this off
+          # the runner's bundled toolchain.
+          standalone: true
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         working-directory: frontend
@@ -39,17 +47,25 @@ jobs:
         working-directory: frontend
 
   frontend-tests:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v6
-        with:
-          version: '11.17.0'
       - uses: actions/setup-node@v7
         with:
           node-version: '24.18.1'
-          cache: pnpm
-          cache-dependency-path: "frontend/pnpm-lock.yaml"
+          # The runner's pnpm store persists between runs, so the Actions
+          # cache adds nothing and downloading it is slow.
+          cache: ''
+      - uses: pnpm/action-setup@v6
+        with:
+          version: '11.17.0'
+          # Fetch the pnpm binary instead of running the npm-based
+          # self-installer: the self-hosted runner's bundled npm
+          # (externals/node24) is missing lib/cli.js, so the installer dies
+          # before pnpm exists. Ordering setup-node first also keeps this off
+          # the runner's bundled toolchain.
+          standalone: true
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         working-directory: frontend

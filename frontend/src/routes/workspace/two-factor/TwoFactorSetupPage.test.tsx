@@ -7,20 +7,26 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
-const expireTimestamp = () => ({
-  seconds: BigInt(Math.floor(Date.now() / 1000) + 300),
+const currentTimestamp = () => ({
+  seconds: BigInt(Math.floor(Date.now() / 1000)),
   nanos: 0,
 });
 
 const currentUser = {
   name: "users/alice@example.com",
   email: "alice@example.com",
+  mfaEnabled: false,
+  profile: { lastChangePasswordTime: currentTimestamp() },
 };
 
 const mintedEnrollment = {
   otpSecret: "new-secret",
   recoveryCodes: ["code-1", "code-2"],
-  expireTime: expireTimestamp(),
+  expireTime: {
+    seconds: BigInt(Math.floor(Date.now() / 1000) + 300),
+    nanos: 0,
+  },
+  pendingVersion: currentTimestamp(),
 };
 
 const mocks = vi.hoisted(() => ({
@@ -38,17 +44,20 @@ vi.mock("@/hooks/useAppState", () => ({
   useCurrentUser: mocks.useCurrentUser,
 }));
 
+vi.mock("@/api", () => ({
+  userServiceClientConnect: {
+    startMFAEnrollment: mocks.startMFAEnrollment,
+    enableMFA: vi.fn(),
+    confirmRecoveryCodes: vi.fn(),
+  },
+}));
+
 vi.mock("@/stores/app", () => ({
   useAppStore: (selector: (state: unknown) => unknown) =>
     selector({
       setCurrentUser: mocks.setCurrentUser,
+      serverInfo: { saas: false },
     }),
-}));
-
-vi.mock("@/api", () => ({
-  userServiceClientConnect: {
-    startMFAEnrollment: mocks.startMFAEnrollment,
-  },
 }));
 
 vi.mock("@/stores", () => ({
@@ -81,6 +90,7 @@ vi.mock("@/types/proto-es/v1/user_service_pb", async (importOriginal) => {
     StartMFAEnrollmentRequestSchema: {},
     EnableMFARequestSchema: {},
     ConfirmRecoveryCodesRequestSchema: {},
+    CredentialProofSchema: {},
   };
 });
 
@@ -114,6 +124,14 @@ vi.mock("@/components/ui/button", () => ({
 
 vi.mock("@/components/ui/otp-input", () => ({
   OtpInput: () => <div data-testid="otp-input" />,
+}));
+
+vi.mock("@/components/CredentialProofInput", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/components/CredentialProofInput")
+  >()),
+  CredentialProofInput: () => <div data-testid="credential-proof" />,
+  useCredentialProofMode: () => "password" as const,
 }));
 
 vi.mock("./RecoveryCodesView", () => ({
@@ -172,6 +190,10 @@ describe("TwoFactorSetupPage", () => {
         .querySelector('[data-testid="secret-modal"]')
         ?.getAttribute("data-secret")
     ).toBe("new-secret");
+    // An account with a password proves it before the swap.
+    expect(
+      container.querySelector('[data-testid="credential-proof"]')
+    ).not.toBeNull();
 
     unmount();
   });

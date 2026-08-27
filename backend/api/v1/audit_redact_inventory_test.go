@@ -810,6 +810,7 @@ var auditRecordedFields = []string{
 	"bytebase.v1.RequestMetadata.caller_supplied_user_agent",
 	"bytebase.v1.RequestPasswordResetRequest.email",
 	"bytebase.v1.RequestPasswordResetRequest.workspace",
+	"bytebase.v1.RequestReauthCodeRequest.name",
 	"bytebase.v1.ResetPasswordRequest.email",
 	"bytebase.v1.RetryIssueApprovalRequest.name",
 	"bytebase.v1.ReviewConfig.name",

@@ -10,6 +10,9 @@ enum EmailVerificationCodePurpose {
   EMAIL_VERIFICATION_CODE_PURPOSE_UNSPECIFIED = 0;
   LOGIN = 1;
   PASSWORD_RESET = 2;
+  // Re-authentication proof for a credential change
+  // (CredentialProof.email_code). Never accepted by Login.
+  REAUTH = 3;
 }
 
 // LoginAttemptKind names which credential's attempt limit a login_attempt row

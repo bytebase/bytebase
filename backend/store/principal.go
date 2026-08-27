@@ -331,6 +331,45 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 	return userMessages, nil
 }
 
+// ConsumeRecoveryCode removes one live recovery code from the account, and
+// reports whether this call is the one that removed it. The removal is a
+// predicate on the row rather than a read-modify-write: two requests spending
+// the same code race here and exactly one sees consumed=true, and the other
+// live fields are never rewritten from whatever the caller happened to read.
+//
+// Callers must treat consumed=false as an invalid code. Verifying against a
+// list read earlier is not enough — that list can be a spend behind.
+func (s *Store) ConsumeRecoveryCode(ctx context.Context, userID int, code string) (bool, error) {
+	// protojson's spelling for MFAConfig.recovery_codes; this JSON is read
+	// back through protojson.Unmarshal.
+	q := qb.Q().Space(`
+		UPDATE principal
+		SET mfa_config = jsonb_set(
+			mfa_config,
+			'{recoveryCodes}',
+			COALESCE((
+				SELECT jsonb_agg(remaining)
+				FROM jsonb_array_elements(mfa_config->'recoveryCodes') AS remaining
+				WHERE remaining <> to_jsonb(?::text)
+			), '[]'::jsonb))
+		WHERE id = ? AND COALESCE(mfa_config->'recoveryCodes', '[]'::jsonb) @> to_jsonb(?::text)
+		RETURNING email
+	`, code, userID, code)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to build sql")
+	}
+	var email string
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&email); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil
+		}
+		return false, errors.Wrapf(err, "failed to consume recovery code")
+	}
+	s.userEmailCache.Remove(email)
+	return true, nil
+}
+
 // SetPendingMFAState writes the three pending enrollment fields and nothing
 // else. The live factor is left exactly as the row has it rather than copied
 // forward from whatever the caller read: a mint that rewrites the whole config
@@ -342,6 +381,11 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 // abandoned enrollment left behind — otherwise confirming those codes would
 // promote a secret nobody is holding.
 func (s *Store) SetPendingMFAState(ctx context.Context, userID int, tempOtpSecret string, tempRecoveryCodes []string, createdTime time.Time) error {
+	// Truncated because UpdateUserMFAConfigIfPending matches this value as a
+	// timestamptz, and that type is microsecond-resolution: a nanosecond tail
+	// stored here would be rounded by the cast in that predicate and never
+	// match the value handed back to the caller.
+	createdTime = createdTime.Truncate(time.Microsecond)
 	codesJSON, err := json.Marshal(tempRecoveryCodes)
 	if err != nil {
 		return err
@@ -388,11 +432,19 @@ func (s *Store) UpdateUserMFAConfigIfPending(ctx context.Context, userID int, ex
 	// as timestamptz rather than text keeps the match independent of how many
 	// fractional digits the value was serialized with. A cleared config has no
 	// such key, so the NULL comparison fails and the write is refused.
+	//
+	// timestamptz is microsecond-resolution, so both sides are truncated to
+	// microseconds: the cast rounds a nanosecond tail while the bound
+	// parameter does not, and the two then disagree for any instant whose
+	// sub-microsecond remainder is large enough to round up. Go's clock is
+	// microsecond-granular on macOS and nanosecond-granular on Linux, so
+	// without this the mismatch appears only on Linux — and there, for roughly
+	// half of all enrollments.
 	q := qb.Q().Space(`
 		UPDATE principal SET mfa_config = ?
 		WHERE id = ? AND (mfa_config->>'tempOtpSecretCreatedTime')::timestamptz = ?
 		RETURNING id, deleted, email, name, password_hash, mfa_config, phone, profile, created_at
-	`, mfaConfigBytes, userID, expectedPendingVersion)
+	`, mfaConfigBytes, userID, expectedPendingVersion.Truncate(time.Microsecond))
 	sqlStr, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")

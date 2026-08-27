@@ -511,6 +511,16 @@
     "new-database-name": "Nuevo nombre de la base de datos",
     "reserved-db-error": "{{databaseName}} es un nombre reservado"
   },
+  "credential-proof": {
+    "code-sent": "Código enviado; revisa tu correo",
+    "email-label": "Código de verificación por correo",
+    "email-me-a-code": "Enviarme un código por correo",
+    "email-placeholder": "Código de 6 dígitos",
+    "factor-label": "Código de verificación",
+    "factor-placeholder": "Código del autenticador o código de recuperación",
+    "password-label": "Contraseña actual",
+    "resend-in": "Reenviar en {{seconds}}s"
+  },
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "Reglas de respaldo",
@@ -3488,6 +3498,7 @@
     },
     "self": "Autenticación de dos factores",
     "setup-steps": {
+      "confirm-code": "Introduce un código nuevo de tu autenticador para finalizar",
       "download-recovery-codes": {
         "keep-safe": {
           "description": "Estos códigos son el último recurso para acceder a su cuenta en caso de que pierda su código de autenticación de dos factores. Si no puede encontrar estos códigos, perderá el acceso a su cuenta.",

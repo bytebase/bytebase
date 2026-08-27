@@ -7,9 +7,50 @@ codes without proving they still control the credential being replaced. Closes T
 [`v1-api-audit-2026-08.md`](v1-api-audit-2026-08.md) for every path `UpdateUser` and its neighbors
 expose today: password and MFA lifecycle both move off `UpdateUser` onto their own methods, not just a
 field addition — see [Resource design](#resource-design). A stolen access token may keep answering
-requests until it expires (≤1h), but this design also stops it being *spent* on a replacement: every
-path that mints a new token from an existing one is bound to the account's credential generation. See
-G7 and Verification → Token-minting paths.
+requests until it expires (≤1h); this design stops it being *spent* on a replacement credential.
+
+> **What shipped differs from this document.** The change that landed is the
+> credential-proof surface only; several mechanisms below were cut or deferred,
+> and the text still describes them as designed.
+>
+> **Shipped.** `CredentialProof` — current password, OTP, recovery code, or an
+> emailed `RequestReauthCode` code — required by `ChangePassword`,
+> `EnableMFA`, `DisableMFA` (self-service), and `ConfirmRecoveryCodes`. Every
+> proof claims a T9 login-attempt slot, so no channel is an unbounded guessing
+> oracle. Factor-touching methods refuse the password while a live factor
+> exists. `email_code` is Bytebase Cloud only and only when no factor exists —
+> bootstrap proof for a Cloud account that has nothing else.
+>
+> **Cut.**
+>
+> - **Credential generation.** `Profile.last_credential_change_time`, the
+>   `cred_gen` JWT claim, and the consume-time checks are gone. Service
+>   accounts and SSO accounts stop being exceptions to a rule that only ever
+>   fit password users.
+> - **The enrollment stamp.** Whether a caller can prove a password is answered
+>   by whether they can supply one. With the stamp went the migration: this
+>   change needs none.
+> - **MFA revocation.** Enrolling, rotating, or disabling a factor no longer
+>   ends other sessions — MFA gates minting a session, not using one, so a new
+>   phone must not sign the owner out everywhere. Only a password change
+>   revokes, and only the account's web sessions; OAuth grants are untouched,
+>   which is a separate change with its own blast radius.
+>
+> **Deferred.** The fenced credential transaction (`store.RunUserCredentialTx`)
+> and the issuance guard are not here; they are a store-concurrency change of
+> their own. Handlers verify against a read and write through the ordinary
+> store methods, so read `Design → the fenced transaction` as intent, not as
+> shipped code.
+>
+> **Kept from the existing implementation.** Promotion stays in
+> `ConfirmRecoveryCodes` for every flow, under the `pending_version`
+> compare-and-set, so a first factor is never live with no saved recovery
+> codes and a replacement promotes the authenticator the user just scanned.
+> `EnableMFA` verifies and writes nothing. First-time enrollment therefore
+> submits a second, fresh `otp_code` at confirmation, since promotion — not
+> verification — is the moment MFA starts gating logins. `DisableMFA` asks for
+> a proof only when there is a live factor to prove, so an abandoned
+> enrollment can still be cancelled.
 
 ## Background
 

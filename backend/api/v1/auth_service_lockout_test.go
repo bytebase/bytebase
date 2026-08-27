@@ -102,7 +102,7 @@ func TestEmailCodeLockoutClaims(t *testing.T) {
 		sent, err := stores.UpsertEmailVerificationCodeIfCooldownExpired(ctx, &store.EmailVerificationCodeMessage{
 			Email:      email,
 			Purpose:    purpose,
-			CodeHash:   service.hashEmailCode(code),
+			CodeHash:   hashEmailCode(service.secret, code),
 			ExpiresAt:  time.Now().Add(emailCodeExpiry),
 			LastSentAt: time.Now(),
 		}, 0)
@@ -153,7 +153,7 @@ func TestEmailCodeLockoutClaims(t *testing.T) {
 		sent, err := stores.UpsertEmailVerificationCodeIfCooldownExpired(ctx, &store.EmailVerificationCodeMessage{
 			Email:      email,
 			Purpose:    storepb.EmailVerificationCodePurpose_LOGIN,
-			CodeHash:   service.hashEmailCode("333333"),
+			CodeHash:   hashEmailCode(service.secret, "333333"),
 			ExpiresAt:  time.Now().Add(emailCodeExpiry),
 			LastSentAt: time.Now(),
 		}, emailCodeResendCooldown)
@@ -220,7 +220,7 @@ func TestResetPasswordClearsPasswordLockout(t *testing.T) {
 	sent, err := stores.UpsertEmailVerificationCodeIfCooldownExpired(ctx, &store.EmailVerificationCodeMessage{
 		Email:      email,
 		Purpose:    storepb.EmailVerificationCodePurpose_PASSWORD_RESET,
-		CodeHash:   service.hashEmailCode(resetCode),
+		CodeHash:   hashEmailCode(service.secret, resetCode),
 		ExpiresAt:  time.Now().Add(emailCodeExpiry),
 		LastSentAt: time.Now(),
 	}, 0)

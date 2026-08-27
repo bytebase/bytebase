@@ -511,6 +511,16 @@
     "new-database-name": "New database name",
     "reserved-db-error": "{{databaseName}} is a reserved name"
   },
+  "credential-proof": {
+    "code-sent": "Code sent — check your email",
+    "email-label": "Email verification code",
+    "email-me-a-code": "Email me a code",
+    "email-placeholder": "6-digit code",
+    "factor-label": "Verification code",
+    "factor-placeholder": "Authenticator code or recovery code",
+    "password-label": "Current password",
+    "resend-in": "Resend in {{seconds}}s"
+  },
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "Fallback Rules",
@@ -3488,6 +3498,7 @@
     },
     "self": "Two-factor authentication",
     "setup-steps": {
+      "confirm-code": "Enter a fresh code from your authenticator to finish",
       "download-recovery-codes": {
         "keep-safe": {
           "description": "These codes are the last resort for accessing your account in case you lose your two-factor authentication code. If you cannot find these codes, you will lose access to your account.",
