@@ -957,7 +957,7 @@ var File_v1_workspace_service_proto protoreflect.FileDescriptor
 const file_v1_workspace_service_proto_rawDesc = "" +
 	"\n" +
 	"\x1av1/workspace_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\x1a\x15v1/auth_service.proto\x1a\x0fv1/common.proto\x1a\x13v1/iam_policy.proto\x1a\x18v1/setting_service.proto\"\x13\n" +
-	"\x11GetMCPInfoRequest\"\xab\x03\n" +
+	"\x11GetMCPInfoRequest\"\xa5\x03\n" +
 	"\aMCPInfo\x12!\n" +
 	"\tworkspace\x18\x01 \x01(\tB\x03\xe0A\x03R\tworkspace\x12G\n" +
 	"\n" +
@@ -967,7 +967,7 @@ const file_v1_workspace_service_proto_rawDesc = "" +
 	"\amethods\x18\x04 \x03(\v2\x16.bytebase.v1.MCPMethodB\x03\xe0A\x03R\amethods\x12@\n" +
 	"\aengines\x18\x05 \x03(\v2!.bytebase.v1.MCPEngineEnforcementB\x03\xe0A\x03R\aengines\x12?\n" +
 	"\x19ignore_masking_exemptions\x18\x06 \x01(\bB\x03\xe0A\x03R\x17ignoreMaskingExemptions\x129\n" +
-	"\x16data_masking_available\x18\a \x01(\bB\x03\xe0A\x03R\x14dataMaskingAvailableJ\x04\b\b\x10\t\"\x9b\x01\n" +
+	"\x16data_masking_available\x18\a \x01(\bB\x03\xe0A\x03R\x14dataMaskingAvailable\"\x9b\x01\n" +
 	"\x11MCPCapabilityMode\x12B\n" +
 	"\n" +
 	"capability\x18\x01 \x01(\x0e2\".bytebase.v1.MCPSetting.CapabilityR\n" +

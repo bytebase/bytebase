@@ -189,8 +189,6 @@ message MCPInfo {
   // mechanism that does not run. Licensing can also be set per instance, so a
   // true here is the workspace answer, not a promise about every instance.
   bool data_masking_available = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  reserved 8;
 }
 
 // MCPCapabilityMode is one ceiling and the method classes it serves.
