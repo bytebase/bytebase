@@ -31,7 +31,7 @@ message SampleInfo {
   // Instance describes one provisioned sample instance.
   message Instance {
     // The provisioned sample instance.
-    // Format: instances/{instance}
+    // Format: instances/{instance} or projects/{project}/instances/{instance}
     string instance = 1 [
       (google.api.field_behavior) = OUTPUT_ONLY,
       (google.api.resource_reference) = {type: "bytebase.com/Instance"}

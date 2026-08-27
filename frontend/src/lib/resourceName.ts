@@ -1,9 +1,15 @@
+import { isValidInstanceName } from "@/types/v1/instance";
+
 export const workspaceNamePrefix = "workspaces/";
 export const userNamePrefix = "users/";
 export const projectNamePrefix = "projects/";
 export const instanceNamePrefix = "instances/";
 export const databaseNamePrefix = "databases/";
 export const settingNamePrefix = "settings/";
+
+export function normalizeInstanceName(name: string): string {
+  return isValidInstanceName(name) ? name : `${instanceNamePrefix}${name}`;
+}
 
 export function getResourceId(name: string, prefix: string): string {
   if (!name.startsWith(prefix)) {

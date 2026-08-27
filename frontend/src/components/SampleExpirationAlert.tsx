@@ -1,8 +1,9 @@
 import { useTranslation } from "react-i18next";
 import { Alert } from "@/components/ui/alert";
+import { normalizeInstanceName } from "@/lib/resourceName";
 import { useAppStore } from "@/stores/app";
 import { getTimeForPbTimestampProtoEs } from "@/types";
-import { extractInstanceResourceName, formatAbsoluteDateTime } from "@/utils";
+import { formatAbsoluteDateTime } from "@/utils";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -15,7 +16,7 @@ export function SampleExpirationAlert({
 }: SampleExpirationAlertProps) {
   const { t } = useTranslation();
   const sample = useAppStore((state) => state.serverInfo?.sample);
-  const canonicalInstanceName = `instances/${extractInstanceResourceName(instanceName)}`;
+  const canonicalInstanceName = normalizeInstanceName(instanceName);
   const expireTime = sample?.instances.find(
     ({ instance }) => instance === canonicalInstanceName
   )?.expireTime;

@@ -491,6 +491,7 @@ func (s *DatabaseService) BatchSyncDatabases(ctx context.Context, req *connect.R
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
+	databases := make([]*store.DatabaseMessage, 0, len(req.Msg.Names))
 	for _, name := range req.Msg.Names {
 		projectID, instanceID, databaseID, err := common.GetDatabaseResourceName(name)
 		if err != nil {
@@ -506,7 +507,10 @@ func (s *DatabaseService) BatchSyncDatabases(ctx context.Context, req *connect.R
 		if err := validateDatabaseParent(projectID, instanceID, databaseID, databaseMessage, parent); err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
-		s.schemaSyncer.SyncDatabaseAsync(databaseMessage)
+		databases = append(databases, databaseMessage)
+	}
+	for _, database := range databases {
+		s.schemaSyncer.SyncDatabaseAsync(database)
 	}
 	return connect.NewResponse(&v1pb.BatchSyncDatabasesResponse{}), nil
 }

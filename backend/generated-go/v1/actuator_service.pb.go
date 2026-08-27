@@ -294,7 +294,7 @@ func (x *ActuatorInfo) GetSample() *SampleInfo {
 type SampleInfo_Instance struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The provisioned sample instance.
-	// Format: instances/{instance}
+	// Format: instances/{instance} or projects/{project}/instances/{instance}
 	Instance string `protobuf:"bytes,1,opt,name=instance,proto3" json:"instance,omitempty"`
 	// The time when the provisioned sample instance expires.
 	ExpireTime    *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=expire_time,json=expireTime,proto3" json:"expire_time,omitempty"`

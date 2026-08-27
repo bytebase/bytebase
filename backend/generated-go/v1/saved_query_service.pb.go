@@ -1074,7 +1074,7 @@ type SavedQuery struct {
 	// The connected database, which must belong to the saved query's own
 	// project. Empty when none is connected, or when the database no longer
 	// exists.
-	// Format: instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
 	Database string `protobuf:"bytes,3,opt,name=database,proto3" json:"database,omitempty"`
 	// The title of the saved query.
 	Title string `protobuf:"bytes,4,opt,name=title,proto3" json:"title,omitempty"`

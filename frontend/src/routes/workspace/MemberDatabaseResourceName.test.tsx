@@ -29,13 +29,17 @@ vi.mock("@/components/EngineIcon", () => ({
 
 vi.mock("@/utils", () => ({
   extractDatabaseResourceName: (name: string) => {
-    const parts = name.split("/");
+    const match = name.match(
+      /^(?<instance>(?:projects\/[^/]+\/)?instances\/(?<instanceName>[^/]+))\/databases\/(?<databaseName>[^/]+)$/
+    );
     return {
-      databaseName: parts[3] ?? name,
-      instanceName: parts[1] ?? "",
+      instance: match?.groups?.instance ?? "",
+      databaseName: match?.groups?.databaseName ?? name,
+      instanceName: match?.groups?.instanceName ?? "",
     };
   },
-  extractInstanceResourceName: (name: string) => name.split("/")[1] ?? name,
+  extractInstanceResourceName: (name: string) =>
+    name.match(/(?:^|\/)instances\/([^/]+)/)?.[1] ?? name,
   getInstanceResource: (database: { instanceResource?: unknown }) =>
     database.instanceResource,
 }));
@@ -102,5 +106,28 @@ describe("MemberDatabaseResourceName", () => {
     render(<MemberDatabaseResourceName />);
 
     expect(screen.getByText("*")).toBeInTheDocument();
+  });
+
+  test("looks up a project instance by its canonical parent", () => {
+    const projectResource: DatabaseResource = {
+      databaseFullName: "projects/app/instances/prod/databases/hr",
+    };
+    mocks.databasesByName = {
+      [projectResource.databaseFullName]: {
+        name: projectResource.databaseFullName,
+      },
+    };
+    mocks.instancesByName = {
+      "projects/app/instances/prod": {
+        name: "projects/app/instances/prod",
+        title: "Project production",
+        engine: "POSTGRES",
+      },
+    };
+
+    render(<MemberDatabaseResourceName resource={projectResource} />);
+
+    expect(screen.getByText("Project production")).toBeInTheDocument();
+    expect(screen.getByText("hr")).toBeInTheDocument();
   });
 });

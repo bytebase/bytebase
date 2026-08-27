@@ -60,6 +60,36 @@ func TestResolve_ProjectInAmbiguous(t *testing.T) {
 	require.Equal(t, "projects/staging", resolved.projects["instances/staging-pg/databases/app"])
 }
 
+func TestResolve_ProjectInstanceDatabaseAndFilter(t *testing.T) {
+	const (
+		projectInstance = "projects/project-a/instances/instance-a"
+		databaseName    = "projects/project-a/instances/instance-a/databases/app"
+	)
+
+	databases := []databaseEntry{{
+		Name:    databaseName,
+		Project: "projects/project-a",
+		InstanceResource: instanceResource{
+			Name:        projectInstance,
+			Engine:      "POSTGRES",
+			DataSources: []dataSource{{ID: "ds-admin-1", Type: "ADMIN"}},
+		},
+	}}
+
+	resolved, err := matchDatabases(databases, "app", "", "")
+	require.NoError(t, err)
+	require.Equal(t, databaseName, resolved.resourceName)
+
+	require.Equal(t,
+		`name.contains("app") && instance == "projects/project-a/instances/instance-a"`,
+		buildDatabaseFilter("app", projectInstance, ""),
+	)
+	require.Equal(t,
+		`name.contains("app") && instance == "instances/instance-a" && project == "projects/project-a"`,
+		buildDatabaseFilter("app", "instance-a", "project-a"),
+	)
+}
+
 // TestResolve_PolicyDenialGetsNoRoleAdvice covers the resolve door. It answers
 // 403 only when the stored ceiling is unreadable or unserved, which is exactly
 // the case where telling the agent to ask for bb.databases.list would send the

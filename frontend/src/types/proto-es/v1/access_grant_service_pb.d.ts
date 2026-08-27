@@ -79,7 +79,7 @@ export declare type AccessGrant = Message<"bytebase.v1.AccessGrant"> & {
 
   /**
    * The target databases for this access grant.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: repeated string targets = 6;
    */

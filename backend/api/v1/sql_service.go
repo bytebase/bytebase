@@ -1407,9 +1407,8 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 	}
 
 	checkDatabaseAccess := func(perm permission.Permission) error {
-		databaseFullName := common.FormatDatabase(instance.ResourceID, database.DatabaseName)
-		grantTargetName := formatDatabaseResourceName(instance, database)
-		if _, granted := grantedTargets[grantTargetName]; granted {
+		databaseFullName := formatDatabaseResourceName(instance, database)
+		if _, granted := grantedTargets[databaseFullName]; granted {
 			return nil
 		}
 		attributes := map[string]any{
@@ -1549,7 +1548,10 @@ func (s *SQLService) accessCheckWithGrantedTargets(
 
 		var deniedResources []string
 		for column := range span.SourceColumns {
-			columnDatabaseFullName := common.FormatDatabase(instance.ResourceID, column.Database)
+			columnDatabaseFullName := formatDatabaseResourceName(instance, &store.DatabaseMessage{
+				InstanceID:   instance.ResourceID,
+				DatabaseName: column.Database,
+			})
 			grantTargetName := formatDatabaseResourceName(instance, &store.DatabaseMessage{
 				ProjectID:    database.ProjectID,
 				InstanceID:   instance.ResourceID,
@@ -1653,7 +1655,10 @@ func (s *SQLService) authorizeWriteTargets(
 
 	var deniedResources []string
 	for _, t := range targets {
-		databaseFullName := common.FormatDatabase(instance.ResourceID, t.database)
+		databaseFullName := formatDatabaseResourceName(instance, &store.DatabaseMessage{
+			InstanceID:   instance.ResourceID,
+			DatabaseName: t.database,
+		})
 		grantTargetName := formatDatabaseResourceName(instance, &store.DatabaseMessage{
 			ProjectID:    database.ProjectID,
 			InstanceID:   instance.ResourceID,

@@ -1017,7 +1017,7 @@ func (*Plan_Spec_ChangeDatabaseConfig) isPlan_Spec_Config() {}
 type Plan_CreateDatabaseConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The resource name of the instance on which the database is created.
-	// Format: instances/{instance}
+	// Format: instances/{instance} or projects/{project}/instances/{instance}
 	Target string `protobuf:"bytes,1,opt,name=target,proto3" json:"target,omitempty"`
 	// The name of the database to create.
 	Database string `protobuf:"bytes,2,opt,name=database,proto3" json:"database,omitempty"`
@@ -1317,7 +1317,7 @@ type PlanCheckRun_Result struct {
 	Content string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
 	Code    int32                  `protobuf:"varint,4,opt,name=code,proto3" json:"code,omitempty"`
 	// Target identification for consolidated results.
-	// Format: instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
 	Target string                   `protobuf:"bytes,7,opt,name=target,proto3" json:"target,omitempty"`
 	Type   PlanCheckRun_Result_Type `protobuf:"varint,8,opt,name=type,proto3,enum=bytebase.v1.PlanCheckRun_Result_Type" json:"type,omitempty"`
 	// Types that are valid to be assigned to Report:

@@ -193,6 +193,22 @@ func TestProjectPurgeRemovesSelfHostSample(t *testing.T) {
 	require.Nil(t, instances[0].ExpireTime)
 }
 
+func TestBatchSyncDatabasesValidatesAllTargetsBeforeScheduling(t *testing.T) {
+	ctx, stores, projectID, instanceID, databaseName := setupProjectInstanceLifecycleAPITest(t)
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
+	require.NoError(t, err)
+	service := NewDatabaseService(stores, nil, nil, nil, licenseService)
+
+	_, err = service.BatchSyncDatabases(ctx, connect.NewRequest(&v1pb.BatchSyncDatabasesRequest{
+		Parent: common.FormatProjectInstance(projectID, instanceID),
+		Names: []string{
+			common.FormatProjectDatabase(projectID, instanceID, databaseName),
+			"invalid",
+		},
+	}))
+	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+}
+
 func TestUndeleteProjectInstanceChecksActivationLimit(t *testing.T) {
 	ctx, stores, projectID, instanceID, _ := setupProjectInstanceLifecycleAPITest(t)
 	licenseService := newInstanceServiceTestLicenseService(t, stores)

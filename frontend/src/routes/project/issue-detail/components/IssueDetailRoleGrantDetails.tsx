@@ -186,12 +186,11 @@ function IssueDetailDatabaseResourceTable({
       databaseResourceList.map((resource) => {
         const database =
           databasesByName[resource.databaseFullName] ?? unknownDatabase();
-        const { databaseName, instanceName } = extractDatabaseResourceName(
+        const { databaseName, instance } = extractDatabaseResourceName(
           resource.databaseFullName
         );
-        const instance = instanceName
-          ? instancesByName[`instances/${instanceName}`]
-          : database.instanceResource;
+        const instanceResource =
+          instancesByName[instance] ?? database.instanceResource;
         const environmentName =
           database.effectiveEnvironment ??
           database.instanceResource?.environment ??
@@ -202,7 +201,7 @@ function IssueDetailDatabaseResourceTable({
         return {
           databaseName,
           environmentTitle: environment.title,
-          instanceTitle: instance?.title ?? "",
+          instanceTitle: instanceResource?.title ?? "",
           resource,
         };
       }),

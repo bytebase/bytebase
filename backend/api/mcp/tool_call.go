@@ -39,10 +39,12 @@ const callAPIDescription = `Execute a Bytebase API endpoint. **Use search_api fi
 | operationId | Yes | e.g., "SQLService/Query" |
 | body | No | JSON request body |
 
-**Resource names:** projects/my-project, instances/prod/databases/main
+**Resource names:** Preserve the exact canonical name returned by ListDatabases:
+instances/prod/databases/main for a workspace instance, or
+projects/my-project/instances/prod/databases/main for a project instance.
 
 **Example:**
-call_api(operationId="SQLService/Query", body={"name": "instances/i/databases/db", "statement": "SELECT 1"})`
+call_api(operationId="SQLService/Query", body={"name": "projects/my-project/instances/i/databases/db", "statement": "SELECT 1"})`
 
 func (s *Server) registerCallTool() {
 	mcp.AddTool(s.mcpServer, &mcp.Tool{

@@ -403,7 +403,7 @@ func (m *Manager) ListInstances(ctx context.Context, workspaceID string) ([]*sam
 	if err != nil {
 		return nil, err
 	}
-	instance := &sample.Instance{Name: common.FormatInstance(payload.InstanceId)}
+	instance := &sample.Instance{Name: common.FormatProjectInstance(payload.ProjectId, payload.InstanceId)}
 	if setup.DeletedAt == nil {
 		instance.ExpireTime = setup.ExpiresAt
 	}

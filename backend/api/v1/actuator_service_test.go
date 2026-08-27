@@ -163,7 +163,7 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	require.NotEmpty(t, privateResponse.Msg.DefaultProject)
 	require.True(t, privateResponse.Msg.Sample.Available)
 	require.Len(t, privateResponse.Msg.Sample.Instances, 1)
-	require.Equal(t, common.FormatInstance("sample-instance"), privateResponse.Msg.Sample.Instances[0].Instance)
+	require.Equal(t, common.FormatProjectInstance(projectID, "sample-instance"), privateResponse.Msg.Sample.Instances[0].Instance)
 	require.True(t, expiresAt.Equal(privateResponse.Msg.Sample.Instances[0].ExpireTime.AsTime()))
 
 	cleanupNow := expiresAt.Add(time.Second)
@@ -182,6 +182,6 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, deletedResponse.Msg.Sample.Available)
 	require.Len(t, deletedResponse.Msg.Sample.Instances, 1)
-	require.Equal(t, common.FormatInstance("sample-instance"), deletedResponse.Msg.Sample.Instances[0].Instance)
+	require.Equal(t, common.FormatProjectInstance(projectID, "sample-instance"), deletedResponse.Msg.Sample.Instances[0].Instance)
 	require.Nil(t, deletedResponse.Msg.Sample.Instances[0].ExpireTime)
 }

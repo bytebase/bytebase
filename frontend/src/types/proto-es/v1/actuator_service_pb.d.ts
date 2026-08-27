@@ -60,7 +60,7 @@ export declare const SampleInfoSchema: GenMessage<SampleInfo>;
 export declare type SampleInfo_Instance = Message<"bytebase.v1.SampleInfo.Instance"> & {
   /**
    * The provisioned sample instance.
-   * Format: instances/{instance}
+   * Format: instances/{instance} or projects/{project}/instances/{instance}
    *
    * @generated from field: string instance = 1;
    */

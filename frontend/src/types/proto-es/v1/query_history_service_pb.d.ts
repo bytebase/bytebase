@@ -215,7 +215,7 @@ export declare type QueryHistory = Message<"bytebase.v1.QueryHistory"> & {
 
   /**
    * The database name to execute the query.
-   * Format: instances/{instance}/databases/{databaseName}
+   * Format: instances/{instance}/databases/{databaseName} or projects/{project}/instances/{instance}/databases/{databaseName}
    *
    * @generated from field: string database = 2;
    */
