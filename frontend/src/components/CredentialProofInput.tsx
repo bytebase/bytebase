@@ -84,8 +84,11 @@ export function buildCredentialProof(
     case "factor":
       return factorProofOf(trimmed);
     case "password":
+      // Verbatim: a password may legitimately begin or end with whitespace,
+      // and login sends it unaltered, so trimming here would reject the
+      // correct password on exactly the accounts that use one.
       return create(CredentialProofSchema, {
-        proof: { case: "currentPassword", value: trimmed },
+        proof: { case: "currentPassword", value },
       });
     case "email":
       return create(CredentialProofSchema, {

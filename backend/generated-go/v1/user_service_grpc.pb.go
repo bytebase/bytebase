@@ -77,20 +77,15 @@ type UserServiceClient interface {
 	// Permissions required: bb.users.updateEmail
 	UpdateEmail(ctx context.Context, in *UpdateEmailRequest, opts ...grpc.CallOption) (*User, error)
 	// Sends a one-time code to the caller's own registered email, usable as
-	// CredentialProof.email_code. The one channel that works when neither a
-	// usable password nor an existing MFA factor exists yet, which on Bytebase
-	// Cloud is every account without MFA. Cloud only — self-hosted keeps an
-	// administrator who can reset a password, which is the recovery route
-	// there. name must be the caller's own.
+	// CredentialProof.email_code. The only proof available when the account has
+	// neither a usable password nor an MFA factor, which on Bytebase Cloud is
+	// every account without MFA. Cloud only, and refused once a live factor
+	// exists — prove that with the factor, not with mail.
 	//
-	// Not to be confused with AuthService.SendEmailLoginCode, the other sender
-	// of a 6-digit code. That one gets you *into* an account and is therefore
-	// unauthenticated; this one proves you are *already* the account holder, so
-	// it requires a session and refuses any name but the caller's. The codes are
-	// stored and consumed per purpose (REAUTH here, LOGIN there) and are not
-	// interchangeable: a login code cannot authorize a credential change, and a
-	// reauth code cannot complete a login. Requesting one also refuses when a
-	// live MFA factor exists — prove that with the factor, not with mail.
+	// Not AuthService.SendEmailLoginCode: that one gets a caller *into* an
+	// account and is unauthenticated, this one proves they already hold it.
+	// Codes are stored and spent per purpose (REAUTH here, LOGIN there) and are
+	// not interchangeable in either direction.
 	// Permissions required: None beyond being signed in as `name`.
 	RequestReauthCode(ctx context.Context, in *RequestReauthCodeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Changes the caller's own password. An administrator resetting someone
@@ -338,20 +333,15 @@ type UserServiceServer interface {
 	// Permissions required: bb.users.updateEmail
 	UpdateEmail(context.Context, *UpdateEmailRequest) (*User, error)
 	// Sends a one-time code to the caller's own registered email, usable as
-	// CredentialProof.email_code. The one channel that works when neither a
-	// usable password nor an existing MFA factor exists yet, which on Bytebase
-	// Cloud is every account without MFA. Cloud only — self-hosted keeps an
-	// administrator who can reset a password, which is the recovery route
-	// there. name must be the caller's own.
+	// CredentialProof.email_code. The only proof available when the account has
+	// neither a usable password nor an MFA factor, which on Bytebase Cloud is
+	// every account without MFA. Cloud only, and refused once a live factor
+	// exists — prove that with the factor, not with mail.
 	//
-	// Not to be confused with AuthService.SendEmailLoginCode, the other sender
-	// of a 6-digit code. That one gets you *into* an account and is therefore
-	// unauthenticated; this one proves you are *already* the account holder, so
-	// it requires a session and refuses any name but the caller's. The codes are
-	// stored and consumed per purpose (REAUTH here, LOGIN there) and are not
-	// interchangeable: a login code cannot authorize a credential change, and a
-	// reauth code cannot complete a login. Requesting one also refuses when a
-	// live MFA factor exists — prove that with the factor, not with mail.
+	// Not AuthService.SendEmailLoginCode: that one gets a caller *into* an
+	// account and is unauthenticated, this one proves they already hold it.
+	// Codes are stored and spent per purpose (REAUTH here, LOGIN there) and are
+	// not interchangeable in either direction.
 	// Permissions required: None beyond being signed in as `name`.
 	RequestReauthCode(context.Context, *RequestReauthCodeRequest) (*emptypb.Empty, error)
 	// Changes the caller's own password. An administrator resetting someone

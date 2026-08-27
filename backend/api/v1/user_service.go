@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"crypto/subtle"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -1172,18 +1171,17 @@ func (s *UserService) verifyCredentialProof(ctx context.Context, user *store.Use
 		if err := s.checkEmailCodeEligible(user); err != nil {
 			return err
 		}
-		// A REAUTH code is single-use: accepting it deletes it, so an
-		// intercepted one cannot be replayed.
-		row, err := s.store.GetEmailVerificationCode(ctx, user.Email, storepb.EmailVerificationCodePurpose_REAUTH)
+		// A REAUTH code is single-use, and the spend is the same statement
+		// that matches it: validating a row that was read first would let two
+		// concurrent requests both accept one code, each deleting a row the
+		// other had already used to authorize a credential change.
+		consumed, err := s.store.ConsumeEmailVerificationCode(ctx, user.Email, storepb.EmailVerificationCodePurpose_REAUTH, hashEmailCode(s.secret, proof.EmailCode))
 		if err != nil {
 			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to verify code"))
 		}
-		if row == nil || time.Now().After(row.ExpiresAt) ||
-			subtle.ConstantTimeCompare([]byte(hashEmailCode(s.secret, proof.EmailCode)), []byte(row.CodeHash)) != 1 {
+		if !consumed {
+			// Wrong, already spent, or expired — indistinguishable on purpose.
 			return connect.NewError(connect.CodeUnauthenticated, errors.Errorf(errMsgInvalidEmailCode))
-		}
-		if err := s.store.DeleteEmailVerificationCodeIfMatch(ctx, user.Email, storepb.EmailVerificationCodePurpose_REAUTH, row.CodeHash); err != nil {
-			return connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to consume code"))
 		}
 		return nil
 	default:

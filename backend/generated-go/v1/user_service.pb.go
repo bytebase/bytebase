@@ -668,12 +668,9 @@ type isCredentialProof_Proof interface {
 }
 
 type CredentialProof_CurrentPassword struct {
-	// The account's current password. Accepted for ChangePassword always, and
-	// for a factor-touching method (DisableMFA, or EnableMFA /
-	// ConfirmRecoveryCodes when replacing an existing factor) ONLY when the
-	// account has no live MFA — ResetPassword mints a password from mailbox
-	// possession alone, so accepting it against live MFA would let a stolen
-	// session plus mailbox strip the factor.
+	// The account's current password. Always accepted for ChangePassword;
+	// accepted by a factor-touching method only when no live MFA exists,
+	// since ResetPassword can mint one from the mailbox alone.
 	CurrentPassword string `protobuf:"bytes,1,opt,name=current_password,json=currentPassword,proto3,oneof"`
 }
 
@@ -688,12 +685,9 @@ type CredentialProof_RecoveryCode struct {
 }
 
 type CredentialProof_EmailCode struct {
-	// A one-time code from RequestReauthCode. Bytebase Cloud only, and valid
-	// only when the account has no live MFA factor: bootstrap proof for a
-	// Cloud account with nothing else yet (Cloud accounts never have a
-	// caller-chosen password), never a substitute for a factor that already
-	// exists. The handler checks this eligibility itself; it is not just a
-	// frontend choice of which field to show.
+	// A one-time code from RequestReauthCode. Bytebase Cloud only, and only
+	// when no live MFA factor exists — bootstrap proof for an account with
+	// nothing else. Enforced server-side, not just by the console.
 	EmailCode string `protobuf:"bytes,4,opt,name=email_code,json=emailCode,proto3,oneof"`
 }
 
@@ -707,10 +701,9 @@ func (*CredentialProof_EmailCode) isCredentialProof_Proof() {}
 
 type RequestReauthCodeRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Format: users/{email}. Must be the caller's own name — the code is
-	// delivered to that account's own registered email, so requesting one for
-	// someone else would only prove the target can read their own mail, not
-	// anything about the caller.
+	// Format: users/{email}. Must be the caller's own name: the code goes to
+	// that account's registered email, so requesting one for anyone else would
+	// prove nothing about the caller.
 	Name          string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -943,15 +936,11 @@ type EnableMFARequest struct {
 	OtpCode string `protobuf:"bytes,2,opt,name=otp_code,json=otpCode,proto3" json:"otp_code,omitempty"`
 	// The pending_version this enrollment was minted with.
 	PendingVersion *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=pending_version,json=pendingVersion,proto3" json:"pending_version,omitempty"`
-	// Proof for the *existing* factor being replaced, if any. Not the code
-	// above — that proves the new enrollment, this proves the caller still owns
-	// the account before the swap. Required whenever a reusable proof exists: a
-	// rotation, or a first-time enrollment where the account has a password.
-	// Must be omitted for first-time enrollment on a Cloud account (which has
-	// no caller-chosen password) — email_code is its only option, and that
-	// single-use code is checked once, at ConfirmRecoveryCodes, where the
-	// mutation actually happens. A self-hosted account with no password cannot
-	// enroll until an admin resets its password.
+	// Proof for the *existing* factor being replaced, if any — not the code
+	// above, which proves the new enrollment. Required for a rotation, and for
+	// a first-time enrollment on an account that has a password. Omit it for
+	// first-time enrollment on a Cloud account: email_code is its only option
+	// and is spent once, at ConfirmRecoveryCodes.
 	Credential    *CredentialProof `protobuf:"bytes,4,opt,name=credential,proto3" json:"credential,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1020,11 +1009,9 @@ type DisableMFARequest struct {
 	// Format: users/{email}. The caller's own, or another user's with
 	// bb.users.update.
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
-	// Required only when name is the caller's own and a live factor exists;
-	// unset and unchecked on an admin-assisted call, and unnecessary when there
-	// is no factor to prove (cancelling an abandoned enrollment). The handler
-	// accepts only otp_code or recovery_code here — never current_password or
-	// email_code — since turning a factor off must be proven with the factor.
+	// Required only for a self-service call against a live factor, and then
+	// only otp_code or recovery_code: turning a factor off is proven with the
+	// factor. Unused on an admin-assisted call.
 	Credential    *CredentialProof `protobuf:"bytes,2,opt,name=credential,proto3" json:"credential,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1181,12 +1168,9 @@ type ConfirmRecoveryCodesRequest struct {
 	// exactly the set this version identifies, or nothing.
 	PendingVersion *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=pending_version,json=pendingVersion,proto3" json:"pending_version,omitempty"`
 	Credential     *CredentialProof       `protobuf:"bytes,3,opt,name=credential,proto3" json:"credential,omitempty"`
-	// Required only for first-time MFA enrollment (the account has no live
-	// OtpSecret yet) — rejected if set otherwise. A *fresh* code, not the one
-	// already submitted to EnableMFA: TOTP codes are only valid for one ~30s
-	// period and the recovery-code download screen routinely takes longer.
-	// Verified against the same pending TempOtpSecret EnableMFA already
-	// validated, and promoted alongside the recovery codes in this call.
+	// Required for first-time enrollment, rejected otherwise. A *fresh* code,
+	// not the one EnableMFA took: promotion happens here, and the download
+	// screen in between outlives one ~30s TOTP window.
 	OtpCode       string `protobuf:"bytes,4,opt,name=otp_code,json=otpCode,proto3" json:"otp_code,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

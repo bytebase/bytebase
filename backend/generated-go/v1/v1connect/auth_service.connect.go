@@ -98,16 +98,14 @@ type AuthServiceClient interface {
 	// Resets the user's password using a password reset token from email.
 	// Permissions required: None (validates via token)
 	ResetPassword(context.Context, *connect.Request[v1.ResetPasswordRequest]) (*connect.Response[emptypb.Empty], error)
-	// Sends a 6-digit verification code to the email for login/signup — the
-	// pre-authentication channel, so it takes an address rather than a user and
-	// never reveals whether that address has an account (sign-up happens at
-	// verify). Gated on the workspace's allow_email_code_signin. Enforces a
-	// 60-sec resend cooldown.
+	// Sends a 6-digit verification code to the email for login/signup. The
+	// pre-authentication channel: it takes an address rather than a user and
+	// never reveals whether that address has an account. Gated on the
+	// workspace's allow_email_code_signin, with a 60-sec resend cooldown.
 	//
 	// The signed-in counterpart is UserService.RequestReauthCode, which proves
-	// an existing session's holder rather than starting one. Codes are stored
-	// and consumed per purpose (LOGIN here, REAUTH there) and are not
-	// interchangeable in either direction.
+	// an existing session's holder rather than starting one; the two purposes
+	// (LOGIN here, REAUTH there) are not interchangeable.
 	// Permissions required: None
 	SendEmailLoginCode(context.Context, *connect.Request[v1.SendEmailLoginCodeRequest]) (*connect.Response[emptypb.Empty], error)
 }
@@ -286,16 +284,14 @@ type AuthServiceHandler interface {
 	// Resets the user's password using a password reset token from email.
 	// Permissions required: None (validates via token)
 	ResetPassword(context.Context, *connect.Request[v1.ResetPasswordRequest]) (*connect.Response[emptypb.Empty], error)
-	// Sends a 6-digit verification code to the email for login/signup — the
-	// pre-authentication channel, so it takes an address rather than a user and
-	// never reveals whether that address has an account (sign-up happens at
-	// verify). Gated on the workspace's allow_email_code_signin. Enforces a
-	// 60-sec resend cooldown.
+	// Sends a 6-digit verification code to the email for login/signup. The
+	// pre-authentication channel: it takes an address rather than a user and
+	// never reveals whether that address has an account. Gated on the
+	// workspace's allow_email_code_signin, with a 60-sec resend cooldown.
 	//
 	// The signed-in counterpart is UserService.RequestReauthCode, which proves
-	// an existing session's holder rather than starting one. Codes are stored
-	// and consumed per purpose (LOGIN here, REAUTH there) and are not
-	// interchangeable in either direction.
+	// an existing session's holder rather than starting one; the two purposes
+	// (LOGIN here, REAUTH there) are not interchangeable.
 	// Permissions required: None
 	SendEmailLoginCode(context.Context, *connect.Request[v1.SendEmailLoginCodeRequest]) (*connect.Response[emptypb.Empty], error)
 }
