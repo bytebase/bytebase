@@ -511,6 +511,16 @@
     "new-database-name": "Tên cơ sở dữ liệu mới",
     "reserved-db-error": "{{databaseName}} là một tên dành riêng"
   },
+  "credential-proof": {
+    "code-sent": "Đã gửi mã — kiểm tra email của bạn",
+    "email-label": "Mã xác minh qua email",
+    "email-me-a-code": "Gửi mã qua email",
+    "email-placeholder": "Mã 6 chữ số",
+    "factor-label": "Mã xác minh",
+    "factor-placeholder": "Mã ứng dụng xác thực hoặc mã khôi phục",
+    "password-label": "Mật khẩu hiện tại",
+    "resend-in": "Gửi lại sau {{seconds}} giây"
+  },
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "Quy tắc dự phòng",
@@ -3488,6 +3498,7 @@
     },
     "self": "Xác thực hai yếu tố",
     "setup-steps": {
+      "confirm-code": "Nhập mã mới từ ứng dụng xác thực để hoàn tất",
       "download-recovery-codes": {
         "keep-safe": {
           "description": "Các mã này là phương sách cuối cùng để truy cập tài khoản của bạn trong trường hợp bạn mất mã xác thực hai yếu tố. Nếu bạn không thể tìm thấy các mã này, bạn sẽ mất quyền truy cập vào tài khoản của mình.",

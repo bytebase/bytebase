@@ -313,6 +313,7 @@
     - [ChangePasswordRequest](#bytebase-v1-ChangePasswordRequest)
     - [ConfirmRecoveryCodesRequest](#bytebase-v1-ConfirmRecoveryCodesRequest)
     - [CreateUserRequest](#bytebase-v1-CreateUserRequest)
+    - [CredentialProof](#bytebase-v1-CredentialProof)
     - [DeleteUserRequest](#bytebase-v1-DeleteUserRequest)
     - [DisableMFARequest](#bytebase-v1-DisableMFARequest)
     - [EnableMFARequest](#bytebase-v1-EnableMFARequest)
@@ -321,6 +322,7 @@
     - [ListUsersResponse](#bytebase-v1-ListUsersResponse)
     - [RegenerateRecoveryCodesRequest](#bytebase-v1-RegenerateRecoveryCodesRequest)
     - [RegenerateRecoveryCodesResponse](#bytebase-v1-RegenerateRecoveryCodesResponse)
+    - [RequestReauthCodeRequest](#bytebase-v1-RequestReauthCodeRequest)
     - [StartMFAEnrollmentRequest](#bytebase-v1-StartMFAEnrollmentRequest)
     - [StartMFAEnrollmentResponse](#bytebase-v1-StartMFAEnrollmentResponse)
     - [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest)
@@ -870,7 +872,7 @@ already keeps for the wording.
 | ---- | ------ | ----------- |
 | MCP_DENIAL_REASON_UNSPECIFIED | 0 | No reason recorded. The method is still denied — mcp_method_class is what enforces — and the denial falls back to generic wording. CI rejects this on a method classified FORBIDDEN or EXCLUDED. |
 | MINTS_CREDENTIAL | 1 | Puts a token for the caller&#39;s own principal in the response body. |
-| RESETS_CREDENTIAL | 2 | Drives the out-of-band reset flow that sets or delivers the secret a login accepts. |
+| RESETS_CREDENTIAL | 2 | Drives the out-of-band reset flow that sets or delivers the secret a login or a credential change accepts. |
 | TAKES_OVER_ACCOUNT | 3 | Rewrites an account&#39;s own credentials, which would let the session log in as that account. |
 | ENDS_SESSION | 4 | Destroys the human&#39;s own login session. |
 | ENDS_MEMBERSHIP | 5 | Destroys the caller&#39;s own workspace membership and mints a plain workspace token on the way out. |
@@ -5446,6 +5448,7 @@ SettingService manages workspace-level settings and configurations.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: users/{email}. Must be the caller&#39;s own name. |
 | new_password | [string](#string) |  |  |
+| credential | [CredentialProof](#bytebase-v1-CredentialProof) |  |  |
 
 
 
@@ -5462,6 +5465,8 @@ SettingService manages workspace-level settings and configurations.
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: users/{email}. Must be the caller&#39;s own name. |
 | pending_version | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The pending_version of the codes being confirmed. Confirming promotes exactly the set this version identifies, or nothing. |
+| credential | [CredentialProof](#bytebase-v1-CredentialProof) |  |  |
+| otp_code | [string](#string) |  | Required only for first-time MFA enrollment (the account has no live OtpSecret yet) — rejected if set otherwise. A *fresh* code, not the one already submitted to EnableMFA: TOTP codes are only valid for one ~30s period and the recovery-code download screen routinely takes longer. Verified against the same pending TempOtpSecret EnableMFA already validated, and promoted alongside the recovery codes in this call. |
 
 
 
@@ -5477,6 +5482,25 @@ SettingService manages workspace-level settings and configurations.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | user | [User](#bytebase-v1-User) |  | The user to create. |
+
+
+
+
+
+
+<a name="bytebase-v1-CredentialProof"></a>
+
+### CredentialProof
+One proof that the caller currently controls a credential on the account.
+Exactly one field must be set; enforced in the handler.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| current_password | [string](#string) |  | The account&#39;s current password. Accepted for ChangePassword always, and for a factor-touching method (DisableMFA, or EnableMFA / ConfirmRecoveryCodes when replacing an existing factor) ONLY when the account has no live MFA — ResetPassword mints a password from mailbox possession alone, so accepting it against live MFA would let a stolen session plus mailbox strip the factor. |
+| otp_code | [string](#string) |  | A live code from the account&#39;s enrolled TOTP authenticator. |
+| recovery_code | [string](#string) |  | A single-use MFA recovery code. |
+| email_code | [string](#string) |  | A one-time code from RequestReauthCode. Bytebase Cloud only, and valid only when the account has no live MFA factor: bootstrap proof for a Cloud account with nothing else yet (Cloud accounts never have a caller-chosen password), never a substitute for a factor that already exists. The handler checks this eligibility itself; it is not just a frontend choice of which field to show. |
 
 
 
@@ -5507,6 +5531,7 @@ SettingService manages workspace-level settings and configurations.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Format: users/{email}. The caller&#39;s own, or another user&#39;s with bb.users.update. |
+| credential | [CredentialProof](#bytebase-v1-CredentialProof) |  | Required only when name is the caller&#39;s own and a live factor exists; unset and unchecked on an admin-assisted call, and unnecessary when there is no factor to prove (cancelling an abandoned enrollment). The handler accepts only otp_code or recovery_code here — never current_password or email_code — since turning a factor off must be proven with the factor. |
 
 
 
@@ -5524,6 +5549,7 @@ SettingService manages workspace-level settings and configurations.
 | name | [string](#string) |  | Format: users/{email}. Must be the caller&#39;s own name. |
 | otp_code | [string](#string) |  | A code from the authenticator the pending secret was just added to. |
 | pending_version | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The pending_version this enrollment was minted with. |
+| credential | [CredentialProof](#bytebase-v1-CredentialProof) |  | Proof for the *existing* factor being replaced, if any. Not the code above — that proves the new enrollment, this proves the caller still owns the account before the swap. Required whenever a reusable proof exists: a rotation, or a first-time enrollment where the account has a password. Must be omitted for first-time enrollment on a Cloud account (which has no caller-chosen password) — email_code is its only option, and that single-use code is checked once, at ConfirmRecoveryCodes, where the mutation actually happens. A self-hosted account with no password cannot enroll until an admin resets its password. |
 
 
 
@@ -5610,6 +5636,21 @@ For example: name == &#34;ed&#34; name.contains(&#34;ed&#34;) email == &#34;ed@b
 | ----- | ---- | ----- | ----------- |
 | recovery_codes | [string](#string) | repeated | The pending recovery codes, shown once for the caller to save. |
 | pending_version | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Identifies this mint; see StartMFAEnrollmentResponse.pending_version. |
+
+
+
+
+
+
+<a name="bytebase-v1-RequestReauthCodeRequest"></a>
+
+### RequestReauthCodeRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: users/{email}. Must be the caller&#39;s own name — the code is delivered to that account&#39;s own registered email, so requesting one for someone else would only prove the target can read their own mail, not anything about the caller. |
 
 
 
@@ -5762,6 +5803,9 @@ UserService manages user accounts and authentication.
 | DeleteUser | [DeleteUserRequest](#bytebase-v1-DeleteUserRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted. Permissions required: bb.users.delete |
 | UndeleteUser | [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest) | [User](#bytebase-v1-User) | Restores a deleted user. Permissions required: bb.users.undelete |
 | UpdateEmail | [UpdateEmailRequest](#bytebase-v1-UpdateEmailRequest) | [User](#bytebase-v1-User) | Updates a user&#39;s email address. Permissions required: bb.users.updateEmail |
+| RequestReauthCode | [RequestReauthCodeRequest](#bytebase-v1-RequestReauthCodeRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sends a one-time code to the caller&#39;s own registered email, usable as CredentialProof.email_code. The one channel that works when neither a usable password nor an existing MFA factor exists yet, which on Bytebase Cloud is every account without MFA. Cloud only — self-hosted keeps an administrator who can reset a password, which is the recovery route there. name must be the caller&#39;s own.
+
+Not to be confused with AuthService.SendEmailLoginCode, the other sender of a 6-digit code. That one gets you *into* an account and is therefore unauthenticated; this one proves you are *already* the account holder, so it requires a session and refuses any name but the caller&#39;s. The codes are stored and consumed per purpose (REAUTH here, LOGIN there) and are not interchangeable: a login code cannot authorize a credential change, and a reauth code cannot complete a login. Requesting one also refuses when a live MFA factor exists — prove that with the factor, not with mail. Permissions required: None beyond being signed in as `name`. |
 | ChangePassword | [ChangePasswordRequest](#bytebase-v1-ChangePasswordRequest) | [User](#bytebase-v1-User) | Changes the caller&#39;s own password. An administrator resetting someone else&#39;s password uses UpdateUser with the `password` mask instead — that is a different operation with a different audit story, even though both end in a new password hash. Permissions required: None beyond being signed in as `name`. |
 | StartMFAEnrollment | [StartMFAEnrollmentRequest](#bytebase-v1-StartMFAEnrollmentRequest) | [StartMFAEnrollmentResponse](#bytebase-v1-StartMFAEnrollmentResponse) | Mints a pending TOTP secret and recovery codes for the caller&#39;s own account and returns them. Nothing goes live until ConfirmRecoveryCodes, so an abandoned enrollment leaves the account exactly as it was. Permissions required: None beyond being signed in as `name`. |
 | EnableMFA | [EnableMFARequest](#bytebase-v1-EnableMFARequest) | [User](#bytebase-v1-User) | Verifies an otp_code against the pending enrollment. Nothing is written: this is the step that catches a mistyped authenticator before the caller is shown recovery codes, and promotion happens at ConfirmRecoveryCodes so an account is never MFA-required with codes its owner never saved. Permissions required: None beyond being signed in as `name`. It writes nothing itself, but it is a required step of installing a factor on the account, which is why it is denied on the same grounds as the promotion it precedes. |
@@ -6084,9 +6128,11 @@ AuthService handles user authentication operations.
 | Signup | [SignupRequest](#bytebase-v1-SignupRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Registers a new user account. Creates a principal and assigns a workspace: - If the user&#39;s email was pre-invited to a workspace, joins that workspace. - Otherwise, creates a new workspace with the user as admin. Returns access tokens so the user is logged in immediately after signup. |
 | Refresh | [RefreshRequest](#bytebase-v1-RefreshRequest) | [RefreshResponse](#bytebase-v1-RefreshResponse) | Refreshes the access token using the refresh token cookie. Permissions required: None (validates via refresh token cookie) |
 | SwitchWorkspace | [SwitchWorkspaceRequest](#bytebase-v1-SwitchWorkspaceRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Switches the current user&#39;s active workspace and issues new tokens. The user must be a member of the target workspace. |
-| RequestPasswordReset | [RequestPasswordResetRequest](#bytebase-v1-RequestPasswordResetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Requests a password reset email for the given email address. Always returns success to avoid leaking whether the email exists. Permissions required: None |
+| RequestPasswordReset | [RequestPasswordResetRequest](#bytebase-v1-RequestPasswordResetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Requests a password reset email for the given email address. Always returns success to avoid leaking whether the email exists. Only does anything when the workspace&#39;s SMTP mail delivery setting is configured; without it no email can be sent and the recovery route is an admin password reset. Permissions required: None |
 | ResetPassword | [ResetPasswordRequest](#bytebase-v1-ResetPasswordRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Resets the user&#39;s password using a password reset token from email. Permissions required: None (validates via token) |
-| SendEmailLoginCode | [SendEmailLoginCodeRequest](#bytebase-v1-SendEmailLoginCodeRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sends a 6-digit verification code to the email for login/signup. Always returns success (no email enumeration). Enforces 60-sec resend cooldown. Permissions required: None |
+| SendEmailLoginCode | [SendEmailLoginCodeRequest](#bytebase-v1-SendEmailLoginCodeRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sends a 6-digit verification code to the email for login/signup — the pre-authentication channel, so it takes an address rather than a user and never reveals whether that address has an account (sign-up happens at verify). Gated on the workspace&#39;s allow_email_code_signin. Enforces a 60-sec resend cooldown.
+
+The signed-in counterpart is UserService.RequestReauthCode, which proves an existing session&#39;s holder rather than starting one. Codes are stored and consumed per purpose (LOGIN here, REAUTH there) and are not interchangeable in either direction. Permissions required: None |
 
  
 

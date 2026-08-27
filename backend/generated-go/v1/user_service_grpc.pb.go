@@ -29,6 +29,7 @@ const (
 	UserService_DeleteUser_FullMethodName              = "/bytebase.v1.UserService/DeleteUser"
 	UserService_UndeleteUser_FullMethodName            = "/bytebase.v1.UserService/UndeleteUser"
 	UserService_UpdateEmail_FullMethodName             = "/bytebase.v1.UserService/UpdateEmail"
+	UserService_RequestReauthCode_FullMethodName       = "/bytebase.v1.UserService/RequestReauthCode"
 	UserService_ChangePassword_FullMethodName          = "/bytebase.v1.UserService/ChangePassword"
 	UserService_StartMFAEnrollment_FullMethodName      = "/bytebase.v1.UserService/StartMFAEnrollment"
 	UserService_EnableMFA_FullMethodName               = "/bytebase.v1.UserService/EnableMFA"
@@ -75,6 +76,23 @@ type UserServiceClient interface {
 	// Updates a user's email address.
 	// Permissions required: bb.users.updateEmail
 	UpdateEmail(ctx context.Context, in *UpdateEmailRequest, opts ...grpc.CallOption) (*User, error)
+	// Sends a one-time code to the caller's own registered email, usable as
+	// CredentialProof.email_code. The one channel that works when neither a
+	// usable password nor an existing MFA factor exists yet, which on Bytebase
+	// Cloud is every account without MFA. Cloud only — self-hosted keeps an
+	// administrator who can reset a password, which is the recovery route
+	// there. name must be the caller's own.
+	//
+	// Not to be confused with AuthService.SendEmailLoginCode, the other sender
+	// of a 6-digit code. That one gets you *into* an account and is therefore
+	// unauthenticated; this one proves you are *already* the account holder, so
+	// it requires a session and refuses any name but the caller's. The codes are
+	// stored and consumed per purpose (REAUTH here, LOGIN there) and are not
+	// interchangeable: a login code cannot authorize a credential change, and a
+	// reauth code cannot complete a login. Requesting one also refuses when a
+	// live MFA factor exists — prove that with the factor, not with mail.
+	// Permissions required: None beyond being signed in as `name`.
+	RequestReauthCode(ctx context.Context, in *RequestReauthCodeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Changes the caller's own password. An administrator resetting someone
 	// else's password uses UpdateUser with the `password` mask instead — that
 	// is a different operation with a different audit story, even though both
@@ -211,6 +229,16 @@ func (c *userServiceClient) UpdateEmail(ctx context.Context, in *UpdateEmailRequ
 	return out, nil
 }
 
+func (c *userServiceClient) RequestReauthCode(ctx context.Context, in *RequestReauthCodeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(emptypb.Empty)
+	err := c.cc.Invoke(ctx, UserService_RequestReauthCode_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *userServiceClient) ChangePassword(ctx context.Context, in *ChangePasswordRequest, opts ...grpc.CallOption) (*User, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(User)
@@ -309,6 +337,23 @@ type UserServiceServer interface {
 	// Updates a user's email address.
 	// Permissions required: bb.users.updateEmail
 	UpdateEmail(context.Context, *UpdateEmailRequest) (*User, error)
+	// Sends a one-time code to the caller's own registered email, usable as
+	// CredentialProof.email_code. The one channel that works when neither a
+	// usable password nor an existing MFA factor exists yet, which on Bytebase
+	// Cloud is every account without MFA. Cloud only — self-hosted keeps an
+	// administrator who can reset a password, which is the recovery route
+	// there. name must be the caller's own.
+	//
+	// Not to be confused with AuthService.SendEmailLoginCode, the other sender
+	// of a 6-digit code. That one gets you *into* an account and is therefore
+	// unauthenticated; this one proves you are *already* the account holder, so
+	// it requires a session and refuses any name but the caller's. The codes are
+	// stored and consumed per purpose (REAUTH here, LOGIN there) and are not
+	// interchangeable: a login code cannot authorize a credential change, and a
+	// reauth code cannot complete a login. Requesting one also refuses when a
+	// live MFA factor exists — prove that with the factor, not with mail.
+	// Permissions required: None beyond being signed in as `name`.
+	RequestReauthCode(context.Context, *RequestReauthCodeRequest) (*emptypb.Empty, error)
 	// Changes the caller's own password. An administrator resetting someone
 	// else's password uses UpdateUser with the `password` mask instead — that
 	// is a different operation with a different audit story, even though both
@@ -381,6 +426,9 @@ func (UnimplementedUserServiceServer) UndeleteUser(context.Context, *UndeleteUse
 }
 func (UnimplementedUserServiceServer) UpdateEmail(context.Context, *UpdateEmailRequest) (*User, error) {
 	return nil, status.Error(codes.Unimplemented, "method UpdateEmail not implemented")
+}
+func (UnimplementedUserServiceServer) RequestReauthCode(context.Context, *RequestReauthCodeRequest) (*emptypb.Empty, error) {
+	return nil, status.Error(codes.Unimplemented, "method RequestReauthCode not implemented")
 }
 func (UnimplementedUserServiceServer) ChangePassword(context.Context, *ChangePasswordRequest) (*User, error) {
 	return nil, status.Error(codes.Unimplemented, "method ChangePassword not implemented")
@@ -583,6 +631,24 @@ func _UserService_UpdateEmail_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _UserService_RequestReauthCode_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestReauthCodeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(UserServiceServer).RequestReauthCode(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: UserService_RequestReauthCode_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(UserServiceServer).RequestReauthCode(ctx, req.(*RequestReauthCodeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _UserService_ChangePassword_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ChangePasswordRequest)
 	if err := dec(in); err != nil {
@@ -733,6 +799,10 @@ var UserService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateEmail",
 			Handler:    _UserService_UpdateEmail_Handler,
+		},
+		{
+			MethodName: "RequestReauthCode",
+			Handler:    _UserService_RequestReauthCode_Handler,
 		},
 		{
 			MethodName: "ChangePassword",

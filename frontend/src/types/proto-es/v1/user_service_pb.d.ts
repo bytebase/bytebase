@@ -278,6 +278,88 @@ export declare type UpdateEmailRequest = Message<"bytebase.v1.UpdateEmailRequest
 export declare const UpdateEmailRequestSchema: GenMessage<UpdateEmailRequest>;
 
 /**
+ * One proof that the caller currently controls a credential on the account.
+ * Exactly one field must be set; enforced in the handler.
+ *
+ * @generated from message bytebase.v1.CredentialProof
+ */
+export declare type CredentialProof = Message<"bytebase.v1.CredentialProof"> & {
+  /**
+   * @generated from oneof bytebase.v1.CredentialProof.proof
+   */
+  proof: {
+    /**
+     * The account's current password. Accepted for ChangePassword always, and
+     * for a factor-touching method (DisableMFA, or EnableMFA /
+     * ConfirmRecoveryCodes when replacing an existing factor) ONLY when the
+     * account has no live MFA — ResetPassword mints a password from mailbox
+     * possession alone, so accepting it against live MFA would let a stolen
+     * session plus mailbox strip the factor.
+     *
+     * @generated from field: string current_password = 1;
+     */
+    value: string;
+    case: "currentPassword";
+  } | {
+    /**
+     * A live code from the account's enrolled TOTP authenticator.
+     *
+     * @generated from field: string otp_code = 2;
+     */
+    value: string;
+    case: "otpCode";
+  } | {
+    /**
+     * A single-use MFA recovery code.
+     *
+     * @generated from field: string recovery_code = 3;
+     */
+    value: string;
+    case: "recoveryCode";
+  } | {
+    /**
+     * A one-time code from RequestReauthCode. Bytebase Cloud only, and valid
+     * only when the account has no live MFA factor: bootstrap proof for a
+     * Cloud account with nothing else yet (Cloud accounts never have a
+     * caller-chosen password), never a substitute for a factor that already
+     * exists. The handler checks this eligibility itself; it is not just a
+     * frontend choice of which field to show.
+     *
+     * @generated from field: string email_code = 4;
+     */
+    value: string;
+    case: "emailCode";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message bytebase.v1.CredentialProof.
+ * Use `create(CredentialProofSchema)` to create a new message.
+ */
+export declare const CredentialProofSchema: GenMessage<CredentialProof>;
+
+/**
+ * @generated from message bytebase.v1.RequestReauthCodeRequest
+ */
+export declare type RequestReauthCodeRequest = Message<"bytebase.v1.RequestReauthCodeRequest"> & {
+  /**
+   * Format: users/{email}. Must be the caller's own name — the code is
+   * delivered to that account's own registered email, so requesting one for
+   * someone else would only prove the target can read their own mail, not
+   * anything about the caller.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message bytebase.v1.RequestReauthCodeRequest.
+ * Use `create(RequestReauthCodeRequestSchema)` to create a new message.
+ */
+export declare const RequestReauthCodeRequestSchema: GenMessage<RequestReauthCodeRequest>;
+
+/**
  * @generated from message bytebase.v1.ChangePasswordRequest
  */
 export declare type ChangePasswordRequest = Message<"bytebase.v1.ChangePasswordRequest"> & {
@@ -292,6 +374,11 @@ export declare type ChangePasswordRequest = Message<"bytebase.v1.ChangePasswordR
    * @generated from field: string new_password = 2;
    */
   newPassword: string;
+
+  /**
+   * @generated from field: bytebase.v1.CredentialProof credential = 3;
+   */
+  credential?: CredentialProof | undefined;
 };
 
 /**
@@ -385,6 +472,21 @@ export declare type EnableMFARequest = Message<"bytebase.v1.EnableMFARequest"> &
    * @generated from field: google.protobuf.Timestamp pending_version = 3;
    */
   pendingVersion?: Timestamp | undefined;
+
+  /**
+   * Proof for the *existing* factor being replaced, if any. Not the code
+   * above — that proves the new enrollment, this proves the caller still owns
+   * the account before the swap. Required whenever a reusable proof exists: a
+   * rotation, or a first-time enrollment where the account has a password.
+   * Must be omitted for first-time enrollment on a Cloud account (which has
+   * no caller-chosen password) — email_code is its only option, and that
+   * single-use code is checked once, at ConfirmRecoveryCodes, where the
+   * mutation actually happens. A self-hosted account with no password cannot
+   * enroll until an admin resets its password.
+   *
+   * @generated from field: bytebase.v1.CredentialProof credential = 4;
+   */
+  credential?: CredentialProof | undefined;
 };
 
 /**
@@ -404,6 +506,17 @@ export declare type DisableMFARequest = Message<"bytebase.v1.DisableMFARequest">
    * @generated from field: string name = 1;
    */
   name: string;
+
+  /**
+   * Required only when name is the caller's own and a live factor exists;
+   * unset and unchecked on an admin-assisted call, and unnecessary when there
+   * is no factor to prove (cancelling an abandoned enrollment). The handler
+   * accepts only otp_code or recovery_code here — never current_password or
+   * email_code — since turning a factor off must be proven with the factor.
+   *
+   * @generated from field: bytebase.v1.CredentialProof credential = 2;
+   */
+  credential?: CredentialProof | undefined;
 };
 
 /**
@@ -473,6 +586,23 @@ export declare type ConfirmRecoveryCodesRequest = Message<"bytebase.v1.ConfirmRe
    * @generated from field: google.protobuf.Timestamp pending_version = 2;
    */
   pendingVersion?: Timestamp | undefined;
+
+  /**
+   * @generated from field: bytebase.v1.CredentialProof credential = 3;
+   */
+  credential?: CredentialProof | undefined;
+
+  /**
+   * Required only for first-time MFA enrollment (the account has no live
+   * OtpSecret yet) — rejected if set otherwise. A *fresh* code, not the one
+   * already submitted to EnableMFA: TOTP codes are only valid for one ~30s
+   * period and the recovery-code download screen routinely takes longer.
+   * Verified against the same pending TempOtpSecret EnableMFA already
+   * validated, and promoted alongside the recovery codes in this call.
+   *
+   * @generated from field: string otp_code = 4;
+   */
+  otpCode: string;
 };
 
 /**
@@ -708,6 +838,31 @@ export declare const UserService: GenService<{
     methodKind: "unary";
     input: typeof UpdateEmailRequestSchema;
     output: typeof UserSchema;
+  },
+  /**
+   * Sends a one-time code to the caller's own registered email, usable as
+   * CredentialProof.email_code. The one channel that works when neither a
+   * usable password nor an existing MFA factor exists yet, which on Bytebase
+   * Cloud is every account without MFA. Cloud only — self-hosted keeps an
+   * administrator who can reset a password, which is the recovery route
+   * there. name must be the caller's own.
+   *
+   * Not to be confused with AuthService.SendEmailLoginCode, the other sender
+   * of a 6-digit code. That one gets you *into* an account and is therefore
+   * unauthenticated; this one proves you are *already* the account holder, so
+   * it requires a session and refuses any name but the caller's. The codes are
+   * stored and consumed per purpose (REAUTH here, LOGIN there) and are not
+   * interchangeable: a login code cannot authorize a credential change, and a
+   * reauth code cannot complete a login. Requesting one also refuses when a
+   * live MFA factor exists — prove that with the factor, not with mail.
+   * Permissions required: None beyond being signed in as `name`.
+   *
+   * @generated from rpc bytebase.v1.UserService.RequestReauthCode
+   */
+  requestReauthCode: {
+    methodKind: "unary";
+    input: typeof RequestReauthCodeRequestSchema;
+    output: typeof EmptySchema;
   },
   /**
    * Changes the caller's own password. An administrator resetting someone

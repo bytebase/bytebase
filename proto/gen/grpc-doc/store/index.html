@@ -3173,6 +3173,16 @@ This information is not authenticated and should be treated accordingly. </p></t
                 <td><p></p></td>
               </tr>
             
+              <tr>
+                <td>REAUTH</td>
+                <td>3</td>
+                <td><p>Re-authentication proof for a credential change
+(CredentialProof.email_code), for an account with neither a usable
+password nor an MFA factor to prove. Like every other purpose it needs
+the workspace&#39;s mail delivery configured. Deliberately not accepted by
+Login: a code minted to authorize a change must not also start a session.</p></td>
+              </tr>
+            
           </tbody>
         </table>
       

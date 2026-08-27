@@ -132,12 +132,20 @@ func TestEnrollmentSecretsLiveOnlyInTheMintingResponses(t *testing.T) {
 	_, err = ctl.userServiceClient.EnableMFA(ctx, connect.NewRequest(&v1pb.EnableMFARequest{
 		Name:           userName,
 		OtpCode:        otp,
+		Credential:     &v1pb.CredentialProof{Proof: &v1pb.CredentialProof_CurrentPassword{CurrentPassword: "1024bytebase"}},
 		PendingVersion: minted.Msg.PendingVersion,
 	}))
 	a.NoError(err)
 
+	// A fresh code, not a replay of EnableMFA's: promotion is the moment MFA
+	// starts gating logins, and the download screen in between outlives one
+	// ~30s TOTP window.
+	confirmOTP, err := totp.GenerateCode(minted.Msg.OtpSecret, time.Now())
+	a.NoError(err)
 	confirmed, err := ctl.userServiceClient.ConfirmRecoveryCodes(ctx, connect.NewRequest(&v1pb.ConfirmRecoveryCodesRequest{
 		Name:           userName,
+		OtpCode:        confirmOTP,
+		Credential:     &v1pb.CredentialProof{Proof: &v1pb.CredentialProof_CurrentPassword{CurrentPassword: "1024bytebase"}},
 		PendingVersion: minted.Msg.PendingVersion,
 	}))
 	a.NoError(err)
@@ -286,8 +294,21 @@ func TestMFAReplacementPromotesTheNewAuthenticator(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	userName := common.FormatUserEmail("demo@example.com")
-	enroll := func() string {
+	// liveSecret is empty for the account's first factor and holds the live
+	// one for the replacement: a factor-touching call on an account that has a
+	// factor must be proven with that factor, never with the password, since a
+	// password can be minted from mailbox possession alone.
+	enroll := func(liveSecret string) string {
 		t.Helper()
+		proof := func() *v1pb.CredentialProof {
+			t.Helper()
+			if liveSecret == "" {
+				return &v1pb.CredentialProof{Proof: &v1pb.CredentialProof_CurrentPassword{CurrentPassword: "1024bytebase"}}
+			}
+			live, err := totp.GenerateCode(liveSecret, time.Now())
+			a.NoError(err)
+			return &v1pb.CredentialProof{Proof: &v1pb.CredentialProof_OtpCode{OtpCode: live}}
+		}
 		minted, err := ctl.userServiceClient.StartMFAEnrollment(ctx, connect.NewRequest(&v1pb.StartMFAEnrollmentRequest{
 			Name: userName,
 		}))
@@ -297,19 +318,29 @@ func TestMFAReplacementPromotesTheNewAuthenticator(t *testing.T) {
 		_, err = ctl.userServiceClient.EnableMFA(ctx, connect.NewRequest(&v1pb.EnableMFARequest{
 			Name:           userName,
 			OtpCode:        otp,
+			Credential:     proof(),
 			PendingVersion: minted.Msg.PendingVersion,
 		}))
 		a.NoError(err)
-		_, err = ctl.userServiceClient.ConfirmRecoveryCodes(ctx, connect.NewRequest(&v1pb.ConfirmRecoveryCodesRequest{
+		confirm := &v1pb.ConfirmRecoveryCodesRequest{
 			Name:           userName,
+			Credential:     proof(),
 			PendingVersion: minted.Msg.PendingVersion,
-		}))
+		}
+		if liveSecret == "" {
+			// Only a first-time enrollment re-proves the new device here; a
+			// replacement is proven with the factor it is replacing.
+			confirmOTP, err := totp.GenerateCode(minted.Msg.OtpSecret, time.Now())
+			a.NoError(err)
+			confirm.OtpCode = confirmOTP
+		}
+		_, err = ctl.userServiceClient.ConfirmRecoveryCodes(ctx, connect.NewRequest(confirm))
 		a.NoError(err)
 		return minted.Msg.OtpSecret
 	}
 
-	firstSecret := enroll()
-	replacementSecret := enroll()
+	firstSecret := enroll("")
+	replacementSecret := enroll(firstSecret)
 	a.NotEqual(firstSecret, replacementSecret)
 
 	// Sign in with the replacement authenticator. This is the assertion that
@@ -362,11 +393,16 @@ func TestSupersededPendingStateIsRefused(t *testing.T) {
 	_, err = ctl.userServiceClient.EnableMFA(ctx, connect.NewRequest(&v1pb.EnableMFARequest{
 		Name:           userName,
 		OtpCode:        otp,
+		Credential:     &v1pb.CredentialProof{Proof: &v1pb.CredentialProof_CurrentPassword{CurrentPassword: "1024bytebase"}},
 		PendingVersion: enrolled.Msg.PendingVersion,
 	}))
 	a.NoError(err)
+	confirmOTP, err := totp.GenerateCode(enrolled.Msg.OtpSecret, time.Now())
+	a.NoError(err)
 	_, err = ctl.userServiceClient.ConfirmRecoveryCodes(ctx, connect.NewRequest(&v1pb.ConfirmRecoveryCodesRequest{
 		Name:           userName,
+		OtpCode:        confirmOTP,
+		Credential:     &v1pb.CredentialProof{Proof: &v1pb.CredentialProof_CurrentPassword{CurrentPassword: "1024bytebase"}},
 		PendingVersion: enrolled.Msg.PendingVersion,
 	}))
 	a.NoError(err)
@@ -385,9 +421,12 @@ func TestSupersededPendingStateIsRefused(t *testing.T) {
 	a.NoError(err)
 	a.NotEqual(enrolled.Msg.OtpSecret, replacement.Msg.OtpSecret)
 
-	// Tab one saves its codes and confirms.
+	// Tab one saves its codes and confirms, proving the live factor it has.
+	liveOTPForConfirm, err := totp.GenerateCode(enrolled.Msg.OtpSecret, time.Now())
+	a.NoError(err)
 	_, err = ctl.userServiceClient.ConfirmRecoveryCodes(ctx, connect.NewRequest(&v1pb.ConfirmRecoveryCodesRequest{
 		Name:           userName,
+		Credential:     &v1pb.CredentialProof{Proof: &v1pb.CredentialProof_OtpCode{OtpCode: liveOTPForConfirm}},
 		PendingVersion: regenerated.Msg.PendingVersion,
 	}))
 	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err),
@@ -441,20 +480,26 @@ func TestConfirmationCannotRevivePendingStateItRaced(t *testing.T) {
 	_, err = ctl.userServiceClient.EnableMFA(ctx, connect.NewRequest(&v1pb.EnableMFARequest{
 		Name:           userName,
 		OtpCode:        otp,
+		Credential:     &v1pb.CredentialProof{Proof: &v1pb.CredentialProof_CurrentPassword{CurrentPassword: "1024bytebase"}},
 		PendingVersion: minted.Msg.PendingVersion,
 	}))
 	a.NoError(err)
 
 	// The pending state is cleared out from under the open enrollment, the way
-	// DisableMFA clears it for an account being recovered.
+	// DisableMFA clears it for an account being recovered. No CredentialProof:
+	// nothing was ever promoted, so there is no factor to prove.
 	_, err = ctl.userServiceClient.DisableMFA(ctx, connect.NewRequest(&v1pb.DisableMFARequest{
 		Name: userName,
 	}))
 	a.NoError(err)
 
 	// The stale tab confirms with the version it was handed.
+	staleOTP, err := totp.GenerateCode(minted.Msg.OtpSecret, time.Now())
+	a.NoError(err)
 	_, err = ctl.userServiceClient.ConfirmRecoveryCodes(ctx, connect.NewRequest(&v1pb.ConfirmRecoveryCodesRequest{
 		Name:           userName,
+		OtpCode:        staleOTP,
+		Credential:     &v1pb.CredentialProof{Proof: &v1pb.CredentialProof_CurrentPassword{CurrentPassword: "1024bytebase"}},
 		PendingVersion: minted.Msg.PendingVersion,
 	}))
 	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err),

@@ -19,9 +19,9 @@ served by no ceiling.
 | READ | 57 | served to a read-only session and above |
 | WRITE | 40 | served to a read-write session only |
 | EXCLUDED | 85 | served by no ceiling this phase ships |
-| FORBIDDEN | 34 | never served, whatever the ceiling |
+| FORBIDDEN | 35 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
-| **total** | **216** | |
+| **total** | **217** | |
 
 | Method | Class | Reason | Permission |
 |---|---|---|---|
@@ -222,6 +222,7 @@ served by no ceiling.
 | UserService/GetUser | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.users.get |
 | UserService/ListUsers | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.users.list |
 | UserService/RegenerateRecoveryCodes | FORBIDDEN | MINTS_CREDENTIAL | — |
+| UserService/RequestReauthCode | FORBIDDEN | RESETS_CREDENTIAL | — |
 | UserService/StartMFAEnrollment | FORBIDDEN | MINTS_CREDENTIAL | — |
 | UserService/UndeleteUser | EXCLUDED | ADMINISTERS_THE_WORKSPACE | — |
 | UserService/UpdateEmail | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.users.updateEmail |

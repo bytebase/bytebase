@@ -248,7 +248,7 @@ const (
 	// Puts a token for the caller's own principal in the response body.
 	MCPDenialReason_MINTS_CREDENTIAL MCPDenialReason = 1
 	// Drives the out-of-band reset flow that sets or delivers the secret a
-	// login accepts.
+	// login or a credential change accepts.
 	MCPDenialReason_RESETS_CREDENTIAL MCPDenialReason = 2
 	// Rewrites an account's own credentials, which would let the session log in
 	// as that account.

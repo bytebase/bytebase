@@ -663,6 +663,9 @@ export declare const AuthService: GenService<{
   /**
    * Requests a password reset email for the given email address.
    * Always returns success to avoid leaking whether the email exists.
+   * Only does anything when the workspace's SMTP mail delivery setting is
+   * configured; without it no email can be sent and the recovery route is an
+   * admin password reset.
    * Permissions required: None
    *
    * @generated from rpc bytebase.v1.AuthService.RequestPasswordReset
@@ -684,8 +687,16 @@ export declare const AuthService: GenService<{
     output: typeof EmptySchema;
   },
   /**
-   * Sends a 6-digit verification code to the email for login/signup.
-   * Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+   * Sends a 6-digit verification code to the email for login/signup — the
+   * pre-authentication channel, so it takes an address rather than a user and
+   * never reveals whether that address has an account (sign-up happens at
+   * verify). Gated on the workspace's allow_email_code_signin. Enforces a
+   * 60-sec resend cooldown.
+   *
+   * The signed-in counterpart is UserService.RequestReauthCode, which proves
+   * an existing session's holder rather than starting one. Codes are stored
+   * and consumed per purpose (LOGIN here, REAUTH there) and are not
+   * interchangeable in either direction.
    * Permissions required: None
    *
    * @generated from rpc bytebase.v1.AuthService.SendEmailLoginCode

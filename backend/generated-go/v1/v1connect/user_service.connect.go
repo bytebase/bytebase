@@ -55,6 +55,9 @@ const (
 	UserServiceUndeleteUserProcedure = "/bytebase.v1.UserService/UndeleteUser"
 	// UserServiceUpdateEmailProcedure is the fully-qualified name of the UserService's UpdateEmail RPC.
 	UserServiceUpdateEmailProcedure = "/bytebase.v1.UserService/UpdateEmail"
+	// UserServiceRequestReauthCodeProcedure is the fully-qualified name of the UserService's
+	// RequestReauthCode RPC.
+	UserServiceRequestReauthCodeProcedure = "/bytebase.v1.UserService/RequestReauthCode"
 	// UserServiceChangePasswordProcedure is the fully-qualified name of the UserService's
 	// ChangePassword RPC.
 	UserServiceChangePasswordProcedure = "/bytebase.v1.UserService/ChangePassword"
@@ -107,6 +110,23 @@ type UserServiceClient interface {
 	// Updates a user's email address.
 	// Permissions required: bb.users.updateEmail
 	UpdateEmail(context.Context, *connect.Request[v1.UpdateEmailRequest]) (*connect.Response[v1.User], error)
+	// Sends a one-time code to the caller's own registered email, usable as
+	// CredentialProof.email_code. The one channel that works when neither a
+	// usable password nor an existing MFA factor exists yet, which on Bytebase
+	// Cloud is every account without MFA. Cloud only — self-hosted keeps an
+	// administrator who can reset a password, which is the recovery route
+	// there. name must be the caller's own.
+	//
+	// Not to be confused with AuthService.SendEmailLoginCode, the other sender
+	// of a 6-digit code. That one gets you *into* an account and is therefore
+	// unauthenticated; this one proves you are *already* the account holder, so
+	// it requires a session and refuses any name but the caller's. The codes are
+	// stored and consumed per purpose (REAUTH here, LOGIN there) and are not
+	// interchangeable: a login code cannot authorize a credential change, and a
+	// reauth code cannot complete a login. Requesting one also refuses when a
+	// live MFA factor exists — prove that with the factor, not with mail.
+	// Permissions required: None beyond being signed in as `name`.
+	RequestReauthCode(context.Context, *connect.Request[v1.RequestReauthCodeRequest]) (*connect.Response[emptypb.Empty], error)
 	// Changes the caller's own password. An administrator resetting someone
 	// else's password uses UpdateUser with the `password` mask instead — that
 	// is a different operation with a different audit story, even though both
@@ -210,6 +230,12 @@ func NewUserServiceClient(httpClient connect.HTTPClient, baseURL string, opts ..
 			connect.WithSchema(userServiceMethods.ByName("UpdateEmail")),
 			connect.WithClientOptions(opts...),
 		),
+		requestReauthCode: connect.NewClient[v1.RequestReauthCodeRequest, emptypb.Empty](
+			httpClient,
+			baseURL+UserServiceRequestReauthCodeProcedure,
+			connect.WithSchema(userServiceMethods.ByName("RequestReauthCode")),
+			connect.WithClientOptions(opts...),
+		),
 		changePassword: connect.NewClient[v1.ChangePasswordRequest, v1.User](
 			httpClient,
 			baseURL+UserServiceChangePasswordProcedure,
@@ -260,6 +286,7 @@ type userServiceClient struct {
 	deleteUser              *connect.Client[v1.DeleteUserRequest, emptypb.Empty]
 	undeleteUser            *connect.Client[v1.UndeleteUserRequest, v1.User]
 	updateEmail             *connect.Client[v1.UpdateEmailRequest, v1.User]
+	requestReauthCode       *connect.Client[v1.RequestReauthCodeRequest, emptypb.Empty]
 	changePassword          *connect.Client[v1.ChangePasswordRequest, v1.User]
 	startMFAEnrollment      *connect.Client[v1.StartMFAEnrollmentRequest, v1.StartMFAEnrollmentResponse]
 	enableMFA               *connect.Client[v1.EnableMFARequest, v1.User]
@@ -311,6 +338,11 @@ func (c *userServiceClient) UndeleteUser(ctx context.Context, req *connect.Reque
 // UpdateEmail calls bytebase.v1.UserService.UpdateEmail.
 func (c *userServiceClient) UpdateEmail(ctx context.Context, req *connect.Request[v1.UpdateEmailRequest]) (*connect.Response[v1.User], error) {
 	return c.updateEmail.CallUnary(ctx, req)
+}
+
+// RequestReauthCode calls bytebase.v1.UserService.RequestReauthCode.
+func (c *userServiceClient) RequestReauthCode(ctx context.Context, req *connect.Request[v1.RequestReauthCodeRequest]) (*connect.Response[emptypb.Empty], error) {
+	return c.requestReauthCode.CallUnary(ctx, req)
 }
 
 // ChangePassword calls bytebase.v1.UserService.ChangePassword.
@@ -377,6 +409,23 @@ type UserServiceHandler interface {
 	// Updates a user's email address.
 	// Permissions required: bb.users.updateEmail
 	UpdateEmail(context.Context, *connect.Request[v1.UpdateEmailRequest]) (*connect.Response[v1.User], error)
+	// Sends a one-time code to the caller's own registered email, usable as
+	// CredentialProof.email_code. The one channel that works when neither a
+	// usable password nor an existing MFA factor exists yet, which on Bytebase
+	// Cloud is every account without MFA. Cloud only — self-hosted keeps an
+	// administrator who can reset a password, which is the recovery route
+	// there. name must be the caller's own.
+	//
+	// Not to be confused with AuthService.SendEmailLoginCode, the other sender
+	// of a 6-digit code. That one gets you *into* an account and is therefore
+	// unauthenticated; this one proves you are *already* the account holder, so
+	// it requires a session and refuses any name but the caller's. The codes are
+	// stored and consumed per purpose (REAUTH here, LOGIN there) and are not
+	// interchangeable: a login code cannot authorize a credential change, and a
+	// reauth code cannot complete a login. Requesting one also refuses when a
+	// live MFA factor exists — prove that with the factor, not with mail.
+	// Permissions required: None beyond being signed in as `name`.
+	RequestReauthCode(context.Context, *connect.Request[v1.RequestReauthCodeRequest]) (*connect.Response[emptypb.Empty], error)
 	// Changes the caller's own password. An administrator resetting someone
 	// else's password uses UpdateUser with the `password` mask instead — that
 	// is a different operation with a different audit story, even though both
@@ -476,6 +525,12 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 		connect.WithSchema(userServiceMethods.ByName("UpdateEmail")),
 		connect.WithHandlerOptions(opts...),
 	)
+	userServiceRequestReauthCodeHandler := connect.NewUnaryHandler(
+		UserServiceRequestReauthCodeProcedure,
+		svc.RequestReauthCode,
+		connect.WithSchema(userServiceMethods.ByName("RequestReauthCode")),
+		connect.WithHandlerOptions(opts...),
+	)
 	userServiceChangePasswordHandler := connect.NewUnaryHandler(
 		UserServiceChangePasswordProcedure,
 		svc.ChangePassword,
@@ -532,6 +587,8 @@ func NewUserServiceHandler(svc UserServiceHandler, opts ...connect.HandlerOption
 			userServiceUndeleteUserHandler.ServeHTTP(w, r)
 		case UserServiceUpdateEmailProcedure:
 			userServiceUpdateEmailHandler.ServeHTTP(w, r)
+		case UserServiceRequestReauthCodeProcedure:
+			userServiceRequestReauthCodeHandler.ServeHTTP(w, r)
 		case UserServiceChangePasswordProcedure:
 			userServiceChangePasswordHandler.ServeHTTP(w, r)
 		case UserServiceStartMFAEnrollmentProcedure:
@@ -587,6 +644,10 @@ func (UnimplementedUserServiceHandler) UndeleteUser(context.Context, *connect.Re
 
 func (UnimplementedUserServiceHandler) UpdateEmail(context.Context, *connect.Request[v1.UpdateEmailRequest]) (*connect.Response[v1.User], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.UserService.UpdateEmail is not implemented"))
+}
+
+func (UnimplementedUserServiceHandler) RequestReauthCode(context.Context, *connect.Request[v1.RequestReauthCodeRequest]) (*connect.Response[emptypb.Empty], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.UserService.RequestReauthCode is not implemented"))
 }
 
 func (UnimplementedUserServiceHandler) ChangePassword(context.Context, *connect.Request[v1.ChangePasswordRequest]) (*connect.Response[v1.User], error) {

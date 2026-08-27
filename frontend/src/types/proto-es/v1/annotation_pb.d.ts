@@ -195,7 +195,7 @@ export enum MCPDenialReason {
 
   /**
    * Drives the out-of-band reset flow that sets or delivers the secret a
-   * login accepts.
+   * login or a credential change accepts.
    *
    * @generated from enum value: RESETS_CREDENTIAL = 2;
    */

@@ -189,12 +189,16 @@ func TestWebUserStillChangesPasswordAndLogsIn(t *testing.T) {
 	a.NoError(err)
 
 	// The user's own session changes their own password, exactly as the
-	// console does.
+	// console does — proving the current one, per
+	// docs/design/reauthenticate-credential-changes.md.
 	admin := ctl.authInterceptor.token
 	ctl.authInterceptor.token = login.Msg.Token
 	_, err = ctl.userServiceClient.ChangePassword(ctx, connect.NewRequest(&v1pb.ChangePasswordRequest{
 		Name:        "users/" + webEmail,
 		NewPassword: newPassword,
+		Credential: &v1pb.CredentialProof{
+			Proof: &v1pb.CredentialProof_CurrentPassword{CurrentPassword: oldPassword},
+		},
 	}))
 	ctl.authInterceptor.token = admin
 	a.NoError(err, "a normal session must still be able to change its own password")

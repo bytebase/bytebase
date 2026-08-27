@@ -511,6 +511,16 @@
     "new-database-name": "新数据库名称",
     "reserved-db-error": "{{databaseName}} 是一个预留名称"
   },
+  "credential-proof": {
+    "code-sent": "验证码已发送，请查收邮件",
+    "email-label": "邮箱验证码",
+    "email-me-a-code": "发送验证码到邮箱",
+    "email-placeholder": "6 位数字验证码",
+    "factor-label": "验证码",
+    "factor-placeholder": "身份验证器代码或恢复代码",
+    "password-label": "当前密码",
+    "resend-in": "{{seconds}} 秒后可重新发送"
+  },
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "兜底规则",
@@ -3488,6 +3498,7 @@
     },
     "self": "双重认证",
     "setup-steps": {
+      "confirm-code": "输入身份验证器中的最新代码以完成设置",
       "download-recovery-codes": {
         "keep-safe": {
           "description": "这些代码是在您无法收到双重认证代码的情况下访问您的账户。如果您找不到这些代码，您将失去对您账户的访问。",

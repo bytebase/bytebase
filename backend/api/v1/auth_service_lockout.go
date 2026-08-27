@@ -48,7 +48,14 @@ var loginAttemptLockedMsg = map[storepb.LoginAttemptKind]string{
 // request context a caller can omit or forge; its size is bounded by the
 // proto field limits, with the store refusing oversized or unkeyed rows.
 func (s *AuthService) claimLoginAttempt(ctx context.Context, identity string, kind storepb.LoginAttemptKind) error {
-	granted, err := s.store.ClaimLoginAttempt(ctx, identity, kind, loginAttemptMax, loginAttemptWindow)
+	return claimLoginAttempt(ctx, s.store, identity, kind)
+}
+
+// claimLoginAttempt is package-level so UserService can claim the same buckets
+// when it verifies a CredentialProof: a proof channel without that bound is a
+// guessing oracle.
+func claimLoginAttempt(ctx context.Context, stores *store.Store, identity string, kind storepb.LoginAttemptKind) error {
+	granted, err := stores.ClaimLoginAttempt(ctx, identity, kind, loginAttemptMax, loginAttemptWindow)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, err)
 	}
@@ -63,9 +70,13 @@ func (s *AuthService) claimLoginAttempt(ctx context.Context, identity string, ki
 // here would hold a lock against a proven credential — retry once, then log;
 // a still-standing counter expires on its own within the window.
 func (s *AuthService) clearLoginAttempt(ctx context.Context, identity string, kind storepb.LoginAttemptKind) {
-	err := s.store.ClearLoginAttempt(ctx, identity, kind)
+	clearLoginAttempt(ctx, s.store, identity, kind)
+}
+
+func clearLoginAttempt(ctx context.Context, stores *store.Store, identity string, kind storepb.LoginAttemptKind) {
+	err := stores.ClearLoginAttempt(ctx, identity, kind)
 	if err != nil {
-		err = s.store.ClearLoginAttempt(ctx, identity, kind)
+		err = stores.ClearLoginAttempt(ctx, identity, kind)
 	}
 	if err != nil {
 		slog.Error("login attempt clear failed", slog.String("kind", kind.String()), log.BBError(err))
