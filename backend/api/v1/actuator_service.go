@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"connectrpc.com/connect"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/sample"
 	"github.com/bytebase/bytebase/backend/enterprise"
@@ -95,7 +97,8 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 			serverInfo.Sample.Available = s.sampleManager.CheckAvailable(ctx) == nil
 			instances, err := s.sampleManager.ListInstances(ctx, workspaceID)
 			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to list sample instances"))
+				slog.Error("failed to list sample instances", log.BBError(err), slog.String("workspace", workspaceID))
+				instances = nil
 			}
 			for _, instance := range instances {
 				item := &v1pb.SampleInfo_Instance{Instance: instance.Name}

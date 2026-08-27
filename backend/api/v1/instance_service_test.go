@@ -204,6 +204,7 @@ type sampleManagerStub struct {
 	prepareRequests     []sample.PrepareRequest
 	checkAvailableErr   error
 	checkAvailableCalls int
+	listInstancesErr    error
 	validate            func(context.Context, string, string) error
 	lifecycle           func(context.Context, string, string, bool) error
 	validateCalls       int
@@ -215,8 +216,8 @@ func (s *sampleManagerStub) CheckAvailable(context.Context) error {
 	return s.checkAvailableErr
 }
 
-func (*sampleManagerStub) ListInstances(context.Context, string) ([]*sample.Instance, error) {
-	return nil, nil
+func (s *sampleManagerStub) ListInstances(context.Context, string) ([]*sample.Instance, error) {
+	return nil, s.listInstancesErr
 }
 
 func (*sampleManagerStub) Start(context.Context, string) error { return nil }

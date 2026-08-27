@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"testing"
@@ -117,6 +118,12 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	embeddedMetadataResponse, err := actuatorService.GetActuatorInfo(authenticatedCtx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
 	require.NoError(t, err)
 	require.True(t, embeddedMetadataResponse.Msg.Sample.Available)
+
+	actuatorService.sampleManager = &sampleManagerStub{listInstancesErr: errors.New("failed to decode sample setup")}
+	degradedSampleResponse, err := actuatorService.GetActuatorInfo(authenticatedCtx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
+	require.NoError(t, err)
+	require.True(t, degradedSampleResponse.Msg.Sample.Available)
+	require.Empty(t, degradedSampleResponse.Msg.Sample.Instances)
 
 	profile.SaaS = true
 	actuatorService.sampleManager = sampleManager
