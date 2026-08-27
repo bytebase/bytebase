@@ -15,9 +15,9 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/store"
 )
 
+// TODO(ed): move to MCPCeilingVerdict.xx() func
 // One heading per way the workspace's MCP policy refuses a consent. Only the
 // heading is local: it is page copy, this is its one consumer, and the three
 // states have different fixes, so a heading naming the wrong one is the part a
@@ -43,7 +43,7 @@ type consentAttempt struct {
 // *store.Store satisfies it; a test supplies its own, which is what lets the
 // outage arm be exercised — a real store cannot be made to fail a single read.
 type mcpCeilingReader interface {
-	GetMCPSettingsUncached(ctx context.Context, workspace string) (store.MCPSettings, error)
+	GetMCPSettingsUncached(ctx context.Context, workspace string) (*storepb.MCPSetting, error)
 }
 
 // refuseConsentByCeiling holds a consent about to be granted against the
@@ -63,7 +63,7 @@ type mcpCeilingReader interface {
 func (s *Service) refuseConsentByCeiling(c *echo.Context, attempt consentAttempt) (bool, error) {
 	ctx := c.Request().Context()
 	settings, err := s.mcpCeiling.GetMCPSettingsUncached(ctx, attempt.user.workspaceID)
-	verdict := auth.ClassifyMCPCeiling(settings.Capability, err)
+	verdict := auth.ClassifyMCPCeiling(settings, err)
 	if verdict == auth.MCPCeilingServes {
 		return false, nil
 	}

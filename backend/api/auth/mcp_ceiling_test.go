@@ -23,30 +23,27 @@ func TestClassifyMCPCeiling(t *testing.T) {
 	unreadable := errors.Wrapf(store.ErrMCPCapabilityUnreadable, "READ_ONLYY is not a value this build understands")
 
 	tests := []struct {
-		name       string
-		capability storepb.MCPSetting_Capability
-		err        error
-		want       MCPCeilingVerdict
-		policy     bool
+		name     string
+		settings *storepb.MCPSetting
+		err      error
+		want     MCPCeilingVerdict
+		policy   bool
 	}{
-		{"read-write serves", storepb.MCPSetting_READ_WRITE, nil, MCPCeilingServes, false},
-		{"read-only serves", storepb.MCPSetting_READ_ONLY, nil, MCPCeilingServes, false},
-		{"disabled", storepb.MCPSetting_DISABLED, nil, MCPCeilingDisabled, true},
-		{"the reserved number", storepb.MCPSetting_Capability(2), nil, MCPCeilingUnserved, true},
-		{"a value from a newer build", storepb.MCPSetting_Capability(99), nil, MCPCeilingUnserved, true},
-		// The store resolves an absent setting to READ_WRITE and an explicit
-		// unset to the unreadable error, so a zero value arriving here was
-		// resolved by nobody.
-		{"nobody resolved it", storepb.MCPSetting_CAPABILITY_UNSPECIFIED, nil, MCPCeilingUnserved, true},
-		{"a stored value nobody can read", storepb.MCPSetting_CAPABILITY_UNSPECIFIED, unreadable, MCPCeilingUnreadable, true},
+		{"read-write serves", &storepb.MCPSetting{Capability: storepb.MCPSetting_READ_WRITE}, nil, MCPCeilingServes, false},
+		{"read-only serves", &storepb.MCPSetting{Capability: storepb.MCPSetting_READ_ONLY}, nil, MCPCeilingServes, false},
+		{"disabled", &storepb.MCPSetting{Capability: storepb.MCPSetting_DISABLED}, nil, MCPCeilingDisabled, true},
+		{"the reserved number", &storepb.MCPSetting{Capability: storepb.MCPSetting_Capability(2)}, nil, MCPCeilingUnserved, true},
+		{"a value from a newer build", &storepb.MCPSetting{Capability: storepb.MCPSetting_Capability(99)}, nil, MCPCeilingUnserved, true},
+		{"nobody resolved it", nil, nil, MCPCeilingUnavailable, false},
+		{"a stored value nobody can read", nil, unreadable, MCPCeilingUnreadable, true},
 		// The error wins over the value, whatever the value happens to be.
-		{"an unreadable value that parsed to something", storepb.MCPSetting_READ_WRITE, unreadable, MCPCeilingUnreadable, true},
-		{"the read failed", storepb.MCPSetting_CAPABILITY_UNSPECIFIED, errors.New("connection refused"), MCPCeilingUnavailable, false},
-		{"the read failed on a permissive workspace", storepb.MCPSetting_READ_WRITE, errors.New("connection refused"), MCPCeilingUnavailable, false},
+		{"an unreadable value that parsed to something", &storepb.MCPSetting{Capability: storepb.MCPSetting_READ_WRITE}, unreadable, MCPCeilingUnreadable, true},
+		{"the read failed", nil, errors.New("connection refused"), MCPCeilingUnavailable, false},
+		{"the read failed on a permissive workspace", &storepb.MCPSetting{Capability: storepb.MCPSetting_READ_WRITE}, errors.New("connection refused"), MCPCeilingUnavailable, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := ClassifyMCPCeiling(tt.capability, tt.err)
+			got := ClassifyMCPCeiling(tt.settings, tt.err)
 			require.Equal(t, tt.want, got)
 			require.Equal(t, tt.policy, got.IsPolicy())
 		})
@@ -62,7 +59,7 @@ func TestMCPCeilingVerdictAdmissionMatchesTheServesPredicate(t *testing.T) {
 	values := storepb.MCPSetting_Capability(0).Descriptor().Values()
 	for i := range values.Len() {
 		capability := storepb.MCPSetting_Capability(values.Get(i).Number())
-		admits := ClassifyMCPCeiling(capability, nil) == MCPCeilingServes
+		admits := ClassifyMCPCeiling(&storepb.MCPSetting{Capability: capability}, nil) == MCPCeilingServes
 		require.Equal(t, MCPCeilingServesAnything(capability), admits,
 			"%v must admit work in exactly one of the two", capability)
 	}

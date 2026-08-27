@@ -46,13 +46,17 @@ func (v MCPCeilingVerdict) IsPolicy() bool {
 // verdict its caller acts on. Everything this build cannot act on refuses; what
 // the split decides is the message and the audit row. A value nobody can
 // interpret never succeeds on retry; an outage may.
-func ClassifyMCPCeiling(capability storepb.MCPSetting_Capability, err error) MCPCeilingVerdict {
+func ClassifyMCPCeiling(settings *storepb.MCPSetting, err error) MCPCeilingVerdict {
 	if err != nil {
 		if errors.Is(err, store.ErrMCPCapabilityUnreadable) {
 			return MCPCeilingUnreadable
 		}
 		return MCPCeilingUnavailable
 	}
+	if settings == nil {
+		return MCPCeilingUnavailable
+	}
+	capability := settings.Capability
 	if capability == storepb.MCPSetting_DISABLED {
 		return MCPCeilingDisabled
 	}

@@ -20,7 +20,6 @@ const mocks = vi.hoisted(() => ({
       | {
           capability: number;
           ignoreMaskingExemptions: boolean;
-          capabilityUnreadable?: boolean;
         }
       | undefined,
   },
@@ -126,7 +125,6 @@ beforeEach(async () => {
   mocks.mcpSetting.value = {
     capability: 3, // READ_ONLY
     ignoreMaskingExemptions: false,
-    capabilityUnreadable: false,
   };
   mocks.upsertSetting.mockResolvedValue(undefined);
   mocks.hasFeature.mockReturnValue(true);

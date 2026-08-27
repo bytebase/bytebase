@@ -16,7 +16,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	"github.com/bytebase/bytebase/backend/store"
 )
 
 // mcpDenialWording is one reason's sentence plus the class it belongs to. The
@@ -267,7 +266,7 @@ var mcpServingClasses = map[storepb.MCPSetting_Capability][]v1pb.MCPMethodClass{
 // database. Named for what it does rather than for what satisfies it, per the
 // convention for a single-method interface.
 type mcpSettingsReader interface {
-	GetMCPSettingsUncached(ctx context.Context, workspace string) (store.MCPSettings, error)
+	GetMCPSettingsUncached(ctx context.Context, workspace string) (*storepb.MCPSetting, error)
 }
 
 // mcpSettingsContextKey carries the MCP settings the gate already resolved, so
@@ -275,13 +274,13 @@ type mcpSettingsReader interface {
 // than a second one the gate could disagree with.
 type mcpSettingsContextKey struct{}
 
-func withMCPSettings(ctx context.Context, settings store.MCPSettings) context.Context {
+func withMCPSettings(ctx context.Context, settings *storepb.MCPSetting) context.Context {
 	return context.WithValue(ctx, mcpSettingsContextKey{}, settings)
 }
 
-func mcpSettingsFromContext(ctx context.Context) (store.MCPSettings, bool) {
-	settings, ok := ctx.Value(mcpSettingsContextKey{}).(store.MCPSettings)
-	return settings, ok
+func mcpSettingsFromContext(ctx context.Context) (*storepb.MCPSetting, bool) {
+	settings, ok := ctx.Value(mcpSettingsContextKey{}).(*storepb.MCPSetting)
+	return settings, ok && settings != nil
 }
 
 // internalMCPGateInterceptor refuses, before dispatch, every request an MCP
@@ -452,19 +451,18 @@ func (in *internalMCPGateInterceptor) refuse(ctx context.Context, req connect.An
 // refuseByCeiling holds the method's class against the workspace's live
 // ceiling, and returns the settings it resolved so the request can be held
 // against the same read further in.
-func (in *internalMCPGateInterceptor) refuseByCeiling(ctx context.Context, procedure string, class v1pb.MCPMethodClass) (store.MCPSettings, bool, error) {
+func (in *internalMCPGateInterceptor) refuseByCeiling(ctx context.Context, procedure string, class v1pb.MCPMethodClass) (*storepb.MCPSetting, bool, error) {
 	// The internal auth interceptor puts the delegated credential's workspace
 	// on every request it admits, so an empty one means the chain was
 	// reordered — a bug in this process, not an outage, and not a verdict
 	// about the caller.
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	if workspaceID == "" {
-		return store.MCPSettings{}, false, connect.NewError(connect.CodeInternal, errors.Errorf(
+		return nil, false, connect.NewError(connect.CodeInternal, errors.Errorf(
 			"%s cannot be checked against the MCP capability ceiling: no workspace on the request", procedure))
 	}
-	// The store applies the backward-compatible default for a workspace that
-	// never set a ceiling and reports everything it cannot make sense of as an
-	// error.
+	// Migration and workspace creation persist a concrete ceiling. Missing or
+	// invalid metadata is an error rather than a runtime default.
 	settings, err := in.store.GetMCPSettingsUncached(ctx, workspaceID)
 
 	// auth.ClassifyMCPCeiling decides, so this gate, the /mcp connection gate,
@@ -484,17 +482,17 @@ func (in *internalMCPGateInterceptor) refuseByCeiling(ctx context.Context, proce
 	// below, which holds an explicit empty list for it, so a mode that serves
 	// nothing reads as an ordinary per-method denial naming the class — the
 	// more useful answer at a per-method door than a workspace-level sentence.
-	switch verdict := auth.ClassifyMCPCeiling(settings.Capability, err); verdict {
+	switch verdict := auth.ClassifyMCPCeiling(settings, err); verdict {
 	case auth.MCPCeilingServes, auth.MCPCeilingDisabled:
 	case auth.MCPCeilingUnavailable:
 		slog.Warn("failed to resolve the MCP capability ceiling; refusing the request",
 			slog.String("method", procedure), slog.String("workspace", workspaceID), log.BBError(err))
-		return settings, false, connect.NewError(connect.CodeUnavailable, errors.Errorf(
+		return nil, false, connect.NewError(connect.CodeUnavailable, errors.Errorf(
 			"%s is refused: %s", procedure, verdict.Refusal()))
 	default:
 		slog.Warn("the MCP capability ceiling refuses this request",
 			slog.String("method", procedure), slog.String("workspace", workspaceID), log.BBError(err))
-		return settings, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+		return nil, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
 			"%s is refused: %s", procedure, verdict.Refusal()))
 	}
 
@@ -504,13 +502,13 @@ func (in *internalMCPGateInterceptor) refuseByCeiling(ctx context.Context, proce
 		// the switch above already refused. Kept because the serving table and
 		// the classifier are two statements of one rule, and this is what a
 		// caller gets if they ever part company.
-		return settings, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+		return nil, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
 			"%s is refused: %s", procedure, auth.MCPCeilingUnserved.Refusal()))
 	}
 	if slices.Contains(served, class) {
 		return settings, false, nil
 	}
-	return settings, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
+	return nil, true, connect.NewError(connect.CodePermissionDenied, errors.Errorf(
 		"%s is a %v method and this workspace's MCP capability ceiling is %v, which serves %s. "+
 			"Ask a workspace admin to raise the MCP ceiling in the workspace settings, "+
 			"or perform this action signed in to the Bytebase console instead",

@@ -20,7 +20,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/store"
 )
 
 // GetMCPInfo reports what MCP does in this workspace.
@@ -43,7 +42,7 @@ func (s *WorkspaceService) GetMCPInfo(ctx context.Context, _ *connect.Request[v1
 	// other modes contain. A ceiling this build does not serve is different —
 	// reporting it as "in force" would describe a state the build does not run,
 	// beside a modes list with no row for it.
-	switch verdict := auth.ClassifyMCPCeiling(settings.Capability, err); verdict {
+	switch verdict := auth.ClassifyMCPCeiling(settings, err); verdict {
 	case auth.MCPCeilingServes, auth.MCPCeilingDisabled:
 	case auth.MCPCeilingUnreadable, auth.MCPCeilingUnserved:
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New(verdict.Refusal()))
@@ -74,7 +73,7 @@ func (s *WorkspaceService) GetMCPInfo(ctx context.Context, _ *connect.Request[v1
 // admitted under, which is the rule mcp_gate.go states and the clamp and the
 // masking check both follow. Off that chain — the console, an admin opening the
 // settings page — nothing is stamped and the store is read.
-func (s *WorkspaceService) mcpSettingsForInfo(ctx context.Context, workspaceID string) (store.MCPSettings, error) {
+func (s *WorkspaceService) mcpSettingsForInfo(ctx context.Context, workspaceID string) (*storepb.MCPSetting, error) {
 	if settings, ok := mcpSettingsFromContext(ctx); ok {
 		return settings, nil
 	}

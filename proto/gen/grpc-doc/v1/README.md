@@ -4983,15 +4983,6 @@ workspace.
 | ignore_masking_exemptions | [bool](#bool) |  | Whether a request that arrived over MCP stops applying the caller&#39;s own unmasking provisioning. Two mechanisms let a user see a real value and this suppresses both: the masking exemptions granted to them, and the unmask carried by an access grant. The same user in the console is untouched.
 
 It cannot force masking where there is none. Masking substitutes values in query results, so this does not reach data copied into a column carrying no masking policy, and it does nothing on the engines Bytebase does not mask. It narrows what an agent reads through the paths Bytebase masks; it is not a confidentiality boundary. |
-| capability_unreadable | [bool](#bool) |  | True when the row carries a capability key that this build cannot resolve to a ceiling. An enum name a newer release wrote is the legitimate trigger, during a rolling upgrade; a hand-edited token reaches the same state. False for every readable row, including one that was never configured.
-
-The capability field cannot carry this on its own: the unmarshaler discards an enum name it does not know, so an unreadable row and a never-configured one both arrive as CAPABILITY_UNSPECIFIED, while MCP is refused for the first and served at READ_WRITE for the second. A client reading only the capability shows the most permissive ceiling over a workspace where every MCP connection is being refused.
-
-A row protojson cannot parse at all is NOT this state. There is no ceiling in it to describe, so the read fails instead, and repairing it needs an operator rather than this field.
-
-The stored token itself is deliberately not returned. Telling a typo apart from a value a newer release wrote would only pay off if this enum grew, and it has not: its one reserved slot held a tier removed before any release shipped it.
-
-Set the row right by writing value.mcp.capability. Any other path is refused while this is true, because the merge that saved it would erase the value nobody could read. |
 
 
 
@@ -5342,10 +5333,11 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 <a name="bytebase-v1-MCPSetting-Capability"></a>
 
 ### MCPSetting.Capability
-Capability is the ceiling: a session runs at this level or lower. An absent
-MCP setting resolves to READ_WRITE, so a workspace that never configured
-MCP is unaffected. Writing CAPABILITY_UNSPECIFIED explicitly is rejected —
-omit the update mask path to leave the ceiling unset.
+Capability is the ceiling: a session runs at this level or lower. Migration
+preserves the legacy capability and workspace creation persists READ_ONLY.
+A missing MCP setting is invalid metadata.
+Writing CAPABILITY_UNSPECIFIED explicitly is rejected; omit the update mask
+path to leave the current ceiling unchanged.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -12837,7 +12829,7 @@ cannot describe the rules of the build before it.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | workspace | [string](#string) |  | The workspace this describes. Format: workspaces/{workspace}. Not this message&#39;s own resource name — MCPInfo is not a named resource and there is nothing to get it by. |
-| capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  | The ceiling in force for this workspace. A workspace that never configured MCP resolves to READ_WRITE. |
+| capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  | The ceiling in force for this workspace. Migration preserves the legacy capability and workspace creation persists READ_ONLY. |
 | modes | [MCPCapabilityMode](#bytebase-v1-MCPCapabilityMode) | repeated | What each ceiling serves, including the one in force, so an admin can compare the choices rather than only read the current answer. |
 | methods | [MCPMethod](#bytebase-v1-MCPMethod) | repeated | Every API method some ceiling serves. A mode serves a method when the method&#39;s class is one of that mode&#39;s served_classes, which is the ceiling rule the gate evaluates. Methods no ceiling serves are absent.
 

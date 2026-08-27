@@ -297,9 +297,7 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 	a.NoError(err)
 	workspaceID := strings.TrimPrefix(workspace.Msg.Name, "workspaces/")
 
-	// Seeded so the row exists to corrupt: an absent MCP setting is the
-	// never-configured state, which resolves READ_WRITE without a row to write
-	// a wrong-typed value into.
+	// Set the control value explicitly before corrupting it.
 	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_READ_WRITE))
 
 	mcpToken, _ := mintMCPOAuthToken(t, ctl, ctl.authInterceptor.token)
@@ -310,17 +308,18 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 
 	db, err := sql.Open("pgx", ctl.profile.PgURL)
 	a.NoError(err)
-	defer db.Close()
+	t.Cleanup(func() { db.Close() })
 
 	// The stored ceiling is given a value the MCP setting cannot be parsed with,
 	// so the read errors outright. That is a distinct arm from an unrecognized
 	// enum NAME, which the store's unmarshaler discards: a name it does not
-	// know is caught by the raw-key check in GetMCPSettingsUncached and also
-	// fails closed, and TestMCPCeilingStoredValueFailsClosed
+	// know is parsed as UNSPECIFIED and fails closed, and
+	// TestMCPCeilingStoredValueFailsClosed
 	// (backend/api/mcp) owns that case. This one is the unmarshal error itself.
 	restore := func() {
 		result, err := db.ExecContext(ctx, `
-			DELETE FROM setting WHERE workspace = $1 AND name = 'MCP';
+			UPDATE setting SET value = '{"capability":"READ_WRITE"}'::jsonb
+			WHERE workspace = $1 AND name = 'MCP';
 		`, workspaceID)
 		a.NoError(err)
 		affected, err := result.RowsAffected()
@@ -348,9 +347,8 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 	status, body = postMCP(t, ctl, mcpToken)
 	a.Equal(http.StatusForbidden, status,
 		"a ceiling that cannot be read must fail closed, not fall back to permitting MCP; %s", body)
-	// Not the disabled wording. An admin turning MCP off and an admin leaving a
-	// value nobody can parse are different problems with different fixes, and
-	// the refusal is the only place the difference reaches anyone.
+	// Invalid persisted metadata is permanent until an admin repairs it, so it
+	// is a policy refusal rather than a retryable storage outage.
 	a.Contains(body, "not one this build understands")
 	a.NotContains(body, "turned MCP access off")
 

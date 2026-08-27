@@ -795,8 +795,11 @@ type mcpGateStore struct {
 	err                     error
 }
 
-func (s mcpGateStore) GetMCPSettingsUncached(context.Context, string) (store.MCPSettings, error) {
-	return store.MCPSettings{Capability: s.ceiling, IgnoreMaskingExemptions: s.ignoreMaskingExemptions}, s.err
+func (s mcpGateStore) GetMCPSettingsUncached(context.Context, string) (*storepb.MCPSetting, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+	return &storepb.MCPSetting{Capability: s.ceiling, IgnoreMaskingExemptions: s.ignoreMaskingExemptions}, nil
 }
 
 func readWriteCeiling() mcpGateStore {

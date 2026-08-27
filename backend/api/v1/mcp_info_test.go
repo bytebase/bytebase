@@ -359,11 +359,11 @@ func TestGetMCPInfoHandler(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	t.Run("a workspace that never configured MCP", func(t *testing.T) {
+	t.Run("a workspace with the default MCP policy", func(t *testing.T) {
 		info, err := get(workspaceCtx())
 		require.NoError(t, err)
 		require.Equal(t, "workspaces/"+workspaceID, info.Workspace)
-		require.Equal(t, v1pb.MCPSetting_READ_WRITE, info.Capability)
+		require.Equal(t, v1pb.MCPSetting_READ_ONLY, info.Capability)
 		require.False(t, info.IgnoreMaskingExemptions)
 
 		// The list is the live registry's, not a fixture: every entry must be a
@@ -423,7 +423,7 @@ func TestGetMCPInfoHandler(t *testing.T) {
 		// request under READ_ONLY. Answering from the store would report a
 		// ceiling the request was not admitted under.
 		setCeiling(t, `{"capability":"DISABLED"}`)
-		stamped := withMCPSettings(workspaceCtx(), store.MCPSettings{
+		stamped := withMCPSettings(workspaceCtx(), &storepb.MCPSetting{
 			Capability:              storepb.MCPSetting_READ_ONLY,
 			IgnoreMaskingExemptions: true,
 		})

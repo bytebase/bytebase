@@ -3,10 +3,8 @@ package store
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"log/slog"
 	"math"
-	"slices"
 	"time"
 
 	"github.com/pkg/errors"
@@ -24,6 +22,8 @@ type SettingMessage struct {
 	Workspace string
 	Value     proto.Message
 }
+
+var errSettingValueInvalid = errors.New("the stored setting value is invalid")
 
 func getSettingMessage(name storepb.SettingName) (proto.Message, error) {
 	switch name {
@@ -355,7 +355,7 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 			return nil, err
 		}
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(valueString), msg); err != nil {
-			return nil, err
+			return nil, errors.Wrapf(errSettingValueInvalid, "failed to unmarshal setting %s: %v", settingMessage.Name, err)
 		}
 		settingMessage.Value = msg
 
@@ -371,51 +371,6 @@ func (s *Store) ListSettings(ctx context.Context, find *FindSettingMessage) ([]*
 	// value. Publication happens only in GetSetting's fill, UpsertSetting,
 	// and UpdateSettingAtomic — all ordered by settingPublishMu.
 	return settingMessages, nil
-}
-
-// RawSettingValue returns a setting row's stored JSON, and whether the row
-// exists. Callers that must reason about what the row literally says — rather
-// than what the unmarshaler could make of it — read it through this.
-func (s *Store) RawSettingValue(ctx context.Context, workspace string, name storepb.SettingName) (string, bool, error) {
-	q := qb.Q().Space(`
-		SELECT value FROM setting WHERE workspace = ? AND name = ?
-	`, workspace, name.String())
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return "", false, errors.Wrap(err, "failed to build sql")
-	}
-	var valueString string
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&valueString); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return "", false, nil
-		}
-		return "", false, errors.Wrapf(err, "failed to read the %s setting", name)
-	}
-	return valueString, true, nil
-}
-
-// EnsureSettingRow creates an empty row for a setting that has none, and does
-// nothing when one exists. It is what lets a setting not seeded at workspace
-// creation be updated under a row lock: UpdateSettingAtomic deliberately
-// refuses a missing row, so the first write has to make one first.
-//
-// Only safe for a setting whose readers answer an empty row and an absent one
-// the same way. The MCP setting does: SettingService.GetSetting returns a zero
-// message for both, and GetMCPSettingsUncached resolves both to READ_WRITE.
-// WorkspaceProfileSetting does not — an absent row is an error there.
-func (s *Store) EnsureSettingRow(ctx context.Context, workspace string, name storepb.SettingName) error {
-	q := qb.Q().Space(`
-		INSERT INTO setting (name, workspace, value) VALUES (?, ?, '{}')
-		ON CONFLICT (name, workspace) DO NOTHING
-	`, name.String(), workspace)
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build sql")
-	}
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
-		return errors.Wrapf(err, "failed to create setting %s", name)
-	}
-	return nil
 }
 
 // UpdateSettingAtomic performs a row-locking read-modify-write of a setting:
@@ -434,18 +389,11 @@ func (s *Store) EnsureSettingRow(ctx context.Context, workspace string, name sto
 // lock, and a nested read wanting a second connection is the bounded-pool
 // starvation cycle.
 //
-// apply also receives the locked row's raw bytes. The unmarshaler discards what
-// it cannot interpret — an enum name from a newer release, say — and marshalling
-// omits a zero field, so a merge that only looked at current would write the row
-// back with that value silently deleted. A caller that must not do that reads
-// the raw bytes, and reads them from the locked row rather than a pre-flight, so
-// there is no window for a concurrent writer to slip a value in between.
-//
 // A row this build cannot parse is refused: the only message this could hand
 // apply is the zero value, and a merging apply would write that back — a
 // caller that sets one field on current and returns it (RotateDirectorySyncToken)
 // would erase everything else the row held.
-func (s *Store) UpdateSettingAtomic(ctx context.Context, workspace string, name storepb.SettingName, apply func(current proto.Message, raw []byte) (proto.Message, error), postCommit func(current *SettingMessage)) (*SettingMessage, error) {
+func (s *Store) UpdateSettingAtomic(ctx context.Context, workspace string, name storepb.SettingName, apply func(current proto.Message) (proto.Message, error), postCommit func(current *SettingMessage)) (*SettingMessage, error) {
 	return s.writeSettingAtomic(ctx, workspace, name, func(raw string) (proto.Message, error) {
 		current, err := getSettingMessage(name)
 		if err != nil {
@@ -454,7 +402,7 @@ func (s *Store) UpdateSettingAtomic(ctx context.Context, workspace string, name 
 		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(raw), current); err != nil {
 			return nil, errors.Wrapf(err, "failed to unmarshal setting %s", name)
 		}
-		return apply(current, []byte(raw))
+		return apply(current)
 	}, postCommit)
 }
 
@@ -624,24 +572,10 @@ func (s *Store) DeleteSetting(ctx context.Context, workspace string, name storep
 	return nil
 }
 
-// ErrMCPCapabilityUnreadable marks a stored MCP capability ceiling this build
-// cannot interpret: an enum name it does not know, a wrong-typed value, a row
-// that is not the JSON the setting expects. It is deliberately distinct from a
-// failed READ, because the two are opposite outcomes for the caller. A read
-// that failed is an outage and will likely succeed on retry; a value that
-// cannot be interpreted will never succeed until an admin rewrites it, so
-// telling the caller to retry would be a lie and telling it "policy" is the
-// truth. Both refuse.
+// ErrMCPCapabilityUnreadable marks an MCP setting that cannot be parsed or has
+// no explicit capability. Migration and workspace creation always write one,
+// so either state is invalid metadata rather than a runtime default.
 var ErrMCPCapabilityUnreadable = errors.New("the stored MCP capability ceiling cannot be interpreted")
-
-// MCPSettings is the MCP setting resolved for enforcement: the effective
-// ceiling, never UNSPECIFIED, and the masking toggle.
-type MCPSettings struct {
-	Capability storepb.MCPSetting_Capability
-	// IgnoreMaskingExemptions is false when unset, so a workspace that never
-	// configured MCP keeps following each user's masking provisioning.
-	IgnoreMaskingExemptions bool
-}
 
 // GetMCPSettingsUncached reads the workspace's stored MCP setting straight from
 // the database, bypassing the setting cache. The cache has no TTL and only
@@ -650,119 +584,30 @@ type MCPSettings struct {
 //
 // Both fields come off one row, so the gate cannot admit a call that a later
 // enforcement point then judges under a different row.
+// Returns nil with any error; no caller may act on partially resolved settings.
 //
-// The raw-key check exists because protojson silently discards an enum NAME it
-// does not know, and the discarded value resolves to the permissive default
-// below, so a stored {"capability":"READ_ONLYY"} would reopen the workspace. An
-// unknown enum NUMBER survives protojson and fails closed on its own, because
-// no mode serves it, so only the name case needs the raw read. Nothing else
-// about the row is read strictly: rejecting it for an unknown field would let
-// one field from a newer release disable MCP workspace-wide.
-//
-// Before this change the ceiling lived on the workspace profile as
-// mcp_capability. That key is not read here and is not migrated. The shared
-// unmarshaler discards unknown fields, so a profile row still carrying it is
-// inert, and a workspace that set a ceiling before upgrading resolves to
-// READ_WRITE until the MCP setting is saved.
-//
-// Deliberate: 3.21.0 and 3.21.1 served the field on the settings API, but the
-// only UI sat behind isDev() (GeneralPage.tsx) and Terraform never exposed it,
-// so setting a ceiling took a hand-built UpdateSetting call naming the
-// field-mask path.
-func (s *Store) GetMCPSettingsUncached(ctx context.Context, workspace string) (MCPSettings, error) {
-	const unset = storepb.MCPSetting_CAPABILITY_UNSPECIFIED
-	const whenUnset = storepb.MCPSetting_READ_WRITE
-	failClosed := MCPSettings{Capability: unset}
-
-	valueString, exists, err := s.RawSettingValue(ctx, workspace, storepb.SettingName_MCP)
+// Migration 3.22.15 creates this row for every workspace and carries forward
+// the legacy workspace-profile capability, including writing READ_WRITE into
+// pre-existing MCP rows that omitted the capability. Workspace creation writes
+// the safer READ_ONLY default. Missing or unspecified metadata after that fails
+// closed rather than recreating migration behavior at runtime.
+func (s *Store) GetMCPSettingsUncached(ctx context.Context, workspace string) (*storepb.MCPSetting, error) {
+	stored, err := s.GetSettingUncached(ctx, workspace, storepb.SettingName_MCP)
 	if err != nil {
-		return failClosed, err
-	}
-	if !exists {
-		// No MCP setting row: this workspace never configured MCP.
-		return MCPSettings{Capability: whenUnset}, nil
-	}
-
-	setting := &storepb.MCPSetting{}
-	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(valueString), setting); err != nil {
-		return failClosed, errors.Wrapf(ErrMCPCapabilityUnreadable, "the MCP setting does not parse: %v", err)
-	}
-	settings := MCPSettings{
-		Capability:              setting.GetCapability(),
-		IgnoreMaskingExemptions: setting.GetIgnoreMaskingExemptions(),
-	}
-	if settings.Capability != unset {
-		return settings, nil
-	}
-
-	stored, err := RawMCPCapability(valueString)
-	if err != nil {
-		return failClosed, err
-	}
-	if stored != "" {
-		return failClosed, errors.Wrapf(ErrMCPCapabilityUnreadable, "%s is not a value this build understands", stored)
-	}
-	settings.Capability = whenUnset
-	return settings, nil
-}
-
-// UnknownSettingKeys returns the top-level keys a stored row carries that the
-// given message does not define, sorted.
-//
-// The unmarshaler discards them, so a read is unaffected — deliberately: one
-// field from a newer release must not disable a setting workspace-wide. A
-// partial WRITE is the opposite case. It re-marshals what the build understood
-// and the discarded keys are gone, so a merge on an older replica during a
-// rolling upgrade would delete configuration a newer one wrote. A caller that
-// merges rather than replaces checks this first.
-func UnknownSettingKeys(raw string, m proto.Message) ([]string, error) {
-	var fields map[string]json.RawMessage
-	if err := json.Unmarshal([]byte(raw), &fields); err != nil {
-		return nil, errors.Wrapf(err, "the setting is not a JSON object")
-	}
-	known := map[string]bool{}
-	descriptors := m.ProtoReflect().Descriptor().Fields()
-	for i := 0; i < descriptors.Len(); i++ {
-		field := descriptors.Get(i)
-		known[field.JSONName()] = true
-		known[string(field.Name())] = true
-	}
-	var unknown []string
-	for key := range fields {
-		if !known[key] {
-			unknown = append(unknown, key)
+		if errors.Is(err, errSettingValueInvalid) {
+			return nil, errors.Wrapf(ErrMCPCapabilityUnreadable, "the MCP setting does not parse: %v", err)
 		}
+		return nil, err
 	}
-	slices.Sort(unknown)
-	return unknown, nil
-}
-
-// RawMCPCapability returns the MCP setting row's raw capability value, or ""
-// when the row carries no such key. The JSON name and the proto field name are
-// both "capability", so there is one spelling to check.
-//
-// A key present alongside a parsed-unset field means the stored name is one this
-// build does not know. An explicit CAPABILITY_UNSPECIFIED counts as that too,
-// deliberately: protojson omits a zero enum when it writes, and the settings API
-// rejects an explicit UNSPECIFIED, so no Bytebase write produces this key with
-// that value — only a hand-edited row does, and there it is indistinguishable
-// from a typo.
-//
-// Read with encoding/json rather than the shared protojson unmarshaler, and
-// that is forced, not legacy: this recovers what protojson DISCARDED.
-// common.ProtojsonUnmarshaler sets DiscardUnknown, so an enum name this build
-// does not know leaves no trace in the message, and protojson exposes no way to
-// ask what token a field carried. A strict unmarshaler is not the alternative —
-// it does reject the unknown enum name, but it rejects an unknown FIELD with
-// the same error, and tolerating a field a newer replica wrote is the rolling
-// upgrade this build has to survive.
-func RawMCPCapability(value string) (string, error) {
-	var fields map[string]json.RawMessage
-	if err := json.Unmarshal([]byte(value), &fields); err != nil {
-		return "", errors.Wrapf(ErrMCPCapabilityUnreadable, "the MCP setting is not a JSON object: %v", err)
+	if stored == nil {
+		return nil, errors.Errorf("setting %s not found", storepb.SettingName_MCP)
 	}
-	if raw, ok := fields["capability"]; ok {
-		return string(raw), nil
+	setting, ok := stored.Value.(*storepb.MCPSetting)
+	if !ok {
+		return nil, errors.Errorf("invalid setting value type for %s", storepb.SettingName_MCP)
 	}
-	return "", nil
+	if setting.GetCapability() == storepb.MCPSetting_CAPABILITY_UNSPECIFIED {
+		return nil, errors.Wrap(ErrMCPCapabilityUnreadable, "the MCP capability is unspecified")
+	}
+	return setting, nil
 }

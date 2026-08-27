@@ -38,7 +38,7 @@ interface Props {
    * Required, and every caller gates its trigger on having it. An optional one
    * would let a pending or refused GetMCPInfo render as a mode that serves
    * nothing — "0 of 0" over a workspace whose ceiling this drawer exists to
-   * explain. GetMCPInfo refuses outright under an unreadable or unserved
+   * explain. GetMCPInfo refuses outright under an invalid or unserved
    * ceiling (BOT-106), which is exactly when an admin opens this.
    */
   readonly info: MCPInfo;

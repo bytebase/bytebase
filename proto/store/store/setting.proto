@@ -39,8 +39,8 @@ message SystemSetting {
 message WorkspaceProfileSetting {
   reserved 15;
   // 26 was mcp_capability, released in 3.21.0 and moved to the MCP setting.
-  // A row still carrying the old key is inert: the shared unmarshaler discards
-  // unknown fields, and nothing reads it. See store.GetMCPSettingsUncached.
+  // Migration 3.22.15 copies it to the mandatory MCP row and leaves the legacy
+  // key for older replicas during a rolling upgrade. New code does not read it.
   reserved 26;
   reserved "mcp_capability";
   message Announcement {
@@ -178,9 +178,9 @@ message WorkspaceProfileSetting {
 // request and should not share a row — or a parse failure — with branding and
 // sign-in configuration.
 message MCPSetting {
-  // Capability is the ceiling: a session runs at this level or lower. An absent
-  // MCP setting resolves to READ_WRITE, so a workspace that never configured
-  // MCP is unaffected.
+  // Capability is the ceiling: a session runs at this level or lower. Migration
+  // preserves the legacy capability and workspace creation persists READ_ONLY.
+  // A missing MCP setting is invalid metadata.
   enum Capability {
     CAPABILITY_UNSPECIFIED = 0;
     // MCP connections are rejected.

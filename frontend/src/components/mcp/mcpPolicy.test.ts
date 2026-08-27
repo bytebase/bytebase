@@ -24,13 +24,10 @@ import {
   serviceOfMethod,
 } from "./mcpPolicy";
 
-const setting = (
-  fields: Partial<{ capability: number; unreadable: boolean }>
-) =>
+const setting = (fields: Partial<{ capability: number }>) =>
   create(MCPSettingSchema, {
     capability:
       fields.capability ?? MCPSetting_Capability.CAPABILITY_UNSPECIFIED,
-    capabilityUnreadable: fields.unreadable ?? false,
   });
 
 describe("readStoredCeiling", () => {
@@ -41,27 +38,10 @@ describe("readStoredCeiling", () => {
     });
   });
 
-  test("no row is unconfigured, not a choice", () => {
-    expect(readStoredCeiling(setting({}))).toEqual({ kind: "unconfigured" });
-  });
-
-  test("an unreadable row is its own state, never read-write", () => {
-    // The defect BOT-100 records: the two arrive as the same capability and
-    // mean opposite things — one resolves READ_WRITE, the other is refused.
-    const stored = readStoredCeiling(setting({ unreadable: true }));
-    expect(stored).toEqual({ kind: "unreadable" });
-    expect(readStoredCeiling(setting({}))).toEqual({ kind: "unconfigured" });
-  });
-
-  test("the flag outranks a capability that parsed away to unset", () => {
-    // The row reads back CAPABILITY_UNSPECIFIED either way. Only the flag
-    // separates a ceiling nobody can resolve from a workspace that never
-    // configured one, and they resolve to opposite ceilings — refused, versus
-    // the READ_WRITE default (BOT-100).
-    expect(readStoredCeiling(setting({ unreadable: true }))).toEqual({
-      kind: "unreadable",
-    });
-    expect(readStoredCeiling(setting({}))).toEqual({ kind: "unconfigured" });
+  test("an unspecified capability is unreadable, never read-write", () => {
+    // Migration gives every workspace a concrete capability, so unspecified
+    // means the stored token could not be resolved and enforcement refuses it.
+    expect(readStoredCeiling(setting({}))).toEqual({ kind: "unreadable" });
   });
 
   test("a number no mode serves is unserved", () => {
@@ -83,12 +63,6 @@ describe("initialCapabilityPick", () => {
     ).toBe(MCPSetting_Capability.DISABLED);
   });
 
-  test("an unconfigured row preselects the ceiling it resolves to", () => {
-    expect(initialCapabilityPick({ kind: "unconfigured" })).toBe(
-      MCPSetting_Capability.READ_WRITE
-    );
-  });
-
   test("a broken row preselects nothing, so every pick is savable", () => {
     // Preselecting read-write here is what left an admin unable to repair the
     // row to read-write at all: the pick matched the preselection, so the form
@@ -102,10 +76,9 @@ describe("initialCapabilityPick", () => {
     }
   });
 
-  test("a readable row is not broken", () => {
+  test("a valid mode is not broken", () => {
     // Without this the whole suite passes on `ceilingIsBroken = () => true`,
     // which would put every workspace into the repair banner.
-    expect(ceilingIsBroken({ kind: "unconfigured" })).toBe(false);
     expect(
       ceilingIsBroken({
         kind: "mode",

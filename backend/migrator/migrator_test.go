@@ -21,8 +21,73 @@ import (
 func TestLatestVersion(t *testing.T) {
 	files, err := getSortedVersionedFiles()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("3.22.14"), *files[len(files)-1].version)
-	require.Equal(t, "migration/3.22/0014##token_row_created_at.sql", files[len(files)-1].path)
+	require.Equal(t, semver.MustParse("3.22.15"), *files[len(files)-1].version)
+	require.Equal(t, "migration/3.22/0015##backfill_mcp_setting.sql", files[len(files)-1].path)
+}
+
+func TestMigration3_22_15BackfillsMCPSetting(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+	db := container.GetDB()
+
+	_, err := db.ExecContext(ctx, `
+		CREATE TABLE workspace (resource_id text PRIMARY KEY);
+		CREATE TABLE setting (
+			name text NOT NULL,
+			workspace text NOT NULL REFERENCES workspace(resource_id),
+			value jsonb NOT NULL,
+			PRIMARY KEY (workspace, name)
+		);
+
+		INSERT INTO workspace (resource_id) VALUES
+			('defaulted'),
+			('legacy-camel'),
+			('legacy-snake'),
+			('legacy-invalid'),
+			('existing-toggle-only'),
+			('already-migrated');
+
+		INSERT INTO setting (name, workspace, value) VALUES
+			('WORKSPACE_PROFILE', 'legacy-camel', '{"mcpCapability":"DISABLED","disallowSignup":true}'),
+			('WORKSPACE_PROFILE', 'legacy-snake', '{"mcp_capability":"READ_ONLY"}'),
+			('WORKSPACE_PROFILE', 'legacy-invalid', '{"mcpCapability":"READ_SIDEWAYS"}'),
+			('WORKSPACE_PROFILE', 'already-migrated', '{"mcpCapability":"DISABLED"}'),
+			('MCP', 'existing-toggle-only', '{"ignoreMaskingExemptions":true}'),
+			('MCP', 'already-migrated', '{"capability":"READ_ONLY","ignoreMaskingExemptions":true}');
+	`)
+	require.NoError(t, err)
+
+	statement, err := migrationFS.ReadFile("migration/3.22/0015##backfill_mcp_setting.sql")
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, string(statement))
+	require.NoError(t, err)
+
+	for workspace, want := range map[string]string{
+		"defaulted":            `{"capability": "READ_WRITE"}`,
+		"legacy-camel":         `{"capability": "DISABLED"}`,
+		"legacy-snake":         `{"capability": "READ_ONLY"}`,
+		"legacy-invalid":       `{"capability": "READ_SIDEWAYS"}`,
+		"existing-toggle-only": `{"capability": "READ_WRITE", "ignoreMaskingExemptions": true}`,
+		"already-migrated":     `{"capability": "READ_ONLY", "ignoreMaskingExemptions": true}`,
+	} {
+		var got string
+		require.NoError(t, db.QueryRowContext(ctx, `
+			SELECT value::text FROM setting WHERE workspace = $1 AND name = 'MCP'
+		`, workspace).Scan(&got))
+		require.JSONEq(t, want, got, workspace)
+	}
+
+	var rows int
+	require.NoError(t, db.QueryRowContext(ctx, `SELECT count(*) FROM setting WHERE name = 'MCP'`).Scan(&rows))
+	require.Equal(t, 6, rows, "every workspace must have exactly one MCP setting")
+
+	var legacyProfile string
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT value::text FROM setting WHERE workspace = 'legacy-camel' AND name = 'WORKSPACE_PROFILE'
+	`).Scan(&legacyProfile))
+	require.JSONEq(t, `{"mcpCapability":"DISABLED","disallowSignup":true}`, legacyProfile,
+		"the old row remains available to older replicas during a rolling upgrade")
 }
 
 func TestVersionUnique(t *testing.T) {

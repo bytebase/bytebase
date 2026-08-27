@@ -196,8 +196,8 @@ type MCPInfo struct {
 	// message's own resource name — MCPInfo is not a named resource and there is
 	// nothing to get it by.
 	Workspace string `protobuf:"bytes,1,opt,name=workspace,proto3" json:"workspace,omitempty"`
-	// The ceiling in force for this workspace. A workspace that never configured
-	// MCP resolves to READ_WRITE.
+	// The ceiling in force for this workspace. Migration preserves the legacy
+	// capability and workspace creation persists READ_ONLY.
 	Capability MCPSetting_Capability `protobuf:"varint,2,opt,name=capability,proto3,enum=bytebase.v1.MCPSetting_Capability" json:"capability,omitempty"`
 	// What each ceiling serves, including the one in force, so an admin can
 	// compare the choices rather than only read the current answer.

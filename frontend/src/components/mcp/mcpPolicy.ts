@@ -19,16 +19,9 @@ export const MCP_CAPABILITY_CHOICES: readonly MCPSetting_Capability[] = [
   MCPSetting_Capability.READ_WRITE,
 ];
 
-/**
- * What the stored row says, which is not always a mode.
- *
- * `unconfigured` and `unreadable` both arrive as CAPABILITY_UNSPECIFIED and
- * mean opposite things: the first resolves READ_WRITE server-side, the second
- * is refused every connection. Collapsing them is the defect BOT-100 records.
- */
+/** What the stored row says, which is not always a mode. */
 export type StoredCeiling =
   | { kind: "mode"; capability: MCPSetting_Capability }
-  | { kind: "unconfigured" }
   | { kind: "unreadable" }
   | { kind: "unserved"; stored: string };
 
@@ -37,17 +30,14 @@ const isChoice = (capability: MCPSetting_Capability): boolean =>
 
 /** Reads the stored row into the state the page renders. */
 export const readStoredCeiling = (setting: MCPSetting): StoredCeiling => {
-  // The server does not return the stored token, only that it could not
-  // resolve one. Unserved is different: that value parsed, so the number is
-  // already here and costs nothing to show.
-  if (setting.capabilityUnreadable) {
-    return { kind: "unreadable" };
-  }
   if (isChoice(setting.capability)) {
     return { kind: "mode", capability: setting.capability };
   }
   if (setting.capability === MCPSetting_Capability.CAPABILITY_UNSPECIFIED) {
-    return { kind: "unconfigured" };
+    // Every workspace is migrated with a concrete capability. Unspecified
+    // therefore means the stored token could not be resolved, and enforcement
+    // refuses it server-side.
+    return { kind: "unreadable" };
   }
   // A number that parsed but no mode serves: the reserved 2, or a ceiling a
   // newer release wrote. Enforcement refuses it, so it is not a choice either.
@@ -76,16 +66,7 @@ export const ceilingIsBroken = (
 export const initialCapabilityPick = (
   stored: StoredCeiling
 ): MCPSetting_Capability | undefined => {
-  switch (stored.kind) {
-    case "mode":
-      return stored.capability;
-    case "unconfigured":
-      // No row resolves READ_WRITE server-side, so this is the ceiling in
-      // force, not a guess.
-      return MCPSetting_Capability.READ_WRITE;
-    default:
-      return undefined;
-  }
+  return stored.kind === "mode" ? stored.capability : undefined;
 };
 
 /**

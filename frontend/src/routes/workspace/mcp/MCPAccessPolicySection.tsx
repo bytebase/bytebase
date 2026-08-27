@@ -74,7 +74,7 @@ export function MCPAccessPolicySection() {
 
   const settingsByName = useAppStore((s) => s.settingsByName);
   // Read from the licence, not from GetMCPInfo. That request refuses outright
-  // under an unreadable or unserved ceiling (BOT-106), which is exactly when an
+  // under an invalid or unserved ceiling (BOT-106), which is exactly when an
   // admin is on this page — and hiding this line there lets them arm a toggle
   // that does nothing while believing they tightened masking.
   const dataMaskingAvailable = useAppStore((s) =>
@@ -140,7 +140,7 @@ export function MCPAccessPolicySection() {
   // for a reason — a hand edit or a newer replica changes it out of band — and
   // getOrFetchSettingByName returns a cached snapshot without revalidating, so
   // a second visit in one session would compute the form's dirty state against
-  // a value that is no longer stored. On an unreadable row that makes the
+  // a value that is no longer stored. On an invalid row that makes the
   // one-save repair unreachable without a reload.
   const [readFailed, setReadFailed] = useState(false);
   // Whether this mount's own read has answered. Until it has, a value left in

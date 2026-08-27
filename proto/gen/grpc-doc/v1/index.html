@@ -14356,36 +14356,6 @@ It narrows what an agent reads through the paths Bytebase masks; it is not
 a confidentiality boundary. </p></td>
                 </tr>
               
-                <tr>
-                  <td>capability_unreadable</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>True when the row carries a capability key that this build cannot resolve
-to a ceiling. An enum name a newer release wrote is the legitimate trigger,
-during a rolling upgrade; a hand-edited token reaches the same state.
-False for every readable row, including one that was never configured.
-
-The capability field cannot carry this on its own: the unmarshaler discards
-an enum name it does not know, so an unreadable row and a never-configured
-one both arrive as CAPABILITY_UNSPECIFIED, while MCP is refused for the
-first and served at READ_WRITE for the second. A client reading only the
-capability shows the most permissive ceiling over a workspace where every
-MCP connection is being refused.
-
-A row protojson cannot parse at all is NOT this state. There is no ceiling
-in it to describe, so the read fails instead, and repairing it needs an
-operator rather than this field.
-
-The stored token itself is deliberately not returned. Telling a typo apart
-from a value a newer release wrote would only pay off if this enum grew,
-and it has not: its one reserved slot held a tier removed before any
-release shipped it.
-
-Set the row right by writing value.mcp.capability. Any other path is
-refused while this is true, because the merge that saved it would erase the
-value nobody could read. </p></td>
-                </tr>
-              
             </tbody>
           </table>
 
@@ -15323,7 +15293,7 @@ Default to this mode.</p></td>
         </table>
       
         <h3 id="bytebase.v1.MCPSetting.Capability">MCPSetting.Capability</h3>
-        <p>Capability is the ceiling: a session runs at this level or lower. An absent</p><p>MCP setting resolves to READ_WRITE, so a workspace that never configured</p><p>MCP is unaffected. Writing CAPABILITY_UNSPECIFIED explicitly is rejected —</p><p>omit the update mask path to leave the ceiling unset.</p>
+        <p>Capability is the ceiling: a session runs at this level or lower. Migration</p><p>preserves the legacy capability and workspace creation persists READ_ONLY.</p><p>A missing MCP setting is invalid metadata.</p><p>Writing CAPABILITY_UNSPECIFIED explicitly is rejected; omit the update mask</p><p>path to leave the current ceiling unchanged.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -36367,8 +36337,8 @@ nothing to get it by. </p></td>
                   <td>capability</td>
                   <td><a href="#bytebase.v1.MCPSetting.Capability">MCPSetting.Capability</a></td>
                   <td></td>
-                  <td><p>The ceiling in force for this workspace. A workspace that never configured
-MCP resolves to READ_WRITE. </p></td>
+                  <td><p>The ceiling in force for this workspace. Migration preserves the legacy
+capability and workspace creation persists READ_ONLY. </p></td>
                 </tr>
               
                 <tr>
