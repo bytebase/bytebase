@@ -55,8 +55,8 @@ test.beforeAll(async ({ browser }) => {
   projectId = env.project.split("/").pop()!;
   await env.api.login(env.adminEmail, env.adminPassword);
 
-  const hrTest = await env.api.findDatabaseByShortName("hr_test");
-  const hrProd = await env.api.findDatabaseByShortName("hr_prod");
+  const hrTest = await env.api.findDatabaseByShortName("hr_test", env.project);
+  const hrProd = await env.api.findDatabaseByShortName("hr_prod", env.project);
   if (!hrTest || !hrProd) {
     throw new Error("plan-check multi-spec setup needs hr_test + hr_prod sample dbs");
   }

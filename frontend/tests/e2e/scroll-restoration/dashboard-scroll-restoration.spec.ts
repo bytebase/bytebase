@@ -150,13 +150,12 @@ test.beforeAll(async ({ browser }) => {
   page = await sharedContext.newPage();
 
   // Seed the way the UI does: each plan is created together with its draft
-  // review issue (createPlanWithDraftReview), so every plan appears in the Plans
-  // list — an issueless plan is not a reachable product state and never lists.
-  // Submit the first ISSUE_COUNT for review so they also surface in the Issues
-  // list (draft issues are hidden there). This exercises the real bulk-create +
-  // submit workflow and stays correct if that workflow changes again.
+  // review issue (createPlanWithDraftReview) and then submitted for review, so
+  // every one surfaces in the Issues list (draft issues are hidden there). An
+  // issueless bare-API plan is not a reachable product state. This exercises
+  // the real create + submit workflow and stays correct if it changes again.
   await page.setViewportSize({ width: 1280, height: 900 }); // the create page needs room
-  for (let i = 0; i < PLAN_COUNT; i++) {
+  for (let i = 0; i < ISSUE_COUNT; i++) {
     await createDatabaseChangePlanViaUI(page, {
       baseURL: env.baseURL,
       projectId,
@@ -164,9 +163,7 @@ test.beforeAll(async ({ browser }) => {
       title: `${searchToken} issue ${i}`,
       sql: "SELECT 1;",
     });
-    if (i < ISSUE_COUNT) {
-      await submitDraftForReviewViaUI(page);
-    }
+    await submitDraftForReviewViaUI(page);
   }
   await page.setViewportSize({ width: 600, height: 720 });
 });
