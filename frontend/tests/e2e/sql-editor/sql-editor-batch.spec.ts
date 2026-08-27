@@ -45,16 +45,15 @@ test.afterAll(async () => {
 });
 
 test.describe("Switching DB connection preserves editor content (C4)", () => {
-  // The disposable server provisions two HR sample databases (hr_prod
-  // on prod-sample-instance, hr_test on test-sample-instance). We use
-  // whichever DB env.database resolved to as the source and pick the
-  // other as the target — the contract is engine-/instance-agnostic.
+  // The setup project adds hr_prod beside the hr_test sample database. We use
+  // whichever DB env.database resolved to as the source and pick the other as
+  // the target — the contract is engine-/instance-agnostic.
 
   test("typing into Monaco then switching DBs keeps the SQL body intact", async () => {
     const sourceShort = env.databaseId;
     const targetShort = sourceShort === "hr_prod" ? "hr_test" : "hr_prod";
 
-    const target = await env.api.findDatabaseByShortName(targetShort);
+    const target = await env.api.findDatabaseByShortName(targetShort, env.project);
     test.skip(
       !target,
       `target DB ${targetShort} not present — needs both hr_prod and hr_test`,

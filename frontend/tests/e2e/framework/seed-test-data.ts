@@ -7,7 +7,7 @@ import { BytebaseApiClient } from "./api-client";
 const TEST_EXTERNAL_URL = "https://e2e.bytebase.test";
 
 /**
- * Provisions WORKSPACE-LEVEL baseline data on top of `api.setupSample()`.
+ * Provisions workspace-level baseline data after the project-scoped sample.
  * Called once per disposable server boot from setup-project.ts.
  *
  * Scope is intentionally narrow: only changes that EVERY spec wants. Any
