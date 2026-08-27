@@ -102,21 +102,39 @@ func (*Driver) GetDB() *sql.DB {
 }
 
 // Execute executes a SQL statement.
-func (d *Driver) Execute(ctx context.Context, statement string, _ db.ExecuteOptions) (int64, error) {
+func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteOptions) (int64, error) {
 	q := d.client.Query(statement)
 	q.DefaultDatasetID = d.databaseName
+
+	// BigQuery submits the whole sheet as one query job, so the task run log
+	// carries one command spanning the entire statement, as snowflake does.
+	// Without these the log holds only the surrounding sync entries and the
+	// engine's error reaches no reader.
+	opts.LogCommandExecute(&storepb.Range{Start: 0, End: int32(len(statement))}, statement)
+
 	job, err := q.Run(ctx)
 	if err != nil {
+		opts.LogCommandResponse(0, nil, err.Error())
 		return 0, err
 	}
 	status, err := job.Wait(ctx)
 	if err != nil {
+		opts.LogCommandResponse(0, nil, err.Error())
 		return 0, err
 	}
 	if err := status.Err(); err != nil {
+		opts.LogCommandResponse(0, nil, err.Error())
 		return 0, err
 	}
-	return 0, nil
+
+	// NumDMLAffectedRows is 0 for DDL and for a multi-statement script, whose
+	// parent job reports statementType SCRIPT and carries no row count.
+	var affectedRows int64
+	if stats, ok := status.Statistics.Details.(*bigquery.QueryStatistics); ok {
+		affectedRows = stats.NumDMLAffectedRows
+	}
+	opts.LogCommandResponse(affectedRows, nil, "")
+	return affectedRows, nil
 }
 
 // QueryConn queries a SQL statement in a given connection.
