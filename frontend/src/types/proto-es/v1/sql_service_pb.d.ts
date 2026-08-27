@@ -19,7 +19,8 @@ export declare const file_v1_sql_service: GenFile;
 export declare type AdminExecuteRequest = Message<"bytebase.v1.AdminExecuteRequest"> & {
   /**
    * The name is the instance name to execute the query against.
-   * Format: instances/{instance}/databases/{databaseName}
+   * Format: instances/{instance}/databases/{databaseName} or
+   * projects/{project}/instances/{instance}/databases/{databaseName}
    *
    * @generated from field: string name = 1;
    */
@@ -85,8 +86,9 @@ export declare const AdminExecuteResponseSchema: GenMessage<AdminExecuteResponse
  */
 export declare type QueryRequest = Message<"bytebase.v1.QueryRequest"> & {
   /**
-   * The name is the instance name to execute the query against.
-   * Format: instances/{instance}/databases/{databaseName}
+   * The name is the database resource name to execute the query against.
+   * Format: instances/{instance}/databases/{databaseName} or
+   * projects/{project}/instances/{instance}/databases/{databaseName}
    *
    * @generated from field: string name = 1;
    */
@@ -1000,8 +1002,8 @@ export declare const Advice_RuleTypeSchema: GenEnum<Advice_RuleType>;
 export declare type ExportRequest = Message<"bytebase.v1.ExportRequest"> & {
   /**
    * The name is the resource name to execute the export against.
-   * Format: instances/{instance}/databases/{database}
-   * Format: instances/{instance}
+   * Format: instances/{instance}/databases/{database} or
+   * projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: string name = 1;
    */

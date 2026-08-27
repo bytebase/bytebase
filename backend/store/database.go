@@ -989,11 +989,18 @@ func GetListDatabaseFilter(workspace, filter string) (*qb.Query, error) {
 			}
 			return qb.Q().Space("db.project = ?", projectID), nil
 		case "instance":
-			instanceID, err := common.GetInstanceID(value.(string))
+			instanceName, ok := value.(string)
+			if !ok {
+				return nil, errors.Errorf("invalid instance filter %q", value)
+			}
+			if projectID, instanceID, err := common.GetProjectIDInstanceID(instanceName); err == nil {
+				return qb.Q().Space("db.instance = ? AND instance.project = ?", instanceID, projectID), nil
+			}
+			instanceID, err := common.GetInstanceID(instanceName)
 			if err != nil {
 				return nil, errors.Errorf("invalid instance filter %q", value)
 			}
-			return qb.Q().Space("db.instance = ?", instanceID), nil
+			return qb.Q().Space("db.instance = ? AND instance.project IS NULL", instanceID), nil
 		case "environment":
 			environment, ok := value.(string)
 			if !ok {

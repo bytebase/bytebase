@@ -211,6 +211,12 @@ func TestBuildDatabaseFilter(t *testing.T) {
 			project:  "hr-system",
 			expect:   `name.contains("employee_db") && instance == "instances/prod-pg" && project == "projects/hr-system"`,
 		},
+		{
+			name:     "with canonical project instance",
+			database: "employee_db",
+			instance: "projects/hr-system/instances/prod-pg",
+			expect:   `name.contains("employee_db") && instance == "projects/hr-system/instances/prod-pg"`,
+		},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
@@ -349,6 +355,39 @@ func TestQueryDatabase_AmbiguousWithInstance(t *testing.T) {
 	require.False(t, resolved.ambiguous)
 	require.Equal(t, "instances/prod-pg/databases/employee_db", resolved.resourceName)
 	require.Equal(t, "ds-admin-1", resolved.dataSourceID)
+}
+
+func TestQueryDatabase_ProjectInstanceRequiresCanonicalInstanceFilter(t *testing.T) {
+	const (
+		instanceName = "projects/hr-system/instances/prod-pg"
+		databaseName = "projects/hr-system/instances/prod-pg/databases/employee_db"
+	)
+	databases := []map[string]any{
+		makeDatabase(databaseName, instanceName, "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	s := newTestServerWithMock(t, mockListDatabases(databases))
+
+	resolved, err := s.resolveDatabase(testContext(), "employee_db", instanceName, "")
+	require.NoError(t, err)
+	require.Equal(t, databaseName, resolved.resourceName)
+
+	_, err = s.resolveDatabase(testContext(), "employee_db", "prod-pg", "")
+	require.Error(t, err)
+	var te *toolError
+	require.ErrorAs(t, err, &te)
+	require.Equal(t, "DATABASE_NOT_FOUND", te.Code)
+}
+
+func TestQueryDatabase_WorkspaceInstanceWithProjectFilter(t *testing.T) {
+	databaseName := "instances/prod-pg/databases/employee_db"
+	databases := []map[string]any{
+		makeDatabase(databaseName, "instances/prod-pg", "projects/hr-system", "POSTGRES", "ds-admin-1"),
+	}
+	s := newTestServerWithMock(t, mockListDatabases(databases))
+
+	resolved, err := s.resolveDatabase(testContext(), "employee_db", "prod-pg", "hr-system")
+	require.NoError(t, err)
+	require.Equal(t, databaseName, resolved.resourceName)
 }
 
 func TestQueryDatabase_ReadOnlyDatasource(t *testing.T) {

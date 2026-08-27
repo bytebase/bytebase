@@ -555,7 +555,7 @@ export declare type SavedQuery = Message<"bytebase.v1.SavedQuery"> & {
    * The connected database, which must belong to the saved query's own
    * project. Empty when none is connected, or when the database no longer
    * exists.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: string database = 3;
    */

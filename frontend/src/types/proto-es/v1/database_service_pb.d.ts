@@ -122,7 +122,7 @@ export declare type ListDatabasesRequest = Message<"bytebase.v1.ListDatabasesReq
    * - environment: the environment full name in "environments/{id}" format, support "==" operator.
    * - name: the database name, support ".contains()" operator.
    * - project: the project full name in "projects/{id}" format, support "==" operator.
-   * - instance: the instance full name in "instances/{id}" format, support "==" operator.
+   * - instance: the instance full name in "instances/{id}" or "projects/{project}/instances/{id}" format, support "==" operator.
    * - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
    * - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
    * - table: filter by the database table, support "==" and ".contains()" operator.
@@ -133,6 +133,7 @@ export declare type ListDatabasesRequest = Message<"bytebase.v1.ListDatabasesReq
    * environment == "" (find databases which environment is not set)
    * project == "projects/{project resource id}"
    * instance == "instances/{instance resource id}"
+   * instance == "projects/{project resource id}/instances/{instance resource id}"
    * name.contains("database name")
    * engine == "MYSQL"
    * engine in ["MYSQL", "POSTGRES"]

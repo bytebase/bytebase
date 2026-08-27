@@ -276,6 +276,21 @@ func TestPopulateRawResourcesUsesWorkspaceFallback(t *testing.T) {
 	require.Empty(t, resources)
 }
 
+func TestPopulateRawResourcesBatchSyncUsesDatabaseProject(t *testing.T) {
+	ctx, stores, instanceID, databaseName, _, _ := setupWorkspaceInstanceDescendantServiceTest(t)
+	resources, err := populateRawResources(
+		ctx,
+		stores,
+		&v1pb.BatchSyncDatabasesRequest{
+			Parent: "-",
+			Names:  []string{common.FormatDatabase(instanceID, databaseName)},
+		},
+		v1connect.DatabaseServiceBatchSyncDatabasesProcedure,
+	)
+	require.NoError(t, err)
+	require.Equal(t, []*common.Resource{{Type: common.ResourceTypeProject, ID: "project-a"}}, resources)
+}
+
 func TestPopulateRawResourcesAllowsDeletedSampleProjectInstanceProject(t *testing.T) {
 	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
@@ -441,6 +456,20 @@ func TestGetResourceFromRequest(t *testing.T) {
 			},
 			method: "/bytebase.v1.DatabaseService/BatchUpdateDatabases",
 			want:   []string{"instances/hello/databases/hello", "instances/world/databases/world"},
+		},
+		{
+			request: &v1pb.BatchSyncDatabasesRequest{
+				Parent: "-",
+				Names: []string{
+					"instances/hello/databases/hello",
+					"projects/project-a/instances/world/databases/world",
+				},
+			},
+			method: "/bytebase.v1.DatabaseService/BatchSyncDatabases",
+			want: []string{
+				"instances/hello/databases/hello",
+				"projects/project-a/instances/world/databases/world",
+			},
 		},
 		{
 			request: &v1pb.BatchUpdateDatabasesRequest{

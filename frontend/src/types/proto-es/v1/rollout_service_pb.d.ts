@@ -482,8 +482,8 @@ export declare type Task = Message<"bytebase.v1.Task"> & {
   type: Task_Type;
 
   /**
-   * Format: instances/{instance} if the task is DatabaseCreate.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance} or projects/{project}/instances/{instance} if the task is DatabaseCreate.
+   * Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: string target = 6;
    */
@@ -1336,7 +1336,7 @@ export declare const TaskRunLogEntry_PriorBackup_PriorBackupDetail_ItemSchema: G
 export declare type TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item_Table = Message<"bytebase.v1.TaskRunLogEntry.PriorBackup.PriorBackupDetail.Item.Table"> & {
   /**
    * The database information.
-   * Format: instances/{instance}/databases/{database}
+   * Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
    *
    * @generated from field: string database = 1;
    */

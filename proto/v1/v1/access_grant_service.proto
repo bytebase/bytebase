@@ -127,7 +127,7 @@ message AccessGrant {
   string issue = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The target databases for this access grant.
-  // Format: instances/{instance}/databases/{database}
+  // Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
   repeated string targets = 6 [(google.api.field_behavior) = REQUIRED];
 
   // The query permission granted.
