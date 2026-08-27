@@ -1,6 +1,6 @@
 # Require re-authentication to change your own credentials
 
-Status: proposal · 2026-08-24
+Status: implemented with deltas · proposed 2026-08-24, shipped 2026-08-27
 
 `UpdateUser` lets an authenticated caller rewrite their own password, TOTP secret, and recovery
 codes without proving they still control the credential being replaced. Closes T10 in
