@@ -390,7 +390,7 @@ func (m *Manager) ListInstances(ctx context.Context, workspaceID string) ([]*sam
 		}
 		instances := make([]*sample.Instance, 0, len(payload.Instances))
 		for _, entry := range payload.Instances {
-			instance := &sample.Instance{Name: common.FormatInstance(entry.InstanceId)}
+			instance := &sample.Instance{Name: common.FormatProjectInstance(entry.GetProjectId(), entry.InstanceId)}
 			if setup.DeletedAt == nil {
 				instance.ExpireTime = setup.ExpiresAt
 			}

@@ -189,7 +189,7 @@ func TestProjectPurgeRemovesSelfHostSample(t *testing.T) {
 	instances, err := manager.ListInstances(ctx, "default")
 	require.NoError(t, err)
 	require.Len(t, instances, 1)
-	require.Equal(t, common.FormatInstance(instanceID), instances[0].Name)
+	require.Equal(t, common.FormatProjectInstance(projectID, instanceID), instances[0].Name)
 	require.Nil(t, instances[0].ExpireTime)
 }
 
