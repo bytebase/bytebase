@@ -130,11 +130,23 @@ func (d *Driver) Execute(ctx context.Context, statement string, opts db.ExecuteO
 	// NumDMLAffectedRows is 0 for DDL and for a multi-statement script, whose
 	// parent job reports statementType SCRIPT and carries no row count.
 	var affectedRows int64
-	if stats, ok := status.Statistics.Details.(*bigquery.QueryStatistics); ok {
+	if stats, ok := statisticsOf(status); ok {
 		affectedRows = stats.NumDMLAffectedRows
 	}
 	opts.LogCommandResponse(affectedRows, nil, "")
 	return affectedRows, nil
+}
+
+// statisticsOf returns the query statistics of a finished job.
+// JobStatus.Statistics is nil when the jobs.get response carried no statistics
+// block (Job.setStatistics returns early on that), so the Details assertion
+// alone dereferences nil.
+func statisticsOf(status *bigquery.JobStatus) (*bigquery.QueryStatistics, bool) {
+	if status.Statistics == nil {
+		return nil, false
+	}
+	stats, ok := status.Statistics.Details.(*bigquery.QueryStatistics)
+	return stats, ok
 }
 
 // QueryConn queries a SQL statement in a given connection.
@@ -218,12 +230,11 @@ func (d *Driver) QueryConn(ctx context.Context, _ *sql.Conn, statement string, q
 			if err := status.Err(); err != nil {
 				return nil, err
 			}
-			switch r := status.Statistics.Details.(type) {
-			case *bigquery.QueryStatistics:
-				return util.BuildAffectedRowsResult(r.NumDMLAffectedRows, nil), nil
-			default:
+			stats, ok := statisticsOf(status)
+			if !ok {
 				return nil, errors.New("invalid status statistics detail type")
 			}
+			return util.BuildAffectedRowsResult(stats.NumDMLAffectedRows, nil), nil
 		}()
 		stop := false
 		if err != nil {
@@ -300,7 +311,7 @@ func (d *Driver) dryRunQuery(ctx context.Context, statement string, queryContext
 			Latency:   durationpb.New(time.Since(startTime)),
 		}
 
-		if stats, ok := status.Statistics.Details.(*bigquery.QueryStatistics); ok {
+		if stats, ok := statisticsOf(status); ok {
 			bytesProcessed := stats.TotalBytesProcessed
 
 			// Format output similar to bq CLI

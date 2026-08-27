@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { HumanizeTs } from "@/components/HumanizeTs";
 import { TaskRunStatusIcon } from "@/components/TaskRunStatusIcon";
 import { TaskRunLogViewer } from "@/components/task-run-log";
-import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tooltip } from "@/components/ui/tooltip";
 import { executorEmailOfTaskRun } from "@/lib/taskRun";
@@ -15,6 +14,7 @@ import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { stringifyTaskRunStatus } from "@/utils/v1/issue/rollout";
 import { PlanDetailTaskRunSession } from "../PlanDetailTaskRunSession";
+import { TaskRunErrorAlert } from "./TaskRunErrorAlert";
 
 const STATUS_LABEL_CLASS: Partial<Record<TaskRun_Status, string>> = {
   [TaskRun_Status.RUNNING]: "text-info",
@@ -103,22 +103,7 @@ export function DeployLatestTaskRunInfo({
         )}
       </div>
 
-      {/* The engine's error, which the log below cannot be relied on to carry:
-          cassandra, databricks, elasticsearch, hive, redis, spanner and
-          starrocks never write a command-response entry, so for them the log
-          holds only the surrounding sync steps and the failure reads as
-          "Database Sync ✓ Completed" with no cause anywhere. */}
-      {taskRun.status === TaskRun_Status.FAILED && taskRun.detail && (
-        <Alert
-          variant="error"
-          title={t("common.error")}
-          description={
-            <span className="whitespace-pre-wrap break-words font-mono text-xs">
-              {taskRun.detail}
-            </span>
-          }
-        />
-      )}
+      <TaskRunErrorAlert taskRun={taskRun} />
 
       {/* Status is part of the key on purpose: a status flip (RUNNING→DONE)
           remounts the viewer for a fresh disclosure state on the new phase.
