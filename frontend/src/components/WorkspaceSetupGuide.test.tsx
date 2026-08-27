@@ -15,7 +15,6 @@ import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  isSaaSMode: vi.fn(() => true),
   projectsByName: {} as Record<string, unknown>,
   instancesByName: {} as Record<string, unknown>,
   databasesByName: {} as Record<string, unknown>,
@@ -53,14 +52,15 @@ const mocks = vi.hoisted(() => ({
   currentRoute: { name: "workspace.home" } as {
     name?: string;
     params?: Record<string, string | undefined>;
+    query?: Record<string, string | undefined>;
   },
   routerPush: vi.fn(),
   captureMetric: vi.fn(),
   defaultProjectName: "projects/default",
-  sampleInstances: [] as { instance: string }[],
   userCountInIam: 1,
   hideQuickStart: false,
   workspaceName: "workspaces/default",
+  productModelContent: "guide content" as string | undefined,
 }));
 
 const dismissedIntroStateKey = "workspace-setup-guide.dismissed";
@@ -72,6 +72,7 @@ vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
   useTranslation: () => ({
     t: (key: string) => key,
+    i18n: { resolvedLanguage: "en-US" },
   }),
 }));
 
@@ -120,7 +121,6 @@ vi.mock("@/app/analytics/provider", () => ({
 
 vi.mock("@/stores/app", () => {
   const getState = () => ({
-    isSaaSMode: mocks.isSaaSMode,
     projectsByName: mocks.projectsByName,
     instancesByName: mocks.instancesByName,
     databasesByName: mocks.databasesByName,
@@ -136,7 +136,6 @@ vi.mock("@/stores/app", () => {
     hasWorkspacePermission: mocks.hasWorkspacePermissionV2,
     serverInfo: {
       defaultProject: mocks.defaultProjectName,
-      sample: { instances: mocks.sampleInstances },
     },
     introStateVersion: mocks.introStateVersion,
     getIntroStateByKey: mocks.getIntroStateByKey,
@@ -203,6 +202,28 @@ vi.mock("@/lib/plan/issue", () => ({
   preCreateIssue: mocks.preCreateIssue,
 }));
 
+vi.mock("@/components/HowBytebaseWorksSheet", () => ({
+  getHowBytebaseWorksGuideContent: () => mocks.productModelContent,
+  HowBytebaseWorksSheet: ({
+    open,
+    onOpenChange,
+  }: {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+  }) =>
+    open ? (
+      <div data-testid="product-model-sheet">
+        <button
+          data-testid="close-product-model"
+          type="button"
+          onClick={() => onOpenChange(false)}
+        >
+          Close
+        </button>
+      </div>
+    ) : null,
+}));
+
 import { WorkspaceSetupGuide } from "./WorkspaceSetupGuide";
 
 let container: HTMLDivElement;
@@ -219,7 +240,6 @@ beforeEach(() => {
     mocks.introState[key] = newState;
     mocks.introStateVersion += 1;
   });
-  mocks.isSaaSMode.mockReturnValue(true);
   mocks.projectsByName = {};
   mocks.instancesByName = {};
   mocks.databasesByName = {};
@@ -245,10 +265,10 @@ beforeEach(() => {
   mocks.hasWorkspacePermissionV2.mockReturnValue(true);
   mocks.currentRoute = { name: "workspace.home" };
   mocks.defaultProjectName = "projects/default";
-  mocks.sampleInstances = [];
   mocks.userCountInIam = 1;
   mocks.hideQuickStart = false;
   mocks.workspaceName = "workspaces/default";
+  mocks.productModelContent = "guide content";
   container = document.createElement("div");
   document.body.appendChild(container);
   root = createRoot(container);
@@ -273,18 +293,99 @@ const render = async (element: ReactElement) => {
 };
 
 describe("WorkspaceSetupGuide", () => {
-  it("renders outside SaaS mode", async () => {
-    mocks.isSaaSMode.mockReturnValue(false);
+  it("opens the product model once for a new eligible guide", async () => {
+    await render(<WorkspaceSetupGuide />);
+
+    expect(
+      container.querySelector('[data-testid="product-model-sheet"]')
+    ).not.toBeNull();
+  });
+
+  it("does not auto-open the product model over a contextual intro", async () => {
+    mocks.currentRoute = {
+      name: "workspace.project.database",
+      query: { intro: "connect-database" },
+    };
 
     await render(<WorkspaceSetupGuide />);
 
-    expect(container.textContent).toContain(
-      "workspace-setup-guide.self"
-    );
-    expect(mocks.fetchProjectList).toHaveBeenCalled();
+    expect(
+      container.querySelector('[data-testid="product-model-sheet"]')
+    ).toBeNull();
   });
 
-  it("shows the first incomplete setup action for SaaS workspaces", async () => {
+  it("does not auto-open a product model that was already seen", async () => {
+    mocks.introState["workspace-setup-guide.product-model-seen"] = true;
+
+    await render(<WorkspaceSetupGuide />);
+
+    expect(
+      container.querySelector('[data-testid="product-model-sheet"]')
+    ).toBeNull();
+  });
+
+  it("disables the product model drawer when localized content is missing", async () => {
+    mocks.productModelContent = undefined;
+
+    await render(<WorkspaceSetupGuide />);
+
+    expect(
+      container.querySelector('[data-testid="open-product-model"]')
+    ).toBeNull();
+    expect(
+      container.querySelector('[data-testid="product-model-sheet"]')
+    ).toBeNull();
+  });
+
+  it("persists seen state when the product model closes", async () => {
+    await render(<WorkspaceSetupGuide />);
+
+    act(() => {
+      container
+        .querySelector<HTMLButtonElement>(
+          '[data-testid="close-product-model"]'
+        )
+        ?.click();
+    });
+
+    expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
+      key: "workspace-setup-guide.product-model-seen",
+      newState: true,
+    });
+  });
+
+  it("uses the shared product model label for the guide control", async () => {
+    await render(<WorkspaceSetupGuide />);
+
+    expect(
+      container.querySelector('[data-testid="open-product-model"]')
+    ).toHaveAttribute("aria-label", "workspace-setup-guide.product-model");
+  });
+
+  it("reopens the product model from the guide control", async () => {
+    mocks.introState["workspace-setup-guide.product-model-seen"] = true;
+
+    await render(<WorkspaceSetupGuide />);
+
+    act(() => {
+      container
+        .querySelector<HTMLButtonElement>('[data-testid="open-product-model"]')
+        ?.click();
+    });
+
+    expect(
+      container.querySelector('[data-testid="product-model-sheet"]')
+    ).not.toBeNull();
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "setup guide action clicked",
+      properties: {
+        action: "product_model_open",
+        source: "guide_bar",
+      },
+    });
+  });
+
+  it("shows the first incomplete setup action", async () => {
     await render(<WorkspaceSetupGuide />);
 
     expect(container.textContent).toContain(
@@ -792,11 +893,7 @@ describe("WorkspaceSetupGuide", () => {
     ]);
   });
 
-  it("counts self-host sample resources as project and instance readiness", async () => {
-    mocks.sampleInstances = [
-      { instance: "instances/sample-one" },
-      { instance: "instances/sample-two" },
-    ];
+  it("counts workspace-owned instances as project and instance readiness", async () => {
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-sample" }],
       nextPageToken: "",
@@ -840,22 +937,19 @@ describe("WorkspaceSetupGuide", () => {
     }
   });
 
-  it("counts SaaS sample resources as project and instance readiness", async () => {
-    mocks.sampleInstances = [
-      { instance: "projects/app/instances/saas-sample" },
-    ];
+  it("counts project-owned instances as project and instance readiness", async () => {
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/app" }],
       nextPageToken: "",
     });
     mocks.fetchInstanceList.mockResolvedValue({
-      instances: [{ name: "projects/app/instances/saas-sample" }],
+      instances: [{ name: "projects/app/instances/project-sample" }],
       nextPageToken: "",
     });
     mocks.fetchDatabases.mockResolvedValue({
       databases: [
         {
-          name: "projects/app/instances/saas-sample/databases/employee",
+          name: "projects/app/instances/project-sample/databases/employee",
           project: "projects/app",
         },
       ],
@@ -882,7 +976,6 @@ describe("WorkspaceSetupGuide", () => {
 
   it("uses only the first resource page", async () => {
     mocks.introState[databaseExploredIntroStateKey] = true;
-    mocks.sampleInstances = [{ instance: "instances/sample" }];
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-sample" }],
       nextPageToken: "project-page-2",
@@ -919,13 +1012,13 @@ describe("WorkspaceSetupGuide", () => {
       })
     );
     expect(mocks.fetchProjectList).toHaveBeenCalledTimes(1);
-    expect(mocks.fetchInstanceList).toHaveBeenCalledTimes(1);
+    expect(mocks.fetchInstanceList).toHaveBeenCalledTimes(2);
     expect(mocks.fetchDatabases).toHaveBeenCalledTimes(1);
     expect(mocks.fetchProjectList).toHaveBeenCalledWith(
       expect.objectContaining({ pageSize: 1 })
     );
     expect(mocks.fetchInstanceList).toHaveBeenCalledWith(
-      expect.objectContaining({ pageSize: 1 })
+      expect.objectContaining({ pageSize: 1, parent: "projects/project-sample" })
     );
     expect(mocks.fetchDatabases).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -1322,9 +1415,6 @@ describe("WorkspaceSetupGuide", () => {
   });
 
   it("completes Query data only after SQL execution finishes", async () => {
-    mocks.sampleInstances = [
-      { instance: "projects/app/instances/saas-sample" },
-    ];
     mocks.fetchProjectList.mockResolvedValue({
       projects: [{ name: "projects/project-a" }],
       nextPageToken: "",
@@ -1365,8 +1455,8 @@ describe("WorkspaceSetupGuide", () => {
 
     await act(async () => {
       await sqlEditorEvents.emit("query-executed", {
-        database: "projects/app/instances/saas-sample/databases/employee",
-        project: "projects/project-sample",
+        database: "projects/project-a/instances/instance-a/databases/db-a",
+        project: "projects/project-a",
       });
     });
 
@@ -1740,6 +1830,31 @@ describe("WorkspaceSetupGuide", () => {
     expect(container.textContent).toContain(
       "workspace-setup-guide.steps.database"
     );
+  });
+
+  it("completes the instance step for an instance owned by the project", async () => {
+    mocks.fetchProjectList.mockResolvedValue({
+      projects: [{ name: "projects/project-a" }],
+      nextPageToken: "",
+    });
+    mocks.fetchInstanceList.mockImplementation(async (params) => ({
+      instances:
+        params?.parent === "projects/project-a"
+          ? [{ name: "projects/project-a/instances/sample" }]
+          : [],
+      nextPageToken: "",
+    }));
+
+    await render(<WorkspaceSetupGuide />);
+
+    expect(mocks.fetchInstanceList).toHaveBeenCalledWith(
+      expect.objectContaining({ parent: "projects/project-a", pageSize: 1 })
+    );
+    expect(
+      container
+        .querySelector("[data-testid='setup-step-hasInstance']")
+        ?.querySelector(".lucide-circle-check-big")
+    ).not.toBeNull();
   });
 
   it("keeps the guide visible while progress is refreshing", async () => {

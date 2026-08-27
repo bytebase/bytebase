@@ -41,10 +41,19 @@ const mocks = vi.hoisted(() => ({
   prepareSampleProjectInstance: vi.fn(),
   setRecentProject: vi.fn(),
   routerReplace: vi.fn(),
+  captureMetric: vi.fn(),
   pushNotification: vi.fn(),
   hasWorkspacePermissionV2: vi.fn(() => false),
   canCreateProject: true,
   sampleAvailable: true,
+  sampleInstances: [] as Array<{ instance: string }>,
+  isSaaSMode: false,
+}));
+
+vi.mock("@/app/analytics/provider", () => ({
+  behaviorAnalytics: {
+    captureMetric: mocks.captureMetric,
+  },
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
@@ -67,7 +76,10 @@ vi.mock("@/stores/app", () => ({
       updateUser: typeof mocks.updateUser;
       updateWorkspace: typeof mocks.updateWorkspace;
       prepareSampleProjectInstance: typeof mocks.prepareSampleProjectInstance;
-      serverInfo: { sample: { available: boolean } };
+      serverInfo: {
+        sample: { available: boolean; instances: Array<{ instance: string }> };
+      };
+      isSaaSMode: () => boolean;
     }) => unknown
   ) =>
     selector({
@@ -76,8 +88,12 @@ vi.mock("@/stores/app", () => ({
       updateWorkspace: mocks.updateWorkspace,
       prepareSampleProjectInstance: mocks.prepareSampleProjectInstance,
       serverInfo: {
-        sample: { available: mocks.sampleAvailable },
+        sample: {
+          available: mocks.sampleAvailable,
+          instances: mocks.sampleInstances,
+        },
       },
+      isSaaSMode: () => mocks.isSaaSMode,
     }),
 }));
 
@@ -107,7 +123,16 @@ vi.mock("@/components/ResourceIdField", async () => {
         onChange?.("new-project");
         onValidationChange?.(true);
       }, [onChange, onValidationChange, resourceTitle]);
-      return <input data-testid="project-resource-id" readOnly value={value} />;
+      return (
+        <input
+          data-testid="project-resource-id"
+          value={value}
+          onChange={(event) => {
+            onChange?.(event.target.value);
+            onValidationChange?.(event.target.value.length > 0);
+          }}
+        />
+      );
     },
   };
 });
@@ -148,7 +173,7 @@ vi.mock("react-i18next", () => ({
   }),
 }));
 
-let ProfileSetupPage: typeof import("./ProfileSetupPage").ProfileSetupPage;
+let WorkspaceSetupPage: typeof import("./WorkspaceSetupPage").WorkspaceSetupPage;
 
 const renderIntoContainer = (element: ReactElement) => {
   const container = document.createElement("div");
@@ -172,6 +197,8 @@ beforeEach(async () => {
   mocks.canUpdateWorkspace = true;
   mocks.canCreateProject = true;
   mocks.sampleAvailable = true;
+  mocks.sampleInstances = [];
+  mocks.isSaaSMode = false;
   mocks.workspacePolicy = {
     bindings: [
       {
@@ -187,12 +214,12 @@ beforeEach(async () => {
   mocks.prepareSampleProjectInstance.mockResolvedValue({
     name: "projects/new-project/instances/sample",
   });
-  ({ ProfileSetupPage } = await import("./ProfileSetupPage"));
+  ({ WorkspaceSetupPage } = await import("./WorkspaceSetupPage"));
 });
 
-describe("ProfileSetupPage", () => {
+describe("WorkspaceSetupPage", () => {
   test("uses the shared product intro query key after creating a project", () => {
-    const source = readFileSync(join(componentDir, "ProfileSetupPage.tsx"), {
+    const source = readFileSync(join(componentDir, "WorkspaceSetupPage.tsx"), {
       encoding: "utf8",
     });
 
@@ -206,7 +233,7 @@ describe("ProfileSetupPage", () => {
   });
 
   test("shows workspace name when the sole member can update the workspace", () => {
-    const page = renderIntoContainer(<ProfileSetupPage />);
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
 
     page.render();
 
@@ -246,7 +273,7 @@ describe("ProfileSetupPage", () => {
         },
       ],
     } as IamPolicy;
-    const page = renderIntoContainer(<ProfileSetupPage />);
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
 
     page.render();
 
@@ -258,7 +285,7 @@ describe("ProfileSetupPage", () => {
   });
 
   test("can optionally create a project and continue to its databases page", async () => {
-    const page = renderIntoContainer(<ProfileSetupPage />);
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
 
     page.render();
 
@@ -328,8 +355,8 @@ describe("ProfileSetupPage", () => {
     page.unmount();
   });
 
-  test("creates a project with an empty title when its resource ID remains", async () => {
-    const page = renderIntoContainer(<ProfileSetupPage />);
+  test("allows setup without creating a project when its title is cleared", async () => {
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
 
     page.render();
 
@@ -343,17 +370,13 @@ describe("ProfileSetupPage", () => {
     });
 
     expect(
-      (
-        page.container.querySelector(
-          "[data-testid='project-resource-id']"
-        ) as HTMLInputElement
-      ).value
-    ).toBe("new-project");
+      page.container.querySelector("[data-testid='project-resource-id']")
+    ).toBeNull();
     const sampleCheckbox = page.container.querySelector(
       "[data-testid='enable-sample-databases']"
     ) as HTMLButtonElement;
-    expect(sampleCheckbox).toBeChecked();
-    expect(sampleCheckbox).not.toHaveAttribute("aria-disabled", "true");
+    expect(sampleCheckbox).not.toBeChecked();
+    expect(sampleCheckbox).toHaveAttribute("aria-disabled", "true");
 
     const save = Array.from(page.container.querySelectorAll("button")).find(
       (button) => button.textContent?.includes("Setup my workspace")
@@ -364,25 +387,40 @@ describe("ProfileSetupPage", () => {
       await Promise.resolve();
     });
 
-    expect(mocks.createProject).toHaveBeenCalledWith("", "new-project");
-    expect(mocks.prepareSampleProjectInstance).toHaveBeenCalledWith(
-      "projects/new-project"
-    );
-    expect(mocks.setRecentProject).toHaveBeenCalledWith("projects/new-project");
+    expect(mocks.createProject).not.toHaveBeenCalled();
+    expect(mocks.prepareSampleProjectInstance).not.toHaveBeenCalled();
+    expect(mocks.setRecentProject).not.toHaveBeenCalled();
     expect(mocks.routerReplace).toHaveBeenCalledWith({
-      name: "workspace.project.database",
-      params: { projectId: "new-project" },
-      query: {
-        syncingInstance: "sample",
-        intro: "project-instance-synced",
-      },
+      name: "workspace.project",
+      query: { intro: "create-project" },
     });
 
     page.unmount();
   });
 
+  test("requires a project ID while the project title is present", async () => {
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
+
+    page.render();
+
+    const projectResourceIdInput = page.container.querySelector(
+      "[data-testid='project-resource-id']"
+    ) as HTMLInputElement;
+    await act(async () => {
+      fireEvent.change(projectResourceIdInput, { target: { value: "" } });
+      await Promise.resolve();
+    });
+
+    const save = Array.from(page.container.querySelectorAll("button")).find(
+      (button) => button.textContent?.includes("Setup my workspace")
+    ) as HTMLButtonElement;
+    expect(save).toBeDisabled();
+
+    page.unmount();
+  });
+
   test("does not prepare sample databases when the user opts out", async () => {
-    const page = renderIntoContainer(<ProfileSetupPage />);
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
 
     page.render();
 
@@ -418,7 +456,7 @@ describe("ProfileSetupPage", () => {
     mocks.prepareSampleProjectInstance.mockRejectedValue(
       new Error("sample target unavailable")
     );
-    const page = renderIntoContainer(<ProfileSetupPage />);
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
 
     page.render();
 
@@ -448,7 +486,7 @@ describe("ProfileSetupPage", () => {
 
   test("hides sample database setup when the target is unavailable", () => {
     mocks.sampleAvailable = false;
-    const page = renderIntoContainer(<ProfileSetupPage />);
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
 
     page.render();
 
@@ -461,8 +499,23 @@ describe("ProfileSetupPage", () => {
     page.unmount();
   });
 
-  test("skips profile setup to the projects page with create project highlighted", async () => {
-    const page = renderIntoContainer(<ProfileSetupPage />);
+  test("hides sample database setup when the workspace already provisioned a sample", () => {
+    mocks.sampleInstances = [{ instance: "instances/sample" }];
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
+
+    page.render();
+
+    expect(
+      page.container.querySelector(
+        "[data-testid='enable-sample-databases']"
+      )
+    ).toBeNull();
+
+    page.unmount();
+  });
+
+  test("skips workspace setup to the projects page with create project highlighted", async () => {
+    const page = renderIntoContainer(<WorkspaceSetupPage />);
 
     page.render();
 
@@ -479,7 +532,47 @@ describe("ProfileSetupPage", () => {
       name: "workspace.project",
       query: { intro: "create-project" },
     });
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup skipped",
+      properties: { deployment: "self-host" },
+    });
 
     page.unmount();
   });
+
+  test.each([
+    { isSaaSMode: false, deployment: "self-host" },
+    { isSaaSMode: true, deployment: "cloud" },
+  ])(
+    "records a completed setup for the $deployment deployment",
+    async ({ isSaaSMode, deployment }) => {
+      mocks.isSaaSMode = isSaaSMode;
+      const page = renderIntoContainer(<WorkspaceSetupPage />);
+
+      page.render();
+
+      const submit = Array.from(
+        page.container.querySelectorAll("button")
+      ).find((button) =>
+        button.textContent?.includes("Setup my workspace")
+      ) as HTMLButtonElement;
+      await act(async () => {
+        submit.click();
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+
+      expect(mocks.captureMetric).toHaveBeenCalledWith({
+        event: "workspace setup completed",
+        properties: {
+          deployment,
+          project_created: true,
+          sample_requested: true,
+          sample_succeeded: true,
+        },
+      });
+
+      page.unmount();
+    }
+  );
 });

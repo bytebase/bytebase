@@ -1861,12 +1861,6 @@
       "count": 1
     },
     {
-      "path": "src/routes/auth/SetupPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
-    },
-    {
       "path": "src/routes/auth/SigninPage.tsx",
       "rule": "no-raw-color",
       "token": "bg-white",

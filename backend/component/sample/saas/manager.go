@@ -87,23 +87,30 @@ func sampleNames(instanceID string) (string, string) {
 	return "bb_sample_" + token, "bb_sample_role_" + token
 }
 
-// Available reports cached target readiness, refreshing stale state with a
+// CheckAvailable checks cached target readiness, refreshing stale state with a
 // short probe.
-func (m *Manager) Available(ctx context.Context) bool {
+func (m *Manager) CheckAvailable(ctx context.Context) error {
 	if m == nil || m.target == nil {
-		return false
+		return sample.NewFailure(sample.FailureUnavailable, errors.New("SaaS sample target is not configured"))
 	}
 	m.availabilityMu.Lock()
 	defer m.availabilityMu.Unlock()
 	now := m.clock()
 	if !m.availabilityCheckedAt.IsZero() && now.Before(m.availabilityCheckedAt.Add(targetAvailabilityCacheTTL)) {
-		return m.available
+		if m.available {
+			return nil
+		}
+		return sample.NewFailure(sample.FailureUnavailable, errors.New("SaaS sample target is unavailable"))
 	}
 	validationCtx, cancel := context.WithTimeout(ctx, targetAvailabilityDeadline)
 	defer cancel()
-	m.available = m.target.validate(validationCtx) == nil
+	err := m.target.validate(validationCtx)
+	m.available = err == nil
 	m.availabilityCheckedAt = m.clock()
-	return m.available
+	if err != nil {
+		return sample.NewFailure(sample.FailureUnavailable, err)
+	}
+	return nil
 }
 
 func (m *Manager) recordAvailability(available bool) {
@@ -113,8 +120,8 @@ func (m *Manager) recordAvailability(available bool) {
 	m.availabilityCheckedAt = m.clock()
 }
 
-// SetupSample provisions and registers one seven-day sample instance.
-func (m *Manager) SetupSample(ctx context.Context, request sample.SetupRequest) (*sample.SetupResult, error) {
+// PrepareSampleProjectInstance provisions and registers one seven-day sample instance.
+func (m *Manager) PrepareSampleProjectInstance(ctx context.Context, request sample.PrepareRequest) (*store.InstanceMessage, error) {
 	if m == nil || m.store == nil || m.target == nil || m.syncer == nil || m.replicaID == "" {
 		return nil, errors.New("SaaS sample manager is not configured")
 	}
@@ -183,7 +190,7 @@ func (m *Manager) SetupSample(ctx context.Context, request sample.SetupRequest) 
 	}
 }
 
-func (m *Manager) reserve(ctx context.Context, request sample.SetupRequest) (*store.SampleInstanceSetupMessage, bool, error) {
+func (m *Manager) reserve(ctx context.Context, request sample.PrepareRequest) (*store.SampleInstanceSetupMessage, bool, error) {
 	instanceID, err := randomInstanceID(m.random)
 	if err != nil {
 		return nil, false, errors.Join(errors.New("failed to generate SaaS sample instance ID"), err)
@@ -228,7 +235,7 @@ func decodePayload(setup *store.SampleInstanceSetupMessage) (*storepb.SaaSSample
 	return payload, nil
 }
 
-func (m *Manager) prepareOwned(ctx context.Context, setup *store.SampleInstanceSetupMessage, payload *storepb.SaaSSampleInstanceSetupPayload, takeover bool) (*sample.SetupResult, error) {
+func (m *Manager) prepareOwned(ctx context.Context, setup *store.SampleInstanceSetupMessage, payload *storepb.SaaSSampleInstanceSetupPayload, takeover bool) (*store.InstanceMessage, error) {
 	workCtx, cancel := preparationWorkContext(ctx)
 	defer cancel()
 	if takeover {
@@ -302,10 +309,10 @@ func (m *Manager) prepareOwned(ctx context.Context, setup *store.SampleInstanceS
 		return m.handleActivationFailure(ctx, setup, payload, errors.Join(errors.New("failed to activate SaaS sample setup"), err))
 	}
 	m.syncer.SyncDatabasesAsync(databases)
-	return &sample.SetupResult{Instances: []*store.InstanceMessage{synced}}, nil
+	return synced, nil
 }
 
-func (m *Manager) activeSetup(ctx context.Context, setup *store.SampleInstanceSetupMessage, payload *storepb.SaaSSampleInstanceSetupPayload) (*sample.SetupResult, error) {
+func (m *Manager) activeSetup(ctx context.Context, setup *store.SampleInstanceSetupMessage, payload *storepb.SaaSSampleInstanceSetupPayload) (*store.InstanceMessage, error) {
 	projectID := payload.ProjectId
 	state, err := sample.LookupMetadata(ctx, m.store, sample.MetadataLookup{
 		WorkspaceID:       setup.WorkspaceID,
@@ -320,7 +327,7 @@ func (m *Manager) activeSetup(ctx context.Context, setup *store.SampleInstanceSe
 	if !state.Active() {
 		return nil, sample.NewFailure(sample.FailureFailedPrecondition, errors.New("SaaS sample metadata is not active"))
 	}
-	return &sample.SetupResult{Instances: []*store.InstanceMessage{state.Instance}}, nil
+	return state.Instance, nil
 }
 
 func (m *Manager) reconcile(ctx context.Context, setup *store.SampleInstanceSetupMessage, payload *storepb.SaaSSampleInstanceSetupPayload) error {
@@ -330,7 +337,7 @@ func (m *Manager) reconcile(ctx context.Context, setup *store.SampleInstanceSetu
 	return errors.Join(metadataErr, targetErr)
 }
 
-func (m *Manager) compensate(ctx context.Context, setup *store.SampleInstanceSetupMessage, payload *storepb.SaaSSampleInstanceSetupPayload, original error) (*sample.SetupResult, error) {
+func (m *Manager) compensate(ctx context.Context, setup *store.SampleInstanceSetupMessage, payload *storepb.SaaSSampleInstanceSetupPayload, original error) (*store.InstanceMessage, error) {
 	compensationCtx, cancel := context.WithTimeout(ctx, compensationDeadline)
 	defer cancel()
 	current, err := m.store.GetSampleInstanceSetup(compensationCtx, setup.WorkspaceID)
@@ -365,7 +372,7 @@ func (m *Manager) discardReservation(ctx context.Context, setup *store.SampleIns
 	return original
 }
 
-func (m *Manager) handleActivationFailure(ctx context.Context, setup *store.SampleInstanceSetupMessage, payload *storepb.SaaSSampleInstanceSetupPayload, original error) (*sample.SetupResult, error) {
+func (m *Manager) handleActivationFailure(ctx context.Context, setup *store.SampleInstanceSetupMessage, payload *storepb.SaaSSampleInstanceSetupPayload, original error) (*store.InstanceMessage, error) {
 	current, err := m.store.GetSampleInstanceSetup(ctx, setup.WorkspaceID)
 	if err != nil {
 		return nil, sample.NewFailure(sample.FailureUnavailable, errors.Join(original, err))
@@ -383,26 +390,24 @@ func (m *Manager) handleActivationFailure(ctx context.Context, setup *store.Samp
 	return m.compensate(ctx, setup, payload, original)
 }
 
-// Info returns target readiness and the provisioned SaaS instance.
-func (m *Manager) Info(ctx context.Context, workspaceID string) (*sample.Info, error) {
+// ListInstances returns the provisioned SaaS instances.
+func (m *Manager) ListInstances(ctx context.Context, workspaceID string) ([]*sample.Instance, error) {
 	if m == nil {
-		return &sample.Info{}, nil
+		return nil, nil
 	}
-	info := &sample.Info{Available: m.Available(ctx)}
 	setup, err := m.store.GetSampleInstanceSetup(ctx, workspaceID)
 	if err != nil || setup == nil || setup.ActivatedAt == nil {
-		return info, err
+		return nil, err
 	}
 	payload, err := decodePayload(setup)
 	if err != nil {
 		return nil, err
 	}
-	instance := sample.InstanceInfo{Instance: common.FormatProjectInstance(payload.ProjectId, payload.InstanceId)}
+	instance := &sample.Instance{Name: common.FormatProjectInstance(payload.ProjectId, payload.InstanceId)}
 	if setup.DeletedAt == nil {
 		instance.ExpireTime = setup.ExpiresAt
 	}
-	info.Instances = append(info.Instances, instance)
-	return info, nil
+	return []*sample.Instance{instance}, nil
 }
 
 // Start is a no-op because the external PostgreSQL server is already running.
@@ -485,6 +490,34 @@ func (m *Manager) ValidateInstanceRestore(ctx context.Context, workspaceID, inst
 // HandleInstanceLifecycle is a no-op because user archive/restore does not
 // change external PostgreSQL resources before expiration.
 func (*Manager) HandleInstanceLifecycle(context.Context, string, string, bool) error { return nil }
+
+// HandleProjectPurge removes sample resources owned by a project before purge.
+func (m *Manager) HandleProjectPurge(ctx context.Context, workspaceID, projectID string) error {
+	if m == nil || m.store == nil || m.target == nil {
+		return errors.New("SaaS sample manager is not configured")
+	}
+	return m.store.WithLockedSampleInstanceSetup(ctx, workspaceID, func(callbackCtx context.Context, tx *store.SampleInstanceSetupTx, setup *store.SampleInstanceSetupMessage) error {
+		payload, err := decodePayload(setup)
+		if err != nil {
+			return err
+		}
+		if payload.ProjectId != projectID {
+			return nil
+		}
+		attemptCtx, cancel := context.WithTimeout(callbackCtx, cleanupAttemptDeadline)
+		defer cancel()
+		if setup.ActivatedAt == nil {
+			return errors.New("sample provisioning is still in progress")
+		}
+		if err := m.target.remove(attemptCtx, allocation{database: payload.DatabaseName, role: payload.RoleName}); err != nil {
+			return err
+		}
+		if _, err := sample.ArchiveMetadata(attemptCtx, m.store, workspaceID, &projectID, payload.InstanceId); err != nil {
+			return err
+		}
+		return tx.MarkDeleted(attemptCtx, m.clock())
+	})
+}
 
 // Stop is a no-op for the external target.
 func (*Manager) Stop() {}

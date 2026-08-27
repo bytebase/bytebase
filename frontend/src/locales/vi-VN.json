@@ -1221,6 +1221,7 @@
     "sample-expiration-future_one": "Phiên bản mẫu sẽ bị xóa sau {{count}} ngày, vào {{time}}.",
     "sample-expiration-future_other": "Phiên bản mẫu sẽ bị xóa sau {{count}} ngày, vào {{time}}.",
     "sample-project-instance-description": "Sử dụng Phiên bản dự án mẫu để khám phá Bytebase với cơ sở dữ liệu sẵn sàng sử dụng trong 7 ngày.",
+    "sample-project-instance-description-self-host": "Sử dụng Phiên bản dự án mẫu để khám phá Bytebase với cơ sở dữ liệu sẵn sàng sử dụng.",
     "sample-project-instance-title": "Dùng thử Phiên bản dự án mẫu",
     "scan-interval": {
       "default-never": "Mặc định (không bao giờ)",
@@ -1317,6 +1318,7 @@
     "type-or-paste-credentials-write-only": "Nhập hoặc dán THÔNG TIN XÁC THỰC - chỉ ghi",
     "unable-to-connect": "Bytebase không thể kết nối với các cài đặt này. Hãy xem hướng dẫn ở trên hoặc tiếp tục và cập nhật kết nối sau.\n\nChi tiết kỹ thuật: {{0}}",
     "use-sample-instance": "Sử dụng phiên bản mẫu (Có sẵn trong 7 ngày)",
+    "use-sample-instance-self-host": "Sử dụng phiên bản mẫu",
     "users": "Người dùng",
     "your-snowflake-account-locator": "Định vị tài khoản Snowflake của bạn"
   },
@@ -2972,26 +2974,6 @@
       }
     }
   },
-  "setup": {
-    "basic-info": "Thông tin cơ bản",
-    "data": {
-      "built-in": "Sử dụng mẫu tích hợp",
-      "built-in-desc": "Tạo dự án mẫu và các trường hợp",
-      "self-setup": "Thiết lập dự án"
-    },
-    "purposes": {
-      "alter-schema": "Thay đổi lược đồ",
-      "query-data": "Truy vấn dữ liệu",
-      "self": "Mục đích chính của bạn khi sử dụng Bytebase là gì?"
-    },
-    "self": "Thiết lập",
-    "skip-setup": "Bỏ qua thiết lập",
-    "workflow": {
-      "self": "Quy trình làm việc của bạn với cơ sở dữ liệu là gì?",
-      "simple": "Không có quy trình làm việc phức tạp, chỉ cần các công cụ UI",
-      "team": "Làm việc với đồng đội, cần có đường ống CI/CD"
-    }
-  },
   "sheet": {
     "filter": {
       "only-show-starred": "Chỉ hiển thị có dấu sao",
@@ -3560,6 +3542,7 @@
     },
     "prepare-database-tip": "Chọn cơ sở dữ liệu để chuyển vào dự án.",
     "previous-step-required": "Bạn cần hoàn thành bước trước đó.",
+    "product-model": "Cách Bytebase hoạt động",
     "self": "Thiết lập Bytebase",
     "steps": {
       "database": "Khám phá cơ sở dữ liệu",

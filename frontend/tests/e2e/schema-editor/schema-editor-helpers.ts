@@ -10,7 +10,7 @@ export async function createSchemaEditorPlan(
   env: TestEnv & { api: BytebaseApiClient },
   prefix: string
 ): Promise<{ projectId: string; planId: string; planName: string }> {
-  const pg = await env.api.findDatabaseByShortName("hr_test");
+  const pg = await env.api.findDatabaseByShortName("hr_test", env.project);
   if (!pg) throw new Error("hr_test Postgres database not found");
 
   const ts = Date.now();

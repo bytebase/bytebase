@@ -4198,7 +4198,6 @@ The severity level for SQL review rules.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| database_project_id | [string](#string) |  |  |
 | instances | [SelfHostSampleInstanceSetupPayload.Instance](#bytebase-store-SelfHostSampleInstanceSetupPayload-Instance) | repeated |  |
 
 
@@ -4220,6 +4219,7 @@ The severity level for SQL review rules.
 | port_offset | [int32](#int32) |  |  |
 | database_name | [string](#string) |  |  |
 | role_name | [string](#string) |  |  |
+| project_id | [string](#string) | optional |  |
 
 
 

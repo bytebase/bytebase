@@ -3,16 +3,6 @@
 
 package v1
 
-func (x *SetupSampleRequest) Equal(y *SetupSampleRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	return true
-}
-
 func (x *GetActuatorInfoRequest) Equal(y *GetActuatorInfoRequest) bool {
 	if x == y {
 		return true

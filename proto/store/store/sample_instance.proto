@@ -21,8 +21,8 @@ message SelfHostSampleInstanceSetupPayload {
     int32 port_offset = 4;
     string database_name = 5;
     string role_name = 6;
+    optional string project_id = 7;
   }
 
-  string database_project_id = 1;
-  repeated Instance instances = 2;
+  repeated Instance instances = 1;
 }

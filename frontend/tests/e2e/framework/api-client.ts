@@ -84,8 +84,12 @@ export class BytebaseApiClient {
     }
   }
 
-  async setupSample(): Promise<void> {
-    await this.request<unknown>("POST", "/v1/actuator:setupSample", {});
+  async prepareSampleProjectInstance(parent: string): Promise<{ name: string }> {
+    return this.request<{ name: string }>(
+      "POST",
+      `/v1/${parent}/instances:prepareSampleProjectInstance`,
+      {},
+    );
   }
 
   // Generic workspace setting upsert. Mirrors the frontend store's
@@ -264,8 +268,9 @@ export class BytebaseApiClient {
   }
 
   // Discovery
-  async listInstances() {
-    return this.request<{ instances: { name: string; engine: string; title: string }[] }>("GET", "/v1/instances?pageSize=100&showDeleted=false");
+  async listInstances(parent?: string) {
+    const collection = parent ? `/v1/${parent}/instances` : "/v1/instances";
+    return this.request<{ instances: { name: string; engine: string; title: string }[] }>("GET", `${collection}?pageSize=100&showDeleted=false`);
   }
 
   async listDatabases(parent: string) {
@@ -294,6 +299,17 @@ export class BytebaseApiClient {
       "PATCH",
       `/v1/${databaseFullName}?updateMask=project`,
       { name: databaseFullName, project },
+    );
+  }
+
+  async updateDatabaseEnvironment(
+    databaseFullName: string,
+    environment: string,
+  ) {
+    return this.request<unknown>(
+      "PATCH",
+      `/v1/${databaseFullName}?updateMask=environment`,
+      { name: databaseFullName, environment },
     );
   }
 
@@ -506,12 +522,9 @@ export class BytebaseApiClient {
     try { await this.request<unknown>("DELETE", `/v1/${name}`); } catch { /* ignore */ }
   }
 
-  // Locate a database by short name (e.g., "family_prod") across every
-  // instance reachable to the test user. Used by tests that need a database
-  // outside the env-discovered default (e.g., R7 needs both hr_prod and a
-  // MySQL family_prod).
-  async findDatabaseByShortName(shortName: string): Promise<{ database: string; instance: string; engine: string } | null> {
-    const { instances } = await this.listInstances();
+  // Locate a database by short name across every instance owned by a project.
+  async findDatabaseByShortName(shortName: string, parent: string): Promise<{ database: string; instance: string; engine: string } | null> {
+    const { instances } = await this.listInstances(parent);
     for (const inst of instances) {
       const { databases } = await this.listDatabases(inst.name);
       const match = databases.find((d) => d.name.endsWith(`/${shortName}`));

@@ -2,14 +2,22 @@ package v1
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	"github.com/bytebase/bytebase/backend/component/config"
+	"github.com/bytebase/bytebase/backend/component/sample"
+	"github.com/bytebase/bytebase/backend/component/sample/selfhost"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -20,10 +28,18 @@ import (
 
 func TestProjectInstanceLifecycleAPIGatesArchivedProjectDescendants(t *testing.T) {
 	ctx, stores, projectID, instanceID, databaseName := setupProjectInstanceLifecycleAPITest(t)
-	licenseService := &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 10}
+	_, err := stores.UpdateInstance(ctx, &store.UpdateInstanceMessage{
+		ResourceID: &instanceID,
+		Workspace:  "default",
+		Metadata: &storepb.Instance{
+			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+		},
+	})
+	require.NoError(t, err)
+	licenseService := newInstanceServiceTestLicenseService(t, stores)
 	databaseLicenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
 	require.NoError(t, err)
-	projectService := NewProjectService(stores, nil, nil)
+	projectService := NewProjectService(stores, nil, nil, nil)
 	instanceService := &InstanceService{store: stores, licenseService: licenseService}
 	databaseService := NewDatabaseService(stores, nil, nil, nil, databaseLicenseService)
 	instanceName := common.FormatProjectInstance(projectID, instanceID)
@@ -40,7 +56,7 @@ func TestProjectInstanceLifecycleAPIGatesArchivedProjectDescendants(t *testing.T
 	require.NoError(t, err)
 	undeleted, err := instanceService.UndeleteInstance(ctx, connect.NewRequest(&v1pb.UndeleteInstanceRequest{Name: instanceName}))
 	require.NoError(t, err)
-	require.True(t, undeleted.Msg.Activation)
+	require.False(t, undeleted.Msg.Activation)
 	_, err = instanceService.DeleteInstance(ctx, connect.NewRequest(&v1pb.DeleteInstanceRequest{Name: instanceName, Force: true}))
 	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 
@@ -65,46 +81,116 @@ func TestProjectInstanceLifecycleAPIGatesArchivedProjectDescendants(t *testing.T
 	require.NoError(t, err)
 	undeleted, err = instanceService.UndeleteInstance(ctx, connect.NewRequest(&v1pb.UndeleteInstanceRequest{Name: instanceName}))
 	require.NoError(t, err)
-	require.True(t, undeleted.Msg.Activation)
+	require.False(t, undeleted.Msg.Activation)
 
 	_, err = projectService.UndeleteProject(ctx, connect.NewRequest(&v1pb.UndeleteProjectRequest{Name: projectName}))
 	require.NoError(t, err)
 	got, err := instanceService.GetInstance(ctx, connect.NewRequest(&v1pb.GetInstanceRequest{Name: instanceName}))
 	require.NoError(t, err)
-	require.True(t, got.Msg.Activation)
+	require.False(t, got.Msg.Activation)
 }
 
-func TestUndeleteProjectInstanceChecksActivationLimit(t *testing.T) {
+func TestProjectPurgeCleansSampleBeforeDeletingMetadata(t *testing.T) {
 	ctx, stores, projectID, instanceID, _ := setupProjectInstanceLifecycleAPITest(t)
-	licenseService := &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 1}
-	instanceService := &InstanceService{store: stores, licenseService: licenseService}
-	instanceName := common.FormatProjectInstance(projectID, instanceID)
+	manager := &sampleManagerStub{}
+	cleanupErr := errors.New("sample cleanup failed")
+	manager.projectPurge = func(ctx context.Context, workspaceID, gotProjectID string) error {
+		require.Equal(t, "default", workspaceID)
+		require.Equal(t, projectID, gotProjectID)
+		instance, err := stores.GetInstance(ctx, &store.FindInstanceMessage{
+			Workspace:  workspaceID,
+			ProjectID:  &gotProjectID,
+			ResourceID: &instanceID,
+		})
+		require.NoError(t, err)
+		require.NotNil(t, instance)
+		if cleanupErr != nil {
+			return cleanupErr
+		}
+		return nil
+	}
+	projectService := NewProjectService(stores, nil, nil, manager)
+	projectName := common.FormatProject(projectID)
 
-	_, err := instanceService.DeleteInstance(ctx, connect.NewRequest(&v1pb.DeleteInstanceRequest{Name: instanceName}))
+	_, err := projectService.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: projectName}))
 	require.NoError(t, err)
-
-	otherProjectID := "project-b"
-	_, err = stores.CreateInstance(ctx, &store.InstanceMessage{
-		ResourceID: "other-project-instance",
-		Workspace:  "default",
-		ProjectID:  &otherProjectID,
-		Metadata: &storepb.Instance{
-			Activation: true,
-			DataSources: []*storepb.DataSource{{
-				Id:   "admin",
-				Type: storepb.DataSourceType_ADMIN,
-			}},
-		},
+	_, err = projectService.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: projectName, Purge: true}))
+	require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:   "default",
+		ResourceID:  &projectID,
+		ShowDeleted: true,
 	})
 	require.NoError(t, err)
+	require.NotNil(t, project)
 
-	_, err = instanceService.UndeleteInstance(ctx, connect.NewRequest(&v1pb.UndeleteInstanceRequest{Name: instanceName}))
-	require.Equal(t, connect.CodeResourceExhausted, connect.CodeOf(err))
-
-	instance, err := getInstanceMessageForLifecycle(ctx, stores, instanceName)
+	cleanupErr = nil
+	_, err = projectService.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: projectName, Purge: true}))
 	require.NoError(t, err)
-	require.True(t, instance.Deleted)
-	require.True(t, instance.Metadata.GetActivation())
+	require.Equal(t, []string{projectID, projectID}, manager.projectPurgeCalls)
+
+	project, err = stores.GetProject(ctx, &store.FindProjectMessage{
+		Workspace:   "default",
+		ResourceID:  &projectID,
+		ShowDeleted: true,
+	})
+	require.NoError(t, err)
+	require.Nil(t, project)
+}
+
+func TestProjectPurgeRemovesSelfHostSample(t *testing.T) {
+	ctx, stores, projectID, instanceID, databaseName := setupProjectInstanceLifecycleAPITest(t)
+	payload, err := protojson.Marshal(&storepb.SelfHostSampleInstanceSetupPayload{
+		Instances: []*storepb.SelfHostSampleInstanceSetupPayload_Instance{{
+			InstanceId:   instanceID,
+			ProjectId:    &projectID,
+			Title:        "Sample Project Instance",
+			DatabaseName: databaseName,
+			RoleName:     "sample-role",
+		}},
+	})
+	require.NoError(t, err)
+	const replicaID = "replica-a"
+	_, created, err := stores.ReserveSampleInstanceSetup(ctx, &store.SampleInstanceSetupMessage{
+		WorkspaceID: "default",
+		ReplicaID:   replicaID,
+		Payload:     payload,
+	})
+	require.NoError(t, err)
+	require.True(t, created)
+	activated, err := stores.ActivateSampleInstanceSetup(ctx, "default", replicaID, []string{projectID}, time.Now(), nil)
+	require.NoError(t, err)
+	require.True(t, activated)
+
+	dataRoot := t.TempDir()
+	dataDir := filepath.Join(dataRoot, "pgdata-sample-managed", instanceID)
+	require.NoError(t, os.MkdirAll(dataDir, 0o755))
+	require.NoError(t, os.WriteFile(filepath.Join(dataDir, "sample-data"), []byte("sample"), 0o644))
+	manager := selfhost.NewManager(
+		stores,
+		&config.Profile{DataDir: dataRoot, Port: 8080},
+		nil,
+		sample.ManagerOptions{ReplicaID: replicaID},
+	)
+	projectService := NewProjectService(stores, nil, nil, manager)
+	projectName := common.FormatProject(projectID)
+
+	_, err = projectService.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: projectName}))
+	require.NoError(t, err)
+	_, err = projectService.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: projectName, Purge: true}))
+	require.NoError(t, err)
+
+	_, err = os.Stat(dataDir)
+	require.ErrorIs(t, err, os.ErrNotExist)
+	setup, err := stores.GetSampleInstanceSetup(ctx, "default")
+	require.NoError(t, err)
+	require.NotNil(t, setup)
+	require.NotNil(t, setup.DeletedAt)
+	instances, err := manager.ListInstances(ctx, "default")
+	require.NoError(t, err)
+	require.Len(t, instances, 1)
+	require.Equal(t, common.FormatProjectInstance(projectID, instanceID), instances[0].Name)
+	require.Nil(t, instances[0].ExpireTime)
 }
 
 func TestBatchSyncDatabasesValidatesAllTargetsBeforeScheduling(t *testing.T) {
@@ -123,29 +209,29 @@ func TestBatchSyncDatabasesValidatesAllTargetsBeforeScheduling(t *testing.T) {
 	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 }
 
-type instanceLicenseServiceStub struct {
-	instanceLimit          int
-	activatedInstanceLimit int
+func TestUndeleteProjectInstanceChecksActivationLimit(t *testing.T) {
+	ctx, stores, projectID, instanceID, _ := setupProjectInstanceLifecycleAPITest(t)
+	licenseService := newInstanceServiceTestLicenseService(t, stores)
+	instanceService := &InstanceService{store: stores, licenseService: licenseService}
+	instanceName := common.FormatProjectInstance(projectID, instanceID)
+
+	_, err := instanceService.DeleteInstance(ctx, connect.NewRequest(&v1pb.DeleteInstanceRequest{Name: instanceName}))
+	require.NoError(t, err)
+
+	_, err = instanceService.UndeleteInstance(ctx, connect.NewRequest(&v1pb.UndeleteInstanceRequest{Name: instanceName}))
+	require.Equal(t, connect.CodeResourceExhausted, connect.CodeOf(err))
+
+	instance, err := getInstanceMessageForLifecycle(ctx, stores, instanceName)
+	require.NoError(t, err)
+	require.True(t, instance.Deleted)
+	require.True(t, instance.Metadata.GetActivation())
 }
 
-func (s *instanceLicenseServiceStub) GetActivatedInstanceLimit(context.Context, string) int {
-	return s.activatedInstanceLimit
-}
-
-func (s *instanceLicenseServiceStub) GetInstanceLimit(context.Context, string) int {
-	return s.instanceLimit
-}
-
-func (*instanceLicenseServiceStub) IsFeatureEnabledForInstance(context.Context, string, v1pb.PlanFeature, *store.InstanceMessage) error {
-	return nil
-}
-
-func (s *instanceLicenseServiceStub) IsInstanceEffectivelyActivated(_ context.Context, _ string, instance *store.InstanceMessage) bool {
-	return instance.Metadata.GetActivation() || s.instanceLimit <= s.activatedInstanceLimit
-}
-
-func (s *instanceLicenseServiceStub) IsUnifiedInstanceLicense(context.Context, string) bool {
-	return s.instanceLimit <= s.activatedInstanceLimit
+func newInstanceServiceTestLicenseService(t *testing.T, stores *store.Store) *enterprise.LicenseService {
+	t.Helper()
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
+	require.NoError(t, err)
+	return licenseService
 }
 
 func setupProjectInstanceLifecycleAPITest(t *testing.T) (context.Context, *store.Store, string, string, string) {

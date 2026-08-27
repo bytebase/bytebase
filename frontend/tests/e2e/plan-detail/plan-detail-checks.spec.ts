@@ -169,7 +169,7 @@ test.describe("WARNING-level review rule", () => {
 });
 
 test.describe("ERROR-level review rule with requirePlanCheckNoError=true", () => {
-  // Product contract observed on free-plan setupSample (2026-05):
+  // Product contract observed on the free-plan sample setup (2026-05):
   //   - ERROR check + requirePlanCheckNoError=true: rollout is BLOCKED.
   //     DEPLOY surfaces "Checks must pass. Failed" with helper text
   //     "Failed checks are blocking automatic rollout creation." NO

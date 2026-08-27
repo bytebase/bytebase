@@ -23,6 +23,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/sample"
 	"github.com/bytebase/bytebase/backend/utils"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -35,9 +36,10 @@ import (
 // ProjectService implements the project service.
 type ProjectService struct {
 	v1connect.UnimplementedProjectServiceHandler
-	store      *store.Store
-	profile    *config.Profile
-	iamManager *iam.Manager
+	store         *store.Store
+	profile       *config.Profile
+	iamManager    *iam.Manager
+	sampleManager sample.Manager
 }
 
 // NewProjectService creates a new ProjectService.
@@ -45,11 +47,13 @@ func NewProjectService(
 	store *store.Store,
 	profile *config.Profile,
 	iamManager *iam.Manager,
+	sampleManager sample.Manager,
 ) *ProjectService {
 	return &ProjectService{
-		store:      store,
-		profile:    profile,
-		iamManager: iamManager,
+		store:         store,
+		profile:       profile,
+		iamManager:    iamManager,
+		sampleManager: sampleManager,
 	}
 }
 
@@ -401,6 +405,12 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("project %q must be archived before it can be deleted", req.Msg.Name))
 		}
 
+		if s.sampleManager != nil {
+			if err := s.sampleManager.HandleProjectPurge(ctx, project.Workspace, project.ResourceID); err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to clean up sample project"))
+			}
+		}
+
 		// Permanently delete the project and all related resources (moves databases to default project)
 		if err := s.store.DeleteProject(ctx, project.Workspace, project.ResourceID); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to purge project"))
@@ -483,6 +493,11 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 
 		// Permanently delete all projects (moves databases to default project)
 		for _, project := range projectsToPurge {
+			if s.sampleManager != nil {
+				if err := s.sampleManager.HandleProjectPurge(ctx, project.Workspace, project.ResourceID); err != nil {
+					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to clean up sample project %q", project.Title))
+				}
+			}
 			if err := s.store.DeleteProject(ctx, project.Workspace, project.ResourceID); err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to purge project %q", project.Title))
 			}

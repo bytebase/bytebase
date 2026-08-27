@@ -11,7 +11,6 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/action/world"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -214,8 +213,4 @@ type actuatorInfoTestService struct {
 
 func (s *actuatorInfoTestService) GetActuatorInfo(context.Context, *connect.Request[v1pb.GetActuatorInfoRequest]) (*connect.Response[v1pb.ActuatorInfo], error) {
 	return connect.NewResponse(&v1pb.ActuatorInfo{Version: s.version}), nil
-}
-
-func (*actuatorInfoTestService) SetupSample(context.Context, *connect.Request[v1pb.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error) {
-	return connect.NewResponse(&emptypb.Empty{}), nil
 }

@@ -6,9 +6,8 @@ import { ignoredCodesContextKey, silentContextKey } from "@/api/context-key";
 import {
   AUTH_MFA_MODULE,
   AUTH_PASSWORD_RESET_MODULE,
-  AUTH_PROFILE_SETUP_MODULE,
+  AUTH_SETUP_MODULE,
   AUTH_SIGNIN_MODULE,
-  SETUP_MODULE,
 } from "@/app/router/handles";
 import {
   navigateByName,
@@ -209,8 +208,8 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
       });
       return;
     }
-    if (get().isSaaSMode() && resp.user && needsProfileSetup(resp.user)) {
-      navigateByName(AUTH_PROFILE_SETUP_MODULE, {
+    if (resp.user && needsProfileSetup(resp.user)) {
+      navigateByName(AUTH_SETUP_MODULE, {
         query: { redirect: nextPage },
       });
       return;
@@ -238,13 +237,13 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
     }
 
     await get().fetchServerInfo();
-    // See `login()`. Loaded above the onboarding branch because `SetupPage`
-    // reads the change mode too, and its skip button navigates to "/".
+    // See `login()`. The profile must be available before the next route is
+    // selected because the root redirect reads the database change mode.
     await get().loadWorkspaceProfile(true);
     set({ authSessionKey: uniqueId() });
 
     if (get().enableOnboarding()) {
-      navigateByName(SETUP_MODULE, { replace: true });
+      navigateByName(AUTH_SETUP_MODULE, { replace: true });
       return;
     }
 

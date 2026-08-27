@@ -6,7 +6,6 @@ import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
-import "google/protobuf/empty.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
 
@@ -22,24 +21,7 @@ service ActuatorService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.mcp_method_class) = READ;
   }
-
-  // Sets up sample data for demonstration and testing purposes.
-  // Permissions required: bb.projects.create
-  rpc SetupSample(SetupSampleRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {
-      post: "/v1/actuator:setupSample"
-      body: ""
-    };
-    option (bytebase.v1.permission) = "bb.projects.create";
-    option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
-    option (bytebase.v1.mcp_method_class) = EXCLUDED;
-    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
-  }
 }
-
-// Request message for setting up sample data.
-message SetupSampleRequest {}
 
 // Request message for getting actuator information.
 message GetActuatorInfoRequest {}

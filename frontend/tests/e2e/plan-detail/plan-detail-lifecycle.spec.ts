@@ -793,10 +793,10 @@ test.describe("A multi-stage rollout advances the header stage by stage to Deplo
   test.beforeAll(async () => {
     await setPermissive();
     const ts = Date.now();
-    const testDb = await env.api.findDatabaseByShortName("hr_test");
-    const prodDb = await env.api.findDatabaseByShortName("hr_prod");
+    const testDb = await env.api.findDatabaseByShortName("hr_test", env.project);
+    const prodDb = await env.api.findDatabaseByShortName("hr_prod", env.project);
     if (!testDb || !prodDb) {
-      throw new Error("multi-stage seed needs hr_test + hr_prod sample dbs");
+      throw new Error("multi-stage seed needs the hr_test + hr_prod E2E databases");
     }
     const sheet = await env.api.createSheet(
       env.project,

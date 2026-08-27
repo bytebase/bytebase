@@ -12,6 +12,7 @@ describe("behavior analytics config", () => {
       buildBehaviorAnalyticsConfig({
         posthogKey: "",
         posthogHost: "https://us.i.posthog.com",
+        deployment: "cloud",
         recordingSampleRate: 0.1,
       })
     ).toBeNull();
@@ -19,6 +20,7 @@ describe("behavior analytics config", () => {
     expect(
       buildBehaviorAnalyticsConfig({
         posthogKey: "phc_test",
+        deployment: "cloud",
         recordingSampleRate: 0.1,
       })
     ).toBeNull();
@@ -28,6 +30,7 @@ describe("behavior analytics config", () => {
     const config = buildBehaviorAnalyticsConfig({
       posthogKey: "phc_test",
       posthogHost: "https://us.i.posthog.com",
+      deployment: "cloud",
       recordingSampleRate: 0.25,
     });
 
@@ -72,10 +75,11 @@ describe("behavior analytics config", () => {
     ).toBeUndefined();
   });
 
-  test("adds build commit metadata to PostHog event properties", () => {
+  test("adds common metadata to PostHog event properties", () => {
     const config = buildBehaviorAnalyticsConfig({
       posthogKey: "phc_test",
       posthogHost: "https://us.i.posthog.com",
+      deployment: "cloud",
       recordingSampleRate: 0.25,
       gitCommit: "abc123",
       resolveRouteId: (url) =>
@@ -88,6 +92,7 @@ describe("behavior analytics config", () => {
       throw new Error("Expected behavior analytics config");
     }
     expect(config.properties).toEqual({
+      deployment: "cloud",
       git_commit: "abc123",
     });
 
@@ -106,6 +111,7 @@ describe("behavior analytics config", () => {
         "$pageview"
       )
     ).toEqual({
+      deployment: "cloud",
       git_commit: "abc123",
       route_id: "workspace.project.database",
     });
@@ -116,10 +122,10 @@ describe("behavior analytics routes", () => {
   test("allows page sessions on any named route", () => {
     expect(
       classifyBehaviorRoute({
-        name: "auth.profile.setup",
+        name: "auth.setup",
       })
     ).toMatchObject({
-      routeId: "auth.profile.setup",
+      routeId: "auth.setup",
       recording: "allow",
     });
 

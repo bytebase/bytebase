@@ -28,7 +28,6 @@ const mocks = vi.hoisted(() => ({
   hideQuickStart: false,
   canReadSetupResources: true,
   userCountInIam: 1,
-  sampleAvailable: true,
   isDev: false,
 }));
 
@@ -136,10 +135,6 @@ vi.mock("@/hooks/useAppState", () => ({
     title: "Alice",
     email: "alice@example.com",
   }),
-  useServerInfo: () => ({
-    sample: { available: mocks.sampleAvailable },
-    userCountInIam: mocks.userCountInIam,
-  }),
   useSubscription: () => ({
     subscription: { plan: PlanType.FREE },
     uploadLicense: mocks.uploadLicense,
@@ -198,7 +193,6 @@ beforeEach(async () => {
   mocks.hideQuickStart = false;
   mocks.canReadSetupResources = true;
   mocks.userCountInIam = 1;
-  mocks.sampleAvailable = true;
   mocks.isDev = false;
   mocks.currentRoute.name = "sql-editor.home";
   window.open = vi.fn();
@@ -289,8 +283,7 @@ describe("ProfileMenuTrigger", () => {
     unmount();
   });
 
-  test("restores the unified guide even when no sample is available", () => {
-    mocks.sampleAvailable = false;
+  test("restores the unified guide", () => {
     const { container, render, unmount } = renderIntoContainer(
       <ProfileMenuTrigger size="medium" link />
     );

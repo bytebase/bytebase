@@ -7,7 +7,6 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/hashicorp/golang-lru/v2/expirable"
-	"google.golang.org/protobuf/types/known/emptypb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/pkg/errors"
@@ -80,46 +79,6 @@ func (s *ActuatorService) GetActuatorInfo(
 	return connect.NewResponse(info), nil
 }
 
-// SetupSample sets up the sample project and instance.
-func (s *ActuatorService) SetupSample(
-	ctx context.Context,
-	_ *connect.Request[v1pb.SetupSampleRequest],
-) (*connect.Response[emptypb.Empty], error) {
-	if s.profile.SaaS {
-		// skip sample setup in SaaS
-		slog.Debug("sample is not available for SaaS")
-		return connect.NewResponse(&emptypb.Empty{}), nil
-	}
-	user, ok := GetUserFromContext(ctx)
-	if !ok || user == nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
-	}
-
-	if s.sampleManager != nil {
-		workspaceID := common.GetWorkspaceIDFromContext(ctx)
-		projectID := "project-sample"
-		project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: workspaceID, ResourceID: &projectID})
-		if err == nil && project == nil {
-			project, err = s.store.CreateProject(ctx, &store.ProjectMessage{
-				Workspace:  workspaceID,
-				ResourceID: projectID,
-				Title:      "Sample Project",
-				Setting:    &storepb.Project{},
-			}, user)
-		}
-		if err == nil {
-			_, err = s.sampleManager.SetupSample(ctx, sample.SetupRequest{WorkspaceID: workspaceID, ProjectID: project.ResourceID})
-		}
-		if err != nil {
-			// When running inside docker on mac, we sometimes get database does not exist error.
-			// This is due to the docker overlay storage incompatibility with mac OS file system.
-			// Onboarding error is not critical, so we just emit an error log.
-			slog.Error("failed to prepare onboarding data", log.BBError(err))
-		}
-	}
-	return connect.NewResponse(&emptypb.Empty{}), nil
-}
-
 func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string) (*v1pb.ActuatorInfo, error) {
 	serverInfo := v1pb.ActuatorInfo{
 		Version:             s.profile.Version,
@@ -135,13 +94,14 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 	if workspaceID != "" {
 		serverInfo.Workspace = common.FormatWorkspace(workspaceID)
 		if s.sampleManager != nil {
-			sampleInfo, err := s.sampleManager.Info(ctx, workspaceID)
+			serverInfo.Sample.Available = s.sampleManager.CheckAvailable(ctx) == nil
+			instances, err := s.sampleManager.ListInstances(ctx, workspaceID)
 			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get sample information"))
+				slog.Error("failed to list sample instances", log.BBError(err), slog.String("workspace", workspaceID))
+				instances = nil
 			}
-			serverInfo.Sample.Available = sampleInfo.Available
-			for _, instance := range sampleInfo.Instances {
-				item := &v1pb.SampleInfo_Instance{Instance: instance.Instance}
+			for _, instance := range instances {
+				item := &v1pb.SampleInfo_Instance{Instance: instance.Name}
 				if instance.ExpireTime != nil {
 					item.ExpireTime = timestamppb.New(*instance.ExpireTime)
 				}
