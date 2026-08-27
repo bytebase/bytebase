@@ -76,6 +76,14 @@ _Avoid_: Plan, rollout, issue
 The recorded history of a database migration after execution. It is evidence that a change ran, not the proposed change itself.
 _Avoid_: Change request, release
 
+**Work Queue Surface**:
+A list surface read to decide what needs attention now, such as the issue, plan, and release lists. The primary time question on a work queue is freshness.
+_Avoid_: History view, feed, dashboard
+
+**History View Surface**:
+A surface read as a record of what already happened, such as the audit log, database changelog, revisions, and task-run history. The primary time question on a history view is exactly when something happened.
+_Avoid_: Work queue, activity feed
+
 **Composite Type**:
 A PostgreSQL-family standalone named row type (`CREATE TYPE x AS (...)`, `pg_type.typtype = 'c'` excluding table row types). Distinct from enums, domains, ranges, Oracle object types, and SQL Server table/alias types — each is its own concept with its own name.
 _Avoid_: UDT, user-defined type, custom type, object type
