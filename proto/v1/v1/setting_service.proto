@@ -214,7 +214,7 @@ message AppIMSetting {
 message WorkspaceProfileSetting {
   reserved 15;
   // 26 was mcp_capability, released in 3.21.0 and copied to the MCP setting by
-  // migration 3.22.15.
+  // migration 3.23.0.
   reserved 26;
   reserved "mcp_capability";
   // The external URL is used for sso authentication callback.

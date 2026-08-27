@@ -586,7 +586,7 @@ var ErrMCPCapabilityUnreadable = errors.New("the stored MCP capability ceiling c
 // enforcement point then judges under a different row.
 // Returns nil with any error; no caller may act on partially resolved settings.
 //
-// Migration 3.22.15 creates this row for every workspace and carries forward
+// Migration 3.23.0 creates this row for every workspace and carries forward
 // the legacy workspace-profile capability, including writing READ_WRITE into
 // pre-existing MCP rows that omitted the capability. Workspace creation writes
 // the safer READ_ONLY default. Missing or unspecified metadata after that fails

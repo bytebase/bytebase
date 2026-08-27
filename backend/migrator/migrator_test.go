@@ -21,11 +21,11 @@ import (
 func TestLatestVersion(t *testing.T) {
 	files, err := getSortedVersionedFiles()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("3.22.15"), *files[len(files)-1].version)
-	require.Equal(t, "migration/3.22/0015##backfill_mcp_setting.sql", files[len(files)-1].path)
+	require.Equal(t, semver.MustParse("3.23.0"), *files[len(files)-1].version)
+	require.Equal(t, "migration/3.23/0000##backfill_mcp_setting.sql", files[len(files)-1].path)
 }
 
-func TestMigration3_22_15BackfillsMCPSetting(t *testing.T) {
+func TestMigration3_23_0BackfillsMCPSetting(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.GetTestPgContainer(ctx, t)
 	t.Cleanup(func() { container.Close(ctx) })
@@ -58,7 +58,7 @@ func TestMigration3_22_15BackfillsMCPSetting(t *testing.T) {
 	`)
 	require.NoError(t, err)
 
-	statement, err := migrationFS.ReadFile("migration/3.22/0015##backfill_mcp_setting.sql")
+	statement, err := migrationFS.ReadFile("migration/3.23/0000##backfill_mcp_setting.sql")
 	require.NoError(t, err)
 	_, err = db.ExecContext(ctx, string(statement))
 	require.NoError(t, err)
