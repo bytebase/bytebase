@@ -301,7 +301,7 @@ describe("InstanceDetailView", () => {
       sample: {
         instances: [
           {
-            instance: "instances/prod",
+            instance: "projects/app/instances/prod",
             expireTime: {
               seconds: BigInt(
                 Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60

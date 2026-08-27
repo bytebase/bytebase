@@ -397,7 +397,7 @@ func (m *Manager) Info(ctx context.Context, workspaceID string) (*sample.Info, e
 	if err != nil {
 		return nil, err
 	}
-	instance := sample.InstanceInfo{Instance: common.FormatInstance(payload.InstanceId)}
+	instance := sample.InstanceInfo{Instance: common.FormatProjectInstance(payload.ProjectId, payload.InstanceId)}
 	if setup.DeletedAt == nil {
 		instance.ExpireTime = setup.ExpiresAt
 	}

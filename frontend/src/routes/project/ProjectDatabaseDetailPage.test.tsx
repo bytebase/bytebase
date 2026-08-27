@@ -557,7 +557,7 @@ describe("ProjectDatabaseDetailPage", () => {
       sample: {
         instances: [
           {
-            instance: "instances/inst1",
+            instance: "projects/proj1/instances/inst1",
             expireTime: {
               seconds: BigInt(
                 Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60

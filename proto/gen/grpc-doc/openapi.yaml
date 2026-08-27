@@ -2216,7 +2216,7 @@ paths:
              - environment: the environment full name in "environments/{id}" format, support "==" operator.
              - name: the database name, support ".contains()" operator.
              - project: the project full name in "projects/{id}" format, support "==" operator.
-             - instance: the instance full name in "instances/{id}" format, support "==" operator.
+             - instance: the instance full name in "instances/{id}" or "projects/{project}/instances/{id}" format, support "==" operator.
              - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
              - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
              - table: filter by the database table, support "==" and ".contains()" operator.
@@ -2227,6 +2227,7 @@ paths:
              environment == "" (find databases which environment is not set)
              project == "projects/{project resource id}"
              instance == "instances/{instance resource id}"
+             instance == "projects/{project resource id}/instances/{instance resource id}"
              name.contains("database name")
              engine == "MYSQL"
              engine in ["MYSQL", "POSTGRES"]
@@ -6698,7 +6699,7 @@ paths:
              - environment: the environment full name in "environments/{id}" format, support "==" operator.
              - name: the database name, support ".contains()" operator.
              - project: the project full name in "projects/{id}" format, support "==" operator.
-             - instance: the instance full name in "instances/{id}" format, support "==" operator.
+             - instance: the instance full name in "instances/{id}" or "projects/{project}/instances/{id}" format, support "==" operator.
              - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
              - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
              - table: filter by the database table, support "==" and ".contains()" operator.
@@ -6709,6 +6710,7 @@ paths:
              environment == "" (find databases which environment is not set)
              project == "projects/{project resource id}"
              instance == "instances/{instance resource id}"
+             instance == "projects/{project resource id}/instances/{instance resource id}"
              name.contains("database name")
              engine == "MYSQL"
              engine in ["MYSQL", "POSTGRES"]
@@ -7323,7 +7325,7 @@ paths:
              - environment: the environment full name in "environments/{id}" format, support "==" operator.
              - name: the database name, support ".contains()" operator.
              - project: the project full name in "projects/{id}" format, support "==" operator.
-             - instance: the instance full name in "instances/{id}" format, support "==" operator.
+             - instance: the instance full name in "instances/{id}" or "projects/{project}/instances/{id}" format, support "==" operator.
              - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
              - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
              - table: filter by the database table, support "==" and ".contains()" operator.
@@ -7334,6 +7336,7 @@ paths:
              environment == "" (find databases which environment is not set)
              project == "projects/{project resource id}"
              instance == "instances/{instance resource id}"
+             instance == "projects/{project resource id}/instances/{instance resource id}"
              name.contains("database name")
              engine == "MYSQL"
              engine in ["MYSQL", "POSTGRES"]
@@ -9811,6 +9814,183 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.DiffSchemaResponse'
+  /v1/projects/{project}/instances/{instance}/databases/{database}:export:
+    post:
+      tags:
+        - SQLService
+      summary: Export
+      description: |-
+        Exports query results to a file format.
+         Permissions required: bb.databases.get
+      operationId: SQLService_Export2
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+        - name: instance
+          in: path
+          description: The instance id.
+          required: true
+          schema:
+            type: string
+        - name: database
+          in: path
+          description: The database id.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                statement:
+                  type: string
+                  title: statement
+                  description: The SQL statement to execute.
+                limit:
+                  type: integer
+                  title: limit
+                  format: int32
+                  description: The maximum number of rows to return.
+                format:
+                  title: format
+                  description: The export format.
+                  $ref: '#/components/schemas/bytebase.v1.ExportFormat'
+                admin:
+                  type: boolean
+                  title: admin
+                  description: |-
+                    The admin is used for workspace owner and DBA for exporting data from SQL
+                     Editor Admin mode. The exported data is not masked.
+                password:
+                  type: string
+                  title: password
+                  description: The zip password provide by users.
+                dataSourceId:
+                  type: string
+                  title: data_source_id
+                  description: |-
+                    The id of data source.
+                     If omitted, Export resolves the data source server-side by using the
+                     single read-only data source when exactly one exists, or the admin data
+                     source otherwise. It can also be set explicitly to export from the admin
+                     data source or a specific read-only data source.
+                schema:
+                  type:
+                    - string
+                    - "null"
+                  title: schema
+                  description: |-
+                    The default schema to search objects. Equals to the current schema in
+                     Oracle and search path in Postgres.
+                container:
+                  type:
+                    - string
+                    - "null"
+                  title: container
+                  description: |-
+                    Container is the container name to execute the query against, used for
+                     CosmosDB only.
+              title: ExportRequest
+              additionalProperties: false
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ExportResponse'
+  /v1/projects/{project}/instances/{instance}/databases/{database}:query:
+    post:
+      tags:
+        - SQLService
+      summary: Query
+      description: |-
+        Executes a read-only SQL query against a database.
+         Permissions required: bb.databases.get
+      operationId: SQLService_Query2
+      parameters:
+        - name: project
+          in: path
+          description: The project id.
+          required: true
+          schema:
+            type: string
+        - name: instance
+          in: path
+          description: The instance id.
+          required: true
+          schema:
+            type: string
+        - name: database
+          in: path
+          description: The database id.
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                statement:
+                  type: string
+                  title: statement
+                  description: The SQL statement to execute.
+                limit:
+                  type: integer
+                  title: limit
+                  format: int32
+                  description: The maximum number of rows to return.
+                dataSourceId:
+                  type: string
+                  title: data_source_id
+                  description: |-
+                    The id of data source.
+                     If omitted, Query resolves the data source server-side by using the single
+                     read-only data source when exactly one exists, or the admin data source
+                     otherwise. It can also be set explicitly to query the admin data source or
+                     a specific read-only data source.
+                explain:
+                  type: boolean
+                  title: explain
+                  description: Explain the statement.
+                schema:
+                  type:
+                    - string
+                    - "null"
+                  title: schema
+                  description: |-
+                    The default schema to search objects. Equals to the current schema in
+                     Oracle and search path in Postgres.
+                queryOption:
+                  title: query_option
+                  $ref: '#/components/schemas/bytebase.v1.QueryOption'
+                container:
+                  type:
+                    - string
+                    - "null"
+                  title: container
+                  description: |-
+                    Container is the container name to execute the query against, used for
+                     CosmosDB only.
+              title: QueryRequest
+              additionalProperties: false
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.QueryResponse'
   /v1/projects/{project}/instances/{instance}/databases/{database}:sync:
     post:
       tags:
@@ -17941,7 +18121,7 @@ paths:
              - environment: the environment full name in "environments/{id}" format, support "==" operator.
              - name: the database name, support ".contains()" operator.
              - project: the project full name in "projects/{id}" format, support "==" operator.
-             - instance: the instance full name in "instances/{id}" format, support "==" operator.
+             - instance: the instance full name in "instances/{id}" or "projects/{project}/instances/{id}" format, support "==" operator.
              - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
              - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
              - table: filter by the database table, support "==" and ".contains()" operator.
@@ -17952,6 +18132,7 @@ paths:
              environment == "" (find databases which environment is not set)
              project == "projects/{project resource id}"
              instance == "instances/{instance resource id}"
+             instance == "projects/{project resource id}/instances/{instance resource id}"
              name.contains("database name")
              engine == "MYSQL"
              engine in ["MYSQL", "POSTGRES"]
@@ -18802,7 +18983,8 @@ paths:
           in: query
           description: |-
             The name is the instance name to execute the query against.
-             Format: instances/{instance}/databases/{databaseName}
+             Format: instances/{instance}/databases/{databaseName} or
+             projects/{project}/instances/{instance}/databases/{databaseName}
           required: true
           schema:
             type: string
@@ -19053,7 +19235,7 @@ components:
               title: targets
               description: |-
                 The target databases for this access grant.
-                 Format: instances/{instance}/databases/{database}
+                 Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
             query:
               type: string
               title: query
@@ -19296,7 +19478,8 @@ components:
           title: name
           description: |-
             The name is the instance name to execute the query against.
-             Format: instances/{instance}/databases/{databaseName}
+             Format: instances/{instance}/databases/{databaseName} or
+             projects/{project}/instances/{instance}/databases/{databaseName}
         statement:
           type: string
           title: statement
@@ -20417,7 +20600,7 @@ components:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Support variables:
-             resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by any role with SQL Editor read (e.g. "roles/sqlEditorUser", "roles/sqlEditorReadUser") or write (bb.sql.ddl / bb.sql.dml) access, support "==" operator.
+             resource.database: the canonical database full name in "instances/{instance}/databases/{database}" or "projects/{project}/instances/{instance}/databases/{database}" format, used by any role with SQL Editor read (e.g. "roles/sqlEditorUser", "roles/sqlEditorReadUser") or write (bb.sql.ddl / bb.sql.dml) access, support "==" operator.
              resource.schema_name: the schema name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
              resource.table_name: the table name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
              resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support "in" operator.
@@ -22972,8 +23155,8 @@ components:
           title: name
           description: |-
             The name is the resource name to execute the export against.
-             Format: instances/{instance}/databases/{database}
-             Format: instances/{instance}
+             Format: instances/{instance}/databases/{database} or
+             projects/{project}/instances/{instance}/databases/{database}
         statement:
           type: string
           title: statement
@@ -24928,7 +25111,7 @@ components:
              - environment: the environment full name in "environments/{id}" format, support "==" operator.
              - name: the database name, support ".contains()" operator.
              - project: the project full name in "projects/{id}" format, support "==" operator.
-             - instance: the instance full name in "instances/{id}" format, support "==" operator.
+             - instance: the instance full name in "instances/{id}" or "projects/{project}/instances/{id}" format, support "==" operator.
              - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
              - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
              - table: filter by the database table, support "==" and ".contains()" operator.
@@ -24939,6 +25122,7 @@ components:
              environment == "" (find databases which environment is not set)
              project == "projects/{project resource id}"
              instance == "instances/{instance resource id}"
+             instance == "projects/{project resource id}/instances/{instance resource id}"
              name.contains("database name")
              engine == "MYSQL"
              engine in ["MYSQL", "POSTGRES"]
@@ -27240,7 +27424,7 @@ components:
           title: target
           description: |-
             The resource name of the instance on which the database is created.
-             Format: instances/{instance}
+             Format: instances/{instance} or projects/{project}/instances/{instance}
         database:
           type: string
           title: database
@@ -27395,7 +27579,7 @@ components:
               title: target
               description: |-
                 Target identification for consolidated results.
-                 Format: instances/{instance}/databases/{database}
+                 Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
             type:
               title: type
               $ref: '#/components/schemas/bytebase.v1.PlanCheckRun.Result.Type'
@@ -28068,7 +28252,7 @@ components:
           title: database
           description: |-
             The database name to execute the query.
-             Format: instances/{instance}/databases/{databaseName}
+             Format: instances/{instance}/databases/{databaseName} or projects/{project}/instances/{instance}/databases/{databaseName}
           readOnly: true
         creator:
           type: string
@@ -28136,8 +28320,9 @@ components:
           type: string
           title: name
           description: |-
-            The name is the instance name to execute the query against.
-             Format: instances/{instance}/databases/{databaseName}
+            The name is the database resource name to execute the query against.
+             Format: instances/{instance}/databases/{databaseName} or
+             projects/{project}/instances/{instance}/databases/{databaseName}
         statement:
           type: string
           title: statement
@@ -29522,7 +29707,7 @@ components:
           title: instance
           description: |-
             The provisioned sample instance.
-             Format: instances/{instance}
+             Format: instances/{instance} or projects/{project}/instances/{instance}
           readOnly: true
         expireTime:
           title: expire_time
@@ -29553,7 +29738,7 @@ components:
             The connected database, which must belong to the saved query's own
              project. Empty when none is connected, or when the database no longer
              exists.
-             Format: instances/{instance}/databases/{database}
+             Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
         title:
           type: string
           title: title
@@ -31315,8 +31500,8 @@ components:
               type: string
               title: target
               description: |-
-                Format: instances/{instance} if the task is DatabaseCreate.
-                 Format: instances/{instance}/databases/{database}
+                Format: instances/{instance} or projects/{project}/instances/{instance} if the task is DatabaseCreate.
+                 Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
             updateTime:
               oneOf:
                 - $ref: '#/components/schemas/google.protobuf.Timestamp'
@@ -31804,7 +31989,7 @@ components:
           title: database
           description: |-
             The database information.
-             Format: instances/{instance}/databases/{database}
+             Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
         schema:
           type: string
           title: schema

@@ -268,7 +268,7 @@ message Plan {
   message CreateDatabaseConfig {
     reserved 8;
     // The resource name of the instance on which the database is created.
-    // Format: instances/{instance}
+    // Format: instances/{instance} or projects/{project}/instances/{instance}
     string target = 1 [(google.api.field_behavior) = REQUIRED];
     // The name of the database to create.
     string database = 2 [(google.api.field_behavior) = REQUIRED];
@@ -390,7 +390,7 @@ message PlanCheckRun {
     int32 code = 4;
 
     // Target identification for consolidated results.
-    // Format: instances/{instance}/databases/{database}
+    // Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
     string target = 7;
     Type type = 8;
 

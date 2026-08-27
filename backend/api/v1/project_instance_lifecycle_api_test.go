@@ -107,6 +107,22 @@ func TestUndeleteProjectInstanceChecksActivationLimit(t *testing.T) {
 	require.True(t, instance.Metadata.GetActivation())
 }
 
+func TestBatchSyncDatabasesValidatesAllTargetsBeforeScheduling(t *testing.T) {
+	ctx, stores, projectID, instanceID, databaseName := setupProjectInstanceLifecycleAPITest(t)
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
+	require.NoError(t, err)
+	service := NewDatabaseService(stores, nil, nil, nil, licenseService)
+
+	_, err = service.BatchSyncDatabases(ctx, connect.NewRequest(&v1pb.BatchSyncDatabasesRequest{
+		Parent: common.FormatProjectInstance(projectID, instanceID),
+		Names: []string{
+			common.FormatProjectDatabase(projectID, instanceID, databaseName),
+			"invalid",
+		},
+	}))
+	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+}
+
 type instanceLicenseServiceStub struct {
 	instanceLimit          int
 	activatedInstanceLimit int

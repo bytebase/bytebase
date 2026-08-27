@@ -22,6 +22,10 @@ service SQLService {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:query"
       body: "*"
+      additional_bindings: {
+        post: "/v1/{name=projects/*/instances/*/databases/*}:query"
+        body: "*"
+      }
     };
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
@@ -86,6 +90,10 @@ service SQLService {
     option (google.api.http) = {
       post: "/v1/{name=instances/*/databases/*}:export"
       body: "*"
+      additional_bindings: {
+        post: "/v1/{name=projects/*/instances/*/databases/*}:export"
+        body: "*"
+      }
     };
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
@@ -96,7 +104,8 @@ service SQLService {
 
 message AdminExecuteRequest {
   // The name is the instance name to execute the query against.
-  // Format: instances/{instance}/databases/{databaseName}
+  // Format: instances/{instance}/databases/{databaseName} or
+  // projects/{project}/instances/{instance}/databases/{databaseName}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
@@ -123,8 +132,9 @@ message AdminExecuteResponse {
 }
 
 message QueryRequest {
-  // The name is the instance name to execute the query against.
-  // Format: instances/{instance}/databases/{databaseName}
+  // The name is the database resource name to execute the query against.
+  // Format: instances/{instance}/databases/{databaseName} or
+  // projects/{project}/instances/{instance}/databases/{databaseName}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}
@@ -409,8 +419,8 @@ message Advice {
 
 message ExportRequest {
   // The name is the resource name to execute the export against.
-  // Format: instances/{instance}/databases/{database}
-  // Format: instances/{instance}
+  // Format: instances/{instance}/databases/{database} or
+  // projects/{project}/instances/{instance}/databases/{database}
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference) = {type: "bytebase.com/Database"}

@@ -67,7 +67,7 @@ message Binding {
   // The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
   //
   // Support variables:
-  // resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by any role with SQL Editor read (e.g. "roles/sqlEditorUser", "roles/sqlEditorReadUser") or write (bb.sql.ddl / bb.sql.dml) access, support "==" operator.
+  // resource.database: the canonical database full name in "instances/{instance}/databases/{database}" or "projects/{project}/instances/{instance}/databases/{database}" format, used by any role with SQL Editor read (e.g. "roles/sqlEditorUser", "roles/sqlEditorReadUser") or write (bb.sql.ddl / bb.sql.dml) access, support "==" operator.
   // resource.schema_name: the schema name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
   // resource.table_name: the table name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
   // resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support "in" operator.

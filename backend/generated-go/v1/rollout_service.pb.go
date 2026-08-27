@@ -1264,8 +1264,8 @@ type Task struct {
 	// The reason why the task was skipped.
 	SkippedReason string    `protobuf:"bytes,4,opt,name=skipped_reason,json=skippedReason,proto3" json:"skipped_reason,omitempty"`
 	Type          Task_Type `protobuf:"varint,5,opt,name=type,proto3,enum=bytebase.v1.Task_Type" json:"type,omitempty"`
-	// Format: instances/{instance} if the task is DatabaseCreate.
-	// Format: instances/{instance}/databases/{database}
+	// Format: instances/{instance} or projects/{project}/instances/{instance} if the task is DatabaseCreate.
+	// Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
 	Target string `protobuf:"bytes,6,opt,name=target,proto3" json:"target,omitempty"`
 	// Types that are valid to be assigned to Payload:
 	//
@@ -2982,7 +2982,7 @@ func (x *TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item) GetEndPosition() *P
 type TaskRunLogEntry_PriorBackup_PriorBackupDetail_Item_Table struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The database information.
-	// Format: instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
 	Database string `protobuf:"bytes,1,opt,name=database,proto3" json:"database,omitempty"`
 	// The schema name.
 	Schema string `protobuf:"bytes,2,opt,name=schema,proto3" json:"schema,omitempty"`

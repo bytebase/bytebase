@@ -13,10 +13,9 @@ export function MemberDatabaseResourceName({
 }: {
   resource?: DatabaseResource;
 }) {
-  const { instanceName } = resource
+  const { instance: expectedInstanceName } = resource
     ? extractDatabaseResourceName(resource.databaseFullName)
-    : { instanceName: "" };
-  const expectedInstanceName = instanceName ? `instances/${instanceName}` : "";
+    : { instance: "" };
   const database = useAppStore((s) =>
     resource ? s.databasesByName[resource.databaseFullName] : undefined
   );
