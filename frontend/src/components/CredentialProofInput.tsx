@@ -72,21 +72,30 @@ export function credentialProofCallOptions() {
   };
 }
 
+// isCredentialProofReady reports whether the input holds enough to submit.
+// A password is whatever the user typed, whitespace included — login compares
+// it verbatim, so an account whose password is spaces must still be able to
+// change it. The codes are transcribed, so their surrounding whitespace is a
+// paste artifact rather than content.
+export function isCredentialProofReady(
+  mode: CredentialProofMode,
+  value: string
+): boolean {
+  return mode === "password" ? value.length > 0 : value.trim().length > 0;
+}
+
 // buildCredentialProof turns the raw input value into the proof message for
 // the mode the account is in, or undefined while the input is empty.
 export function buildCredentialProof(
   mode: CredentialProofMode,
   value: string
 ): CredentialProof | undefined {
+  if (!isCredentialProofReady(mode, value)) return undefined;
   const trimmed = value.trim();
-  if (!trimmed) return undefined;
   switch (mode) {
     case "factor":
       return factorProofOf(trimmed);
     case "password":
-      // Verbatim: a password may legitimately begin or end with whitespace,
-      // and login sends it unaltered, so trimming here would reject the
-      // correct password on exactly the accounts that use one.
       return create(CredentialProofSchema, {
         proof: { case: "currentPassword", value },
       });

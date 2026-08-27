@@ -10,6 +10,7 @@ import {
   buildCredentialProof,
   CredentialProofInput,
   credentialProofCallOptions,
+  isCredentialProofReady,
   useCredentialProofMode,
 } from "@/components/CredentialProofInput";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
@@ -178,7 +179,8 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   const handleOtpFinish = useCallback(
     async (value: string[]) => {
       setOtpCodes(value);
-      if (needProofAtEnable && !proofValue.trim()) return;
+      if (needProofAtEnable && !isCredentialProofReady(proofMode, proofValue))
+        return;
       const result = await verifyNewDevice(value);
       if (result && currentStep === SETUP_AUTH_APP_STEP) {
         setCurrentStep(DOWNLOAD_RECOVERY_CODES_STEP);
@@ -291,14 +293,15 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   // only proof the account has.
   const confirmNeedsEmailProof = !rotation && proofMode === "email";
   const confirmStepReady = rotation
-    ? confirmProofValue.trim().length > 0
+    ? isCredentialProofReady("factor", confirmProofValue)
     : confirmOtpCodes.filter(Boolean).length === DIGITS &&
-      (!confirmNeedsEmailProof || confirmProofValue.trim().length > 0);
+      (!confirmNeedsEmailProof ||
+        isCredentialProofReady("email", confirmProofValue));
   const allowNext =
     currentStep === SETUP_AUTH_APP_STEP
       ? otpCodes.filter(Boolean).length === DIGITS &&
         !isExpired &&
-        (!needProofAtEnable || proofValue.trim().length > 0)
+        (!needProofAtEnable || isCredentialProofReady(proofMode, proofValue))
       : recoveryCodesDownloaded && confirmStepReady;
 
   const steps = [

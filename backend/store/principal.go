@@ -381,6 +381,11 @@ func (s *Store) ConsumeRecoveryCode(ctx context.Context, userID int, code string
 // abandoned enrollment left behind — otherwise confirming those codes would
 // promote a secret nobody is holding.
 func (s *Store) SetPendingMFAState(ctx context.Context, userID int, tempOtpSecret string, tempRecoveryCodes []string, createdTime time.Time) error {
+	// Truncated because UpdateUserMFAConfigIfPending matches this value as a
+	// timestamptz, and that type is microsecond-resolution: a nanosecond tail
+	// stored here would be rounded by the cast in that predicate and never
+	// match the value handed back to the caller.
+	createdTime = createdTime.Truncate(time.Microsecond)
 	codesJSON, err := json.Marshal(tempRecoveryCodes)
 	if err != nil {
 		return err
@@ -427,11 +432,19 @@ func (s *Store) UpdateUserMFAConfigIfPending(ctx context.Context, userID int, ex
 	// as timestamptz rather than text keeps the match independent of how many
 	// fractional digits the value was serialized with. A cleared config has no
 	// such key, so the NULL comparison fails and the write is refused.
+	//
+	// timestamptz is microsecond-resolution, so both sides are truncated to
+	// microseconds: the cast rounds a nanosecond tail while the bound
+	// parameter does not, and the two then disagree for any instant whose
+	// sub-microsecond remainder is large enough to round up. Go's clock is
+	// microsecond-granular on macOS and nanosecond-granular on Linux, so
+	// without this the mismatch appears only on Linux — and there, for roughly
+	// half of all enrollments.
 	q := qb.Q().Space(`
 		UPDATE principal SET mfa_config = ?
 		WHERE id = ? AND (mfa_config->>'tempOtpSecretCreatedTime')::timestamptz = ?
 		RETURNING id, deleted, email, name, password_hash, mfa_config, phone, profile, created_at
-	`, mfaConfigBytes, userID, expectedPendingVersion)
+	`, mfaConfigBytes, userID, expectedPendingVersion.Truncate(time.Microsecond))
 	sqlStr, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")

@@ -7,6 +7,7 @@ import {
   buildCredentialProof,
   CredentialProofInput,
   credentialProofCallOptions,
+  isCredentialProofReady,
 } from "@/components/CredentialProofInput";
 import { Button } from "@/components/ui/button";
 import { useCurrentUser } from "@/hooks/useAppState";
@@ -104,7 +105,7 @@ export function RegenerateRecoveryCodesView({
         <Button
           disabled={
             !recoveryCodesDownloaded ||
-            !proofValue.trim() ||
+            !isCredentialProofReady("factor", proofValue) ||
             !pending ||
             submitting
           }

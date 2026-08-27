@@ -11,6 +11,7 @@ import {
   buildCredentialProof,
   CredentialProofInput,
   credentialProofCallOptions,
+  isCredentialProofReady,
   useCredentialProofMode,
 } from "@/components/CredentialProofInput";
 import { FeatureBadge } from "@/components/FeatureBadge";
@@ -128,7 +129,7 @@ export function AccountSettingsPage() {
   );
   const allowSavePassword =
     password.length > 0 &&
-    passwordProofValue.trim().length > 0 &&
+    isCredentialProofReady(proofMode, passwordProofValue) &&
     !passwordErrors.hasHint &&
     !passwordErrors.hasMismatch;
 
@@ -518,7 +519,10 @@ export function AccountSettingsPage() {
               </Button>
               <Button
                 variant="destructive"
-                disabled={disabling2FA || !disable2FAProofValue.trim()}
+                disabled={
+                  disabling2FA ||
+                  !isCredentialProofReady("factor", disable2FAProofValue)
+                }
                 onClick={handleDisable2FA}
               >
                 {t("common.disable")}

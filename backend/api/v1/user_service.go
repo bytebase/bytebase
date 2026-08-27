@@ -719,16 +719,6 @@ func (s *UserService) ChangePassword(ctx context.Context, request *connect.Reque
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate password hash"))
 	}
 
-	if bcrypt.CompareHashAndPassword([]byte(caller.PasswordHash), []byte(request.Msg.NewPassword)) == nil {
-		// Not just UX: any PasswordHash write moves the password-rotation
-		// deadline, which a same-password "change" must not reset.
-		//
-		// Refused before the claim, same rule as EnableMFA: submitting the
-		// password you already have is an argument error, not a guess, and
-		// must not spend a slot from the bucket real logins draw from.
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password cannot be the same"))
-	}
-
 	claimed, err := s.claimCredentialProof(ctx, caller.Email, request.Msg.Credential, false)
 	if err != nil {
 		return nil, err
@@ -739,6 +729,22 @@ func (s *UserService) ChangePassword(ctx context.Context, request *connect.Reque
 	// rewritten here from a read taken before it.
 	if err := s.verifyCredentialProof(ctx, caller, request.Msg.Credential, false); err != nil {
 		return nil, err
+	}
+
+	if bcrypt.CompareHashAndPassword([]byte(caller.PasswordHash), []byte(request.Msg.NewPassword)) == nil {
+		// Not just UX: any PasswordHash write moves the password-rotation
+		// deadline, which a same-password "change" must not reset.
+		//
+		// This comparison answers "is this the current password?", so it stays
+		// behind the proof. Reached without one it is an unbounded password
+		// oracle: a stolen session exhausts the lockout bucket, then reads the
+		// answer off which error comes back for each candidate new_password.
+		//
+		// The claim is released because the credential *was* proven — the same
+		// reason the success path releases it. That is not the case where an
+		// unproven request gets its counter reset.
+		s.clearCredentialProofClaims(ctx, caller.Email, claimed)
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("password cannot be the same"))
 	}
 
 	profile := caller.Profile
@@ -778,7 +784,11 @@ func (s *UserService) StartMFAEnrollment(ctx context.Context, request *connect.R
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate recovery codes"))
 	}
-	version := timestamppb.Now()
+	// Microseconds, not nanoseconds: this value is handed to the caller,
+	// stored, and later matched as a Postgres timestamptz, which cannot hold
+	// a finer instant. Minting one the store cannot represent would make the
+	// confirmation reject the enrollment it just created.
+	version := timestamppb.New(time.Now().Truncate(time.Microsecond))
 
 	// The live factor is carried forward untouched: minting an enrollment
 	// changes nothing about how the account signs in today.
@@ -801,7 +811,7 @@ func (s *UserService) StartMFAEnrollment(ctx context.Context, request *connect.R
 // and a rotation is not half-applied if the user abandons the download step.
 // Nothing is revoked either: MFA gates minting a session, not using one.
 func (s *UserService) EnableMFA(ctx context.Context, request *connect.Request[v1pb.EnableMFARequest]) (*connect.Response[v1pb.User], error) {
-	caller, err := s.resolveSelfUserFresh(ctx, request.Msg.Name)
+	caller, err := s.resolveSelfUser(ctx, request.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -835,6 +845,11 @@ func (s *UserService) EnableMFA(ctx context.Context, request *connect.Request[v1
 		if err := s.verifyCredentialProof(ctx, caller, request.Msg.Credential, true); err != nil {
 			return nil, firstTimeEnrollmentProofError(err, rotation, request.Msg.Credential)
 		}
+		// Proven, so its bucket has done its job. Releasing it here rather
+		// than at the end keeps a mistyped new-device code below from
+		// draining the bucket an ordinary login draws from.
+		s.clearCredentialProofClaims(ctx, caller.Email, claimed)
+		claimed = nil
 	}
 
 	// The enrollment code proves the caller configured the new device
@@ -916,6 +931,9 @@ func (s *UserService) DisableMFA(ctx context.Context, request *connect.Request[v
 		if request.Msg.Credential == nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("credential is required"))
 		}
+		if err := checkFactorProofShape(user, request.Msg.Credential); err != nil {
+			return nil, err
+		}
 		claimed, err = s.claimCredentialProof(ctx, user.Email, request.Msg.Credential, false)
 		if err != nil {
 			return nil, err
@@ -954,7 +972,7 @@ func (s *UserService) RegenerateRecoveryCodes(ctx context.Context, request *conn
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to generate recovery codes"))
 	}
-	version := timestamppb.Now()
+	version := timestamppb.New(time.Now().Truncate(time.Microsecond))
 
 	if caller.MFAConfig.GetOtpSecret() == "" {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("MFA is not enabled"))
@@ -980,7 +998,7 @@ func (s *UserService) RegenerateRecoveryCodes(ctx context.Context, request *conn
 // together, gated on a fresh otp_code. Both branches change live credential
 // material, so both revoke sessions.
 func (s *UserService) ConfirmRecoveryCodes(ctx context.Context, request *connect.Request[v1pb.ConfirmRecoveryCodesRequest]) (*connect.Response[v1pb.User], error) {
-	caller, err := s.resolveSelfUserFresh(ctx, request.Msg.Name)
+	caller, err := s.resolveSelfUser(ctx, request.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -1014,6 +1032,9 @@ func (s *UserService) ConfirmRecoveryCodes(ctx context.Context, request *connect
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("no MFA enrollment in progress, call StartMFAEnrollment first"))
 	}
 
+	if err := checkFactorProofShape(caller, request.Msg.Credential); err != nil {
+		return nil, err
+	}
 	claimed, err := s.claimCredentialProof(ctx, caller.Email, request.Msg.Credential, request.Msg.OtpCode != "")
 	if err != nil {
 		return nil, err
@@ -1024,11 +1045,15 @@ func (s *UserService) ConfirmRecoveryCodes(ctx context.Context, request *connect
 		// live, so this is where the proof binds. A fresh otp_code, not a
 		// replay of EnableMFA's — promotion is the moment MFA starts gating
 		// logins.
-		if !totp.Validate(request.Msg.OtpCode, caller.MFAConfig.GetTempOtpSecret()) {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid OTP code"))
-		}
 		if err := s.verifyCredentialProof(ctx, caller, request.Msg.Credential, true); err != nil {
 			return nil, firstTimeEnrollmentProofError(err, false, request.Msg.Credential)
+		}
+		// Released once proven, so a mistyped new-device code costs the user
+		// nothing but a retry. See EnableMFA.
+		s.clearCredentialProofClaims(ctx, caller.Email, claimed)
+		claimed = nil
+		if !totp.Validate(request.Msg.OtpCode, caller.MFAConfig.GetTempOtpSecret()) {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid OTP code"))
 		}
 	} else if err := s.verifyCredentialProof(ctx, caller, request.Msg.Credential, true); err != nil {
 		return nil, err
@@ -1073,30 +1098,6 @@ func (*UserService) resolveSelfUser(ctx context.Context, name string) (*store.Us
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("name must be the caller's own account"))
 	}
 	return caller, nil
-}
-
-// resolveSelfUserFresh resolves the caller, then re-reads the row.
-//
-// The user on the context is whatever the store's user cache held when the
-// request authenticated, and that cache is filled from whole-table snapshots:
-// a list whose transaction began before a write can land after it and put the
-// pre-write row back. Every step of an MFA enrollment reads pending state that
-// a *previous* request wrote, so those steps read the row instead — otherwise
-// a confirmation intermittently reports that its own enrollment was
-// superseded. GetUserByID does not consult the cache.
-func (s *UserService) resolveSelfUserFresh(ctx context.Context, name string) (*store.UserMessage, error) {
-	caller, err := s.resolveSelfUser(ctx, name)
-	if err != nil {
-		return nil, err
-	}
-	user, err := s.store.GetUserByID(ctx, caller.ID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
-	}
-	if user == nil || user.MemberDeleted {
-		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %q not found", caller.Email))
-	}
-	return user, nil
 }
 
 // claimCredentialProof claims the T9 lockout slot for the credential this
@@ -1285,7 +1286,7 @@ func (s *UserService) checkEnableMFACredentialShape(user *store.UserMessage, cre
 		if credential == nil {
 			return errFirstTimeEnrollmentNeedsPassword
 		}
-		return nil
+		return checkFactorProofShape(user, credential)
 	}
 	if credential != nil {
 		// Cloud passwordless enrollment: email_code would be the only
@@ -1296,6 +1297,23 @@ func (s *UserService) checkEnableMFACredentialShape(user *store.UserMessage, cre
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("credential must be omitted for first-time enrollment on an account without a password"))
 	}
 	return nil
+}
+
+// checkFactorProofShape refuses, before any slot is claimed, a proof channel
+// that a live factor could never accept. verifyCredentialProof rejects these
+// too, but it does so after the claim — and a request naming a channel this
+// account cannot use has guessed at nothing, so five of them must not lock the
+// bucket ordinary password or email-code logins draw from.
+func checkFactorProofShape(user *store.UserMessage, credential *v1pb.CredentialProof) error {
+	if user.MFAConfig.GetOtpSecret() == "" {
+		return nil
+	}
+	switch credential.GetProof().(type) {
+	case *v1pb.CredentialProof_OtpCode, *v1pb.CredentialProof_RecoveryCode:
+		return nil
+	default:
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("changing the MFA factor requires an OTP or recovery code, not the password"))
+	}
 }
 
 // checkRecoveryCodesConfirmable refuses the state and argument shapes
