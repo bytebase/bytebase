@@ -249,7 +249,10 @@ export const readConsentCeiling = (
   if (!info) {
     return { kind: "unknown" };
   }
-  if (info.policyUnreadable) {
+  // Unspecified is not a ceiling: the server resolves one before answering, and
+  // a workspace that never configured MCP resolves to READ_WRITE. So the only
+  // way to see it here is a stored row nothing could resolve.
+  if (info.capability === MCPSetting_Capability.CAPABILITY_UNSPECIFIED) {
     return { kind: "unreadable" };
   }
   if (!modeFor(info, info.capability)) {

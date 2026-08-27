@@ -61,9 +61,6 @@ func (x *MCPInfo) Equal(y *MCPInfo) bool {
 	if x.DataMaskingAvailable != y.DataMaskingAvailable {
 		return false
 	}
-	if x.PolicyUnreadable != y.PolicyUnreadable {
-		return false
-	}
 	return true
 }
 

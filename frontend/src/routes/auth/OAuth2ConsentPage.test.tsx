@@ -726,7 +726,6 @@ describe("OAuth2ConsentPage", () => {
   test("an unreadable ceiling says so and offers no grant", async () => {
     const { container, unmount } = await renderWithCeiling({
       capability: 0,
-      policyUnreadable: true,
       ignoreMaskingExemptions: false,
       dataMaskingAvailable: true,
       methods: [],
@@ -821,7 +820,6 @@ describe("OAuth2ConsentPage", () => {
   test("dismissing an undisclosed policy denies the request", async () => {
     const { container, unmount } = await renderWithCeiling({
       capability: 0,
-      policyUnreadable: true,
       ignoreMaskingExemptions: false,
       dataMaskingAvailable: true,
       methods: [],

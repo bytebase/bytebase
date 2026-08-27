@@ -12702,7 +12702,9 @@ cannot describe the rules of the build before it.
 | workspace | [string](#string) |  | The workspace this describes. Format: workspaces/{workspace}. Not this message&#39;s own resource name — MCPInfo is not a named resource and there is nothing to get it by. |
 | capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  | The ceiling in force for this workspace. A workspace that never configured MCP resolves to READ_WRITE.
 
-Read policy_unreadable before this field, and decide the rest from modes rather than from this number. CAPABILITY_UNSPECIFIED, which protojson omits, is not a ceiling: it means the stored value could not be resolved. Otherwise the ceiling serves nothing exactly when modes carries no row for it. A number a client&#39;s own generated enum cannot name is a different case — a newer release added it — and modes still says whether it serves. |
+Decide from this field and modes, in that order. CAPABILITY_UNSPECIFIED, which protojson omits, is not a ceiling: it means this build could not resolve one from the stored row, and every MCP connection is refused. A workspace that never configured MCP resolves to READ_WRITE instead, so unspecified never means unconfigured here.
+
+Otherwise the ceiling serves nothing exactly when modes carries no row for it. A number a client&#39;s own generated enum cannot name is a different case — a newer release added it — and modes still says whether it serves. |
 | modes | [MCPCapabilityMode](#bytebase-v1-MCPCapabilityMode) | repeated | What each ceiling serves, including the one in force, so an admin can compare the choices rather than only read the current answer. |
 | methods | [MCPMethod](#bytebase-v1-MCPMethod) | repeated | Every API method some ceiling serves. A mode serves a method when the method&#39;s class is one of that mode&#39;s served_classes, which is the ceiling rule the gate evaluates. Methods no ceiling serves are absent.
 
@@ -12710,19 +12712,6 @@ Being listed is necessary, not sufficient. The caller still needs the permission
 | engines | [MCPEngineEnforcement](#bytebase-v1-MCPEngineEnforcement) | repeated | What a read-only session and the masking toggle actually reach, per engine. Both are engine-conditional in ways the ceiling alone does not show. |
 | ignore_masking_exemptions | [bool](#bool) |  | Whether this workspace stops applying the caller&#39;s own unmasking provisioning to MCP requests. It decides which branch of each engine&#39;s masking state a caller is in, and no other API tells an MCP session: SettingService/GetSetting is served by no ceiling. |
 | data_masking_available | [bool](#bool) |  | Whether data masking is licensed for this workspace. When false nothing is masked whatever an engine supports, so the masking states below describe a mechanism that does not run. Licensing can also be set per instance, so a true here is the workspace answer, not a promise about every instance. |
-| policy_unreadable | [bool](#bool) |  | True when this build cannot resolve a ceiling from the stored row, which is refused every MCP connection. Anything that leaves the row unresolvable reaches it, whether or not the capability is at fault: a wrong JSON type on any field fails the whole unmarshal, so a malformed ignore_masking_exemptions sets this over a perfectly readable capability.
-
-Named for the consequence, not the cause. Deliberately not capability_unreadable, which would claim the capability is the unreadable part when that is one case of several.
-
-Wider than MCPSetting.capability_unreadable despite the neighbouring names, and not interchangeable with it. GetSetting fails outright on a row that does not unmarshal, so that field only ever describes rows that parsed; this one also covers the rows GetSetting refuses, because this method answers the mode contents for them rather than refusing.
-
-So a client cannot infer from this field how the row gets repaired: some of these an admin fixes in the workspace settings, and some need an operator to correct the stored value directly. The settings API is where that distinction is drawn.
-
-modes, methods and engines are answered anyway: they come from the compiled descriptors and the enforcement code, never from the stored row (BOT-106).
-
-capability is CAPABILITY_UNSPECIFIED whenever this is true, and never otherwise: a workspace that never configured MCP resolves to READ_WRITE. ignore_masking_exemptions is served as false, which is its permissive direction — do not read it as a masking decision. Neither field carries what the row holds, because no MCP request runs under this ceiling for either to apply to.
-
-A ceiling that parsed but no mode serves is the neighbouring state: the number arrives on capability and modes has no row for it. |
 
 
 

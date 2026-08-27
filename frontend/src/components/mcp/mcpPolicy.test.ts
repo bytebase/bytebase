@@ -280,12 +280,9 @@ describe("grouping", () => {
 // about (backend/api/v1/mcp_gate.go, mcpServingClasses).
 const SERVED_MODES = [1, 3, 4];
 
-const infoWith = (
-  fields: Partial<{ capability: number; unreadable: boolean; modes: number[] }>
-) =>
+const infoWith = (fields: Partial<{ capability: number; modes: number[] }>) =>
   create(MCPInfoSchema, {
     capability: fields.capability ?? MCPSetting_Capability.READ_ONLY,
-    policyUnreadable: fields.unreadable ?? false,
     modes: (fields.modes ?? SERVED_MODES).map((capability) =>
       create(MCPCapabilityModeSchema, { capability })
     ),
@@ -312,9 +309,9 @@ describe("readConsentCeiling", () => {
     // The capability arrives unspecified when the stored value cannot be
     // resolved, and unspecified has no row, so both rules would fire. Only the
     // first says what an admin has to do about it.
-    expect(
-      readConsentCeiling(infoWith({ capability: 0, unreadable: true }))
-    ).toEqual({ kind: "unreadable" });
+    expect(readConsentCeiling(infoWith({ capability: 0 }))).toEqual({
+      kind: "unreadable",
+    });
   });
 
   test("a value with no row in the serving table is unserved", () => {
