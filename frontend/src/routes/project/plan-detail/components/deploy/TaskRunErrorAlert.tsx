@@ -11,7 +11,7 @@ import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 //
 // The log loads asynchronously, so gating this on the log's contents would
 // flip the alert after first paint.
-export function TaskRunErrorAlert({ taskRun }: { taskRun: TaskRun }) {
+export function TaskRunErrorAlert({ taskRun }: Readonly<{ taskRun: TaskRun }>) {
   const { t } = useTranslation();
 
   if (taskRun.status !== TaskRun_Status.FAILED || !taskRun.detail) {
