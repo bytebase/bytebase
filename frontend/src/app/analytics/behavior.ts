@@ -49,6 +49,7 @@ export type BehaviorMetricInput = {
 export function buildBehaviorAnalyticsConfig(params: {
   posthogKey?: string;
   posthogHost?: string;
+  deployment: "cloud" | "self-host";
   gitCommit?: string;
   recordingSampleRate: number;
   resolveRouteId?: (url: string) => string | undefined;
@@ -59,6 +60,7 @@ export function buildBehaviorAnalyticsConfig(params: {
     return null;
   }
   const properties = sanitizeBehaviorProperties({
+    deployment: params.deployment,
     git_commit: params.gitCommit?.trim() || undefined,
   });
 
