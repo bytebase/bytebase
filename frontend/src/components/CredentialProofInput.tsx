@@ -103,7 +103,7 @@ export function buildCredentialProof(
 export function CredentialProofInput({
   value,
   onChange,
-}: CredentialProofInputProps) {
+}: Readonly<CredentialProofInputProps>) {
   const { t } = useTranslation();
   // Only one mode's Input renders at a time, so a single id serves them all.
   const inputId = useId();

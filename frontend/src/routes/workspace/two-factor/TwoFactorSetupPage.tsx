@@ -292,11 +292,11 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   const confirmNeedsEmailProof = !rotation && proofMode === "email";
   const confirmStepReady = rotation
     ? confirmProofValue.trim().length > 0
-    : confirmOtpCodes.filter((v) => v).length === DIGITS &&
+    : confirmOtpCodes.filter(Boolean).length === DIGITS &&
       (!confirmNeedsEmailProof || confirmProofValue.trim().length > 0);
   const allowNext =
     currentStep === SETUP_AUTH_APP_STEP
-      ? otpCodes.filter((v) => v).length === DIGITS &&
+      ? otpCodes.filter(Boolean).length === DIGITS &&
         !isExpired &&
         (!needProofAtEnable || proofValue.trim().length > 0)
       : recoveryCodesDownloaded && confirmStepReady;

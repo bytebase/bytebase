@@ -686,8 +686,10 @@ func (s *UserService) RequestReauthCode(ctx context.Context, request *connect.Re
 		common.GetWorkspaceIDFromContext(ctx),
 		caller.Email,
 		storepb.EmailVerificationCodePurpose_REAUTH,
-		"[Bytebase] Confirm your identity",
-		"Hi,\n\nYour verification code is: %s\n\nThis code expires in %d minutes. If you didn't request this, you can safely ignore this email.\n\n— Bytebase",
+		emailCodeTemplate{
+			Subject: "[Bytebase] Confirm your identity",
+			BodyFmt: "Hi,\n\nYour verification code is: %s\n\nThis code expires in %d minutes. If you didn't request this, you can safely ignore this email.\n\n— Bytebase",
+		},
 	); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

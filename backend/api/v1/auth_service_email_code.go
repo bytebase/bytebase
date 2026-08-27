@@ -349,15 +349,22 @@ func resolvePreLoginEmailSetting(
 // Returns an error only on actionable failures (missing EMAIL setting, SMTP failure, DB error).
 // Callers decide whether to propagate the error: `SendEmailLoginCode` surfaces it (users need
 // to know email delivery failed), `RequestPasswordReset` swallows it to avoid revealing that
-// the account exists. `bodyFmt` must contain one %s for the 6-digit code.
+// the account exists.
 func (s *AuthService) sendEmailVerificationCode(ctx context.Context, workspaceID, email string, purpose storepb.EmailVerificationCodePurpose, subject, bodyFmt string) error {
-	return sendEmailVerificationCode(ctx, s.store, s.secret, workspaceID, email, purpose, subject, bodyFmt)
+	return sendEmailVerificationCode(ctx, s.store, s.secret, workspaceID, email, purpose, emailCodeTemplate{Subject: subject, BodyFmt: bodyFmt})
+}
+
+// emailCodeTemplate is the message a verification code is delivered in.
+// BodyFmt must contain one %s for the 6-digit code.
+type emailCodeTemplate struct {
+	Subject string
+	BodyFmt string
 }
 
 // sendEmailVerificationCode is package-level because both AuthService (login
 // and password-reset codes) and UserService (the re-authentication code) send
 // them; the deps it needs are passed rather than reached through a receiver.
-func sendEmailVerificationCode(ctx context.Context, stores *store.Store, secret, workspaceID, email string, purpose storepb.EmailVerificationCodePurpose, subject, bodyFmt string) error {
+func sendEmailVerificationCode(ctx context.Context, stores *store.Store, secret, workspaceID, email string, purpose storepb.EmailVerificationCodePurpose, mail emailCodeTemplate) error {
 	// For password reset, only send to active end users — no upsert or email for other targets.
 	// Login intentionally skips this account check because email-code login also supports signup.
 	if purpose == storepb.EmailVerificationCodePurpose_PASSWORD_RESET {
@@ -405,10 +412,10 @@ func sendEmailVerificationCode(ctx context.Context, stores *store.Store, secret,
 		return errors.Wrap(err, "failed to create mail sender")
 	}
 
-	body := fmt.Sprintf(bodyFmt, code, int(emailCodeExpiry.Minutes()))
+	body := fmt.Sprintf(mail.BodyFmt, code, int(emailCodeExpiry.Minutes()))
 	if err := sender.Send(ctx, &mailer.SendRequest{
 		To:       []string{email},
-		Subject:  subject,
+		Subject:  mail.Subject,
 		TextBody: body,
 	}); err != nil {
 		// Delete the row so the cooldown doesn't block an immediate retry.
