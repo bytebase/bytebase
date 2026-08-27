@@ -257,11 +257,10 @@ function ConnectionPaneInner({ show, onMissingFeature }: Props) {
   const currentProject = useAppProject(projectName);
   const projectTitle = projectName ? currentProject.title : "";
 
-  const scopeOptions = useCommonSearchScopeOptions([
-    "instance",
-    "label",
-    "engine",
-  ]);
+  const scopeOptions = useCommonSearchScopeOptions(
+    ["instance", "label", "engine"],
+    currentProject
+  );
 
   // Derive DatabaseFilter fields from the search scopes, matching the Vue
   // version's slicing of `state.params` into `instance`, `labels`, and
