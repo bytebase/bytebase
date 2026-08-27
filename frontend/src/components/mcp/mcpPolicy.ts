@@ -1,5 +1,4 @@
 import type { Engine } from "@/types/proto-es/v1/common_pb";
-import type { MCPSetting } from "@/types/proto-es/v1/setting_service_pb";
 import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
 import type {
   MCPCapabilityMode,
@@ -12,62 +11,22 @@ import {
   MCPEngineEnforcement_ReadOnlyDepth,
 } from "@/types/proto-es/v1/workspace_service_pb";
 
+export type MCPMode =
+  | MCPSetting_Capability.DISABLED
+  | MCPSetting_Capability.READ_ONLY
+  | MCPSetting_Capability.READ_WRITE;
+
 /** The ceilings an admin picks between, least to most capable. */
-export const MCP_CAPABILITY_CHOICES: readonly MCPSetting_Capability[] = [
+export const MCP_CAPABILITY_CHOICES: readonly MCPMode[] = [
   MCPSetting_Capability.DISABLED,
   MCPSetting_Capability.READ_ONLY,
   MCPSetting_Capability.READ_WRITE,
 ];
 
-/** What the stored row says, which is not always a mode. */
-export type StoredCeiling =
-  | { kind: "mode"; capability: MCPSetting_Capability }
-  | { kind: "unreadable" }
-  | { kind: "unserved"; stored: string };
-
-const isChoice = (capability: MCPSetting_Capability): boolean =>
-  MCP_CAPABILITY_CHOICES.includes(capability);
-
-/** Reads the stored row into the state the page renders. */
-export const readStoredCeiling = (setting: MCPSetting): StoredCeiling => {
-  if (isChoice(setting.capability)) {
-    return { kind: "mode", capability: setting.capability };
-  }
-  if (setting.capability === MCPSetting_Capability.CAPABILITY_UNSPECIFIED) {
-    // Every workspace is migrated with a concrete capability. Unspecified
-    // therefore means the stored token could not be resolved, and enforcement
-    // refuses it server-side.
-    return { kind: "unreadable" };
-  }
-  // A number that parsed but no mode serves: the reserved 2, or a ceiling a
-  // newer release wrote. Enforcement refuses it, so it is not a choice either.
-  return { kind: "unserved", stored: String(setting.capability) };
-};
-
-/** A stored row the server refuses, which carries the value nobody could read. */
-export type BrokenCeiling = Extract<
-  StoredCeiling,
-  { kind: "unreadable" } | { kind: "unserved" }
->;
-
-/** Whether the stored row is one the server can act on. */
-export const ceilingIsBroken = (
-  stored: StoredCeiling
-): stored is BrokenCeiling =>
-  stored.kind === "unreadable" || stored.kind === "unserved";
-
-/**
- * The card the form starts on, or undefined when the row is broken.
- *
- * A broken row starts on no card so that every pick is a change the footer can
- * save — including the most permissive one. Preselecting the ceiling such a row
- * resolves to is what left an admin unable to repair it in one save (BOT-100).
- */
-export const initialCapabilityPick = (
-  stored: StoredCeiling
-): MCPSetting_Capability | undefined => {
-  return stored.kind === "mode" ? stored.capability : undefined;
-};
+export const isMCPMode = (
+  capability: MCPSetting_Capability
+): capability is MCPMode =>
+  MCP_CAPABILITY_CHOICES.some((choice) => choice === capability);
 
 /**
  * The methods a mode serves, by the same rule the gate evaluates: a method is

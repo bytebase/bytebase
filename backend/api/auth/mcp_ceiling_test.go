@@ -29,6 +29,7 @@ func TestClassifyMCPCeiling(t *testing.T) {
 		{"read-write serves", &storepb.MCPSetting{Capability: storepb.MCPSetting_READ_WRITE}, nil, MCPCeilingServes, false},
 		{"read-only serves", &storepb.MCPSetting{Capability: storepb.MCPSetting_READ_ONLY}, nil, MCPCeilingServes, false},
 		{"disabled", &storepb.MCPSetting{Capability: storepb.MCPSetting_DISABLED}, nil, MCPCeilingDisabled, true},
+		{"unspecified", &storepb.MCPSetting{Capability: storepb.MCPSetting_CAPABILITY_UNSPECIFIED}, nil, MCPCeilingUnserved, true},
 		{"the reserved number", &storepb.MCPSetting{Capability: storepb.MCPSetting_Capability(2)}, nil, MCPCeilingUnserved, true},
 		{"a value from a newer build", &storepb.MCPSetting{Capability: storepb.MCPSetting_Capability(99)}, nil, MCPCeilingUnserved, true},
 		{"nobody resolved it", nil, nil, MCPCeilingUnavailable, false},
@@ -41,21 +42,6 @@ func TestClassifyMCPCeiling(t *testing.T) {
 			require.Equal(t, tt.want, got)
 			require.Equal(t, tt.policy, got.IsPolicy())
 		})
-	}
-}
-
-// TestMCPCeilingVerdictAdmissionMatchesTheServesPredicate holds the classifier
-// against the predicate the serving table already pins: exactly one verdict may
-// admit work, and it must be the one MCPCeilingServesAnything agrees with over
-// the whole enum. A mode that starts or stops serving a class cannot leave one
-// of them stale.
-func TestMCPCeilingVerdictAdmissionMatchesTheServesPredicate(t *testing.T) {
-	values := storepb.MCPSetting_Capability(0).Descriptor().Values()
-	for i := range values.Len() {
-		capability := storepb.MCPSetting_Capability(values.Get(i).Number())
-		admits := ClassifyMCPCeiling(&storepb.MCPSetting{Capability: capability}, nil) == MCPCeilingServes
-		require.Equal(t, MCPCeilingServesAnything(capability), admits,
-			"%v must admit work in exactly one of the two", capability)
 	}
 }
 

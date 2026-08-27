@@ -24,39 +24,6 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 )
 
-// TestMCPConnectionAllowed pins the rule the connection gate decides from:
-// READ_WRITE and READ_ONLY admit a connection, and everything else fails
-// closed — DISABLED, unknown stored values such as the reserved number 2, and
-// the zero value. The gate reaches it through auth.ClassifyMCPCeiling, which
-// TestMCPCeilingVerdictAdmissionMatchesTheServesPredicate holds against this
-// same predicate over the whole enum.
-//
-// READ_ONLY is admitted from the cutover, once the SQL clamp made a read-only
-// session one that cannot write. What it may then do is decided per method by
-// the ceiling gate and per statement by the clamp; this function only decides
-// whether the session opens at all.
-//
-// UNSPECIFIED is refused here because migration and workspace creation always
-// persist a concrete capability.
-func TestMCPConnectionAllowed(t *testing.T) {
-	tests := []struct {
-		capability storepb.MCPSetting_Capability
-		allowed    bool
-	}{
-		{storepb.MCPSetting_CAPABILITY_UNSPECIFIED, false},
-		{storepb.MCPSetting_READ_WRITE, true},
-		{storepb.MCPSetting_DISABLED, false},
-		{storepb.MCPSetting_Capability(2), false},  // reserved (was METADATA_ONLY)
-		{storepb.MCPSetting_Capability(99), false}, // no such value in any build
-		{storepb.MCPSetting_READ_ONLY, true},
-	}
-	for _, tt := range tests {
-		t.Run(tt.capability.String(), func(t *testing.T) {
-			require.Equal(t, tt.allowed, auth.MCPCeilingServesAnything(tt.capability))
-		})
-	}
-}
-
 // TestMCPKillSwitchEndToEnd drives the /mcp auth middleware against a real store:
 // a workspace with DISABLED is rejected server-side with 403, while an
 // explicit READ_WRITE ceiling is allowed. This is the server-side enforcement

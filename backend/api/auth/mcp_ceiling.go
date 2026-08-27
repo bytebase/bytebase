@@ -45,14 +45,14 @@ func ClassifyMCPCeiling(settings *storepb.MCPSetting, err error) MCPCeilingVerdi
 	if settings == nil {
 		return MCPCeilingUnavailable
 	}
-	capability := settings.Capability
-	if capability == storepb.MCPSetting_DISABLED {
+	switch settings.Capability {
+	case storepb.MCPSetting_DISABLED:
 		return MCPCeilingDisabled
-	}
-	if !MCPCeilingServesAnything(capability) {
+	case storepb.MCPSetting_READ_ONLY, storepb.MCPSetting_READ_WRITE:
+		return MCPCeilingServes
+	default:
 		return MCPCeilingUnserved
 	}
-	return MCPCeilingServes
 }
 
 // Refusal is what a door tells the caller it is refusing: what is wrong with

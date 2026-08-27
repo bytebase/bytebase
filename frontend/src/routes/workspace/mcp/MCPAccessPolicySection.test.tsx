@@ -189,6 +189,46 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
+  test("repairs an unspecified capability without a frontend fallback", async () => {
+    mocks.mcpSetting.value = {
+      capability: 0,
+      ignoreMaskingExemptions: false,
+    };
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+
+    expect(container.textContent).toContain(
+      "settings.mcp.policy.unreadable.title"
+    );
+    expect(container.textContent).not.toContain("settings.mcp.policy.in-force");
+
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+    expect(container.textContent).toContain(
+      "settings.mcp.policy.unreadable.pick"
+    );
+
+    clickText(container, "settings.mcp.policy.mode.read-write.title");
+    await flush();
+    clickText(container, "settings.mcp.policy.save");
+    await flush();
+
+    expect(mocks.upsertSetting).toHaveBeenCalledWith(
+      expect.objectContaining({
+        updateMask: expect.objectContaining({
+          paths: ["value.mcp.capability"],
+        }),
+      })
+    );
+    const request = mocks.upsertSetting.mock.calls.at(-1)?.[0];
+    expect(request.value.value.value.capability).toBe(4);
+
+    unmount();
+  });
+
   // Codex, #21236: the drawer opens from a mode card the admin is choosing, so
   // it previews the candidate policy. Reading the persisted value described the
   // masking behavior they were about to replace.

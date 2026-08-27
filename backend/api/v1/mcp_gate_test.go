@@ -393,21 +393,23 @@ func TestLintRefusedClassesMatchTheServingTable(t *testing.T) {
 
 // TestLintCeilingAdmissionMatchesTheServingTable is the connection gate's half
 // of the same arrangement. The /mcp boundary decides whether a session opens at
-// all, and it asks auth.MCPCeilingServesAnything, which cannot see this table.
-// This holds the two against each other over every ceiling value, so a mode
+// all through auth.ClassifyMCPCeiling, which cannot see this table. This holds
+// the two against each other over every ceiling value, so a mode
 // that serves no class cannot start admitting sessions — or the reverse, which
 // would refuse a connection whose methods the gate is ready to serve.
 func TestLintCeilingAdmissionMatchesTheServingTable(t *testing.T) {
 	values := storepb.MCPSetting_Capability(0).Descriptor().Values()
 	for i := range values.Len() {
 		capability := storepb.MCPSetting_Capability(values.Get(i).Number())
-		require.Equal(t, len(mcpServingClasses[capability]) > 0, auth.MCPCeilingServesAnything(capability),
-			"%v: the serving table and auth.MCPCeilingServesAnything disagree about whether this ceiling serves anything", capability)
+		verdict := auth.ClassifyMCPCeiling(&storepb.MCPSetting{Capability: capability}, nil)
+		require.Equal(t, len(mcpServingClasses[capability]) > 0, verdict == auth.MCPCeilingServes,
+			"%v: the serving table and auth.ClassifyMCPCeiling disagree about whether this ceiling serves anything", capability)
 	}
 	// A stored number no release ever wrote is refused too, and it cannot come
 	// from the descriptor because it is in no build's enum.
 	for _, unknown := range []storepb.MCPSetting_Capability{2, 99} {
-		require.False(t, auth.MCPCeilingServesAnything(unknown),
+		verdict := auth.ClassifyMCPCeiling(&storepb.MCPSetting{Capability: unknown}, nil)
+		require.NotEqual(t, auth.MCPCeilingServes, verdict,
 			"%v: a ceiling this build cannot interpret must not open a session", unknown)
 	}
 }

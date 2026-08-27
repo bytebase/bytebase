@@ -10,13 +10,8 @@ import {
 } from "@/api";
 import { silentContextKey } from "@/api/context-key";
 import { MCPModeContentsSheet } from "@/components/mcp/MCPModeContentsSheet";
-import type { StoredCeiling } from "@/components/mcp/mcpPolicy";
-import {
-  ceilingIsBroken,
-  initialCapabilityPick,
-  MCP_CAPABILITY_CHOICES,
-  readStoredCeiling,
-} from "@/components/mcp/mcpPolicy";
+import type { MCPMode } from "@/components/mcp/mcpPolicy";
+import { isMCPMode, MCP_CAPABILITY_CHOICES } from "@/components/mcp/mcpPolicy";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { Alert } from "@/components/ui/alert";
 import type { BadgeProps } from "@/components/ui/badge";
@@ -44,14 +39,9 @@ import type { MCPInfo } from "@/types/proto-es/v1/workspace_service_pb";
 // the card to the in-force chip, so they belong on one row rather than in
 // parallel tables that can drift apart.
 const MODES: Record<
-  MCPSetting_Capability,
+  MCPMode,
   { key: string; tone: string; badge: BadgeProps["variant"] }
 > = {
-  [MCPSetting_Capability.CAPABILITY_UNSPECIFIED]: {
-    key: "read-write",
-    tone: "text-warning",
-    badge: "warning",
-  },
   [MCPSetting_Capability.DISABLED]: {
     key: "disabled",
     tone: "text-error",
@@ -93,13 +83,11 @@ export function MCPAccessPolicySection() {
   const [info, setInfo] = useState<MCPInfo | undefined>(undefined);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [pick, setPick] = useState<MCPSetting_Capability | undefined>(
+  const [pick, setPick] = useState<MCPMode | undefined>(undefined);
+  const [ignoreMasking, setIgnoreMasking] = useState(false);
+  const [contentsFor, setContentsFor] = useState<MCPMode | undefined>(
     undefined
   );
-  const [ignoreMasking, setIgnoreMasking] = useState(false);
-  const [contentsFor, setContentsFor] = useState<
-    MCPSetting_Capability | undefined
-  >(undefined);
 
   // GetMCPInfo resolves what a mode contains from the live descriptors, so it
   // is re-read after a save rather than patched: the ceiling in force is part
@@ -190,24 +178,26 @@ export function MCPAccessPolicySection() {
     };
   }, [loadInfo]);
 
-  const stored: StoredCeiling | undefined = useMemo(
-    () => (mcpSetting ? readStoredCeiling(mcpSetting) : undefined),
-    [mcpSetting]
-  );
-  const storedPick = stored ? initialCapabilityPick(stored) : undefined;
+  const storedCapability = mcpSetting?.capability;
+  const storedMode =
+    storedCapability !== undefined && isMCPMode(storedCapability)
+      ? storedCapability
+      : undefined;
+  const unreadable =
+    storedCapability === MCPSetting_Capability.CAPABILITY_UNSPECIFIED;
   const storedIgnoreMasking = mcpSetting?.ignoreMaskingExemptions ?? false;
 
   // The form is seeded when editing opens, not on every store change: the
   // stored value only moves under an open form when someone else saved, and
   // replacing an admin's unsaved pick is worse than showing it stale.
   const startEditing = () => {
-    setPick(storedPick);
+    setPick(storedMode);
     setIgnoreMasking(storedIgnoreMasking);
     setEditing(true);
   };
 
   const isDirty =
-    editing && (pick !== storedPick || ignoreMasking !== storedIgnoreMasking);
+    editing && (pick !== storedMode || ignoreMasking !== storedIgnoreMasking);
   // The section this replaced was registered in GeneralPage's guarded refs, so
   // moving it to its own route would otherwise drop the confirm an admin gets
   // when navigating away from an unsaved ceiling.
@@ -216,7 +206,7 @@ export function MCPAccessPolicySection() {
   // else would erase it, and the server refuses that write.
   const canSave = isDirty && pick !== undefined;
 
-  const modeLabel = (capability: MCPSetting_Capability): string =>
+  const modeLabel = (capability: MCPMode): string =>
     t(`settings.mcp.policy.mode.${MODES[capability].key}.title`);
 
   const save = async () => {
@@ -224,7 +214,7 @@ export function MCPAccessPolicySection() {
       return;
     }
     const paths: string[] = [];
-    if (pick !== storedPick) {
+    if (pick !== storedMode) {
       paths.push("value.mcp.capability");
     }
     if (ignoreMasking !== storedIgnoreMasking) {
@@ -257,13 +247,10 @@ export function MCPAccessPolicySection() {
     }
   };
 
-  const inForceCapability = (state: StoredCeiling): MCPSetting_Capability =>
-    state.kind === "mode" ? state.capability : MCPSetting_Capability.READ_WRITE;
-
   // The mode the drawer is showing, frozen while it closes. The Sheet unmounts
   // after its close animation, so reading contentsFor directly would swap the
   // contents for another mode's for those ~200ms.
-  const openContentsRef = useRef(MCPSetting_Capability.READ_ONLY);
+  const openContentsRef = useRef<MCPMode>(MCPSetting_Capability.READ_ONLY);
   if (contentsFor !== undefined) {
     openContentsRef.current = contentsFor;
   }
@@ -282,7 +269,7 @@ export function MCPAccessPolicySection() {
         />
       );
     }
-    if (!readSettled || !stored) {
+    if (!readSettled || storedCapability === undefined) {
       return (
         <p className="textinfolabel">{t("settings.mcp.policy.loading")}</p>
       );
@@ -290,10 +277,10 @@ export function MCPAccessPolicySection() {
     return (
       <div className="rounded-sm border border-control-border p-4 flex flex-col gap-y-4">
         <div className="flex items-start justify-between gap-x-2">
-          {ceilingIsBroken(stored) ? (
+          {storedMode === undefined ? (
             <span className="text-sm font-medium text-warning">
               {t(
-                stored.kind === "unreadable"
+                unreadable
                   ? "settings.mcp.policy.unreadable.title"
                   : "settings.mcp.policy.unserved.title"
               )}
@@ -301,16 +288,13 @@ export function MCPAccessPolicySection() {
           ) : (
             <div className="flex flex-wrap items-center gap-2">
               <Rows3
-                className={cn(
-                  "size-4 shrink-0",
-                  MODES[inForceCapability(stored)].tone
-                )}
+                className={cn("size-4 shrink-0", MODES[storedMode].tone)}
               />
               <span className="text-sm text-control-light">
                 {t("settings.mcp.policy.in-force")}
               </span>
-              <Badge variant={MODES[inForceCapability(stored)].badge}>
-                {modeLabel(inForceCapability(stored))}
+              <Badge variant={MODES[storedMode].badge}>
+                {modeLabel(storedMode)}
               </Badge>
               {storedIgnoreMasking && (
                 <Badge variant="secondary">
@@ -335,14 +319,14 @@ export function MCPAccessPolicySection() {
           )}
         </div>
 
-        {ceilingIsBroken(stored) && (
+        {storedMode === undefined && (
           <Alert
             variant="warning"
             description={
-              stored.kind === "unreadable"
+              unreadable
                 ? t("settings.mcp.policy.unreadable.description")
                 : t("settings.mcp.policy.unserved.description", {
-                    stored: stored.stored,
+                    stored: String(storedCapability),
                   })
             }
           />
@@ -358,7 +342,12 @@ export function MCPAccessPolicySection() {
               className="grid grid-cols-1 gap-4 md:grid-cols-3"
               disabled={saving}
               value={pick === undefined ? "" : String(pick)}
-              onValueChange={(value) => setPick(Number(value))}
+              onValueChange={(value) => {
+                const capability = Number(value) as MCPSetting_Capability;
+                if (isMCPMode(capability)) {
+                  setPick(capability);
+                }
+              }}
             >
               {MCP_CAPABILITY_CHOICES.map((capability) => {
                 const mode = MODES[capability];
@@ -469,11 +458,11 @@ export function MCPAccessPolicySection() {
           </>
         ) : (
           <>
-            {!ceilingIsBroken(stored) && (
+            {storedMode !== undefined && (
               <p className="textinfolabel">
                 {t(
                   `settings.mcp.policy.mode.${
-                    MODES[inForceCapability(stored)].key
+                    MODES[storedMode].key
                   }.description`
                 )}
               </p>
