@@ -689,7 +689,9 @@ CREATE TABLE oauth2_authorization_code (
     -- access token's workspace_id claim.
     workspace text REFERENCES workspace(resource_id),
     config jsonb NOT NULL,
-    expires_at timestamptz NOT NULL
+    expires_at timestamptz NOT NULL,
+    -- When the row was issued.
+    created_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE TABLE oauth2_refresh_token (
@@ -703,11 +705,21 @@ CREATE TABLE oauth2_refresh_token (
     -- consented resource and scope, inherited from the authorization code and
     -- carried forward unchanged by every refresh.
     config jsonb NOT NULL DEFAULT '{}',
-    expires_at timestamptz NOT NULL
+    expires_at timestamptz NOT NULL,
+    -- When the row was issued.
+    created_at timestamptz NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_oauth2_authorization_code_expires_at ON oauth2_authorization_code(expires_at);
 CREATE INDEX idx_oauth2_refresh_token_expires_at ON oauth2_refresh_token(expires_at);
+-- Referencing columns of the two foreign keys these tables carry: PostgreSQL
+-- indexes only the referenced side, so without these the ON UPDATE CASCADE
+-- from principal(email) and the ON DELETE CASCADE from oauth2_client are
+-- sequential scans.
+CREATE INDEX idx_oauth2_authorization_code_user_email ON oauth2_authorization_code(user_email);
+CREATE INDEX idx_oauth2_refresh_token_user_email ON oauth2_refresh_token(user_email);
+CREATE INDEX idx_oauth2_authorization_code_client_id ON oauth2_authorization_code(client_id);
+CREATE INDEX idx_oauth2_refresh_token_client_id ON oauth2_refresh_token(client_id);
 CREATE INDEX idx_oauth2_client_last_active_at ON oauth2_client(last_active_at);
 CREATE INDEX idx_oauth2_client_workspace ON oauth2_client(workspace);
 
@@ -715,7 +727,9 @@ CREATE INDEX idx_oauth2_client_workspace ON oauth2_client(workspace);
 CREATE TABLE web_refresh_token (
     token_hash  TEXT PRIMARY KEY,
     user_email  TEXT NOT NULL REFERENCES principal(email) ON UPDATE CASCADE,
-    expires_at  TIMESTAMPTZ NOT NULL
+    expires_at  TIMESTAMPTZ NOT NULL,
+    -- When the row was issued.
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX idx_web_refresh_token_user_email ON web_refresh_token(user_email);

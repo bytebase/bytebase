@@ -130,6 +130,108 @@ service UserService {
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
+
+  // Changes the caller's own password. An administrator resetting someone
+  // else's password uses UpdateUser with the `password` mask instead — that
+  // is a different operation with a different audit story, even though both
+  // end in a new password hash.
+  // Permissions required: None beyond being signed in as `name`.
+  rpc ChangePassword(ChangePasswordRequest) returns (User) {
+    option (google.api.http) = {
+      post: "/v1/{name=users/*}:changePassword"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name,new_password";
+    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = TAKES_OVER_ACCOUNT;
+  }
+
+  // Mints a pending TOTP secret and recovery codes for the caller's own
+  // account and returns them. Nothing goes live until ConfirmRecoveryCodes,
+  // so an abandoned enrollment leaves the account exactly as it was.
+  // Permissions required: None beyond being signed in as `name`.
+  rpc StartMFAEnrollment(StartMFAEnrollmentRequest) returns (StartMFAEnrollmentResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=users/*}:startMFAEnrollment"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
+  }
+
+  // Verifies an otp_code against the pending enrollment. Nothing is written:
+  // this is the step that catches a mistyped authenticator before the caller
+  // is shown recovery codes, and promotion happens at ConfirmRecoveryCodes so
+  // an account is never MFA-required with codes its owner never saved.
+  // Permissions required: None beyond being signed in as `name`.
+  // It writes nothing itself, but it is a required step of installing a
+  // factor on the account, which is why it is denied on the same grounds as
+  // the promotion it precedes.
+  rpc EnableMFA(EnableMFARequest) returns (User) {
+    option (google.api.http) = {
+      post: "/v1/{name=users/*}:enableMFA"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name,otp_code";
+    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = TAKES_OVER_ACCOUNT;
+  }
+
+  // Turns MFA off, clearing the entire MFA config — live and pending state
+  // alike. Callers may disable their own; an administrator may disable
+  // another user's with bb.users.update, which is how a locked-out user is
+  // recovered.
+  // Permissions required: bb.users.update, unless `name` is the caller's own.
+  rpc DisableMFA(DisableMFARequest) returns (User) {
+    option (google.api.http) = {
+      post: "/v1/{name=users/*}:disableMFA"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = TAKES_OVER_ACCOUNT;
+  }
+
+  // Mints a pending recovery-code set beside the live one and returns it.
+  // The old codes keep working until ConfirmRecoveryCodes promotes these, so
+  // a caller who closes the page mid-way is not left without any.
+  // Permissions required: None beyond being signed in as `name`.
+  rpc RegenerateRecoveryCodes(RegenerateRecoveryCodesRequest) returns (RegenerateRecoveryCodesResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=users/*}:regenerateRecoveryCodes"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
+  }
+
+  // Promotes the pending recovery codes. During first-time enrollment this is
+  // also where the pending TOTP secret goes live, so the factor and the codes
+  // that recover it start existing in the same write.
+  // Permissions required: None beyond being signed in as `name`.
+  rpc ConfirmRecoveryCodes(ConfirmRecoveryCodesRequest) returns (User) {
+    option (google.api.http) = {
+      post: "/v1/{name=users/*}:confirmRecoveryCodes"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = TAKES_OVER_ACCOUNT;
+  }
 }
 
 message GetUserRequest {
@@ -218,15 +320,10 @@ message UpdateUserRequest {
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
 
-  // The otp_code is used to verify the user's identity by MFA.
-  optional string otp_code = 3 [(bytebase.v1.audit_behavior) = SENSITIVE];
-
-  // The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user.
-  // This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response.
-  bool regenerate_temp_mfa_secret = 4;
-
-  // The regenerate_recovery_codes flag means to regenerate recovery codes for user.
-  bool regenerate_recovery_codes = 5;
+  // MFA enrollment moved to the dedicated methods: StartMFAEnrollment,
+  // EnableMFA, DisableMFA, RegenerateRecoveryCodes, ConfirmRecoveryCodes.
+  reserved 3, 4, 5;
+  reserved "otp_code", "regenerate_temp_mfa_secret", "regenerate_recovery_codes";
 
   // If set to true, and the user is not found, a new user will be created.
   // In this situation, `update_mask` is ignored.
@@ -267,6 +364,113 @@ message UpdateEmailRequest {
   ];
 }
 
+message ChangePasswordRequest {
+  // Format: users/{email}. Must be the caller's own name.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/User"},
+    (buf.validate.field).string.max_len = 260
+  ];
+
+  string new_password = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (bytebase.v1.audit_behavior) = SENSITIVE,
+    (buf.validate.field).string.max_bytes = 72
+  ];
+}
+
+message StartMFAEnrollmentRequest {
+  // Format: users/{email}. Must be the caller's own name.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/User"},
+    (buf.validate.field).string.max_len = 260
+  ];
+}
+
+message StartMFAEnrollmentResponse {
+  // The pending TOTP secret. The only response that carries it — it is never
+  // readable from the User resource.
+  string otp_secret = 1 [(bytebase.v1.audit_behavior) = SENSITIVE];
+
+  // The pending recovery codes, shown once for the caller to save.
+  repeated string recovery_codes = 2 [(bytebase.v1.audit_behavior) = SENSITIVE];
+
+  // When this enrollment stops being confirmable.
+  google.protobuf.Timestamp expire_time = 3;
+
+  // Identifies this mint. Echo it back to EnableMFA and
+  // ConfirmRecoveryCodes; a mint from another tab or device replaces the
+  // pending state, and those methods refuse a version that is no longer the
+  // pending one rather than promoting something this caller never saw.
+  google.protobuf.Timestamp pending_version = 4;
+}
+
+message EnableMFARequest {
+  // Format: users/{email}. Must be the caller's own name.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/User"},
+    (buf.validate.field).string.max_len = 260
+  ];
+
+  // A code from the authenticator the pending secret was just added to.
+  string otp_code = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (bytebase.v1.audit_behavior) = SENSITIVE,
+    (buf.validate.field).string.max_len = 64
+  ];
+
+  // The pending_version this enrollment was minted with.
+  google.protobuf.Timestamp pending_version = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+message DisableMFARequest {
+  // Format: users/{email}. The caller's own, or another user's with
+  // bb.users.update.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/User"},
+    (buf.validate.field).string.max_len = 260
+  ];
+}
+
+message RegenerateRecoveryCodesRequest {
+  // Format: users/{email}. Must be the caller's own name.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/User"},
+    (buf.validate.field).string.max_len = 260
+  ];
+}
+
+message RegenerateRecoveryCodesResponse {
+  // The pending recovery codes, shown once for the caller to save.
+  repeated string recovery_codes = 1 [(bytebase.v1.audit_behavior) = SENSITIVE];
+
+  // Identifies this mint; see StartMFAEnrollmentResponse.pending_version.
+  google.protobuf.Timestamp pending_version = 2;
+}
+
+message ConfirmRecoveryCodesRequest {
+  // Format: users/{email}. Must be the caller's own name.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/User"},
+    (buf.validate.field).string.max_len = 260
+  ];
+
+  // The pending_version of the codes being confirmed. Confirming promotes
+  // exactly the set this version identifies, or nothing.
+  google.protobuf.Timestamp pending_version = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
 message User {
   reserved 5, 7, 15;
 
@@ -295,17 +499,15 @@ message User {
     (buf.validate.field).string.max_bytes = 72
   ];
 
-  // The mfa_enabled flag means if the user has enabled MFA.
-  bool mfa_enabled = 8;
+  // Whether the user has a live MFA factor. Set by ConfirmRecoveryCodes and
+  // DisableMFA, never by an update.
+  bool mfa_enabled = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // Temporary OTP secret used during MFA setup and regeneration.
-  string temp_otp_secret = 9 [(bytebase.v1.audit_behavior) = SENSITIVE];
-
-  // Temporary recovery codes used during MFA setup and regeneration.
-  repeated string temp_recovery_codes = 10 [(bytebase.v1.audit_behavior) = SENSITIVE];
-
-  // Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
-  google.protobuf.Timestamp temp_otp_secret_created_time = 11;
+  // Pending enrollment state is no longer readable from the user resource:
+  // StartMFAEnrollment and RegenerateRecoveryCodes return it once, to the
+  // caller enrolling, and nowhere else.
+  reserved 9, 10, 11;
+  reserved "temp_otp_secret", "temp_recovery_codes", "temp_otp_secret_created_time";
 
   // Should be a valid E.164 compliant phone number.
   // Could be empty.

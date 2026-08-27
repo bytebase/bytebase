@@ -9,6 +9,14 @@ import {
   workspaceServiceClientConnect,
 } from "@/api";
 import { silentContextKey } from "@/api/context-key";
+import { MCPModeContentsSheet } from "@/components/mcp/MCPModeContentsSheet";
+import type { StoredCeiling } from "@/components/mcp/mcpPolicy";
+import {
+  ceilingIsBroken,
+  initialCapabilityPick,
+  MCP_CAPABILITY_CHOICES,
+  readStoredCeiling,
+} from "@/components/mcp/mcpPolicy";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { Alert } from "@/components/ui/alert";
 import type { BadgeProps } from "@/components/ui/badge";
@@ -30,14 +38,6 @@ import {
 } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import type { MCPInfo } from "@/types/proto-es/v1/workspace_service_pb";
-import { MCPModeContentsSheet } from "./MCPModeContentsSheet";
-import type { StoredCeiling } from "./mcpPolicy";
-import {
-  ceilingIsBroken,
-  initialCapabilityPick,
-  MCP_CAPABILITY_CHOICES,
-  readStoredCeiling,
-} from "./mcpPolicy";
 
 // One row per ceiling an admin can pick: the locale-key stem, the glyph tone,
 // and the chip variant. The tone and the variant always agree, and carry from

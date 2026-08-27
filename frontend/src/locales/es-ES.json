@@ -1563,6 +1563,31 @@
       "error-load-failed": "Error al cargar la información del cliente",
       "error-missing-params": "Faltan parámetros obligatorios de OAuth2",
       "error-switch-failed": "Error al cambiar de workspace",
+      "mcp": {
+        "disabled": {
+          "ask-admin": "¿Cree que debería estar activado? Pregunte a un administrador del espacio de trabajo por la política de acceso MCP.",
+          "description": "Un administrador del espacio de trabajo ha desactivado el acceso MCP para {{workspace}}. No se conectó nada.",
+          "description-no-workspace": "Un administrador del espacio de trabajo ha desactivado el acceso MCP para este espacio de trabajo. No se conectó nada.",
+          "line": {
+            "no-session": "Ninguna sesión de IA puede conectarse a este espacio de trabajo",
+            "recorded": "Cualquier intento de conectarse de todos modos queda registrado en el registro de auditoría"
+          },
+          "policy-label": "Política del espacio de trabajo",
+          "title": "El acceso MCP está desactivado"
+        },
+        "line": {
+          "audit": "Las acciones auditadas llevan una etiqueta MCP, y lo que la política rechaza también se registra",
+          "capped": "Limitada por sus propios permisos de Bytebase",
+          "masking": "Sus exenciones de enmascaramiento no se aplican a esta sesión",
+          "no-write": "Ningún cambio de datos ni de esquema",
+          "read": "Explorar esquemas y ejecutar consultas de solo lectura",
+          "workflow": "Abrir incidencias, planes y despliegues, y exportar resultados de consultas",
+          "write": "Hacer los cambios de datos y esquema que permitan sus permisos"
+        },
+        "see-contents": "Ver lo que permite la política de este espacio de trabajo",
+        "title": "Esta sesión puede",
+        "write-caution": "Una sesión de IA con acceso de escritura hace cambios reales. Apruébela solo en una máquina que usted controle."
+      },
       "permission-access": "Acceder a tu cuenta de Bytebase con tus permisos",
       "permissions": "Esta aplicación podrá:",
       "title": "Solicitud de autorización",
@@ -2528,6 +2553,12 @@
         "description": "Se requiere autenticación OAuth en la primera conexión. Asegúrese de tener los permisos apropiados en Bytebase.",
         "title": "Autenticación requerida"
       },
+      "connect": {
+        "description": "Añada Bytebase a su cliente de IA, apruebe el acceso en el navegador y empiece a preguntar.",
+        "desktop-note": "Claude Desktop lee los servidores remotos de su cuenta de Claude, no del archivo de configuración. Añada esta URL como conector personalizado en Customize > Connectors de claude.ai y aparecerá en Claude Desktop.",
+        "json-note": "Este es el formato mcpServers. Los formatos de configuración varían según el cliente: VS Code, por ejemplo, espera servers en su propio mcp.json, así que use la pestaña de VS Code para eso.",
+        "title": "Conectar un cliente"
+      },
       "contents": {
         "depth": {
           "description": "Hasta dónde se aplica el techo de solo lectura en cada motor.",
@@ -2565,9 +2596,6 @@
         "description": "Una vez conectado, intente preguntar a su asistente de IA:",
         "example": "Listar todos los proyectos en mi instancia de Bytebase",
         "title": "Tu primer prompt"
-      },
-      "general-config": {
-        "title": "Opción 1: Configuración JSON"
       },
       "policy": {
         "audit": "Las denegaciones de la política MCP se registran en el registro de auditoría.",
@@ -2617,13 +2645,6 @@
           "description": "Este espacio de trabajo almacena {{stored}}, que no es un techo que esta versión ofrezca. Se está rechazando cada conexión MCP. Elija un modo y guarde para corregirlo.",
           "title": "La política de acceso almacenada no es una que esta versión ofrezca"
         }
-      },
-      "quick-start": {
-        "description": "Alternativamente, use uno de estos comandos CLI.",
-        "title": "Opción 2: Comandos CLI"
-      },
-      "setup": {
-        "add-to-config": "Agregue este JSON a su archivo de configuración del cliente MCP."
       },
       "title": "Integración MCP"
     },

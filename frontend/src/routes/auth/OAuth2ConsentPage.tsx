@@ -1,6 +1,9 @@
+import { createContextValues } from "@connectrpc/connect";
 import { Building2, Check, Loader2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { workspaceServiceClientConnect } from "@/api";
+import { silentContextKey } from "@/api/context-key";
 import { router } from "@/app/router";
 import { AUTH_SIGNIN_MODULE } from "@/app/router/handles";
 import { BytebaseLogo } from "@/components/BytebaseLogo";
@@ -14,6 +17,10 @@ import {
 } from "@/components/ui/select";
 import { useWorkspace } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
+import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
+import type { MCPInfo } from "@/types/proto-es/v1/workspace_service_pb";
+import { MCPConsentCeiling } from "./MCPConsentCeiling";
+import { MCPConsentDisabled } from "./MCPConsentDisabled";
 
 const AUTHORIZE_URL = "/api/oauth2/authorize";
 
@@ -23,6 +30,10 @@ export function OAuth2ConsentPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [clientName, setClientName] = useState("");
+  // What the workspace's MCP ceiling lets this session do. Every grant this
+  // server issues is an MCP grant, so the ceiling decides the POST too — this
+  // is the same answer, shown before the person presses Approve.
+  const [mcpInfo, setMcpInfo] = useState<MCPInfo | undefined>(undefined);
 
   const loadWorkspace = useAppStore((state) => state.loadWorkspace);
   const loadWorkspaceList = useAppStore((state) => state.loadWorkspaceList);
@@ -95,7 +106,34 @@ export function OAuth2ConsentPage() {
         const data = await response.json();
         setClientName(data.client_name || clientId);
       } catch {
+        // Same shape as the !response.ok branch above: with no client there is
+        // nothing for the policy lookup to enrich, and the render checks
+        // loading before error, so falling through would hold the spinner over
+        // an error we already have.
         setError(t("oauth2.consent.error-load-failed"));
+        setLoading(false);
+        return;
+      }
+      // A ceiling this build cannot read refuses this call. That is the one
+      // policy state the backend still has to be the first to say, so the card
+      // falls back to its ceiling-free shape and the POST refuses with its own
+      // page. Silent: the interceptor's toast would be the only thing on
+      // screen about it, and it names a status code, not a fix.
+      try {
+        setMcpInfo(
+          await workspaceServiceClientConnect.getMCPInfo(
+            {},
+            {
+              contextValues: createContextValues().set(silentContextKey, true),
+              // The shared transport has no deadline. This request only
+              // enriches the card, so a stalled one must not leave the page on
+              // its spinner with no Allow and no Deny.
+              timeoutMs: 10_000,
+            }
+          )
+        );
+      } catch {
+        setMcpInfo(undefined);
       }
       setLoading(false);
     })();
@@ -136,6 +174,47 @@ export function OAuth2ConsentPage() {
     }
   };
 
+  // Rendered in BOTH branches. A disabled workspace is exactly when a SaaS
+  // user needs the switcher: another workspace may permit MCP, and without it
+  // they have to abandon the OAuth flow, switch, and start over.
+  const workspaceCard = currentWorkspace ? (
+    <div className="bg-control-bg rounded-sm p-4 flex items-center gap-3">
+      <Building2 className="size-5 text-control-light shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-xs text-control-light">
+          {t("oauth2.consent.workspace-label")}
+        </p>
+        {isSaaSMode && workspaceList.length > 1 ? (
+          <Select
+            value={currentWorkspace.name}
+            onValueChange={onSwitchWorkspace}
+            disabled={submitting}
+          >
+            <SelectTrigger size="sm" className="mt-1 w-full">
+              <SelectValue>
+                {(name) => {
+                  const ws = workspaceList.find((w) => w.name === name);
+                  return ws?.title || ws?.name || name || "";
+                }}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {workspaceList.map((ws) => (
+                <SelectItem key={ws.name} value={ws.name}>
+                  {ws.title || ws.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <p className="text-sm text-main truncate">
+            {currentWorkspace.title || currentWorkspace.name}
+          </p>
+        )}
+      </div>
+    </div>
+  ) : null;
+
   const goBack = () => {
     router.back();
   };
@@ -166,122 +245,123 @@ export function OAuth2ConsentPage() {
     form.submit();
   };
 
-  return (
-    <div className="h-full flex flex-col justify-center mx-auto w-full max-w-sm">
-      <BytebaseLogo className="mx-auto mb-8" />
-      <div className="rounded-sm border border-control-border bg-white p-6">
-        {loading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="size-6 animate-spin" />
-          </div>
-        ) : error ? (
-          <div className="text-center py-4">
-            <p className="text-error mb-4">{error}</p>
-            <Button appearance="outline" onClick={goBack}>
-              {t("common.go-back")}
-            </Button>
-          </div>
+  // Four states share this slot. Early returns rather than a ternary chain,
+  // so each is named where it is decided and the consent card reads as the
+  // ordinary case it is.
+  const consentBody = () => {
+    if (loading) {
+      return (
+        <div className="flex justify-center py-8">
+          <Loader2 className="size-6 animate-spin" />
+        </div>
+      );
+    }
+    if (error) {
+      return (
+        <div className="text-center py-4">
+          <p className="text-error mb-4">{error}</p>
+          <Button appearance="outline" onClick={goBack}>
+            {t("common.go-back")}
+          </Button>
+        </div>
+      );
+    }
+    if (mcpInfo?.capability === MCPSetting_Capability.DISABLED) {
+      return (
+        <MCPConsentDisabled
+          workspaceTitle={
+            currentWorkspace?.title || currentWorkspace?.name || ""
+          }
+          workspaceCard={workspaceCard}
+          // Not goBack: history leaves the client waiting on a callback that
+          // never comes. A deny POST returns access_denied to the registered
+          // redirect_uri, which is the answer the OAuth client is blocked on.
+          onDismiss={deny}
+          dismissing={submitting}
+        />
+      );
+    }
+    return (
+      <div className="flex flex-col gap-6">
+        <div className="text-center">
+          <h1 className="text-xl font-semibold text-main mb-2">
+            {t("oauth2.consent.title")}
+          </h1>
+          <p className="text-control">
+            {t("oauth2.consent.description", { clientName })}
+          </p>
+        </div>
+        {workspaceCard}
+        {/* Only the two ceilings this bundle can describe. A value it
+              cannot name — a newer release's, against a cached page — would
+              otherwise fall through to the read-only wording and understate
+              what was approved. It gets the same card as no policy data,
+              which BOT-106 covers. */}
+        {mcpInfo &&
+        (mcpInfo.capability === MCPSetting_Capability.READ_ONLY ||
+          mcpInfo.capability === MCPSetting_Capability.READ_WRITE) ? (
+          <MCPConsentCeiling info={mcpInfo} />
         ) : (
-          <div className="space-y-6">
-            <div className="text-center">
-              <h1 className="text-xl font-semibold text-main mb-2">
-                {t("oauth2.consent.title")}
-              </h1>
-              <p className="text-control">
-                {t("oauth2.consent.description", { clientName })}
-              </p>
-            </div>
-            {currentWorkspace && (
-              <div className="bg-control-bg rounded-sm p-4 flex items-center gap-3">
-                <Building2 className="size-5 text-control-light shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-control-light">
-                    {t("oauth2.consent.workspace-label")}
-                  </p>
-                  {isSaaSMode && workspaceList.length > 1 ? (
-                    <Select
-                      value={currentWorkspace.name}
-                      onValueChange={onSwitchWorkspace}
-                      disabled={submitting}
-                    >
-                      <SelectTrigger size="sm" className="mt-1 w-full">
-                        <SelectValue>
-                          {(name) => {
-                            const ws = workspaceList.find(
-                              (w) => w.name === name
-                            );
-                            return ws?.title || ws?.name || name || "";
-                          }}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent>
-                        {workspaceList.map((ws) => (
-                          <SelectItem key={ws.name} value={ws.name}>
-                            {ws.title || ws.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  ) : (
-                    <p className="text-sm text-main truncate">
-                      {currentWorkspace.title || currentWorkspace.name}
-                    </p>
-                  )}
-                </div>
-              </div>
-            )}
-            <div className="bg-control-bg rounded-sm p-4">
-              <p className="text-sm text-control-light mb-2">
-                {t("oauth2.consent.permissions")}
-              </p>
-              <ul className="text-sm text-main space-y-1">
-                <li className="flex items-center gap-2">
-                  <Check className="size-4 text-success" />
-                  {t("oauth2.consent.permission-access")}
-                </li>
-              </ul>
-            </div>
-            <form method="POST" action={AUTHORIZE_URL}>
-              <input type="hidden" name="client_id" value={clientId} />
-              <input type="hidden" name="redirect_uri" value={redirectUri} />
-              <input type="hidden" name="state" value={oauthState} />
-              <input
-                type="hidden"
-                name="code_challenge"
-                value={codeChallenge}
-              />
-              <input
-                type="hidden"
-                name="code_challenge_method"
-                value={codeChallengeMethod}
-              />
-              <input type="hidden" name="resource" value={resource} />
-              <input type="hidden" name="scope" value={scope} />
-              <div className="flex gap-x-2">
-                <Button
-                  type="button"
-                  appearance="outline"
-                  size="lg"
-                  className="flex-1"
-                  disabled={submitting}
-                  onClick={deny}
-                >
-                  {t("common.deny")}
-                </Button>
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="flex-1"
-                  disabled={submitting}
-                  name="action"
-                  value="allow"
-                >
-                  {t("common.allow")}
-                </Button>
-              </div>
-            </form>
+          <div className="bg-control-bg rounded-sm p-4">
+            <p className="text-sm text-control-light mb-2">
+              {t("oauth2.consent.permissions")}
+            </p>
+            <ul className="text-sm text-main flex flex-col gap-1">
+              <li className="flex items-center gap-2">
+                <Check className="size-4 text-success" />
+                {t("oauth2.consent.permission-access")}
+              </li>
+            </ul>
           </div>
         )}
+        <form method="POST" action={AUTHORIZE_URL}>
+          <input type="hidden" name="client_id" value={clientId} />
+          <input type="hidden" name="redirect_uri" value={redirectUri} />
+          <input type="hidden" name="state" value={oauthState} />
+          <input type="hidden" name="code_challenge" value={codeChallenge} />
+          <input
+            type="hidden"
+            name="code_challenge_method"
+            value={codeChallengeMethod}
+          />
+          <input type="hidden" name="resource" value={resource} />
+          <input type="hidden" name="scope" value={scope} />
+          <div className="flex gap-x-2">
+            <Button
+              type="button"
+              appearance="outline"
+              size="lg"
+              className="flex-1"
+              disabled={submitting}
+              onClick={deny}
+            >
+              {t("common.deny")}
+            </Button>
+            <Button
+              type="submit"
+              size="lg"
+              className="flex-1"
+              disabled={submitting}
+              name="action"
+              value="allow"
+            >
+              {t("common.allow")}
+            </Button>
+          </div>
+        </form>
+      </div>
+    );
+  };
+
+  return (
+    // SplashLayout's root is overflow-hidden, so this column carries its own
+    // scroll: the ceiling panel and its caution make the card taller than a
+    // short viewport, and the part that clips is Allow and Deny. The auto
+    // margins keep it centred while it still fits.
+    <div className="h-full overflow-y-auto flex flex-col mx-auto w-full max-w-sm py-8">
+      <BytebaseLogo className="mx-auto mb-8 mt-auto shrink-0" />
+      <div className="rounded-sm border border-control-border bg-white p-6 mb-auto shrink-0">
+        {consentBody()}
       </div>
     </div>
   );

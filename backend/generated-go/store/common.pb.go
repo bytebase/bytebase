@@ -480,6 +480,7 @@ const (
 	StatementType_INSERT StatementType = 60
 	StatementType_UPDATE StatementType = 61
 	StatementType_DELETE StatementType = 62
+	StatementType_MERGE  StatementType = 63
 )
 
 // Enum value maps for StatementType.
@@ -526,6 +527,7 @@ var (
 		60: "INSERT",
 		61: "UPDATE",
 		62: "DELETE",
+		63: "MERGE",
 	}
 	StatementType_value = map[string]int32{
 		"STATEMENT_TYPE_UNSPECIFIED": 0,
@@ -569,6 +571,7 @@ var (
 		"INSERT":                     60,
 		"UPDATE":                     61,
 		"DELETE":                     62,
+		"MERGE":                      63,
 	}
 )
 
@@ -865,7 +868,7 @@ const file_store_common_proto_rawDesc = "" +
 	"\x06FEISHU\x10\x05\x12\t\n" +
 	"\x05WECOM\x10\x06\x12\b\n" +
 	"\x04LARK\x10\a\x12\x0f\n" +
-	"\vGOOGLE_CHAT\x10\b*\x83\x06\n" +
+	"\vGOOGLE_CHAT\x10\b*\x8e\x06\n" +
 	"\rStatementType\x12\x1e\n" +
 	"\x1aSTATEMENT_TYPE_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fCREATE_DATABASE\x10\x01\x12\x10\n" +
@@ -917,7 +920,8 @@ const file_store_common_proto_rawDesc = "" +
 	"\n" +
 	"\x06UPDATE\x10=\x12\n" +
 	"\n" +
-	"\x06DELETE\x10>\"\x04\b\r\x10\x13\"\x04\b \x10'\"\x04\b/\x101\"\x04\b8\x10;B\x8e\x01\n" +
+	"\x06DELETE\x10>\x12\t\n" +
+	"\x05MERGE\x10?\"\x04\b\r\x10\x13\"\x04\b \x10'\"\x04\b/\x101\"\x04\b8\x10;B\x8e\x01\n" +
 	"\x12com.bytebase.storeB\vCommonProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (

@@ -1563,6 +1563,31 @@
       "error-load-failed": "クライアント情報の読み込みに失敗しました",
       "error-missing-params": "必須の OAuth2 パラメータが不足しています",
       "error-switch-failed": "ワークスペースの切り替えに失敗しました",
+      "mcp": {
+        "disabled": {
+          "ask-admin": "オンにすべきだと思いますか？ワークスペース管理者に MCP アクセスポリシーを確認してください。",
+          "description": "ワークスペース管理者が {{workspace}} の MCP アクセスをオフにしています。何も接続されていません。",
+          "description-no-workspace": "ワークスペース管理者がこのワークスペースの MCP アクセスをオフにしています。何も接続されていません。",
+          "line": {
+            "no-session": "このワークスペースにはどの AI セッションも接続できません",
+            "recorded": "それでも接続を試みた場合、その試行は監査ログに記録されます"
+          },
+          "policy-label": "ワークスペースポリシー",
+          "title": "MCP アクセスはオフです"
+        },
+        "line": {
+          "audit": "監査対象の操作には MCP タグが付き、ポリシーが拒否したものも記録されます",
+          "capped": "上限はあなた自身の Bytebase 権限",
+          "masking": "あなたのマスキング適用除外はこのセッションには適用されません",
+          "no-write": "データやスキーマの変更はできない",
+          "read": "スキーマを調べ、読み取り専用のクエリを実行する",
+          "workflow": "イシュー・プラン・ロールアウトの作成、およびクエリ結果のエクスポート",
+          "write": "あなたの権限の範囲でデータとスキーマを変更する"
+        },
+        "see-contents": "このワークスペースのポリシーが許可する範囲を見る",
+        "title": "このセッションでできること",
+        "write-caution": "書き込み権限のある AI セッションは実際に変更を加えます。自分が管理しているマシンでのみ承認してください。"
+      },
       "permission-access": "あなたの権限で Bytebase アカウントにアクセス",
       "permissions": "このアプリケーションは以下のことができます:",
       "title": "認証リクエスト",
@@ -2528,6 +2553,12 @@
         "description": "初回接続時に OAuth 認証が必要です。適切な Bytebase 権限があることを確認してください。",
         "title": "認証が必要"
       },
+      "connect": {
+        "description": "Bytebase を AI クライアントに追加し、ブラウザーでアクセスを承認して、質問を始めてください。",
+        "desktop-note": "Claude Desktop はリモートサーバーを設定ファイルではなく Claude アカウントから読み込みます。claude.ai の Customize > Connectors でこの URL をカスタムコネクタとして追加すると、Claude Desktop に表示されます。",
+        "json-note": "これは mcpServers 形式です。クライアントごとに設定形式が異なります。たとえば VS Code は独自の mcp.json で servers を使うため、その場合は VS Code タブを使ってください。",
+        "title": "クライアントを接続"
+      },
       "contents": {
         "depth": {
           "description": "読み取り専用の上限が各エンジンでどこまで適用されるか。",
@@ -2565,9 +2596,6 @@
         "description": "接続後、AI アシスタントに聞いてみてください：",
         "example": "Bytebase インスタンス内のすべてのプロジェクトをリストする",
         "title": "最初のプロンプト"
-      },
-      "general-config": {
-        "title": "方法 1：JSON 設定"
       },
       "policy": {
         "audit": "MCP ポリシーによる拒否は監査ログに記録されます。",
@@ -2617,13 +2645,6 @@
           "description": "このワークスペースには {{stored}} が保存されていますが、このビルドが提供する上限ではありません。MCP 接続はすべて拒否されています。モードを選んで保存すると修復されます。",
           "title": "保存されたアクセスポリシーはこのビルドが提供するものではありません"
         }
-      },
-      "quick-start": {
-        "description": "または、以下の CLI コマンドを使用してください。",
-        "title": "方法 2：CLI コマンド"
-      },
-      "setup": {
-        "add-to-config": "この JSON を MCP クライアント設定ファイルに追加してください。"
       },
       "title": "MCP 連携"
     },

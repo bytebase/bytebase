@@ -25,6 +25,9 @@ type OAuth2AuthorizationCodeMessage struct {
 	Workspace string
 	Config    *storepb.OAuth2AuthorizationCodeConfig
 	ExpiresAt time.Time
+	// CreatedAt is when the code was issued, filled in by the database.
+	// Ignored on create.
+	CreatedAt time.Time
 }
 
 func (s *Store) CreateOAuth2AuthorizationCode(ctx context.Context, create *OAuth2AuthorizationCodeMessage) (*OAuth2AuthorizationCodeMessage, error) {
@@ -56,7 +59,7 @@ func (s *Store) CreateOAuth2AuthorizationCode(ctx context.Context, create *OAuth
 
 func (s *Store) GetOAuth2AuthorizationCode(ctx context.Context, clientID, code string) (*OAuth2AuthorizationCodeMessage, error) {
 	q := qb.Q().Space(`
-		SELECT code, client_id, user_email, workspace, config, expires_at
+		SELECT code, client_id, user_email, workspace, config, expires_at, created_at
 		FROM oauth2_authorization_code
 		WHERE code = ? AND client_id = ?
 	`, code, clientID)
@@ -70,7 +73,7 @@ func (s *Store) GetOAuth2AuthorizationCode(ctx context.Context, clientID, code s
 	var workspace sql.NullString
 	var configBytes []byte
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan( // NOSONAR: query is parameterized via qb.Query
-		&msg.Code, &msg.ClientID, &msg.UserEmail, &workspace, &configBytes, &msg.ExpiresAt,
+		&msg.Code, &msg.ClientID, &msg.UserEmail, &workspace, &configBytes, &msg.ExpiresAt, &msg.CreatedAt,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil

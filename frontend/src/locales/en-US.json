@@ -1563,6 +1563,31 @@
       "error-load-failed": "Failed to load client information",
       "error-missing-params": "Missing required OAuth2 parameters",
       "error-switch-failed": "Failed to switch workspace",
+      "mcp": {
+        "disabled": {
+          "ask-admin": "Think this should be on? Ask a workspace admin about the MCP access policy.",
+          "description": "A workspace admin has turned off MCP access for {{workspace}}. Nothing was connected.",
+          "description-no-workspace": "A workspace admin has turned off MCP access for this workspace. Nothing was connected.",
+          "line": {
+            "no-session": "No AI session can connect to this workspace",
+            "recorded": "Any attempt to connect anyway is recorded in the audit log"
+          },
+          "policy-label": "Workspace policy",
+          "title": "MCP access is turned off"
+        },
+        "line": {
+          "audit": "Audited actions carry an MCP tag, and anything the policy refuses is recorded",
+          "capped": "Capped by your own Bytebase permissions",
+          "masking": "Your masking exemptions do not apply to this session",
+          "no-write": "No data or schema changes",
+          "read": "Read schemas and run read-only queries",
+          "workflow": "Open issues, plans and rollouts, and export query results",
+          "write": "Make the data and schema changes your permissions allow"
+        },
+        "see-contents": "See what this workspace's policy allows",
+        "title": "This session may",
+        "write-caution": "An AI session with write access makes real changes. Approve only on a machine you control."
+      },
       "permission-access": "Access your Bytebase account with your permissions",
       "permissions": "This application will be able to:",
       "title": "Authorization Request",
@@ -2528,6 +2553,12 @@
         "description": "OAuth authentication is required on first connection. Ensure you have appropriate Bytebase permissions.",
         "title": "Authentication Required"
       },
+      "connect": {
+        "description": "Add Bytebase to your AI client, approve access in the browser, and start asking.",
+        "desktop-note": "Claude Desktop reads remote servers from your Claude account, not from the config file. Add this URL as a custom connector under Customize > Connectors on claude.ai, then it appears in Claude Desktop.",
+        "json-note": "This is the mcpServers shape. Client config formats differ: VS Code, for example, expects servers in its own mcp.json, so use the VS Code tab for that.",
+        "title": "Connect a client"
+      },
       "contents": {
         "depth": {
           "description": "How far the read-only ceiling is enforced on each engine.",
@@ -2565,9 +2596,6 @@
         "description": "Once connected, try asking your AI assistant:",
         "example": "List all projects in my Bytebase instance",
         "title": "Your First Prompt"
-      },
-      "general-config": {
-        "title": "Option 1: JSON Configuration"
       },
       "policy": {
         "audit": "MCP policy denials are recorded in the audit log.",
@@ -2617,13 +2645,6 @@
           "description": "This workspace stores {{stored}}, which is not a ceiling this build serves. Every MCP connection is being refused. Pick a mode and save to set it right.",
           "title": "The stored access policy is not one this build serves"
         }
-      },
-      "quick-start": {
-        "description": "Alternatively, use one of these CLI commands.",
-        "title": "Option 2: CLI Commands"
-      },
-      "setup": {
-        "add-to-config": "Add this JSON to your MCP client configuration file."
       },
       "title": "MCP Integration"
     },

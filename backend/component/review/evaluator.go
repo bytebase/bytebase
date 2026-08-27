@@ -703,6 +703,11 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 		statementSummaryResults = buildStatementSummaryResultMap(planCheckRun.Result.GetResults())
 	}
 
+	// A database group expands one sheet across every target, so classify each
+	// (engine, sheet) once. Sheets run to common.MaxSheetCheckSize and this
+	// path is synchronous on issue submission.
+	statementTypeCache := map[statementTypeKey][]storepb.StatementType{}
+
 	var celVarsList []map[string]any
 	for _, target := range targets {
 		taskStatement := ""
@@ -738,16 +743,21 @@ func buildCELVariablesForDatabaseChange(ctx context.Context, stores *store.Store
 			DatabaseName: target.database.DatabaseName,
 			SheetSHA256:  target.sheetSha256,
 		}]
-		if !ok {
-			celVarsList = append(celVarsList, celVars)
+		if !ok || result.GetSqlSummaryReport() == nil {
+			// Set statement.sql_type wherever the engine can classify:
+			// cel-go resolves a declared-but-absent variable to an unknown,
+			// which matchRulesForSource drops as a non-match.
+			cacheKey := statementTypeKey{engine: target.database.Engine, sheetSHA256: target.sheetSha256}
+			statementTypes, cached := statementTypeCache[cacheKey]
+			if !cached {
+				statementTypes = statementTypesFromParser(target.database.Engine, taskStatement)
+				statementTypeCache[cacheKey] = statementTypes
+			}
+			celVarsList = append(celVarsList, expandCELVars(celVars, statementTypes, nil)...)
 			continue
 		}
 
 		report := result.GetSqlSummaryReport()
-		if report == nil {
-			celVarsList = append(celVarsList, celVars)
-			continue
-		}
 
 		// Calculate table rows from changed resources
 		var tableRows int64
@@ -1106,6 +1116,42 @@ func getApprovalSourceFromIssue(ctx context.Context, stores *store.Store, issue 
 	}
 }
 
+// statementTypeKey covers both inputs statementTypesFromParser reads: the
+// engine, because an issue's targets can span instances of different engines,
+// and the sheet digest, which determines the statement text the caller loaded
+// from it.
+type statementTypeKey struct {
+	engine      storepb.Engine
+	sheetSHA256 string
+}
+
+// statementTypesFromParser classifies a sheet directly, for engines that never
+// produce a SQL summary report. Returns nil when the engine has no statement-type
+// handler, when the sheet does not parse, or when it is over the size guard,
+// which leaves statement.sql_type absent for those engines exactly as before.
+//
+// The size guard mirrors the statement report check, which skips sheets over
+// common.MaxSheetCheckSize; parsing runs on the approval path, so a sheet the
+// report check declined to read must not be parsed here either.
+func statementTypesFromParser(engine storepb.Engine, statement string) []storepb.StatementType {
+	if statement == "" || len(statement) > common.MaxSheetCheckSize {
+		return nil
+	}
+	stmts, err := parserbase.ParseStatements(engine, statement)
+	if err != nil {
+		return nil
+	}
+	asts := parserbase.ExtractASTs(stmts)
+	if len(asts) == 0 {
+		return nil
+	}
+	statementTypes, err := parserbase.GetStatementTypes(engine, asts)
+	if err != nil {
+		return nil
+	}
+	return statementTypes
+}
+
 // expandCELVars creates CEL variable maps for each combination of statement types and table names.
 func expandCELVars(base map[string]any, statementTypes []storepb.StatementType, tableNames []string) []map[string]any {
 	if len(statementTypes) == 0 {
@@ -1117,9 +1163,26 @@ func expandCELVars(base map[string]any, statementTypes []storepb.StatementType, 
 		tableNames = []string{""}
 	}
 
+	// Both producers return one entry per statement, so a sheet of N statements
+	// yields N identical activations for the same type. Rule matching asks
+	// whether ANY activation matches, so duplicates cannot change the answer,
+	// and every rule is evaluated against every activation: a 2 MiB sheet of
+	// short statements is tens of thousands of pointless evaluations per target.
+	type activation struct {
+		statementType storepb.StatementType
+		tableName     string
+	}
+	seen := make(map[activation]bool, len(statementTypes))
+
 	var result []map[string]any
 	for _, statementType := range statementTypes {
 		for _, tableName := range tableNames {
+			key := activation{statementType: statementType, tableName: tableName}
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+
 			vars := maps.Clone(base)
 			vars[common.CELAttributeStatementSQLType] = statementType.String()
 			if tableName != "" {

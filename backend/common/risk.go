@@ -17,6 +17,7 @@ var highRiskStatementTypes = map[string]bool{
 var moderateRiskStatementTypes = map[string]bool{
 	"DELETE":      true,
 	"UPDATE":      true,
+	"MERGE":       true,
 	"ALTER_TABLE": true,
 	"DROP_INDEX":  true,
 }

@@ -1,8 +1,7 @@
 import { create } from "@bufbuild/protobuf";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { authServiceClientConnect } from "@/api";
+import { authServiceClientConnect, userServiceClientConnect } from "@/api";
 import { router } from "@/app/router";
 import { AUTH_SIGNIN_MODULE } from "@/app/router/handles";
 import logoFull from "@/assets/logo-full.svg";
@@ -21,7 +20,7 @@ import {
   LoginRequestSchema,
   ResetPasswordRequestSchema,
 } from "@/types/proto-es/v1/auth_service_pb";
-import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
+import { ChangePasswordRequestSchema } from "@/types/proto-es/v1/user_service_pb";
 
 export function PasswordResetPage() {
   const { t } = useTranslation();
@@ -153,13 +152,13 @@ export function PasswordResetPage() {
 
     // Forced-reset mode
     if (!currentUser) return;
-    const patch = { ...currentUser, password };
-    await useAppStore.getState().updateUser(
-      create(UpdateUserRequestSchema, {
-        user: patch,
-        updateMask: create(FieldMaskSchema, { paths: ["password"] }),
+    const updated = await userServiceClientConnect.changePassword(
+      create(ChangePasswordRequestSchema, {
+        name: currentUser.name,
+        newPassword: password,
       })
     );
+    useAppStore.getState().setCurrentUser(updated);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",

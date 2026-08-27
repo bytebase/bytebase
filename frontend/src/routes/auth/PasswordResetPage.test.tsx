@@ -22,6 +22,9 @@ const mocks = vi.hoisted(() => ({
     login: vi.fn(async () => {}),
   })),
   updateUser: vi.fn(),
+  changePassword: vi.fn(async () => ({ name: "users/1" })),
+  fetchCurrentUser: vi.fn(async () => ({ name: "users/1" })),
+  setCurrentUser: vi.fn(),
   pushNotification: vi.fn(),
   routerReplace: vi.fn(),
   routerPush: vi.fn(),
@@ -48,6 +51,8 @@ vi.mock("@/stores/app", () => {
   const getState = () => ({
     ...mocks.appStoreState,
     updateUser: mocks.updateUser,
+    fetchCurrentUser: mocks.fetchCurrentUser,
+    setCurrentUser: mocks.setCurrentUser,
     loadAuthenticationInfo: vi.fn().mockResolvedValue(undefined),
     login: mocks.login,
     setRequireResetPassword: mocks.setRequireResetPassword,
@@ -76,6 +81,9 @@ vi.mock("@/api", () => ({
   authServiceClientConnect: {
     resetPassword: mocks.resetPassword,
     requestPasswordReset: mocks.requestPasswordReset,
+  },
+  userServiceClientConnect: {
+    changePassword: mocks.changePassword,
   },
 }));
 
@@ -233,6 +241,39 @@ describe("PasswordResetPage", () => {
     setInputValue(passwordInputs[0], "Passw0rd!");
     setInputValue(passwordInputs[1], "Passw0rd!");
     expect(confirmBtn?.disabled).toBe(false);
+    unmount();
+  });
+
+  // The forced reset is the caller changing their own password, which
+  // UpdateUser refuses — it keeps the password mask for administrators
+  // resetting someone else. Sending it there strands the user on this page
+  // with no way to finish signing in.
+  test("forced-reset mode: confirm calls changePassword", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <PasswordResetPage />
+    );
+    render();
+
+    const passwordInputs = container.querySelectorAll<HTMLInputElement>(
+      'input[type="password"]'
+    );
+    setInputValue(passwordInputs[0], "Passw0rd!");
+    setInputValue(passwordInputs[1], "Passw0rd!");
+    const confirmBtn = Array.from(
+      container.querySelectorAll<HTMLButtonElement>("button")
+    ).find((b) => b.textContent === "common.confirm")!;
+    act(() => {
+      confirmBtn.click();
+    });
+    await flushPromises();
+
+    expect(mocks.changePassword).toHaveBeenCalledWith(
+      expect.objectContaining({ name: "users/1", newPassword: "Passw0rd!" })
+    );
+    expect(mocks.updateUser).not.toHaveBeenCalled();
+    // The response is adopted rather than refetched, so the shared user the
+    // guards read is current before this page navigates away.
+    expect(mocks.setCurrentUser).toHaveBeenCalledWith({ name: "users/1" });
     unmount();
   });
 

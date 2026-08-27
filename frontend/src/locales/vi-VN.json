@@ -1563,6 +1563,31 @@
       "error-load-failed": "Tải thông tin client thất bại",
       "error-missing-params": "Thiếu các tham số OAuth2 bắt buộc",
       "error-switch-failed": "Chuyển workspace thất bại",
+      "mcp": {
+        "disabled": {
+          "ask-admin": "Bạn nghĩ nên bật? Hãy hỏi quản trị viên không gian làm việc về chính sách truy cập MCP.",
+          "description": "Quản trị viên không gian làm việc đã tắt truy cập MCP cho {{workspace}}. Không có gì được kết nối.",
+          "description-no-workspace": "Quản trị viên đã tắt truy cập MCP cho không gian làm việc này. Không có gì được kết nối.",
+          "line": {
+            "no-session": "Không phiên AI nào có thể kết nối tới không gian làm việc này",
+            "recorded": "Mọi lần vẫn cố kết nối đều được ghi vào nhật ký kiểm toán"
+          },
+          "policy-label": "Chính sách không gian làm việc",
+          "title": "Truy cập MCP đang tắt"
+        },
+        "line": {
+          "audit": "Hành động được kiểm toán mang nhãn MCP, và những gì chính sách từ chối cũng được ghi lại",
+          "capped": "Giới hạn bởi chính quyền Bytebase của bạn",
+          "masking": "Các miễn trừ che dữ liệu của bạn không áp dụng cho phiên này",
+          "no-write": "Không thay đổi dữ liệu hay lược đồ",
+          "read": "Khám phá lược đồ và chạy truy vấn chỉ đọc",
+          "workflow": "Tạo vấn đề, kế hoạch và triển khai, và xuất kết quả truy vấn",
+          "write": "Thay đổi dữ liệu và lược đồ trong phạm vi quyền của bạn"
+        },
+        "see-contents": "Xem những gì chính sách của không gian làm việc này cho phép",
+        "title": "Phiên này có thể",
+        "write-caution": "Phiên AI có quyền ghi sẽ tạo ra thay đổi thật. Chỉ phê duyệt trên máy bạn kiểm soát."
+      },
       "permission-access": "Truy cập tài khoản Bytebase của bạn với quyền hạn của bạn",
       "permissions": "Ứng dụng này sẽ có thể:",
       "title": "Yêu cầu ủy quyền",
@@ -2528,6 +2553,12 @@
         "description": "Xác thực OAuth được yêu cầu khi kết nối lần đầu. Đảm bảo bạn có quyền Bytebase phù hợp.",
         "title": "Yêu cầu xác thực"
       },
+      "connect": {
+        "description": "Thêm Bytebase vào client AI của bạn, phê duyệt truy cập trong trình duyệt, rồi bắt đầu hỏi.",
+        "desktop-note": "Claude Desktop đọc máy chủ từ xa từ tài khoản Claude của bạn, không phải từ tệp cấu hình. Hãy thêm URL này làm trình kết nối tùy chỉnh tại Customize > Connectors trên claude.ai, sau đó nó sẽ xuất hiện trong Claude Desktop.",
+        "json-note": "Đây là định dạng mcpServers. Mỗi client có định dạng cấu hình khác nhau: ví dụ VS Code dùng servers trong mcp.json của nó, nên hãy dùng tab VS Code cho trường hợp đó.",
+        "title": "Kết nối một client"
+      },
       "contents": {
         "depth": {
           "description": "Mức trần chỉ đọc được thực thi sâu tới đâu trên mỗi công cụ.",
@@ -2565,9 +2596,6 @@
         "description": "Sau khi kết nối, hãy thử hỏi trợ lý AI của bạn:",
         "example": "Liệt kê tất cả các dự án trong phiên bản Bytebase của tôi",
         "title": "Prompt đầu tiên của bạn"
-      },
-      "general-config": {
-        "title": "Cách 1: Cấu hình JSON"
       },
       "policy": {
         "audit": "Các lần từ chối theo chính sách MCP được ghi vào nhật ký kiểm toán.",
@@ -2617,13 +2645,6 @@
           "description": "Không gian làm việc này lưu {{stored}}, không phải mức trần mà bản dựng này phục vụ. Mọi kết nối MCP đang bị từ chối. Hãy chọn một chế độ và lưu để sửa lại.",
           "title": "Chính sách truy cập đã lưu không phải loại bản dựng này phục vụ"
         }
-      },
-      "quick-start": {
-        "description": "Hoặc sử dụng một trong các lệnh CLI sau.",
-        "title": "Cách 2: Lệnh CLI"
-      },
-      "setup": {
-        "add-to-config": "Thêm JSON này vào tệp cấu hình MCP client của bạn."
       },
       "title": "Tích hợp MCP"
     },

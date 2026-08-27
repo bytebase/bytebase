@@ -4,6 +4,7 @@ import type { ConnectError } from "@connectrpc/connect";
 import { Ellipsis } from "lucide-react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { userServiceClientConnect } from "@/api";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
@@ -26,7 +27,10 @@ import { useAppStore } from "@/stores/app";
 import { AccountType, getAccountTypeByEmail } from "@/types";
 import { State } from "@/types/proto-es/v1/common_pb";
 import type { User } from "@/types/proto-es/v1/user_service_pb";
-import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
+import {
+  DisableMFARequestSchema,
+  UpdateUserRequestSchema,
+} from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
 import { EmailInput } from "../profile/EmailInput";
 import { getPasswordErrors } from "../profile/UserPasswordSection";
@@ -175,11 +179,8 @@ export function UserRowMenu({
   const handleResetMfa = async () => {
     setProcessing(true);
     try {
-      const updated = await updateUser(
-        create(UpdateUserRequestSchema, {
-          user: { name: user.name, mfaEnabled: false },
-          updateMask: create(FieldMaskSchema, { paths: ["mfa_enabled"] }),
-        })
+      const updated = await userServiceClientConnect.disableMFA(
+        create(DisableMFARequestSchema, { name: user.name })
       );
       onUserUpdated(updated);
       pushNotification({

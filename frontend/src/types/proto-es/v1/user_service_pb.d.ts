@@ -198,28 +198,6 @@ export declare type UpdateUserRequest = Message<"bytebase.v1.UpdateUserRequest">
   updateMask?: FieldMask | undefined;
 
   /**
-   * The otp_code is used to verify the user's identity by MFA.
-   *
-   * @generated from field: optional string otp_code = 3;
-   */
-  otpCode?: string | undefined;
-
-  /**
-   * The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user.
-   * This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response.
-   *
-   * @generated from field: bool regenerate_temp_mfa_secret = 4;
-   */
-  regenerateTempMfaSecret: boolean;
-
-  /**
-   * The regenerate_recovery_codes flag means to regenerate recovery codes for user.
-   *
-   * @generated from field: bool regenerate_recovery_codes = 5;
-   */
-  regenerateRecoveryCodes: boolean;
-
-  /**
    * If set to true, and the user is not found, a new user will be created.
    * In this situation, `update_mask` is ignored.
    *
@@ -300,6 +278,210 @@ export declare type UpdateEmailRequest = Message<"bytebase.v1.UpdateEmailRequest
 export declare const UpdateEmailRequestSchema: GenMessage<UpdateEmailRequest>;
 
 /**
+ * @generated from message bytebase.v1.ChangePasswordRequest
+ */
+export declare type ChangePasswordRequest = Message<"bytebase.v1.ChangePasswordRequest"> & {
+  /**
+   * Format: users/{email}. Must be the caller's own name.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string new_password = 2;
+   */
+  newPassword: string;
+};
+
+/**
+ * Describes the message bytebase.v1.ChangePasswordRequest.
+ * Use `create(ChangePasswordRequestSchema)` to create a new message.
+ */
+export declare const ChangePasswordRequestSchema: GenMessage<ChangePasswordRequest>;
+
+/**
+ * @generated from message bytebase.v1.StartMFAEnrollmentRequest
+ */
+export declare type StartMFAEnrollmentRequest = Message<"bytebase.v1.StartMFAEnrollmentRequest"> & {
+  /**
+   * Format: users/{email}. Must be the caller's own name.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message bytebase.v1.StartMFAEnrollmentRequest.
+ * Use `create(StartMFAEnrollmentRequestSchema)` to create a new message.
+ */
+export declare const StartMFAEnrollmentRequestSchema: GenMessage<StartMFAEnrollmentRequest>;
+
+/**
+ * @generated from message bytebase.v1.StartMFAEnrollmentResponse
+ */
+export declare type StartMFAEnrollmentResponse = Message<"bytebase.v1.StartMFAEnrollmentResponse"> & {
+  /**
+   * The pending TOTP secret. The only response that carries it — it is never
+   * readable from the User resource.
+   *
+   * @generated from field: string otp_secret = 1;
+   */
+  otpSecret: string;
+
+  /**
+   * The pending recovery codes, shown once for the caller to save.
+   *
+   * @generated from field: repeated string recovery_codes = 2;
+   */
+  recoveryCodes: string[];
+
+  /**
+   * When this enrollment stops being confirmable.
+   *
+   * @generated from field: google.protobuf.Timestamp expire_time = 3;
+   */
+  expireTime?: Timestamp | undefined;
+
+  /**
+   * Identifies this mint. Echo it back to EnableMFA and
+   * ConfirmRecoveryCodes; a mint from another tab or device replaces the
+   * pending state, and those methods refuse a version that is no longer the
+   * pending one rather than promoting something this caller never saw.
+   *
+   * @generated from field: google.protobuf.Timestamp pending_version = 4;
+   */
+  pendingVersion?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.StartMFAEnrollmentResponse.
+ * Use `create(StartMFAEnrollmentResponseSchema)` to create a new message.
+ */
+export declare const StartMFAEnrollmentResponseSchema: GenMessage<StartMFAEnrollmentResponse>;
+
+/**
+ * @generated from message bytebase.v1.EnableMFARequest
+ */
+export declare type EnableMFARequest = Message<"bytebase.v1.EnableMFARequest"> & {
+  /**
+   * Format: users/{email}. Must be the caller's own name.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * A code from the authenticator the pending secret was just added to.
+   *
+   * @generated from field: string otp_code = 2;
+   */
+  otpCode: string;
+
+  /**
+   * The pending_version this enrollment was minted with.
+   *
+   * @generated from field: google.protobuf.Timestamp pending_version = 3;
+   */
+  pendingVersion?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.EnableMFARequest.
+ * Use `create(EnableMFARequestSchema)` to create a new message.
+ */
+export declare const EnableMFARequestSchema: GenMessage<EnableMFARequest>;
+
+/**
+ * @generated from message bytebase.v1.DisableMFARequest
+ */
+export declare type DisableMFARequest = Message<"bytebase.v1.DisableMFARequest"> & {
+  /**
+   * Format: users/{email}. The caller's own, or another user's with
+   * bb.users.update.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message bytebase.v1.DisableMFARequest.
+ * Use `create(DisableMFARequestSchema)` to create a new message.
+ */
+export declare const DisableMFARequestSchema: GenMessage<DisableMFARequest>;
+
+/**
+ * @generated from message bytebase.v1.RegenerateRecoveryCodesRequest
+ */
+export declare type RegenerateRecoveryCodesRequest = Message<"bytebase.v1.RegenerateRecoveryCodesRequest"> & {
+  /**
+   * Format: users/{email}. Must be the caller's own name.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message bytebase.v1.RegenerateRecoveryCodesRequest.
+ * Use `create(RegenerateRecoveryCodesRequestSchema)` to create a new message.
+ */
+export declare const RegenerateRecoveryCodesRequestSchema: GenMessage<RegenerateRecoveryCodesRequest>;
+
+/**
+ * @generated from message bytebase.v1.RegenerateRecoveryCodesResponse
+ */
+export declare type RegenerateRecoveryCodesResponse = Message<"bytebase.v1.RegenerateRecoveryCodesResponse"> & {
+  /**
+   * The pending recovery codes, shown once for the caller to save.
+   *
+   * @generated from field: repeated string recovery_codes = 1;
+   */
+  recoveryCodes: string[];
+
+  /**
+   * Identifies this mint; see StartMFAEnrollmentResponse.pending_version.
+   *
+   * @generated from field: google.protobuf.Timestamp pending_version = 2;
+   */
+  pendingVersion?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.RegenerateRecoveryCodesResponse.
+ * Use `create(RegenerateRecoveryCodesResponseSchema)` to create a new message.
+ */
+export declare const RegenerateRecoveryCodesResponseSchema: GenMessage<RegenerateRecoveryCodesResponse>;
+
+/**
+ * @generated from message bytebase.v1.ConfirmRecoveryCodesRequest
+ */
+export declare type ConfirmRecoveryCodesRequest = Message<"bytebase.v1.ConfirmRecoveryCodesRequest"> & {
+  /**
+   * Format: users/{email}. Must be the caller's own name.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * The pending_version of the codes being confirmed. Confirming promotes
+   * exactly the set this version identifies, or nothing.
+   *
+   * @generated from field: google.protobuf.Timestamp pending_version = 2;
+   */
+  pendingVersion?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.ConfirmRecoveryCodesRequest.
+ * Use `create(ConfirmRecoveryCodesRequestSchema)` to create a new message.
+ */
+export declare const ConfirmRecoveryCodesRequestSchema: GenMessage<ConfirmRecoveryCodesRequest>;
+
+/**
  * @generated from message bytebase.v1.User
  */
 export declare type User = Message<"bytebase.v1.User"> & {
@@ -340,32 +522,12 @@ export declare type User = Message<"bytebase.v1.User"> & {
   password: string;
 
   /**
-   * The mfa_enabled flag means if the user has enabled MFA.
+   * Whether the user has a live MFA factor. Set by ConfirmRecoveryCodes and
+   * DisableMFA, never by an update.
    *
    * @generated from field: bool mfa_enabled = 8;
    */
   mfaEnabled: boolean;
-
-  /**
-   * Temporary OTP secret used during MFA setup and regeneration.
-   *
-   * @generated from field: string temp_otp_secret = 9;
-   */
-  tempOtpSecret: string;
-
-  /**
-   * Temporary recovery codes used during MFA setup and regeneration.
-   *
-   * @generated from field: repeated string temp_recovery_codes = 10;
-   */
-  tempRecoveryCodes: string[];
-
-  /**
-   * Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
-   *
-   * @generated from field: google.protobuf.Timestamp temp_otp_secret_created_time = 11;
-   */
-  tempOtpSecretCreatedTime?: Timestamp | undefined;
 
   /**
    * Should be a valid E.164 compliant phone number.
@@ -545,6 +707,90 @@ export declare const UserService: GenService<{
   updateEmail: {
     methodKind: "unary";
     input: typeof UpdateEmailRequestSchema;
+    output: typeof UserSchema;
+  },
+  /**
+   * Changes the caller's own password. An administrator resetting someone
+   * else's password uses UpdateUser with the `password` mask instead — that
+   * is a different operation with a different audit story, even though both
+   * end in a new password hash.
+   * Permissions required: None beyond being signed in as `name`.
+   *
+   * @generated from rpc bytebase.v1.UserService.ChangePassword
+   */
+  changePassword: {
+    methodKind: "unary";
+    input: typeof ChangePasswordRequestSchema;
+    output: typeof UserSchema;
+  },
+  /**
+   * Mints a pending TOTP secret and recovery codes for the caller's own
+   * account and returns them. Nothing goes live until ConfirmRecoveryCodes,
+   * so an abandoned enrollment leaves the account exactly as it was.
+   * Permissions required: None beyond being signed in as `name`.
+   *
+   * @generated from rpc bytebase.v1.UserService.StartMFAEnrollment
+   */
+  startMFAEnrollment: {
+    methodKind: "unary";
+    input: typeof StartMFAEnrollmentRequestSchema;
+    output: typeof StartMFAEnrollmentResponseSchema;
+  },
+  /**
+   * Verifies an otp_code against the pending enrollment. Nothing is written:
+   * this is the step that catches a mistyped authenticator before the caller
+   * is shown recovery codes, and promotion happens at ConfirmRecoveryCodes so
+   * an account is never MFA-required with codes its owner never saved.
+   * Permissions required: None beyond being signed in as `name`.
+   * It writes nothing itself, but it is a required step of installing a
+   * factor on the account, which is why it is denied on the same grounds as
+   * the promotion it precedes.
+   *
+   * @generated from rpc bytebase.v1.UserService.EnableMFA
+   */
+  enableMFA: {
+    methodKind: "unary";
+    input: typeof EnableMFARequestSchema;
+    output: typeof UserSchema;
+  },
+  /**
+   * Turns MFA off, clearing the entire MFA config — live and pending state
+   * alike. Callers may disable their own; an administrator may disable
+   * another user's with bb.users.update, which is how a locked-out user is
+   * recovered.
+   * Permissions required: bb.users.update, unless `name` is the caller's own.
+   *
+   * @generated from rpc bytebase.v1.UserService.DisableMFA
+   */
+  disableMFA: {
+    methodKind: "unary";
+    input: typeof DisableMFARequestSchema;
+    output: typeof UserSchema;
+  },
+  /**
+   * Mints a pending recovery-code set beside the live one and returns it.
+   * The old codes keep working until ConfirmRecoveryCodes promotes these, so
+   * a caller who closes the page mid-way is not left without any.
+   * Permissions required: None beyond being signed in as `name`.
+   *
+   * @generated from rpc bytebase.v1.UserService.RegenerateRecoveryCodes
+   */
+  regenerateRecoveryCodes: {
+    methodKind: "unary";
+    input: typeof RegenerateRecoveryCodesRequestSchema;
+    output: typeof RegenerateRecoveryCodesResponseSchema;
+  },
+  /**
+   * Promotes the pending recovery codes. During first-time enrollment this is
+   * also where the pending TOTP secret goes live, so the factor and the codes
+   * that recover it start existing in the same write.
+   * Permissions required: None beyond being signed in as `name`.
+   *
+   * @generated from rpc bytebase.v1.UserService.ConfirmRecoveryCodes
+   */
+  confirmRecoveryCodes: {
+    methodKind: "unary";
+    input: typeof ConfirmRecoveryCodesRequestSchema;
     output: typeof UserSchema;
   },
 }>;

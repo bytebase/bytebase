@@ -27,6 +27,9 @@ type OAuth2RefreshTokenMessage struct {
 	// never widens a grant. Empty for tokens created before the 3.22.1 migration.
 	Config    *storepb.OAuth2RefreshTokenConfig
 	ExpiresAt time.Time
+	// CreatedAt is when the grant was issued, filled in by the database.
+	// Ignored on create.
+	CreatedAt time.Time
 }
 
 func (s *Store) CreateOAuth2RefreshToken(ctx context.Context, create *OAuth2RefreshTokenMessage) (*OAuth2RefreshTokenMessage, error) {
@@ -58,7 +61,7 @@ func (s *Store) CreateOAuth2RefreshToken(ctx context.Context, create *OAuth2Refr
 
 func (s *Store) GetOAuth2RefreshToken(ctx context.Context, clientID, tokenHash string) (*OAuth2RefreshTokenMessage, error) {
 	q := qb.Q().Space(`
-		SELECT token_hash, client_id, user_email, workspace, config, expires_at
+		SELECT token_hash, client_id, user_email, workspace, config, expires_at, created_at
 		FROM oauth2_refresh_token
 		WHERE token_hash = ? AND client_id = ?
 	`, tokenHash, clientID)
@@ -72,7 +75,7 @@ func (s *Store) GetOAuth2RefreshToken(ctx context.Context, clientID, tokenHash s
 	var workspace sql.NullString
 	var configBytes []byte
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&msg.TokenHash, &msg.ClientID, &msg.UserEmail, &workspace, &configBytes, &msg.ExpiresAt,
+		&msg.TokenHash, &msg.ClientID, &msg.UserEmail, &workspace, &configBytes, &msg.ExpiresAt, &msg.CreatedAt,
 	); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, nil

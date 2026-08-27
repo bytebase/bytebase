@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -328,6 +329,94 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 	}
 
 	return userMessages, nil
+}
+
+// SetPendingMFAState writes the three pending enrollment fields and nothing
+// else. The live factor is left exactly as the row has it rather than copied
+// forward from whatever the caller read: a mint that rewrites the whole config
+// resurrects the factor an administrator disabled, or the recovery codes a
+// confirmation just rotated away, whenever either commits while the mint is in
+// flight.
+//
+// All three are always written, so a regeneration clears any pending secret an
+// abandoned enrollment left behind — otherwise confirming those codes would
+// promote a secret nobody is holding.
+func (s *Store) SetPendingMFAState(ctx context.Context, userID int, tempOtpSecret string, tempRecoveryCodes []string, createdTime time.Time) error {
+	codesJSON, err := json.Marshal(tempRecoveryCodes)
+	if err != nil {
+		return err
+	}
+	// protojson's spelling for the MFAConfig fields, and its timestamp format:
+	// this JSON is read back through protojson.Unmarshal.
+	q := qb.Q().Space(`
+		UPDATE principal
+		SET mfa_config = jsonb_set(
+			jsonb_set(
+				jsonb_set(mfa_config, '{tempOtpSecret}', to_jsonb(?::text)),
+				'{tempRecoveryCodes}', ?::jsonb),
+			'{tempOtpSecretCreatedTime}', to_jsonb(?::text))
+		WHERE id = ?
+		RETURNING email
+	`, tempOtpSecret, codesJSON, createdTime.UTC().Format(time.RFC3339Nano), userID)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return errors.Wrapf(err, "failed to build sql")
+	}
+	var email string
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&email); err != nil {
+		return errors.Wrapf(err, "failed to set pending mfa state")
+	}
+	s.userEmailCache.Remove(email)
+	return nil
+}
+
+// UpdateUserMFAConfigIfPending replaces the account's MFA config, but only
+// while the pending enrollment recorded on the row is still the one the caller
+// verified. Returns nil when it is not: another tab minted a fresh enrollment,
+// or an administrator disabled MFA, in between.
+//
+// The comparison has to happen in the same statement as the write. Checking a
+// user read moments earlier and then writing unconditionally leaves a window
+// where a confirmation promotes an enrollment nobody is waiting for — or
+// re-enables MFA the administrator just cleared for a locked-out user.
+func (s *Store) UpdateUserMFAConfigIfPending(ctx context.Context, userID int, expectedPendingVersion time.Time, mfaConfig *storepb.MFAConfig) (*UserMessage, error) {
+	mfaConfigBytes, err := protojson.Marshal(mfaConfig)
+	if err != nil {
+		return nil, err
+	}
+	// tempOtpSecretCreatedTime is protojson's camelCase spelling, and comparing
+	// as timestamptz rather than text keeps the match independent of how many
+	// fractional digits the value was serialized with. A cleared config has no
+	// such key, so the NULL comparison fails and the write is refused.
+	q := qb.Q().Space(`
+		UPDATE principal SET mfa_config = ?
+		WHERE id = ? AND (mfa_config->>'tempOtpSecretCreatedTime')::timestamptz = ?
+		RETURNING id, deleted, email, name, password_hash, mfa_config, phone, profile, created_at
+	`, mfaConfigBytes, userID, expectedPendingVersion)
+	sqlStr, args, err := q.ToSQL()
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to build sql")
+	}
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer tx.Rollback()
+
+	updatedUser, err := scanPrincipalRow(ctx, tx, sqlStr, args)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, errors.Wrapf(err, "failed to update mfa config")
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, err
+	}
+
+	s.userEmailCache.Add(updatedUser.Email, updatedUser)
+	return updatedUser, nil
 }
 
 // scanPrincipalRow scans a principal row into a UserMessage (without groups).

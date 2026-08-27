@@ -18,7 +18,7 @@ import {
   MCPEngineEnforcement_Masking,
   MCPEngineEnforcement_ReadOnlyDepth,
 } from "@/types/proto-es/v1/workspace_service_pb";
-import { engineNameV1 } from "@/utils";
+import { engineNameV1 } from "@/utils/v1/instance";
 import {
   engineNotes,
   groupEnginesByMasking,

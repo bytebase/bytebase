@@ -304,38 +304,3 @@ export function getProjectResourceId(project: Project) {
 // a new seed is minted, and is withheld once the window expires. Any of the
 // three stops what we hold from being carried, which is why there is no copy of
 // the five-minute rule here — the server does not report an expired enrollment
-// as an open one.
-export function keepMfaEnrollment(
-  fresh: User,
-  previous: User | undefined
-): User {
-  if (!previous || previous.name !== fresh.name) return fresh;
-  if (fresh.tempOtpSecret || fresh.tempRecoveryCodes.length > 0) return fresh;
-  if (!previous.tempOtpSecret && previous.tempRecoveryCodes.length === 0) {
-    return fresh;
-  }
-  // Carry them only while the read describes the same enrollment we hold. The
-  // server keeps one enrollment per user and replaces the seed, the codes and
-  // the created time together, so a created time that moved means another tab
-  // or another device minted a new seed. Keeping ours then would render a QR
-  // code the server has already discarded, and every code typed off it would
-  // be rejected.
-  const held = previous.tempOtpSecretCreatedTime;
-  const read = fresh.tempOtpSecretCreatedTime;
-  // Nanos as well as seconds: two mints inside the same wall-clock second are
-  // rare and not impossible, and comparing only seconds would call the second
-  // one the same enrollment and carry the seed it replaced.
-  if (
-    !held ||
-    !read ||
-    held.seconds !== read.seconds ||
-    held.nanos !== read.nanos
-  ) {
-    return fresh;
-  }
-  return {
-    ...fresh,
-    tempOtpSecret: previous.tempOtpSecret,
-    tempRecoveryCodes: previous.tempRecoveryCodes,
-  };
-}

@@ -14,6 +14,7 @@ import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
 import { TaskRun_Status } from "@/types/proto-es/v1/rollout_service_pb";
 import { stringifyTaskRunStatus } from "@/utils/v1/issue/rollout";
 import { PlanDetailTaskRunSession } from "../PlanDetailTaskRunSession";
+import { TaskRunErrorAlert } from "./TaskRunErrorAlert";
 
 const STATUS_LABEL_CLASS: Partial<Record<TaskRun_Status, string>> = {
   [TaskRun_Status.RUNNING]: "text-info",
@@ -101,6 +102,8 @@ export function DeployLatestTaskRunInfo({
           </span>
         )}
       </div>
+
+      <TaskRunErrorAlert taskRun={taskRun} />
 
       {/* Status is part of the key on purpose: a status flip (RUNNING→DONE)
           remounts the viewer for a fresh disclosure state on the new phase.
