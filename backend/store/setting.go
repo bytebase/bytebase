@@ -572,11 +572,6 @@ func (s *Store) DeleteSetting(ctx context.Context, workspace string, name storep
 	return nil
 }
 
-// ErrMCPCapabilityUnreadable marks an MCP setting that cannot be parsed or has
-// no explicit capability. Migration and workspace creation always write one,
-// so either state is invalid metadata rather than a runtime default.
-var ErrMCPCapabilityUnreadable = errors.New("the stored MCP capability ceiling cannot be interpreted")
-
 // GetMCPSettingsUncached reads the workspace's stored MCP setting straight from
 // the database, bypassing the setting cache. The cache has no TTL and only
 // in-process writes refresh it, so a setting flipped out of band — direct SQL,
@@ -589,14 +584,11 @@ var ErrMCPCapabilityUnreadable = errors.New("the stored MCP capability ceiling c
 // Migration 3.23.0 creates this row for every workspace and carries forward
 // the legacy workspace-profile capability, including writing READ_WRITE into
 // pre-existing MCP rows that omitted the capability. Workspace creation writes
-// the safer READ_ONLY default. Missing or unspecified metadata after that fails
-// closed rather than recreating migration behavior at runtime.
+// the safer READ_ONLY default. A missing row or a payload the store protocol
+// cannot decode is an error.
 func (s *Store) GetMCPSettingsUncached(ctx context.Context, workspace string) (*storepb.MCPSetting, error) {
 	stored, err := s.GetSettingUncached(ctx, workspace, storepb.SettingName_MCP)
 	if err != nil {
-		if errors.Is(err, errSettingValueInvalid) {
-			return nil, errors.Wrapf(ErrMCPCapabilityUnreadable, "the MCP setting does not parse: %v", err)
-		}
 		return nil, err
 	}
 	if stored == nil {
@@ -605,9 +597,6 @@ func (s *Store) GetMCPSettingsUncached(ctx context.Context, workspace string) (*
 	setting, ok := stored.Value.(*storepb.MCPSetting)
 	if !ok {
 		return nil, errors.Errorf("invalid setting value type for %s", storepb.SettingName_MCP)
-	}
-	if setting.GetCapability() == storepb.MCPSetting_CAPABILITY_UNSPECIFIED {
-		return nil, errors.Wrap(ErrMCPCapabilityUnreadable, "the MCP capability is unspecified")
 	}
 	return setting, nil
 }

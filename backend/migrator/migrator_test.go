@@ -78,16 +78,23 @@ func TestMigration3_23_0BackfillsMCPSetting(t *testing.T) {
 		require.JSONEq(t, want, got, workspace)
 	}
 
-	var rows int
-	require.NoError(t, db.QueryRowContext(ctx, `SELECT count(*) FROM setting WHERE name = 'MCP'`).Scan(&rows))
-	require.Equal(t, 6, rows, "every workspace must have exactly one MCP setting")
+	var missing int
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT count(*)
+		FROM workspace AS w
+		LEFT JOIN setting AS s
+			ON s.workspace = w.resource_id
+			AND s.name = 'MCP'
+		WHERE s.workspace IS NULL
+	`).Scan(&missing))
+	require.Zero(t, missing, "every workspace must have an MCP setting")
 
 	var legacyProfile string
 	require.NoError(t, db.QueryRowContext(ctx, `
 		SELECT value::text FROM setting WHERE workspace = 'legacy-camel' AND name = 'WORKSPACE_PROFILE'
 	`).Scan(&legacyProfile))
 	require.JSONEq(t, `{"mcpCapability":"DISABLED","disallowSignup":true}`, legacyProfile,
-		"the old row remains available to older replicas during a rolling upgrade")
+		"the backfill must not modify the source workspace profile")
 }
 
 func TestVersionUnique(t *testing.T) {

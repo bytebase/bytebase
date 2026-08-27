@@ -332,7 +332,7 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 	`, workspaceID)
 	a.NoError(err)
 	// Registered before the assertions below so a failing one cannot leave the
-	// server running on an unreadable MCP setting through teardown, burying the
+	// server running on an invalid MCP setting through teardown, burying the
 	// real failure under unrelated errors.
 	restored := false
 	t.Cleanup(func() {
@@ -345,11 +345,9 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 	a.Equal(int64(1), affected, "the workspace profile row must exist for this test to mean anything")
 
 	status, body = postMCP(t, ctl, mcpToken)
-	a.Equal(http.StatusForbidden, status,
+	a.Equal(http.StatusServiceUnavailable, status,
 		"a ceiling that cannot be read must fail closed, not fall back to permitting MCP; %s", body)
-	// Invalid persisted metadata is permanent until an admin repairs it, so it
-	// is a policy refusal rather than a retryable storage outage.
-	a.Contains(body, "not one this build understands")
+	a.Contains(body, "could not be read")
 	a.NotContains(body, "turned MCP access off")
 
 	// Restoring the row proves the refusal was the unreadable policy and

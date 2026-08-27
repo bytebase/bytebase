@@ -113,20 +113,17 @@ func TestConsentCeiling(t *testing.T) {
 			"a consent never reached the /mcp boundary that mints one")
 	})
 
-	t.Run("a stored ceiling nobody can read is refused as a typo, not as policy", func(t *testing.T) {
+	t.Run("an unknown capability is refused as unserved", func(t *testing.T) {
 		rec := consentTo(t, s, "ws-typo")
 
 		require.Equal(t, http.StatusForbidden, rec.Code)
-		require.Contains(t, rec.Body.String(), "not one this build understands")
-		// The heading follows the verdict: a stored value nobody can read is
-		// not "an admin turned MCP off", and the heading is what a hurried
-		// reader acts on.
-		require.Contains(t, rec.Body.String(), "MCP setting cannot be read")
+		require.Contains(t, rec.Body.String(), "not one this build serves")
+		require.Contains(t, rec.Body.String(), "not one this version supports")
 		require.NotContains(t, rec.Body.String(), "MCP access is turned off")
 
 		rows := auditRows(t, "ws-typo")
 		require.Len(t, rows, 1)
-		require.Contains(t, rows[0].Payload.GetStatus().GetMessage(), "not one this build understands")
+		require.Contains(t, rows[0].Payload.GetStatus().GetMessage(), "not one this build serves")
 	})
 
 	t.Run("a ceiling this build does not serve is refused too", func(t *testing.T) {

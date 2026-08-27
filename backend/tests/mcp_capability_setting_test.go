@@ -194,16 +194,12 @@ func TestMCPSettingExistsWithTheWorkspace(t *testing.T) {
 	a.Equal(v1pb.MCPSetting_READ_ONLY, stored)
 }
 
-// TestMCPUnreadableCeilingSurvivesAToggleOnlyUpdate is the write-path half of
-// the fail-closed rule. GetMCPSettingsUncached refuses a stored capability this
-// build cannot read; the merge would erase it, because the unmarshaler drops an
-// enum name it does not know and marshalling omits the zero enum — so the row
-// would come back with no capability key. Saving the masking toggle would turn
-// malformed metadata into a different malformed row.
-//
-// Reachable on a rolling upgrade, not only from a typo: a newer replica can
-// write a capability name this build has never heard of.
-func TestMCPUnreadableCeilingSurvivesAToggleOnlyUpdate(t *testing.T) {
+// TestMCPUnrecognizedCeilingSurvivesAToggleOnlyUpdate is the write-path half of
+// the fail-closed rule. The unmarshaler resolves an unknown enum name to
+// UNSPECIFIED, and marshalling would omit that zero enum. The partial update
+// therefore requires the request to set a recognized capability rather than
+// silently erasing the stored value.
+func TestMCPUnrecognizedCeilingSurvivesAToggleOnlyUpdate(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()

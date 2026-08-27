@@ -320,9 +320,6 @@ message WorkspaceProfileSetting {
 // MCPSetting is what an MCP (Model Context Protocol) session may do in this
 // workspace.
 message MCPSetting {
-  reserved 3;
-  reserved "capability_unreadable";
-
   // Capability is the ceiling: a session runs at this level or lower. Migration
   // preserves the legacy capability and workspace creation persists READ_ONLY.
   // A missing MCP setting is invalid metadata.

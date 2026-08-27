@@ -17,18 +17,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-// TODO(ed): move to MCPCeilingVerdict.xx() func
-// One heading per way the workspace's MCP policy refuses a consent. Only the
-// heading is local: it is page copy, this is its one consumer, and the three
-// states have different fixes, so a heading naming the wrong one is the part a
-// hurried reader acts on. The sentence under it is the verdict's own
-// (auth.MCPCeilingVerdict.Refusal), shared with every other door.
-var consentHeadings = map[auth.MCPCeilingVerdict]string{
-	auth.MCPCeilingDisabled:   "MCP access is turned off",
-	auth.MCPCeilingUnreadable: "This workspace's MCP setting cannot be read",
-	auth.MCPCeilingUnserved:   "This workspace's MCP setting is not one this version supports",
-}
-
 // consentAttempt is the consent a ceiling check may refuse: who is consenting,
 // which client asked, what was asked for, and where the client waits.
 type consentAttempt struct {
@@ -120,7 +108,7 @@ func (s *Service) refuseConsent(c *echo.Context, attempt consentAttempt, verdict
 // allows inline style and blocks inline script, so the page carries no
 // behavior.
 func consentRefusedHTML(verdict auth.MCPCeilingVerdict, redirectURI, state string) string {
-	heading := html.EscapeString(consentHeadings[verdict])
+	heading := html.EscapeString(verdict.Heading())
 	page := `<!DOCTYPE html>
 <html>
 <head>

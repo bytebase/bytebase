@@ -21,7 +21,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	"github.com/bytebase/bytebase/backend/store"
 )
 
 // mcpClassification is one v1 RPC's MCP annotations, as the compiled
@@ -935,19 +934,13 @@ func TestMCPGateFailsClosedOnTheCeiling(t *testing.T) {
 			"the denial rows an operator filters on must be denials; an outage is not one")
 	})
 
-	t.Run("a stored value this build cannot interpret is a policy refusal", func(t *testing.T) {
-		// The opposite half of the same failure. No retry fixes a mistyped
-		// ceiling, so promising one would be a lie, and an admin has to act —
-		// which makes it a denial, and an audited one. The /mcp connection
-		// gate splits the same two the same way.
-		got := invokeMCPGate(t, mcpGateStore{err: errors.Wrap(store.ErrMCPCapabilityUnreadable, "READ_WRTIE")},
+	t.Run("an unspecified stored value is a policy refusal", func(t *testing.T) {
+		got := invokeMCPGate(t, mcpGateStore{ceiling: storepb.MCPSetting_CAPABILITY_UNSPECIFIED},
 			classContext(v1pb.MCPMethodClass_READ),
 			v1connect.DatabaseServiceGetDatabaseProcedure, connect.NewRequest(&v1pb.GetDatabaseRequest{}))
 		require.Error(t, got.err)
 		require.False(t, got.dispatched)
 		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
-		require.NotContains(t, got.err.Error(), "READ_WRTIE",
-			"the agent gets the outcome, not the workspace's storage state")
 		require.True(t, got.auditMarked)
 	})
 

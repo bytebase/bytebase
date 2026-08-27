@@ -229,8 +229,8 @@ func tokenForWorkspace(t *testing.T, secret, workspaceID string) string {
 // a session, because a read-only session can no longer write — the ceiling gate
 // refuses the methods the mode does not cover and the SQL clamp refuses a
 // statement that writes. The rows around it are what must NOT have moved with
-// it: a ceiling this build cannot read still refuses, and so does a value no
-// Bytebase write produces.
+// it: a capability this build does not recognize still refuses, and so does a
+// value no Bytebase write produces.
 func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.GetTestPgContainer(ctx, t)
@@ -246,7 +246,7 @@ func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
 		why       string
 	}{
 		{"ws-typo", `{"capability":"READ_WRTIE"}`, http.StatusForbidden,
-			"a ceiling this build cannot read is not a ceiling that permits"},
+			"an unknown enum name resolves to UNSPECIFIED, which no mode permits"},
 		{"ws-reserved", `{"capability":2}`, http.StatusForbidden,
 			"the reserved number was METADATA_ONLY; no mode serves it"},
 		{"ws-explicit-unset", `{"capability":"CAPABILITY_UNSPECIFIED"}`, http.StatusForbidden,
@@ -259,8 +259,8 @@ func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
 			"the explicit default admits MCP"},
 		{"ws-missing-capability", `{}`, http.StatusForbidden,
 			"migration makes the capability explicit, so an unset row is invalid metadata"},
-		{"ws-wrong-type", `{"capability":true}`, http.StatusForbidden,
-			"a permanently invalid stored capability is a policy failure, not a retryable outage"},
+		{"ws-wrong-type", `{"capability":true}`, http.StatusServiceUnavailable,
+			"a payload the store protocol cannot decode is a metadata read failure"},
 		{"ws-ignoring", `{"capability":"READ_ONLY","ignoreMaskingExemptions":true}`, http.StatusOK,
 			"ignoring masking exemptions is not a reason to refuse the connection; it changes what the session reads"},
 	}
@@ -321,6 +321,10 @@ func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
 		"ws-open":                storepb.MCPSetting_READ_WRITE,
 		"ws-other-unknown-field": storepb.MCPSetting_READ_WRITE,
 		"ws-ignoring":            storepb.MCPSetting_READ_ONLY,
+		"ws-typo":                storepb.MCPSetting_CAPABILITY_UNSPECIFIED,
+		"ws-reserved":            storepb.MCPSetting_Capability(2),
+		"ws-explicit-unset":      storepb.MCPSetting_CAPABILITY_UNSPECIFIED,
+		"ws-missing-capability":  storepb.MCPSetting_CAPABILITY_UNSPECIFIED,
 	} {
 		got, err := s.GetMCPSettingsUncached(ctx, workspace)
 		require.NoError(t, err, "%s stores a ceiling this build understands", workspace)
@@ -350,18 +354,9 @@ func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
 		require.Nil(t, got, "an error must not carry a usable settings result")
 	}
 
-	for _, workspace := range []string{"ws-typo", "ws-reserved", "ws-explicit-unset", "ws-missing-capability", "ws-wrong-type"} {
-		got, err := s.GetMCPSettingsUncached(ctx, workspace)
-		if err == nil {
-			// The reserved number parses; it is refused later because no
-			// ceiling serves it. What must never happen is resolving to a
-			// value some other workspace stored.
-			require.NotEqual(t, storepb.MCPSetting_READ_WRITE, got.Capability,
-				"%s must not resolve to a neighbour's permissive ceiling", workspace)
-		} else {
-			require.Nil(t, got, "an error must not carry a usable settings result")
-		}
-	}
+	got, err := s.GetMCPSettingsUncached(ctx, "ws-wrong-type")
+	require.Error(t, err, "an invalid MCP payload must remain a store error")
+	require.Nil(t, got, "an error must not carry a guessed settings result")
 
 	for _, row := range rows {
 		t.Run(row.workspace, func(t *testing.T) {

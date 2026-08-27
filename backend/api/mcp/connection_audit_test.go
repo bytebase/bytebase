@@ -19,7 +19,6 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/store"
 )
 
 // TestMCPConnectionDenialEmission pins which refusals at /mcp become audit rows
@@ -92,18 +91,6 @@ func TestMCPConnectionDenialEmission(t *testing.T) {
 		// one different from the rows that session already wrote, hiding the
 		// denial from the pivot an operator would use to find it.
 		require.Empty(t, row.McpDelegation.GetCorrelationId())
-	})
-
-	t.Run("an unreadable ceiling writes a row that names the typo, not the policy", func(t *testing.T) {
-		st := newTestServerStore()
-		st.capabilityErr = errors.Wrapf(store.ErrMCPCapabilityUnreadable, "READ_ONLYY is not a value this build understands")
-		srv := newServer(t, st)
-
-		require.Equal(t, http.StatusForbidden, connect(t, srv, mcpToken(t, secret, tokenOptions{})))
-
-		require.Len(t, st.auditRows, 1)
-		require.Contains(t, st.auditRows[0].Status.GetMessage(), "not one this build understands",
-			"an admin fixes a broken stored value by rewriting it, not by turning MCP back on")
 	})
 
 	t.Run("a ceiling this build does not serve writes its own row", func(t *testing.T) {
@@ -299,18 +286,14 @@ func mcpToken(t *testing.T, secret string, opts tokenOptions) string {
 // the ceiling refusals that can reach a tool, rather than restating its phrase
 // list somewhere it would drift.
 //
-// Only these two reach it. A 403 is what the predicate is consulted for, and
-// the per-request gate answers CodePermissionDenied for exactly these; an
+// Only this verdict reaches it. A 403 is what the predicate is consulted for,
+// and the per-request gate answers CodePermissionDenied for it; an
 // outage answers CodeUnavailable, and DISABLED is refused at this door before
 // any tool call and by the serving table at the per-request one. A refusal it
 // stops recognizing gets "request a project role" appended — advice that cannot
 // lift a workspace setting.
 func TestCeilingRefusalsAreRecognizedAsPolicy(t *testing.T) {
-	for _, verdict := range []auth.MCPCeilingVerdict{
-		auth.MCPCeilingUnreadable,
-		auth.MCPCeilingUnserved,
-	} {
-		require.True(t, IsPolicyRefusal(verdict.Refusal()),
-			"%v reaches a tool as a 403 and must carry its own way out", verdict)
-	}
+	verdict := auth.MCPCeilingUnserved
+	require.True(t, IsPolicyRefusal(verdict.Refusal()),
+		"%v reaches a tool as a 403 and must carry its own way out", verdict)
 }

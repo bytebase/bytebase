@@ -3647,7 +3647,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\x18require_uppercase_letter\x18\x04 \x01(\bR\x16requireUppercaseLetter\x12:\n" +
 	"\x19require_special_character\x18\x05 \x01(\bR\x17requireSpecialCharacter\x12Q\n" +
 	"&require_reset_password_for_first_login\x18\x06 \x01(\bR!requireResetPasswordForFirstLogin\x12F\n" +
-	"\x11password_rotation\x18\a \x01(\v2\x19.google.protobuf.DurationR\x10passwordRotationJ\x04\b\x0f\x10\x10J\x04\b\x1a\x10\x1bJ\x04\b\x10\x10\x11R\x0emcp_capability\"\x86\x02\n" +
+	"\x11password_rotation\x18\a \x01(\v2\x19.google.protobuf.DurationR\x10passwordRotationJ\x04\b\x0f\x10\x10J\x04\b\x1a\x10\x1bJ\x04\b\x10\x10\x11R\x0emcp_capability\"\xe9\x01\n" +
 	"\n" +
 	"MCPSetting\x12B\n" +
 	"\n" +
@@ -3660,7 +3660,7 @@ const file_v1_setting_service_proto_rawDesc = "" +
 	"\bDISABLED\x10\x01\x12\r\n" +
 	"\tREAD_ONLY\x10\x03\x12\x0e\n" +
 	"\n" +
-	"READ_WRITE\x10\x04\"\x04\b\x02\x10\x02J\x04\b\x03\x10\x04R\x15capability_unreadable\"\xf3\x01\n" +
+	"READ_WRITE\x10\x04\"\x04\b\x02\x10\x02\"\xf3\x01\n" +
 	"\x15SQLEditorThemeSetting\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1f\n" +

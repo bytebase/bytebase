@@ -44,7 +44,7 @@ func (s *WorkspaceService) GetMCPInfo(ctx context.Context, _ *connect.Request[v1
 	// beside a modes list with no row for it.
 	switch verdict := auth.ClassifyMCPCeiling(settings, err); verdict {
 	case auth.MCPCeilingServes, auth.MCPCeilingDisabled:
-	case auth.MCPCeilingUnreadable, auth.MCPCeilingUnserved:
+	case auth.MCPCeilingUnserved:
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New(verdict.Refusal()))
 	default:
 		// The store error stays in the log. This method is served to MCP

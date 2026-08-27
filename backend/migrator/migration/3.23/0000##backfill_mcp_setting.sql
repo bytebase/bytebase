@@ -2,8 +2,11 @@
 -- in 3.22. Preserve the legacy value when present and give every other
 -- workspace the explicit backward-compatible READ_WRITE default.
 --
--- Keep the legacy key for older replicas during a rolling upgrade. New code
--- reads only the MCP row.
+-- This migration is the only legacy translation. Runtime reads only the MCP
+-- row and treats a missing row as invalid metadata.
+-- Keep the workspace set stable until the transaction validates the invariant.
+LOCK TABLE workspace IN SHARE MODE;
+
 INSERT INTO setting (workspace, name, value)
 SELECT
     w.resource_id,
@@ -26,11 +29,25 @@ LEFT JOIN setting AS p
     AND p.name = 'WORKSPACE_PROFILE'
 ON CONFLICT (workspace, name) DO NOTHING;
 
--- Older builds could create an MCP row by updating only a sibling field. Make
--- those rows explicit too, so runtime never has to distinguish a missing key
--- from a value it cannot interpret.
+-- Existing MCP rows may predate the mandatory capability. Backfill those rows
+-- too instead of teaching runtime code to synthesize a value.
 UPDATE setting
 SET value = value || jsonb_build_object('capability', 'READ_WRITE')
 WHERE name = 'MCP'
     AND jsonb_typeof(value) = 'object'
     AND NOT value ? 'capability';
+
+DO $$
+BEGIN
+    IF EXISTS (
+        SELECT 1
+        FROM workspace AS w
+        LEFT JOIN setting AS s
+            ON s.workspace = w.resource_id
+            AND s.name = 'MCP'
+        WHERE s.workspace IS NULL
+    ) THEN
+        RAISE EXCEPTION 'MCP setting backfill left a workspace without an MCP setting';
+    END IF;
+END
+$$;

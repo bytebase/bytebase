@@ -402,11 +402,11 @@ func TestGetMCPInfoHandler(t *testing.T) {
 			"an admin with MCP off is exactly who needs to see what the other modes contain")
 	})
 
-	t.Run("a ceiling this build cannot read fails closed", func(t *testing.T) {
+	t.Run("an unknown capability fails closed", func(t *testing.T) {
 		setCeiling(t, `{"capability":"READ_ONLYY"}`)
 		_, err := get(workspaceCtx())
 		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
-		require.Contains(t, err.Error(), "not one this build understands")
+		require.Contains(t, err.Error(), "not one this build serves")
 	})
 
 	t.Run("a ceiling this build does not serve fails closed", func(t *testing.T) {
