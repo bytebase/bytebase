@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log/slog"
 	"regexp"
-	"slices"
 	"strings"
 	"time"
 
@@ -802,7 +801,7 @@ func (s *UserService) StartMFAEnrollment(ctx context.Context, request *connect.R
 // and a rotation is not half-applied if the user abandons the download step.
 // Nothing is revoked either: MFA gates minting a session, not using one.
 func (s *UserService) EnableMFA(ctx context.Context, request *connect.Request[v1pb.EnableMFARequest]) (*connect.Response[v1pb.User], error) {
-	caller, err := s.resolveSelfUser(ctx, request.Msg.Name)
+	caller, err := s.resolveSelfUserFresh(ctx, request.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -981,7 +980,7 @@ func (s *UserService) RegenerateRecoveryCodes(ctx context.Context, request *conn
 // together, gated on a fresh otp_code. Both branches change live credential
 // material, so both revoke sessions.
 func (s *UserService) ConfirmRecoveryCodes(ctx context.Context, request *connect.Request[v1pb.ConfirmRecoveryCodesRequest]) (*connect.Response[v1pb.User], error) {
-	caller, err := s.resolveSelfUser(ctx, request.Msg.Name)
+	caller, err := s.resolveSelfUserFresh(ctx, request.Msg.Name)
 	if err != nil {
 		return nil, err
 	}
@@ -1076,22 +1075,51 @@ func (*UserService) resolveSelfUser(ctx context.Context, name string) (*store.Us
 	return caller, nil
 }
 
-// claimCredentialProof claims one T9 lockout slot per credential kind this
-// request will verify: the supplied proof's kind, plus the MFA bucket when an
-// enrollment otp_code will be checked. Each distinct kind is claimed once per
-// request, and the claim is taken before any verification runs — a proof
-// channel that verified first and counted afterwards would let a caller
-// abandon the request on failure and guess without bound.
+// resolveSelfUserFresh resolves the caller, then re-reads the row.
+//
+// The user on the context is whatever the store's user cache held when the
+// request authenticated, and that cache is filled from whole-table snapshots:
+// a list whose transaction began before a write can land after it and put the
+// pre-write row back. Every step of an MFA enrollment reads pending state that
+// a *previous* request wrote, so those steps read the row instead — otherwise
+// a confirmation intermittently reports that its own enrollment was
+// superseded. GetUserByID does not consult the cache.
+func (s *UserService) resolveSelfUserFresh(ctx context.Context, name string) (*store.UserMessage, error) {
+	caller, err := s.resolveSelfUser(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	user, err := s.store.GetUserByID(ctx, caller.ID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get user"))
+	}
+	if user == nil || user.MemberDeleted {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %q not found", caller.Email))
+	}
+	return user, nil
+}
+
+// claimCredentialProof claims the T9 lockout slot for the credential this
+// request will verify, before any verification runs — a proof channel that
+// verified first and counted afterwards would let a caller abandon the request
+// on failure and guess without bound.
+//
+// Exactly one slot, never two. An enrollment otp_code is checked against a
+// secret StartMFAEnrollment just handed this same caller, so it is not a
+// secret to guess; it needs the bound only when it is the one thing being
+// verified, which is Cloud first-time enrollment. Claiming a second bucket
+// alongside a real proof would also mean a refusal on that second claim leaves
+// the first one counted against a request that verified nothing, draining an
+// unrelated bucket on every retry.
 func (s *UserService) claimCredentialProof(ctx context.Context, email string, credential *v1pb.CredentialProof, verifiesEnrollmentOtp bool) ([]storepb.LoginAttemptKind, error) {
-	kinds := []storepb.LoginAttemptKind{}
+	var kinds []storepb.LoginAttemptKind
 	if credential != nil {
 		kind, err := credentialProofKind(credential)
 		if err != nil {
 			return nil, err
 		}
 		kinds = append(kinds, kind)
-	}
-	if verifiesEnrollmentOtp && !slices.Contains(kinds, storepb.LoginAttemptKind_MFA) {
+	} else if verifiesEnrollmentOtp {
 		kinds = append(kinds, storepb.LoginAttemptKind_MFA)
 	}
 	for _, kind := range kinds {
