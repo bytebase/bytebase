@@ -20,6 +20,7 @@ import {
 } from "@/lib/taskRun";
 import { getTimeForPbTimestampProtoEs } from "@/types";
 import type { TaskRun } from "@/types/proto-es/v1/rollout_service_pb";
+import { TaskRunErrorAlert } from "./TaskRunErrorAlert";
 
 // With this many runs or more, only the newest run starts expanded; older
 // runs collapse to header rows. Keeps the sheet scannable and avoids fetching
@@ -154,7 +155,8 @@ function TaskRunHistoryItem({
         </span>
       </button>
       {isExpanded && (
-        <div className="border-t p-3">
+        <div className="flex flex-col gap-2 border-t p-3">
+          <TaskRunErrorAlert taskRun={taskRun} />
           {/* Status is part of the key (as in the latest-run panel): a
               RUNNING -> DONE flip remounts the viewer so useTaskRunLogData's
               unmount cleanup invalidates the in-flight RUNNING log request,
