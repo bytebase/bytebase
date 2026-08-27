@@ -355,9 +355,8 @@ paths:
       description: |-
         Requests a password reset email for the given email address.
          Always returns success to avoid leaking whether the email exists.
-         Only does anything when the workspace's SMTP mail delivery setting is
-         configured; without it no email can be sent and the recovery route is an
-         admin password reset.
+         Requires the workspace's SMTP mail delivery setting; without it the
+         recovery route is an admin password reset.
          Permissions required: None
       operationId: AuthService_RequestPasswordReset
       requestBody:
@@ -399,15 +398,12 @@ paths:
     post:
       tags:
         - AuthService
-      summary: |-
-        Sends a 6-digit verification code to the email for login/signup. The
-         pre-authentication channel: it takes an address rather than a user and
-         never reveals whether that address has an account. Gated on the
-         workspace's allow_email_code_signin, with a 60-sec resend cooldown.
+      summary: SendEmailLoginCode
       description: |-
-        The signed-in counterpart is UserService.RequestReauthCode, which proves
-         an existing session's holder rather than starting one; the two purposes
-         (LOGIN here, REAUTH there) are not interchangeable.
+        Sends a 6-digit verification code to the email for login/signup.
+         Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+         The signed-in counterpart is UserService.RequestReauthCode; LOGIN and
+         REAUTH codes are not interchangeable.
          Permissions required: None
       operationId: AuthService_SendEmailLoginCode
       requestBody:
@@ -17416,8 +17412,7 @@ paths:
                   maxLength: 64
                   description: |-
                     (OPTIONAL) Required for first-time enrollment, rejected otherwise. A *fresh* code,
-                     not the one EnableMFA took: promotion happens here, and the download
-                     screen in between outlives one ~30s TOTP window.
+                     not the one EnableMFA took.
               title: ConfirmRecoveryCodesRequest
               required:
                 - pendingVersion
@@ -17459,9 +17454,8 @@ paths:
                 credential:
                   title: credential
                   description: |-
-                    (OPTIONAL) Required only for a self-service call against a live factor, and then
-                     only otp_code or recovery_code: turning a factor off is proven with the
-                     factor. Unused on an admin-assisted call.
+                    (OPTIONAL) Required for a self-service call against a live factor, and then only
+                     otp_code or recovery_code. Unused on an admin-assisted call.
                   $ref: '#/components/schemas/bytebase.v1.CredentialProof'
               title: DisableMFARequest
               additionalProperties: false
@@ -17513,11 +17507,8 @@ paths:
                 credential:
                   title: credential
                   description: |-
-                    (OPTIONAL) Proof for the *existing* factor being replaced, if any — not the code
-                     above, which proves the new enrollment. Required for a rotation, and for
-                     a first-time enrollment on an account that has a password. Omit it for
-                     first-time enrollment on a Cloud account: email_code is its only option
-                     and is spent once, at ConfirmRecoveryCodes.
+                    (OPTIONAL) Proof of the *existing* factor, not the new device above. Required for a
+                     rotation, and for first-time enrollment on an account with a password.
                   $ref: '#/components/schemas/bytebase.v1.CredentialProof'
               title: EnableMFARequest
               required:
@@ -17561,17 +17552,12 @@ paths:
     post:
       tags:
         - UserService
-      summary: |-
-        Sends a one-time code to the caller's own registered email, usable as
-         CredentialProof.email_code. The only proof available when the account has
-         neither a usable password nor an MFA factor, which on Bytebase Cloud is
-         every account without MFA. Cloud only, and refused once a live factor
-         exists — prove that with the factor, not with mail.
+      summary: RequestReauthCode
       description: |-
-        Not AuthService.SendEmailLoginCode: that one gets a caller *into* an
-         account and is unauthenticated, this one proves they already hold it.
-         Codes are stored and spent per purpose (REAUTH here, LOGIN there) and are
-         not interchangeable in either direction.
+        Sends a one-time code to the caller's own email, usable as
+         CredentialProof.email_code. Bytebase Cloud only, and only while the
+         account has no live MFA factor. Not AuthService.SendEmailLoginCode: that
+         one starts a session, this one proves an existing one.
          Permissions required: None beyond being signed in as `name`.
       operationId: UserService_RequestReauthCode
       parameters:
@@ -21207,8 +21193,7 @@ components:
           maxLength: 64
           description: |-
             (OPTIONAL) Required for first-time enrollment, rejected otherwise. A *fresh* code,
-             not the one EnableMFA took: promotion happens here, and the download
-             screen in between outlives one ~30s TOTP window.
+             not the one EnableMFA took.
       title: ConfirmRecoveryCodesRequest
       required:
         - name
@@ -21662,9 +21647,8 @@ components:
               type: string
               title: current_password
               description: |
-                The account's current password. Always accepted for ChangePassword;
-                 accepted by a factor-touching method only when no live MFA exists,
-                 since ResetPassword can mint one from the mailbox alone.
+                The account's current password. Refused by a factor-touching method
+                 while a live MFA factor exists.
                 string.max_bytes = 72
           title: current_password
           required:
@@ -21677,8 +21661,7 @@ components:
               maxLength: 64
               description: |-
                 A one-time code from RequestReauthCode. Bytebase Cloud only, and only
-                 when no live MFA factor exists — bootstrap proof for an account with
-                 nothing else. Enforced server-side, not just by the console.
+                 while the account has no live MFA factor.
           title: email_code
           required:
             - emailCode
@@ -22946,9 +22929,8 @@ components:
         credential:
           title: credential
           description: |-
-            (OPTIONAL) Required only for a self-service call against a live factor, and then
-             only otp_code or recovery_code: turning a factor off is proven with the
-             factor. Unused on an admin-assisted call.
+            (OPTIONAL) Required for a self-service call against a live factor, and then only
+             otp_code or recovery_code. Unused on an admin-assisted call.
           $ref: '#/components/schemas/bytebase.v1.CredentialProof'
       title: DisableMFARequest
       required:
@@ -23046,11 +23028,8 @@ components:
         credential:
           title: credential
           description: |-
-            (OPTIONAL) Proof for the *existing* factor being replaced, if any — not the code
-             above, which proves the new enrollment. Required for a rotation, and for
-             a first-time enrollment on an account that has a password. Omit it for
-             first-time enrollment on a Cloud account: email_code is its only option
-             and is spent once, at ConfirmRecoveryCodes.
+            (OPTIONAL) Proof of the *existing* factor, not the new device above. Required for a
+             rotation, and for first-time enrollment on an account with a password.
           $ref: '#/components/schemas/bytebase.v1.CredentialProof'
       title: EnableMFARequest
       required:
@@ -29048,10 +29027,7 @@ components:
           type: string
           title: name
           maxLength: 260
-          description: |-
-            Format: users/{email}. Must be the caller's own name: the code goes to
-             that account's registered email, so requesting one for anyone else would
-             prove nothing about the caller.
+          description: 'Format: users/{email}. Must be the caller''s own name.'
       title: RequestReauthCodeRequest
       required:
         - name

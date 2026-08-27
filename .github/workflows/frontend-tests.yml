@@ -17,7 +17,8 @@ concurrency:
 
 jobs:
   static-checks:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -26,8 +27,9 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '24.18.1'
-          cache: pnpm
-          cache-dependency-path: "frontend/pnpm-lock.yaml"
+          # The runner's pnpm store persists between runs, so the Actions
+          # cache adds nothing and downloading it is slow.
+          cache: ''
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         working-directory: frontend
@@ -39,7 +41,8 @@ jobs:
         working-directory: frontend
 
   frontend-tests:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
@@ -48,8 +51,9 @@ jobs:
       - uses: actions/setup-node@v7
         with:
           node-version: '24.18.1'
-          cache: pnpm
-          cache-dependency-path: "frontend/pnpm-lock.yaml"
+          # The runner's pnpm store persists between runs, so the Actions
+          # cache adds nothing and downloading it is slow.
+          cache: ''
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         working-directory: frontend

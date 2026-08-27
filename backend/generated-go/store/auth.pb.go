@@ -30,10 +30,7 @@ const (
 	EmailVerificationCodePurpose_LOGIN                                       EmailVerificationCodePurpose = 1
 	EmailVerificationCodePurpose_PASSWORD_RESET                              EmailVerificationCodePurpose = 2
 	// Re-authentication proof for a credential change
-	// (CredentialProof.email_code), for an account with neither a usable
-	// password nor an MFA factor to prove. Like every other purpose it needs
-	// the workspace's mail delivery configured. Deliberately not accepted by
-	// Login: a code minted to authorize a change must not also start a session.
+	// (CredentialProof.email_code). Never accepted by Login.
 	EmailVerificationCodePurpose_REAUTH EmailVerificationCodePurpose = 3
 )
 

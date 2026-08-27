@@ -64,22 +64,17 @@ type AuthServiceClient interface {
 	SwitchWorkspace(ctx context.Context, in *SwitchWorkspaceRequest, opts ...grpc.CallOption) (*LoginResponse, error)
 	// Requests a password reset email for the given email address.
 	// Always returns success to avoid leaking whether the email exists.
-	// Only does anything when the workspace's SMTP mail delivery setting is
-	// configured; without it no email can be sent and the recovery route is an
-	// admin password reset.
+	// Requires the workspace's SMTP mail delivery setting; without it the
+	// recovery route is an admin password reset.
 	// Permissions required: None
 	RequestPasswordReset(ctx context.Context, in *RequestPasswordResetRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	// Resets the user's password using a password reset token from email.
 	// Permissions required: None (validates via token)
 	ResetPassword(ctx context.Context, in *ResetPasswordRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
-	// Sends a 6-digit verification code to the email for login/signup. The
-	// pre-authentication channel: it takes an address rather than a user and
-	// never reveals whether that address has an account. Gated on the
-	// workspace's allow_email_code_signin, with a 60-sec resend cooldown.
-	//
-	// The signed-in counterpart is UserService.RequestReauthCode, which proves
-	// an existing session's holder rather than starting one; the two purposes
-	// (LOGIN here, REAUTH there) are not interchangeable.
+	// Sends a 6-digit verification code to the email for login/signup.
+	// Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+	// The signed-in counterpart is UserService.RequestReauthCode; LOGIN and
+	// REAUTH codes are not interchangeable.
 	// Permissions required: None
 	SendEmailLoginCode(ctx context.Context, in *SendEmailLoginCodeRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 }
@@ -224,22 +219,17 @@ type AuthServiceServer interface {
 	SwitchWorkspace(context.Context, *SwitchWorkspaceRequest) (*LoginResponse, error)
 	// Requests a password reset email for the given email address.
 	// Always returns success to avoid leaking whether the email exists.
-	// Only does anything when the workspace's SMTP mail delivery setting is
-	// configured; without it no email can be sent and the recovery route is an
-	// admin password reset.
+	// Requires the workspace's SMTP mail delivery setting; without it the
+	// recovery route is an admin password reset.
 	// Permissions required: None
 	RequestPasswordReset(context.Context, *RequestPasswordResetRequest) (*emptypb.Empty, error)
 	// Resets the user's password using a password reset token from email.
 	// Permissions required: None (validates via token)
 	ResetPassword(context.Context, *ResetPasswordRequest) (*emptypb.Empty, error)
-	// Sends a 6-digit verification code to the email for login/signup. The
-	// pre-authentication channel: it takes an address rather than a user and
-	// never reveals whether that address has an account. Gated on the
-	// workspace's allow_email_code_signin, with a 60-sec resend cooldown.
-	//
-	// The signed-in counterpart is UserService.RequestReauthCode, which proves
-	// an existing session's holder rather than starting one; the two purposes
-	// (LOGIN here, REAUTH there) are not interchangeable.
+	// Sends a 6-digit verification code to the email for login/signup.
+	// Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+	// The signed-in counterpart is UserService.RequestReauthCode; LOGIN and
+	// REAUTH codes are not interchangeable.
 	// Permissions required: None
 	SendEmailLoginCode(context.Context, *SendEmailLoginCodeRequest) (*emptypb.Empty, error)
 	mustEmbedUnimplementedAuthServiceServer()

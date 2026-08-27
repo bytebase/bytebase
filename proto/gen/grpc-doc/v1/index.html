@@ -15706,8 +15706,7 @@ exactly the set this version identifies, or nothing. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>Required for first-time enrollment, rejected otherwise. A *fresh* code,
-not the one EnableMFA took: promotion happens here, and the download
-screen in between outlives one ~30s TOTP window. </p></td>
+not the one EnableMFA took. </p></td>
                 </tr>
               
             </tbody>
@@ -15755,9 +15754,8 @@ screen in between outlives one ~30s TOTP window. </p></td>
                   <td>current_password</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The account&#39;s current password. Always accepted for ChangePassword;
-accepted by a factor-touching method only when no live MFA exists,
-since ResetPassword can mint one from the mailbox alone. </p></td>
+                  <td><p>The account&#39;s current password. Refused by a factor-touching method
+while a live MFA factor exists. </p></td>
                 </tr>
               
                 <tr>
@@ -15779,8 +15777,7 @@ since ResetPassword can mint one from the mailbox alone. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>A one-time code from RequestReauthCode. Bytebase Cloud only, and only
-when no live MFA factor exists — bootstrap proof for an account with
-nothing else. Enforced server-side, not just by the console. </p></td>
+while the account has no live MFA factor. </p></td>
                 </tr>
               
             </tbody>
@@ -15837,9 +15834,8 @@ bb.users.update. </p></td>
                   <td>credential</td>
                   <td><a href="#bytebase.v1.CredentialProof">CredentialProof</a></td>
                   <td></td>
-                  <td><p>Required only for a self-service call against a live factor, and then
-only otp_code or recovery_code: turning a factor off is proven with the
-factor. Unused on an admin-assisted call. </p></td>
+                  <td><p>Required for a self-service call against a live factor, and then only
+otp_code or recovery_code. Unused on an admin-assisted call. </p></td>
                 </tr>
               
             </tbody>
@@ -15884,11 +15880,8 @@ factor. Unused on an admin-assisted call. </p></td>
                   <td>credential</td>
                   <td><a href="#bytebase.v1.CredentialProof">CredentialProof</a></td>
                   <td></td>
-                  <td><p>Proof for the *existing* factor being replaced, if any — not the code
-above, which proves the new enrollment. Required for a rotation, and for
-a first-time enrollment on an account that has a password. Omit it for
-first-time enrollment on a Cloud account: email_code is its only option
-and is spent once, at ConfirmRecoveryCodes. </p></td>
+                  <td><p>Proof of the *existing* factor, not the new device above. Required for a
+rotation, and for first-time enrollment on an account with a password. </p></td>
                 </tr>
               
             </tbody>
@@ -16094,9 +16087,7 @@ If this field is omitted, there are no subsequent pages. </p></td>
                   <td>name</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Format: users/{email}. Must be the caller&#39;s own name: the code goes to
-that account&#39;s registered email, so requesting one for anyone else would
-prove nothing about the caller. </p></td>
+                  <td><p>Format: users/{email}. Must be the caller&#39;s own name. </p></td>
                 </tr>
               
             </tbody>
@@ -16504,16 +16495,10 @@ Permissions required: bb.users.updateEmail</p></td>
                 <td>RequestReauthCode</td>
                 <td><a href="#bytebase.v1.RequestReauthCodeRequest">RequestReauthCodeRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p>Sends a one-time code to the caller&#39;s own registered email, usable as
-CredentialProof.email_code. The only proof available when the account has
-neither a usable password nor an MFA factor, which on Bytebase Cloud is
-every account without MFA. Cloud only, and refused once a live factor
-exists — prove that with the factor, not with mail.
-
-Not AuthService.SendEmailLoginCode: that one gets a caller *into* an
-account and is unauthenticated, this one proves they already hold it.
-Codes are stored and spent per purpose (REAUTH here, LOGIN there) and are
-not interchangeable in either direction.
+                <td><p>Sends a one-time code to the caller&#39;s own email, usable as
+CredentialProof.email_code. Bytebase Cloud only, and only while the
+account has no live MFA factor. Not AuthService.SendEmailLoginCode: that
+one starts a session, this one proves an existing one.
 Permissions required: None beyond being signed in as `name`.</p></td>
               </tr>
             
@@ -17469,9 +17454,8 @@ The user must be a member of the target workspace.</p></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
                 <td><p>Requests a password reset email for the given email address.
 Always returns success to avoid leaking whether the email exists.
-Only does anything when the workspace&#39;s SMTP mail delivery setting is
-configured; without it no email can be sent and the recovery route is an
-admin password reset.
+Requires the workspace&#39;s SMTP mail delivery setting; without it the
+recovery route is an admin password reset.
 Permissions required: None</p></td>
               </tr>
             
@@ -17487,14 +17471,10 @@ Permissions required: None (validates via token)</p></td>
                 <td>SendEmailLoginCode</td>
                 <td><a href="#bytebase.v1.SendEmailLoginCodeRequest">SendEmailLoginCodeRequest</a></td>
                 <td><a href="#google.protobuf.Empty">.google.protobuf.Empty</a></td>
-                <td><p>Sends a 6-digit verification code to the email for login/signup. The
-pre-authentication channel: it takes an address rather than a user and
-never reveals whether that address has an account. Gated on the
-workspace&#39;s allow_email_code_signin, with a 60-sec resend cooldown.
-
-The signed-in counterpart is UserService.RequestReauthCode, which proves
-an existing session&#39;s holder rather than starting one; the two purposes
-(LOGIN here, REAUTH there) are not interchangeable.
+                <td><p>Sends a 6-digit verification code to the email for login/signup.
+Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+The signed-in counterpart is UserService.RequestReauthCode; LOGIN and
+REAUTH codes are not interchangeable.
 Permissions required: None</p></td>
               </tr>
             
