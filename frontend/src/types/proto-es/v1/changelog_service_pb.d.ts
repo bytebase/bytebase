@@ -54,12 +54,13 @@ export declare type ListChangelogsRequest = Message<"bytebase.v1.ListChangelogsR
    *
    * Supported filter:
    * - status: the changelog status, support "==" operation. check Changelog.Status for available values.
-   * - create_time: the changelog create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
+   * - has_schema_snapshot: filters to changelogs with a schema snapshot; only "has_schema_snapshot == true" is supported.
+   * - create_time: the changelog create time in RFC 3339 format, supports ">=", "<=", or "<" operator.
    *
    * Example:
    * status == "DONE"
-   * status == "FAILED" && type == "SDL"
-   * create_time >= "2024-01-01T00:00:00Z" && create_time <= "2024-01-02T00:00:00Z"
+   * status == "FAILED"
+   * has_schema_snapshot == true && create_time < "2024-01-02T00:00:00Z"
    *
    * @generated from field: string filter = 5;
    */
