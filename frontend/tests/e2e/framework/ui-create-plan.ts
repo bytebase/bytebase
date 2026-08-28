@@ -102,44 +102,30 @@ export async function createMultiSpecChangePlanViaUI(
   return { planId };
 }
 
-// Submit the current draft plan for review (draft issue → open/non-draft), the
-// UI's "Ready for Review" flow. Call while on the created plan's detail page.
+// Submit the current draft plan for review — the UI's "Ready for Review"
+// advance. Call while on the created plan's detail page.
 //
-// The confirm dialog runs the plan checks and has TWO terminal states, both
-// handled here so the helper is correct whether or not the plan has failing
-// checks (review / rollout / plan-check callers deliberately attach ERROR-level
-// rules):
-//   - checks pass  → the Confirm button enables on its own.
-//   - checks fail  → the product gates submission behind an explicit
-//                    "Confirm anyway" acknowledgment checkbox; Confirm stays
-//                    disabled until it is checked.
+// The advance is a tiered press (LifecycleAdvance.tsx / advanceState.ts), not
+// a confirm dialog: a clean press advances immediately with no UI; when checks
+// failed and the project does not enforce SQL review, a warning popover offers
+// "Submit anyway"; a hard blocker (e.g. enforceSqlReview + failed checks)
+// shows a read-only list and the press is a no-op. Success is the header state
+// machine leaving `ready-for-review` — the button disappears. ONE press, then
+// one positive wait: no re-press/Escape loop, which fires stray events into a
+// transitioning React tree on the shared page and destabilises later tests.
 export async function submitDraftForReviewViaUI(page: Page): Promise<void> {
-  await page.getByRole("button", { name: "Ready for Review" }).click();
-  const dialog = page.getByRole("dialog");
-  const confirm = dialog
-    .getByRole("button", { name: /Ready for Review|Submit|Confirm/ })
-    .first();
-  const confirmAnyway = dialog
-    .getByRole("checkbox", { name: "Confirm anyway" })
-    .first();
-
-  // Wait for the checks to settle into whichever terminal state applies: the
-  // ack checkbox appears (failing) or Confirm becomes enabled (passing).
-  await expect(async () => {
-    const gated = await confirmAnyway.isVisible().catch(() => false);
-    const enabled = await confirm.isEnabled().catch(() => false);
-    expect(gated || enabled).toBe(true);
-  }).toPass({ timeout: 45_000 });
-
-  if (await confirmAnyway.isVisible().catch(() => false)) {
-    await confirmAnyway.click();
-  }
-  await expect(confirm).toBeEnabled({ timeout: 10_000 });
-  await confirm.click();
-  // After submission the header advances out of the ready-for-review state.
-  await expect(
-    page.getByRole("button", { name: "Ready for Review" }),
-  ).toHaveCount(0, { timeout: 15_000 });
+  const readyButton = page.getByRole("button", { name: "Ready for Review" });
+  const submitAnyway = page.getByRole("button", { name: "Submit anyway" });
+  await readyButton.click();
+  // Tier 2: a "Submit anyway" decision popover appears only when checks failed.
+  const decided = await submitAnyway
+    .waitFor({ state: "visible", timeout: 3_000 })
+    .then(() => true)
+    .catch(() => false);
+  if (decided) await submitAnyway.click();
+  // The advance completes when the header leaves ready-for-review. Plan checks
+  // may still be finishing (a "wait" blocker clears on its own), so allow time.
+  await expect(readyButton).toHaveCount(0, { timeout: 60_000 });
 }
 
 // Create AND submit a database-change plan through the UI — the full "start a

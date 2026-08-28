@@ -22,6 +22,12 @@ function loadSampleSeedData(): string {
     .join("\n");
 }
 
+// The secondary-database sync poll below allows 60s, plus login, discovery
+// and psql seeding before it. Playwright's 30s default test timeout would
+// cut that poll off before instance sync can complete on a slower machine,
+// so give the setup step an explicit budget that covers its own waits.
+setup.setTimeout(180_000);
+
 setup("authenticate and discover", async ({ page }) => {
   const env = loadTestEnv();
   await env.api.login(env.adminEmail, env.adminPassword);
@@ -102,6 +108,14 @@ setup("authenticate and discover", async ({ page }) => {
       loadSampleSeedData(),
     );
   }
+  // The sample instance is registered with a sync allowlist of just hr_test;
+  // the syncer skips any other discovered database. Widen it to include the
+  // secondary database BEFORE syncing, or hr_prod is discovered but never
+  // persisted and the poll below can never see it.
+  await env.api.updateInstanceSyncDatabases(instance, [
+    databaseId,
+    SECONDARY_DATABASE_ID,
+  ]);
   await env.api.syncInstance(instance);
   const secondaryDatabase = `${instance}/databases/${SECONDARY_DATABASE_ID}`;
   await expect

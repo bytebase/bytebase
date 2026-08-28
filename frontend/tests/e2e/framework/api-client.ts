@@ -363,6 +363,20 @@ export class BytebaseApiClient {
     return this.request<{ name: string; dataSources: { id: string; port: string; host: string }[] }>("GET", `/v1/${instanceName}`);
   }
 
+  // Set the instance's database sync allowlist (Instance.sync_databases). A
+  // project-scoped sample instance is registered with an explicit allowlist of
+  // exactly its seeded database (selfhost sample manager: [hr_test]), and the
+  // schema syncer SKIPS any discovered database not on that list — so a
+  // database created directly in the sample Postgres is never persisted by
+  // syncInstance unless the allowlist is widened first.
+  async updateInstanceSyncDatabases(instanceName: string, databases: string[]) {
+    return this.request<unknown>(
+      "PATCH",
+      `/v1/${instanceName}?updateMask=sync_databases`,
+      { name: instanceName, syncDatabases: { databases } },
+    );
+  }
+
   async updateInstanceDataSource(instanceName: string, dataSourceId: string, port: string) {
     return this.request<unknown>("PATCH",
       `/v1/${instanceName}:updateDataSource?updateMask=port`,
