@@ -1,0 +1,25 @@
+syntax = "proto3";
+
+package bytebase.store;
+
+option go_package = "generated-go/store";
+
+// ReviewRun is the status slot of one reviewer (rule engine or AI) on one
+// issue. Results live in issue comments; the run carries none.
+message ReviewRun {
+  // Strictly 1:1 with the status CHECK constraint — no unpersisted values.
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    AVAILABLE = 1;
+    RUNNING = 2;
+    DONE = 3;
+    FAILED = 4;
+  }
+}
+
+message ReviewRunPayload {
+  // Fatal execution error for the FAILED status, e.g. "metadata not synced:
+  // instances/prod/databases/db1, db2, db3 (+497 more)". Written by the
+  // executor or by the reaper.
+  string error = 1;
+}

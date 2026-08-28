@@ -238,6 +238,12 @@
     - [SQLReviewRule.Level](#bytebase-store-SQLReviewRule-Level)
     - [SQLReviewRule.Type](#bytebase-store-SQLReviewRule-Type)
   
+- [store/review_run.proto](#store_review_run-proto)
+    - [ReviewRun](#bytebase-store-ReviewRun)
+    - [ReviewRunPayload](#bytebase-store-ReviewRunPayload)
+  
+    - [ReviewRun.Status](#bytebase-store-ReviewRun-Status)
+  
 - [store/revision.proto](#store_revision-proto)
     - [RevisionPayload](#bytebase-store-RevisionPayload)
   
@@ -4087,6 +4093,63 @@ The severity level for SQL review rules.
 | BUILTIN_WALK_THROUGH_CHECK | 110 |  |
 | STATEMENT_DISALLOW_TRUNCATE | 111 |  |
 | BUILTIN_STATEMENT_MAXIMUM_SQL_SIZE | 112 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
+<a name="store_review_run-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/review_run.proto
+
+
+
+<a name="bytebase-store-ReviewRun"></a>
+
+### ReviewRun
+ReviewRun is the status slot of one reviewer (rule engine or AI) on one
+issue. Results live in issue comments; the run carries none.
+
+
+
+
+
+
+<a name="bytebase-store-ReviewRunPayload"></a>
+
+### ReviewRunPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| error | [string](#string) |  | Fatal execution error for the FAILED status, e.g. &#34;metadata not synced: instances/prod/databases/db1, db2, db3 (&#43;497 more)&#34;. Written by the executor or by the reaper. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-ReviewRun-Status"></a>
+
+### ReviewRun.Status
+Strictly 1:1 with the status CHECK constraint — no unpersisted values.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| AVAILABLE | 1 |  |
+| RUNNING | 2 |  |
+| DONE | 3 |  |
+| FAILED | 4 |  |
 
 
  
