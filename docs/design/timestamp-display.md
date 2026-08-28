@@ -247,10 +247,13 @@ tooltip.
   shared: `mode="datetime"` (full, existing `formatAbsoluteDateTime`) and `mode="compact"` (a new
   `formatCompactDateTime` helper in `datetime.ts` — date + hh:mm, locale-aware). One canonical
   component, modes matching the principle one-to-one; the audit log can keep its direct call.
-- Operational times: the scheduled pill in `DeployTaskHeader.tsx` swaps `HumanizeTs` for the
-  operational string; the three bare-format expiration call sites converge on
-  `formatOperationalDateTime` (open item 4). The six expiration surfaces already on
-  `formatAbsoluteDateTime` move to the same helper, dropping their always-`:00` seconds.
+- Operational times render through the shared component, never as bare strings: `HumanizeTs` gains
+  `mode="operational"` (`formatOperationalDateTime` in the cell, D6 tooltip carrying the full
+  enforced value with seconds). The scheduled pill in `DeployTaskHeader.tsx` switches mode rather
+  than dropping the component — its tooltip survives; the three bare-format expiration call sites
+  and the six already-absolute ones adopt the same mode (open item 4), which is what makes the
+  sub-minute preset tails recoverable. **Invariant: a reduced timestamp without a full-precision
+  tooltip is a bug** — bare formatter calls are reserved for full-precision strings and exports.
 - Tests: update `HumanizeTs.test.tsx` for the switch; sweep the `*.test.tsx` files that assert
   relative strings (`PlanDetailMeta.test.tsx`, `SchemaPane.test.tsx`,
   `DeployTaskRunHistorySheet.test.tsx`, `IssueCommentActivity.test.tsx`,
@@ -260,6 +263,9 @@ tooltip.
 ## What does not change
 
 - The audit log (already correct).
+- Duration display (`humanizeDurationV1` — elapsed times like "4.2s" on task runs and query
+  results). Durations are elapsed quantities, not timestamps: they carry no calendar, timezone, or
+  precision question, so this design leaves them untouched.
 - Relative wording under 30 days.
 - No user or workspace preference (revisit only if a customer asks for the opposite default —
   GitLab's model is the known shape for that).
