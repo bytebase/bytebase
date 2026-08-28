@@ -49,9 +49,11 @@ order in each of those queries — different effective `LIMIT` values pick top-N
 heapsort or a full sort, and parallel gather-merge interleaves workers
 independently. A tied row then crosses the page boundary between two reads, and
 the caller skips it or receives it twice. This is not a concurrency artifact: it
-happens on completely static data. Measured on 10,030 issues across 40 projects,
-paging 100 at a time, ordering by `issue.id` alone duplicated 195 rows and
-missed another 195.
+happens on completely static data. Measured on 10,000 issues across 40 projects
+by issuing the 100 page queries separately, exactly as the API does: ordering by
+`issue.id` alone returned 10,000 rows of which only 9,764 were distinct — 236
+duplicated and 236 never returned at all. Adding `issue.project` makes it
+10,000 of 10,000.
 
 **Every offset-paginated query must sort on a total order.** Write the clause
 out — the tiebreak columns are part of the SQL, not something to build:
@@ -106,21 +108,14 @@ Rules for choosing the tiebreak:
    tiebreak included, the moment a caller passed `order_by`.
 7. Check what the clause costs. Appending a tiebreak can turn an ordered index
    scan into an incremental sort, so `EXPLAIN` against the query's *real*
-   predicate shape, not an idealized one. Then decide deliberately: narrow the
-   tiebreak where uniqueness is already guaranteed (`ListRevisions` does),
-   widen the index with a migration, or accept the cost and say so. Accepted
-   here: `SearchAuditLogs` costs ~16 ms more per 5000-row export page because
-   `resource_id` falls outside `idx_audit_log_workspace_created_at`; judged not
-   worth a migration.
-8. A per-project `id` is a *recency* ordering only within one project.
-   `nextProjectID` allocates `MAX(id)+1` per project, so with the project pinned
-   to a constant, `id DESC` is exactly `created_at DESC` and PostgreSQL serves
-   it from the primary key as an ordered index scan. Across projects it means
-   nothing — every project's first row is `101`, so an old project's row 5100
-   outranks today's row 140 and a new project's rows sink thousands of rows down
-   the list. A list that can span projects must lead with a real timestamp;
-   `ListIssues` picks its leading key from the scope for this reason, keeping
-   the index scan on the single-project path.
+   predicate shape, not an idealized one, and keep the tiebreak's direction
+   matching any index you rely on — `ListSavedQueries` does, so that
+   `order_by: update_time desc` still reads
+   `idx_saved_query_creator_updated_at_resource_id` in order. Then decide
+   deliberately: widen the index with a migration, or accept the cost and say
+   so. Accepted here: `SearchAuditLogs` costs ~16 ms more per 5000-row export
+   page because `resource_id` falls outside
+   `idx_audit_log_workspace_created_at`; judged not worth a migration.
 
 ### What is and is not enforced
 

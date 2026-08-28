@@ -175,20 +175,21 @@ func (s *Store) ListSavedQueries(ctx context.Context, find *FindSavedQueryMessag
 		q.And("saved_query.resource_id = ?", *v)
 	}
 
-	// Default title order; List overrides via order_by. Titles are not unique;
-	// resource_id is the primary key and makes the ordering total. Note the
-	// access clause above puts creator in a disjunction rather than pinning it,
-	// so idx_saved_query_creator_updated_at_resource_id cannot order this query
-	// however the tiebreak is spelled — it sorts.
+	// Default title order; List overrides via order_by. The resource_id
+	// tiebreak keeps pages stable and follows the last key's direction so
+	// "update_time desc" matches the
+	// (creator, updated_at DESC, resource_id DESC) index exactly.
+	keys := find.OrderByKeys
+	if len(keys) == 0 {
+		keys = []*OrderByKey{{Key: "saved_query.name", SortOrder: ASC}}
+	}
 	orderBy := []string{}
-	for _, v := range find.OrderByKeys {
-		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder))
+	for _, v := range keys {
+		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
 	}
-	if len(orderBy) == 0 {
-		orderBy = append(orderBy, "saved_query.name ASC")
-	}
-	orderBy = append(orderBy, "saved_query.resource_id ASC")
-	q.Space("ORDER BY " + strings.Join(orderBy, ", "))
+	last := keys[len(keys)-1]
+	orderBy = append(orderBy, fmt.Sprintf("saved_query.resource_id %s", last.SortOrder.String()))
+	q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

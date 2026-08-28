@@ -20,11 +20,10 @@ import (
 // whose rows are deliberately tied on every sort key that is not a full primary
 // key, and asserts every issue is returned exactly once.
 //
-// Nothing checks this statically — see backend/store/AGENTS.md#pagination-ordering
-// for why the earlier AST guard was removed. Against the pre-fix ordering
-// (`ORDER BY issue.id DESC` alone) this fails — issue IDs restart per project,
-// so every id below is tied three ways and rows cross the page boundary between
-// reads.
+// Nothing checks this statically — see backend/store/AGENTS.md#pagination-ordering.
+// Against the pre-fix ordering (`ORDER BY issue.id DESC` alone) this fails:
+// issue IDs restart per project, so every id below is tied three ways and rows
+// cross the page boundary between reads.
 func TestPaginationStabilityAcrossProjects(t *testing.T) {
 	const (
 		workspaceID  = "pagination-ws"

@@ -76,19 +76,10 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 	if !find.ShowDeleted {
 		q.And("deleted_at IS NULL")
 	}
-	// version is unique per (instance, db_name, type) and only while
-	// deleted_at IS NULL. When the query pins all three and excludes deleted
-	// rows, version alone is already total, and naming it as its own tiebreak
-	// keeps the clause a single column so the ordered scan on
-	// idx_revision_instance_db_name_type_version survives. Any looser query
-	// needs the primary key.
-	if find.DatabaseName != nil && find.Type != nil && !find.ShowDeleted {
-		// version is already unique under this scope; a second column would
-		// only cost the ordered index scan.
-		q.Space("ORDER BY revision.version DESC")
-	} else {
-		q.Space("ORDER BY revision.version DESC, revision.resource_id DESC")
-	}
+	// version is unique only per (instance, db_name, type) and only while
+	// deleted_at IS NULL, so it does not identify a row on its own — least of
+	// all under ShowDeleted. resource_id is the primary key.
+	q.Space("ORDER BY revision.version DESC, revision.resource_id DESC")
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

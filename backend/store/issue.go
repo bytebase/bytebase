@@ -321,8 +321,8 @@ func updateIssue(ctx context.Context, executor issueUpdateExecutor, projectID st
 // ListIssues returns the list of issues by find query.
 func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*IssueMessage, error) {
 	// Relevance ranking is derived from the query text rather than requested by
-	// the caller, so it is tracked apart from find.OrderByKeys and leads them.
-	// Set when the caller supplied query text that produced a tsquery.
+	// the caller, so it is tracked apart from find.OrderByKeys. Set when the
+	// caller supplied query text that produced a tsquery.
 	var rankOrder string
 	from := qb.Q().Space("issue")
 	where := qb.Q()
@@ -400,24 +400,21 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		where.And("COALESCE(issue.payload->>'draft', 'false') = 'false'")
 	}
 
-	// An explicit order_by leads; relevance falls in behind it, because ts_rank
-	// is a float that virtually never ties and would otherwise leave the
-	// caller's keys unreachable. issue.id trails as the second half of the
-	// (project, id) primary key and issue.project completes it.
+	// issue.id alone is not unique across projects — nextProjectID floors every
+	// project's first issue at 101 — so issue.project completes the
+	// (project, id) primary key and makes the ordering total.
 	//
-	// Exactly one project ID emits `issue.project = ?`, pinning the column to a
-	// constant, so id is both exact recency and an ordered issue_pkey scan.
-	// Anything wider spans projects, where id is a per-project counter and means
-	// nothing, so created_at leads instead.
+	// Which key leads is unchanged: relevance ranking still replaces the
+	// caller's order_by outright, and issue.id is still a per-project counter
+	// rather than a recency ordering across projects. Both are real problems,
+	// and both are separate ones.
 	orderBy := []string{}
-	for _, v := range find.OrderByKeys {
-		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder))
-	}
 	if rankOrder != "" {
 		orderBy = append(orderBy, rankOrder)
-	}
-	if len(find.ProjectIDs) != 1 {
-		orderBy = append(orderBy, "issue.created_at DESC")
+	} else {
+		for _, v := range find.OrderByKeys {
+			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder))
+		}
 	}
 	orderBy = append(orderBy, "issue.id DESC", "issue.project DESC")
 	orderByClause := "ORDER BY " + strings.Join(orderBy, ", ")
