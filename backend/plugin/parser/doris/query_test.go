@@ -196,6 +196,16 @@ func TestValidateQuery(t *testing.T) {
 			valid:       true,
 			description: "Set operation with parenthesized operand and trailing LIMIT is read-only",
 		},
+		{
+			statement:   "EXPLAIN (SELECT 1)",
+			valid:       true,
+			description: "EXPLAIN over a parenthesized query is read-only",
+		},
+		{
+			statement:   "EXPLAIN (SELECT 1 LIMIT 1) LIMIT 2",
+			valid:       true,
+			description: "EXPLAIN over a grouped query is read-only",
+		},
 	}
 
 	for _, tc := range tests {
