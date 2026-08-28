@@ -296,8 +296,11 @@ tooltip.
 - Staleness: `HumanizeTs` evaluates `Date.now()` only during render, so a long-mounted page shows
   "5 minutes ago" indefinitely and a row can sit on the wrong side of the 30-day cutoff until an
   unrelated render. With buckets formalized, the component subscribes to one shared module-level
-  coarse clock (~30–60s tick); a subscriber re-renders only when its formatted output actually
-  changes. This matches GitHub's `relative-time` element, which schedules its own updates.
+  clock with adaptive cadence: second-level ticks while any subscriber's label still changes at
+  sub-minute granularity (the "now" and seconds buckets), dropping to a coarse ~30–60s tick once
+  every subscriber is in minute-or-older buckets; a subscriber re-renders only when its formatted
+  output actually changes. This matches GitHub's `relative-time` element, which schedules its own
+  updates at the next boundary.
   Absolute modes (compact/datetime/operational) never change with time and skip the subscription.
 - Tests: update `HumanizeTs.test.tsx` for the switch; sweep the `*.test.tsx` files that assert
   relative strings (`PlanDetailMeta.test.tsx`, `SchemaPane.test.tsx`,
