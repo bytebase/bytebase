@@ -131,7 +131,7 @@ Every current `HumanizeTs` call site, classified under the principle:
 |---|---|---|---|
 | Issue list | `components/IssueTable.tsx` | Work queue | 30d switch |
 | Plan list | `routes/project/ProjectPlanDashboardPage.tsx` | Work queue | 30d switch |
-| Release list / detail meta | `routes/project/ProjectReleaseDashboardPage.tsx`, `ProjectReleaseDetailPage.tsx` | Work queue / meta | 30d switch |
+| Release list / detail meta | `routes/project/ProjectReleaseDashboardPage.tsx`, `ProjectReleaseDetailPage.tsx`, `components/release/ReleaseInfoCard.tsx` (fixed string today — adopts `HumanizeTs`) | Work queue / meta | 30d switch |
 | Issue comments & activity | `components/issue-activity/IssueCommentActivity.tsx`, `routes/project/issue-detail/components/IssueDetailCommentList.tsx` | Feed | 30d switch |
 | Review timeline / rejection banner | `routes/project/plan-detail/components/review/ReviewActivityTimeline.tsx`, `ReviewRejectionBanner.tsx` | Feed | 30d switch |
 | Plan detail "created" | `routes/project/plan-detail/components/PlanDetailMeta.tsx` | Meta | 30d switch |
@@ -181,7 +181,9 @@ For reference, absolute timestamps already appear in the product in three incons
    scheduled-time messages, SQL editor result panel, Monaco heartbeat, agent chat tooltip.
 2. **Fixed dayjs strings** — time but no timezone, not locale-aware: masking exemption
    (`YYYY-MM-DD HH:mm`), role-grant details (`LLL`), SQL editor query-history rows and tab titles
-   (`YYYY-MM-DD HH:mm:ss` via `titleOfQueryHistory` in `HistoryPane.tsx`).
+   (`YYYY-MM-DD HH:mm:ss` — `titleOfQueryHistory` in `HistoryPane.tsx`, plus an independently
+   built deep-link tab title in `SQLEditorRouteShell.tsx`), and embedded release metadata
+   (`components/release/ReleaseInfoCard.tsx`, `YYYY-MM-DD HH:mm:ss`).
 3. **Ad-hoc `toLocaleDateString`** with hour/minute — no seconds, no timezone: the members-page
    expiration preview.
 
@@ -251,7 +253,9 @@ tooltip.
   `formatCompactDateTime` helper in `datetime.ts` — date + hh:mm, locale-aware). One canonical
   component, modes matching the principle one-to-one; the audit log can keep its direct call.
   `titleOfQueryHistory` in `HistoryPane.tsx` splits: the row display adopts the compact mode with
-  its D6 tooltip, while the tab title — a plain-string context — keeps a full-precision string.
+  its D6 tooltip, while both tab-title paths — `titleOfQueryHistory` and the independently built
+  deep-link title in `SQLEditorRouteShell.tsx` — keep a full-precision string (plain-string
+  corollary). `ReleaseInfoCard.tsx` swaps its fixed string for `HumanizeTs` (queue mode).
 - Operational times render through the shared component, never as bare strings: `HumanizeTs` gains
   `mode="operational"` (`formatOperationalDateTime` in the cell, D6 tooltip carrying the full
   enforced value with seconds). The scheduled pill in `DeployTaskHeader.tsx` switches mode rather
