@@ -160,7 +160,8 @@ Where operational times are displayed today:
 | Surface | File | Today | Gap |
 |---|---|---|---|
 | Scheduled rollout pill | `routes/project/plan-detail/components/deploy/DeployTaskHeader.tsx` (task pinned to a run time) | `HumanizeTs` — relative ("in 7 hours"), tz only in tooltip | **The BYT-10023 display gap**: the one surface showing when a rollout will fire hides the timezone question entirely |
-| Task-run waiting message | `frontend/src/lib/taskRun.ts` ("enqueued, will run at …") | `formatAbsoluteDateTime` | None — already absolute + tz (seconds drop under D5's minute precision) |
+| Task-run waiting message | `frontend/src/lib/taskRun.ts` ("enqueued, will run at …") | `formatAbsoluteDateTime` interpolated into a plain i18n string | None — a plain-string context cannot host a tooltip, so it keeps the full-precision form (invariant corollary below); seconds do **not** drop here |
+| SQL-editor access grant item, <24h remaining | `modules/sql-editor/components/AccessGrantItem.tsx` | Duration only ("expires in 3h20m"); the absolute value is discarded, no tooltip | Relative-only operational display — needs the D6 tooltip carrying the full absolute + timezone |
 | Masking exemption expiration | `routes/project/ProjectMaskingExemptionPage.tsx` | dayjs `YYYY-MM-DD HH:mm` | No timezone, no seconds, not locale-aware |
 | Role-grant expiration detail | `routes/project/issue-detail/components/IssueDetailRoleGrantDetails.tsx` | dayjs `LLL` | No timezone |
 | Member expiration preview | `routes/workspace/MembersPage.tsx` (`formatExpirationDate`) | `toLocaleDateString` + hour/minute | No timezone, no seconds |
@@ -254,6 +255,10 @@ tooltip.
   and the six already-absolute ones adopt the same mode (open item 4), which is what makes the
   sub-minute preset tails recoverable. **Invariant: a reduced timestamp without a full-precision
   tooltip is a bug** — bare formatter calls are reserved for full-precision strings and exports.
+  Corollary: a plain-string context that cannot host a tooltip — the i18n-interpolated task-run
+  waiting message, exports, document titles — must embed the full-precision string, never the
+  reduced one. The SQL-editor access grant item's <24h branch ("expires in 3h20m") is a relative
+  operational display and adopts the same tooltip treatment as the pill.
 - Tests: update `HumanizeTs.test.tsx` for the switch; sweep the `*.test.tsx` files that assert
   relative strings (`PlanDetailMeta.test.tsx`, `SchemaPane.test.tsx`,
   `DeployTaskRunHistorySheet.test.tsx`, `IssueCommentActivity.test.tsx`,
