@@ -282,17 +282,3 @@ func TestPreflightWorkspaceProfileSaaSRestrictedPaths(t *testing.T) {
 		require.NoError(t, err, path)
 	}
 }
-
-// TestAlwaysPresentSettingsHaveAZeroValue pins the two halves of the
-// always-present rule against each other. ListSettings walks the slice to
-// synthesize absent rows; Get and Update key on emptySetting returning
-// non-nil. A name in one and not the other is a setting that lists but cannot
-// be read, or reads but cannot be patched.
-func TestAlwaysPresentSettingsHaveAZeroValue(t *testing.T) {
-	for _, name := range alwaysPresentSettings {
-		require.NotNil(t, emptySetting(name, "ws"), "%v is listed as always present", name)
-		require.True(t, settingIsAlwaysPresent(name))
-	}
-	require.False(t, settingIsAlwaysPresent(storepb.SettingName_WORKSPACE_PROFILE),
-		"a setting whose row always exists must keep 404 for a genuinely missing one")
-}

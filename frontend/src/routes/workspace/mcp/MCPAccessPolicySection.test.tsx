@@ -20,7 +20,6 @@ const mocks = vi.hoisted(() => ({
       | {
           capability: number;
           ignoreMaskingExemptions: boolean;
-          capabilityUnreadable?: boolean;
         }
       | undefined,
   },
@@ -126,7 +125,6 @@ beforeEach(async () => {
   mocks.mcpSetting.value = {
     capability: 3, // READ_ONLY
     ignoreMaskingExemptions: false,
-    capabilityUnreadable: false,
   };
   mocks.upsertSetting.mockResolvedValue(undefined);
   mocks.hasFeature.mockReturnValue(true);
@@ -188,6 +186,46 @@ describe("MCPAccessPolicySection", () => {
       "settings.mcp.policy.read-failed.title"
     );
     expect(container.textContent).not.toContain("settings.mcp.policy.in-force");
+    unmount();
+  });
+
+  test("repairs an unspecified capability without a frontend fallback", async () => {
+    mocks.mcpSetting.value = {
+      capability: 0,
+      ignoreMaskingExemptions: false,
+    };
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+
+    expect(container.textContent).toContain(
+      "settings.mcp.policy.unreadable.title"
+    );
+    expect(container.textContent).not.toContain("settings.mcp.policy.in-force");
+
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+    expect(container.textContent).toContain(
+      "settings.mcp.policy.unreadable.pick"
+    );
+
+    clickText(container, "settings.mcp.policy.mode.read-write.title");
+    await flush();
+    clickText(container, "settings.mcp.policy.save");
+    await flush();
+
+    expect(mocks.upsertSetting).toHaveBeenCalledWith(
+      expect.objectContaining({
+        updateMask: expect.objectContaining({
+          paths: ["value.mcp.capability"],
+        }),
+      })
+    );
+    const request = mocks.upsertSetting.mock.calls.at(-1)?.[0];
+    expect(request.value.value.value.capability).toBe(4);
+
     unmount();
   });
 

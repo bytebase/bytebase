@@ -78,7 +78,7 @@ func TestUpdateSettingAtomicInterleaving(t *testing.T) {
 	firstResult := make(chan error, 1)
 	go func() {
 		_, err := s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE,
-			func(current proto.Message, _ []byte) (proto.Message, error) {
+			func(current proto.Message) (proto.Message, error) {
 				profile, ok := current.(*storepb.WorkspaceProfileSetting)
 				if !ok {
 					return nil, errors.Errorf("unexpected type %T", current)
@@ -100,7 +100,7 @@ func TestUpdateSettingAtomicInterleaving(t *testing.T) {
 	secondResult := make(chan error, 1)
 	go func() {
 		_, err := s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE,
-			func(current proto.Message, _ []byte) (proto.Message, error) {
+			func(current proto.Message) (proto.Message, error) {
 				profile, ok := current.(*storepb.WorkspaceProfileSetting)
 				if !ok {
 					return nil, errors.Errorf("unexpected type %T", current)
@@ -165,7 +165,7 @@ func TestUpdateSettingAtomicApplyAbort(t *testing.T) {
 
 	sentinel := errors.New("validation failed")
 	_, err := s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE,
-		func(current proto.Message, _ []byte) (proto.Message, error) {
+		func(current proto.Message) (proto.Message, error) {
 			profile, ok := current.(*storepb.WorkspaceProfileSetting)
 			if !ok {
 				return nil, errors.Errorf("unexpected type %T", current)
@@ -191,7 +191,7 @@ func TestUpdateSettingAtomicMissingRow(t *testing.T) {
 	ctx, _, s := newSettingAtomicFixture(t)
 
 	_, err := s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_AI,
-		func(current proto.Message, _ []byte) (proto.Message, error) {
+		func(current proto.Message) (proto.Message, error) {
 			return current, nil
 		}, nil)
 	require.Error(t, err)
@@ -241,7 +241,7 @@ func TestUpdateSettingAtomicPublishOrder(t *testing.T) {
 	firstResult := make(chan error, 1)
 	go func() {
 		_, err := s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE,
-			func(current proto.Message, _ []byte) (proto.Message, error) {
+			func(current proto.Message) (proto.Message, error) {
 				profile, ok := current.(*storepb.WorkspaceProfileSetting)
 				if !ok {
 					return nil, errors.Errorf("unexpected type %T", current)
@@ -261,7 +261,7 @@ func TestUpdateSettingAtomicPublishOrder(t *testing.T) {
 	secondResult := make(chan error, 1)
 	go func() {
 		_, err := s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE,
-			func(current proto.Message, _ []byte) (proto.Message, error) {
+			func(current proto.Message) (proto.Message, error) {
 				profile, ok := current.(*storepb.WorkspaceProfileSetting)
 				if !ok {
 					return nil, errors.Errorf("unexpected type %T", current)
@@ -373,7 +373,7 @@ func TestGetSettingCacheDisabledNotSerialized(t *testing.T) {
 	writerResult := make(chan error, 1)
 	go func() {
 		_, err := s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE,
-			func(current proto.Message, _ []byte) (proto.Message, error) {
+			func(current proto.Message) (proto.Message, error) {
 				profile, ok := current.(*storepb.WorkspaceProfileSetting)
 				if !ok {
 					return nil, errors.Errorf("unexpected type %T", current)
@@ -436,7 +436,7 @@ func TestUpdateSettingAtomicPublishSurvivesCancellation(t *testing.T) {
 
 	var observed *storepb.WorkspaceProfileSetting
 	_, err := s.UpdateSettingAtomic(updateCtx, "default", storepb.SettingName_WORKSPACE_PROFILE,
-		func(current proto.Message, _ []byte) (proto.Message, error) {
+		func(current proto.Message) (proto.Message, error) {
 			profile, ok := current.(*storepb.WorkspaceProfileSetting)
 			if !ok {
 				return nil, errors.Errorf("unexpected type %T", current)
@@ -536,7 +536,7 @@ func TestUpdateSettingAtomicRefusesAnUnparsedRow(t *testing.T) {
 
 	applied := false
 	_, err = s.UpdateSettingAtomic(ctx, "default", storepb.SettingName_WORKSPACE_PROFILE,
-		func(current proto.Message, _ []byte) (proto.Message, error) {
+		func(current proto.Message) (proto.Message, error) {
 			applied = true
 			return current, nil
 		}, nil)

@@ -57,10 +57,17 @@ func TestCreateWorkspaceInitializesDefaults(t *testing.T) {
 		storepb.SettingName_WORKSPACE_APPROVAL,
 		storepb.SettingName_WORKSPACE_PROFILE,
 		storepb.SettingName_ENVIRONMENT,
+		storepb.SettingName_MCP,
 		storepb.SettingName_AI,
 	} {
 		require.Truef(t, slices.Contains(names, name), "missing setting %s", name)
 	}
+
+	mcpSetting, err := stores.GetSetting(ctx, workspaceID, storepb.SettingName_MCP)
+	require.NoError(t, err)
+	mcp, ok := mcpSetting.Value.(*storepb.MCPSetting)
+	require.True(t, ok)
+	require.Equal(t, storepb.MCPSetting_READ_ONLY, mcp.Capability)
 
 	environmentSetting, err := stores.GetSetting(ctx, workspaceID, storepb.SettingName_ENVIRONMENT)
 	require.NoError(t, err)

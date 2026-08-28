@@ -22,7 +22,7 @@ import (
 func (s *Server) refuseByCeiling(c *echo.Context, delegated auth.DelegatedMCPCredential) error {
 	ctx := c.Request().Context()
 	settings, err := s.store.GetMCPSettingsUncached(ctx, delegated.WorkspaceID)
-	verdict := auth.ClassifyMCPCeiling(settings.Capability, err)
+	verdict := auth.ClassifyMCPCeiling(settings, err)
 	if verdict == auth.MCPCeilingServes {
 		return nil
 	}

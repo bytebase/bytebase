@@ -149,8 +149,7 @@ message MCPInfo {
   // nothing to get it by.
   string workspace = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The ceiling in force for this workspace. A workspace that never configured
-  // MCP resolves to READ_WRITE.
+  // The ceiling in force for this workspace.
   MCPSetting.Capability capability = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // What each ceiling serves, including the one in force, so an admin can

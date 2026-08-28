@@ -51,7 +51,7 @@ type Server struct {
 type serverStore interface {
 	GetWorkspaceID(context.Context) (string, error)
 	GetWorkspaceProfileSetting(context.Context, string) (*storepb.WorkspaceProfileSetting, error)
-	GetMCPSettingsUncached(context.Context, string) (store.MCPSettings, error)
+	GetMCPSettingsUncached(context.Context, string) (*storepb.MCPSetting, error)
 	DeleteOAuth2RefreshTokensByUserAndClient(context.Context, string, string) error
 	// CreateAuditLog records the connection denials this package emits itself.
 	// They happen in echo middleware, outside both connect chains, so the audit

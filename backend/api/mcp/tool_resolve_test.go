@@ -91,9 +91,9 @@ func TestResolve_ProjectInstanceDatabaseAndFilter(t *testing.T) {
 }
 
 // TestResolve_PolicyDenialGetsNoRoleAdvice covers the resolve door. It answers
-// 403 only when the stored ceiling is unreadable or unserved, which is exactly
-// the case where telling the agent to ask for bb.databases.list would send the
-// person it acts for after a grant that cannot fix a broken setting.
+// 403 when the stored ceiling is unserved, which is exactly the case where
+// telling the agent to ask for bb.databases.list would send the person it acts
+// for after a grant that cannot fix a broken setting.
 func TestResolve_PolicyDenialGetsNoRoleAdvice(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if strings.Contains(r.URL.Path, "DatabaseService/ListDatabases") {
@@ -101,7 +101,7 @@ func TestResolve_PolicyDenialGetsNoRoleAdvice(t *testing.T) {
 			w.WriteHeader(http.StatusForbidden)
 			_ = json.NewEncoder(w).Encode(map[string]any{
 				"message": "/bytebase.v1.DatabaseService/ListDatabases is refused: this workspace's " +
-					"stored MCP capability ceiling is not one this build understands",
+					"stored MCP capability ceiling is not one this build serves",
 			})
 			return
 		}
@@ -114,7 +114,7 @@ func TestResolve_PolicyDenialGetsNoRoleAdvice(t *testing.T) {
 	var te *toolError
 	require.ErrorAs(t, err, &te)
 	require.Contains(t, te.Message, "MCP capability ceiling")
-	require.Empty(t, te.Suggestion, "no grant fixes a stored ceiling this build cannot read")
+	require.Empty(t, te.Suggestion, "no grant fixes a stored ceiling this build does not serve")
 }
 
 // TestTranslateMetadataError_PolicyDenialGetsNoRoleAdvice is the same contract

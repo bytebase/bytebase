@@ -81,7 +81,7 @@ ALTER SEQUENCE principal_id_seq RESTART WITH 101;
 -- Setting
 CREATE TABLE setting (
     -- name: SYSTEM, WORKSPACE_PROFILE, WORKSPACE_APPROVAL,
-    -- APP_IM, AI, DATA_CLASSIFICATION, SEMANTIC_TYPES, ENVIRONMENT
+    -- APP_IM, AI, DATA_CLASSIFICATION, SEMANTIC_TYPES, ENVIRONMENT, EMAIL, MCP
     -- Enum: SettingName (proto/store/store/setting.proto)
     name text NOT NULL,
     workspace text NOT NULL REFERENCES workspace(resource_id),

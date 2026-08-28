@@ -15,8 +15,8 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func maskingSettings(ignore bool) store.MCPSettings {
-	return store.MCPSettings{
+func maskingSettings(ignore bool) *storepb.MCPSetting {
+	return &storepb.MCPSetting{
 		Capability:              storepb.MCPSetting_READ_WRITE,
 		IgnoreMaskingExemptions: ignore,
 	}
