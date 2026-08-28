@@ -165,7 +165,7 @@ Where operational times are displayed today:
 | SQL-editor access grant item, <24h remaining | `modules/sql-editor/components/AccessGrantItem.tsx` | Duration only ("expires in 3h20m"); the absolute value is discarded, no tooltip | Relative-only operational display — needs the D6 tooltip carrying the full absolute + timezone |
 | Masking exemption expiration | `routes/project/ProjectMaskingExemptionPage.tsx` | dayjs `YYYY-MM-DD HH:mm` | No timezone, no seconds, not locale-aware |
 | Role-grant expiration detail | `routes/project/issue-detail/components/IssueDetailRoleGrantDetails.tsx` | dayjs `LLL` | No timezone |
-| Member expiration preview | `routes/workspace/MembersPage.tsx` (`formatExpirationDate`) | `toLocaleDateString` + hour/minute | No timezone, no seconds |
+| Member expiration preview | `routes/workspace/MembersPage.tsx` (`formatExpirationDate`) | `toLocaleDateString` + hour/minute, interpolated into `t("project.members.expires-at", …)` | No timezone, no seconds — and a plain-string context: gets the full-precision string per the corollary (a `Trans`-slot refactor is the alternative if minute display is wanted) |
 | Member expiration table, access grants, IAM remind dialog, sample expiration, subscription expiry | `MembersPage.tsx`, `ProjectAccessGrantsPage.tsx`, `utils/accessGrant.ts`, `IAMRemindDialog.tsx`, `SampleExpirationAlert.tsx`, `stores/app/workspace.ts` | `formatAbsoluteDateTime` | None today. Under D5, the JSX-rendered sites adopt the operational mode; the string-interpolated ones (subscription banner via `BannersWrapper.tsx`, `SampleExpirationAlert.tsx`) keep full precision — plain-string corollary |
 
 Fixes under D5: the scheduled pill and the three bare-format expirations converge on the
@@ -236,6 +236,12 @@ their list views render relative. D4 makes each list agree with its own detail v
 - **Compact** = date + hh:mm, locale-aware: "Aug 26, 2026, 2:03 PM" / zh "2026年8月26日 14:03"
   (~21 characters). Seconds and timezone stay one hover away per D6.
 
+**Task-run log entries** (`components/task-run-log/model.ts::formatTime` — `HH:mm:ss.SSS`,
+embedded in changelog detail and task-run views) keep their time-only millisecond format: log
+lines are dense by design and the parent run header carries the full date. They are still reduced
+displays, so each entry gains the D6 tooltip with the full date-time — which also covers a run
+crossing midnight.
+
 **Operational times** (scheduled rollouts, expirations): a new `formatOperationalDateTime` helper
 in `datetime.ts` — date + hh:mm + short timezone, locale-aware: "Sep 15, 2026, 9:00 AM GMT+8" / zh
 "2026年9月15日 09:00 GMT+8". The timezone lives in the visible string — not only in the tooltip,
@@ -261,10 +267,12 @@ tooltip.
 - Operational times render through the shared component, never as bare strings: `HumanizeTs` gains
   `mode="operational"` (`formatOperationalDateTime` in the cell, D6 tooltip carrying the full
   enforced value with seconds). The scheduled pill in `DeployTaskHeader.tsx` switches mode rather
-  than dropping the component — its tooltip survives; the three bare-format expiration call sites
-  and, of the six already-absolute ones, the JSX-rendered sites adopt the same mode (open item 4),
-  which is what makes the sub-minute preset tails recoverable. The string-interpolated sites
-  (subscription banner, sample-expiration alert) keep the full-precision string per the corollary. **Invariant: a reduced timestamp without a full-precision
+  than dropping the component — its tooltip survives; of the three bare-format expiration call
+  sites, masking exemption and role-grant details adopt the same mode (open item 4), which is what
+  makes the sub-minute preset tails recoverable, while the member preset preview is itself
+  i18n-interpolated and keeps a full-precision string per the corollary. Of the six
+  already-absolute sites, the JSX-rendered ones adopt the mode; the string-interpolated ones
+  (subscription banner, sample-expiration alert) keep the full-precision string. **Invariant: a reduced timestamp without a full-precision
   tooltip is a bug** — bare formatter calls are reserved for full-precision strings and exports.
   Corollary: a plain-string context that cannot host a tooltip — the i18n-interpolated task-run
   waiting message, exports, document titles — must embed the full-precision string, never the
