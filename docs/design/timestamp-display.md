@@ -165,7 +165,7 @@ Where operational times are displayed today:
 | Masking exemption expiration | `routes/project/ProjectMaskingExemptionPage.tsx` | dayjs `YYYY-MM-DD HH:mm` | No timezone, no seconds, not locale-aware |
 | Role-grant expiration detail | `routes/project/issue-detail/components/IssueDetailRoleGrantDetails.tsx` | dayjs `LLL` | No timezone |
 | Member expiration preview | `routes/workspace/MembersPage.tsx` (`formatExpirationDate`) | `toLocaleDateString` + hour/minute | No timezone, no seconds |
-| Member expiration table, access grants, IAM remind dialog, sample expiration, subscription expiry | `MembersPage.tsx`, `ProjectAccessGrantsPage.tsx`, `utils/accessGrant.ts`, `IAMRemindDialog.tsx`, `SampleExpirationAlert.tsx`, `stores/app/workspace.ts` | `formatAbsoluteDateTime` | None — already absolute + tz (seconds drop under D5's minute precision) |
+| Member expiration table, access grants, IAM remind dialog, sample expiration, subscription expiry | `MembersPage.tsx`, `ProjectAccessGrantsPage.tsx`, `utils/accessGrant.ts`, `IAMRemindDialog.tsx`, `SampleExpirationAlert.tsx`, `stores/app/workspace.ts` | `formatAbsoluteDateTime` | None today. Under D5, the JSX-rendered sites adopt the operational mode; the string-interpolated ones (subscription banner via `BannersWrapper.tsx`, `SampleExpirationAlert.tsx`) keep full precision — plain-string corollary |
 
 Fixes under D5: the scheduled pill and the three bare-format expirations converge on the
 operational format — absolute date-time + timezone at minute precision ("Sep 15, 2026, 9:00 AM
@@ -180,7 +180,8 @@ For reference, absolute timestamps already appear in the product in three incons
    expiration table, IAM remind dialog, sample-expiration alert, subscription expiry, task-run
    scheduled-time messages, SQL editor result panel, Monaco heartbeat, agent chat tooltip.
 2. **Fixed dayjs strings** — time but no timezone, not locale-aware: masking exemption
-   (`YYYY-MM-DD HH:mm`), role-grant details (`LLL`), SQL editor tab titles (`YYYY-MM-DD HH:mm:ss`).
+   (`YYYY-MM-DD HH:mm`), role-grant details (`LLL`), SQL editor query-history rows and tab titles
+   (`YYYY-MM-DD HH:mm:ss` via `titleOfQueryHistory` in `HistoryPane.tsx`).
 3. **Ad-hoc `toLocaleDateString`** with hour/minute — no seconds, no timezone: the members-page
    expiration preview.
 
@@ -224,6 +225,7 @@ their list views render relative. D4 makes each list agree with its own detail v
 | Database revision list | Full-width table | Compact |
 | Task-run history sheet | 704px sheet — the space-constrained case | Compact |
 | Issue-detail task-run table | Embedded table | Compact |
+| SQL editor query history rows (`HistoryPane.tsx`) | Narrow side-pane list; today a fixed non-locale `YYYY-MM-DD HH:mm:ss` | Compact |
 
 - **Full** = `formatAbsoluteDateTime`: "Aug 26, 2026, 2:03:22 PM GMT+8" / zh
   "2026年8月26日 14:03:22 GMT+8" (~30 characters).
@@ -248,12 +250,15 @@ tooltip.
   shared: `mode="datetime"` (full, existing `formatAbsoluteDateTime`) and `mode="compact"` (a new
   `formatCompactDateTime` helper in `datetime.ts` — date + hh:mm, locale-aware). One canonical
   component, modes matching the principle one-to-one; the audit log can keep its direct call.
+  `titleOfQueryHistory` in `HistoryPane.tsx` splits: the row display adopts the compact mode with
+  its D6 tooltip, while the tab title — a plain-string context — keeps a full-precision string.
 - Operational times render through the shared component, never as bare strings: `HumanizeTs` gains
   `mode="operational"` (`formatOperationalDateTime` in the cell, D6 tooltip carrying the full
   enforced value with seconds). The scheduled pill in `DeployTaskHeader.tsx` switches mode rather
   than dropping the component — its tooltip survives; the three bare-format expiration call sites
-  and the six already-absolute ones adopt the same mode (open item 4), which is what makes the
-  sub-minute preset tails recoverable. **Invariant: a reduced timestamp without a full-precision
+  and, of the six already-absolute ones, the JSX-rendered sites adopt the same mode (open item 4),
+  which is what makes the sub-minute preset tails recoverable. The string-interpolated sites
+  (subscription banner, sample-expiration alert) keep the full-precision string per the corollary. **Invariant: a reduced timestamp without a full-precision
   tooltip is a bug** — bare formatter calls are reserved for full-precision strings and exports.
   Corollary: a plain-string context that cannot host a tooltip — the i18n-interpolated task-run
   waiting message, exports, document titles — must embed the full-precision string, never the
