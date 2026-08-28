@@ -183,6 +183,67 @@ describe("Locale keys are sorted alphabetically", () => {
   }
 });
 
+const dig = (messages: LocaleMessageObject, path: string): string => {
+  let cur: string | LocaleMessageObject = messages;
+  for (const part of path.split(".")) {
+    expect(typeof cur, path).toBe("object");
+    cur = (cur as LocaleMessageObject)[part];
+  }
+  expect(typeof cur, path).toBe("string");
+  return cur as string;
+};
+
+// The workspace data-export setting's description quotes the "Request
+// export" button label verbatim so admins can connect the policy to the
+// affordance users see. Nothing else ties the two strings together, and
+// the label has a history of renames (#21081, #21200) — assert the quote
+// tracks the label in every locale. Scoped to these two keys on purpose:
+// a repo-wide grep would false-positive on prose that coincidentally
+// contains the label (e.g. ja role.project-viewer.description).
+describe("data-export description quotes the Request export label", () => {
+  for (const [locale, messages] of Object.entries(mergedLocalMessage)) {
+    test(locale, () => {
+      const label = dig(
+        messages as LocaleMessageObject,
+        "sql-editor.request-export"
+      );
+      const description = dig(
+        messages as LocaleMessageObject,
+        "settings.general.workspace.data-export.description"
+      );
+      expect(description).toContain(label);
+    });
+  }
+});
+
+// The Masking Exemptions FEATURE (admin-granted, resource-scoped policy on
+// the project's Masking Exemptions page) and the access-grant "unmask"
+// capability (user-requested, statement-bound) are different mechanisms.
+// zh once shipped the feature's name (脱敏豁免) on the capability's CTA,
+// sending users into the wrong mental model in the largest zh market —
+// lock the separation in every locale: the capability strings must never
+// reuse the feature's name.
+describe("unmask capability wording stays distinct from the Masking Exemptions feature", () => {
+  for (const [locale, messages] of Object.entries(mergedLocalMessage)) {
+    test(locale, () => {
+      const featureName = dig(
+        messages as LocaleMessageObject,
+        "project.masking-exemption.self"
+      );
+      for (const key of [
+        "sql-editor.request-unmask",
+        "sql-editor.grant-type-unmask",
+      ]) {
+        const value = dig(messages as LocaleMessageObject, key);
+        expect(
+          value.toLowerCase().includes(featureName.toLowerCase()),
+          `${locale} ${key} ("${value}") must not reuse the Masking Exemptions feature name ("${featureName}")`
+        ).toBe(false);
+      }
+    });
+  }
+});
+
 const compareMessages = (
   localA: LocaleMessageObject,
   localB: LocaleMessageObject

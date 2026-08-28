@@ -1,26 +1,26 @@
 // SQL Editor — access-grant flow (Batch 8, L-series + H1 CUJs).
 //
 // Covers:
-//   - L1 / L2 RequestQueryButton label switches to "Request access grant"
+//   - L1 / L2 RequestQueryButton label switches to "Request query"
 //     when project.allowJustInTimeAccess is on AND the missing
-//     permission is exactly bb.sql.select (the access-grant path).
+//     permissions consist only of bb.sql.select / bb.sql.info (the
+//     access-grant path).
 //   - L4 ACCESS pane shows the "Request access grant" CTA when JIT is enabled.
 //   - L5 AccessGrantRequestDrawer renders Databases / Statement / Unmask /
 //     Export / Expiration / Reason fields when opened from the pane
 //     (Unmask + Export capability sections added by PRs #20491/#20487).
 //   - L6 ACCESS gutter tab appears only while JIT is on.
+//   - L7 masked-cell popover explains WHY a cell is masked and, only
+//     while JIT is on, offers "Request unmask" → grant drawer with the
+//     Unmask capability pre-checked (Export not).
 //   - H1 Gutter tab count flips between 3 (no JIT) and 4 (with JIT).
 //
 // Deferred (out of this batch):
 //   - L3 full JIT Unmask flow — request → admin approve → re-run.
 //     Requires a multi-actor handoff (requestor user creates grant,
-//     admin user approves, requestor re-runs and sees unmasked data),
-//     plus seeded masked columns. Worth its own spec; punted to a
-//     later session.
-//   - L7 MaskingReasonPopover — requires the demo to ship a column
-//     with a non-empty maskingReason; the discovered Postgres project
-//     in this branch's demo does not have one out of the box. Will
-//     pair with L3 when masking-test data is set up.
+//     admin user approves, requestor re-runs and sees unmasked data).
+//     The masked-column fixture it needs now lives in this file's L7
+//     block — reuse it when picking L3 up.
 
 import {
   test,
@@ -169,9 +169,9 @@ test.describe("ACCESS gutter tab follows the project's allowJustInTimeAccess fla
 });
 
 // L1 / L2 — RequestQueryButton's `useJIT` is true when
-// project.allowJustInTimeAccess is on AND the missing permissions are
-// exactly bb.sql.select. The visible label switches from
-// "Request role" to "Request access grant" accordingly.
+// project.allowJustInTimeAccess is on AND the missing permissions
+// consist only of bb.sql.select / bb.sql.info. The visible label
+// switches from "Request role" to "Request query" accordingly.
 test.describe("RequestQueryButton label tracks the project's JIT flag", () => {
   test("with access grants off, running a forbidden SELECT shows the 'Request role' CTA", async () => {
     await setJIT(false);
@@ -181,15 +181,15 @@ test.describe("RequestQueryButton label tracks the project's JIT flag", () => {
     await expect(viewerEditor.requestRoleButton.first()).toBeVisible({
       timeout: 10_000,
     });
-    await expect(viewerEditor.requestAccessGrantButton).toHaveCount(0);
+    await expect(viewerEditor.requestQueryButton).toHaveCount(0);
   });
 
-  test("with access grants on, running a forbidden SELECT shows the 'Request access grant' CTA", async () => {
+  test("with access grants on, running a forbidden SELECT shows the 'Request query' CTA", async () => {
     await setJIT(true);
     await viewerEditor.runPreparedQuery("SELECT 1;");
     await viewerPage.waitForTimeout(800);
 
-    await expect(viewerEditor.requestAccessGrantButton.first()).toBeVisible({
+    await expect(viewerEditor.requestQueryButton.first()).toBeVisible({
       timeout: 10_000,
     });
     await expect(viewerEditor.requestRoleButton).toHaveCount(0);
@@ -285,6 +285,184 @@ test.describe("ACCESS pane Request-access-grant button opens the grant drawer", 
     // by an explicit Cancel — we use Escape which the Sheet honors.
     await viewerPage.keyboard.press("Escape");
     await viewerPage.waitForTimeout(300);
+  });
+});
+
+// L7 — a masked result column's header renders an EyeOff trigger; opening it
+// shows a popover explaining WHY the column is masked (semantic type, method),
+// and — only while the project allows access grants — a "Request unmask"
+// button that opens the grant drawer with the Unmask capability pre-checked
+// and Export unchecked (MaskingReasonPopover.tsx passes unmask={true} only).
+//
+// Runs as the ADMIN: the viewer user above lacks bb.sql.select, and L7 needs
+// the query to SUCCEED so masked cells render. Masking applies to admins too
+// (sql-editor-export.spec.ts asserts the mask marker on-screen as admin).
+// The masked column is seeded the same way as that spec's "Masking ↔ export
+// security" block: register a scoped full-mask semantic type, create a
+// throwaway schema via psql, and bind the column through the catalog —
+// all restored in afterAll. workers=1, so overwriting the shared
+// SEMANTIC_TYPES workspace setting cannot race the export spec.
+test.describe("L7 — masked-cell popover offers Request unmask", () => {
+  const SEMANTIC_TYPE_ID = "bb.unmask-l7-qa";
+  const SCHEMA = "qa_unmask_l7";
+  const TABLE = "secret";
+  const COLUMN = "email_addr";
+  // Unique full-mask substitution (not the default "******") so the cell
+  // provably carries OUR semantic type — see the export spec for why.
+  const MASK_MARKER = "QAL7MASKED";
+  const STATEMENT = `SELECT id, ${COLUMN} FROM ${SCHEMA}.${TABLE} ORDER BY id;`;
+
+  let adminEditor: SqlEditorPage;
+  let l7PgPort = "";
+  let originalSemanticTypes: unknown = null;
+
+  test.beforeAll(async () => {
+    adminEditor = new SqlEditorPage(adminPage, env.baseURL);
+    l7PgPort = await getInstancePgPort(env);
+
+    originalSemanticTypes =
+      (await env.api.getSetting("SEMANTIC_TYPES"))?.value ?? null;
+    await env.api.upsertSetting(
+      "SEMANTIC_TYPES",
+      {
+        semanticType: {
+          types: [
+            {
+              id: SEMANTIC_TYPE_ID,
+              title: "QA L7 Unmask",
+              description: "L7 masked-cell popover e2e",
+              algorithm: { fullMask: { substitution: MASK_MARKER } },
+            },
+          ],
+        },
+      },
+      "value.semantic_type",
+    );
+
+    execSql(env.databaseId, l7PgPort, `DROP SCHEMA IF EXISTS ${SCHEMA} CASCADE`);
+    execSql(env.databaseId, l7PgPort, `CREATE SCHEMA ${SCHEMA}`);
+    execSql(
+      env.databaseId,
+      l7PgPort,
+      `CREATE TABLE ${SCHEMA}.${TABLE} (id INT PRIMARY KEY, ${COLUMN} TEXT)`,
+    );
+    execSql(
+      env.databaseId,
+      l7PgPort,
+      `INSERT INTO ${SCHEMA}.${TABLE} VALUES (1, 'l7-plaintext-value')`,
+    );
+    await env.api.syncDatabase(env.database);
+    await env.api.updateCatalog(env.database, {
+      name: `${env.database}/catalog`,
+      schemas: [
+        {
+          name: SCHEMA,
+          tables: [
+            {
+              name: TABLE,
+              columns: {
+                columns: [{ name: COLUMN, semanticType: SEMANTIC_TYPE_ID }],
+              },
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  test.afterAll(async () => {
+    try {
+      execSql(
+        env.databaseId,
+        l7PgPort,
+        `DROP SCHEMA IF EXISTS ${SCHEMA} CASCADE`,
+      );
+      await env.api.syncDatabase(env.database);
+    } catch {
+      /* best-effort */
+    }
+    try {
+      await env.api.upsertSetting(
+        "SEMANTIC_TYPES",
+        originalSemanticTypes ?? { semanticType: { types: [] } },
+        "value.semantic_type",
+      );
+    } catch {
+      /* best-effort */
+    }
+  });
+
+  // Set the project's JIT flag, load the editor fresh (the per-tab project
+  // cache does not pick up API-side flag flips), run the statement, and
+  // open the masking-reason popover. The EyeOff trigger renders in the
+  // masked COLUMN's header (VirtualDataTable.tsx renders MaskingReasonPopover
+  // next to the column name; masking is column-scoped), and its own click
+  // handler stops propagation, so clicking it cannot toggle the adjacent
+  // sort control. Click (not hover) to open: click-open is sticky, so moving
+  // the pointer to the popover's button can't hover-close it on the way.
+  async function openMaskedCellPopover(jit: boolean): Promise<void> {
+    await env.api.updateProjectSettings(env.project, {
+      allowJustInTimeAccess: jit,
+    });
+    await adminEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
+    await adminPage.waitForTimeout(1500);
+    await adminEditor.runPreparedQuery(STATEMENT);
+
+    // The full mask replaces the value with OUR marker — masking is live.
+    await expect(
+      adminPage.getByText(MASK_MARKER).first(),
+      "the seeded semantic type must mask the cell",
+    ).toBeVisible({ timeout: 10_000 });
+    await expect(adminPage.getByText("l7-plaintext-value")).toHaveCount(0);
+
+    // Only the masked column's header renders the EyeOff popover trigger —
+    // the statement selects exactly one masked column, so .first() is it.
+    const trigger = adminPage.locator("svg.lucide-eye-off").first();
+    await expect(trigger).toBeVisible();
+    await trigger.click();
+    await expect(
+      adminPage.getByText("Why is this data masked?"),
+      "the masking-reason popover must open from the masked cell",
+    ).toBeVisible({ timeout: 5000 });
+  }
+
+  test("with JIT off, the popover explains the mask but offers no Request unmask", async () => {
+    await openMaskedCellPopover(false);
+
+    // The reason rows surface the seeded semantic type by title.
+    await expect(adminPage.getByText("QA L7 Unmask").first()).toBeVisible();
+    await expect(adminEditor.requestUnmaskButton).toHaveCount(0);
+
+    await adminPage.keyboard.press("Escape");
+    await adminPage.waitForTimeout(300);
+  });
+
+  test("with JIT on, Request unmask opens the grant drawer with Unmask pre-checked and Export not", async () => {
+    await openMaskedCellPopover(true);
+
+    await expect(adminEditor.requestUnmaskButton.first()).toBeVisible({
+      timeout: 5000,
+    });
+    await adminEditor.requestUnmaskButton.first().click();
+
+    const drawer = adminEditor.accessGrantDrawer;
+    await expect(drawer).toBeVisible({ timeout: 10_000 });
+    await expect(drawer.getByText(STATEMENT)).toBeVisible();
+
+    // The masked-cell entry point requests exactly the Unmask capability
+    // (MaskingReasonPopover passes unmask={true}; export stays opt-in —
+    // the mirror of RequestExportButton's export-only pre-fill, BYT-9654).
+    await expect(
+      drawer.getByRole("checkbox", { name: "See unmasked sensitive data" }),
+      "Unmask must be pre-checked from the masked-cell popover",
+    ).toBeChecked();
+    await expect(
+      drawer.getByRole("checkbox", { name: "Export the query result" }),
+      "Export must NOT be pre-checked from the masked-cell popover",
+    ).not.toBeChecked();
+
+    await adminPage.keyboard.press("Escape");
+    await adminPage.waitForTimeout(300);
   });
 });
 
