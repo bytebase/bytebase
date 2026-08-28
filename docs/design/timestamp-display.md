@@ -165,6 +165,7 @@ Where operational times are displayed today:
 | Scheduled rollout pill | `routes/project/plan-detail/components/deploy/DeployTaskHeader.tsx` (task pinned to a run time) | `HumanizeTs` — relative ("in 7 hours"), tz only in tooltip | **The BYT-10023 display gap**: the one surface showing when a rollout will fire hides the timezone question entirely |
 | Task-run waiting message | `frontend/src/lib/taskRun.ts` ("enqueued, will run at …") | `formatAbsoluteDateTime` interpolated into a plain i18n string | None — a plain-string context cannot host a tooltip, so it keeps the full-precision form (invariant corollary below); seconds do **not** drop here |
 | SQL-editor access grant item, <24h remaining | `modules/sql-editor/components/AccessGrantItem.tsx` | Duration only ("expires in 3h20m"); the absolute value is discarded, no tooltip | Relative-only operational display — needs the D6 tooltip carrying the full absolute + timezone |
+| Access-grant expiration, issue detail | `routes/project/issue-detail/components/IssueDetailAccessGrantDetails.tsx` (renders the helper's string in JSX) | `formatAbsoluteDateTime` via `getAccessGrantExpirationText` | None today. Under D5: JSX context — adopts the operational mode with its D6 tooltip |
 | Masking exemption expiration | `routes/project/ProjectMaskingExemptionPage.tsx` | dayjs `YYYY-MM-DD HH:mm` | No timezone, no seconds, not locale-aware |
 | Role-grant expiration detail | `routes/project/issue-detail/components/IssueDetailRoleGrantDetails.tsx` | dayjs `LLL` | No timezone |
 | Member expiration preview | `routes/workspace/MembersPage.tsx` (`formatExpirationDate`) | `toLocaleDateString` + hour/minute, interpolated into `t("project.members.expires-at", …)` | No timezone, no seconds — and a plain-string context: gets the full-precision string per the corollary (a `Trans`-slot refactor is the alternative if minute display is wanted) |
@@ -275,7 +276,11 @@ tooltip.
   makes the sub-minute preset tails recoverable, while the member preset preview is itself
   i18n-interpolated and keeps a full-precision string per the corollary. Of the six
   already-absolute sites, the JSX-rendered ones adopt the mode; the string-interpolated ones
-  (subscription banner, sample-expiration alert) keep the full-precision string. **Invariant: a reduced timestamp without a full-precision
+  (subscription banner, sample-expiration alert) keep the full-precision string.
+  `getAccessGrantExpirationText` itself stays a full-precision string builder — its output also
+  lands in string concatenations — while its JSX consumers (`AccessGrantItem.tsx`,
+  `ProjectAccessGrantsPage.tsx`, `IssueDetailAccessGrantDetails.tsx`) render the shared component
+  in operational mode instead of the helper's string. **Invariant: a reduced timestamp without a full-precision
   tooltip is a bug** — bare formatter calls are reserved for full-precision strings and exports.
   Corollary: a plain-string context that cannot host a tooltip — the i18n-interpolated task-run
   waiting message, exports, document titles — must embed the full-precision string, never the
