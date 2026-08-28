@@ -203,18 +203,19 @@ test.describe("Connection panel Database Group tab (C8/C9)", () => {
     await sqlEditor.runPreparedQuery("SELECT 1 AS n;");
 
     // BatchQuerySelect rendering signal: the "Batch export" button is
-    // present alongside one button per queried database. The DB tabs
-    // are plain <button name="hr_prod"> elements (the breadcrumb's
-    // button is "Prod Prod Sample Instance hr_prod", so exact match
-    // disambiguates).
+    // present alongside one result tab per queried database. Each tab's
+    // accessible name is the full "<instance> / <env> <db>" path (e.g.
+    // "Sample Project Instance / Prod hr_prod"), so anchor on the database
+    // name at the END of the name — the breadcrumb's connection button also
+    // contains "hr_prod" but is not a result tab and does not end with it.
     await expect(
       page.getByRole("button", { name: /Batch export/i }).first(),
     ).toBeVisible({ timeout: 15_000 });
     await expect(
-      page.getByRole("button", { name: "hr_prod", exact: true }).first(),
+      page.getByRole("button", { name: /\bhr_prod$/ }).first(),
     ).toBeVisible({ timeout: 5_000 });
     await expect(
-      page.getByRole("button", { name: "hr_test", exact: true }).first(),
+      page.getByRole("button", { name: /\bhr_test$/ }).first(),
     ).toBeVisible({ timeout: 5_000 });
   });
 

@@ -128,6 +128,10 @@ async function expectBackRestored({
 }
 
 test.beforeAll(async ({ browser }) => {
+  // The file-level test.setTimeout does not cover hooks: beforeAll runs under
+  // Playwright's 30s default, which cannot fit ISSUE_COUNT UI create+submit
+  // cycles (each submit waits for the real "Ready for Review" advance).
+  test.setTimeout(240_000);
   env = loadTestEnv();
   await env.api.login(env.adminEmail, env.adminPassword);
   const projectId = env.project.split("/").pop()!;

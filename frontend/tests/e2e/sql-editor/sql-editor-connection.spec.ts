@@ -271,8 +271,13 @@ test.describe("SQL Editor entry from the database page connects the tab (BYT-961
 
     const projectId = env.project.split("/").pop()!;
     // Database detail page (cold load — do NOT visit /sql-editor first).
+    // Navigate exactly as the product links to it (autoDatabaseRoute): the
+    // `parent` query carries the project-parented instance name. Without it the
+    // page falls back to the legacy `instances/<id>` parent, GetDatabase 404s,
+    // and the route bounces to the landing page.
+    const parent = env.database.replace(/\/databases\/[^/]+$/, "");
     await dbPage.goto(
-      `${env.baseURL}/projects/${projectId}/instances/${env.instanceId}/databases/${env.databaseId}`,
+      `${env.baseURL}/projects/${projectId}/instances/${env.instanceId}/databases/${env.databaseId}?parent=${encodeURIComponent(parent)}`,
     );
     await dbPage.keyboard.press("Escape").catch(() => {});
     await dbPage.waitForTimeout(1500);

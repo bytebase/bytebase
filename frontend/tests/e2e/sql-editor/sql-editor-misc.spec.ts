@@ -6,8 +6,8 @@
 //     localStorage-persisted tab).
 //   - H4 Clicking the gutter tabs switches the visible aside panel
 //     (SavedQuery ↔ Schema ↔ History).
-//   - H5 The SQL editor's gutter logo opens in a new tab
-//     (target=_blank + rel=noopener noreferrer) — GutterBar.tsx:49.
+//   - H5 The SQL editor header logo renders as a plain image (no link) —
+//     SQLEditorHeader.tsx mounts <BytebaseLogo> without `redirect`.
 //   - O1 The QueryContextSettingPopover trigger ("(limit N)") is hidden
 //     in admin mode — EditorAction.tsx:171 wraps it in a `!isAdminMode`
 //     block.
@@ -110,24 +110,21 @@ test.describe("Gutter tab switching (H4)", () => {
   });
 });
 
-test.describe("Header logo links to the workspace landing (H5)", () => {
-  test("logo is an in-app link to the landing page, not a new-tab external anchor", async () => {
+test.describe("Header logo renders as a plain image (H5)", () => {
+  test("the SQL editor header shows the Bytebase logo and it is not a navigation link", async () => {
     const projectId = env.project.split("/").pop()!;
     await sqlEditor.gotoWithDb(projectId, env.instanceId, env.databaseId);
 
-    // The route-ownership refactor moved the logo into the shared SQL Editor
-    // header (SQLEditorHeader → BytebaseLogo) and made it an in-app RouterLink
-    // to the workspace landing route — no longer an external new-tab anchor.
-    // It's the only <img alt="Bytebase"> on the page; walk up to its <a>.
-    const logoAnchor = page
-      .locator("a")
-      .filter({ has: page.locator('img[alt="Bytebase"]') })
-      .first();
-    await expect(logoAnchor).toBeVisible({ timeout: 10_000 });
-    // Internal SPA navigation: a relative href to the landing route, and NOT a
-    // new-tab link.
-    await expect(logoAnchor).toHaveAttribute("href", /\/landing/);
-    await expect(logoAnchor).not.toHaveAttribute("target", "_blank");
+    // The SQL editor header mounts <BytebaseLogo> WITHOUT the `redirect` prop
+    // (SQLEditorHeader.tsx), so the logo is a plain image — not a RouterLink to
+    // the landing page and not an external new-tab anchor. (Both earlier forms
+    // existed on prior mains; the current contract is "no link".) It is the
+    // only <img alt="Bytebase"> on the page.
+    const logo = page.locator('img[alt="Bytebase"]').first();
+    await expect(logo).toBeVisible({ timeout: 10_000 });
+    await expect(
+      page.locator("a").filter({ has: page.locator('img[alt="Bytebase"]') }),
+    ).toHaveCount(0);
   });
 });
 

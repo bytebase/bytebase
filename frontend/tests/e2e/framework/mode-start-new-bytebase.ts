@@ -307,10 +307,26 @@ export async function startServer(): Promise<{
 
 export function stopServer(): void {
   if (serverProcess?.pid) {
+    const pid = serverProcess.pid;
     try {
-      process.kill(-serverProcess.pid, "SIGTERM");
+      process.kill(-pid, "SIGTERM");
     } catch {
       /* already dead */
+    }
+    // Wait for the process group to actually exit before removing its data
+    // directory. Deleting it while the embedded Postgres is still shutting down
+    // makes the checkpointer PANIC ("could not fsync pg_xact/0000") and leaves
+    // the metadata-Postgres socket (/tmp/.s.PGSQL.<PORT+2>) behind, which then
+    // trips the next boot's port probe. Bounded so a wedged server can't block
+    // teardown forever.
+    const deadline = Date.now() + 15_000;
+    while (Date.now() < deadline) {
+      try {
+        process.kill(pid, 0); // throws once the process is gone
+      } catch {
+        break;
+      }
+      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 200);
     }
     serverProcess = undefined;
   }
