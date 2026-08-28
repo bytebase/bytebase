@@ -305,30 +305,35 @@ export async function startServer(): Promise<{
   };
 }
 
-export function stopServer(): void {
+export async function stopServer(): Promise<void> {
   if (serverProcess?.pid) {
-    const pid = serverProcess.pid;
-    try {
-      process.kill(-pid, "SIGTERM");
-    } catch {
-      /* already dead */
-    }
-    // Wait for the process group to actually exit before removing its data
+    const child = serverProcess;
+    serverProcess = undefined;
+    // Wait for the server to actually exit before removing its data
     // directory. Deleting it while the embedded Postgres is still shutting down
     // makes the checkpointer PANIC ("could not fsync pg_xact/0000") and leaves
     // the metadata-Postgres socket (/tmp/.s.PGSQL.<PORT+2>) behind, which then
-    // trips the next boot's port probe. Bounded so a wedged server can't block
-    // teardown forever.
-    const deadline = Date.now() + 15_000;
-    while (Date.now() < deadline) {
-      try {
-        process.kill(pid, 0); // throws once the process is gone
-      } catch {
-        break;
+    // trips the next boot's port probe. The wait must be asynchronous: Node
+    // reaps the child on the event loop, so a blocking poll of `kill(pid, 0)`
+    // would only ever see a zombie and run to its deadline. Bounded (a ref'd
+    // timer keeps the loop alive) so a wedged server can't block teardown.
+    await new Promise<void>((resolve) => {
+      if (child.exitCode !== null || child.signalCode !== null) {
+        resolve();
+        return;
       }
-      Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 200);
-    }
-    serverProcess = undefined;
+      const timer = setTimeout(resolve, 15_000);
+      child.once("exit", () => {
+        clearTimeout(timer);
+        resolve();
+      });
+      try {
+        process.kill(-child.pid!, "SIGTERM");
+      } catch {
+        clearTimeout(timer);
+        resolve(); // already dead
+      }
+    });
   }
   if (tempDir && fs.existsSync(tempDir)) {
     fs.rmSync(tempDir, { recursive: true, force: true });
