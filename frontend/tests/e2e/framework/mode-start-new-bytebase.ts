@@ -315,25 +315,36 @@ export async function stopServer(): Promise<void> {
     // the metadata-Postgres socket (/tmp/.s.PGSQL.<PORT+2>) behind, which then
     // trips the next boot's port probe. The wait must be asynchronous: Node
     // reaps the child on the event loop, so a blocking poll of `kill(pid, 0)`
-    // would only ever see a zombie and run to its deadline. Bounded (a ref'd
-    // timer keeps the loop alive) so a wedged server can't block teardown.
-    await new Promise<void>((resolve) => {
-      if (child.exitCode !== null || child.signalCode !== null) {
-        resolve();
-        return;
-      }
-      const timer = setTimeout(resolve, 15_000);
-      child.once("exit", () => {
-        clearTimeout(timer);
-        resolve();
+    // would only ever see a zombie and run to its deadline. Bounded (ref'd
+    // timers keep the loop alive): a server that ignores SIGTERM for 15 s is
+    // SIGKILLed as a group and given a short grace so the directory is never
+    // deleted under a live Postgres.
+    const exited = () => child.exitCode !== null || child.signalCode !== null;
+    const waitExit = (ms: number) =>
+      new Promise<void>((resolve) => {
+        if (exited()) {
+          resolve();
+          return;
+        }
+        const timer = setTimeout(resolve, ms);
+        child.once("exit", () => {
+          clearTimeout(timer);
+          resolve();
+        });
       });
+    const signalGroup = (signal: NodeJS.Signals) => {
       try {
-        process.kill(-child.pid!, "SIGTERM");
+        process.kill(-child.pid!, signal);
       } catch {
-        clearTimeout(timer);
-        resolve(); // already dead
+        /* already dead */
       }
-    });
+    };
+    signalGroup("SIGTERM");
+    await waitExit(15_000);
+    if (!exited()) {
+      signalGroup("SIGKILL");
+      await waitExit(5_000);
+    }
   }
   if (tempDir && fs.existsSync(tempDir)) {
     fs.rmSync(tempDir, { recursive: true, force: true });

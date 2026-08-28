@@ -41,8 +41,19 @@ export async function createDatabaseChangePlanViaUI(
   await page.goto(
     `${opts.baseURL}/projects/${opts.projectId}/plans/create/specs/placeholder?${q.toString()}`,
   );
-  await page.locator(".monaco-editor").first().click();
-  await page.keyboard.type(opts.sql);
+  // Enter the statement atomically: `keyboard.type` feeds Monaco one key at a
+  // time and drops keystrokes on a loaded worker (this suite has observed
+  // first-character loss), while Create only requires NON-EMPTY SQL — a damaged
+  // statement would still be created and fail later, far from its cause.
+  // `insertText` paints the whole string in one input event, and the editor is
+  // checked to show it before Create is pressed.
+  const editor = page.locator(".monaco-editor").first();
+  await editor.click();
+  await page.keyboard.insertText(opts.sql);
+  await expect(editor.locator(".view-lines")).toContainText(
+    opts.sql.split("\n")[0].trim(),
+    { timeout: 10_000 },
+  );
   const createBtn = page.getByRole("button", { name: "Create", exact: true });
   await expect(createBtn).toBeEnabled({ timeout: 15_000 });
   await createBtn.click();
