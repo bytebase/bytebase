@@ -11,11 +11,14 @@ schedule and expiration pickers) is explicitly out of scope for now.
 
 ## Problem
 
-Every timestamp outside the audit log renders through the shared `HumanizeTs` component
-(`frontend/src/components/HumanizeTs.tsx`), which is **relative-forever**: "45 seconds ago" → "12
+The product's canonical timestamp component, `HumanizeTs`
+(`frontend/src/components/HumanizeTs.tsx`), is **relative-forever**: "45 seconds ago" → "12
 minutes ago" → "7 hours ago" → "N days ago" with no upper cap. A year-old issue reads "365 days
-ago". The absolute time exists only in a hover tooltip, recoverable one row at a time. The audit
-log is the sole exception — it renders absolute date-time always.
+ago". The absolute time exists only in a hover tooltip, recoverable one row at a time. It backs
+the issue list, the plan list, and a dozen other surfaces. The rest of the product is a patchwork
+rather than a counter-model: the audit log and a few detail views render full absolute date-times,
+while several surfaces hand-roll fixed, non-locale strings — the inventories below map every call
+site.
 
 For someone reviewing historical tickets, relative wording past a certain age carries no usable
 information: it cannot be correlated with an incident window, a changelog entry, or an external
@@ -142,6 +145,7 @@ Every current `HumanizeTs` call site, classified under the principle:
 | Schema sync status | `modules/sql-editor/components/SchemaPane/SyncSchemaButton.tsx`, `routes/project/ProjectSyncSchemaPage.tsx`, `components/database/DatabaseOverviewInfo.tsx` | Freshness | 30d switch |
 | Agent chat | `modules/agent/components/AgentWindow.tsx` | Feed | 30d switch |
 | Plan-check run time | `components/plan-check/PlanCheckSection.tsx` (bare `toLocaleString()` today — adopts `HumanizeTs`) | Freshness | 30d switch |
+| Access-grant creation time | `routes/project/ProjectAccessGrantsPage.tsx` (`AccessGrantRow`; full absolute today — adopts `HumanizeTs`). Creation meta on a management roster; the grant's operational fact is its *expiration*, which stays operational mode | Work queue / meta | 30d switch |
 | **Database changelog** | `routes/project/database-detail/changelog/DatabaseChangelogTable.tsx` | **History view** | **Absolute always — compact tier (D7)** |
 | **Database revisions** | `routes/project/database-detail/revision/DatabaseRevisionTable.tsx` | **History view** | **Absolute always — compact tier (D7)** |
 | **Task-run history** | `routes/project/plan-detail/components/deploy/DeployTaskRunHistorySheet.tsx`, `routes/project/issue-detail/components/IssueDetailTaskRunTable.tsx` | **History view** | **Absolute always — compact tier (D7)** |
