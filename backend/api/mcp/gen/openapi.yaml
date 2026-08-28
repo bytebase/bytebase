@@ -15612,9 +15612,7 @@ components:
              nothing to get it by.
         capability:
           title: capability
-          description: |-
-            The ceiling in force for this workspace. Migration preserves the legacy
-             capability and workspace creation persists READ_ONLY.
+          description: The ceiling in force for this workspace.
           $ref: '#/components/schemas/bytebase.v1.MCPSetting.Capability'
         modes:
           type: array

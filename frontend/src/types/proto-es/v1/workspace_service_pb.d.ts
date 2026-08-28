@@ -50,8 +50,7 @@ export declare type MCPInfo = Message<"bytebase.v1.MCPInfo"> & {
   workspace: string;
 
   /**
-   * The ceiling in force for this workspace. Migration preserves the legacy
-   * capability and workspace creation persists READ_ONLY.
+   * The ceiling in force for this workspace.
    *
    * @generated from field: bytebase.v1.MCPSetting.Capability capability = 2;
    */

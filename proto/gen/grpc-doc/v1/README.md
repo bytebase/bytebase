@@ -12857,7 +12857,7 @@ cannot describe the rules of the build before it.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | workspace | [string](#string) |  | The workspace this describes. Format: workspaces/{workspace}. Not this message&#39;s own resource name — MCPInfo is not a named resource and there is nothing to get it by. |
-| capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  | The ceiling in force for this workspace. Migration preserves the legacy capability and workspace creation persists READ_ONLY. |
+| capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  | The ceiling in force for this workspace. |
 | modes | [MCPCapabilityMode](#bytebase-v1-MCPCapabilityMode) | repeated | What each ceiling serves, including the one in force, so an admin can compare the choices rather than only read the current answer. |
 | methods | [MCPMethod](#bytebase-v1-MCPMethod) | repeated | Every API method some ceiling serves. A mode serves a method when the method&#39;s class is one of that mode&#39;s served_classes, which is the ceiling rule the gate evaluates. Methods no ceiling serves are absent.
 
