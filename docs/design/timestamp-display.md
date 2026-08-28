@@ -139,6 +139,7 @@ Every current `HumanizeTs` call site, classified under the principle:
 | **Scheduled rollout pill** | `DeployTaskHeader.tsx` (task pinned to a run time) | **Operational** | **Absolute + timezone** |
 | Schema sync status | `modules/sql-editor/components/SchemaPane/SyncSchemaButton.tsx`, `routes/project/ProjectSyncSchemaPage.tsx`, `components/database/DatabaseOverviewInfo.tsx` | Freshness | 30d switch |
 | Agent chat | `modules/agent/components/AgentWindow.tsx` | Feed | 30d switch |
+| Plan-check run time | `components/plan-check/PlanCheckSection.tsx` (bare `toLocaleString()` today — adopts `HumanizeTs`) | Freshness | 30d switch |
 | **Database changelog** | `routes/project/database-detail/changelog/DatabaseChangelogTable.tsx` | **History view** | **Absolute always — compact tier (D7)** |
 | **Database revisions** | `routes/project/database-detail/revision/DatabaseRevisionTable.tsx` | **History view** | **Absolute always — compact tier (D7)** |
 | **Task-run history** | `routes/project/plan-detail/components/deploy/DeployTaskRunHistorySheet.tsx`, `routes/project/issue-detail/components/IssueDetailTaskRunTable.tsx` | **History view** | **Absolute always — compact tier (D7)** |
@@ -184,8 +185,9 @@ For reference, absolute timestamps already appear in the product in three incons
    (`YYYY-MM-DD HH:mm:ss` — `titleOfQueryHistory` in `HistoryPane.tsx`, plus an independently
    built deep-link tab title in `SQLEditorRouteShell.tsx`), and embedded release metadata
    (`components/release/ReleaseInfoCard.tsx`, `YYYY-MM-DD HH:mm:ss`).
-3. **Ad-hoc `toLocaleDateString`** with hour/minute — no seconds, no timezone: the members-page
-   expiration preview.
+3. **Ad-hoc `toLocale*`** — the members-page expiration preview (`toLocaleDateString` with
+   hour/minute — no seconds, no timezone) and the plan-check run time (bare `toLocaleString()` in
+   `PlanCheckSection.tsx` — locale default, no tooltip).
 
 Two half-built versions of this design already exist as dead code: the unused `humanizeTs()`
 30-day switch in `utils/util.ts`, and the never-passed `format="absolute"` branch of the date cell
@@ -280,6 +282,20 @@ tooltip.
 - Duration display (`humanizeDurationV1` — elapsed times like "4.2s" on task runs and query
   results). Durations are elapsed quantities, not timestamps: they carry no calendar, timezone, or
   precision question, so this design leaves them untouched.
+- Four further classes of date-formatting call sites are out of scope by kind, closing the
+  inventory — every `dayjs`/`Intl`/`toLocale*` call site under `frontend/src` now has a
+  disposition in this doc (a display class, a corollary context, or one of these):
+  - **SQL result cell values** (`utils/v1/sql.ts`): rendering of the database's own timestamp
+    data, with microsecond precision and stored offsets — data fidelity, never subject to UI
+    display tiers.
+  - **Generated content embedding times**: issue titles (`utils/v1/issue/issue.ts` — already
+    carries a UTC offset) and CEL request descriptions (`utils/issue/cel.ts`) are written into
+    resources at creation; reformatting them is a data change, not a display change.
+  - **Export/download filenames** (`DataExportButton.tsx`, SQL-editor result exports,
+    `SubscriptionPage.tsx`): filesystem-safe fixed format.
+  - **Picker value echoes and API wire strings**: `date-time-picker`, `TimeRangePicker`,
+    `expiration-picker` render the input's own value (deferred with the pickers);
+    `stores/app/issue.ts`/`plan.ts` and the audit-log filter emit ISO strings to the API.
 - Relative wording under 30 days.
 - No user or workspace preference (revisit only if a customer asks for the opposite default —
   GitLab's model is the known shape for that).
