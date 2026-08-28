@@ -1889,7 +1889,7 @@
       "confirm-delete-project": "Deleting \"{{name}}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone.",
       "issue-related": {
         "allow-access-grants": {
-          "description": "Allow project members to request time-boxed access grants for specific read-only statements.",
+          "description": "Allow project members to request time-boxed access grants for specific read-only statements. Grants can also cover exporting results and viewing unmasked data.",
           "self": "Allow access grants"
         },
         "allow-request-role": {
@@ -2376,7 +2376,10 @@
           "exiting": "Exiting..."
         },
         "data-copy": "Enable data copying",
-        "data-export": "Enable data export",
+        "data-export": {
+          "description": "When disabled, users cannot export query results directly. In projects that allow access grants, users can still click \"Request export\" to submit an access grant request and export after approval.",
+          "self": "Allow data export without approval"
+        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "The workspace's default view has been changed to SQL Editor.",
           "go-to-sql-editor": "Go to SQL Editor",
@@ -3064,6 +3067,8 @@
     "request-aborted": "User aborted the request",
     "request-access-grant": "Request access grant",
     "request-export": "Request export",
+    "request-query": "Request query",
+    "request-unmask": "Request unmask",
     "result-detail": {
       "next-match": "Next match",
       "previous-match": "Previous match",

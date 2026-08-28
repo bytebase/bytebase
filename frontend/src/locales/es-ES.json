@@ -1889,7 +1889,7 @@
       "confirm-delete-project": "Eliminar \"{{name}}\" eliminará permanentemente el proyecto y todos los datos asociados, incluidos issues, configuraciones e historial. Todas las bases de datos de este proyecto se moverán al proyecto predeterminado. Esta acción no se puede deshacer.",
       "issue-related": {
         "allow-access-grants": {
-          "description": "Permite a los miembros del proyecto solicitar concesiones de acceso con límite de tiempo para sentencias específicas de solo lectura.",
+          "description": "Permite a los miembros del proyecto solicitar concesiones de acceso con límite de tiempo para sentencias específicas de solo lectura. Las concesiones también pueden incluir la exportación de resultados y la visualización de datos sin enmascarar.",
           "self": "Permitir concesiones de acceso"
         },
         "allow-request-role": {
@@ -2376,7 +2376,10 @@
           "exiting": "Saliendo..."
         },
         "data-copy": "Habilitar la copia de datos",
-        "data-export": "Habilitar la exportación de datos",
+        "data-export": {
+          "description": "Si está deshabilitado, los usuarios no pueden exportar directamente los resultados de las consultas. En los proyectos que permiten concesiones de acceso, aún pueden pulsar \"Solicitar exportación\" para enviar una solicitud de concesión de acceso y exportar tras la aprobación.",
+          "self": "Permitir la exportación de datos sin aprobación"
+        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "La vista predeterminada del espacio de trabajo se ha cambiado al Editor SQL.",
           "go-to-sql-editor": "Ir al Editor SQL",
@@ -3064,6 +3067,8 @@
     "request-aborted": "El usuario abortó la solicitud",
     "request-access-grant": "Solicitar concesión de acceso",
     "request-export": "Solicitar exportación",
+    "request-query": "Solicitar consulta",
+    "request-unmask": "Solicitar desenmascaramiento",
     "result-detail": {
       "next-match": "Siguiente coincidencia",
       "previous-match": "Coincidencia anterior",

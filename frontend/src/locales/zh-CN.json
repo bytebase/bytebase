@@ -1889,7 +1889,7 @@
       "confirm-delete-project": "删除「{{name}}」将永久移除该项目及所有关联数据，包括工单、配置和历史记录。该项目中的所有数据库将被移至默认项目。此操作无法撤销。",
       "issue-related": {
         "allow-access-grants": {
-          "description": "允许项目成员为特定只读语句申请限时访问授权。",
+          "description": "允许项目成员为特定只读语句申请限时访问授权。授权还可包含导出查询结果和查看未脱敏数据。",
           "self": "允许访问授权"
         },
         "allow-request-role": {
@@ -2376,7 +2376,10 @@
           "exiting": "退出中..."
         },
         "data-copy": "启用复制数据",
-        "data-export": "启用数据导出",
+        "data-export": {
+          "description": "关闭后，用户无法直接导出查询结果。在启用访问授权的项目中，用户仍可点击“申请导出”提交访问授权申请，审批通过后即可导出。",
+          "self": "允许无需审批导出数据"
+        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "工作区的默认视图已更改为 SQL 编辑器。",
           "go-to-sql-editor": "转到 SQL 编辑器",
@@ -3021,7 +3024,7 @@
     "format-sql": "格式化 SQL",
     "generate-sql": "生成 SQL",
     "grant-type-export": "导出",
-    "grant-type-unmask": "脱敏豁免",
+    "grant-type-unmask": "取消脱敏",
     "hex-format": "十六进制格式",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
@@ -3064,6 +3067,8 @@
     "request-aborted": "用户中止了请求",
     "request-access-grant": "申请访问授权",
     "request-export": "申请导出",
+    "request-query": "申请查询",
+    "request-unmask": "申请取消脱敏",
     "result-detail": {
       "next-match": "下一个匹配项",
       "previous-match": "上一个匹配项",
