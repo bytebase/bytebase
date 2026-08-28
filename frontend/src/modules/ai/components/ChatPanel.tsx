@@ -86,33 +86,26 @@ export function ChatPanel() {
       if (!tab) return;
 
       const { messageList } = conversation;
+      let prompt = query;
       if (messageList.length === 0) {
         const engine = context.engine;
         const databaseMetadata = context.databaseMetadata;
         const schema = context.schema;
-        const prompts: string[] = [
+        prompt = [
           promptUtils.declaration(databaseMetadata, engine, schema),
           query,
-        ];
-        const prompt = prompts.join("\n");
-        await store.createMessage({
-          conversation_id: conversation.id,
-          content: query,
-          prompt,
-          author: "USER",
-          error: "",
-          status: "DONE",
-        });
+        ].join("\n");
+      }
+      const userMessage = await store.createMessage({
+        conversation_id: conversation.id,
+        content: query,
+        prompt,
+        author: "USER",
+        error: "",
+        status: "DONE",
+      });
+      if (messageList.length === 0) {
         console.debug("[AI Assistant] init chat:", prompt);
-      } else {
-        await store.createMessage({
-          conversation_id: conversation.id,
-          content: query,
-          prompt: query,
-          author: "USER",
-          error: "",
-          status: "DONE",
-        });
       }
 
       const answer = await store.createMessage({
@@ -123,8 +116,8 @@ export function ChatPanel() {
         conversation_id: conversation.id,
         status: "LOADING",
       });
-      const messages: AIChatMessage[] = conversation.messageList.map(
-        (message) =>
+      const messages: AIChatMessage[] =
+        userMessage.conversation.messageList.map((message) =>
           createProto(AIChatMessageSchema, {
             role:
               message.author === "USER"
@@ -132,7 +125,7 @@ export function ChatPanel() {
                 : AIChatMessageRole.AI_CHAT_MESSAGE_ROLE_ASSISTANT,
             content: message.prompt,
           })
-      );
+        );
       setLoading(true);
       try {
         const response = await aiServiceClientConnect.chat({ messages });
@@ -144,6 +137,7 @@ export function ChatPanel() {
         }
         answer.status = "DONE";
       } catch (err) {
+        console.error("[AI Assistant] chat failed:", err);
         answer.error = String(err);
         answer.status = "FAILED";
       } finally {

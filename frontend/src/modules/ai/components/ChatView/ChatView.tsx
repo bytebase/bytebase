@@ -61,7 +61,10 @@ export function ChatView({ mode = "CHAT", conversation }: Props) {
 
   return (
     <ChatViewProvider value={chatViewValue}>
-      <div ref={scrollerRef} className="flex-1 overflow-y-auto">
+      <div
+        ref={scrollerRef}
+        className="min-w-0 flex-1 overflow-x-hidden overflow-y-auto"
+      >
         {conversation ? (
           conversation.messageList.length === 0 ? (
             mode === "VIEW" ? (
@@ -70,12 +73,12 @@ export function ChatView({ mode = "CHAT", conversation }: Props) {
           ) : (
             <div
               ref={containerRef}
-              className="flex flex-col justify-end px-2 gap-y-4"
+              className="flex min-w-0 max-w-full flex-col justify-end px-2 gap-y-4"
             >
               {conversation.messageList.map((message) => (
                 <div
                   key={message.id}
-                  className={`flex message ${
+                  className={`message flex min-w-0 w-full ${
                     message.author === "AI" ? "justify-start" : "justify-end"
                   }`}
                 >

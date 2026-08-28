@@ -37,11 +37,15 @@ export function Markdown({ content, codeBlockProps }: Props) {
           "code",
           {
             className:
-              "inline-block rounded-xs bg-control-bg-hover px-0.5 mx-0.5 text-control",
+              "inline-block max-w-full wrap-anywhere whitespace-normal rounded-xs bg-control-bg-hover px-0.5 mx-0.5 text-control",
           },
           node.value.replace(/\r?\n|\r/g, " ")
         ),
-      image: (node) => createElement("img", { src: node.url }),
+      image: (node) =>
+        createElement("img", {
+          src: node.url,
+          className: "h-auto max-w-full",
+        }),
     }),
     [codeBlockProps]
   );
