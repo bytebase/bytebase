@@ -48,6 +48,15 @@ const conversations = new PouchDB<ConversationEntity>(
   "bb.plugin.ai.conversations"
 );
 const messages = new PouchDB<MessageEntity>("bb.plugin.ai.messages");
+
+const putExisting = async <T extends { _id: string }>(
+  database: PouchDB.Database<T>,
+  entity: T
+) => {
+  const current = await database.get(entity._id);
+  return database.put({ ...entity, _rev: current._rev });
+};
+
 const ready: Promise<unknown>[] = [];
 ready.push(
   messages.createIndex({
@@ -113,17 +122,19 @@ export const useConversationStore = create<ConversationState>((set, get) => {
     const conversation = get().conversationsById[id];
     if (!conversation) return;
     if (conversation.messageList.length > 0) {
-      await messages.bulkDocs(
-        conversation.messageList.map((message) => ({
-          ...convertMessageToEntity(message),
-          row_status: "ARCHIVED" as const,
-        }))
+      await Promise.all(
+        conversation.messageList.map((message) =>
+          putExisting(messages, {
+            ...convertMessageToEntity(message),
+            row_status: "ARCHIVED" as const,
+          })
+        )
       );
     }
-    await conversations.put(
-      { ...convertConversationToEntity(conversation), row_status: "ARCHIVED" },
-      { force: true }
-    );
+    await putExisting(conversations, {
+      ...convertConversationToEntity(conversation),
+      row_status: "ARCHIVED",
+    });
     set((state) => {
       const next = { ...state.conversationsById };
       delete next[id];
@@ -132,7 +143,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
   };
 
   const updateMessage = async (message: Message): Promise<Message> => {
-    await messages.put(convertMessageToEntity(message), { force: true });
+    await putExisting(messages, convertMessageToEntity(message));
     const conversation = get().conversationsById[message.conversation.id];
     if (conversation) {
       const nextConversation: Conversation = {
@@ -154,13 +165,11 @@ export const useConversationStore = create<ConversationState>((set, get) => {
   const fixAbnormalMessages = async (messageList: Message[]) => {
     const requests = messageList
       .filter((message) => message.status === "LOADING")
-      .map((message) =>
-        updateMessage({
-          ...message,
-          status: "FAILED",
-          error: "Request timeout",
-        })
-      );
+      .map((message) => {
+        message.status = "FAILED";
+        message.error = "Request timeout";
+        return updateMessage(message);
+      });
     await Promise.all(requests);
   };
 
@@ -245,9 +254,7 @@ export const useConversationStore = create<ConversationState>((set, get) => {
   const updateConversation = async (
     conversation: Conversation
   ): Promise<Conversation> => {
-    await conversations.put(convertConversationToEntity(conversation), {
-      force: true,
-    });
+    await putExisting(conversations, convertConversationToEntity(conversation));
     const existing = get().conversationsById[conversation.id];
     const next: Conversation = {
       ...conversation,
