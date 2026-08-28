@@ -172,6 +172,16 @@ func TestGetResourceRoute(t *testing.T) {
 			parts: []string{"instances", "instance-a", "databases", "app", "schema"},
 			want:  resourceRoute{"instances", "databases", "schema"},
 		},
+		{
+			name:  "project database catalog",
+			parts: []string{"projects", "project-a", "instances", "instance-a", "databases", "app", "catalog"},
+			want:  resourceRoute{"projects", "instances", "databases"},
+		},
+		{
+			name:  "workspace database catalog",
+			parts: []string{"instances", "instance-a", "databases", "app", "catalog"},
+			want:  resourceRoute{"instances", "databases", "catalog"},
+		},
 	}
 
 	for _, tt := range tests {
@@ -201,6 +211,7 @@ func TestFindResourceResolver(t *testing.T) {
 		{name: "workspace instance role", route: resourceRoute{"instances", "roles"}, wantRoute: resourceRoute{"instances"}, wantExists: true},
 		{name: "workspace database revision", route: resourceRoute{"instances", "databases", "revisions"}, wantRoute: resourceRoute{"instances", "databases"}, wantExists: true},
 		{name: "workspace database schema", route: resourceRoute{"instances", "databases", "schema"}, wantRoute: resourceRoute{"instances", "databases"}, wantExists: true},
+		{name: "workspace database catalog", route: resourceRoute{"instances", "databases", "catalog"}, wantRoute: resourceRoute{"instances", "databases"}, wantExists: true},
 		{name: "ordinary project descendant", route: resourceRoute{"projects", "issues"}, wantRoute: resourceRoute{"projects"}, wantExists: true},
 		{name: "unknown root", route: resourceRoute{"unknowns"}, wantExists: false},
 	}
@@ -595,6 +606,28 @@ func TestGetResourceFromRequest(t *testing.T) {
 			request: &v1pb.MoveMySavedQueriesRequest{Parent: "projects/hello"},
 			method:  "/bytebase.v1.SavedQueryService/MoveMySavedQueries",
 			want:    []string{"projects/hello"},
+		},
+		{
+			// The field is `catalog`, not the `database_catalog` the Update
+			// convention derives -- so this must not fall back to "", which
+			// would check the permission against the workspace instead of the
+			// named database's project.
+			request: &v1pb.UpdateDatabaseCatalogRequest{
+				Catalog: &v1pb.DatabaseCatalog{
+					Name: "instances/hello/databases/world/catalog",
+				},
+			},
+			method: "/bytebase.v1.DatabaseCatalogService/UpdateDatabaseCatalog",
+			want:   []string{"instances/hello/databases/world/catalog"},
+		},
+		{
+			request: &v1pb.UpdateDatabaseCatalogRequest{
+				Catalog: &v1pb.DatabaseCatalog{
+					Name: "projects/hello/instances/world/databases/db/catalog",
+				},
+			},
+			method: "/bytebase.v1.DatabaseCatalogService/UpdateDatabaseCatalog",
+			want:   []string{"projects/hello/instances/world/databases/db/catalog"},
 		},
 	}
 

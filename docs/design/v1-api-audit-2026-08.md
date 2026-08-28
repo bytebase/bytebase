@@ -10,7 +10,6 @@ noted. Fixed findings are removed and listed at the end.
 
 | | Problem | Severity |
 |---|---|---|
-| T2 | Schema diff reads a second database without checking permission on it | HIGH |
 | T15 | Rotating a leaked cloud credential can silently do nothing | HIGH |
 | T13 | "Waiting for my approval" can show an empty page with a live Load More | HIGH |
 | T14 | Paging through issues across projects skips some and repeats others | HIGH |
@@ -26,19 +25,26 @@ noted. Fixed findings are removed and listed at the end.
 
 ## Doing more than you're allowed
 
-### T2 · The permission check only looks at one resource per request — HIGH
+### The one-resource ACL rule, and what it still costs
 
-The ACL interceptor authorizes exactly one resource name per request: `parent`, else `name`, else
-`resource`, else `project`. Any *second* resource named in the body is invisible to it.
+`getResourceFromSingleRequest` authorizes exactly one resource name per request, picked by field-name
+convention: `parent`, else `name`, else `resource`, else `project`, else — for `Create`/`Update`/
+`Remove`/`Test` — the nested `<snake_case(resource)>.name`. Nothing else in the body is visible to it.
+`acl.go:735-795`
 
-One live case: `DiffSchema` takes both a database and a changelog, and the changelog can belong to a
-different project. Only the first is checked, so a caller can read schema out of a project they have
-no access to. Every other known case is closed inside the handler; this is the last one, and the
-parked patch `04` fixes it.
+A sweep of all 216 v1 RPCs found 24 whose body names a resource the interceptor never authorizes.
+Twenty-two are closed downstream: `CreatePlan`/`UpdatePlan`, the three `Release` RPCs,
+`BatchCreateRevisions`, `CreateAccessGrant`, the `SavedQuery` writes, `CreateIssue`,
+`UpdateIssueComment`, `TestWebhook` and `GetQueryHistory` each compare the second resource's project
+to the authorized one; `BatchRunTasks`, `BatchSkipTasks` and `CreateRollout` re-derive it from the
+parent instead of trusting the name; `UpdateDatabase`/`BatchUpdateDatabases` are special-cased in the
+interceptor itself. `DiffSchema` was the one live gap and is now closed the same way.
 
-The real fix is the general one — teach the interceptor to collect *every* annotated resource field,
-so the next second-resource field doesn't reopen the hole. `acl.go:735-753`,
-`database_service.go:1051-1082`
+The convention can also miss the *only* resource: `UpdateDatabaseCatalog` names its target in
+`catalog`, not the `database_catalog` the method suffix derives, so it resolved nothing and every
+call was authorized against the workspace. Both are fixed and listed at the end. Neither fix
+generalizes — the next request field that departs from the convention arrives unchecked, silently,
+and only a sweep like this one finds it.
 
 ### T18a · Test-environment rights can cancel a production migration — MED
 
@@ -204,10 +210,13 @@ constraints.
 
 ## What I'd do, in order
 
-1. **Fix the ACL class, not the instance (T2).** Teach the interceptor to collect every annotated
-   resource field, then annotate `DiffSchema`. Otherwise the next second-resource field reopens it.
-2. **Make credential rotation fail loudly (T15).** A security operation that returns 200 and does
+1. **Make credential rotation fail loudly (T15).** A security operation that returns 200 and does
    nothing is worse than one that errors.
+2. **Make the extractor's misses loud.** A `Create`/`Update` request whose conventional field is
+   absent still degrades silently to a workspace check — `UpdateDatabaseCatalog` sat that way until
+   it was found by sweep, not by failure. Rejecting it at startup, the same shape as the
+   `AUTH_METHOD_UNSPECIFIED` gate below, turns the next `catalog`-style field name into a build
+   failure instead of a silent scope change.
 3. **Fail closed on auth annotations, and put api-linter in CI.** Reject
    `AUTH_METHOD_UNSPECIFIED` at startup; make a `permission` on a CUSTOM RPC either enforced or a
    build error, since 15 are decorative. None of Tier 5 was visible to `buf lint`'s BASIC profile,
@@ -221,6 +230,8 @@ constraints.
 |---|---|
 | T1, T3 | Fixed earlier in the session |
 | T2 (INPUT_ONLY) | Read-path fix |
+| T2 `DiffSchema` | `DiffSchema` rejects a changelog target owned by another project before any read, matching how every other second-resource handler closes it. Not the general interceptor change: the resource the caller names must simply belong to the project they were authorized on, which is also the only thing a cross-project diff could have meant. A missing target and a foreign one return the same error, so neither confirms what lives in the other project. Accepted with it: the class stays latent — a future second-resource field still arrives unchecked |
+| T19 `UpdateDatabaseCatalog` | The interceptor now reads `catalog.name`, so the permission is checked against the named database's project instead of the workspace — the route resolver already drops the trailing `/catalog`. Strictly additive: workspace holders are unaffected and Project Owner, whose role carries `bb.databaseCatalogs.update`, is no longer denied. Separate and still open: `bb.databaseCatalogs.create` does not exist, so the `allow_missing` secondary check denies every caller. Dead rather than harmful — no UI sets the flag and the RPC is MCP-`EXCLUDED` |
 | T5, T6 | [#21143](https://github.com/bytebase/bytebase/pull/21143) — `sheet_blob_ref` gives sheets per-project ownership; `BatchCreateRevisions` rejects foreign-project provenance without echoing the hash |
 | T7 | [#21102](https://github.com/bytebase/bytebase/pull/21102) — every `CheckRelease` target validated against the parent project before any schema read (its error codes still leak existence — T18c-iii) |
 | T8 `CreateWorksheet` | [#21169](https://github.com/bytebase/bytebase/pull/21169) — `CreateSavedQuery` is now IAM-enforced; Workspace Member holds no saved-query permission, and new queries start creator-private |
@@ -236,6 +247,6 @@ is free on Bytebase's own key, so no customer budget is at risk and abuse is our
 problem. Self-hosted, the admin supplies the org's key when enabling it, so org-wide use by members
 is the intended model. The missing per-user rate limit and audit are accepted with that disposition.
 
-The three patches from earlier in the session (`SearchProjects` proto comment, `SearchProjects`
-pagination, `DiffSchema` ACL) remain parked and still apply — none landed independently, and all
-three targets are still present at HEAD.
+Two patches from earlier in the session (`SearchProjects` proto comment, `SearchProjects` pagination)
+remain parked and still apply — neither landed independently, and both targets are still present at
+HEAD. The third, `DiffSchema` ACL, is superseded by the same-project fix above.
