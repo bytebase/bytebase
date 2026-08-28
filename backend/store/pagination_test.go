@@ -194,6 +194,7 @@ func TestPaginatedListsUseStableOrderBy(t *testing.T) {
 					if ident, ok := node.Fun.(*ast.Ident); ok {
 						fn.calls = append(fn.calls, ident.Name)
 					}
+				default:
 				}
 				return true
 			})

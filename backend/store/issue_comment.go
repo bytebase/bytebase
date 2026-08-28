@@ -164,11 +164,11 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 	// ordinal keeps the batch in insertion order and makes created_at unique
 	// within it, at a cost of microseconds.
 	q := qb.Q().Space(`
-		INSERT INTO issue_comment (creator, project, issue_id, payload, created_at)
-		SELECT ?, c.project, c.issue_id, c.payload,
-		       now() + ((c.ordinality - 1) * interval '1 microsecond')
+		INSERT INTO issue_comment (creator, project, issue_id, payload, created_at, updated_at)
+		SELECT ?, c.project, c.issue_id, c.payload, t.at, t.at
 		FROM unnest(?::TEXT[], ?::INT[], ?::JSONB[])
-		     WITH ORDINALITY AS c(project, issue_id, payload, ordinality)
+		     WITH ORDINALITY AS c(project, issue_id, payload, ordinality),
+		     LATERAL (SELECT now() + ((c.ordinality - 1) * interval '1 microsecond')) AS t(at)
 	`, creator, projectIDs, issueIDs, payloads)
 
 	// For single comment, use RETURNING to get the created comment details.
