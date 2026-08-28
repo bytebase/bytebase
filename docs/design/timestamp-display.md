@@ -300,8 +300,11 @@ tooltip.
   sub-minute granularity (the "now" and seconds buckets), dropping to a coarse ~30–60s tick once
   every subscriber is in minute-or-older buckets; a subscriber re-renders only when its formatted
   output actually changes. This matches GitHub's `relative-time` element, which schedules its own
-  updates at the next boundary.
-  Absolute modes (compact/datetime/operational) never change with time and skip the subscription.
+  updates at the next boundary. The dividing line is time-variance, not mode: absolute labels
+  (compact/datetime/operational) never change with time and skip the subscription, while every
+  time-varying display subscribes — the relative buckets, and countdown/status consumers such as
+  the SQL-editor access-grant item, whose remaining duration, 24-hour display transition, and
+  expired state otherwise go stale on a long-mounted editor.
 - Tests: update `HumanizeTs.test.tsx` for the switch; sweep the `*.test.tsx` files that assert
   relative strings (`PlanDetailMeta.test.tsx`, `SchemaPane.test.tsx`,
   `DeployTaskRunHistorySheet.test.tsx`, `IssueCommentActivity.test.tsx`,
@@ -310,8 +313,9 @@ tooltip.
   the operational contract — a component test using an expiration with a sub-minute tail
   (e.g. 9:00:47) asserting the visible label renders minute + timezone and the tooltip carries the
   full seconds + timezone, plus the countdown carve-out (a <24h grant renders the remaining
-  duration with that same full tooltip), and a fake-timer test advancing a mounted component
-  across a relative bucket boundary and across the 30-day cutoff.
+  duration with that same full tooltip), a fake-timer test advancing a mounted component across a
+  relative bucket boundary and across the 30-day cutoff, and a fake-timer transition test for the
+  access-grant countdown (duration ticks → 24-hour display boundary → expired state).
 
 ## What does not change
 
