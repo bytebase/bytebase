@@ -3,14 +3,14 @@
 -- not the slot's history). Results live in issue comments; the run carries
 -- none. No standalone id on purpose: nothing may durably reference a run.
 CREATE TABLE review_run (
-    created_at timestamptz NOT NULL DEFAULT now(),
-    updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),
     issue_id bigint NOT NULL,
     -- Reviewer type: 'RULE' (standard rules) or 'GUIDELINE' (natural-language
     -- guidelines, performed by AI). No CHECK on purpose: the reviewer-id space
     -- is open.
     type text NOT NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
     -- Attempt number of the current run, 0-based like task_run.attempt.
     -- Bumped on every slot reset (issue created / SQL updated / manual
     -- re-run); it counts triggers, not completed executions. The completion
