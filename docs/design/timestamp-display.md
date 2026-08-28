@@ -302,9 +302,16 @@ tooltip.
   output actually changes. This matches GitHub's `relative-time` element, which schedules its own
   updates at the next boundary. The dividing line is time-variance, not mode: absolute labels
   (compact/datetime/operational) never change with time and skip the subscription, while every
-  time-varying display subscribes — the relative buckets, and countdown/status consumers such as
-  the SQL-editor access-grant item, whose remaining duration, 24-hour display transition, and
-  expired state otherwise go stale on a long-mounted editor.
+  time-varying display subscribes — the relative buckets, and every countdown/status consumer
+  that derives `isExpired`/remaining-time state from render-time `Date.now()`: the SQL-editor
+  access-grant item (duration, 24-hour display transition, expired state), the masking exemption
+  rows (`ExemptionGrantSection`), `SampleExpirationAlert`, and the subscription banner's
+  time-dependent store selectors. Two components already run private timers for exactly this
+  (`PlanDetailMeta` at 60s, `DatabaseQueryContext` at 1s) and consolidate onto the shared clock
+  (`InactiveRemindModal`'s 1s timer is a session-idle mechanism, not a timestamp display — out of
+  scope). Implementation checklist: sweep render-time `Date.now()` in display components — every
+  hit either subscribes to the shared clock or records why it need not (e.g. values evaluated at
+  interaction time inside action panels).
 - Tests: update `HumanizeTs.test.tsx` for the switch; sweep the `*.test.tsx` files that assert
   relative strings (`PlanDetailMeta.test.tsx`, `SchemaPane.test.tsx`,
   `DeployTaskRunHistorySheet.test.tsx`, `IssueCommentActivity.test.tsx`,
@@ -314,8 +321,10 @@ tooltip.
   (e.g. 9:00:47) asserting the visible label renders minute + timezone and the tooltip carries the
   full seconds + timezone, plus the countdown carve-out (a <24h grant renders the remaining
   duration with that same full tooltip), a fake-timer test advancing a mounted component across a
-  relative bucket boundary and across the 30-day cutoff, and a fake-timer transition test for the
-  access-grant countdown (duration ticks → 24-hour display boundary → expired state).
+  relative bucket boundary and across the 30-day cutoff, a fake-timer transition test for the
+  access-grant countdown (duration ticks → 24-hour display boundary → expired state), and
+  fake-timer expiration-status flips for the masking exemption row, the sample-expiration alert,
+  and the subscription banner.
 
 ## What does not change
 
