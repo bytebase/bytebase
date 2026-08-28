@@ -207,19 +207,17 @@ func (s *Store) GetTaskRunV1(ctx context.Context, find *FindTaskRunMessage) (*Ta
 
 // UpdateTaskRunStatus updates task run status.
 func (s *Store) UpdateTaskRunStatus(ctx context.Context, patch *TaskRunStatusPatch) (*TaskRunMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
+	scope, err := s.taskRunLifecycleScope(ctx, patch.ProjectID, []int64{patch.ID})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin tx")
+		return nil, err
 	}
-	defer tx.Rollback()
-
-	taskRun, err := s.patchTaskRunStatusImpl(ctx, tx, patch)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to update task run")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit tx")
+	var taskRun *TaskRunMessage
+	if err := s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		var err error
+		taskRun, err = s.patchTaskRunStatusImpl(ctx, tx, patch)
+		return errors.Wrap(err, "failed to update task run")
+	}); err != nil {
+		return nil, err
 	}
 	return taskRun, nil
 }
@@ -235,6 +233,50 @@ type ClaimedTaskRun struct {
 // and returns the claimed task run and task UIDs. This combines list + claim into a single atomic operation.
 // Uses FOR UPDATE SKIP LOCKED to allow concurrent schedulers to claim different tasks.
 func (s *Store) ClaimAvailableTaskRuns(ctx context.Context, replicaID string) ([]*ClaimedTaskRun, error) {
+	type candidate struct {
+		projectID string
+		id        int64
+		instance  string
+	}
+	rows, err := s.GetDB().QueryContext(ctx, `
+		SELECT task_run.project, task_run.id, task.instance
+		FROM task_run
+		JOIN project ON project.resource_id = task_run.project
+		JOIN task ON task.project = task_run.project AND task.id = task_run.task_id
+		JOIN instance ON instance.resource_id = task.instance
+		WHERE task_run.status = $1 AND project.deleted = FALSE AND instance.deleted = FALSE
+		ORDER BY task_run.project, task_run.id
+	`, storepb.TaskRun_AVAILABLE.String())
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to discover claimable task runs")
+	}
+	var candidates []candidate
+	if err := func() error {
+		defer rows.Close()
+		for rows.Next() {
+			var c candidate
+			if err := rows.Scan(&c.projectID, &c.id, &c.instance); err != nil {
+				return err
+			}
+			candidates = append(candidates, c)
+		}
+		return rows.Err()
+	}(); err != nil {
+		return nil, errors.Wrap(err, "failed to read claimable task runs")
+	}
+	if len(candidates) == 0 {
+		return nil, nil
+	}
+
+	scope := lifecycleScope{}
+	projects := make([]string, 0, len(candidates))
+	ids := make([]int64, 0, len(candidates))
+	for _, candidate := range candidates {
+		scope.addProject(candidate.projectID, lifecycleActive)
+		scope.addInstance(candidate.instance, lifecycleActive)
+		projects = append(projects, candidate.projectID)
+		ids = append(ids, candidate.id)
+	}
 	q := qb.Q().Space(`
 		UPDATE task_run
 		SET status = ?, updated_at = now(), replica_id = ?
@@ -245,31 +287,36 @@ func (s *Store) ClaimAvailableTaskRuns(ctx context.Context, replicaID string) ([
 			JOIN task ON task.project = task_run.project AND task.id = task_run.task_id
 			JOIN instance ON instance.resource_id = task.instance
 			WHERE task_run.status = ? AND project.deleted = FALSE AND instance.deleted = FALSE
+			  AND (task_run.project, task_run.id) IN (
+				SELECT unnest(CAST(? AS TEXT[])), unnest(CAST(? AS BIGINT[]))
+			  )
 			FOR UPDATE OF task_run SKIP LOCKED
 		)
 		RETURNING id, task_id, project
-	`, storepb.TaskRun_RUNNING.String(), replicaID, storepb.TaskRun_AVAILABLE.String())
+	`, storepb.TaskRun_RUNNING.String(), replicaID, storepb.TaskRun_AVAILABLE.String(), projects, ids)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	rows, err := s.GetDB().QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to claim task runs")
-	}
-	defer rows.Close()
-
 	var claimed []*ClaimedTaskRun
-	for rows.Next() {
-		var c ClaimedTaskRun
-		if err := rows.Scan(&c.TaskRunUID, &c.TaskUID, &c.ProjectID); err != nil {
-			return nil, err
+	err = s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		rows, err := tx.QueryContext(ctx, query, args...)
+		if err != nil {
+			return errors.Wrap(err, "failed to claim task runs")
 		}
-		claimed = append(claimed, &c)
-	}
-	if err := rows.Err(); err != nil {
+		defer rows.Close()
+		for rows.Next() {
+			var c ClaimedTaskRun
+			if err := rows.Scan(&c.TaskRunUID, &c.TaskUID, &c.ProjectID); err != nil {
+				return err
+			}
+			claimed = append(claimed, &c)
+		}
+		return rows.Err()
+	})
+	if err != nil {
 		return nil, err
 	}
 	return claimed, nil
@@ -287,7 +334,16 @@ func (s *Store) UpdateTaskRunStartAt(ctx context.Context, projectID string, task
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	result, err := s.GetDB().ExecContext(ctx, query, args...)
+	scope, err := s.taskRunLifecycleScope(ctx, projectID, []int64{taskRunID})
+	if err != nil {
+		return err
+	}
+	var result sql.Result
+	err = s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		var err error
+		result, err = tx.ExecContext(ctx, query, args...)
+		return err
+	})
 	if err != nil {
 		return errors.Wrapf(err, "failed to update task run start at")
 	}
@@ -307,6 +363,34 @@ func (s *Store) UpdateTaskRunStartAt(ctx context.Context, projectID string, task
 // - Uses ON CONFLICT DO NOTHING to handle race conditions where two requests try to create the same task run
 // - The unique constraint on (task_id, attempt) ensures no duplicates
 func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creates ...*TaskRunMessage) error {
+	if len(creates) == 0 {
+		return nil
+	}
+	projectID := creates[0].ProjectID
+	taskUIDs := make([]int64, 0, len(creates))
+	projects := make([]string, 0, len(creates))
+	scope := lifecycleScope{}
+	for _, create := range creates {
+		if create.ProjectID != projectID {
+			return common.Errorf(common.Invalid, "all task runs in a batch must belong to the same project")
+		}
+		taskUIDs = append(taskUIDs, create.TaskUID)
+		projects = append(projects, create.ProjectID)
+		scope.addProject(create.ProjectID, lifecycleActive)
+	}
+	instanceIDs, err := s.listTaskRunCreationInstances(ctx, projects, taskUIDs)
+	if err != nil {
+		return err
+	}
+	for _, instanceID := range instanceIDs {
+		scope.addInstance(instanceID, lifecycleActive)
+	}
+	return s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		return s.createPendingTaskRunsInLifecycleTransaction(ctx, tx, creator, creates...)
+	})
+}
+
+func (s *Store) createPendingTaskRunsInLifecycleTransaction(ctx context.Context, tx *sql.Tx, creator string, creates ...*TaskRunMessage) error {
 	if len(creates) == 0 {
 		return nil
 	}
@@ -348,17 +432,6 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 	instanceIDs, err := s.listTaskRunCreationInstances(ctx, projects, taskUIDs)
 	if err != nil {
 		return err
-	}
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return errors.Wrapf(err, "failed to begin tx")
-	}
-	defer tx.Rollback()
-	for _, instanceID := range instanceIDs {
-		if err := acquireInstancePurgeLock(ctx, tx, instanceID); err != nil {
-			return errors.Wrapf(err, "failed to lock instance lifecycle fence for %s", instanceID)
-		}
 	}
 
 	lockQ := qb.Q().Space(`
@@ -423,7 +496,7 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 		}
 	}
 
-	// Keep the child-to-parent lock order used by project deletion: task, instance, then project.
+	// Keep nextProjectID's allocator lock after the lifecycle gates and task locks.
 	baseID, err := nextProjectID(ctx, tx, "task_run", projectID)
 	if err != nil {
 		return err
@@ -490,10 +563,6 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 
 	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return errors.Wrapf(err, "failed to create pending task runs")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return errors.Wrapf(err, "failed to commit tx")
 	}
 
 	return nil
@@ -624,10 +693,14 @@ func (s *Store) BatchCancelTaskRuns(ctx context.Context, projectID string, taskR
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	scope, err := s.taskRunLifecycleScope(ctx, projectID, taskRunIDs)
+	if err != nil {
 		return err
 	}
-	return nil
+	return s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, query, args...)
+		return err
+	})
 }
 
 // FailStaleTaskRuns marks RUNNING task runs as FAILED if their replica is dead.
@@ -636,6 +709,45 @@ func (s *Store) BatchCancelTaskRuns(ctx context.Context, projectID string, taskR
 // 2. Its last_heartbeat is older than the staleness threshold
 // Returns the number of task runs marked as failed.
 func (s *Store) FailStaleTaskRuns(ctx context.Context, stalenessThreshold time.Duration) (int64, error) {
+	rows, err := s.GetDB().QueryContext(ctx, `
+		SELECT task_run.project, task_run.id, task.instance
+		FROM task_run
+		JOIN task ON task.project = task_run.project AND task.id = task_run.task_id
+		WHERE task_run.status = $1
+		  AND task_run.replica_id IS NOT NULL
+		  AND NOT EXISTS (
+			SELECT 1 FROM replica_heartbeat rh
+			WHERE rh.replica_id = task_run.replica_id
+			  AND rh.last_heartbeat >= now() - $2::INTERVAL
+		  )
+		ORDER BY task_run.project, task_run.id
+	`, storepb.TaskRun_RUNNING.String(), stalenessThreshold.String())
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to discover stale task runs")
+	}
+	scope := lifecycleScope{}
+	var projects []string
+	var ids []int64
+	if err := func() error {
+		defer rows.Close()
+		for rows.Next() {
+			var projectID, instanceID string
+			var id int64
+			if err := rows.Scan(&projectID, &id, &instanceID); err != nil {
+				return err
+			}
+			scope.addProject(projectID, lifecycleExisting)
+			scope.addInstance(instanceID, lifecycleExisting)
+			projects = append(projects, projectID)
+			ids = append(ids, id)
+		}
+		return rows.Err()
+	}(); err != nil {
+		return 0, errors.Wrap(err, "failed to read stale task runs")
+	}
+	if len(ids) == 0 {
+		return 0, nil
+	}
 	q := qb.Q().Space(`
 		UPDATE task_run
 		SET status = ?,
@@ -648,14 +760,22 @@ func (s *Store) FailStaleTaskRuns(ctx context.Context, stalenessThreshold time.D
 		    WHERE rh.replica_id = task_run.replica_id
 		      AND rh.last_heartbeat >= now() - ?::INTERVAL
 		  )
-	`, storepb.TaskRun_FAILED.String(), storepb.TaskRun_RUNNING.String(), stalenessThreshold.String())
+		  AND (task_run.project, task_run.id) IN (
+			SELECT unnest(CAST(? AS TEXT[])), unnest(CAST(? AS BIGINT[]))
+		  )
+	`, storepb.TaskRun_FAILED.String(), storepb.TaskRun_RUNNING.String(), stalenessThreshold.String(), projects, ids)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to build sql")
 	}
 
-	result, err := s.GetDB().ExecContext(ctx, query, args...)
+	var result sql.Result
+	err = s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		var err error
+		result, err = tx.ExecContext(ctx, query, args...)
+		return err
+	})
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to fail stale task runs")
 	}
@@ -684,8 +804,44 @@ func (s *Store) UpdateTaskRunPayload(ctx context.Context, projectID string, task
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	scope, err := s.taskRunLifecycleScope(ctx, projectID, []int64{taskRunID})
+	if err != nil {
+		return err
+	}
+	if err := s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, query, args...)
+		return err
+	}); err != nil {
 		return errors.Wrapf(err, "failed to update task run payload")
 	}
 	return nil
+}
+
+func (s *Store) taskRunLifecycleScope(ctx context.Context, projectID string, taskRunIDs []int64) (lifecycleScope, error) {
+	scope := lifecycleScope{}
+	scope.addProject(projectID, lifecycleExisting)
+	q := qb.Q().Space(`
+		SELECT DISTINCT task.instance
+		FROM task_run
+		JOIN task ON task.project = task_run.project AND task.id = task_run.task_id
+		WHERE task_run.project = ? AND task_run.id = ANY(?)
+		ORDER BY task.instance
+	`, projectID, taskRunIDs)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return scope, errors.Wrap(err, "failed to build task run lifecycle scope query")
+	}
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
+	if err != nil {
+		return scope, errors.Wrap(err, "failed to resolve task run lifecycle scope")
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var instanceID string
+		if err := rows.Scan(&instanceID); err != nil {
+			return scope, errors.Wrap(err, "failed to scan task run lifecycle scope")
+		}
+		scope.addInstance(instanceID, lifecycleExisting)
+	}
+	return scope, errors.Wrap(rows.Err(), "failed to read task run lifecycle scope")
 }

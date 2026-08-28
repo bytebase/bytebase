@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"strings"
 	"time"
 
@@ -61,18 +62,17 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creator strin
 		return nil, errors.Wrap(err, "failed to marshal plan config")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to begin tx")
-	}
-	defer tx.Rollback()
+	scope := lifecycleScope{}
+	scope.addProject(plan.ProjectID, lifecycleActive)
+	var nextID int64
+	err = s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		var err error
+		nextID, err = nextProjectID(ctx, tx, "plan", plan.ProjectID)
+		if err != nil {
+			return err
+		}
 
-	nextID, err := nextProjectID(ctx, tx, "plan", plan.ProjectID)
-	if err != nil {
-		return nil, err
-	}
-
-	q := qb.Q().Space(`
+		q := qb.Q().Space(`
 		INSERT INTO plan (
 			id,
 			creator,
@@ -85,17 +85,18 @@ func (s *Store) CreatePlan(ctx context.Context, plan *PlanMessage, creator strin
 		) RETURNING created_at, updated_at
 	`, nextID, creator, plan.ProjectID, plan.Name, plan.Description, config)
 
-	query, args, err := q.ToSQL()
+		query, args, err := q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build sql")
+		}
+
+		if err := tx.QueryRowContext(ctx, query, args...).Scan(&plan.CreatedAt, &plan.UpdatedAt); err != nil {
+			return errors.Wrap(err, "failed to insert plan")
+		}
+		return nil
+	})
 	if err != nil {
-		return nil, errors.Wrap(err, "failed to build sql")
-	}
-
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(&plan.CreatedAt, &plan.UpdatedAt); err != nil {
-		return nil, errors.Wrap(err, "failed to insert plan")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "failed to commit tx")
+		return nil, err
 	}
 
 	plan.UID = nextID

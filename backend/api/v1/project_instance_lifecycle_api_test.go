@@ -90,6 +90,61 @@ func TestProjectInstanceLifecycleAPIGatesArchivedProjectDescendants(t *testing.T
 	require.False(t, got.Msg.Activation)
 }
 
+func TestBatchPurgeProjectsKeepsEarlierRuntimeSuccess(t *testing.T) {
+	ctx, stores, _, _, _ := setupProjectInstanceLifecycleAPITest(t)
+	deleted := true
+	require.NoError(t, stores.UpdateProjects(ctx,
+		&store.UpdateProjectMessage{ResourceID: "project-a", Workspace: "default", Delete: &deleted},
+		&store.UpdateProjectMessage{ResourceID: "project-b", Workspace: "default", Delete: &deleted},
+	))
+
+	manager := &sampleManagerStub{projectPurge: func(_ context.Context, _, projectID string) error {
+		if projectID == "project-b" {
+			return errors.New("sample cleanup failed")
+		}
+		return nil
+	}}
+	service := NewProjectService(stores, nil, nil, manager)
+	_, err := service.BatchDeleteProjects(ctx, connect.NewRequest(&v1pb.BatchDeleteProjectsRequest{
+		Names: []string{"projects/project-a", "projects/project-b"},
+		Purge: true,
+	}))
+	require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
+	require.Equal(t, []string{"project-a", "project-b"}, manager.projectPurgeCalls)
+
+	projectA := "project-a"
+	got, err := stores.GetProject(ctx, &store.FindProjectMessage{Workspace: "default", ResourceID: &projectA, ShowDeleted: true})
+	require.NoError(t, err)
+	require.Nil(t, got, "a runtime failure after the first purge must not roll it back")
+	projectB := "project-b"
+	got, err = stores.GetProject(ctx, &store.FindProjectMessage{Workspace: "default", ResourceID: &projectB, ShowDeleted: true})
+	require.NoError(t, err)
+	require.NotNil(t, got, "the failed and remaining purges are retry targets")
+}
+
+func TestProjectLifecycleContentionReturnsAbortedWithoutMutation(t *testing.T) {
+	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
+	conn, err := stores.GetDB().Conn(ctx)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, conn.Close()) })
+	_, err = conn.ExecContext(ctx, "SELECT pg_advisory_lock_shared($1, hashtext($2))", int32(store.AdvisoryLockKeyProjectLifecycle), projectID)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		_, err := conn.ExecContext(context.Background(), "SELECT pg_advisory_unlock_shared($1, hashtext($2))", int32(store.AdvisoryLockKeyProjectLifecycle), projectID)
+		require.NoError(t, err)
+	})
+
+	service := NewProjectService(stores, nil, nil, nil)
+	_, err = service.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: "projects/" + projectID}))
+	require.Equal(t, connect.CodeAborted, connect.CodeOf(err))
+	require.ErrorContains(t, err, "resource is busy; retry")
+
+	project, err := stores.GetProject(ctx, &store.FindProjectMessage{Workspace: "default", ResourceID: &projectID, ShowDeleted: true})
+	require.NoError(t, err)
+	require.NotNil(t, project)
+	require.False(t, project.Deleted)
+}
+
 func TestProjectPurgeCleansSampleBeforeDeletingMetadata(t *testing.T) {
 	ctx, stores, projectID, instanceID, _ := setupProjectInstanceLifecycleAPITest(t)
 	manager := &sampleManagerStub{}

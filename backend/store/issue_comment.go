@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/pkg/errors"
@@ -148,6 +149,10 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 		issueIDs = append(issueIDs, create.IssueUID)
 		payloads = append(payloads, payload)
 	}
+	scope := lifecycleScope{}
+	for _, projectID := range projectIDs {
+		scope.addProject(projectID, lifecycleActive)
+	}
 
 	// Use UNNEST to insert all comments in one query.
 	//
@@ -174,7 +179,9 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 		}
 
 		create := creates[0]
-		if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.ResourceID, &create.CreatedAt, &create.UpdatedAt); err != nil {
+		if err := s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+			return tx.QueryRowContext(ctx, query, args...).Scan(&create.ResourceID, &create.CreatedAt, &create.UpdatedAt)
+		}); err != nil {
 			return nil, errors.Wrapf(err, "failed to insert")
 		}
 		create.CreatorEmail = creator
@@ -187,7 +194,10 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	if err := s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, query, args...)
+		return err
+	}); err != nil {
 		return nil, errors.Wrapf(err, "failed to batch insert comments")
 	}
 
@@ -208,7 +218,10 @@ func (s *Store) UpdateIssueComment(ctx context.Context, patch *UpdateIssueCommen
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	if err := s.runProjectLifecycleWrite(ctx, patch.ProjectID, lifecycleExisting, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, query, args...)
+		return err
+	}); err != nil {
 		return errors.Wrapf(err, "failed to update issue comment")
 	}
 	return nil

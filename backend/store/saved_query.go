@@ -331,47 +331,41 @@ func (s *Store) SetSavedQueryBindings(ctx context.Context, projectID, resourceID
 	if err != nil {
 		return false, err
 	}
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return false, errors.Wrap(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
-	// Scoped to the project the caller named, not the saved query's global id.
-	// A project purge re-parents its members' saved queries to the default
-	// project, so a write resolved against the old project must land on
-	// nothing rather than on a row that has since moved out from under it.
-	var currentBytes []byte
-	if err := tx.QueryRowContext(ctx,
-		`SELECT bindings FROM saved_query WHERE resource_id = $1 AND project = $2 FOR UPDATE`,
-		resourceID, projectID).Scan(&currentBytes); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return false, nil
+	scope := lifecycleScope{}
+	scope.addProject(projectID, lifecycleExisting)
+	applied := false
+	err = s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		// Scope to the project the caller named so a write cannot land on a row
+		// that purge has reassigned to the default project.
+		var currentBytes []byte
+		if err := tx.QueryRowContext(ctx,
+			`SELECT bindings FROM saved_query WHERE resource_id = $1 AND project = $2 FOR UPDATE`,
+			resourceID, projectID).Scan(&currentBytes); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil
+			}
+			return errors.Wrapf(err, "failed to lock saved query %s", resourceID)
 		}
-		return false, errors.Wrapf(err, "failed to lock saved query %s", resourceID)
-	}
-	current, err := unmarshalSavedQueryBindings(currentBytes)
-	if err != nil {
-		return false, err
-	}
-	currentEtag, err := SavedQueryPolicyEtag(current)
-	if err != nil {
-		return false, err
-	}
-	if expectedEtag != currentEtag {
-		return false, ErrSavedQueryEtagMismatch
-	}
-
-	if _, err := tx.ExecContext(ctx,
-		`UPDATE saved_query SET bindings = $1 WHERE resource_id = $2 AND project = $3`,
-		marshalled, resourceID, projectID); err != nil {
-		return false, errors.Wrapf(err, "failed to update bindings for saved query %s", resourceID)
-	}
-	if err := tx.Commit(); err != nil {
-		return false, errors.Wrap(err, "failed to commit transaction")
-	}
-	return true, nil
+		current, err := unmarshalSavedQueryBindings(currentBytes)
+		if err != nil {
+			return err
+		}
+		currentEtag, err := SavedQueryPolicyEtag(current)
+		if err != nil {
+			return err
+		}
+		if expectedEtag != currentEtag {
+			return ErrSavedQueryEtagMismatch
+		}
+		if _, err := tx.ExecContext(ctx,
+			`UPDATE saved_query SET bindings = $1 WHERE resource_id = $2 AND project = $3`,
+			marshalled, resourceID, projectID); err != nil {
+			return errors.Wrapf(err, "failed to update bindings for saved query %s", resourceID)
+		}
+		applied = true
+		return nil
+	})
+	return applied, err
 }
 
 // ErrSavedQueryEtagMismatch reports that the policy moved under a
@@ -385,18 +379,6 @@ var ErrSavedQueryEtagMismatch = errors.New("saved query policy etag mismatch")
 func (s *Store) CreateSavedQuery(ctx context.Context, create *SavedQueryMessage) (*SavedQueryMessage, error) {
 	payloadStr, err := protojson.Marshal(&storepb.SavedQueryPayload{Database: create.Database})
 	if err != nil {
-		return nil, err
-	}
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
-	// A saved query is a new child row, so it takes the "requires an active
-	// project" fence: lock the parent and refuse if it is archived or purged.
-	if err := lockActiveProject(ctx, tx, create.ProjectID); err != nil {
 		return nil, err
 	}
 
@@ -415,19 +397,23 @@ func (s *Store) CreateSavedQuery(ctx context.Context, create *SavedQueryMessage)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(
-		&create.ResourceID,
-		&create.CreatedAt,
-		&create.UpdatedAt,
-		&create.Size,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
+	scope := lifecycleScope{}
+	scope.addProject(create.ProjectID, lifecycleActive)
+	if err := s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		if err := tx.QueryRowContext(ctx, query, args...).Scan(
+			&create.ResourceID,
+			&create.CreatedAt,
+			&create.UpdatedAt,
+			&create.Size,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				return common.FormatDBErrorEmptyRowWithQuery(query)
+			}
+			return err
 		}
+		return nil
+	}); err != nil {
 		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
 
 	return create, nil
@@ -461,16 +447,18 @@ func (s *Store) PatchSavedQuery(ctx context.Context, patch *PatchSavedQueryMessa
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
 	}
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	scope := lifecycleScope{}
+	scope.addProject(patch.ProjectID, lifecycleExisting)
+	return s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, query, args...)
 		return err
-	}
-	return nil
+	})
 }
 
 // DeleteSavedQuery deletes an existing saved query and reports whether it was
 // still there to delete. Star rows are deleted first, in full primary-key
 // order — explicitly, not via the FK cascade (which would lock the parent
-// first) — matching the star and purge lock order so a delete racing a star
+// first) — matching the star/delete order so a delete racing a star
 // toggle or a purge cannot deadlock.
 //
 // Both statements scope by the project the caller was authorized in: a purge
@@ -481,7 +469,7 @@ func (s *Store) PatchSavedQuery(ctx context.Context, patch *PatchSavedQueryMessa
 // also restores any stars the first statement removed, and the caller gets
 // false to answer NotFound.
 //
-// Lifecycle policy (per the store's purge-fence rule): writers on existing
+// Lifecycle policy: writers on existing
 // rows — delete, patch, star — require the row in the authorized project,
 // not an active project. Archived projects are unreachable through every
 // read path (the project.deleted = FALSE fence on the fetches), so the only
@@ -490,13 +478,11 @@ func (s *Store) PatchSavedQuery(ctx context.Context, patch *PatchSavedQueryMessa
 // Only creation, which adds a row a purge cannot see, requires an active
 // project.
 func (s *Store) DeleteSavedQuery(ctx context.Context, projectID, resourceID string) (bool, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return false, errors.Wrap(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
-	if _, err := tx.ExecContext(ctx, `
+	scope := lifecycleScope{}
+	scope.addProject(projectID, lifecycleExisting)
+	deleted := false
+	err := s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx, `
 		DELETE FROM saved_query_star
 		WHERE (saved_query, principal) IN (
 			SELECT saved_query, principal
@@ -509,21 +495,21 @@ func (s *Store) DeleteSavedQuery(ctx context.Context, projectID, resourceID stri
 			ORDER BY saved_query, principal
 			FOR UPDATE
 		)
-	`, resourceID, projectID); err != nil {
-		return false, errors.Wrapf(err, "failed to delete stars for saved query %s", resourceID)
-	}
-	result, err := tx.ExecContext(ctx, `DELETE FROM saved_query WHERE resource_id = $1 AND project = $2`, resourceID, projectID)
-	if err != nil {
-		return false, err
-	}
-	deleted, err := result.RowsAffected()
-	if err != nil {
-		return false, errors.Wrap(err, "failed to count deleted saved queries")
-	}
-	if deleted == 0 {
-		return false, nil
-	}
-	return true, tx.Commit()
+		`, resourceID, projectID); err != nil {
+			return errors.Wrapf(err, "failed to delete stars for saved query %s", resourceID)
+		}
+		result, err := tx.ExecContext(ctx, `DELETE FROM saved_query WHERE resource_id = $1 AND project = $2`, resourceID, projectID)
+		if err != nil {
+			return err
+		}
+		rows, err := result.RowsAffected()
+		if err != nil {
+			return errors.Wrap(err, "failed to count deleted saved queries")
+		}
+		deleted = rows != 0
+		return nil
+	})
+	return deleted, err
 }
 
 // SetSavedQueryStar stars or unstars a saved query for a principal, and
@@ -539,61 +525,57 @@ func (s *Store) DeleteSavedQuery(ctx context.Context, projectID, resourceID stri
 // row means. Removing an existing star stays project-blind: the star is the
 // caller's own marker, removable wherever its row went.
 func (s *Store) SetSavedQueryStar(ctx context.Context, projectID, savedQueryResourceID, principal string, starred bool) (bool, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return false, errors.Wrap(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
-	var exists bool
-	if err := tx.QueryRowContext(ctx, `
+	scope := lifecycleScope{}
+	scope.addProject(projectID, lifecycleExisting)
+	applied := false
+	err := s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		var exists bool
+		if err := tx.QueryRowContext(ctx, `
 		SELECT EXISTS (
 			SELECT 1
 			FROM saved_query_star
 			WHERE saved_query = $1 AND principal = $2
 			FOR UPDATE
 		)
-	`, savedQueryResourceID, principal).Scan(&exists); err != nil {
-		return false, errors.Wrap(err, "failed to lock star row")
-	}
+		`, savedQueryResourceID, principal).Scan(&exists); err != nil {
+			return errors.Wrap(err, "failed to lock star row")
+		}
 
-	switch {
-	case starred && !exists:
-		var one int
-		if err := tx.QueryRowContext(ctx, `
+		switch {
+		case starred && !exists:
+			var one int
+			if err := tx.QueryRowContext(ctx, `
 			SELECT 1
 			FROM saved_query
 			WHERE resource_id = $1 AND project = $2
 			FOR UPDATE
-		`, savedQueryResourceID, projectID).Scan(&one); err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return false, nil
+			`, savedQueryResourceID, projectID).Scan(&one); err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					return nil
+				}
+				return errors.Wrapf(err, "failed to lock saved query %s", savedQueryResourceID)
 			}
-			return false, errors.Wrapf(err, "failed to lock saved query %s", savedQueryResourceID)
-		}
-		if _, err := tx.ExecContext(ctx, `
+			if _, err := tx.ExecContext(ctx, `
 			INSERT INTO saved_query_star (saved_query, principal)
 			VALUES ($1, $2)
 			ON CONFLICT (saved_query, principal) DO NOTHING
-		`, savedQueryResourceID, principal); err != nil {
-			return false, errors.Wrap(err, "failed to insert star")
-		}
-	case !starred && exists:
-		if _, err := tx.ExecContext(ctx, `
+			`, savedQueryResourceID, principal); err != nil {
+				return errors.Wrap(err, "failed to insert star")
+			}
+		case !starred && exists:
+			if _, err := tx.ExecContext(ctx, `
 			DELETE FROM saved_query_star
 			WHERE saved_query = $1 AND principal = $2
-		`, savedQueryResourceID, principal); err != nil {
-			return false, errors.Wrap(err, "failed to delete star")
+			`, savedQueryResourceID, principal); err != nil {
+				return errors.Wrap(err, "failed to delete star")
+			}
+		default:
+			// Already in the requested state.
 		}
-	default:
-		// Already in the requested state: an unstar of a row that is gone
-		// needs no parent, so it is reported as applied.
-	}
-
-	if err := tx.Commit(); err != nil {
-		return false, err
-	}
-	return true, nil
+		applied = true
+		return nil
+	})
+	return applied, err
 }
 
 // BatchUpdateSavedQueryFolder re-files the given saved queries into folder.
@@ -610,7 +592,11 @@ func (s *Store) MoveSavedQueryFolder(ctx context.Context, projectID, creator, so
 	if source == "" {
 		return 0, errors.New("source folder cannot be empty")
 	}
-	result, err := s.GetDB().ExecContext(ctx, `
+	scope := lifecycleScope{}
+	scope.addProject(projectID, lifecycleExisting)
+	moved := int64(0)
+	err := s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		result, err := tx.ExecContext(ctx, `
 		WITH locked AS (
 			SELECT resource_id FROM saved_query
 			WHERE project = $1 AND creator = $2 AND (folder = $3 OR folder LIKE $4)
@@ -621,15 +607,14 @@ func (s *Store) MoveSavedQueryFolder(ctx context.Context, projectID, creator, so
 		SET folder = ltrim($5 || substring(folder from length($3) + 1), '/'),
 		    updated_at = now()
 		WHERE resource_id IN (SELECT resource_id FROM locked)
-	`, projectID, creator, source, escapeLikePattern(source)+"/%", target)
-	if err != nil {
-		return 0, errors.Wrap(err, "failed to move saved query folder")
-	}
-	moved, err := result.RowsAffected()
-	if err != nil {
-		return 0, errors.Wrap(err, "failed to count moved saved queries")
-	}
-	return int(moved), nil
+		`, projectID, creator, source, escapeLikePattern(source)+"/%", target)
+		if err != nil {
+			return errors.Wrap(err, "failed to move saved query folder")
+		}
+		moved, err = result.RowsAffected()
+		return errors.Wrap(err, "failed to count moved saved queries")
+	})
+	return int(moved), err
 }
 
 // ListSavedQueryFolderPaths returns the distinct folder paths of the saved

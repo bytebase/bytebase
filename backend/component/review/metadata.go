@@ -2,6 +2,7 @@ package review
 
 import (
 	"context"
+	"database/sql"
 	"slices"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -42,91 +43,82 @@ func (w *Workflow) UpdateIssueMetadata(ctx context.Context, input UpdateIssueMet
 		return nil, workflowError(ErrorNotFound, "project %s not found", input.ProjectID)
 	}
 
-	tx, err := w.store.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to begin issue metadata transaction")
-	}
-	defer tx.Rollback()
-	issue, err := lockIssue(ctx, tx, input.ProjectID, input.IssueUID)
-	if err != nil {
-		return nil, err
-	}
-	if issue == nil {
-		return nil, workflowError(ErrorNotFound, "issue %d not found in project %s", input.IssueUID, input.ProjectID)
-	}
-	if input.ExpectedDraft != nil && issue.Payload.GetDraft() != *input.ExpectedDraft {
-		return nil, workflowError(ErrorConflict, "issue draft state changed while metadata was being updated")
-	}
-	result := &UpdateIssueMetadataResult{Issue: issue}
-	patch := &store.UpdateIssueMessage{}
-	if input.Title != nil && *input.Title != issue.Title {
-		patch.Title = input.Title
-		result.Events = append(result.Events, IssueTitleUpdatedEvent{FromTitle: issue.Title, ToTitle: *input.Title})
-	}
-	if input.Description != nil && *input.Description != issue.Description {
-		patch.Description = input.Description
-		result.Events = append(result.Events, IssueDescriptionUpdatedEvent{FromDescription: issue.Description, ToDescription: *input.Description})
-	}
-
-	var labels []string
-	oldLabels := store.CanonicalizeIssueLabels(issue.Payload.GetLabels())
-	labelsChanged := false
-	if input.Labels != nil {
-		labels = store.CanonicalizeIssueLabels(*input.Labels)
-		labelsChanged = !slices.Equal(oldLabels, labels)
-	}
-	if !labelsChanged && patch.Title == nil && patch.Description == nil {
-		if err := tx.Commit(); err != nil {
-			return nil, workflowWrap(ErrorInternal, err, "failed to commit issue metadata transaction")
+	var result *UpdateIssueMetadataResult
+	err = w.store.RunActiveProjectAndInstancesLifecycleWrite(ctx, input.ProjectID, nil, func(tx *sql.Tx) error {
+		issue, err := lockIssue(ctx, tx, input.ProjectID, input.IssueUID)
+		if err != nil {
+			return err
 		}
-		return result, nil
-	}
+		if issue == nil {
+			return workflowError(ErrorNotFound, "issue %d not found in project %s", input.IssueUID, input.ProjectID)
+		}
+		if input.ExpectedDraft != nil && issue.Payload.GetDraft() != *input.ExpectedDraft {
+			return workflowError(ErrorConflict, "issue draft state changed while metadata was being updated")
+		}
+		result = &UpdateIssueMetadataResult{Issue: issue}
+		patch := &store.UpdateIssueMessage{}
+		if input.Title != nil && *input.Title != issue.Title {
+			patch.Title = input.Title
+			result.Events = append(result.Events, IssueTitleUpdatedEvent{FromTitle: issue.Title, ToTitle: *input.Title})
+		}
+		if input.Description != nil && *input.Description != issue.Description {
+			patch.Description = input.Description
+			result.Events = append(result.Events, IssueDescriptionUpdatedEvent{FromDescription: issue.Description, ToDescription: *input.Description})
+		}
 
-	if labelsChanged {
-		var plan *store.PlanMessage
-		if !issue.Payload.GetDraft() && issue.Type == storepb.Issue_DATABASE_CHANGE && issue.PlanUID != nil {
-			plan, err = lockIssuePlan(ctx, tx, issue)
-			if err != nil {
-				return nil, err
+		var labels []string
+		oldLabels := store.CanonicalizeIssueLabels(issue.Payload.GetLabels())
+		labelsChanged := false
+		if input.Labels != nil {
+			labels = store.CanonicalizeIssueLabels(*input.Labels)
+			labelsChanged = !slices.Equal(oldLabels, labels)
+		}
+		if !labelsChanged && patch.Title == nil && patch.Description == nil {
+			return nil
+		}
+
+		if labelsChanged {
+			var plan *store.PlanMessage
+			if !issue.Payload.GetDraft() && issue.Type == storepb.Issue_DATABASE_CHANGE && issue.PlanUID != nil {
+				plan, err = lockIssuePlan(ctx, tx, issue)
+				if err != nil {
+					return err
+				}
+			}
+			resetApproval := shouldResetApprovalForLabels(issue, plan)
+			payloadPatch := &storepb.Issue{Labels: labels}
+			if resetApproval {
+				payloadPatch.Approval = &storepb.IssuePayloadApproval{ApprovalInputVersion: plan.Config.GetApprovalInputVersion()}
+				result.ApprovalReset = true
+			}
+			patch.PayloadUpsert = payloadPatch
+			patch.RemoveLabels = len(labels) == 0
+			result.Events = append(result.Events, IssueLabelsUpdatedEvent{FromLabels: oldLabels, ToLabels: labels})
+			if resetApproval {
+				result.Events = append(result.Events, ApprovalCheckEvent{})
 			}
 		}
-		resetApproval := shouldResetApprovalForLabels(issue, plan)
-		payloadPatch := &storepb.Issue{Labels: labels}
-		if resetApproval {
-			payloadPatch.Approval = &storepb.IssuePayloadApproval{
-				ApprovalInputVersion: plan.Config.GetApprovalInputVersion(),
+		updatedAt, err := store.UpdateIssueTx(ctx, tx, issue, patch)
+		if err != nil {
+			return workflowWrap(ErrorInternal, err, "failed to update issue metadata")
+		}
+		issue.UpdatedAt = updatedAt
+		if patch.Title != nil {
+			issue.Title = *patch.Title
+		}
+		if patch.Description != nil {
+			issue.Description = *patch.Description
+		}
+		if labelsChanged {
+			issue.Payload.Labels = labels
+			if result.ApprovalReset {
+				issue.Payload.Approval = patch.PayloadUpsert.Approval
 			}
-			result.ApprovalReset = true
 		}
-		patch.PayloadUpsert = payloadPatch
-		patch.RemoveLabels = len(labels) == 0
-		result.Events = append(result.Events, IssueLabelsUpdatedEvent{
-			FromLabels: oldLabels,
-			ToLabels:   labels,
-		})
-		if resetApproval {
-			result.Events = append(result.Events, ApprovalCheckEvent{})
-		}
-	}
-	updatedAt, err := store.UpdateIssueTx(ctx, tx, issue, patch)
+		return nil
+	})
 	if err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to update issue metadata")
-	}
-	issue.UpdatedAt = updatedAt
-	if patch.Title != nil {
-		issue.Title = *patch.Title
-	}
-	if patch.Description != nil {
-		issue.Description = *patch.Description
-	}
-	if labelsChanged {
-		issue.Payload.Labels = labels
-		if result.ApprovalReset {
-			issue.Payload.Approval = patch.PayloadUpsert.Approval
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to commit issue metadata transaction")
+		return nil, lifecycleWorkflowError(err)
 	}
 	return result, nil
 }

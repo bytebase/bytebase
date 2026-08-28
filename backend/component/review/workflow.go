@@ -239,45 +239,41 @@ func (w *Workflow) ReviewIssue(ctx context.Context, input IssueInput) (*IssueRes
 		w.beforeCommit()
 	}
 
-	tx, err := w.store.GetDB().BeginTx(ctx, nil)
+	var lockedIssue *store.IssueMessage
+	var plan *store.PlanMessage
+	var approved bool
+	err = w.store.RunActiveProjectAndInstancesLifecycleWrite(ctx, input.ProjectID, nil, func(tx *sql.Tx) error {
+		var err error
+		lockedIssue, err = lockIssue(ctx, tx, input.ProjectID, input.IssueUID)
+		if err != nil {
+			return err
+		}
+		if lockedIssue == nil {
+			return workflowError(ErrorNotFound, "issue %d not found in project %s", input.IssueUID, input.ProjectID)
+		}
+		plan, err = lockIssuePlan(ctx, tx, lockedIssue)
+		if err != nil {
+			return err
+		}
+		lockedApproval := lockedIssue.Payload.GetApproval()
+		if lockedIssue.Payload.GetDraft() != issue.Payload.GetDraft() || lockedIssue.Type != issue.Type || !sameInt64Pointer(lockedIssue.PlanUID, issue.PlanUID) || lockedApproval == nil || !lockedApproval.Equal(approval) {
+			return workflowError(ErrorConflict, "approval finding is stale")
+		}
+		if observedPlan != nil && (plan == nil || plan.Config.GetApprovalInputVersion() != observedPlan.Config.GetApprovalInputVersion()) {
+			return workflowError(ErrorConflict, "approval finding is stale")
+		}
+		if err := updateIssuePayload(ctx, tx, lockedIssue, &storepb.Issue{Approval: updatedApproval}, issuePayloadUpdateOptions{}); err != nil {
+			return workflowWrap(ErrorInternal, err, "failed to update issue approval")
+		}
+		lockedIssue.Payload.Approval = updatedApproval
+		approved, err = utils.CheckIssueApprovedForPlan(lockedIssue, plan)
+		if err != nil {
+			return workflowWrap(ErrorInternal, err, "failed to check if the issue is approved")
+		}
+		return nil
+	})
 	if err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to begin review transaction")
-	}
-	defer tx.Rollback()
-
-	lockedIssue, err := lockIssue(ctx, tx, input.ProjectID, input.IssueUID)
-	if err != nil {
-		return nil, err
-	}
-	if lockedIssue == nil {
-		return nil, workflowError(ErrorNotFound, "issue %d not found in project %s", input.IssueUID, input.ProjectID)
-	}
-	plan, err := lockIssuePlan(ctx, tx, lockedIssue)
-	if err != nil {
-		return nil, err
-	}
-	lockedApproval := lockedIssue.Payload.GetApproval()
-	if lockedIssue.Payload.GetDraft() != issue.Payload.GetDraft() ||
-		lockedIssue.Type != issue.Type ||
-		!sameInt64Pointer(lockedIssue.PlanUID, issue.PlanUID) ||
-		lockedApproval == nil || !lockedApproval.Equal(approval) {
-		return nil, workflowError(ErrorConflict, "approval finding is stale")
-	}
-	if observedPlan != nil && (plan == nil || plan.Config.GetApprovalInputVersion() != observedPlan.Config.GetApprovalInputVersion()) {
-		return nil, workflowError(ErrorConflict, "approval finding is stale")
-	}
-
-	if err := updateIssuePayload(ctx, tx, lockedIssue, &storepb.Issue{Approval: updatedApproval}, issuePayloadUpdateOptions{}); err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to update issue approval")
-	}
-	lockedIssue.Payload.Approval = updatedApproval
-
-	approved, err := utils.CheckIssueApprovedForPlan(lockedIssue, plan)
-	if err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to check if the issue is approved")
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to commit review transaction")
+		return nil, lifecycleWorkflowError(err)
 	}
 	if approved && input.Action == ActionApprove {
 		events = append(events, IssueApprovedEvent{})
@@ -537,6 +533,13 @@ func workflowReasonError(code ErrorCode, reason ErrorReason, message string) err
 
 func workflowWrap(_ ErrorCode, err error, message string) error {
 	return &Error{Code: ErrorInternal, Err: errors.Wrap(err, message)}
+}
+
+func lifecycleWorkflowError(err error) error {
+	if errors.Is(err, store.ErrLifecycleBusy) {
+		return &Error{Code: ErrorConflict, Err: err}
+	}
+	return err
 }
 
 func sameInt64Pointer(a, b *int64) bool {

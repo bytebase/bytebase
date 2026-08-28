@@ -105,7 +105,7 @@ func (s *Store) CreateQueryHistory(ctx context.Context, create *QueryHistoryMess
 	if err != nil {
 		return nil, errors.Wrapf(err, "invalid query history database %q", create.Database)
 	}
-	err = s.withDatabasePurgeFence(ctx, instanceID, databaseName, create.Project, nil, func(tx *sql.Tx, _ *databaseOwnership) error {
+	err = s.withDatabaseLifecycleWrite(ctx, instanceID, databaseName, create.Project, nil, func(tx *sql.Tx, _ *databaseOwnership) error {
 		return tx.QueryRowContext(ctx, query, args...).Scan(
 			&create.ResourceID,
 			&create.CreatedAt,

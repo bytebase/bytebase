@@ -9,8 +9,10 @@ import (
 // Called when user clicks BatchRunTasks to enable new notifications on retry.
 func (s *Store) ResetPlanWebhookDelivery(ctx context.Context, projectID string, planID int64) error {
 	query := `DELETE FROM plan_webhook_delivery WHERE project = $1 AND plan_id = $2`
-	_, err := s.GetDB().ExecContext(ctx, query, projectID, planID)
-	return err
+	return s.runProjectLifecycleWrite(ctx, projectID, lifecycleExisting, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, query, projectID, planID)
+		return err
+	})
 }
 
 // ClaimPipelineFailureNotification attempts to claim the right to send PIPELINE_FAILED webhook.
@@ -26,7 +28,9 @@ func (s *Store) ClaimPipelineFailureNotification(ctx context.Context, projectID 
 	`
 
 	var id int64
-	err := s.GetDB().QueryRowContext(ctx, query, projectID, planID).Scan(&id)
+	err := s.runProjectLifecycleWrite(ctx, projectID, lifecycleExisting, func(tx *sql.Tx) error {
+		return tx.QueryRowContext(ctx, query, projectID, planID).Scan(&id)
+	})
 	if err == sql.ErrNoRows {
 		return false, nil // Already exists
 	}
@@ -45,7 +49,9 @@ func (s *Store) ClaimPipelineCompletionNotification(ctx context.Context, project
 	`
 
 	var id int64
-	err := s.GetDB().QueryRowContext(ctx, query, projectID, planID).Scan(&id)
+	err := s.runProjectLifecycleWrite(ctx, projectID, lifecycleExisting, func(tx *sql.Tx) error {
+		return tx.QueryRowContext(ctx, query, projectID, planID).Scan(&id)
+	})
 	if err == sql.ErrNoRows {
 		return false, nil // Already exists
 	}

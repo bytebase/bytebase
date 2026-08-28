@@ -2,6 +2,7 @@ package review
 
 import (
 	"context"
+	"database/sql"
 	"slices"
 
 	"google.golang.org/protobuf/proto"
@@ -142,64 +143,59 @@ func (a *ApprovalEvaluator) ApplyApprovalTemplate(ctx context.Context, input App
 		a.beforeCommit()
 	}
 
-	tx, err := w.store.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to begin approval finding transaction")
-	}
-	defer tx.Rollback()
-	if observedPlan != nil {
-		if err := store.AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, input.ProjectID, observedPlan.UID); err != nil {
-			return nil, workflowWrap(ErrorInternal, err, "failed to acquire Plan review lock for approval finding")
+	var lockedIssue *store.IssueMessage
+	err = w.store.RunActiveProjectAndInstancesLifecycleWrite(ctx, input.ProjectID, nil, func(tx *sql.Tx) error {
+		if observedPlan != nil {
+			if err := store.AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, input.ProjectID, observedPlan.UID); err != nil {
+				return workflowWrap(ErrorInternal, err, "failed to acquire Plan review lock for approval finding")
+			}
 		}
-	}
-	// The existing Issue row is the project-lifecycle fence for this update:
-	// project purge deletes Issues before the Project. Approval may finish while
-	// a soft-deleted Project still exists, but cannot write after purge passes it.
-	lockedIssue, err := lockIssue(ctx, tx, input.ProjectID, input.IssueUID)
-	if err != nil {
-		return nil, err
-	}
-	if lockedIssue == nil {
-		return nil, workflowError(ErrorNotFound, "issue %d not found in project %s", input.IssueUID, input.ProjectID)
-	}
-	lockedPlan, err := getIssuePlan(ctx, tx, lockedIssue)
-	if err != nil {
-		return nil, err
-	}
-	if !approvalsEqual(lockedIssue.Payload.GetApproval(), observedApproval) ||
-		(labelsAffectApproval && !slices.Equal(store.CanonicalizeIssueLabels(lockedIssue.Payload.GetLabels()), observedLabels)) ||
-		lockedIssue.Payload.GetDraft() != issue.Payload.GetDraft() ||
-		lockedIssue.Type != issue.Type ||
-		!sameInt64Pointer(lockedIssue.PlanUID, issue.PlanUID) {
-		return nil, workflowError(ErrorConflict, "approval finding input changed")
-	}
-	if observedPlan != nil && (lockedPlan == nil || lockedPlan.Config.GetApprovalInputVersion() != approvalInputVersion) {
-		return nil, workflowError(ErrorConflict, "approval finding input changed")
-	}
-	if observedPlan != nil {
-		generation, err := lockPlanCheckRunGeneration(ctx, tx, input.ProjectID, observedPlan.UID)
+		var err error
+		lockedIssue, err = lockIssue(ctx, tx, input.ProjectID, input.IssueUID)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		if (generation == nil) != (observedPlanCheckRun == nil) ||
-			generation != nil && *generation != observedPlanCheckRun.Generation {
-			return nil, workflowError(ErrorConflict, "approval finding input changed")
+		if lockedIssue == nil {
+			return workflowError(ErrorNotFound, "issue %d not found in project %s", input.IssueUID, input.ProjectID)
 		}
-	}
-	if lockedPlan != nil && project.Setting.GetRequireIssueApproval() && lockedPlan.Config.GetHasRollout() {
-		return nil, workflowError(ErrorConflict, "rollout already started")
-	}
-
-	if err := updateIssuePayload(ctx, tx, lockedIssue, &storepb.Issue{
-		Approval:  evaluatedApproval,
-		RiskLevel: evaluatedRiskLevel,
-	}, issuePayloadUpdateOptions{}); err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to apply approval finding")
-	}
-	lockedIssue.Payload.Approval = evaluatedApproval
-	lockedIssue.Payload.RiskLevel = evaluatedRiskLevel
-	if err := tx.Commit(); err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to commit approval finding transaction")
+		lockedPlan, err := getIssuePlan(ctx, tx, lockedIssue)
+		if err != nil {
+			return err
+		}
+		if !approvalsEqual(lockedIssue.Payload.GetApproval(), observedApproval) ||
+			(labelsAffectApproval && !slices.Equal(store.CanonicalizeIssueLabels(lockedIssue.Payload.GetLabels()), observedLabels)) ||
+			lockedIssue.Payload.GetDraft() != issue.Payload.GetDraft() ||
+			lockedIssue.Type != issue.Type ||
+			!sameInt64Pointer(lockedIssue.PlanUID, issue.PlanUID) {
+			return workflowError(ErrorConflict, "approval finding input changed")
+		}
+		if observedPlan != nil && (lockedPlan == nil || lockedPlan.Config.GetApprovalInputVersion() != approvalInputVersion) {
+			return workflowError(ErrorConflict, "approval finding input changed")
+		}
+		if observedPlan != nil {
+			generation, err := lockPlanCheckRunGeneration(ctx, tx, input.ProjectID, observedPlan.UID)
+			if err != nil {
+				return err
+			}
+			if (generation == nil) != (observedPlanCheckRun == nil) || generation != nil && *generation != observedPlanCheckRun.Generation {
+				return workflowError(ErrorConflict, "approval finding input changed")
+			}
+		}
+		if lockedPlan != nil && project.Setting.GetRequireIssueApproval() && lockedPlan.Config.GetHasRollout() {
+			return workflowError(ErrorConflict, "rollout already started")
+		}
+		if err := updateIssuePayload(ctx, tx, lockedIssue, &storepb.Issue{
+			Approval:  evaluatedApproval,
+			RiskLevel: evaluatedRiskLevel,
+		}, issuePayloadUpdateOptions{}); err != nil {
+			return workflowWrap(ErrorInternal, err, "failed to apply approval finding")
+		}
+		lockedIssue.Payload.Approval = evaluatedApproval
+		lockedIssue.Payload.RiskLevel = evaluatedRiskLevel
+		return nil
+	})
+	if err != nil {
+		return nil, lifecycleWorkflowError(err)
 	}
 	result.Issue = lockedIssue
 	result.Applied = true

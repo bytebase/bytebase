@@ -202,38 +202,36 @@ func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage) (*IssueMe
 	}
 	tsVector := getTSVector(fmt.Sprintf("%s %s", create.Title, create.Description))
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin tx")
-	}
-	defer tx.Rollback()
+	scope := lifecycleScope{}
+	scope.addProject(create.ProjectID, lifecycleActive)
+	var nextID int64
+	err = s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		if create.PlanUID != nil {
+			if err := AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, create.ProjectID, *create.PlanUID); err != nil {
+				return errors.Wrap(err, "failed to acquire plan issue-rollout lock")
+			}
 
-	if create.PlanUID != nil {
-		if err := AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, create.ProjectID, *create.PlanUID); err != nil {
-			return nil, errors.Wrap(err, "failed to acquire plan issue-rollout lock")
-		}
-
-		var hasRollout bool
-		if err := tx.QueryRowContext(ctx, `
+			var hasRollout bool
+			if err := tx.QueryRowContext(ctx, `
 			SELECT COALESCE((config->>'hasRollout')::boolean, false)
 			FROM plan
 			WHERE project = $1
 			  AND id = $2
 			FOR UPDATE`,
-			create.ProjectID, *create.PlanUID).Scan(&hasRollout); err != nil {
-			return nil, errors.Wrapf(err, "failed to get plan %d", *create.PlanUID)
+				create.ProjectID, *create.PlanUID).Scan(&hasRollout); err != nil {
+				return errors.Wrapf(err, "failed to get plan %d", *create.PlanUID)
+			}
+			if create.Payload.GetDraft() && hasRollout {
+				return ErrPlanHasRollout
+			}
 		}
-		if create.Payload.GetDraft() && hasRollout {
-			return nil, ErrPlanHasRollout
+
+		nextID, err = nextProjectID(ctx, tx, "issue", create.ProjectID)
+		if err != nil {
+			return err
 		}
-	}
 
-	nextID, err := nextProjectID(ctx, tx, "issue", create.ProjectID)
-	if err != nil {
-		return nil, err
-	}
-
-	q := qb.Q().Space(`
+		q := qb.Q().Space(`
 		INSERT INTO issue (
 			id,
 			creator,
@@ -247,29 +245,30 @@ func (s *Store) CreateIssue(ctx context.Context, create *IssueMessage) (*IssueMe
 			ts_vector
 		)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-		nextID,
-		create.CreatorEmail,
-		create.ProjectID,
-		create.PlanUID,
-		create.Title,
-		create.Status.String(),
-		create.Type.String(),
-		create.Description,
-		payload,
-		tsVector,
-	)
+			nextID,
+			create.CreatorEmail,
+			create.ProjectID,
+			create.PlanUID,
+			create.Title,
+			create.Status.String(),
+			create.Type.String(),
+			create.Description,
+			payload,
+			tsVector,
+		)
 
-	query, args, err := q.ToSQL()
+		query, args, err := q.ToSQL()
+		if err != nil {
+			return errors.Wrapf(err, "failed to build sql")
+		}
+
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+			return err
+		}
+		return nil
+	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
 		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit tx")
 	}
 
 	create.UID = nextID
@@ -282,7 +281,10 @@ func (s *Store) UpdateIssue(ctx context.Context, projectID string, uid int64, pa
 	if err != nil {
 		return nil, err
 	}
-	if _, err := updateIssue(ctx, s.GetDB(), projectID, uid, oldIssue, patch); err != nil {
+	if err := s.runProjectLifecycleWrite(ctx, projectID, lifecycleExisting, func(tx *sql.Tx) error {
+		_, err := updateIssue(ctx, tx, projectID, uid, oldIssue, patch)
+		return err
+	}); err != nil {
 		return nil, err
 	}
 

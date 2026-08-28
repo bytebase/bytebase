@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"maps"
@@ -256,12 +257,7 @@ func (s *Store) filterSheetsForProject(ctx context.Context, projectID string, sh
 // Duplicate statements share the same blob (ON CONFLICT DO NOTHING); refs are
 // per project.
 //
-// Lifecycle policy: creating a sheet requires an active project. The
-// transaction takes the project purge fence before any row lock, then locks
-// the project row and rejects a missing or deleted project with NotFound,
-// serializing against project purge in both directions. Both inserts are
-// new-row-only; the foreign-key checks on project and sheet_blob are covered
-// by the fence and the project row lock.
+// Lifecycle policy: creating a sheet requires an active project.
 func (s *Store) CreateSheets(ctx context.Context, projectID string, creates ...*SheetMessage) ([]*SheetMessage, error) {
 	if projectID == "" {
 		return nil, errors.New("project is required to create sheets")
@@ -280,20 +276,10 @@ func (s *Store) CreateSheets(ctx context.Context, projectID string, creates ...*
 		c.Size = int64(len(c.Statement))
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
-	if err := acquireProjectPurgeLock(ctx, tx, projectID); err != nil {
-		return nil, errors.Wrapf(err, "failed to lock project purge fence for %s", projectID)
-	}
-	if err := lockActiveProject(ctx, tx, projectID); err != nil {
-		return nil, err
-	}
-
-	q := qb.Q().Space(`
+	scope := lifecycleScope{}
+	scope.addProject(projectID, lifecycleActive)
+	err := s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		q := qb.Q().Space(`
 		INSERT INTO sheet_blob (
 			sha256,
 			content
@@ -302,29 +288,30 @@ func (s *Store) CreateSheets(ctx context.Context, projectID string, creates ...*
 			unnest(CAST(? AS TEXT[]))
 		ON CONFLICT DO NOTHING
 	`, sha256s, statements)
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-		return nil, errors.Wrapf(err, "failed to insert sheet blobs")
-	}
+		query, args, err := q.ToSQL()
+		if err != nil {
+			return errors.Wrapf(err, "failed to build sql")
+		}
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+			return errors.Wrapf(err, "failed to insert sheet blobs")
+		}
 
-	q = qb.Q().Space(`
+		q = qb.Q().Space(`
 		INSERT INTO sheet_blob_ref (project, sha256)
 		SELECT ?, unnest(CAST(? AS BYTEA[]))
 		ON CONFLICT DO NOTHING
 	`, projectID, sha256s)
-	query, args, err = q.ToSQL()
+		query, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrapf(err, "failed to build sql")
+		}
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+			return errors.Wrapf(err, "failed to insert sheet blob refs")
+		}
+		return nil
+	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-		return nil, errors.Wrapf(err, "failed to insert sheet blob refs")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "failed to commit transaction")
+		return nil, err
 	}
 	return creates, nil
 }

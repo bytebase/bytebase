@@ -94,7 +94,7 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (
 	}
 
 	var resourceID string
-	err = s.withDatabasePurgeFence(ctx, create.InstanceID, create.DatabaseName, "", func(tx *sql.Tx) error {
+	err = s.withDatabaseLifecycleWrite(ctx, create.InstanceID, create.DatabaseName, "", func(tx *sql.Tx) error {
 		if create.SyncHistory == nil {
 			return nil
 		}
@@ -111,6 +111,13 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (
 }
 
 func (s *Store) UpdateChangelog(ctx context.Context, update *UpdateChangelogMessage) error {
+	var instanceID, databaseName string
+	if err := s.GetDB().QueryRowContext(ctx, "SELECT instance, db_name FROM changelog WHERE resource_id = $1", update.ResourceID).Scan(&instanceID, &databaseName); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return common.Errorf(common.NotFound, "changelog %s not found", update.ResourceID)
+		}
+		return errors.Wrap(err, "failed to resolve changelog lifecycle root")
+	}
 	set := qb.Q()
 	if v := update.SyncHistory; v != nil {
 		set.Comma("sync_history = ?", *v)
@@ -131,7 +138,10 @@ func (s *Store) UpdateChangelog(ctx context.Context, update *UpdateChangelogMess
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	if err := s.withDatabaseLifecycleWrite(ctx, instanceID, databaseName, "", nil, func(tx *sql.Tx, _ *databaseOwnership) error {
+		_, err := tx.ExecContext(ctx, query, args...)
+		return err
+	}); err != nil {
 		return errors.Wrapf(err, "failed to update")
 	}
 

@@ -80,6 +80,11 @@ func (e *Error) Error() string {
 	return e.Err.Error()
 }
 
+// Unwrap exposes the underlying error for errors.Is and errors.As.
+func (e *Error) Unwrap() error {
+	return e.Err
+}
+
 // ErrorCode unwraps an application error and returns its code.
 // Non-application errors always return EINTERNAL.
 func ErrorCode(err error) Code {

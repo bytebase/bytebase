@@ -32,7 +32,8 @@ This repo uses a single-context domain-doc layout. See `docs/agents/domain.md`.
 
 Anything that writes SQL against the metadata database is governed by
 [`backend/store/AGENTS.md`](backend/store/AGENTS.md): composite-primary-key
-predicates, pagination ordering, and transaction row-lock ordering. That means
+predicates, lifecycle coordination, pagination ordering, and transaction row-lock
+ordering. That means
 all of `backend/store/` — including the CEL-to-SQL filter builders, which live
 there and not in the service layer — plus the raw metadata reads in the
 `backend/tests/` collision tests. Read it before adding or modifying a query, a

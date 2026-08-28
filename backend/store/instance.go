@@ -224,33 +224,16 @@ func (s *Store) CreateInstance(ctx context.Context, instanceCreate *InstanceMess
 		environment = instanceCreate.EnvironmentID
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer tx.Rollback()
+	scope := lifecycleScope{}
 	if instanceCreate.ProjectID != nil {
 		if common.IsDefaultProject(instanceCreate.Workspace, *instanceCreate.ProjectID) {
 			return nil, errors.Errorf("default project %s cannot own an instance", *instanceCreate.ProjectID)
 		}
-		var deleted bool
-		if err := tx.QueryRowContext(ctx, `
-			SELECT deleted
-			FROM project
-			WHERE resource_id = $1 AND workspace = $2
-			FOR UPDATE
-		`, *instanceCreate.ProjectID, instanceCreate.Workspace).Scan(&deleted); err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, common.Errorf(common.NotFound, "project %s not found", *instanceCreate.ProjectID)
-			}
-			return nil, errors.Wrapf(err, "failed to lock project %s", *instanceCreate.ProjectID)
-		}
-		if deleted {
-			return nil, common.Errorf(common.NotFound, "project %s is deleted", *instanceCreate.ProjectID)
-		}
+		scope.addProject(*instanceCreate.ProjectID, lifecycleActive)
 	}
 
-	q := qb.Q().Space(`
+	err = s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		q := qb.Q().Space(`
 			INSERT INTO instance (
 				resource_id,
 				workspace,
@@ -259,14 +242,14 @@ func (s *Store) CreateInstance(ctx context.Context, instanceCreate *InstanceMess
 				metadata
 			) VALUES (?, ?, ?, ?, ?)
 		`, instanceCreate.ResourceID, instanceCreate.Workspace, instanceCreate.ProjectID, environment, metadataBytes)
-	query, args, err := q.ToSQL()
+		query, args, err := q.ToSQL()
+		if err != nil {
+			return errors.Wrapf(err, "failed to build sql")
+		}
+		_, err = tx.ExecContext(ctx, query, args...)
+		return err
+	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to build sql")
-	}
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
 		return nil, err
 	}
 
@@ -371,100 +354,96 @@ func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage
 func (s *Store) updateInstanceLifecycle(ctx context.Context, patch *UpdateInstanceMessage, q *qb.Query) (*InstanceMessage, error) {
 	resourceID := *patch.ResourceID
 	var projectFences []string
+	var ownerProject sql.NullString
+	if err := s.GetDB().QueryRowContext(ctx, "SELECT project FROM instance WHERE resource_id = $1", resourceID).Scan(&ownerProject); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, common.Errorf(common.NotFound, "instance %s not found", resourceID)
+		}
+		return nil, errors.Wrapf(err, "failed to find instance %s", resourceID)
+	}
+	if ownerProject.Valid {
+		projectFences = append(projectFences, ownerProject.String)
+	}
 	if destinationProjectID := patch.MoveDatabasesToProjectID; destinationProjectID != nil {
 		var err error
-		projectFences, err = s.listInstanceDatabaseProjects(ctx, resourceID)
+		databaseProjects, err := s.listInstanceDatabaseProjects(ctx, resourceID)
 		if err != nil {
 			return nil, err
 		}
+		projectFences = append(projectFences, databaseProjects...)
 		projectFences = append(projectFences, *destinationProjectID)
-		slices.Sort(projectFences)
-		projectFences = slices.Compact(projectFences)
 	}
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to begin instance lifecycle transaction")
-	}
-	defer tx.Rollback()
+	slices.Sort(projectFences)
+	projectFences = slices.Compact(projectFences)
+	sharedScope := lifecycleScope{}
 	for _, projectID := range projectFences {
-		if err := acquireProjectPurgeLock(ctx, tx, projectID); err != nil {
-			return nil, errors.Wrapf(err, "failed to lock project purge fence for %s", projectID)
-		}
+		sharedScope.addProject(projectID, lifecycleExisting)
 	}
-	if err := acquireInstancePurgeLock(ctx, tx, resourceID); err != nil {
-		return nil, errors.Wrapf(err, "failed to lock instance lifecycle fence for %s", resourceID)
-	}
-
-	activeTaskRunCount, err := lockActiveTaskRunsForInstance(ctx, tx, resourceID)
-	if err != nil {
-		return nil, err
-	}
-	if activeTaskRunCount > 0 {
-		operation := "archiving"
-		if !*patch.Deleted {
-			operation = "restoring"
-		}
-		return nil, common.Errorf(common.Conflict, "instance %s has %d active task run(s); cancel them or wait for them to finish before %s", resourceID, activeTaskRunCount, operation)
-	}
-
+	exclusiveScope := lifecycleScope{}
+	exclusiveScope.addInstance(resourceID, lifecycleExisting)
 	var movedDatabases []instanceDatabaseTarget
-	if destinationProjectID := patch.MoveDatabasesToProjectID; destinationProjectID != nil {
-		movedDatabases, err = lockInstanceDatabases(ctx, tx, resourceID)
-		if err != nil {
-			return nil, err
-		}
-		for _, database := range movedDatabases {
-			if !slices.Contains(projectFences, database.projectID) {
-				return nil, common.Errorf(common.Conflict, "database ownership changed to project %s for %s; retry", database.projectID, common.FormatDatabase(resourceID, database.name))
-			}
-		}
-
-		var instanceProject sql.NullString
-		if err := tx.QueryRowContext(ctx, `
-			SELECT project FROM instance WHERE resource_id = $1 FOR NO KEY UPDATE
-		`, resourceID).Scan(&instanceProject); err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, common.Errorf(common.NotFound, "instance %s not found", resourceID)
-			}
-			return nil, errors.Wrapf(err, "failed to lock instance %s", resourceID)
-		}
-		if instanceProject.Valid {
-			return nil, common.Errorf(common.Invalid, "cannot transfer databases while archiving project instance %s", resourceID)
-		}
-
-		projectIDs := append([]string(nil), *destinationProjectID)
-		for _, database := range movedDatabases {
-			projectIDs = append(projectIDs, database.projectID)
-		}
-		slices.Sort(projectIDs)
-		projectIDs = slices.Compact(projectIDs)
-		for _, projectID := range projectIDs {
-			var foundProjectID string
-			if err := tx.QueryRowContext(ctx, "SELECT resource_id FROM project WHERE resource_id = $1 FOR UPDATE", projectID).Scan(&foundProjectID); err != nil {
-				if errors.Is(err, sql.ErrNoRows) {
-					return nil, common.Errorf(common.NotFound, "project %s not found", projectID)
-				}
-				return nil, errors.Wrapf(err, "failed to lock project %s", projectID)
-			}
-		}
-		if _, err := tx.ExecContext(ctx, "UPDATE db SET project = $1 WHERE instance = $2", *destinationProjectID, resourceID); err != nil {
-			return nil, errors.Wrapf(err, "failed to transfer databases for instance %s", resourceID)
-		}
-	}
-
-	q.Space("RETURNING workspace, project")
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to build instance lifecycle query")
-	}
 	var workspace string
 	var project sql.NullString
-	if err := tx.QueryRowContext(ctx, query, args...).Scan(&workspace, &project); err != nil {
+	err := s.runLifecycleTransition(ctx, sharedScope, exclusiveScope, func(tx *sql.Tx) error {
+		activeTaskRunCount, err := lockActiveTaskRunsForInstance(ctx, tx, resourceID)
+		if err != nil {
+			return err
+		}
+		if activeTaskRunCount > 0 {
+			operation := "archiving"
+			if !*patch.Deleted {
+				operation = "restoring"
+			}
+			return common.Errorf(common.Conflict, "instance %s has %d active task run(s); cancel them or wait for them to finish before %s", resourceID, activeTaskRunCount, operation)
+		}
+
+		if destinationProjectID := patch.MoveDatabasesToProjectID; destinationProjectID != nil {
+			movedDatabases, err = lockInstanceDatabases(ctx, tx, resourceID)
+			if err != nil {
+				return err
+			}
+			for _, database := range movedDatabases {
+				if !slices.Contains(projectFences, database.projectID) {
+					return common.Errorf(common.Conflict, "database ownership changed to project %s for %s; retry", database.projectID, common.FormatDatabase(resourceID, database.name))
+				}
+			}
+
+			var instanceProject sql.NullString
+			if err := tx.QueryRowContext(ctx, `
+			SELECT project FROM instance WHERE resource_id = $1
+		`, resourceID).Scan(&instanceProject); err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					return common.Errorf(common.NotFound, "instance %s not found", resourceID)
+				}
+				return errors.Wrapf(err, "failed to read instance %s", resourceID)
+			}
+			if instanceProject.Valid {
+				return common.Errorf(common.Invalid, "cannot transfer databases while archiving project instance %s", resourceID)
+			}
+
+			projectIDs := append([]string(nil), *destinationProjectID)
+			for _, database := range movedDatabases {
+				projectIDs = append(projectIDs, database.projectID)
+			}
+			slices.Sort(projectIDs)
+			projectIDs = slices.Compact(projectIDs)
+			if !slices.Equal(projectIDs, projectFences) {
+				return common.Errorf(common.Conflict, "instance database ownership changed; retry")
+			}
+			if _, err := tx.ExecContext(ctx, "UPDATE db SET project = $1 WHERE instance = $2", *destinationProjectID, resourceID); err != nil {
+				return errors.Wrapf(err, "failed to transfer databases for instance %s", resourceID)
+			}
+		}
+
+		q.Space("RETURNING workspace, project")
+		query, args, err := q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build instance lifecycle query")
+		}
+		return tx.QueryRowContext(ctx, query, args...).Scan(&workspace, &project)
+	})
+	if err != nil {
 		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "failed to commit instance lifecycle transaction")
 	}
 
 	s.instanceCache.Remove(getInstanceCacheKey(resourceID))
@@ -850,15 +829,29 @@ func (s *Store) deobfuscateInstances(ctx context.Context, instances []*InstanceM
 // - Test cleanup
 // Following AIP-164/165, this only works on instances where deleted = TRUE.
 func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID string) error {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(err, "failed to begin transaction")
+	var projectID sql.NullString
+	if err := s.GetDB().QueryRowContext(ctx, "SELECT project FROM instance WHERE resource_id = $1 AND workspace = $2", resourceID, workspace).Scan(&projectID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return common.Errorf(common.NotFound, "instance %s not found", resourceID)
+		}
+		return errors.Wrapf(err, "failed to resolve instance %s lifecycle scope", resourceID)
 	}
-	defer tx.Rollback()
-	if err := acquireInstancePurgeLock(ctx, tx, resourceID); err != nil {
-		return errors.Wrapf(err, "failed to lock instance purge fence for %s", resourceID)
+	sharedScope := lifecycleScope{}
+	if projectID.Valid {
+		sharedScope.addProject(projectID.String, lifecycleExisting)
 	}
+	exclusiveScope := lifecycleScope{}
+	exclusiveScope.addInstance(resourceID, lifecycleExisting)
+	if err := s.runLifecycleTransition(ctx, sharedScope, exclusiveScope, func(tx *sql.Tx) error {
+		return deleteInstanceInLifecycleTransaction(ctx, tx, workspace, resourceID)
+	}); err != nil {
+		return err
+	}
+	s.removeInstancePurgeCaches(workspace, resourceID)
+	return nil
+}
 
+func deleteInstanceInLifecycleTransaction(ctx context.Context, tx *sql.Tx, workspace string, resourceID string) error {
 	// Delete query history before locking database-scoped rows to preserve the
 	// canonical sibling-branch order.
 	q := qb.Q().Space(`
@@ -1010,16 +1003,14 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 		return errors.Wrapf(err, "failed to delete databases for instance %s", resourceID)
 	}
 
-	// Lock the instance only after all descendant branches. A project owner is
-	// locked after its instance, matching the canonical child-to-parent order.
-	var projectID sql.NullString
+	// Revalidate the terminal state after child cleanup. The lifecycle gate owns
+	// root coordination; this read preserves the non-idempotent purge contract.
 	var deleted bool
 	if err := tx.QueryRowContext(ctx, `
-		SELECT project, deleted
+		SELECT deleted
 		FROM instance
 		WHERE resource_id = $1 AND workspace = $2
-		FOR UPDATE
-	`, resourceID, workspace).Scan(&projectID, &deleted); err != nil {
+	`, resourceID, workspace).Scan(&deleted); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return errors.Errorf("instance %s not found or not marked as deleted", resourceID)
 		}
@@ -1028,16 +1019,7 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 	if !deleted {
 		return errors.Errorf("instance %s not found or not marked as deleted", resourceID)
 	}
-	if projectID.Valid {
-		var lockedProjectID string
-		if err := tx.QueryRowContext(ctx, `
-			SELECT resource_id FROM project WHERE resource_id = $1 FOR UPDATE
-		`, projectID.String).Scan(&lockedProjectID); err != nil {
-			return errors.Wrapf(err, "failed to lock owning project %s", projectID.String)
-		}
-	}
-
-	// Delete the soft-deleted instance after locking its owning project.
+	// Delete the soft-deleted instance.
 	q = qb.Q().Space(`
 		DELETE FROM instance
 		WHERE resource_id = ? AND deleted = TRUE AND workspace = ?
@@ -1059,13 +1041,13 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 		return errors.Errorf("instance %s not found or not marked as deleted", resourceID)
 	}
 
-	if err := tx.Commit(); err != nil {
-		return errors.Wrap(err, "failed to commit transaction")
-	}
+	return nil
+}
 
-	// Publish cache invalidation only after the purge commits. Descendant cache
-	// keys carry the instance ID, so invalidation does not need to read every
-	// database row before deleting it.
+// removeInstancePurgeCaches publishes invalidation only after the lifecycle
+// transaction commits. Descendant cache keys carry the instance ID, so no
+// deleted rows need to be reread.
+func (s *Store) removeInstancePurgeCaches(workspace, resourceID string) {
 	s.instanceCache.Remove(getInstanceCacheKey(resourceID))
 	unscopedDatabaseCachePrefix := getDatabaseCacheKey("", resourceID, "")
 	workspaceDatabaseCachePrefix := getDatabaseCacheKey(workspace, resourceID, "")
@@ -1080,8 +1062,6 @@ func (s *Store) DeleteInstance(ctx context.Context, workspace string, resourceID
 			s.dbSchemaCache.Remove(key)
 		}
 	}
-
-	return nil
 }
 
 func GetListInstanceFilter(filter string) (*qb.Query, error) {

@@ -219,6 +219,9 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		},
 	})
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create access grant"))
 	}
 
@@ -246,6 +249,9 @@ func (s *AccessGrantService) CreateAccessGrant(ctx context.Context, request *con
 		Payload: grant.Payload,
 	})
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update access grant payload"))
 	}
 
@@ -368,6 +374,9 @@ func activateAccessGrant(ctx context.Context, stores *store.Store, accessGrantNa
 
 	updated, err := stores.UpdateAccessGrant(ctx, accessGrantID, update)
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to activate access grant"))
 	}
 
@@ -404,6 +413,9 @@ func (s *AccessGrantService) RevokeAccessGrant(ctx context.Context, request *con
 		Status: new(storepb.AccessGrant_REVOKED),
 	})
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to revoke access grant"))
 	}
 

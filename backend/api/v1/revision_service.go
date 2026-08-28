@@ -244,6 +244,9 @@ func (s *RevisionService) createRevisions(
 		revisionCreate := convertRevision(revision, database, sheetSha256s[i])
 		revisionM, err := s.store.CreateRevision(ctx, revisionCreate)
 		if err != nil {
+			if errors.Is(err, store.ErrLifecycleBusy) {
+				return nil, lifecycleBusyConnectError(err)
+			}
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create revision"))
 		}
 		createdRevisions = append(createdRevisions, convertToRevision(parent, revisionM))
@@ -269,6 +272,9 @@ func (s *RevisionService) DeleteRevision(
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
 	if err := s.store.DeleteRevision(ctx, revisionID, database.InstanceID, database.DatabaseName, user.Email); err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to delete revision %v", request.Name))
 	}
 	return connect.NewResponse(&emptypb.Empty{}), nil

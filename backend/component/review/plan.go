@@ -67,43 +67,39 @@ func (w *Workflow) UpdatePlan(ctx context.Context, input UpdatePlanInput) (*Upda
 	if w.beforePlanCommit != nil {
 		w.beforePlanCommit()
 	}
-	tx, err := w.store.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to begin Plan review transaction")
-	}
-	defer tx.Rollback()
+	var result *UpdatePlanResult
+	err := w.store.RunActiveProjectAndInstancesLifecycleWrite(ctx, input.ProjectID, nil, func(tx *sql.Tx) error {
+		if err := store.AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, input.ProjectID, input.PlanUID); err != nil {
+			return workflowWrap(ErrorInternal, err, "failed to acquire Plan review lock")
+		}
+		issue, err := lockIssueByPlan(ctx, tx, input.ProjectID, input.PlanUID)
+		if err != nil {
+			return err
+		}
+		plan, err := lockPlan(ctx, tx, input.Workspace, input.ProjectID, input.PlanUID)
+		if err != nil {
+			return err
+		}
+		if plan == nil {
+			return workflowError(ErrorNotFound, "plan %d not found in project %s", input.PlanUID, input.ProjectID)
+		}
+		if input.Specs != nil && plan.Config.GetHasRollout() {
+			return workflowError(ErrorFailedPrecondition, "cannot update specs for plan that has a rollout")
+		}
 
-	if err := store.AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, input.ProjectID, input.PlanUID); err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to acquire Plan review lock")
-	}
-	issue, err := lockIssueByPlan(ctx, tx, input.ProjectID, input.PlanUID)
-	if err != nil {
-		return nil, err
-	}
-	plan, err := lockPlan(ctx, tx, input.Workspace, input.ProjectID, input.PlanUID)
-	if err != nil {
-		return nil, err
-	}
-	if plan == nil {
-		return nil, workflowError(ErrorNotFound, "plan %d not found in project %s", input.PlanUID, input.ProjectID)
-	}
-	if input.Specs != nil && plan.Config.GetHasRollout() {
-		return nil, workflowError(ErrorFailedPrecondition, "cannot update specs for plan that has a rollout")
-	}
+		oldSpecs := plan.Config.GetSpecs()
+		updatedConfig := proto.CloneOf(plan.Config)
+		if input.Specs != nil {
+			updatedConfig.Specs = *input.Specs
+			updatedConfig.ApprovalInputVersion = plan.Config.GetApprovalInputVersion() + 1
+		}
+		config, err := protojson.Marshal(updatedConfig)
+		if err != nil {
+			return workflowWrap(ErrorInternal, err, "failed to marshal Plan config")
+		}
 
-	oldSpecs := plan.Config.GetSpecs()
-	updatedConfig := proto.CloneOf(plan.Config)
-	if input.Specs != nil {
-		updatedConfig.Specs = *input.Specs
-		updatedConfig.ApprovalInputVersion = plan.Config.GetApprovalInputVersion() + 1
-	}
-	config, err := protojson.Marshal(updatedConfig)
-	if err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to marshal Plan config")
-	}
-
-	updatedAt := time.Now()
-	if err := tx.QueryRowContext(ctx, `
+		updatedAt := time.Now()
+		if err := tx.QueryRowContext(ctx, `
 		UPDATE plan
 		SET updated_at = $1,
 			name = CASE WHEN $2 THEN $3 ELSE name END,
@@ -113,44 +109,44 @@ func (w *Workflow) UpdatePlan(ctx context.Context, input UpdatePlanInput) (*Upda
 		WHERE project = $10
 		  AND id = $11
 		RETURNING updated_at`,
-		updatedAt,
-		input.Title != nil, stringValue(input.Title),
-		input.Description != nil, stringValue(input.Description),
-		input.Deleted != nil, boolValue(input.Deleted),
-		input.Specs != nil, config,
-		input.ProjectID, input.PlanUID,
-	).Scan(&plan.UpdatedAt); err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to update Plan")
-	}
-	if input.Title != nil {
-		plan.Name = *input.Title
-	}
-	if input.Description != nil {
-		plan.Description = *input.Description
-	}
-	if input.Deleted != nil {
-		plan.Deleted = *input.Deleted
-	}
-	plan.Config = updatedConfig
-
-	result := &UpdatePlanResult{Plan: plan, Issue: issue}
-	if issue != nil && issue.Payload.GetDraft() {
-		status := issue.Status
-		if input.Deleted != nil {
-			status = storepb.Issue_OPEN
-			if *input.Deleted {
-				status = storepb.Issue_CANCELED
-			}
+			updatedAt,
+			input.Title != nil, stringValue(input.Title),
+			input.Description != nil, stringValue(input.Description),
+			input.Deleted != nil, boolValue(input.Deleted),
+			input.Specs != nil, config,
+			input.ProjectID, input.PlanUID,
+		).Scan(&plan.UpdatedAt); err != nil {
+			return workflowWrap(ErrorInternal, err, "failed to update Plan")
 		}
-		title := issue.Title
 		if input.Title != nil {
-			title = *input.Title
+			plan.Name = *input.Title
 		}
-		description := issue.Description
 		if input.Description != nil {
-			description = *input.Description
+			plan.Description = *input.Description
 		}
-		if err := tx.QueryRowContext(ctx, `
+		if input.Deleted != nil {
+			plan.Deleted = *input.Deleted
+		}
+		plan.Config = updatedConfig
+
+		result = &UpdatePlanResult{Plan: plan, Issue: issue}
+		if issue != nil && issue.Payload.GetDraft() {
+			status := issue.Status
+			if input.Deleted != nil {
+				status = storepb.Issue_OPEN
+				if *input.Deleted {
+					status = storepb.Issue_CANCELED
+				}
+			}
+			title := issue.Title
+			if input.Title != nil {
+				title = *input.Title
+			}
+			description := issue.Description
+			if input.Description != nil {
+				description = *input.Description
+			}
+			if err := tx.QueryRowContext(ctx, `
 			UPDATE issue
 			SET updated_at = $1,
 				name = $2,
@@ -161,37 +157,39 @@ func (w *Workflow) UpdatePlan(ctx context.Context, input UpdatePlanInput) (*Upda
 			  AND id = $7
 			  AND COALESCE((payload->>'draft')::boolean, false)
 			RETURNING updated_at`,
-			time.Now(), title, description, status.String(), store.IssueSearchVector(title, description),
-			input.ProjectID, issue.UID,
-		).Scan(&issue.UpdatedAt); err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return nil, workflowError(ErrorConflict, "linked draft issue was submitted while the Plan was being updated")
+				time.Now(), title, description, status.String(), store.IssueSearchVector(title, description),
+				input.ProjectID, issue.UID,
+			).Scan(&issue.UpdatedAt); err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					return workflowError(ErrorConflict, "linked draft issue was submitted while the Plan was being updated")
+				}
+				return workflowWrap(ErrorInternal, err, "failed to synchronize linked draft issue")
 			}
-			return nil, workflowWrap(ErrorInternal, err, "failed to synchronize linked draft issue")
+			issue.Title = title
+			issue.Description = description
+			issue.Status = status
+		} else if issue != nil && input.Specs != nil {
+			approval := &storepb.IssuePayloadApproval{
+				ApprovalFindingDone:  false,
+				ApprovalInputVersion: updatedConfig.GetApprovalInputVersion(),
+			}
+			if err := updateIssuePayload(ctx, tx, issue, &storepb.Issue{Approval: approval}, issuePayloadUpdateOptions{}); err != nil {
+				return workflowWrap(ErrorInternal, err, "failed to reset issue approval")
+			}
+			issue.Payload.Approval = approval
+			result.ApprovalReset = true
 		}
-		issue.Title = title
-		issue.Description = description
-		issue.Status = status
-	} else if issue != nil && input.Specs != nil {
-		approval := &storepb.IssuePayloadApproval{
-			ApprovalFindingDone:  false,
-			ApprovalInputVersion: updatedConfig.GetApprovalInputVersion(),
+		if issue != nil && input.Specs != nil && !planSpecsEqualSet(oldSpecs, *input.Specs) {
+			result.Events = append(result.Events, PlanUpdatedEvent{
+				FromSpecs: oldSpecs,
+				ToSpecs:   *input.Specs,
+			})
 		}
-		if err := updateIssuePayload(ctx, tx, issue, &storepb.Issue{Approval: approval}, issuePayloadUpdateOptions{}); err != nil {
-			return nil, workflowWrap(ErrorInternal, err, "failed to reset issue approval")
-		}
-		issue.Payload.Approval = approval
-		result.ApprovalReset = true
-	}
-	if issue != nil && input.Specs != nil && !planSpecsEqualSet(oldSpecs, *input.Specs) {
-		result.Events = append(result.Events, PlanUpdatedEvent{
-			FromSpecs: oldSpecs,
-			ToSpecs:   *input.Specs,
-		})
-	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to commit Plan review transaction")
+		return nil
+	})
+	if err != nil {
+		return nil, lifecycleWorkflowError(err)
 	}
 	return result, nil
 }

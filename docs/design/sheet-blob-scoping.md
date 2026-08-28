@@ -344,7 +344,7 @@ func (s *Store) GetSheetForProject(ctx, projectID, sha256Hex string, raw bool) (
 func (s *Store) MissingSheetsForProject(ctx, projectID string, sha256Hexes ...string) ([]string, error)
 
 // Scoped creation: writes blobs and ref rows, both as set inserts, in one
-// transaction behind the project purge fence.
+// transaction under the active project's shared lifecycle gate.
 func (s *Store) CreateSheets(ctx, projectID string, creates ...*SheetMessage) ([]*SheetMessage, error)
 
 // Unexported internals: filterSheetsForProject (the ref query),
@@ -580,13 +580,12 @@ As a writer of purge-managed data, `CreateSheets` must declare a lifecycle polic
 active project**: a sheet ref is a new resource with no deleted-project continuation case. The API
 create paths check the project before calling the store, but that check is not serialized with
 purge, so a concurrent purge would surface as a raw foreign-key violation rather than a controlled
-NotFound. `CreateSheets` therefore takes the same transaction-scoped purge fence that database
-creation and task-run creation already take; `withDatabasePurgeFence`
-(`backend/store/database.go:798-820`) is the pattern to mirror.
+NotFound. `CreateSheets` therefore runs under the same shared, transaction-scoped lifecycle gate
+as database and task-run creation. The lifecycle module owns fail-fast acquisition, validation,
+ordering, and transaction cleanup.
 
-Both need the deterministic real-PostgreSQL regression tests that section mandates, asserting
-terminal outcomes in both lock-acquisition directions rather than merely the absence of SQLSTATE
-`40P01`.
+Lifecycle contention is covered at the module interface in both acquisition directions, including
+terminal outcomes rather than merely the absence of SQLSTATE `40P01`.
 
 ## Independent fixes
 

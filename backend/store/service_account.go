@@ -196,7 +196,14 @@ func (s *Store) CreateServiceAccount(ctx context.Context, create *CreateServiceA
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, sqlStr, args...); err != nil {
+	scope := lifecycleScope{}
+	if create.Project != nil {
+		scope.addProject(*create.Project, lifecycleActive)
+	}
+	if err := s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, sqlStr, args...)
+		return err
+	}); err != nil {
 		return nil, err
 	}
 
@@ -235,14 +242,20 @@ func (s *Store) UpdateServiceAccount(ctx context.Context, sa *ServiceAccountMess
 
 	var updated ServiceAccountMessage
 	var project sql.NullString
-	if err := s.GetDB().QueryRowContext(ctx, sqlStr, args...).Scan(
-		&updated.MemberDeleted,
-		&updated.Email,
-		&updated.Name,
-		&updated.Workspace,
-		&updated.ServiceKeyHash,
-		&project,
-	); err != nil {
+	scope := lifecycleScope{}
+	if sa.Project != nil {
+		scope.addProject(*sa.Project, lifecycleExisting)
+	}
+	if err := s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		return tx.QueryRowContext(ctx, sqlStr, args...).Scan(
+			&updated.MemberDeleted,
+			&updated.Email,
+			&updated.Name,
+			&updated.Workspace,
+			&updated.ServiceKeyHash,
+			&project,
+		)
+	}); err != nil {
 		return nil, err
 	}
 	if project.Valid {

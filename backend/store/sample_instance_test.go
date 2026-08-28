@@ -199,7 +199,7 @@ func TestSampleInstanceSetupDeletedRowRemainsTombstone(t *testing.T) {
 	require.Equal(t, deleted, again)
 }
 
-func TestActivateSampleInstanceSetupSerializesWithProjectArchive(t *testing.T) {
+func TestActivateSampleInstanceSetupRejectsArchivedProject(t *testing.T) {
 	ctx, db, stores := newSampleInstanceFixture(t)
 	_, created, err := stores.ReserveSampleInstanceSetup(ctx, &store.SampleInstanceSetupMessage{
 		WorkspaceID: "workspace-a",
@@ -208,54 +208,18 @@ func TestActivateSampleInstanceSetupSerializesWithProjectArchive(t *testing.T) {
 	})
 	require.NoError(t, err)
 	require.True(t, created)
-
-	archiveTx, err := db.BeginTx(ctx, nil)
-	require.NoError(t, err)
-	committed := false
-	defer func() {
-		if !committed {
-			_ = archiveTx.Rollback()
-		}
-	}()
-	_, err = archiveTx.ExecContext(ctx, `
-		UPDATE project SET deleted = TRUE
-		WHERE workspace = 'workspace-a' AND resource_id = 'project-workspace-a'
-	`)
+	_, err = db.ExecContext(ctx, "UPDATE project SET deleted = TRUE WHERE resource_id = 'project-workspace-a'")
 	require.NoError(t, err)
 
-	result := make(chan error, 1)
-	go func() {
-		_, err := stores.ActivateSampleInstanceSetup(
-			ctx,
-			"workspace-a",
-			"replica-a",
-			[]string{"project-workspace-a"},
-			time.Now(),
-			nil,
-		)
-		result <- err
-	}()
-	require.Eventually(t, func() bool {
-		var waiting bool
-		err := db.QueryRowContext(ctx, `
-			SELECT EXISTS (
-				SELECT 1 FROM pg_stat_activity
-				WHERE wait_event_type = 'Lock'
-					AND query LIKE '%SELECT deleted FROM project%FOR UPDATE%'
-			)
-		`).Scan(&waiting)
-		return err == nil && waiting
-	}, 5*time.Second, 10*time.Millisecond)
-	require.NoError(t, archiveTx.Commit())
-	committed = true
-	require.Equal(t, common.NotFound, common.ErrorCode(<-result))
-
+	activated, err := stores.ActivateSampleInstanceSetup(ctx, "workspace-a", "replica-a", []string{"project-workspace-a"}, time.Now(), nil)
+	require.False(t, activated)
+	require.Equal(t, common.NotFound, common.ErrorCode(err))
 	current, err := stores.GetSampleInstanceSetup(ctx, "workspace-a")
 	require.NoError(t, err)
 	require.Nil(t, current.ActivatedAt)
 }
 
-func TestProjectArchiveWaitsForSampleInstanceSetupActivation(t *testing.T) {
+func TestActivateSampleInstanceSetupFailsWhenProjectGateIsHeld(t *testing.T) {
 	ctx, db, stores := newSampleInstanceFixture(t)
 	_, created, err := stores.ReserveSampleInstanceSetup(ctx, &store.SampleInstanceSetupMessage{
 		WorkspaceID: "workspace-a",
@@ -265,86 +229,19 @@ func TestProjectArchiveWaitsForSampleInstanceSetupActivation(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, created)
 
-	workspaceTx, err := db.BeginTx(ctx, nil)
+	conn, err := db.Conn(ctx)
 	require.NoError(t, err)
-	committed := false
+	defer conn.Close()
+	_, err = conn.ExecContext(ctx, "SELECT pg_advisory_lock($1, hashtext($2))", int64(store.AdvisoryLockKeyProjectLifecycle), "project-workspace-a")
+	require.NoError(t, err)
 	defer func() {
-		if !committed {
-			_ = workspaceTx.Rollback()
-		}
+		_, _ = conn.ExecContext(context.Background(), "SELECT pg_advisory_unlock($1, hashtext($2))", int64(store.AdvisoryLockKeyProjectLifecycle), "project-workspace-a")
 	}()
-	var lockedWorkspace string
-	err = workspaceTx.QueryRowContext(ctx, `
-		SELECT resource_id FROM workspace
-		WHERE resource_id = 'workspace-a'
-		FOR UPDATE
-	`).Scan(&lockedWorkspace)
-	require.NoError(t, err)
 
-	activationResult := make(chan struct {
-		activated bool
-		err       error
-	}, 1)
-	go func() {
-		activated, err := stores.ActivateSampleInstanceSetup(
-			ctx,
-			"workspace-a",
-			"replica-a",
-			[]string{"project-workspace-a"},
-			time.Now(),
-			nil,
-		)
-		activationResult <- struct {
-			activated bool
-			err       error
-		}{activated: activated, err: err}
-	}()
-	require.Eventually(t, func() bool {
-		var waiting bool
-		err := db.QueryRowContext(ctx, `
-			SELECT EXISTS (
-				SELECT 1 FROM pg_stat_activity
-				WHERE wait_event_type = 'Lock'
-					AND query LIKE '%SELECT deleted FROM workspace%FOR UPDATE%'
-			)
-		`).Scan(&waiting)
-		return err == nil && waiting
-	}, 5*time.Second, 10*time.Millisecond)
-
-	archiveResult := make(chan error, 1)
-	go func() {
-		_, err := db.ExecContext(ctx, `
-			UPDATE project SET deleted = TRUE
-			WHERE workspace = 'workspace-a' AND resource_id = 'project-workspace-a'
-		`)
-		archiveResult <- err
-	}()
-	require.Eventually(t, func() bool {
-		var waiting bool
-		err := db.QueryRowContext(ctx, `
-			SELECT EXISTS (
-				SELECT 1 FROM pg_stat_activity
-				WHERE wait_event_type = 'Lock'
-					AND query LIKE '%UPDATE project SET deleted = TRUE%'
-			)
-		`).Scan(&waiting)
-		return err == nil && waiting
-	}, 5*time.Second, 10*time.Millisecond)
-
-	require.NoError(t, workspaceTx.Commit())
-	committed = true
-	activation := <-activationResult
-	require.NoError(t, activation.err)
-	require.True(t, activation.activated)
-	require.NoError(t, <-archiveResult)
-
+	activated, err := stores.ActivateSampleInstanceSetup(ctx, "workspace-a", "replica-a", []string{"project-workspace-a"}, time.Now(), nil)
+	require.False(t, activated)
+	require.ErrorIs(t, err, store.ErrLifecycleBusy)
 	current, err := stores.GetSampleInstanceSetup(ctx, "workspace-a")
 	require.NoError(t, err)
-	require.NotNil(t, current.ActivatedAt)
-	var projectDeleted bool
-	require.NoError(t, db.QueryRowContext(ctx, `
-		SELECT deleted FROM project
-		WHERE workspace = 'workspace-a' AND resource_id = 'project-workspace-a'
-	`).Scan(&projectDeleted))
-	require.True(t, projectDeleted)
+	require.Nil(t, current.ActivatedAt)
 }

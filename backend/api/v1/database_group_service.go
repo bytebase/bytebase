@@ -83,6 +83,9 @@ func (s *DatabaseGroupService) CreateDatabaseGroup(ctx context.Context, req *con
 
 	databaseGroup, err := s.store.CreateDatabaseGroup(ctx, storeDatabaseGroup)
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	result, err := convertStoreToV1DatabaseGroupWithView(ctx, s.store, databaseGroup, projectResourceID, v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL)
@@ -155,6 +158,9 @@ func (s *DatabaseGroupService) UpdateDatabaseGroup(ctx context.Context, req *con
 	}
 	databaseGroup, err := s.store.UpdateDatabaseGroup(ctx, existedDatabaseGroup.ProjectID, existedDatabaseGroup.ResourceID, &updateDatabaseGroup)
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	result, err := convertStoreToV1DatabaseGroupWithView(ctx, s.store, databaseGroup, projectResourceID, v1pb.DatabaseGroupView_DATABASE_GROUP_VIEW_FULL)
@@ -196,6 +202,9 @@ func (s *DatabaseGroupService) DeleteDatabaseGroup(ctx context.Context, req *con
 
 	err = s.store.DeleteDatabaseGroup(ctx, existedDatabaseGroup.ProjectID, existedDatabaseGroup.ResourceID)
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	return connect.NewResponse(&emptypb.Empty{}), nil

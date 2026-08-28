@@ -8,8 +8,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
-
-	"github.com/bytebase/bytebase/backend/store"
 )
 
 const maintenanceLockWait = 10 * time.Second
@@ -137,30 +135,6 @@ func requireMaintenanceResult(t *testing.T, result <-chan error) {
 	}
 }
 
-func requireProjectInstanceDeletionState(ctx context.Context, t *testing.T, db *sql.DB) {
-	t.Helper()
-	for _, table := range []string{"project", "instance", "db", "revision", "service_account"} {
-		var count int
-		require.NoError(t, db.QueryRowContext(ctx, fmt.Sprintf("SELECT COUNT(*) FROM %s", table)).Scan(&count))
-		if table == "project" {
-			require.Equal(t, 1, count, "only the default project should remain")
-		} else {
-			require.Zero(t, count, "%s should be removed", table)
-		}
-	}
-
-	// The connected-database reference now lives in the payload as a soft
-	// canonical name that simply dangles after instance deletion, so only
-	// the purge re-parenting is asserted here.
-	var project string
-	require.NoError(t, db.QueryRowContext(ctx, `
-		SELECT project
-		FROM saved_query
-		WHERE resource_id = 'saved-query-a'
-	`).Scan(&project))
-	require.Equal(t, "default", project)
-}
-
 func requireProjectUserDeletionState(ctx context.Context, t *testing.T, db *sql.DB) {
 	t.Helper()
 	var projectCount, planCount, queryHistoryCount int
@@ -187,134 +161,6 @@ func requireUserInstanceDeletionState(ctx context.Context, t *testing.T, db *sql
 	var email string
 	require.NoError(t, db.QueryRowContext(ctx, "SELECT email FROM principal WHERE id = 101").Scan(&email))
 	require.Equal(t, "renamed@example.com", email)
-}
-
-func TestDeleteProjectAndDeleteInstanceLockOrder(t *testing.T) {
-	const seedSQL = `
-		INSERT INTO instance (resource_id, workspace, project, deleted)
-			VALUES ('instance-a', 'default', 'project-a', TRUE);
-		INSERT INTO db (instance, name, project) VALUES ('instance-a', 'db-a', 'project-a');
-		INSERT INTO service_account (name, email, workspace, service_key_hash, project)
-			VALUES ('service account', 'service-account@example.com', 'default', 'unused', 'project-a');
-		INSERT INTO revision (resource_id, instance, db_name, deleter, version)
-			VALUES ('revision-a', 'instance-a', 'db-a', 'service-account@example.com', 'v1');
-		INSERT INTO plan (id, creator, project, name, description)
-			VALUES (101, 'user@example.com', 'project-a', 'Plan A', '');
-		INSERT INTO task (id, project, plan_id, instance, type)
-			VALUES (101, 'project-a', 101, 'instance-a', 'DATABASE_SCHEMA_UPDATE');
-		INSERT INTO saved_query (resource_id, creator, project, name, statement)
-			VALUES ('saved-query-a', 'user@example.com', 'project-a', 'Saved Query A', '');
-	`
-
-	t.Run("delete project first", func(t *testing.T) {
-		fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
-		const barrierID = 9921
-		barrier := newMaintenanceLockBarrier(fixture.ctx, t, fixture.db, barrierID)
-		// Park the purge on its task delete: `task` is the table both paths
-		// still contend on. (The purge used to be parked on the saved-query
-		// re-parent, with DeleteInstance blocking via its saved-query
-		// nullify UPDATE — that cross-path statement was removed when the
-		// connected-database reference became a soft payload link.)
-		installMaintenanceLockBarrier(t, fixture.db, barrierID,
-			"AFTER DELETE ON task FOR EACH ROW")
-
-		projectResult := make(chan error, 1)
-		go func() { projectResult <- fixture.store.DeleteProject(fixture.ctx, "default", "project-a") }()
-		waitForMaintenanceBarrier(fixture.ctx, t, fixture.db, barrierID)
-		projectPID := maintenanceBarrierWaitingPID(fixture.ctx, t, fixture.db, barrierID)
-
-		instanceResult := make(chan error, 1)
-		go func() { instanceResult <- fixture.store.DeleteInstance(fixture.ctx, "default", "instance-a") }()
-		waitForBackendBlockedByPID(fixture.ctx, t, fixture.db, projectPID)
-		barrier.release(t)
-
-		requireMaintenanceResult(t, projectResult)
-		require.ErrorContains(t, <-instanceResult, "not found or not marked as deleted")
-		requireProjectInstanceDeletionState(fixture.ctx, t, fixture.db)
-	})
-
-	t.Run("delete instance first", func(t *testing.T) {
-		fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
-		const barrierID = 9922
-		barrier := newMaintenanceLockBarrier(fixture.ctx, t, fixture.db, barrierID)
-		installMaintenanceLockBarrier(t, fixture.db, barrierID,
-			"AFTER DELETE ON task FOR EACH ROW")
-
-		instanceResult := make(chan error, 1)
-		go func() { instanceResult <- fixture.store.DeleteInstance(fixture.ctx, "default", "instance-a") }()
-		waitForMaintenanceBarrier(fixture.ctx, t, fixture.db, barrierID)
-		instancePID := maintenanceBarrierWaitingPID(fixture.ctx, t, fixture.db, barrierID)
-
-		projectResult := make(chan error, 1)
-		go func() { projectResult <- fixture.store.DeleteProject(fixture.ctx, "default", "project-a") }()
-		waitForBackendBlockedByPID(fixture.ctx, t, fixture.db, instancePID)
-		barrier.release(t)
-
-		requireMaintenanceResult(t, instanceResult)
-		requireMaintenanceResult(t, projectResult)
-		requireProjectInstanceDeletionState(fixture.ctx, t, fixture.db)
-	})
-}
-
-func TestCreateProjectInstanceAndDeleteProjectLockOrder(t *testing.T) {
-	createProjectInstance := func(fixture *projectDeletionLockOrderFixture) error {
-		projectID := "project-a"
-		_, err := fixture.store.CreateInstance(fixture.ctx, &store.InstanceMessage{
-			ResourceID: "instance-a",
-			Workspace:  "default",
-			ProjectID:  &projectID,
-			Metadata:   testInstanceMetadata(),
-		})
-		return err
-	}
-
-	requireNoProjectInstance := func(t *testing.T, fixture *projectDeletionLockOrderFixture) {
-		t.Helper()
-		var projectCount, instanceCount int
-		require.NoError(t, fixture.db.QueryRowContext(fixture.ctx, "SELECT COUNT(*) FROM project").Scan(&projectCount))
-		require.NoError(t, fixture.db.QueryRowContext(fixture.ctx, "SELECT COUNT(*) FROM instance WHERE resource_id = 'instance-a'").Scan(&instanceCount))
-		require.Equal(t, 1, projectCount, "only the default project should remain")
-		require.Zero(t, instanceCount, "the project instance should not survive project deletion")
-	}
-
-	t.Run("delete project first rejects an absent project instance", func(t *testing.T) {
-		fixture := newProjectDeletionLockOrderFixture(t, `
-			INSERT INTO saved_query (resource_id, creator, project, name, statement)
-				VALUES ('saved-query-a', 'user@example.com', 'project-a', 'Saved Query A', '');
-		`)
-		const barrierID = 9927
-		barrier := newMaintenanceLockBarrier(fixture.ctx, t, fixture.db, barrierID)
-		installMaintenanceLockBarrier(t, fixture.db, barrierID,
-			"AFTER UPDATE OF project ON saved_query FOR EACH ROW")
-
-		deleteResult := make(chan error, 1)
-		go func() { deleteResult <- fixture.store.DeleteProject(fixture.ctx, "default", "project-a") }()
-		waitForMaintenanceBarrier(fixture.ctx, t, fixture.db, barrierID)
-
-		createResult := make(chan error, 1)
-		go func() { createResult <- createProjectInstance(fixture) }()
-		select {
-		case err := <-createResult:
-			require.Error(t, err)
-		case <-time.After(maintenanceLockWait):
-			t.Fatal("project instance creation should reject a deleted project before purge completion")
-		}
-		barrier.release(t)
-
-		requireMaintenanceResult(t, deleteResult)
-		requireNoProjectInstance(t, fixture)
-	})
-
-	t.Run("new project instance is removed by project deletion", func(t *testing.T) {
-		fixture := newProjectDeletionLockOrderFixture(t, "")
-		_, err := fixture.db.ExecContext(fixture.ctx, `
-			INSERT INTO instance (resource_id, workspace, project)
-			VALUES ('instance-a', 'default', 'project-a')
-		`)
-		require.NoError(t, err)
-		require.NoError(t, fixture.store.DeleteProject(fixture.ctx, "default", "project-a"))
-		requireNoProjectInstance(t, fixture)
-	})
 }
 
 func TestUpdateUserEmailAndDeleteProjectLockOrder(t *testing.T) {

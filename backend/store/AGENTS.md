@@ -141,6 +141,37 @@ A total order fixes misordering, not drift: rows inserted or deleted between two
 page reads still shift the offset window. Fixing that needs keyset pagination
 and a page-token format change, which is out of scope here.
 
+## Project and instance lifecycle gates
+
+Purge-managed writers and lifecycle transitions use the deep module in
+`lifecycle_gate.go`. Callers declare only their project and instance roots, the
+required state (`active` or `existing`), and their transactional callback. The
+module owns the transaction, advisory keys, deterministic ordering,
+deduplication, stricter-state merging, validation, error normalization, and
+cleanup.
+
+- Normal writers take transaction-scoped shared advisory try-gates.
+- Archive, restore, and purge take exclusive advisory try-gates for their
+  targets. A project-instance transition first takes a shared gate on its owning
+  project.
+- All project gates are acquired in sorted order before all instance gates.
+- Either side fails fast with `common.Conflict` and `resource is busy; retry`
+  when a conflicting gate is held. RPC handlers use their existing generic error
+  mapping.
+- Validate lifecycle state only after every gate is held. New active-only work
+  rejects archived roots; intentional archived-root continuation requires only
+  that the root still exists.
+
+Every new or modified writer of data removed, reassigned, or otherwise inspected
+by project or instance purge must declare its roots and lifecycle policy at this
+seam. Include soft references such as project policy resources, Query History
+database names, and `revision.deleter`, not only foreign-key descendants.
+
+Project and instance purge remain synchronous and non-idempotent. Cache keys are
+captured inside the transition and invalidation is published only after commit.
+The protocol requires a coordinated replica cutover; mixed old/new replicas are
+unsupported.
+
 ## Transaction row-lock ordering
 
 PostgreSQL holds row locks until a transaction ends. Transactions that acquire the same locks in different orders can deadlock, so every store transaction must follow these rules:
@@ -166,19 +197,11 @@ that branch. The active-project check in `nextProjectID` covers this case only f
 writers that call it; it is not a repository-wide purge fence because other
 writers bypass `nextProjectID`.
 
-Database creation, database-sync, batch database updates, task-run creation,
-sheet creation, and Query History writers, together with direct instance
-archive and direct project/instance purge, additionally take the matching
-transaction-scoped purge fence before any row lock. This closes absent-descendant gaps; writers then
-retain the normal child-to-parent row-lock order. Database sync may continue for
-an archived project while its row exists, but never through a soft-deleted
-instance. Direct instance archive and restore fail while any targeting task run
-is pending, available, or running.
-
-Every new or modified writer of purge-managed data must define its project
-lifecycle policy: require an active project for new resources, or require only an
-existing project when deleted-project continuation is intentional. Serialize and
-validate that policy against project deletion before writing the managed data.
+Lifecycle gates close absent-descendant gaps; writers still retain the normal
+child-to-parent row-lock order for ordinary correctness. They do not replace row
+locks for allocators, queue claiming, compare-and-swap, read-modify-write
+updates, or state transitions. In particular, `nextProjectID` continues to lock
+and validate the active project before its `MAX(id) + 1` allocation.
 
 Transactions spanning project- or instance-owned sibling branches follow this canonical order:
 

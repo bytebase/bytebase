@@ -153,80 +153,87 @@ func (s *Store) ClaimSampleInstanceSetup(ctx context.Context, workspaceID string
 // ActivateSampleInstanceSetup marks a setup active after validating its owning
 // workspace and projects are still active.
 func (s *Store) ActivateSampleInstanceSetup(ctx context.Context, workspaceID, replicaID string, projectIDs []string, activatedAt time.Time, expiresAt *time.Time) (bool, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return false, errors.Wrap(err, "failed to begin sample instance setup activation")
+	var pending bool
+	if err := s.GetDB().QueryRowContext(ctx, `
+		SELECT EXISTS (
+			SELECT 1 FROM sample_instance_setup
+			WHERE workspace = $1 AND replica_id = $2
+				AND activated_at IS NULL AND deleted_at IS NULL
+		)
+	`, workspaceID, replicaID).Scan(&pending); err != nil {
+		return false, errors.Wrap(err, "failed to find pending sample instance setup activation")
 	}
-	defer tx.Rollback()
-
-	setup, err := scanSampleInstanceSetup(tx.QueryRowContext(ctx, `
+	if !pending {
+		return false, nil
+	}
+	projects := slices.Clone(projectIDs)
+	slices.Sort(projects)
+	projects = slices.Compact(projects)
+	scope := lifecycleScope{}
+	for _, projectID := range projects {
+		scope.addProject(projectID, lifecycleActive)
+	}
+	activated := false
+	err := s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		setup, err := scanSampleInstanceSetup(tx.QueryRowContext(ctx, `
 		SELECT workspace, replica_id, payload, created_at, updated_at,
 			activated_at, expires_at, deleted_at
 		FROM sample_instance_setup
 		WHERE workspace = $1 AND replica_id = $2
 			AND activated_at IS NULL AND deleted_at IS NULL
 		FOR UPDATE
-	`, workspaceID, replicaID))
-	if errors.Is(err, sql.ErrNoRows) {
-		if err := tx.Commit(); err != nil {
-			return false, errors.Wrap(err, "failed to commit unchanged sample instance setup activation")
+		`, workspaceID, replicaID))
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil
 		}
-		return false, nil
-	}
-	if err != nil {
-		return false, errors.Wrap(err, "failed to lock sample instance setup activation")
-	}
-
-	projects := slices.Clone(projectIDs)
-	slices.Sort(projects)
-	projects = slices.Compact(projects)
-	for _, projectID := range projects {
-		var deleted bool
-		if err := tx.QueryRowContext(ctx, `
-			SELECT deleted FROM project
-			WHERE workspace = $1 AND resource_id = $2
-			FOR UPDATE
-		`, workspaceID, projectID).Scan(&deleted); err != nil {
-			if errors.Is(err, sql.ErrNoRows) {
-				return false, common.Errorf(common.NotFound, "project %s not found", projectID)
+		if err != nil {
+			return errors.Wrap(err, "failed to lock sample instance setup activation")
+		}
+		for _, projectID := range projects {
+			var one int
+			if err := tx.QueryRowContext(ctx, `
+				SELECT 1 FROM project WHERE workspace = $1 AND resource_id = $2
+			`, workspaceID, projectID).Scan(&one); err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					return common.Errorf(common.NotFound, "project %s not found", projectID)
+				}
+				return errors.Wrapf(err, "failed to validate project %s for sample instance setup activation", projectID)
 			}
-			return false, errors.Wrapf(err, "failed to lock project %s for sample instance setup activation", projectID)
 		}
-		if deleted {
-			return false, common.Errorf(common.NotFound, "project %s is deleted", projectID)
-		}
-	}
 
-	var workspaceDeleted bool
-	if err := tx.QueryRowContext(ctx, `
+		var workspaceDeleted bool
+		if err := tx.QueryRowContext(ctx, `
 		SELECT deleted FROM workspace WHERE resource_id = $1 FOR UPDATE
 	`, workspaceID).Scan(&workspaceDeleted); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return false, common.Errorf(common.NotFound, "workspace %s not found", workspaceID)
+			if errors.Is(err, sql.ErrNoRows) {
+				return common.Errorf(common.NotFound, "workspace %s not found", workspaceID)
+			}
+			return errors.Wrapf(err, "failed to lock workspace %s", workspaceID)
 		}
-		return false, errors.Wrapf(err, "failed to lock workspace %s", workspaceID)
-	}
-	if workspaceDeleted {
-		return false, common.Errorf(common.NotFound, "workspace %s is deleted", workspaceID)
-	}
+		if workspaceDeleted {
+			return common.Errorf(common.NotFound, "workspace %s is deleted", workspaceID)
+		}
 
-	result, err := tx.ExecContext(ctx, `
+		result, err := tx.ExecContext(ctx, `
 		UPDATE sample_instance_setup
 		SET activated_at = $1, expires_at = $2, updated_at = $1
 		WHERE workspace = $3 AND replica_id = $4
 			AND activated_at IS NULL AND deleted_at IS NULL
-	`, activatedAt, expiresAt, setup.WorkspaceID, setup.ReplicaID)
+		`, activatedAt, expiresAt, setup.WorkspaceID, setup.ReplicaID)
+		if err != nil {
+			return errors.Wrap(err, "failed to activate sample instance setup")
+		}
+		rows, err := result.RowsAffected()
+		if err != nil {
+			return errors.Wrap(err, "failed to inspect sample instance setup activation")
+		}
+		activated = rows == 1
+		return nil
+	})
 	if err != nil {
-		return false, errors.Wrap(err, "failed to activate sample instance setup")
+		return false, err
 	}
-	rows, err := result.RowsAffected()
-	if err != nil {
-		return false, errors.Wrap(err, "failed to inspect sample instance setup activation")
-	}
-	if err := tx.Commit(); err != nil {
-		return false, errors.Wrap(err, "failed to commit sample instance setup activation")
-	}
-	return rows == 1, nil
+	return activated, nil
 }
 
 // DeletePendingSampleInstanceSetup removes an unactivated setup still owned by

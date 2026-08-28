@@ -64,39 +64,38 @@ type SetIamPolicyMessage struct {
 // actually applied rather than a snapshot that may have moved, and
 // ErrIamPolicyEtagMismatch when the caller's etag is stale.
 func (s *Store) SetIamPolicy(ctx context.Context, set *SetIamPolicyMessage) (*IamPolicyMessage, *IamPolicyMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
-	if err := acquireIamPolicyLock(ctx, tx, set.Workspace, set.ResourceType, set.Resource); err != nil {
-		return nil, nil, err
-	}
-	previous, err := lockIamPolicyImpl(ctx, tx, set.Workspace, set.ResourceType, set.Resource)
+	scope, err := policyLifecycleScope(set.ResourceType, set.Resource, lifecycleActive)
 	if err != nil {
 		return nil, nil, err
 	}
-	if set.ExpectedEtag != "" && set.ExpectedEtag != previous.Etag {
-		// The locked row just disagreed with what this process has cached, which
-		// only an out-of-band writer can cause -- the recovery CLI opens its own
-		// store against the same database. Drop it so the refetch the caller
-		// makes next is not served the etag it already lost with.
-		s.evictIamPolicyCache(set.Workspace, set.ResourceType, set.Resource)
-		return nil, nil, ErrIamPolicyEtagMismatch
-	}
-	if set.ValidateReplaced != nil {
-		if err := set.ValidateReplaced(previous.Policy); err != nil {
-			return nil, nil, err
+	var previous *IamPolicyMessage
+	var policy *PolicyMessage
+	if err := s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		if err := acquireIamPolicyLock(ctx, tx, set.Workspace, set.ResourceType, set.Resource); err != nil {
+			return err
 		}
-	}
-
-	policy, err := writeIamPolicyImpl(ctx, tx, set.Workspace, set.ResourceType, set.Resource, set.Policy)
-	if err != nil {
+		var err error
+		previous, err = lockIamPolicyImpl(ctx, tx, set.Workspace, set.ResourceType, set.Resource)
+		if err != nil {
+			return err
+		}
+		if set.ExpectedEtag != "" && set.ExpectedEtag != previous.Etag {
+			// The locked row just disagreed with what this process has cached, which
+			// only an out-of-band writer can cause -- the recovery CLI opens its own
+			// store against the same database. Drop it so the refetch the caller
+			// makes next is not served the etag it already lost with.
+			s.evictIamPolicyCache(set.Workspace, set.ResourceType, set.Resource)
+			return ErrIamPolicyEtagMismatch
+		}
+		if set.ValidateReplaced != nil {
+			if err := set.ValidateReplaced(previous.Policy); err != nil {
+				return err
+			}
+		}
+		policy, err = writeIamPolicyImpl(ctx, tx, set.Workspace, set.ResourceType, set.Resource, set.Policy)
+		return err
+	}); err != nil {
 		return nil, nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, nil, errors.Wrap(err, "failed to commit transaction")
 	}
 	s.evictIamPolicyCache(set.Workspace, set.ResourceType, set.Resource)
 
@@ -109,29 +108,28 @@ func (s *Store) SetIamPolicy(ctx context.Context, set *SetIamPolicyMessage) (*Ia
 // before the write began, which is the only thing a caller holding no etag can
 // be given.
 func (s *Store) PatchIamPolicy(ctx context.Context, workspace string, resourceType storepb.Policy_Resource, resource string, mutate func(*storepb.IamPolicy) error) (*IamPolicyMessage, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
-	if err := acquireIamPolicyLock(ctx, tx, workspace, resourceType, resource); err != nil {
-		return nil, err
-	}
-	current, err := lockIamPolicyImpl(ctx, tx, workspace, resourceType, resource)
+	scope, err := policyLifecycleScope(resourceType, resource, lifecycleActive)
 	if err != nil {
 		return nil, err
 	}
-	if err := mutate(current.Policy); err != nil {
+	var current *IamPolicyMessage
+	var policy *PolicyMessage
+	if err := s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		if err := acquireIamPolicyLock(ctx, tx, workspace, resourceType, resource); err != nil {
+			return err
+		}
+		var err error
+		current, err = lockIamPolicyImpl(ctx, tx, workspace, resourceType, resource)
+		if err != nil {
+			return err
+		}
+		if err := mutate(current.Policy); err != nil {
+			return err
+		}
+		policy, err = writeIamPolicyImpl(ctx, tx, workspace, resourceType, resource, current.Policy)
+		return err
+	}); err != nil {
 		return nil, err
-	}
-
-	policy, err := writeIamPolicyImpl(ctx, tx, workspace, resourceType, resource, current.Policy)
-	if err != nil {
-		return nil, err
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
 	s.evictIamPolicyCache(workspace, resourceType, resource)
 
@@ -744,18 +742,16 @@ func (s *Store) CreatePolicy(ctx context.Context, create *PolicyMessage) (*Polic
 	if create.Workspace == "" {
 		return nil, errors.Errorf("workspace is required to create policy (resource_type=%s, resource=%s, type=%s)", create.ResourceType, create.Resource, create.Type)
 	}
-	tx, err := s.GetDB().BeginTx(ctx, nil)
+	scope, err := policyLifecycleScope(create.ResourceType, create.Resource, lifecycleActive)
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
-
-	policy, err := upsertPolicyImpl(ctx, tx, create)
-	if err != nil {
-		return nil, err
-	}
-
-	if err := tx.Commit(); err != nil {
+	var policy *PolicyMessage
+	if err := s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		var err error
+		policy, err = upsertPolicyImpl(ctx, tx, create)
+		return err
+	}); err != nil {
 		return nil, err
 	}
 
@@ -792,17 +788,30 @@ func (s *Store) UpdatePolicy(ctx context.Context, patch *UpdatePolicyMessage) (*
 		ResourceType: patch.ResourceType,
 		Type:         patch.Type,
 	}
-
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&policy.Payload,
-		&policy.InheritFromParent,
-		&policy.Enforce,
-		&policy.UpdatedAt,
-	); err != nil {
-		if err == sql.ErrNoRows {
-			return nil, nil
-		}
+	scope, err := policyLifecycleScope(patch.ResourceType, patch.Resource, lifecycleExisting)
+	if err != nil {
 		return nil, err
+	}
+	found := true
+	if err := s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		if err := tx.QueryRowContext(ctx, query, args...).Scan(
+			&policy.Payload,
+			&policy.InheritFromParent,
+			&policy.Enforce,
+			&policy.UpdatedAt,
+		); err != nil {
+			if err == sql.ErrNoRows {
+				found = false
+				return nil
+			}
+			return err
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	if !found {
+		return nil, nil
 	}
 
 	s.policyCache.Add(getPolicyCacheKey(patch.Workspace, patch.ResourceType, patch.Resource, patch.Type), policy)
@@ -827,7 +836,14 @@ func (s *Store) DeletePolicy(ctx context.Context, policy *PolicyMessage) error {
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	scope, err := policyLifecycleScope(policy.ResourceType, policy.Resource, lifecycleExisting)
+	if err != nil {
+		return err
+	}
+	if err := s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, query, args...)
+		return err
+	}); err != nil {
 		return err
 	}
 
@@ -836,6 +852,19 @@ func (s *Store) DeletePolicy(ctx context.Context, policy *PolicyMessage) error {
 		s.iamPolicyCache.Remove(getIamPolicyCacheKey(policy.Workspace, policy.ResourceType, policy.Resource))
 	}
 	return nil
+}
+
+func policyLifecycleScope(resourceType storepb.Policy_Resource, resource string, requirement lifecycleRequirement) (lifecycleScope, error) {
+	scope := lifecycleScope{}
+	if resourceType != storepb.Policy_PROJECT {
+		return scope, nil
+	}
+	projectID, err := common.GetProjectID(resource)
+	if err != nil {
+		return scope, errors.Wrap(err, "invalid project policy resource")
+	}
+	scope.addProject(projectID, requirement)
+	return scope, nil
 }
 
 func upsertPolicyImpl(ctx context.Context, txn *sql.Tx, create *PolicyMessage) (*PolicyMessage, error) {

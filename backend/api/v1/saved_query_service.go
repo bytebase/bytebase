@@ -91,6 +91,9 @@ func (s *SavedQueryService) CreateSavedQuery(
 	}
 	savedQuery, err := s.store.CreateSavedQuery(ctx, convertToStoreSavedQueryMessage(projectResourceID, database, user.Email, folder, request.SavedQuery))
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		if common.ErrorCode(err) == common.NotFound {
 			// The fence lost to an archive or purge racing this create.
 			return nil, connect.NewError(connect.CodeNotFound, errors.Wrapf(err, "project %q not found", projectResourceID))
@@ -458,6 +461,9 @@ func (s *SavedQueryService) UpdateSavedQuery(
 		}
 	}
 	if err := s.store.PatchSavedQuery(ctx, savedQueryPatch); err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update saved query: %v", err))
 	}
 
@@ -519,6 +525,9 @@ func (s *SavedQueryService) DeleteSavedQuery(
 
 	deleted, err := s.store.DeleteSavedQuery(ctx, savedQuery.ProjectID, savedQuery.ResourceID)
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to delete saved query: %v", err))
 	}
 	if !deleted {
@@ -574,6 +583,9 @@ func (s *SavedQueryService) UpdateSavedQueryStar(
 
 	applied, err := s.store.SetSavedQueryStar(ctx, savedQuery.ProjectID, savedQuery.ResourceID, user.Email, request.Starred)
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update star: %v", err))
 	}
 	if !applied {
@@ -626,6 +638,9 @@ func (s *SavedQueryService) MoveMySavedQueries(
 	}
 	moved, err := s.store.MoveSavedQueryFolder(ctx, projectID, user.Email, source, target)
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to move folder: %v", err))
 	}
 
@@ -800,6 +815,9 @@ func (s *SavedQueryService) SetSavedQueryPolicy(
 
 	applied, err := s.store.SetSavedQueryBindings(ctx, projectID, savedQuery.ResourceID, bindings, request.Policy.Etag)
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		if errors.Is(err, store.ErrSavedQueryEtagMismatch) {
 			// The policy moved under this write. Aborted tells the caller to
 			// refetch and reapply rather than clobber a concurrent revocation.

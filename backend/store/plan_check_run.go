@@ -65,41 +65,40 @@ func (s *Store) CreatePlanCheckRun(ctx context.Context, create *PlanCheckRunMess
 		return false, errors.Wrapf(err, "failed to marshal result")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to begin tx")
-	}
-	defer tx.Rollback()
-	if err := AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, create.ProjectID, create.PlanUID); err != nil {
-		return false, errors.Wrap(err, "failed to acquire Plan review lock for Plan check run")
-	}
-	var lockedPlanCheckRunUID int64
-	if err := tx.QueryRowContext(ctx, `
-		SELECT id
-		FROM plan_check_run
-		WHERE project = $1 AND plan_id = $2
-		FOR UPDATE`, create.ProjectID, create.PlanUID).Scan(&lockedPlanCheckRunUID); err != nil && !errors.Is(err, sql.ErrNoRows) {
-		return false, errors.Wrap(err, "failed to lock Plan Check Run")
-	}
-	var lockedPlanUID int64
-	if err := tx.QueryRowContext(ctx, `
-		SELECT id
-		FROM plan
-		WHERE project = $1 AND id = $2
-		FOR UPDATE`, create.ProjectID, create.PlanUID).Scan(&lockedPlanUID); err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return false, nil
+	scope := lifecycleScope{}
+	scope.addProject(create.ProjectID, lifecycleActive)
+	var rowsAffected int64
+	err = s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		if err := AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, create.ProjectID, create.PlanUID); err != nil {
+			return errors.Wrap(err, "failed to acquire Plan review lock for Plan check run")
 		}
-		return false, errors.Wrap(err, "failed to lock Plan for Plan check run")
-	}
+		var lockedPlanCheckRunUID int64
+		if err := tx.QueryRowContext(ctx, `
+			SELECT id
+			FROM plan_check_run
+			WHERE project = $1 AND plan_id = $2
+			FOR UPDATE`, create.ProjectID, create.PlanUID).Scan(&lockedPlanCheckRunUID); err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return errors.Wrap(err, "failed to lock Plan Check Run")
+		}
+		var lockedPlanUID int64
+		if err := tx.QueryRowContext(ctx, `
+			SELECT id
+			FROM plan
+			WHERE project = $1 AND id = $2
+			FOR UPDATE`, create.ProjectID, create.PlanUID).Scan(&lockedPlanUID); err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil
+			}
+			return errors.Wrap(err, "failed to lock Plan for Plan check run")
+		}
 
-	nextID, err := nextProjectID(ctx, tx, "plan_check_run", create.ProjectID)
-	if err != nil {
-		return false, err
-	}
+		nextID, err := nextProjectID(ctx, tx, "plan_check_run", create.ProjectID)
+		if err != nil {
+			return err
+		}
 
-	approvalInputVersion := create.Result.GetApprovalInputVersion()
-	query := `
+		approvalInputVersion := create.Result.GetApprovalInputVersion()
+		query := `
 		INSERT INTO plan_check_run (id, project, plan_id, status, result)
 		SELECT $1, $2, $3, $4, $5
 		FROM plan
@@ -120,18 +119,19 @@ func (s *Store) CreatePlanCheckRun(ctx context.Context, create *PlanCheckRunMess
 			  AND plan.id = plan_check_run.plan_id
 			  AND COALESCE((plan.config->>'approvalInputVersion')::bigint, 0) = $9
 		  )
-	`
-	sqlResult, err := tx.ExecContext(ctx, query, nextID, create.ProjectID, create.PlanUID, PlanCheckRunStatusAvailable, result, approvalInputVersion, PlanCheckRunStatusAvailable, PlanCheckRunStatusRunning, approvalInputVersion)
+		`
+		sqlResult, err := tx.ExecContext(ctx, query, nextID, create.ProjectID, create.PlanUID, PlanCheckRunStatusAvailable, result, approvalInputVersion, PlanCheckRunStatusAvailable, PlanCheckRunStatusRunning, approvalInputVersion)
+		if err != nil {
+			return errors.Wrapf(err, "failed to upsert plan check run")
+		}
+		rowsAffected, err = sqlResult.RowsAffected()
+		if err != nil {
+			return errors.Wrapf(err, "failed to inspect plan check run upsert")
+		}
+		return nil
+	})
 	if err != nil {
-		return false, errors.Wrapf(err, "failed to upsert plan check run")
-	}
-	rowsAffected, err := sqlResult.RowsAffected()
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to inspect plan check run upsert")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return false, errors.Wrapf(err, "failed to commit tx")
+		return false, err
 	}
 	return rowsAffected > 0, nil
 }
@@ -250,7 +250,10 @@ func (s *Store) UpdatePlanCheckRun(ctx context.Context, projectID string, status
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
 	}
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	if err := s.runProjectLifecycleWrite(ctx, projectID, lifecycleExisting, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, query, args...)
+		return err
+	}); err != nil {
 		return errors.Wrapf(err, "failed to update plan check run")
 	}
 	return nil
@@ -281,7 +284,12 @@ func (s *Store) UpdatePlanCheckRunIfApprovalInputVersion(ctx context.Context, pr
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to build sql")
 	}
-	sqlResult, err := s.GetDB().ExecContext(ctx, query, args...)
+	var sqlResult sql.Result
+	err = s.runProjectLifecycleWrite(ctx, projectID, lifecycleExisting, func(tx *sql.Tx) error {
+		var err error
+		sqlResult, err = tx.ExecContext(ctx, query, args...)
+		return err
+	})
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to update plan check run")
 	}
@@ -319,7 +327,12 @@ func (s *Store) RefreshPlanCheckRunIfStaleApprovalInputVersion(ctx context.Conte
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to build sql")
 	}
-	sqlResult, err := s.GetDB().ExecContext(ctx, query, args...)
+	var sqlResult sql.Result
+	err = s.runProjectLifecycleWrite(ctx, projectID, lifecycleExisting, func(tx *sql.Tx) error {
+		var err error
+		sqlResult, err = tx.ExecContext(ctx, query, args...)
+		return err
+	})
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to refresh stale plan check run")
 	}
@@ -342,10 +355,10 @@ func (s *Store) BatchCancelPlanCheckRuns(ctx context.Context, projectID string, 
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
 	}
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	return s.runProjectLifecycleWrite(ctx, projectID, lifecycleExisting, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, query, args...)
 		return err
-	}
-	return nil
+	})
 }
 
 // CancelPlanCheckRunIfApprovalInputVersion cancels an active plan check run only when it still matches the observed approval input version.
@@ -364,7 +377,12 @@ func (s *Store) CancelPlanCheckRunIfApprovalInputVersion(ctx context.Context, pr
 	if err != nil {
 		return false, errors.Wrapf(err, "failed to build sql")
 	}
-	result, err := s.GetDB().ExecContext(ctx, query, args...)
+	var result sql.Result
+	err = s.runProjectLifecycleWrite(ctx, projectID, lifecycleExisting, func(tx *sql.Tx) error {
+		var err error
+		result, err = tx.ExecContext(ctx, query, args...)
+		return err
+	})
 	if err != nil {
 		return false, err
 	}
@@ -387,6 +405,37 @@ type ClaimedPlanCheckRun struct {
 // longer than the timeout threshold. Unlike task runs, plan check runs don't use heartbeat
 // detection - they use a simple timeout since they have a bounded execution time.
 func (s *Store) FailStalePlanCheckRuns(ctx context.Context, timeout time.Duration) (int64, error) {
+	rows, err := s.GetDB().QueryContext(ctx, `
+		SELECT project, id
+		FROM plan_check_run
+		WHERE status = $1 AND updated_at < now() - $2::INTERVAL
+		ORDER BY project, id
+	`, PlanCheckRunStatusRunning, timeout.String())
+	if err != nil {
+		return 0, errors.Wrap(err, "failed to discover stale plan check runs")
+	}
+	scope := lifecycleScope{}
+	var projects []string
+	var ids []int64
+	if err := func() error {
+		defer rows.Close()
+		for rows.Next() {
+			var projectID string
+			var id int64
+			if err := rows.Scan(&projectID, &id); err != nil {
+				return err
+			}
+			scope.addProject(projectID, lifecycleExisting)
+			projects = append(projects, projectID)
+			ids = append(ids, id)
+		}
+		return rows.Err()
+	}(); err != nil {
+		return 0, errors.Wrap(err, "failed to read stale plan check runs")
+	}
+	if len(ids) == 0 {
+		return 0, nil
+	}
 	q := qb.Q().Space(`
 		UPDATE plan_check_run
 		SET status = ?,
@@ -401,14 +450,22 @@ func (s *Store) FailStalePlanCheckRuns(ctx context.Context, timeout time.Duratio
 		    updated_at = now()
 		WHERE status = ?
 		  AND updated_at < now() - ?::INTERVAL
-	`, PlanCheckRunStatusFailed, PlanCheckRunStatusRunning, timeout.String())
+		  AND (project, id) IN (
+			SELECT unnest(CAST(? AS TEXT[])), unnest(CAST(? AS BIGINT[]))
+		  )
+	`, PlanCheckRunStatusFailed, PlanCheckRunStatusRunning, timeout.String(), projects, ids)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to build sql")
 	}
 
-	result, err := s.GetDB().ExecContext(ctx, query, args...)
+	var result sql.Result
+	err = s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		var err error
+		result, err = tx.ExecContext(ctx, query, args...)
+		return err
+	})
 	if err != nil {
 		return 0, errors.Wrapf(err, "failed to mark stale plan check runs as failed")
 	}
@@ -419,6 +476,40 @@ func (s *Store) FailStalePlanCheckRuns(ctx context.Context, timeout time.Duratio
 // ClaimAvailablePlanCheckRuns atomically claims all AVAILABLE plan check runs by updating them to RUNNING
 // and returns the claimed UIDs. Uses FOR UPDATE SKIP LOCKED to allow concurrent schedulers to claim different runs.
 func (s *Store) ClaimAvailablePlanCheckRuns(ctx context.Context) ([]*ClaimedPlanCheckRun, error) {
+	rows, err := s.GetDB().QueryContext(ctx, `
+		SELECT plan_check_run.project, plan_check_run.id
+		FROM plan_check_run
+		JOIN project ON project.resource_id = plan_check_run.project
+		WHERE plan_check_run.status = $1 AND project.deleted = FALSE
+		ORDER BY plan_check_run.project, plan_check_run.id
+	`, PlanCheckRunStatusAvailable)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to discover claimable plan check runs")
+	}
+	var projects []string
+	var ids []int64
+	if err := func() error {
+		defer rows.Close()
+		for rows.Next() {
+			var projectID string
+			var id int64
+			if err := rows.Scan(&projectID, &id); err != nil {
+				return err
+			}
+			projects = append(projects, projectID)
+			ids = append(ids, id)
+		}
+		return rows.Err()
+	}(); err != nil {
+		return nil, errors.Wrap(err, "failed to read claimable plan check runs")
+	}
+	if len(ids) == 0 {
+		return nil, nil
+	}
+	scope := lifecycleScope{}
+	for _, projectID := range projects {
+		scope.addProject(projectID, lifecycleActive)
+	}
 	q := qb.Q().Space(`
 		UPDATE plan_check_run
 		SET status = ?, updated_at = now()
@@ -428,32 +519,36 @@ func (s *Store) ClaimAvailablePlanCheckRuns(ctx context.Context) ([]*ClaimedPlan
 			JOIN project ON project.resource_id = plan_check_run.project
 			WHERE plan_check_run.status = ?
 			  AND project.deleted = FALSE
+			  AND (plan_check_run.project, plan_check_run.id) IN (
+				SELECT unnest(CAST(? AS TEXT[])), unnest(CAST(? AS BIGINT[]))
+			  )
 			FOR UPDATE OF plan_check_run SKIP LOCKED
 		)
 		RETURNING id, project, plan_id, COALESCE((result->>'approvalInputVersion')::bigint, 0)
-	`, PlanCheckRunStatusRunning, PlanCheckRunStatusAvailable)
+	`, PlanCheckRunStatusRunning, PlanCheckRunStatusAvailable, projects, ids)
 
 	query, args, err := q.ToSQL()
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	rows, err := s.GetDB().QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to claim plan check runs")
-	}
-	defer rows.Close()
-
 	var claimed []*ClaimedPlanCheckRun
-	for rows.Next() {
-		var c ClaimedPlanCheckRun
-		if err := rows.Scan(&c.UID, &c.ProjectID, &c.PlanUID, &c.ApprovalInputVersion); err != nil {
-			return nil, err
+	err = s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		rows, err := tx.QueryContext(ctx, query, args...)
+		if err != nil {
+			return errors.Wrap(err, "failed to claim plan check runs")
 		}
-		claimed = append(claimed, &c)
-	}
-
-	if err := rows.Err(); err != nil {
+		defer rows.Close()
+		for rows.Next() {
+			var c ClaimedPlanCheckRun
+			if err := rows.Scan(&c.UID, &c.ProjectID, &c.PlanUID, &c.ApprovalInputVersion); err != nil {
+				return err
+			}
+			claimed = append(claimed, &c)
+		}
+		return rows.Err()
+	})
+	if err != nil {
 		return nil, err
 	}
 

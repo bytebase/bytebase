@@ -67,9 +67,9 @@ func (s *Store) CreateProjectWebhook(ctx context.Context, projectID string, crea
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&projectWebhook.ResourceID,
-	); err != nil {
+	if err := s.runProjectLifecycleWrite(ctx, projectID, lifecycleActive, func(tx *sql.Tx) error {
+		return tx.QueryRowContext(ctx, query, args...).Scan(&projectWebhook.ResourceID)
+	}); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.FormatDBErrorEmptyRowWithQuery(query)
 		}
@@ -198,11 +198,13 @@ func (s *Store) UpdateProjectWebhook(ctx context.Context, projectResourceID stri
 	}
 	var returnedPayload []byte
 	// Execute update query with RETURNING.
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&projectWebhook.ResourceID,
-		&projectWebhook.ProjectID,
-		&returnedPayload,
-	); err != nil {
+	if err := s.runProjectLifecycleWrite(ctx, projectResourceID, lifecycleExisting, func(tx *sql.Tx) error {
+		return tx.QueryRowContext(ctx, query, args...).Scan(
+			&projectWebhook.ResourceID,
+			&projectWebhook.ProjectID,
+			&returnedPayload,
+		)
+	}); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, &common.Error{Code: common.NotFound, Err: errors.Errorf("project hook not found: %s", webhookResourceID)}
 		}
@@ -226,7 +228,10 @@ func (s *Store) DeleteProjectWebhook(ctx context.Context, projectResourceID stri
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	if err := s.runProjectLifecycleWrite(ctx, projectResourceID, lifecycleExisting, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, query, args...)
+		return err
+	}); err != nil {
 		return err
 	}
 

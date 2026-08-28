@@ -2,8 +2,10 @@ package review
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
+	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -93,61 +95,68 @@ func (w *Workflow) CreateRollout(ctx context.Context, input CreateRolloutInput) 
 		observedApproval = proto.CloneOf(issue.Payload.GetApproval())
 	}
 
-	tx, err := w.store.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to begin rollout transaction")
+	var lockedIssue *store.IssueMessage
+	var lockedPlan *store.PlanMessage
+	instanceIDs := make([]string, 0, len(tasks))
+	for _, task := range tasks {
+		instanceIDs = append(instanceIDs, task.InstanceID)
 	}
-	defer tx.Rollback()
-	if err := store.AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, input.ProjectID, input.PlanUID); err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to acquire Plan review lock")
-	}
-	lockedIssue, err := lockIssueByPlan(ctx, tx, input.ProjectID, input.PlanUID)
-	if err != nil {
-		return nil, err
-	}
-	lockedPlan, err := lockPlan(ctx, tx, project.Workspace, input.ProjectID, input.PlanUID)
-	if err != nil {
-		return nil, err
-	}
-	if lockedPlan == nil {
-		return nil, workflowError(ErrorNotFound, "plan %d not found", input.PlanUID)
-	}
-	if lockedPlan.Config.GetApprovalInputVersion() != plan.Config.GetApprovalInputVersion() {
-		return nil, workflowReasonError(ErrorConflict, ReasonStaleInput, "issue approval is stale")
-	}
-	if lockedIssue != nil && lockedIssue.Payload.GetDraft() {
-		return nil, workflowReasonError(ErrorFailedPrecondition, ReasonDraftIssue, "draft issue must be submitted before rollout creation")
-	}
-	if project.Setting.GetRequireIssueApproval() && lockedIssue != nil {
-		if issue != nil && (lockedIssue.UID != issue.UID || !approvalsEqual(lockedIssue.Payload.GetApproval(), observedApproval)) {
-			return nil, workflowReasonError(ErrorConflict, ReasonStaleInput, "issue approval is stale")
+	err = w.store.RunActiveProjectAndInstancesLifecycleWrite(ctx, input.ProjectID, instanceIDs, func(tx *sql.Tx) error {
+		if err := store.AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, input.ProjectID, input.PlanUID); err != nil {
+			return workflowWrap(ErrorInternal, err, "failed to acquire Plan review lock")
 		}
-		approved, err := utils.CheckIssueApprovedForPlan(lockedIssue, lockedPlan)
+		lockedIssue, err = lockIssueByPlan(ctx, tx, input.ProjectID, input.PlanUID)
 		if err != nil {
-			return nil, workflowWrap(ErrorInternal, err, "failed to check issue approval")
+			return err
 		}
-		if !approved {
-			return nil, workflowReasonError(ErrorFailedPrecondition, ReasonApprovalRequired, "cannot create rollout because issue approval is required but the issue is not approved")
+		lockedPlan, err = lockPlan(ctx, tx, project.Workspace, input.ProjectID, input.PlanUID)
+		if err != nil {
+			return err
 		}
-	}
-	if !lockedPlan.Config.GetHasRollout() {
-		if err := tx.QueryRowContext(ctx, `
+		if lockedPlan == nil {
+			return workflowError(ErrorNotFound, "plan %d not found", input.PlanUID)
+		}
+		if lockedPlan.Config.GetApprovalInputVersion() != plan.Config.GetApprovalInputVersion() {
+			return workflowReasonError(ErrorConflict, ReasonStaleInput, "issue approval is stale")
+		}
+		if lockedIssue != nil && lockedIssue.Payload.GetDraft() {
+			return workflowReasonError(ErrorFailedPrecondition, ReasonDraftIssue, "draft issue must be submitted before rollout creation")
+		}
+		if project.Setting.GetRequireIssueApproval() && lockedIssue != nil {
+			if issue != nil && (lockedIssue.UID != issue.UID || !approvalsEqual(lockedIssue.Payload.GetApproval(), observedApproval)) {
+				return workflowReasonError(ErrorConflict, ReasonStaleInput, "issue approval is stale")
+			}
+			approved, err := utils.CheckIssueApprovedForPlan(lockedIssue, lockedPlan)
+			if err != nil {
+				return workflowWrap(ErrorInternal, err, "failed to check issue approval")
+			}
+			if !approved {
+				return workflowReasonError(ErrorFailedPrecondition, ReasonApprovalRequired, "cannot create rollout because issue approval is required but the issue is not approved")
+			}
+		}
+		if !lockedPlan.Config.GetHasRollout() {
+			if err := tx.QueryRowContext(ctx, `
 			UPDATE plan
 			SET updated_at = $1,
 				config = jsonb_set(config, '{hasRollout}', 'true'::jsonb, true)
 			WHERE project = $2
 			  AND id = $3
 			RETURNING updated_at`, time.Now(), input.ProjectID, input.PlanUID).Scan(&lockedPlan.UpdatedAt); err != nil {
-			return nil, workflowWrap(ErrorInternal, err, "failed to mark Plan has rollout")
+				return workflowWrap(ErrorInternal, err, "failed to mark Plan has rollout")
+			}
+			lockedPlan.Config.HasRollout = true
 		}
-		lockedPlan.Config.HasRollout = true
-	}
-	tasks, err = w.store.CreateMissingTasksTx(ctx, tx, input.ProjectID, input.PlanUID, tasks)
+		tasks, err = w.store.CreateMissingTasksTx(ctx, tx, input.ProjectID, input.PlanUID, tasks)
+		if err != nil {
+			return workflowWrap(ErrorInternal, err, "failed to create rollout tasks")
+		}
+		return nil
+	})
 	if err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to create rollout tasks")
-	}
-	if err := tx.Commit(); err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to commit rollout transaction")
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, &Error{Code: ErrorConflict, Err: err}
+		}
+		return nil, err
 	}
 	result := &CreateRolloutResult{Plan: lockedPlan, Issue: lockedIssue, Project: project, Tasks: tasks}
 	if lockedIssue != nil {

@@ -124,6 +124,9 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 	// the same content hash and mints this project's refs.
 	if len(sheetsToCreate) > 0 {
 		if _, err := s.store.CreateSheets(ctx, project.ResourceID, sheetsToCreate...); err != nil {
+			if errors.Is(err, store.ErrLifecycleBusy) {
+				return nil, lifecycleBusyConnectError(err)
+			}
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheets"))
 		}
 	}
@@ -151,6 +154,9 @@ func (s *ReleaseService) CreateRelease(ctx context.Context, req *connect.Request
 
 	release, err := s.store.CreateRelease(ctx, releaseMessage, user.Email)
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create release"))
 	}
 
@@ -267,6 +273,9 @@ func (s *ReleaseService) DeleteRelease(ctx context.Context, req *connect.Request
 		ReleaseID: releaseID,
 		Deleted:   &deletePatch,
 	}); err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to delete release"))
 	}
 	return connect.NewResponse(&emptypb.Empty{}), nil
@@ -295,6 +304,9 @@ func (s *ReleaseService) UndeleteRelease(ctx context.Context, req *connect.Reque
 		Deleted:   &undeletePatch,
 	})
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to undelete release"))
 	}
 	releaseConverted := convertToRelease(releaseMessage)

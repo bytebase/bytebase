@@ -247,6 +247,9 @@ func (s *OrgPolicyService) UpdatePolicy(ctx context.Context, req *connect.Reques
 
 	p, err := s.store.UpdatePolicy(ctx, patch)
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -296,6 +299,9 @@ func (s *OrgPolicyService) DeletePolicy(ctx context.Context, req *connect.Reques
 	}
 
 	if err := s.store.DeletePolicy(ctx, policy); err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -444,6 +450,9 @@ func (s *OrgPolicyService) createPolicyMessage(ctx context.Context, req *connect
 
 	p, err := s.store.CreatePolicy(ctx, create)
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 

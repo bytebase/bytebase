@@ -47,6 +47,10 @@ type InstanceService struct {
 	sampleManager  sample.Manager
 }
 
+func lifecycleBusyConnectError(_ error) error {
+	return connect.NewError(connect.CodeAborted, store.ErrLifecycleBusy)
+}
+
 const (
 	connectionCategoryHeader             = "bytebase-connection-failure-category"
 	connectionCategoryNetworkUnreachable = "network_unreachable"
@@ -429,6 +433,9 @@ func (s *InstanceService) CreateInstance(ctx context.Context, req *connect.Reque
 
 	instance, err := s.store.CreateInstance(ctx, instanceMessage)
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		if strings.Contains(err.Error(), "duplicate key") {
 			return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("instance ID %q already exists", req.Msg.InstanceId))
 		}
@@ -955,6 +962,9 @@ func (s *InstanceService) UpdateInstance(ctx context.Context, req *connect.Reque
 
 	ins, err := s.store.UpdateInstance(ctx, patch)
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	result := s.convertToV1Instance(ctx, ins)
@@ -980,6 +990,12 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 
 		// Permanently delete the instance and all related resources
 		if err := s.store.DeleteInstance(ctx, instance.Workspace, instance.ResourceID); err != nil {
+			if errors.Is(err, store.ErrLifecycleBusy) {
+				return nil, lifecycleBusyConnectError(err)
+			}
+			if common.ErrorCode(err) == common.NotFound {
+				return nil, connect.NewError(connect.CodeNotFound, err)
+			}
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to purge instance"))
 		}
 
@@ -1026,6 +1042,9 @@ func (s *InstanceService) DeleteInstance(ctx context.Context, req *connect.Reque
 		patch.Metadata = metadata
 	}
 	if _, err := s.store.UpdateInstance(ctx, patch); err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		if common.ErrorCode(err) == common.Conflict {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
 		}
@@ -1078,6 +1097,9 @@ func (s *InstanceService) UndeleteInstance(ctx context.Context, req *connect.Req
 		Deleted:    &undeletePatch,
 	})
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		if common.ErrorCode(err) == common.Conflict {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
 		}
@@ -1254,6 +1276,9 @@ func (s *InstanceService) AddDataSource(ctx context.Context, req *connect.Reques
 		Metadata:   metadata,
 	})
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -1359,6 +1384,9 @@ func (s *InstanceService) UpdateDataSource(ctx context.Context, req *connect.Req
 		Metadata:   metadata,
 	})
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	result := s.convertToV1Instance(ctx, instance)
@@ -1579,6 +1607,9 @@ func (s *InstanceService) RemoveDataSource(ctx context.Context, req *connect.Req
 		Metadata:   metadata,
 	})
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 

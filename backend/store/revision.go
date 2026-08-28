@@ -171,7 +171,7 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage) (
 		return nil, errors.Wrapf(err, "failed to marshal revision payload")
 	}
 
-	err = s.withDatabasePurgeFence(ctx, revision.InstanceID, revision.DatabaseName, "", nil, func(tx *sql.Tx, _ *databaseOwnership) error {
+	err = s.withDatabaseLifecycleWrite(ctx, revision.InstanceID, revision.DatabaseName, "", nil, func(tx *sql.Tx, _ *databaseOwnership) error {
 		return tx.QueryRowContext(ctx, query,
 			revision.InstanceID,
 			revision.DatabaseName,
@@ -192,7 +192,10 @@ func (s *Store) DeleteRevision(ctx context.Context, resourceID, instanceID, data
 		SET deleter = $1, deleted_at = now()
 		WHERE resource_id = $2 AND instance = $3 AND db_name = $4`
 
-	if _, err := s.GetDB().ExecContext(ctx, query, deleter, resourceID, instanceID, databaseName); err != nil {
+	if err := s.withDatabaseLifecycleWrite(ctx, instanceID, databaseName, "", nil, func(tx *sql.Tx, _ *databaseOwnership) error {
+		_, err := tx.ExecContext(ctx, query, deleter, resourceID, instanceID, databaseName)
+		return err
+	}); err != nil {
 		return errors.Wrapf(err, "failed to exec")
 	}
 

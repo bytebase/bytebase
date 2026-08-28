@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"log/slog"
 	"time"
 
@@ -26,6 +27,19 @@ func (s *Store) CreateTaskRunLogS(ctx context.Context, projectID string, taskRun
 }
 
 func (s *Store) CreateTaskRunLog(ctx context.Context, projectID string, taskRunUID int64, t time.Time, replicaID string, e *storepb.TaskRunLog) error {
+	var instanceID string
+	if err := s.GetDB().QueryRowContext(ctx, `
+		SELECT task.instance
+		FROM task_run
+		JOIN task ON task.project = task_run.project AND task.id = task_run.task_id
+		WHERE task_run.project = $1 AND task_run.id = $2
+	`, projectID, taskRunUID).Scan(&instanceID); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return common.Errorf(common.NotFound, "task run %s/%d not found", projectID, taskRunUID)
+		}
+		return errors.Wrap(err, "failed to resolve task run lifecycle scope")
+	}
+
 	e.ReplicaId = replicaID
 	p, err := protojson.Marshal(e)
 	if err != nil {
@@ -46,15 +60,20 @@ func (s *Store) CreateTaskRunLog(ctx context.Context, projectID string, taskRunU
 		)
 	`, projectID, taskRunUID, t, p)
 
-	sql, args, err := q.ToSQL()
+	sqlText, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to create task run log")
-	}
-	return nil
+	scope := lifecycleScope{}
+	scope.addProject(projectID, lifecycleExisting)
+	scope.addInstance(instanceID, lifecycleActive)
+	return s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		if _, err := tx.ExecContext(ctx, sqlText, args...); err != nil {
+			return errors.Wrapf(err, "failed to create task run log")
+		}
+		return nil
+	})
 }
 
 func (s *Store) ListTaskRunLogs(ctx context.Context, projectID string, taskRunUID int64) ([]*TaskRunLog, error) {

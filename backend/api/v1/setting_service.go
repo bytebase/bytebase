@@ -388,6 +388,9 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					FindByEnvironmentID: &env.Id,
 					Workspace:           common.GetWorkspaceIDFromContext(ctx),
 				}); err != nil {
+					if errors.Is(err, store.ErrLifecycleBusy) {
+						return nil, lifecycleBusyConnectError(err)
+					}
 					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to unset environment %v for instances", env.Id))
 				}
 				if err := s.store.BatchUpdateDatabases(ctx, nil, &store.BatchUpdateDatabases{
@@ -395,6 +398,9 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 					EnvironmentID:       &emptyStr,
 					FindByEnvironmentID: &env.Id,
 				}); err != nil {
+					if errors.Is(err, store.ErrLifecycleBusy) {
+						return nil, lifecycleBusyConnectError(err)
+					}
 					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to unset environment %v for databases", env.Id))
 				}
 			}
@@ -498,6 +504,9 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 			})
 		}
 		if err = s.store.UpdateProjects(ctx, batchUpdate...); err != nil {
+			if errors.Is(err, store.ErrLifecycleBusy) {
+				return nil, lifecycleBusyConnectError(err)
+			}
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to patch project classification with error: %v", err))
 		}
 	}

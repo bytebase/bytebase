@@ -46,16 +46,20 @@ type UpdateReleaseMessage struct {
 }
 
 func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, creator string) (*ReleaseMessage, error) {
+	var created *ReleaseMessage
+	err := s.runProjectLifecycleWrite(ctx, release.ProjectID, lifecycleActive, func(tx *sql.Tx) error {
+		var err error
+		created, err = createReleaseInLifecycleTransaction(ctx, tx, release, creator)
+		return err
+	})
+	return created, err
+}
+
+func createReleaseInLifecycleTransaction(ctx context.Context, tx *sql.Tx, release *ReleaseMessage, creator string) (*ReleaseMessage, error) {
 	p, err := protojson.Marshal(release.Payload)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to marshal release payload")
 	}
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin tx")
-	}
-	defer tx.Rollback()
 
 	// Atomically get next iteration for (project, train)
 	// Lock all rows for this (project, train) to prevent concurrent inserts with same iteration
@@ -106,10 +110,6 @@ func (s *Store) CreateRelease(ctx context.Context, release *ReleaseMessage, crea
 	var createdTime time.Time
 	if err := tx.QueryRowContext(ctx, query, args...).Scan(&createdTime); err != nil {
 		return nil, errors.Wrapf(err, "failed to insert release")
-	}
-
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit tx")
 	}
 
 	release.Creator = creator
@@ -244,7 +244,10 @@ func (s *Store) UpdateRelease(ctx context.Context, update *UpdateReleaseMessage)
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	if err := s.runProjectLifecycleWrite(ctx, update.ProjectID, lifecycleExisting, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, query, args...)
+		return err
+	}); err != nil {
 		return nil, errors.Wrapf(err, "failed to query row")
 	}
 

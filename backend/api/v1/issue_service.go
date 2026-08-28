@@ -511,6 +511,9 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 		} else {
 			issue, err = s.store.CreateIssue(ctx, issueToCreate)
 			if err != nil {
+				if errors.Is(err, store.ErrLifecycleBusy) {
+					return nil, lifecycleBusyConnectError(err)
+				}
 				existing, lookupErr := s.findLinkedIssueForCreate(ctx, issueToCreate)
 				if lookupErr != nil {
 					return nil, lookupErr
@@ -541,6 +544,9 @@ func (s *IssueService) CreateIssue(ctx context.Context, req *connect.Request[v1p
 }
 
 func mapDraftCreationError(err error) error {
+	if errors.Is(err, store.ErrLifecycleBusy) {
+		return lifecycleBusyConnectError(err)
+	}
 	var workflowErr *review.Error
 	if !errors.As(err, &workflowErr) {
 		return connect.NewError(connect.CodeInternal, err)
@@ -1295,6 +1301,9 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, req *connect.Requ
 		},
 	})
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create issue comment: %v", err))
 	}
 
@@ -1358,6 +1367,9 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 	}
 
 	if err := s.store.UpdateIssueComment(ctx, update); err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		if common.ErrorCode(err) == common.NotFound {
 			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot found the issue comment %s", req.Msg.IssueComment.Name))
 		}

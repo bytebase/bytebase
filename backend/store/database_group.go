@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/pkg/errors"
 	"google.golang.org/genproto/googleapis/type/expr"
@@ -40,7 +41,10 @@ func (s *Store) DeleteDatabaseGroup(ctx context.Context, projectID, resourceID s
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	if err := s.runProjectLifecycleWrite(ctx, projectID, lifecycleExisting, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, query, args...)
+		return err
+	}); err != nil {
 		return errors.Wrapf(err, "failed to execute")
 	}
 	return nil
@@ -158,16 +162,14 @@ func (s *Store) UpdateDatabaseGroup(ctx context.Context, projectID, resourceID s
 
 	var updatedDatabaseGroup DatabaseGroupMessage
 	var exprBytes []byte
-	if err := s.GetDB().QueryRowContext(
-		ctx,
-		query,
-		args...,
-	).Scan(
-		&updatedDatabaseGroup.ProjectID,
-		&updatedDatabaseGroup.ResourceID,
-		&updatedDatabaseGroup.Title,
-		&exprBytes,
-	); err != nil {
+	if err := s.runProjectLifecycleWrite(ctx, projectID, lifecycleExisting, func(tx *sql.Tx) error {
+		return tx.QueryRowContext(ctx, query, args...).Scan(
+			&updatedDatabaseGroup.ProjectID,
+			&updatedDatabaseGroup.ResourceID,
+			&updatedDatabaseGroup.Title,
+			&exprBytes,
+		)
+	}); err != nil {
 		return nil, errors.Wrapf(err, "failed to scan")
 	}
 	var expression expr.Expr
@@ -199,7 +201,10 @@ func (s *Store) CreateDatabaseGroup(ctx context.Context, create *DatabaseGroupMe
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	if err := s.runProjectLifecycleWrite(ctx, create.ProjectID, lifecycleActive, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, query, args...)
+		return err
+	}); err != nil {
 		return nil, errors.Wrapf(err, "failed to execute")
 	}
 

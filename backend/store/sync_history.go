@@ -94,7 +94,7 @@ func (s *Store) CreateSyncHistory(ctx context.Context, instanceID, databaseName 
 	}
 
 	var resourceID string
-	err = s.withDatabasePurgeFence(ctx, instanceID, databaseName, "", nil, func(tx *sql.Tx, _ *databaseOwnership) error {
+	err = s.withDatabaseLifecycleWrite(ctx, instanceID, databaseName, "", nil, func(tx *sql.Tx, _ *databaseOwnership) error {
 		return tx.QueryRowContext(ctx, query, args...).Scan(&resourceID)
 	})
 	if err != nil {

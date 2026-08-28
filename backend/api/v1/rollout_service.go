@@ -313,6 +313,9 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 	}
 
 	if err := CreateRolloutAndPendingTasks(ctx, s.store, user.Email, plan, issue, project, tasks); err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, connect.NewError(connect.CodeAborted, store.ErrLifecycleBusy)
+		}
 		if IsStaleRolloutApprovalError(err) || IsDraftIssueNotSubmittedError(err) {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
 		}
@@ -897,6 +900,9 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 	}
 
 	if err := s.store.CreatePendingTaskRuns(ctx, user.Email, taskRunCreates...); err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		if common.ErrorCode(err) == common.Conflict {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
 		}
@@ -1013,6 +1019,9 @@ func (s *RolloutService) BatchSkipTasks(ctx context.Context, req *connect.Reques
 	}
 
 	if err := s.store.BatchSkipTasks(ctx, projectID, taskUIDs, request.Reason); err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		if common.ErrorCode(err) == common.Conflict {
 			return nil, connect.NewError(connect.CodeFailedPrecondition, err)
 		}
@@ -1156,6 +1165,9 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 	}
 
 	if err := s.store.BatchCancelTaskRuns(ctx, projectID, taskRunIDs); err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to batch patch task run status to canceled"))
 	}
 

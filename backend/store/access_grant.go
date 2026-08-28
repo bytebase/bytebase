@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 	"time"
@@ -82,7 +83,9 @@ func (s *Store) CreateAccessGrant(ctx context.Context, create *AccessGrantMessag
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&create.CreatedAt, &create.UpdatedAt); err != nil {
+	if err := s.runProjectLifecycleWrite(ctx, create.ProjectID, lifecycleActive, func(tx *sql.Tx) error {
+		return tx.QueryRowContext(ctx, query, args...).Scan(&create.CreatedAt, &create.UpdatedAt)
+	}); err != nil {
 		return nil, errors.Wrapf(err, "failed to insert access grant")
 	}
 
@@ -204,6 +207,10 @@ func (s *Store) ListAccessGrants(ctx context.Context, find *FindAccessGrantMessa
 
 // UpdateAccessGrant updates an existing access grant.
 func (s *Store) UpdateAccessGrant(ctx context.Context, id string, update *UpdateAccessGrantMessage) (*AccessGrantMessage, error) {
+	var projectID string
+	if err := s.GetDB().QueryRowContext(ctx, "SELECT project FROM access_grant WHERE id = $1", id).Scan(&projectID); err != nil {
+		return nil, errors.Wrap(err, "failed to resolve access grant project")
+	}
 	set := qb.Q()
 
 	if v := update.Status; v != nil {
@@ -237,16 +244,18 @@ func (s *Store) UpdateAccessGrant(ctx context.Context, id string, update *Update
 	}
 	var payload []byte
 	var statusString string
-	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(
-		&grant.ID,
-		&grant.ProjectID,
-		&grant.Creator,
-		&statusString,
-		&grant.ExpireTime,
-		&payload,
-		&grant.CreatedAt,
-		&grant.UpdatedAt,
-	); err != nil {
+	if err := s.runProjectLifecycleWrite(ctx, projectID, lifecycleExisting, func(tx *sql.Tx) error {
+		return tx.QueryRowContext(ctx, query, args...).Scan(
+			&grant.ID,
+			&grant.ProjectID,
+			&grant.Creator,
+			&statusString,
+			&grant.ExpireTime,
+			&payload,
+			&grant.CreatedAt,
+			&grant.UpdatedAt,
+		)
+	}); err != nil {
 		return nil, errors.Wrapf(err, "failed to update access grant")
 	}
 	statusValue, ok := storepb.AccessGrant_Status_value[statusString]

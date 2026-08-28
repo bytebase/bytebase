@@ -489,81 +489,103 @@ func (s *Store) BatchSkipTasks(ctx context.Context, projectID string, taskUIDs [
 		return nil
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
+	scope := lifecycleScope{}
+	scope.addProject(projectID, lifecycleExisting)
+	q := qb.Q().Space(`
+		SELECT DISTINCT instance
+		FROM task
+		WHERE project = ? AND id = ANY(?)
+		ORDER BY instance
+	`, projectID, taskUIDs)
+	query, args, err := q.ToSQL()
 	if err != nil {
-		return errors.Wrapf(err, "failed to begin tx")
+		return errors.Wrap(err, "failed to build task lifecycle scope query")
 	}
-	defer tx.Rollback()
+	if err := func() error {
+		rows, err := s.GetDB().QueryContext(ctx, query, args...)
+		if err != nil {
+			return errors.Wrap(err, "failed to resolve task lifecycle scope")
+		}
+		defer rows.Close()
+		for rows.Next() {
+			var instanceID string
+			if err := rows.Scan(&instanceID); err != nil {
+				return errors.Wrap(err, "failed to scan task lifecycle scope")
+			}
+			scope.addInstance(instanceID, lifecycleExisting)
+		}
+		return errors.Wrap(rows.Err(), "failed to read task lifecycle scope")
+	}(); err != nil {
+		return err
+	}
 
-	// Lock task rows before checking task runs so the check uses a fresh Read Committed snapshot.
-	lockQ := qb.Q().Space(`
+	return s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		// Lock task rows before checking task runs so the check uses a fresh Read Committed snapshot.
+		lockQ := qb.Q().Space(`
 		SELECT id
 		FROM task
 		WHERE project = ? AND id = ANY(?)
 		ORDER BY id
 		FOR UPDATE`, projectID, taskUIDs)
-	lockQuery, lockArgs, err := lockQ.ToSQL()
-	if err != nil {
-		return errors.Wrapf(err, "failed to build task lock sql")
-	}
-	if err := func() error {
-		rows, err := tx.QueryContext(ctx, lockQuery, lockArgs...)
+		lockQuery, lockArgs, err := lockQ.ToSQL()
 		if err != nil {
-			return errors.Wrapf(err, "failed to lock tasks")
+			return errors.Wrapf(err, "failed to build task lock sql")
 		}
-		defer rows.Close()
-		for rows.Next() {
-			var taskUID int64
-			if err := rows.Scan(&taskUID); err != nil {
-				return errors.Wrapf(err, "failed to scan locked task")
+		if err := func() error {
+			rows, err := tx.QueryContext(ctx, lockQuery, lockArgs...)
+			if err != nil {
+				return errors.Wrapf(err, "failed to lock tasks")
 			}
+			defer rows.Close()
+			for rows.Next() {
+				var taskUID int64
+				if err := rows.Scan(&taskUID); err != nil {
+					return errors.Wrapf(err, "failed to scan locked task")
+				}
+			}
+			if err := rows.Err(); err != nil {
+				return errors.Wrapf(err, "failed to read locked tasks")
+			}
+			return nil
+		}(); err != nil {
+			return err
 		}
-		if err := rows.Err(); err != nil {
-			return errors.Wrapf(err, "failed to read locked tasks")
-		}
-		return nil
-	}(); err != nil {
-		return err
-	}
 
-	blockingQ := qb.Q().Space(`
+		blockingQ := qb.Q().Space(`
 		SELECT task_id
 		FROM task_run
 		WHERE project = ? AND task_id = ANY(?)
 		AND status IN (?, ?, ?, ?)
 		ORDER BY task_id
 		LIMIT 1`, projectID, taskUIDs,
-		storepb.TaskRun_PENDING.String(), storepb.TaskRun_AVAILABLE.String(), storepb.TaskRun_RUNNING.String(), storepb.TaskRun_DONE.String())
-	blockingQuery, blockingArgs, err := blockingQ.ToSQL()
-	if err != nil {
-		return errors.Wrapf(err, "failed to build task run check sql")
-	}
-	var blockingTaskUID int64
-	if err := tx.QueryRowContext(ctx, blockingQuery, blockingArgs...).Scan(&blockingTaskUID); err != nil && err != sql.ErrNoRows {
-		return errors.Wrapf(err, "failed to check task runs")
-	} else if err == nil {
-		return common.Errorf(common.Conflict, "task %d cannot be skipped because it has a task run in a blocking status", blockingTaskUID)
-	}
+			storepb.TaskRun_PENDING.String(), storepb.TaskRun_AVAILABLE.String(), storepb.TaskRun_RUNNING.String(), storepb.TaskRun_DONE.String())
+		blockingQuery, blockingArgs, err := blockingQ.ToSQL()
+		if err != nil {
+			return errors.Wrapf(err, "failed to build task run check sql")
+		}
+		var blockingTaskUID int64
+		if err := tx.QueryRowContext(ctx, blockingQuery, blockingArgs...).Scan(&blockingTaskUID); err != nil && err != sql.ErrNoRows {
+			return errors.Wrapf(err, "failed to check task runs")
+		} else if err == nil {
+			return common.Errorf(common.Conflict, "task %d cannot be skipped because it has a task run in a blocking status", blockingTaskUID)
+		}
 
-	q := qb.Q().Space(`
+		q = qb.Q().Space(`
 		UPDATE task AS t
 		SET payload = payload || jsonb_build_object('skipped', ?::BOOLEAN) || jsonb_build_object('skippedReason', ?::TEXT)
 		WHERE t.id = ANY(?) AND t.project = ?
 		AND (t.payload->>'skipped')::BOOLEAN IS NOT TRUE`, true, comment, taskUIDs, projectID)
-	query, args, err := q.ToSQL()
-	if err != nil {
-		return errors.Wrapf(err, "failed to build sql")
-	}
+		query, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrapf(err, "failed to build sql")
+		}
 
-	if _, err := tx.ExecContext(ctx, query, args...); err != nil {
-		return errors.Wrapf(err, "failed to batch skip tasks")
-	}
+		if _, err := tx.ExecContext(ctx, query, args...); err != nil {
+			return errors.Wrapf(err, "failed to batch skip tasks")
+		}
 
-	if err := tx.Commit(); err != nil {
-		return errors.Wrapf(err, "failed to commit tx")
-	}
-
-	return nil
+		return nil
+	})
 }
 
 // CreateMissingTasksTx creates any missing rollout tasks inside a caller-owned transaction.

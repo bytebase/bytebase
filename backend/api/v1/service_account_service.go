@@ -109,6 +109,9 @@ func (s *ServiceAccountService) CreateServiceAccount(ctx context.Context, reques
 		Project:        projectID,
 	})
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create service account"))
 	}
 
@@ -262,6 +265,9 @@ func (s *ServiceAccountService) UpdateServiceAccount(ctx context.Context, reques
 
 	updatedSA, err := s.store.UpdateServiceAccount(ctx, sa, patch)
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update service account"))
 	}
 
@@ -296,6 +302,9 @@ func (s *ServiceAccountService) DeleteServiceAccount(ctx context.Context, reques
 
 	// Soft delete
 	if err := s.store.DeleteServiceAccount(ctx, sa); err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to delete service account"))
 	}
 

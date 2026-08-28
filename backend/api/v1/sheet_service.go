@@ -53,6 +53,9 @@ func (s *SheetService) CreateSheet(ctx context.Context, request *connect.Request
 	storeSheetCreate := convertToStoreSheetMessage(request.Msg.Sheet)
 	sheets, err := s.store.CreateSheets(ctx, project.ResourceID, storeSheetCreate)
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheet"))
 	}
 	sheet := sheets[0]
@@ -96,6 +99,9 @@ func (s *SheetService) BatchCreateSheets(ctx context.Context, request *connect.R
 
 	sheets, err := s.store.CreateSheets(ctx, project.ResourceID, sheetCreates...)
 	if err != nil {
+		if errors.Is(err, store.ErrLifecycleBusy) {
+			return nil, lifecycleBusyConnectError(err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create sheet"))
 	}
 	response := &v1pb.BatchCreateSheetsResponse{}

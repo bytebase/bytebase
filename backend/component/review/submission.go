@@ -52,79 +52,80 @@ func (w *Workflow) CreateDraftIssue(ctx context.Context, input CreateDraftIssueI
 	issue.Payload.Labels = store.CanonicalizeIssueLabels(issue.Payload.GetLabels())
 	issue.Status = storepb.Issue_OPEN
 
-	tx, err := w.store.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to begin draft creation transaction")
-	}
-	defer tx.Rollback()
-	if err := store.AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, issue.ProjectID, *issue.PlanUID); err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to acquire Plan review lock")
-	}
-	existing, err := lockIssueByPlan(ctx, tx, issue.ProjectID, *issue.PlanUID)
-	if err != nil {
-		return nil, err
-	}
-	if existing != nil {
-		if existing.Payload.GetDraft() && existing.CreatorEmail == issue.CreatorEmail {
-			return &CreateDraftIssueResult{Issue: existing}, nil
+	var result *CreateDraftIssueResult
+	err := w.store.RunActiveProjectAndInstancesLifecycleWrite(ctx, issue.ProjectID, nil, func(tx *sql.Tx) error {
+		if err := store.AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, issue.ProjectID, *issue.PlanUID); err != nil {
+			return workflowWrap(ErrorInternal, err, "failed to acquire Plan review lock")
 		}
-		return nil, workflowError(ErrorConflict, "Plan already has a review issue")
-	}
-	plan, err := lockPlan(ctx, tx, input.Workspace, issue.ProjectID, *issue.PlanUID)
-	if err != nil {
-		return nil, err
-	}
-	if plan == nil {
-		return nil, workflowError(ErrorNotFound, "Plan not found")
-	}
-	if plan.Deleted {
-		return nil, workflowError(ErrorFailedPrecondition, "cannot create a draft issue for a closed Plan")
-	}
-	if plan.Config.GetHasRollout() {
-		return nil, workflowError(ErrorFailedPrecondition, "cannot create a draft issue because the Plan already has a rollout")
-	}
-	if _, err := classifyReviewPlan(plan); err != nil {
-		return nil, err
-	}
-	issue.Title = plan.Name
-	issue.Description = plan.Description
-	var projectDeleted bool
-	if err := tx.QueryRowContext(ctx, `
-		SELECT deleted FROM project
-		WHERE workspace = $1 AND resource_id = $2
-		FOR UPDATE`, input.Workspace, issue.ProjectID).Scan(&projectDeleted); errors.Is(err, sql.ErrNoRows) {
-		return nil, workflowError(ErrorNotFound, "project %s not found", issue.ProjectID)
-	} else if err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to lock project for draft creation")
-	}
-	if projectDeleted {
-		return nil, workflowError(ErrorNotFound, "project %s not found", issue.ProjectID)
-	}
-	if err := tx.QueryRowContext(ctx, `
-		SELECT GREATEST(COALESCE(MAX(id), 0) + 1, 101)
-		FROM issue
-		WHERE project = $1`, issue.ProjectID).Scan(&issue.UID); err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to allocate issue ID")
-	}
-	payload, err := protojson.Marshal(issue.Payload)
-	if err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to marshal draft issue payload")
-	}
-	if err := tx.QueryRowContext(ctx, `
+		existing, err := lockIssueByPlan(ctx, tx, issue.ProjectID, *issue.PlanUID)
+		if err != nil {
+			return err
+		}
+		if existing != nil {
+			if existing.Payload.GetDraft() && existing.CreatorEmail == issue.CreatorEmail {
+				result = &CreateDraftIssueResult{Issue: existing}
+				return nil
+			}
+			return workflowError(ErrorConflict, "Plan already has a review issue")
+		}
+		plan, err := lockPlan(ctx, tx, input.Workspace, issue.ProjectID, *issue.PlanUID)
+		if err != nil {
+			return err
+		}
+		if plan == nil {
+			return workflowError(ErrorNotFound, "Plan not found")
+		}
+		if plan.Deleted {
+			return workflowError(ErrorFailedPrecondition, "cannot create a draft issue for a closed Plan")
+		}
+		if plan.Config.GetHasRollout() {
+			return workflowError(ErrorFailedPrecondition, "cannot create a draft issue because the Plan already has a rollout")
+		}
+		if _, err := classifyReviewPlan(plan); err != nil {
+			return err
+		}
+		issue.Title = plan.Name
+		issue.Description = plan.Description
+		var projectDeleted bool
+		if err := tx.QueryRowContext(ctx, `
+			SELECT deleted FROM project
+			WHERE workspace = $1 AND resource_id = $2
+			FOR UPDATE`, input.Workspace, issue.ProjectID).Scan(&projectDeleted); errors.Is(err, sql.ErrNoRows) {
+			return workflowError(ErrorNotFound, "project %s not found", issue.ProjectID)
+		} else if err != nil {
+			return workflowWrap(ErrorInternal, err, "failed to lock project for draft creation")
+		}
+		if projectDeleted {
+			return workflowError(ErrorNotFound, "project %s not found", issue.ProjectID)
+		}
+		if err := tx.QueryRowContext(ctx, `
+			SELECT GREATEST(COALESCE(MAX(id), 0) + 1, 101)
+			FROM issue
+			WHERE project = $1`, issue.ProjectID).Scan(&issue.UID); err != nil {
+			return workflowWrap(ErrorInternal, err, "failed to allocate issue ID")
+		}
+		payload, err := protojson.Marshal(issue.Payload)
+		if err != nil {
+			return workflowWrap(ErrorInternal, err, "failed to marshal draft issue payload")
+		}
+		if err := tx.QueryRowContext(ctx, `
 		INSERT INTO issue (
 			id, creator, project, plan_id, name, status, type, description, payload, ts_vector
 		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 		RETURNING created_at, updated_at`,
-		issue.UID, issue.CreatorEmail, issue.ProjectID, issue.PlanUID, issue.Title,
-		issue.Status.String(), issue.Type.String(), issue.Description, payload,
-		store.IssueSearchVector(issue.Title, issue.Description),
-	).Scan(&issue.CreatedAt, &issue.UpdatedAt); err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to insert draft issue")
+			issue.UID, issue.CreatorEmail, issue.ProjectID, issue.PlanUID, issue.Title,
+			issue.Status.String(), issue.Type.String(), issue.Description, payload,
+			store.IssueSearchVector(issue.Title, issue.Description),
+		).Scan(&issue.CreatedAt, &issue.UpdatedAt); err != nil {
+			return workflowWrap(ErrorInternal, err, "failed to insert draft issue")
+		}
+		result = &CreateDraftIssueResult{Issue: &issue, Created: true}
+		return nil
+	})
+	if err != nil {
+		return nil, lifecycleWorkflowError(err)
 	}
-	if err := tx.Commit(); err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to commit draft creation")
-	}
-	return &CreateDraftIssueResult{Issue: &issue, Created: true}, nil
+	return result, nil
 }
 
 // SubmitIssueInput identifies a draft issue submission.
@@ -176,70 +177,70 @@ func (w *Workflow) SubmitIssue(ctx context.Context, input SubmitIssueInput) (*Su
 		w.beforeSubmit()
 	}
 
-	tx, err := w.store.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to begin issue submission transaction")
-	}
-	defer tx.Rollback()
-
-	if err := store.AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, input.ProjectID, *observedIssue.PlanUID); err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to acquire Plan review lock")
-	}
-	issue, err := lockIssue(ctx, tx, input.ProjectID, input.IssueUID)
-	if err != nil {
-		return nil, err
-	}
-	if issue == nil {
-		return nil, workflowError(ErrorNotFound, "issue %d not found in project %s", input.IssueUID, input.ProjectID)
-	}
-	if !issue.Payload.GetDraft() {
-		return &SubmitIssueResult{Issue: issue, Project: project}, nil
-	}
-	if issue.Type != storepb.Issue_DATABASE_CHANGE || issue.PlanUID == nil || *issue.PlanUID != *observedIssue.PlanUID {
-		return nil, workflowError(ErrorFailedPrecondition, "draft review issue must have a database Plan")
-	}
-	plan, err := lockIssuePlan(ctx, tx, issue)
-	if err != nil {
-		return nil, err
-	}
-	if plan == nil {
-		return nil, workflowError(ErrorNotFound, "plan not found")
-	}
-
-	labels := store.CanonicalizeIssueLabels(issue.Payload.GetLabels())
-	previousLabels := labels
-	if input.LabelsSet {
-		labels = store.CanonicalizeIssueLabels(input.Labels)
-	}
-	if err := validateSubmissionState(project, issue, plan, labels); err != nil {
-		return nil, err
-	}
-	if reviewPlanRequiresChecks(plan) {
-		planCheckRun, err := lockPlanCheckRun(ctx, tx, input.ProjectID, plan.UID)
+	var result *SubmitIssueResult
+	err = w.store.RunActiveProjectAndInstancesLifecycleWrite(ctx, input.ProjectID, nil, func(tx *sql.Tx) error {
+		if err := store.AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, input.ProjectID, *observedIssue.PlanUID); err != nil {
+			return workflowWrap(ErrorInternal, err, "failed to acquire Plan review lock")
+		}
+		issue, err := lockIssue(ctx, tx, input.ProjectID, input.IssueUID)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		if err := validatePlanCheckRun(project, plan, planCheckRun); err != nil {
-			return nil, err
+		if issue == nil {
+			return workflowError(ErrorNotFound, "issue %d not found in project %s", input.IssueUID, input.ProjectID)
 		}
-	}
+		if !issue.Payload.GetDraft() {
+			result = &SubmitIssueResult{Issue: issue, Project: project}
+			return nil
+		}
+		if issue.Type != storepb.Issue_DATABASE_CHANGE || issue.PlanUID == nil || *issue.PlanUID != *observedIssue.PlanUID {
+			return workflowError(ErrorFailedPrecondition, "draft review issue must have a database Plan")
+		}
+		plan, err := lockIssuePlan(ctx, tx, issue)
+		if err != nil {
+			return err
+		}
+		if plan == nil {
+			return workflowError(ErrorNotFound, "plan not found")
+		}
 
-	if err := submitIssuePayload(ctx, tx, issue, labels); err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to submit issue")
+		labels := store.CanonicalizeIssueLabels(issue.Payload.GetLabels())
+		previousLabels := labels
+		if input.LabelsSet {
+			labels = store.CanonicalizeIssueLabels(input.Labels)
+		}
+		if err := validateSubmissionState(project, issue, plan, labels); err != nil {
+			return err
+		}
+		if reviewPlanRequiresChecks(plan) {
+			planCheckRun, err := lockPlanCheckRun(ctx, tx, input.ProjectID, plan.UID)
+			if err != nil {
+				return err
+			}
+			if err := validatePlanCheckRun(project, plan, planCheckRun); err != nil {
+				return err
+			}
+		}
+
+		if err := submitIssuePayload(ctx, tx, issue, labels); err != nil {
+			return workflowWrap(ErrorInternal, err, "failed to submit issue")
+		}
+		issue.Payload.Draft = false
+		issue.Payload.Labels = labels
+		result = &SubmitIssueResult{
+			Issue:          issue,
+			Project:        project,
+			Submitted:      true,
+			LabelsChanged:  !slices.Equal(previousLabels, labels),
+			PreviousLabels: previousLabels,
+			Events:         []Event{SubmittedEvent{}, IssueCreatedEvent{}, ApprovalCheckEvent{}},
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, lifecycleWorkflowError(err)
 	}
-	issue.Payload.Draft = false
-	issue.Payload.Labels = labels
-	if err := tx.Commit(); err != nil {
-		return nil, workflowWrap(ErrorInternal, err, "failed to commit issue submission")
-	}
-	return &SubmitIssueResult{
-		Issue:          issue,
-		Project:        project,
-		Submitted:      true,
-		LabelsChanged:  !slices.Equal(previousLabels, labels),
-		PreviousLabels: previousLabels,
-		Events:         []Event{SubmittedEvent{}, IssueCreatedEvent{}, ApprovalCheckEvent{}},
-	}, nil
+	return result, nil
 }
 
 type reviewPlanKind int

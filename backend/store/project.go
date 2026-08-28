@@ -275,11 +275,6 @@ func (s *Store) UpdateProjects(ctx context.Context, patches ...*UpdateProjectMes
 		return nil
 	}
 
-	// Remove all projects from cache first
-	for _, patch := range patches {
-		s.removeProjectCache(patch.ResourceID)
-	}
-
 	// Prepare arrays for batch update
 	resourceIDs := make([]string, len(patches))
 	titles := make([]*string, len(patches))
@@ -314,8 +309,23 @@ func (s *Store) UpdateProjects(ctx context.Context, patches ...*UpdateProjectMes
 		return err
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	sharedScope := lifecycleScope{}
+	exclusiveScope := lifecycleScope{}
+	for _, patch := range patches {
+		if patch.Delete == nil {
+			sharedScope.addProject(patch.ResourceID, lifecycleExisting)
+		} else {
+			exclusiveScope.addProject(patch.ResourceID, lifecycleExisting)
+		}
+	}
+	if err := s.runLifecycleTransition(ctx, sharedScope, exclusiveScope, func(tx *stdsql.Tx) error {
+		_, err := tx.ExecContext(ctx, query, args...)
 		return err
+	}); err != nil {
+		return err
+	}
+	for _, patch := range patches {
+		s.removeProjectCache(patch.ResourceID)
 	}
 
 	return nil
@@ -454,50 +464,45 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		return errors.Wrap(err, "failed to get default project ID")
 	}
 
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return errors.Wrap(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-	if err := acquireProjectPurgeLock(ctx, tx, resourceID); err != nil {
-		return errors.Wrapf(err, "failed to lock project purge fence for %s", resourceID)
-	}
+	exclusiveScope := lifecycleScope{}
+	exclusiveScope.addProject(resourceID, lifecycleExisting)
+	var cacheKeys *projectDescendantCacheKeys
+	err = s.runLifecycleTransition(ctx, lifecycleScope{}, exclusiveScope, func(tx *stdsql.Tx) error {
+		// Capture descendant cache keys before any descendant rows are removed so
+		// the post-commit invalidation is precise and does not require re-reading
+		// rows that no longer exist.
+		cacheKeys, err = captureProjectDescendantCacheKeys(ctx, tx, resourceID)
+		if err != nil {
+			return errors.Wrap(err, "failed to capture project descendant cache keys")
+		}
 
-	// Capture descendant cache keys before any descendant rows are removed so
-	// the post-commit invalidation is precise and does not require re-reading
-	// rows that no longer exist.
-	cacheKeys, err := captureProjectDescendantCacheKeys(ctx, tx, resourceID)
-	if err != nil {
-		return errors.Wrap(err, "failed to capture project descendant cache keys")
-	}
+		// Delete query history before locking database-scoped rows to preserve the
+		// canonical sibling-branch order.
+		q := qb.Q().Space("DELETE FROM query_history WHERE project = ?", resourceID)
+		sql, args, err := q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build query_history delete query")
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to delete query_history for project %s", resourceID)
+		}
 
-	// Delete query history before locking database-scoped rows to preserve the
-	// canonical sibling-branch order.
-	q := qb.Q().Space("DELETE FROM query_history WHERE project = ?", resourceID)
-	sql, args, err := q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build query_history delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete query_history for project %s", resourceID)
-	}
+		// Delete policy entries that reference this project.
+		q = qb.Q().Space("DELETE FROM policy")
+		q.Space("WHERE (resource_type = ? AND resource = 'projects/' || ?)", storepb.Policy_PROJECT.String(), resourceID)
+		q.And("workspace = ?", workspace)
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build policy delete query")
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to delete policy for project %s", resourceID)
+		}
 
-	// Delete policy entries that reference this project.
-	q = qb.Q().Space("DELETE FROM policy")
-	q.Space("WHERE (resource_type = ? AND resource = 'projects/' || ?)", storepb.Policy_PROJECT.String(), resourceID)
-	q.And("workspace = ?", workspace)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build policy delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete policy for project %s", resourceID)
-	}
-
-	// Delete star rows before their parents, in full primary-key order: stars
-	// held by project principals, and stars on the saved queries the next
-	// statement deletes.
-	q = qb.Q().Space(`DELETE FROM saved_query_star
+		// Delete star rows before their parents, in full primary-key order: stars
+		// held by project principals, and stars on the saved queries the next
+		// statement deletes.
+		q = qb.Q().Space(`DELETE FROM saved_query_star
 		WHERE (saved_query, principal) IN (
 			SELECT saved_query, principal
 			FROM saved_query_star
@@ -511,222 +516,189 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 			ORDER BY saved_query, principal
 			FOR UPDATE
 		)`, resourceID, workspace, resourceID, workspace, resourceID, workspace, resourceID, workspace)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build saved_query_star delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete saved_query_star for project %s", resourceID)
-	}
-
-	// Delete saved queries created by project service accounts or workload identities.
-	q = qb.Q().Space(`DELETE FROM saved_query
-		WHERE creator IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
-		   OR creator IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)`, resourceID, workspace, resourceID, workspace)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build saved query delete query for principals")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete saved queries for project principals %s", resourceID)
-	}
-
-	// Reassign remaining saved queries associated with this project.
-	q = qb.Q().Space("UPDATE saved_query SET project = ? WHERE project = ?", defaultProjectID, resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build saved query update query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to update saved queries for project %s", resourceID)
-	}
-
-	// Delete issue_comment entries for issues in this project
-	q = qb.Q().Space("DELETE FROM issue_comment WHERE project = ?", resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build issue_comment delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete issue_comment for project %s", resourceID)
-	}
-
-	// Delete review_run entries for issues in this project
-	q = qb.Q().Space("DELETE FROM review_run WHERE project = ?", resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build review_run delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete review_run for project %s", resourceID)
-	}
-
-	// Delete issues associated with this project
-	q = qb.Q().Space("DELETE FROM issue WHERE project = ?", resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build issue delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete issues for project %s", resourceID)
-	}
-
-	// Delete plan_webhook_delivery entries for plans in this project
-	q = qb.Q().Space("DELETE FROM plan_webhook_delivery WHERE project = ?", resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build plan_webhook_delivery delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete plan_webhook_delivery for project %s", resourceID)
-	}
-
-	// Delete plan_check_run entries for plans in this project
-	q = qb.Q().Space("DELETE FROM plan_check_run WHERE project = ?", resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build plan_check_run delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete plan_check_run for project %s", resourceID)
-	}
-
-	// Delete task_run_log entries for tasks in plans of this project
-	q = qb.Q().Space("DELETE FROM task_run_log WHERE project = ?", resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build task_run_log delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete task_run_log for project %s", resourceID)
-	}
-
-	// Delete task_run entries for tasks in plans of this project
-	q = qb.Q().Space("DELETE FROM task_run WHERE project = ?", resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build task_run delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete task_run for project %s", resourceID)
-	}
-
-	// Lock tasks in full primary-key order before deleting them. Pending Task Run
-	// creation uses the same order, so concurrent batches cannot form a wait cycle.
-	q = qb.Q().Space(`
-		SELECT project, id
-		FROM task
-		WHERE project = ?
-		ORDER BY project, id
-		FOR UPDATE`, resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build task lock query")
-	}
-	if err := func() error {
-		rows, err := tx.QueryContext(ctx, sql, args...)
-		if err != nil {
-			return errors.Wrapf(err, "failed to lock tasks for project %s", resourceID)
-		}
-		defer rows.Close()
-		for rows.Next() {
-			var lockedProjectID string
-			var lockedTaskID int64
-			if err := rows.Scan(&lockedProjectID, &lockedTaskID); err != nil {
-				return errors.Wrap(err, "failed to scan locked task")
-			}
-		}
-		if err := rows.Err(); err != nil {
-			return errors.Wrap(err, "failed to read locked tasks")
-		}
-		return nil
-	}(); err != nil {
-		return err
-	}
-
-	// Delete tasks in plans of this project after acquiring every task lock.
-	q = qb.Q().Space("DELETE FROM task WHERE project = ?", resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build task delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete tasks for project %s", resourceID)
-	}
-
-	// Delete plans associated with this project
-	q = qb.Q().Space("DELETE FROM plan WHERE project = ?", resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build plan delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete plans for project %s", resourceID)
-	}
-
-	// Delete access_grant associated with this project
-	q = qb.Q().Space("DELETE FROM access_grant WHERE project = ?", resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build access_grant delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete access_grants for project %s", resourceID)
-	}
-
-	// Delete releases associated with this project
-	q = qb.Q().Space("DELETE FROM release WHERE project = ?", resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build release delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete releases for project %s", resourceID)
-	}
-
-	// Delete db_groups associated with this project
-	q = qb.Q().Space("DELETE FROM db_group WHERE project = ?", resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build db_group delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete db_groups for project %s", resourceID)
-	}
-
-	// Purge the databases and database-scoped history of project instances.
-	// Workspace instances remain shared infrastructure, so their databases are
-	// reassigned to the default project below instead.
-	for _, statement := range []struct {
-		name string
-		sql  string
-	}{
-		{"changelog", "DELETE FROM changelog WHERE instance IN (SELECT resource_id FROM instance WHERE project = ?)"},
-		{"sync_history", "DELETE FROM sync_history WHERE instance IN (SELECT resource_id FROM instance WHERE project = ?)"},
-		{"revision deleter", `UPDATE revision SET deleter = NULL
-			WHERE deleter IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
-			   OR deleter IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)`},
-		{"revision", "DELETE FROM revision WHERE instance IN (SELECT resource_id FROM instance WHERE project = ?)"},
-		{"db_schema", "DELETE FROM db_schema WHERE instance IN (SELECT resource_id FROM instance WHERE project = ?)"},
-		{"database", "DELETE FROM db WHERE instance IN (SELECT resource_id FROM instance WHERE project = ?)"},
-	} {
-		if statement.name == "revision deleter" {
-			q = qb.Q().Space(statement.sql, resourceID, workspace, resourceID, workspace)
-		} else {
-			q = qb.Q().Space(statement.sql, resourceID)
-		}
 		sql, args, err = q.ToSQL()
 		if err != nil {
-			return errors.Wrapf(err, "failed to build %s delete query", statement.name)
+			return errors.Wrap(err, "failed to build saved_query_star delete query")
 		}
 		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-			return errors.Wrapf(err, "failed to delete %s for project %s", statement.name, resourceID)
+			return errors.Wrapf(err, "failed to delete saved_query_star for project %s", resourceID)
 		}
-	}
 
-	// Move only workspace-instance databases to the default project. Project
-	// instance databases were deleted with their owning instance above.
-	q = qb.Q().Space(`
+		// Delete saved queries created by project service accounts or workload identities.
+		q = qb.Q().Space(`DELETE FROM saved_query
+		WHERE creator IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
+		   OR creator IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)`, resourceID, workspace, resourceID, workspace)
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build saved query delete query for principals")
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to delete saved queries for project principals %s", resourceID)
+		}
+
+		// Reassign remaining saved queries associated with this project.
+		q = qb.Q().Space("UPDATE saved_query SET project = ? WHERE project = ?", defaultProjectID, resourceID)
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build saved query update query")
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to update saved queries for project %s", resourceID)
+		}
+
+		// Delete issue_comment entries for issues in this project
+		q = qb.Q().Space("DELETE FROM issue_comment WHERE project = ?", resourceID)
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build issue_comment delete query")
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to delete issue_comment for project %s", resourceID)
+		}
+
+		// Delete review_run entries for issues in this project
+		q = qb.Q().Space("DELETE FROM review_run WHERE project = ?", resourceID)
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build review_run delete query")
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to delete review_run for project %s", resourceID)
+		}
+
+		// Delete issues associated with this project
+		q = qb.Q().Space("DELETE FROM issue WHERE project = ?", resourceID)
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build issue delete query")
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to delete issues for project %s", resourceID)
+		}
+
+		// Delete plan_webhook_delivery entries for plans in this project
+		q = qb.Q().Space("DELETE FROM plan_webhook_delivery WHERE project = ?", resourceID)
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build plan_webhook_delivery delete query")
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to delete plan_webhook_delivery for project %s", resourceID)
+		}
+
+		// Delete plan_check_run entries for plans in this project
+		q = qb.Q().Space("DELETE FROM plan_check_run WHERE project = ?", resourceID)
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build plan_check_run delete query")
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to delete plan_check_run for project %s", resourceID)
+		}
+
+		// Delete task_run_log entries for tasks in plans of this project
+		q = qb.Q().Space("DELETE FROM task_run_log WHERE project = ?", resourceID)
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build task_run_log delete query")
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to delete task_run_log for project %s", resourceID)
+		}
+
+		// Delete task_run entries for tasks in plans of this project
+		q = qb.Q().Space("DELETE FROM task_run WHERE project = ?", resourceID)
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build task_run delete query")
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to delete task_run for project %s", resourceID)
+		}
+
+		// Delete tasks in plans of this project.
+		q = qb.Q().Space("DELETE FROM task WHERE project = ?", resourceID)
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build task delete query")
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to delete tasks for project %s", resourceID)
+		}
+
+		// Delete plans associated with this project
+		q = qb.Q().Space("DELETE FROM plan WHERE project = ?", resourceID)
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build plan delete query")
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to delete plans for project %s", resourceID)
+		}
+
+		// Delete access_grant associated with this project
+		q = qb.Q().Space("DELETE FROM access_grant WHERE project = ?", resourceID)
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build access_grant delete query")
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to delete access_grants for project %s", resourceID)
+		}
+
+		// Delete releases associated with this project
+		q = qb.Q().Space("DELETE FROM release WHERE project = ?", resourceID)
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build release delete query")
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to delete releases for project %s", resourceID)
+		}
+
+		// Delete db_groups associated with this project
+		q = qb.Q().Space("DELETE FROM db_group WHERE project = ?", resourceID)
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build db_group delete query")
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to delete db_groups for project %s", resourceID)
+		}
+
+		// Purge the databases and database-scoped history of project instances.
+		// Workspace instances remain shared infrastructure, so their databases are
+		// reassigned to the default project below instead.
+		for _, statement := range []struct {
+			name string
+			sql  string
+		}{
+			{"changelog", "DELETE FROM changelog WHERE instance IN (SELECT resource_id FROM instance WHERE project = ?)"},
+			{"sync_history", "DELETE FROM sync_history WHERE instance IN (SELECT resource_id FROM instance WHERE project = ?)"},
+			{"revision deleter", `UPDATE revision SET deleter = NULL
+			WHERE deleter IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
+			   OR deleter IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)`},
+			{"revision", "DELETE FROM revision WHERE instance IN (SELECT resource_id FROM instance WHERE project = ?)"},
+			{"db_schema", "DELETE FROM db_schema WHERE instance IN (SELECT resource_id FROM instance WHERE project = ?)"},
+			{"database", "DELETE FROM db WHERE instance IN (SELECT resource_id FROM instance WHERE project = ?)"},
+		} {
+			if statement.name == "revision deleter" {
+				q = qb.Q().Space(statement.sql, resourceID, workspace, resourceID, workspace)
+			} else {
+				q = qb.Q().Space(statement.sql, resourceID)
+			}
+			sql, args, err = q.ToSQL()
+			if err != nil {
+				return errors.Wrapf(err, "failed to build %s delete query", statement.name)
+			}
+			if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+				return errors.Wrapf(err, "failed to delete %s for project %s", statement.name, resourceID)
+			}
+		}
+
+		// Move only workspace-instance databases to the default project. Project
+		// instance databases were deleted with their owning instance above.
+		q = qb.Q().Space(`
 		UPDATE db
 		SET project = ?
 		FROM instance
@@ -734,134 +706,105 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		  AND db.project = ?
 		  AND instance.project IS NULL
 	`, defaultProjectID, resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build workspace database update query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to move workspace databases to default project for project %s", resourceID)
-	}
-
-	// Delete sheet refs owned by this project. Blobs stay: content-addressed
-	// rows may be shared with other projects, and unreferenced blobs are a
-	// future GC's concern (see the sheet_blob comment in LATEST.sql).
-	q = qb.Q().Space("DELETE FROM sheet_blob_ref WHERE project = ?", resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build sheet_blob_ref delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete sheet_blob_ref for project %s", resourceID)
-	}
-
-	// Delete project webhooks
-	q = qb.Q().Space("DELETE FROM project_webhook WHERE project = ?", resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build project_webhook delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete project_webhook for project %s", resourceID)
-	}
-
-	// Delete project service accounts
-	q = qb.Q().Space("DELETE FROM service_account WHERE project = ? AND workspace = ?", resourceID, workspace)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build service_account delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete service accounts for project %s", resourceID)
-	}
-
-	// Delete project workload identities
-	q = qb.Q().Space("DELETE FROM workload_identity WHERE project = ? AND workspace = ?", resourceID, workspace)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build workload_identity delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete workload identities for project %s", resourceID)
-	}
-
-	// Lock existing project instances after all of their descendants. A new
-	// project instance is rejected because this project is already soft-deleted.
-	q = qb.Q().Space(`
-		SELECT resource_id
-		FROM instance
-		WHERE project = ?
-		ORDER BY resource_id
-		FOR UPDATE
-	`, resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build project instance lock query")
-	}
-	if err := func() error {
-		rows, err := tx.QueryContext(ctx, sql, args...)
+		sql, args, err = q.ToSQL()
 		if err != nil {
-			return errors.Wrapf(err, "failed to lock project instances for project %s", resourceID)
+			return errors.Wrap(err, "failed to build workspace database update query")
 		}
-		defer rows.Close()
-		for rows.Next() {
-			var instanceID string
-			if err := rows.Scan(&instanceID); err != nil {
-				return errors.Wrap(err, "failed to scan locked project instance")
-			}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to move workspace databases to default project for project %s", resourceID)
 		}
-		return rows.Err()
-	}(); err != nil {
-		return err
-	}
 
-	// Every project instance is deleted with its owner; they are never converted
-	// into workspace instances.
-	q = qb.Q().Space("DELETE FROM instance WHERE project = ?", resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build project instance delete query")
-	}
-	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
-		return errors.Wrapf(err, "failed to delete project instances for project %s", resourceID)
-	}
+		// Delete sheet refs owned by this project. Blobs stay: content-addressed
+		// rows may be shared with other projects, and unreferenced blobs are a
+		// future GC's concern (see the sheet_blob comment in LATEST.sql).
+		q = qb.Q().Space("DELETE FROM sheet_blob_ref WHERE project = ?", resourceID)
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build sheet_blob_ref delete query")
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to delete sheet_blob_ref for project %s", resourceID)
+		}
 
-	var projectDeleted bool
-	if err := tx.QueryRowContext(ctx, `
+		// Delete project webhooks
+		q = qb.Q().Space("DELETE FROM project_webhook WHERE project = ?", resourceID)
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build project_webhook delete query")
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to delete project_webhook for project %s", resourceID)
+		}
+
+		// Delete project service accounts
+		q = qb.Q().Space("DELETE FROM service_account WHERE project = ? AND workspace = ?", resourceID, workspace)
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build service_account delete query")
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to delete service accounts for project %s", resourceID)
+		}
+
+		// Delete project workload identities
+		q = qb.Q().Space("DELETE FROM workload_identity WHERE project = ? AND workspace = ?", resourceID, workspace)
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build workload_identity delete query")
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to delete workload identities for project %s", resourceID)
+		}
+
+		// Every project instance is deleted with its owner; they are never converted
+		// into workspace instances.
+		q = qb.Q().Space("DELETE FROM instance WHERE project = ?", resourceID)
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build project instance delete query")
+		}
+		if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+			return errors.Wrapf(err, "failed to delete project instances for project %s", resourceID)
+		}
+
+		var projectDeleted bool
+		if err := tx.QueryRowContext(ctx, `
 		SELECT deleted
 		FROM project
 		WHERE resource_id = $1 AND workspace = $2
-		FOR UPDATE
 	`, resourceID, workspace).Scan(&projectDeleted); err != nil {
-		if errors.Is(err, stdsql.ErrNoRows) {
+			if errors.Is(err, stdsql.ErrNoRows) {
+				return errors.Errorf("project %s not found or not marked as deleted", resourceID)
+			}
+			return errors.Wrapf(err, "failed to lock project %s", resourceID)
+		}
+		if !projectDeleted {
 			return errors.Errorf("project %s not found or not marked as deleted", resourceID)
 		}
-		return errors.Wrapf(err, "failed to lock project %s", resourceID)
-	}
-	if !projectDeleted {
-		return errors.Errorf("project %s not found or not marked as deleted", resourceID)
-	}
 
-	// Finally, delete the project itself (only if it's marked as deleted)
-	q = qb.Q().Space("DELETE FROM project WHERE resource_id = ? AND deleted = TRUE AND workspace = ?", resourceID, workspace)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build project delete query")
-	}
-	result, err := tx.ExecContext(ctx, sql, args...)
-	if err != nil {
-		return errors.Wrapf(err, "failed to delete project %s", resourceID)
-	}
+		// Finally, delete the project itself (only if it's marked as deleted)
+		q = qb.Q().Space("DELETE FROM project WHERE resource_id = ? AND deleted = TRUE AND workspace = ?", resourceID, workspace)
+		sql, args, err = q.ToSQL()
+		if err != nil {
+			return errors.Wrap(err, "failed to build project delete query")
+		}
+		result, err := tx.ExecContext(ctx, sql, args...)
+		if err != nil {
+			return errors.Wrapf(err, "failed to delete project %s", resourceID)
+		}
 
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return errors.Wrap(err, "failed to get rows affected")
-	}
-	if rowsAffected == 0 {
-		return errors.Errorf("project %s not found or not marked as deleted", resourceID)
-	}
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			return errors.Wrap(err, "failed to get rows affected")
+		}
+		if rowsAffected == 0 {
+			return errors.Errorf("project %s not found or not marked as deleted", resourceID)
+		}
 
-	if err := tx.Commit(); err != nil {
-		return errors.Wrap(err, "failed to commit transaction")
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 
 	// Publish invalidation only after the purge commits: every captured

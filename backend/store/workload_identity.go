@@ -218,7 +218,14 @@ func (s *Store) CreateWorkloadIdentity(ctx context.Context, create *CreateWorklo
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
 
-	if _, err := s.GetDB().ExecContext(ctx, sqlStr, args...); err != nil {
+	scope := lifecycleScope{}
+	if create.Project != nil {
+		scope.addProject(*create.Project, lifecycleActive)
+	}
+	if err := s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, sqlStr, args...)
+		return err
+	}); err != nil {
 		return nil, err
 	}
 
@@ -262,14 +269,20 @@ func (s *Store) UpdateWorkloadIdentity(ctx context.Context, wi *WorkloadIdentity
 	var updated WorkloadIdentityMessage
 	var project sql.NullString
 	var configBytes []byte
-	if err := s.GetDB().QueryRowContext(ctx, sqlStr, args...).Scan(
-		&updated.MemberDeleted,
-		&updated.Email,
-		&updated.Name,
-		&updated.Workspace,
-		&project,
-		&configBytes,
-	); err != nil {
+	scope := lifecycleScope{}
+	if wi.Project != nil {
+		scope.addProject(*wi.Project, lifecycleExisting)
+	}
+	if err := s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		return tx.QueryRowContext(ctx, sqlStr, args...).Scan(
+			&updated.MemberDeleted,
+			&updated.Email,
+			&updated.Name,
+			&updated.Workspace,
+			&project,
+			&configBytes,
+		)
+	}); err != nil {
 		return nil, err
 	}
 	if project.Valid {
