@@ -76,10 +76,10 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 	// primary key. Audit exports page through this at 5000 rows a time.
 	orderBy := []string{}
 	for _, v := range find.OrderByKeys {
-		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder))
+		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
 	}
 	if len(orderBy) == 0 {
-		orderBy = append(orderBy, "audit_log.created_at DESC")
+		orderBy = append(orderBy, "created_at DESC")
 	}
 	orderBy = append(orderBy, "audit_log.resource_id DESC")
 	q.Space("ORDER BY " + strings.Join(orderBy, ", "))
@@ -291,7 +291,7 @@ func GetAuditLogOrders(orderBy string) ([]*OrderByKey, error) {
 
 	return []*OrderByKey{
 		{
-			Key:       "audit_log.created_at",
+			Key:       "created_at",
 			SortOrder: keys[0].SortOrder,
 		},
 	}, nil

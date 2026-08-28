@@ -125,7 +125,7 @@ func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*
 	// Titles are not unique; resource_id is the primary key.
 	orderBy := []string{}
 	for _, v := range find.OrderByKeys {
-		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder))
+		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
 	}
 	orderBy = append(orderBy, "project.resource_id ASC")
 	q.Space("ORDER BY " + strings.Join(orderBy, ", "))

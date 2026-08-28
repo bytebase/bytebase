@@ -68,7 +68,7 @@ Where a caller-supplied `order_by` leads, append the same columns after it:
 ```go
 orderBy := []string{}
 for _, v := range find.OrderByKeys {
-    orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder))
+    orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
 }
 if len(orderBy) == 0 {
     orderBy = append(orderBy, "access_grant.created_at DESC")

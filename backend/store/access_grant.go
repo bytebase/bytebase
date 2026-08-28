@@ -141,7 +141,7 @@ func (s *Store) ListAccessGrants(ctx context.Context, find *FindAccessGrantMessa
 	// makes the ordering total, so offset pages cannot skip or repeat.
 	orderBy := []string{}
 	for _, v := range find.OrderByKeys {
-		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder))
+		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
 	}
 	if len(orderBy) == 0 {
 		orderBy = append(orderBy, "access_grant.created_at DESC")

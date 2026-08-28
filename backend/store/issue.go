@@ -413,7 +413,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		orderBy = append(orderBy, rankOrder)
 	} else {
 		for _, v := range find.OrderByKeys {
-			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder))
+			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
 		}
 	}
 	orderBy = append(orderBy, "issue.id DESC", "issue.project DESC")

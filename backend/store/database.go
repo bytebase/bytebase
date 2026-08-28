@@ -202,7 +202,7 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 	// PostgreSQL ignores as a redundant sort key.
 	orderBy := []string{}
 	for _, v := range find.OrderByKeys {
-		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder))
+		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
 	}
 	if len(orderBy) == 0 {
 		orderBy = append(orderBy, "db.project ASC")
