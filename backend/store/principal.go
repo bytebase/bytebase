@@ -277,10 +277,7 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 	// share it; principal.id is the primary key, and stays unique in the result
 	// because the project and workspace filters join single-row ARRAY_AGG CTEs
 	// rather than the member rows themselves.
-	q.Space(buildStableOrderBy(
-		[]*OrderByKey{{Key: "principal.created_at", SortOrder: ASC}},
-		"principal.id",
-	))
+	q.Space("ORDER BY principal.created_at ASC, principal.id ASC")
 
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)

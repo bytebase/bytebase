@@ -174,9 +174,8 @@ contributors and AI agents that read these docs at session start.
 **Skip if:** the diff does not add or modify a paginated list query in `backend/store/`.
 
 Every offset-paginated list must sort on a total order, or its pages skip and
-repeat rows. `TestPaginatedListsUseStableOrderBy` checks that the clause is built
-with `buildStableOrderBy`; it cannot check that the columns you passed are
-actually unique. That is this step. Read the canonical
+repeat rows. Nothing checks this statically — this step is the gate. Read the
+canonical
 [pagination ordering](../backend/store/AGENTS.md#pagination-ordering) rules, then
 for each paginated list in the diff:
 

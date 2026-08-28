@@ -193,12 +193,8 @@ func buildListChangelogsQuery(find *FindChangelogMessage) (string, []any, error)
 	}
 
 	// created_at defaults to now() and is not unique; resource_id is the
-	// primary key. main added this same tiebreak as a literal; routed through
-	// the helper it renders identically and satisfies the pagination guard.
-	q.Space(buildStableOrderBy(
-		[]*OrderByKey{{Key: "changelog.created_at", SortOrder: DESC}},
-		"changelog.resource_id",
-	))
+	// primary key, and completes the ordering so offset pages stay stable.
+	q.Space("ORDER BY changelog.created_at DESC, changelog.resource_id DESC")
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

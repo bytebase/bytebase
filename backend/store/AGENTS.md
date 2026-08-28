@@ -53,17 +53,18 @@ happens on completely static data. Measured on 10,030 issues across 40 projects,
 paging 100 at a time, ordering by `issue.id` alone duplicated 195 rows and
 missed another 195.
 
-**Every offset-paginated query must sort on a total order.** Build the clause
-with `buildStableOrderBy` (`common.go`), passing the caller's sort keys plus
-tiebreak columns that are unique under that query's scope:
+**Every offset-paginated query must sort on a total order.** Where the clause is
+fixed, write it out — the tiebreak columns are part of the SQL, not something to
+build:
 
 ```go
 // created_at defaults to now() and is not unique; resource_id is the primary key.
-q.Space(buildStableOrderBy(
-    []*OrderByKey{{Key: "changelog.created_at", SortOrder: DESC}},
-    "changelog.resource_id",
-))
+q.Space("ORDER BY changelog.created_at DESC, changelog.resource_id DESC")
 ```
+
+Only where a caller-supplied `order_by` has to be composed with a tiebreak is
+there a helper, `buildStableOrderBy` (`common.go`) — seven lists use it, the
+rest are literals.
 
 Rules for choosing the tiebreak:
 
@@ -89,11 +90,14 @@ Rules for choosing the tiebreak:
    caller's keys through `buildStableOrderBy` so the tiebreak is still appended.
    `ListDatabases`, `ListInstances` and `ListProjects` each used to drop the
    whole clause, tiebreak included, the moment a caller passed `order_by`.
-7. Check that the clause you end up with still has an index behind it, and add
-   a migration if it does not. Appending a tiebreak can turn an ordered index
-   scan into an incremental sort — `EXPLAIN` against the query's *real*
-   predicate shape, not an idealized one. `ListRevisions` narrows its tiebreak
-   for exactly this reason.
+7. Check what the clause costs. Appending a tiebreak can turn an ordered index
+   scan into an incremental sort, so `EXPLAIN` against the query's *real*
+   predicate shape, not an idealized one. Then decide deliberately: narrow the
+   tiebreak where uniqueness is already guaranteed (`ListRevisions` does),
+   widen the index with a migration, or accept the cost and say so. Accepted
+   here: `SearchAuditLogs` costs ~16 ms more per 5000-row export page because
+   `resource_id` falls outside `idx_audit_log_workspace_created_at`; judged not
+   worth a migration.
 8. A per-project `id` is a *recency* ordering only within one project.
    `nextProjectID` allocates `MAX(id)+1` per project, so with the project pinned
    to a constant, `id DESC` is exactly `created_at DESC` and PostgreSQL serves
@@ -104,26 +108,21 @@ Rules for choosing the tiebreak:
    `ListIssues` picks its leading key from the scope for this reason, keeping
    the index scan on the single-project path.
 
-### What the guard test does and does not catch
+### What is and is not enforced
 
-`TestPaginatedListsUseStableOrderBy` fails any store function that applies
-`OFFSET` — in either case, with a `?` or a `$N` placeholder, anywhere under
-`backend/store/` — without reaching `buildStableOrderBy`, directly or through a
-package-level helper. The count of paginated lists is pinned, so one dropping
-out of detection fails too.
+`TestPaginationStabilityAcrossProjects` pages through a deliberately tied
+cross-project issue list against a real PostgreSQL and asserts every row comes
+back exactly once; `TestIssueCommentBatchKeepsInsertionOrder` pins the batch
+ordering. Both fail against the pre-fix behavior. Add a case when a new list's
+tiebreak is not obviously total.
 
-`TestPaginationStabilityAcrossProjects` complements it behaviorally: it pages
-through a deliberately tied cross-project issue list against a real PostgreSQL
-and asserts every row comes back exactly once. It fails against the pre-fix
-ordering. Add a case there when a new list's tiebreak is not obviously total.
-
-The static guard does **not** check that the tiebreak columns you chose are actually unique
-under the query's scope. That judgment is yours, against `LATEST.sql`. The
-helper's required tiebreak argument forces one to be named, not to be right.
-It also cannot see a tiebreak invalidated by a later change elsewhere: a
-one-to-many join added to a list, or a migration that project-scopes a table
-whose tiebreak was a bare `resource_id`, both re-break paging with the guard
-still green.
+Nothing checks this statically. An earlier revision of this change routed all 17
+lists through `buildStableOrderBy` so an AST test could require it, but that put
+ceremony on the ten sites whose clause is a constant; review judged the literals
+clearer, and the guard had no chokepoint left to police. So the rules above are
+enforced by the pre-PR checklist and by review, not by a test — which means a
+new paginated list added without a tiebreak will not fail CI. Step 4 of
+[`docs/pre-pr-checklist.md`](../../docs/pre-pr-checklist.md) is the gate.
 
 A total order fixes misordering, not drift: rows inserted or deleted between two
 page reads still shift the offset window. Fixing that needs keyset pagination

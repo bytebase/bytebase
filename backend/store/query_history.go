@@ -160,10 +160,7 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 
 	// created_at defaults to now() and is not unique; resource_id is the
 	// primary key.
-	q.Space(buildStableOrderBy(
-		[]*OrderByKey{{Key: "query_history.created_at", SortOrder: DESC}},
-		"query_history.resource_id",
-	))
+	q.Space("ORDER BY query_history.created_at DESC, query_history.resource_id DESC")
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

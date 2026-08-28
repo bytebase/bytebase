@@ -186,7 +186,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 	// plan.project, so PostgreSQL folds it out of the pathkeys and naming it
 	// costs nothing — but naming it keeps the ordering total if that predicate
 	// is ever relaxed into a cross-project list.
-	q.Space(buildStableOrderBy([]*OrderByKey{{Key: "plan.id", SortOrder: DESC}}, "plan.project"))
+	q.Space("ORDER BY plan.id DESC, plan.project DESC")
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

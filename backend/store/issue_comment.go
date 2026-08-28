@@ -74,17 +74,11 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 		q.And("issue_id = ?", *v)
 	}
 
-	// created_at defaults to now(), so comments written by one
-	// CreateIssueComments batch share it exactly; resource_id is the primary
-	// key. Accepted tradeoff: resource_id is a random UUID, so a batch (the
-	// several activity comments one UpdateIssue writes) renders in an arbitrary
-	// order rather than insertion order. It is at least a stable arbitrary
-	// order, where before it was unstable. issue_comment has no monotonic
-	// column, so fixing the sequence properly needs a schema change.
-	q.Space(buildStableOrderBy(
-		[]*OrderByKey{{Key: "issue_comment.created_at", SortOrder: ASC}},
-		"issue_comment.resource_id",
-	))
+	// resource_id is the primary key. created_at alone would not be total —
+	// it defaults to now(), the transaction timestamp — so CreateIssueComments
+	// offsets each row of a batch by its ordinal to keep insertion order; see
+	// the comment there.
+	q.Space("ORDER BY issue_comment.created_at ASC, issue_comment.resource_id ASC")
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

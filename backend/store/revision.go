@@ -82,14 +82,13 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 	// keeps the clause a single column so the ordered scan on
 	// idx_revision_instance_db_name_type_version survives. Any looser query
 	// needs the primary key.
-	tieBreak := "revision.resource_id"
 	if find.DatabaseName != nil && find.Type != nil && !find.ShowDeleted {
-		tieBreak = "revision.version"
+		// version is already unique under this scope; a second column would
+		// only cost the ordered index scan.
+		q.Space("ORDER BY revision.version DESC")
+	} else {
+		q.Space("ORDER BY revision.version DESC, revision.resource_id DESC")
 	}
-	q.Space(buildStableOrderBy(
-		[]*OrderByKey{{Key: "revision.version", SortOrder: DESC}},
-		tieBreak,
-	))
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

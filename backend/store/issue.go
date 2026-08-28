@@ -318,39 +318,6 @@ func updateIssue(ctx context.Context, executor issueUpdateExecutor, projectID st
 	return updatedAt, nil
 }
 
-// buildIssueOrderBy renders the ORDER BY clause for ListIssues. rankKey is the
-// relevance ordering when the caller supplied query text, nil otherwise.
-//
-// An explicit order_by leads, and relevance falls in behind it. Ranking first
-// would leave order_by inert: ts_rank is a float that virtually never ties, so
-// no key after it is ever reached. With no order_by, relevance leads as before.
-//
-// issue.id descending trails as the second half of the (project, id) primary
-// key, and issue.project completes it.
-//
-// Whether id is a *recency* ordering depends on the scope. nextProjectID
-// allocates MAX(id)+1 per project, so within one project id order is exactly
-// created_at order — and with project pinned to a constant, PostgreSQL serves
-// it from issue_pkey as an ordered index scan. Across projects it means
-// nothing: every project's first issue is 101, so a three-year-old issue 5100
-// outranks today's issue 140 and a new project's issues sink thousands of rows
-// down the default list. crossProject therefore leads with created_at, which
-// costs nothing there because no index covers a cross-project sort either way.
-//
-// See backend/store/AGENTS.md#pagination-ordering.
-func buildIssueOrderBy(orderByKeys []*OrderByKey, rankKey *OrderByKey, crossProject bool) string {
-	keys := make([]*OrderByKey, 0, len(orderByKeys)+3)
-	keys = append(keys, orderByKeys...)
-	if rankKey != nil {
-		keys = append(keys, rankKey)
-	}
-	if crossProject {
-		keys = append(keys, &OrderByKey{Key: "issue.created_at", SortOrder: DESC})
-	}
-	keys = append(keys, &OrderByKey{Key: "issue.id", SortOrder: DESC})
-	return buildStableOrderBy(keys, "issue.project")
-}
-
 // ListIssues returns the list of issues by find query.
 func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*IssueMessage, error) {
 	// Relevance ranking is derived from the query text rather than requested by
@@ -432,10 +399,25 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		where.And("COALESCE(issue.payload->>'draft', 'false') = 'false'")
 	}
 
-	// Exactly one project ID emits `issue.project = ?`, which pins the column to
-	// a constant; anything else spans projects and makes id meaningless as a
-	// recency ordering.
-	orderByClause := buildIssueOrderBy(find.OrderByKeys, rankKey, len(find.ProjectIDs) != 1)
+	// An explicit order_by leads; relevance falls in behind it, because ts_rank
+	// is a float that virtually never ties and would otherwise leave the
+	// caller's keys unreachable. issue.id trails as the second half of the
+	// (project, id) primary key and issue.project completes it.
+	//
+	// Exactly one project ID emits `issue.project = ?`, pinning the column to a
+	// constant, so id is both exact recency and an ordered issue_pkey scan.
+	// Anything wider spans projects, where id is a per-project counter and means
+	// nothing, so created_at leads instead.
+	orderByKeys := make([]*OrderByKey, 0, len(find.OrderByKeys)+3)
+	orderByKeys = append(orderByKeys, find.OrderByKeys...)
+	if rankKey != nil {
+		orderByKeys = append(orderByKeys, rankKey)
+	}
+	if len(find.ProjectIDs) != 1 {
+		orderByKeys = append(orderByKeys, &OrderByKey{Key: "issue.created_at", SortOrder: DESC})
+	}
+	orderByKeys = append(orderByKeys, &OrderByKey{Key: "issue.id", SortOrder: DESC})
+	orderByClause := buildStableOrderBy(orderByKeys, "issue.project")
 
 	q := qb.Q().Space(`
 		SELECT

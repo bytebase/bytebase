@@ -130,10 +130,7 @@ func (s *Store) ListServiceAccounts(ctx context.Context, find *FindServiceAccoun
 	`, where)
 
 	// created_at defaults to now() and is not unique; email is the primary key.
-	q.Space(buildStableOrderBy(
-		[]*OrderByKey{{Key: "service_account.created_at", SortOrder: ASC}},
-		"service_account.email",
-	))
+	q.Space("ORDER BY service_account.created_at ASC, service_account.email ASC")
 
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
