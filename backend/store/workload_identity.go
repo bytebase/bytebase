@@ -142,8 +142,8 @@ func (s *Store) ListWorkloadIdentities(ctx context.Context, find *FindWorkloadId
 
 	// created_at defaults to now() and is not unique; email is the primary key.
 	q.Space(buildStableOrderBy(
-		[]*OrderByKey{{Key: "created_at", SortOrder: ASC}},
-		"email",
+		[]*OrderByKey{{Key: "workload_identity.created_at", SortOrder: ASC}},
+		"workload_identity.email",
 	))
 
 	if v := find.Limit; v != nil {

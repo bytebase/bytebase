@@ -594,8 +594,8 @@ type projectSnapshot struct {
 
 // planWebhookDelivery is one row of the plan_webhook_delivery table, which
 // has no public gRPC read API. The collision suite snapshots it with the
-// table-specific direct DB read below (see AGENTS.md's allowance for
-// tables without public read APIs).
+// table-specific direct DB read below (see backend/store/AGENTS.md's
+// allowance for tables without public read APIs).
 type planWebhookDelivery struct {
 	PlanID      int64
 	EventType   string

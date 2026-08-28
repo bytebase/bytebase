@@ -86,22 +86,40 @@ Rules for choosing the tiebreak:
 4. `created_at` is never a tiebreak. It defaults to `now()`, which is the
    *transaction* timestamp, so every row written by one batch insert shares it
    exactly.
-5. A scope column pinned to a single value by a mandatory `WHERE` predicate is
-   already satisfied and need not be repeated — say so in a comment, as
-   `ListPlans` does.
-6. Sorting a user-supplied `order_by` must **add** to the default ordering, not
-   replace it. Pass the caller's keys to `buildStableOrderBy` so the tiebreak is
-   still appended; several lists previously dropped a correct default the moment
-   a caller passed `order_by`.
+5. Name the scope columns even when a mandatory `WHERE` predicate already pins
+   them. PostgreSQL folds a constant-equality column out of the pathkeys, so it
+   costs nothing in the plan, and the ordering stays total if that predicate is
+   ever relaxed into a cross-scope list. `ListPlans` does this.
+6. A user-supplied `order_by` replaces the default *sort key* — that is correct
+   AIP-132 behavior — but it must never replace the *tiebreak*. Pass the
+   caller's keys through `buildStableOrderBy` so the tiebreak is still appended.
+   `ListDatabases`, `ListInstances` and `ListProjects` each used to drop the
+   whole clause, tiebreak included, the moment a caller passed `order_by`.
+7. Check that the clause you end up with still has an index behind it, and add
+   a migration if it does not. Appending a tiebreak can turn an ordered index
+   scan into an incremental sort — `EXPLAIN` against the query's *real*
+   predicate shape, not an idealized one. `ListRevisions` narrows its tiebreak
+   for exactly this reason.
+
+### What the guard test does and does not catch
 
 `TestPaginatedListsUseStableOrderBy` fails any store function that applies
-`OFFSET` without reaching `buildStableOrderBy`, directly or through a named
-helper. It cannot check that the tiebreak columns you chose are actually unique
-— that judgment is yours, against `LATEST.sql`.
+`OFFSET` — in either case, with a `?` or a `$N` placeholder, anywhere under
+`backend/store/` — without reaching `buildStableOrderBy`, directly or through a
+package-level helper. The count of paginated lists is pinned, so one dropping
+out of detection fails too.
 
-Note that a total order fixes misordering, not drift: rows inserted or deleted
-between two page reads still shift the offset window. Fixing that needs keyset
-pagination and a page-token format change, which is out of scope here.
+It does **not** check that the tiebreak columns you chose are actually unique
+under the query's scope. That judgment is yours, against `LATEST.sql`. The
+helper's required tiebreak argument forces one to be named, not to be right.
+It also cannot see a tiebreak invalidated by a later change elsewhere: a
+one-to-many join added to a list, or a migration that project-scopes a table
+whose tiebreak was a bare `resource_id`, both re-break paging with the guard
+still green.
+
+A total order fixes misordering, not drift: rows inserted or deleted between two
+page reads still shift the offset window. Fixing that needs keyset pagination
+and a page-token format change, which is out of scope here.
 
 ## Transaction row-lock ordering
 

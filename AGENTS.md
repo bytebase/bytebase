@@ -30,13 +30,13 @@ This repo uses a single-context domain-doc layout. See `docs/agents/domain.md`.
   - `./backend/migrator/migration/LATEST.sql` should be updated for DDL migrations
 - Files in `./backend/store` are mappings to the database tables
 
-Anything that writes SQL against the metadata database — in `backend/store/`,
-but also the CEL-to-SQL filter builders in `backend/api/v1/` and the collision
-tests in `backend/tests/` — is governed by
+Anything that writes SQL against the metadata database is governed by
 [`backend/store/AGENTS.md`](backend/store/AGENTS.md): composite-primary-key
-predicates, pagination ordering, and transaction row-lock ordering. Read it
-before adding or modifying a query, a paginated list, or a multi-row
-transaction.
+predicates, pagination ordering, and transaction row-lock ordering. That means
+all of `backend/store/` — including the CEL-to-SQL filter builders, which live
+there and not in the service layer — plus the raw metadata reads in the
+`backend/tests/` collision tests. Read it before adding or modifying a query, a
+paginated list, or a multi-row transaction.
 
 ## Development Workflow
 

@@ -319,19 +319,23 @@ func updateIssue(ctx context.Context, executor issueUpdateExecutor, projectID st
 }
 
 // buildIssueOrderBy renders the ORDER BY clause for ListIssues. rankKey is the
-// relevance ordering when the caller supplied query text, nil otherwise; it
-// leads the caller's keys rather than replacing them.
+// relevance ordering when the caller supplied query text, nil otherwise.
 //
-// issue.id descending is both the default recency proxy and the second half of
-// the (project, id) primary key. IDs restart per project — nextProjectID floors
-// every project's first issue at 101 — so across projects id alone is not
-// unique and issue.project is what completes the key.
+// An explicit order_by leads, and relevance falls in behind it. Ranking first
+// would leave order_by inert: ts_rank is a float that virtually never ties, so
+// no key after it is ever reached. With no order_by, relevance leads as before.
+//
+// issue.id descending trails as the second half of the (project, id) primary
+// key. IDs restart per project — nextProjectID floors every project's first
+// issue at 101 — so across projects id alone is not unique and issue.project is
+// what completes the key. Note that id is not a recency ordering across
+// projects, only within one; see backend/store/AGENTS.md#pagination-ordering.
 func buildIssueOrderBy(orderByKeys []*OrderByKey, rankKey *OrderByKey) string {
 	keys := make([]*OrderByKey, 0, len(orderByKeys)+2)
+	keys = append(keys, orderByKeys...)
 	if rankKey != nil {
 		keys = append(keys, rankKey)
 	}
-	keys = append(keys, orderByKeys...)
 	keys = append(keys, &OrderByKey{Key: "issue.id", SortOrder: DESC})
 	return buildStableOrderBy(keys, "issue.project")
 }

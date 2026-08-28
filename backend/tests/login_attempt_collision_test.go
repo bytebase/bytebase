@@ -15,8 +15,8 @@ import (
 )
 
 // TestCollision_LoginAttempt is the composite-PK collision gate for
-// login_attempt (PRIMARY KEY (identity, kind)) — see AGENTS.md and
-// docs/pre-pr-checklist.md step 3. The table is not project-scoped: identity
+// login_attempt (PRIMARY KEY (identity, kind)) — see
+// backend/store/AGENTS.md and docs/pre-pr-checklist.md step 3. The table is not project-scoped: identity
 // is itself the scope column, so the shared project fixture does not apply.
 // What collision safety means here is that no store operation may cross
 // buckets: rows sharing an identity (other kind) or sharing a kind (other

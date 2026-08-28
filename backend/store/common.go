@@ -1,7 +1,6 @@
 package store
 
 import (
-	"fmt"
 	"regexp"
 	"strings"
 
@@ -48,33 +47,43 @@ type OrderByKey struct {
 //
 // tieBreak names columns that are unique under the query's scope; together with
 // keys they make the ordering total, which is what keeps offset pages stable.
-// Pick them from the table's primary key or a declared non-partial unique key
-// in LATEST.sql, and include every scope column of a composite key — `id` alone
-// does not identify a row in a `(project, id)` table. They are appended in the
-// last sort key's direction so a composite index can still serve the ordering.
+// At least one is required, so a query cannot reach this helper and still sort
+// on a non-total order. Qualify every column with its table, and pick them per
+// the rules in backend/store/AGENTS.md#pagination-ordering — which also covers
+// checking that the resulting clause still has an index behind it.
 //
-// See backend/store/AGENTS.md#pagination-ordering.
-func buildStableOrderBy(keys []*OrderByKey, tieBreak ...string) string {
-	direction := ASC
-	if len(keys) > 0 {
-		direction = keys[len(keys)-1].SortOrder
-	}
+// The tiebreak follows the direction of the last key actually emitted. That is
+// a hedge, not a guarantee: it lets a composite index serve the ordering where
+// one happens to cover the whole clause, and several call sites have no such
+// index. EXPLAIN against the query's real predicates rather than assuming.
+func buildStableOrderBy(keys []*OrderByKey, tieBreak string, moreTieBreak ...string) string {
 	// A column already ordered on cannot break its own ties, so a tiebreak the
 	// caller also sorts by is dropped rather than repeated.
-	seen := make(map[string]bool, len(keys)+len(tieBreak))
-	parts := make([]string, 0, len(keys)+len(tieBreak))
+	seen := make(map[string]bool, len(keys)+1+len(moreTieBreak))
+	parts := make([]string, 0, len(keys)+1+len(moreTieBreak))
+	// Read from the last part actually appended, so a duplicate key that dedupe
+	// drops cannot decide the tiebreak's direction.
+	direction := ASC
 	appendPart := func(column string, sortOrder SortOrder) {
-		if seen[column] {
+		if column == "" || seen[column] {
 			return
 		}
 		seen[column] = true
-		parts = append(parts, fmt.Sprintf("%s %s", column, sortOrder))
+		direction = sortOrder
+		// qb re-scans this clause for bind placeholders, so a literal `?` in a
+		// column expression would be eaten as one and fail the query build.
+		// `??` is qb's escape for a literal question mark.
+		parts = append(parts, strings.ReplaceAll(column, "?", "??")+" "+sortOrder.String())
 	}
 	for _, key := range keys {
 		appendPart(key.Key, key.SortOrder)
 	}
-	for _, column := range tieBreak {
+	appendPart(tieBreak, direction)
+	for _, column := range moreTieBreak {
 		appendPart(column, direction)
+	}
+	if len(parts) == 0 {
+		return ""
 	}
 	return "ORDER BY " + strings.Join(parts, ", ")
 }

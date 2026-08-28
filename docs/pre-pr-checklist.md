@@ -41,7 +41,9 @@ cause existing users, integrations, or deployments to fail after upgrading.
 
 ## 3. Composite-PK Query Safety
 
-**Skip if:** diff does not touch `backend/store/` or `backend/migrator/`.
+**Skip if:** diff does not touch `backend/store/`, `backend/migrator/`, or `backend/tests/`.
+The CEL-to-SQL filter builders live in `backend/store/`, so a filter change is in
+scope; the collision tests in `backend/tests/` read the metadata DB raw and are too.
 
 Composite primary keys (e.g., `(project, id)`) mean that `id` alone is NOT unique.
 Filtering by `id` without `project` causes cross-project data corruption — the exact
@@ -167,7 +169,30 @@ spots — they document what helpers exist and what guarantees they make.
 Stale references don't break the build but they actively mislead future
 contributors and AI agents that read these docs at session start.
 
-## 4. Transaction Lock Ordering
+## 4. Pagination Ordering
+
+**Skip if:** the diff does not add or modify a paginated list query in `backend/store/`.
+
+Every offset-paginated list must sort on a total order, or its pages skip and
+repeat rows. `TestPaginatedListsUseStableOrderBy` checks that the clause is built
+with `buildStableOrderBy`; it cannot check that the columns you passed are
+actually unique. That is this step. Read the canonical
+[pagination ordering](../backend/store/AGENTS.md#pagination-ordering) rules, then
+for each paginated list in the diff:
+
+- Open `LATEST.sql` and confirm the tiebreak is a primary key or a **non-partial**
+  unique key, that it is `NOT NULL`, and that every column of a composite key is
+  named
+- Confirm no join in the query can duplicate a row, which would break the
+  tiebreak's uniqueness in the result even though it holds in the table
+- Confirm a caller-supplied `order_by` still leaves the tiebreak appended
+- `EXPLAIN` the new clause against the query's real predicate shape and add a
+  migration if the tiebreak pushed it off an index
+
+**STOP — do not proceed to PR creation if a tiebreak is not provably unique under
+the query's own scope.**
+
+## 5. Transaction Lock Ordering
 
 **Skip if:** the diff does not add or modify a transaction in `backend/store/`.
 
@@ -200,7 +225,7 @@ SQLSTATE `40P01` is insufficient.
 canonical order or lacks the required deterministic lock and lifecycle regression
 tests.**
 
-## 5. Image Compatibility Window
+## 6. Image Compatibility Window
 
 **Skip if:** diff does not touch server version metadata, actuator compatibility
 metadata, or `bytebase-action` version/compatibility logic.
@@ -214,7 +239,7 @@ If the diff changes, narrows, or may break the compatibility window, call out
 the policy change, compatibility impact, and validation plan in the PR
 description.
 
-## 6. Lint and Format Gate
+## 7. Lint and Format Gate
 
 **Skip if:** no code changes (docs-only PR).
 
@@ -238,7 +263,7 @@ pnpm --dir frontend type-check
 buf lint proto
 ```
 
-## 7. Test Gate
+## 8. Test Gate
 
 **Skip if:** no code changes.
 
@@ -247,7 +272,7 @@ buf lint proto
 - For Go changes: `go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go`
 - For new migration files: update `TestLatestVersion` in `backend/migrator/migrator_test.go`
 
-## 8. SonarCloud Properties
+## 9. SonarCloud Properties
 
 **Skip if:** no new files or directories added.
 
@@ -256,7 +281,7 @@ Update `.sonarcloud.properties` to reflect the latest file structure:
 - `sonar.test.inclusions` for test file patterns (e.g., `**/*_test.go`)
 - `sonar.cpd.exclusions` to skip copy-paste detection on test files
 
-## 9. Final Verification
+## 10. Final Verification
 
 Before running `gh pr create`:
 

@@ -176,9 +176,12 @@ func (s *Store) ListSavedQueries(ctx context.Context, find *FindSavedQueryMessag
 	}
 
 	// Default title order; List overrides via order_by. Titles are not unique;
-	// resource_id is the primary key, and the tiebreak follows the last key's
-	// direction so "update_time desc" matches the
-	// (creator, updated_at DESC, resource_id DESC) index exactly.
+	// resource_id is the primary key. The tiebreak follows the last key's
+	// direction, which would let "update_time desc" match the
+	// (creator, updated_at DESC, resource_id DESC) index — but only if creator
+	// were equality-pinned, and the access clause below puts it in a
+	// disjunction instead, so this query sorts rather than scanning that index.
+	// The direction rule is a cheap hedge here, not a match.
 	keys := find.OrderByKeys
 	if len(keys) == 0 {
 		keys = []*OrderByKey{{Key: "saved_query.name", SortOrder: ASC}}

@@ -182,9 +182,11 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		)`)
 	}
 
-	// The mandatory WHERE above pins plan.project to a single value, so id
-	// alone already covers the (project, id) primary key here.
-	q.Space(buildStableOrderBy([]*OrderByKey{{Key: "plan.id", SortOrder: DESC}}))
+	// (project, id) is the primary key. The mandatory WHERE above pins
+	// plan.project, so PostgreSQL folds it out of the pathkeys and naming it
+	// costs nothing — but naming it keeps the ordering total if that predicate
+	// is ever relaxed into a cross-project list.
+	q.Space(buildStableOrderBy([]*OrderByKey{{Key: "plan.id", SortOrder: DESC}}, "plan.project"))
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

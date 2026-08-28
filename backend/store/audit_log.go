@@ -73,11 +73,11 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 
 	orderByKeys := find.OrderByKeys
 	if len(orderByKeys) == 0 {
-		orderByKeys = []*OrderByKey{{Key: "created_at", SortOrder: DESC}}
+		orderByKeys = []*OrderByKey{{Key: "audit_log.created_at", SortOrder: DESC}}
 	}
 	// created_at defaults to now() and is not unique; resource_id is the
 	// primary key. Audit exports page through this at 5000 rows a time.
-	q.Space(buildStableOrderBy(orderByKeys, "resource_id"))
+	q.Space(buildStableOrderBy(orderByKeys, "audit_log.resource_id"))
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}
@@ -286,7 +286,7 @@ func GetAuditLogOrders(orderBy string) ([]*OrderByKey, error) {
 
 	return []*OrderByKey{
 		{
-			Key:       "created_at",
+			Key:       "audit_log.created_at",
 			SortOrder: keys[0].SortOrder,
 		},
 	}, nil
