@@ -170,9 +170,10 @@ Where operational times are displayed today:
 | Member expiration preview | `routes/workspace/MembersPage.tsx` (`formatExpirationDate`) | `toLocaleDateString` + hour/minute, interpolated into `t("project.members.expires-at", …)` | No timezone, no seconds — and a plain-string context: gets the full-precision string per the corollary (a `Trans`-slot refactor is the alternative if minute display is wanted) |
 | Member expiration table, access grants, IAM remind dialog, sample expiration, subscription expiry | `MembersPage.tsx`, `ProjectAccessGrantsPage.tsx`, `utils/accessGrant.ts`, `IAMRemindDialog.tsx`, `SampleExpirationAlert.tsx`, `stores/app/workspace.ts` | `formatAbsoluteDateTime` | None today. Under D5, the JSX-rendered sites adopt the operational mode; the string-interpolated ones (subscription banner via `BannersWrapper.tsx`, `SampleExpirationAlert.tsx`) keep full precision — plain-string corollary |
 
-Fixes under D5: the scheduled pill and the three bare-format expirations converge on the
-operational format — absolute date-time + timezone at minute precision ("Sep 15, 2026, 9:00 AM
-GMT+8"); relative age can move to the tooltip.
+Fixes under D5: the scheduled pill, the masking exemption expiration, and the role-grant
+expiration converge on the operational format — absolute date-time + timezone at minute precision
+("Sep 15, 2026, 9:00 AM GMT+8"), relative age movable to the tooltip. The member expiration
+preview is i18n-interpolated and keeps a full-precision string instead (plain-string corollary).
 
 ## Current absolute-time display inventory
 
