@@ -73,28 +73,43 @@ func TestBuildStableOrderBy(t *testing.T) {
 	}
 }
 
-// TestBuildIssueOrderBy pins the cross-project ordering that keeps My Issues
-// pages stable. Issue IDs restart per project, so every project has an issue
-// 101, 102, and so on; ordering by id alone leaves those rows tied and offset
-// paging then skips some and repeats others.
+// TestBuildIssueOrderBy pins the ordering that keeps issue pages both stable and
+// meaningful. Issue IDs restart per project — every project has an issue 101 —
+// so across projects id alone is neither unique nor a recency ordering.
 func TestBuildIssueOrderBy(t *testing.T) {
 	rankKey := &OrderByKey{Key: "ts_rank(issue.ts_vector, query)", SortOrder: DESC}
 	createTimeDesc := []*OrderByKey{{Key: "issue.created_at", SortOrder: DESC}}
 
 	tests := []struct {
-		name        string
-		orderByKeys []*OrderByKey
-		rankKey     *OrderByKey
-		want        string
+		name         string
+		orderByKeys  []*OrderByKey
+		rankKey      *OrderByKey
+		crossProject bool
+		want         string
 	}{
 		{
-			name: "default order is completed by project",
+			// project is pinned to a constant, so id is exactly created order
+			// here and issue_pkey serves it as an ordered index scan.
+			name: "single project keeps the index-served id ordering",
 			want: "ORDER BY issue.id DESC, issue.project DESC",
+		},
+		{
+			name:         "cross project leads with created_at, since id is per-project",
+			crossProject: true,
+			want:         "ORDER BY issue.created_at DESC, issue.id DESC, issue.project DESC",
 		},
 		{
 			name:        "caller keys keep id and project as tiebreaks",
 			orderByKeys: createTimeDesc,
 			want:        "ORDER BY issue.created_at DESC, issue.id DESC, issue.project DESC",
+		},
+		{
+			// The caller already sorts on created_at, so the cross-project key
+			// dedupes away rather than being repeated.
+			name:         "an explicit create_time is not duplicated cross project",
+			orderByKeys:  createTimeDesc,
+			crossProject: true,
+			want:         "ORDER BY issue.created_at DESC, issue.id DESC, issue.project DESC",
 		},
 		{
 			name:    "relevance ranking leads and is still completed by project",
@@ -114,7 +129,7 @@ func TestBuildIssueOrderBy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.want, buildIssueOrderBy(tt.orderByKeys, tt.rankKey))
+			require.Equal(t, tt.want, buildIssueOrderBy(tt.orderByKeys, tt.rankKey, tt.crossProject))
 		})
 	}
 }

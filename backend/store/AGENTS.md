@@ -100,6 +100,15 @@ Rules for choosing the tiebreak:
    scan into an incremental sort — `EXPLAIN` against the query's *real*
    predicate shape, not an idealized one. `ListRevisions` narrows its tiebreak
    for exactly this reason.
+8. A per-project `id` is a *recency* ordering only within one project.
+   `nextProjectID` allocates `MAX(id)+1` per project, so with the project pinned
+   to a constant, `id DESC` is exactly `created_at DESC` and PostgreSQL serves
+   it from the primary key as an ordered index scan. Across projects it means
+   nothing — every project's first row is `101`, so an old project's row 5100
+   outranks today's row 140 and a new project's rows sink thousands of rows down
+   the list. A list that can span projects must lead with a real timestamp;
+   `ListIssues` picks its leading key from the scope for this reason, keeping
+   the index scan on the single-project path.
 
 ### What the guard test does and does not catch
 
@@ -109,7 +118,12 @@ Rules for choosing the tiebreak:
 package-level helper. The count of paginated lists is pinned, so one dropping
 out of detection fails too.
 
-It does **not** check that the tiebreak columns you chose are actually unique
+`TestPaginationStabilityAcrossProjects` complements it behaviorally: it pages
+through a deliberately tied cross-project issue list against a real PostgreSQL
+and asserts every row comes back exactly once. It fails against the pre-fix
+ordering. Add a case there when a new list's tiebreak is not obviously total.
+
+The static guard does **not** check that the tiebreak columns you chose are actually unique
 under the query's scope. That judgment is yours, against `LATEST.sql`. The
 helper's required tiebreak argument forces one to be named, not to be right.
 It also cannot see a tiebreak invalidated by a later change elsewhere: a

@@ -326,15 +326,26 @@ func updateIssue(ctx context.Context, executor issueUpdateExecutor, projectID st
 // no key after it is ever reached. With no order_by, relevance leads as before.
 //
 // issue.id descending trails as the second half of the (project, id) primary
-// key. IDs restart per project — nextProjectID floors every project's first
-// issue at 101 — so across projects id alone is not unique and issue.project is
-// what completes the key. Note that id is not a recency ordering across
-// projects, only within one; see backend/store/AGENTS.md#pagination-ordering.
-func buildIssueOrderBy(orderByKeys []*OrderByKey, rankKey *OrderByKey) string {
-	keys := make([]*OrderByKey, 0, len(orderByKeys)+2)
+// key, and issue.project completes it.
+//
+// Whether id is a *recency* ordering depends on the scope. nextProjectID
+// allocates MAX(id)+1 per project, so within one project id order is exactly
+// created_at order — and with project pinned to a constant, PostgreSQL serves
+// it from issue_pkey as an ordered index scan. Across projects it means
+// nothing: every project's first issue is 101, so a three-year-old issue 5100
+// outranks today's issue 140 and a new project's issues sink thousands of rows
+// down the default list. crossProject therefore leads with created_at, which
+// costs nothing there because no index covers a cross-project sort either way.
+//
+// See backend/store/AGENTS.md#pagination-ordering.
+func buildIssueOrderBy(orderByKeys []*OrderByKey, rankKey *OrderByKey, crossProject bool) string {
+	keys := make([]*OrderByKey, 0, len(orderByKeys)+3)
 	keys = append(keys, orderByKeys...)
 	if rankKey != nil {
 		keys = append(keys, rankKey)
+	}
+	if crossProject {
+		keys = append(keys, &OrderByKey{Key: "issue.created_at", SortOrder: DESC})
 	}
 	keys = append(keys, &OrderByKey{Key: "issue.id", SortOrder: DESC})
 	return buildStableOrderBy(keys, "issue.project")
@@ -421,7 +432,10 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		where.And("COALESCE(issue.payload->>'draft', 'false') = 'false'")
 	}
 
-	orderByClause := buildIssueOrderBy(find.OrderByKeys, rankKey)
+	// Exactly one project ID emits `issue.project = ?`, which pins the column to
+	// a constant; anything else spans projects and makes id meaningless as a
+	// recency ordering.
+	orderByClause := buildIssueOrderBy(find.OrderByKeys, rankKey, len(find.ProjectIDs) != 1)
 
 	q := qb.Q().Space(`
 		SELECT
