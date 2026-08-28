@@ -36,7 +36,7 @@ async function globalSetup() {
     // Playwright does NOT run globalTeardown when globalSetup throws, so tear
     // the half-started server down here — otherwise a failed boot orphans a
     // process group and temp dir that starve every subsequent run's boot.
-    stopServer();
+    await stopServer();
     throw err;
   }
 
