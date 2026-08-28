@@ -1035,8 +1035,9 @@ func (s *DatabaseService) getSourceDBMetadata(ctx context.Context, request *v1pb
 		}
 
 		changelog, err := s.store.GetChangelog(ctx, &store.FindChangelogMessage{
-			InstanceID: instanceID,
-			ResourceID: &changelogID,
+			InstanceID:   instanceID,
+			DatabaseName: &databaseID,
+			ResourceID:   &changelogID,
 		})
 		if err != nil {
 			return nil, err
@@ -1117,8 +1118,9 @@ func (s *DatabaseService) getTargetDBMetadata(ctx context.Context, request *v1pb
 		}
 
 		changelog, err := s.store.GetChangelog(ctx, &store.FindChangelogMessage{
-			InstanceID: instanceID,
-			ResourceID: &changelogID,
+			InstanceID:   instanceID,
+			DatabaseName: &databaseID,
+			ResourceID:   &changelogID,
 		})
 		if err != nil {
 			return nil, err

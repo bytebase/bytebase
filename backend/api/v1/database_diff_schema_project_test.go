@@ -72,6 +72,24 @@ func TestDiffSchemaTargetProject(t *testing.T) {
 		require.Equal(t, connect.CodeOf(err), connect.CodeOf(missing))
 	})
 
+	t.Run("foreign changelog id under an owned database is rejected", func(t *testing.T) {
+		// Changelog ids are globally unique, so the path's database name alone
+		// does not establish which changelog it addresses. Same error as an id
+		// that does not exist, which is what the pre-existing not-found path
+		// already returns.
+		_, err := diffAgainstChangelog(
+			common.FormatDatabase(instanceID, "app-a"),
+			common.FormatChangelog(instanceID, "app-a", changelogByDatabase["app-b"]),
+		)
+		require.Error(t, err)
+
+		_, missing := diffAgainstChangelog(
+			common.FormatDatabase(instanceID, "app-a"),
+			common.FormatChangelog(instanceID, "app-a", "999999"),
+		)
+		require.Equal(t, connect.CodeOf(missing), connect.CodeOf(err))
+	})
+
 	t.Run("schema target skips the gate", func(t *testing.T) {
 		// One-resource requests must not reach the gate at all.
 		response, err := service.DiffSchema(ctx, connect.NewRequest(&v1pb.DiffSchemaRequest{
