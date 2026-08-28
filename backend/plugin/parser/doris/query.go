@@ -94,9 +94,13 @@ func isReadOnlyAST(node ast.Node) bool {
 // legitimately wrap (SELECT family or DML). DDL inside EXPLAIN is rejected:
 // Doris only supports EXPLAIN on query and DML statements.
 func isExplainableInner(node ast.Node) bool {
-	switch node.(type) {
+	switch n := node.(type) {
 	case *ast.SelectStmt, *ast.SetOpStmt:
 		return true
+	case *ast.GroupedQuery:
+		// EXPLAIN (SELECT 1 LIMIT 1) LIMIT 2 — engine-verified accept;
+		// classify by the wrapped query.
+		return isExplainableInner(n.Query)
 	case *ast.InsertStmt, *ast.UpdateStmt, *ast.DeleteStmt,
 		*ast.MergeStmt, *ast.TruncateTableStmt:
 		return true

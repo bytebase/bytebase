@@ -133,6 +133,16 @@ func TestValidateQuery(t *testing.T) {
 			description: "INTO OUTFILE inside nested parens must not slip the export gate",
 		},
 		{
+			statement:   "EXPLAIN (SELECT 1)",
+			valid:       true,
+			description: "EXPLAIN over a parenthesized query is read-only",
+		},
+		{
+			statement:   "EXPLAIN ((SELECT 1))",
+			valid:       true,
+			description: "EXPLAIN over nested parens is read-only",
+		},
+		{
 			statement:   "SELECT EXTRACT(YEAR FROM MONTHS_ADD(NOW(), -1))",
 			valid:       true,
 			description: "EXTRACT(unit FROM expr) is read-only",
