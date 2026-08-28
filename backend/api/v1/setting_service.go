@@ -1237,9 +1237,7 @@ func (s *SettingService) updateMCPSetting(ctx context.Context, request *connect.
 	return connect.NewResponse(settingMessage), nil
 }
 
-// validateMCPCapability rejects an explicit write of UNSPECIFIED. Migration and
-// workspace creation persist a concrete capability. Unknown enum numbers, which
-// proto3 open enums would otherwise allow, are rejected too.
+// validateMCPCapability rejects UNSPECIFIED and unknown enum numbers.
 func validateMCPCapability(capability storepb.MCPSetting_Capability) error {
 	if capability == storepb.MCPSetting_CAPABILITY_UNSPECIFIED {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("capability cannot be set to CAPABILITY_UNSPECIFIED; choose an explicit capability or omit the update mask path to leave it unchanged"))

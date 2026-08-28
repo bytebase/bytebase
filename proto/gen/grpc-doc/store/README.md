@@ -5064,9 +5064,7 @@ It cannot force masking where there is none. Masking substitutes values in query
 <a name="bytebase-store-MCPSetting-Capability"></a>
 
 ### MCPSetting.Capability
-Capability is the ceiling: a session runs at this level or lower. Migration
-preserves the legacy capability and workspace creation persists READ_ONLY.
-A missing MCP setting is invalid metadata.
+Capability is the ceiling: a session runs at this level or lower.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |

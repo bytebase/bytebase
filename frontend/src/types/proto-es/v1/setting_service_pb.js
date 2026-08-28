@@ -165,9 +165,7 @@ export const MCPSetting_CapabilitySchema = /*@__PURE__*/
   enumDesc(file_v1_setting_service, 9, 0);
 
 /**
- * Capability is the ceiling: a session runs at this level or lower. Migration
- * preserves the legacy capability and workspace creation persists READ_ONLY.
- * A missing MCP setting is invalid metadata.
+ * Capability is the ceiling: a session runs at this level or lower.
  * Writing CAPABILITY_UNSPECIFIED explicitly is rejected; omit the update mask
  * path to leave the current ceiling unchanged.
  *

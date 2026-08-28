@@ -461,8 +461,6 @@ func (in *internalMCPGateInterceptor) refuseByCeiling(ctx context.Context, proce
 		return nil, false, connect.NewError(connect.CodeInternal, errors.Errorf(
 			"%s cannot be checked against the MCP capability ceiling: no workspace on the request", procedure))
 	}
-	// Migration and workspace creation persist a concrete ceiling. Missing or
-	// invalid metadata is an error rather than a runtime default.
 	settings, err := in.store.GetMCPSettingsUncached(ctx, workspaceID)
 
 	// auth.ClassifyMCPCeiling decides, so this gate, the /mcp connection gate,

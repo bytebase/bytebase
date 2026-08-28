@@ -150,9 +150,7 @@ func (WorkspaceProfileSetting_DatabaseChangeMode) EnumDescriptor() ([]byte, []in
 	return file_store_setting_proto_rawDescGZIP(), []int{1, 0}
 }
 
-// Capability is the ceiling: a session runs at this level or lower. Migration
-// preserves the legacy capability and workspace creation persists READ_ONLY.
-// A missing MCP setting is invalid metadata.
+// Capability is the ceiling: a session runs at this level or lower.
 type MCPSetting_Capability int32
 
 const (

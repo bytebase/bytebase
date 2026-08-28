@@ -148,9 +148,7 @@ func (Setting_SettingName) EnumDescriptor() ([]byte, []int) {
 	return file_v1_setting_service_proto_rawDescGZIP(), []int{5, 0}
 }
 
-// Capability is the ceiling: a session runs at this level or lower. Migration
-// preserves the legacy capability and workspace creation persists READ_ONLY.
-// A missing MCP setting is invalid metadata.
+// Capability is the ceiling: a session runs at this level or lower.
 // Writing CAPABILITY_UNSPECIFIED explicitly is rejected; omit the update mask
 // path to leave the current ceiling unchanged.
 type MCPSetting_Capability int32

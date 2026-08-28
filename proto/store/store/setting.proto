@@ -39,8 +39,6 @@ message SystemSetting {
 message WorkspaceProfileSetting {
   reserved 15;
   // 26 was mcp_capability, released in 3.21.0 and moved to the MCP setting.
-  // Migration 3.23.0 copies it to the mandatory MCP row. New code reads only
-  // that row.
   reserved 26;
   reserved "mcp_capability";
   message Announcement {
@@ -178,9 +176,7 @@ message WorkspaceProfileSetting {
 // request and should not share a row — or a parse failure — with branding and
 // sign-in configuration.
 message MCPSetting {
-  // Capability is the ceiling: a session runs at this level or lower. Migration
-  // preserves the legacy capability and workspace creation persists READ_ONLY.
-  // A missing MCP setting is invalid metadata.
+  // Capability is the ceiling: a session runs at this level or lower.
   enum Capability {
     CAPABILITY_UNSPECIFIED = 0;
     // MCP connections are rejected.

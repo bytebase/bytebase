@@ -788,9 +788,7 @@ export declare type MCPSetting = Message<"bytebase.v1.MCPSetting"> & {
 export declare const MCPSettingSchema: GenMessage<MCPSetting>;
 
 /**
- * Capability is the ceiling: a session runs at this level or lower. Migration
- * preserves the legacy capability and workspace creation persists READ_ONLY.
- * A missing MCP setting is invalid metadata.
+ * Capability is the ceiling: a session runs at this level or lower.
  * Writing CAPABILITY_UNSPECIFIED explicitly is rejected; omit the update mask
  * path to leave the current ceiling unchanged.
  *

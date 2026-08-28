@@ -581,18 +581,19 @@ func (s *Store) DeleteSetting(ctx context.Context, workspace string, name storep
 // enforcement point then judges under a different row.
 // Returns nil with any error; no caller may act on partially resolved settings.
 //
-// Migration 3.23.0 creates this row for every workspace and carries forward
-// the legacy workspace-profile capability, including writing READ_WRITE into
-// pre-existing MCP rows that omitted the capability. Workspace creation writes
-// the safer READ_ONLY default. A missing row or a payload the store protocol
-// cannot decode is an error.
+// The policy UX was not released before this setting, so an absent row has no
+// user configuration to preserve and resolves to READ_ONLY. Workspace creation
+// persists that default. A present row whose payload the store protocol cannot
+// decode remains an error.
 func (s *Store) GetMCPSettingsUncached(ctx context.Context, workspace string) (*storepb.MCPSetting, error) {
 	stored, err := s.GetSettingUncached(ctx, workspace, storepb.SettingName_MCP)
 	if err != nil {
 		return nil, err
 	}
 	if stored == nil {
-		return nil, errors.Errorf("setting %s not found", storepb.SettingName_MCP)
+		return &storepb.MCPSetting{
+			Capability: storepb.MCPSetting_READ_ONLY,
+		}, nil
 	}
 	setting, ok := stored.Value.(*storepb.MCPSetting)
 	if !ok {

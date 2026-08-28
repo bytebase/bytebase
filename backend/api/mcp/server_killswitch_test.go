@@ -188,10 +188,6 @@ func tokenForWorkspace(t *testing.T, secret, workspaceID string) string {
 // nothing. An unknown enum NUMBER never had that problem, because protojson
 // keeps it and no mode serves it.
 //
-// The migration owns the legacy workspace-profile translation. Runtime reads
-// only the mandatory MCP row, so a missing row is invalid metadata and fails
-// closed rather than silently becoming READ_WRITE.
-//
 // The read-only row is the cutover pin, now on its other side: READ_ONLY opens
 // a session, because a read-only session can no longer write — the ceiling gate
 // refuses the methods the mode does not cover and the SQL clamp refuses a
@@ -225,7 +221,7 @@ func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
 		{"ws-open", `{"capability":"READ_WRITE"}`, http.StatusOK,
 			"the explicit default admits MCP"},
 		{"ws-missing-capability", `{}`, http.StatusForbidden,
-			"migration makes the capability explicit, so an unset row is invalid metadata"},
+			"an existing row with an unset capability is invalid"},
 		{"ws-wrong-type", `{"capability":true}`, http.StatusServiceUnavailable,
 			"a payload the store protocol cannot decode is a metadata read failure"},
 		{"ws-ignoring", `{"capability":"READ_ONLY","ignoreMaskingExemptions":true}`, http.StatusOK,
@@ -241,8 +237,6 @@ func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	// These states can only be produced after migration by metadata corruption or
-	// an incomplete manual import. Runtime must not recreate migration behavior.
 	for _, ws := range []struct{ workspace, profile string }{
 		{workspace: "ws-absent"},
 		{workspace: "ws-legacy", profile: `{"mcpCapability":"DISABLED"}`},
@@ -317,8 +311,10 @@ func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
 
 	for _, workspace := range []string{"ws-absent", "ws-legacy"} {
 		got, err := s.GetMCPSettingsUncached(ctx, workspace)
-		require.Error(t, err, "%s has no mandatory MCP setting row", workspace)
-		require.Nil(t, got, "an error must not carry a usable settings result")
+		require.NoError(t, err)
+		require.Equal(t, storepb.MCPSetting_READ_ONLY, got.Capability,
+			"unexpected capability for %s", workspace)
+		require.False(t, got.IgnoreMaskingExemptions)
 	}
 
 	got, err := s.GetMCPSettingsUncached(ctx, "ws-wrong-type")
