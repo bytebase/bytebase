@@ -121,13 +121,20 @@ func getStatementWithResultLimitInline(statement string, limitCount int) (string
 	case *ast.SetOpStmt:
 		return rewriteSetOpLimit(statement, stmt, limitCount)
 	case *ast.ParenSelect:
-		switch inner := stmt.Sel.(type) {
-		case *ast.SelectStmt:
-			return rewriteSelectLimit(statement, inner, limitCount)
-		case *ast.SetOpStmt:
-			return rewriteSetOpLimit(statement, inner, limitCount)
+		// The wrapper itself may carry the trailing clauses —
+		// (SELECT 1) LIMIT 900000 attaches the LIMIT to the ParenSelect,
+		// not the inner query — so the wrapper is where the cap applies.
+		if stmt.Limit != nil {
+			return rewriteExistingLimit(statement, stmt.Limit, limitCount)
 		}
-		return statement, nil
+		// No wrapper LIMIT: append one at the wrapper level, which covers
+		// any paren nesting depth — ((SELECT 1)) LIMIT n and
+		// (SELECT 1) ORDER BY 1 LIMIT n are engine-valid — instead of
+		// unwrapping and missing deeper layers.
+		if hasUnparsedTail(statement, stmt.Loc.End) {
+			return "", errors.New("statement has unparsed tail content")
+		}
+		return statement[:stmt.Loc.End] + fmt.Sprintf(" LIMIT %d", limitCount) + statement[stmt.Loc.End:], nil
 	default:
 		return statement, nil
 	}
@@ -169,26 +176,32 @@ func hasUnparsedTail(sql string, locEnd int) bool {
 	return false
 }
 
-func rewriteSelectLimit(sql string, stmt *ast.SelectStmt, limitCount int) (string, error) {
-	if stmt.Limit != nil {
-		limitLoc := literalLoc(stmt.Limit)
-		if limitLoc.Start < 0 {
-			return "", errors.New("cannot rewrite non-constant LIMIT expression")
-		}
+// rewriteExistingLimit caps an already-present LIMIT clause: keep it when it
+// is a constant no larger than limitCount, replace the count otherwise.
+func rewriteExistingLimit(sql string, limitNode ast.Node, limitCount int) (string, error) {
+	limitLoc := literalLoc(limitNode)
+	if limitLoc.Start < 0 {
+		return "", errors.New("cannot rewrite non-constant LIMIT expression")
+	}
 
-		if countStart, countEnd, ok := findCommaLimitCount(sql, limitLoc); ok {
-			existingCount, _ := strconv.Atoi(sql[countStart:countEnd])
-			if existingCount > 0 && existingCount <= limitCount {
-				return sql, nil
-			}
-			return sql[:countStart] + fmt.Sprintf("%d", limitCount) + sql[countEnd:], nil
-		}
-
-		existingLimit := extractLimitValue(stmt.Limit)
-		if existingLimit >= 0 && existingLimit <= limitCount {
+	if countStart, countEnd, ok := findCommaLimitCount(sql, limitLoc); ok {
+		existingCount, _ := strconv.Atoi(sql[countStart:countEnd])
+		if existingCount > 0 && existingCount <= limitCount {
 			return sql, nil
 		}
-		return sql[:limitLoc.Start] + fmt.Sprintf("%d", limitCount) + sql[limitLoc.End:], nil
+		return sql[:countStart] + fmt.Sprintf("%d", limitCount) + sql[countEnd:], nil
+	}
+
+	existingLimit := extractLimitValue(limitNode)
+	if existingLimit >= 0 && existingLimit <= limitCount {
+		return sql, nil
+	}
+	return sql[:limitLoc.Start] + fmt.Sprintf("%d", limitCount) + sql[limitLoc.End:], nil
+}
+
+func rewriteSelectLimit(sql string, stmt *ast.SelectStmt, limitCount int) (string, error) {
+	if stmt.Limit != nil {
+		return rewriteExistingLimit(sql, stmt.Limit, limitCount)
 	}
 
 	if stmt.Into != nil {
@@ -202,24 +215,7 @@ func rewriteSelectLimit(sql string, stmt *ast.SelectStmt, limitCount int) (strin
 
 func rewriteSetOpLimit(sql string, stmt *ast.SetOpStmt, limitCount int) (string, error) {
 	if stmt.Limit != nil {
-		limitLoc := literalLoc(stmt.Limit)
-		if limitLoc.Start < 0 {
-			return "", errors.New("cannot rewrite non-constant LIMIT expression")
-		}
-
-		if countStart, countEnd, ok := findCommaLimitCount(sql, limitLoc); ok {
-			existingCount, _ := strconv.Atoi(sql[countStart:countEnd])
-			if existingCount > 0 && existingCount <= limitCount {
-				return sql, nil
-			}
-			return sql[:countStart] + fmt.Sprintf("%d", limitCount) + sql[countEnd:], nil
-		}
-
-		existingLimit := extractLimitValue(stmt.Limit)
-		if existingLimit >= 0 && existingLimit <= limitCount {
-			return sql, nil
-		}
-		return sql[:limitLoc.Start] + fmt.Sprintf("%d", limitCount) + sql[limitLoc.End:], nil
+		return rewriteExistingLimit(sql, stmt.Limit, limitCount)
 	}
 	if hasUnparsedTail(sql, stmt.Loc.End) {
 		return "", errors.New("statement has unparsed tail content")
