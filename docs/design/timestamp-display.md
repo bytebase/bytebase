@@ -108,9 +108,12 @@ the SQL-editor access-grant drawer), so a minute display floors the enforced cut
 seconds — in the safe direction: the value never expires earlier than displayed, and the full
 value stays in the tooltip (D6). Accepting D5 means accepting that bounded under-report;
 alternatives are retaining seconds for expiration values, or normalizing preset writes to the
-minute (a write-path change, out of scope for this display-only design). Driven by BYT-10023 —
-see Operational times below. Proposed, pending confirmation; the time *pickers* that write these
-values are explicitly deferred.
+minute (a write-path change, out of scope for this display-only design). Scope note: the rule targets **wall-clock renderings** — the timezone trap it guards against
+cannot occur in a pure remaining-duration display ("expires in 3h20m"), which is
+timezone-unambiguous by construction and stays permitted for short horizons, provided the D6
+tooltip carries the full absolute + timezone. Driven by BYT-10023 — see Operational times below.
+Proposed, pending confirmation; the time *pickers* that write these values are explicitly
+deferred.
 
 **D6 — Full date-time tooltip on every reduced display.**
 Any timestamp that does not show the full form — relative, date-only after the switch, or the
@@ -168,7 +171,7 @@ Where operational times are displayed today:
 |---|---|---|---|
 | Scheduled rollout pill | `routes/project/plan-detail/components/deploy/DeployTaskHeader.tsx` (task pinned to a run time) | `HumanizeTs` — relative ("in 7 hours"), tz only in tooltip | **The BYT-10023 display gap**: the one surface showing when a rollout will fire hides the timezone question entirely |
 | Task-run waiting message | `frontend/src/lib/taskRun.ts` ("enqueued, will run at …") | `formatAbsoluteDateTime` interpolated into a plain i18n string | None — a plain-string context cannot host a tooltip, so it keeps the full-precision form (invariant corollary below); seconds do **not** drop here |
-| SQL-editor access grant item, <24h remaining | `modules/sql-editor/components/AccessGrantItem.tsx` | Duration only ("expires in 3h20m"); the absolute value is discarded, no tooltip | Relative-only operational display — needs the D6 tooltip carrying the full absolute + timezone |
+| SQL-editor access grant item, <24h remaining | `modules/sql-editor/components/AccessGrantItem.tsx` | Duration only ("expires in 3h20m"); the absolute value is discarded, no tooltip | The visible duration is permitted under D5's wall-clock scope note (a countdown is timezone-unambiguous); the gap is the missing D6 tooltip with the full absolute + timezone |
 | Access-grant expiration, issue detail | `routes/project/issue-detail/components/IssueDetailAccessGrantDetails.tsx` (renders the helper's string in JSX) | `formatAbsoluteDateTime` via `getAccessGrantExpirationText` | None today. Under D5: JSX context — adopts the operational mode with its D6 tooltip |
 | Masking exemption expiration | `routes/project/ProjectMaskingExemptionPage.tsx` | dayjs `YYYY-MM-DD HH:mm` | No timezone, no seconds, not locale-aware |
 | Role-grant expiration detail | `routes/project/issue-detail/components/IssueDetailRoleGrantDetails.tsx` | dayjs `LLL` | No timezone |
