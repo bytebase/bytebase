@@ -154,11 +154,11 @@ Where operational times are displayed today:
 | Surface | File | Today | Gap |
 |---|---|---|---|
 | Scheduled rollout pill | `routes/project/plan-detail/components/deploy/DeployTaskHeader.tsx` (task pinned to a run time) | `HumanizeTs` — relative ("in 7 hours"), tz only in tooltip | **The BYT-10023 display gap**: the one surface showing when a rollout will fire hides the timezone question entirely |
-| Task-run waiting message | `frontend/src/lib/taskRun.ts` ("enqueued, will run at …") | `formatAbsoluteDateTime` | None — already absolute + tz |
+| Task-run waiting message | `frontend/src/lib/taskRun.ts` ("enqueued, will run at …") | `formatAbsoluteDateTime` | None — already absolute + tz (seconds drop under D5's minute precision) |
 | Masking exemption expiration | `routes/project/ProjectMaskingExemptionPage.tsx` | dayjs `YYYY-MM-DD HH:mm` | No timezone, no seconds, not locale-aware |
 | Role-grant expiration detail | `routes/project/issue-detail/components/IssueDetailRoleGrantDetails.tsx` | dayjs `LLL` | No timezone |
 | Member expiration preview | `routes/workspace/MembersPage.tsx` (`formatExpirationDate`) | `toLocaleDateString` + hour/minute | No timezone, no seconds |
-| Member expiration table, access grants, IAM remind dialog, sample expiration, subscription expiry | `MembersPage.tsx`, `ProjectAccessGrantsPage.tsx`, `utils/accessGrant.ts`, `IAMRemindDialog.tsx`, `SampleExpirationAlert.tsx`, `stores/app/workspace.ts` | `formatAbsoluteDateTime` | None — already absolute + tz |
+| Member expiration table, access grants, IAM remind dialog, sample expiration, subscription expiry | `MembersPage.tsx`, `ProjectAccessGrantsPage.tsx`, `utils/accessGrant.ts`, `IAMRemindDialog.tsx`, `SampleExpirationAlert.tsx`, `stores/app/workspace.ts` | `formatAbsoluteDateTime` | None — already absolute + tz (seconds drop under D5's minute precision) |
 
 Fixes under D5: the scheduled pill and the three bare-format expirations converge on the
 operational format — absolute date-time + timezone at minute precision ("Sep 15, 2026, 9:00 AM
@@ -223,10 +223,13 @@ their list views render relative. D4 makes each list agree with its own detail v
 - **Compact** = date + hh:mm, locale-aware: "Aug 26, 2026, 2:03 PM" / zh "2026年8月26日 14:03"
   (~21 characters). Seconds and timezone stay one hover away per D6.
 
-**Operational times** (scheduled rollouts, expirations): `formatAbsoluteDateTime`, with the
-timezone in the visible string — not only in the tooltip, because the reader is about to act on
-the value and must not have to discover that a timezone question exists. Relative age ("in 7
-hours") may accompany it in the tooltip.
+**Operational times** (scheduled rollouts, expirations): a new `formatOperationalDateTime` helper
+in `datetime.ts` — date + hh:mm + short timezone, locale-aware: "Sep 15, 2026, 9:00 AM GMT+8" / zh
+"2026年9月15日 09:00 GMT+8". The timezone lives in the visible string — not only in the tooltip,
+because the reader is about to act on the value and must not have to discover that a timezone
+question exists. No seconds per D5 (`formatAbsoluteDateTime` is the alternative if D5's
+minute-precision refinement is rejected). Relative age ("in 7 hours") may accompany it in the
+tooltip.
 
 ## Implementation shape
 
@@ -239,8 +242,9 @@ hours") may accompany it in the tooltip.
   `formatCompactDateTime` helper in `datetime.ts` — date + hh:mm, locale-aware). One canonical
   component, modes matching the principle one-to-one; the audit log can keep its direct call.
 - Operational times: the scheduled pill in `DeployTaskHeader.tsx` swaps `HumanizeTs` for the
-  absolute string; the three bare-format expiration call sites converge on
-  `formatAbsoluteDateTime` (default 6).
+  operational string; the three bare-format expiration call sites converge on
+  `formatOperationalDateTime` (open item 4). The six expiration surfaces already on
+  `formatAbsoluteDateTime` move to the same helper, dropping their always-`:00` seconds.
 - Tests: update `HumanizeTs.test.tsx` for the switch; sweep the `*.test.tsx` files that assert
   relative strings (`PlanDetailMeta.test.tsx`, `SchemaPane.test.tsx`,
   `DeployTaskRunHistorySheet.test.tsx`, `IssueCommentActivity.test.tsx`,
@@ -262,8 +266,12 @@ hours") may accompany it in the tooltip.
 
 - Historical tickets (> 30 days): issue list shows the real date — complaint resolved for genuinely
   old history.
-- Changelog / revisions / task-run history: full date-time with seconds by default — the
-  year-month-day-hour-minute-second ask fully satisfied on the record surfaces.
+- Changelog / revisions / task-run history: absolute date-time to the minute by default (compact
+  tier, D7); seconds and timezone one hover away (D6). Full seconds remain the default on the
+  evidence surfaces — the audit log and the changelog/revision detail views — so the
+  year-month-day-hour-minute-second ask is met to the minute on record lists and fully on record
+  details. If the customer pushes back specifically on visible seconds, the escalation is flipping
+  those lists to the full tier — a one-line D7 assignment change, no model change.
 - Queue rows 1–29 days old: still "x days ago" (D1/D3 trade-off, accepted because these are queue
   readings). **Risk**: if the reported "ticket history" reading includes *recent* issue-list rows,
   part of the complaint survives. Mitigation: tooltip; escalation path if it recurs is lowering the
