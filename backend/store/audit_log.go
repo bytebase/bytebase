@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/google/cel-go/cel"
@@ -71,13 +72,17 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 		q.And("payload->>'parent' = ?", *v)
 	}
 
-	orderByKeys := find.OrderByKeys
-	if len(orderByKeys) == 0 {
-		orderByKeys = []*OrderByKey{{Key: "audit_log.created_at", SortOrder: DESC}}
-	}
 	// created_at defaults to now() and is not unique; resource_id is the
 	// primary key. Audit exports page through this at 5000 rows a time.
-	q.Space(buildStableOrderBy(orderByKeys, "audit_log.resource_id"))
+	orderBy := []string{}
+	for _, v := range find.OrderByKeys {
+		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder))
+	}
+	if len(orderBy) == 0 {
+		orderBy = append(orderBy, "audit_log.created_at DESC")
+	}
+	orderBy = append(orderBy, "audit_log.resource_id DESC")
+	q.Space("ORDER BY " + strings.Join(orderBy, ", "))
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

@@ -322,7 +322,8 @@ func updateIssue(ctx context.Context, executor issueUpdateExecutor, projectID st
 func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*IssueMessage, error) {
 	// Relevance ranking is derived from the query text rather than requested by
 	// the caller, so it is tracked apart from find.OrderByKeys and leads them.
-	var rankKey *OrderByKey
+	// Set when the caller supplied query text that produced a tsquery.
+	var rankOrder string
 	from := qb.Q().Space("issue")
 	where := qb.Q()
 
@@ -373,7 +374,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		if tsQuery := getTSQuery(*v); tsQuery != "" {
 			from.Space("LEFT JOIN CAST(? AS tsquery) AS query ON TRUE", tsQuery)
 			searchCondition.Or("issue.ts_vector @@ query")
-			rankKey = &OrderByKey{Key: "ts_rank(issue.ts_vector, query)", SortOrder: DESC}
+			rankOrder = "ts_rank(issue.ts_vector, query) DESC"
 		}
 		searchCondition.Or("issue.name ILIKE ?", "%"+*v+"%")
 		where.And("(?)", searchCondition)
@@ -408,16 +409,18 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 	// constant, so id is both exact recency and an ordered issue_pkey scan.
 	// Anything wider spans projects, where id is a per-project counter and means
 	// nothing, so created_at leads instead.
-	orderByKeys := make([]*OrderByKey, 0, len(find.OrderByKeys)+3)
-	orderByKeys = append(orderByKeys, find.OrderByKeys...)
-	if rankKey != nil {
-		orderByKeys = append(orderByKeys, rankKey)
+	orderBy := []string{}
+	for _, v := range find.OrderByKeys {
+		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder))
+	}
+	if rankOrder != "" {
+		orderBy = append(orderBy, rankOrder)
 	}
 	if len(find.ProjectIDs) != 1 {
-		orderByKeys = append(orderByKeys, &OrderByKey{Key: "issue.created_at", SortOrder: DESC})
+		orderBy = append(orderBy, "issue.created_at DESC")
 	}
-	orderByKeys = append(orderByKeys, &OrderByKey{Key: "issue.id", SortOrder: DESC})
-	orderByClause := buildStableOrderBy(orderByKeys, "issue.project")
+	orderBy = append(orderBy, "issue.id DESC", "issue.project DESC")
+	orderByClause := "ORDER BY " + strings.Join(orderBy, ", ")
 
 	q := qb.Q().Space(`
 		SELECT

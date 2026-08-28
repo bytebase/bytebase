@@ -123,7 +123,12 @@ func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*
 	}
 
 	// Titles are not unique; resource_id is the primary key.
-	q.Space(buildStableOrderBy(find.OrderByKeys, "project.resource_id"))
+	orderBy := []string{}
+	for _, v := range find.OrderByKeys {
+		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder))
+	}
+	orderBy = append(orderBy, "project.resource_id ASC")
+	q.Space("ORDER BY " + strings.Join(orderBy, ", "))
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

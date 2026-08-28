@@ -53,18 +53,32 @@ happens on completely static data. Measured on 10,030 issues across 40 projects,
 paging 100 at a time, ordering by `issue.id` alone duplicated 195 rows and
 missed another 195.
 
-**Every offset-paginated query must sort on a total order.** Where the clause is
-fixed, write it out — the tiebreak columns are part of the SQL, not something to
-build:
+**Every offset-paginated query must sort on a total order.** Write the clause
+out — the tiebreak columns are part of the SQL, not something to build:
 
 ```go
 // created_at defaults to now() and is not unique; resource_id is the primary key.
 q.Space("ORDER BY changelog.created_at DESC, changelog.resource_id DESC")
 ```
 
-Only where a caller-supplied `order_by` has to be composed with a tiebreak is
-there a helper, `buildStableOrderBy` (`common.go`) — seven lists use it, the
-rest are literals.
+Where a caller-supplied `order_by` leads, append the same columns after it:
+
+```go
+orderBy := []string{}
+for _, v := range find.OrderByKeys {
+    orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder))
+}
+if len(orderBy) == 0 {
+    orderBy = append(orderBy, "access_grant.created_at DESC")
+}
+orderBy = append(orderBy, "access_grant.id DESC")
+q.Space("ORDER BY " + strings.Join(orderBy, ", "))
+```
+
+There is deliberately no shared helper for this. One existed and was removed in
+review: it put four lines of ceremony on the ten lists whose clause is a
+constant, and the SQL reads better written out. If a caller's key repeats a
+tiebreak column, leave it — PostgreSQL ignores a redundant sort key.
 
 Rules for choosing the tiebreak:
 
@@ -86,10 +100,10 @@ Rules for choosing the tiebreak:
    costs nothing in the plan, and the ordering stays total if that predicate is
    ever relaxed into a cross-scope list. `ListPlans` does this.
 6. A user-supplied `order_by` replaces the default *sort key* — that is correct
-   AIP-132 behavior — but it must never replace the *tiebreak*. Pass the
-   caller's keys through `buildStableOrderBy` so the tiebreak is still appended.
-   `ListDatabases`, `ListInstances` and `ListProjects` each used to drop the
-   whole clause, tiebreak included, the moment a caller passed `order_by`.
+   AIP-132 behavior — but it must never replace the *tiebreak*. Append the
+   tiebreak after the caller's keys, as in the snippet above. `ListDatabases`,
+   `ListInstances` and `ListProjects` each used to drop the whole clause,
+   tiebreak included, the moment a caller passed `order_by`.
 7. Check what the clause costs. Appending a tiebreak can turn an ordered index
    scan into an incremental sort, so `EXPLAIN` against the query's *real*
    predicate shape, not an idealized one. Then decide deliberately: narrow the
@@ -116,10 +130,9 @@ back exactly once; `TestIssueCommentBatchKeepsInsertionOrder` pins the batch
 ordering. Both fail against the pre-fix behavior. Add a case when a new list's
 tiebreak is not obviously total.
 
-Nothing checks this statically. An earlier revision of this change routed all 17
-lists through `buildStableOrderBy` so an AST test could require it, but that put
-ceremony on the ten sites whose clause is a constant; review judged the literals
-clearer, and the guard had no chokepoint left to police. So the rules above are
+Nothing checks this statically. An earlier revision routed all 17 lists through
+a shared helper so an AST test could require it; review judged that ceremony,
+the helper is gone, and the guard had no chokepoint left to police. So the rules above are
 enforced by the pre-PR checklist and by review, not by a test — which means a
 new paginated list added without a tiebreak will not fail CI. Step 4 of
 [`docs/pre-pr-checklist.md`](../../docs/pre-pr-checklist.md) is the gate.

@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"time"
 
@@ -136,12 +137,17 @@ func (s *Store) ListAccessGrants(ctx context.Context, find *FindAccessGrantMessa
 		q.And("creator = ?", *v)
 	}
 
-	orderByKeys := find.OrderByKeys
-	if len(orderByKeys) == 0 {
-		orderByKeys = []*OrderByKey{{Key: "access_grant.created_at", SortOrder: DESC}}
+	// created_at defaults to now() and is not unique; id is the primary key and
+	// makes the ordering total, so offset pages cannot skip or repeat.
+	orderBy := []string{}
+	for _, v := range find.OrderByKeys {
+		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder))
 	}
-	// created_at defaults to now() and is not unique; id is the primary key.
-	q.Space(buildStableOrderBy(orderByKeys, "access_grant.id"))
+	if len(orderBy) == 0 {
+		orderBy = append(orderBy, "access_grant.created_at DESC")
+	}
+	orderBy = append(orderBy, "access_grant.id DESC")
+	q.Space("ORDER BY " + strings.Join(orderBy, ", "))
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

@@ -36,58 +36,6 @@ type OrderByKey struct {
 	SortOrder SortOrder
 }
 
-// buildStableOrderBy renders the ORDER BY clause for an offset-paginated list.
-//
-// Offset pagination reads every page with a fresh LIMIT/OFFSET query. When the
-// sort key is not unique under the query's scope, PostgreSQL may order tied
-// rows differently in each of those queries, so a tied row can cross the page
-// boundary between two reads and the caller then skips it or sees it twice.
-// Ties are not hypothetical: `created_at` defaults to `now()`, which is the
-// transaction timestamp, so rows written by one batch insert all share it.
-//
-// tieBreak names columns that are unique under the query's scope; together with
-// keys they make the ordering total, which is what keeps offset pages stable.
-// At least one is required, so a query cannot reach this helper and still sort
-// on a non-total order. Qualify every column with its table, and pick them per
-// the rules in backend/store/AGENTS.md#pagination-ordering — which also covers
-// checking that the resulting clause still has an index behind it.
-//
-// The tiebreak follows the direction of the last key actually emitted. That is
-// a hedge, not a guarantee: it lets a composite index serve the ordering where
-// one happens to cover the whole clause, and several call sites have no such
-// index. EXPLAIN against the query's real predicates rather than assuming.
-func buildStableOrderBy(keys []*OrderByKey, tieBreak string, moreTieBreak ...string) string {
-	// A column already ordered on cannot break its own ties, so a tiebreak the
-	// caller also sorts by is dropped rather than repeated.
-	seen := make(map[string]bool, len(keys)+1+len(moreTieBreak))
-	parts := make([]string, 0, len(keys)+1+len(moreTieBreak))
-	// Read from the last part actually appended, so a duplicate key that dedupe
-	// drops cannot decide the tiebreak's direction.
-	direction := ASC
-	appendPart := func(column string, sortOrder SortOrder) {
-		if column == "" || seen[column] {
-			return
-		}
-		seen[column] = true
-		direction = sortOrder
-		// qb re-scans this clause for bind placeholders, so a literal `?` in a
-		// column expression would be eaten as one and fail the query build.
-		// `??` is qb's escape for a literal question mark.
-		parts = append(parts, strings.ReplaceAll(column, "?", "??")+" "+sortOrder.String())
-	}
-	for _, key := range keys {
-		appendPart(key.Key, key.SortOrder)
-	}
-	appendPart(tieBreak, direction)
-	for _, column := range moreTieBreak {
-		appendPart(column, direction)
-	}
-	if len(parts) == 0 {
-		return ""
-	}
-	return "ORDER BY " + strings.Join(parts, ", ")
-}
-
 // getOrderByKeys parses an AIP-132 order_by string against a whitelist
 // mapping API field names to SQL columns. Strict where parseOrderBy is not:
 // every comma-separated entry must be a whitelisted field with an optional
