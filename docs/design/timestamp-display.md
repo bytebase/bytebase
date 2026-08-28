@@ -96,11 +96,26 @@ GitHub behavior).
 The history views — database changelog, revision table, task-run history — flip to **absolute
 date-time always**, consistent with the audit log. They are records of execution, not queues.
 
-**D5 (proposed) — Operational times: absolute with explicit timezone, always.**
-Scheduled rollout times and expirations render `formatAbsoluteDateTime` (which carries the short
-timezone name) in the visible string, not just the tooltip. Driven by BYT-10023 — see Operational
-times below. Proposed, pending confirmation; the time *pickers* that write these values are
-explicitly deferred.
+**D5 (proposed) — Operational times: absolute with explicit timezone, minute precision.**
+Scheduled rollout times and expirations render the absolute date-time with the short timezone name
+in the visible string, not just the tooltip: "Sep 15, 2026, 9:00 AM GMT+8". No seconds — the
+pickers write minute precision, so a seconds field would always read ":00". Driven by BYT-10023 —
+see Operational times below. Proposed, pending confirmation; the time *pickers* that write these
+values are explicitly deferred.
+
+**D6 — Full date-time tooltip on every reduced display.**
+Any timestamp that does not show the full form — relative, date-only after the switch, or the
+compact history tier — carries the full absolute date-time with seconds and timezone in its
+tooltip. This is the universal escape hatch that keeps every reduced cell recoverable.
+
+**D7 (proposed) — History views carry two precision tiers.**
+*A history row orients; a history record testifies.* Full precision (seconds + timezone,
+`formatAbsoluteDateTime`) where the time itself is the evidence: the audit log — exportable, and
+the export must match the screen — and single-record detail views. Compact precision (date +
+hh:mm, no seconds, no timezone) where rows are scanned to locate a record inside one resource's
+history: the embedded lists, where width is contended and D6 keeps full precision one hover away.
+Objective divider: **exportable-as-evidence or a detail view → full; scannable embedded list →
+compact.**
 
 ## Surface classification
 
@@ -118,9 +133,9 @@ Every current `HumanizeTs` call site, classified under the principle:
 | **Scheduled rollout pill** | `DeployTaskHeader.tsx` (task pinned to a run time) | **Operational** | **Absolute + timezone** |
 | Schema sync status | `modules/sql-editor/components/SchemaPane/SyncSchemaButton.tsx`, `routes/project/ProjectSyncSchemaPage.tsx`, `components/database/DatabaseOverviewInfo.tsx` | Freshness | 30d switch |
 | Agent chat | `modules/agent/components/AgentWindow.tsx` | Feed | 30d switch |
-| **Database changelog** | `routes/project/database-detail/changelog/DatabaseChangelogTable.tsx` | **History view** | **Absolute date-time always** |
-| **Database revisions** | `routes/project/database-detail/revision/DatabaseRevisionTable.tsx` | **History view** | **Absolute date-time always** |
-| **Task-run history** | `routes/project/plan-detail/components/deploy/DeployTaskRunHistorySheet.tsx`, `routes/project/issue-detail/components/IssueDetailTaskRunTable.tsx` | **History view** | **Absolute date-time always** |
+| **Database changelog** | `routes/project/database-detail/changelog/DatabaseChangelogTable.tsx` | **History view** | **Absolute always — compact tier (D7)** |
+| **Database revisions** | `routes/project/database-detail/revision/DatabaseRevisionTable.tsx` | **History view** | **Absolute always — compact tier (D7)** |
+| **Task-run history** | `routes/project/plan-detail/components/deploy/DeployTaskRunHistorySheet.tsx`, `routes/project/issue-detail/components/IssueDetailTaskRunTable.tsx` | **History view** | **Absolute always — compact tier (D7)** |
 | Audit log | `components/AuditLogTable.tsx` | History view | Already absolute — unchanged |
 
 ## Operational times (BYT-10023)
@@ -145,8 +160,9 @@ Where operational times are displayed today:
 | Member expiration preview | `routes/workspace/MembersPage.tsx` (`formatExpirationDate`) | `toLocaleDateString` + hour/minute | No timezone, no seconds |
 | Member expiration table, access grants, IAM remind dialog, sample expiration, subscription expiry | `MembersPage.tsx`, `ProjectAccessGrantsPage.tsx`, `utils/accessGrant.ts`, `IAMRemindDialog.tsx`, `SampleExpirationAlert.tsx`, `stores/app/workspace.ts` | `formatAbsoluteDateTime` | None — already absolute + tz |
 
-Fixes under D5: the scheduled pill renders `formatAbsoluteDateTime` (relative age can move to the
-tooltip), and the three bare-format expirations converge on `formatAbsoluteDateTime`.
+Fixes under D5: the scheduled pill and the three bare-format expirations converge on the
+operational format — absolute date-time + timezone at minute precision ("Sep 15, 2026, 9:00 AM
+GMT+8"); relative age can move to the tooltip.
 
 ## Current absolute-time display inventory
 
@@ -190,10 +206,22 @@ their list views render relative. D4 makes each list agree with its own detail v
 - All strings locale-aware via `Intl` with the active i18n locale — no hardcoded formats, no new
   locale keys needed.
 
-**History views** (changelog, revisions, task-run history): absolute date-time always, using the
-audit log's exact format (`formatAbsoluteDateTime`): "Aug 26, 2026, 2:03:22 PM GMT+8" — seconds
-included, which is where the exact-time ask lands fully. Tooltip retained (GitHub also tooltips its
-absolute dates); it may additionally show the relative age — see defaults below.
+**History views**: absolute always; precision comes in two tiers under D7 (assignment proposed):
+
+| History-view occurrence | Space | Tier |
+|---|---|---|
+| Audit log (workspace + project pages) | Dedicated page, exportable | **Full** — keep as is |
+| Changelog detail page | Detail view | **Full** — keep as is |
+| Revision detail panel | Detail view | **Full** — keep as is |
+| Database changelog list | Full-width table | Compact |
+| Database revision list | Full-width table | Compact |
+| Task-run history sheet | 704px sheet — the space-constrained case | Compact |
+| Issue-detail task-run table | Embedded table | Compact |
+
+- **Full** = `formatAbsoluteDateTime`: "Aug 26, 2026, 2:03:22 PM GMT+8" / zh
+  "2026年8月26日 14:03:22 GMT+8" (~30 characters).
+- **Compact** = date + hh:mm, locale-aware: "Aug 26, 2026, 2:03 PM" / zh "2026年8月26日 14:03"
+  (~21 characters). Seconds and timezone stay one hover away per D6.
 
 **Operational times** (scheduled rollouts, expirations): `formatAbsoluteDateTime`, with the
 timezone in the visible string — not only in the tooltip, because the reader is about to act on
@@ -206,10 +234,10 @@ hours") may accompany it in the tooltip.
   in `frontend/src/utils/util.ts` (30-day switch) + `RELATIVE_THRESHOLD_MS` and
   `formatAbsoluteDate` in `frontend/src/utils/datetime.ts`. Consolidate into `datetime.ts`; delete
   the dead `humanizeTs`/`humanizeDate` pair in `util.ts` / `utils/v1/common.ts`.
-- History views either call `formatAbsoluteDateTime` directly (as `AuditLogTable.tsx` does today)
-  or `HumanizeTs` gains a `mode="absolute"` prop so the tooltip/i18n-resubscribe behavior stays
-  shared. Prefer the prop — one canonical component, two declared modes, matching the principle
-  one-to-one.
+- History views use a `mode` prop on `HumanizeTs` so the tooltip/i18n-resubscribe behavior stays
+  shared: `mode="datetime"` (full, existing `formatAbsoluteDateTime`) and `mode="compact"` (a new
+  `formatCompactDateTime` helper in `datetime.ts` — date + hh:mm, locale-aware). One canonical
+  component, modes matching the principle one-to-one; the audit log can keep its direct call.
 - Operational times: the scheduled pill in `DeployTaskHeader.tsx` swaps `HumanizeTs` for the
   absolute string; the three bare-format expiration call sites converge on
   `formatAbsoluteDateTime` (default 6).
@@ -241,17 +269,20 @@ hours") may accompany it in the tooltip.
   part of the complaint survives. Mitigation: tooltip; escalation path if it recurs is lowering the
   threshold (D3) or a GitLab-style preference (D1 rejected-for-now).
 
-## Defaults awaiting veto
+## Open items awaiting ruling
 
-1. History-view cells keep the timezone suffix ("GMT+8"), matching the audit log. Alternative: move
-   tz to tooltip for density.
-2. Tooltip on absolute cells shows the full date-time (GitHub parity). Alternative: show the
-   relative age instead (inverse tooltip).
-3. Release list classified as work queue (switch), not history.
-4. Comment/activity timelines classified as feed (switch) even on closed issues.
-5. Scheduled rollout pill shows the full `formatAbsoluteDateTime` string inline (wide, but the
-   pill only appears while a schedule is pending). Alternative: date + hh:mm + tz, seconds in
-   tooltip.
-6. The three bare-format expiration displays (masking exemption, role-grant details, member
-   preview) are normalized to `formatAbsoluteDateTime` in this effort. Alternative: file as
+Confirmed since the first draft: release list = work queue; comment/activity timelines = feed;
+D6 (full date-time tooltip on every reduced display). Still open:
+
+1. **D7 tier assignment/format** — compact (date + hh:mm) vs full for the embedded history lists.
+   Mockups of both options exist for the changelog table and the 704px task-run sheet;
+   recommendation is compact per the orient/testify principle.
+2. **D5 precision refinement** — operational times at minute precision (no seconds), since the
+   pickers write minutes. Alternative: full seconds for uniformity with the full history tier.
+3. Scheduled rollout pill shows the operational format inline ("Sep 15, 2026, 9:00 AM GMT+8");
+   relative age moves to the tooltip.
+4. The three bare-format expiration displays (masking exemption, role-grant details, member
+   preview) are normalized to the operational format in this effort. Alternative: file as
    follow-up cleanup.
+5. Tooltip on *full* cells may show the relative age (inverse tooltip). Alternative: repeat the
+   full string (GitHub parity).
