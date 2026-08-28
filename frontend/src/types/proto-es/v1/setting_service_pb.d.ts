@@ -779,36 +779,6 @@ export declare type MCPSetting = Message<"bytebase.v1.MCPSetting"> & {
    * @generated from field: bool ignore_masking_exemptions = 2;
    */
   ignoreMaskingExemptions: boolean;
-
-  /**
-   * True when the row carries a capability key that this build cannot resolve
-   * to a ceiling. An enum name a newer release wrote is the legitimate trigger,
-   * during a rolling upgrade; a hand-edited token reaches the same state.
-   * False for every readable row, including one that was never configured.
-   *
-   * The capability field cannot carry this on its own: the unmarshaler discards
-   * an enum name it does not know, so an unreadable row and a never-configured
-   * one both arrive as CAPABILITY_UNSPECIFIED, while MCP is refused for the
-   * first and served at READ_WRITE for the second. A client reading only the
-   * capability shows the most permissive ceiling over a workspace where every
-   * MCP connection is being refused.
-   *
-   * A row protojson cannot parse at all is NOT this state. There is no ceiling
-   * in it to describe, so the read fails instead, and repairing it needs an
-   * operator rather than this field.
-   *
-   * The stored token itself is deliberately not returned. Telling a typo apart
-   * from a value a newer release wrote would only pay off if this enum grew,
-   * and it has not: its one reserved slot held a tier removed before any
-   * release shipped it.
-   *
-   * Set the row right by writing value.mcp.capability. Any other path is
-   * refused while this is true, because the merge that saved it would erase the
-   * value nobody could read.
-   *
-   * @generated from field: bool capability_unreadable = 3;
-   */
-  capabilityUnreadable: boolean;
 };
 
 /**
@@ -818,10 +788,9 @@ export declare type MCPSetting = Message<"bytebase.v1.MCPSetting"> & {
 export declare const MCPSettingSchema: GenMessage<MCPSetting>;
 
 /**
- * Capability is the ceiling: a session runs at this level or lower. An absent
- * MCP setting resolves to READ_WRITE, so a workspace that never configured
- * MCP is unaffected. Writing CAPABILITY_UNSPECIFIED explicitly is rejected —
- * omit the update mask path to leave the ceiling unset.
+ * Capability is the ceiling: a session runs at this level or lower.
+ * Writing CAPABILITY_UNSPECIFIED explicitly is rejected; omit the update mask
+ * path to leave the current ceiling unchanged.
  *
  * @generated from enum bytebase.v1.MCPSetting.Capability
  */

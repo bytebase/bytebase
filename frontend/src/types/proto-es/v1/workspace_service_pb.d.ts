@@ -50,8 +50,7 @@ export declare type MCPInfo = Message<"bytebase.v1.MCPInfo"> & {
   workspace: string;
 
   /**
-   * The ceiling in force for this workspace. A workspace that never configured
-   * MCP resolves to READ_WRITE.
+   * The ceiling in force for this workspace.
    *
    * @generated from field: bytebase.v1.MCPSetting.Capability capability = 2;
    */

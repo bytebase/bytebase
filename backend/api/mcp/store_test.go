@@ -4,7 +4,6 @@ import (
 	"context"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/store"
 )
 
 type testServerStore struct {
@@ -41,8 +40,11 @@ func (s *testServerStore) GetWorkspaceProfileSetting(context.Context, string) (*
 	return s.workspaceProfile, nil
 }
 
-func (s *testServerStore) GetMCPSettingsUncached(context.Context, string) (store.MCPSettings, error) {
-	return store.MCPSettings{Capability: s.capability}, s.capabilityErr
+func (s *testServerStore) GetMCPSettingsUncached(context.Context, string) (*storepb.MCPSetting, error) {
+	if s.capabilityErr != nil {
+		return nil, s.capabilityErr
+	}
+	return &storepb.MCPSetting{Capability: s.capability}, nil
 }
 
 func (*testServerStore) DeleteOAuth2RefreshTokensByUserAndClient(context.Context, string, string) error {

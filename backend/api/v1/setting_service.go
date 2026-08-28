@@ -4,14 +4,13 @@ import (
 	"context"
 	"log/slog"
 	"regexp"
-	"slices"
 	"strings"
 	"time"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
-	"google.golang.org/protobuf/proto" // Added
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -66,74 +65,17 @@ func (s *SettingService) ListSettings(ctx context.Context, _ *connect.Request[v1
 	}
 
 	response := &v1pb.ListSettingsResponse{}
-	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	stored := map[storepb.SettingName]bool{}
 	for _, setting := range settings {
 		if s.isSettingDisallowed(setting.Name) {
 			continue
 		}
-		// The MCP setting is served below, from its own reader. The bulk read
-		// gives the parsed message and nothing else, and serving that would
-		// report a row whose capability this build cannot resolve as a
-		// never-configured workspace — the permissive default over one that is
-		// refusing every connection.
-		if setting.Name == storepb.SettingName_MCP {
-			continue
-		}
-		stored[setting.Name] = true
 		settingMessage, err := convertToSettingMessage(setting)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
 		}
 		response.Settings = append(response.Settings, settingMessage)
 	}
-	for _, name := range alwaysPresentSettings {
-		if stored[name] || s.isSettingDisallowed(name) {
-			continue
-		}
-		// One reader for the MCP setting, so a list and a get cannot describe
-		// the same row two ways — the unreadable state only one of them carried
-		// is the difference an admin acts on.
-		if name == storepb.SettingName_MCP {
-			settingMessage, err := s.mcpSettingMessage(ctx, workspaceID)
-			if err != nil {
-				return nil, err
-			}
-			response.Settings = append(response.Settings, settingMessage)
-			continue
-		}
-		settingMessage, err := convertToSettingMessage(emptySetting(name, workspaceID))
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
-		}
-		response.Settings = append(response.Settings, settingMessage)
-	}
 	return connect.NewResponse(response), nil
-}
-
-// alwaysPresentSettings are the settings whose absent row is a defined state
-// rather than a missing resource, so Get, List and Update all answer that they
-// exist. The MCP setting is one: no row means MCP was never configured, which
-// the resolver reads as the backward-compatible ceiling. Three different
-// answers is how a client reads the resource and then cannot patch it.
-var alwaysPresentSettings = []storepb.SettingName{storepb.SettingName_MCP}
-
-func settingIsAlwaysPresent(name storepb.SettingName) bool {
-	return emptySetting(name, "") != nil
-}
-
-// emptySetting is the zero value served for an always-present setting with no
-// row yet, or nil for one whose absence really is a 404. It must match what the
-// store writes for an empty row, or the resource would change shape the first
-// time anyone saves it. TestAlwaysPresentSettingsHaveAZeroValue pins that this
-// and alwaysPresentSettings agree.
-func emptySetting(name storepb.SettingName, workspaceID string) *store.SettingMessage {
-	switch name {
-	case storepb.SettingName_MCP:
-		return &store.SettingMessage{Name: name, Workspace: workspaceID, Value: &storepb.MCPSetting{}}
-	default:
-		return nil
-	}
 }
 
 // GetSetting gets the setting by name.
@@ -167,23 +109,12 @@ func (s *SettingService) GetSetting(ctx context.Context, request *connect.Reques
 		return nil, err
 	}
 
-	if storeSettingName == storepb.SettingName_MCP {
-		message, err := s.mcpSettingMessage(ctx, common.GetWorkspaceIDFromContext(ctx))
-		if err != nil {
-			return nil, err
-		}
-		return connect.NewResponse(message), nil
-	}
-
 	setting, err := s.store.GetSetting(ctx, common.GetWorkspaceIDFromContext(ctx), storeSettingName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get setting: %v", err))
 	}
 	if setting == nil {
-		if !settingIsAlwaysPresent(storeSettingName) {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("setting %s not found", settingName))
-		}
-		setting = emptySetting(storeSettingName, common.GetWorkspaceIDFromContext(ctx))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("setting %s not found", settingName))
 	}
 	// Only return whitelisted setting.
 	settingMessage, err := convertToSettingMessage(setting)
@@ -233,22 +164,11 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 
-	// The MCP setting dispatches before the read below, not after. That read
-	// parses the stored row, and a ceiling this build cannot parse fails it —
-	// which would refuse the write that repairs the row, on the one path an
-	// admin has to repair it (BOT-107). updateMCPSetting needs nothing from it:
-	// it reads the row again under a lock, and takes its audit before-image
-	// from that locked read rather than from the cache this one consults.
-	if storeSettingName == storepb.SettingName_MCP {
-		s.stampMCPAuditBefore(ctx, workspaceID)
-		return s.updateMCPSetting(ctx, request, workspaceID)
-	}
-
 	existedSetting, err := s.store.GetSetting(ctx, workspaceID, storeSettingName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", settingName, err))
 	}
-	if existedSetting == nil && !request.Msg.AllowMissing && !settingIsAlwaysPresent(storeSettingName) {
+	if existedSetting == nil && !request.Msg.AllowMissing {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("setting %s not found", settingName))
 	}
 	// audit log.
@@ -268,6 +188,38 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	var resetClassification bool
 
 	switch storeSettingName {
+	case storepb.SettingName_MCP:
+		if request.Msg.UpdateMask == nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
+		}
+		payload := request.Msg.Setting.Value.GetMcp()
+		if payload == nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("mcp setting is required"))
+		}
+
+		mcpSetting := &storepb.MCPSetting{Capability: storepb.MCPSetting_READ_WRITE}
+		if existedSetting != nil {
+			existing, ok := existedSetting.Value.(*storepb.MCPSetting)
+			if !ok {
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_MCP))
+			}
+			mcpSetting = proto.CloneOf(existing)
+		}
+
+		for _, path := range request.Msg.UpdateMask.Paths {
+			switch path {
+			case "value.mcp.capability":
+				mcpSetting.Capability = convertToStoreMCPCapability(payload.Capability)
+			case "value.mcp.ignore_masking_exemptions":
+				mcpSetting.IgnoreMaskingExemptions = payload.IgnoreMaskingExemptions
+			default:
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))
+			}
+		}
+		if err := validateMCPCapability(mcpSetting.GetCapability()); err != nil {
+			return nil, err
+		}
+		storeSettingValue = mcpSetting
 	case storepb.SettingName_WORKSPACE_PROFILE:
 		return s.updateWorkspaceProfileSetting(ctx, request, workspaceID)
 	case storepb.SettingName_WORKSPACE_APPROVAL:
@@ -652,7 +604,7 @@ func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, requ
 		return nil, err
 	}
 	var lockedBefore *storepb.WorkspaceProfileSetting
-	apply := func(current proto.Message, _ []byte) (proto.Message, error) {
+	apply := func(current proto.Message) (proto.Message, error) {
 		oldSetting, ok := current.(*storepb.WorkspaceProfileSetting)
 		if !ok {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_WORKSPACE_PROFILE))
@@ -685,7 +637,7 @@ func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, requ
 		// longer populate the cache), but validate against a clone anyway so
 		// a validate-only request can never mutate shared state should the
 		// read path change.
-		if _, err := apply(proto.CloneOf(profileValue), nil); err != nil {
+		if _, err := apply(proto.CloneOf(profileValue)); err != nil {
 			return nil, err
 		}
 		return connect.NewResponse(&v1pb.Setting{
@@ -1164,283 +1116,10 @@ func validateAnnouncementTheme(t *storepb.WorkspaceProfileSetting_Announcement_A
 	return nil
 }
 
-// mcpSettingMessage answers the MCP setting from the row itself, carrying the
-// unreadable state the parsed value cannot.
-//
-// Uncached, unlike its sibling settings: the setting cache has no TTL and only
-// in-process writes refresh it, while every way a capability becomes unreadable
-// — a hand edit, a newer replica during a rolling upgrade — happens out of
-// band. A cached copy would show an admin the ceiling that was readable before
-// the edit, over a workspace where MCP is now refused every connection. The
-// enforcement gate reads the same row the same way
-// (store.GetMCPSettingsUncached).
-func (s *SettingService) mcpSettingMessage(ctx context.Context, workspaceID string) (*v1pb.Setting, error) {
-	raw, exists, err := s.store.RawSettingValue(ctx, workspaceID, storepb.SettingName_MCP)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get setting: %v", err))
-	}
-	stored := &storepb.MCPSetting{}
-	if exists {
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(raw), stored); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("the mcp setting does not parse: %v", err))
-		}
-	}
-	message, err := convertToSettingMessage(&store.SettingMessage{
-		Name:      storepb.SettingName_MCP,
-		Workspace: workspaceID,
-		Value:     stored,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
-	}
-	message.GetValue().GetMcp().CapabilityUnreadable = mcpCapabilityUnreadable(raw, exists, stored)
-	return message, nil
-}
-
-// mcpCapabilityUnreadable reports whether this build can resolve a ceiling from
-// the stored row.
-//
-// True when the row carries a capability key but protojson leaves the parsed
-// capability unspecified. An enum name a newer release wrote is the legitimate
-// trigger — a rolling upgrade — and a hand-edited token reaches the same state:
-// null, "", and an explicit CAPABILITY_UNSPECIFIED all parse away to unset
-// without erroring (TestMCPUnreadableCeilingIsVisibleToTheAdmin covers all
-// four).
-//
-// An absent key gives the same parsed value and means the opposite: never
-// configured, which resolves to the READ_WRITE default rather than a refusal
-// (BOT-100). A row that does not parse at all never gets this far; the read
-// fails, because there is no ceiling in it to describe.
-//
-// The page and the write path's repair guard both read this. Two copies drift
-// into a row the resolver refuses while the console reports a ceiling, or a
-// repair the page offers and the write rejects.
-func mcpCapabilityUnreadable(raw string, exists bool, stored *storepb.MCPSetting) bool {
-	if !exists || stored.GetCapability() != storepb.MCPSetting_CAPABILITY_UNSPECIFIED {
-		return false
-	}
-	key, err := store.RawMCPCapability(raw)
-	// No capability key is the ordinary never-configured state — a first edit
-	// that set only the masking toggle leaves exactly that — and resolves
-	// READ_WRITE.
-	return err == nil && key != ""
-}
-
-// stampMCPAuditBefore records the pre-lock MCP before-image on the audit row.
-//
-// The generic path below stamps one from the read it does before the merge.
-// MCP dispatches above that read, so without this a refused write — an
-// unreadable ceiling, a rejected mask, a dry run — audits with no before-image
-// at all, and a refusal is where the ceiling that was in force matters most.
-// updateMCPSetting overwrites it from the locked row when the write lands,
-// which is the value that was true at commit time.
-func (s *SettingService) stampMCPAuditBefore(ctx context.Context, workspaceID string) {
-	setServiceData, ok := common.GetSetServiceDataFromContext(ctx)
-	if !ok {
-		return
-	}
-	message, err := s.mcpSettingMessage(ctx, workspaceID)
-	if err != nil {
-		slog.Warn("audit: failed to read the mcp setting for the before-image", log.BBError(err))
-		return
-	}
-	p, err := anypb.New(message)
-	if err != nil {
-		slog.Warn("audit: failed to convert to anypb.Any", log.BBError(err))
-		return
-	}
-	setServiceData(p)
-}
-
-// updateMCPSetting merges the named update-mask paths into the stored MCP
-// setting under a row lock. Each path sets one field, so an admin changing the
-// masking toggle does not have to resend a ceiling they are not changing.
-//
-// Locked rather than read-merge-write, unlike the sibling settings: this row is
-// the MCP kill switch, and two concurrent saves that each merged onto their own
-// unlocked read would leave one of them silently reverted — for a ceiling, the
-// difference between off and on.
-//
-// The audit before-image is re-captured from the locked row, overwriting the
-// pre-lock snapshot UpdateSetting took from the setting cache. A ceiling flipped
-// out of band would otherwise be recorded as a transition from whatever the
-// cache still held, which never happened.
-func (s *SettingService) updateMCPSetting(ctx context.Context, request *connect.Request[v1pb.UpdateSettingRequest], workspaceID string) (*connect.Response[v1pb.Setting], error) {
-	if request.Msg.UpdateMask == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
-	}
-	payload := request.Msg.Setting.Value.GetMcp()
-	if payload == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("mcp setting is required"))
-	}
-
-	repairsCapability := slices.Contains(request.Msg.UpdateMask.Paths, "value.mcp.capability")
-
-	var lockedBefore *storepb.MCPSetting
-	// The v1-only capability_unreadable the before-image cannot carry on its
-	// own: lockedBefore is a store message, and that field exists to tell a
-	// repair of an unreadable ceiling apart from configuring a workspace that
-	// never had one. Without it the audit row for the two is byte-identical.
-	var lockedBeforeUnreadable bool
-	apply := func(current proto.Message, raw []byte) (proto.Message, error) {
-		existing, ok := current.(*storepb.MCPSetting)
-		if !ok {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_MCP))
-		}
-		// Captured before anything below can refuse. Every decision here is made
-		// against the LOCKED row, so that is what the audit row has to show —
-		// a refusal most of all, since the refusal names a ceiling only the
-		// locked read saw. The pre-lock stamp can already be describing a value
-		// another replica has replaced, which is the same reason the guard
-		// below reads raw rather than a pre-flight.
-		lockedBefore = proto.CloneOf(existing)
-		lockedBeforeUnreadable = mcpCapabilityUnreadable(string(raw), len(raw) > 0, existing)
-		// A key this build does not define would be deleted by the merge below:
-		// the unmarshaler discarded it, so re-marshalling writes the row back
-		// without it. During a rolling upgrade that is an older replica erasing
-		// what a newer one configured. Reads stay lenient on purpose — one
-		// field from a newer release must not disable MCP — but a partial write
-		// refuses rather than corrupt.
-		if len(raw) > 0 {
-			unknown, err := store.UnknownSettingKeys(string(raw), existing)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to read the stored mcp setting: %v", err))
-			}
-			if len(unknown) > 0 {
-				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf(
-					"this workspace's MCP setting carries %v, which this build does not understand, and saving another field would delete it. "+
-						"A newer Bytebase replica most likely wrote it; retry once the rollout has finished", unknown))
-			}
-		}
-
-		// A stored capability this build cannot read is enforced closed, and
-		// this merge would quietly erase it: the unmarshaler drops an enum name
-		// it does not know, and marshalling omits the zero enum, so the row
-		// would come back with no capability key at all and the next read would
-		// resolve it to the permissive default. Saving the masking toggle would
-		// reopen MCP. Refuse unless this same request sets a capability.
-		//
-		// Read from the locked row, not before the lock: a newer replica during
-		// a rolling upgrade can write a name this build has never heard of, and
-		// a pre-flight would have checked a value that is no longer there.
-		//
-		// The same predicate the page reads, so a row cannot be offered as
-		// repairable on one and refused on the other.
-		if lockedBeforeUnreadable && !repairsCapability {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf(
-				"this workspace's stored MCP capability is not one this build understands, and saving another field would erase it. "+
-					"Set value.mcp.capability in the same request to repair it"))
-		}
-		merged := proto.CloneOf(existing)
-		for _, path := range request.Msg.UpdateMask.Paths {
-			switch path {
-			case "value.mcp.capability":
-				capability := convertToStoreMCPCapability(payload.Capability)
-				if err := validateMCPCapability(capability); err != nil {
-					return nil, err
-				}
-				merged.Capability = capability
-			case "value.mcp.ignore_masking_exemptions":
-				merged.IgnoreMaskingExemptions = payload.IgnoreMaskingExemptions
-			default:
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))
-			}
-		}
-		return merged, nil
-	}
-
-	// A dry run must not reach the row or the served cache: flipping the ceiling
-	// on a request that asked for nothing would be the kill switch turning
-	// itself off.
-	if request.Msg.ValidateOnly {
-		// The same parse and the same apply the locked path runs, so the dry run
-		// cannot disagree with the write it stands in for in either direction.
-		raw, _, err := s.store.RawSettingValue(ctx, workspaceID, storepb.SettingName_MCP)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to read mcp setting: %v", err))
-		}
-		current := &storepb.MCPSetting{}
-		if raw != "" {
-			if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(raw), current); err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("the mcp setting does not parse: %v", err))
-			}
-		}
-		validated, err := apply(current, []byte(raw))
-		if err != nil {
-			var connectErr *connect.Error
-			if errors.As(err, &connectErr) {
-				return nil, err
-			}
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-		settingMessage, err := convertToSettingMessage(&store.SettingMessage{
-			Name:      storepb.SettingName_MCP,
-			Workspace: workspaceID,
-			Value:     validated,
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
-		}
-		return connect.NewResponse(settingMessage), nil
-	}
-
-	// UpdateSettingAtomic updates existing state only, and a workspace that
-	// never configured MCP has no row to lock.
-	if err := s.store.EnsureSettingRow(ctx, workspaceID, storepb.SettingName_MCP); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create mcp setting: %v", err))
-	}
-	// Overwrites the pre-lock stamp on either outcome. apply captured this from
-	// the locked row, so it describes the state the write actually decided
-	// against; the pre-lock stamp stays only for failures that never reach the
-	// lock at all.
-	stampLocked := func() {
-		setServiceData, ok := common.GetSetServiceDataFromContext(ctx)
-		if !ok || lockedBefore == nil {
-			return
-		}
-		v1pbSetting, err := convertToSettingMessage(&store.SettingMessage{
-			Name:      storepb.SettingName_MCP,
-			Workspace: workspaceID,
-			Value:     lockedBefore,
-		})
-		if err != nil {
-			slog.Warn("audit: failed to convert to v1.Setting", log.BBError(err))
-			return
-		}
-		v1pbSetting.GetValue().GetMcp().CapabilityUnreadable = lockedBeforeUnreadable
-		p, err := anypb.New(v1pbSetting)
-		if err != nil {
-			slog.Warn("audit: failed to convert to anypb.Any", log.BBError(err))
-			return
-		}
-		setServiceData(p)
-	}
-
-	setting, err := s.store.UpdateSettingAtomic(ctx, workspaceID, storepb.SettingName_MCP, apply, nil)
-	if err != nil {
-		stampLocked()
-		var connectErr *connect.Error
-		if errors.As(err, &connectErr) {
-			return nil, err
-		}
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to set setting: %v", err))
-	}
-	stampLocked()
-
-	settingMessage, err := convertToSettingMessage(setting)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
-	}
-	return connect.NewResponse(settingMessage), nil
-}
-
-// validateMCPCapability rejects an explicit write of UNSPECIFIED — absent has
-// defined resolver semantics (it resolves to READ_WRITE), so writing
-// "unspecified" is a caller bug — and unknown enum numbers, which proto3 open
-// enums would otherwise let through.
+// validateMCPCapability rejects UNSPECIFIED and unknown enum numbers.
 func validateMCPCapability(capability storepb.MCPSetting_Capability) error {
 	if capability == storepb.MCPSetting_CAPABILITY_UNSPECIFIED {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("capability cannot be set to CAPABILITY_UNSPECIFIED; choose an explicit capability or omit the update mask path to leave it unset"))
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("capability must be specified"))
 	}
 	if _, ok := storepb.MCPSetting_Capability_name[int32(capability)]; !ok {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unknown capability value %d", capability))

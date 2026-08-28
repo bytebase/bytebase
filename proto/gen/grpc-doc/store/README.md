@@ -5065,9 +5065,7 @@ It cannot force masking where there is none. Masking substitutes values in query
 <a name="bytebase-store-MCPSetting-Capability"></a>
 
 ### MCPSetting.Capability
-Capability is the ceiling: a session runs at this level or lower. An absent
-MCP setting resolves to READ_WRITE, so a workspace that never configured
-MCP is unaffected.
+Capability is the ceiling: a session runs at this level or lower.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |

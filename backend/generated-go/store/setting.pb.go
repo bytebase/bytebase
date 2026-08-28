@@ -150,9 +150,7 @@ func (WorkspaceProfileSetting_DatabaseChangeMode) EnumDescriptor() ([]byte, []in
 	return file_store_setting_proto_rawDescGZIP(), []int{1, 0}
 }
 
-// Capability is the ceiling: a session runs at this level or lower. An absent
-// MCP setting resolves to READ_WRITE, so a workspace that never configured
-// MCP is unaffected.
+// Capability is the ceiling: a session runs at this level or lower.
 type MCPSetting_Capability int32
 
 const (
