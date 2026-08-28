@@ -132,12 +132,19 @@ func TestIssueCommentBatchKeepsInsertionOrder(t *testing.T) {
 		projectID   = "comment-p"
 		issueUID    = int64(101)
 	)
-	_, err := db.ExecContext(ctx, `
-		INSERT INTO workspace (resource_id) VALUES ($1);
-		INSERT INTO project (resource_id, workspace, name) VALUES ($2, $1, $2);
+	// One statement per Exec: a parameterized Exec goes through the extended
+	// query protocol, and a prepared statement cannot carry several commands.
+	_, err := db.ExecContext(ctx,
+		`INSERT INTO workspace (resource_id) VALUES ($1)`, workspaceID)
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx,
+		`INSERT INTO project (resource_id, workspace, name) VALUES ($1, $2, $1)`,
+		projectID, workspaceID)
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, `
 		INSERT INTO issue (id, project, creator, name, status, type, description)
-		VALUES ($3, $2, 'users/comment@example.com', 'issue', 'OPEN', 'DATABASE_CHANGE', '')`,
-		workspaceID, projectID, issueUID)
+		VALUES ($1, $2, 'users/comment@example.com', 'issue', 'OPEN', 'DATABASE_CHANGE', '')`,
+		issueUID, projectID)
 	require.NoError(t, err)
 
 	pgURL := fmt.Sprintf(
