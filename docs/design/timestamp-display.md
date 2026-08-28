@@ -98,8 +98,14 @@ date-time always**, consistent with the audit log. They are records of execution
 
 **D5 (proposed) — Operational times: absolute with explicit timezone, minute precision.**
 Scheduled rollout times and expirations render the absolute date-time with the short timezone name
-in the visible string, not just the tooltip: "Sep 15, 2026, 9:00 AM GMT+8". No seconds — the
-pickers write minute precision, so a seconds field would always read ":00". Driven by BYT-10023 —
+in the visible string, not just the tooltip: "Sep 15, 2026, 9:00 AM GMT+8". Precision caveat:
+minute-granular input covers only the `datetime-local` pickers. Day/second-count presets write
+`now() + offset` with real sub-minute tails (`computeExpirationTimestamp` in `MembersPage.tsx`,
+the SQL-editor access-grant drawer), so a minute display floors the enforced cutoff by up to 59
+seconds — in the safe direction: the value never expires earlier than displayed, and the full
+value stays in the tooltip (D6). Accepting D5 means accepting that bounded under-report;
+alternatives are retaining seconds for expiration values, or normalizing preset writes to the
+minute (a write-path change, out of scope for this display-only design). Driven by BYT-10023 —
 see Operational times below. Proposed, pending confirmation; the time *pickers* that write these
 values are explicitly deferred.
 
@@ -285,8 +291,11 @@ D6 (full date-time tooltip on every reduced display). Still open:
 1. **D7 tier assignment/format** — compact (date + hh:mm) vs full for the embedded history lists.
    Mockups of both options exist for the changelog table and the 704px task-run sheet;
    recommendation is compact per the orient/testify principle.
-2. **D5 precision refinement** — operational times at minute precision (no seconds), since the
-   pickers write minutes. Alternative: full seconds for uniformity with the full history tier.
+2. **D5 precision refinement** — operational times at minute precision (no seconds). Pickers
+   write minutes, but day/second-count presets write `now() + offset` with sub-minute tails, so
+   minute display floors the enforced cutoff by ≤59s (safe direction; full value in the tooltip).
+   Alternatives: full seconds for expiration values, or normalizing preset writes to the minute
+   (write-path change, out of scope here).
 3. Scheduled rollout pill shows the operational format inline ("Sep 15, 2026, 9:00 AM GMT+8");
    relative age moves to the tooltip.
 4. The three bare-format expiration displays (masking exemption, role-grant details, member
