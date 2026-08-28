@@ -9,27 +9,26 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
 )
 
-// TestQuerySpanFailClosed pins the BYT-10085 contract at the bytebase layer:
-// a statement the parser cannot fully consume must FAIL the span extraction,
-// not return an empty span. Before strict parsing, "SELECT a FROM secret
-// xx yy" silently truncated to "SELECT a FROM secret" upstream and variants
-// with a junked FROM clause could yield zero AccessTables — masking and
-// table-level ACL checks then saw nothing to protect.
+// TestQuerySpanFailClosed pins the BYT-10085 contract at the bytebase layer
+// for StarRocks: junk the parser cannot consume fails the span extraction
+// instead of yielding an empty span, and the newly accepted ParenSelect
+// statement shapes still report their reads — including clauses that live on
+// the wrapper itself.
 func TestQuerySpanFailClosed(t *testing.T) {
 	a := require.New(t)
 	q := newQuerySpanExtractor("db1", base.GetQuerySpanContext{}, false)
+	secret := base.ColumnResource{Database: "db1", Table: "secret"}
 
-	_, err := q.getQuerySpan(context.Background(), "SELECT a FROM secret xx yy zz")
-	a.Error(err, "trailing junk must fail the span, not truncate silently")
+	_, err := q.getQuerySpan(context.Background(), "SELECT a FROM secret GROUP BY a WITH ROLLUP")
+	a.Error(err, "engine-invalid tail (WITH ROLLUP) must fail the span, not truncate")
 
-	// The newly accepted paren/grouped shapes still extract their reads.
-	span, err := q.getQuerySpan(context.Background(), "(SELECT a FROM secret) LIMIT 1")
+	span, err := q.getQuerySpan(context.Background(), "((SELECT a FROM secret)) LIMIT 2")
 	a.NoError(err)
-	a.True(span.SourceColumns[base.ColumnResource{Database: "db1", Table: "secret"}],
-		"paren query must report its table read")
+	a.True(span.SourceColumns[secret], "nested paren query must report its table read")
 
-	span, err = q.getQuerySpan(context.Background(), "(SELECT a FROM secret ORDER BY 1) ORDER BY 1")
+	// The wrapper's own trailing ORDER BY may carry a subquery read.
+	span, err = q.getQuerySpan(context.Background(),
+		"(SELECT 1) ORDER BY (SELECT max(a) FROM secret)")
 	a.NoError(err)
-	a.True(span.SourceColumns[base.ColumnResource{Database: "db1", Table: "secret"}],
-		"grouped query must report its table read")
+	a.True(span.SourceColumns[secret], "wrapper clause subquery read must be reported")
 }
