@@ -947,6 +947,7 @@ Stored as the enum name string in email_verification_code.purpose column.
 | EMAIL_VERIFICATION_CODE_PURPOSE_UNSPECIFIED | 0 |  |
 | LOGIN | 1 |  |
 | PASSWORD_RESET | 2 |  |
+| REAUTH | 3 | Re-authentication proof for a credential change (CredentialProof.email_code). Never accepted by Login. |
 
 
 

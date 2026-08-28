@@ -178,6 +178,41 @@ func (x *UpdateEmailRequest) Equal(y *UpdateEmailRequest) bool {
 	return true
 }
 
+func (x *CredentialProof) Equal(y *CredentialProof) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.GetCurrentPassword() != y.GetCurrentPassword() {
+		return false
+	}
+	if x.GetOtpCode() != y.GetOtpCode() {
+		return false
+	}
+	if x.GetRecoveryCode() != y.GetRecoveryCode() {
+		return false
+	}
+	if x.GetEmailCode() != y.GetEmailCode() {
+		return false
+	}
+	return true
+}
+
+func (x *RequestReauthCodeRequest) Equal(y *RequestReauthCodeRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	return true
+}
+
 func (x *ChangePasswordRequest) Equal(y *ChangePasswordRequest) bool {
 	if x == y {
 		return true
@@ -189,6 +224,9 @@ func (x *ChangePasswordRequest) Equal(y *ChangePasswordRequest) bool {
 		return false
 	}
 	if x.NewPassword != y.NewPassword {
+		return false
+	}
+	if !x.Credential.Equal(y.Credential) {
 		return false
 	}
 	return true
@@ -250,6 +288,9 @@ func (x *EnableMFARequest) Equal(y *EnableMFARequest) bool {
 	if p, q := x.PendingVersion, y.PendingVersion; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
 		return false
 	}
+	if !x.Credential.Equal(y.Credential) {
+		return false
+	}
 	return true
 }
 
@@ -261,6 +302,9 @@ func (x *DisableMFARequest) Equal(y *DisableMFARequest) bool {
 		return x == nil && y == nil
 	}
 	if x.Name != y.Name {
+		return false
+	}
+	if !x.Credential.Equal(y.Credential) {
 		return false
 	}
 	return true
@@ -311,6 +355,12 @@ func (x *ConfirmRecoveryCodesRequest) Equal(y *ConfirmRecoveryCodesRequest) bool
 		return false
 	}
 	if p, q := x.PendingVersion, y.PendingVersion; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	if !x.Credential.Equal(y.Credential) {
+		return false
+	}
+	if x.OtpCode != y.OtpCode {
 		return false
 	}
 	return true

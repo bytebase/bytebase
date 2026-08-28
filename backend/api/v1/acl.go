@@ -627,6 +627,12 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 		}
 	default:
 	}
+	if r, ok := request.(*v1pb.UpdateDatabaseCatalogRequest); ok {
+		// The catalog is in `catalog`, not the `database_catalog` the Update
+		// convention below derives from the method name. Without this it
+		// resolves nothing and falls back to workspace scope.
+		return []string{r.GetCatalog().GetName()}, nil
+	}
 	if r, ok := request.(*v1pb.UpdateInstanceRequest); ok && r.AllowMissing && r.Instance != nil {
 		if projectID, _, err := common.GetProjectIDInstanceID(r.Instance.Name); err == nil {
 			// The instance does not exist yet, so authorize the implicit creation

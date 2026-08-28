@@ -171,6 +171,41 @@ func TestValidateQuery(t *testing.T) {
 			valid:       true,
 			description: "CONVERT and BINARY forms are read-only",
 		},
+		{
+			statement:   "(SELECT 1) LIMIT 1",
+			valid:       true,
+			description: "Parenthesized query with trailing LIMIT is read-only",
+		},
+		{
+			statement:   "(SELECT 1 LIMIT 1) LIMIT 2",
+			valid:       true,
+			description: "GroupedQuery wrapper (repeated clause groups) is read-only",
+		},
+		{
+			statement:   "SELECT 1 LIMIT 5 ORDER BY 1",
+			valid:       true,
+			description: "Engine-lenient clause order wraps in GroupedQuery, still read-only",
+		},
+		{
+			statement:   "(WITH c AS (SELECT 1) SELECT * FROM c)",
+			valid:       true,
+			description: "Parenthesized WITH group (CTE scope boundary) is read-only",
+		},
+		{
+			statement:   "SELECT 1 UNION (SELECT 2) LIMIT 5",
+			valid:       true,
+			description: "Set operation with parenthesized operand and trailing LIMIT is read-only",
+		},
+		{
+			statement:   "EXPLAIN (SELECT 1)",
+			valid:       true,
+			description: "EXPLAIN over a parenthesized query is read-only",
+		},
+		{
+			statement:   "EXPLAIN (SELECT 1 LIMIT 1) LIMIT 2",
+			valid:       true,
+			description: "EXPLAIN over a grouped query is read-only",
+		},
 	}
 
 	for _, tc := range tests {
@@ -228,6 +263,13 @@ func TestValidateQuery(t *testing.T) {
 			// EXPLAIN over DDL is not a real read-only operation.
 			statement:   "EXPLAIN DROP TABLE t",
 			description: "EXPLAIN over DDL must be rejected",
+		},
+		{
+			// Strict parsing (BYT-10085): a valid prefix followed by junk no
+			// longer silently truncates — it is a syntax error. Before the
+			// fix this parsed as `SELECT a FROM t` and ran.
+			statement:   "SELECT a FROM t xx yy zz",
+			description: "Trailing junk after a valid prefix must be rejected",
 		},
 	}
 	for _, tc := range rejectCases {

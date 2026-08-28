@@ -286,21 +286,3 @@ export function projectResourceNameFromId(projectId: string | undefined) {
 export function getProjectResourceId(project: Project) {
   return getProjectName(project.name);
 }
-
-// The MFA enrollment secrets come back only from the two UpdateUser requests
-// that drive the enrollment. A GetCurrentUser read no longer carries them,
-// because a TOTP seed in a read response is a stored secret handed to whoever
-// can read the profile, and neither does an UpdateUser that mints nothing.
-//
-// Both of those overwrite the store's current user, and the enrollment window
-// is five minutes: AuthGate revalidates the session on that same interval, and
-// the account page saves a title or a phone number from the panel showing the
-// recovery codes. A plain overwrite would blank what the user is halfway
-// through saving, so both merges go through here.
-//
-// Carry them across while the response still describes the enrollment we hold.
-// temp_otp_secret_created_time is not a secret and reads keep it, so it
-// identifies the enrollment: it is nil once the enrollment commits, moves when
-// a new seed is minted, and is withheld once the window expires. Any of the
-// three stops what we hold from being carried, which is why there is no copy of
-// the five-minute rule here — the server does not report an expired enrollment

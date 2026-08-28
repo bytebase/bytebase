@@ -787,6 +787,10 @@ func (s *DatabaseService) GetDatabaseSDLSchema(ctx context.Context, req *connect
 
 // DiffSchema diff the database schema.
 func (s *DatabaseService) DiffSchema(ctx context.Context, req *connect.Request[v1pb.DiffSchemaRequest]) (*connect.Response[v1pb.DiffSchemaResponse], error) {
+	if err := s.validateDiffSchemaTargetProject(ctx, req.Msg); err != nil {
+		return nil, err
+	}
+
 	engine, err := s.getParserEngine(ctx, req.Msg)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get parser engine"))
@@ -879,6 +883,56 @@ func (s *DatabaseService) DiffMetadata(ctx context.Context, req *connect.Request
 	return connect.NewResponse(&v1pb.DiffMetadataResponse{
 		Diff: migrationSQL,
 	}), nil
+}
+
+// validateDiffSchemaTargetProject confines the changelog target to the source's
+// project. The ACL interceptor authorizes request.name only, so nothing else
+// checks the changelog.
+func (s *DatabaseService) validateDiffSchemaTargetProject(ctx context.Context, request *v1pb.DiffSchemaRequest) error {
+	changelog := request.GetChangelog()
+	if changelog == "" {
+		return nil
+	}
+	source, err := s.getDiffSchemaDatabase(ctx, request.GetName())
+	if err != nil {
+		return err
+	}
+	if source == nil {
+		return connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", request.GetName()))
+	}
+	target, err := s.getDiffSchemaDatabase(ctx, changelog)
+	if err != nil {
+		return err
+	}
+	// One error for both: a distinct one would confirm what lives in a project
+	// the caller cannot see.
+	if target == nil || target.ProjectID != source.ProjectID {
+		return connect.NewError(connect.CodeNotFound, errors.Errorf("changelog %q not found", changelog))
+	}
+	return nil
+}
+
+// getDiffSchemaDatabase resolves the database behind a DiffSchema name, which
+// may name a database or one of its changelogs. Returns nil, not an error, when
+// the database does not exist.
+func (s *DatabaseService) getDiffSchemaDatabase(ctx context.Context, name string) (*store.DatabaseMessage, error) {
+	// Not a "changelogs/" substring test: an instance or project may be named
+	// `changelogs`. Segment counts make exactly one form parse.
+	_, instanceID, databaseName, _, err := common.GetDatabaseChangelogResourceName(name)
+	if err != nil {
+		if _, instanceID, databaseName, err = common.GetDatabaseResourceName(name); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", name))
+		}
+	}
+	database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
+		Workspace:    common.GetWorkspaceIDFromContext(ctx),
+		InstanceID:   &instanceID,
+		DatabaseName: &databaseName,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database %q", name))
+	}
+	return database, nil
 }
 
 // shouldDiffSchemaViaSDL reports whether a raw-schema-text DiffSchema target should take the
@@ -981,8 +1035,9 @@ func (s *DatabaseService) getSourceDBMetadata(ctx context.Context, request *v1pb
 		}
 
 		changelog, err := s.store.GetChangelog(ctx, &store.FindChangelogMessage{
-			InstanceID: instanceID,
-			ResourceID: &changelogID,
+			InstanceID:   instanceID,
+			DatabaseName: &databaseID,
+			ResourceID:   &changelogID,
 		})
 		if err != nil {
 			return nil, err
@@ -1063,8 +1118,9 @@ func (s *DatabaseService) getTargetDBMetadata(ctx context.Context, request *v1pb
 		}
 
 		changelog, err := s.store.GetChangelog(ctx, &store.FindChangelogMessage{
-			InstanceID: instanceID,
-			ResourceID: &changelogID,
+			InstanceID:   instanceID,
+			DatabaseName: &databaseID,
+			ResourceID:   &changelogID,
 		})
 		if err != nil {
 			return nil, err

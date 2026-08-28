@@ -278,6 +278,77 @@ export declare type UpdateEmailRequest = Message<"bytebase.v1.UpdateEmailRequest
 export declare const UpdateEmailRequestSchema: GenMessage<UpdateEmailRequest>;
 
 /**
+ * One proof that the caller currently controls a credential on the account.
+ * Exactly one field must be set; enforced in the handler.
+ *
+ * @generated from message bytebase.v1.CredentialProof
+ */
+export declare type CredentialProof = Message<"bytebase.v1.CredentialProof"> & {
+  /**
+   * @generated from oneof bytebase.v1.CredentialProof.proof
+   */
+  proof: {
+    /**
+     * The account's current password. Refused by a factor-touching method
+     * while a live MFA factor exists.
+     *
+     * @generated from field: string current_password = 1;
+     */
+    value: string;
+    case: "currentPassword";
+  } | {
+    /**
+     * A live code from the account's enrolled TOTP authenticator.
+     *
+     * @generated from field: string otp_code = 2;
+     */
+    value: string;
+    case: "otpCode";
+  } | {
+    /**
+     * A single-use MFA recovery code.
+     *
+     * @generated from field: string recovery_code = 3;
+     */
+    value: string;
+    case: "recoveryCode";
+  } | {
+    /**
+     * A one-time code from RequestReauthCode. Bytebase Cloud only, and only
+     * while the account has no live MFA factor.
+     *
+     * @generated from field: string email_code = 4;
+     */
+    value: string;
+    case: "emailCode";
+  } | { case: undefined; value?: undefined };
+};
+
+/**
+ * Describes the message bytebase.v1.CredentialProof.
+ * Use `create(CredentialProofSchema)` to create a new message.
+ */
+export declare const CredentialProofSchema: GenMessage<CredentialProof>;
+
+/**
+ * @generated from message bytebase.v1.RequestReauthCodeRequest
+ */
+export declare type RequestReauthCodeRequest = Message<"bytebase.v1.RequestReauthCodeRequest"> & {
+  /**
+   * Format: users/{email}. Must be the caller's own name.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message bytebase.v1.RequestReauthCodeRequest.
+ * Use `create(RequestReauthCodeRequestSchema)` to create a new message.
+ */
+export declare const RequestReauthCodeRequestSchema: GenMessage<RequestReauthCodeRequest>;
+
+/**
  * @generated from message bytebase.v1.ChangePasswordRequest
  */
 export declare type ChangePasswordRequest = Message<"bytebase.v1.ChangePasswordRequest"> & {
@@ -292,6 +363,11 @@ export declare type ChangePasswordRequest = Message<"bytebase.v1.ChangePasswordR
    * @generated from field: string new_password = 2;
    */
   newPassword: string;
+
+  /**
+   * @generated from field: bytebase.v1.CredentialProof credential = 3;
+   */
+  credential?: CredentialProof | undefined;
 };
 
 /**
@@ -385,6 +461,14 @@ export declare type EnableMFARequest = Message<"bytebase.v1.EnableMFARequest"> &
    * @generated from field: google.protobuf.Timestamp pending_version = 3;
    */
   pendingVersion?: Timestamp | undefined;
+
+  /**
+   * Proof of the *existing* factor, not the new device above. Required for a
+   * rotation, and for first-time enrollment on an account with a password.
+   *
+   * @generated from field: bytebase.v1.CredentialProof credential = 4;
+   */
+  credential?: CredentialProof | undefined;
 };
 
 /**
@@ -404,6 +488,14 @@ export declare type DisableMFARequest = Message<"bytebase.v1.DisableMFARequest">
    * @generated from field: string name = 1;
    */
   name: string;
+
+  /**
+   * Required for a self-service call against a live factor, and then only
+   * otp_code or recovery_code. Unused on an admin-assisted call.
+   *
+   * @generated from field: bytebase.v1.CredentialProof credential = 2;
+   */
+  credential?: CredentialProof | undefined;
 };
 
 /**
@@ -473,6 +565,19 @@ export declare type ConfirmRecoveryCodesRequest = Message<"bytebase.v1.ConfirmRe
    * @generated from field: google.protobuf.Timestamp pending_version = 2;
    */
   pendingVersion?: Timestamp | undefined;
+
+  /**
+   * @generated from field: bytebase.v1.CredentialProof credential = 3;
+   */
+  credential?: CredentialProof | undefined;
+
+  /**
+   * Required for first-time enrollment, rejected otherwise. A *fresh* code,
+   * not the one EnableMFA took.
+   *
+   * @generated from field: string otp_code = 4;
+   */
+  otpCode: string;
 };
 
 /**
@@ -708,6 +813,20 @@ export declare const UserService: GenService<{
     methodKind: "unary";
     input: typeof UpdateEmailRequestSchema;
     output: typeof UserSchema;
+  },
+  /**
+   * Sends a one-time code to the caller's own email, usable as
+   * CredentialProof.email_code. Bytebase Cloud only, and only while the
+   * account has no live MFA factor. Not AuthService.SendEmailLoginCode: that
+   * one starts a session, this one proves an existing one.
+   * Permissions required: None beyond being signed in as `name`.
+   *
+   * @generated from rpc bytebase.v1.UserService.RequestReauthCode
+   */
+  requestReauthCode: {
+    methodKind: "unary";
+    input: typeof RequestReauthCodeRequestSchema;
+    output: typeof EmptySchema;
   },
   /**
    * Changes the caller's own password. An administrator resetting someone

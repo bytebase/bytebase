@@ -132,6 +132,7 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.UserServiceDisableMFAProcedure,
 		v1connect.UserServiceRegenerateRecoveryCodesProcedure,
 		v1connect.UserServiceConfirmRecoveryCodesProcedure,
+		v1connect.UserServiceRequestReauthCodeProcedure,
 	}
 	got := forbiddenProceduresFromDescriptors(t)
 
@@ -171,6 +172,7 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.UserServiceDisableMFAProcedure:                         v1pb.MCPDenialReason_TAKES_OVER_ACCOUNT,
 		v1connect.UserServiceRegenerateRecoveryCodesProcedure:            v1pb.MCPDenialReason_MINTS_CREDENTIAL,
 		v1connect.UserServiceConfirmRecoveryCodesProcedure:               v1pb.MCPDenialReason_TAKES_OVER_ACCOUNT,
+		v1connect.UserServiceRequestReauthCodeProcedure:                  v1pb.MCPDenialReason_RESETS_CREDENTIAL,
 		v1connect.IdentityProviderServiceCreateIdentityProviderProcedure: v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
 		v1connect.IdentityProviderServiceUpdateIdentityProviderProcedure: v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
 		v1connect.IdentityProviderServiceTestIdentityProviderProcedure:   v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,

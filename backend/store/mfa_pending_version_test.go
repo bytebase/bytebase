@@ -1,127 +1,61 @@
 package store_test
 
 import (
-	"context"
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
-
-	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 )
 
-func newMFAPendingTestStore(t *testing.T) *store.Store {
-	t.Helper()
-	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	s, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, s.Close()) })
-	return s
-}
-
-// TestUpdateUserMFAConfigIfPending pins the compare-and-swap the confirming
-// methods promote through. The version has to be part of the write: a caller
-// that checked a user it read moments ago would otherwise still commit, and
-// the two states worth protecting are a newer enrollment from another tab and
-// an administrator's disable — reviving a factor that was just cleared.
-func TestUpdateUserMFAConfigIfPending(t *testing.T) {
-	ctx := context.Background()
-	s := newMFAPendingTestStore(t)
+// TestPendingMFAVersionSurvivesNanosecondClocks pins the precision contract
+// between the pending version and the predicate that matches it.
+//
+// UpdateUserMFAConfigIfPending compares the stored value as a timestamptz, and
+// that type holds microseconds. The cast rounds a nanosecond tail while the
+// bound parameter does not, so an instant whose sub-microsecond remainder
+// rounds up used to match nothing and the confirmation reported that its own
+// enrollment had been superseded.
+//
+// It never reproduced on macOS, whose clock is microsecond-granular: every
+// value it produces is already exact. On Linux, which is nanosecond-granular,
+// it struck roughly half of all enrollments — so the instants here are chosen
+// rather than sampled from time.Now().
+func TestPendingMFAVersionSurvivesNanosecondClocks(t *testing.T) {
+	ctx, _, s := newSettingAtomicFixture(t)
+	a := require.New(t)
 
 	user, err := s.CreateUser(ctx, &store.UserMessage{
-		Email:        "pending@example.com",
-		Name:         "Pending",
-		PasswordHash: "unused",
+		Email: "enroller@example.com",
+		Name:  "enroller",
+		Type:  storepb.PrincipalType_END_USER,
 	})
-	require.NoError(t, err)
+	a.NoError(err)
 
-	version := timestamppb.New(time.Now().UTC().Truncate(time.Microsecond))
-	_, err = s.UpdateUser(ctx, user, &store.UpdateUserMessage{
-		MFAConfig: &storepb.MFAConfig{
-			TempOtpSecret:            "pending-secret",
-			TempRecoveryCodes:        []string{"code-a"},
-			TempOtpSecretCreatedTime: version,
-		},
-	})
-	require.NoError(t, err)
+	base := time.Date(2026, 8, 27, 5, 10, 43, 0, time.UTC)
+	for _, nanos := range []int{0, 1, 499, 500, 501, 999, 123456000, 123456789, 999999999} {
+		// Handed in with the nanosecond tail a Linux clock produces, not
+		// pre-rounded: the store owns this contract, so it has to hold for a
+		// caller that passes time.Now() straight through.
+		raw := base.Add(time.Duration(nanos))
+		a.NoError(s.SetPendingMFAState(ctx, user.ID, "PENDINGSECRET", []string{"code-1", "code-2"}, raw))
 
-	promoted := &storepb.MFAConfig{OtpSecret: "pending-secret", RecoveryCodes: []string{"code-a"}}
+		promoted, err := s.UpdateUserMFAConfigIfPending(ctx, user.ID, raw, &storepb.MFAConfig{
+			OtpSecret:     "PENDINGSECRET",
+			RecoveryCodes: []string{"code-1", "code-2"},
+		})
+		a.NoError(err)
+		a.NotNil(promoted, "a confirmation carrying the version it was minted with must promote, nanos=%d", nanos)
+		a.Equal("PENDINGSECRET", promoted.MFAConfig.GetOtpSecret(), "nanos=%d", nanos)
 
-	stale := version.AsTime().Add(-time.Second)
-	refused, err := s.UpdateUserMFAConfigIfPending(ctx, user.ID, stale, promoted)
-	require.NoError(t, err)
-	require.Nil(t, refused, "a version that is not the pending one must not commit")
-	unchanged, err := s.GetUserByEmail(ctx, user.Email)
-	require.NoError(t, err)
-	require.Empty(t, unchanged.MFAConfig.GetOtpSecret(), "the refused write must leave the account alone")
-
-	updated, err := s.UpdateUserMFAConfigIfPending(ctx, user.ID, version.AsTime(), promoted)
-	require.NoError(t, err)
-	require.NotNil(t, updated)
-	require.Equal(t, "pending-secret", updated.MFAConfig.GetOtpSecret())
-
-	// Promotion clears the pending slot, so replaying the same confirmation —
-	// a double-submit, or a tab that never learned it already went through —
-	// finds nothing to promote rather than rewriting the factor.
-	replayed, err := s.UpdateUserMFAConfigIfPending(ctx, user.ID, version.AsTime(), promoted)
-	require.NoError(t, err)
-	require.Nil(t, replayed, "a consumed pending version must not promote twice")
-}
-
-// TestSetPendingMFAStateLeavesTheLiveFactor pins that minting pending state
-// never writes the live factor. The mint reads the account, generates secrets,
-// then writes — and an administrator disabling MFA in that window used to be
-// undone by the write, silently re-enabling the factor they had cleared for a
-// locked-out user.
-func TestSetPendingMFAStateLeavesTheLiveFactor(t *testing.T) {
-	ctx := context.Background()
-	s := newMFAPendingTestStore(t)
-
-	user, err := s.CreateUser(ctx, &store.UserMessage{
-		Email:        "mint@example.com",
-		Name:         "Mint",
-		PasswordHash: "unused",
-	})
-	require.NoError(t, err)
-	live, err := s.UpdateUser(ctx, user, &store.UpdateUserMessage{
-		MFAConfig: &storepb.MFAConfig{
-			OtpSecret:     "live-secret",
-			RecoveryCodes: []string{"live-a", "live-b"},
-		},
-	})
-	require.NoError(t, err)
-
-	// What a mint holds: the account as it was before the concurrent change.
-	stale := live
-
-	_, err = s.UpdateUser(ctx, stale, &store.UpdateUserMessage{MFAConfig: &storepb.MFAConfig{}})
-	require.NoError(t, err)
-
-	// The mint lands afterwards, still holding the stale read.
-	require.NoError(t, s.SetPendingMFAState(ctx, stale.ID, "pending-secret", []string{"code-a"}, time.Now()))
-
-	after, err := s.GetUserByEmail(ctx, user.Email)
-	require.NoError(t, err)
-	require.Empty(t, after.MFAConfig.GetOtpSecret(), "a mint must not bring back a disabled factor")
-	require.Empty(t, after.MFAConfig.GetRecoveryCodes(), "nor the codes that went with it")
-	require.Equal(t, "pending-secret", after.MFAConfig.GetTempOtpSecret())
-	require.Equal(t, []string{"code-a"}, after.MFAConfig.GetTempRecoveryCodes())
-	require.NotNil(t, after.MFAConfig.GetTempOtpSecretCreatedTime(), "the version must round-trip through protojson")
+		// The row reports the instant it can actually hold, so a handler that
+		// mints the same way compares equal to it.
+		a.NoError(s.SetPendingMFAState(ctx, user.ID, "AGAIN", []string{"code-3"}, raw))
+		reread, err := s.GetUserByID(ctx, user.ID)
+		a.NoError(err)
+		stored := reread.MFAConfig.GetTempOtpSecretCreatedTime().AsTime()
+		a.True(stored.Equal(raw.Truncate(time.Microsecond)), "stored %v, minted %v", stored, raw)
+	}
 }

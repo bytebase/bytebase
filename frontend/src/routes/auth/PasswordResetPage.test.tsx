@@ -238,8 +238,12 @@ describe("PasswordResetPage", () => {
     const passwordInputs = container.querySelectorAll<HTMLInputElement>(
       'input[type="password"]'
     );
-    setInputValue(passwordInputs[0], "Passw0rd!");
+    // A matching new password is not enough on its own: the forced reset is a
+    // credential change, so it proves the current password too.
     setInputValue(passwordInputs[1], "Passw0rd!");
+    setInputValue(passwordInputs[2], "Passw0rd!");
+    expect(confirmBtn?.disabled).toBe(true);
+    setInputValue(passwordInputs[0], "0ldPassw0rd!");
     expect(confirmBtn?.disabled).toBe(false);
     unmount();
   });
@@ -257,8 +261,9 @@ describe("PasswordResetPage", () => {
     const passwordInputs = container.querySelectorAll<HTMLInputElement>(
       'input[type="password"]'
     );
-    setInputValue(passwordInputs[0], "Passw0rd!");
+    setInputValue(passwordInputs[0], "0ldPassw0rd!");
     setInputValue(passwordInputs[1], "Passw0rd!");
+    setInputValue(passwordInputs[2], "Passw0rd!");
     const confirmBtn = Array.from(
       container.querySelectorAll<HTMLButtonElement>("button")
     ).find((b) => b.textContent === "common.confirm")!;
@@ -268,7 +273,15 @@ describe("PasswordResetPage", () => {
     await flushPromises();
 
     expect(mocks.changePassword).toHaveBeenCalledWith(
-      expect.objectContaining({ name: "users/1", newPassword: "Passw0rd!" })
+      expect.objectContaining({
+        name: "users/1",
+        newPassword: "Passw0rd!",
+        // The proof travels with the change; without it the server refuses.
+        credential: expect.objectContaining({
+          proof: { case: "currentPassword", value: "0ldPassw0rd!" },
+        }),
+      }),
+      expect.anything()
     );
     expect(mocks.updateUser).not.toHaveBeenCalled();
     // The response is adopted rather than refetched, so the shared user the

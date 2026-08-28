@@ -48,15 +48,21 @@ func TestLoginFailureLockout(t *testing.T) {
 	a.NoError(err)
 	validOTP, err := totp.GenerateCode(mfaSetup.Msg.OtpSecret, time.Now())
 	a.NoError(err)
+	passwordProof := &v1pb.CredentialProof{Proof: &v1pb.CredentialProof_CurrentPassword{CurrentPassword: "1024bytebase"}}
 	_, err = ctl.userServiceClient.EnableMFA(ctx, connect.NewRequest(&v1pb.EnableMFARequest{
 		Name:           userName,
 		OtpCode:        validOTP,
+		Credential:     passwordProof,
 		PendingVersion: mfaSetup.Msg.PendingVersion,
 	}))
 	a.NoError(err)
+	confirmOTP, err := totp.GenerateCode(mfaSetup.Msg.OtpSecret, time.Now())
+	a.NoError(err)
 	_, err = ctl.userServiceClient.ConfirmRecoveryCodes(ctx, connect.NewRequest(&v1pb.ConfirmRecoveryCodesRequest{
 		Name:           userName,
+		Credential:     passwordProof,
 		PendingVersion: mfaSetup.Msg.PendingVersion,
+		OtpCode:        confirmOTP,
 	}))
 	a.NoError(err)
 

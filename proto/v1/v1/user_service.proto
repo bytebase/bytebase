@@ -131,6 +131,23 @@ service UserService {
     option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
 
+  // Sends a one-time code to the caller's own email, usable as
+  // CredentialProof.email_code. Bytebase Cloud only, and only while the
+  // account has no live MFA factor. Not AuthService.SendEmailLoginCode: that
+  // one starts a session, this one proves an existing one.
+  // Permissions required: None beyond being signed in as `name`.
+  rpc RequestReauthCode(RequestReauthCodeRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      post: "/v1/{name=users/*}:requestReauthCode"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = FORBIDDEN;
+    option (bytebase.v1.mcp_denial_reason) = RESETS_CREDENTIAL;
+  }
+
   // Changes the caller's own password. An administrator resetting someone
   // else's password uses UpdateUser with the `password` mask instead — that
   // is a different operation with a different audit story, even though both
@@ -364,6 +381,47 @@ message UpdateEmailRequest {
   ];
 }
 
+// One proof that the caller currently controls a credential on the account.
+// Exactly one field must be set; enforced in the handler.
+message CredentialProof {
+  oneof proof {
+    // The account's current password. Refused by a factor-touching method
+    // while a live MFA factor exists.
+    string current_password = 1 [
+      (bytebase.v1.audit_behavior) = SENSITIVE,
+      (buf.validate.field).string.max_bytes = 72
+    ];
+
+    // A live code from the account's enrolled TOTP authenticator.
+    string otp_code = 2 [
+      (bytebase.v1.audit_behavior) = SENSITIVE,
+      (buf.validate.field).string.max_len = 64
+    ];
+
+    // A single-use MFA recovery code.
+    string recovery_code = 3 [
+      (bytebase.v1.audit_behavior) = SENSITIVE,
+      (buf.validate.field).string.max_len = 64
+    ];
+
+    // A one-time code from RequestReauthCode. Bytebase Cloud only, and only
+    // while the account has no live MFA factor.
+    string email_code = 4 [
+      (bytebase.v1.audit_behavior) = SENSITIVE,
+      (buf.validate.field).string.max_len = 64
+    ];
+  }
+}
+
+message RequestReauthCodeRequest {
+  // Format: users/{email}. Must be the caller's own name.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/User"},
+    (buf.validate.field).string.max_len = 260
+  ];
+}
+
 message ChangePasswordRequest {
   // Format: users/{email}. Must be the caller's own name.
   string name = 1 [
@@ -376,6 +434,11 @@ message ChangePasswordRequest {
     (google.api.field_behavior) = REQUIRED,
     (bytebase.v1.audit_behavior) = SENSITIVE,
     (buf.validate.field).string.max_bytes = 72
+  ];
+
+  CredentialProof credential = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
   ];
 }
 
@@ -426,6 +489,10 @@ message EnableMFARequest {
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
   ];
+
+  // Proof of the *existing* factor, not the new device above. Required for a
+  // rotation, and for first-time enrollment on an account with a password.
+  CredentialProof credential = 4 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message DisableMFARequest {
@@ -436,6 +503,10 @@ message DisableMFARequest {
     (google.api.resource_reference) = {type: "bytebase.com/User"},
     (buf.validate.field).string.max_len = 260
   ];
+
+  // Required for a self-service call against a live factor, and then only
+  // otp_code or recovery_code. Unused on an admin-assisted call.
+  CredentialProof credential = 2 [(google.api.field_behavior) = OPTIONAL];
 }
 
 message RegenerateRecoveryCodesRequest {
@@ -468,6 +539,19 @@ message ConfirmRecoveryCodesRequest {
   google.protobuf.Timestamp pending_version = 2 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
+  ];
+
+  CredentialProof credential = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Required for first-time enrollment, rejected otherwise. A *fresh* code,
+  // not the one EnableMFA took.
+  string otp_code = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (bytebase.v1.audit_behavior) = SENSITIVE,
+    (buf.validate.field).string.max_len = 64
   ];
 }
 
