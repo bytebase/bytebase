@@ -117,7 +117,9 @@ tooltip. This is the universal escape hatch that keeps every reduced cell recove
 **D7 (proposed) — History views carry two precision tiers.**
 *A history row orients; a history record testifies.* Full precision (seconds + timezone,
 `formatAbsoluteDateTime`) where the time itself is the evidence: the audit log — exportable, and
-the export must match the screen — and single-record detail views. Compact precision (date +
+the export must preserve the same instant at no less precision than the screen (the export writes
+RFC 3339 UTC while the screen shows browser-local time; equivalence means instant + precision,
+not string identity) — and single-record detail views. Compact precision (date +
 hh:mm, no seconds, no timezone) where rows are scanned to locate a record inside one resource's
 history: the embedded lists, where width is contended and D6 keeps full precision one hover away.
 Objective divider: **exportable-as-evidence or a detail view → full; scannable embedded list →
@@ -342,8 +344,9 @@ D6 (full date-time tooltip on every reduced display). Still open:
    (write-path change, out of scope here).
 3. Scheduled rollout pill shows the operational format inline ("Sep 15, 2026, 9:00 AM GMT+8");
    relative age moves to the tooltip.
-4. The three bare-format expiration displays (masking exemption, role-grant details, member
-   preview) are normalized to the operational format in this effort. Alternative: file as
-   follow-up cleanup.
+4. The bare-format expiration displays are fixed in this effort rather than filed as follow-up
+   cleanup: masking exemption and role-grant details adopt the operational mode; the member
+   preview — an i18n-interpolated string — gets the full-precision string per the corollary
+   (or the `Trans`-slot refactor if minute display is preferred there).
 5. Tooltip on *full* cells may show the relative age (inverse tooltip). Alternative: repeat the
    full string (GitHub parity).
