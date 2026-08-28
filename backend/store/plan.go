@@ -182,11 +182,7 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		)`)
 	}
 
-	// (project, id) is the primary key. The mandatory WHERE above pins
-	// plan.project, so PostgreSQL folds it out of the pathkeys and naming it
-	// costs nothing — but naming it keeps the ordering total if that predicate
-	// is ever relaxed into a cross-project list.
-	q.Space("ORDER BY plan.id DESC, plan.project DESC")
+	q.Space("ORDER BY id DESC")
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

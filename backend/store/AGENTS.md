@@ -97,10 +97,15 @@ Rules for choosing the tiebreak:
 4. `created_at` is never a tiebreak. It defaults to `now()`, which is the
    *transaction* timestamp, so every row written by one batch insert shares it
    exactly.
-5. Name the scope columns even when a mandatory `WHERE` predicate already pins
-   them. PostgreSQL folds a constant-equality column out of the pathkeys, so it
-   costs nothing in the plan, and the ordering stays total if that predicate is
-   ever relaxed into a cross-scope list. `ListPlans` does this.
+5. A mandatory `WHERE` predicate that pins a scope column to one value already
+   supplies that column, so the rest of the key is total on its own and needs no
+   tiebreak. `ListPlans` is total under `WHERE plan.project = ?` with nothing but
+   `ORDER BY id DESC`, because `(project, id)` is the primary key. Naming the
+   pinned column anyway is free in the plan — PostgreSQL folds a
+   constant-equality column out of the pathkeys — but it is not a fix, and adding
+   it to a query that is already total is churn. What matters is the reverse: if
+   you ever relax such a predicate into a cross-scope list, the ordering stops
+   being total that moment and the tiebreak becomes mandatory.
 6. A user-supplied `order_by` replaces the default *sort key* — that is correct
    AIP-132 behavior — but it must never replace the *tiebreak*. Append the
    tiebreak after the caller's keys, as in the snippet above. `ListDatabases`,
