@@ -50,12 +50,13 @@ bug class behind BYT-9259 (customer data loss from silent task re-execution).
 ### Step 3a: Identify composite-PK tables in the diff
 
 Read `backend/migrator/migration/LATEST.sql` and find every table with a multi-column
-`PRIMARY KEY`. The known project-scoped set (as of April 2026) includes:
+`PRIMARY KEY`. The known project-scoped set (as of August 2026) includes:
 
 - `plan (project, id)`
 - `plan_check_run (project, id)`
 - `plan_webhook_delivery (project, plan_id)`
 - `issue (project, id)`
+- `review_run (project, issue_id, type)`
 - `task (project, id)`
 - `task_run (project, id)`
 - `db_group (project, resource_id)`

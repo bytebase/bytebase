@@ -18,7 +18,8 @@ import (
 // Scope: covers plan, issue, task_run, plan_check_run isolation via the
 // gRPC snapshot. Tables NOT covered here (currently): task, task_run_log,
 // plan_webhook_delivery. Add targeted tests if a future change touches
-// their DELETE paths.
+// their DELETE paths. review_run is covered by the targeted purge test in
+// review_run_collision_test.go.
 func TestCollisionDeleteProjectCascade(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)

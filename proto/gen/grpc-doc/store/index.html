@@ -177,15 +177,15 @@
           <li>
             <a href="#store%2faccess_grant.proto">store/access_grant.proto</a>
             <ul>
-
+              
                 <li>
                   <a href="#bytebase.store.AccessGrant"><span class="badge">M</span>AccessGrant</a>
                 </li>
-
+              
                 <li>
                   <a href="#bytebase.store.AccessGrantPayload"><span class="badge">M</span>AccessGrantPayload</a>
                 </li>
-
+              
               
                 <li>
                   <a href="#bytebase.store.AccessGrant.Status"><span class="badge">E</span>AccessGrant.Status</a>
@@ -1125,6 +1125,29 @@
         
           
           <li>
+            <a href="#store%2freview_run.proto">store/review_run.proto</a>
+            <ul>
+              
+                <li>
+                  <a href="#bytebase.store.ReviewRun"><span class="badge">M</span>ReviewRun</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.store.ReviewRunPayload"><span class="badge">M</span>ReviewRunPayload</a>
+                </li>
+              
+              
+                <li>
+                  <a href="#bytebase.store.ReviewRun.Status"><span class="badge">E</span>ReviewRun.Status</a>
+                </li>
+              
+              
+              
+            </ul>
+          </li>
+        
+          
+          <li>
             <a href="#store%2frevision.proto">store/revision.proto</a>
             <ul>
               
@@ -1693,7 +1716,7 @@
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
-
+              
                 <tr>
                   <td>issue_id</td>
                   <td><a href="#int64">int64</a></td>
@@ -11673,6 +11696,94 @@ IM integration setting should be set for this function to work. </p></td>
     
       
       <div class="file-heading">
+        <h2 id="store/review_run.proto">store/review_run.proto</h2><a href="#title">Top</a>
+      </div>
+      <p></p>
+
+      
+        <h3 id="bytebase.store.ReviewRun">ReviewRun</h3>
+        <p>ReviewRun is the status slot of one reviewer (rule engine or AI) on one</p><p>issue. Results live in issue comments; the run carries none.</p>
+
+        
+
+        
+      
+        <h3 id="bytebase.store.ReviewRunPayload">ReviewRunPayload</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Fatal execution error for the FAILED status, e.g. &#34;metadata not synced:
+instances/prod/databases/db1, db2, db3 (&#43;497 more)&#34;. Written by the
+executor or by the reaper. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+
+      
+        <h3 id="bytebase.store.ReviewRun.Status">ReviewRun.Status</h3>
+        <p>Strictly 1:1 with the status CHECK constraint — no unpersisted values.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>AVAILABLE</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RUNNING</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DONE</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>FAILED</td>
+                <td>4</td>
+                <td><p></p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+
+      
+
+      
+    
+      
+      <div class="file-heading">
         <h2 id="store/revision.proto">store/revision.proto</h2><a href="#title">Top</a>
       </div>
       <p></p>
@@ -11892,7 +12003,7 @@ unreadable and the revision carries no sheet name. </p></td>
               <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
             </thead>
             <tbody>
-
+              
                 <tr>
                   <td>instance_id</td>
                   <td><a href="#string">string</a></td>
@@ -11941,7 +12052,7 @@ unreadable and the revision carries no sheet name. </p></td>
                   <td>optional</td>
                   <td><p> </p></td>
                 </tr>
-
+              
             </tbody>
           </table>
 
@@ -15846,3 +15957,4 @@ Used to auto-select workspace on next login instead of requiring a workspace pic
     </table>
   </body>
 </html>
+

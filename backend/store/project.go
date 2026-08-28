@@ -553,6 +553,16 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		return errors.Wrapf(err, "failed to delete issue_comment for project %s", resourceID)
 	}
 
+	// Delete review_run entries for issues in this project
+	q = qb.Q().Space("DELETE FROM review_run WHERE project = ?", resourceID)
+	sql, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrap(err, "failed to build review_run delete query")
+	}
+	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+		return errors.Wrapf(err, "failed to delete review_run for project %s", resourceID)
+	}
+
 	// Delete issues associated with this project
 	q = qb.Q().Space("DELETE FROM issue WHERE project = ?", resourceID)
 	sql, args, err = q.ToSQL()
