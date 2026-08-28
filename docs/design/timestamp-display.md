@@ -293,6 +293,12 @@ tooltip.
   waiting message, exports, document titles — must embed the full-precision string, never the
   reduced one. The SQL-editor access grant item's <24h branch ("expires in 3h20m") is a relative
   operational display and adopts the same tooltip treatment as the pill.
+- Staleness: `HumanizeTs` evaluates `Date.now()` only during render, so a long-mounted page shows
+  "5 minutes ago" indefinitely and a row can sit on the wrong side of the 30-day cutoff until an
+  unrelated render. With buckets formalized, the component subscribes to one shared module-level
+  coarse clock (~30–60s tick); a subscriber re-renders only when its formatted output actually
+  changes. This matches GitHub's `relative-time` element, which schedules its own updates.
+  Absolute modes (compact/datetime/operational) never change with time and skip the subscription.
 - Tests: update `HumanizeTs.test.tsx` for the switch; sweep the `*.test.tsx` files that assert
   relative strings (`PlanDetailMeta.test.tsx`, `SchemaPane.test.tsx`,
   `DeployTaskRunHistorySheet.test.tsx`, `IssueCommentActivity.test.tsx`,
@@ -301,7 +307,8 @@ tooltip.
   the operational contract — a component test using an expiration with a sub-minute tail
   (e.g. 9:00:47) asserting the visible label renders minute + timezone and the tooltip carries the
   full seconds + timezone, plus the countdown carve-out (a <24h grant renders the remaining
-  duration with that same full tooltip).
+  duration with that same full tooltip), and a fake-timer test advancing a mounted component
+  across a relative bucket boundary and across the 30-day cutoff.
 
 ## What does not change
 
