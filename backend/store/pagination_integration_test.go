@@ -20,9 +20,8 @@ import (
 // whose rows are deliberately tied on every sort key that is not a full primary
 // key, and asserts every issue is returned exactly once.
 //
-// This is the behavior TestPaginatedListsUseStableOrderBy cannot check: that
-// test only sees whether the clause was built with the helper, not whether the
-// columns chosen make the order total. Against the pre-fix ordering
+// Nothing checks this statically — see backend/store/AGENTS.md#pagination-ordering
+// for why the earlier AST guard was removed. Against the pre-fix ordering
 // (`ORDER BY issue.id DESC` alone) this fails — issue IDs restart per project,
 // so every id below is tied three ways and rows cross the page boundary between
 // reads.
