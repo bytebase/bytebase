@@ -111,7 +111,7 @@ func TestBuildIssueOrderBy(t *testing.T) {
 // without building its ORDER BY through buildStableOrderBy. Offset pagination
 // reads each page with a separate query, so a sort that is not a total order
 // lets tied rows cross the page boundary between reads — the caller then skips
-// some rows and sees others twice. See backend/store/README.md#pagination-ordering.
+// some rows and sees others twice. See backend/store/AGENTS.md#pagination-ordering.
 func TestPaginatedListsUseStableOrderBy(t *testing.T) {
 	paths, err := filepath.Glob("*.go")
 	require.NoError(t, err)
@@ -186,7 +186,7 @@ func TestPaginatedListsUseStableOrderBy(t *testing.T) {
 		paginated++
 		require.Truef(t, reachesHelper[fn.name],
 			"%s: %s applies OFFSET but does not build its ORDER BY with buildStableOrderBy, "+
-				"so its offset pages can skip and repeat rows; see backend/store/README.md#pagination-ordering",
+				"so its offset pages can skip and repeat rows; see backend/store/AGENTS.md#pagination-ordering",
 			fn.path, fn.name)
 	}
 

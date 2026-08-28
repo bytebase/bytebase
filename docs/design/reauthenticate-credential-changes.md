@@ -195,7 +195,7 @@ the factor itself to change the factor closes both. (`ChangePassword` is unaffec
 `current_password` with or without MFA, since changing the password is not touching the factor, and a
 password change already revokes sessions so it cannot be a step toward one.) "Check, then mutate"
 has to be one transaction with the account row locked (`SELECT ... FOR UPDATE`) from before the check
-to after the write, per this repo's own [row-lock ordering](../../backend/store/README.md#transaction-row-lock-ordering)
+to after the write, per this repo's own [row-lock ordering](../../backend/store/AGENTS.md#transaction-row-lock-ordering)
 convention — not a read-verify-then-later-write sequence against a row nothing is holding. Without the
 lock, two concurrent calls against the *same* still-current credential (an attacker who separately
 obtained it, and the legitimate owner racing to rotate away from it) can both pass verification before
@@ -328,7 +328,7 @@ keeps working until it expires regardless (see G7).
 Ordered wrong, though, as first written — [a sixth finding](https://github.com/bytebase/bytebase/pull/21235):
 locking the principal row and only then deleting its `web_refresh_token` rows is parent-then-child,
 backwards from this repo's mandatory rule of locking existing related rows child-to-parent
-(`backend/store/README.md#transaction-row-lock-ordering`), and `web_refresh_token.user_email` is a
+(`backend/store/AGENTS.md#transaction-row-lock-ordering`), and `web_refresh_token.user_email` is a
 real foreign key to `principal.email` (`LATEST.sql:715-720`) — a `DELETE` on those rows counts as
 acquiring a lock on them, same as an explicit `SELECT ... FOR UPDATE` would. Corrected order: lock the
 account's *existing* `web_refresh_token` rows first (in primary-key order, if there's more than one),

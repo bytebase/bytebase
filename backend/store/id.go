@@ -18,7 +18,7 @@ const idMinValue int64 = 101
 // lockActiveProject locks the project row and requires it to be active,
 // serializing the caller with project deletion. Creation is rejected with
 // NotFound when the project is missing or deleted. This is the "requires an
-// active project" lifecycle policy from backend/store/README.md; call it
+// active project" lifecycle policy from backend/store/AGENTS.md; call it
 // after locking any existing child rows.
 func lockActiveProject(ctx context.Context, tx *sql.Tx, projectID string) error {
 	var deleted bool
@@ -38,7 +38,7 @@ func lockActiveProject(ctx context.Context, tx *sql.Tx, projectID string) error 
 // nextProjectID returns the next per-project auto-increment ID for the given table.
 // Must be called within a transaction. Locks and validates the active project row to
 // serialize concurrent inserts with project deletion.
-// Callers must first lock existing child rows as described in backend/store/README.md.
+// Callers must first lock existing child rows as described in backend/store/AGENTS.md.
 // Returns at least idMinValue (101) for new projects.
 func nextProjectID(ctx context.Context, tx *sql.Tx, table, projectID string) (int64, error) {
 	if err := lockActiveProject(ctx, tx, projectID); err != nil {

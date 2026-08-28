@@ -1,6 +1,47 @@
 # Bytebase storage package
 
+This file provides additional guidance to AI coding assistants working under
+`./backend/store/`, the mapping between Go and the metadata database.
+
+## Inheritance
+
+- Follow the repository-wide guidance in `../../AGENTS.md`.
+- Treat this file as store-specific additions, not a replacement for the root instructions.
+
 For schema update, please follow [Bytebase Schema Update Guide](https://github.com/bytebase/bytebase/blob/main/docs/schema-update-guide.md)
+
+## Composite primary keys
+
+Several tables use composite primary keys (e.g., `(project, id)`). Check
+`backend/migrator/migration/LATEST.sql` for the full list — any table with a
+multi-column PRIMARY KEY. `task_run_log` deliberately has no primary key (it is
+an append-only log whose entries can share a `created_at` microsecond,
+BYT-10035) but is equally project-scoped, so the same predicate rules apply to
+it.
+
+When writing or modifying queries on these tables:
+- Every WHERE, JOIN, USING, DELETE, and UPDATE predicate must include every
+  project/tenant scope column. Identify rows with either the full primary key or
+  a full declared non-partial UNIQUE key that contains the same scope columns;
+  verify alternate keys in `LATEST.sql`. Never filter by `id` or another locally
+  unique identifier alone
+- When adding a new store method touching a composite-PK table, add a corresponding
+  `TestCollision_*` test in `backend/tests/`. The existing `setupCollidingProjects`
+  fixture and `assertProjectUnchanged` helper cover `plan`, `issue`, `task`, `task_run`,
+  `plan_check_run`, `task_run_log`, `db_group`, `release`, and `sheet_blob_ref` (the
+  snapshot reads the last four through public APIs where one exists). `plan_webhook_delivery`
+  has no public read API and uses a table-specific raw metadata-DB read; its rows are
+  claimed asynchronously after rollout completion, so raw-read collision tests
+  must stabilize before snapshotting and compare the table separately (see
+  `backend/tests/README.md`). `sheet_blob_ref` also has no public read API and is
+  read raw, but its rows are written synchronously, so `assertProjectUnchanged`
+  compares them directly. For any future composite-PK table outside that set,
+  write table-specific seed and assertion helpers — or extend the shared helper
+  first
+- Collision tests use `setupCollidingProjects` + `fixture.completeRolloutB` for setup
+  and `snapshotProject` / `assertProjectUnchanged` for assertions — all going through
+  the public gRPC API, no store access. Run with:
+  `go test -v -count=1 ./backend/tests/ -run "^(TestClaim|TestCollision)" -timeout 5m`
 
 ## Pagination ordering
 
@@ -14,7 +55,9 @@ order in each of those queries — different effective `LIMIT` values pick top-N
 heapsort or a full sort, and parallel gather-merge interleaves workers
 independently. A tied row then crosses the page boundary between two reads, and
 the caller skips it or receives it twice. This is not a concurrency artifact: it
-happens on completely static data.
+happens on completely static data. Measured on 10,030 issues across 40 projects,
+paging 100 at a time, ordering by `issue.id` alone duplicated 195 rows and
+missed another 195.
 
 **Every offset-paginated query must sort on a total order.** Build the clause
 with `buildStableOrderBy` (`common.go`), passing the caller's sort keys plus

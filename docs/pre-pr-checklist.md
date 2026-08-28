@@ -171,7 +171,7 @@ contributors and AI agents that read these docs at session start.
 
 **Skip if:** the diff does not add or modify a transaction in `backend/store/`.
 
-Read the canonical [store row-lock ordering](../backend/store/README.md#transaction-row-lock-ordering), then inspect every explicit and implicit lock in the changed transaction:
+Read the canonical [store row-lock ordering](../backend/store/AGENTS.md#transaction-row-lock-ordering), then inspect every explicit and implicit lock in the changed transaction:
 
 - Transaction-scoped advisory locks are acquired before row locks
 - Existing related rows are locked child-to-parent

@@ -53,7 +53,7 @@ type OrderByKey struct {
 // does not identify a row in a `(project, id)` table. They are appended in the
 // last sort key's direction so a composite index can still serve the ordering.
 //
-// See backend/store/README.md#pagination-ordering.
+// See backend/store/AGENTS.md#pagination-ordering.
 func buildStableOrderBy(keys []*OrderByKey, tieBreak ...string) string {
 	direction := ASC
 	if len(keys) > 0 {

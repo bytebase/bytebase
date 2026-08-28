@@ -30,6 +30,14 @@ This repo uses a single-context domain-doc layout. See `docs/agents/domain.md`.
   - `./backend/migrator/migration/LATEST.sql` should be updated for DDL migrations
 - Files in `./backend/store` are mappings to the database tables
 
+Anything that writes SQL against the metadata database — in `backend/store/`,
+but also the CEL-to-SQL filter builders in `backend/api/v1/` and the collision
+tests in `backend/tests/` — is governed by
+[`backend/store/AGENTS.md`](backend/store/AGENTS.md): composite-primary-key
+predicates, pagination ordering, and transaction row-lock ordering. Read it
+before adding or modifying a query, a paginated list, or a multi-row
+transaction.
+
 ## Development Workflow
 
 **ALWAYS follow these steps after making code changes:**
@@ -194,80 +202,6 @@ The canonical frontend ownership map is in `./frontend/AGENTS.md`. In summary:
 - React app state lives under `./frontend/src/stores/` — the core slices are in `stores/app/`, consumed via the `useAppStore` hook. Routing helpers live in `./frontend/src/app/router/`
 - React `.tsx` is compiled by esbuild (`react-tsx-transform` Vite plugin) and type-checked with `tsc --build` via `pnpm --dir frontend type-check`
 
-## Naming
-
-- Use American English
-- Avoid plurals like "xxxList" for simplicity and to prevent singular/plural ambiguity stemming from poor design
-
-## Composite Primary Keys
-
-Several tables use composite primary keys (e.g., `(project, id)`). Check
-`backend/migrator/migration/LATEST.sql` for the full list — any table with a
-multi-column PRIMARY KEY. `task_run_log` deliberately has no primary key (it is
-an append-only log whose entries can share a `created_at` microsecond,
-BYT-10035) but is equally project-scoped, so the same predicate rules apply to
-it.
-
-When writing or modifying queries on these tables:
-- Every WHERE, JOIN, USING, DELETE, and UPDATE predicate must include every
-  project/tenant scope column. Identify rows with either the full primary key or
-  a full declared non-partial UNIQUE key that contains the same scope columns;
-  verify alternate keys in `LATEST.sql`. Never filter by `id` or another locally
-  unique identifier alone
-- When adding a new store method touching a composite-PK table, add a corresponding
-  `TestCollision_*` test in `backend/tests/`. The existing `setupCollidingProjects`
-  fixture and `assertProjectUnchanged` helper cover `plan`, `issue`, `task`, `task_run`,
-  `plan_check_run`, `task_run_log`, `db_group`, `release`, and `sheet_blob_ref` (the
-  snapshot reads the last four through public APIs where one exists). `plan_webhook_delivery`
-  has no public read API and uses a table-specific raw metadata-DB read; its rows are
-  claimed asynchronously after rollout completion, so raw-read collision tests
-  must stabilize before snapshotting and compare the table separately (see
-  `backend/tests/README.md`). `sheet_blob_ref` also has no public read API and is
-  read raw, but its rows are written synchronously, so `assertProjectUnchanged`
-  compares them directly. For any future composite-PK table outside that set,
-  write table-specific seed and assertion helpers — or extend the shared helper
-  first
-- Collision tests use `setupCollidingProjects` + `fixture.completeRolloutB` for setup
-  and `snapshotProject` / `assertProjectUnchanged` for assertions — all going through
-  the public gRPC API, no store access. Run with:
-  `go test -v -count=1 ./backend/tests/ -run "^(TestClaim|TestCollision)" -timeout 5m`
-
-## Pagination Ordering
-
-Every paginated v1 list pages with `LIMIT`/`OFFSET`, so a sort that is not a
-total order lets tied rows cross the page boundary between two page reads — the
-caller then skips some rows and sees others twice, on static data. Build every
-offset-paginated `ORDER BY` with `buildStableOrderBy` (`backend/store/common.go`),
-appending tiebreak columns that are unique under that query's scope. Follow the
-canonical [pagination ordering](backend/store/README.md#pagination-ordering)
-rules for choosing them.
-
-The traps that produced this class of bug: `id` alone in a `(project, id)` table
-(`nextProjectID` restarts IDs per project, so every project has a row `101`);
-`created_at`, which defaults to the *transaction* timestamp and is therefore
-identical across a batch insert; a nullable column; a partial unique index; and
-a user-supplied `order_by` that replaces the default ordering instead of adding
-to it. `TestPaginatedListsUseStableOrderBy` enforces that the helper is used,
-but it cannot verify that the columns you picked are actually unique — check
-them against `LATEST.sql` yourself.
-
-## Transaction Lock Ordering
-
-Before adding or modifying a transaction that locks multiple rows or tables, follow the canonical [store row-lock ordering](backend/store/README.md#transaction-row-lock-ordering). Lock existing child rows before parents, lock batches in full primary-key order, and treat upserts as existing-row locks. Add the deterministic real-PostgreSQL regression tests required below for new multi-row or multi-table coordination paths.
-
-Row ordering prevents wait-for cycles on existing rows, but it cannot protect a
-child row that does not exist yet. `nextProjectID` closes that gap for its callers:
-it locks the project and requires the project to be active before allocating an ID,
-so creation is rejected when the project is missing or deleted. This is not a
-repository-wide purge fence because some writers bypass `nextProjectID`.
-
-Every new or modified writer of purge-managed data must define whether its
-lifecycle policy requires an active project or merely an existing project, then
-serialize and validate that policy against project deletion. Add deterministic
-real-PostgreSQL tests for both lock-acquisition directions. Assert the terminal
-outcomes, including that neither direction ends in a foreign-key failure; merely
-checking for the absence of SQLSTATE `40P01` is insufficient.
-
 ### Imports
 
 - Use organized imports (sorted by the import path)
@@ -279,6 +213,11 @@ checking for the absence of SQLSTATE `40P01` is insufficient.
 ### Error Handling
 
 - Be explicit but concise about error cases
+
+## Naming
+
+- Use American English
+- Avoid plurals like "xxxList" for simplicity and to prevent singular/plural ambiguity stemming from poor design
 
 ## Pull Request Guidelines
 
