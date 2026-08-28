@@ -148,6 +148,7 @@ PostgreSQL holds row locks until a transaction ends. Transactions that acquire t
 1. Acquire transaction-scoped advisory locks before row locks.
 2. Lock existing related rows from the deepest child to its parents. The project workflow chains are:
    - `issue_comment -> issue -> plan -> project`
+   - `review_run -> issue -> plan -> project`
    - `plan_webhook_delivery -> plan -> project`
    - `plan_check_run -> plan -> project`
    - `task_run_log -> task_run -> task -> plan -> project`
@@ -183,7 +184,7 @@ Transactions spanning project- or instance-owned sibling branches follow this ca
 
 ```text
 query_history -> policy -> saved_query_organizer -> saved_query
--> issue_comment -> issue -> plan_webhook_delivery -> plan_check_run
+-> issue_comment -> review_run -> issue -> plan_webhook_delivery -> plan_check_run
 -> task_run_log -> task_run -> task -> plan -> access_grant -> release
 -> db_group -> changelog -> sync_history -> revision -> db_schema -> db
 -> sheet_blob_ref -> project_webhook -> service_account -> workload_identity -> instance -> project
