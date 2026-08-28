@@ -297,7 +297,11 @@ tooltip.
   relative strings (`PlanDetailMeta.test.tsx`, `SchemaPane.test.tsx`,
   `DeployTaskRunHistorySheet.test.tsx`, `IssueCommentActivity.test.tsx`,
   `ProjectPlanDashboardPage.test.tsx`, `DatabaseChangelogTable.test.tsx`, …). New behavior gets new
-  tests: threshold boundary (29d/31d), same-year vs cross-year, zh locale, history-view mode.
+  tests: threshold boundary (29d/31d), same-year vs cross-year, zh locale, history-view tiers, and
+  the operational contract — a component test using an expiration with a sub-minute tail
+  (e.g. 9:00:47) asserting the visible label renders minute + timezone and the tooltip carries the
+  full seconds + timezone, plus the countdown carve-out (a <24h grant renders the remaining
+  duration with that same full tooltip).
 
 ## What does not change
 
