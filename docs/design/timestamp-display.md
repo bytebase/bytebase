@@ -295,23 +295,14 @@ tooltip.
   operational display and adopts the same tooltip treatment as the pill.
 - Staleness: `HumanizeTs` evaluates `Date.now()` only during render, so a long-mounted page shows
   "5 minutes ago" indefinitely and a row can sit on the wrong side of the 30-day cutoff until an
-  unrelated render. With buckets formalized, the component subscribes to one shared module-level
-  clock with adaptive cadence: second-level ticks while any subscriber's label still changes at
-  sub-minute granularity (the "now" and seconds buckets), dropping to a coarse ~30–60s tick once
-  every subscriber is in minute-or-older buckets; a subscriber re-renders only when its formatted
-  output actually changes. This matches GitHub's `relative-time` element, which schedules its own
-  updates at the next boundary. The dividing line is time-variance, not mode: absolute labels
-  (compact/datetime/operational) never change with time and skip the subscription, while every
-  time-varying display subscribes — the relative buckets, and every countdown/status consumer
-  that derives `isExpired`/remaining-time state from render-time `Date.now()`: the SQL-editor
-  access-grant item (duration, 24-hour display transition, expired state), the masking exemption
-  rows (`ExemptionGrantSection`), `SampleExpirationAlert`, and the subscription banner's
-  time-dependent store selectors. Two components already run private timers for exactly this
-  (`PlanDetailMeta` at 60s, `DatabaseQueryContext` at 1s) and consolidate onto the shared clock
-  (`InactiveRemindModal`'s 1s timer is a session-idle mechanism, not a timestamp display — out of
-  scope). Implementation checklist: sweep render-time `Date.now()` in display components — every
-  hit either subscribes to the shared clock or records why it need not (e.g. values evaluated at
-  interaction time inside action panels).
+  unrelated render. Design requirement: **no time-varying display may go stale while mounted** —
+  relative buckets, countdowns, and `isExpired`/remaining-state derivations must track the
+  passage of time, and displays that never change with time must not pay for a refresh
+  subscription. The mechanism (a shared clock, its cadence, which components subscribe —
+  including consolidating the ad-hoc per-component timers that already exist) is the
+  implementation PR's design space, guarded there by a sweep of render-time `Date.now()` in
+  display components and fake-timer tests. GitHub's `relative-time` element, which schedules its
+  own updates at the next boundary, is the reference behavior.
 - Tests: update `HumanizeTs.test.tsx` for the switch; sweep the `*.test.tsx` files that assert
   relative strings (`PlanDetailMeta.test.tsx`, `SchemaPane.test.tsx`,
   `DeployTaskRunHistorySheet.test.tsx`, `IssueCommentActivity.test.tsx`,
@@ -320,11 +311,9 @@ tooltip.
   the operational contract — a component test using an expiration with a sub-minute tail
   (e.g. 9:00:47) asserting the visible label renders minute + timezone and the tooltip carries the
   full seconds + timezone, plus the countdown carve-out (a <24h grant renders the remaining
-  duration with that same full tooltip), a fake-timer test advancing a mounted component across a
-  relative bucket boundary and across the 30-day cutoff, a fake-timer transition test for the
-  access-grant countdown (duration ticks → 24-hour display boundary → expired state), and
-  fake-timer expiration-status flips for the masking exemption row, the sample-expiration alert,
-  and the subscription banner.
+  duration with that same full tooltip), and fake-timer staleness tests: a mounted component
+  crossing a relative bucket boundary and the 30-day cutoff, plus representative
+  countdown-to-expired transitions.
 
 ## What does not change
 
