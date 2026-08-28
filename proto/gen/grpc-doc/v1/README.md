@@ -6251,9 +6251,9 @@ When paginating, all other parameters provided must match the call that provided
 | view | [ChangelogView](#bytebase-v1-ChangelogView) |  |  |
 | filter | [string](#string) |  | Filter is used to filter changelogs returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - status: the changelog status, support &#34;==&#34; operation. check Changelog.Status for available values. - create_time: the changelog create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator.
+Supported filter: - status: the changelog status, support &#34;==&#34; operation. check Changelog.Status for available values. - has_schema_snapshot: filters to changelogs with a schema snapshot; only &#34;has_schema_snapshot == true&#34; is supported. - create_time: the changelog create time in RFC 3339 format, supports &#34;&gt;=&#34;, &#34;&lt;=&#34;, or &#34;&lt;&#34; operator.
 
-Example: status == &#34;DONE&#34; status == &#34;FAILED&#34; &amp;&amp; type == &#34;SDL&#34; create_time &gt;= &#34;2024-01-01T00:00:00Z&#34; &amp;&amp; create_time &lt;= &#34;2024-01-02T00:00:00Z&#34; |
+Example: status == &#34;DONE&#34; status == &#34;FAILED&#34; has_schema_snapshot == true &amp;&amp; create_time &lt; &#34;2024-01-02T00:00:00Z&#34; |
 
 
 

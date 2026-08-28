@@ -1,4 +1,5 @@
 import { create as createProto } from "@bufbuild/protobuf";
+import { TimestampSchema } from "@bufbuild/protobuf/wkt";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { silentContextKey } from "@/api/context-key";
 import { isValidDatabaseGroupName, UNKNOWN_PROJECT_NAME } from "@/types";
@@ -437,6 +438,11 @@ const changelogA = createProto(ChangelogSchema, {
 const changelogB = createProto(ChangelogSchema, {
   name: "instances/i1/databases/db1/changelogs/2",
   schema: "full",
+});
+
+const changelogCreateTime = createProto(TimestampSchema, {
+  seconds: 1735689599n,
+  nanos: 123456789,
 });
 
 const webhookA = createProto(WebhookSchema, {
@@ -1441,6 +1447,37 @@ describe("useAppStore", () => {
         `${changelogA.name}|${ChangelogView.BASIC}`
       ]
     ).toBeUndefined();
+  });
+
+  test("fetches the latest prior changelog with a schema snapshot", async () => {
+    const current = createProto(ChangelogSchema, {
+      ...changelogA,
+      createTime: changelogCreateTime,
+    });
+    mocks.getChangelog.mockResolvedValue(current);
+    mocks.listChangelogs.mockResolvedValue({ changelogs: [changelogB] });
+    const store = createAppStore();
+
+    const previous = await store
+      .getState()
+      .fetchPreviousChangelog(current.name);
+
+    expect(previous).toBe(changelogB);
+    expect(mocks.getChangelog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: current.name,
+        view: ChangelogView.FULL,
+      })
+    );
+    expect(mocks.listChangelogs).toHaveBeenCalledWith(
+      expect.objectContaining({
+        parent: "instances/i1/databases/db1",
+        pageSize: 1,
+        view: ChangelogView.FULL,
+        filter:
+          'has_schema_snapshot == true && create_time < "2024-12-31T23:59:59.123456789Z"',
+      })
+    );
   });
 
   test("project webhook operations call through and lookup by id", async () => {
