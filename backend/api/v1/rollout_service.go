@@ -1080,14 +1080,18 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find issue"))
 	}
 
+	// Require every task run to name the parent's stage so the single permission
+	// check below covers the whole batch.
+	var taskRunIDs []int64
 	for _, taskRun := range request.TaskRuns {
-		_, _, taskRunStageID, _, _, err := common.GetProjectIDPlanIDStageIDTaskIDTaskRunID(taskRun)
+		_, _, taskRunStageID, _, taskRunID, err := common.GetProjectIDPlanIDStageIDTaskIDTaskRunID(taskRun)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 		if taskRunStageID != stageID {
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("task run %v is not in the specified stage %v", taskRun, stageID))
 		}
+		taskRunIDs = append(taskRunIDs, taskRunID)
 	}
 
 	user, ok := GetUserFromContext(ctx)
@@ -1104,22 +1108,29 @@ func (s *RolloutService) BatchCancelTaskRuns(ctx context.Context, req *connect.R
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("Not allowed to cancel tasks"))
 	}
 
-	var taskRunIDs []int64
-	for _, taskRun := range request.TaskRuns {
-		_, _, _, _, taskRunID, err := common.GetProjectIDPlanIDStageIDTaskIDTaskRunID(taskRun)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-		taskRunIDs = append(taskRunIDs, taskRunID)
-	}
-
+	// Confine the lookup to the plan and environment just authorized: the stage in
+	// the request names is caller-supplied, so without this an ID from another
+	// environment or plan in the same project would resolve and be canceled on
+	// permission granted elsewhere. Reject rather than drop an out-of-scope ID —
+	// the cancel below is driven by the requested IDs.
 	taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
-		Workspace: common.GetWorkspaceIDFromContext(ctx),
-		ProjectID: projectID,
-		UIDs:      &taskRunIDs,
+		Workspace:   common.GetWorkspaceIDFromContext(ctx),
+		ProjectID:   projectID,
+		PlanUID:     &planID,
+		Environment: &environment,
+		UIDs:        &taskRunIDs,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list task runs"))
+	}
+	foundTaskRunIDs := make(map[int64]bool, len(taskRuns))
+	for _, taskRun := range taskRuns {
+		foundTaskRunIDs[taskRun.ID] = true
+	}
+	for _, taskRunID := range taskRunIDs {
+		if !foundTaskRunIDs[taskRunID] {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("task run %v not found in stage %v", taskRunID, stageID))
+		}
 	}
 
 	for _, taskRun := range taskRuns {
