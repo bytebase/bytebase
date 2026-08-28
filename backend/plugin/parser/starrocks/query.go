@@ -57,6 +57,10 @@ func isReadOnlyAST(node ast.Node) bool {
 		return n.Into == nil
 	case *ast.SetOpStmt:
 		return !setOpWritesOutfile(n)
+	case *ast.ParenSelect:
+		// (SELECT ...) at the top level — classify by the inner query so the
+		// INTO OUTFILE gate still applies inside the parens.
+		return isReadOnlyAST(n.Sel)
 	case *ast.ShowStmt:
 		// Reject bare `SHOW` (Type is empty when the parser took the stub path
 		// without seeing a recognised variant keyword).
@@ -102,6 +106,10 @@ func setOpWritesOutfile(node ast.Node) bool {
 		return n.Into != nil
 	case *ast.SetOpStmt:
 		return setOpWritesOutfile(n.Left) || setOpWritesOutfile(n.Right)
+	case *ast.ParenSelect:
+		// A parenthesized arm — SELECT 1 UNION (SELECT ... INTO OUTFILE ...) —
+		// must not slip the export gate.
+		return setOpWritesOutfile(n.Sel)
 	default:
 		return false
 	}

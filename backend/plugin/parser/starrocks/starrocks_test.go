@@ -12,7 +12,12 @@ func TestStarRocksSQLParser(t *testing.T) {
 		errorMessage string
 	}{
 		{
-			statement: "SELECT * FROM person LATERAL VIEW EXPLODE(ARRAY(30, 60)) tableName AS c_age;",
+			// StarRocks has no Hive-style LATERAL VIEW (its lateral form is
+			// `, [LATERAL] unnest(...)`) — container-verified engine reject.
+			// The old parser only "accepted" this by silently truncating at
+			// LATERAL (BYT-10085); strict parsing reports it like the engine.
+			statement:    "SELECT * FROM person LATERAL VIEW EXPLODE(ARRAY(30, 60)) tableName AS c_age;",
+			errorMessage: "syntax error at or near LATERAL",
 		},
 		{
 			statement: "SELECT * FROM schema1.t1 JOIN schema2.t2 ON t1.c1 = t2.c1",

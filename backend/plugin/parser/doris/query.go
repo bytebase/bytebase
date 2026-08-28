@@ -63,6 +63,10 @@ func isReadOnlyAST(node ast.Node) bool {
 	switch n := node.(type) {
 	case *ast.SelectStmt, *ast.SetOpStmt:
 		return true
+	case *ast.GroupedQuery:
+		// A repeated trailing clause group or a parenthesized WITH group —
+		// (SELECT 1 LIMIT 1) LIMIT 2 — wraps a query; classify by the query.
+		return isReadOnlyAST(n.Query)
 	case *ast.ShowStmt:
 		// Reject bare `SHOW` (Type is empty when the parser took the stub path
 		// without seeing a recognised variant keyword).

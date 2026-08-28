@@ -108,6 +108,31 @@ func TestValidateQuery(t *testing.T) {
 			description: "CTE-prefixed SELECT is read-only",
 		},
 		{
+			statement:   "((SELECT 1))",
+			valid:       true,
+			description: "Nested parenthesized SELECT is read-only",
+		},
+		{
+			statement:   "(SELECT 1) LIMIT 5",
+			valid:       true,
+			description: "Parenthesized SELECT with trailing LIMIT is read-only",
+		},
+		{
+			statement:   "(WITH c AS (SELECT 1) SELECT * FROM c)",
+			valid:       true,
+			description: "Parenthesized WITH query is read-only",
+		},
+		{
+			statement:   `SELECT 1 UNION (SELECT a FROM t INTO OUTFILE "s3://b/x")`,
+			valid:       false,
+			description: "INTO OUTFILE inside a parenthesized set-op arm must not slip the export gate",
+		},
+		{
+			statement:   `((SELECT a FROM t INTO OUTFILE "s3://b/x"))`,
+			valid:       false,
+			description: "INTO OUTFILE inside nested parens must not slip the export gate",
+		},
+		{
 			statement:   "SELECT EXTRACT(YEAR FROM MONTHS_ADD(NOW(), -1))",
 			valid:       true,
 			description: "EXTRACT(unit FROM expr) is read-only",
@@ -189,6 +214,9 @@ func TestValidateQuery(t *testing.T) {
 	// Cases that must fail validation — either because they're not read-only
 	// or because they don't parse. Both shapes flow through the same code
 	// path and must be rejected (either via valid=false or err!=nil).
+	//
+	// The trailing-junk case pins strict parsing (BYT-10085): before the fix
+	// "SELECT a FROM t xx yy zz" silently truncated to its valid prefix.
 	rejectCases := []struct {
 		statement   string
 		description string
@@ -232,6 +260,10 @@ func TestValidateQuery(t *testing.T) {
 			// EXPLAIN over DDL is not a real read-only operation.
 			statement:   "EXPLAIN DROP TABLE t",
 			description: "EXPLAIN over DDL must be rejected",
+		},
+		{
+			statement:   "SELECT a FROM t xx yy zz",
+			description: "Trailing junk after a valid prefix must be rejected",
 		},
 	}
 	for _, tc := range rejectCases {
