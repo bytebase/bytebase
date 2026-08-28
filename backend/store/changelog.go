@@ -192,6 +192,8 @@ func buildListChangelogsQuery(find *FindChangelogMessage) (string, []any, error)
 		q.And("changelog.created_at < ?", *v)
 	}
 
+	// created_at defaults to now() and is not unique; resource_id is the
+	// primary key, and completes the ordering so offset pages stay stable.
 	q.Space("ORDER BY changelog.created_at DESC, changelog.resource_id DESC")
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)

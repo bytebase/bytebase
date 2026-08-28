@@ -122,15 +122,13 @@ func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*
 		q.And("deleted = ?", false)
 	}
 
-	if len(find.OrderByKeys) > 0 {
-		orderBy := []string{}
-		for _, v := range find.OrderByKeys {
-			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
-		}
-		q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
-	} else {
-		q.Space("ORDER BY project.resource_id")
+	// Titles are not unique; resource_id is the primary key.
+	orderBy := []string{}
+	for _, v := range find.OrderByKeys {
+		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
 	}
+	orderBy = append(orderBy, "project.resource_id ASC")
+	q.Space("ORDER BY " + strings.Join(orderBy, ", "))
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

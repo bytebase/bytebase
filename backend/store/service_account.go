@@ -127,8 +127,10 @@ func (s *Store) ListServiceAccounts(ctx context.Context, find *FindServiceAccoun
 			project
 		FROM service_account
 		WHERE ?
-		ORDER BY created_at ASC
 	`, where)
+
+	// created_at defaults to now() and is not unique; email is the primary key.
+	q.Space("ORDER BY service_account.created_at ASC, service_account.email ASC")
 
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)

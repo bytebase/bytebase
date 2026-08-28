@@ -137,15 +137,13 @@ func (s *Store) ListInstances(ctx context.Context, find *FindInstanceMessage) ([
 		WHERE ?
 	`, where)
 
-	if len(find.OrderByKeys) > 0 {
-		orderBy := []string{}
-		for _, v := range find.OrderByKeys {
-			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
-		}
-		q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
-	} else {
-		q.Space("ORDER BY resource_id ASC")
+	// Titles and environments are not unique; resource_id is the primary key.
+	orderBy := []string{}
+	for _, v := range find.OrderByKeys {
+		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
 	}
+	orderBy = append(orderBy, "instance.resource_id ASC")
+	q.Space("ORDER BY " + strings.Join(orderBy, ", "))
 
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)

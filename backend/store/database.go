@@ -192,15 +192,23 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 		WHERE ?
 	`, from, where)
 
-	if len(find.OrderByKeys) > 0 {
-		orderBy := []string{}
-		for _, v := range find.OrderByKeys {
-			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
-		}
-		q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
-	} else {
-		q.Space("ORDER BY db.project, db.instance, db.name")
+	// Neither project nor name identifies a database; (instance, name) is the
+	// primary key. That stays unique in the result only because every join
+	// above is at most 1:1 — db_schema is joined on its own full primary key,
+	// and instance.resource_id is a primary key. A one-to-many join added here
+	// would duplicate rows and silently un-stabilize paging again.
+	//
+	// A caller sorting by instance or name repeats that column below, which
+	// PostgreSQL ignores as a redundant sort key.
+	orderBy := []string{}
+	for _, v := range find.OrderByKeys {
+		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
 	}
+	if len(orderBy) == 0 {
+		orderBy = append(orderBy, "db.project ASC")
+	}
+	orderBy = append(orderBy, "db.instance ASC", "db.name ASC")
+	q.Space("ORDER BY " + strings.Join(orderBy, ", "))
 
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)

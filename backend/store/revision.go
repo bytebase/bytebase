@@ -76,7 +76,10 @@ func (s *Store) ListRevisions(ctx context.Context, find *FindRevisionMessage) ([
 	if !find.ShowDeleted {
 		q.And("deleted_at IS NULL")
 	}
-	q.Space("ORDER BY version DESC")
+	// version is unique only per (instance, db_name, type) and only while
+	// deleted_at IS NULL, so it does not identify a row on its own — least of
+	// all under ShowDeleted. resource_id is the primary key.
+	q.Space("ORDER BY revision.version DESC, revision.resource_id DESC")
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

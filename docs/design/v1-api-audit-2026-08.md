@@ -12,7 +12,6 @@ noted. Fixed findings are removed and listed at the end.
 |---|---|---|
 | T15 | Rotating a leaked cloud credential can silently do nothing | HIGH |
 | T13 | "Waiting for my approval" can show an empty page with a live Load More | HIGH |
-| T14 | Paging through issues across projects skips some and repeats others | HIGH |
 | T18a | Test-environment rights can cancel a running production migration | MED |
 | T12 | Anonymous callers can enumerate emails, relay mail, and read your LDAP config | MED |
 | T16 | Four `BatchGet` RPCs behave four different ways when an item is missing | MED |
@@ -119,15 +118,6 @@ This is the default My Issues view, and there's no empty-page workaround on the 
 `issue_service_converter.go:29-41`, `issue_service.go:134-148`
 
 (Same shape as the `SearchProjects` bug that parked patch `03` fixes — also still unmerged.)
-
-### T14 · Paging issues across projects skips and repeats rows — HIGH
-
-Issue IDs restart from 1 in each project, but the cross-project list sorts by ID alone. Issues from
-different projects constantly share an ID, and tied rows can land in a different order on each query
-— so paging forward drops some issues entirely and shows others twice. My Issues always queries
-across all projects, so this is the common path, not an edge case.
-
-**Fix:** sort by `(project, id)`, which is the primary key. `store/issue.go:323`
 
 ### T16 · Four `BatchGet` RPCs, four behaviors — MED
 
@@ -239,6 +229,7 @@ constraints.
 | T13 `SearchWorksheets` | [#21160](https://github.com/bytebase/bytebase/pull/21160) + [#21178](https://github.com/bytebase/bytebase/pull/21178) — visibility predicate pushed into SQL before `LIMIT` |
 | T18 worksheet write/delete | [#21169](https://github.com/bytebase/bytebase/pull/21169) + [#21181](https://github.com/bytebase/bytebase/pull/21181) — per-verb permissions; SQL Editor Read User can no longer rewrite or delete |
 | T9 | [#21189](https://github.com/bytebase/bytebase/pull/21189) (self-hosted audit rows) + [#21234](https://github.com/bytebase/bytebase/pull/21234) — one `login_attempt` table bounds password, email-code, and MFA guessing per identity on both deployments, replacing the audit-log counter and the per-code attempt column (which bypassed the resend cooldown). Accepted with it: no per-tenant failed-login record on Cloud, and lockout-as-denial-of-service — see [`login-attempt-lockout.md`](login-attempt-lockout.md) |
+| T14 | [#21267](https://github.com/bytebase/bytebase/pull/21267) — filed as issue paging; the sweep it prompted found the same defect across the class, so it was fixed as a class. Counting endpoints, **17 of the 22** offset-paginated v1 list RPCs were affected; counting the store functions behind them, **14 of 17**. The three already sorting on a total order were `ListQueryHistories` and `ListSavedQueries` (both from one commit, [#21203](https://github.com/bytebase/bytebase/pull/21203), that was never swept across the other lists) and `ListPlans`, which is total only because a mandatory `WHERE plan.project = ?` pins its scope column. Every store list now names tiebreak columns that are unique under its own scope — written into the SQL, and appended after the caller's keys at the six affected lists that accept an `order_by`. The three that were already total are left untouched. Nothing enforces this statically: an earlier revision routed all seventeen through a `buildStableOrderBy` helper so an AST test could require it, but review judged that ceremony and both were removed, so a new paginated list added without a tiebreak will not fail CI. Enforcement is step 4 of `docs/pre-pr-checklist.md` plus review, with `TestPaginationStabilityAcrossProjects` and `TestIssueCommentBatchKeepsInsertionOrder` covering the behavior against a real PostgreSQL. The rules, and the five traps that produced the class — `id` alone in a `(project, id)` table, `created_at` (the *transaction* timestamp, identical across a batch insert), a nullable column, a partial unique index, and an `order_by` that replaces the default ordering rather than adding to it — are in [`backend/store/AGENTS.md`](../../backend/store/AGENTS.md#pagination-ordering). One adjacent bug fixed with it: `ListDatabases`, `ListInstances` and `ListProjects` each threw away the whole clause, tiebreak included, the moment a caller passed `order_by` — which is what broke their paging. Accepted with them: offset paging still drifts under concurrent inserts and deletes (that needs keyset pagination and a page-token change). `ListIssueComment` needed a second fix: its `resource_id` tiebreak is a random UUID, which would have scrambled the activity feed of a multi-field `UpdateIssue`, so `CreateIssueComments` now offsets each row of a batch by its ordinal to keep `created_at` unique and in insertion order. Deliberately out of scope, and worth its own change: `issue.id` is a per-project counter, so ordering a cross-project list by it is not recency — seeded with a three-year-old project and one created today, the newest issue in the new project ranked 4962nd on the default list. Making `create_time` the cross-project default is a product decision. Also left alone: issue search still discards an explicit `order_by` outright when the caller supplied query text |
 | T10 | [#21252](https://github.com/bytebase/bytebase/pull/21252) + [#21258](https://github.com/bytebase/bytebase/pull/21258) — password change and MFA lifecycle move off `UpdateUser` onto their own methods, each requiring a `CredentialProof`: current password, live OTP, recovery code, or a Cloud-only emailed re-auth code. Every proof claims a T9 login-attempt slot, so no proof channel is an unbounded guessing oracle, and a factor-touching method refuses the password while a live factor exists. Accepted with it: **the stolen access token still answers until it expires (≤1h)** — credential generation and the fenced transaction were cut or deferred, password change revokes only the account's web refresh tokens (best-effort, OAuth grants untouched), and an MFA change revokes nothing. What this closes is the credential being *spent* on its own replacement, not the session. Design, and the shipped-vs-designed delta: [`reauthenticate-credential-changes.md`](reauthenticate-credential-changes.md) |
 
 **`AIService.Chat` — accepted, not fixed** (2026-08-18). `Chat` requires an authenticated workspace

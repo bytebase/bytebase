@@ -271,8 +271,13 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 			principal.created_at
 		FROM ?
 		WHERE ?
-		ORDER BY created_at ASC
 	`, from, where)
+
+	// created_at defaults to now(), so users provisioned by one SCIM sync
+	// share it; principal.id is the primary key, and stays unique in the result
+	// because the project and workspace filters join single-row ARRAY_AGG CTEs
+	// rather than the member rows themselves.
+	q.Space("ORDER BY principal.created_at ASC, principal.id ASC")
 
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
