@@ -197,7 +197,10 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 		orderByKeys = []*OrderByKey{{Key: "db.project", SortOrder: ASC}}
 	}
 	// Neither project nor name identifies a database; (instance, name) is the
-	// primary key.
+	// primary key. That stays unique in the result only because every join
+	// above is at most 1:1 — db_schema is joined on its own full primary key,
+	// and instance.resource_id is a primary key. A one-to-many join added here
+	// would duplicate rows and silently un-stabilize paging again.
 	q.Space(buildStableOrderBy(orderByKeys, "db.instance", "db.name"))
 
 	if v := find.Limit; v != nil {

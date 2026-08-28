@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 
@@ -110,4 +111,67 @@ func seedTiedIssues(ctx context.Context, t *testing.T, db *sql.DB, workspaceID s
 		require.NoError(t, err)
 	}
 	require.NoError(t, tx.Commit())
+}
+
+// TestIssueCommentBatchKeepsInsertionOrder pins the ordering of comments written
+// by one CreateIssueComments batch — the several activity events a multi-field
+// UpdateIssue produces.
+//
+// created_at is the transaction timestamp, so without the per-row ordinal offset
+// in CreateIssueComments the whole batch lands on one instant and
+// ListIssueComment falls through to its resource_id tiebreak, a random UUID.
+// The feed would then be stably scrambled: "labels changed" above "title
+// changed", permanently, for that issue.
+func TestIssueCommentBatchKeepsInsertionOrder(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+	db := container.GetDB()
+	require.NoError(t, migrator.MigrateSchema(ctx, db))
+
+	const (
+		workspaceID = "comment-ws"
+		projectID   = "comment-p"
+		issueUID    = int64(101)
+	)
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO workspace (resource_id) VALUES ($1);
+		INSERT INTO project (resource_id, workspace, name) VALUES ($2, $1, $2);
+		INSERT INTO issue (id, project, creator, name, status, type, description)
+		VALUES ($3, $2, 'users/comment@example.com', 'issue', 'OPEN', 'DATABASE_CHANGE', '')`,
+		workspaceID, projectID, issueUID)
+	require.NoError(t, err)
+
+	pgURL := fmt.Sprintf(
+		"host=%s port=%s user=postgres password=root-password database=postgres",
+		container.GetHost(), container.GetPort(),
+	)
+	stores, err := store.New(ctx, pgURL, false)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, stores.Close()) })
+
+	want := []string{"title", "description", "labels", "status", "assignee"}
+	creates := make([]*store.IssueCommentMessage, 0, len(want))
+	for _, comment := range want {
+		creates = append(creates, &store.IssueCommentMessage{
+			ProjectID: projectID,
+			IssueUID:  issueUID,
+			Payload:   &storepb.IssueCommentPayload{Comment: comment},
+		})
+	}
+	_, err = stores.CreateIssueComments(ctx, "users/comment@example.com", creates...)
+	require.NoError(t, err)
+
+	uid := issueUID
+	got, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{
+		ProjectID: projectID,
+		IssueUID:  &uid,
+	})
+	require.NoError(t, err)
+
+	order := make([]string, 0, len(got))
+	for _, comment := range got {
+		order = append(order, comment.Payload.Comment)
+	}
+	require.Equal(t, want, order, "a batch of issue comments must read back in insertion order")
 }

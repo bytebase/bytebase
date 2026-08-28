@@ -156,9 +156,19 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 	}
 
 	// Use UNNEST to insert all comments in one query.
+	//
+	// created_at defaults to now(), which is the transaction timestamp, so a
+	// batch would otherwise land on one instant and ListIssueComment could only
+	// fall back to its resource_id tiebreak — a random UUID, which scrambles the
+	// activity feed of a multi-field UpdateIssue. Offsetting each row by its
+	// ordinal keeps the batch in insertion order and makes created_at unique
+	// within it, at a cost of microseconds.
 	q := qb.Q().Space(`
-		INSERT INTO issue_comment (creator, project, issue_id, payload)
-		SELECT ?, unnest(?::TEXT[]), unnest(?::INT[]), unnest(?::JSONB[])
+		INSERT INTO issue_comment (creator, project, issue_id, payload, created_at)
+		SELECT ?, c.project, c.issue_id, c.payload,
+		       now() + ((c.ordinality - 1) * interval '1 microsecond')
+		FROM unnest(?::TEXT[], ?::INT[], ?::JSONB[])
+		     WITH ORDINALITY AS c(project, issue_id, payload, ordinality)
 	`, creator, projectIDs, issueIDs, payloads)
 
 	// For single comment, use RETURNING to get the created comment details.

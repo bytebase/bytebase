@@ -145,7 +145,8 @@ func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*Grou
 
 	// email is nullable — CreateGroup writes NULL for an empty one — and its
 	// unique index is partial, so it does not identify a group. id is the
-	// primary key.
+	// primary key, and stays unique in the result because the project filter
+	// joins a single-row ARRAY_AGG CTE rather than the member rows themselves.
 	q.Space(buildStableOrderBy(
 		[]*OrderByKey{{Key: "user_group.email", SortOrder: ASC}},
 		"user_group.id",
