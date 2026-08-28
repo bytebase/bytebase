@@ -4,14 +4,13 @@ import (
 	"context"
 	"log/slog"
 	"regexp"
-	"slices"
 	"strings"
 	"time"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
-	"google.golang.org/protobuf/proto" // Added
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -165,11 +164,6 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 
-	// MCP uses an atomic merge so concurrent changes cannot overwrite each other.
-	if storeSettingName == storepb.SettingName_MCP {
-		return s.updateMCPSetting(ctx, request, workspaceID)
-	}
-
 	existedSetting, err := s.store.GetSetting(ctx, workspaceID, storeSettingName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", settingName, err))
@@ -194,6 +188,38 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	var resetClassification bool
 
 	switch storeSettingName {
+	case storepb.SettingName_MCP:
+		if request.Msg.UpdateMask == nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
+		}
+		payload := request.Msg.Setting.Value.GetMcp()
+		if payload == nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("mcp setting is required"))
+		}
+
+		mcpSetting := &storepb.MCPSetting{Capability: storepb.MCPSetting_READ_WRITE}
+		if existedSetting != nil {
+			existing, ok := existedSetting.Value.(*storepb.MCPSetting)
+			if !ok {
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_MCP))
+			}
+			mcpSetting = proto.CloneOf(existing)
+		}
+
+		for _, path := range request.Msg.UpdateMask.Paths {
+			switch path {
+			case "value.mcp.capability":
+				mcpSetting.Capability = convertToStoreMCPCapability(payload.Capability)
+			case "value.mcp.ignore_masking_exemptions":
+				mcpSetting.IgnoreMaskingExemptions = payload.IgnoreMaskingExemptions
+			default:
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))
+			}
+		}
+		if err := validateMCPCapability(mcpSetting.GetCapability()); err != nil {
+			return nil, err
+		}
+		storeSettingValue = mcpSetting
 	case storepb.SettingName_WORKSPACE_PROFILE:
 		return s.updateWorkspaceProfileSetting(ctx, request, workspaceID)
 	case storepb.SettingName_WORKSPACE_APPROVAL:
@@ -1090,157 +1116,10 @@ func validateAnnouncementTheme(t *storepb.WorkspaceProfileSetting_Announcement_A
 	return nil
 }
 
-// updateMCPSetting merges the named update-mask paths into the stored MCP
-// setting under a row lock. Each path sets one field, so an admin changing the
-// masking toggle does not have to resend a ceiling they are not changing.
-//
-// Locked rather than read-merge-write, unlike the sibling settings: this row is
-// the MCP kill switch, and two concurrent saves that each merged onto their own
-// unlocked read would leave one of them silently reverted — for a ceiling, the
-// difference between off and on.
-//
-// The audit before-image is re-captured from the locked row, overwriting the
-// pre-lock snapshot UpdateSetting took from the setting cache. A ceiling flipped
-// out of band would otherwise be recorded as a transition from whatever the
-// cache still held, which never happened.
-func (s *SettingService) updateMCPSetting(ctx context.Context, request *connect.Request[v1pb.UpdateSettingRequest], workspaceID string) (*connect.Response[v1pb.Setting], error) {
-	if request.Msg.UpdateMask == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
-	}
-	payload := request.Msg.Setting.Value.GetMcp()
-	if payload == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("mcp setting is required"))
-	}
-
-	repairsCapability := slices.Contains(request.Msg.UpdateMask.Paths, "value.mcp.capability")
-
-	var lockedBefore *storepb.MCPSetting
-	var unrecognizedCapability bool
-	apply := func(current proto.Message) (proto.Message, error) {
-		existing, ok := current.(*storepb.MCPSetting)
-		if !ok {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_MCP))
-		}
-		// Captured before anything below can refuse. Every decision here is made
-		// against the LOCKED row, so that is what the audit row has to show —
-		// a refusal most of all, since the refusal names a ceiling only the
-		// locked read saw. A pre-lock stamp could already describe a value another
-		// replica has replaced.
-		lockedBefore = proto.CloneOf(existing)
-		unrecognizedCapability = existing.GetCapability() == storepb.MCPSetting_CAPABILITY_UNSPECIFIED
-		// A stored capability this build cannot read is enforced closed, and
-		// this merge would quietly erase it: the unmarshaler drops an enum name
-		// it does not know, and marshalling omits the zero enum, so the row
-		// would come back with no capability key at all. Refuse unless this same
-		// request sets a capability.
-		//
-		// Read from the locked row, not before the lock: a newer replica during
-		// a rolling upgrade can write a name this build has never heard of, and
-		// a pre-flight would have checked a value that is no longer there.
-		//
-		if unrecognizedCapability && !repairsCapability {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf(
-				"this workspace's stored MCP capability is not one this build understands, and saving another field would erase it. "+
-					"Set value.mcp.capability in the same request to repair it"))
-		}
-		merged := proto.CloneOf(existing)
-		for _, path := range request.Msg.UpdateMask.Paths {
-			switch path {
-			case "value.mcp.capability":
-				capability := convertToStoreMCPCapability(payload.Capability)
-				if err := validateMCPCapability(capability); err != nil {
-					return nil, err
-				}
-				merged.Capability = capability
-			case "value.mcp.ignore_masking_exemptions":
-				merged.IgnoreMaskingExemptions = payload.IgnoreMaskingExemptions
-			default:
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))
-			}
-		}
-		return merged, nil
-	}
-
-	// A dry run must not write the row or publish to the served cache: flipping
-	// the ceiling on a request that asked for nothing would be the kill switch
-	// turning itself off.
-	if request.Msg.ValidateOnly {
-		stored, err := s.store.GetSettingUncached(ctx, workspaceID, storepb.SettingName_MCP)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to read mcp setting: %v", err))
-		}
-		if stored == nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("setting %s not found", storepb.SettingName_MCP))
-		}
-		current, ok := stored.Value.(*storepb.MCPSetting)
-		if !ok {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_MCP))
-		}
-		validated, err := apply(current)
-		if err != nil {
-			var connectErr *connect.Error
-			if errors.As(err, &connectErr) {
-				return nil, err
-			}
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-		settingMessage, err := convertToSettingMessage(&store.SettingMessage{
-			Name:      storepb.SettingName_MCP,
-			Workspace: workspaceID,
-			Value:     validated,
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
-		}
-		return connect.NewResponse(settingMessage), nil
-	}
-
-	// The callback captures the locked row, so the audit before-image describes
-	// the state the write actually decided against.
-	stampLocked := func() {
-		setServiceData, ok := common.GetSetServiceDataFromContext(ctx)
-		if !ok || lockedBefore == nil {
-			return
-		}
-		v1pbSetting, err := convertToSettingMessage(&store.SettingMessage{
-			Name:      storepb.SettingName_MCP,
-			Workspace: workspaceID,
-			Value:     lockedBefore,
-		})
-		if err != nil {
-			slog.Warn("audit: failed to convert to v1.Setting", log.BBError(err))
-			return
-		}
-		p, err := anypb.New(v1pbSetting)
-		if err != nil {
-			slog.Warn("audit: failed to convert to anypb.Any", log.BBError(err))
-			return
-		}
-		setServiceData(p)
-	}
-
-	setting, err := s.store.UpdateSettingAtomic(ctx, workspaceID, storepb.SettingName_MCP, apply, nil)
-	if err != nil {
-		stampLocked()
-		var connectErr *connect.Error
-		if errors.As(err, &connectErr) {
-			return nil, err
-		}
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to set setting: %v", err))
-	}
-	stampLocked()
-
-	settingMessage, err := convertToSettingMessage(setting)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
-	}
-	return connect.NewResponse(settingMessage), nil
-}
-
 // validateMCPCapability rejects UNSPECIFIED and unknown enum numbers.
 func validateMCPCapability(capability storepb.MCPSetting_Capability) error {
 	if capability == storepb.MCPSetting_CAPABILITY_UNSPECIFIED {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("capability cannot be set to CAPABILITY_UNSPECIFIED; choose an explicit capability or omit the update mask path to leave it unchanged"))
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("capability must be specified"))
 	}
 	if _, ok := storepb.MCPSetting_Capability_name[int32(capability)]; !ok {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unknown capability value %d", capability))

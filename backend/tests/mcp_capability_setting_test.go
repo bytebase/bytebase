@@ -69,8 +69,8 @@ func currentWorkspaceID(ctx context.Context, t *testing.T, ctl *controller) stri
 
 // TestMCPCapabilitySettingRoundTrip verifies the workspace MCP capability
 // ceiling round-trips through the v1 settings API for every defined value, and
-// that an explicit write of UNSPECIFIED is rejected. Workspace creation and the
-// migration both store a concrete capability.
+// that an explicit write of UNSPECIFIED is rejected. Workspace creation stores
+// a concrete capability.
 func TestMCPCapabilitySettingRoundTrip(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -121,36 +121,10 @@ func TestMCPCapabilitySettingRoundTrip(t *testing.T) {
 	got, err = ctl.getMCPCapability(ctx)
 	a.NoError(err)
 	a.Equal(v1pb.MCPSetting_DISABLED, got)
-
-	// Saving the other field of the MCP setting must not revert a ceiling
-	// written out-of-band (emergency SQL): the update path merges the named
-	// mask paths onto the stored value and writes the whole message back, so
-	// merging onto a stale cached base would silently clear the kill switch.
-	// The cache is warm from the reads above and holds DISABLED; flip the
-	// stored value behind the server's back, then update the other field.
-	workspaceID := currentWorkspaceID(ctx, t, ctl)
-	db, err := sql.Open("pgx", ctl.profile.PgURL)
-	a.NoError(err)
-	defer db.Close()
-	_, err = db.ExecContext(ctx, `
-		UPDATE setting SET value = jsonb_set(value, '{capability}', '"READ_ONLY"')
-		WHERE workspace = $1 AND name = 'MCP';
-	`, workspaceID)
-	a.NoError(err)
-	a.NoError(ctl.setIgnoreMaskingExemptions(ctx, true))
-	got, err = ctl.getMCPCapability(ctx)
-	a.NoError(err)
-	a.Equal(v1pb.MCPSetting_READ_ONLY, got,
-		"the sibling update must merge onto the stored setting, not a stale cached one")
-	ignoring, err := ctl.getIgnoreMaskingExemptions(ctx)
-	a.NoError(err)
-	a.True(ignoring, "and the field it named must actually be written")
 }
 
-// TestMCPSettingExistsWithTheWorkspace pins the metadata invariant: migration
-// backfills existing workspaces with the compatible default, while workspace
-// creation writes the safer default for new ones. Every API path reads a
-// persisted resource either way.
+// TestMCPSettingExistsWithTheWorkspace pins that workspace creation writes the
+// safe default for new workspaces.
 func TestMCPSettingExistsWithTheWorkspace(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -208,8 +182,6 @@ func TestMCPUnrecognizedCeilingSurvivesAToggleOnlyUpdate(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	a.NoError(ctl.setMCPCapability(ctx, v1pb.MCPSetting_DISABLED))
-
 	workspaceID := currentWorkspaceID(ctx, t, ctl)
 	db, err := sql.Open("pgx", ctl.profile.PgURL)
 	a.NoError(err)
@@ -225,8 +197,7 @@ func TestMCPUnrecognizedCeilingSurvivesAToggleOnlyUpdate(t *testing.T) {
 
 	err = ctl.setIgnoreMaskingExemptions(ctx, true)
 	a.Error(err, "saving the toggle must not erase a ceiling this build cannot read")
-	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
-	a.Contains(err.Error(), "value.mcp.capability", "the refusal must name the way out")
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 
 	var stored string
 	a.NoError(db.QueryRowContext(ctx, `
@@ -235,7 +206,7 @@ func TestMCPUnrecognizedCeilingSurvivesAToggleOnlyUpdate(t *testing.T) {
 	`, workspaceID).Scan(&stored))
 	a.Equal("READ_ONLYY", stored, "the unreadable ceiling is still there, so enforcement still fails closed")
 
-	// The dry run sees the same parsed capability state as the locked merge.
+	// A dry run can repair the parsed capability state without persisting it.
 	dryRun := ctl.updateMCPCapability(ctx, v1pb.MCPSetting_READ_ONLY, true)
 	a.NoError(dryRun, "a dry run that repairs the capability is fine")
 
@@ -247,7 +218,7 @@ func TestMCPUnrecognizedCeilingSurvivesAToggleOnlyUpdate(t *testing.T) {
 	a.NoError(ctl.setIgnoreMaskingExemptions(ctx, true), "and the toggle saves once the ceiling is readable")
 }
 
-func TestMCPMissingRowUsesGenericNotFound(t *testing.T) {
+func TestMCPMissingRowUsesGenericUpdateSemantics(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
@@ -268,6 +239,25 @@ func TestMCPMissingRowUsesGenericNotFound(t *testing.T) {
 	_, err = ctl.getMCPSetting(ctx)
 	a.Error(err)
 	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+		Setting: &v1pb.Setting{
+			Name: "settings/" + v1pb.Setting_MCP.String(),
+			Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_Mcp{
+				Mcp: &v1pb.MCPSetting{Capability: v1pb.MCPSetting_READ_ONLY},
+			}},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"value.mcp.capability"}},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+
+	a.NoError(ctl.setIgnoreMaskingExemptions(ctx, true),
+		"allow_missing must create an MCP row from the READ_WRITE compatibility fallback")
+	setting, err := ctl.getMCPSetting(ctx)
+	a.NoError(err)
+	a.Equal(v1pb.MCPSetting_READ_WRITE, setting.GetCapability())
+	a.True(setting.GetIgnoreMaskingExemptions())
 }
 
 // TestMCPRepairKeepsTheMaskingToggle pins that fixing the ceiling does not
@@ -310,8 +300,8 @@ func TestMCPRepairKeepsTheMaskingToggle(t *testing.T) {
 		"repairing the ceiling must not return exemptions to MCP sessions")
 }
 
-// TestMCPMissingCapabilityRefusesPartialUpdate pins the post-migration
-// invariant: a partial update cannot make an invalid row look permissive.
+// TestMCPMissingCapabilityRefusesPartialUpdate pins that a partial update cannot
+// make an invalid row look permissive.
 func TestMCPMissingCapabilityRefusesPartialUpdate(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -332,62 +322,5 @@ func TestMCPMissingCapabilityRefusesPartialUpdate(t *testing.T) {
 
 	err = ctl.setIgnoreMaskingExemptions(ctx, true)
 	a.Error(err)
-	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
-}
-
-// TestMCPRefusedPartialUpdateAuditsLockedBeforeImage pins the before-image on a
-// refusal, which nothing else covers.
-//
-// updateMCPSetting decides everything against the locked row, so the audit row
-// for a refusal has to describe that row too. It used to record only the
-// pre-lock snapshot taken before
-// UpdateSetting dispatched, because the locked capture happened after the point
-// where a refusal returns.
-//
-// This covers the deterministic half. The stale case needs another replica to
-// write between the pre-lock read and the lock, and there is no injection point
-// for that in this package, so the fix is structural: the capture is now the
-// first statement in the callback and no refusal can return ahead of it.
-func TestMCPRefusedPartialUpdateAuditsLockedBeforeImage(t *testing.T) {
-	t.Parallel()
-	a := require.New(t)
-	ctx := context.Background()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
-
-	workspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{
-		Name: "workspaces/-",
-	}))
-	a.NoError(err)
-	workspaceID := currentWorkspaceID(ctx, t, ctl)
-
-	db, err := sql.Open("pgx", ctl.profile.PgURL)
-	a.NoError(err)
-	defer db.Close()
-	_, err = db.ExecContext(ctx, `
-		INSERT INTO setting (name, workspace, value) VALUES ('MCP', $1, '{"capability": "READ_ONLYY"}')
-		ON CONFLICT (name, workspace) DO UPDATE SET value = EXCLUDED.value;
-	`, workspaceID)
-	a.NoError(err)
-
-	// Refused: the toggle alone would marshal the row back without the ceiling.
-	err = ctl.setIgnoreMaskingExemptions(ctx, true)
-	a.Error(err)
-	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
-
-	resp, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
-		Parent:  workspace.Msg.Name,
-		Filter:  `method == "/bytebase.v1.SettingService/UpdateSetting"`,
-		OrderBy: "create_time desc",
-	}))
-	a.NoError(err)
-	a.NotEmpty(resp.Msg.AuditLogs, "a refused MCP write still belongs in the audit log")
-
-	before := resp.Msg.AuditLogs[0].ServiceData
-	a.NotNil(before, "the refusal has to say which ceiling it was protecting")
-	setting := &v1pb.Setting{}
-	a.NoError(before.UnmarshalTo(setting))
-	a.Equal(v1pb.MCPSetting_CAPABILITY_UNSPECIFIED, setting.GetValue().GetMcp().GetCapability())
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 }

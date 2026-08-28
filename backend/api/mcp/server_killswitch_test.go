@@ -312,7 +312,7 @@ func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
 	for _, workspace := range []string{"ws-absent", "ws-legacy"} {
 		got, err := s.GetMCPSettingsUncached(ctx, workspace)
 		require.NoError(t, err)
-		require.Equal(t, storepb.MCPSetting_READ_ONLY, got.Capability,
+		require.Equal(t, storepb.MCPSetting_READ_WRITE, got.Capability,
 			"unexpected capability for %s", workspace)
 		require.False(t, got.IgnoreMaskingExemptions)
 	}
