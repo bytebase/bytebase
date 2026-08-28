@@ -106,26 +106,59 @@ export async function createMultiSpecChangePlanViaUI(
 // advance. Call while on the created plan's detail page.
 //
 // The advance is a tiered press (LifecycleAdvance.tsx / advanceState.ts), not
-// a confirm dialog: a clean press advances immediately with no UI; when checks
-// failed and the project does not enforce SQL review, a warning popover offers
-// "Submit anyway"; a hard blocker (e.g. enforceSqlReview + failed checks)
-// shows a read-only list and the press is a no-op. Success is the header state
-// machine leaving `ready-for-review` — the button disappears. ONE press, then
-// one positive wait: no re-press/Escape loop, which fires stray events into a
-// transitioning React tree on the shared page and destabilises later tests.
+// a confirm dialog. One press resolves to exactly one of:
+//   advanced  — nothing unresolved: the header leaves ready-for-review and the
+//               button disappears.
+//   decision  — checks failed and the project does not enforce SQL review: a
+//               popover offers "Submit anyway".
+//   blocked   — a read-only blockers popover (role="alert") and NO advance.
+//               `wait` rows ("Clears on its own": checks queued/running) close
+//               the popover by themselves once the checks finish — but closing
+//               never submits, so the press must be repeated. `fix` rows
+//               (title, statement, permission) never clear without the user.
+// So: press, observe which tier answered, and re-press only after a wait-only
+// popover has closed on its own. Never re-press blindly or send Escape — stray
+// events into a transitioning React tree on the shared page destabilise later
+// tests.
 export async function submitDraftForReviewViaUI(page: Page): Promise<void> {
   const readyButton = page.getByRole("button", { name: "Ready for Review" });
   const submitAnyway = page.getByRole("button", { name: "Submit anyway" });
-  await readyButton.click();
-  // Tier 2: a "Submit anyway" decision popover appears only when checks failed.
-  const decided = await submitAnyway
-    .waitFor({ state: "visible", timeout: 3_000 })
-    .then(() => true)
-    .catch(() => false);
-  if (decided) await submitAnyway.click();
-  // The advance completes when the header leaves ready-for-review. Plan checks
-  // may still be finishing (a "wait" blocker clears on its own), so allow time.
-  await expect(readyButton).toHaveCount(0, { timeout: 60_000 });
+  const blockers = page.getByRole("alert").filter({ hasText: /./ });
+  // Blocker rows without the "Clears on its own" tag need the user to act.
+  const fixRows = blockers
+    .locator(":scope > div")
+    .filter({ hasNotText: "Clears on its own" });
+
+  const observe = async () => {
+    if ((await readyButton.count()) === 0) return "advanced";
+    if (await submitAnyway.isVisible()) return "decision";
+    if (await blockers.isVisible()) return "blocked";
+    return "pending";
+  };
+
+  for (let press = 1; press <= 8; press++) {
+    await readyButton.click();
+    await expect
+      .poll(observe, { timeout: 20_000 })
+      .not.toBe("pending");
+    const tier = await observe();
+    if (tier === "advanced") return;
+    if (tier === "decision") {
+      await submitAnyway.click();
+      await expect(readyButton).toHaveCount(0, { timeout: 60_000 });
+      return;
+    }
+    // Blocked: a fix-kind row cannot self-clear — fail with what the user sees.
+    if ((await fixRows.count()) > 0) {
+      throw new Error(
+        `Ready for Review is blocked by: ${(await fixRows.allInnerTexts()).join(" | ")}`,
+      );
+    }
+    // Wait-only blockers (plan checks still running) close the popover by
+    // themselves when the checks finish; then press again.
+    await expect(blockers).toBeHidden({ timeout: 120_000 });
+  }
+  throw new Error("Ready for Review kept re-blocking on running checks");
 }
 
 // Create AND submit a database-change plan through the UI — the full "start a

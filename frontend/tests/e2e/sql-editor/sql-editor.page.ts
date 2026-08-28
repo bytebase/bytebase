@@ -173,7 +173,12 @@ export class SqlEditorPage {
       opts.which === "last" ? this.codeEditor.last() : this.codeEditor;
     await editor.click();
     await this.page.waitForTimeout(150);
-    await this.page.keyboard.press("ControlOrMeta+a");
+    // `Control+a`, not `ControlOrMeta+a`: Monaco reads its CtrlCmd modifier
+    // from the user agent (Playwright's headless Chromium reports Windows on
+    // every host), while Playwright resolves ControlOrMeta from the host OS —
+    // on a macOS host that sent Meta+a, which Monaco ignored, so the "clear"
+    // only ever worked on editors that were already empty.
+    await this.page.keyboard.press("Control+a");
     await this.page.waitForTimeout(50);
     await this.page.keyboard.press("Delete");
     await this.page.waitForTimeout(50);

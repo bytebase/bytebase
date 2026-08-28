@@ -267,29 +267,62 @@ export class SchemaEditorPage {
     await expect(this.sheet).toBeHidden({ timeout: 15_000 });
   }
 
-  // Reads the plan's statement Monaco editor. That editor VIRTUALIZES and its
-  // viewport is short, so only the top (rendered) lines live in the DOM. A
-  // multi-statement DDL - e.g. a CREATE TABLE followed by a SEPARATE
-  // `ALTER TABLE ... ADD CONSTRAINT ... PRIMARY KEY (...)` statement - puts its
-  // trailing lines below the fold, and a naive `.view-lines` read silently
-  // truncates them (this is why a created-table PK, emitted as that trailing
-  // ALTER statement, appeared "missing"). Read the top, jump to the end so the
-  // trailing lines render, then union both. Also normalize Monaco's rendered
-  // non-breaking spaces to plain spaces so literal-space assertions match.
+  // Reads the plan's statement Monaco editor — the COMPLETE text, not the
+  // rendered viewport. That editor VIRTUALIZES: only the lines in view exist in
+  // the DOM, so a `.view-lines` read silently truncates a multi-statement DDL
+  // (this is why a created-table PK, emitted as a trailing separate
+  // `ALTER TABLE ... ADD CONSTRAINT ... PRIMARY KEY`, appeared "missing").
+  // `window.monaco` is not exposed on the production bundle, so the model is
+  // read the way a user copies it: select all, then copy. Monaco's own copy
+  // handler writes the full selection into the copy event's clipboardData, and
+  // a bubbling listener on window (it runs after Monaco's textarea handler)
+  // reads it from there — no OS clipboard involved, which headless Chromium
+  // does not share between a native copy and navigator.clipboard anyway. Each
+  // step waits on its observable effect; the selection is collapsed afterwards
+  // so the editor is left as it was found.
   async planStatementText(): Promise<string> {
-    const lines = this.page.locator(".monaco-editor .view-lines").first();
-    await expect(lines).toBeVisible({ timeout: 10_000 });
-    const norm = (s: string) => s.replace(/\u00a0/g, " ");
-    const top = norm(await lines.innerText());
-    // Focus the editor and jump to document end so the last lines render.
-    await this.page.locator(".monaco-editor").first().click();
-    await this.page.keyboard.press("ControlOrMeta+End");
-    await this.page.waitForTimeout(300); // let the scrolled-to lines render
-    const bottom = norm(await lines.innerText());
-    // Union preserves order: top lines first, then newly-revealed trailing
-    // lines. Substring/regex assertions then see the whole statement.
-    return Array.from(
-      new Set([...top.split("\n"), ...bottom.split("\n")]),
-    ).join("\n");
+    const editor = this.page.locator(".monaco-editor").first();
+    await expect(editor.locator(".view-lines")).toBeVisible({ timeout: 10_000 });
+    await this.page.evaluate(() => {
+      const w = window as unknown as {
+        __bbCopied?: string;
+        __bbCopyHooked?: boolean;
+      };
+      w.__bbCopied = undefined;
+      if (w.__bbCopyHooked) return;
+      w.__bbCopyHooked = true;
+      window.addEventListener("copy", (e) => {
+        w.__bbCopied = e.clipboardData?.getData("text/plain") ?? "";
+      });
+    });
+    // Monaco takes keys through its hidden textarea, and focuses it a tick
+    // AFTER a mouse click — a select-all pressed straight after a click lands
+    // on nothing. Focus the textarea itself and wait for the focus.
+    // `Control+a`, not `ControlOrMeta+a`: select-all is Monaco's OWN keybinding
+    // and Monaco derives its CtrlCmd modifier from the user agent — Playwright's
+    // headless Chromium reports a Windows UA whatever the host is — whereas
+    // Playwright resolves ControlOrMeta from the HOST OS (Meta on macOS, which
+    // Monaco then ignores; Linux CI hosts happen to agree, hiding the mismatch).
+    const input = editor.locator("textarea.inputarea");
+    await input.focus();
+    await expect(input).toBeFocused({ timeout: 5_000 });
+    await this.page.keyboard.press("Control+a");
+    await expect(editor.locator(".selected-text").first()).toBeVisible({
+      timeout: 5_000,
+    });
+    // Copy through execCommand rather than a key: the browser-native copy
+    // shortcut follows the HOST OS (Cmd+C on macOS, Ctrl+C on Linux CI), so no
+    // single key works everywhere, while execCommand("copy") dispatches the
+    // same copy event to Monaco's handler on every host. The select-all
+    // keypress just above supplies the user activation Chromium requires.
+    await this.page.evaluate(() => document.execCommand("copy"));
+    const read = () =>
+      this.page.evaluate(
+        () => (window as unknown as { __bbCopied?: string }).__bbCopied,
+      );
+    await expect.poll(read, { timeout: 5_000 }).not.toBeUndefined();
+    const text = (await read()) ?? "";
+    await this.page.keyboard.press("ArrowRight"); // collapse the selection
+    return text.replace(/\u00a0/g, " ").replace(/\r\n/g, "\n");
   }
 }
