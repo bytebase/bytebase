@@ -223,6 +223,44 @@ func TestGetStatementWithResultLimit(t *testing.T) {
 			count: 10,
 			want:  "SELECT * FROM (SELECT * FROM person /* c */ LATERAL VIEW EXPLODE(ARRAY(30, 60)) tableName AS c_age) result LIMIT 10;",
 		},
+		// Parenthesized queries: the LIMIT lands on (or caps at) the wrapper,
+		// covering any nesting depth.
+		{
+			stmt:  "(SELECT * FROM t)",
+			count: 10,
+			want:  "(SELECT * FROM t) LIMIT 10",
+		},
+		{
+			stmt:  "((SELECT * FROM large_table))",
+			count: 10,
+			want:  "((SELECT * FROM large_table)) LIMIT 10",
+		},
+		{
+			stmt:  "(((SELECT * FROM t)))",
+			count: 10,
+			want:  "(((SELECT * FROM t))) LIMIT 10",
+		},
+		{
+			stmt:  "(SELECT * FROM t) ORDER BY 1",
+			count: 10,
+			want:  "(SELECT * FROM t) ORDER BY 1 LIMIT 10",
+		},
+		// The wrapper's own LIMIT is the one that caps.
+		{
+			stmt:  "(SELECT * FROM t) LIMIT 1000000",
+			count: 10,
+			want:  "(SELECT * FROM t) LIMIT 10",
+		},
+		{
+			stmt:  "(SELECT * FROM t) LIMIT 5",
+			count: 10,
+			want:  "(SELECT * FROM t) LIMIT 5",
+		},
+		{
+			stmt:  "((SELECT * FROM t)) ORDER BY 1 LIMIT 0,1000000",
+			count: 10,
+			want:  "((SELECT * FROM t)) ORDER BY 1 LIMIT 0,10",
+		},
 	}
 
 	for _, tc := range testCases {

@@ -44,9 +44,10 @@ type FindChangelogMessage struct {
 	ResourceID   *string
 	DatabaseName *string
 
-	Status          *ChangelogStatus
-	CreatedAtBefore *time.Time
-	CreatedAtAfter  *time.Time
+	Status                  *ChangelogStatus
+	CreatedAtBefore         *time.Time
+	CreatedAtAfter          *time.Time
+	CreatedAtStrictlyBefore *time.Time
 
 	Limit  *int
 	Offset *int
@@ -137,7 +138,7 @@ func (s *Store) UpdateChangelog(ctx context.Context, update *UpdateChangelogMess
 	return nil
 }
 
-func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) ([]*ChangelogMessage, error) {
+func buildListChangelogsQuery(find *FindChangelogMessage) (string, []any, error) {
 	// Avoid SQL-level string functions (e.g. LEFT()) on raw_dump — the column may
 	// contain invalid UTF-8 from TiDB/OceanBase schema syncs (SQLSTATE 22021).
 	// BASIC view skips the column entirely; FULL view fetches it and sanitizes in Go.
@@ -187,9 +188,13 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 	if v := find.CreatedAtAfter; v != nil {
 		q.And("changelog.created_at >= ?", *v)
 	}
+	if v := find.CreatedAtStrictlyBefore; v != nil {
+		q.And("changelog.created_at < ?", *v)
+	}
 
 	// created_at defaults to now() and is not unique; resource_id is the
-	// primary key.
+	// primary key. main added this same tiebreak as a literal; routed through
+	// the helper it renders identically and satisfies the pagination guard.
 	q.Space(buildStableOrderBy(
 		[]*OrderByKey{{Key: "changelog.created_at", SortOrder: DESC}},
 		"changelog.resource_id",
@@ -201,7 +206,11 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 		q.Space("OFFSET ?", *v)
 	}
 
-	query, args, err := q.ToSQL()
+	return q.ToSQL()
+}
+
+func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) ([]*ChangelogMessage, error) {
+	query, args, err := buildListChangelogsQuery(find)
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}

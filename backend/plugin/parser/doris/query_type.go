@@ -77,6 +77,10 @@ func astQueryType(node ast.Node) (analysis.QueryType, bool) {
 	switch n := node.(type) {
 	case *ast.SelectStmt, *ast.SetOpStmt:
 		return analysis.QueryTypeSelect, true
+	case *ast.GroupedQuery:
+		// A repeated trailing clause group or a parenthesized WITH group
+		// wraps a query; classify by the wrapped query.
+		return astQueryType(n.Query)
 	case *ast.ShowStmt,
 		*ast.ShowRoutineLoadStmt, *ast.ShowRoutineLoadTaskStmt,
 		*ast.ShowJobStmt, *ast.ShowJobTaskStmt,
