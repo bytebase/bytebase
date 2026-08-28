@@ -232,6 +232,25 @@ When writing or modifying queries on these tables:
   the public gRPC API, no store access. Run with:
   `go test -v -count=1 ./backend/tests/ -run "^(TestClaim|TestCollision)" -timeout 5m`
 
+## Pagination Ordering
+
+Every paginated v1 list pages with `LIMIT`/`OFFSET`, so a sort that is not a
+total order lets tied rows cross the page boundary between two page reads — the
+caller then skips some rows and sees others twice, on static data. Build every
+offset-paginated `ORDER BY` with `buildStableOrderBy` (`backend/store/common.go`),
+appending tiebreak columns that are unique under that query's scope. Follow the
+canonical [pagination ordering](backend/store/README.md#pagination-ordering)
+rules for choosing them.
+
+The traps that produced this class of bug: `id` alone in a `(project, id)` table
+(`nextProjectID` restarts IDs per project, so every project has a row `101`);
+`created_at`, which defaults to the *transaction* timestamp and is therefore
+identical across a batch insert; a nullable column; a partial unique index; and
+a user-supplied `order_by` that replaces the default ordering instead of adding
+to it. `TestPaginatedListsUseStableOrderBy` enforces that the helper is used,
+but it cannot verify that the columns you picked are actually unique — check
+them against `LATEST.sql` yourself.
+
 ## Transaction Lock Ordering
 
 Before adding or modifying a transaction that locks multiple rows or tables, follow the canonical [store row-lock ordering](backend/store/README.md#transaction-row-lock-ordering). Lock existing child rows before parents, lock batches in full primary-key order, and treat upserts as existing-row locks. Add the deterministic real-PostgreSQL regression tests required below for new multi-row or multi-table coordination paths.

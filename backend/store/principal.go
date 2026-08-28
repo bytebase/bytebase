@@ -271,8 +271,14 @@ func listUserImpl(ctx context.Context, txn *sql.Tx, find *FindUserMessage) ([]*U
 			principal.created_at
 		FROM ?
 		WHERE ?
-		ORDER BY created_at ASC
 	`, from, where)
+
+	// created_at defaults to now(), so users provisioned by one SCIM sync
+	// share it; principal.id is the primary key.
+	q.Space(buildStableOrderBy(
+		[]*OrderByKey{{Key: "principal.created_at", SortOrder: ASC}},
+		"principal.id",
+	))
 
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)

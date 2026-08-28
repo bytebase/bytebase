@@ -175,21 +175,15 @@ func (s *Store) ListSavedQueries(ctx context.Context, find *FindSavedQueryMessag
 		q.And("saved_query.resource_id = ?", *v)
 	}
 
-	// Default title order; List overrides via order_by. The resource_id
-	// tiebreak keeps pages stable and follows the last key's direction so
-	// "update_time desc" matches the
+	// Default title order; List overrides via order_by. Titles are not unique;
+	// resource_id is the primary key, and the tiebreak follows the last key's
+	// direction so "update_time desc" matches the
 	// (creator, updated_at DESC, resource_id DESC) index exactly.
 	keys := find.OrderByKeys
 	if len(keys) == 0 {
 		keys = []*OrderByKey{{Key: "saved_query.name", SortOrder: ASC}}
 	}
-	orderBy := []string{}
-	for _, v := range keys {
-		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
-	}
-	last := keys[len(keys)-1]
-	orderBy = append(orderBy, fmt.Sprintf("saved_query.resource_id %s", last.SortOrder.String()))
-	q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
+	q.Space(buildStableOrderBy(keys, "saved_query.resource_id"))
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

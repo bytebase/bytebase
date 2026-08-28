@@ -2,6 +2,64 @@
 
 For schema update, please follow [Bytebase Schema Update Guide](https://github.com/bytebase/bytebase/blob/main/docs/schema-update-guide.md)
 
+## Pagination ordering
+
+Every paginated v1 list reads its pages with `LIMIT`/`OFFSET`: the page token
+carries `{limit, offset}` (`backend/api/v1/common.go`), so each page is a
+separate query against a table that other transactions are still writing.
+
+PostgreSQL only guarantees the order the `ORDER BY` specifies. When the sort key
+is not unique under the query's scope, tied rows may come back in a different
+order in each of those queries — different effective `LIMIT` values pick top-N
+heapsort or a full sort, and parallel gather-merge interleaves workers
+independently. A tied row then crosses the page boundary between two reads, and
+the caller skips it or receives it twice. This is not a concurrency artifact: it
+happens on completely static data.
+
+**Every offset-paginated query must sort on a total order.** Build the clause
+with `buildStableOrderBy` (`common.go`), passing the caller's sort keys plus
+tiebreak columns that are unique under that query's scope:
+
+```go
+// created_at defaults to now() and is not unique; resource_id is the primary key.
+q.Space(buildStableOrderBy(
+    []*OrderByKey{{Key: "changelog.created_at", SortOrder: DESC}},
+    "changelog.resource_id",
+))
+```
+
+Rules for choosing the tiebreak:
+
+1. Take it from the table's primary key or a declared **non-partial** unique key
+   in `LATEST.sql`. A partial unique index (`... WHERE deleted_at IS NULL`)
+   constrains nothing outside its predicate, so it does not qualify whenever the
+   query can return rows outside it.
+2. Include **every** column of a composite key. `id` alone does not identify a
+   row in a `(project, id)` table, and IDs are allocated per project by
+   `nextProjectID` — every project's first row is `101` — so cross-project lists
+   collide constantly. `(project, train, iteration)` needs all three.
+3. A column is only a valid tiebreak if it is `NOT NULL`. `user_group.email` is
+   nullable, so groups without one all tie.
+4. `created_at` is never a tiebreak. It defaults to `now()`, which is the
+   *transaction* timestamp, so every row written by one batch insert shares it
+   exactly.
+5. A scope column pinned to a single value by a mandatory `WHERE` predicate is
+   already satisfied and need not be repeated — say so in a comment, as
+   `ListPlans` does.
+6. Sorting a user-supplied `order_by` must **add** to the default ordering, not
+   replace it. Pass the caller's keys to `buildStableOrderBy` so the tiebreak is
+   still appended; several lists previously dropped a correct default the moment
+   a caller passed `order_by`.
+
+`TestPaginatedListsUseStableOrderBy` fails any store function that applies
+`OFFSET` without reaching `buildStableOrderBy`, directly or through a named
+helper. It cannot check that the tiebreak columns you chose are actually unique
+— that judgment is yours, against `LATEST.sql`.
+
+Note that a total order fixes misordering, not drift: rows inserted or deleted
+between two page reads still shift the offset window. Fixing that needs keyset
+pagination and a page-token format change, which is out of scope here.
+
 ## Transaction row-lock ordering
 
 PostgreSQL holds row locks until a transaction ends. Transactions that acquire the same locks in different orders can deadlock, so every store transaction must follow these rules:

@@ -192,15 +192,13 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 		WHERE ?
 	`, from, where)
 
-	if len(find.OrderByKeys) > 0 {
-		orderBy := []string{}
-		for _, v := range find.OrderByKeys {
-			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
-		}
-		q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
-	} else {
-		q.Space("ORDER BY db.project, db.instance, db.name")
+	orderByKeys := find.OrderByKeys
+	if len(orderByKeys) == 0 {
+		orderByKeys = []*OrderByKey{{Key: "db.project", SortOrder: ASC}}
 	}
+	// Neither project nor name identifies a database; (instance, name) is the
+	// primary key.
+	q.Space(buildStableOrderBy(orderByKeys, "db.instance", "db.name"))
 
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)

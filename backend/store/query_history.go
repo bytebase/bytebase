@@ -158,8 +158,12 @@ func (s *Store) ListQueryHistories(ctx context.Context, find *FindQueryHistoryMe
 		q.And("query_history.type = ?", *v)
 	}
 
-	// resource_id breaks created_at ties so offset pages stay stable.
-	q.Space("ORDER BY created_at DESC, resource_id DESC")
+	// created_at defaults to now() and is not unique; resource_id is the
+	// primary key.
+	q.Space(buildStableOrderBy(
+		[]*OrderByKey{{Key: "created_at", SortOrder: DESC}},
+		"resource_id",
+	))
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

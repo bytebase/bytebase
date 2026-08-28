@@ -182,7 +182,9 @@ func (s *Store) ListPlans(ctx context.Context, find *FindPlanMessage) ([]*PlanMe
 		)`)
 	}
 
-	q.Space("ORDER BY id DESC")
+	// The mandatory WHERE above pins plan.project to a single value, so id
+	// alone already covers the (project, id) primary key here.
+	q.Space(buildStableOrderBy([]*OrderByKey{{Key: "plan.id", SortOrder: DESC}}))
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

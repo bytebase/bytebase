@@ -163,7 +163,12 @@ func (s *Store) ListReleases(ctx context.Context, find *FindReleaseMessage) ([]*
 		q.And("deleted = ?", false)
 	}
 
-	q.Space("ORDER BY release.created_at DESC")
+	// created_at defaults to now() and is not unique; (project, train,
+	// iteration) is the primary key.
+	q.Space(buildStableOrderBy(
+		[]*OrderByKey{{Key: "release.created_at", SortOrder: DESC}},
+		"release.project", "release.train", "release.iteration",
+	))
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

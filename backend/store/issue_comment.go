@@ -74,7 +74,12 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 		q.And("issue_id = ?", *v)
 	}
 
-	q.Space("ORDER BY created_at ASC")
+	// created_at defaults to now(), so comments written by one
+	// CreateIssueComments batch share it; resource_id is the primary key.
+	q.Space(buildStableOrderBy(
+		[]*OrderByKey{{Key: "created_at", SortOrder: ASC}},
+		"resource_id",
+	))
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

@@ -188,7 +188,12 @@ func (s *Store) ListChangelogs(ctx context.Context, find *FindChangelogMessage) 
 		q.And("changelog.created_at >= ?", *v)
 	}
 
-	q.Space("ORDER BY changelog.created_at DESC")
+	// created_at defaults to now() and is not unique; resource_id is the
+	// primary key.
+	q.Space(buildStableOrderBy(
+		[]*OrderByKey{{Key: "changelog.created_at", SortOrder: DESC}},
+		"changelog.resource_id",
+	))
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

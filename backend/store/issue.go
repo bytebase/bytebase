@@ -318,9 +318,29 @@ func updateIssue(ctx context.Context, executor issueUpdateExecutor, projectID st
 	return updatedAt, nil
 }
 
+// buildIssueOrderBy renders the ORDER BY clause for ListIssues. rankKey is the
+// relevance ordering when the caller supplied query text, nil otherwise; it
+// leads the caller's keys rather than replacing them.
+//
+// issue.id descending is both the default recency proxy and the second half of
+// the (project, id) primary key. IDs restart per project — nextProjectID floors
+// every project's first issue at 101 — so across projects id alone is not
+// unique and issue.project is what completes the key.
+func buildIssueOrderBy(orderByKeys []*OrderByKey, rankKey *OrderByKey) string {
+	keys := make([]*OrderByKey, 0, len(orderByKeys)+2)
+	if rankKey != nil {
+		keys = append(keys, rankKey)
+	}
+	keys = append(keys, orderByKeys...)
+	keys = append(keys, &OrderByKey{Key: "issue.id", SortOrder: DESC})
+	return buildStableOrderBy(keys, "issue.project")
+}
+
 // ListIssues returns the list of issues by find query.
 func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*IssueMessage, error) {
-	orderByClause := "ORDER BY issue.id DESC"
+	// Relevance ranking is derived from the query text rather than requested by
+	// the caller, so it is tracked apart from find.OrderByKeys and leads them.
+	var rankKey *OrderByKey
 	from := qb.Q().Space("issue")
 	where := qb.Q()
 
@@ -371,7 +391,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		if tsQuery := getTSQuery(*v); tsQuery != "" {
 			from.Space("LEFT JOIN CAST(? AS tsquery) AS query ON TRUE", tsQuery)
 			searchCondition.Or("issue.ts_vector @@ query")
-			orderByClause = "ORDER BY ts_rank(issue.ts_vector, query) DESC, issue.id DESC"
+			rankKey = &OrderByKey{Key: "ts_rank(issue.ts_vector, query)", SortOrder: DESC}
 		}
 		searchCondition.Or("issue.name ILIKE ?", "%"+*v+"%")
 		where.And("(?)", searchCondition)
@@ -397,14 +417,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 		where.And("COALESCE(issue.payload->>'draft', 'false') = 'false'")
 	}
 
-	if len(find.OrderByKeys) > 0 && orderByClause == "ORDER BY issue.id DESC" {
-		parts := make([]string, 0, len(find.OrderByKeys)+1)
-		for _, v := range find.OrderByKeys {
-			parts = append(parts, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
-		}
-		parts = append(parts, "issue.id DESC")
-		orderByClause = fmt.Sprintf("ORDER BY %s", strings.Join(parts, ", "))
-	}
+	orderByClause := buildIssueOrderBy(find.OrderByKeys, rankKey)
 
 	q := qb.Q().Space(`
 		SELECT

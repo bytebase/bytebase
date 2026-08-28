@@ -1,6 +1,7 @@
 package store
 
 import (
+	"fmt"
 	"regexp"
 	"strings"
 
@@ -34,6 +35,48 @@ func (s SortOrder) String() string {
 type OrderByKey struct {
 	Key       string
 	SortOrder SortOrder
+}
+
+// buildStableOrderBy renders the ORDER BY clause for an offset-paginated list.
+//
+// Offset pagination reads every page with a fresh LIMIT/OFFSET query. When the
+// sort key is not unique under the query's scope, PostgreSQL may order tied
+// rows differently in each of those queries, so a tied row can cross the page
+// boundary between two reads and the caller then skips it or sees it twice.
+// Ties are not hypothetical: `created_at` defaults to `now()`, which is the
+// transaction timestamp, so rows written by one batch insert all share it.
+//
+// tieBreak names columns that are unique under the query's scope; together with
+// keys they make the ordering total, which is what keeps offset pages stable.
+// Pick them from the table's primary key or a declared non-partial unique key
+// in LATEST.sql, and include every scope column of a composite key — `id` alone
+// does not identify a row in a `(project, id)` table. They are appended in the
+// last sort key's direction so a composite index can still serve the ordering.
+//
+// See backend/store/README.md#pagination-ordering.
+func buildStableOrderBy(keys []*OrderByKey, tieBreak ...string) string {
+	direction := ASC
+	if len(keys) > 0 {
+		direction = keys[len(keys)-1].SortOrder
+	}
+	// A column already ordered on cannot break its own ties, so a tiebreak the
+	// caller also sorts by is dropped rather than repeated.
+	seen := make(map[string]bool, len(keys)+len(tieBreak))
+	parts := make([]string, 0, len(keys)+len(tieBreak))
+	appendPart := func(column string, sortOrder SortOrder) {
+		if seen[column] {
+			return
+		}
+		seen[column] = true
+		parts = append(parts, fmt.Sprintf("%s %s", column, sortOrder))
+	}
+	for _, key := range keys {
+		appendPart(key.Key, key.SortOrder)
+	}
+	for _, column := range tieBreak {
+		appendPart(column, direction)
+	}
+	return "ORDER BY " + strings.Join(parts, ", ")
 }
 
 // getOrderByKeys parses an AIP-132 order_by string against a whitelist

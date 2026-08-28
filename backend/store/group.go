@@ -141,8 +141,15 @@ func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*Grou
 			user_group.payload
 		FROM ?
 		WHERE ?
-		ORDER BY email
 	`, from, where)
+
+	// email is nullable — CreateGroup writes NULL for an empty one — and its
+	// unique index is partial, so it does not identify a group. id is the
+	// primary key.
+	q.Space(buildStableOrderBy(
+		[]*OrderByKey{{Key: "user_group.email", SortOrder: ASC}},
+		"user_group.id",
+	))
 
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
