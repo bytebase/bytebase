@@ -1634,6 +1634,7 @@
       "reset-to-defaults": "Đặt lại về mặc định"
     },
     "go-to-plan-page": "Đi tới trang kế hoạch",
+    "initial-sql-storage-failed": "Không thể lưu tạm thời SQL. Hãy giải phóng dung lượng lưu trữ của trình duyệt rồi thử lại.",
     "isolation-level": {
       "read-committed": "Đọc đã cam kết",
       "read-uncommitted": "Đọc chưa cam kết",
@@ -1811,7 +1812,8 @@
       "actions": {
         "explain-code": "Giải thích mã",
         "find-problems": "Tìm vấn đề",
-        "insert-at-caret": "Chèn vào con trỏ"
+        "insert-at-caret": "Chèn vào con trỏ",
+        "new-chat-using-selection": "Cuộc trò chuyện mới bằng nội dung đã chọn"
       },
       "ai-assistant": "Trợ lý AI",
       "conversation": {

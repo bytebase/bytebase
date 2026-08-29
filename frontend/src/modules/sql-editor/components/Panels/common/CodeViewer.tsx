@@ -188,11 +188,7 @@ export function CodeViewer({
             />
             {t("sql-editor.format")}
           </label>
-          <OpenAIButton
-            size="sm"
-            actions={["explain-code"]}
-            statement={selectedStatement || content}
-          />
+          <OpenAIButton size="sm" />
         </div>
       </div>
       <div className="flex-1 min-h-0 flex flex-col overflow-hidden">

@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { v4 as uuidv4 } from "uuid";
 import { router } from "@/app/router";
 import { buildPlanCreateRoute } from "@/app/router/routeHelpers";
 import { DatabaseSelect } from "@/components/DatabaseSelect";
@@ -50,7 +49,7 @@ import { StepIndicator } from "@/components/ui/step-indicator";
 import { useClickOutside } from "@/hooks/useClickOutside";
 import { useEscapeKey } from "@/hooks/useEscapeKey";
 import { useProjectByName } from "@/hooks/useProjectByName";
-import { keyValueStorage } from "@/lib/keyValueStorage";
+import { saveInitialSQL } from "@/lib/plan/initialSQLStorage";
 import { applyPlanTitleToQuery } from "@/lib/plan/title";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
@@ -401,9 +400,16 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
       }
     });
     query.databaseList = Object.keys(sqlMap).join(",");
-    const sqlMapStorageKey = `bb.issues.sql-map.${uuidv4()}`;
-    void keyValueStorage.put(sqlMapStorageKey, sqlMap);
-    query.sqlMapStorageKey = sqlMapStorageKey;
+    try {
+      query.sqlMapStorageKey = saveInitialSQL(sqlMap);
+    } catch {
+      useAppStore.getState().notify({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("plan.initial-sql-storage-failed"),
+      });
+      return;
+    }
     if (!project) return; // defensive: should not happen if the page rendered
     applyPlanTitleToQuery(query, project, () =>
       generatePlanTitle(
@@ -416,7 +422,7 @@ export function ProjectSyncSchemaPage({ projectId }: { projectId: string }) {
     router.push(
       buildPlanCreateRoute(extractProjectResourceName(project.name), query)
     );
-  }, [selectedDatabaseNameList, schemaDiffCache, project]);
+  }, [selectedDatabaseNameList, schemaDiffCache, project, t]);
 
   if (!project) return null;
 

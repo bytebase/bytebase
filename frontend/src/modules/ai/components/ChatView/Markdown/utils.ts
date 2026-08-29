@@ -102,7 +102,9 @@ function defaultMdNodeToReact(node: RootContent, state: State): ReactNode {
 function rootToReact(node: Root, state: State): ReactNode {
   return createElement(
     "div",
-    { className: "markdown min-w-0 max-w-full wrap-anywhere" },
+    {
+      className: "markdown min-w-0 max-w-full wrap-anywhere text-sm leading-5",
+    },
     mapChildren(node.children, state)
   );
 }

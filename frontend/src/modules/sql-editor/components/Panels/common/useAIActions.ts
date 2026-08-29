@@ -1,5 +1,6 @@
 import type * as monaco from "monaco-editor";
 import { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import type { MonacoModule } from "@/components/monaco/types";
 import type { ChatAction } from "@/modules/ai/types";
 import { useAppStore } from "@/stores/app";
@@ -28,6 +29,7 @@ export function useAIActions({
   actions,
   callback,
 }: UseAIActionsOptions) {
+  const { t } = useTranslation();
   const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
   // Subscribe to the AI setting so the registered Monaco actions re-register
   // or unregister live when an admin toggles AI access while the editor is
@@ -87,7 +89,7 @@ export function useAIActions({
       subscriptions.push(
         editor.addAction({
           id: "explain-code",
-          label: "Explain code",
+          label: `[AI] ${t("plugin.ai.actions.explain-code")}`,
           precondition: "!bb.ai.contentEmpty",
           contextMenuGroupId: "2_ai_assistant",
           contextMenuOrder: 1,
@@ -99,7 +101,7 @@ export function useAIActions({
       subscriptions.push(
         editor.addAction({
           id: "find-problems",
-          label: "Find problems",
+          label: `[AI] ${t("plugin.ai.actions.find-problems")}`,
           precondition: "!bb.ai.contentEmpty",
           contextMenuGroupId: "2_ai_assistant",
           contextMenuOrder: 2,
@@ -111,7 +113,7 @@ export function useAIActions({
       subscriptions.push(
         editor.addAction({
           id: "new-chat-using-selection",
-          label: "New chat using selection",
+          label: `[AI] ${t("plugin.ai.actions.new-chat-using-selection")}`,
           precondition: "!bb.ai.selectedContentEmpty",
           contextMenuGroupId: "2_ai_assistant",
           contextMenuOrder: 2,
@@ -122,5 +124,5 @@ export function useAIActions({
     return () => {
       subscriptions.forEach((sub) => sub.dispose());
     };
-  }, [monaco, editor, aiEnabled, actions, callback]);
+  }, [monaco, editor, aiEnabled, actions, callback, t]);
 }

@@ -58,6 +58,8 @@ describe("AI chat message wrapping", () => {
     );
     expect(markdown?.className).toContain("wrap-anywhere");
     expect(markdown?.className).toContain("min-w-0");
+    expect(markdown?.className).toContain("text-sm");
+    expect(markdown?.className).toContain("leading-5");
     expect(markdown?.textContent).toContain(longContent);
   });
 

@@ -235,10 +235,7 @@ export function EditorAction({ onExecute }: Props) {
       </div>
       <div className="action-right gap-x-2 flex overflow-x-auto sm:overflow-x-hidden sm:justify-end items-center">
         <ChooserGroup />
-        <OpenAIButton
-          size="sm"
-          statement={currentTab?.selectedStatement || currentTab?.statement}
-        />
+        <OpenAIButton size="sm" />
       </div>
     </div>
   );
