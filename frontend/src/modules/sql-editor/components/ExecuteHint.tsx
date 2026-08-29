@@ -1,9 +1,9 @@
 import { Trans, useTranslation } from "react-i18next";
-import { v4 as uuidv4 } from "uuid";
 import { router } from "@/app/router";
 import { buildPlanCreateRoute } from "@/app/router/routeHelpers";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { saveInitialSQL } from "@/lib/plan/initialSQLStorage";
 import { applyPlanTitleToQuery } from "@/lib/plan/title";
 import { useSQLEditorAllowAdmin } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
@@ -16,7 +16,6 @@ import {
   extractProjectResourceName,
   getDatabaseEnvironment,
 } from "@/utils";
-import { putBlob } from "@/utils/blob-storage";
 import { AdminModeButton } from "./AdminModeButton";
 
 type Props = {
@@ -48,8 +47,6 @@ export function ExecuteHint({ database, onClose }: Props) {
       return;
     }
 
-    onClose();
-
     const db = await useAppStore
       .getState()
       .getOrFetchDatabaseByName(connectedDatabase);
@@ -61,8 +58,17 @@ export function ExecuteHint({ database, onClose }: Props) {
 
     const tab = tabsState.tabsById.get(tabsState.currentTabId);
     const statement = tab?.selectedStatement || tab?.statement || "";
-    const sqlStorageKey = `bb.issues.sql.${uuidv4()}`;
-    void putBlob(sqlStorageKey, statement);
+    let sqlStorageKey: string;
+    try {
+      sqlStorageKey = saveInitialSQL(statement);
+    } catch {
+      useAppStore.getState().notify({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: t("plan.initial-sql-storage-failed"),
+      });
+      return;
+    }
     const { databaseName } = extractDatabaseResourceName(db.name);
 
     const query: Record<string, string> = {
@@ -78,6 +84,7 @@ export function ExecuteHint({ database, onClose }: Props) {
     const route = router.resolve(
       buildPlanCreateRoute(extractProjectResourceName(db.project), query)
     );
+    onClose();
     window.open(route.fullPath, "_blank");
   };
 

@@ -1634,6 +1634,7 @@
       "reset-to-defaults": "Reset to defaults"
     },
     "go-to-plan-page": "Go to plan page",
+    "initial-sql-storage-failed": "Unable to temporarily save the SQL. Clear some browser storage and try again.",
     "isolation-level": {
       "read-committed": "Read Committed",
       "read-uncommitted": "Read Uncommitted",
@@ -1811,7 +1812,8 @@
       "actions": {
         "explain-code": "Explain code",
         "find-problems": "Find problems",
-        "insert-at-caret": "Insert at caret"
+        "insert-at-caret": "Insert at caret",
+        "new-chat-using-selection": "New chat using selection"
       },
       "ai-assistant": "AI Assistant",
       "conversation": {

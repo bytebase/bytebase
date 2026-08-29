@@ -15,13 +15,15 @@ type Props = {
 const LINE_HEIGHT_PX = 20;
 const MIN_ROWS = 1;
 const MAX_ROWS = 10;
+const RESIZE_HANDLE_SIZE_PX = 16;
 
 /**
  * React port of `plugins/ai/components/PromptInput.vue`.
  *
- * Autosizing textarea (1-10 visible rows) bound to local state. Enter
- * submits; Shift+Enter inserts a newline. The trailing button is a
- * tooltipped ⏎ that submits when clicked.
+ * Autosizing textarea (1-10 visible rows) bound to local state. Users can
+ * resize it vertically, after which their chosen height is preserved. Enter
+ * submits; Shift+Enter inserts a newline. The trailing button is a tooltipped
+ * ⏎ that submits when clicked.
  *
  * Naive UI's `NInput type="textarea" autosize` isn't available; we
  * hand-roll the autosize by measuring `scrollHeight` after each value
@@ -31,8 +33,8 @@ const MAX_ROWS = 10;
  * identically for plain text input.
  *
  * Reacts to two external triggers from `AIContext`:
- *   - `pendingPreInput`: a one-shot seed value (e.g. `OpenAIButton`
- *     "Ask AI about this query"). Cleared after consumption.
+ *   - `pendingPreInput`: a one-shot seed value from an editor action. Cleared
+ *     after consumption.
  *   - `new-conversation` event: re-focuses the textarea so the user can
  *     immediately type into a freshly-created conversation.
  */
@@ -42,6 +44,7 @@ export function PromptInput({ disabled = false, onEnter }: Props) {
 
   const [value, setValue] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const manuallyResizedRef = useRef(false);
 
   // Focus on mount + on `new-conversation` so the user can start typing
   // immediately.
@@ -74,13 +77,25 @@ export function PromptInput({ disabled = false, onEnter }: Props) {
   // clamped to [MIN_ROWS, MAX_ROWS] lines.
   useLayoutEffect(() => {
     const el = textareaRef.current;
-    if (!el) return;
+    if (!el || manuallyResizedRef.current) return;
     el.style.height = "auto";
     const minHeight = MIN_ROWS * LINE_HEIGHT_PX;
     const maxHeight = MAX_ROWS * LINE_HEIGHT_PX;
     const next = Math.min(maxHeight, Math.max(minHeight, el.scrollHeight));
     el.style.height = `${next}px`;
   }, [value]);
+
+  const handlePointerDown = (
+    event: React.PointerEvent<HTMLTextAreaElement>
+  ) => {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    if (
+      event.clientX >= bounds.right - RESIZE_HANDLE_SIZE_PX &&
+      event.clientY >= bounds.bottom - RESIZE_HANDLE_SIZE_PX
+    ) {
+      manuallyResizedRef.current = true;
+    }
+  };
 
   const applyValue = (raw: string) => {
     setValue("");
@@ -125,19 +140,20 @@ export function PromptInput({ disabled = false, onEnter }: Props) {
         placeholder={t("plugin.ai.text-to-sql-placeholder")}
         onChange={(e) => setValue(e.target.value)}
         onKeyDown={handleKeyDown}
+        onPointerDown={handlePointerDown}
         rows={MIN_ROWS}
         className={cn(
-          "w-full resize-none rounded-xs border border-control-border bg-background pl-2 pr-9 py-1 text-sm",
+          "w-full min-h-5 max-h-[50vh] resize-y overflow-y-auto rounded-xs border border-control-border bg-background pl-2 pr-14 py-1 text-sm",
           "leading-5 text-main placeholder:text-control-placeholder",
           "focus:outline-none focus:border-accent focus:ring-0",
-          "disabled:opacity-50 disabled:cursor-not-allowed"
+          "disabled:resize-none disabled:opacity-50 disabled:cursor-not-allowed"
         )}
       />
       <Tooltip content={tooltipContent} side="top">
         <Button
           appearance="secondary"
           size="xs"
-          className="absolute right-1 bottom-1 h-6 px-1.5 text-accent"
+          className="absolute right-5 bottom-1 h-6 px-1.5 text-accent"
           disabled={!value || disabled}
           onClick={handleSubmitClick}
           aria-label={t("plugin.ai.send")}

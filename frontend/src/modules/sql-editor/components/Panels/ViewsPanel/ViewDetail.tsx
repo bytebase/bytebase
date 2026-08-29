@@ -32,7 +32,6 @@ export function ViewDetail({ db, database, schema, view }: ViewDetailProps) {
   const { detail, clearDetail } = useViewStateNav();
   const [mode, setMode] = useState<Mode>("COLUMNS");
   const [keyword, setKeyword] = useState("");
-  const [selectedStatement, setSelectedStatement] = useState("");
   const [format, setFormat] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return (
@@ -117,23 +116,14 @@ export function ViewDetail({ db, database, schema, view }: ViewDetailProps) {
               />
               {t("sql-editor.format")}
             </label>
-            <OpenAIButton
-              size="sm"
-              actions={["explain-code"]}
-              statement={selectedStatement || view.definition}
-            />
+            <OpenAIButton size="sm" />
           </div>
         ) : (
           <PanelSearchBox value={keyword} onChange={setKeyword} />
         )}
       </div>
       <TabsPanel value="DEFINITION" className="flex-1 min-h-0 mt-0">
-        <DefinitionViewer
-          db={db}
-          code={view.definition}
-          format={format}
-          onSelectContent={setSelectedStatement}
-        />
+        <DefinitionViewer db={db} code={view.definition} format={format} />
       </TabsPanel>
       {view.columns.length > 0 ? (
         <TabsPanel value="COLUMNS" className="flex-1 min-h-0 mt-0">

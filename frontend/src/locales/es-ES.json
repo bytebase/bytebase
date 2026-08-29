@@ -1634,6 +1634,7 @@
       "reset-to-defaults": "Restablecer valores predeterminados"
     },
     "go-to-plan-page": "Ir a la página del plan",
+    "initial-sql-storage-failed": "No se pudo guardar temporalmente el SQL. Libera espacio de almacenamiento del navegador e inténtalo de nuevo.",
     "isolation-level": {
       "read-committed": "Lectura confirmada",
       "read-uncommitted": "Lectura no confirmada",
@@ -1811,7 +1812,8 @@
       "actions": {
         "explain-code": "Explicar el código",
         "find-problems": "encontrar problemas",
-        "insert-at-caret": "Insertar en el cursor"
+        "insert-at-caret": "Insertar en el cursor",
+        "new-chat-using-selection": "Nuevo chat con la selección"
       },
       "ai-assistant": "Asistente de IA",
       "conversation": {

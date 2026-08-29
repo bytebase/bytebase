@@ -1634,6 +1634,7 @@
       "reset-to-defaults": "デフォルトに戻す"
     },
     "go-to-plan-page": "プランページへ移動",
+    "initial-sql-storage-failed": "SQL を一時保存できませんでした。ブラウザーのストレージを空けて、もう一度お試しください。",
     "isolation-level": {
       "read-committed": "コミット済み読み取り",
       "read-uncommitted": "未コミット読み取り",
@@ -1811,7 +1812,8 @@
       "actions": {
         "explain-code": "コードの説明",
         "find-problems": "問題を見つける",
-        "insert-at-caret": "キャレットに挿入"
+        "insert-at-caret": "キャレットに挿入",
+        "new-chat-using-selection": "選択範囲を使用して新しいチャットを開始"
       },
       "ai-assistant": "AI アシスタント",
       "conversation": {

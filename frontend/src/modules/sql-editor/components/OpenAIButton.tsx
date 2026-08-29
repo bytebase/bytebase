@@ -4,25 +4,16 @@ import { SETTING_ROUTE_WORKSPACE_GENERAL } from "@/app/router/handles";
 import { RouterLink } from "@/components/RouterLink";
 import { Button, buttonVariants } from "@/components/ui/button";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Tooltip } from "@/components/ui/tooltip";
 import {
   AI_ASSISTANT_PRODUCT_INTRO,
   PRODUCT_INTRO_QUERY_KEY,
 } from "@/lib/productIntro";
 import { cn } from "@/lib/utils";
-import { aiContextEvents } from "@/modules/ai/logic";
-import * as promptUtils from "@/modules/ai/logic/prompt";
-import type { ChatAction } from "@/modules/ai/types";
-import { useConnectionOfCurrentSQLEditorTab } from "@/modules/sql-editor/hooks/useSQLEditorState";
 import { useSQLEditorStore } from "@/modules/sql-editor/store";
 import {
   useIsDisconnected,
@@ -30,33 +21,25 @@ import {
 } from "@/modules/sql-editor/store/tab";
 import { useAppStore } from "@/stores/app";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
-import { hasWorkspacePermissionV2, nextAnimationFrame } from "@/utils";
+import { hasWorkspacePermissionV2 } from "@/utils";
 
 type Size = "sm" | "default";
 
 type Props = {
-  /**
-   * Restricts the popselect to the provided subset of actions. When omitted
-   * all built-in actions (explain-code, find-problems) render.
-   */
-  readonly actions?: ChatAction[];
-  /** The SQL statement the assistant should reason about. */
-  readonly statement?: string;
   readonly size?: Size;
 };
 
 /**
  * Replaces frontend/src/views/sql-editor/EditorCommon/OpenAIButton/*.vue.
  * Shows an AI-assistant toggle when the editor is connected + in saved query
- * mode. Clicking the button toggles the AI panel; the attached dropdown
- * offers shortcuts that seed the chat with a prompt.
+ * mode. Clicking the button toggles the AI panel. Statement-specific AI
+ * actions live in the editor context menu.
  */
-export function OpenAIButton({ actions, statement, size = "default" }: Props) {
+export function OpenAIButton({ size = "default" }: Props) {
   const { t } = useTranslation();
   const showAIPanel = useSQLEditorStore((s) => s.showAIPanel);
   const setShowAIPanel = useSQLEditorStore((s) => s.setShowAIPanel);
   const getOrFetchSettingByName = useAppStore((s) => s.getOrFetchSettingByName);
-  const { instance } = useConnectionOfCurrentSQLEditorTab();
 
   // Make sure the AI setting is resolved before we gate the enabled state.
   useEffect(() => {
@@ -73,8 +56,6 @@ export function OpenAIButton({ actions, statement, size = "default" }: Props) {
       ? setting.value.value.value.enabled
       : false;
   });
-
-  const [menuOpen, setMenuOpen] = useState(false);
 
   if (isDisconnected || currentMode !== "SAVED_QUERY") {
     return null;
@@ -111,80 +92,18 @@ export function OpenAIButton({ actions, statement, size = "default" }: Props) {
     );
   }
 
-  // ---- Enabled state -------------------------------------------------------
-  const allActions: { value: ChatAction; label: string }[] = [
-    { value: "explain-code", label: t("plugin.ai.actions.explain-code") },
-    { value: "find-problems", label: t("plugin.ai.actions.find-problems") },
-  ];
-  const visibleActions = actions
-    ? allActions.filter((o) => actions.includes(o.value))
-    : allActions;
-  const hasActions = visibleActions.length > 0;
-
-  const handleSelect = async (action: ChatAction) => {
-    setMenuOpen(false);
-    const newChat = !showAIPanel;
-    setShowAIPanel(true);
-
-    if (!statement) return;
-    await nextAnimationFrame();
-    if (action === "explain-code") {
-      void aiContextEvents.emit("send-chat", {
-        content: promptUtils.explainCode(statement, instance.engine),
-        newChat,
-      });
-    } else if (action === "find-problems") {
-      void aiContextEvents.emit("send-chat", {
-        content: promptUtils.findProblems(statement, instance.engine),
-        newChat,
-      });
-    }
-  };
-
-  const renderButton = (onClick?: () => void) => (
-    <Button
-      appearance={buttonAppearance}
-      size={size}
-      className={buttonClass}
-      aria-label={t("plugin.ai.ai-assistant")}
-      onClick={onClick}
-    >
-      {icon}
-    </Button>
-  );
-
-  if (!hasActions) {
-    return renderButton(handleToggle);
-  }
-
   return (
-    <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
-      <DropdownMenuTrigger
-        render={renderButton(handleToggle)}
-        onContextMenu={(e) => {
-          // Right-click opens the action menu; left-click is handled by the
-          // button's onClick and toggles the AI panel.
-          e.preventDefault();
-          setMenuOpen(true);
-        }}
-      />
-      <DropdownMenuContent align="end" sideOffset={4}>
-        <div className="px-3 py-1.5 text-xs font-semibold text-control-light">
-          {t("plugin.ai.ai-assistant")}
-        </div>
-        {visibleActions.map((opt) => (
-          <DropdownMenuItem
-            key={opt.value}
-            disabled={!statement}
-            onClick={() => {
-              void handleSelect(opt.value);
-            }}
-          >
-            {opt.label}
-          </DropdownMenuItem>
-        ))}
-      </DropdownMenuContent>
-    </DropdownMenu>
+    <Tooltip content={t("plugin.ai.ai-assistant")} side="bottom">
+      <Button
+        appearance={buttonAppearance}
+        size={size}
+        className={buttonClass}
+        aria-label={t("plugin.ai.ai-assistant")}
+        onClick={handleToggle}
+      >
+        {icon}
+      </Button>
+    </Tooltip>
   );
 }
 
