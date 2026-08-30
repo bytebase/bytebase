@@ -36,7 +36,7 @@ service DatabaseCatalogService {
         body: "catalog"
       }
     };
-    option (google.api.method_signature) = "catalog,update_mask";
+    option (google.api.method_signature) = "catalog";
     option (bytebase.v1.permission) = "bb.databaseCatalogs.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
