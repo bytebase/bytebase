@@ -264,30 +264,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 		storeSettingValue = payload
 	case storepb.SettingName_APP_IM:
-		if request.Msg.UpdateMask == nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
-		}
-		payload, err := convertAppIMSetting(request.Msg.Setting.Value.GetAppIm())
-		if err != nil {
-			return nil, err
-		}
-		stored := &storepb.AppIMSetting{}
-		if existedSetting != nil {
-			existing, ok := existedSetting.Value.(*storepb.AppIMSetting)
-			if !ok {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_APP_IM))
-			}
-			stored = existing
-		}
-		merged, err := mergeAppIMSetting(stored, payload, request.Msg.UpdateMask.Paths,
-			func(setting *storepb.AppIMSetting_IMSetting) error {
-				return validateIMSetting(ctx, setting, user)
-			})
-		if err != nil {
-			return nil, err
-		}
-
-		storeSettingValue = merged
+		return s.updateAppIMSetting(ctx, request, workspaceID, user)
 	case storepb.SettingName_DATA_CLASSIFICATION:
 		if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DATA_CLASSIFICATION); err != nil {
 			return nil, connect.NewError(connect.CodePermissionDenied, err)
@@ -546,12 +523,129 @@ var appIMSettingMaskPath = map[string]storepb.WebhookType{
 	"value.app_im_setting_value.teams": storepb.WebhookType_TEAMS,
 }
 
+// updateAppIMSetting handles the APP_IM branch of UpdateSetting through the
+// store's row-locking read-modify-write primitive: the merge runs inside the
+// transaction against the value of the locked row, so two admins configuring
+// different providers at once cannot each merge onto the same stale snapshot
+// and have the later write restore the other's provider from it. The row is
+// seeded at workspace creation, so the primitive always finds it.
+func (s *SettingService) updateAppIMSetting(ctx context.Context, request *connect.Request[v1pb.UpdateSettingRequest], workspaceID string, user *store.UserMessage) (*connect.Response[v1pb.Setting], error) {
+	if request.Msg.UpdateMask == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
+	}
+	payload, err := convertAppIMSetting(request.Msg.Setting.Value.GetAppIm())
+	if err != nil {
+		return nil, err
+	}
+	if err := preflightAppIMPaths(ctx, payload, request.Msg.UpdateMask.Paths, user); err != nil {
+		return nil, err
+	}
+
+	var lockedBefore *storepb.AppIMSetting
+	apply := func(current proto.Message) (proto.Message, error) {
+		stored, ok := current.(*storepb.AppIMSetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_APP_IM))
+		}
+		// The audit before-image is the row this merge actually ran against,
+		// not the possibly stale pre-lock snapshot captured by UpdateSetting.
+		lockedBefore = proto.CloneOf(stored)
+		return mergeAppIMSetting(stored, payload, request.Msg.UpdateMask.Paths)
+	}
+
+	if request.Msg.ValidateOnly {
+		fresh, err := s.store.GetSettingUncached(ctx, workspaceID, storepb.SettingName_APP_IM)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", storepb.SettingName_APP_IM, err))
+		}
+		if fresh == nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("cannot find setting %v", storepb.SettingName_APP_IM))
+		}
+		merged, err := apply(fresh.Value)
+		if err != nil {
+			return nil, err
+		}
+		// Return the merged value, not the request: the request carries only
+		// the masked providers, so echoing it would show every provider this
+		// update preserves as gone.
+		return newAppIMSettingResponse(workspaceID, merged)
+	}
+
+	setting, err := s.store.UpdateSettingAtomic(ctx, workspaceID, storepb.SettingName_APP_IM, apply, nil)
+	if err != nil {
+		var connectErr *connect.Error
+		if errors.As(err, &connectErr) {
+			return nil, err
+		}
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to set setting: %v", err))
+	}
+
+	// Re-capture the audit before-image from the locked row the merge ran
+	// against, overwriting UpdateSetting's earlier pre-lock snapshot.
+	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok && lockedBefore != nil {
+		v1pbSetting, err := convertToSettingMessage(&store.SettingMessage{
+			Name:      storepb.SettingName_APP_IM,
+			Workspace: workspaceID,
+			Value:     lockedBefore,
+		})
+		if err != nil {
+			slog.Warn("audit: failed to convert to v1.Setting", log.BBError(err))
+		}
+		p, err := anypb.New(v1pbSetting)
+		if err != nil {
+			slog.Warn("audit: failed to convert to anypb.Any", log.BBError(err))
+		}
+		setServiceData(p)
+	}
+
+	settingMessage, err := convertToSettingMessage(setting)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
+	}
+	return connect.NewResponse(settingMessage), nil
+}
+
+func newAppIMSettingResponse(workspaceID string, value proto.Message) (*connect.Response[v1pb.Setting], error) {
+	settingMessage, err := convertToSettingMessage(&store.SettingMessage{
+		Name:      storepb.SettingName_APP_IM,
+		Workspace: workspaceID,
+		Value:     value,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
+	}
+	return connect.NewResponse(settingMessage), nil
+}
+
+// preflightAppIMPaths validates the credentials of every provider the mask
+// names and the payload carries. It runs BEFORE the row-locking transaction:
+// each check is a round trip to the provider's own API, and holding the
+// setting row lock across one would let a slow vendor block every other write
+// to this row. None of it depends on the locked row.
+func preflightAppIMPaths(ctx context.Context, payload *storepb.AppIMSetting, paths []string, user *store.UserMessage) error {
+	for _, path := range paths {
+		imType, ok := appIMSettingMaskPath[path]
+		if !ok {
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
+		}
+		incoming := findIMSetting(payload.GetSettings(), imType)
+		if incoming == nil || incoming.GetPayload() == nil {
+			// A masked provider the payload omits is a removal.
+			continue
+		}
+		if err := validateIMSetting(ctx, incoming, user); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // mergeAppIMSetting splices only the masked providers of payload into stored.
 // Assigning the request wholesale used to drop every provider it left out, so
 // saving Slack wiped the stored Feishu, WeCom, Lark, DingTalk and Teams
 // secrets. A masked provider the payload omits is removed, which is how one is
 // deleted. stored is not modified.
-func mergeAppIMSetting(stored, payload *storepb.AppIMSetting, paths []string, validate func(*storepb.AppIMSetting_IMSetting) error) (*storepb.AppIMSetting, error) {
+func mergeAppIMSetting(stored, payload *storepb.AppIMSetting, paths []string) (*storepb.AppIMSetting, error) {
 	merged := proto.CloneOf(stored)
 	for _, path := range paths {
 		imType, ok := appIMSettingMaskPath[path]
@@ -564,9 +658,6 @@ func mergeAppIMSetting(stored, payload *storepb.AppIMSetting, paths []string, va
 				return s.GetType() == imType
 			})
 			continue
-		}
-		if err := validate(incoming); err != nil {
-			return nil, err
 		}
 		if existing := findIMSetting(merged.GetSettings(), imType); existing != nil {
 			proto.Reset(existing)
