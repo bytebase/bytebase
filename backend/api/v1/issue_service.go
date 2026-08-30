@@ -39,12 +39,6 @@ type IssueService struct {
 	reviewWorkflow *review.Workflow
 }
 
-type filterIssueMessage struct {
-	ApprovalStatus *v1pb.ApprovalStatus
-	// Approver is the user who can approve the issue.
-	Approver *store.UserMessage
-}
-
 // NewIssueService creates a new IssueService.
 func NewIssueService(
 	store *store.Store,
@@ -76,13 +70,17 @@ func (s *IssueService) GetIssue(ctx context.Context, req *connect.Request[v1pb.G
 	return connect.NewResponse(issueV1), nil
 }
 
+// getIssueFind translates the CEL filter into a store query. The second return
+// value is the user named by `current_approver`, if any: which roles that user
+// holds depends on the projects being searched, which the caller resolves after
+// this, so it is passed back for setNextApproverRoles rather than applied here.
 func (s *IssueService) getIssueFind(
 	ctx context.Context,
 	filter string,
 	query string,
 	limit,
 	offset *int,
-) (*store.FindIssueMessage, *filterIssueMessage, error) {
+) (*store.FindIssueMessage, *store.UserMessage, error) {
 	issueFind := &store.FindIssueMessage{
 		Workspace: common.GetWorkspaceIDFromContext(ctx),
 		Limit:     limit,
@@ -104,7 +102,7 @@ func (s *IssueService) getIssueFind(
 		return nil, nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
 	}
 
-	filterIssue := &filterIssueMessage{}
+	var approver *store.UserMessage
 
 	var parseFilter func(expr celast.Expr) (string, error)
 	parseFilter = func(expr celast.Expr) (string, error) {
@@ -136,14 +134,14 @@ func (s *IssueService) getIssueFind(
 					if !ok {
 						return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`invalid approval_status %q`, value))
 					}
-					filterIssue.ApprovalStatus = new(v1pb.ApprovalStatus(approvalStatusValue))
+					issueFind.ApprovalStatus = new(v1pb.ApprovalStatus(approvalStatusValue).String())
 				case "current_approver", "creator":
 					user, err := s.getUserByIdentifier(ctx, value.(string))
 					if err != nil {
 						return "", connect.NewError(connect.CodeInternal, errors.Errorf("failed to get user %v with error %v", value, err.Error()))
 					}
 					if variable == "current_approver" {
-						filterIssue.Approver = user
+						approver = user
 					} else {
 						issueFind.CreatorID = &user.Email
 					}
@@ -228,7 +226,33 @@ func (s *IssueService) getIssueFind(
 	if _, err := parseFilter(ast.NativeRep().Expr()); err != nil {
 		return nil, nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse filter"))
 	}
-	return issueFind, filterIssue, nil
+	return issueFind, approver, nil
+}
+
+// setNextApproverRoles resolves the roles the approver holds in each project
+// being searched, so that `current_approver` is matched in SQL. A user with no
+// role in any of them yields an empty set, which matches no issue.
+func (s *IssueService) setNextApproverRoles(ctx context.Context, issueFind *store.FindIssueMessage, approver *store.UserMessage) error {
+	if approver == nil {
+		return nil
+	}
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	workspacePolicy, err := s.store.GetWorkspaceIamPolicy(ctx, workspaceID)
+	if err != nil {
+		return errors.Wrapf(err, "failed to get workspace iam policy")
+	}
+	projectRoles := []store.ProjectRole{}
+	for _, projectID := range issueFind.ProjectIDs {
+		projectPolicy, err := s.store.GetProjectIamPolicy(ctx, workspaceID, projectID)
+		if err != nil {
+			return errors.Wrapf(err, "failed to get iam policy for project %q", projectID)
+		}
+		for role := range utils.GetUserFormattedRolesMap(ctx, s.store, workspaceID, approver, projectPolicy.Policy, workspacePolicy.Policy) {
+			projectRoles = append(projectRoles, store.ProjectRole{ProjectID: projectID, Role: role})
+		}
+	}
+	issueFind.NextApproverRoles = &projectRoles
+	return nil
 }
 
 func (s *IssueService) ListIssues(ctx context.Context, req *connect.Request[v1pb.ListIssuesRequest]) (*connect.Response[v1pb.ListIssuesResponse], error) {
@@ -251,12 +275,15 @@ func (s *IssueService) ListIssues(ctx context.Context, req *connect.Request[v1pb
 	}
 	limitPlusOne := offset.limit + 1
 
-	issueFind, issueFilter, err := s.getIssueFind(ctx, req.Msg.Filter, req.Msg.Query, &limitPlusOne, &offset.offset)
+	issueFind, approver, err := s.getIssueFind(ctx, req.Msg.Filter, req.Msg.Query, &limitPlusOne, &offset.offset)
 	if err != nil {
 		return nil, err
 	}
 	issueFind.ProjectIDs = []string{projectID}
 	issueFind.ExcludeDraft = true
+	if err := s.setNextApproverRoles(ctx, issueFind, approver); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
 
 	orderByKeys, err := store.GetIssueOrders(req.Msg.OrderBy)
 	if err != nil {
@@ -277,7 +304,7 @@ func (s *IssueService) ListIssues(ctx context.Context, req *connect.Request[v1pb
 		issues = issues[:offset.limit]
 	}
 
-	converted, err := s.convertToIssues(ctx, issues, issueFilter)
+	converted, err := s.convertToIssues(issues)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
 	}
@@ -307,7 +334,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, req *connect.Request[v1
 	}
 	limitPlusOne := offset.limit + 1
 
-	issueFind, issueFilter, err := s.getIssueFind(ctx, req.Msg.Filter, req.Msg.Query, &limitPlusOne, &offset.offset)
+	issueFind, approver, err := s.getIssueFind(ctx, req.Msg.Filter, req.Msg.Query, &limitPlusOne, &offset.offset)
 	if err != nil {
 		return nil, err
 	}
@@ -361,6 +388,9 @@ func (s *IssueService) SearchIssues(ctx context.Context, req *connect.Request[v1
 	}
 	issueFind.ProjectIDs = projectIDs
 	issueFind.ExcludeDraft = true
+	if err := s.setNextApproverRoles(ctx, issueFind, approver); err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
+	}
 
 	issues, err := s.store.ListIssues(ctx, issueFind)
 	if err != nil {
@@ -375,7 +405,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, req *connect.Request[v1
 		issues = issues[:offset.limit]
 	}
 
-	converted, err := s.convertToIssues(ctx, issues, issueFilter)
+	converted, err := s.convertToIssues(issues)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to issue"))
 	}

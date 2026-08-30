@@ -108,7 +108,54 @@ type FindIssueMessage struct {
 	LabelList     []string
 	RiskLevelList []storepb.RiskLevel
 	OrderByKeys   []*OrderByKey
+
+	// ApprovalStatus is a v1 ApprovalStatus enum name (CHECKING, SKIPPED,
+	// PENDING, APPROVED, REJECTED). It is derived from the payload rather than
+	// stored, so it is matched by approvalStatusExpr below.
+	ApprovalStatus *string
+	// NextApproverRoles restricts the list to issues whose approval flow is
+	// currently waiting on one of these (project, role) pairs. Resolving which
+	// roles a user holds needs the IAM policies, so the caller does that and
+	// passes the result here. Non-nil and empty matches no issue.
+	NextApproverRoles *[]ProjectRole
 }
+
+// ProjectRole is a role held in one project.
+type ProjectRole struct {
+	ProjectID string
+	Role      string
+}
+
+// approvalStatusExpr derives the v1 ApprovalStatus of an issue from its
+// payload. It mirrors computeApprovalStatus in
+// backend/api/v1/issue_service_converter.go branch for branch, including the
+// empty-approvers case that precedes the rejected and approved checks. Keep the
+// two in step.
+//
+// Payloads are written with a bare protojson.Marshal, so a zero value is an
+// absent key: no approvalFindingDone means false and no approvers means empty.
+const approvalStatusExpr = `
+	CASE
+		WHEN NOT COALESCE((issue.payload->'approval'->>'approvalFindingDone')::BOOLEAN, FALSE) THEN 'CHECKING'
+		WHEN issue.payload->'approval'->'approvalTemplate' IS NULL THEN 'SKIPPED'
+		WHEN COALESCE(jsonb_array_length(issue.payload->'approval'->'approvers'), 0) = 0 THEN 'PENDING'
+		WHEN issue.payload->'approval'->'approvers' @> '[{"status": "REJECTED"}]'::JSONB THEN 'REJECTED'
+		WHEN COALESCE(jsonb_array_length(issue.payload->'approval'->'approvers'), 0)
+				>= COALESCE(jsonb_array_length(issue.payload->'approval'->'approvalTemplate'->'flow'->'roles'), 0)
+			AND NOT EXISTS (
+				SELECT 1
+				FROM jsonb_array_elements(issue.payload->'approval'->'approvers') AS approver
+				WHERE COALESCE(approver->>'status', '') <> 'APPROVED'
+			) THEN 'APPROVED'
+		ELSE 'PENDING'
+	END`
+
+// nextApprovalRoleExpr is the role the approval flow is waiting on: the flow
+// role at the index of the first step nobody has acted on yet. `->>` with an
+// index past the end of the array yields NULL, which is how a fully acted-on
+// flow drops out.
+const nextApprovalRoleExpr = `issue.payload->'approval'->'approvalTemplate'->'flow'->'roles'
+		->> COALESCE(jsonb_array_length(issue.payload->'approval'->'approvers'), 0)`
 
 // GetIssueOrders parses the order_by string and returns the corresponding OrderByKeys.
 func GetIssueOrders(orderBy string) ([]*OrderByKey, error) {
@@ -398,6 +445,27 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 	}
 	if find.ExcludeDraft {
 		where.And("COALESCE(issue.payload->>'draft', 'false') = 'false'")
+	}
+	// Both approval predicates are matched in SQL rather than over the returned
+	// page: filtering after LIMIT mints a page token for rows that are then
+	// dropped, so a filtered list can answer with an empty page and a live next
+	// page token.
+	if v := find.ApprovalStatus; v != nil {
+		where.And("("+approvalStatusExpr+") = ?", *v)
+	}
+	if v := find.NextApproverRoles; v != nil {
+		projects := make([]string, 0, len(*v))
+		roles := make([]string, 0, len(*v))
+		for _, projectRole := range *v {
+			projects = append(projects, projectRole.ProjectID)
+			roles = append(roles, projectRole.Role)
+		}
+		where.And(`EXISTS (
+			SELECT 1
+			FROM unnest(?::TEXT[], ?::TEXT[]) AS approver_role(project, role)
+			WHERE approver_role.project = issue.project
+				AND approver_role.role = `+nextApprovalRoleExpr+`
+		)`, projects, roles)
 	}
 
 	// issue.id alone is not unique across projects — nextProjectID floors every
