@@ -93,7 +93,6 @@ const agentFiles = [
   resolve(frontendRoot, "tests/e2e/AGENTS.md"),
   resolve(frontendRoot, "src/modules/agent/AGENTS.md"),
   resolve(frontendRoot, "src/modules/sql-editor/AGENTS.md"),
-  resolve(repoRoot, ".sonarcloud.properties"),
 ];
 const retiredDocumentationTokens = [
   ["src", "react"].join("/"),
