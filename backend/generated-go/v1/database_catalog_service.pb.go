@@ -137,14 +137,13 @@ func (x *GetDatabaseCatalogRequest) GetName() string {
 // Request message for updating a database catalog.
 type UpdateDatabaseCatalogRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The database catalog to update.
-	//
-	// The catalog's `name` field is used to identify the database catalog to update.
+	// The database catalog to update, identified by its `name` field.
 	// Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
-	Catalog *DatabaseCatalog `protobuf:"bytes,1,opt,name=catalog,proto3" json:"catalog,omitempty"`
-	// If set to true, and the database catalog is not found, a new database catalog will be created.
-	// In this situation, `update_mask` is ignored.
-	AllowMissing  bool `protobuf:"varint,2,opt,name=allow_missing,json=allowMissing,proto3" json:"allow_missing,omitempty"`
+	//
+	// Replaces the whole catalog: send the complete value, since anything omitted
+	// is erased. There is no `update_mask` because `schemas` is a repeated field,
+	// and AIP-161 forbids addressing one element of one.
+	Catalog       *DatabaseCatalog `protobuf:"bytes,1,opt,name=catalog,proto3" json:"catalog,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -184,13 +183,6 @@ func (x *UpdateDatabaseCatalogRequest) GetCatalog() *DatabaseCatalog {
 		return x.Catalog
 	}
 	return nil
-}
-
-func (x *UpdateDatabaseCatalogRequest) GetAllowMissing() bool {
-	if x != nil {
-		return x.AllowMissing
-	}
-	return false
 }
 
 // Catalog metadata for a database including schemas, tables, and columns.
@@ -737,10 +729,9 @@ const file_v1_database_catalog_service_proto_rawDesc = "" +
 	"!v1/database_catalog_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x13v1/annotation.proto\"U\n" +
 	"\x19GetDatabaseCatalogRequest\x128\n" +
 	"\x04name\x18\x01 \x01(\tB$\xe0A\x02\xfaA\x1e\n" +
-	"\x1cbytebase.com/DatabaseCatalogR\x04name\"\x80\x01\n" +
+	"\x1cbytebase.com/DatabaseCatalogR\x04name\"p\n" +
 	"\x1cUpdateDatabaseCatalogRequest\x12;\n" +
-	"\acatalog\x18\x01 \x01(\v2\x1c.bytebase.v1.DatabaseCatalogB\x03\xe0A\x02R\acatalog\x12#\n" +
-	"\rallow_missing\x18\x02 \x01(\bR\fallowMissing\"\xf9\x01\n" +
+	"\acatalog\x18\x01 \x01(\v2\x1c.bytebase.v1.DatabaseCatalogB\x03\xe0A\x02R\acatalogJ\x04\b\x02\x10\x03R\rallow_missing\"\xf9\x01\n" +
 	"\x0fDatabaseCatalog\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x124\n" +
 	"\aschemas\x18\x02 \x03(\v2\x1a.bytebase.v1.SchemaCatalogR\aschemas:\x9b\x01\xeaA\x97\x01\n" +

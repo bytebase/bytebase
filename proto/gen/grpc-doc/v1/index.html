@@ -18499,18 +18499,12 @@ Format: instances/{instance}/databases/{database}/catalog or projects/{project}/
                   <td>catalog</td>
                   <td><a href="#bytebase.v1.DatabaseCatalog">DatabaseCatalog</a></td>
                   <td></td>
-                  <td><p>The database catalog to update.
+                  <td><p>The database catalog to update, identified by its `name` field.
+Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
 
-The catalog&#39;s `name` field is used to identify the database catalog to update.
-Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog </p></td>
-                </tr>
-              
-                <tr>
-                  <td>allow_missing</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If set to true, and the database catalog is not found, a new database catalog will be created.
-In this situation, `update_mask` is ignored. </p></td>
+Replaces the whole catalog: send the complete value, since anything omitted
+is erased. There is no `update_mask` because `schemas` is a repeated field,
+and AIP-161 forbids addressing one element of one. </p></td>
                 </tr>
               
             </tbody>

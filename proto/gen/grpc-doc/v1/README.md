@@ -6537,10 +6537,9 @@ Request message for updating a database catalog.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| catalog | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  | The database catalog to update.
+| catalog | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  | The database catalog to update, identified by its `name` field. Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
 
-The catalog&#39;s `name` field is used to identify the database catalog to update. Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog |
-| allow_missing | [bool](#bool) |  | If set to true, and the database catalog is not found, a new database catalog will be created. In this situation, `update_mask` is ignored. |
+Replaces the whole catalog: send the complete value, since anything omitted is erased. There is no `update_mask` because `schemas` is a repeated field, and AIP-161 forbids addressing one element of one. |
 
 
 

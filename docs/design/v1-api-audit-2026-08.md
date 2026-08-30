@@ -10,7 +10,6 @@ noted. Fixed findings are removed and listed at the end.
 
 | | Problem | Severity |
 |---|---|---|
-| T15 | Rotating a leaked cloud credential can silently do nothing | HIGH |
 | T13 | "Waiting for my approval" can show an empty page with a live Load More | HIGH |
 | T18a | Test-environment rights can cancel a running production migration | MED |
 | T12 | Anonymous callers can enumerate emails, relay mail, and read your LDAP config | MED |
@@ -65,28 +64,6 @@ enforced. It's decorative, and it reads as protection. `acl.go:251-253`, `group_
 ---
 
 ## The API says OK and does nothing
-
-### T15 · `update_mask` is ignored in four places — HIGH
-
-The worst one: **rotating a leaked cloud credential can silently no-op.** `UpdateDataSource` decides
-what to write based on the `authentication_type` in the request rather than the mask or the stored
-value, so a request carrying only a new GCP credential falls through an empty branch and writes
-nothing. You get HTTP 200 and the compromised key stays live. `instance_service.go:1405-1447`
-
-The other three lose data rather than fail to save it:
-
-- **`UpdateSetting` replaces whole settings.** Updating your Slack config wipes stored Feishu, WeCom,
-  Lark, DingTalk and Teams secrets — and it *validates* the mask path first, then ignores it. For
-  environments the replace cascades into every instance and database. `setting_service.go:329-391`,
-  `:505-525`
-- **`UpdateDatabaseCatalog` never reads a mask at all** and replaces the whole config column, wiping
-  other schemas' classification and masking. Its proto comment refers to an `update_mask` field that
-  doesn't exist. `database_catalog_service.go:96-139`
-- **`UpdateIssue` implements four fields** and silently drops the rest, so `update_mask=["status"]`
-  returns 200 and does nothing. `issue_service.go:922-948`
-
-Underneath: some Update RPCs reject unknown mask paths, others ignore them, in four different error
-wordings. There's no shared validator.
 
 ### T18b · Concurrent permission edits silently lose one side — MED
 
@@ -200,14 +177,12 @@ constraints.
 
 ## What I'd do, in order
 
-1. **Make credential rotation fail loudly (T15).** A security operation that returns 200 and does
-   nothing is worse than one that errors.
-2. **Make the extractor's misses loud.** A `Create`/`Update` request whose conventional field is
+1. **Make the extractor's misses loud.** A `Create`/`Update` request whose conventional field is
    absent still degrades silently to a workspace check — `UpdateDatabaseCatalog` sat that way until
    it was found by sweep, not by failure. Rejecting it at startup, the same shape as the
    `AUTH_METHOD_UNSPECIFIED` gate below, turns the next `catalog`-style field name into a build
    failure instead of a silent scope change.
-3. **Fail closed on auth annotations, and put api-linter in CI.** Reject
+2. **Fail closed on auth annotations, and put api-linter in CI.** Reject
    `AUTH_METHOD_UNSPECIFIED` at startup; make a `permission` on a CUSTOM RPC either enforced or a
    build error, since 15 are decorative. None of Tier 5 was visible to `buf lint`'s BASIC profile,
    which is why it accumulated.
@@ -229,6 +204,7 @@ constraints.
 | T13 `SearchWorksheets` | [#21160](https://github.com/bytebase/bytebase/pull/21160) + [#21178](https://github.com/bytebase/bytebase/pull/21178) — visibility predicate pushed into SQL before `LIMIT` |
 | T18 worksheet write/delete | [#21169](https://github.com/bytebase/bytebase/pull/21169) + [#21181](https://github.com/bytebase/bytebase/pull/21181) — per-verb permissions; SQL Editor Read User can no longer rewrite or delete |
 | T9 | [#21189](https://github.com/bytebase/bytebase/pull/21189) (self-hosted audit rows) + [#21234](https://github.com/bytebase/bytebase/pull/21234) — one `login_attempt` table bounds password, email-code, and MFA guessing per identity on both deployments, replacing the audit-log counter and the per-code attempt column (which bypassed the resend cooldown). Accepted with it: no per-tenant failed-login record on Cloud, and lockout-as-denial-of-service — see [`login-attempt-lockout.md`](login-attempt-lockout.md) |
+| T15 | `update_mask` now decides what each of the four Update methods writes. **`UpdateDataSource`** dispatches the IAM credential on the mask path instead of the request's `authentication_type`, which was unset on any request that masked only the credential — the AIP-134 shape — so rotating a leaked key returned 200 and wrote nothing. The same branch, given a body type that disagreed with the mask, wrote the *other* credential and moved `authentication_type` with it though the mask named neither; the effective type is now resolved from the mask before the loop and a mismatched path is `InvalidArgument`. **`UpdateSetting(APP_IM)`** splices only the masked providers into the stored value rather than assigning the request wholesale, so saving Slack no longer erases the Feishu, WeCom, Lark, DingTalk and Teams secrets; the mask is now required, and a masked provider the payload omits is removed, which is how the console deletes one (it no longer merges the list client-side). **`UpdateIssue`** rejects paths it does not implement instead of returning 200 and dropping them — `status` belongs to `BatchUpdateIssuesStatus` and approvals to `ApproveIssue`/`RejectIssue`, so the supported set was right and only the silence was wrong. **`UpdateDatabaseCatalog`** keeps full-replace semantics and now says so in the proto; its `allow_missing` is removed and the number reserved, because a catalog is not independently creatable — it exists once its database is synced — so the flag had nothing to create, and the ACL's create-permission check on it denied every caller. Both merges were extracted into pure functions (`applyDataSourceUpdateMask`, `mergeAppIMSetting`), so `instance_service_test.go` and `setting_service_test.go` pin the behavior in milliseconds without a server or a metadata database. Accepted with it: the APP_IM mask paths still name no real proto field (`AppIMSetting` holds one repeated `settings`, and `value.app_im_setting_value.teams` is not a field path at all), so they are matched as a fixed vocabulary — making them true paths means restructuring the message one-field-per-provider, which needs a JSONB migration. Also left open, and the reason `UpdateDatabaseCatalog`'s hazard is documented rather than removed: a mask cannot express "this one table" while `schemas` is repeated, and read-modify-write on the catalog and on any IAM policy still loses one side of a concurrent edit, which needs an etag (AIP-154, and T18b) |
 | T14 | [#21267](https://github.com/bytebase/bytebase/pull/21267) — filed as issue paging; the sweep it prompted found the same defect across the class, so it was fixed as a class. Counting endpoints, **17 of the 22** offset-paginated v1 list RPCs were affected; counting the store functions behind them, **14 of 17**. The three already sorting on a total order were `ListQueryHistories` and `ListSavedQueries` (both from one commit, [#21203](https://github.com/bytebase/bytebase/pull/21203), that was never swept across the other lists) and `ListPlans`, which is total only because a mandatory `WHERE plan.project = ?` pins its scope column. Every store list now names tiebreak columns that are unique under its own scope — written into the SQL, and appended after the caller's keys at the six affected lists that accept an `order_by`. The three that were already total are left untouched. Nothing enforces this statically: an earlier revision routed all seventeen through a `buildStableOrderBy` helper so an AST test could require it, but review judged that ceremony and both were removed, so a new paginated list added without a tiebreak will not fail CI. Enforcement is step 4 of `docs/pre-pr-checklist.md` plus review, with `TestPaginationStabilityAcrossProjects` and `TestIssueCommentBatchKeepsInsertionOrder` covering the behavior against a real PostgreSQL. The rules, and the five traps that produced the class — `id` alone in a `(project, id)` table, `created_at` (the *transaction* timestamp, identical across a batch insert), a nullable column, a partial unique index, and an `order_by` that replaces the default ordering rather than adding to it — are in [`backend/store/AGENTS.md`](../../backend/store/AGENTS.md#pagination-ordering). One adjacent bug fixed with it: `ListDatabases`, `ListInstances` and `ListProjects` each threw away the whole clause, tiebreak included, the moment a caller passed `order_by` — which is what broke their paging. Accepted with them: offset paging still drifts under concurrent inserts and deletes (that needs keyset pagination and a page-token change). `ListIssueComment` needed a second fix: its `resource_id` tiebreak is a random UUID, which would have scrambled the activity feed of a multi-field `UpdateIssue`, so `CreateIssueComments` now offsets each row of a batch by its ordinal to keep `created_at` unique and in insertion order. Deliberately out of scope, and worth its own change: `issue.id` is a per-project counter, so ordering a cross-project list by it is not recency — seeded with a three-year-old project and one created today, the newest issue in the new project ranked 4962nd on the default list. Making `create_time` the cross-project default is a product decision. Also left alone: issue search still discards an explicit `order_by` outright when the caller supplied query text |
 | T10 | [#21252](https://github.com/bytebase/bytebase/pull/21252) + [#21258](https://github.com/bytebase/bytebase/pull/21258) — password change and MFA lifecycle move off `UpdateUser` onto their own methods, each requiring a `CredentialProof`: current password, live OTP, recovery code, or a Cloud-only emailed re-auth code. Every proof claims a T9 login-attempt slot, so no proof channel is an unbounded guessing oracle, and a factor-touching method refuses the password while a live factor exists. Accepted with it: **the stolen access token still answers until it expires (≤1h)** — credential generation and the fenced transaction were cut or deferred, password change revokes only the account's web refresh tokens (best-effort, OAuth grants untouched), and an MFA change revokes nothing. What this closes is the credential being *spent* on its own replacement, not the session. Design, and the shipped-vs-designed delta: [`reauthenticate-credential-changes.md`](reauthenticate-credential-changes.md) |
 
