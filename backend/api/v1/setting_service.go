@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"regexp"
+	"slices"
 	"strings"
 	"time"
 
@@ -263,84 +264,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 		storeSettingValue = payload
 	case storepb.SettingName_APP_IM:
-		payload, err := convertAppIMSetting(request.Msg.Setting.Value.GetAppIm())
-		if err != nil {
-			return nil, err
-		}
-
-		// Helper function to find or create an IM setting entry by type
-		findIMSetting := func(imType storepb.WebhookType) *storepb.AppIMSetting_IMSetting {
-			for _, s := range payload.Settings {
-				if s.Type == imType {
-					return s
-				}
-			}
-			return nil
-		}
-
-		for _, path := range request.Msg.GetUpdateMask().GetPaths() {
-			switch path {
-			case "value.app_im.slack":
-				slackSetting := findIMSetting(storepb.WebhookType_SLACK)
-				if slackSetting == nil || slackSetting.GetSlack() == nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found slack setting"))
-				}
-				if err := slack.ValidateToken(ctx, slackSetting.GetSlack().GetToken()); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
-				}
-
-			case "value.app_im.feishu":
-				feishuSetting := findIMSetting(storepb.WebhookType_FEISHU)
-				if feishuSetting == nil || feishuSetting.GetFeishu() == nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found feishu setting"))
-				}
-				if err := feishu.Validate(ctx, feishuSetting.GetFeishu().GetAppId(), feishuSetting.GetFeishu().GetAppSecret(), user.Email); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
-				}
-
-			case "value.app_im.wecom":
-				wecomSetting := findIMSetting(storepb.WebhookType_WECOM)
-				if wecomSetting == nil || wecomSetting.GetWecom() == nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found wecom setting"))
-				}
-				if err := wecom.Validate(ctx, wecomSetting.GetWecom().GetCorpId(), wecomSetting.GetWecom().GetAgentId(), wecomSetting.GetWecom().GetSecret()); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
-				}
-
-			case "value.app_im.lark":
-				larkSetting := findIMSetting(storepb.WebhookType_LARK)
-				if larkSetting == nil || larkSetting.GetLark() == nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found lark setting"))
-				}
-				if err := lark.Validate(ctx, larkSetting.GetLark().GetAppId(), larkSetting.GetLark().GetAppSecret(), user.Email); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
-				}
-
-			case "value.app_im.dingtalk":
-				dingtalkSetting := findIMSetting(storepb.WebhookType_DINGTALK)
-				if dingtalkSetting == nil || dingtalkSetting.GetDingtalk() == nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found dingtalk setting"))
-				}
-				if err := dingtalk.Validate(ctx, dingtalkSetting.GetDingtalk().GetClientId(), dingtalkSetting.GetDingtalk().GetClientSecret(), dingtalkSetting.GetDingtalk().GetRobotCode(), user.Phone); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
-				}
-
-			case "value.app_im_setting_value.teams":
-				teamsSetting := findIMSetting(storepb.WebhookType_TEAMS)
-				if teamsSetting == nil || teamsSetting.GetTeams() == nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found teams setting"))
-				}
-				if err := teams.Validate(ctx, teamsSetting.GetTeams().GetTenantId(), teamsSetting.GetTeams().GetClientId(), teamsSetting.GetTeams().GetClientSecret(), user.Email); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
-				}
-
-			default:
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
-			}
-		}
-
-		storeSettingValue = payload
-
+		return s.updateAppIMSetting(ctx, request, workspaceID, user)
 	case storepb.SettingName_DATA_CLASSIFICATION:
 		if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DATA_CLASSIFICATION); err != nil {
 			return nil, connect.NewError(connect.CodePermissionDenied, err)
@@ -584,6 +508,199 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	}
 
 	return connect.NewResponse(settingMessage), nil
+}
+
+// appIMSettingMaskPath maps each accepted APP_IM mask path to the provider it
+// addresses. The paths do not name real proto fields — AppIMSetting holds one
+// repeated `settings`, and AIP-161 does not let a mask address a repeated
+// element — so they are matched as a fixed vocabulary rather than traversed.
+var appIMSettingMaskPath = map[string]storepb.WebhookType{
+	"value.app_im.slack":               storepb.WebhookType_SLACK,
+	"value.app_im.feishu":              storepb.WebhookType_FEISHU,
+	"value.app_im.wecom":               storepb.WebhookType_WECOM,
+	"value.app_im.lark":                storepb.WebhookType_LARK,
+	"value.app_im.dingtalk":            storepb.WebhookType_DINGTALK,
+	"value.app_im_setting_value.teams": storepb.WebhookType_TEAMS,
+}
+
+// updateAppIMSetting handles the APP_IM branch of UpdateSetting through the
+// store's row-locking read-modify-write primitive: the merge runs inside the
+// transaction against the value of the locked row, so two admins configuring
+// different providers at once cannot each merge onto the same stale snapshot
+// and have the later write restore the other's provider from it. The row is
+// seeded at workspace creation, so the primitive always finds it.
+func (s *SettingService) updateAppIMSetting(ctx context.Context, request *connect.Request[v1pb.UpdateSettingRequest], workspaceID string, user *store.UserMessage) (*connect.Response[v1pb.Setting], error) {
+	if request.Msg.UpdateMask == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
+	}
+	payload, err := convertAppIMSetting(request.Msg.Setting.Value.GetAppIm())
+	if err != nil {
+		return nil, err
+	}
+	if err := preflightAppIMPaths(ctx, payload, request.Msg.UpdateMask.Paths, user); err != nil {
+		return nil, err
+	}
+
+	var lockedBefore *storepb.AppIMSetting
+	apply := func(current proto.Message) (proto.Message, error) {
+		stored, ok := current.(*storepb.AppIMSetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_APP_IM))
+		}
+		// The audit before-image is the row this merge actually ran against,
+		// not the possibly stale pre-lock snapshot captured by UpdateSetting.
+		lockedBefore = proto.CloneOf(stored)
+		return mergeAppIMSetting(stored, payload, request.Msg.UpdateMask.Paths)
+	}
+
+	if request.Msg.ValidateOnly {
+		fresh, err := s.store.GetSettingUncached(ctx, workspaceID, storepb.SettingName_APP_IM)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", storepb.SettingName_APP_IM, err))
+		}
+		if fresh == nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("cannot find setting %v", storepb.SettingName_APP_IM))
+		}
+		merged, err := apply(fresh.Value)
+		if err != nil {
+			return nil, err
+		}
+		// Return the merged value, not the request: the request carries only
+		// the masked providers, so echoing it would show every provider this
+		// update preserves as gone.
+		return newAppIMSettingResponse(workspaceID, merged)
+	}
+
+	setting, err := s.store.UpdateSettingAtomic(ctx, workspaceID, storepb.SettingName_APP_IM, apply, nil)
+	if err != nil {
+		var connectErr *connect.Error
+		if errors.As(err, &connectErr) {
+			return nil, err
+		}
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to set setting: %v", err))
+	}
+
+	// Re-capture the audit before-image from the locked row the merge ran
+	// against, overwriting UpdateSetting's earlier pre-lock snapshot.
+	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok && lockedBefore != nil {
+		v1pbSetting, err := convertToSettingMessage(&store.SettingMessage{
+			Name:      storepb.SettingName_APP_IM,
+			Workspace: workspaceID,
+			Value:     lockedBefore,
+		})
+		if err != nil {
+			slog.Warn("audit: failed to convert to v1.Setting", log.BBError(err))
+		}
+		p, err := anypb.New(v1pbSetting)
+		if err != nil {
+			slog.Warn("audit: failed to convert to anypb.Any", log.BBError(err))
+		}
+		setServiceData(p)
+	}
+
+	settingMessage, err := convertToSettingMessage(setting)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
+	}
+	return connect.NewResponse(settingMessage), nil
+}
+
+func newAppIMSettingResponse(workspaceID string, value proto.Message) (*connect.Response[v1pb.Setting], error) {
+	settingMessage, err := convertToSettingMessage(&store.SettingMessage{
+		Name:      storepb.SettingName_APP_IM,
+		Workspace: workspaceID,
+		Value:     value,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
+	}
+	return connect.NewResponse(settingMessage), nil
+}
+
+// preflightAppIMPaths validates the credentials of every provider the mask
+// names and the payload carries. It runs BEFORE the row-locking transaction:
+// each check is a round trip to the provider's own API, and holding the
+// setting row lock across one would let a slow vendor block every other write
+// to this row. None of it depends on the locked row.
+func preflightAppIMPaths(ctx context.Context, payload *storepb.AppIMSetting, paths []string, user *store.UserMessage) error {
+	for _, path := range paths {
+		imType, ok := appIMSettingMaskPath[path]
+		if !ok {
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
+		}
+		incoming := findIMSetting(payload.GetSettings(), imType)
+		if incoming == nil || incoming.GetPayload() == nil {
+			// A masked provider the payload omits is a removal.
+			continue
+		}
+		if err := validateIMSetting(ctx, incoming, user); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// mergeAppIMSetting splices only the masked providers of payload into stored.
+// Assigning the request wholesale used to drop every provider it left out, so
+// saving Slack wiped the stored Feishu, WeCom, Lark, DingTalk and Teams
+// secrets. A masked provider the payload omits is removed, which is how one is
+// deleted. stored is not modified.
+func mergeAppIMSetting(stored, payload *storepb.AppIMSetting, paths []string) (*storepb.AppIMSetting, error) {
+	merged := proto.CloneOf(stored)
+	for _, path := range paths {
+		imType, ok := appIMSettingMaskPath[path]
+		if !ok {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
+		}
+		incoming := findIMSetting(payload.GetSettings(), imType)
+		if incoming == nil || incoming.GetPayload() == nil {
+			merged.Settings = slices.DeleteFunc(merged.Settings, func(s *storepb.AppIMSetting_IMSetting) bool {
+				return s.GetType() == imType
+			})
+			continue
+		}
+		if existing := findIMSetting(merged.GetSettings(), imType); existing != nil {
+			proto.Reset(existing)
+			proto.Merge(existing, incoming)
+		} else {
+			merged.Settings = append(merged.Settings, incoming)
+		}
+	}
+	return merged, nil
+}
+
+func findIMSetting(settings []*storepb.AppIMSetting_IMSetting, imType storepb.WebhookType) *storepb.AppIMSetting_IMSetting {
+	for _, setting := range settings {
+		if setting.GetType() == imType {
+			return setting
+		}
+	}
+	return nil
+}
+
+// validateIMSetting checks the provider's credentials against its own API.
+func validateIMSetting(ctx context.Context, setting *storepb.AppIMSetting_IMSetting, user *store.UserMessage) error {
+	var err error
+	switch setting.GetType() {
+	case storepb.WebhookType_SLACK:
+		err = slack.ValidateToken(ctx, setting.GetSlack().GetToken())
+	case storepb.WebhookType_FEISHU:
+		err = feishu.Validate(ctx, setting.GetFeishu().GetAppId(), setting.GetFeishu().GetAppSecret(), user.Email)
+	case storepb.WebhookType_WECOM:
+		err = wecom.Validate(ctx, setting.GetWecom().GetCorpId(), setting.GetWecom().GetAgentId(), setting.GetWecom().GetSecret())
+	case storepb.WebhookType_LARK:
+		err = lark.Validate(ctx, setting.GetLark().GetAppId(), setting.GetLark().GetAppSecret(), user.Email)
+	case storepb.WebhookType_DINGTALK:
+		err = dingtalk.Validate(ctx, setting.GetDingtalk().GetClientId(), setting.GetDingtalk().GetClientSecret(), setting.GetDingtalk().GetRobotCode(), user.Phone)
+	case storepb.WebhookType_TEAMS:
+		err = teams.Validate(ctx, setting.GetTeams().GetTenantId(), setting.GetTeams().GetClientId(), setting.GetTeams().GetClientSecret(), user.Email)
+	default:
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported IM type %v", setting.GetType()))
+	}
+	if err != nil {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
+	}
+	return nil
 }
 
 // updateWorkspaceProfileSetting handles the WORKSPACE_PROFILE branch of

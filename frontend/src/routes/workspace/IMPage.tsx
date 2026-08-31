@@ -345,18 +345,17 @@ export function IMPage() {
     const values = localValues[index] ?? {};
     setPendingSaveType(typeKey);
     try {
-      const reconstructed = createIMSetting(wt, values);
-      const current = clone(AppIMSettingSchema, getStoredIMSetting());
-      const existingIdx = current.settings.findIndex((s) => s.type === wt);
-      if (existingIdx >= 0) {
-        current.settings[existingIdx] = reconstructed;
-      } else {
-        current.settings.push(reconstructed);
-      }
+      // Send only the provider being saved; the server splices it into the
+      // stored setting and leaves the others alone.
       await useAppStore.getState().upsertSetting({
         name: Setting_SettingName.APP_IM,
         value: create(SettingValueSchema, {
-          value: { case: "appIm", value: current },
+          value: {
+            case: "appIm",
+            value: create(AppIMSettingSchema, {
+              settings: [createIMSetting(wt, values)],
+            }),
+          },
         }),
         updateMask: create(FieldMaskSchema, { paths: [UPDATE_MASKS[wt]] }),
       });
@@ -377,16 +376,16 @@ export function IMPage() {
     const stored = getStoredIMSetting();
     const wasConfigured = stored.settings.some((s) => s.type === wt);
     if (wasConfigured) {
+      // Masking a provider the payload omits removes it.
       await useAppStore.getState().upsertSetting({
         name: Setting_SettingName.APP_IM,
         value: create(SettingValueSchema, {
           value: {
             case: "appIm",
-            value: create(AppIMSettingSchema, {
-              settings: stored.settings.filter((s) => s.type !== wt),
-            }),
+            value: create(AppIMSettingSchema, { settings: [] }),
           },
         }),
+        updateMask: create(FieldMaskSchema, { paths: [UPDATE_MASKS[wt]] }),
       });
       pushNotification({
         module: "bytebase",

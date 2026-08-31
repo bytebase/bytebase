@@ -945,6 +945,10 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 		case "draft":
 			// Submission is committed below through the review workflow.
 		default:
+			// status moves through BatchUpdateIssuesStatus and approvals through
+			// ApproveIssue/RejectIssue, so those paths are not silently dropped
+			// here — they are not this method's to apply.
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unsupported update_mask "%s"`, path))
 		}
 	}
 
