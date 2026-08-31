@@ -30,7 +30,9 @@ service DatabaseService {
   }
 
   // Retrieves multiple databases by their names.
-  // Permissions required: bb.databases.get
+  // One resource per requested name, in request order. The first name that
+  // does not resolve fails the whole call (AIP-231: no partial response).
+  // Permissions required: bb.databases.get (on each named database's project)
   rpc BatchGetDatabases(BatchGetDatabasesRequest) returns (BatchGetDatabasesResponse) {
     option (google.api.http) = {
       get: "/v1/{parent=projects/*}/databases:batchGet"
@@ -248,7 +250,7 @@ message BatchGetDatabasesRequest {
 }
 
 message BatchGetDatabasesResponse {
-  // The databases from the specified request.
+  // One database per requested name, in the same order as `names`.
   repeated Database databases = 1;
 }
 

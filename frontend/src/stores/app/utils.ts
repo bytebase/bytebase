@@ -1,4 +1,11 @@
 import { Code, ConnectError } from "@connectrpc/connect";
+
+// The per-resource failures the all-or-nothing BatchGet contract introduces.
+// Only these are worth a per-name retry; anything else is a real error.
+export const isMissingOrForbidden = (error: unknown) =>
+  error instanceof ConnectError &&
+  (error.code === Code.NotFound || error.code === Code.PermissionDenied);
+
 import type { DatabaseFilter } from "@/lib/databaseFilter";
 import {
   getProjectName,

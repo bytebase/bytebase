@@ -1274,6 +1274,8 @@ paths:
       description: |-
         Gets multiple groups in a single request.
          Group members or users with bb.groups.get permission can get the group.
+         One resource per requested name, in request order. The first name that
+         does not resolve fails the whole call (AIP-231: no partial response).
          Permissions required: bb.groups.get OR caller is the group member
       operationId: GroupService_BatchGetGroups
       parameters:
@@ -4781,7 +4783,9 @@ paths:
       summary: BatchGetDatabases
       description: |-
         Retrieves multiple databases by their names.
-         Permissions required: bb.databases.get
+         One resource per requested name, in request order. The first name that
+         does not resolve fails the whole call (AIP-231: no partial response).
+         Permissions required: bb.databases.get (on each named database's project)
       operationId: DatabaseService_BatchGetDatabases2
       parameters:
         - name: instance
@@ -6736,7 +6740,9 @@ paths:
       summary: BatchGetDatabases
       description: |-
         Retrieves multiple databases by their names.
-         Permissions required: bb.databases.get
+         One resource per requested name, in request order. The first name that
+         does not resolve fails the whole call (AIP-231: no partial response).
+         Permissions required: bb.databases.get (on each named database's project)
       operationId: DatabaseService_BatchGetDatabases
       parameters:
         - name: project
@@ -9999,7 +10005,9 @@ paths:
       summary: BatchGetDatabases
       description: |-
         Retrieves multiple databases by their names.
-         Permissions required: bb.databases.get
+         One resource per requested name, in request order. The first name that
+         does not resolve fails the whole call (AIP-231: no partial response).
+         Permissions required: bb.databases.get (on each named database's project)
       operationId: DatabaseService_BatchGetDatabases3
       parameters:
         - name: project
@@ -15417,7 +15425,9 @@ paths:
       summary: BatchGetProjects
       description: |-
         BatchGetProjects retrieves multiple projects by their names.
-         Permissions required: bb.projects.get
+         One resource per requested name, in request order. The first name that
+         does not resolve fails the whole call (AIP-231: no partial response).
+         Permissions required: bb.projects.get (on each named project)
       operationId: ProjectService_BatchGetProjects
       parameters:
         - name: names
@@ -17649,6 +17659,8 @@ paths:
       description: |-
         Get the users in batch.
          Any authenticated user can batch get users.
+         One resource per requested name, in request order. The first name that
+         does not resolve fails the whole call (AIP-231: no partial response).
          Permissions required: bb.users.get
       operationId: UserService_BatchGetUsers
       parameters:
@@ -20271,7 +20283,7 @@ components:
           items:
             $ref: '#/components/schemas/bytebase.v1.Database'
           title: databases
-          description: The databases from the specified request.
+          description: One database per requested name, in the same order as `names`.
       title: BatchGetDatabasesResponse
       additionalProperties: false
     bytebase.v1.BatchGetGroupsRequest:
@@ -20298,7 +20310,7 @@ components:
           items:
             $ref: '#/components/schemas/bytebase.v1.Group'
           title: groups
-          description: The groups from the specified request.
+          description: One group per requested name, in the same order as `names`.
       title: BatchGetGroupsResponse
       additionalProperties: false
       description: Response message for batch getting groups.
@@ -20325,7 +20337,7 @@ components:
           items:
             $ref: '#/components/schemas/bytebase.v1.Project'
           title: projects
-          description: The projects from the specified request.
+          description: One project per requested name, in the same order as `names`.
       title: BatchGetProjectsResponse
       additionalProperties: false
     bytebase.v1.BatchGetUsersRequest:
@@ -20351,7 +20363,7 @@ components:
           items:
             $ref: '#/components/schemas/bytebase.v1.User'
           title: users
-          description: The users from the specified request.
+          description: One user per requested name, in the same order as `names`.
       title: BatchGetUsersResponse
       additionalProperties: false
     bytebase.v1.BatchParseRequest:

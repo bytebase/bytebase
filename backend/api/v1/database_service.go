@@ -190,8 +190,7 @@ func (s *DatabaseService) BatchGetDatabases(ctx context.Context, req *connect.Re
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 		if databaseMessage == nil {
-			// Ignore deleted database.
-			continue
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", name))
 		}
 		if err := validateDatabaseParent(projectID, instanceID, databaseID, databaseMessage, parent); err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -201,8 +200,9 @@ func (s *DatabaseService) BatchGetDatabases(ctx context.Context, req *connect.Re
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
 		if !ok {
-			// Ignore no permission database.
-			continue
+			// Same code and message as a missing database: a different one would
+			// tell the caller a database exists in a project they cannot see.
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", name))
 		}
 		database, err := s.convertToDatabase(ctx, databaseMessage)
 		if err != nil {

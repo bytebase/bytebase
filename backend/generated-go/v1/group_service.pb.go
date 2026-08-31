@@ -175,7 +175,7 @@ func (x *BatchGetGroupsRequest) GetNames() []string {
 // Response message for batch getting groups.
 type BatchGetGroupsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The groups from the specified request.
+	// One group per requested name, in the same order as `names`.
 	Groups        []*Group `protobuf:"bytes,1,rep,name=groups,proto3" json:"groups,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

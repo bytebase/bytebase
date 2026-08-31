@@ -1,7 +1,7 @@
 import { create as createProto } from "@bufbuild/protobuf";
-import { createContextValues } from "@connectrpc/connect";
+import { Code, createContextValues } from "@connectrpc/connect";
 import { projectServiceClientConnect } from "@/api";
-import { silentContextKey } from "@/api/context-key";
+import { ignoredCodesContextKey, silentContextKey } from "@/api/context-key";
 import { isValidProjectName } from "@/lib/resourceName";
 import { UNKNOWN_ID } from "@/types/const";
 import { State } from "@/types/proto-es/v1/common_pb";
@@ -26,6 +26,7 @@ import {
   buildProjectFilter,
   defaultProjectName,
   getLabelFilter,
+  isMissingOrForbidden,
   toError,
 } from "./utils";
 
@@ -196,7 +197,17 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
         const response = await projectServiceClientConnect.batchGetProjects(
           createProto(BatchGetProjectsRequestSchema, { names: validNames }),
           {
-            contextValues: createContextValues().set(silentContextKey, silent),
+            // A revoked name fails the whole batch; ignoring it here keeps the
+            // interceptor from navigating to /403. The fallback renders the rest.
+            contextValues: createContextValues()
+              .set(ignoredCodesContextKey, [
+                // Listing any code replaces the middleware defaults, so
+                // NotFound is repeated here. Unauthenticated is left out: an
+                // ignored code short-circuits before the token refresh.
+                Code.NotFound,
+                Code.PermissionDenied,
+              ])
+              .set(silentContextKey, silent),
           }
         );
         set((state) => ({
@@ -208,9 +219,11 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
           },
         }));
         return response.projects;
-      } catch {
+      } catch (error) {
+        if (!isMissingOrForbidden(error)) throw error;
+        // Batch is all-or-nothing; refetch per name so one stale name isn't fatal.
         const projects = await Promise.all(
-          validNames.map((name) => get().fetchProject(name, silent))
+          validNames.map((name) => get().fetchProject(name, true))
         );
         return projects.filter(
           (project): project is NonNullable<typeof project> => Boolean(project)
