@@ -89,12 +89,26 @@ export const createGroupSlice: AppSliceCreator<GroupSlice> = (set, get) => ({
       return response.groups;
     } catch {
       // Batch is all-or-nothing; refetch per name so one stale name isn't fatal.
-      const groups = await Promise.all(
-        validNames.map((name) => get().fetchGroup(name))
+      // Calls GetGroup directly rather than fetchGroup, whose workspace
+      // bb.groups.get guard would skip a group the caller reads as its member.
+      const settled = await Promise.allSettled(
+        validNames.map((name) =>
+          groupServiceClientConnect.getGroup(
+            createProto(GetGroupRequestSchema, { name }),
+            { contextValues: createContextValues().set(silentContextKey, true) }
+          )
+        )
       );
-      return groups.filter((group): group is NonNullable<typeof group> =>
-        Boolean(group)
+      const groups = settled.flatMap((result) =>
+        result.status === "fulfilled" ? [result.value] : []
       );
+      set((state) => ({
+        groupsByName: {
+          ...state.groupsByName,
+          ...Object.fromEntries(groups.map((group) => [group.name, group])),
+        },
+      }));
+      return groups;
     }
   },
 

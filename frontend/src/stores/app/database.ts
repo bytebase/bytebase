@@ -179,7 +179,13 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
             // A revoked name fails the whole batch; ignoring it here keeps the
             // interceptor from navigating to /403. The fallback renders the rest.
             contextValues: createContextValues()
-              .set(ignoredCodesContextKey, [Code.PermissionDenied])
+              .set(ignoredCodesContextKey, [
+                // Listing any code replaces the middleware defaults, so
+                // NotFound is repeated here. Unauthenticated is left out: an
+                // ignored code short-circuits before the token refresh.
+                Code.NotFound,
+                Code.PermissionDenied,
+              ])
               .set(silentContextKey, silent),
           }
         );
