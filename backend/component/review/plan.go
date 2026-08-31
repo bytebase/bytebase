@@ -189,7 +189,7 @@ func (w *Workflow) UpdatePlan(ctx context.Context, input UpdatePlanInput) (*Upda
 		return nil
 	})
 	if err != nil {
-		return nil, lifecycleWorkflowError(err)
+		return nil, err
 	}
 	return result, nil
 }

@@ -123,7 +123,7 @@ func (w *Workflow) CreateDraftIssue(ctx context.Context, input CreateDraftIssueI
 		return nil
 	})
 	if err != nil {
-		return nil, lifecycleWorkflowError(err)
+		return nil, err
 	}
 	return result, nil
 }
@@ -238,7 +238,7 @@ func (w *Workflow) SubmitIssue(ctx context.Context, input SubmitIssueInput) (*Su
 		return nil
 	})
 	if err != nil {
-		return nil, lifecycleWorkflowError(err)
+		return nil, err
 	}
 	return result, nil
 }

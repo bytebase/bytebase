@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"time"
 
-	"github.com/pkg/errors"
 	"google.golang.org/protobuf/proto"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -153,9 +152,6 @@ func (w *Workflow) CreateRollout(ctx context.Context, input CreateRolloutInput) 
 		return nil
 	})
 	if err != nil {
-		if errors.Is(err, store.ErrLifecycleBusy) {
-			return nil, &Error{Code: ErrorConflict, Err: err}
-		}
 		return nil, err
 	}
 	result := &CreateRolloutResult{Plan: lockedPlan, Issue: lockedIssue, Project: project, Tasks: tasks}

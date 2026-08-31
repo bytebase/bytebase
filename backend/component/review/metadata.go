@@ -118,7 +118,7 @@ func (w *Workflow) UpdateIssueMetadata(ctx context.Context, input UpdateIssueMet
 		return nil
 	})
 	if err != nil {
-		return nil, lifecycleWorkflowError(err)
+		return nil, err
 	}
 	return result, nil
 }

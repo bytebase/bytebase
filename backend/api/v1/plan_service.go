@@ -207,9 +207,6 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 
 	plan, err := s.store.CreatePlan(ctx, planMessage, user.Email)
 	if err != nil {
-		if errors.Is(err, store.ErrLifecycleBusy) {
-			return nil, lifecycleBusyConnectError(err)
-		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create plan"))
 	}
 
@@ -219,9 +216,6 @@ func (s *PlanService) CreatePlan(ctx context.Context, request *connect.Request[v
 	}
 	if planCheckRun != nil {
 		if _, err := s.store.CreatePlanCheckRun(ctx, planCheckRun); err != nil {
-			if errors.Is(err, store.ErrLifecycleBusy) {
-				return nil, lifecycleBusyConnectError(err)
-			}
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create plan check run"))
 		}
 	}
@@ -379,9 +373,6 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		if planCheckRun != nil {
 			created, err := s.store.CreatePlanCheckRun(ctx, planCheckRun)
 			if err != nil {
-				if errors.Is(err, store.ErrLifecycleBusy) {
-					return nil, lifecycleBusyConnectError(err)
-				}
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create plan check run"))
 			}
 			planCheckRunCreated = created
@@ -511,9 +502,6 @@ func (s *PlanService) RunPlanChecks(ctx context.Context, request *connect.Reques
 	}
 	created, err := s.store.CreatePlanCheckRun(ctx, planCheckRun)
 	if err != nil {
-		if errors.Is(err, store.ErrLifecycleBusy) {
-			return nil, lifecycleBusyConnectError(err)
-		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create plan check run"))
 	}
 	if !created {

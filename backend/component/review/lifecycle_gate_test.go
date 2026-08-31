@@ -87,9 +87,6 @@ func lockReviewProjectLifecycleGate(ctx context.Context, t *testing.T, stores *s
 
 func requireReviewLifecycleBusy(t *testing.T, err error) {
 	t.Helper()
-	var workflowErr *Error
-	require.ErrorAs(t, err, &workflowErr)
-	require.Equal(t, ErrorConflict, workflowErr.Code)
 	require.ErrorIs(t, err, store.ErrLifecycleBusy)
 	require.EqualError(t, err, store.ErrLifecycleBusy.Error())
 }

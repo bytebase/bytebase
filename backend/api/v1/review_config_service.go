@@ -195,9 +195,6 @@ func (s *ReviewConfigService) DeleteReviewConfig(ctx context.Context, req *conne
 			Payload:      new(string(payloadBytes)),
 		})
 		if err != nil {
-			if errors.Is(err, store.ErrLifecycleBusy) {
-				return nil, lifecycleBusyConnectError(err)
-			}
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to update tag policy"))
 		}
 		if updatedPolicy == nil {

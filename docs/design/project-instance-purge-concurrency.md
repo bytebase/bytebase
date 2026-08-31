@@ -4,10 +4,10 @@
 
 Treat physical project and instance purge as **best-effort maintenance**: if a
 normal write is already operating on the same lifecycle root, purge should fail
-fast with a retryable error. Do not, however, remove all common-path locking and
-hope that foreign keys will make the rare operation lose. PostgreSQL does not
-guarantee which overlapping transaction wins, and Bytebase has lifecycle rules
-and soft references that foreign keys cannot enforce.
+fast with an identifiable store error. Do not, however, remove all common-path
+locking and hope that foreign keys will make the rare operation lose. PostgreSQL
+does not guarantee which overlapping transaction wins, and Bytebase has
+lifecycle rules and soft references that foreign keys cannot enforce.
 
 The recommended design is one shared/exclusive lifecycle gate per project or
 instance:
@@ -17,8 +17,9 @@ instance:
   existing).
 - Archive, restore, and purge take the corresponding **exclusive try-lock**.
   Either side returns `common.Conflict` with `resource is busy; retry` without
-  changing anything when its try-lock cannot be acquired. RPCs expose this as
-  Connect `Aborted`.
+  changing anything when its try-lock cannot be acquired. RPC handlers use their
+  existing generic error mapping; this change does not add per-handler lifecycle
+  conversion branches.
 - Once every purge-managed writer uses that gate, remove explicit row locks whose
   only purpose was coordination with purge. Keep locks needed for ordinary
   common/common concurrency, allocation, state transitions, or queue claiming.
@@ -144,25 +145,15 @@ removed, a concurrent history insert could survive instance purge without
 violating any FK. JSON payload references and cache invalidation create similar
 application-level obligations. Retrying only on FK errors cannot detect them.
 
-### 3. The API must expose a retryable result, not `Internal`
+### 3. API mapping remains generic
 
-Project and instance purge previously translated every store failure to Connect
-`CodeInternal`
-([project](../../backend/api/v1/project_service.go#L414-L417),
-[instance](../../backend/api/v1/instance_service.go#L980-L983)). A deliberate
-maintenance collision should instead be a stable conflict/aborted result with a
-message `resource is busy; retry`. PostgreSQL recommends testing
-SQLSTATE rather than localized error text. Relevant codes are `40001`
-`serialization_failure`, `40P01` `deadlock_detected`, `55P03`
-`lock_not_available`, and `23503` `foreign_key_violation`
-([PostgreSQL error codes](https://www.postgresql.org/docs/current/errcodes-appendix.html)).
-
-Only the first three are generically transient in this context. PostgreSQL says
-serialization failures require retrying the **complete transaction**, including
-the logic that chose its SQL and values
-([serialization failure handling](https://www.postgresql.org/docs/current/mvcc-serialization-failure-handling.html)).
-Treat `23503` as retryable only when the failing constraint and operation prove
-it is the known purge race; otherwise it is persistent bad data or a purge bug.
+Lifecycle contention is rare and does not justify lifecycle-specific conversion
+branches in every RPC handler. The store preserves `ErrLifecycleBusy` and
+`common.Conflict` so tests and internal callers can identify the outcome, while
+RPC handlers use their existing generic mapping. This accepts that a contention
+response may surface as `Internal`. If a stable retryable RPC contract becomes
+necessary, add it once at a centralized API boundary instead of distributing
+`errors.Is` checks across handlers.
 
 ## Options
 
@@ -216,12 +207,13 @@ concurrent soft-reference insert that takes no conflicting lock.
    validate lifecycle state after acquisition. Keep the ordering already used by
    the store. Normal writers for one root no longer exclude one another merely
    because purge is possible.
-3. **Make lifecycle transitions try-exclusive and user-retryable.** Archive and
+3. **Make lifecycle transitions try-exclusive.** Archive and
    restore need the exclusive gate too; otherwise a shared normal writer can
    still cross the `deleted` state change. Purge acquires it before any row work.
-   Failure maps to Connect `Aborted`, not `Internal`. Optionally add a short
-   transaction-local `lock_timeout` as defense against unmodeled locks. Purge
-   remains non-idempotent: an already-missing target returns `NotFound`.
+   Contention returns `ErrLifecycleBusy` from the store and follows each RPC's
+   existing generic error mapping. Optionally add a short transaction-local
+   `lock_timeout` as defense against unmodeled locks. Purge remains
+   non-idempotent: an already-missing target returns `NotFound`.
 4. **Delete locks by proven purpose.** Remove explicit child/root locks only when
    they exist solely for purge serialization and every relevant writer is behind
    the lifecycle gate. Retain `nextProjectID` until its `MAX(id) + 1` allocator is
@@ -231,9 +223,9 @@ concurrent soft-reference insert that takes no conflicting lock.
    semantics. Keep explicit handling for saved queries, workspace-instance
    databases, principals, policies, Query History, JSON references, and caches.
 6. **Test the contract, not the implementation.** For both acquisition orders,
-   assert: an already-running normal write makes purge return retryable conflict;
-   purge-first prevents resurrection; retry eventually succeeds; no orphan or
-   soft reference survives; and unrelated projects/instances continue. Keep
+   assert: an already-running normal write makes purge return a lifecycle-busy
+   error; purge-first prevents resurrection; retry eventually succeeds; no orphan
+   or soft reference survives; and unrelated projects/instances continue. Keep
    separate concurrency tests for allocator and state-transition locks.
 
 Keep the synchronous RPC shape. `BatchDeleteProjects(purge=true)` validates

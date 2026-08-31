@@ -453,9 +453,6 @@ func (s *DatabaseService) UpdateDatabase(ctx context.Context, req *connect.Reque
 
 	updatedDatabase, err := s.store.UpdateDatabase(ctx, patch)
 	if err != nil {
-		if errors.Is(err, store.ErrLifecycleBusy) {
-			return nil, lifecycleBusyConnectError(err)
-		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("%v", err.Error()))
 	}
 

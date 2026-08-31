@@ -380,9 +380,6 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 	}
 
 	if err := s.store.UpdateProjects(ctx, patch); err != nil {
-		if errors.Is(err, store.ErrLifecycleBusy) {
-			return nil, lifecycleBusyConnectError(err)
-		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	project, err = s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &patch.ResourceID})
@@ -416,9 +413,6 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 
 		// Permanently delete the project and all related resources (moves databases to default project)
 		if err := s.store.DeleteProject(ctx, project.Workspace, project.ResourceID); err != nil {
-			if errors.Is(err, store.ErrLifecycleBusy) {
-				return nil, lifecycleBusyConnectError(err)
-			}
 			if common.ErrorCode(err) == common.NotFound {
 				return nil, connect.NewError(connect.CodeNotFound, err)
 			}
@@ -443,9 +437,6 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 		Workspace:  project.Workspace,
 		Delete:     &deletePatch,
 	}); err != nil {
-		if errors.Is(err, store.ErrLifecycleBusy) {
-			return nil, lifecycleBusyConnectError(err)
-		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -468,9 +459,6 @@ func (s *ProjectService) UndeleteProject(ctx context.Context, req *connect.Reque
 		Workspace:  project.Workspace,
 		Delete:     &undeletePatch,
 	}); err != nil {
-		if errors.Is(err, store.ErrLifecycleBusy) {
-			return nil, lifecycleBusyConnectError(err)
-		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 	project, err = s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &project.ResourceID})
@@ -514,9 +502,6 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 				}
 			}
 			if err := s.store.DeleteProject(ctx, project.Workspace, project.ResourceID); err != nil {
-				if errors.Is(err, store.ErrLifecycleBusy) {
-					return nil, lifecycleBusyConnectError(err)
-				}
 				if common.ErrorCode(err) == common.NotFound {
 					return nil, connect.NewError(connect.CodeNotFound, err)
 				}
@@ -557,9 +542,6 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 
 	if len(updatePatches) > 0 {
 		if err := s.store.UpdateProjects(ctx, updatePatches...); err != nil {
-			if errors.Is(err, store.ErrLifecycleBusy) {
-				return nil, lifecycleBusyConnectError(err)
-			}
 			return nil, connect.NewError(connect.CodeInternal, err)
 		}
 	}
@@ -804,9 +786,6 @@ func (s *ProjectService) AddWebhook(ctx context.Context, req *connect.Request[v1
 	}
 
 	if _, err := s.store.CreateProjectWebhook(ctx, project.ResourceID, create); err != nil {
-		if errors.Is(err, store.ErrLifecycleBusy) {
-			return nil, lifecycleBusyConnectError(err)
-		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -902,9 +881,6 @@ func (s *ProjectService) UpdateWebhook(ctx context.Context, req *connect.Request
 	}
 
 	if _, err := s.store.UpdateProjectWebhook(ctx, project.ResourceID, webhook.ResourceID, update); err != nil {
-		if errors.Is(err, store.ErrLifecycleBusy) {
-			return nil, lifecycleBusyConnectError(err)
-		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -952,9 +928,6 @@ func (s *ProjectService) RemoveWebhook(ctx context.Context, req *connect.Request
 	}
 
 	if err := s.store.DeleteProjectWebhook(ctx, project.ResourceID, webhook.ResourceID); err != nil {
-		if errors.Is(err, store.ErrLifecycleBusy) {
-			return nil, lifecycleBusyConnectError(err)
-		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 

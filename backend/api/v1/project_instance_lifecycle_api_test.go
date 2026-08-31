@@ -122,7 +122,7 @@ func TestBatchPurgeProjectsKeepsEarlierRuntimeSuccess(t *testing.T) {
 	require.NotNil(t, got, "the failed and remaining purges are retry targets")
 }
 
-func TestProjectLifecycleContentionReturnsAbortedWithoutMutation(t *testing.T) {
+func TestProjectLifecycleContentionReturnsInternalWithoutMutation(t *testing.T) {
 	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
 	conn, err := stores.GetDB().Conn(ctx)
 	require.NoError(t, err)
@@ -136,8 +136,7 @@ func TestProjectLifecycleContentionReturnsAbortedWithoutMutation(t *testing.T) {
 
 	service := NewProjectService(stores, nil, nil, nil)
 	_, err = service.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: "projects/" + projectID}))
-	require.Equal(t, connect.CodeAborted, connect.CodeOf(err))
-	require.ErrorContains(t, err, "resource is busy; retry")
+	require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
 
 	project, err := stores.GetProject(ctx, &store.FindProjectMessage{Workspace: "default", ResourceID: &projectID, ShowDeleted: true})
 	require.NoError(t, err)

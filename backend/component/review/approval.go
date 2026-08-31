@@ -195,7 +195,7 @@ func (a *ApprovalEvaluator) ApplyApprovalTemplate(ctx context.Context, input App
 		return nil
 	})
 	if err != nil {
-		return nil, lifecycleWorkflowError(err)
+		return nil, err
 	}
 	result.Issue = lockedIssue
 	result.Applied = true

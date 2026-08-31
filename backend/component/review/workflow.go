@@ -273,7 +273,7 @@ func (w *Workflow) ReviewIssue(ctx context.Context, input IssueInput) (*IssueRes
 		return nil
 	})
 	if err != nil {
-		return nil, lifecycleWorkflowError(err)
+		return nil, err
 	}
 	if approved && input.Action == ActionApprove {
 		events = append(events, IssueApprovedEvent{})
@@ -533,13 +533,6 @@ func workflowReasonError(code ErrorCode, reason ErrorReason, message string) err
 
 func workflowWrap(_ ErrorCode, err error, message string) error {
 	return &Error{Code: ErrorInternal, Err: errors.Wrap(err, message)}
-}
-
-func lifecycleWorkflowError(err error) error {
-	if errors.Is(err, store.ErrLifecycleBusy) {
-		return &Error{Code: ErrorConflict, Err: err}
-	}
-	return err
 }
 
 func sameInt64Pointer(a, b *int64) bool {

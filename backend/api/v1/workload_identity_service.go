@@ -102,9 +102,6 @@ func (s *WorkloadIdentityService) CreateWorkloadIdentity(ctx context.Context, re
 		Config:    storeConfig,
 	})
 	if err != nil {
-		if errors.Is(err, store.ErrLifecycleBusy) {
-			return nil, lifecycleBusyConnectError(err)
-		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to create workload identity"))
 	}
 
@@ -246,9 +243,6 @@ func (s *WorkloadIdentityService) UpdateWorkloadIdentity(ctx context.Context, re
 
 	updatedWI, err := s.store.UpdateWorkloadIdentity(ctx, wi, patch)
 	if err != nil {
-		if errors.Is(err, store.ErrLifecycleBusy) {
-			return nil, lifecycleBusyConnectError(err)
-		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to update workload identity"))
 	}
 
@@ -278,9 +272,6 @@ func (s *WorkloadIdentityService) DeleteWorkloadIdentity(ctx context.Context, re
 
 	// Soft delete
 	if err := s.store.DeleteWorkloadIdentity(ctx, wi); err != nil {
-		if errors.Is(err, store.ErrLifecycleBusy) {
-			return nil, lifecycleBusyConnectError(err)
-		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to delete workload identity"))
 	}
 
