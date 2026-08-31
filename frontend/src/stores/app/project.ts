@@ -192,30 +192,24 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
       );
       if (validNames.length === 0) return [];
 
-      try {
-        const response = await projectServiceClientConnect.batchGetProjects(
-          createProto(BatchGetProjectsRequestSchema, { names: validNames }),
-          {
-            contextValues: createContextValues().set(silentContextKey, silent),
-          }
-        );
-        set((state) => ({
-          projectsByName: {
-            ...state.projectsByName,
-            ...Object.fromEntries(
-              response.projects.map((project) => [project.name, project])
-            ),
-          },
-        }));
-        return response.projects;
-      } catch {
-        const projects = await Promise.all(
-          validNames.map((name) => get().fetchProject(name, silent))
-        );
-        return projects.filter(
-          (project): project is NonNullable<typeof project> => Boolean(project)
-        );
-      }
+      // A name the caller may not see or that no longer exists comes back in
+      // `unmatchedNames`, so the batch no longer fails on it and needs no
+      // per-name fallback.
+      const response = await projectServiceClientConnect.batchGetProjects(
+        createProto(BatchGetProjectsRequestSchema, { names: validNames }),
+        {
+          contextValues: createContextValues().set(silentContextKey, silent),
+        }
+      );
+      set((state) => ({
+        projectsByName: {
+          ...state.projectsByName,
+          ...Object.fromEntries(
+            response.projects.map((project) => [project.name, project])
+          ),
+        },
+      }));
+      return response.projects;
     },
 
     batchGetOrFetchProjects: async (names) => {

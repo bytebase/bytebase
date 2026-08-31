@@ -55,11 +55,23 @@ export declare const BatchGetUsersRequestSchema: GenMessage<BatchGetUsersRequest
  */
 export declare type BatchGetUsersResponse = Message<"bytebase.v1.BatchGetUsersResponse"> & {
   /**
-   * The users from the specified request.
+   * The users from the specified request, in the order their names were
+   * requested. Duplicate names collapse to their first occurrence and unmatched
+   * names have no entry, so this list may be shorter than `names`.
    *
    * @generated from field: repeated bytebase.v1.User users = 1;
    */
   users: User[];
+
+  /**
+   * The requested names that returned no user, in request order. A name lands
+   * here whether the user does not exist or is not a member of the workspace.
+   * The two are not distinguished, so the response cannot be used to probe which
+   * accounts exist.
+   *
+   * @generated from field: repeated string unmatched_names = 2;
+   */
+  unmatchedNames: string[];
 };
 
 /**
@@ -725,6 +737,10 @@ export declare const UserService: GenService<{
   /**
    * Get the users in batch.
    * Any authenticated user can batch get users.
+   * A name that resolves to nothing is reported in `unmatched_names` instead of
+   * failing the call, so a partial response is a success. This departs from
+   * AIP-231 atomicity on purpose: callers resolve names held in stored
+   * references, which go stale when a user leaves the workspace.
    * Permissions required: bb.users.get
    *
    * @generated from rpc bytebase.v1.UserService.BatchGetUsers

@@ -88,7 +88,11 @@ type ProjectServiceClient interface {
 	// Permissions required: bb.projects.get
 	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.Project], error)
 	// BatchGetProjects retrieves multiple projects by their names.
-	// Permissions required: bb.projects.get
+	// A name that resolves to nothing is reported in `unmatched_names` instead of
+	// failing the call, so a partial response is a success. This departs from
+	// AIP-231 atomicity on purpose: callers resolve names held in stored
+	// references, which go stale when a project is deleted.
+	// Permissions required: bb.projects.get (on each named project)
 	BatchGetProjects(context.Context, *connect.Request[v1.BatchGetProjectsRequest]) (*connect.Response[v1.BatchGetProjectsResponse], error)
 	// Lists all projects in the workspace with optional filtering.
 	// Permissions required: bb.projects.list
@@ -336,7 +340,11 @@ type ProjectServiceHandler interface {
 	// Permissions required: bb.projects.get
 	GetProject(context.Context, *connect.Request[v1.GetProjectRequest]) (*connect.Response[v1.Project], error)
 	// BatchGetProjects retrieves multiple projects by their names.
-	// Permissions required: bb.projects.get
+	// A name that resolves to nothing is reported in `unmatched_names` instead of
+	// failing the call, so a partial response is a success. This departs from
+	// AIP-231 atomicity on purpose: callers resolve names held in stored
+	// references, which go stale when a project is deleted.
+	// Permissions required: bb.projects.get (on each named project)
 	BatchGetProjects(context.Context, *connect.Request[v1.BatchGetProjectsRequest]) (*connect.Response[v1.BatchGetProjectsResponse], error)
 	// Lists all projects in the workspace with optional filtering.
 	// Permissions required: bb.projects.list

@@ -60,11 +60,23 @@ export declare const BatchGetGroupsRequestSchema: GenMessage<BatchGetGroupsReque
  */
 export declare type BatchGetGroupsResponse = Message<"bytebase.v1.BatchGetGroupsResponse"> & {
   /**
-   * The groups from the specified request.
+   * The groups from the specified request, in the order their names were
+   * requested. Duplicate names collapse to their first occurrence and unmatched
+   * names have no entry, so this list may be shorter than `names`.
    *
    * @generated from field: repeated bytebase.v1.Group groups = 1;
    */
   groups: Group[];
+
+  /**
+   * The requested names that returned no group, in request order. A name lands
+   * here whether the group does not exist or the caller may not see it. The two
+   * are not distinguished, so the response cannot be used to probe which groups
+   * exist.
+   *
+   * @generated from field: repeated string unmatched_names = 2;
+   */
+  unmatchedNames: string[];
 };
 
 /**
@@ -383,6 +395,10 @@ export declare const GroupService: GenService<{
   /**
    * Gets multiple groups in a single request.
    * Group members or users with bb.groups.get permission can get the group.
+   * A name that resolves to nothing is reported in `unmatched_names` instead of
+   * failing the call, so a partial response is a success. This departs from
+   * AIP-231 atomicity on purpose: callers resolve names held in stored
+   * references, which go stale when a group is deleted.
    * Permissions required: bb.groups.get OR caller is the group member
    *
    * @generated from rpc bytebase.v1.GroupService.BatchGetGroups

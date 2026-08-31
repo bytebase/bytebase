@@ -2,14 +2,12 @@ package v1
 
 import (
 	"context"
-	"log/slog"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/log"
 	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/iam"
 	"github.com/bytebase/bytebase/backend/enterprise"
@@ -60,16 +58,36 @@ func (s *GroupService) GetGroup(ctx context.Context, req *connect.Request[v1pb.G
 
 // BatchGetGroups get groups in batch.
 func (s *GroupService) BatchGetGroups(ctx context.Context, request *connect.Request[v1pb.BatchGetGroupsRequest]) (*connect.Response[v1pb.BatchGetGroupsResponse], error) {
-	response := &v1pb.BatchGetGroupsResponse{}
-	for _, name := range request.Msg.Names {
-		group, err := s.GetGroup(ctx, connect.NewRequest(&v1pb.GetGroupRequest{Name: name}))
+	groups, unmatched, err := resolveBatchGet(request.Msg.Names, func(name string) (*v1pb.Group, bool, error) {
+		group, err := s.store.GetGroupByName(ctx, common.GetWorkspaceIDFromContext(ctx), name)
 		if err != nil {
-			slog.Error("failed to find group", slog.String("name", name), log.BBError(err))
-			continue
+			return nil, false, connect.NewError(connect.CodeInternal, err)
 		}
-		response.Groups = append(response.Groups, group.Msg)
+		if group == nil {
+			return nil, false, nil
+		}
+		// Only "you may not see this group" joins "no such group" in the
+		// unmatched bucket. Anything else fails the batch, so a store outage
+		// cannot read as a group that does not exist.
+		if err := s.checkGroupPermission(ctx, request, group); err != nil {
+			if connect.CodeOf(err) == connect.CodePermissionDenied {
+				return nil, false, nil
+			}
+			return nil, false, err
+		}
+		v1Group, err := s.convertToV1Group(group)
+		if err != nil {
+			return nil, false, err
+		}
+		return v1Group, true, nil
+	})
+	if err != nil {
+		return nil, err
 	}
-	return connect.NewResponse(response), nil
+	return connect.NewResponse(&v1pb.BatchGetGroupsResponse{
+		Groups:         groups,
+		UnmatchedNames: unmatched,
+	}), nil
 }
 
 // ListGroups lists all groups.

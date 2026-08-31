@@ -120,10 +120,17 @@ func (x *BatchGetUsersRequest) GetNames() []string {
 
 type BatchGetUsersResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The users from the specified request.
-	Users         []*User `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// The users from the specified request, in the order their names were
+	// requested. Duplicate names collapse to their first occurrence and unmatched
+	// names have no entry, so this list may be shorter than `names`.
+	Users []*User `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
+	// The requested names that returned no user, in request order. A name lands
+	// here whether the user does not exist or is not a member of the workspace.
+	// The two are not distinguished, so the response cannot be used to probe which
+	// accounts exist.
+	UnmatchedNames []string `protobuf:"bytes,2,rep,name=unmatched_names,json=unmatchedNames,proto3" json:"unmatched_names,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *BatchGetUsersResponse) Reset() {
@@ -159,6 +166,13 @@ func (*BatchGetUsersResponse) Descriptor() ([]byte, []int) {
 func (x *BatchGetUsersResponse) GetUsers() []*User {
 	if x != nil {
 		return x.Users
+	}
+	return nil
+}
+
+func (x *BatchGetUsersResponse) GetUnmatchedNames() []string {
+	if x != nil {
+		return x.UnmatchedNames
 	}
 	return nil
 }
@@ -1429,9 +1443,10 @@ const file_v1_user_service_proto_rawDesc = "" +
 	"\x11bytebase.com/UserR\x04name\"G\n" +
 	"\x14BatchGetUsersRequest\x12/\n" +
 	"\x05names\x18\x01 \x03(\tB\x19\xe0A\x02\xfaA\x13\n" +
-	"\x11bytebase.com/UserR\x05names\"@\n" +
+	"\x11bytebase.com/UserR\x05names\"i\n" +
 	"\x15BatchGetUsersResponse\x12'\n" +
-	"\x05users\x18\x01 \x03(\v2\x11.bytebase.v1.UserR\x05users\"\x89\x01\n" +
+	"\x05users\x18\x01 \x03(\v2\x11.bytebase.v1.UserR\x05users\x12'\n" +
+	"\x0funmatched_names\x18\x02 \x03(\tR\x0eunmatchedNames\"\x89\x01\n" +
 	"\x10ListUsersRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +

@@ -271,9 +271,15 @@ var auditRecordedFields = []string{
 	"bytebase.v1.BatchDeparseResponse.expressions",
 	"bytebase.v1.BatchGetDatabasesRequest.names",
 	"bytebase.v1.BatchGetDatabasesRequest.parent",
+	// The unmatched names a BatchGet reports back are a subset of the names the
+	// same row already records from the request, so the row keeps them.
+	"bytebase.v1.BatchGetDatabasesResponse.unmatched_names",
 	"bytebase.v1.BatchGetGroupsRequest.names",
+	"bytebase.v1.BatchGetGroupsResponse.unmatched_names",
 	"bytebase.v1.BatchGetProjectsRequest.names",
+	"bytebase.v1.BatchGetProjectsResponse.unmatched_names",
 	"bytebase.v1.BatchGetUsersRequest.names",
+	"bytebase.v1.BatchGetUsersResponse.unmatched_names",
 	"bytebase.v1.BatchParseRequest.expressions",
 	"bytebase.v1.BatchRunTasksRequest.parent",
 	"bytebase.v1.BatchRunTasksRequest.tasks",

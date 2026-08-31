@@ -68,18 +68,48 @@ func (s *ProjectService) GetProject(ctx context.Context, req *connect.Request[v1
 
 // BatchGetProjects gets projects in batch.
 func (s *ProjectService) BatchGetProjects(ctx context.Context, req *connect.Request[v1pb.BatchGetProjectsRequest]) (*connect.Response[v1pb.BatchGetProjectsResponse], error) {
-	projects := make([]*v1pb.Project, 0, len(req.Msg.Names))
-	for _, name := range req.Msg.Names {
-		project, err := s.getProjectMessage(ctx, name)
-		if err != nil {
-			return nil, err
-		}
-		if project.Deleted {
-			continue
-		}
-		projects = append(projects, convertToProject(project))
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
 	}
-	return connect.NewResponse(&v1pb.BatchGetProjectsResponse{Projects: projects}), nil
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+
+	projects, unmatched, err := resolveBatchGet(req.Msg.Names, func(name string) (*v1pb.Project, bool, error) {
+		projectID, err := common.GetProjectID(name)
+		if err != nil {
+			return nil, false, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+		project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
+			Workspace:   workspaceID,
+			ResourceID:  &projectID,
+			ShowDeleted: true,
+		})
+		if err != nil {
+			return nil, false, connect.NewError(connect.CodeInternal, err)
+		}
+		if project == nil {
+			return nil, false, nil
+		}
+		// Authorized per named project, the way GetProject is. The request names
+		// its projects in a repeated field the ACL interceptor cannot read, so
+		// leaving this to the interceptor checked bb.projects.get against the
+		// workspace and denied every project-scoped role.
+		ok, err := s.iamManager.CheckPermission(ctx, permission.ProjectsGet, user, workspaceID, projectID)
+		if err != nil {
+			return nil, false, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
+		}
+		if !ok {
+			return nil, false, nil
+		}
+		return convertToProject(project), true, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return connect.NewResponse(&v1pb.BatchGetProjectsResponse{
+		Projects:       projects,
+		UnmatchedNames: unmatched,
+	}), nil
 }
 
 // ListProjects lists all projects.

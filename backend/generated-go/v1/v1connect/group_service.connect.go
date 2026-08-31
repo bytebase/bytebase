@@ -60,6 +60,10 @@ type GroupServiceClient interface {
 	GetGroup(context.Context, *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.Group], error)
 	// Gets multiple groups in a single request.
 	// Group members or users with bb.groups.get permission can get the group.
+	// A name that resolves to nothing is reported in `unmatched_names` instead of
+	// failing the call, so a partial response is a success. This departs from
+	// AIP-231 atomicity on purpose: callers resolve names held in stored
+	// references, which go stale when a group is deleted.
 	// Permissions required: bb.groups.get OR caller is the group member
 	BatchGetGroups(context.Context, *connect.Request[v1.BatchGetGroupsRequest]) (*connect.Response[v1.BatchGetGroupsResponse], error)
 	// Lists all groups in the workspace.
@@ -175,6 +179,10 @@ type GroupServiceHandler interface {
 	GetGroup(context.Context, *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.Group], error)
 	// Gets multiple groups in a single request.
 	// Group members or users with bb.groups.get permission can get the group.
+	// A name that resolves to nothing is reported in `unmatched_names` instead of
+	// failing the call, so a partial response is a success. This departs from
+	// AIP-231 atomicity on purpose: callers resolve names held in stored
+	// references, which go stale when a group is deleted.
 	// Permissions required: bb.groups.get OR caller is the group member
 	BatchGetGroups(context.Context, *connect.Request[v1.BatchGetGroupsRequest]) (*connect.Response[v1.BatchGetGroupsResponse], error)
 	// Lists all groups in the workspace.

@@ -93,7 +93,7 @@ func (s *DatabaseService) findDatabaseForResource(
 		ShowDeleted:  showDeleted,
 	})
 	if err != nil {
-		return nil, nil, errors.Wrap(err, "failed to get database")
+		return nil, nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get database"))
 	}
 	if database == nil {
 		return nil, nil, nil
@@ -155,18 +155,34 @@ func (s *DatabaseService) parseDatabaseParent(ctx context.Context, parent string
 }
 
 func validateDatabaseParent(projectID *string, instanceID, databaseID string, database *store.DatabaseMessage, parent *databaseParent) error {
+	if err := validateDatabaseNameParent(projectID, instanceID, databaseID, parent); err != nil {
+		return err
+	}
+	if !databaseInParent(database, parent) {
+		return errors.Errorf("database %q does not belong to parent project", databaseID)
+	}
+	return nil
+}
+
+// validateDatabaseNameParent checks a database resource name against the parent
+// it was requested under. It reads nothing but the request, so a failure here is
+// the caller contradicting itself rather than a fact about stored data.
+func validateDatabaseNameParent(projectID *string, instanceID, databaseID string, parent *databaseParent) error {
 	if parent.instanceID != nil && instanceID != *parent.instanceID {
 		return errors.Errorf("database %q does not belong to parent instance", databaseID)
 	}
-	if parent.projectID != nil {
-		if projectID != nil && *projectID != *parent.projectID {
-			return errors.Errorf("database %q does not belong to parent project", databaseID)
-		}
-		if database.ProjectID != *parent.projectID {
-			return errors.Errorf("database %q does not belong to parent project", databaseID)
-		}
+	if parent.projectID != nil && projectID != nil && *projectID != *parent.projectID {
+		return errors.Errorf("database %q does not belong to parent project", databaseID)
 	}
 	return nil
+}
+
+// databaseInParent reports whether the stored database sits under the requested
+// parent. This one reads the stored row, which is why BatchGetDatabases counts a
+// false as an unmatched name: answering "it exists, just not here" would make the
+// RPC an existence oracle for projects the caller cannot see.
+func databaseInParent(database *store.DatabaseMessage, parent *databaseParent) bool {
+	return parent.projectID == nil || database.ProjectID == *parent.projectID
 }
 
 func (s *DatabaseService) BatchGetDatabases(ctx context.Context, req *connect.Request[v1pb.BatchGetDatabasesRequest]) (*connect.Response[v1pb.BatchGetDatabasesResponse], error) {
@@ -179,38 +195,47 @@ func (s *DatabaseService) BatchGetDatabases(ctx context.Context, req *connect.Re
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
-	databases := make([]*v1pb.Database, 0, len(req.Msg.Names))
-	for _, name := range req.Msg.Names {
+	databases, unmatched, err := resolveBatchGet(req.Msg.Names, func(name string) (*v1pb.Database, bool, error) {
 		projectID, instanceID, databaseID, err := common.GetDatabaseResourceName(name)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", name))
+			return nil, false, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse %q", name))
+		}
+		if err := validateDatabaseNameParent(projectID, instanceID, databaseID, parent); err != nil {
+			return nil, false, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 		databaseMessage, _, err := s.findDatabaseForResource(ctx, projectID, instanceID, databaseID, true)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+			var connectErr *connect.Error
+			if errors.As(err, &connectErr) {
+				return nil, false, err
+			}
+			return nil, false, connect.NewError(connect.CodeInvalidArgument, err)
 		}
-		if databaseMessage == nil {
-			// Ignore deleted database.
-			continue
-		}
-		if err := validateDatabaseParent(projectID, instanceID, databaseID, databaseMessage, parent); err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		// A database that is gone, sits outside the parent, or that the caller
+		// may not see is reported as unmatched, never dropped.
+		if databaseMessage == nil || !databaseInParent(databaseMessage, parent) {
+			return nil, false, nil
 		}
 		ok, err := s.iamManager.CheckPermission(ctx, permission.DatabasesGet, user, common.GetWorkspaceIDFromContext(ctx), databaseMessage.ProjectID)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
+			return nil, false, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
 		if !ok {
-			// Ignore no permission database.
-			continue
+			return nil, false, nil
 		}
 		database, err := s.convertToDatabase(ctx, databaseMessage)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert database"))
+			return nil, false, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert database"))
 		}
-		databases = append(databases, database)
+		return database, true, nil
+	})
+	if err != nil {
+		return nil, err
 	}
-	return connect.NewResponse(&v1pb.BatchGetDatabasesResponse{Databases: databases}), nil
+	return connect.NewResponse(&v1pb.BatchGetDatabasesResponse{
+		Databases:      databases,
+		UnmatchedNames: unmatched,
+	}), nil
 }
 
 func getVariableAndValueFromExpr(expr celast.Expr) (string, any) {

@@ -44,7 +44,11 @@ type DatabaseServiceClient interface {
 	// Permissions required: bb.databases.get
 	GetDatabase(ctx context.Context, in *GetDatabaseRequest, opts ...grpc.CallOption) (*Database, error)
 	// Retrieves multiple databases by their names.
-	// Permissions required: bb.databases.get
+	// A name that resolves to nothing is reported in `unmatched_names` instead of
+	// failing the call, so a partial response is a success. This departs from
+	// AIP-231 atomicity on purpose: callers resolve names held in stored
+	// references, which go stale when a database is dropped or transferred.
+	// Permissions required: bb.databases.get (on each named database's project)
 	BatchGetDatabases(ctx context.Context, in *BatchGetDatabasesRequest, opts ...grpc.CallOption) (*BatchGetDatabasesResponse, error)
 	// Lists databases in a project, instance, or workspace.
 	// Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)
@@ -230,7 +234,11 @@ type DatabaseServiceServer interface {
 	// Permissions required: bb.databases.get
 	GetDatabase(context.Context, *GetDatabaseRequest) (*Database, error)
 	// Retrieves multiple databases by their names.
-	// Permissions required: bb.databases.get
+	// A name that resolves to nothing is reported in `unmatched_names` instead of
+	// failing the call, so a partial response is a success. This departs from
+	// AIP-231 atomicity on purpose: callers resolve names held in stored
+	// references, which go stale when a database is dropped or transferred.
+	// Permissions required: bb.databases.get (on each named database's project)
 	BatchGetDatabases(context.Context, *BatchGetDatabasesRequest) (*BatchGetDatabasesResponse, error)
 	// Lists databases in a project, instance, or workspace.
 	// Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)

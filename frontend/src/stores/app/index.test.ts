@@ -1803,10 +1803,13 @@ describe("useAppStore", () => {
     expect(store.getState().projectsByName[projectA.name]).toBe(projectA);
   });
 
-  test("falls back to individual project fetches when batch fetch fails", async () => {
-    mocks.batchGetProjects.mockRejectedValue(new Error("batch failed"));
-    mocks.getProject.mockImplementation(({ name }: { name: string }) => {
-      return Promise.resolve(name === projectA.name ? projectA : projectB);
+  test("keeps the projects a partial batch fetch returned", async () => {
+    // A name the caller may not see or that no longer exists comes back in
+    // unmatchedNames rather than failing the call, so one batch round trip is
+    // the whole of it.
+    mocks.batchGetProjects.mockResolvedValue({
+      projects: [projectA],
+      unmatchedNames: [projectB.name],
     });
     const store = createAppStore();
 
@@ -1814,17 +1817,13 @@ describe("useAppStore", () => {
       .getState()
       .batchFetchProjects([projectA.name, projectB.name], true);
 
-    expect(projects).toEqual([projectA, projectB]);
+    expect(projects).toEqual([projectA]);
     expect(mocks.batchGetProjects).toHaveBeenCalledTimes(1);
-    expect(mocks.getProject).toHaveBeenCalledTimes(2);
+    expect(mocks.getProject).not.toHaveBeenCalled();
+    expect(store.getState().projectsByName[projectA.name]).toBe(projectA);
     expect(
       mocks.batchGetProjects.mock.calls[0]?.[1]?.contextValues.get(
         silentContextKey
-      )
-    ).toBe(true);
-    expect(
-      mocks.getProject.mock.calls.every(
-        (call) => call[1]?.contextValues.get(silentContextKey) === true
       )
     ).toBe(true);
   });

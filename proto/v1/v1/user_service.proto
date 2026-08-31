@@ -31,6 +31,10 @@ service UserService {
 
   // Get the users in batch.
   // Any authenticated user can batch get users.
+  // A name that resolves to nothing is reported in `unmatched_names` instead of
+  // failing the call, so a partial response is a success. This departs from
+  // AIP-231 atomicity on purpose: callers resolve names held in stored
+  // references, which go stale when a user leaves the workspace.
   // Permissions required: bb.users.get
   rpc BatchGetUsers(BatchGetUsersRequest) returns (BatchGetUsersResponse) {
     option (google.api.http) = {get: "/v1/users:batchGet"};
@@ -270,8 +274,16 @@ message BatchGetUsersRequest {
 }
 
 message BatchGetUsersResponse {
-  // The users from the specified request.
+  // The users from the specified request, in the order their names were
+  // requested. Duplicate names collapse to their first occurrence and unmatched
+  // names have no entry, so this list may be shorter than `names`.
   repeated User users = 1;
+
+  // The requested names that returned no user, in request order. A name lands
+  // here whether the user does not exist or is not a member of the workspace.
+  // The two are not distinguished, so the response cannot be used to probe which
+  // accounts exist.
+  repeated string unmatched_names = 2;
 }
 
 message ListUsersRequest {

@@ -622,10 +622,17 @@ func (x *BatchGetDatabasesRequest) GetNames() []string {
 
 type BatchGetDatabasesResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The databases from the specified request.
-	Databases     []*Database `protobuf:"bytes,1,rep,name=databases,proto3" json:"databases,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// The databases from the specified request, in the order their names were
+	// requested. Duplicate names collapse to their first occurrence and unmatched
+	// names have no entry, so this list may be shorter than `names`.
+	Databases []*Database `protobuf:"bytes,1,rep,name=databases,proto3" json:"databases,omitempty"`
+	// The requested names that returned no database, in request order. A name
+	// lands here whether the database does not exist, does not belong to
+	// `parent`, or the caller may not see it. The cases are not distinguished, so
+	// the response cannot be used to probe which databases exist.
+	UnmatchedNames []string `protobuf:"bytes,2,rep,name=unmatched_names,json=unmatchedNames,proto3" json:"unmatched_names,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *BatchGetDatabasesResponse) Reset() {
@@ -661,6 +668,13 @@ func (*BatchGetDatabasesResponse) Descriptor() ([]byte, []int) {
 func (x *BatchGetDatabasesResponse) GetDatabases() []*Database {
 	if x != nil {
 		return x.Databases
+	}
+	return nil
+}
+
+func (x *BatchGetDatabasesResponse) GetUnmatchedNames() []string {
+	if x != nil {
+		return x.UnmatchedNames
 	}
 	return nil
 }
@@ -5467,9 +5481,10 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\x18BatchGetDatabasesRequest\x125\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\x12\x15bytebase.com/DatabaseR\x06parent\x123\n" +
 	"\x05names\x18\x02 \x03(\tB\x1d\xe0A\x02\xfaA\x17\n" +
-	"\x15bytebase.com/DatabaseR\x05names\"P\n" +
+	"\x15bytebase.com/DatabaseR\x05names\"y\n" +
 	"\x19BatchGetDatabasesResponse\x123\n" +
-	"\tdatabases\x18\x01 \x03(\v2\x15.bytebase.v1.DatabaseR\tdatabases\"\xdf\x01\n" +
+	"\tdatabases\x18\x01 \x03(\v2\x15.bytebase.v1.DatabaseR\tdatabases\x12'\n" +
+	"\x0funmatched_names\x18\x02 \x03(\tR\x0eunmatchedNames\"\xdf\x01\n" +
 	"\x14ListDatabasesRequest\x125\n" +
 	"\x06parent\x18\x01 \x01(\tB\x1d\xe0A\x02\xfaA\x17\x12\x15bytebase.com/DatabaseR\x06parent\x12\x1b\n" +
 	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +

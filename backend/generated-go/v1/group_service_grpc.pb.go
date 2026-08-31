@@ -40,6 +40,10 @@ type GroupServiceClient interface {
 	GetGroup(ctx context.Context, in *GetGroupRequest, opts ...grpc.CallOption) (*Group, error)
 	// Gets multiple groups in a single request.
 	// Group members or users with bb.groups.get permission can get the group.
+	// A name that resolves to nothing is reported in `unmatched_names` instead of
+	// failing the call, so a partial response is a success. This departs from
+	// AIP-231 atomicity on purpose: callers resolve names held in stored
+	// references, which go stale when a group is deleted.
 	// Permissions required: bb.groups.get OR caller is the group member
 	BatchGetGroups(ctx context.Context, in *BatchGetGroupsRequest, opts ...grpc.CallOption) (*BatchGetGroupsResponse, error)
 	// Lists all groups in the workspace.
@@ -137,6 +141,10 @@ type GroupServiceServer interface {
 	GetGroup(context.Context, *GetGroupRequest) (*Group, error)
 	// Gets multiple groups in a single request.
 	// Group members or users with bb.groups.get permission can get the group.
+	// A name that resolves to nothing is reported in `unmatched_names` instead of
+	// failing the call, so a partial response is a success. This departs from
+	// AIP-231 atomicity on purpose: callers resolve names held in stored
+	// references, which go stale when a group is deleted.
 	// Permissions required: bb.groups.get OR caller is the group member
 	BatchGetGroups(context.Context, *BatchGetGroupsRequest) (*BatchGetGroupsResponse, error)
 	// Lists all groups in the workspace.

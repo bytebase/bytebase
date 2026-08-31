@@ -189,10 +189,17 @@ func (x *BatchGetProjectsRequest) GetNames() []string {
 
 type BatchGetProjectsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The projects from the specified request.
-	Projects      []*Project `protobuf:"bytes,1,rep,name=projects,proto3" json:"projects,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	// The projects from the specified request, in the order their names were
+	// requested. Duplicate names collapse to their first occurrence and unmatched
+	// names have no entry, so this list may be shorter than `names`.
+	Projects []*Project `protobuf:"bytes,1,rep,name=projects,proto3" json:"projects,omitempty"`
+	// The requested names that returned no project, in request order. A name
+	// lands here whether the project does not exist or the caller may not see it.
+	// The two are not distinguished, so the response cannot be used to probe which
+	// projects exist.
+	UnmatchedNames []string `protobuf:"bytes,2,rep,name=unmatched_names,json=unmatchedNames,proto3" json:"unmatched_names,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *BatchGetProjectsResponse) Reset() {
@@ -228,6 +235,13 @@ func (*BatchGetProjectsResponse) Descriptor() ([]byte, []int) {
 func (x *BatchGetProjectsResponse) GetProjects() []*Project {
 	if x != nil {
 		return x.Projects
+	}
+	return nil
+}
+
+func (x *BatchGetProjectsResponse) GetUnmatchedNames() []string {
+	if x != nil {
+		return x.UnmatchedNames
 	}
 	return nil
 }
@@ -1607,9 +1621,10 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x14bytebase.com/ProjectR\x04name\"M\n" +
 	"\x17BatchGetProjectsRequest\x122\n" +
 	"\x05names\x18\x01 \x03(\tB\x1c\xe0A\x02\xfaA\x16\n" +
-	"\x14bytebase.com/ProjectR\x05names\"L\n" +
+	"\x14bytebase.com/ProjectR\x05names\"u\n" +
 	"\x18BatchGetProjectsResponse\x120\n" +
-	"\bprojects\x18\x01 \x03(\v2\x14.bytebase.v1.ProjectR\bprojects\"\xa7\x01\n" +
+	"\bprojects\x18\x01 \x03(\v2\x14.bytebase.v1.ProjectR\bprojects\x12'\n" +
+	"\x0funmatched_names\x18\x02 \x03(\tR\x0eunmatchedNames\"\xa7\x01\n" +
 	"\x13ListProjectsRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +
@@ -1721,7 +1736,7 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x0eProjectService\x12\x83\x01\n" +
 	"\n" +
 	"GetProject\x12\x1e.bytebase.v1.GetProjectRequest\x1a\x14.bytebase.v1.Project\"?\xdaA\x04name\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/{name=projects/*}\x12\x99\x01\n" +
-	"\x10BatchGetProjects\x12$.bytebase.v1.BatchGetProjectsRequest\x1a%.bytebase.v1.BatchGetProjectsResponse\"8\x8a\xea0\x0fbb.projects.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/projects:batchGet\x12\x88\x01\n" +
+	"\x10BatchGetProjects\x12$.bytebase.v1.BatchGetProjectsRequest\x1a%.bytebase.v1.BatchGetProjectsResponse\"8\x8a\xea0\x0fbb.projects.get\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x17\x12\x15/v1/projects:batchGet\x12\x88\x01\n" +
 	"\fListProjects\x12 .bytebase.v1.ListProjectsRequest\x1a!.bytebase.v1.ListProjectsResponse\"3\xdaA\x00\x8a\xea0\x10bb.projects.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x0e\x12\f/v1/projects\x12\x84\x01\n" +
 	"\x0eSearchProjects\x12\".bytebase.v1.SearchProjectsRequest\x1a#.bytebase.v1.SearchProjectsResponse\")\xdaA\x00\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x18:\x01*\"\x13/v1/projects:search\x12\x90\x01\n" +
 	"\rCreateProject\x12!.bytebase.v1.CreateProjectRequest\x1a\x14.bytebase.v1.Project\"F\xdaA\x00\x8a\xea0\x12bb.projects.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02\x17:\aproject\"\f/v1/projects\x12\xb4\x01\n" +

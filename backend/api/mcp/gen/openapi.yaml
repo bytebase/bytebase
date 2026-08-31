@@ -1185,7 +1185,11 @@ paths:
       summary: BatchGetDatabases
       description: |-
         Retrieves multiple databases by their names.
-         Permissions required: bb.databases.get
+         A name that resolves to nothing is reported in `unmatched_names` instead of
+         failing the call, so a partial response is a success. This departs from
+         AIP-231 atomicity on purpose: callers resolve names held in stored
+         references, which go stale when a database is dropped or transferred.
+         Permissions required: bb.databases.get (on each named database's project)
       operationId: bytebase.v1.DatabaseService.BatchGetDatabases
       parameters:
         - name: Connect-Protocol-Version
@@ -1681,6 +1685,10 @@ paths:
       description: |-
         Gets multiple groups in a single request.
          Group members or users with bb.groups.get permission can get the group.
+         A name that resolves to nothing is reported in `unmatched_names` instead of
+         failing the call, so a partial response is a success. This departs from
+         AIP-231 atomicity on purpose: callers resolve names held in stored
+         references, which go stale when a group is deleted.
          Permissions required: bb.groups.get OR caller is the group member
       operationId: bytebase.v1.GroupService.BatchGetGroups
       parameters:
@@ -3748,7 +3756,11 @@ paths:
       summary: BatchGetProjects
       description: |-
         BatchGetProjects retrieves multiple projects by their names.
-         Permissions required: bb.projects.get
+         A name that resolves to nothing is reported in `unmatched_names` instead of
+         failing the call, so a partial response is a success. This departs from
+         AIP-231 atomicity on purpose: callers resolve names held in stored
+         references, which go stale when a project is deleted.
+         Permissions required: bb.projects.get (on each named project)
       operationId: bytebase.v1.ProjectService.BatchGetProjects
       parameters:
         - name: Connect-Protocol-Version
@@ -7086,6 +7098,10 @@ paths:
       description: |-
         Get the users in batch.
          Any authenticated user can batch get users.
+         A name that resolves to nothing is reported in `unmatched_names` instead of
+         failing the call, so a partial response is a success. This departs from
+         AIP-231 atomicity on purpose: callers resolve names held in stored
+         references, which go stale when a user leaves the workspace.
          Permissions required: bb.users.get
       operationId: bytebase.v1.UserService.BatchGetUsers
       parameters:
@@ -9442,7 +9458,20 @@ components:
           items:
             $ref: '#/components/schemas/bytebase.v1.Database'
           title: databases
-          description: The databases from the specified request.
+          description: |-
+            The databases from the specified request, in the order their names were
+             requested. Duplicate names collapse to their first occurrence and unmatched
+             names have no entry, so this list may be shorter than `names`.
+        unmatchedNames:
+          type: array
+          items:
+            type: string
+          title: unmatched_names
+          description: |-
+            The requested names that returned no database, in request order. A name
+             lands here whether the database does not exist, does not belong to
+             `parent`, or the caller may not see it. The cases are not distinguished, so
+             the response cannot be used to probe which databases exist.
       title: BatchGetDatabasesResponse
       additionalProperties: false
     bytebase.v1.BatchGetGroupsRequest:
@@ -9467,7 +9496,20 @@ components:
           items:
             $ref: '#/components/schemas/bytebase.v1.Group'
           title: groups
-          description: The groups from the specified request.
+          description: |-
+            The groups from the specified request, in the order their names were
+             requested. Duplicate names collapse to their first occurrence and unmatched
+             names have no entry, so this list may be shorter than `names`.
+        unmatchedNames:
+          type: array
+          items:
+            type: string
+          title: unmatched_names
+          description: |-
+            The requested names that returned no group, in request order. A name lands
+             here whether the group does not exist or the caller may not see it. The two
+             are not distinguished, so the response cannot be used to probe which groups
+             exist.
       title: BatchGetGroupsResponse
       additionalProperties: false
       description: Response message for batch getting groups.
@@ -9492,7 +9534,20 @@ components:
           items:
             $ref: '#/components/schemas/bytebase.v1.Project'
           title: projects
-          description: The projects from the specified request.
+          description: |-
+            The projects from the specified request, in the order their names were
+             requested. Duplicate names collapse to their first occurrence and unmatched
+             names have no entry, so this list may be shorter than `names`.
+        unmatchedNames:
+          type: array
+          items:
+            type: string
+          title: unmatched_names
+          description: |-
+            The requested names that returned no project, in request order. A name
+             lands here whether the project does not exist or the caller may not see it.
+             The two are not distinguished, so the response cannot be used to probe which
+             projects exist.
       title: BatchGetProjectsResponse
       additionalProperties: false
     bytebase.v1.BatchGetUsersRequest:
@@ -9516,7 +9571,20 @@ components:
           items:
             $ref: '#/components/schemas/bytebase.v1.User'
           title: users
-          description: The users from the specified request.
+          description: |-
+            The users from the specified request, in the order their names were
+             requested. Duplicate names collapse to their first occurrence and unmatched
+             names have no entry, so this list may be shorter than `names`.
+        unmatchedNames:
+          type: array
+          items:
+            type: string
+          title: unmatched_names
+          description: |-
+            The requested names that returned no user, in request order. A name lands
+             here whether the user does not exist or is not a member of the workspace.
+             The two are not distinguished, so the response cannot be used to probe which
+             accounts exist.
       title: BatchGetUsersResponse
       additionalProperties: false
     bytebase.v1.BatchParseRequest:
