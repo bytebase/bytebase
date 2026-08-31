@@ -240,13 +240,20 @@ func (s *IssueService) setNextApproverRoles(ctx context.Context, issueFind *stor
 	if err != nil {
 		return errors.Wrapf(err, "failed to get workspace iam policy")
 	}
+	// One query rather than one per project: the wildcard search authorizes
+	// every project the caller can read issues in, and a workspace-level
+	// grant reaches this loop without having read any project policy.
+	projectPolicies, err := s.store.ListProjectIamPolicies(ctx, workspaceID, issueFind.ProjectIDs)
+	if err != nil {
+		return errors.Wrapf(err, "failed to list project iam policies")
+	}
 	projectRoles := []store.ProjectRole{}
 	for _, projectID := range issueFind.ProjectIDs {
-		projectPolicy, err := s.store.GetProjectIamPolicy(ctx, workspaceID, projectID)
-		if err != nil {
-			return errors.Wrapf(err, "failed to get iam policy for project %q", projectID)
+		projectPolicy, ok := projectPolicies[projectID]
+		if !ok {
+			projectPolicy = &storepb.IamPolicy{}
 		}
-		for role := range utils.GetUserFormattedRolesMap(ctx, s.store, workspaceID, approver, projectPolicy.Policy, workspacePolicy.Policy) {
+		for role := range utils.GetUserFormattedRolesMap(ctx, s.store, workspaceID, approver, projectPolicy, workspacePolicy.Policy) {
 			projectRoles = append(projectRoles, store.ProjectRole{ProjectID: projectID, Role: role})
 		}
 	}
