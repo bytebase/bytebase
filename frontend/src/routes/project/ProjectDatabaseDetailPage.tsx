@@ -18,6 +18,7 @@ import {
   UpdateDatabaseRequestSchema,
 } from "@/types/proto-es/v1/database_service_pb";
 import { autoDatabaseRoute, getDatabaseProject } from "@/utils";
+import { isProjectInstanceDatabase } from "@/utils/v1/database";
 import { DatabaseDetailActions } from "./database-detail/DatabaseDetailActions";
 import { DatabaseDetailHeader } from "./database-detail/DatabaseDetailHeader";
 import { DatabaseCatalogPanel } from "./database-detail/panels/DatabaseCatalogPanel";
@@ -152,12 +153,23 @@ export function ProjectDatabaseDetailPage({
       </div>
     );
   }
+  const isProjectInstance = detail.database
+    ? isProjectInstanceDatabase(detail.database)
+    : false;
 
   return (
     <div className="flex min-h-full flex-col gap-y-4 p-4">
       <SampleExpirationAlert
         instanceName={detail.database.instanceResource?.name ?? parent}
       />
+
+      {isProjectInstance && (
+        <Alert
+          variant="info"
+          title={t("instance.project-bound-title")}
+          description={t("instance.project-bound-description")}
+        />
+      )}
 
       {!detail.database.effectiveEnvironment && (
         <Alert
@@ -233,12 +245,14 @@ export function ProjectDatabaseDetailPage({
         </ComponentPermissionGuard>
       )}
 
-      <TransferProjectSheet
-        open={showTransferDrawer}
-        databases={[detail.database]}
-        onClose={() => setShowTransferDrawer(false)}
-        onTransfer={handleTransferProject}
-      />
+      {!isProjectInstance && (
+        <TransferProjectSheet
+          open={showTransferDrawer}
+          databases={[detail.database]}
+          onClose={() => setShowTransferDrawer(false)}
+          onTransfer={handleTransferProject}
+        />
+      )}
     </div>
   );
 }

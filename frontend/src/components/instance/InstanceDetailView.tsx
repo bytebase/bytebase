@@ -573,6 +573,15 @@ export function InstanceDetailView({
 
       <SampleExpirationAlert instanceName={instanceName} />
 
+      {isProjectOwned && (
+        <Alert
+          variant="info"
+          className="mb-4"
+          title={t("instance.project-bound-title")}
+          description={t("instance.project-bound-description")}
+        />
+      )}
+
       {/* No environment warning */}
       {!instance.environment && (
         <Alert
