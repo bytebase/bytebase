@@ -12,7 +12,6 @@ noted. Fixed findings are removed and listed at the end.
 |---|---|---|
 | T12 | Anonymous callers can enumerate emails, relay mail, and read your LDAP config | MED |
 | T16 | Four `BatchGet` RPCs behave four different ways when an item is missing | MED |
-| T11 | A create-permission check is skipped on `allow_missing` updates | MED |
 | T18c | Three smaller ones: broken filter, unpaginated list, half-finished delete | MED |
 
 ---
@@ -39,16 +38,6 @@ The convention can also miss the *only* resource: `UpdateDatabaseCatalog` names 
 call was authorized against the workspace. Both are fixed and listed at the end. Neither fix
 generalizes — the next request field that departs from the convention arrives unchecked, silently,
 and only a sweep like this one finds it.
-
-### T11 · A create check is skipped on `allow_missing` updates — MED
-
-`UpdateGroup(allow_missing=true)` creates a group when none exists, but the create-permission check
-is short-circuited for CUSTOM-auth RPCs, so nothing is verified. Harmless today only because every
-member can create groups anyway — but the code comment right above it claims the check happens,
-which is how this survives review.
-
-Same root cause, wider: 15 of the 45 CUSTOM RPCs declare a `permission` annotation that is never
-enforced. It's decorative, and it reads as protection. `acl.go:251-253`, `group_service.go:167-177`
 
 ---
 
@@ -142,8 +131,9 @@ constraints.
    failure instead of a silent scope change.
 2. **Fail closed on auth annotations, and put api-linter in CI.** Reject
    `AUTH_METHOD_UNSPECIFIED` at startup; make a `permission` on a CUSTOM RPC either enforced or a
-   build error, since 15 are decorative. None of Tier 5 was visible to `buf lint`'s BASIC profile,
-   which is why it accumulated.
+   build error, since 16 of the 52 are decorative — `TestAllowMissingCreatePermission`, added with
+   T11, is the descriptor-walking shape to generalize. None of Tier 5 was visible to `buf lint`'s
+   BASIC profile, which is why it accumulated.
 
 ---
 
@@ -155,6 +145,7 @@ constraints.
 | T2 (INPUT_ONLY) | Read-path fix |
 | T2 `DiffSchema` | `DiffSchema` rejects a changelog target owned by another project before any read, matching how every other second-resource handler closes it. Not the general interceptor change: the resource the caller names must simply belong to the project they were authorized on, which is also the only thing a cross-project diff could have meant. A missing target and a foreign one return the same error, so neither confirms what lives in the other project. Accepted with it: the class stays latent — a future second-resource field still arrives unchecked |
 | T19 `UpdateDatabaseCatalog` | The interceptor now reads `catalog.name`, so the permission is checked against the named database's project instead of the workspace — the route resolver already drops the trailing `/catalog`. Strictly additive: workspace holders are unaffected and Project Owner, whose role carries `bb.databaseCatalogs.update`, is no longer denied. Separate and still open: `bb.databaseCatalogs.create` does not exist, so the `allow_missing` secondary check denies every caller. Dead rather than harmful — no UI sets the flag and the RPC is MCP-`EXCLUDED` |
+| T11 | `UpdateGroup(allow_missing=true)` now checks `bb.groups.create` itself, the shape `UpdatePlan` and `UpdateUser` already had. The interceptor never covered it: `doIAMPermissionCheck` returns true for every non-IAM auth method, so the `allow_missing` secondary block evaluated to nothing on a CUSTOM RPC, and the create path calls `CreateGroup` in-process, which bypasses the interceptor anyway — while the comment above it claimed both permissions were verified. The exposure was narrower and differently shaped than first written: Workspace Member does hold `bb.groups.create`, but Workspace DBA and every project role do not, so a DBA-only principal could create a group and name itself OWNER, which `checkPermission` then honors for that group. It stops there — a group confers nothing until someone with IAM-policy rights binds a role to it. The interceptor's block is now gated on `AuthMethod == IAM` so it no longer reads as protection where it verifies nothing (behavior-preserving: it already returned true there). Found tracing the same mechanism, and fixed with it: the `.update` → `.create` string rewrite is unvalidated, and `UpdateDatabase` derived `bb.databases.create`, which does not exist — `CheckPermission` never matches an unknown string, so `allow_missing=true` denied every caller including Workspace Admin, on a flag `database_service.go` never read and the proto documented as working. Removed and the number reserved, per the `UpdateDatabaseCatalog` precedent. `TestAllowMissingCreatePermission` walks the descriptors and makes all four silent failure modes a build failure — an RPC that gains the flag with nothing authorizing its create path, a derived permission that does not exist, a declared permission the rewrite leaves unchanged (`bb.settings.set` is one, and vacuous if it ever went IAM), and a nested `allow_missing` sub-request the interceptor's hand-written type switch does not name, which it proves by building the request and asserting `hasAllowMissingEnabled` reads it. Still open, and the other half of the original finding: 16 of the 52 CUSTOM RPCs declare a `permission` annotation that nothing ties to enforcement, so it remains documentation that reads as protection |
 | T5, T6 | [#21143](https://github.com/bytebase/bytebase/pull/21143) — `sheet_blob_ref` gives sheets per-project ownership; `BatchCreateRevisions` rejects foreign-project provenance without echoing the hash |
 | T7 | [#21102](https://github.com/bytebase/bytebase/pull/21102) — every `CheckRelease` target validated against the parent project before any schema read (its error codes still leak existence — T18c-iii) |
 | T8 `CreateWorksheet` | [#21169](https://github.com/bytebase/bytebase/pull/21169) — `CreateSavedQuery` is now IAM-enforced; Workspace Member holds no saved-query permission, and new queries start creator-private |
