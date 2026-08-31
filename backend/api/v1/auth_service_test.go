@@ -539,12 +539,22 @@ func TestSignupChecksRestrictionBeforeExistence(t *testing.T) {
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
 	require.NoError(t, err)
 
-	_, err = stores.CreateUser(ctx, &store.UserMessage{
+	// The account must hold a workspace binding, not merely exist: signup
+	// resolves the target workspace through FindWorkspace(email), so a member
+	// resolves to a real workspace ID while an unknown address resolves to none.
+	// A bare CreateUser resolves to none either way and would let a denial that
+	// names the workspace pass unnoticed.
+	takenUser, err := stores.CreateUser(ctx, &store.UserMessage{
 		Email:        "taken@example.com",
 		Name:         "Taken",
 		PasswordHash: "unused",
 		Profile:      &storepb.UserProfile{},
 	})
+	require.NoError(t, err)
+	_, err = stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
+		ResourceID: "signup-order-test",
+		Payload:    &storepb.WorkspacePayload{Title: "Signup order test"},
+	}, takenUser.Email)
 	require.NoError(t, err)
 
 	signup := func(service *AuthService, email string) error {
@@ -605,4 +615,81 @@ func TestSendEmailLoginCodeBudgetsWorkspacelessSends(t *testing.T) {
 	// The bucket is the recipient domain, so an exhausted campaign does not
 	// stop sign-in for anyone else.
 	require.Equal(t, connect.CodeInternal, connect.CodeOf(send("someone@other.example")))
+}
+
+// TestSendEmailLoginCodeAnswersUniformlyWhenSignupDisallowed pins the other half
+// of the redeemability gate: skipping the send for an address that has no
+// account is only safe while skipping it is unobservable. A workspace that
+// disallows signup cannot onboard an unknown address through an email code, so
+// no code is sent to one — and the known address must not be told anything the
+// unknown address isn't, including that delivery failed.
+func TestSendEmailLoginCodeAnswersUniformlyWhenSignupDisallowed(t *testing.T) {
+	const (
+		workspaceID = "email-code-uniform-test"
+		secret      = "test-secret"
+	)
+
+	ctx := context.Background()
+	stores := newAuthTestStore(t)
+
+	member, err := stores.CreateUser(ctx, &store.UserMessage{
+		Email:        "member@example.com",
+		Name:         "Member",
+		PasswordHash: "unused",
+		Profile:      &storepb.UserProfile{},
+	})
+	require.NoError(t, err)
+	_, err = stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
+		ResourceID: workspaceID,
+		Payload:    &storepb.WorkspacePayload{Title: "Email code uniform test"},
+	}, member.Email)
+	require.NoError(t, err)
+	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{
+		Name:      storepb.SettingName_WORKSPACE_PROFILE,
+		Workspace: workspaceID,
+		Value: &storepb.WorkspaceProfileSetting{
+			AllowEmailCodeSignin: true,
+			DisallowSignup:       true,
+			PasswordRestriction:  &storepb.WorkspaceProfileSetting_PasswordRestriction{MinLength: 8},
+		},
+	})
+	require.NoError(t, err)
+	// Port 1 refuses immediately, so the known address takes the delivery-failure
+	// path — the branch that used to answer Internal while the unknown address
+	// answered success.
+	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{
+		Name:      storepb.SettingName_EMAIL,
+		Workspace: workspaceID,
+		Value: &storepb.EmailSetting{
+			From: "bytebase@example.com",
+			Type: storepb.EmailSetting_SMTP,
+			Config: &storepb.EmailSetting_Smtp{Smtp: &storepb.EmailSetting_SMTPConfig{
+				Host:           "127.0.0.1",
+				Port:           1,
+				Encryption:     storepb.EmailSetting_SMTPConfig_ENCRYPTION_NONE,
+				Authentication: storepb.EmailSetting_SMTPConfig_AUTHENTICATION_NONE,
+			}},
+		},
+	})
+	require.NoError(t, err)
+
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
+	require.NoError(t, err)
+	require.NoError(t, licenseService.StoreLicense(ctx, workspaceID, authTestEnterpriseLicense))
+	service := NewAuthService(stores, secret, licenseService, &config.Profile{}, nil)
+	workspaceName := common.FormatWorkspace(workspaceID)
+
+	for _, email := range []string{member.Email, "stranger@example.com"} {
+		_, err := service.SendEmailLoginCode(ctx, connect.NewRequest(&v1pb.SendEmailLoginCodeRequest{
+			Email:     email,
+			Workspace: &workspaceName,
+		}))
+		require.NoError(t, err, "%s must not learn whether it has an account here", email)
+	}
+
+	// The stranger is not merely answered the same — no code was written for
+	// them, so nothing was mailed anywhere on their behalf.
+	row, err := stores.GetEmailVerificationCode(ctx, "stranger@example.com", storepb.EmailVerificationCodePurpose_LOGIN)
+	require.NoError(t, err)
+	require.Nil(t, row, "an address that could never redeem a code must not be sent one")
 }

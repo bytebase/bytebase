@@ -316,7 +316,11 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		return nil, err
 	}
 	if restriction.DisallowSignup {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed for this workspace %v", targetWorkspaceID))
+		// The denial names no workspace. targetWorkspaceID is resolved from the
+		// email — a member resolves to their workspace and a stranger to none —
+		// so interpolating it answers the very question the ordering below
+		// exists to withhold.
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed for this workspace"))
 	}
 	if err := validatePasswordWithRestriction(request.Password, convertToStorePasswordRestriction(restriction.PasswordRestriction)); err != nil {
 		return nil, err

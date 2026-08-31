@@ -49,15 +49,6 @@ const (
 // the caller answers it with ResourceExhausted rather than Internal.
 var errSendBudgetExhausted = errors.New("too many sign-in codes requested, please try again later")
 
-// sendBudget caps how much mail one bucket may generate in a window. The bucket
-// is a mail path — a recipient domain, the deployment — never a person, so
-// exhausting one delays sends and locks no account.
-type sendBudget struct {
-	key    string
-	max    int
-	window time.Duration
-}
-
 // RequestPasswordReset sends a password reset email. Always returns success to avoid leaking email existence.
 func (s *AuthService) RequestPasswordReset(ctx context.Context, req *connect.Request[v1pb.RequestPasswordResetRequest]) (*connect.Response[emptypb.Empty], error) {
 	email := normalizeEmail(req.Msg.Email)
@@ -186,9 +177,18 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 	// Send only a code that could be redeemed. authenticateEmailCodeLogin refuses
 	// to create an account when a self-hosted workspace disallows signup, so a
 	// code mailed to an address with no account there is mail the recipient can
-	// do nothing with, addressed by whoever called this. Silent, not an error:
-	// the response must stay identical for addresses that do have accounts.
-	if !s.profile.SaaS && restriction.DisallowSignup {
+	// do nothing with, addressed by whoever called this.
+	//
+	// Skipping the send is only safe if skipping is unobservable, so wherever
+	// this check applies the endpoint answers success for every address: an
+	// unknown one because nothing was sent, a known one because the send result
+	// is withheld. Surfacing a delivery failure for known addresses alone would
+	// turn the saved mail into the account-existence oracle this audit item is
+	// about. Same contract as RequestPasswordReset, which gates on the account
+	// the same way; the residual timing difference between a skipped send and an
+	// SMTP round trip is accepted there and here.
+	answerUniformly := !s.profile.SaaS && restriction.DisallowSignup
+	if answerUniformly {
 		user, err := s.store.GetUserByEmail(ctx, email)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user by email"))
@@ -207,11 +207,11 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 	// the sender's reputation. Accepted with it: sustaining either rate delays
 	// self-service signup for that bucket until the window passes — the same
 	// trade the login lockout makes, and the volume that trips it is the abuse.
-	var budgets []sendBudget
+	var budgets []store.LoginAttemptBucket
 	if workspaceID == "" {
-		budgets = []sendBudget{
-			{key: "signup-code-domain:" + emailDomain(email), max: emailCodeSendPerDomain, window: emailCodeSendWindow},
-			{key: "signup-code-deployment", max: emailCodeSendPerDeployment, window: emailCodeSendWindow},
+		budgets = []store.LoginAttemptBucket{
+			{Identity: "signup-code-domain:" + emailDomain(email), Max: emailCodeSendPerDomain},
+			{Identity: "signup-code-deployment", Max: emailCodeSendPerDeployment},
 		}
 	}
 
@@ -229,6 +229,12 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 	); err != nil {
 		if errors.Is(err, errSendBudgetExhausted) {
 			return nil, connect.NewError(connect.CodeResourceExhausted, err)
+		}
+		if answerUniformly {
+			// The skipped send above returned success; this one must too. Logged
+			// so the failure is still visible to whoever runs the deployment.
+			slog.Warn("failed to send sign-in code", slog.String("email", email), log.BBError(err))
+			return connect.NewResponse(&emptypb.Empty{}), nil
 		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
@@ -417,7 +423,7 @@ func resolvePreLoginEmailSetting(
 // Callers decide whether to propagate the error: `SendEmailLoginCode` surfaces it (users need
 // to know email delivery failed), `RequestPasswordReset` swallows it to avoid revealing that
 // the account exists.
-func (s *AuthService) sendEmailVerificationCode(ctx context.Context, workspaceID, email string, purpose storepb.EmailVerificationCodePurpose, subject, bodyFmt string, budgets ...sendBudget) error {
+func (s *AuthService) sendEmailVerificationCode(ctx context.Context, workspaceID, email string, purpose storepb.EmailVerificationCodePurpose, subject, bodyFmt string, budgets ...store.LoginAttemptBucket) error {
 	return sendEmailVerificationCode(ctx, s.store, s.secret, workspaceID, email, purpose, emailCodeTemplate{Subject: subject, BodyFmt: bodyFmt}, budgets...)
 }
 
@@ -431,7 +437,7 @@ type emailCodeTemplate struct {
 // sendEmailVerificationCode is package-level because both AuthService (login
 // and password-reset codes) and UserService (the re-authentication code) send
 // them; the deps it needs are passed rather than reached through a receiver.
-func sendEmailVerificationCode(ctx context.Context, stores *store.Store, secret, workspaceID, email string, purpose storepb.EmailVerificationCodePurpose, mail emailCodeTemplate, budgets ...sendBudget) error {
+func sendEmailVerificationCode(ctx context.Context, stores *store.Store, secret, workspaceID, email string, purpose storepb.EmailVerificationCodePurpose, mail emailCodeTemplate, budgets ...store.LoginAttemptBucket) error {
 	// For password reset, only send to active end users — no upsert or email for other targets.
 	// Login intentionally skips this account check because email-code login also supports signup.
 	if purpose == storepb.EmailVerificationCodePurpose_PASSWORD_RESET {
@@ -478,18 +484,16 @@ func sendEmailVerificationCode(ctx context.Context, stores *store.Store, secret,
 	// about to go out spends it. Claiming earlier would let repeated requests
 	// for a single address drain a shared bucket through the cooldown's silent
 	// skips, turning the limit into the denial of service it exists to prevent.
-	for _, budget := range budgets {
-		ok, err := stores.ClaimLoginAttempt(ctx, budget.key, storepb.LoginAttemptKind_EMAIL_CODE_SEND, budget.max, budget.window)
-		if err != nil {
-			return errors.Wrap(err, "failed to claim send budget")
-		}
-		if !ok {
-			// Drop the code we just wrote, for the reason the delivery-failure
-			// path below drops its own: an undelivered code must not hold the
-			// cooldown against a later, deliverable one.
-			_ = stores.DeleteEmailVerificationCodeIfMatch(ctx, email, purpose, hashEmailCode(secret, code))
-			return errSendBudgetExhausted
-		}
+	granted, err := stores.ClaimLoginAttemptBuckets(ctx, storepb.LoginAttemptKind_EMAIL_CODE_SEND, emailCodeSendWindow, budgets)
+	if err != nil {
+		return errors.Wrap(err, "failed to claim send budget")
+	}
+	if !granted {
+		// Drop the code we just wrote, for the reason the delivery-failure path
+		// below drops its own: an undelivered code must not hold the cooldown
+		// against a later, deliverable one.
+		_ = stores.DeleteEmailVerificationCodeIfMatch(ctx, email, purpose, hashEmailCode(secret, code))
+		return errSendBudgetExhausted
 	}
 
 	sender, err := mailer.NewSender(emailSetting)
