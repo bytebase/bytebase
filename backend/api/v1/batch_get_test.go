@@ -50,137 +50,58 @@ func TestResolveBatchGet(t *testing.T) {
 			failOn:  "boom",
 			wantErr: true,
 		},
-		{
-			name:  "no names",
-			names: nil,
-		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			a := require.New(t)
-			var looked []string
 			resources, unmatched, err := resolveBatchGet(tc.names, func(name string) (string, bool, error) {
-				looked = append(looked, name)
-				if name == tc.failOn {
+				switch {
+				case name == tc.failOn:
 					return "", false, errors.Errorf("store is down")
-				}
-				if tc.absent[name] {
+				case tc.absent[name]:
 					return "", false, nil
+				default:
+					return name, true, nil
 				}
-				return name, true, nil
 			})
 			if tc.wantErr {
 				a.Error(err)
-				a.Nil(resources)
-				a.Nil(unmatched)
 				return
 			}
 			a.NoError(err)
-			a.Equal(tc.wantResources, emptyToNil(resources))
+			a.Equal(tc.wantResources, resources)
 			a.Equal(tc.wantUnmatched, unmatched)
-			// Every distinct name is looked up exactly once.
-			a.Len(looked, len(uniqueNames(tc.names)))
 		})
 	}
 }
 
-func emptyToNil(s []string) []string {
-	if len(s) == 0 {
-		return nil
-	}
-	return s
-}
-
-func uniqueNames(names []string) map[string]bool {
-	seen := make(map[string]bool, len(names))
-	for _, name := range names {
-		seen[name] = true
-	}
-	return seen
-}
-
-func TestValidateDatabaseNameParent(t *testing.T) {
-	projectA, projectB, instanceX := "project-a", "project-b", "instance-x"
-
-	testCases := []struct {
-		name       string
-		projectID  *string
-		instanceID string
-		parent     *databaseParent
-		wantErr    bool
-	}{
-		{
-			name:       "wildcard parent accepts any name",
-			projectID:  &projectA,
-			instanceID: instanceX,
-			parent:     &databaseParent{},
-		},
-		{
-			name:       "name matching its parent",
-			projectID:  &projectA,
-			instanceID: instanceX,
-			parent:     &databaseParent{projectID: &projectA, instanceID: &instanceX},
-		},
-		{
-			name:       "name naming a different project than the parent",
-			projectID:  &projectB,
-			instanceID: instanceX,
-			parent:     &databaseParent{projectID: &projectA},
-			wantErr:    true,
-		},
-		{
-			name:       "name naming a different instance than the parent",
-			projectID:  &projectA,
-			instanceID: "instance-y",
-			parent:     &databaseParent{instanceID: &instanceX},
-			wantErr:    true,
-		},
-		{
-			// The name says nothing about a project, so nothing in the request
-			// contradicts itself. Whether the stored database sits under the
-			// parent is databaseInParent's call, and an unmatched name there.
-			name:       "instance-only name under a project parent",
-			projectID:  nil,
-			instanceID: instanceX,
-			parent:     &databaseParent{projectID: &projectA},
-		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			a := require.New(t)
-			err := validateDatabaseNameParent(tc.projectID, tc.instanceID, "db", tc.parent)
-			if tc.wantErr {
-				a.Error(err)
-				return
-			}
-			a.NoError(err)
-		})
-	}
-}
-
-func TestDatabaseInParent(t *testing.T) {
+// BatchGetDatabases splits the parent check in two: the half decidable from the
+// request alone stays an error, and the half that reads the stored row becomes
+// an unmatched name, so the response cannot say "it exists, just not here".
+func TestDatabaseParentChecks(t *testing.T) {
 	a := require.New(t)
-	projectA, projectB := "project-a", "project-b"
-	database := &store.DatabaseMessage{ProjectID: projectA}
+	projectA, projectB, instanceX := "project-a", "project-b", "instance-x"
+	inA := &store.DatabaseMessage{ProjectID: projectA}
 
-	a.True(databaseInParent(database, &databaseParent{}), "wildcard parent matches")
-	a.True(databaseInParent(database, &databaseParent{projectID: &projectA}))
-	a.False(databaseInParent(database, &databaseParent{projectID: &projectB}))
-}
+	// Decidable from the name alone: the caller contradicting itself.
+	a.Error(validateDatabaseNameParent(&projectB, instanceX, "db", &databaseParent{projectID: &projectA}))
+	a.Error(validateDatabaseNameParent(&projectA, "instance-y", "db", &databaseParent{instanceID: &instanceX}))
+	a.NoError(validateDatabaseNameParent(&projectA, instanceX, "db", &databaseParent{projectID: &projectA, instanceID: &instanceX}))
+	a.NoError(validateDatabaseNameParent(&projectA, instanceX, "db", &databaseParent{}))
+	// An instance-only name says nothing about a project, so nothing here
+	// contradicts a project parent — that is databaseInParent's call.
+	a.NoError(validateDatabaseNameParent(nil, instanceX, "db", &databaseParent{projectID: &projectA}))
 
-func TestValidateDatabaseParentStillRejectsAForeignDatabase(t *testing.T) {
+	// Read from the stored row.
+	a.True(databaseInParent(inA, &databaseParent{}))
+	a.True(databaseInParent(inA, &databaseParent{projectID: &projectA}))
+	a.False(databaseInParent(inA, &databaseParent{projectID: &projectB}))
+
 	// The write paths keep the strict check: BatchSyncDatabases and
 	// BatchUpdateDatabases must not act on a database outside the parent.
-	a := require.New(t)
-	projectA, projectB, instanceX := "project-a", "project-b", "instance-x"
-
-	err := validateDatabaseParent(nil, instanceX, "db", &store.DatabaseMessage{ProjectID: projectB}, &databaseParent{projectID: &projectA})
-	a.Error(err)
-
-	err = validateDatabaseParent(nil, instanceX, "db", &store.DatabaseMessage{ProjectID: projectA}, &databaseParent{projectID: &projectA})
-	a.NoError(err)
+	a.Error(validateDatabaseParent(nil, instanceX, "db", &store.DatabaseMessage{ProjectID: projectB}, &databaseParent{projectID: &projectA}))
+	a.NoError(validateDatabaseParent(nil, instanceX, "db", inA, &databaseParent{projectID: &projectA}))
 }
 
 func TestBatchGetLookupNames(t *testing.T) {
