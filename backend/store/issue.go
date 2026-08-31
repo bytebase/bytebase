@@ -566,12 +566,19 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 // BatchUpdateIssueStatuses updates the status of multiple issues.
 // Returns a map of issueUID -> old status for the updated issues.
 func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, issueUIDs []int64, newStatus storepb.Issue_Status) (map[int64]storepb.Issue_Status, error) {
-	tx, err := s.GetDB().BeginTx(ctx, nil)
+	var oldStatuses map[int64]storepb.Issue_Status
+	err := s.runProjectLifecycleWrite(ctx, projectID, lifecycleActive, func(tx *sql.Tx) error {
+		var err error
+		oldStatuses, err = batchUpdateIssueStatusesTx(ctx, tx, projectID, issueUIDs, newStatus)
+		return err
+	})
 	if err != nil {
-		return nil, errors.Wrapf(err, "failed to begin transaction")
+		return nil, err
 	}
-	defer tx.Rollback()
+	return oldStatuses, nil
+}
 
+func batchUpdateIssueStatusesTx(ctx context.Context, tx *sql.Tx, projectID string, issueUIDs []int64, newStatus storepb.Issue_Status) (map[int64]storepb.Issue_Status, error) {
 	// Lock current issues to serialize status changes with draft submission.
 	fetchQuery := qb.Q().Space(`
 		SELECT id, status, COALESCE((payload->>'draft')::boolean, false)
@@ -634,9 +641,6 @@ func (s *Store) BatchUpdateIssueStatuses(ctx context.Context, projectID string, 
 		return nil, errors.Wrapf(err, "failed to update")
 	}
 
-	if err := tx.Commit(); err != nil {
-		return nil, errors.Wrapf(err, "failed to commit")
-	}
 	return oldStatuses, nil
 }
 

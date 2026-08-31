@@ -313,6 +313,23 @@ func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage
 		return nil, errors.Errorf("empty where")
 	}
 
+	requirement := lifecycleExisting
+	if patch.ResourceID != nil {
+		requirement = lifecycleActive
+	}
+	scope, targetIDs, err := s.resolveInstanceLifecycleScope(ctx, where, requirement)
+	if err != nil {
+		return nil, err
+	}
+	if patch.ResourceID == nil {
+		if len(targetIDs) == 0 {
+			return nil, nil
+		}
+		// Only mutate the targets whose lifecycle gates were acquired. An instance
+		// that concurrently enters the environment is handled by a later cleanup.
+		where.And("resource_id = ANY(?)", targetIDs)
+	}
+
 	q := qb.Q().Space("UPDATE instance SET ?", set).
 		Space("WHERE ?", where)
 
@@ -327,7 +344,9 @@ func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage
 		}
 		var workspace string
 		var project sql.NullString
-		if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&workspace, &project); err != nil {
+		if err := s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+			return tx.QueryRowContext(ctx, query, args...).Scan(&workspace, &project)
+		}); err != nil {
 			return nil, err
 		}
 		s.instanceCache.Remove(getInstanceCacheKey(*v))
@@ -344,11 +363,50 @@ func (s *Store) UpdateInstance(ctx context.Context, patch *UpdateInstanceMessage
 	if err != nil {
 		return nil, errors.Wrapf(err, "failed to build sql")
 	}
-	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
+	if err := s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		_, err := tx.ExecContext(ctx, query, args...)
+		return err
+	}); err != nil {
 		return nil, err
 	}
 
 	return nil, nil
+}
+
+func (s *Store) resolveInstanceLifecycleScope(ctx context.Context, where *qb.Query, requirement lifecycleRequirement) (lifecycleScope, []string, error) {
+	q := qb.Q().Space(`
+		SELECT resource_id, project
+		FROM instance
+		WHERE ?
+		ORDER BY resource_id`, where)
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return lifecycleScope{}, nil, errors.Wrap(err, "failed to build instance lifecycle target query")
+	}
+	rows, err := s.GetDB().QueryContext(ctx, query, args...)
+	if err != nil {
+		return lifecycleScope{}, nil, errors.Wrap(err, "failed to list instance lifecycle targets")
+	}
+	defer rows.Close()
+
+	scope := lifecycleScope{}
+	var targetIDs []string
+	for rows.Next() {
+		var resourceID string
+		var project sql.NullString
+		if err := rows.Scan(&resourceID, &project); err != nil {
+			return lifecycleScope{}, nil, errors.Wrap(err, "failed to scan instance lifecycle target")
+		}
+		targetIDs = append(targetIDs, resourceID)
+		scope.addInstance(resourceID, requirement)
+		if project.Valid {
+			scope.addProject(project.String, requirement)
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return lifecycleScope{}, nil, errors.Wrap(err, "failed to read instance lifecycle targets")
+	}
+	return scope, targetIDs, nil
 }
 
 func (s *Store) updateInstanceLifecycle(ctx context.Context, patch *UpdateInstanceMessage, q *qb.Query) (*InstanceMessage, error) {
