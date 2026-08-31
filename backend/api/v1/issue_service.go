@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"maps"
 	"slices"
 	"strings"
 	"time"
@@ -247,13 +248,22 @@ func (s *IssueService) setNextApproverRoles(ctx context.Context, issueFind *stor
 	if err != nil {
 		return errors.Wrapf(err, "failed to list project iam policies")
 	}
+	// Resolved once rather than per project. GetUserRolesInIamPolicy unions the
+	// policies it is handed, so roles(workspace ∪ project) is roles(workspace)
+	// ∪ roles(project) and splitting the two changes nothing — but expanding
+	// the workspace policy inside the loop re-runs its group lookups for every
+	// project, and HA runs with the store cache off (server.go passes
+	// !profile.HA), so each of those is a real query.
+	workspaceRoles := utils.GetUserFormattedRolesMap(ctx, s.store, workspaceID, approver, workspacePolicy.Policy)
+
 	projectRoles := []store.ProjectRole{}
 	for _, projectID := range issueFind.ProjectIDs {
-		projectPolicy, ok := projectPolicies[projectID]
-		if !ok {
-			projectPolicy = &storepb.IamPolicy{}
+		roles := map[string]bool{}
+		maps.Copy(roles, workspaceRoles)
+		if projectPolicy, ok := projectPolicies[projectID]; ok {
+			maps.Copy(roles, utils.GetUserFormattedRolesMap(ctx, s.store, workspaceID, approver, projectPolicy))
 		}
-		for role := range utils.GetUserFormattedRolesMap(ctx, s.store, workspaceID, approver, projectPolicy, workspacePolicy.Policy) {
+		for role := range roles {
 			projectRoles = append(projectRoles, store.ProjectRole{ProjectID: projectID, Role: role})
 		}
 	}
