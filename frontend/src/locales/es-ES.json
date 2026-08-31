@@ -725,6 +725,7 @@
     "nullable": "Anulable",
     "partition-tables": "Tablas de particiones",
     "partitioned": "Particionado",
+    "project-instance-transfer-disabled": "Las bases de datos de una instancia vinculada a un proyecto no se pueden transferir ni desasignar.",
     "revision": {
       "add-more-files": "Añadir más",
       "available-files": "Archivos disponibles",
@@ -1222,6 +1223,8 @@
     "port": "Puerto",
     "prepare-sample-instance-failed": "No se pudo preparar la instancia de proyecto de muestra.",
     "preparing-sample-instance": "Preparando la instancia de proyecto de muestra…",
+    "project-bound-description": "Esta instancia está vinculada a este proyecto. Todas sus bases de datos se transfieren automáticamente al proyecto y no se pueden transferir ni desasignar.",
+    "project-bound-title": "Instancia vinculada al proyecto",
     "project-id": "ID del proyecto",
     "restore-instance-instance-name-to-normal-state": "¿Restaurar la instancia '{{0}}' al estado normal?",
     "role-arn": "ARN del rol",

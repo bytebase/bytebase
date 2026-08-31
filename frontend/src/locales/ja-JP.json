@@ -725,6 +725,7 @@
     "nullable": "null も可能",
     "partition-tables": "パーティションテーブル",
     "partitioned": "パーティション",
+    "project-instance-transfer-disabled": "プロジェクトに紐付けられたインスタンスのデータベースは、移管または割り当て解除できません。",
     "revision": {
       "add-more-files": "さらに追加",
       "available-files": "利用可能なファイル",
@@ -1222,6 +1223,8 @@
     "port": "ポート",
     "prepare-sample-instance-failed": "サンプルプロジェクトインスタンスの準備に失敗しました。",
     "preparing-sample-instance": "サンプルプロジェクトインスタンスを準備しています…",
+    "project-bound-description": "このインスタンスはこのプロジェクトに紐付けられています。すべてのデータベースは自動的にこのプロジェクトへ移管され、移管や割り当て解除はできません。",
+    "project-bound-title": "プロジェクトに紐付けられたインスタンス",
     "project-id": "プロジェクトID",
     "restore-instance-instance-name-to-normal-state": "インスタンス '{{0}}' を通常の状態に復元しますか?",
     "role-arn": "ロール ARN",

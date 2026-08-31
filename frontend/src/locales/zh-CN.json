@@ -725,6 +725,7 @@
     "nullable": "可为空",
     "partition-tables": "分区表",
     "partitioned": "分区",
+    "project-instance-transfer-disabled": "项目绑定实例中的数据库无法转移或取消分配。",
     "revision": {
       "add-more-files": "添加更多",
       "available-files": "可用文件",
@@ -1222,6 +1223,8 @@
     "port": "端口",
     "prepare-sample-instance-failed": "准备示例项目实例失败。",
     "preparing-sample-instance": "正在准备示例项目实例…",
+    "project-bound-description": "此实例已绑定到该项目。其所有数据库都会自动转移到该项目，且无法转移或取消分配。",
+    "project-bound-title": "项目绑定实例",
     "project-id": "项目 ID",
     "restore-instance-instance-name-to-normal-state": "恢复实例'{{0}}'到正常状态?",
     "role-arn": "角色 ARN",

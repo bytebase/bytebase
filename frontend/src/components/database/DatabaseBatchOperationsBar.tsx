@@ -19,6 +19,7 @@ import {
   hasWorkspacePermissionV2,
   PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE,
 } from "@/utils";
+import { isProjectInstanceDatabase } from "@/utils/v1/database";
 
 export interface DatabaseBatchOperationsBarProps {
   databases: Database[];
@@ -68,6 +69,10 @@ export function DatabaseBatchOperationsBar({
   const canGetEnvironment = hasPermission("bb.settings.getEnvironment");
   const canChangeDatabase =
     PERMISSIONS_FOR_DATABASE_CHANGE_ISSUE.every(hasPermission);
+  const hasProjectInstanceDatabase = databases.some(isProjectInstanceDatabase);
+  const transferDisabledReason = hasProjectInstanceDatabase
+    ? t("database.project-instance-transfer-disabled")
+    : undefined;
 
   const actions: SelectionAction[] = [
     {
@@ -104,7 +109,8 @@ export function DatabaseBatchOperationsBar({
       label: t("database.transfer-project"),
       icon: ArrowRightLeft,
       onClick: () => onTransferProject?.(),
-      disabled: !canUpdate,
+      disabled: !canUpdate || hasProjectInstanceDatabase,
+      disabledReason: transferDisabledReason,
       hidden: !onTransferProject,
     },
     {
@@ -112,7 +118,8 @@ export function DatabaseBatchOperationsBar({
       label: t("database.unassign"),
       icon: Unlink,
       onClick: () => onUnassign?.(),
-      disabled: !canUpdate,
+      disabled: !canUpdate || hasProjectInstanceDatabase,
+      disabledReason: transferDisabledReason,
       hidden: !onUnassign,
     },
   ];

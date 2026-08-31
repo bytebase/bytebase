@@ -8,6 +8,7 @@ import { preCreateIssue } from "@/lib/plan/issue";
 import { useAppStore } from "@/stores/app";
 import type { Permission } from "@/types";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
+import { isProjectInstanceDatabase } from "@/utils/v1/database";
 import { DatabaseExportSchemaButton } from "./DatabaseExportSchemaButton";
 import { DatabaseSyncButton } from "./DatabaseSyncButton";
 
@@ -81,7 +82,7 @@ export function DatabaseDetailActions({
             disabled={!canExportSchema}
           />
         </PermissionGuard>
-        {!isDefaultProject && (
+        {!isDefaultProject && !isProjectInstanceDatabase(database) && (
           <PermissionGuard
             permissions={["bb.databases.update"]}
             project={project}
