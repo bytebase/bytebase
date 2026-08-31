@@ -57,6 +57,7 @@ func (c *DataCleaner) Run(ctx context.Context, wg *sync.WaitGroup) {
 	c.cleanup(ctx)
 	c.detectStaleTaskRuns(ctx)
 	c.detectStalePlanCheckRuns(ctx)
+	c.detectStaleReviewRuns(ctx)
 
 	for {
 		select {
@@ -73,6 +74,7 @@ func (c *DataCleaner) Run(ctx context.Context, wg *sync.WaitGroup) {
 			}
 			c.detectStaleTaskRuns(ctx)
 			c.detectStalePlanCheckRuns(ctx)
+			c.detectStaleReviewRuns(ctx)
 		case <-ctx.Done():
 			return
 		}
@@ -96,6 +98,17 @@ func (c *DataCleaner) detectStaleTaskRuns(ctx context.Context) {
 	}
 	if rowsAffected > 0 {
 		slog.Info("Marked stale task runs as failed", slog.Int64("count", rowsAffected))
+	}
+}
+
+func (c *DataCleaner) detectStaleReviewRuns(ctx context.Context) {
+	rowsAffected, err := c.store.FailStaleReviewRuns(ctx, stalenessThreshold)
+	if err != nil {
+		slog.Error("Failed to detect stale review runs", log.BBError(err))
+		return
+	}
+	if rowsAffected > 0 {
+		slog.Info("Marked stale review runs as failed", slog.Int64("count", rowsAffected))
 	}
 }
 

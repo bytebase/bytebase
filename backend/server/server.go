@@ -43,6 +43,7 @@ import (
 	"github.com/bytebase/bytebase/backend/runner/monitor"
 	"github.com/bytebase/bytebase/backend/runner/notifylistener"
 	"github.com/bytebase/bytebase/backend/runner/plancheck"
+	"github.com/bytebase/bytebase/backend/runner/reviewrun"
 	samplerunner "github.com/bytebase/bytebase/backend/runner/sample"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/runner/taskrun"
@@ -63,6 +64,7 @@ type Server struct {
 	// Asynchronous runners.
 	taskScheduler      *taskrun.Scheduler
 	planCheckScheduler *plancheck.Scheduler
+	reviewRunScheduler *reviewrun.Scheduler
 	schemaSyncer       *schemasync.Syncer
 	approvalRunner     *review.Runner
 	notifyListener     *notifylistener.Listener
@@ -241,6 +243,10 @@ func NewServer(ctx context.Context, profile *config.Profile) (*Server, error) {
 
 	combinedExecutor := plancheck.NewCombinedExecutor(stores, sheetManager, s.dbFactory)
 	s.planCheckScheduler = plancheck.NewScheduler(stores, s.bus, combinedExecutor, s.licenseService, productMetrics)
+
+	s.reviewRunScheduler = reviewrun.NewScheduler(stores, s.bus, profile, s.licenseService, productMetrics)
+	s.reviewRunScheduler.Register(store.ReviewRunTypeRule, reviewrun.NewRuleExecutor(stores, sheetManager, s.dbFactory))
+	s.reviewRunScheduler.Register(store.ReviewRunTypeGuideline, reviewrun.NewGuidelineExecutor())
 	s.notifyListener = notifylistener.NewListener(stores.GetDB(), s.bus)
 
 	// Data cleaner
@@ -311,6 +317,9 @@ func (s *Server) Run(ctx context.Context, port int) error {
 
 	s.runnerWG.Add(1)
 	go s.planCheckScheduler.Run(ctx, &s.runnerWG)
+
+	s.runnerWG.Add(1)
+	go s.reviewRunScheduler.Run(ctx, &s.runnerWG)
 
 	s.runnerWG.Add(1)
 	go s.dataCleaner.Run(ctx, &s.runnerWG)

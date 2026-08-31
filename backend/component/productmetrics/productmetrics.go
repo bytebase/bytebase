@@ -25,6 +25,7 @@ type Runner string
 
 const (
 	RunnerPlanCheck    Runner = "plan_check"
+	RunnerReviewRun    Runner = "review_run"
 	RunnerTaskPending  Runner = "task_pending"
 	RunnerTaskDispatch Runner = "task_dispatch"
 	RunnerInstanceSync Runner = "instance_sync"
