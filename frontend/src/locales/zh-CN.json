@@ -929,9 +929,6 @@
       "select-placeholder": "选择工作负载身份"
     }
   },
-  "iam-policy": {
-    "concurrent-update": "在您编辑期间，其他人修改了这些权限。页面内容已更新，请确认后重试。"
-  },
   "identity-provider": {
     "attributes-description": "以下是匹配到的目录条目返回的属性。请在用户信息字段映射中使用这些属性名。",
     "claims-description": "身份提供商返回了以下 claims。此信息可帮助您配置用户信息映射。",

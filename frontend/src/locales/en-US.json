@@ -929,9 +929,6 @@
       "select-placeholder": "Select a workload identity"
     }
   },
-  "iam-policy": {
-    "concurrent-update": "Someone else changed these permissions while you were editing. Your view has been updated — review it and try again."
-  },
   "identity-provider": {
     "attributes-description": "The following attributes were returned from the matched directory entry. Use these exact attribute names in the user information field mapping.",
     "claims-description": "The following claims were returned by the identity provider. This information can help you configure field mappings.",

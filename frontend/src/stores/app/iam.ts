@@ -6,10 +6,8 @@ import {
   roleServiceClientConnect,
   workspaceServiceClientConnect,
 } from "@/api";
-import { ignoredCodesContextKey, silentContextKey } from "@/api/context-key";
-import i18n from "@/lib/i18n";
+import { silentContextKey } from "@/api/context-key";
 import { userNamePrefix, workspaceNamePrefix } from "@/lib/resourceName";
-import { pushNotification } from "@/stores/modules/notification";
 import { PRESET_WORKSPACE_ROLES } from "@/types/iam/role";
 import {
   BindingSchema,
@@ -58,31 +56,16 @@ const mergeBinding = ({
 // The server rejects a write whose etag no longer matches with ABORTED rather
 // than letting it overwrite the edit that got there first. The policy this
 // store holds is then the stale one that lost, so a retry would replay the same
-// conflict forever -- refetch it, and say so in place of the server's "please
-// refresh", which the refetch has already done.
+// conflict forever -- refetch it so the next attempt carries the etag it lost
+// to. The error itself is reported by the notification interceptor, as every
+// other request failure is.
 const recoverFromIamPolicyConflict = async (
   error: unknown,
   refetch: () => Promise<unknown>
 ) => {
   if (!(error instanceof ConnectError) || error.code !== Code.Aborted) return;
   await refetch().catch(() => undefined);
-  pushNotification({
-    module: "bytebase",
-    style: "CRITICAL",
-    title: i18n.t("iam-policy.concurrent-update"),
-  });
 };
-
-// ABORTED is reported by recoverFromIamPolicyConflict together with the refetch
-// it performed, so the interceptor's generic notification would only duplicate
-// it. The other two are the interceptor's own defaults, which listing any code
-// replaces.
-const iamPolicyWriteContext = () =>
-  createContextValues().set(ignoredCodesContextKey, [
-    Code.Aborted,
-    Code.NotFound,
-    Code.Unauthenticated,
-  ]);
 
 export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
   projectPoliciesByName: {},
@@ -251,8 +234,7 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
           resource: project,
           policy: deduped,
           etag: deduped.etag,
-        }),
-        { contextValues: iamPolicyWriteContext() }
+        })
       )
       .catch(async (error) => {
         await recoverFromIamPolicyConflict(error, async () => {
@@ -341,8 +323,7 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
           resource,
           policy,
           etag: policy.etag,
-        }),
-        { contextValues: iamPolicyWriteContext() }
+        })
       )
       .catch(async (error) => {
         await recoverFromIamPolicyConflict(error, () =>

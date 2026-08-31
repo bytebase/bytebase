@@ -433,15 +433,13 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace iam policy"))
 	}
+	// The etag is compared only in the write below, against the locked row.
+	// Comparing it here as well would reject a caller holding the etag another
+	// node just wrote, because this read can be served by the policy cache,
+	// which no other node invalidates.
 	expectedEtag, err := requestedIamPolicyEtag(request)
 	if err != nil {
 		return nil, err
-	}
-	// A request already known to be stale fails here rather than after
-	// validation, which reads the policy this one no longer matches. The write
-	// below compares again under lock, which is what actually closes the race.
-	if expectedEtag != "" && expectedEtag != policyMessage.Etag {
-		return nil, connect.NewError(connect.CodeAborted, errors.New("there is concurrent update to the workspace iam policy, please refresh and try again"))
 	}
 
 	if err := validateIAMPolicy(ctx, s.store, !s.profile.SaaS, request, policyMessage); err != nil {

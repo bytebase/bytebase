@@ -1122,8 +1122,6 @@ describe("useAppStore", () => {
   });
 
   test("patchWorkspaceIamPolicy refetches after a concurrent edit", async () => {
-    const { toastManager } = await import("@/lib/toast");
-    const addSpy = vi.spyOn(toastManager, "add");
     const stale = createProto(IamPolicySchema, {
       etag: "1756000000000",
       bindings: [
@@ -1161,14 +1159,9 @@ describe("useAppStore", () => {
     // Without the refetch the store would keep the losing policy, and every
     // retry would replay the same stale etag.
     expect(store.getState().workspacePolicy).toBe(current);
-    expect(addSpy).toHaveBeenCalledTimes(1);
-    expect(addSpy.mock.calls[0][0]).toMatchObject({ type: "error" });
-    addSpy.mockRestore();
   });
 
   test("updateProjectIamPolicy refetches after a concurrent edit", async () => {
-    const { toastManager } = await import("@/lib/toast");
-    const addSpy = vi.spyOn(toastManager, "add");
     const stale = createProto(IamPolicySchema, {
       etag: "1756000000000",
       bindings: [
@@ -1202,8 +1195,6 @@ describe("useAppStore", () => {
       etag: "1756000000000",
     });
     expect(store.getState().projectPoliciesByName[projectA.name]).toBe(current);
-    expect(addSpy).toHaveBeenCalledTimes(1);
-    addSpy.mockRestore();
   });
 
   test("updateProjectIamPolicy leaves the cached policy alone on other errors", async () => {

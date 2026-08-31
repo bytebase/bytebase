@@ -599,15 +599,13 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project iam policy with error"))
 	}
 
+	// The etag is compared only in the write below, against the locked row.
+	// Comparing it here as well would reject a caller holding the etag another
+	// node just wrote, because this read can be served by the policy cache,
+	// which no other node invalidates.
 	expectedEtag, err := requestedIamPolicyEtag(req.Msg)
 	if err != nil {
 		return nil, err
-	}
-	// A request already known to be stale fails here rather than after
-	// validation, which reads the policy this one no longer matches. The write
-	// below compares again under lock, which is what actually closes the race.
-	if expectedEtag != "" && expectedEtag != oldIamPolicyMsg.Etag {
-		return nil, connect.NewError(connect.CodeAborted, errors.Errorf("there is concurrent update to the project iam policy, please refresh and try again"))
 	}
 
 	if err := validateIAMPolicy(ctx, s.store, !s.profile.SaaS, req.Msg, oldIamPolicyMsg); err != nil {
