@@ -86,8 +86,7 @@ export const createGroupSlice: AppSliceCreator<GroupSlice> = (set, get) => ({
       }));
       return response.groups;
     } catch {
-      // The batch is all-or-nothing, so fall back to per-name fetches, which
-      // tolerate a name that went stale.
+      // Batch is all-or-nothing; refetch per name so one stale name isn't fatal.
       const groups = await Promise.all(
         validNames.map((name) => get().fetchGroup(name))
       );

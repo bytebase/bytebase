@@ -1274,9 +1274,8 @@ paths:
       description: |-
         Gets multiple groups in a single request.
          Group members or users with bb.groups.get permission can get the group.
-         Answers with one resource per requested name, in request order. Equivalent
-         to calling GetGroup for each name: the first name that does not resolve
-         fails the whole call, so there is no partial response (AIP-231).
+         One resource per requested name, in request order. The first name that
+         does not resolve fails the whole call (AIP-231: no partial response).
          Permissions required: bb.groups.get OR caller is the group member
       operationId: GroupService_BatchGetGroups
       parameters:
@@ -4792,9 +4791,8 @@ paths:
       summary: BatchGetDatabases
       description: |-
         Retrieves multiple databases by their names.
-         Answers with one resource per requested name, in request order. Equivalent
-         to calling GetDatabase for each name: the first name that does not resolve
-         fails the whole call, so there is no partial response (AIP-231).
+         One resource per requested name, in request order. The first name that
+         does not resolve fails the whole call (AIP-231: no partial response).
          Permissions required: bb.databases.get (on each named database's project)
       operationId: DatabaseService_BatchGetDatabases2
       parameters:
@@ -6750,9 +6748,8 @@ paths:
       summary: BatchGetDatabases
       description: |-
         Retrieves multiple databases by their names.
-         Answers with one resource per requested name, in request order. Equivalent
-         to calling GetDatabase for each name: the first name that does not resolve
-         fails the whole call, so there is no partial response (AIP-231).
+         One resource per requested name, in request order. The first name that
+         does not resolve fails the whole call (AIP-231: no partial response).
          Permissions required: bb.databases.get (on each named database's project)
       operationId: DatabaseService_BatchGetDatabases
       parameters:
@@ -10024,9 +10021,8 @@ paths:
       summary: BatchGetDatabases
       description: |-
         Retrieves multiple databases by their names.
-         Answers with one resource per requested name, in request order. Equivalent
-         to calling GetDatabase for each name: the first name that does not resolve
-         fails the whole call, so there is no partial response (AIP-231).
+         One resource per requested name, in request order. The first name that
+         does not resolve fails the whole call (AIP-231: no partial response).
          Permissions required: bb.databases.get (on each named database's project)
       operationId: DatabaseService_BatchGetDatabases3
       parameters:
@@ -15443,9 +15439,8 @@ paths:
       summary: BatchGetProjects
       description: |-
         BatchGetProjects retrieves multiple projects by their names.
-         Answers with one resource per requested name, in request order. Equivalent
-         to calling GetProject for each name: the first name that does not resolve
-         fails the whole call, so there is no partial response (AIP-231).
+         One resource per requested name, in request order. The first name that
+         does not resolve fails the whole call (AIP-231: no partial response).
          Permissions required: bb.projects.get (on each named project)
       operationId: ProjectService_BatchGetProjects
       parameters:
@@ -17678,9 +17673,8 @@ paths:
       description: |-
         Get the users in batch.
          Any authenticated user can batch get users.
-         Answers with one resource per requested name, in request order. Equivalent
-         to calling GetUser for each name: the first name that does not resolve
-         fails the whole call, so there is no partial response (AIP-231).
+         One resource per requested name, in request order. The first name that
+         does not resolve fails the whole call (AIP-231: no partial response).
          Permissions required: bb.users.get
       operationId: UserService_BatchGetUsers
       parameters:

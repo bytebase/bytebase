@@ -105,8 +105,7 @@ func (s *UserService) BatchGetUsers(ctx context.Context, request *connect.Reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to batch get users"))
 	}
-	// The store returns its own order, so index the result and answer in the
-	// order the names were requested.
+	// The store returns its own order; answer in request order.
 	userByEmail := make(map[string]*store.UserMessage, len(users))
 	for _, user := range users {
 		userByEmail[strings.ToLower(user.Email)] = user

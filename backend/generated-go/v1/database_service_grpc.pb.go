@@ -44,9 +44,8 @@ type DatabaseServiceClient interface {
 	// Permissions required: bb.databases.get
 	GetDatabase(ctx context.Context, in *GetDatabaseRequest, opts ...grpc.CallOption) (*Database, error)
 	// Retrieves multiple databases by their names.
-	// Answers with one resource per requested name, in request order. Equivalent
-	// to calling GetDatabase for each name: the first name that does not resolve
-	// fails the whole call, so there is no partial response (AIP-231).
+	// One resource per requested name, in request order. The first name that
+	// does not resolve fails the whole call (AIP-231: no partial response).
 	// Permissions required: bb.databases.get (on each named database's project)
 	BatchGetDatabases(ctx context.Context, in *BatchGetDatabasesRequest, opts ...grpc.CallOption) (*BatchGetDatabasesResponse, error)
 	// Lists databases in a project, instance, or workspace.
@@ -233,9 +232,8 @@ type DatabaseServiceServer interface {
 	// Permissions required: bb.databases.get
 	GetDatabase(context.Context, *GetDatabaseRequest) (*Database, error)
 	// Retrieves multiple databases by their names.
-	// Answers with one resource per requested name, in request order. Equivalent
-	// to calling GetDatabase for each name: the first name that does not resolve
-	// fails the whole call, so there is no partial response (AIP-231).
+	// One resource per requested name, in request order. The first name that
+	// does not resolve fails the whole call (AIP-231: no partial response).
 	// Permissions required: bb.databases.get (on each named database's project)
 	BatchGetDatabases(context.Context, *BatchGetDatabasesRequest) (*BatchGetDatabasesResponse, error)
 	// Lists databases in a project, instance, or workspace.

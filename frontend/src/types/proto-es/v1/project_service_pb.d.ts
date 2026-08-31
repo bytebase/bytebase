@@ -918,9 +918,8 @@ export declare const ProjectService: GenService<{
   },
   /**
    * BatchGetProjects retrieves multiple projects by their names.
-   * Answers with one resource per requested name, in request order. Equivalent
-   * to calling GetProject for each name: the first name that does not resolve
-   * fails the whole call, so there is no partial response (AIP-231).
+   * One resource per requested name, in request order. The first name that
+   * does not resolve fails the whole call (AIP-231: no partial response).
    * Permissions required: bb.projects.get (on each named project)
    *
    * @generated from rpc bytebase.v1.ProjectService.BatchGetProjects

@@ -176,9 +176,8 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
             names: validNames,
           }),
           {
-            // A permission change can revoke one name in the batch, and the batch is
-            // all-or-nothing. Ignore that here — falling back per name still renders
-            // the rest — rather than letting the interceptor navigate to /403.
+            // A revoked name fails the whole batch; ignoring it here keeps the
+            // interceptor from navigating to /403. The fallback renders the rest.
             contextValues: createContextValues()
               .set(ignoredCodesContextKey, [Code.PermissionDenied])
               .set(silentContextKey, silent),
@@ -194,8 +193,7 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
         });
         return composed;
       } catch {
-        // The batch is all-or-nothing, so fall back to per-name fetches, which
-        // tolerate a name that went stale.
+        // Batch is all-or-nothing; refetch per name so one stale name isn't fatal.
         const databases = await Promise.all(
           validNames.map((name) => fetchByName(name, true))
         );

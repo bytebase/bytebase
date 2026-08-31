@@ -135,8 +135,7 @@ export const createUserSlice: AppSliceCreator<UserSlice> = (set, get) => {
             },
           }));
         } catch {
-          // The batch is all-or-nothing, so fall back to per-name fetches, which
-          // tolerate a name that went stale.
+          // Batch is all-or-nothing; refetch per name so one stale name isn't fatal.
           await Promise.all(missing.map((name) => get().fetchUser(name, true)));
         }
       }

@@ -383,9 +383,8 @@ export declare const GroupService: GenService<{
   /**
    * Gets multiple groups in a single request.
    * Group members or users with bb.groups.get permission can get the group.
-   * Answers with one resource per requested name, in request order. Equivalent
-   * to calling GetGroup for each name: the first name that does not resolve
-   * fails the whole call, so there is no partial response (AIP-231).
+   * One resource per requested name, in request order. The first name that
+   * does not resolve fails the whole call (AIP-231: no partial response).
    * Permissions required: bb.groups.get OR caller is the group member
    *
    * @generated from rpc bytebase.v1.GroupService.BatchGetGroups

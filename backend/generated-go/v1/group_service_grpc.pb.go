@@ -40,9 +40,8 @@ type GroupServiceClient interface {
 	GetGroup(ctx context.Context, in *GetGroupRequest, opts ...grpc.CallOption) (*Group, error)
 	// Gets multiple groups in a single request.
 	// Group members or users with bb.groups.get permission can get the group.
-	// Answers with one resource per requested name, in request order. Equivalent
-	// to calling GetGroup for each name: the first name that does not resolve
-	// fails the whole call, so there is no partial response (AIP-231).
+	// One resource per requested name, in request order. The first name that
+	// does not resolve fails the whole call (AIP-231: no partial response).
 	// Permissions required: bb.groups.get OR caller is the group member
 	BatchGetGroups(ctx context.Context, in *BatchGetGroupsRequest, opts ...grpc.CallOption) (*BatchGetGroupsResponse, error)
 	// Lists all groups in the workspace.
@@ -140,9 +139,8 @@ type GroupServiceServer interface {
 	GetGroup(context.Context, *GetGroupRequest) (*Group, error)
 	// Gets multiple groups in a single request.
 	// Group members or users with bb.groups.get permission can get the group.
-	// Answers with one resource per requested name, in request order. Equivalent
-	// to calling GetGroup for each name: the first name that does not resolve
-	// fails the whole call, so there is no partial response (AIP-231).
+	// One resource per requested name, in request order. The first name that
+	// does not resolve fails the whole call (AIP-231: no partial response).
 	// Permissions required: bb.groups.get OR caller is the group member
 	BatchGetGroups(context.Context, *BatchGetGroupsRequest) (*BatchGetGroupsResponse, error)
 	// Lists all groups in the workspace.

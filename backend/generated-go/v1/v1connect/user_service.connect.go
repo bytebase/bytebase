@@ -84,9 +84,8 @@ type UserServiceClient interface {
 	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.User], error)
 	// Get the users in batch.
 	// Any authenticated user can batch get users.
-	// Answers with one resource per requested name, in request order. Equivalent
-	// to calling GetUser for each name: the first name that does not resolve
-	// fails the whole call, so there is no partial response (AIP-231).
+	// One resource per requested name, in request order. The first name that
+	// does not resolve fails the whole call (AIP-231: no partial response).
 	// Permissions required: bb.users.get
 	BatchGetUsers(context.Context, *connect.Request[v1.BatchGetUsersRequest]) (*connect.Response[v1.BatchGetUsersResponse], error)
 	// Get the current authenticated user.
@@ -375,9 +374,8 @@ type UserServiceHandler interface {
 	GetUser(context.Context, *connect.Request[v1.GetUserRequest]) (*connect.Response[v1.User], error)
 	// Get the users in batch.
 	// Any authenticated user can batch get users.
-	// Answers with one resource per requested name, in request order. Equivalent
-	// to calling GetUser for each name: the first name that does not resolve
-	// fails the whole call, so there is no partial response (AIP-231).
+	// One resource per requested name, in request order. The first name that
+	// does not resolve fails the whole call (AIP-231: no partial response).
 	// Permissions required: bb.users.get
 	BatchGetUsers(context.Context, *connect.Request[v1.BatchGetUsersRequest]) (*connect.Response[v1.BatchGetUsersResponse], error)
 	// Get the current authenticated user.
