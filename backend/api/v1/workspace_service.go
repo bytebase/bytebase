@@ -473,15 +473,6 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to count users in IAM policy"))
 	}
-	if newCount > userLimit {
-		oldCount, err := countUsersInIamPolicy(ctx, s.store, workspaceID, policyMessage.Policy, s.profile.SaaS)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to count users in current IAM policy"))
-		}
-		if newCount > oldCount {
-			return nil, connect.NewError(connect.CodeResourceExhausted, errors.Errorf("workspace has %d users, exceeding the limit of %d", newCount, userLimit))
-		}
-	}
 
 	// The write targets the workspace the caller is authenticated to, the same
 	// one every read and check above resolved. Naming any other resource used to
@@ -492,10 +483,33 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		Resource:     common.FormatWorkspace(workspaceID),
 		Policy:       iamPolicy,
 		ExpectedEtag: expectedEtag,
+		// The seat count this change is measured against is the one it replaces,
+		// so it is taken under the same lock. A count from the read above could
+		// be this node's obsolete copy, and an over-limit workspace would be let
+		// through to grow.
+		ValidateReplaced: func(previous *storepb.IamPolicy) error {
+			if newCount <= userLimit {
+				return nil
+			}
+			oldCount, err := countUsersInIamPolicy(ctx, s.store, workspaceID, previous, s.profile.SaaS)
+			if err != nil {
+				return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to count users in current IAM policy"))
+			}
+			if newCount > oldCount {
+				return connect.NewError(connect.CodeResourceExhausted, errors.Errorf("workspace has %d users, exceeding the limit of %d", newCount, userLimit))
+			}
+			return nil
+		},
 	})
 	if err != nil {
 		if errors.Is(err, store.ErrIamPolicyEtagMismatch) {
 			return nil, connect.NewError(connect.CodeAborted, errors.New("there is concurrent update to the workspace iam policy, please refresh and try again"))
+		}
+		// ValidateReplaced reports its own status; only an unclassified failure
+		// is this handler's to label.
+		var connectErr *connect.Error
+		if errors.As(err, &connectErr) {
+			return nil, connectErr
 		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

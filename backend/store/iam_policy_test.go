@@ -158,6 +158,59 @@ func TestSetIamPolicyComparesAgainstTheRowNotTheCache(t *testing.T) {
 		ExpectedEtag: stale.Etag,
 	})
 	require.ErrorIs(t, err, store.ErrIamPolicyEtagMismatch)
+
+	// Rejecting is only half of it. The caller refetches to pick up the etag it
+	// lost to, and being served the same stale one from here would conflict
+	// again forever -- so the entry the write proved stale is gone.
+	recovered, err := cached.GetProjectIamPolicy(ctx, "default", "project-a")
+	require.NoError(t, err)
+	require.NotEqual(t, stale.Etag, recovered.Etag, "the stale cache entry must not survive the conflict")
+	require.Nil(t, projectPolicyMembers(ctx, t, cached, "default", "roles/projectDeveloper"))
+
+	// And the retry that etag carries now lands.
+	_, _, err = cached.SetIamPolicy(ctx, &store.SetIamPolicyMessage{
+		Workspace:    "default",
+		ResourceType: storepb.Policy_PROJECT,
+		Resource:     common.FormatProject("project-a"),
+		Policy:       iamPolicy(t, map[string][]string{"roles/projectDeveloper": {"users/dev@example.com"}}),
+		ExpectedEtag: recovered.Etag,
+	})
+	require.NoError(t, err)
+}
+
+// A check that compares the new policy against the old one -- the workspace
+// seat guard -- has to see the policy the write replaces. Reading it in the
+// caller reads this node's cache, which may hold another node's obsolete copy,
+// and an over-limit workspace would be measured against a count that never
+// existed.
+func TestSetIamPolicyValidatesAgainstTheReplacedPolicy(t *testing.T) {
+	const seedSQL = `
+		INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent)
+			VALUES ('default', 'PROJECT', 'projects/project-a', 'IAM', '` + ownerAndDeveloperPolicy + `', FALSE);
+	`
+	fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
+	ctx, s := fixture.ctx, fixture.store
+
+	var seen []string
+	rejected := errors.New("too many members")
+	_, _, err := s.SetIamPolicy(ctx, &store.SetIamPolicyMessage{
+		Workspace:    "default",
+		ResourceType: storepb.Policy_PROJECT,
+		Resource:     common.FormatProject("project-a"),
+		Policy:       iamPolicy(t, map[string][]string{"roles/projectOwner": {"users/owner@example.com"}}),
+		ValidateReplaced: func(previous *storepb.IamPolicy) error {
+			for _, binding := range previous.Bindings {
+				seen = append(seen, binding.Role)
+			}
+			return rejected
+		},
+	})
+	require.ErrorIs(t, err, rejected)
+	require.ElementsMatch(t, []string{"roles/projectOwner", "roles/projectDeveloper"}, seen,
+		"the check must see the policy stored, not the one being written")
+	require.Equal(t, []string{"users/dev@example.com"},
+		projectPolicyMembers(ctx, t, s, "default", "roles/projectDeveloper"),
+		"a rejected check must leave the policy untouched")
 }
 
 // policy is keyed by (workspace, resource_type, resource, type), and two

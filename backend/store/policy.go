@@ -45,6 +45,12 @@ type SetIamPolicyMessage struct {
 	// ExpectedEtag is the etag the caller read the policy at. Empty skips the
 	// compare, which is all a caller that never read the policy can offer.
 	ExpectedEtag string
+	// ValidateReplaced, when set, runs inside the write transaction against the
+	// policy being replaced. A check that compares the new policy to the old one
+	// belongs here rather than in the caller, where the old one comes from a
+	// cached read that may be another node's obsolete copy. Returning an error
+	// aborts the write, and the error reaches the caller unwrapped.
+	ValidateReplaced func(previous *storepb.IamPolicy) error
 }
 
 // SetIamPolicy replaces an IAM policy under compare-and-swap. The policy row is
@@ -71,7 +77,16 @@ func (s *Store) SetIamPolicy(ctx context.Context, set *SetIamPolicyMessage) (*Ia
 		return nil, nil, err
 	}
 	if set.ExpectedEtag != "" && set.ExpectedEtag != previous.Etag {
+		// This node's cached copy is what the caller's etag lost to, and it is
+		// still cached. Drop it, or the refetch the caller makes next is served
+		// the same stale etag from here and the retry conflicts again.
+		s.evictIamPolicyCache(set.Workspace, set.ResourceType, set.Resource)
 		return nil, nil, ErrIamPolicyEtagMismatch
+	}
+	if set.ValidateReplaced != nil {
+		if err := set.ValidateReplaced(previous.Policy); err != nil {
+			return nil, nil, err
+		}
 	}
 
 	policy, err := writeIamPolicyImpl(ctx, tx, set.Workspace, set.ResourceType, set.Resource, set.Policy)
@@ -169,6 +184,11 @@ func writeIamPolicyImpl(ctx context.Context, tx *sql.Tx, workspace string, resou
 		// Enforce cannot be false while creating a policy.
 		Enforce: true,
 	})
+}
+
+func (s *Store) evictIamPolicyCache(workspace string, resourceType storepb.Policy_Resource, resource string) {
+	s.policyCache.Remove(getPolicyCacheKey(workspace, resourceType, resource, storepb.Policy_IAM))
+	s.iamPolicyCache.Remove(getIamPolicyCacheKey(workspace, resourceType, resource))
 }
 
 func (s *Store) cacheIamPolicyWrite(policy *PolicyMessage) {
