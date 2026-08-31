@@ -26,6 +26,7 @@ import {
 import { celString } from "@/utils/v1/celLiteral";
 import { ensureUserFullName } from "@/utils/v1/user";
 import type { AppSliceCreator, UserFilter, UserSlice } from "./types";
+import { isMissingOrForbidden } from "./utils";
 
 const UNKNOWN_PROJECT_NAME_LEGACY = "projects/-";
 
@@ -136,9 +137,16 @@ export const createUserSlice: AppSliceCreator<UserSlice> = (set, get) => {
               ),
             },
           }));
-        } catch {
-          // Batch is all-or-nothing; refetch per name so one stale name isn't fatal.
-          await Promise.all(missing.map((name) => get().fetchUser(name, true)));
+        } catch (error) {
+          // Batch is all-or-nothing; refetch per name so one stale name isn't
+          // fatal. Other errors skip the fallback: this returns unknown users
+          // rather than throwing, so retrying each name would only amplify an
+          // outage.
+          if (isMissingOrForbidden(error)) {
+            await Promise.all(
+              missing.map((name) => get().fetchUser(name, true))
+            );
+          }
         }
       }
 

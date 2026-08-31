@@ -26,6 +26,7 @@ import {
   buildProjectFilter,
   defaultProjectName,
   getLabelFilter,
+  isMissingOrForbidden,
   toError,
 } from "./utils";
 
@@ -218,7 +219,8 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
           },
         }));
         return response.projects;
-      } catch {
+      } catch (error) {
+        if (!isMissingOrForbidden(error)) throw error;
         // Batch is all-or-nothing; refetch per name so one stale name isn't fatal.
         const projects = await Promise.all(
           validNames.map((name) => get().fetchProject(name, true))

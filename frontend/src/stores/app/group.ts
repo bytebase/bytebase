@@ -15,7 +15,7 @@ import {
 } from "@/types/proto-es/v1/group_service_pb";
 import { celString } from "@/utils/v1/celLiteral";
 import type { AppSliceCreator, GroupFilter, GroupSlice } from "./types";
-import { toError } from "./utils";
+import { isMissingOrForbidden, toError } from "./utils";
 
 const groupNamePrefix = "groups/";
 
@@ -87,7 +87,8 @@ export const createGroupSlice: AppSliceCreator<GroupSlice> = (set, get) => ({
         },
       }));
       return response.groups;
-    } catch {
+    } catch (error) {
+      if (!isMissingOrForbidden(error)) throw error;
       // Batch is all-or-nothing; refetch per name so one stale name isn't fatal.
       // Calls GetGroup directly rather than fetchGroup, whose workspace
       // bb.groups.get guard would skip a group the caller reads as its member.

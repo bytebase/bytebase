@@ -26,7 +26,7 @@ import { isValidDatabaseName } from "@/types/v1/database";
 import { unknownInstanceResource } from "@/types/v1/instance";
 import { createUnknownDatabase, setDatabaseAccess } from "./databaseAccess";
 import type { AppSliceCreator, DatabaseSlice } from "./types";
-import { buildDatabaseFilter, toError } from "./utils";
+import { buildDatabaseFilter, isMissingOrForbidden, toError } from "./utils";
 
 // Inlined to keep the app store's load graph free of the Pinia `@/stores`
 // barrel that `@/utils/v1/database` pulls in.
@@ -198,15 +198,28 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
           return { databasesByName: next };
         });
         return composed;
-      } catch {
-        // Batch is all-or-nothing; refetch per name so one stale name isn't fatal.
-        const databases = await Promise.all(
-          validNames.map((name) => fetchByName(name, true))
+      } catch (error) {
+        if (!isMissingOrForbidden(error)) throw error;
+        // Batch is all-or-nothing; refetch per name so one stale name isn't
+        // fatal. Raw gets, composed once: composeDatabases fans out to
+        // batchFetchProjects, so composing per database multiplies that call.
+        const settled = await Promise.allSettled(
+          validNames.map((name) =>
+            databaseServiceClientConnect.getDatabase(
+              createProto(GetDatabaseRequestSchema, { name }),
+              {
+                contextValues: createContextValues().set(
+                  silentContextKey,
+                  true
+                ),
+              }
+            )
+          )
         );
-        return databases.filter(
-          (database): database is NonNullable<typeof database> =>
-            Boolean(database)
+        const found = settled.flatMap((result) =>
+          result.status === "fulfilled" ? [result.value] : []
         );
+        return found.length > 0 ? await upsertDatabases(found, true) : [];
       }
     },
 

@@ -1940,7 +1940,9 @@ describe("useAppStore", () => {
 
   test("falls back to individual project fetches when batch fetch fails", async () => {
     // BatchGetProjects is all-or-nothing, so one stale name fails the batch.
-    mocks.batchGetProjects.mockRejectedValue(new Error("batch failed"));
+    mocks.batchGetProjects.mockRejectedValue(
+      new ConnectError("project not found", Code.NotFound)
+    );
     mocks.getProject.mockImplementation(({ name }: { name: string }) => {
       return Promise.resolve(name === projectA.name ? projectA : projectB);
     });
