@@ -34,12 +34,16 @@ const (
 	emailCodeExpiry         = 10 * time.Minute
 	emailCodeResendCooldown = 60 * time.Second
 
-	// Budgets for sign-in codes a caller sends without naming a workspace; see
-	// SendEmailLoginCode for why only that path carries one. Both sit far above
-	// real self-service signup volume, so reaching either is the abuse itself.
+	// Budgets for outbound sign-in codes; see SendEmailLoginCode for which sender
+	// is charged to which bucket. All sit far above real self-service signup
+	// volume, so reaching one is the abuse itself.
 	emailCodeSendWindow        = time.Hour
 	emailCodeSendPerDomain     = 20
 	emailCodeSendPerDeployment = 500
+	// Mail a named workspace sends to addresses it has no relationship with,
+	// which is self-service signup traffic — members and invitees are exempt, so
+	// this bounds relay without bounding sign-in.
+	emailCodeSendPerWorkspace = 20
 
 	errMsgInvalidEmailCode = "invalid or expired code"
 )
@@ -198,20 +202,40 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 		}
 	}
 
-	// A caller who named no workspace is the one sender that reaches the
-	// deployment's own mail identity (EMAIL_CONFIG) with no admin opt-in and no
-	// domain restriction narrowing the recipients, so its volume is budgeted.
-	// The per-recipient cooldown bounds one address; these bound a campaign
-	// across many. The domain bucket confines a mail-bomb to the domain it
-	// targets, and the deployment bucket caps a broad list before it can burn
-	// the sender's reputation. Accepted with it: sustaining either rate delays
-	// self-service signup for that bucket until the window passes — the same
-	// trade the login lockout makes, and the volume that trips it is the abuse.
+	// Budget mail to strangers. The per-recipient cooldown bounds one address;
+	// these bound a campaign across many, which is what an unauthenticated
+	// sender with a recipient list actually does.
+	//
+	// A caller who named no workspace reaches the deployment's own mail identity
+	// (EMAIL_CONFIG) with no admin opt-in at all, and has no membership to be
+	// judged against — every address is a stranger. The domain bucket confines a
+	// mail-bomb to the domain it targets and the deployment bucket caps a broad
+	// list before it can burn the sender's reputation.
+	//
+	// A named workspace sends over its own SMTP, but nothing narrows who it may
+	// be addressed to: the domain restriction needs a license, EnforceIdentityDomain
+	// and a domain list, so a workspace with email-code sign-in and none of those
+	// relays to anyone. Only mail to an address the workspace has no relationship
+	// with is budgeted — a member or an invitee is expected traffic, and
+	// throttling them would lock a customer's own workforce out of sign-in.
 	var budgets []store.LoginAttemptBucket
+	budgetSilently := false
 	if workspaceID == "" {
 		budgets = []store.LoginAttemptBucket{
 			{Identity: "signup-code-domain:" + emailDomain(email), Max: emailCodeSendPerDomain},
 			{Identity: "signup-code-deployment", Max: emailCodeSendPerDeployment},
+		}
+	} else {
+		known, err := s.emailBelongsToWorkspace(ctx, workspaceID, email)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+		if !known {
+			// Exhaustion here must be silent. Only strangers are charged, so
+			// answering ResourceExhausted once the bucket is empty would separate
+			// them from members — rebuilding the oracle the gate above closes.
+			budgets = []store.LoginAttemptBucket{{Identity: "signup-code-workspace:" + workspaceID, Max: emailCodeSendPerWorkspace}}
+			budgetSilently = true
 		}
 	}
 
@@ -228,6 +252,9 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 		budgets...,
 	); err != nil {
 		if errors.Is(err, errSendBudgetExhausted) {
+			if budgetSilently {
+				return connect.NewResponse(&emptypb.Empty{}), nil
+			}
 			return nil, connect.NewError(connect.CodeResourceExhausted, err)
 		}
 		if answerUniformly {
@@ -240,6 +267,21 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
+}
+
+// emailBelongsToWorkspace reports whether the address holds a workspace IAM
+// binding — a member, a group member, or an invitee who has not signed up yet.
+// allUsers is deliberately excluded: a blanket self-hosted grant would make
+// every address on earth "known" and retire the budget it gates.
+func (s *AuthService) emailBelongsToWorkspace(ctx context.Context, workspaceID, email string) (bool, error) {
+	workspace, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+		WorkspaceID: &workspaceID,
+		Email:       email,
+	})
+	if err != nil {
+		return false, errors.Wrapf(err, "failed to resolve workspace membership")
+	}
+	return workspace != nil, nil
 }
 
 // emailDomain returns the part of a validated address after the "@", which is

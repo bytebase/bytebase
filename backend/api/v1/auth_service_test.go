@@ -693,3 +693,93 @@ func TestSendEmailLoginCodeAnswersUniformlyWhenSignupDisallowed(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, row, "an address that could never redeem a code must not be sent one")
 }
+
+// TestSendEmailLoginCodeBudgetsWorkspaceStrangers covers the relay a named
+// workspace still had: its SMTP will address anyone, since the domain
+// restriction needs a license, EnforceIdentityDomain and a domain list before it
+// narrows recipients at all. Mail to an address the workspace has no
+// relationship with is budgeted; members and invitees are exempt, so the limit
+// cannot lock a customer's own workforce out of sign-in.
+func TestSendEmailLoginCodeBudgetsWorkspaceStrangers(t *testing.T) {
+	const (
+		workspaceID = "email-code-stranger-test"
+		secret      = "test-secret"
+	)
+
+	ctx := context.Background()
+	stores := newAuthTestStore(t)
+
+	member, err := stores.CreateUser(ctx, &store.UserMessage{
+		Email:        "member@corp.example",
+		Name:         "Member",
+		PasswordHash: "unused",
+		Profile:      &storepb.UserProfile{},
+	})
+	require.NoError(t, err)
+	_, err = stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
+		ResourceID: workspaceID,
+		Payload:    &storepb.WorkspacePayload{Title: "Email code stranger test"},
+	}, member.Email)
+	require.NoError(t, err)
+	// Signup stays allowed, so the redeemability gate does not apply and every
+	// address below reaches the send path — this is the default self-hosted shape.
+	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{
+		Name:      storepb.SettingName_WORKSPACE_PROFILE,
+		Workspace: workspaceID,
+		Value: &storepb.WorkspaceProfileSetting{
+			AllowEmailCodeSignin: true,
+			PasswordRestriction:  &storepb.WorkspaceProfileSetting_PasswordRestriction{MinLength: 8},
+		},
+	})
+	require.NoError(t, err)
+	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{
+		Name:      storepb.SettingName_EMAIL,
+		Workspace: workspaceID,
+		Value: &storepb.EmailSetting{
+			From: "bytebase@corp.example",
+			Type: storepb.EmailSetting_SMTP,
+			Config: &storepb.EmailSetting_Smtp{Smtp: &storepb.EmailSetting_SMTPConfig{
+				Host:           "127.0.0.1",
+				Port:           1,
+				Encryption:     storepb.EmailSetting_SMTPConfig_ENCRYPTION_NONE,
+				Authentication: storepb.EmailSetting_SMTPConfig_AUTHENTICATION_NONE,
+			}},
+		},
+	})
+	require.NoError(t, err)
+
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
+	require.NoError(t, err)
+	service := NewAuthService(stores, secret, licenseService, &config.Profile{}, nil)
+	workspaceName := common.FormatWorkspace(workspaceID)
+
+	send := func(email string) error {
+		_, err := service.SendEmailLoginCode(ctx, connect.NewRequest(&v1pb.SendEmailLoginCodeRequest{
+			Email:     email,
+			Workspace: &workspaceName,
+		}))
+		return err
+	}
+	// SMTP refuses on port 1, so a send that got as far as delivery reports
+	// Internal. That is the marker for "this address was charged and mailed".
+	requireAttempted := func(t *testing.T, email string) {
+		t.Helper()
+		require.Equal(t, connect.CodeInternal, connect.CodeOf(send(email)), "%s should have reached delivery", email)
+	}
+
+	for i := range emailCodeSendPerWorkspace {
+		requireAttempted(t, fmt.Sprintf("stranger%d@elsewhere.example", i))
+	}
+
+	// The stranger budget is spent. Further strangers are refused, and refused
+	// silently: only strangers are charged, so a ResourceExhausted here would
+	// separate them from members and rebuild the account-existence oracle.
+	require.NoError(t, send("stranger-over@elsewhere.example"), "an exhausted stranger budget must not answer differently from a member")
+	row, err := stores.GetEmailVerificationCode(ctx, "stranger-over@elsewhere.example", storepb.EmailVerificationCodePurpose_LOGIN)
+	require.NoError(t, err)
+	require.Nil(t, row, "a refused send must leave no code behind")
+
+	// The workspace's own member is never charged, so sign-in still works while
+	// the stranger budget is empty.
+	requireAttempted(t, member.Email)
+}
