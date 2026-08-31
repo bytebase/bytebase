@@ -11,7 +11,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func holdExclusiveLifecycleGate(t *testing.T, ctx context.Context, db *sql.DB, namespace store.AdvisoryLockKey, resourceID string) func() {
+func holdExclusiveLifecycleGate(ctx context.Context, t *testing.T, db *sql.DB, namespace store.AdvisoryLockKey, resourceID string) func() {
 	t.Helper()
 	conn, err := db.Conn(ctx)
 	require.NoError(t, err)
@@ -43,7 +43,7 @@ func TestBatchUpdateIssueStatusesFailsWhenProjectLifecycleGateHeld(t *testing.T)
 	})
 	require.NoError(t, err)
 
-	release := holdExclusiveLifecycleGate(t, fixture.ctx, fixture.db, store.AdvisoryLockKeyProjectLifecycle, "project-a")
+	release := holdExclusiveLifecycleGate(fixture.ctx, t, fixture.db, store.AdvisoryLockKeyProjectLifecycle, "project-a")
 	_, err = fixture.store.BatchUpdateIssueStatuses(fixture.ctx, "project-a", []int64{issue.UID}, storepb.Issue_DONE)
 	require.ErrorIs(t, err, store.ErrLifecycleBusy)
 	release()
@@ -73,7 +73,7 @@ func TestUpdateInstanceFailsWhenLifecycleGateHeld(t *testing.T) {
 		{name: "instance", namespace: store.AdvisoryLockKeyInstanceLifecycle, resourceID: instance.ResourceID},
 	} {
 		t.Run(gate.name, func(t *testing.T) {
-			release := holdExclusiveLifecycleGate(t, ctx, db, gate.namespace, gate.resourceID)
+			release := holdExclusiveLifecycleGate(ctx, t, db, gate.namespace, gate.resourceID)
 			metadata := testInstanceMetadata()
 			metadata.Title = "changed"
 			_, err := stores.UpdateInstance(ctx, &store.UpdateInstanceMessage{
@@ -99,7 +99,7 @@ func TestBatchUpdateInstancesByEnvironmentUsesExistingLifecycleGate(t *testing.T
 	require.NoError(t, err)
 
 	environmentID, unset := "environment-a", ""
-	release := holdExclusiveLifecycleGate(t, ctx, db, store.AdvisoryLockKeyInstanceLifecycle, "archived-instance")
+	release := holdExclusiveLifecycleGate(ctx, t, db, store.AdvisoryLockKeyInstanceLifecycle, "archived-instance")
 	_, err = stores.UpdateInstance(ctx, &store.UpdateInstanceMessage{
 		Workspace:           "default",
 		FindByEnvironmentID: &environmentID,
