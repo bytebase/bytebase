@@ -29,7 +29,6 @@ function createMessage(
     created_ts: 1,
     author,
     content: longContent,
-    prompt: longContent,
     status,
     error: "",
     conversation,

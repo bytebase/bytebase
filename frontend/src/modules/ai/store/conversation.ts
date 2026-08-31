@@ -1,317 +1,234 @@
-import { groupBy, omit } from "lodash-es";
-import PouchDB from "pouchdb";
-import PouchDBFind from "pouchdb-find";
 import { v1 as uuidv1 } from "uuid";
 import { create } from "zustand";
+import { useAppStore } from "@/stores/app";
 import type { SQLEditorConnection } from "@/types";
+import { storageKeyAiConversations } from "@/utils/storage-keys";
 import type { Conversation, Message } from "../types";
+import {
+  loadConversationHistory,
+  saveConversationHistory,
+} from "./conversationStorage";
 
-type RowStatus = "NORMAL" | "ARCHIVED";
-
-type Entity<T, O extends keyof T, E = unknown> = Omit<T, "id" | O> & {
-  _id: string;
-  _rev?: string;
-  row_status: RowStatus;
-} & E;
-
-type ConversationEntity = Entity<Conversation, "messageList">;
-type MessageEntity = Entity<
-  Message,
-  "conversation",
-  {
-    conversation_id: string;
-  }
+type ConversationCreate = Omit<
+  Conversation,
+  "id" | "created_ts" | "messageList"
 >;
-
-type EntityCreate<T> = Omit<T, "_id" | "created_ts" | "row_status">;
-
-PouchDB.plugin(PouchDBFind);
-
-const convertConversationToEntity = (
-  conversation: Conversation
-): ConversationEntity => ({
-  ...omit(conversation, "id", "messageList"),
-  _id: conversation.id,
-  row_status: "NORMAL",
-});
-
-const convertMessageToEntity = (message: Message): MessageEntity => ({
-  ...omit(message, "id", "conversation"),
-  _id: message.id,
-  row_status: "NORMAL",
-  conversation_id: message.conversation.id,
-});
-
-const FK_MESSAGE_CONVERSATION_ID = "fk_message_conversation_id";
-
-const conversations = new PouchDB<ConversationEntity>(
-  "bb.plugin.ai.conversations"
-);
-const messages = new PouchDB<MessageEntity>("bb.plugin.ai.messages");
-
-const putExisting = async <T extends { _id: string }>(
-  database: PouchDB.Database<T>,
-  entity: T
-) => {
-  const current = await database.get(entity._id);
-  return database.put({ ...entity, _rev: current._rev });
+type MessageCreate = Omit<Message, "id" | "created_ts" | "conversation"> & {
+  conversation_id: string;
 };
-
-const ready: Promise<unknown>[] = [];
-ready.push(
-  messages.createIndex({
-    index: { name: FK_MESSAGE_CONVERSATION_ID, fields: ["conversation_id"] },
-  })
-);
 
 const connectionKey = (conn: { instance: string; database: string }) =>
   `${conn.instance}/${conn.database}`;
 
+const currentStorageKey = () => {
+  const state = useAppStore.getState();
+  const email = state.currentUser?.email;
+  const workspace =
+    state.currentUser?.workspace || state.serverInfo?.workspace || "";
+  if (!email || !workspace) return undefined;
+  return storageKeyAiConversations(workspace, email);
+};
+
+const withMessageBackReferences = (
+  conversation: Omit<Conversation, "messageList">,
+  messages: Message[]
+): Conversation => {
+  const next: Conversation = { ...conversation, messageList: [] };
+  next.messageList = messages.map((message) => ({
+    ...message,
+    conversation: next,
+  }));
+  return next;
+};
+
 type ConversationState = {
   conversationsById: Record<string, Conversation>;
   readyByConnection: Record<string, boolean>;
+  storageKey?: string;
   fetchConversationListByConnection: (
     conn: SQLEditorConnection
   ) => Promise<Conversation[]>;
   createConversation: (
-    conversationCreate: EntityCreate<ConversationEntity>
+    conversationCreate: ConversationCreate
   ) => Promise<Conversation>;
   updateConversation: (conversation: Conversation) => Promise<Conversation>;
   deleteConversation: (id: string) => Promise<void>;
-  createMessage: (
-    messageCreate: EntityCreate<MessageEntity>
-  ) => Promise<Message>;
+  createMessage: (messageCreate: MessageCreate) => Promise<Message>;
   updateMessage: (message: Message) => Promise<Message>;
   reset: () => Promise<void>;
 };
 
-// Build a plain Conversation (with its message back-refs) from entities.
-const buildConversation = (
-  c: ConversationEntity,
-  messageEntities: MessageEntity[]
-): Conversation => {
-  const conversation: Conversation = {
-    ...omit(c, "_id", "_rev", "row_status"),
-    id: c._id,
-    messageList: [],
-  } as Conversation;
-  conversation.messageList = messageEntities
-    .map<Message>(
-      (m) =>
-        ({
-          ...omit(m, "_id", "_rev", "row_status", "conversation_id"),
-          id: m._id,
-          conversation,
-        }) as Message
-    )
-    .sort((a, b) => a.created_ts - b.created_ts);
-  return conversation;
-};
-
-// Immutably replace a conversation in the map.
-const withConversation = (
-  byId: Record<string, Conversation>,
-  conversation: Conversation
-): Record<string, Conversation> => ({
-  ...byId,
-  [conversation.id]: conversation,
-});
+let persistenceWarningShown = false;
 
 export const useConversationStore = create<ConversationState>((set, get) => {
-  const deleteConversation = async (id: string): Promise<void> => {
-    const conversation = get().conversationsById[id];
-    if (!conversation) return;
-    if (conversation.messageList.length > 0) {
-      await Promise.all(
-        conversation.messageList.map((message) =>
-          putExisting(messages, {
-            ...convertMessageToEntity(message),
-            row_status: "ARCHIVED" as const,
-          })
-        )
-      );
+  const persist = () => {
+    const key = currentStorageKey();
+    const state = get();
+    if (!key || state.storageKey !== key) return;
+    const saved = saveConversationHistory(
+      key,
+      Object.values(state.conversationsById)
+    );
+    if (!saved && !persistenceWarningShown) {
+      persistenceWarningShown = true;
+      console.warn("[AI Assistant] Unable to persist conversation history");
     }
-    await putExisting(conversations, {
-      ...convertConversationToEntity(conversation),
-      row_status: "ARCHIVED",
-    });
-    set((state) => {
-      const next = { ...state.conversationsById };
-      delete next[id];
-      return { conversationsById: next };
-    });
-  };
-
-  const updateMessage = async (message: Message): Promise<Message> => {
-    await putExisting(messages, convertMessageToEntity(message));
-    const conversation = get().conversationsById[message.conversation.id];
-    if (conversation) {
-      const nextConversation: Conversation = {
-        ...conversation,
-        messageList: conversation.messageList.map((m) =>
-          m.id === message.id ? message : m
-        ),
-      };
-      set((state) => ({
-        conversationsById: withConversation(
-          state.conversationsById,
-          nextConversation
-        ),
-      }));
-    }
-    return message;
-  };
-
-  const fixAbnormalMessages = async (messageList: Message[]) => {
-    const requests = messageList
-      .filter((message) => message.status === "LOADING")
-      .map((message) => {
-        message.status = "FAILED";
-        message.error = "Request timeout";
-        return updateMessage(message);
-      });
-    await Promise.all(requests);
   };
 
   const fetchConversationListByConnection = async (
     conn: SQLEditorConnection
   ): Promise<Conversation[]> => {
-    const conversationEntityList = (
-      await conversations.find({
-        selector: {
-          row_status: { $eq: "NORMAL" },
-          instance: { $eq: conn.instance },
-          database: { $eq: conn.database },
-        },
-      })
-    ).docs;
-    const flattenMessageList = (
-      await messages.find({
-        selector: {
-          row_status: { $eq: "NORMAL" },
-          conversation_id: { $in: conversationEntityList.map((c) => c._id) },
-        },
-      })
-    ).docs;
-
-    const groupByConversationId = groupBy(
-      flattenMessageList,
-      (m) => m.conversation_id
+    const key = currentStorageKey();
+    const existing = get();
+    const allConversations =
+      existing.storageKey === key
+        ? Object.values(existing.conversationsById)
+        : key
+          ? loadConversationHistory(key)
+          : [];
+    const conversationsById = Object.fromEntries(
+      allConversations
+        .filter((conversation) => conversation.messageList.length > 0)
+        .map((conversation) => [conversation.id, conversation])
     );
-    conversationEntityList.sort((a, b) => a.created_ts - b.created_ts);
-    const rawConversationList = conversationEntityList.map<Conversation>((c) =>
-      buildConversation(c, groupByConversationId[c._id] ?? [])
-    );
-
-    await fixAbnormalMessages(
-      rawConversationList.flatMap((c) => c.messageList)
-    );
-
-    const emptyConversationList = rawConversationList.filter(
-      (c) => c.messageList.length === 0
-    );
-
-    set((state) => {
-      const next = { ...state.conversationsById };
-      for (const c of rawConversationList) next[c.id] = c;
-      return {
-        conversationsById: next,
-        readyByConnection: {
-          ...state.readyByConnection,
-          [connectionKey(conn)]: true,
-        },
-      };
+    set({
+      conversationsById,
+      storageKey: key,
+      readyByConnection: {
+        ...(existing.storageKey === key ? existing.readyByConnection : {}),
+        [connectionKey(conn)]: true,
+      },
     });
-
-    await Promise.all(
-      emptyConversationList.map((c) => deleteConversation(c.id))
-    );
-
-    return rawConversationList.filter((c) => c.messageList.length > 0);
+    persist();
+    return Object.values(conversationsById)
+      .filter(
+        (conversation) =>
+          conversation.instance === conn.instance &&
+          conversation.database === conn.database
+      )
+      .sort((a, b) => a.created_ts - b.created_ts);
   };
 
   const createConversation = async (
-    conversationCreate: EntityCreate<ConversationEntity>
+    conversationCreate: ConversationCreate
   ): Promise<Conversation> => {
-    const c: ConversationEntity = {
-      _id: uuidv1(),
+    const key = currentStorageKey();
+    const conversation: Conversation = {
+      id: uuidv1(),
       created_ts: Date.now(),
-      row_status: "NORMAL",
+      messageList: [],
       ...conversationCreate,
     };
-    const response = await conversations.put(c);
-    c._rev = response.rev;
-    const conversation = buildConversation(c, []);
     set((state) => ({
-      conversationsById: withConversation(
-        state.conversationsById,
-        conversation
-      ),
+      conversationsById: {
+        ...(state.storageKey === key
+          ? state.conversationsById
+          : Object.fromEntries(
+              (key ? loadConversationHistory(key) : []).map((stored) => [
+                stored.id,
+                stored,
+              ])
+            )),
+        [conversation.id]: conversation,
+      },
+      readyByConnection:
+        state.storageKey === key ? state.readyByConnection : {},
+      storageKey: key,
     }));
+    persist();
     return conversation;
   };
 
   const updateConversation = async (
     conversation: Conversation
   ): Promise<Conversation> => {
-    await putExisting(conversations, convertConversationToEntity(conversation));
     const existing = get().conversationsById[conversation.id];
-    const next: Conversation = {
-      ...conversation,
-      messageList: existing?.messageList ?? conversation.messageList,
-    };
+    const next = withMessageBackReferences(
+      conversation,
+      existing?.messageList ?? conversation.messageList
+    );
     set((state) => ({
-      conversationsById: withConversation(state.conversationsById, next),
+      conversationsById: {
+        ...state.conversationsById,
+        [next.id]: next,
+      },
     }));
+    persist();
     return next;
   };
 
+  const deleteConversation = async (id: string): Promise<void> => {
+    set((state) => {
+      const conversationsById = { ...state.conversationsById };
+      delete conversationsById[id];
+      return { conversationsById };
+    });
+    persist();
+  };
+
   const createMessage = async (
-    messageCreate: EntityCreate<MessageEntity>
+    messageCreate: MessageCreate
   ): Promise<Message> => {
-    const m: MessageEntity = {
-      _id: uuidv1(),
-      created_ts: Date.now(),
-      row_status: "NORMAL",
-      ...messageCreate,
-    };
-    const response = await messages.put(m);
-    m._rev = response.rev;
-    const conversation = get().conversationsById[m.conversation_id];
-    const message: Message = {
-      ...omit(m, "_id", "_rev", "row_status", "conversation_id"),
-      id: m._id,
-      conversation,
-    } as Message;
-    if (conversation) {
-      const nextConversation: Conversation = {
-        ...conversation,
-        messageList: [...conversation.messageList, message],
-      };
-      message.conversation = nextConversation;
-      set((state) => ({
-        conversationsById: withConversation(
-          state.conversationsById,
-          nextConversation
-        ),
-      }));
+    const conversation = get().conversationsById[messageCreate.conversation_id];
+    if (!conversation) {
+      throw new Error(
+        `Conversation not found: ${messageCreate.conversation_id}`
+      );
     }
-    return message;
+    const message = {
+      id: uuidv1(),
+      created_ts: Date.now(),
+      author: messageCreate.author,
+      content: messageCreate.content,
+      status: messageCreate.status,
+      error: messageCreate.error,
+      conversation,
+    } satisfies Message;
+    const next = withMessageBackReferences(conversation, [
+      ...conversation.messageList,
+      message,
+    ]);
+    set((state) => ({
+      conversationsById: {
+        ...state.conversationsById,
+        [next.id]: next,
+      },
+    }));
+    persist();
+    return next.messageList.at(-1)!;
+  };
+
+  const updateMessage = async (message: Message): Promise<Message> => {
+    const conversation = get().conversationsById[message.conversation.id];
+    if (!conversation) return message;
+    const next = withMessageBackReferences(
+      conversation,
+      conversation.messageList.map((current) =>
+        current.id === message.id ? message : current
+      )
+    );
+    set((state) => ({
+      conversationsById: {
+        ...state.conversationsById,
+        [next.id]: next,
+      },
+    }));
+    persist();
+    return next.messageList.find(({ id }) => id === message.id) ?? message;
   };
 
   const reset = async () => {
-    try {
-      await Promise.all(ready);
-      await Promise.all([conversations.destroy(), messages.destroy()]);
-    } catch {
-      // nothing to do
-    }
-    set({ conversationsById: {}, readyByConnection: {} });
+    set({
+      conversationsById: {},
+      readyByConnection: {},
+      storageKey: undefined,
+    });
   };
 
   return {
     conversationsById: {},
     readyByConnection: {},
+    storageKey: undefined,
     fetchConversationListByConnection,
     createConversation,
     updateConversation,
@@ -322,8 +239,6 @@ export const useConversationStore = create<ConversationState>((set, get) => {
   };
 });
 
-// Conversations for a given connection, sorted by creation time (mirrors the
-// Vue store's filtered `conversationList`).
 export const conversationListByConnection = (
   state: ConversationState,
   conn: { instance: string; database: string }
