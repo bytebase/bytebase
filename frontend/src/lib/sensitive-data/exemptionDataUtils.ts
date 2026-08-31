@@ -1,4 +1,5 @@
 import i18n from "@/lib/i18n";
+import { celString } from "@/utils/v1/celLiteral";
 import type {
   AccessUser,
   ClassificationLevel,
@@ -174,14 +175,14 @@ export function generateGrantTitle(grant: ExemptionGrant): string {
 // `resource.instance_id == "X" && resource.database_name == "Y"`.
 // The expression editor uses resource.database as a combined selector,
 // but the backend masking exemption evaluator only knows individual attributes.
-export function rewriteResourceDatabase(celString: string): string {
-  return celString.replaceAll(
+export function rewriteResourceDatabase(expression: string): string {
+  return expression.replaceAll(
     /resource\.database\s*==\s*"([^"]+)"/g,
     (_match, fullPath: string) => {
       const matches = fullPath.match(databaseResourcePattern);
       const instanceName = matches?.groups?.instanceName ?? "";
       const databaseName = matches?.groups?.databaseName ?? "";
-      return `resource.instance_id == "${instanceName}" && resource.database_name == "${databaseName}"`;
+      return `resource.instance_id == ${celString(instanceName)} && resource.database_name == ${celString(databaseName)}`;
     }
   );
 }

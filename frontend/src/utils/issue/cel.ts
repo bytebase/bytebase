@@ -28,6 +28,7 @@ import {
   CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
   CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
 } from "@/utils/cel-attributes";
+import { celString, celStringList } from "@/utils/v1/celLiteral";
 
 interface DatabaseLevelCondition {
   database: string[];
@@ -239,12 +240,12 @@ export const stringifyConditionExpression = ({
   }
   if (expirationTimestampInMS) {
     expression.push(
-      `${CEL_ATTRIBUTE_REQUEST_TIME} < timestamp("${dayjs(expirationTimestampInMS).toISOString()}")`
+      `${CEL_ATTRIBUTE_REQUEST_TIME} < timestamp(${celString(dayjs(expirationTimestampInMS).toISOString())})`
     );
   }
   if (environments !== undefined) {
     expression.push(
-      `${CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID} in [${environments.map((env) => `"${getEnvironmentId(env)}"`)}]`
+      `${CEL_ATTRIBUTE_RESOURCE_ENVIRONMENT_ID} in ${celStringList(environments.map((env) => getEnvironmentId(env)))}`
     );
   }
   return expression.join(" && ");
@@ -266,14 +267,14 @@ const convertToCELString = (
     if (arr.length === 0) {
       return "";
     }
-    return `${resource} in ${JSON.stringify(arr)}`;
+    return `${resource} in ${celStringList(arr)}`;
   };
 
   const getStringExpressionString = (resource: string, value: string) => {
     if (!value) {
       return "";
     }
-    return `${resource} == "${value}"`;
+    return `${resource} == ${celString(value)}`;
   };
 
   function buildCondition(
@@ -283,10 +284,11 @@ const convertToCELString = (
       | TableLevelCondition
       | ColumnLevelCondition
   ): string {
-    const databaseExpression = `${CEL_ATTRIBUTE_RESOURCE_DATABASE} == "${condition.database}"`;
+    const databaseExpression = (database: string) =>
+      `${CEL_ATTRIBUTE_RESOURCE_DATABASE} == ${celString(database)}`;
     if ("column" in condition) {
       return [
-        databaseExpression,
+        databaseExpression(condition.database),
         getStringExpressionString(
           CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
           condition.schema
@@ -304,7 +306,7 @@ const convertToCELString = (
         .join(" && ");
     } else if ("table" in condition) {
       return [
-        databaseExpression,
+        databaseExpression(condition.database),
         getStringExpressionString(
           CEL_ATTRIBUTE_RESOURCE_SCHEMA_NAME,
           condition.schema
@@ -318,7 +320,7 @@ const convertToCELString = (
         .join(" && ");
     } else if ("schema" in condition) {
       return [
-        databaseExpression,
+        databaseExpression(condition.database),
         getArrayExpressionString(
           CEL_ATTRIBUTE_RESOURCE_TABLE_NAME,
           condition.schema
@@ -327,7 +329,7 @@ const convertToCELString = (
         .filter((str) => str)
         .join(" && ");
     } else {
-      return `${CEL_ATTRIBUTE_RESOURCE_DATABASE} in ${JSON.stringify(condition.database)}`;
+      return `${CEL_ATTRIBUTE_RESOURCE_DATABASE} in ${celStringList(condition.database)}`;
     }
   }
 

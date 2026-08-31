@@ -15,6 +15,7 @@ export * from "./issue";
 export * from "./changelog";
 export * from "./revision";
 export * from "./cel";
+export * from "./celLiteral";
 export * from "./advanced-search";
 export * from "./iam";
 export * from "./dbSchema";

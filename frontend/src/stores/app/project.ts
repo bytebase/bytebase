@@ -19,6 +19,7 @@ import {
   UpdateProjectRequestSchema,
 } from "@/types/proto-es/v1/project_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
+import { celString } from "@/utils/v1/celLiteral";
 import { setProjectAccess } from "./projectAccess";
 import type { AppSliceCreator, ProjectFilter, ProjectSlice } from "./types";
 import {
@@ -28,13 +29,12 @@ import {
   toError,
 } from "./utils";
 
-const getListProjectFilter = (params: ProjectFilter): string => {
+export const getListProjectFilter = (params: ProjectFilter): string => {
   const list: string[] = [];
   const search = params.query?.trim().toLowerCase();
   if (search) {
-    list.push(
-      `(name.contains("${search}") || resource_id.contains("${search}"))`
-    );
+    const value = celString(search);
+    list.push(`(name.contains(${value}) || resource_id.contains(${value}))`);
   }
   if (params.labels) {
     list.push(...getLabelFilter(params.labels));
@@ -43,7 +43,7 @@ const getListProjectFilter = (params: ProjectFilter): string => {
     list.push("exclude_default == true");
   }
   if (params.state === State.DELETED) {
-    list.push(`state == "${State[params.state]}"`);
+    list.push(`state == ${celString(State[params.state])}`);
   }
   return list.join(" && ");
 };

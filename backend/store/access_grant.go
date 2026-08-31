@@ -439,7 +439,7 @@ func GetListAccessGrantFilter(filter string) (*qb.Query, error) {
 				}
 				// Normalize whitespace on both sides so "SELECT *" matches "SELECT\n  *".
 				normalizedValue := strings.Join(strings.Fields(value), " ")
-				return qb.Q().Space("regexp_replace(access_grant.payload->>'query', '\\s+', ' ', 'g') ILIKE ?", "%"+normalizedValue+"%"), nil
+				return qb.Q().Space("regexp_replace(access_grant.payload->>'query', '\\s+', ' ', 'g') ILIKE ? ESCAPE '\\'", containsPattern(normalizedValue)), nil
 			case celoperators.In:
 				variable, value := getVariableAndValueFromExpr(expr)
 				if variable != "status" {

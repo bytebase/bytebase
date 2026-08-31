@@ -30,7 +30,7 @@ import {
   storageKeySqlEditorSavedQueryTree,
   workspaceCacheScope,
 } from "@/utils";
-import { escapeCELStringLiteral } from "@/utils/v1/cel";
+import { celString } from "@/utils/v1/celLiteral";
 import { isSubFolder } from "./folder";
 import { type SheetViewMode, SheetViewModeList } from "./types";
 
@@ -1007,7 +1007,7 @@ const folderFilterForKey = (view: SheetViewMode, folderKey: string): string => {
     return `folder == ""`;
   }
   const folder = getFoldersForSavedQuery(view, key).join("/");
-  return `folder == "${escapeCELStringLiteral(folder)}"`;
+  return `folder == ${celString(folder)}`;
 };
 
 const savedQuerySearchFilters = (): string[] => {
@@ -1015,7 +1015,7 @@ const savedQuerySearchFilters = (): string[] => {
   const filters: string[] = [];
   const keyword = filter.keyword.trim().toLowerCase();
   if (keyword) {
-    filters.push(`title.contains("${escapeCELStringLiteral(keyword)}")`);
+    filters.push(`title.contains(${celString(keyword)})`);
   }
   if (filter.onlyShowStarred) {
     filters.push("starred == true");
@@ -1034,7 +1034,7 @@ const sheetFilterForView = (
   // and those must not appear here.
   const baseFilters =
     view === "my"
-      ? [`creator == "users/${escapeCELStringLiteral(email)}"`]
+      ? [`creator == ${celString(`users/${email}`)}`]
       : [`shared == true`];
   return [
     ...baseFilters,
@@ -1115,7 +1115,7 @@ const fetchSavedQueriesByFolder = async (
     const { savedQueries, nextPageToken } = await fetchSavedQueriesPage(
       view,
       "",
-      [`folder == "${escapeCELStringLiteral(folder)}"`]
+      [`folder == ${celString(folder)}`]
     );
     const names = new Set(
       useSheetContextStore.getState().viewStates[view].savedQueryNames
