@@ -1812,7 +1812,7 @@
       "actions": {
         "explain-code": "Giải thích mã",
         "find-problems": "Tìm vấn đề",
-        "insert-at-caret": "Chèn vào con trỏ",
+        "insert-at-caret": "Chèn tại con trỏ",
         "new-chat-using-selection": "Cuộc trò chuyện mới bằng nội dung đã chọn"
       },
       "ai-assistant": "Trợ lý AI",

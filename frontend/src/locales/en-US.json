@@ -1812,7 +1812,7 @@
       "actions": {
         "explain-code": "Explain code",
         "find-problems": "Find problems",
-        "insert-at-caret": "Insert at caret",
+        "insert-at-caret": "Insert at cursor",
         "new-chat-using-selection": "New chat using selection"
       },
       "ai-assistant": "AI Assistant",
