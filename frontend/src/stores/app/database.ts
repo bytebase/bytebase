@@ -189,10 +189,8 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
         });
         return composed;
       } catch {
-        // BatchGet is all-or-nothing: one name that no longer exists, or that this
-        // caller may not see, fails the whole batch. Names here come from stored
-        // references that go stale, so fall back to per-name fetches, which
-        // tolerate a miss.
+        // The batch is all-or-nothing, so fall back to per-name fetches, which
+        // tolerate a name that went stale.
         const databases = await Promise.all(
           validNames.map((name) => fetchByName(name, silent))
         );
