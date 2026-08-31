@@ -128,8 +128,8 @@ export function ConversationList() {
                   key={conversation.id}
                   data-conversation-id={conversation.id}
                   className={cn(
-                    "flex items-start gap-x-0.5 border rounded-md py-2 pl-2 pr-0.5 hover:bg-indigo-50 hover:border-indigo-400 cursor-pointer",
-                    isActive && "bg-indigo-100 border-indigo-400",
+                    "flex items-start gap-x-0.5 border rounded-md py-2 pl-2 pr-0.5 hover:bg-control-bg hover:border-accent cursor-pointer",
+                    isActive && "bg-accent/10 border-accent",
                     isRenaming && "cursor-default"
                   )}
                   onClick={() => setSelected(conversation)}
@@ -170,7 +170,7 @@ export function ConversationList() {
                       {conversation.name}
                     </div>
                   ) : (
-                    <div className="min-w-0 flex-1 truncate text-sm text-gray-500 italic">
+                    <div className="min-w-0 flex-1 truncate text-sm text-control-light italic">
                       {previewTitle}
                     </div>
                   )}
@@ -180,7 +180,7 @@ export function ConversationList() {
                         type="button"
                         appearance="secondary"
                         size="xs"
-                        className="size-6 shrink-0 p-0 text-control-light hover:text-accent"
+                        className="shrink-0 text-control-light hover:text-accent"
                         onPointerDown={(event) => {
                           if (event.button !== 0) return;
                           event.preventDefault();
@@ -207,7 +207,7 @@ export function ConversationList() {
                               type="button"
                               appearance="secondary"
                               size="xs"
-                              className="size-6 shrink-0 p-0 text-control-light hover:text-error"
+                              className="shrink-0 text-control-light hover:text-error"
                               onClick={(event) => {
                                 event.stopPropagation();
                                 setDeleteCandidate(conversation);
