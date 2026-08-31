@@ -1,7 +1,7 @@
 import { create as createProto } from "@bufbuild/protobuf";
-import { createContextValues } from "@connectrpc/connect";
+import { Code, createContextValues } from "@connectrpc/connect";
 import { projectServiceClientConnect } from "@/api";
-import { silentContextKey } from "@/api/context-key";
+import { ignoredCodesContextKey, silentContextKey } from "@/api/context-key";
 import { isValidProjectName } from "@/lib/resourceName";
 import { UNKNOWN_ID } from "@/types/const";
 import { State } from "@/types/proto-es/v1/common_pb";
@@ -196,7 +196,12 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
         const response = await projectServiceClientConnect.batchGetProjects(
           createProto(BatchGetProjectsRequestSchema, { names: validNames }),
           {
-            contextValues: createContextValues().set(silentContextKey, silent),
+            // A permission change can revoke one name in the batch, and the batch is
+            // all-or-nothing. Ignore that here — falling back per name still renders
+            // the rest — rather than letting the interceptor navigate to /403.
+            contextValues: createContextValues()
+              .set(ignoredCodesContextKey, [Code.PermissionDenied])
+              .set(silentContextKey, silent),
           }
         );
         set((state) => ({
@@ -212,7 +217,7 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
         // The batch is all-or-nothing, so fall back to per-name fetches, which
         // tolerate a name that went stale.
         const projects = await Promise.all(
-          validNames.map((name) => get().fetchProject(name, silent))
+          validNames.map((name) => get().fetchProject(name, true))
         );
         return projects.filter(
           (project): project is NonNullable<typeof project> => Boolean(project)

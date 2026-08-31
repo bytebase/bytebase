@@ -1,8 +1,8 @@
 import { create as createProto } from "@bufbuild/protobuf";
-import { createContextValues } from "@connectrpc/connect";
+import { Code, createContextValues } from "@connectrpc/connect";
 import { uniq } from "lodash-es";
 import { databaseServiceClientConnect } from "@/api";
-import { silentContextKey } from "@/api/context-key";
+import { ignoredCodesContextKey, silentContextKey } from "@/api/context-key";
 import {
   BatchGetDatabasesRequestSchema,
   BatchSyncDatabasesRequestSchema,
@@ -176,7 +176,12 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
             names: validNames,
           }),
           {
-            contextValues: createContextValues().set(silentContextKey, silent),
+            // A permission change can revoke one name in the batch, and the batch is
+            // all-or-nothing. Ignore that here — falling back per name still renders
+            // the rest — rather than letting the interceptor navigate to /403.
+            contextValues: createContextValues()
+              .set(ignoredCodesContextKey, [Code.PermissionDenied])
+              .set(silentContextKey, silent),
           }
         );
         const composed = await composeDatabases(response.databases, silent);
@@ -192,7 +197,7 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
         // The batch is all-or-nothing, so fall back to per-name fetches, which
         // tolerate a name that went stale.
         const databases = await Promise.all(
-          validNames.map((name) => fetchByName(name, silent))
+          validNames.map((name) => fetchByName(name, true))
         );
         return databases.filter(
           (database): database is NonNullable<typeof database> =>
