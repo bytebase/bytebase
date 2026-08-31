@@ -1815,7 +1815,7 @@
       "actions": {
         "explain-code": "コードの説明",
         "find-problems": "問題を見つける",
-        "insert-at-caret": "キャレットに挿入",
+        "insert-at-caret": "カーソル位置に挿入",
         "new-chat-using-selection": "選択範囲を使用して新しいチャットを開始"
       },
       "ai-assistant": "AI アシスタント",
