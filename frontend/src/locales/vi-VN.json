@@ -1771,6 +1771,7 @@
         "rollout-not-created": "Bản triển khai chưa được tạo tự động",
         "waiting-on-review": "Đang chờ xét duyệt"
       },
+      "last-plan-editor-cannot-approve": "Người chỉnh sửa kế hoạch gần nhất không thể phê duyệt kế hoạch này.",
       "rejection": {
         "guidance-prefix": "Cập nhật thay đổi để xử lý phản hồi, hoặc",
         "guidance-suffix": "mà không thay đổi",
@@ -1969,6 +1970,10 @@
         "allow-access-grants": {
           "description": "Cho phép thành viên dự án yêu cầu cấp quyền truy cập có thời hạn cho các câu lệnh chỉ đọc cụ thể. Quyền được cấp cũng có thể bao gồm xuất kết quả và xem dữ liệu chưa che.",
           "self": "Cho phép cấp quyền truy cập"
+        },
+        "allow-last-plan-editor-approval": {
+          "description": "Cho phép người chỉnh sửa kế hoạch gần nhất phê duyệt kế hoạch đó.",
+          "self": "Cho phép người chỉnh sửa kế hoạch gần nhất phê duyệt"
         },
         "allow-request-role": {
           "description": "Người dùng không phải chủ sở hữu dự án có thể tự yêu cầu vai trò cấp dự án",

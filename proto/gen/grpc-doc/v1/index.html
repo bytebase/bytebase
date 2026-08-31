@@ -10894,6 +10894,15 @@ Ordered by environment deployment order. Empty when no rollout exists. </p></td>
                   <td><p>The lifecycle status of the linked issue.
 Unspecified when no linked issue exists. </p></td>
                 </tr>
+
+                <tr>
+                  <td>last_plan_editor</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The user who last created or updated the Plan specs.
+Format: users/hello@world.com. For legacy Plans without stored attribution,
+this falls back to the Plan creator. </p></td>
+                </tr>
               
             </tbody>
           </table>
@@ -28881,6 +28890,13 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Once enabled, users can request and use the just-in-time access in the SQL Editor. </p></td>
+                </tr>
+
+                <tr>
+                  <td>allow_last_plan_editor_approval</td>
+                  <td><a href="#bool">bool</a></td>
+                  <td></td>
+                  <td><p>Whether to allow the last Plan editor to approve a database change issue. </p></td>
                 </tr>
               
             </tbody>

@@ -1771,6 +1771,7 @@
         "rollout-not-created": "El despliegue no se creó automáticamente",
         "waiting-on-review": "Esperando revisión"
       },
+      "last-plan-editor-cannot-approve": "El último editor del plan no puede aprobar este plan.",
       "rejection": {
         "guidance-prefix": "Actualiza tus cambios para atender los comentarios, o",
         "guidance-suffix": "sin cambios",
@@ -1969,6 +1970,10 @@
         "allow-access-grants": {
           "description": "Permite a los miembros del proyecto solicitar concesiones de acceso con límite de tiempo para sentencias específicas de solo lectura. Las concesiones también pueden incluir la exportación de resultados y la visualización de datos sin enmascarar.",
           "self": "Permitir concesiones de acceso"
+        },
+        "allow-last-plan-editor-approval": {
+          "description": "Permitir que el último editor de un plan lo apruebe.",
+          "self": "Permitir la aprobación del último editor del plan"
         },
         "allow-request-role": {
           "description": "Los usuarios que no son propietarios del proyecto pueden solicitar roles a nivel de proyecto por sí mismos",

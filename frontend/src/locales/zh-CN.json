@@ -1771,6 +1771,7 @@
         "rollout-not-created": "发布未自动创建",
         "waiting-on-review": "等待审批"
       },
+      "last-plan-editor-cannot-approve": "最后计划编辑者无法批准此计划。",
       "rejection": {
         "guidance-prefix": "请根据反馈修改变更，或",
         "guidance-suffix": "（不做修改）",
@@ -1969,6 +1970,10 @@
         "allow-access-grants": {
           "description": "允许项目成员为特定只读语句申请限时访问授权。授权还可包含导出查询结果和查看未脱敏数据。",
           "self": "允许访问授权"
+        },
+        "allow-last-plan-editor-approval": {
+          "description": "允许计划的最后编辑者批准该计划。",
+          "self": "允许最后计划编辑者批准"
         },
         "allow-request-role": {
           "description": "非项目所有者可以自行申请项目级角色",

@@ -283,6 +283,8 @@ CREATE TABLE plan (
     id bigint NOT NULL,
     deleted boolean NOT NULL DEFAULT FALSE,
     creator text NOT NULL,
+    -- The last actor to create or update the plan specs. Nullable for legacy plans.
+    last_plan_editor text,
     created_at timestamptz NOT NULL DEFAULT now(),
     updated_at timestamptz NOT NULL DEFAULT now(),
     project text NOT NULL REFERENCES project(resource_id),

@@ -22,7 +22,10 @@ import {
   type ApprovalStepStatus,
   computeApprovalFlowLayout,
 } from "./approvalFlowLayout";
-import { useApprovalCandidates } from "./useApprovalCandidates";
+import {
+  type ApprovalCandidate,
+  useApprovalCandidates,
+} from "./useApprovalCandidates";
 
 export interface FlowStep {
   index: number;
@@ -319,6 +322,7 @@ function NodeReviewers({
   role: string;
 }) {
   const { t } = useTranslation();
+  const page = usePlanDetailContext();
   // Whether the project IAM policy is in cache yet — used to tell "still
   // loading" (show nothing) apart from "genuinely no eligible reviewers".
   const policyLoaded = useAppStore(
@@ -326,7 +330,12 @@ function NodeReviewers({
       state.projectPoliciesByName[`${projectNamePrefix}${projectId}`] !==
       undefined
   );
-  const { candidates } = useApprovalCandidates(issue, projectId, role);
+  const { candidates } = useApprovalCandidates(
+    issue,
+    projectId,
+    role,
+    page.plan?.lastPlanEditor ?? ""
+  );
   if (candidates.length === 0) {
     // No eligible reviewers means this stage can never be approved — surface it
     // explicitly rather than rendering nothing (BYT-9711). Stay silent until the
@@ -340,6 +349,9 @@ function NodeReviewers({
   }
   const visible = candidates.slice(0, 3);
   const overflow = candidates.length - visible.length;
+  const lastPlanEditorCandidate = candidates.find((candidate) =>
+    candidate.ineligibilities.includes("last-plan-editor")
+  );
   // A role can resolve to thousands of candidates; render a bounded, scrollable
   // slice in the popover and summarize the rest rather than mounting every row.
   const MAX_LISTED = 50;
@@ -347,58 +359,79 @@ function NodeReviewers({
   const remaining = candidates.length - listed.length;
 
   return (
-    <Popover>
-      <PopoverTrigger
-        delay={100}
-        nativeButton={false}
-        openOnHover
-        render={
-          <div className="mt-1 flex h-5 w-fit cursor-default items-center gap-x-1.5">
-            <div className="flex items-center">
-              {visible.map((user) => (
-                <InitialsAvatar
-                  className="-ml-1 size-5 text-xs ring-2 ring-background first:ml-0"
-                  key={user.name}
-                  user={user}
-                />
-              ))}
-              {overflow > 0 && (
-                <span className="-ml-1 flex size-5 items-center justify-center rounded-full bg-control-bg font-medium text-control text-xs ring-2 ring-background first:ml-0">
-                  +{overflow}
-                </span>
-              )}
-            </div>
-            <span className="text-xs text-control-light">
-              {t("plan.review.approval-flow.n-reviewers", {
-                count: candidates.length,
-              })}
-            </span>
-          </div>
-        }
-      />
-      <PopoverContent align="start" className="w-60" side="bottom">
-        <div className="flex max-h-64 flex-col gap-y-2 overflow-y-auto">
-          {listed.map((user) => (
-            <div className="flex items-center gap-x-2" key={user.name}>
-              <InitialsAvatar className="size-6 text-xs" user={user} />
-              <div className="min-w-0">
-                <div className="truncate text-sm text-main">
-                  {user.title || user.email.split("@")[0]}
-                </div>
-                <div className="truncate text-xs text-control-light">
-                  {user.email}
-                </div>
+    <div className="mt-1">
+      <Popover>
+        <PopoverTrigger
+          delay={100}
+          nativeButton={false}
+          openOnHover
+          render={
+            <div className="flex h-5 w-fit cursor-default items-center gap-x-1.5">
+              <div className="flex items-center">
+                {visible.map(({ user }) => (
+                  <InitialsAvatar
+                    className="-ml-1 size-5 text-xs ring-2 ring-background first:ml-0"
+                    key={user.name}
+                    user={user}
+                  />
+                ))}
+                {overflow > 0 && (
+                  <span className="-ml-1 flex size-5 items-center justify-center rounded-full bg-control-bg font-medium text-control text-xs ring-2 ring-background first:ml-0">
+                    +{overflow}
+                  </span>
+                )}
               </div>
+              <span className="text-xs text-control-light">
+                {t("plan.review.approval-flow.n-reviewers", {
+                  count: candidates.length,
+                })}
+              </span>
             </div>
-          ))}
+          }
+        />
+        <PopoverContent align="start" className="w-60" side="bottom">
+          <div className="flex max-h-64 flex-col gap-y-2 overflow-y-auto">
+            {listed.map((candidate) => (
+              <CandidateRow candidate={candidate} key={candidate.user.name} />
+            ))}
+          </div>
+          {remaining > 0 && (
+            <div className="mt-2 border-t pt-1.5 text-xs text-control-placeholder">
+              {t("plan.review.approval-flow.and-n-more", { count: remaining })}
+            </div>
+          )}
+        </PopoverContent>
+      </Popover>
+      {lastPlanEditorCandidate && (
+        <div className="mt-1 truncate text-xs text-warning">
+          {lastPlanEditorCandidate.user.title ||
+            lastPlanEditorCandidate.user.email}
+          {": "}
+          {t("plan.review.last-plan-editor-cannot-approve")}
         </div>
-        {remaining > 0 && (
-          <div className="mt-2 border-t pt-1.5 text-xs text-control-placeholder">
-            {t("plan.review.approval-flow.and-n-more", { count: remaining })}
+      )}
+    </div>
+  );
+}
+
+function CandidateRow({ candidate }: { candidate: ApprovalCandidate }) {
+  const { t } = useTranslation();
+  const { user } = candidate;
+  return (
+    <div className="flex items-center gap-x-2">
+      <InitialsAvatar className="size-6 text-xs" user={user} />
+      <div className="min-w-0">
+        <div className="truncate text-sm text-main">
+          {user.title || user.email.split("@")[0]}
+        </div>
+        <div className="truncate text-xs text-control-light">{user.email}</div>
+        {candidate.ineligibilities.includes("last-plan-editor") && (
+          <div className="text-xs text-warning">
+            {t("plan.review.last-plan-editor-cannot-approve")}
           </div>
         )}
-      </PopoverContent>
-    </Popover>
+      </div>
+    </div>
   );
 }
 
@@ -540,7 +573,8 @@ function PendingPopoverRow({ issue, step }: { issue: Issue; step: FlowStep }) {
   const { candidates } = useApprovalCandidates(
     issue,
     page.projectId,
-    step.role
+    step.role,
+    page.plan?.lastPlanEditor ?? ""
   );
   const roleName = displayRoleTitleFromList(step.role, roleList);
   const visible = candidates.slice(0, 4);
@@ -556,7 +590,7 @@ function PendingPopoverRow({ issue, step }: { issue: Issue; step: FlowStep }) {
         {candidates.length > 0 && (
           <div className="mt-1 flex items-center gap-x-1.5">
             <div className="flex items-center">
-              {visible.map((user) => (
+              {visible.map(({ user }) => (
                 <InitialsAvatar
                   className="-ml-1 size-5 text-xs ring-2 ring-background first:ml-0"
                   key={user.name}

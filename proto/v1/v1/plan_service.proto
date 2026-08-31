@@ -265,6 +265,11 @@ message Plan {
   // Unspecified when no linked issue exists.
   IssueStatus issue_status = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The user who last created or updated the Plan specs.
+  // Format: users/hello@world.com. For legacy Plans without stored attribution,
+  // this falls back to the Plan creator.
+  string last_plan_editor = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
+
   message CreateDatabaseConfig {
     reserved 8;
     // The resource name of the instance on which the database is created.

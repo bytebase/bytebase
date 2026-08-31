@@ -6,11 +6,25 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 func (ctl *controller) createDatabase(ctx context.Context, project *v1pb.Project, instance *v1pb.Instance, environment *v1pb.EnvironmentSetting_Environment, databaseName string, owner string) error {
+	// Database provisioning is test setup, and its plan is approved by the same
+	// test actor. Opt into that legacy behavior explicitly; production projects
+	// keep the restrictive default when the setting is absent.
+	if _, err := ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+		Project: &v1pb.Project{
+			Name:                        project.Name,
+			AllowLastPlanEditorApproval: true,
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"allow_last_plan_editor_approval"}},
+	})); err != nil {
+		return err
+	}
+
 	characterSet, collation := "utf8mb4", "utf8mb4_general_ci"
 	if instance.Engine == v1pb.Engine_POSTGRES {
 		characterSet = "UTF8"

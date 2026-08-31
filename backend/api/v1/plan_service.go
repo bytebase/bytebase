@@ -300,6 +300,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 	var description *string
 	var deleted *bool
 	var specs []*storepb.PlanConfig_Spec
+	var lastPlanEditor *string
 
 	var planCheckRunsTrigger bool
 	var databaseGroup *v1pb.DatabaseGroup
@@ -334,6 +335,8 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 
 			// Trigger plan check runs.
 			planCheckRunsTrigger = true
+			editor := strings.ToLower(user.Email)
+			lastPlanEditor = &editor
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update_mask path %q", path))
 		}
@@ -344,13 +347,14 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		specsUpdate = &specs
 	}
 	updateResult, err := s.reviewWorkflow.UpdatePlan(ctx, review.UpdatePlanInput{
-		Workspace:   common.GetWorkspaceIDFromContext(ctx),
-		PlanUID:     oldPlan.UID,
-		ProjectID:   oldPlan.ProjectID,
-		Title:       title,
-		Description: description,
-		Deleted:     deleted,
-		Specs:       specsUpdate,
+		Workspace:      common.GetWorkspaceIDFromContext(ctx),
+		PlanUID:        oldPlan.UID,
+		ProjectID:      oldPlan.ProjectID,
+		Title:          title,
+		Description:    description,
+		Deleted:        deleted,
+		Specs:          specsUpdate,
+		LastPlanEditor: lastPlanEditor,
 	})
 	if err != nil {
 		var workflowErr *review.Error
@@ -942,6 +946,7 @@ func buildV1PlanFields(plan *store.PlanMessage) *v1pb.Plan {
 		Title:                   plan.Name,
 		Description:             plan.Description,
 		Creator:                 common.FormatUserEmail(plan.Creator),
+		LastPlanEditor:          common.FormatUserEmail(effectivePlanEditor(plan)),
 		Specs:                   specs,
 		CreateTime:              timestamppb.New(plan.CreatedAt),
 		UpdateTime:              timestamppb.New(plan.UpdatedAt),
@@ -952,6 +957,13 @@ func buildV1PlanFields(plan *store.PlanMessage) *v1pb.Plan {
 		p.HasRollout = plan.Config.HasRollout
 	}
 	return p
+}
+
+func effectivePlanEditor(plan *store.PlanMessage) string {
+	if plan.LastPlanEditor != nil {
+		return *plan.LastPlanEditor
+	}
+	return plan.Creator
 }
 
 func buildRolloutStageSummaries(projectID string, planUID int64, counts []*store.TaskStatusCount, environmentOrderMap map[string]int) []*v1pb.Plan_RolloutStageSummary {

@@ -27549,6 +27549,14 @@ components:
              Unspecified when no linked issue exists.
           readOnly: true
           $ref: '#/components/schemas/bytebase.v1.IssueStatus'
+        lastPlanEditor:
+          type: string
+          title: last_plan_editor
+          description: |-
+            The user who last created or updated the Plan specs.
+             Format: users/hello@world.com. For legacy Plans without stored attribution,
+             this falls back to the Plan creator.
+          readOnly: true
       title: Plan
       additionalProperties: false
     bytebase.v1.Plan.ChangeDatabaseConfig:
@@ -28243,6 +28251,10 @@ components:
           type: boolean
           title: allow_just_in_time_access
           description: Once enabled, users can request and use the just-in-time access in the SQL Editor.
+        allowLastPlanEditorApproval:
+          type: boolean
+          title: allow_last_plan_editor_approval
+          description: Whether to allow the last Plan editor to approve a database change issue.
       title: Project
       additionalProperties: false
     bytebase.v1.Project.ExecutionRetryPolicy:

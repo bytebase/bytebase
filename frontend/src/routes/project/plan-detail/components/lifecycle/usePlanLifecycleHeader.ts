@@ -33,11 +33,13 @@ export function usePlanLifecycleHeader(
         : "",
     [issue]
   );
-  const { isCurrentUserCandidate } = useApprovalCandidates(
-    issue ?? EMPTY_ISSUE,
-    page.projectId,
-    currentRole
-  );
+  const { canCurrentUserApprove, isCurrentUserReviewCandidate } =
+    useApprovalCandidates(
+      issue ?? EMPTY_ISSUE,
+      page.projectId,
+      currentRole,
+      page.plan.lastPlanEditor
+    );
 
   const isGitOpsPlan = useMemo(
     () => isReleaseBackedPlan(page.plan.specs),
@@ -67,7 +69,8 @@ export function usePlanLifecycleHeader(
         issueDraft,
         approvalStatus,
         hasCurrentStep: currentRole !== "",
-        isCurrentUserCandidate,
+        canCurrentUserApprove,
+        isCurrentUserReviewCandidate,
         checks,
         hasRollout: !!page.rollout,
         rollout: page.rollout,
@@ -77,7 +80,8 @@ export function usePlanLifecycleHeader(
       checks,
       currentRole,
       hasIssue,
-      isCurrentUserCandidate,
+      canCurrentUserApprove,
+      isCurrentUserReviewCandidate,
       isGitOpsPlan,
       issueDraft,
       issueStatus,

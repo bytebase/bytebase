@@ -491,9 +491,13 @@ type Plan struct {
 	RolloutStageSummaries []*Plan_RolloutStageSummary `protobuf:"bytes,14,rep,name=rollout_stage_summaries,json=rolloutStageSummaries,proto3" json:"rollout_stage_summaries,omitempty"`
 	// The lifecycle status of the linked issue.
 	// Unspecified when no linked issue exists.
-	IssueStatus   IssueStatus `protobuf:"varint,15,opt,name=issue_status,json=issueStatus,proto3,enum=bytebase.v1.IssueStatus" json:"issue_status,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	IssueStatus IssueStatus `protobuf:"varint,15,opt,name=issue_status,json=issueStatus,proto3,enum=bytebase.v1.IssueStatus" json:"issue_status,omitempty"`
+	// The user who last created or updated the Plan specs.
+	// Format: users/hello@world.com. For legacy Plans without stored attribution,
+	// this falls back to the Plan creator.
+	LastPlanEditor string `protobuf:"bytes,16,opt,name=last_plan_editor,json=lastPlanEditor,proto3" json:"last_plan_editor,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *Plan) Reset() {
@@ -622,6 +626,13 @@ func (x *Plan) GetIssueStatus() IssueStatus {
 		return x.IssueStatus
 	}
 	return IssueStatus_ISSUE_STATUS_UNSPECIFIED
+}
+
+func (x *Plan) GetLastPlanEditor() string {
+	if x != nil {
+		return x.LastPlanEditor
+	}
+	return ""
 }
 
 type GetPlanCheckRunRequest struct {
@@ -1574,7 +1585,7 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\x04plan\x18\x01 \x01(\v2\x11.bytebase.v1.PlanB\x03\xe0A\x02R\x04plan\x12@\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskB\x03\xe0A\x02R\n" +
 	"updateMask\x12#\n" +
-	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\xa7\x0e\n" +
+	"\rallow_missing\x18\x03 \x01(\bR\fallowMissing\"\xd6\x0e\n" +
 	"\x04Plan\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x19\n" +
@@ -1593,7 +1604,8 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"hasRollout\x12I\n" +
 	"\x0fapproval_status\x18\r \x01(\x0e2\x1b.bytebase.v1.ApprovalStatusB\x03\xe0A\x03R\x0eapprovalStatus\x12b\n" +
 	"\x17rollout_stage_summaries\x18\x0e \x03(\v2%.bytebase.v1.Plan.RolloutStageSummaryB\x03\xe0A\x03R\x15rolloutStageSummaries\x12@\n" +
-	"\fissue_status\x18\x0f \x01(\x0e2\x18.bytebase.v1.IssueStatusB\x03\xe0A\x03R\vissueStatus\x1a\xe0\x01\n" +
+	"\fissue_status\x18\x0f \x01(\x0e2\x18.bytebase.v1.IssueStatusB\x03\xe0A\x03R\vissueStatus\x12-\n" +
+	"\x10last_plan_editor\x18\x10 \x01(\tB\x03\xe0A\x03R\x0elastPlanEditor\x1a\xe0\x01\n" +
 	"\x04Spec\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12^\n" +
 	"\x16create_database_config\x18\x02 \x01(\v2&.bytebase.v1.Plan.CreateDatabaseConfigH\x00R\x14createDatabaseConfig\x12^\n" +

@@ -3608,6 +3608,7 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &
 | approval_status | [ApprovalStatus](#bytebase-v1-ApprovalStatus) |  | The approval status of the linked issue. Unspecified when no linked issue exists or the linked issue is a draft. |
 | rollout_stage_summaries | [Plan.RolloutStageSummary](#bytebase-v1-Plan-RolloutStageSummary) | repeated | Per-stage rollout status summary. Ordered by environment deployment order. Empty when no rollout exists. |
 | issue_status | [IssueStatus](#bytebase-v1-IssueStatus) |  | The lifecycle status of the linked issue. Unspecified when no linked issue exists. |
+| last_plan_editor | [string](#string) |  | The user who last created or updated the Plan specs. Format: users/hello@world.com. For legacy Plans without stored attribution, this falls back to the Plan creator. |
 
 
 
@@ -10139,6 +10140,7 @@ When paginating, all other parameters provided to `ListProjects` must match the 
 | require_plan_check_no_error | [bool](#bool) |  | Whether to require plan check to have no error before rollout. |
 | allow_request_role | [bool](#bool) |  |  |
 | allow_just_in_time_access | [bool](#bool) |  | Once enabled, users can request and use the just-in-time access in the SQL Editor. |
+| allow_last_plan_editor_approval | [bool](#bool) |  | Whether to allow the last Plan editor to approve a database change issue. |
 
 
 

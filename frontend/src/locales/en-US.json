@@ -1771,6 +1771,7 @@
         "rollout-not-created": "Rollout was not created automatically",
         "waiting-on-review": "Waiting on review"
       },
+      "last-plan-editor-cannot-approve": "Last Plan Editor cannot approve this plan.",
       "rejection": {
         "guidance-prefix": "Update your changes to address the feedback, or",
         "guidance-suffix": "without changes",
@@ -1969,6 +1970,10 @@
         "allow-access-grants": {
           "description": "Allow project members to request time-boxed access grants for specific read-only statements. Grants can also cover exporting results and viewing unmasked data.",
           "self": "Allow access grants"
+        },
+        "allow-last-plan-editor-approval": {
+          "description": "Allow the last editor of a plan to approve it.",
+          "self": "Allow last plan editor approval"
         },
         "allow-request-role": {
           "description": "Allow project members to request roles.",

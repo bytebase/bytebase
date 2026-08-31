@@ -124,6 +124,83 @@ func TestReviewIssueApproveCurrentPlan(t *testing.T) {
 	}, result.Events)
 }
 
+func TestLastPlanEditorApproval(t *testing.T) {
+	newIssue := func(ctx context.Context, t *testing.T, stores *store.Store, clearLastPlanEditor bool) *store.IssueMessage {
+		t.Helper()
+		plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+			ProjectID: "project-a",
+			Name:      "change database",
+			Config:    &storepb.PlanConfig{ApprovalInputVersion: 2},
+		}, "reviewer@example.com")
+		require.NoError(t, err)
+		if clearLastPlanEditor {
+			_, err := stores.GetDB().ExecContext(ctx, "UPDATE plan SET last_plan_editor = NULL WHERE project = $1 AND id = $2", plan.ProjectID, plan.UID)
+			require.NoError(t, err)
+		}
+		issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+			ProjectID:    "project-a",
+			CreatorEmail: "creator@example.com",
+			Title:        "change database",
+			Type:         storepb.Issue_DATABASE_CHANGE,
+			PlanUID:      &plan.UID,
+			Payload: &storepb.Issue{Approval: &storepb.IssuePayloadApproval{
+				ApprovalFindingDone:  true,
+				ApprovalInputVersion: 2,
+				ApprovalTemplate:     &storepb.ApprovalTemplate{Flow: &storepb.ApprovalFlow{Roles: []string{"roles/projectOwner"}}},
+			}},
+		})
+		require.NoError(t, err)
+		return issue
+	}
+
+	for _, test := range []struct {
+		name                string
+		action              Action
+		allowLastPlanEditor bool
+		clearLastPlanEditor bool
+		wantError           ErrorCode
+	}{
+		{name: "approve blocked", action: ActionApprove, wantError: ErrorFailedPrecondition},
+		{name: "reject allowed", action: ActionReject},
+		{name: "approve allowed by setting", action: ActionApprove, allowLastPlanEditor: true},
+		{name: "legacy Plan falls back to creator", action: ActionApprove, clearLastPlanEditor: true, wantError: ErrorFailedPrecondition},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.Background()
+			stores := setupWorkflowStore(ctx, t)
+			_, err := stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+				Workspace: "default",
+				Member:    common.FormatUserEmail("reviewer@example.com"),
+				Roles:     []string{"roles/projectOwner"},
+			})
+			require.NoError(t, err)
+			if test.allowLastPlanEditor {
+				projectID := "project-a"
+				require.NoError(t, stores.UpdateProjects(ctx, &store.UpdateProjectMessage{
+					Workspace:  "default",
+					ResourceID: projectID,
+					Setting:    &storepb.Project{AllowLastPlanEditorApproval: true},
+				}))
+			}
+			issue := newIssue(ctx, t, stores, test.clearLastPlanEditor)
+			_, err = NewWorkflow(stores).ReviewIssue(ctx, IssueInput{
+				Workspace: "default",
+				ProjectID: "project-a",
+				IssueUID:  issue.UID,
+				Actor:     &store.UserMessage{Email: "reviewer@example.com"},
+				Action:    test.action,
+			})
+			if test.wantError == ErrorInternal {
+				require.NoError(t, err)
+				return
+			}
+			var workflowErr *Error
+			require.ErrorAs(t, err, &workflowErr)
+			require.Equal(t, test.wantError, workflowErr.Code)
+		})
+	}
+}
+
 func TestReviewIssueConcurrentApprovalsHaveOneWinner(t *testing.T) {
 	ctx := context.Background()
 	stores := setupWorkflowStore(ctx, t)

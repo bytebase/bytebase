@@ -3628,6 +3628,7 @@ Project contains settings and configuration for a Bytebase project.
 | allow_request_role | [bool](#bool) |  |  |
 | data_classification_config_id | [string](#string) |  | The data classification configuration ID for the project. |
 | allow_just_in_time_access | [bool](#bool) |  | Once enabled, users can request and use the just-in-time access in the SQL Editor. |
+| allow_last_plan_editor_approval | [bool](#bool) |  | Whether to allow the last Plan editor to approve a database change issue. |
 
 
 

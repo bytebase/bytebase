@@ -1771,6 +1771,7 @@
         "rollout-not-created": "ロールアウトは自動作成されませんでした",
         "waiting-on-review": "レビュー待ち"
       },
+      "last-plan-editor-cannot-approve": "最終プラン編集者はこのプランを承認できません。",
       "rejection": {
         "guidance-prefix": "フィードバックに対応して変更を更新するか、変更なしで",
         "guidance-suffix": "こともできます",
@@ -1969,6 +1970,10 @@
         "allow-access-grants": {
           "description": "プロジェクトメンバーが特定の読み取り専用ステートメントに対して期限付きのアクセス付与をリクエストできるようにします。付与には結果のエクスポートやマスク解除データの閲覧を含めることもできます。",
           "self": "アクセス付与を許可"
+        },
+        "allow-last-plan-editor-approval": {
+          "description": "プランの最終編集者がそのプランを承認できるようにします。",
+          "self": "最終プラン編集者の承認を許可"
         },
         "allow-request-role": {
           "description": "プロジェクト所有者以外のユーザーがプロジェクトレベルのロールを自分でリクエストできます",
