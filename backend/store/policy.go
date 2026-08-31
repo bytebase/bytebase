@@ -116,6 +116,45 @@ func (s *Store) GetProjectIamPolicy(ctx context.Context, workspaceID string, pro
 	})
 }
 
+// ListProjectIamPolicies returns the IAM policy of each named project, keyed by
+// project resource ID, in one query. Callers needing several projects' policies
+// use this instead of GetProjectIamPolicy in a loop, which costs a round trip
+// per project whenever the cache is cold. A project with no stored policy is
+// absent from the map; treat that as an empty policy.
+func (s *Store) ListProjectIamPolicies(ctx context.Context, workspaceID string, projectIDs []string) (map[string]*storepb.IamPolicy, error) {
+	if len(projectIDs) == 0 {
+		return map[string]*storepb.IamPolicy{}, nil
+	}
+	resources := make([]string, 0, len(projectIDs))
+	for _, projectID := range projectIDs {
+		resources = append(resources, common.FormatProject(projectID))
+	}
+	policies, err := s.ListPolicies(ctx, &FindPolicyMessage{
+		Workspace:    workspaceID,
+		ResourceType: new(storepb.Policy_PROJECT),
+		Resources:    resources,
+		Type:         new(storepb.Policy_IAM),
+		ShowAll:      true,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	policyMap := make(map[string]*storepb.IamPolicy, len(policies))
+	for _, policy := range policies {
+		projectID, err := common.GetProjectID(policy.Resource)
+		if err != nil {
+			return nil, errors.Wrapf(err, "failed to parse project from policy resource %q", policy.Resource)
+		}
+		p := &storepb.IamPolicy{}
+		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(policy.Payload), p); err != nil {
+			return nil, errors.Wrapf(err, "failed to unmarshal iam policy for %v", policy.Resource)
+		}
+		policyMap[projectID] = p
+	}
+	return policyMap, nil
+}
+
 func (s *Store) GetWorkspaceIamPolicySnapshot(ctx context.Context, workspaceID string) (*IamPolicyMessage, error) {
 	workspaceResource := common.FormatWorkspace(workspaceID)
 	key := getIamPolicyCacheKey(workspaceID, storepb.Policy_WORKSPACE, workspaceResource)
@@ -419,7 +458,10 @@ type FindPolicyMessage struct {
 	Workspace    string
 	ResourceType *storepb.Policy_Resource
 	Resource     *string
-	Type         *storepb.Policy_Type
+	// Resources matches any of several resources. Unlike Resource it is never
+	// cached, so it is for batch reads rather than single lookups.
+	Resources []string
+	Type      *storepb.Policy_Type
 	// ShowAll will show all policies regardless of the enforce status.
 	ShowAll bool
 }
@@ -487,6 +529,9 @@ func (s *Store) ListPolicies(ctx context.Context, find *FindPolicyMessage) ([]*P
 	}
 	if v := find.Resource; v != nil {
 		q.And("resource = ?", *v)
+	}
+	if v := find.Resources; v != nil {
+		q.And("resource = ANY(?)", v)
 	}
 	if v := find.Type; v != nil {
 		q.And("type = ?", v.String())

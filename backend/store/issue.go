@@ -108,7 +108,45 @@ type FindIssueMessage struct {
 	LabelList     []string
 	RiskLevelList []storepb.RiskLevel
 	OrderByKeys   []*OrderByKey
+
+	// ApprovalStatus is a v1 ApprovalStatus enum name, matched by approvalStatusExpr.
+	ApprovalStatus *string
+	// NextApproverRoles restricts the list to issues whose approval flow is
+	// waiting on one of these (project, role) pairs. Non-nil and empty matches
+	// no issue.
+	NextApproverRoles *[]ProjectRole
 }
+
+// ProjectRole is a role held in one project.
+type ProjectRole struct {
+	ProjectID string
+	Role      string
+}
+
+// approvalStatusExpr mirrors computeApprovalStatus in
+// backend/api/v1/issue_service_converter.go branch for branch — keep the two in
+// step. Payloads are marshalled with a bare protojson.Marshal, so an absent key
+// is a zero value.
+const approvalStatusExpr = `
+	CASE
+		WHEN NOT COALESCE((issue.payload->'approval'->>'approvalFindingDone')::BOOLEAN, FALSE) THEN 'CHECKING'
+		WHEN issue.payload->'approval'->'approvalTemplate' IS NULL THEN 'SKIPPED'
+		WHEN COALESCE(jsonb_array_length(issue.payload->'approval'->'approvers'), 0) = 0 THEN 'PENDING'
+		WHEN issue.payload->'approval'->'approvers' @> '[{"status": "REJECTED"}]'::JSONB THEN 'REJECTED'
+		WHEN COALESCE(jsonb_array_length(issue.payload->'approval'->'approvers'), 0)
+				>= COALESCE(jsonb_array_length(issue.payload->'approval'->'approvalTemplate'->'flow'->'roles'), 0)
+			AND NOT EXISTS (
+				SELECT 1
+				FROM jsonb_array_elements(issue.payload->'approval'->'approvers') AS approver
+				WHERE COALESCE(approver->>'status', '') <> 'APPROVED'
+			) THEN 'APPROVED'
+		ELSE 'PENDING'
+	END`
+
+// nextApprovalRoleExpr is the flow role at the first step nobody has acted on.
+// `->>` past the end of the array yields NULL, so a finished flow drops out.
+const nextApprovalRoleExpr = `issue.payload->'approval'->'approvalTemplate'->'flow'->'roles'
+		->> COALESCE(jsonb_array_length(issue.payload->'approval'->'approvers'), 0)`
 
 // GetIssueOrders parses the order_by string and returns the corresponding OrderByKeys.
 func GetIssueOrders(orderBy string) ([]*OrderByKey, error) {
@@ -356,11 +394,12 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 	if v := find.CreatorID; v != nil {
 		where.And("issue.creator = ?", *v)
 	}
+	// The filter grammar documents ">=" and "<=" for create_time.
 	if v := find.CreatedAtBefore; v != nil {
-		where.And("issue.created_at < ?", *v)
+		where.And("issue.created_at <= ?", *v)
 	}
 	if v := find.CreatedAtAfter; v != nil {
-		where.And("issue.created_at > ?", *v)
+		where.And("issue.created_at >= ?", *v)
 	}
 	if v := find.Types; v != nil {
 		typeStrings := make([]string, 0, len(*v))
@@ -376,7 +415,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 			searchCondition.Or("issue.ts_vector @@ query")
 			rankOrder = "ts_rank(issue.ts_vector, query) DESC"
 		}
-		searchCondition.Or("issue.name ILIKE ?", "%"+*v+"%")
+		searchCondition.Or("issue.name ILIKE ?", "%"+escapeLikePattern(*v)+"%")
 		where.And("(?)", searchCondition)
 	}
 	if len(find.StatusList) != 0 {
@@ -398,6 +437,26 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 	}
 	if find.ExcludeDraft {
 		where.And("COALESCE(issue.payload->>'draft', 'false') = 'false'")
+	}
+	// Matched in SQL, not over the returned page: filtering after LIMIT mints a
+	// page token for rows that are then dropped, so the list answers with an
+	// empty page and a live next page token.
+	if v := find.ApprovalStatus; v != nil {
+		where.And("("+approvalStatusExpr+") = ?", *v)
+	}
+	if v := find.NextApproverRoles; v != nil {
+		projects := make([]string, 0, len(*v))
+		roles := make([]string, 0, len(*v))
+		for _, projectRole := range *v {
+			projects = append(projects, projectRole.ProjectID)
+			roles = append(roles, projectRole.Role)
+		}
+		where.And(`EXISTS (
+			SELECT 1
+			FROM unnest(?::TEXT[], ?::TEXT[]) AS approver_role(project, role)
+			WHERE approver_role.project = issue.project
+				AND approver_role.role = `+nextApprovalRoleExpr+`
+		)`, projects, roles)
 	}
 
 	// issue.id alone is not unique across projects — nextProjectID floors every
@@ -604,8 +663,12 @@ func getTSQuery(text string) string {
 	if len(parts) == 0 {
 		parts = seg.CutTrim(text)
 	}
+	// Text the segmenter reduces to nothing is punctuation only. It has no
+	// lexeme to search for, and interpolating it raw builds an invalid tsquery
+	// that fails the whole query at cast time — `(`, `:` and `'` are tsquery
+	// syntax. Callers fall back to ILIKE when this is empty.
 	if len(parts) == 0 {
-		return fmt.Sprintf("%s:*", text)
+		return ""
 	}
 	var tsQuery strings.Builder
 	for i, part := range parts {
