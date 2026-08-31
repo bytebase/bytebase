@@ -425,6 +425,16 @@ func (s *WorkspaceService) LeaveWorkspace(ctx context.Context, req *connect.Requ
 	return s.authService.switchWorkspaceInternal(ctx, user, nextWS.ResourceID, isWeb, req.Header())
 }
 
+// workspaceResourceMatches reports whether the resource a caller named is the
+// workspace their token authenticates them to. GetIamPolicy ignores the field
+// entirely, and the console sends a placeholder before it has resolved the
+// name, so both an empty value and the wildcard mean "the current workspace".
+func workspaceResourceMatches(resource, workspaceID string) bool {
+	return resource == "" ||
+		resource == common.FormatWorkspace(workspaceID) ||
+		resource == common.FormatWorkspace("-")
+}
+
 func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Request[v1pb.SetIamPolicyRequest]) (*connect.Response[v1pb.IamPolicy], error) {
 	request := req.Msg
 
@@ -433,6 +443,15 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace iam policy"))
 	}
+	// The write targets the workspace the caller is authenticated to, so a
+	// request naming a different one is refused rather than silently applied to
+	// this one: getRequestResource audits the name the caller sent, and writing
+	// one workspace while recording another attributes a real permission change
+	// to the wrong place.
+	if !workspaceResourceMatches(request.Resource, workspaceID) {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("resource %q is not the workspace this request is authenticated to", request.Resource))
+	}
+
 	// The etag is compared only in the write below, against the locked row.
 	// Comparing it here too would add a second answer to the same question from
 	// a read the write does not hold, and only the locked one decides.
@@ -473,9 +492,6 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to count users in IAM policy"))
 	}
 
-	// The write targets the workspace the caller is authenticated to, the same
-	// one every read and check above resolved. Naming any other resource used to
-	// match no row, and the write silently did nothing.
 	replaced, policy, err := s.store.SetIamPolicy(ctx, &store.SetIamPolicyMessage{
 		Workspace:    workspaceID,
 		ResourceType: storepb.Policy_WORKSPACE,

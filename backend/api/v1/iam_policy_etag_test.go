@@ -66,3 +66,27 @@ func TestRequestedIamPolicyEtag(t *testing.T) {
 		})
 	}
 }
+
+// The workspace a SetIamPolicy call writes comes from the token, but the audit
+// log records the resource the caller named. Accepting a name that points
+// somewhere else would attribute a real permission change to the wrong
+// workspace, so the two have to agree.
+func TestWorkspaceResourceMatches(t *testing.T) {
+	testCases := []struct {
+		name     string
+		resource string
+		want     bool
+	}{
+		{name: "the caller's own workspace", resource: "workspaces/ws-a", want: true},
+		{name: "unset", resource: "", want: true},
+		{name: "the console's placeholder", resource: "workspaces/-", want: true},
+		{name: "another workspace", resource: "workspaces/ws-b", want: false},
+		{name: "not a workspace at all", resource: "projects/ws-a", want: false},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, tc.want, workspaceResourceMatches(tc.resource, "ws-a"))
+		})
+	}
+}
