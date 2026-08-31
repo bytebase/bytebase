@@ -12,10 +12,8 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// convertToIssues converts a page the store has already filtered. Nothing may
-// be dropped here: the page token is minted from the row count the store
-// returned, so a row removed after the fact leaves the caller with a short or
-// empty page and a live next page token.
+// convertToIssues converts a page the store has already filtered. Nothing may be
+// dropped here: the page token is minted from the row count the store returned.
 func (s *IssueService) convertToIssues(issues []*store.IssueMessage) ([]*v1pb.Issue, error) {
 	var converted []*v1pb.Issue
 	for _, issue := range issues {

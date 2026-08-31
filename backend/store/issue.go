@@ -109,14 +109,11 @@ type FindIssueMessage struct {
 	RiskLevelList []storepb.RiskLevel
 	OrderByKeys   []*OrderByKey
 
-	// ApprovalStatus is a v1 ApprovalStatus enum name (CHECKING, SKIPPED,
-	// PENDING, APPROVED, REJECTED). It is derived from the payload rather than
-	// stored, so it is matched by approvalStatusExpr below.
+	// ApprovalStatus is a v1 ApprovalStatus enum name, matched by approvalStatusExpr.
 	ApprovalStatus *string
 	// NextApproverRoles restricts the list to issues whose approval flow is
-	// currently waiting on one of these (project, role) pairs. Resolving which
-	// roles a user holds needs the IAM policies, so the caller does that and
-	// passes the result here. Non-nil and empty matches no issue.
+	// waiting on one of these (project, role) pairs. Non-nil and empty matches
+	// no issue.
 	NextApproverRoles *[]ProjectRole
 }
 
@@ -126,14 +123,10 @@ type ProjectRole struct {
 	Role      string
 }
 
-// approvalStatusExpr derives the v1 ApprovalStatus of an issue from its
-// payload. It mirrors computeApprovalStatus in
-// backend/api/v1/issue_service_converter.go branch for branch, including the
-// empty-approvers case that precedes the rejected and approved checks. Keep the
-// two in step.
-//
-// Payloads are written with a bare protojson.Marshal, so a zero value is an
-// absent key: no approvalFindingDone means false and no approvers means empty.
+// approvalStatusExpr mirrors computeApprovalStatus in
+// backend/api/v1/issue_service_converter.go branch for branch — keep the two in
+// step. Payloads are marshalled with a bare protojson.Marshal, so an absent key
+// is a zero value.
 const approvalStatusExpr = `
 	CASE
 		WHEN NOT COALESCE((issue.payload->'approval'->>'approvalFindingDone')::BOOLEAN, FALSE) THEN 'CHECKING'
@@ -150,10 +143,8 @@ const approvalStatusExpr = `
 		ELSE 'PENDING'
 	END`
 
-// nextApprovalRoleExpr is the role the approval flow is waiting on: the flow
-// role at the index of the first step nobody has acted on yet. `->>` with an
-// index past the end of the array yields NULL, which is how a fully acted-on
-// flow drops out.
+// nextApprovalRoleExpr is the flow role at the first step nobody has acted on.
+// `->>` past the end of the array yields NULL, so a finished flow drops out.
 const nextApprovalRoleExpr = `issue.payload->'approval'->'approvalTemplate'->'flow'->'roles'
 		->> COALESCE(jsonb_array_length(issue.payload->'approval'->'approvers'), 0)`
 
@@ -403,11 +394,12 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 	if v := find.CreatorID; v != nil {
 		where.And("issue.creator = ?", *v)
 	}
+	// The filter grammar documents ">=" and "<=" for create_time.
 	if v := find.CreatedAtBefore; v != nil {
-		where.And("issue.created_at < ?", *v)
+		where.And("issue.created_at <= ?", *v)
 	}
 	if v := find.CreatedAtAfter; v != nil {
-		where.And("issue.created_at > ?", *v)
+		where.And("issue.created_at >= ?", *v)
 	}
 	if v := find.Types; v != nil {
 		typeStrings := make([]string, 0, len(*v))
@@ -423,7 +415,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 			searchCondition.Or("issue.ts_vector @@ query")
 			rankOrder = "ts_rank(issue.ts_vector, query) DESC"
 		}
-		searchCondition.Or("issue.name ILIKE ?", "%"+*v+"%")
+		searchCondition.Or("issue.name ILIKE ?", "%"+escapeLikePattern(*v)+"%")
 		where.And("(?)", searchCondition)
 	}
 	if len(find.StatusList) != 0 {
@@ -446,10 +438,9 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 	if find.ExcludeDraft {
 		where.And("COALESCE(issue.payload->>'draft', 'false') = 'false'")
 	}
-	// Both approval predicates are matched in SQL rather than over the returned
-	// page: filtering after LIMIT mints a page token for rows that are then
-	// dropped, so a filtered list can answer with an empty page and a live next
-	// page token.
+	// Matched in SQL, not over the returned page: filtering after LIMIT mints a
+	// page token for rows that are then dropped, so the list answers with an
+	// empty page and a live next page token.
 	if v := find.ApprovalStatus; v != nil {
 		where.And("("+approvalStatusExpr+") = ?", *v)
 	}
@@ -672,8 +663,12 @@ func getTSQuery(text string) string {
 	if len(parts) == 0 {
 		parts = seg.CutTrim(text)
 	}
+	// Text the segmenter reduces to nothing is punctuation only. It has no
+	// lexeme to search for, and interpolating it raw builds an invalid tsquery
+	// that fails the whole query at cast time — `(`, `:` and `'` are tsquery
+	// syntax. Callers fall back to ILIKE when this is empty.
 	if len(parts) == 0 {
-		return fmt.Sprintf("%s:*", text)
+		return ""
 	}
 	var tsQuery strings.Builder
 	for i, part := range parts {

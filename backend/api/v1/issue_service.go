@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"time"
 
@@ -70,10 +71,9 @@ func (s *IssueService) GetIssue(ctx context.Context, req *connect.Request[v1pb.G
 	return connect.NewResponse(issueV1), nil
 }
 
-// getIssueFind translates the CEL filter into a store query. The second return
-// value is the user named by `current_approver`, if any: which roles that user
-// holds depends on the projects being searched, which the caller resolves after
-// this, so it is passed back for setNextApproverRoles rather than applied here.
+// getIssueFind translates the CEL filter into a store query. It returns the user
+// named by `current_approver`, if any: their roles depend on the projects being
+// searched, which the caller resolves afterwards via setNextApproverRoles.
 func (s *IssueService) getIssueFind(
 	ctx context.Context,
 	filter string,
@@ -230,8 +230,7 @@ func (s *IssueService) getIssueFind(
 }
 
 // setNextApproverRoles resolves the roles the approver holds in each project
-// being searched, so that `current_approver` is matched in SQL. A user with no
-// role in any of them yields an empty set, which matches no issue.
+// being searched, so `current_approver` can be matched in SQL.
 func (s *IssueService) setNextApproverRoles(ctx context.Context, issueFind *store.FindIssueMessage, approver *store.UserMessage) error {
 	if approver == nil {
 		return nil
@@ -1150,6 +1149,9 @@ func (s *IssueService) BatchUpdateIssuesStatus(ctx context.Context, req *connect
 
 		issueUIDs = append(issueUIDs, issueUID)
 	}
+	// One comment per issue, and the store rejects a batch whose ids do not all
+	// resolve — so naming the same issue twice must collapse, not fail.
+	issueUIDs = slices.Compact(slices.Sorted(slices.Values(issueUIDs)))
 
 	// Get project early for webhooks.
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{Workspace: common.GetWorkspaceIDFromContext(ctx), ResourceID: &projectID})
