@@ -77,15 +77,27 @@ func (EmailVerificationCodePurpose) EnumDescriptor() ([]byte, []int) {
 	return file_store_auth_proto_rawDescGZIP(), []int{0}
 }
 
-// LoginAttemptKind names which credential's attempt limit a login_attempt row
-// tracks. Stored as the enum name string in login_attempt.kind column.
+// LoginAttemptKind names what a login_attempt row counts. Stored as the enum
+// name string in login_attempt.kind column. The kind also says what the
+// identity column holds: the three credential kinds below count failed guesses
+// against a person, share one attempt limit, and are cleared by a successful
+// verification.
 type LoginAttemptKind int32
 
 const (
 	LoginAttemptKind_LOGIN_ATTEMPT_KIND_UNSPECIFIED LoginAttemptKind = 0
 	LoginAttemptKind_PASSWORD                       LoginAttemptKind = 1
-	LoginAttemptKind_EMAIL_CODE                     LoginAttemptKind = 2
-	LoginAttemptKind_MFA                            LoginAttemptKind = 3
+	// Submitting a 6-digit code. Sign-in, password reset and re-authentication
+	// share one bucket per email, so a guess anywhere counts everywhere.
+	LoginAttemptKind_EMAIL_CODE LoginAttemptKind = 2
+	LoginAttemptKind_MFA        LoginAttemptKind = 3
+	// Sending those codes rather than guessing them — the opposite direction, and
+	// the reason it is a separate kind. Its identity is a mail path (a recipient
+	// domain, or the deployment) and not a person; it carries its own volume
+	// limit rather than the shared attempt limit; and nothing clears it, because
+	// a delivered email is the thing being counted and there is no success to
+	// forgive. Exhausting it throttles that mail path and locks no account.
+	LoginAttemptKind_EMAIL_CODE_SEND LoginAttemptKind = 4
 )
 
 // Enum value maps for LoginAttemptKind.
@@ -95,12 +107,14 @@ var (
 		1: "PASSWORD",
 		2: "EMAIL_CODE",
 		3: "MFA",
+		4: "EMAIL_CODE_SEND",
 	}
 	LoginAttemptKind_value = map[string]int32{
 		"LOGIN_ATTEMPT_KIND_UNSPECIFIED": 0,
 		"PASSWORD":                       1,
 		"EMAIL_CODE":                     2,
 		"MFA":                            3,
+		"EMAIL_CODE_SEND":                4,
 	}
 )
 
@@ -141,13 +155,14 @@ const file_store_auth_proto_rawDesc = "" +
 	"\x05LOGIN\x10\x01\x12\x12\n" +
 	"\x0ePASSWORD_RESET\x10\x02\x12\n" +
 	"\n" +
-	"\x06REAUTH\x10\x03*]\n" +
+	"\x06REAUTH\x10\x03*r\n" +
 	"\x10LoginAttemptKind\x12\"\n" +
 	"\x1eLOGIN_ATTEMPT_KIND_UNSPECIFIED\x10\x00\x12\f\n" +
 	"\bPASSWORD\x10\x01\x12\x0e\n" +
 	"\n" +
 	"EMAIL_CODE\x10\x02\x12\a\n" +
-	"\x03MFA\x10\x03B\x8c\x01\n" +
+	"\x03MFA\x10\x03\x12\x13\n" +
+	"\x0fEMAIL_CODE_SEND\x10\x04B\x8c\x01\n" +
 	"\x12com.bytebase.storeB\tAuthProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
 var (

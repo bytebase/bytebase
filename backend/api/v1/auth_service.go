@@ -294,15 +294,6 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		return nil, err
 	}
 
-	// Check if principal already exists.
-	existingUser, err := s.store.GetUserByEmail(ctx, email)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user by email"))
-	}
-	if existingUser != nil {
-		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("email %s is already registered", request.Email))
-	}
-
 	// Resolve the target workspace (read-only) so we can check restrictions BEFORE
 	// any write — otherwise a rejected signup would leave an orphan user/workspace behind.
 	targetWorkspaceID, targetIsMember, err := s.resolveWorkspaceIDByEmail(ctx, email, "")
@@ -329,6 +320,18 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 	}
 	if err := validatePasswordWithRestriction(request.Password, convertToStorePasswordRestriction(restriction.PasswordRestriction)); err != nil {
 		return nil, err
+	}
+
+	// Existence is checked only once the workspace would accept a signup at all.
+	// Answering AlreadyExists ahead of the gates makes a workspace that refuses
+	// every signup — every SaaS workspace, since the override above always sets
+	// DisallowSignup — an account-existence oracle for anonymous callers.
+	existingUser, err := s.store.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user by email"))
+	}
+	if existingUser != nil {
+		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("email %s is already registered", request.Email))
 	}
 
 	workspaceID, err := s.provisionResolvedWorkspace(ctx, email, targetWorkspaceID, targetIsMember)

@@ -10,7 +10,7 @@ noted. Fixed findings are removed and listed at the end.
 
 | | Problem | Severity |
 |---|---|---|
-| T12 | Anonymous callers can enumerate emails, relay mail, and read your LDAP config | MED |
+| T12 | Anonymous callers can read your LDAP config | MED |
 | T18c | Three smaller ones: broken filter, unpaginated list, half-finished delete | MED |
 
 ---
@@ -66,23 +66,31 @@ irreversibly purged, and the error names only the one that failed — not the on
 
 ### T12 · The unauthenticated surface — MED
 
-12 RPCs allow calls with no credentials. Four are worth attention:
+12 RPCs allow calls with no credentials. Two are still open:
 
-- **Email enumeration.** `Signup` answers "already registered" *before* it checks whether signup is
-  even allowed, so anyone can test whether an email has an account — on a workspace with signup
-  disabled. `auth_service.go:298-304` (existence), `:327-329` (restriction)
-- **Open mail relay.** `SendEmailLoginCode` will send to any address over the customer's SMTP.
-  [#21177](https://github.com/bytebase/bytebase/pull/21177) added a domain check, but it only
-  applies if the domain-restriction license feature is on, enforcement is enabled, *and* a domain
-  list is set — no default deployment qualifies. The 60s cooldown is per recipient, so volume scales
-  with the address list. `auth_service_email_code.go:137-179`, `user_service.go:1443-1473`
-- **LDAP config disclosure.** `ListIdentityProviders` hands any caller the SSO config for any
-  workspace ID they guess: LDAP host, port, bind DN, base DN, user filter, plus OAuth/OIDC endpoints
-  and client IDs. Passwords and secrets are redacted. `idp_service.go:55-85`, `:461-541`
+- **LDAP config disclosure.** `ListIdentityProviders` hands any caller the SSO config for the
+  workspace they name: LDAP host, port, bind DN, base DN, user filter, plus OAuth/OIDC endpoints
+  and client IDs. Passwords and secrets are redacted. No guessing is needed self-hosted —
+  `GetWorkspace("workspaces/-")` is anonymous too and returns the singleton workspace ID, so the
+  disclosure is a two-call chain; and self-hosted is where LDAP is configured.
+  `idp_service.go:55-85`, `:461-541`, `workspace_service.go:64-74`
+
+  The endpoint serves three journeys with three different needs — the anonymous login page (which
+  needs the authorization-request fields and no LDAP config at all), the SSO admin console (which
+  needs everything), and General settings (which needs `count > 0` to guard the
+  disallow-password-signin toggle, and which every Workspace Member can reach). Redacting by caller
+  closes it, but the durable fix is to give the login page its own message on `AuthenticationInfo`,
+  following [#21184](https://github.com/bytebase/bytebase/pull/21184), so a new admin-side config
+  field cannot become public by default. Tracked in
+  [BYT-10156](https://linear.app/bytebase/issue/BYT-10156/listidentityproviders-leaks-ldap-config-to-anonymous-callers-t12).
 - **Workspace-existence oracle.** `GetAuthenticationRestriction` (which replaced the actuator leak,
   now fixed) is anonymous by design and doesn't need membership. Naming a real workspace returns
-  200, a fake one returns `InvalidArgument`. The pre-login page genuinely needs most of these
-  fields; the oracle is the part worth closing. `auth_service.go:107-152`
+  200, a fake one returns `InvalidArgument`. Left open on purpose: workspace IDs are
+  `RandomString(16)` with no rename path, so this confirms an ID already held rather than
+  enumerating one, and the pre-login page needs the workspace's real settings — so returning
+  defaults for an unknown workspace trades a genuine login-page error message for an oracle that
+  still distinguishes any workspace with non-default auth settings. `auth_service.go:107-152`,
+  `auth_service.go:437` (ID generation)
 
 ### T18c-iii · `CheckRelease` error codes leak existence — MED · ✅ read myself
 
@@ -139,6 +147,7 @@ constraints.
 | T7 | [#21102](https://github.com/bytebase/bytebase/pull/21102) — every `CheckRelease` target validated against the parent project before any schema read (its error codes still leak existence — T18c-iii) |
 | T8 `CreateWorksheet` | [#21169](https://github.com/bytebase/bytebase/pull/21169) — `CreateSavedQuery` is now IAM-enforced; Workspace Member holds no saved-query permission, and new queries start creator-private |
 | T12 `GetActuatorInfo` | [#21184](https://github.com/bytebase/bytebase/pull/21184) — anonymous access and the `name` field removed; workspace now comes from the token (the narrower surface that replaced it is T12) |
+| T12 email enumeration, mail relay | Two of the four anonymous surfaces; LDAP disclosure and the existence oracle stay open and are what T12 is now. **`Signup`** checks the restriction before it checks existence, so a workspace that refuses every signup — every SaaS workspace, since the override always sets `DisallowSignup` — no longer answers `AlreadyExists` for registered addresses and `PermissionDenied` for the rest. The duplicate is still reported where signup is allowed; only the order moved, and denied duplicates now reach the deferred `SetAuditWorkspaceID` they used to return ahead of. **`SendEmailLoginCode`** stops mailing codes that could not be redeemed — silently, since the response must not separate addresses that have accounts from those that do not — and budgets the workspaceless send, the one sender that reaches the deployment's own `EMAIL_CONFIG` identity with no admin opt-in and no domain restriction: 20/hour per recipient domain confines a mail-bomb to its target, 500/hour deployment-wide caps a broad list, both far above real self-service volume. Budget is claimed after the per-recipient cooldown grants, so only mail about to go out spends it — claiming on entry would let repeated requests for one address drain a shared bucket through the cooldown's silent skips. Accepted with it: sustaining either rate delays self-service signup for that bucket until the window passes, the same trade T9's lockout makes. Reuses `login_attempt` under a new `EMAIL_CODE_SEND` kind, whose identity is a mail path and not a person, so no migration and no row here can lock an account |
 | T13 `SearchWorksheets` | [#21160](https://github.com/bytebase/bytebase/pull/21160) + [#21178](https://github.com/bytebase/bytebase/pull/21178) — visibility predicate pushed into SQL before `LIMIT` |
 | T13 issue filters | `approval_status` and `current_approver` are matched in SQL before `LIMIT`, so a filtered page can no longer come back empty under a live page token. The status is a `CASE` over `payload->'approval'` mirroring `computeApprovalStatus`; `current_approver` cannot be resolved in SQL alone (binding conditions and group expansion are evaluated in Go), so the caller passes down the `(project, role)` pairs the named user holds, the same shape as the saved-query `AccessMembers` predicate. Accepted with it: the predicates are not indexable, so a filtered list scans until it has a full page of matches — measured on 50,000 issues across 40 projects, that is ~9 ms against ~14 ms for the same unfiltered query, and ~3.5 ms in the zero-match case, because PostgreSQL drives the join from the small `(project, role)` set, so no expression index is warranted yet. Deliberately unchanged: the filter still ignores rejection and self-approval, so a rejected issue names the holder of the *next* role as its current approver — masked in the default view, and worth its own fix |
 | T18 worksheet write/delete | [#21169](https://github.com/bytebase/bytebase/pull/21169) + [#21181](https://github.com/bytebase/bytebase/pull/21181) — per-verb permissions; SQL Editor Read User can no longer rewrite or delete |

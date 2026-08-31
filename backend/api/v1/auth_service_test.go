@@ -530,3 +530,79 @@ func TestSwitchWorkspaceInternalRefusesMCPCaller(t *testing.T) {
 	webHeaders.Set("Authorization", "Bearer "+webToken)
 	require.NoError(t, s.rejectMCPOriginatedTokenMint(context.Background(), webHeaders, "obtain a workspace token"))
 }
+
+func TestSignupChecksRestrictionBeforeExistence(t *testing.T) {
+	const secret = "test-secret"
+
+	ctx := context.Background()
+	stores := newAuthTestStore(t)
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
+	require.NoError(t, err)
+
+	_, err = stores.CreateUser(ctx, &store.UserMessage{
+		Email:        "taken@example.com",
+		Name:         "Taken",
+		PasswordHash: "unused",
+		Profile:      &storepb.UserProfile{},
+	})
+	require.NoError(t, err)
+
+	signup := func(service *AuthService, email string) error {
+		_, err := service.Signup(ctx, connect.NewRequest(&v1pb.SignupRequest{
+			Email:    email,
+			Title:    "Signup test",
+			Password: "password-long-enough",
+		}))
+		return err
+	}
+
+	// SaaS forces DisallowSignup for every workspace, so the RPC can never
+	// succeed there — and must not answer differently for an address that has
+	// an account than for one that does not.
+	t.Run("denied signup reveals nothing", func(t *testing.T) {
+		service := NewAuthService(stores, secret, licenseService, &config.Profile{SaaS: true}, nil)
+		takenErr := signup(service, "taken@example.com")
+		unknownErr := signup(service, "unknown@example.com")
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(takenErr))
+		require.Equal(t, connect.CodeOf(unknownErr), connect.CodeOf(takenErr))
+		require.Equal(t, unknownErr.Error(), takenErr.Error())
+	})
+
+	// Where signup is allowed the duplicate is still reported: the reorder moved
+	// the check behind the gates, it did not remove it.
+	t.Run("allowed signup still reports a duplicate", func(t *testing.T) {
+		service := NewAuthService(stores, secret, licenseService, &config.Profile{}, nil)
+		require.Equal(t, connect.CodeAlreadyExists, connect.CodeOf(signup(service, "taken@example.com")))
+	})
+}
+
+func TestSendEmailLoginCodeBudgetsWorkspacelessSends(t *testing.T) {
+	const secret = "test-secret"
+
+	ctx := context.Background()
+	stores := newAuthTestStore(t)
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
+	require.NoError(t, err)
+
+	// Port 1 refuses immediately, so every send fails after its budget is spent
+	// — the shape a real campaign hits once the SMTP host starts rejecting.
+	t.Setenv("EMAIL_CONFIG", `{"from":"bytebase@example.com","type":"SMTP","smtp":{"host":"127.0.0.1","port":1,"encryption":"ENCRYPTION_NONE","authentication":"AUTHENTICATION_NONE"}}`)
+	service := NewAuthService(stores, secret, licenseService, &config.Profile{SaaS: true}, nil)
+
+	send := func(email string) error {
+		_, err := service.SendEmailLoginCode(ctx, connect.NewRequest(&v1pb.SendEmailLoginCodeRequest{Email: email}))
+		return err
+	}
+
+	// Distinct addresses so the per-recipient cooldown never masks the budget:
+	// this is the attack the cooldown does not bound.
+	for i := range emailCodeSendPerDomain {
+		require.Equal(t, connect.CodeInternal, connect.CodeOf(send(fmt.Sprintf("victim%d@target.example", i))),
+			"send %d is within budget and must fail only on delivery", i)
+	}
+	require.Equal(t, connect.CodeResourceExhausted, connect.CodeOf(send("victim-over@target.example")))
+
+	// The bucket is the recipient domain, so an exhausted campaign does not
+	// stop sign-in for anyone else.
+	require.Equal(t, connect.CodeInternal, connect.CodeOf(send("someone@other.example")))
+}
