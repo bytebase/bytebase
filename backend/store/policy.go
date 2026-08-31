@@ -53,9 +53,10 @@ type SetIamPolicyMessage struct {
 	ValidateReplaced func(previous *storepb.IamPolicy) error
 }
 
-// SetIamPolicy replaces an IAM policy under compare-and-swap. The policy row is
-// locked and its etag compared inside the write transaction, so a
-// full-replacement write can never silently undo a concurrent revocation.
+// SetIamPolicy replaces an IAM policy under compare-and-swap: the row is read
+// FOR UPDATE, its etag compared, and the replacement written, all in one
+// transaction -- so a full-replacement write can never silently undo a
+// concurrent revocation.
 // Comparing against a read taken earlier cannot promise that: two requests
 // reading the same policy would both pass, and the later write would win --
 // which is the defect this exists to close, one layer up.
@@ -70,9 +71,6 @@ func (s *Store) SetIamPolicy(ctx context.Context, set *SetIamPolicyMessage) (*Ia
 	}
 	defer tx.Rollback()
 
-	if err := acquireIamPolicyLock(ctx, tx, set.Workspace, set.ResourceType, set.Resource); err != nil {
-		return nil, nil, err
-	}
 	previous, err := lockIamPolicyImpl(ctx, tx, set.Workspace, set.ResourceType, set.Resource)
 	if err != nil {
 		return nil, nil, err
@@ -115,9 +113,6 @@ func (s *Store) PatchIamPolicy(ctx context.Context, workspace string, resourceTy
 	}
 	defer tx.Rollback()
 
-	if err := acquireIamPolicyLock(ctx, tx, workspace, resourceType, resource); err != nil {
-		return nil, err
-	}
 	current, err := lockIamPolicyImpl(ctx, tx, workspace, resourceType, resource)
 	if err != nil {
 		return nil, err
@@ -138,17 +133,16 @@ func (s *Store) PatchIamPolicy(ctx context.Context, workspace string, resourceTy
 	return &IamPolicyMessage{Policy: current.Policy, Etag: generateEtag(policy.UpdatedAt)}, nil
 }
 
-// acquireIamPolicyLock serializes writers of one resource's IAM policy before
-// any row lock, so two first writes to a resource that has no policy row yet --
-// which have no row to lock -- still order against each other.
-func acquireIamPolicyLock(ctx context.Context, tx *sql.Tx, workspace string, resourceType storepb.Policy_Resource, resource string) error {
-	return AcquireAdvisoryXactLockWithStringKey(ctx, tx, AdvisoryLockKeyIamPolicy, fmt.Sprintf("%s/%s/%s", workspace, resourceType, resource))
-}
-
 // lockIamPolicyImpl locks one IAM policy row and returns the policy it holds,
-// reading past the policy cache so the etag reflects the row being replaced. A
-// resource whose policy was never written has no row, and reads as the empty
-// policy.
+// reading past the policy cache so the etag reflects the row being replaced.
+// Holding that lock until the write commits is what makes the compare a
+// compare-and-swap: a second writer's SELECT waits here, and then reads the etag
+// the first one just wrote.
+//
+// A resource whose policy was never written has no row, so it reads as the empty
+// policy and two first writes are not ordered against each other. Nothing is
+// lost with them: an absent policy has no etag to hand out, so a first write is
+// unconditional either way.
 func lockIamPolicyImpl(ctx context.Context, tx *sql.Tx, workspace string, resourceType storepb.Policy_Resource, resource string) (*IamPolicyMessage, error) {
 	var payload string
 	var updatedAt time.Time

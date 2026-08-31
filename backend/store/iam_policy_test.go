@@ -3,6 +3,7 @@ package store_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
@@ -240,7 +241,8 @@ func TestSetIamPolicyIsScopedToItsWorkspace(t *testing.T) {
 }
 
 // A resource whose IAM policy was never written has no row to lock, so the
-// first write creates one rather than failing the compare.
+// first write creates one rather than failing the compare. It is unconditional
+// by construction: an absent policy hands out no etag to present.
 func TestSetIamPolicyCreatesTheFirstPolicy(t *testing.T) {
 	fixture := newProjectDeletionLockOrderFixture(t, "")
 	ctx, s := fixture.ctx, fixture.store
@@ -380,10 +382,11 @@ func TestPatchIamPolicyRollsBackAFailedMutation(t *testing.T) {
 		projectPolicyMembers(ctx, t, s, "default", "roles/projectDeveloper"))
 }
 
-// A write must not publish what it just wrote into the cache. The advisory lock
-// ends with the commit, so two writers can commit in one order and reach the
-// cache in the other, and the loser's snapshot would then sit in a cache with no
-// expiry -- which is what permission checks read. Observed here without racing
+// A write must not publish what it just wrote into the cache. The row lock ends
+// with the commit and the cache write happens after it, so two writers can
+// commit in one order and reach the cache in the other, and the loser's snapshot
+// would then sit in a cache with no expiry -- which is what permission checks
+// read. Observed here without racing
 // goroutines: after a write, the row is changed out of band, and a read that
 // still saw the written value would prove the write had published it.
 func TestSetIamPolicyDoesNotPublishItsOwnWrite(t *testing.T) {
@@ -419,4 +422,73 @@ func TestSetIamPolicyDoesNotPublishItsOwnWrite(t *testing.T) {
 		projectPolicyMembers(ctx, t, cached, "default", "roles/projectReleaser"),
 		"the write must leave nothing cached, so this read reaches the row")
 	require.Nil(t, projectPolicyMembers(ctx, t, cached, "default", "roles/projectOwner"))
+}
+
+// SELECT ... FOR UPDATE is the whole of the serialization now -- there is no
+// advisory lock beside it. A second writer has to wait on the first one's row
+// lock rather than read alongside it, so that when it does read, it reads the
+// etag the first one wrote and its own compare fails. Two admins editing from
+// one read therefore land one change, not two.
+func TestSetIamPolicySerializesWritersOnTheRowLock(t *testing.T) {
+	// updated_at is pinned in the past so the etag read here cannot coincide
+	// with the winner's, which is only millisecond-resolution.
+	const seedSQL = `
+		INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent, updated_at)
+			VALUES ('default', 'PROJECT', 'projects/project-a', 'IAM', '` + ownerAndDeveloperPolicy + `', FALSE, now() - interval '1 hour');
+	`
+	fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
+	ctx, s := fixture.ctx, fixture.store
+
+	current, err := s.GetProjectIamPolicy(ctx, "default", "project-a")
+	require.NoError(t, err)
+
+	// Both writers present the same etag. ValidateReplaced runs after the SELECT
+	// and before the write, so it is where the first one holds its lock open.
+	write := func(role string, insideTransaction func()) error {
+		_, _, err := s.SetIamPolicy(ctx, &store.SetIamPolicyMessage{
+			Workspace:    "default",
+			ResourceType: storepb.Policy_PROJECT,
+			Resource:     common.FormatProject("project-a"),
+			Policy:       iamPolicy(t, map[string][]string{role: {"users/owner@example.com"}}),
+			ExpectedEtag: current.Etag,
+			ValidateReplaced: func(*storepb.IamPolicy) error {
+				if insideTransaction != nil {
+					insideTransaction()
+				}
+				return nil
+			},
+		})
+		return err
+	}
+
+	holding, release := make(chan struct{}), make(chan struct{})
+	first := make(chan error, 1)
+	go func() {
+		first <- write("roles/projectReleaser", func() {
+			close(holding)
+			select {
+			case <-release:
+			case <-ctx.Done():
+			}
+		})
+	}()
+	<-holding
+
+	second := make(chan error, 1)
+	go func() { second <- write("roles/projectViewer", nil) }()
+	require.Eventually(t, func() bool {
+		var blocked bool
+		err := fixture.db.QueryRowContext(ctx,
+			`SELECT EXISTS (SELECT 1 FROM pg_stat_activity WHERE cardinality(pg_blocking_pids(pid)) > 0)`).Scan(&blocked)
+		return err == nil && blocked
+	}, 10*time.Second, 10*time.Millisecond, "the second writer must wait on the first one's row lock")
+
+	close(release)
+	require.NoError(t, <-first)
+	require.ErrorIs(t, <-second, store.ErrIamPolicyEtagMismatch)
+
+	require.Equal(t, []string{"users/owner@example.com"},
+		projectPolicyMembers(ctx, t, s, "default", "roles/projectReleaser"))
+	require.Nil(t, projectPolicyMembers(ctx, t, s, "default", "roles/projectViewer"),
+		"the write that lost the compare must not have landed")
 }
