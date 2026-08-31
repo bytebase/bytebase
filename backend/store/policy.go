@@ -98,7 +98,7 @@ func (s *Store) SetIamPolicy(ctx context.Context, set *SetIamPolicyMessage) (*Ia
 	if err := tx.Commit(); err != nil {
 		return nil, nil, errors.Wrap(err, "failed to commit transaction")
 	}
-	s.cacheIamPolicyWrite(policy)
+	s.evictIamPolicyCache(set.Workspace, set.ResourceType, set.Resource)
 
 	return previous, &IamPolicyMessage{Policy: set.Policy, Etag: generateEtag(policy.UpdatedAt)}, nil
 }
@@ -133,7 +133,7 @@ func (s *Store) PatchIamPolicy(ctx context.Context, workspace string, resourceTy
 	if err := tx.Commit(); err != nil {
 		return nil, errors.Wrap(err, "failed to commit transaction")
 	}
-	s.cacheIamPolicyWrite(policy)
+	s.evictIamPolicyCache(workspace, resourceType, resource)
 
 	return &IamPolicyMessage{Policy: current.Policy, Etag: generateEtag(policy.UpdatedAt)}, nil
 }
@@ -188,14 +188,15 @@ func writeIamPolicyImpl(ctx context.Context, tx *sql.Tx, workspace string, resou
 	})
 }
 
+// evictIamPolicyCache drops this process's cached copies of one IAM policy. A
+// write evicts rather than publishing what it just wrote: the advisory lock ends
+// with the commit, so two writers can commit in one order and reach the cache in
+// the other, leaving the older policy cached with no expiry -- and permission
+// checks read this cache. Eviction is safe under every interleaving, because it
+// never installs a value; the next read repopulates it from the row.
 func (s *Store) evictIamPolicyCache(workspace string, resourceType storepb.Policy_Resource, resource string) {
 	s.policyCache.Remove(getPolicyCacheKey(workspace, resourceType, resource, storepb.Policy_IAM))
 	s.iamPolicyCache.Remove(getIamPolicyCacheKey(workspace, resourceType, resource))
-}
-
-func (s *Store) cacheIamPolicyWrite(policy *PolicyMessage) {
-	s.policyCache.Add(getPolicyCacheKey(policy.Workspace, policy.ResourceType, policy.Resource, policy.Type), policy)
-	s.iamPolicyCache.Remove(getIamPolicyCacheKey(policy.Workspace, policy.ResourceType, policy.Resource))
 }
 
 func (s *Store) GetWorkspaceIamPolicy(ctx context.Context, workspaceID string) (*IamPolicyMessage, error) {

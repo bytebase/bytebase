@@ -379,3 +379,44 @@ func TestPatchIamPolicyRollsBackAFailedMutation(t *testing.T) {
 	require.Equal(t, []string{"users/dev@example.com"},
 		projectPolicyMembers(ctx, t, s, "default", "roles/projectDeveloper"))
 }
+
+// A write must not publish what it just wrote into the cache. The advisory lock
+// ends with the commit, so two writers can commit in one order and reach the
+// cache in the other, and the loser's snapshot would then sit in a cache with no
+// expiry -- which is what permission checks read. Observed here without racing
+// goroutines: after a write, the row is changed out of band, and a read that
+// still saw the written value would prove the write had published it.
+func TestSetIamPolicyDoesNotPublishItsOwnWrite(t *testing.T) {
+	const seedSQL = `
+		INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent)
+			VALUES ('default', 'PROJECT', 'projects/project-a', 'IAM', '` + ownerAndDeveloperPolicy + `', FALSE);
+	`
+	fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
+	ctx := fixture.ctx
+
+	cached, err := store.New(ctx, fixture.pgURL, true)
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, cached.Close()) })
+
+	_, _, err = cached.SetIamPolicy(ctx, &store.SetIamPolicyMessage{
+		Workspace:    "default",
+		ResourceType: storepb.Policy_PROJECT,
+		Resource:     common.FormatProject("project-a"),
+		Policy:       iamPolicy(t, map[string][]string{"roles/projectOwner": {"users/owner@example.com"}}),
+	})
+	require.NoError(t, err)
+
+	// Stand in for the writer that committed second: the row moves on without
+	// this process's cache being told.
+	_, err = fixture.db.ExecContext(ctx, `
+		UPDATE policy SET payload = $1, updated_at = now()
+		WHERE workspace = 'default' AND resource_type = 'PROJECT'
+		  AND resource = 'projects/project-a' AND type = 'IAM'`,
+		`{"bindings":[{"role":"roles/projectReleaser","members":["users/releaser@example.com"]}]}`)
+	require.NoError(t, err)
+
+	require.Equal(t, []string{"users/releaser@example.com"},
+		projectPolicyMembers(ctx, t, cached, "default", "roles/projectReleaser"),
+		"the write must leave nothing cached, so this read reaches the row")
+	require.Nil(t, projectPolicyMembers(ctx, t, cached, "default", "roles/projectOwner"))
+}
