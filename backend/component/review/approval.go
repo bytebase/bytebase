@@ -144,7 +144,7 @@ func (a *ApprovalEvaluator) ApplyApprovalTemplate(ctx context.Context, input App
 	}
 
 	var lockedIssue *store.IssueMessage
-	err = w.store.RunActiveProjectAndInstancesLifecycleWrite(ctx, input.ProjectID, nil, func(tx *sql.Tx) error {
+	err = w.store.RunExistingProjectLifecycleWrite(ctx, input.ProjectID, func(tx *sql.Tx) error {
 		if observedPlan != nil {
 			if err := store.AcquirePlanIssueRolloutAdvisoryLock(ctx, tx, input.ProjectID, observedPlan.UID); err != nil {
 				return workflowWrap(ErrorInternal, err, "failed to acquire Plan review lock for approval finding")

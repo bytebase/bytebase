@@ -116,6 +116,12 @@ func (s *Store) RunActiveProjectAndInstancesLifecycleWrite(ctx context.Context, 
 	return s.runLifecycleWrite(ctx, scope, fn)
 }
 
+// RunExistingProjectLifecycleWrite runs a caller-owned transaction that may
+// intentionally continue work for an archived project before it is purged.
+func (s *Store) RunExistingProjectLifecycleWrite(ctx context.Context, projectID string, fn func(*sql.Tx) error) error {
+	return s.runProjectLifecycleWrite(ctx, projectID, lifecycleExisting, fn)
+}
+
 func (s *Store) runProjectLifecycleWrite(ctx context.Context, projectID string, requirement lifecycleRequirement, fn func(*sql.Tx) error) error {
 	scope := lifecycleScope{}
 	scope.addProject(projectID, requirement)

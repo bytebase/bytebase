@@ -36,6 +36,31 @@ func TestApplyApprovalTemplateFailsWhenProjectLifecycleGateHeld(t *testing.T) {
 	require.False(t, current.Payload.GetApproval().GetApprovalFindingDone())
 }
 
+func TestApplyApprovalTemplateContinuesForArchivedProject(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	stores := setupWorkflowStore(ctx, t)
+	plan, issue := newReviewLifecycleFixture(ctx, t, stores)
+	deleted := true
+	require.NoError(t, stores.UpdateProjects(ctx, &store.UpdateProjectMessage{
+		Workspace: "default", ResourceID: issue.ProjectID, Delete: &deleted,
+	}))
+
+	evaluator := &ApprovalEvaluator{
+		workflow: NewWorkflow(stores),
+		evaluateApproval: func(_ context.Context, issue *store.IssueMessage, _ *store.ProjectMessage, _ *storepb.WorkspaceApprovalSetting) error {
+			issue.Payload.Approval = &storepb.IssuePayloadApproval{ApprovalFindingDone: true, ApprovalInputVersion: plan.Config.GetApprovalInputVersion()}
+			return nil
+		},
+	}
+	result, err := evaluator.ApplyApprovalTemplate(ctx, ApplyApprovalTemplateInput{
+		Workspace: "default", ProjectID: issue.ProjectID, IssueUID: issue.UID,
+	})
+	require.NoError(t, err)
+	require.True(t, result.Applied)
+	require.True(t, result.Issue.Payload.GetApproval().GetApprovalFindingDone())
+}
+
 func TestCreateDraftIssueFailsWhenProjectLifecycleGateHeld(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
