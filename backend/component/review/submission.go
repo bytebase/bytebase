@@ -123,6 +123,9 @@ func (w *Workflow) CreateDraftIssue(ctx context.Context, input CreateDraftIssueI
 		return nil
 	})
 	if err != nil {
+		if common.ErrorCode(err) == common.NotFound {
+			return nil, workflowError(ErrorNotFound, "project %s not found", issue.ProjectID)
+		}
 		return nil, err
 	}
 	return result, nil
