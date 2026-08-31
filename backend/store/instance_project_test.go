@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/migrator"
@@ -165,6 +166,24 @@ func TestCreateProjectInstanceRejectsDefaultDeletedAndMissingProject(t *testing.
 			require.Error(t, err)
 		})
 	}
+}
+
+func TestCreateProjectInstanceRejectsProjectFromAnotherWorkspace(t *testing.T) {
+	ctx, db, s := newInstanceProjectFixture(t)
+	_, err := db.ExecContext(ctx, "INSERT INTO workspace (resource_id) VALUES ('other')")
+	require.NoError(t, err)
+	projectID := "project-a"
+	_, err = s.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: "cross-workspace-instance",
+		Workspace:  "other",
+		ProjectID:  &projectID,
+		Metadata:   testInstanceMetadata(),
+	})
+	require.Equal(t, common.NotFound, common.ErrorCode(err))
+
+	var count int
+	require.NoError(t, db.QueryRowContext(ctx, "SELECT COUNT(*) FROM instance WHERE resource_id = 'cross-workspace-instance'").Scan(&count))
+	require.Zero(t, count)
 }
 
 func TestDeleteProjectDeletesProjectInstancesAndKeepsWorkspaceInstanceDatabases(t *testing.T) {

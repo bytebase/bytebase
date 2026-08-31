@@ -233,6 +233,19 @@ func (s *Store) CreateInstance(ctx context.Context, instanceCreate *InstanceMess
 	}
 
 	err = s.runLifecycleWrite(ctx, scope, func(tx *sql.Tx) error {
+		if instanceCreate.ProjectID != nil {
+			var exists bool
+			if err := tx.QueryRowContext(ctx, `
+				SELECT TRUE
+				FROM project
+				WHERE resource_id = $1 AND workspace = $2
+			`, *instanceCreate.ProjectID, instanceCreate.Workspace).Scan(&exists); err != nil {
+				if errors.Is(err, sql.ErrNoRows) {
+					return common.Errorf(common.NotFound, "project %s not found in workspace %s", *instanceCreate.ProjectID, instanceCreate.Workspace)
+				}
+				return errors.Wrapf(err, "failed to validate project %s workspace", *instanceCreate.ProjectID)
+			}
+		}
 		q := qb.Q().Space(`
 			INSERT INTO instance (
 				resource_id,
