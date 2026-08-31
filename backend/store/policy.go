@@ -32,6 +32,173 @@ func generateEtag(t time.Time) string {
 	return fmt.Sprintf("%d", t.UnixMilli())
 }
 
+// ErrIamPolicyEtagMismatch reports that the IAM policy moved under a
+// compare-and-swap write; the caller refetches and reapplies.
+var ErrIamPolicyEtagMismatch = errors.New("iam policy etag mismatch")
+
+// SetIamPolicyMessage replaces the IAM policy of one resource.
+type SetIamPolicyMessage struct {
+	Workspace    string
+	ResourceType storepb.Policy_Resource
+	Resource     string
+	Policy       *storepb.IamPolicy
+	// ExpectedEtag is the etag the caller read the policy at. Empty skips the
+	// compare, which is all a caller that never read the policy can offer.
+	ExpectedEtag string
+	// ValidateReplaced, when set, runs inside the write transaction against the
+	// policy being replaced. A check that compares the new policy to the old one
+	// belongs here rather than in the caller, where reading the old one and
+	// writing are two steps another request can land between. Returning an error
+	// aborts the write, and the error reaches the caller unwrapped.
+	ValidateReplaced func(previous *storepb.IamPolicy) error
+}
+
+// SetIamPolicy replaces an IAM policy under compare-and-swap. The policy row is
+// locked and its etag compared inside the write transaction, so a
+// full-replacement write can never silently undo a concurrent revocation.
+// Comparing against a read taken earlier cannot promise that: two requests
+// reading the same policy would both pass, and the later write would win --
+// which is the defect this exists to close, one layer up.
+//
+// Returns the policy the write replaced, so the caller reports the delta it
+// actually applied rather than a snapshot that may have moved, and
+// ErrIamPolicyEtagMismatch when the caller's etag is stale.
+func (s *Store) SetIamPolicy(ctx context.Context, set *SetIamPolicyMessage) (*IamPolicyMessage, *IamPolicyMessage, error) {
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	if err := acquireIamPolicyLock(ctx, tx, set.Workspace, set.ResourceType, set.Resource); err != nil {
+		return nil, nil, err
+	}
+	previous, err := lockIamPolicyImpl(ctx, tx, set.Workspace, set.ResourceType, set.Resource)
+	if err != nil {
+		return nil, nil, err
+	}
+	if set.ExpectedEtag != "" && set.ExpectedEtag != previous.Etag {
+		// The locked row just disagreed with what this process has cached, which
+		// only an out-of-band writer can cause -- the recovery CLI opens its own
+		// store against the same database. Drop it so the refetch the caller
+		// makes next is not served the etag it already lost with.
+		s.evictIamPolicyCache(set.Workspace, set.ResourceType, set.Resource)
+		return nil, nil, ErrIamPolicyEtagMismatch
+	}
+	if set.ValidateReplaced != nil {
+		if err := set.ValidateReplaced(previous.Policy); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	policy, err := writeIamPolicyImpl(ctx, tx, set.Workspace, set.ResourceType, set.Resource, set.Policy)
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, nil, errors.Wrap(err, "failed to commit transaction")
+	}
+	s.evictIamPolicyCache(set.Workspace, set.ResourceType, set.Resource)
+
+	return previous, &IamPolicyMessage{Policy: set.Policy, Etag: generateEtag(policy.UpdatedAt)}, nil
+}
+
+// PatchIamPolicy applies mutate to one resource's IAM policy inside the locked
+// transaction, so a merge neither loses nor is lost by a concurrent
+// full-replacement write. mutate sees the policy as stored, not a snapshot read
+// before the write began, which is the only thing a caller holding no etag can
+// be given.
+func (s *Store) PatchIamPolicy(ctx context.Context, workspace string, resourceType storepb.Policy_Resource, resource string, mutate func(*storepb.IamPolicy) error) (*IamPolicyMessage, error) {
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to begin transaction")
+	}
+	defer tx.Rollback()
+
+	if err := acquireIamPolicyLock(ctx, tx, workspace, resourceType, resource); err != nil {
+		return nil, err
+	}
+	current, err := lockIamPolicyImpl(ctx, tx, workspace, resourceType, resource)
+	if err != nil {
+		return nil, err
+	}
+	if err := mutate(current.Policy); err != nil {
+		return nil, err
+	}
+
+	policy, err := writeIamPolicyImpl(ctx, tx, workspace, resourceType, resource, current.Policy)
+	if err != nil {
+		return nil, err
+	}
+	if err := tx.Commit(); err != nil {
+		return nil, errors.Wrap(err, "failed to commit transaction")
+	}
+	s.evictIamPolicyCache(workspace, resourceType, resource)
+
+	return &IamPolicyMessage{Policy: current.Policy, Etag: generateEtag(policy.UpdatedAt)}, nil
+}
+
+// acquireIamPolicyLock serializes writers of one resource's IAM policy before
+// any row lock, so two first writes to a resource that has no policy row yet --
+// which have no row to lock -- still order against each other.
+func acquireIamPolicyLock(ctx context.Context, tx *sql.Tx, workspace string, resourceType storepb.Policy_Resource, resource string) error {
+	return AcquireAdvisoryXactLockWithStringKey(ctx, tx, AdvisoryLockKeyIamPolicy, fmt.Sprintf("%s/%s/%s", workspace, resourceType, resource))
+}
+
+// lockIamPolicyImpl locks one IAM policy row and returns the policy it holds,
+// reading past the policy cache so the etag reflects the row being replaced. A
+// resource whose policy was never written has no row, and reads as the empty
+// policy.
+func lockIamPolicyImpl(ctx context.Context, tx *sql.Tx, workspace string, resourceType storepb.Policy_Resource, resource string) (*IamPolicyMessage, error) {
+	var payload string
+	var updatedAt time.Time
+	if err := tx.QueryRowContext(ctx, `
+		SELECT payload, updated_at FROM policy
+		WHERE workspace = $1 AND resource_type = $2 AND resource = $3 AND type = $4
+		FOR UPDATE`,
+		workspace, resourceType.String(), resource, storepb.Policy_IAM.String(),
+	).Scan(&payload, &updatedAt); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return &IamPolicyMessage{Policy: &storepb.IamPolicy{}}, nil
+		}
+		return nil, errors.Wrapf(err, "failed to lock iam policy for %s", resource)
+	}
+
+	p := &storepb.IamPolicy{}
+	if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(payload), p); err != nil {
+		return nil, errors.Wrapf(err, "failed to unmarshal iam policy for %s", resource)
+	}
+	return &IamPolicyMessage{Policy: p, Etag: generateEtag(updatedAt)}, nil
+}
+
+func writeIamPolicyImpl(ctx context.Context, tx *sql.Tx, workspace string, resourceType storepb.Policy_Resource, resource string, policy *storepb.IamPolicy) (*PolicyMessage, error) {
+	payload, err := protojson.Marshal(policy)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to marshal iam policy")
+	}
+	return upsertPolicyImpl(ctx, tx, &PolicyMessage{
+		Workspace:         workspace,
+		ResourceType:      resourceType,
+		Resource:          resource,
+		Type:              storepb.Policy_IAM,
+		Payload:           string(payload),
+		InheritFromParent: false,
+		// Enforce cannot be false while creating a policy.
+		Enforce: true,
+	})
+}
+
+// evictIamPolicyCache drops this process's cached copies of one IAM policy. A
+// write evicts rather than publishing what it just wrote: the advisory lock ends
+// with the commit, so two writers can commit in one order and reach the cache in
+// the other, leaving the older policy cached with no expiry -- and permission
+// checks read this cache. Eviction is safe under every interleaving, because it
+// never installs a value; the next read repopulates it from the row.
+func (s *Store) evictIamPolicyCache(workspace string, resourceType storepb.Policy_Resource, resource string) {
+	s.policyCache.Remove(getPolicyCacheKey(workspace, resourceType, resource, storepb.Policy_IAM))
+	s.iamPolicyCache.Remove(getIamPolicyCacheKey(workspace, resourceType, resource))
+}
+
 func (s *Store) GetWorkspaceIamPolicy(ctx context.Context, workspaceID string) (*IamPolicyMessage, error) {
 	return s.getIamPolicy(ctx, &FindPolicyMessage{
 		Workspace:    workspaceID,
@@ -47,28 +214,33 @@ type PatchIamPolicyMessage struct {
 }
 
 // PatchWorkspaceIamPolicy will set or remove the member for the workspace role.
+// The read-modify-write runs inside the locked transaction, so it neither loses
+// a concurrent SetIamPolicy nor has its own membership lost by one.
 func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPolicyMessage) (*IamPolicyMessage, error) {
-	workspaceResource := common.FormatWorkspace(patch.Workspace)
+	return s.PatchIamPolicy(ctx, patch.Workspace, storepb.Policy_WORKSPACE, common.FormatWorkspace(patch.Workspace),
+		func(policy *storepb.IamPolicy) error {
+			applyIamPolicyMemberPatch(policy, patch.Member, patch.Roles)
+			return nil
+		})
+}
 
-	workspaceIamPolicy, err := s.GetWorkspaceIamPolicy(ctx, patch.Workspace)
-	if err != nil {
-		return nil, err
-	}
-
+// applyIamPolicyMemberPatch sets the member's roles to exactly the listed ones,
+// adding and removing bindings in place.
+func applyIamPolicyMemberPatch(policy *storepb.IamPolicy, member string, roles []string) {
 	roleMap := map[string]bool{}
-	for _, role := range patch.Roles {
+	for _, role := range roles {
 		roleMap[role] = true
 	}
 
-	for _, binding := range workspaceIamPolicy.Policy.Bindings {
-		index := slices.Index(binding.Members, patch.Member)
+	for _, binding := range policy.Bindings {
+		index := slices.Index(binding.Members, member)
 		if !roleMap[binding.Role] {
 			if index >= 0 {
 				binding.Members = slices.Delete(binding.Members, index, index+1)
 			}
 		} else {
 			if index < 0 {
-				binding.Members = append(binding.Members, patch.Member)
+				binding.Members = append(binding.Members, member)
 			}
 		}
 
@@ -76,36 +248,13 @@ func (s *Store) PatchWorkspaceIamPolicy(ctx context.Context, patch *PatchIamPoli
 	}
 
 	for role := range roleMap {
-		workspaceIamPolicy.Policy.Bindings = append(workspaceIamPolicy.Policy.Bindings, &storepb.Binding{
+		policy.Bindings = append(policy.Bindings, &storepb.Binding{
 			Role: role,
 			Members: []string{
-				patch.Member,
+				member,
 			},
 		})
 	}
-
-	policyPayload, err := protojson.Marshal(workspaceIamPolicy.Policy)
-	if err != nil {
-		return nil, err
-	}
-
-	if _, err := s.CreatePolicy(ctx, &PolicyMessage{
-		Workspace:         patch.Workspace,
-		ResourceType:      storepb.Policy_WORKSPACE,
-		Resource:          workspaceResource,
-		Payload:           string(policyPayload),
-		Type:              storepb.Policy_IAM,
-		InheritFromParent: false,
-		// Enforce cannot be false while creating a policy.
-		Enforce: true,
-	}); err != nil {
-		return nil, err
-	}
-
-	// Invalidate caches after mutation.
-	s.iamPolicyCache.Remove(getIamPolicyCacheKey(patch.Workspace, storepb.Policy_WORKSPACE, workspaceResource))
-
-	return s.GetWorkspaceIamPolicy(ctx, patch.Workspace)
 }
 
 func (s *Store) GetProjectIamPolicy(ctx context.Context, workspaceID string, projectID string) (*IamPolicyMessage, error) {

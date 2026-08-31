@@ -13138,9 +13138,10 @@ components:
           type: string
           title: etag
           description: |-
-            The current etag of the policy.
-             If an etag is provided and does not match the current etag of the policy,
-             the call will be blocked and an ABORTED error will be returned.
+            The current etag of the policy, returned by GetIamPolicy and SetIamPolicy.
+             Sending it back on SetIamPolicy makes the write conditional: if the policy
+             changed since the read, the call returns ABORTED. Omitting it applies the
+             write unconditionally, overwriting any concurrent change (AIP-154).
       title: IamPolicy
       additionalProperties: false
       description: IAM policy that binds members to roles.
@@ -19479,7 +19480,9 @@ components:
         etag:
           type: string
           title: etag
-          description: The current etag of the policy.
+          description: |-
+            The current etag of the policy. Equivalent to setting `policy.etag`;
+             supplying both with different values returns INVALID_ARGUMENT.
       title: SetIamPolicyRequest
       additionalProperties: false
       description: Request message for setting an IAM policy.
