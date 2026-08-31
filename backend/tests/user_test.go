@@ -126,6 +126,42 @@ func TestDeleteUser(t *testing.T) {
 // TestSeatCountExcludesDeletedPrincipal verifies a soft-deleted principal stops
 // occupying a seat even though its IAM binding lingers, while a pending member
 // (in IAM, no principal) still counts.
+func TestBatchGetUsers(t *testing.T) {
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	first, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+		User: &v1pb.User{Title: "first", Email: "batch-first@bytebase.com", Password: "1024bytebase"},
+	}))
+	a.NoError(err)
+	second, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+		User: &v1pb.User{Title: "second", Email: "batch-second@bytebase.com", Password: "1024bytebase"},
+	}))
+	a.NoError(err)
+
+	// Newest first, so the store's own created_at ordering would invert this.
+	resp, err := ctl.userServiceClient.BatchGetUsers(ctx, connect.NewRequest(&v1pb.BatchGetUsersRequest{
+		Names: []string{second.Msg.Name, first.Msg.Name},
+	}))
+	a.NoError(err)
+	names := make([]string, 0, len(resp.Msg.Users))
+	for _, user := range resp.Msg.Users {
+		names = append(names, user.Name)
+	}
+	a.Equal([]string{second.Msg.Name, first.Msg.Name}, names, "users come back in request order")
+
+	// One name that does not resolve fails the whole call.
+	_, err = ctl.userServiceClient.BatchGetUsers(ctx, connect.NewRequest(&v1pb.BatchGetUsersRequest{
+		Names: []string{first.Msg.Name, "users/nobody@bytebase.com"},
+	}))
+	a.Error(err)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+}
+
 func TestSeatCountExcludesDeletedPrincipal(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
