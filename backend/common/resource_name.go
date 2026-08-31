@@ -41,6 +41,7 @@ const (
 	ChangelogPrefix            = "changelogs/"
 	IssueNamePrefix            = "issues/"
 	IssueCommentNamePrefix     = "issueComments/"
+	ReviewRunNamePrefix        = "reviewRuns/"
 	PipelineNamePrefix         = "pipelines/"
 	LogNamePrefix              = "logs/"
 	BranchPrefix               = "branches/"
@@ -298,6 +299,20 @@ func GetProjectIDIssueUID(name string) (string, int64, error) {
 // GetProjectIDIssueUIDIssueCommentID returns the project ID, issue UID and issue comment ID from the issue comment name.
 func GetProjectIDIssueUIDIssueCommentID(name string) (string, int64, string, error) {
 	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, IssueNamePrefix, IssueCommentNamePrefix)
+	if err != nil {
+		return "", 0, "", err
+	}
+	issueUID, err := strconv.ParseInt(tokens[1], 10, 64)
+	if err != nil {
+		return "", 0, "", errors.Errorf("invalid issue ID %q", tokens[1])
+	}
+	return tokens[0], issueUID, tokens[2], nil
+}
+
+// GetProjectIDIssueUIDReviewRunID returns the project ID, issue UID, and
+// review run ID from a resource name.
+func GetProjectIDIssueUIDReviewRunID(name string) (string, int64, string, error) {
+	tokens, err := GetNameParentTokens(name, ProjectNamePrefix, IssueNamePrefix, ReviewRunNamePrefix)
 	if err != nil {
 		return "", 0, "", err
 	}
@@ -702,6 +717,12 @@ func FormatRole(role string) string {
 
 func FormatSheet(projectID string, sheetSha256 string) string {
 	return fmt.Sprintf("%s/%s%s", FormatProject(projectID), SheetIDPrefix, sheetSha256)
+}
+
+// FormatReviewRun formats a review run resource name. The review run ID is
+// the reviewer: "rule" or "guideline".
+func FormatReviewRun(projectID string, issueUID int64, reviewRunID string) string {
+	return fmt.Sprintf("%s/%s%s", FormatIssue(projectID, issueUID), ReviewRunNamePrefix, reviewRunID)
 }
 
 func FormatIssue(projectID string, issueUID int64) string {

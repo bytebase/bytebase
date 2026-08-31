@@ -46,6 +46,8 @@ type Bus struct {
 	PlanCheckTickleChan chan int
 	// TaskRunTickleChan is the tickler for task run scheduler.
 	TaskRunTickleChan chan int
+	// ReviewRunTickleChan is the tickler for the review run scheduler.
+	ReviewRunTickleChan chan int
 
 	// RolloutCreationChan is the channel for automatic rollout creation.
 	RolloutCreationChan chan PlanRef
@@ -59,6 +61,7 @@ func New() (*Bus, error) {
 		ApprovalCheckChan:       make(chan IssueRef, 1000),
 		PlanCheckTickleChan:     make(chan int, 1000),
 		TaskRunTickleChan:       make(chan int, 1000),
+		ReviewRunTickleChan:     make(chan int, 1000),
 		RolloutCreationChan:     make(chan PlanRef, 100),
 		PlanCompletionCheckChan: make(chan PlanRef, 1000),
 	}, nil

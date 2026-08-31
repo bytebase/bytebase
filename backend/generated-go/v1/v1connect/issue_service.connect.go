@@ -70,6 +70,8 @@ const (
 	// IssueServiceRetryIssueApprovalProcedure is the fully-qualified name of the IssueService's
 	// RetryIssueApproval RPC.
 	IssueServiceRetryIssueApprovalProcedure = "/bytebase.v1.IssueService/RetryIssueApproval"
+	// IssueServiceRunReviewProcedure is the fully-qualified name of the IssueService's RunReview RPC.
+	IssueServiceRunReviewProcedure = "/bytebase.v1.IssueService/RunReview"
 )
 
 // IssueServiceClient is a client for the bytebase.v1.IssueService service.
@@ -120,6 +122,12 @@ type IssueServiceClient interface {
 	// Permissions required: None (caller must be the issue creator;
 	// mirrors RequestIssue's authorization model).
 	RetryIssueApproval(context.Context, *connect.Request[v1.RetryIssueApprovalRequest]) (*connect.Response[v1.Issue], error)
+	// Triggers a review run. The slot is reset unconditionally: a RUNNING
+	// execution is superseded (its completion is fenced off), the attempt
+	// number is bumped, and the returned run is AVAILABLE.
+	// The audit log is the only record of who triggered a run.
+	// Permissions required: bb.reviewRuns.run
+	RunReview(context.Context, *connect.Request[v1.RunReviewRequest]) (*connect.Response[v1.ReviewRun], error)
 }
 
 // NewIssueServiceClient constructs a client for the bytebase.v1.IssueService service. By default,
@@ -211,6 +219,12 @@ func NewIssueServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(issueServiceMethods.ByName("RetryIssueApproval")),
 			connect.WithClientOptions(opts...),
 		),
+		runReview: connect.NewClient[v1.RunReviewRequest, v1.ReviewRun](
+			httpClient,
+			baseURL+IssueServiceRunReviewProcedure,
+			connect.WithSchema(issueServiceMethods.ByName("RunReview")),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -229,6 +243,7 @@ type issueServiceClient struct {
 	rejectIssue             *connect.Client[v1.RejectIssueRequest, v1.Issue]
 	requestIssue            *connect.Client[v1.RequestIssueRequest, v1.Issue]
 	retryIssueApproval      *connect.Client[v1.RetryIssueApprovalRequest, v1.Issue]
+	runReview               *connect.Client[v1.RunReviewRequest, v1.ReviewRun]
 }
 
 // GetIssue calls bytebase.v1.IssueService.GetIssue.
@@ -296,6 +311,11 @@ func (c *issueServiceClient) RetryIssueApproval(ctx context.Context, req *connec
 	return c.retryIssueApproval.CallUnary(ctx, req)
 }
 
+// RunReview calls bytebase.v1.IssueService.RunReview.
+func (c *issueServiceClient) RunReview(ctx context.Context, req *connect.Request[v1.RunReviewRequest]) (*connect.Response[v1.ReviewRun], error) {
+	return c.runReview.CallUnary(ctx, req)
+}
+
 // IssueServiceHandler is an implementation of the bytebase.v1.IssueService service.
 type IssueServiceHandler interface {
 	// Retrieves an issue by name.
@@ -344,6 +364,12 @@ type IssueServiceHandler interface {
 	// Permissions required: None (caller must be the issue creator;
 	// mirrors RequestIssue's authorization model).
 	RetryIssueApproval(context.Context, *connect.Request[v1.RetryIssueApprovalRequest]) (*connect.Response[v1.Issue], error)
+	// Triggers a review run. The slot is reset unconditionally: a RUNNING
+	// execution is superseded (its completion is fenced off), the attempt
+	// number is bumped, and the returned run is AVAILABLE.
+	// The audit log is the only record of who triggered a run.
+	// Permissions required: bb.reviewRuns.run
+	RunReview(context.Context, *connect.Request[v1.RunReviewRequest]) (*connect.Response[v1.ReviewRun], error)
 }
 
 // NewIssueServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -431,6 +457,12 @@ func NewIssueServiceHandler(svc IssueServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(issueServiceMethods.ByName("RetryIssueApproval")),
 		connect.WithHandlerOptions(opts...),
 	)
+	issueServiceRunReviewHandler := connect.NewUnaryHandler(
+		IssueServiceRunReviewProcedure,
+		svc.RunReview,
+		connect.WithSchema(issueServiceMethods.ByName("RunReview")),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/bytebase.v1.IssueService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case IssueServiceGetIssueProcedure:
@@ -459,6 +491,8 @@ func NewIssueServiceHandler(svc IssueServiceHandler, opts ...connect.HandlerOpti
 			issueServiceRequestIssueHandler.ServeHTTP(w, r)
 		case IssueServiceRetryIssueApprovalProcedure:
 			issueServiceRetryIssueApprovalHandler.ServeHTTP(w, r)
+		case IssueServiceRunReviewProcedure:
+			issueServiceRunReviewHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -518,4 +552,8 @@ func (UnimplementedIssueServiceHandler) RequestIssue(context.Context, *connect.R
 
 func (UnimplementedIssueServiceHandler) RetryIssueApproval(context.Context, *connect.Request[v1.RetryIssueApprovalRequest]) (*connect.Response[v1.Issue], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IssueService.RetryIssueApproval is not implemented"))
+}
+
+func (UnimplementedIssueServiceHandler) RunReview(context.Context, *connect.Request[v1.RunReviewRequest]) (*connect.Response[v1.ReviewRun], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.IssueService.RunReview is not implemented"))
 }

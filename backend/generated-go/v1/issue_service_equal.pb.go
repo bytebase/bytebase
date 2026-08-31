@@ -622,3 +622,44 @@ func (x *IssueComment) Equal(y *IssueComment) bool {
 	}
 	return true
 }
+
+func (x *ReviewRun) Equal(y *ReviewRun) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	if x.Type != y.Type {
+		return false
+	}
+	if x.Status != y.Status {
+		return false
+	}
+	if p, q := x.CreateTime, y.CreateTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	if p, q := x.EndTime, y.EndTime; (p == nil && q != nil) || (p != nil && (q == nil || p.Seconds != q.Seconds || p.Nanos != q.Nanos)) {
+		return false
+	}
+	if x.Error != y.Error {
+		return false
+	}
+	return true
+}
+
+func (x *RunReviewRequest) Equal(y *RunReviewRequest) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Name != y.Name {
+		return false
+	}
+	return true
+}
