@@ -143,6 +143,53 @@ describe("ChatPanel", () => {
         content: "schema context\nshow me the tables",
       }),
     ]);
+    expect(mocks.createMessage).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ content: "show me the tables" })
+    );
+    expect(mocks.createMessage.mock.calls[0]?.[0]).not.toHaveProperty("prompt");
+  });
+
+  test("rebuilds schema context for a conversation restored from storage", async () => {
+    const conversation = emptyConversation();
+    const firstUser: Message = {
+      id: "message-1",
+      created_ts: 1,
+      author: "USER",
+      content: "first question",
+      status: "DONE",
+      error: "",
+      conversation,
+    };
+    const firstAnswer: Message = {
+      id: "message-2",
+      created_ts: 2,
+      author: "AI",
+      content: "first answer",
+      status: "DONE",
+      error: "",
+      conversation,
+    };
+    conversation.messageList = [firstUser, firstAnswer];
+    mocks.currentConversation = conversation;
+    mocks.context = {
+      ...mocks.context,
+      chat: {
+        ...(mocks.context?.chat as object),
+        list: [conversation],
+        selected: conversation,
+      },
+    };
+
+    render(<ChatPanel />);
+    fireEvent.click(screen.getByRole("button", { name: "send" }));
+
+    await waitFor(() => expect(mocks.chat).toHaveBeenCalledTimes(1));
+    expect(mocks.chat.mock.calls[0]?.[0].messages).toEqual([
+      expect.objectContaining({ content: "schema context\nfirst question" }),
+      expect.objectContaining({ content: "first answer" }),
+      expect.objectContaining({ content: "show me the tables" }),
+    ]);
   });
 
   test("logs the original Connect error when the chat request fails", async () => {

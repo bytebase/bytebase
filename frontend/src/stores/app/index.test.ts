@@ -1,5 +1,6 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import { TimestampSchema } from "@bufbuild/protobuf/wkt";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { silentContextKey } from "@/api/context-key";
 import { isValidDatabaseGroupName, UNKNOWN_PROJECT_NAME } from "@/types";
@@ -118,6 +119,7 @@ const mocks = vi.hoisted(() => ({
   getSetting: vi.fn(),
   getProject: vi.fn(),
   getProjectIamPolicy: vi.fn(),
+  setProjectIamPolicy: vi.fn(),
   batchGetProjects: vi.fn(),
   searchProjects: vi.fn(),
   createProject: vi.fn(),
@@ -202,6 +204,7 @@ vi.mock("@/api", () => ({
   projectServiceClientConnect: {
     getProject: mocks.getProject,
     getIamPolicy: mocks.getProjectIamPolicy,
+    setIamPolicy: mocks.setProjectIamPolicy,
     batchGetProjects: mocks.batchGetProjects,
     searchProjects: mocks.searchProjects,
     createProject: mocks.createProject,
@@ -1086,6 +1089,138 @@ describe("useAppStore", () => {
       },
     ]);
     expect(store.getState().workspacePolicy).toBe(setPolicy);
+  });
+
+  test("patchWorkspaceIamPolicy round-trips the etag it read", async () => {
+    const existing = createProto(IamPolicySchema, {
+      etag: "1756000000000",
+      bindings: [
+        createProto(BindingSchema, {
+          role: "roles/workspaceMember",
+          members: ["user:alice@example.com"],
+        }),
+      ],
+    });
+    mocks.setIamPolicy.mockResolvedValue(existing);
+    const store = createAppStore();
+    store.setState({ workspacePolicy: existing });
+
+    await store
+      .getState()
+      .patchWorkspaceIamPolicy([
+        { member: "user:bob@example.com", roles: ["roles/workspaceMember"] },
+      ]);
+
+    // The server reads the etag from either field; sending both keeps an older
+    // server, which only reads the request field, checking it too.
+    const request = mocks.setIamPolicy.mock.calls[0][0] as {
+      etag: string;
+      policy: { etag: string };
+    };
+    expect(request.etag).toBe("1756000000000");
+    expect(request.policy.etag).toBe("1756000000000");
+  });
+
+  test("patchWorkspaceIamPolicy refetches after a concurrent edit", async () => {
+    const stale = createProto(IamPolicySchema, {
+      etag: "1756000000000",
+      bindings: [
+        createProto(BindingSchema, {
+          role: "roles/workspaceMember",
+          members: ["user:alice@example.com"],
+        }),
+      ],
+    });
+    // What the other admin left behind: alice revoked, and a new etag.
+    const current = createProto(IamPolicySchema, {
+      etag: "1756000009999",
+      bindings: [
+        createProto(BindingSchema, {
+          role: "roles/workspaceAdmin",
+          members: ["user:carol@example.com"],
+        }),
+      ],
+    });
+    mocks.setIamPolicy.mockRejectedValue(
+      new ConnectError("concurrent update", Code.Aborted)
+    );
+    mocks.getIamPolicy.mockResolvedValue(current);
+    const store = createAppStore();
+    store.setState({ workspacePolicy: stale });
+
+    await expect(
+      store
+        .getState()
+        .patchWorkspaceIamPolicy([
+          { member: "user:bob@example.com", roles: ["roles/workspaceMember"] },
+        ])
+    ).rejects.toThrow();
+
+    // Without the refetch the store would keep the losing policy, and every
+    // retry would replay the same stale etag.
+    expect(store.getState().workspacePolicy).toBe(current);
+  });
+
+  test("updateProjectIamPolicy refetches after a concurrent edit", async () => {
+    const stale = createProto(IamPolicySchema, {
+      etag: "1756000000000",
+      bindings: [
+        createProto(BindingSchema, {
+          role: "roles/projectDeveloper",
+          members: ["user:alice@example.com"],
+        }),
+      ],
+    });
+    const current = createProto(IamPolicySchema, {
+      etag: "1756000009999",
+      bindings: [
+        createProto(BindingSchema, {
+          role: "roles/projectOwner",
+          members: ["user:carol@example.com"],
+        }),
+      ],
+    });
+    mocks.setProjectIamPolicy.mockRejectedValue(
+      new ConnectError("concurrent update", Code.Aborted)
+    );
+    mocks.getProjectIamPolicy.mockResolvedValue(current);
+    const store = createAppStore();
+    store.setState({ projectPoliciesByName: { [projectA.name]: stale } });
+
+    await expect(
+      store.getState().updateProjectIamPolicy(projectA.name, stale)
+    ).rejects.toThrow();
+
+    expect(mocks.setProjectIamPolicy.mock.calls[0][0]).toMatchObject({
+      etag: "1756000000000",
+    });
+    expect(store.getState().projectPoliciesByName[projectA.name]).toBe(current);
+  });
+
+  test("updateProjectIamPolicy leaves the cached policy alone on other errors", async () => {
+    const stale = createProto(IamPolicySchema, {
+      etag: "1756000000000",
+      bindings: [
+        createProto(BindingSchema, {
+          role: "roles/projectDeveloper",
+          members: ["user:alice@example.com"],
+        }),
+      ],
+    });
+    mocks.setProjectIamPolicy.mockRejectedValue(
+      new ConnectError("at least one owner", Code.InvalidArgument)
+    );
+    const store = createAppStore();
+    store.setState({ projectPoliciesByName: { [projectA.name]: stale } });
+
+    await expect(
+      store.getState().updateProjectIamPolicy(projectA.name, stale)
+    ).rejects.toThrow();
+
+    // A rejected write left the server's policy where it was, so the etag this
+    // store holds is still good and refetching would be churn.
+    expect(mocks.getProjectIamPolicy).not.toHaveBeenCalled();
+    expect(store.getState().projectPoliciesByName[projectA.name]).toBe(stale);
   });
 
   test("workspaceUserMapToRoles inverts policy bindings to member -> roles", () => {

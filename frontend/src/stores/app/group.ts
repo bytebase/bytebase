@@ -13,6 +13,7 @@ import {
   ListGroupsRequestSchema,
   UpdateGroupRequestSchema,
 } from "@/types/proto-es/v1/group_service_pb";
+import { celString } from "@/utils/v1/celLiteral";
 import type { AppSliceCreator, GroupFilter, GroupSlice } from "./types";
 import { toError } from "./utils";
 
@@ -32,10 +33,11 @@ export const buildGroupFilter = (params: GroupFilter) => {
   const filter = [];
   const search = params.query?.trim()?.toLowerCase();
   if (search) {
-    filter.push(`(title.contains("${search}") || email.contains("${search}"))`);
+    const value = celString(search);
+    filter.push(`(title.contains(${value}) || email.contains(${value}))`);
   }
   if (isValidProjectName(params.project)) {
-    filter.push(`project == "${params.project}"`);
+    filter.push(`project == ${celString(params.project)}`);
   }
   return filter.join(" && ");
 };

@@ -73,7 +73,7 @@ export function ChatView({ mode = "CHAT", conversation }: Props) {
           ) : (
             <div
               ref={containerRef}
-              className="flex min-w-0 max-w-full flex-col justify-end px-2 gap-y-4"
+              className="flex min-w-0 max-w-full flex-col justify-end gap-y-4 px-2 pt-2"
             >
               {conversation.messageList.map((message) => (
                 <div

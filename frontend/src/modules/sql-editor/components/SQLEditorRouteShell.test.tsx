@@ -189,7 +189,7 @@ vi.mock("@/modules/sql-editor/store/tab", () => ({
 }));
 
 vi.mock("@/modules/sql-editor/legacy/migration", () => ({
-  migrateLegacyCache: vi.fn(async () => undefined),
+  cleanupLegacyPouchDatabases: vi.fn(async () => undefined),
 }));
 
 vi.mock("./SQLEditorHomePage", () => ({

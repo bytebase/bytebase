@@ -1100,34 +1100,11 @@ func GetListInstanceFilter(filter string) (*qb.Query, error) {
 
 	var getFilter func(expr celast.Expr) (*qb.Query, error)
 
-	parseToLabelFilterSQL := func(resource, key string, value any) (*qb.Query, error) {
-		switch v := value.(type) {
-		case string:
-			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' = ?", resource, key), v), nil
-		case []any:
-			if len(v) == 0 {
-				return nil, errors.Errorf("empty label filter")
-			}
-
-			labelValueList := make([]any, len(v))
-			for i, raw := range v {
-				str, ok := raw.(string)
-				if !ok {
-					return nil, errors.Errorf("label value must be string, got %T", raw)
-				}
-				labelValueList[i] = str
-			}
-			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' = ANY(?)", resource, key), labelValueList), nil
-		default:
-			return nil, errors.Errorf("empty value %v for label filter", value)
-		}
-	}
-
 	parseToSQL := func(variable, value any) (*qb.Query, error) {
 		// Handle label filters like "labels.org_group"
 		if varStr, ok := variable.(string); ok {
 			if labelKey, ok := strings.CutPrefix(varStr, "labels."); ok {
-				return parseToLabelFilterSQL("instance.metadata", labelKey, value)
+				return buildLabelFilterSQL("instance.metadata", labelKey, value)
 			}
 		}
 
@@ -1259,13 +1236,13 @@ func GetListInstanceFilter(filter string) (*qb.Query, error) {
 
 				switch variable {
 				case "name":
-					return qb.Q().Space("LOWER(instance.metadata->>'title') LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+					return qb.Q().Space("LOWER(instance.metadata->>'title') LIKE ? ESCAPE '\\'", containsPattern(strings.ToLower(strValue))), nil
 				case "resource_id":
-					return qb.Q().Space("LOWER(instance.resource_id) LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+					return qb.Q().Space("LOWER(instance.resource_id) LIKE ? ESCAPE '\\'", containsPattern(strings.ToLower(strValue))), nil
 				case "host", "port":
 					return qb.Q().Space(
-						fmt.Sprintf(`EXISTS (SELECT 1 FROM jsonb_array_elements(instance.metadata -> 'dataSources') AS ds WHERE ds ->> '%s' LIKE ?)`, variable),
-						"%"+strValue+"%"), nil
+						fmt.Sprintf(`EXISTS (SELECT 1 FROM jsonb_array_elements(instance.metadata -> 'dataSources') AS ds WHERE ds ->> '%s' LIKE ? ESCAPE '\')`, variable),
+						containsPattern(strValue)), nil
 				default:
 					return nil, errors.Errorf("unsupport variable %q", variable)
 				}
@@ -1274,7 +1251,7 @@ func GetListInstanceFilter(filter string) (*qb.Query, error) {
 				if variable == "engine" {
 					return parseToEngineSQL(expr)
 				} else if labelKey, ok := strings.CutPrefix(variable, "labels."); ok {
-					return parseToLabelFilterSQL("instance.metadata", labelKey, value)
+					return buildLabelFilterSQL("instance.metadata", labelKey, value)
 				}
 				return nil, errors.Errorf("unsupport variable %q", variable)
 			case celoperators.LogicalNot:

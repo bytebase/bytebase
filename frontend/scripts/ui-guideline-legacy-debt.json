@@ -1196,12 +1196,6 @@
     },
     {
       "path": "src/modules/ai/components/HistoryPanel/ConversationList.tsx",
-      "rule": "no-native-control",
-      "token": "button",
-      "count": 2
-    },
-    {
-      "path": "src/modules/ai/components/HistoryPanel/ConversationList.tsx",
       "rule": "no-off-scale-gap",
       "token": "gap-x-0.5",
       "count": 1
@@ -1211,36 +1205,6 @@
       "rule": "no-off-scale-radius",
       "token": "rounded-md",
       "count": 1
-    },
-    {
-      "path": "src/modules/ai/components/HistoryPanel/ConversationList.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-indigo-100",
-      "count": 1
-    },
-    {
-      "path": "src/modules/ai/components/HistoryPanel/ConversationList.tsx",
-      "rule": "no-raw-color",
-      "token": "border-indigo-400",
-      "count": 1
-    },
-    {
-      "path": "src/modules/ai/components/HistoryPanel/ConversationList.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:bg-indigo-50",
-      "count": 3
-    },
-    {
-      "path": "src/modules/ai/components/HistoryPanel/ConversationList.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:border-indigo-400",
-      "count": 1
-    },
-    {
-      "path": "src/modules/ai/components/HistoryPanel/ConversationList.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-500",
-      "count": 3
     },
     {
       "path": "src/modules/ai/components/PromptInput.tsx",

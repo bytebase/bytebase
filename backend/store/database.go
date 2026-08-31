@@ -944,24 +944,6 @@ func GetListDatabaseFilter(workspace, filter string) (*qb.Query, error) {
 
 	var getFilter func(expr celast.Expr) (*qb.Query, error)
 
-	parseToLabelFilterSQL := func(resource, key string, value any) (*qb.Query, error) {
-		switch v := value.(type) {
-		case string:
-			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' = ?", resource, key), v), nil
-		case []any:
-			if len(v) == 0 {
-				return nil, errors.Errorf("empty label filter")
-			}
-			labelValueList := []any{}
-			for _, raw := range v {
-				labelValueList = append(labelValueList, raw.(string))
-			}
-			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' = ANY(?)", resource, key), labelValueList), nil
-		default:
-			return nil, errors.Errorf("empty value %v for label filter", value)
-		}
-	}
-
 	parseToEngineSQL := func(expr celast.Expr) (*qb.Query, error) {
 		variable, value := getVariableAndValueFromExpr(expr)
 		if variable != "engine" {
@@ -1051,7 +1033,7 @@ func GetListDatabaseFilter(workspace, filter string) (*qb.Query, error) {
 				return nil, errors.Errorf("unsupport variable %q", variable)
 			}
 			if labelKey, ok := strings.CutPrefix(varStr, "labels."); ok {
-				return parseToLabelFilterSQL("db.metadata", labelKey, value)
+				return buildLabelFilterSQL("db.metadata", labelKey, value)
 			}
 			return nil, errors.Errorf("unsupport variable %q", variable)
 		}
@@ -1099,13 +1081,13 @@ func GetListDatabaseFilter(workspace, filter string) (*qb.Query, error) {
 
 				switch variable {
 				case "name":
-					return qb.Q().Space("LOWER(db.name) LIKE ?", "%"+strValue+"%"), nil
+					return qb.Q().Space("LOWER(db.name) LIKE ? ESCAPE '\\'", containsPattern(strValue)), nil
 				case "table":
 					return qb.Q().Space(`EXISTS (
 						SELECT 1
 						FROM json_array_elements(ds.metadata->'schemas') AS s,
 						 	 json_array_elements(s->'tables') AS t
-						WHERE t->>'name' LIKE ?)`, "%"+strValue+"%"), nil
+						WHERE t->>'name' LIKE ? ESCAPE '\')`, containsPattern(strValue)), nil
 				default:
 					return nil, errors.Errorf(`only "name" or "table" support %q operator, but found %q`, celoverloads.Contains, variable)
 				}
@@ -1114,7 +1096,7 @@ func GetListDatabaseFilter(workspace, filter string) (*qb.Query, error) {
 				if variable == "engine" {
 					return parseToEngineSQL(expr)
 				} else if labelKey, ok := strings.CutPrefix(variable, "labels."); ok {
-					return parseToLabelFilterSQL("db.metadata", labelKey, value)
+					return buildLabelFilterSQL("db.metadata", labelKey, value)
 				}
 				return nil, errors.Errorf("unsupport variable %q", variable)
 			case celoperators.LogicalNot:

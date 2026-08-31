@@ -465,5 +465,9 @@ describe("InstanceDetailView", () => {
     expect(container.querySelector("[data-testid='create-database-sheet']"))
       .toBeNull();
     expect(mocks.fetchProjectList).not.toHaveBeenCalled();
+    expect(container.textContent).toContain("instance.project-bound-title");
+    expect(container.textContent).toContain(
+      "instance.project-bound-description"
+    );
   });
 });

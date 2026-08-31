@@ -63,6 +63,20 @@ func TestProjectInstanceCoreBehavior(t *testing.T) {
 	a.NoError(err)
 	a.Equal(databaseName, database.Msg.Name)
 	a.Equal(ctl.project.Name, database.Msg.Project)
+	workspaceDatabaseName := fmt.Sprintf("%s/databases/%s", workspace.Name, databaseID)
+	currentWorkspace, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{Name: "workspaces/-"}))
+	a.NoError(err)
+	workspaceDatabases, err := ctl.databaseServiceClient.ListDatabases(ctx, connect.NewRequest(&v1pb.ListDatabasesRequest{
+		Parent:   currentWorkspace.Msg.Name,
+		PageSize: 1000,
+	}))
+	a.NoError(err)
+	listedWorkspaceDatabases := make([]string, 0, len(workspaceDatabases.Msg.Databases))
+	for _, listed := range workspaceDatabases.Msg.Databases {
+		listedWorkspaceDatabases = append(listedWorkspaceDatabases, listed.Name)
+	}
+	a.Contains(listedWorkspaceDatabases, workspaceDatabaseName)
+	a.Contains(listedWorkspaceDatabases, databaseName)
 	_, err = ctl.databaseServiceClient.SyncDatabase(ctx, connect.NewRequest(&v1pb.SyncDatabaseRequest{Name: databaseName}))
 	a.NoError(err)
 	query, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{

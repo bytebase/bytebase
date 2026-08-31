@@ -5822,9 +5822,10 @@ A binding binds one or more project members to a single project role. </p></td>
                   <td>etag</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The current etag of the policy.
-If an etag is provided and does not match the current etag of the policy,
-the call will be blocked and an ABORTED error will be returned. </p></td>
+                  <td><p>The current etag of the policy, returned by GetIamPolicy and SetIamPolicy.
+Sending it back on SetIamPolicy makes the write conditional: if the policy
+changed since the read, the call returns ABORTED. Omitting it applies the
+write unconditionally, overwriting any concurrent change (AIP-154). </p></td>
                 </tr>
               
             </tbody>
@@ -5888,7 +5889,8 @@ Format: workspaces/{workspace} </p></td>
                   <td>etag</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The current etag of the policy. </p></td>
+                  <td><p>The current etag of the policy. Equivalent to setting `policy.etag`;
+supplying both with different values returns INVALID_ARGUMENT. </p></td>
                 </tr>
               
             </tbody>
@@ -24907,14 +24909,6 @@ Format: instances/{instance}/databases/{database} or projects/{project}/instance
                   <td><a href="#google.protobuf.FieldMask">google.protobuf.FieldMask</a></td>
                   <td></td>
                   <td><p>The list of fields to update. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>allow_missing</td>
-                  <td><a href="#bool">bool</a></td>
-                  <td></td>
-                  <td><p>If set to true, and the database is not found, a new database will be created.
-In this situation, `update_mask` is ignored. </p></td>
                 </tr>
               
             </tbody>

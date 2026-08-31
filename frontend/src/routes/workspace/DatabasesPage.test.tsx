@@ -18,6 +18,8 @@ const mocks = vi.hoisted(() => ({
   hasWorkspacePermission: true,
   databaseTableRows: [] as unknown[],
   databaseTableLoading: false,
+  databaseTableSelectedNames: [] as string[],
+  batchOperationDatabases: [] as { name: string }[],
   scopeValues: {} as Record<string, string | undefined>,
 }));
 
@@ -84,17 +86,26 @@ vi.mock("@/components/database", () => ({
   CreateDatabaseSheet: ({ open }: { open: boolean }) => (
     <div data-testid="create-database-sheet" data-open={String(open)} />
   ),
-  DatabaseBatchOperationsBar: () => null,
+  DatabaseBatchOperationsBar: ({
+    databases,
+  }: {
+    databases: { name: string }[];
+  }) => {
+    mocks.batchOperationDatabases = databases;
+    return null;
+  },
   DatabaseTable: ({
     filter,
     emptyPlaceholder,
     selectionColumnIntroTarget,
+    onSelectedNamesChange,
     onDatabasesChange,
     onLoadingChange,
   }: {
     filter?: { instance?: string };
     emptyPlaceholder?: React.ReactNode;
     selectionColumnIntroTarget?: string;
+    onSelectedNamesChange?: (selectedNames: Set<string>) => void;
     onDatabasesChange?: (databases: unknown[]) => void;
     onLoadingChange?: (loading: boolean) => void;
   }) => (
@@ -102,6 +113,7 @@ vi.mock("@/components/database", () => ({
       filter={filter}
       emptyPlaceholder={emptyPlaceholder}
       selectionColumnIntroTarget={selectionColumnIntroTarget}
+      onSelectedNamesChange={onSelectedNamesChange}
       onDatabasesChange={onDatabasesChange}
       onLoadingChange={onLoadingChange}
     />
@@ -114,18 +126,23 @@ const DatabaseTableMock = ({
   filter,
   emptyPlaceholder,
   selectionColumnIntroTarget,
+  onSelectedNamesChange,
   onDatabasesChange,
   onLoadingChange,
 }: {
   filter?: { instance?: string };
   emptyPlaceholder?: React.ReactNode;
   selectionColumnIntroTarget?: string;
+  onSelectedNamesChange?: (selectedNames: Set<string>) => void;
   onDatabasesChange?: (databases: unknown[]) => void;
   onLoadingChange?: (loading: boolean) => void;
 }) => {
   useEffect(() => {
     onDatabasesChange?.(mocks.databaseTableRows);
   }, [onDatabasesChange]);
+  useEffect(() => {
+    onSelectedNamesChange?.(new Set(mocks.databaseTableSelectedNames));
+  }, [onSelectedNamesChange]);
   useEffect(() => {
     onLoadingChange?.(mocks.databaseTableLoading);
   }, [onLoadingChange]);
@@ -188,11 +205,36 @@ beforeEach(async () => {
   mocks.currentRoute = { query: {} };
   mocks.databaseTableRows = [];
   mocks.databaseTableLoading = false;
+  mocks.databaseTableSelectedNames = [];
+  mocks.batchOperationDatabases = [];
   mocks.scopeValues = {};
   ({ DatabasesPage } = await import("./DatabasesPage"));
 });
 
 describe("DatabasesPage", () => {
+  test("passes selected project-instance databases to batch operations", async () => {
+    const databaseName =
+      "projects/app/instances/bound/databases/project-database";
+    mocks.databaseTableSelectedNames = [databaseName];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <DatabasesPage />
+        </MemoryRouter>
+      );
+      await Promise.resolve();
+    });
+
+    expect(mocks.batchOperationDatabases).toEqual([{ name: databaseName }]);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   test("preserves a canonical project-instance filter", async () => {
     mocks.scopeValues.instance = "projects/app/instances/prod";
     const container = document.createElement("div");

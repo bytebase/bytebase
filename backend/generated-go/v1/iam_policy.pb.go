@@ -133,7 +133,8 @@ type SetIamPolicyRequest struct {
 	// Format: workspaces/{workspace}
 	Resource string     `protobuf:"bytes,1,opt,name=resource,proto3" json:"resource,omitempty"`
 	Policy   *IamPolicy `protobuf:"bytes,2,opt,name=policy,proto3" json:"policy,omitempty"`
-	// The current etag of the policy.
+	// The current etag of the policy. Equivalent to setting `policy.etag`;
+	// supplying both with different values returns INVALID_ARGUMENT.
 	Etag          string `protobuf:"bytes,3,opt,name=etag,proto3" json:"etag,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -196,9 +197,10 @@ type IamPolicy struct {
 	// Collection of binding.
 	// A binding binds one or more project members to a single project role.
 	Bindings []*Binding `protobuf:"bytes,1,rep,name=bindings,proto3" json:"bindings,omitempty"`
-	// The current etag of the policy.
-	// If an etag is provided and does not match the current etag of the policy,
-	// the call will be blocked and an ABORTED error will be returned.
+	// The current etag of the policy, returned by GetIamPolicy and SetIamPolicy.
+	// Sending it back on SetIamPolicy makes the write conditional: if the policy
+	// changed since the read, the call returns ABORTED. Omitting it applies the
+	// write unconditionally, overwriting any concurrent change (AIP-154).
 	Etag          string `protobuf:"bytes,2,opt,name=etag,proto3" json:"etag,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -482,11 +484,11 @@ const file_v1_iam_policy_proto_rawDesc = "" +
 	"\n" +
 	"\x13v1/iam_policy.proto\x12\vbytebase.v1\x1a%google/api/expr/v1alpha1/syntax.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x16google/type/expr.proto\"Q\n" +
 	"\x13GetIamPolicyRequest\x12:\n" +
-	"\bresource\x18\x01 \x01(\tB\x1e\xe0A\x02\xfaA\x18\x12\x16bytebase.com/IAMPolicyR\bresource\"\x9a\x01\n" +
+	"\bresource\x18\x01 \x01(\tB\x1e\xe0A\x02\xfaA\x18\x12\x16bytebase.com/IAMPolicyR\bresource\"\x9f\x01\n" +
 	"\x13SetIamPolicyRequest\x12:\n" +
 	"\bresource\x18\x01 \x01(\tB\x1e\xe0A\x02\xfaA\x18\x12\x16bytebase.com/IAMPolicyR\bresource\x123\n" +
-	"\x06policy\x18\x02 \x01(\v2\x16.bytebase.v1.IamPolicyB\x03\xe0A\x02R\x06policy\x12\x12\n" +
-	"\x04etag\x18\x03 \x01(\tR\x04etag\"Q\n" +
+	"\x06policy\x18\x02 \x01(\v2\x16.bytebase.v1.IamPolicyB\x03\xe0A\x02R\x06policy\x12\x17\n" +
+	"\x04etag\x18\x03 \x01(\tB\x03\xe0A\x01R\x04etag\"Q\n" +
 	"\tIamPolicy\x120\n" +
 	"\bbindings\x18\x01 \x03(\v2\x14.bytebase.v1.BindingR\bbindings\x12\x12\n" +
 	"\x04etag\x18\x02 \x01(\tR\x04etag\"\xae\x01\n" +

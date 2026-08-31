@@ -72,6 +72,7 @@ import {
   getDefaultPagination,
   humanizeDurationV1,
 } from "@/utils";
+import { celString } from "@/utils/v1/celLiteral";
 
 dayjs.extend(utc);
 
@@ -89,18 +90,18 @@ interface AuditLogFilter {
 
 function buildFilterString(filter: AuditLogFilter): string {
   const parts: string[] = [];
-  if (filter.method) parts.push(`method == "${filter.method}"`);
+  if (filter.method) parts.push(`method == ${celString(filter.method)}`);
   if (filter.level !== undefined)
-    parts.push(`severity == "${AuditLog_Severity[filter.level]}"`);
+    parts.push(`severity == ${celString(AuditLog_Severity[filter.level])}`);
   if (filter.userEmail)
-    parts.push(`user == "${userNamePrefix}${filter.userEmail}"`);
+    parts.push(`user == ${celString(`${userNamePrefix}${filter.userEmail}`)}`);
   if (filter.createdTsAfter)
     parts.push(
-      `create_time >= "${dayjs(filter.createdTsAfter).utc().format()}"`
+      `create_time >= ${celString(dayjs(filter.createdTsAfter).utc().format())}`
     );
   if (filter.createdTsBefore)
     parts.push(
-      `create_time <= "${dayjs(filter.createdTsBefore).utc().format()}"`
+      `create_time <= ${celString(dayjs(filter.createdTsBefore).utc().format())}`
     );
   return parts.join(" && ");
 }

@@ -55,7 +55,8 @@ export declare type SetIamPolicyRequest = Message<"bytebase.v1.SetIamPolicyReque
   policy?: IamPolicy | undefined;
 
   /**
-   * The current etag of the policy.
+   * The current etag of the policy. Equivalent to setting `policy.etag`;
+   * supplying both with different values returns INVALID_ARGUMENT.
    *
    * @generated from field: string etag = 3;
    */
@@ -83,9 +84,10 @@ export declare type IamPolicy = Message<"bytebase.v1.IamPolicy"> & {
   bindings: Binding[];
 
   /**
-   * The current etag of the policy.
-   * If an etag is provided and does not match the current etag of the policy,
-   * the call will be blocked and an ABORTED error will be returned.
+   * The current etag of the policy, returned by GetIamPolicy and SetIamPolicy.
+   * Sending it back on SetIamPolicy makes the write conditional: if the policy
+   * changed since the read, the call returns ABORTED. Omitting it applies the
+   * write unconditionally, overwriting any concurrent change (AIP-154).
    *
    * @generated from field: string etag = 2;
    */

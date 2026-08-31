@@ -312,7 +312,7 @@ func GetListQueryHistoryFilter(filter string) (*qb.Query, error) {
 				// the access-grant `query.contains` search in
 				// GetListAccessGrantFilter.
 				normalizedValue := strings.Join(strings.Fields(strValue), " ")
-				return qb.Q().Space("regexp_replace(query_history.statement, '\\s+', ' ', 'g') ILIKE ?", "%"+normalizedValue+"%"), nil
+				return qb.Q().Space("regexp_replace(query_history.statement, '\\s+', ' ', 'g') ILIKE ? ESCAPE '\\'", containsPattern(normalizedValue)), nil
 			default:
 				return nil, errors.Errorf("unexpected function %v", functionName)
 			}

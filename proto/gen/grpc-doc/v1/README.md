@@ -1736,7 +1736,7 @@ IAM policy that binds members to roles.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | bindings | [Binding](#bytebase-v1-Binding) | repeated | Collection of binding. A binding binds one or more project members to a single project role. |
-| etag | [string](#string) |  | The current etag of the policy. If an etag is provided and does not match the current etag of the policy, the call will be blocked and an ABORTED error will be returned. |
+| etag | [string](#string) |  | The current etag of the policy, returned by GetIamPolicy and SetIamPolicy. Sending it back on SetIamPolicy makes the write conditional: if the policy changed since the read, the call returns ABORTED. Omitting it applies the write unconditionally, overwriting any concurrent change (AIP-154). |
 
 
 
@@ -1768,7 +1768,7 @@ Request message for setting an IAM policy.
 | ----- | ---- | ----- | ----------- |
 | resource | [string](#string) |  | The name of the resource to set the IAM policy. Format: projects/{project} Format: workspaces/{workspace} |
 | policy | [IamPolicy](#bytebase-v1-IamPolicy) |  |  |
-| etag | [string](#string) |  | The current etag of the policy. |
+| etag | [string](#string) |  | The current etag of the policy. Equivalent to setting `policy.etag`; supplying both with different values returns INVALID_ARGUMENT. |
 
 
 
@@ -8726,7 +8726,6 @@ TessellationConfig defines tessellation parameters for spatial indexes.
 
 The database&#39;s `name` field is used to identify the database to update. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| allow_missing | [bool](#bool) |  | If set to true, and the database is not found, a new database will be created. In this situation, `update_mask` is ignored. |
 
 
 

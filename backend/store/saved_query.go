@@ -856,7 +856,7 @@ func GetSearchSavedQueryFilter(ctx context.Context, s *Store, caller string, acc
 					if !allowTitleContains {
 						return nil, errors.Errorf("unsupport variable %q", variable)
 					}
-					return qb.Q().Space("LOWER(saved_query.name) LIKE ? ESCAPE '\\'", "%"+escapeLikePattern(strings.ToLower(strValue))+"%"), nil
+					return qb.Q().Space("LOWER(saved_query.name) LIKE ? ESCAPE '\\'", containsPattern(strings.ToLower(strValue))), nil
 				default:
 					return nil, errors.Errorf("unsupport variable %q", variable)
 				}
@@ -914,14 +914,6 @@ func GetSearchSavedQueryFilter(ctx context.Context, s *Store, caller string, acc
 		return nil, err
 	}
 	return qb.Q().Space("(?)", q), nil
-}
-
-func escapeLikePattern(pattern string) string {
-	return strings.NewReplacer(
-		`\`, `\\`,
-		`%`, `\%`,
-		`_`, `\_`,
-	).Replace(pattern)
 }
 
 // GetSavedQueryOrders parses an AIP-132 order_by string into OrderByKey

@@ -160,14 +160,27 @@ func (s *GroupService) UpdateGroup(ctx context.Context, req *connect.Request[v1p
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
+	user, ok := GetUserFromContext(ctx)
+	if !ok {
+		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
+	}
+
 	if group == nil {
 		if req.Msg.AllowMissing {
 			groupEmail, err := common.GetGroupEmail(req.Msg.Group.Name)
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
 			}
-			// Permission check is now handled by the ACL interceptor
-			// which verifies both bb.groups.update and bb.groups.create
+			// Checked here, not by the ACL interceptor: UpdateGroup is CUSTOM-authed,
+			// and the CreateGroup call below is in-process, so neither path reaches
+			// the interceptor. No group exists yet, so no owner bypass applies.
+			ok, err := s.iamManager.CheckPermission(ctx, permission.GroupsCreate, user, common.GetWorkspaceIDFromContext(ctx))
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
+			}
+			if !ok {
+				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.GroupsCreate))
+			}
 			return s.CreateGroup(ctx, connect.NewRequest(&v1pb.CreateGroupRequest{
 				Group:      req.Msg.Group,
 				GroupEmail: groupEmail,
@@ -179,10 +192,6 @@ func (s *GroupService) UpdateGroup(ctx context.Context, req *connect.Request[v1p
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("not support update external group %q", req.Msg.Group.Name))
 	}
 
-	user, ok := GetUserFromContext(ctx)
-	if !ok {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("user not found"))
-	}
 	if err := s.checkPermission(ctx, group, user, permission.GroupsUpdate); err != nil {
 		return nil, err
 	}
