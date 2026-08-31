@@ -929,6 +929,9 @@
       "select-placeholder": "Seleccionar una identidad de carga de trabajo"
     }
   },
+  "iam-policy": {
+    "concurrent-update": "Otra persona cambió estos permisos mientras editabas. Tu vista se ha actualizado: revísala e inténtalo de nuevo."
+  },
   "identity-provider": {
     "attributes-description": "Los siguientes atributos fueron devueltos por la entrada del directorio coincidente. Utilice estos nombres de atributo exactos en la asignación de campos de información del usuario.",
     "claims-description": "El proveedor de identidad devolvió las siguientes notificaciones. Esta información puede ayudarle a configurar las asignaciones de campos.",

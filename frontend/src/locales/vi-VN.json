@@ -929,6 +929,9 @@
       "select-placeholder": "Chọn một workload identity"
     }
   },
+  "iam-policy": {
+    "concurrent-update": "Người khác đã thay đổi các quyền này trong lúc bạn đang chỉnh sửa. Chế độ xem của bạn đã được cập nhật — hãy xem lại và thử lại."
+  },
   "identity-provider": {
     "attributes-description": "Các thuộc tính sau được trả về từ mục thư mục khớp. Hãy dùng chính xác các tên thuộc tính này trong ánh xạ trường thông tin người dùng.",
     "claims-description": "Các yêu cầu sau đây đã được nhà cung cấp danh tính trả về. Thông tin này có thể giúp bạn cấu hình ánh xạ trường.",
