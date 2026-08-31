@@ -18,6 +18,11 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+const (
+	taskRunStartRetryInterval = 100 * time.Millisecond
+	taskRunStartRetryTimeout  = taskSchedulerInterval
+)
+
 func getDatabaseKey(instanceID, databaseName string) string {
 	return fmt.Sprintf("%s/%s", instanceID, databaseName)
 }
@@ -130,13 +135,34 @@ func (s *Scheduler) executeTaskRun(ctx context.Context, projectID string, taskRu
 		return errors.Errorf("executor not found for task type: %v", task.Type)
 	}
 
-	// Update started_at
-	if err := s.store.UpdateTaskRunStartAt(ctx, task.ProjectID, taskRunUID); err != nil {
+	// The claim has already committed RUNNING. Retry brief lifecycle contention
+	// so the claimed task run is not abandoned by this live replica.
+	if err := s.updateTaskRunStartAt(ctx, task.ProjectID, taskRunUID); err != nil {
 		return errors.Wrapf(err, "failed to update task run start at")
 	}
 
 	go s.runTaskRunOnce(ctx, taskRunUID, task, executor)
 	return nil
+}
+
+func (s *Scheduler) updateTaskRunStartAt(ctx context.Context, projectID string, taskRunUID int64) error {
+	retryCtx, cancel := context.WithTimeout(ctx, taskRunStartRetryTimeout)
+	defer cancel()
+
+	for {
+		err := s.store.UpdateTaskRunStartAt(retryCtx, projectID, taskRunUID)
+		if err == nil || !errors.Is(err, store.ErrLifecycleBusy) {
+			return err
+		}
+
+		timer := time.NewTimer(taskRunStartRetryInterval)
+		select {
+		case <-retryCtx.Done():
+			timer.Stop()
+			return err
+		case <-timer.C:
+		}
+	}
 }
 
 func (s *Scheduler) runTaskRunOnce(ctx context.Context, taskRunUID int64, task *store.TaskMessage, executor Executor) {

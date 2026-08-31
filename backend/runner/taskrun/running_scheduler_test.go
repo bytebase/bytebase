@@ -3,6 +3,7 @@ package taskrun
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 
@@ -11,6 +12,15 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
+
+type signalingExecutor struct {
+	called chan struct{}
+}
+
+func (e *signalingExecutor) RunOnce(context.Context, context.Context, *store.TaskMessage, int64) (*storepb.TaskRunResult, error) {
+	close(e.called)
+	return &storepb.TaskRunResult{}, nil
+}
 
 func TestCheckTaskDrift(t *testing.T) {
 	prodEnv := "prod"
@@ -254,4 +264,101 @@ func TestScheduleRunningTaskRunsSkipsArchivedInstance(t *testing.T) {
 	require.NoError(t, err)
 	require.Len(t, taskRuns, 1)
 	require.Equal(t, storepb.TaskRun_AVAILABLE, taskRuns[0].Status, "an archived instance's available task run must not be claimed")
+}
+
+func TestExecuteTaskRunRetriesLifecycleContentionAfterClaim(t *testing.T) {
+	ctx := context.Background()
+	s := setupRolloutCreatorStore(ctx, t)
+	plan, err := s.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      "lifecycle contention plan",
+		Config:    &storepb.PlanConfig{},
+	}, "creator@example.com")
+	require.NoError(t, err)
+	instanceID := "instance-a"
+	_, err = s.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: instanceID,
+		Workspace:  "default",
+		Metadata: &storepb.Instance{
+			Engine:      storepb.Engine_POSTGRES,
+			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+		},
+	})
+	require.NoError(t, err)
+
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	require.NoError(t, err)
+	tasks, err := s.CreateMissingTasksTx(ctx, tx, plan.ProjectID, plan.UID, []*store.TaskMessage{{
+		InstanceID: instanceID,
+		Type:       storepb.Task_DATABASE_CREATE,
+		Payload:    &storepb.Task{},
+	}})
+	require.NoError(t, err)
+	require.Len(t, tasks, 1)
+	require.NoError(t, tx.Commit())
+	require.NoError(t, s.CreatePendingTaskRuns(ctx, "", &store.TaskRunMessage{
+		ProjectID: plan.ProjectID,
+		TaskUID:   tasks[0].ID,
+	}))
+	taskRuns, err := s.ListTaskRuns(ctx, &store.FindTaskRunMessage{ProjectID: plan.ProjectID})
+	require.NoError(t, err)
+	require.Len(t, taskRuns, 1)
+	_, err = s.UpdateTaskRunStatus(ctx, &store.TaskRunStatusPatch{
+		ID:              taskRuns[0].ID,
+		ProjectID:       plan.ProjectID,
+		Status:          storepb.TaskRun_AVAILABLE,
+		AllowedStatuses: []storepb.TaskRun_Status{storepb.TaskRun_PENDING},
+	})
+	require.NoError(t, err)
+	claimed, err := s.ClaimAvailableTaskRuns(ctx, "replica-a")
+	require.NoError(t, err)
+	require.Len(t, claimed, 1)
+
+	conn, err := s.GetDB().Conn(ctx)
+	require.NoError(t, err)
+	_, err = conn.ExecContext(ctx, "SELECT pg_advisory_lock($1, hashtext($2))", int64(store.AdvisoryLockKeyInstanceLifecycle), instanceID)
+	require.NoError(t, err)
+	released := false
+	release := func() {
+		if released {
+			return
+		}
+		released = true
+		_, err := conn.ExecContext(context.Background(), "SELECT pg_advisory_unlock($1, hashtext($2))", int64(store.AdvisoryLockKeyInstanceLifecycle), instanceID)
+		require.NoError(t, err)
+		require.NoError(t, conn.Close())
+	}
+	t.Cleanup(release)
+
+	b, err := bus.New()
+	require.NoError(t, err)
+	called := make(chan struct{})
+	scheduler := &Scheduler{
+		store: s,
+		bus:   b,
+		executorMap: map[storepb.Task_Type]Executor{
+			storepb.Task_DATABASE_CREATE: &signalingExecutor{called: called},
+		},
+	}
+	result := make(chan error, 1)
+	go func() {
+		result <- scheduler.executeTaskRun(ctx, plan.ProjectID, claimed[0].TaskRunUID, claimed[0].TaskUID)
+	}()
+
+	select {
+	case err := <-result:
+		require.Failf(t, "task launch returned while lifecycle gate was held", "error: %v", err)
+	case <-time.After(100 * time.Millisecond):
+	}
+	release()
+	require.NoError(t, <-result)
+	select {
+	case <-called:
+	case <-time.After(time.Second):
+		require.Fail(t, "claimed task run was not executed after lifecycle contention cleared")
+	}
+	require.Eventually(t, func() bool {
+		taskRuns, err := s.ListTaskRuns(ctx, &store.FindTaskRunMessage{ProjectID: plan.ProjectID})
+		return err == nil && len(taskRuns) == 1 && taskRuns[0].Status == storepb.TaskRun_DONE
+	}, time.Second, 10*time.Millisecond)
 }
