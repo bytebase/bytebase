@@ -8726,7 +8726,6 @@ TessellationConfig defines tessellation parameters for spatial indexes.
 
 The database&#39;s `name` field is used to identify the database to update. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| allow_missing | [bool](#bool) |  | If set to true, and the database is not found, a new database will be created. In this situation, `update_mask` is ignored. |
 
 
 

@@ -21415,12 +21415,6 @@ components:
           title: update_mask
           description: The list of fields to update.
           $ref: '#/components/schemas/google.protobuf.FieldMask'
-        allowMissing:
-          type: boolean
-          title: allow_missing
-          description: |-
-            If set to true, and the database is not found, a new database will be created.
-             In this situation, `update_mask` is ignored.
       title: UpdateDatabaseRequest
       additionalProperties: false
     bytebase.v1.UpdateEmailRequest:

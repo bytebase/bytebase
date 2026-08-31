@@ -185,10 +185,12 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 		return err
 	}
 
-	// Check allow_missing secondary permission if applicable
-	// This handles Update methods that can create resources via allow_missing=true
-	// When allow_missing is set, we additionally require create permission
-	if hasAllowMissingEnabled(request) {
+	// An Update that creates via allow_missing=true also needs the create permission.
+	// IAM only: doIAMPermissionCheck returns true for every other auth method, so
+	// running this on a CUSTOM method would verify nothing while reading as
+	// protection. CUSTOM handlers check for themselves, pinned by
+	// TestAllowMissingCreatePermission.
+	if authContext.AuthMethod == common.AuthMethodIAM && hasAllowMissingEnabled(request) {
 		// Derive create permission by replacing ".update" with ".create"
 		// Example: "bb.roles.update" -> "bb.roles.create"
 		createPerm := strings.Replace(string(authContext.Permission), ".update", ".create", 1)

@@ -2511,14 +2511,6 @@ paths:
              `INVALID_ARGUMENT` error if any path is unmappable.
           schema:
             type: string
-        - name: allowMissing
-          in: query
-          description: |-
-            If set to true, and the database is not found, a new database will be created.
-             In this situation, `update_mask` is ignored.
-          schema:
-            type: boolean
-            title: allow_missing
       requestBody:
         description: |-
           The database to update.
@@ -7629,14 +7621,6 @@ paths:
              `INVALID_ARGUMENT` error if any path is unmappable.
           schema:
             type: string
-        - name: allowMissing
-          in: query
-          description: |-
-            If set to true, and the database is not found, a new database will be created.
-             In this situation, `update_mask` is ignored.
-          schema:
-            type: boolean
-            title: allow_missing
       requestBody:
         description: |-
           The database to update.
@@ -32727,12 +32711,6 @@ components:
           title: update_mask
           description: The list of fields to update.
           $ref: '#/components/schemas/google.protobuf.FieldMask'
-        allowMissing:
-          type: boolean
-          title: allow_missing
-          description: |-
-            If set to true, and the database is not found, a new database will be created.
-             In this situation, `update_mask` is ignored.
       title: UpdateDatabaseRequest
       required:
         - database
