@@ -48,10 +48,9 @@ type ProjectServiceClient interface {
 	// Permissions required: bb.projects.get
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*Project, error)
 	// BatchGetProjects retrieves multiple projects by their names.
-	// A name that resolves to nothing is reported in `unmatched_names` instead of
-	// failing the call, so a partial response is a success. This departs from
-	// AIP-231 atomicity on purpose: callers resolve names held in stored
-	// references, which go stale when a project is deleted.
+	// Answers with one resource per requested name, in request order. Equivalent
+	// to calling GetProject for each name: the first name that does not resolve
+	// fails the whole call, so there is no partial response (AIP-231).
 	// Permissions required: bb.projects.get (on each named project)
 	BatchGetProjects(ctx context.Context, in *BatchGetProjectsRequest, opts ...grpc.CallOption) (*BatchGetProjectsResponse, error)
 	// Lists all projects in the workspace with optional filtering.
@@ -264,10 +263,9 @@ type ProjectServiceServer interface {
 	// Permissions required: bb.projects.get
 	GetProject(context.Context, *GetProjectRequest) (*Project, error)
 	// BatchGetProjects retrieves multiple projects by their names.
-	// A name that resolves to nothing is reported in `unmatched_names` instead of
-	// failing the call, so a partial response is a success. This departs from
-	// AIP-231 atomicity on purpose: callers resolve names held in stored
-	// references, which go stale when a project is deleted.
+	// Answers with one resource per requested name, in request order. Equivalent
+	// to calling GetProject for each name: the first name that does not resolve
+	// fails the whole call, so there is no partial response (AIP-231).
 	// Permissions required: bb.projects.get (on each named project)
 	BatchGetProjects(context.Context, *BatchGetProjectsRequest) (*BatchGetProjectsResponse, error)
 	// Lists all projects in the workspace with optional filtering.

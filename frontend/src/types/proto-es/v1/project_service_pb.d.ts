@@ -57,23 +57,11 @@ export declare const BatchGetProjectsRequestSchema: GenMessage<BatchGetProjectsR
  */
 export declare type BatchGetProjectsResponse = Message<"bytebase.v1.BatchGetProjectsResponse"> & {
   /**
-   * The projects from the specified request, in the order their names were
-   * requested. Duplicate names collapse to their first occurrence and unmatched
-   * names have no entry, so this list may be shorter than `names`.
+   * One project per requested name, in the same order as `names`.
    *
    * @generated from field: repeated bytebase.v1.Project projects = 1;
    */
   projects: Project[];
-
-  /**
-   * The requested names that returned no project, in request order. A name
-   * lands here whether the project does not exist or the caller may not see it.
-   * The two are not distinguished, so the response cannot be used to probe which
-   * projects exist.
-   *
-   * @generated from field: repeated string unmatched_names = 2;
-   */
-  unmatchedNames: string[];
 };
 
 /**
@@ -930,10 +918,9 @@ export declare const ProjectService: GenService<{
   },
   /**
    * BatchGetProjects retrieves multiple projects by their names.
-   * A name that resolves to nothing is reported in `unmatched_names` instead of
-   * failing the call, so a partial response is a success. This departs from
-   * AIP-231 atomicity on purpose: callers resolve names held in stored
-   * references, which go stale when a project is deleted.
+   * Answers with one resource per requested name, in request order. Equivalent
+   * to calling GetProject for each name: the first name that does not resolve
+   * fails the whole call, so there is no partial response (AIP-231).
    * Permissions required: bb.projects.get (on each named project)
    *
    * @generated from rpc bytebase.v1.ProjectService.BatchGetProjects

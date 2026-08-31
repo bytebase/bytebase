@@ -175,17 +175,10 @@ func (x *BatchGetGroupsRequest) GetNames() []string {
 // Response message for batch getting groups.
 type BatchGetGroupsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The groups from the specified request, in the order their names were
-	// requested. Duplicate names collapse to their first occurrence and unmatched
-	// names have no entry, so this list may be shorter than `names`.
-	Groups []*Group `protobuf:"bytes,1,rep,name=groups,proto3" json:"groups,omitempty"`
-	// The requested names that returned no group, in request order. A name lands
-	// here whether the group does not exist or the caller may not see it. The two
-	// are not distinguished, so the response cannot be used to probe which groups
-	// exist.
-	UnmatchedNames []string `protobuf:"bytes,2,rep,name=unmatched_names,json=unmatchedNames,proto3" json:"unmatched_names,omitempty"`
-	unknownFields  protoimpl.UnknownFields
-	sizeCache      protoimpl.SizeCache
+	// One group per requested name, in the same order as `names`.
+	Groups        []*Group `protobuf:"bytes,1,rep,name=groups,proto3" json:"groups,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
 }
 
 func (x *BatchGetGroupsResponse) Reset() {
@@ -221,13 +214,6 @@ func (*BatchGetGroupsResponse) Descriptor() ([]byte, []int) {
 func (x *BatchGetGroupsResponse) GetGroups() []*Group {
 	if x != nil {
 		return x.Groups
-	}
-	return nil
-}
-
-func (x *BatchGetGroupsResponse) GetUnmatchedNames() []string {
-	if x != nil {
-		return x.UnmatchedNames
 	}
 	return nil
 }
@@ -704,10 +690,9 @@ const file_v1_group_service_proto_rawDesc = "" +
 	"\x12bytebase.com/GroupR\x04name\"I\n" +
 	"\x15BatchGetGroupsRequest\x120\n" +
 	"\x05names\x18\x01 \x03(\tB\x1a\xe0A\x02\xfaA\x14\n" +
-	"\x12bytebase.com/GroupR\x05names\"m\n" +
+	"\x12bytebase.com/GroupR\x05names\"D\n" +
 	"\x16BatchGetGroupsResponse\x12*\n" +
-	"\x06groups\x18\x01 \x03(\v2\x12.bytebase.v1.GroupR\x06groups\x12'\n" +
-	"\x0funmatched_names\x18\x02 \x03(\tR\x0eunmatchedNames\"g\n" +
+	"\x06groups\x18\x01 \x03(\v2\x12.bytebase.v1.GroupR\x06groups\"g\n" +
 	"\x11ListGroupsRequest\x12\x1b\n" +
 	"\tpage_size\x18\x01 \x01(\x05R\bpageSize\x12\x1d\n" +
 	"\n" +

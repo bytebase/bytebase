@@ -135,7 +135,11 @@ export const createUserSlice: AppSliceCreator<UserSlice> = (set, get) => {
             },
           }));
         } catch {
-          // Match the legacy store: return cached users plus unknown fallbacks.
+          // BatchGet is all-or-nothing: one name that no longer exists, or that this
+          // caller may not see, fails the whole batch. Names here come from stored
+          // references that go stale, so fall back to per-name fetches, which
+          // tolerate a miss.
+          await Promise.all(missing.map((name) => get().fetchUser(name, true)));
         }
       }
 

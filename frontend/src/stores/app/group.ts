@@ -71,19 +71,32 @@ export const createGroupSlice: AppSliceCreator<GroupSlice> = (set, get) => ({
   batchFetchGroups: async (names) => {
     const validNames = uniq(names).filter(Boolean).map(ensureGroupIdentifier);
     if (validNames.length === 0) return [];
-    const response = await groupServiceClientConnect.batchGetGroups(
-      createProto(BatchGetGroupsRequestSchema, { names: validNames }),
-      { contextValues: createContextValues().set(silentContextKey, true) }
-    );
-    set((state) => ({
-      groupsByName: {
-        ...state.groupsByName,
-        ...Object.fromEntries(
-          response.groups.map((group) => [group.name, group])
-        ),
-      },
-    }));
-    return response.groups;
+    try {
+      const response = await groupServiceClientConnect.batchGetGroups(
+        createProto(BatchGetGroupsRequestSchema, { names: validNames }),
+        { contextValues: createContextValues().set(silentContextKey, true) }
+      );
+      set((state) => ({
+        groupsByName: {
+          ...state.groupsByName,
+          ...Object.fromEntries(
+            response.groups.map((group) => [group.name, group])
+          ),
+        },
+      }));
+      return response.groups;
+    } catch {
+      // BatchGet is all-or-nothing: one name that no longer exists, or that this
+      // caller may not see, fails the whole batch. Names here come from stored
+      // references that go stale, so fall back to per-name fetches, which
+      // tolerate a miss.
+      const groups = await Promise.all(
+        validNames.map((name) => get().fetchGroup(name))
+      );
+      return groups.filter((group): group is NonNullable<typeof group> =>
+        Boolean(group)
+      );
+    }
   },
 
   batchGetOrFetchGroups: async (names) => {

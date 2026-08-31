@@ -29,10 +29,9 @@ service GroupService {
 
   // Gets multiple groups in a single request.
   // Group members or users with bb.groups.get permission can get the group.
-  // A name that resolves to nothing is reported in `unmatched_names` instead of
-  // failing the call, so a partial response is a success. This departs from
-  // AIP-231 atomicity on purpose: callers resolve names held in stored
-  // references, which go stale when a group is deleted.
+  // Answers with one resource per requested name, in request order. Equivalent
+  // to calling GetGroup for each name: the first name that does not resolve
+  // fails the whole call, so there is no partial response (AIP-231).
   // Permissions required: bb.groups.get OR caller is the group member
   rpc BatchGetGroups(BatchGetGroupsRequest) returns (BatchGetGroupsResponse) {
     option (google.api.http) = {get: "/v1/groups:batchGet"};
@@ -119,16 +118,8 @@ message BatchGetGroupsRequest {
 
 // Response message for batch getting groups.
 message BatchGetGroupsResponse {
-  // The groups from the specified request, in the order their names were
-  // requested. Duplicate names collapse to their first occurrence and unmatched
-  // names have no entry, so this list may be shorter than `names`.
+  // One group per requested name, in the same order as `names`.
   repeated Group groups = 1;
-
-  // The requested names that returned no group, in request order. A name lands
-  // here whether the group does not exist or the caller may not see it. The two
-  // are not distinguished, so the response cannot be used to probe which groups
-  // exist.
-  repeated string unmatched_names = 2;
 }
 
 // Request message for listing groups.

@@ -2,7 +2,6 @@ package tests
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -10,14 +9,13 @@ import (
 	"github.com/stretchr/testify/require"
 
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
-// The four BatchGet RPCs answer one contract: resources in request order, a
-// repeated name served once, and a name that resolves to nothing reported in
-// unmatched_names instead of silently dropped or 404ing the whole call.
+// The four BatchGet RPCs answer one contract: one resource per requested name,
+// in request order, and the first name that does not resolve fails the whole
+// call. No partial responses (AIP-231).
 
-func TestBatchGetProjectsReportsMissingNamesInsteadOfFailing(t *testing.T) {
+func TestBatchGetProjectsIsOrderedAndAtomic(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -38,86 +36,22 @@ func TestBatchGetProjectsReportsMissingNamesInsteadOfFailing(t *testing.T) {
 	}))
 	a.NoError(err)
 
-	const missing = "projects/no-such-project"
-	// B before A, so a response in store order would not match.
+	// B before A, so a response in creation order would not match.
 	response, err := ctl.projectServiceClient.BatchGetProjects(ctx, connect.NewRequest(&v1pb.BatchGetProjectsRequest{
-		Names: []string{projectB.Msg.Name, missing, projectA.Msg.Name, projectB.Msg.Name},
+		Names: []string{projectB.Msg.Name, projectA.Msg.Name},
 	}))
-	a.NoError(err, "one missing name must not fail the whole batch")
-	a.Equal(
-		[]string{projectB.Msg.Name, projectA.Msg.Name},
-		projectNames(response.Msg.Projects),
-		"projects come back in request order, each requested name served once",
-	)
-	a.Equal([]string{missing}, response.Msg.UnmatchedNames)
+	a.NoError(err)
+	a.Equal([]string{projectB.Msg.Name, projectA.Msg.Name}, projectNames(response.Msg.Projects),
+		"one project per requested name, in request order")
+
+	_, err = ctl.projectServiceClient.BatchGetProjects(ctx, connect.NewRequest(&v1pb.BatchGetProjectsRequest{
+		Names: []string{projectA.Msg.Name, "projects/no-such-project"},
+	}))
+	a.Error(err, "one name that does not resolve fails the whole call")
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
 }
 
-func TestBatchGetProjectsAuthorizesEachNamedProject(t *testing.T) {
-	t.Parallel()
-	a := require.New(t)
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
-	defer cancel()
-	ctl := &controller{}
-	ctx, err := ctl.StartServerWithExternalPg(ctx)
-	a.NoError(err)
-	defer ctl.Close(ctx)
-
-	mine, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
-		ProjectId: generateRandomString("bg-mine"),
-		Project:   &v1pb.Project{Title: "Batch Get Mine"},
-	}))
-	a.NoError(err)
-	theirs, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
-		ProjectId: generateRandomString("bg-theirs"),
-		Project:   &v1pb.Project{Title: "Batch Get Theirs"},
-	}))
-	a.NoError(err)
-
-	// A member whose only project grant is on `mine`. bb.projects.get is not a
-	// Workspace Member permission, so authorizing this request against the
-	// workspace — which is all the ACL interceptor can do with a repeated names
-	// field — denied the call outright.
-	const email = "batch-get-member@example.com"
-	const password = "1024bytebase"
-	created, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
-		User: &v1pb.User{Title: "batch get member", Email: email, Password: password},
-	}))
-	a.NoError(err)
-	_, err = ctl.addMemberToWorkspaceIAM(ctx, created.Msg.Workspace, "user:"+email, "roles/workspaceMember")
-	a.NoError(err)
-
-	policy, err := ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{
-		Resource: mine.Msg.Name,
-	}))
-	a.NoError(err)
-	policy.Msg.Bindings = append(policy.Msg.Bindings, &v1pb.Binding{
-		Role:    "roles/projectOwner",
-		Members: []string{fmt.Sprintf("user:%s", email)},
-	})
-	_, err = ctl.projectServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
-		Resource: mine.Msg.Name,
-		Policy:   policy.Msg,
-	}))
-	a.NoError(err)
-
-	login, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
-		Email:    email,
-		Password: password,
-	}))
-	a.NoError(err)
-	asMember := v1connect.NewProjectServiceClient(ctl.client, ctl.rootURL,
-		connect.WithInterceptors(&authInterceptor{token: login.Msg.Token}))
-
-	response, err := asMember.BatchGetProjects(ctx, connect.NewRequest(&v1pb.BatchGetProjectsRequest{
-		Names: []string{mine.Msg.Name, theirs.Msg.Name},
-	}))
-	a.NoError(err, "a project-scoped role must be able to batch get its own projects")
-	a.Equal([]string{mine.Msg.Name}, projectNames(response.Msg.Projects))
-	a.Equal([]string{theirs.Msg.Name}, response.Msg.UnmatchedNames,
-		"a project the caller may not see is unmatched, indistinguishable from one that does not exist")
-}
-
-func TestBatchGetUsersReturnsRequestOrder(t *testing.T) {
+func TestBatchGetUsersIsOrderedAndAtomic(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -137,9 +71,8 @@ func TestBatchGetUsersReturnsRequestOrder(t *testing.T) {
 	a.NoError(err)
 
 	// Newest first, so the store's own created_at ordering would invert this.
-	const missing = "users/batch-get-nobody@example.com"
 	response, err := ctl.userServiceClient.BatchGetUsers(ctx, connect.NewRequest(&v1pb.BatchGetUsersRequest{
-		Names: []string{second.Msg.Name, missing, first.Msg.Name, second.Msg.Name},
+		Names: []string{second.Msg.Name, first.Msg.Name},
 	}))
 	a.NoError(err)
 	names := make([]string, 0, len(response.Msg.Users))
@@ -147,10 +80,15 @@ func TestBatchGetUsersReturnsRequestOrder(t *testing.T) {
 		names = append(names, user.Name)
 	}
 	a.Equal([]string{second.Msg.Name, first.Msg.Name}, names)
-	a.Equal([]string{missing}, response.Msg.UnmatchedNames)
+
+	_, err = ctl.userServiceClient.BatchGetUsers(ctx, connect.NewRequest(&v1pb.BatchGetUsersRequest{
+		Names: []string{first.Msg.Name, "users/batch-get-nobody@example.com"},
+	}))
+	a.Error(err, "a user that does not exist fails the whole call")
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
 }
 
-func TestBatchGetGroupsReportsMissingNames(t *testing.T) {
+func TestBatchGetGroupsIsAtomic(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -166,18 +104,23 @@ func TestBatchGetGroupsReportsMissingNames(t *testing.T) {
 	}))
 	a.NoError(err)
 
-	const missing = "groups/no-such-group@example.com"
 	response, err := ctl.groupServiceClient.BatchGetGroups(ctx, connect.NewRequest(&v1pb.BatchGetGroupsRequest{
-		Names: []string{missing, group.Msg.Name},
+		Names: []string{group.Msg.Name},
 	}))
 	a.NoError(err)
 	a.Len(response.Msg.Groups, 1)
 	a.Equal(group.Msg.Name, response.Msg.Groups[0].Name)
-	a.Equal([]string{missing}, response.Msg.UnmatchedNames,
-		"a group that does not exist is reported, not swallowed with every other error")
+
+	// This used to swallow every error and answer 200 with the group missing,
+	// which made a store failure indistinguishable from "no such group".
+	_, err = ctl.groupServiceClient.BatchGetGroups(ctx, connect.NewRequest(&v1pb.BatchGetGroupsRequest{
+		Names: []string{group.Msg.Name, "groups/no-such-group@example.com"},
+	}))
+	a.Error(err, "a group that does not exist fails the whole call")
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
 }
 
-func TestBatchGetDatabasesReportsMissingNames(t *testing.T) {
+func TestBatchGetDatabasesIsAtomic(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -187,20 +130,14 @@ func TestBatchGetDatabasesReportsMissingNames(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	missing := []string{
-		"instances/no-such-instance/databases/no-such-db",
-		"instances/no-such-instance/databases/other-db",
-	}
-	response, err := ctl.databaseServiceClient.BatchGetDatabases(ctx, connect.NewRequest(&v1pb.BatchGetDatabasesRequest{
+	// This used to answer 200 with the database silently missing from the list.
+	_, err = ctl.databaseServiceClient.BatchGetDatabases(ctx, connect.NewRequest(&v1pb.BatchGetDatabasesRequest{
 		Parent: "-",
-		Names:  missing,
+		Names:  []string{"instances/no-such-instance/databases/no-such-db"},
 	}))
-	a.NoError(err)
-	a.Empty(response.Msg.Databases)
-	a.Equal(missing, response.Msg.UnmatchedNames,
-		"the caller must be able to tell which names came back empty")
+	a.Error(err, "a database that does not exist fails the whole call")
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
 
-	// A name the caller malformed is still their error, and still fails the call.
 	_, err = ctl.databaseServiceClient.BatchGetDatabases(ctx, connect.NewRequest(&v1pb.BatchGetDatabasesRequest{
 		Parent: "-",
 		Names:  []string{"not-a-database-name"},

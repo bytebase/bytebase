@@ -50,10 +50,9 @@ type UserServiceClient interface {
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*User, error)
 	// Get the users in batch.
 	// Any authenticated user can batch get users.
-	// A name that resolves to nothing is reported in `unmatched_names` instead of
-	// failing the call, so a partial response is a success. This departs from
-	// AIP-231 atomicity on purpose: callers resolve names held in stored
-	// references, which go stale when a user leaves the workspace.
+	// Answers with one resource per requested name, in request order. Equivalent
+	// to calling GetUser for each name: the first name that does not resolve
+	// fails the whole call, so there is no partial response (AIP-231).
 	// Permissions required: bb.users.get
 	BatchGetUsers(ctx context.Context, in *BatchGetUsersRequest, opts ...grpc.CallOption) (*BatchGetUsersResponse, error)
 	// Get the current authenticated user.
@@ -304,10 +303,9 @@ type UserServiceServer interface {
 	GetUser(context.Context, *GetUserRequest) (*User, error)
 	// Get the users in batch.
 	// Any authenticated user can batch get users.
-	// A name that resolves to nothing is reported in `unmatched_names` instead of
-	// failing the call, so a partial response is a success. This departs from
-	// AIP-231 atomicity on purpose: callers resolve names held in stored
-	// references, which go stale when a user leaves the workspace.
+	// Answers with one resource per requested name, in request order. Equivalent
+	// to calling GetUser for each name: the first name that does not resolve
+	// fails the whole call, so there is no partial response (AIP-231).
 	// Permissions required: bb.users.get
 	BatchGetUsers(context.Context, *BatchGetUsersRequest) (*BatchGetUsersResponse, error)
 	// Get the current authenticated user.

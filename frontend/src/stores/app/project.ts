@@ -192,24 +192,34 @@ export const createProjectSlice: AppSliceCreator<ProjectSlice> = (set, get) => {
       );
       if (validNames.length === 0) return [];
 
-      // A name the caller may not see or that no longer exists comes back in
-      // `unmatchedNames`, so the batch no longer fails on it and needs no
-      // per-name fallback.
-      const response = await projectServiceClientConnect.batchGetProjects(
-        createProto(BatchGetProjectsRequestSchema, { names: validNames }),
-        {
-          contextValues: createContextValues().set(silentContextKey, silent),
-        }
-      );
-      set((state) => ({
-        projectsByName: {
-          ...state.projectsByName,
-          ...Object.fromEntries(
-            response.projects.map((project) => [project.name, project])
-          ),
-        },
-      }));
-      return response.projects;
+      try {
+        const response = await projectServiceClientConnect.batchGetProjects(
+          createProto(BatchGetProjectsRequestSchema, { names: validNames }),
+          {
+            contextValues: createContextValues().set(silentContextKey, silent),
+          }
+        );
+        set((state) => ({
+          projectsByName: {
+            ...state.projectsByName,
+            ...Object.fromEntries(
+              response.projects.map((project) => [project.name, project])
+            ),
+          },
+        }));
+        return response.projects;
+      } catch {
+        // BatchGet is all-or-nothing: one name that no longer exists, or that this
+        // caller may not see, fails the whole batch. Names here come from stored
+        // references that go stale, so fall back to per-name fetches, which
+        // tolerate a miss.
+        const projects = await Promise.all(
+          validNames.map((name) => get().fetchProject(name, silent))
+        );
+        return projects.filter(
+          (project): project is NonNullable<typeof project> => Boolean(project)
+        );
+      }
     },
 
     batchGetOrFetchProjects: async (names) => {

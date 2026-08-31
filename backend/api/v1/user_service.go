@@ -84,12 +84,8 @@ func (s *UserService) GetUser(ctx context.Context, request *connect.Request[v1pb
 // BatchGetUsers get users in batch.
 func (s *UserService) BatchGetUsers(ctx context.Context, request *connect.Request[v1pb.BatchGetUsersRequest]) (*connect.Response[v1pb.BatchGetUsersResponse], error) {
 	// Extract and validate emails from names.
-	emailByName := make(map[string]string, len(request.Msg.Names))
 	emails := make([]string, 0, len(request.Msg.Names))
 	for _, name := range request.Msg.Names {
-		if _, ok := emailByName[name]; ok {
-			continue
-		}
 		email, err := common.GetUserEmail(name)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInvalidArgument, err)
@@ -97,7 +93,6 @@ func (s *UserService) BatchGetUsers(ctx context.Context, request *connect.Reques
 		if err := validateEndUserEmail(email); err != nil {
 			return nil, err
 		}
-		emailByName[name] = strings.ToLower(email)
 		emails = append(emails, email)
 	}
 
@@ -110,32 +105,27 @@ func (s *UserService) BatchGetUsers(ctx context.Context, request *connect.Reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to batch get users"))
 	}
-	// The store returns its own order, so index the result and emit in the order
-	// the names were requested.
+	// The store returns its own order, so index the result and answer in the
+	// order the names were requested.
 	userByEmail := make(map[string]*store.UserMessage, len(users))
 	for _, user := range users {
 		userByEmail[strings.ToLower(user.Email)] = user
 	}
 
-	v1Users, unmatched, err := resolveBatchGet(request.Msg.Names, func(name string) (*v1pb.User, bool, error) {
-		user, ok := userByEmail[emailByName[name]]
+	response := &v1pb.BatchGetUsersResponse{}
+	for i, name := range request.Msg.Names {
+		user, ok := userByEmail[strings.ToLower(emails[i])]
 		if !ok {
-			return nil, false, nil
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %q not found", name))
 		}
 		v1User, err := convertToUser(ctx, s.iamManager, user)
 		if err != nil {
-			return nil, false, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))
 		}
-		return v1User, true, nil
-	})
-	if err != nil {
-		return nil, err
+		response.Users = append(response.Users, v1User)
 	}
 
-	return connect.NewResponse(&v1pb.BatchGetUsersResponse{
-		Users:          v1Users,
-		UnmatchedNames: unmatched,
-	}), nil
+	return connect.NewResponse(response), nil
 }
 
 // GetCurrentUser gets the current authenticated user.

@@ -533,18 +533,10 @@ func populateRawResources(ctx context.Context, stores *store.Store, request any,
 		return nil, err
 	}
 
-	lenient := batchGetLookupNames(request, method)
 	var resources []*common.Resource
 	for _, name := range rawNames {
 		resource, err := resolveRawResourceWithArchivedProject(ctx, stores, name, allowsArchivedProjectResourceResolution(method))
 		if err != nil {
-			// A BatchGet reports a name it cannot resolve in the response's
-			// unmatched_names, so resolution here must not fail the whole
-			// batch on one. Every name that does resolve is still authorized,
-			// and the handlers re-check permission per name.
-			if lenient[name] && connect.CodeOf(err) == connect.CodeNotFound {
-				continue
-			}
 			return nil, err
 		}
 		if resource != nil {
@@ -552,32 +544,6 @@ func populateRawResources(ctx context.Context, stores *store.Store, request any,
 		}
 	}
 	return resources, nil
-}
-
-// batchGetLookupNames returns the names a BatchGet method looks up, which are
-// exactly the names it may report back as unmatched. The batch's `parent` is
-// not among them: that is the scope of the call, and a parent that does not
-// resolve is still the caller's error.
-func batchGetLookupNames(request any, method string) map[string]bool {
-	methodTokens := strings.Split(method, "/")
-	if len(methodTokens) != 3 || !strings.HasPrefix(methodTokens[2], "BatchGet") {
-		return nil
-	}
-	pm, ok := request.(proto.Message)
-	if !ok {
-		return nil
-	}
-	mr := pm.ProtoReflect()
-	namesDesc := mr.Descriptor().Fields().ByName("names")
-	if namesDesc == nil || !namesDesc.IsList() {
-		return nil
-	}
-	names := mr.Get(namesDesc).List()
-	lookup := make(map[string]bool, names.Len())
-	for i := 0; i < names.Len(); i++ {
-		lookup[names.Get(i).String()] = true
-	}
-	return lookup
 }
 
 func getProjectScopedInstance(ctx context.Context, stores *store.Store, projectID, instanceID string) (*store.InstanceMessage, error) {

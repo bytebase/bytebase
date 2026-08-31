@@ -169,24 +169,38 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
     batchFetchDatabases: async (names, silent = false) => {
       const validNames = uniq(names).filter(isValidDatabaseName);
       if (!validNames.length) return [];
-      const response = await databaseServiceClientConnect.batchGetDatabases(
-        createProto(BatchGetDatabasesRequestSchema, {
-          parent: "-",
-          names: validNames,
-        }),
-        {
-          contextValues: createContextValues().set(silentContextKey, silent),
-        }
-      );
-      const composed = await composeDatabases(response.databases, silent);
-      set((state) => {
-        const next = { ...state.databasesByName };
-        for (const db of composed) {
-          next[db.name] = db;
-        }
-        return { databasesByName: next };
-      });
-      return composed;
+      try {
+        const response = await databaseServiceClientConnect.batchGetDatabases(
+          createProto(BatchGetDatabasesRequestSchema, {
+            parent: "-",
+            names: validNames,
+          }),
+          {
+            contextValues: createContextValues().set(silentContextKey, silent),
+          }
+        );
+        const composed = await composeDatabases(response.databases, silent);
+        set((state) => {
+          const next = { ...state.databasesByName };
+          for (const db of composed) {
+            next[db.name] = db;
+          }
+          return { databasesByName: next };
+        });
+        return composed;
+      } catch {
+        // BatchGet is all-or-nothing: one name that no longer exists, or that this
+        // caller may not see, fails the whole batch. Names here come from stored
+        // references that go stale, so fall back to per-name fetches, which
+        // tolerate a miss.
+        const databases = await Promise.all(
+          validNames.map((name) => fetchByName(name, silent))
+        );
+        return databases.filter(
+          (database): database is NonNullable<typeof database> =>
+            Boolean(database)
+        );
+      }
     },
 
     batchGetOrFetchDatabases: async (names, silent = false) => {

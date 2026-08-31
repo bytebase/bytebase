@@ -54,14 +54,6 @@ func (x *BatchGetUsersResponse) Equal(y *BatchGetUsersResponse) bool {
 			return false
 		}
 	}
-	if len(x.UnmatchedNames) != len(y.UnmatchedNames) {
-		return false
-	}
-	for i := 0; i < len(x.UnmatchedNames); i++ {
-		if x.UnmatchedNames[i] != y.UnmatchedNames[i] {
-			return false
-		}
-	}
 	return true
 }
 
