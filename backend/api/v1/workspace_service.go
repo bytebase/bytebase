@@ -10,7 +10,6 @@ import (
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/pkg/errors"
-	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
@@ -434,7 +433,14 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace iam policy"))
 	}
-	if request.Etag != "" && request.Etag != policyMessage.Etag {
+	expectedEtag, err := requestedIamPolicyEtag(request)
+	if err != nil {
+		return nil, err
+	}
+	// A request already known to be stale fails here rather than after
+	// validation, which reads the policy this one no longer matches. The write
+	// below compares again under lock, which is what actually closes the race.
+	if expectedEtag != "" && expectedEtag != policyMessage.Etag {
 		return nil, connect.NewError(connect.CodeAborted, errors.New("there is concurrent update to the workspace iam policy, please refresh and try again"))
 	}
 
@@ -479,19 +485,20 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		}
 	}
 
-	payloadBytes, err := protojson.Marshal(iamPolicy)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to marshal iam policy"))
-	}
-	patch := &store.UpdatePolicyMessage{
-		ResourceType: storepb.Policy_WORKSPACE,
-		Resource:     request.Resource,
-		Type:         storepb.Policy_IAM,
+	// The write targets the workspace the caller is authenticated to, the same
+	// one every read and check above resolved. Naming any other resource used to
+	// match no row, and the write silently did nothing.
+	replaced, policy, err := s.store.SetIamPolicy(ctx, &store.SetIamPolicyMessage{
 		Workspace:    workspaceID,
-		Payload:      new(string(payloadBytes)),
-	}
-
-	if _, err := s.store.UpdatePolicy(ctx, patch); err != nil {
+		ResourceType: storepb.Policy_WORKSPACE,
+		Resource:     common.FormatWorkspace(workspaceID),
+		Policy:       iamPolicy,
+		ExpectedEtag: expectedEtag,
+	})
+	if err != nil {
+		if errors.Is(err, store.ErrIamPolicyEtagMismatch) {
+			return nil, connect.NewError(connect.CodeAborted, errors.New("there is concurrent update to the workspace iam policy, please refresh and try again"))
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -499,12 +506,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		return nil, err
 	}
 
-	policy, err := s.store.GetWorkspaceIamPolicy(ctx, workspaceID)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find iam policy"))
-	}
-
-	deltas := findIamPolicyDeltas(policyMessage.Policy, policy.Policy)
+	deltas := findIamPolicyDeltas(replaced.Policy, policy.Policy)
 
 	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok {
 		p, err := convertToProtoAny(deltas)
@@ -515,7 +517,7 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 	}
 
 	// send invite emails to newly added members.
-	go s.sendInviteEmails(context.WithoutCancel(ctx), workspaceID, policyMessage.Policy, deltas)
+	go s.sendInviteEmails(context.WithoutCancel(ctx), workspaceID, replaced.Policy, deltas)
 
 	v1Policy, err := convertToV1IamPolicy(policy)
 	if err != nil {
