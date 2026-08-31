@@ -21,7 +21,9 @@ const rawInterpolationRules = [
   },
   {
     what: "a CEL comparison operand — use `state == ${celString(x)}`",
-    pattern: /[a-z][a-zA-Z0-9_.]*\s*(?:==|!=|>=|<=|<|>)\s*"\$\{/,
+    // The left operand may be a plain field, a computed one (`${field} ==`,
+    // which getLabelFilter builds), or an index (`labels["k"] ==`).
+    pattern: /(?:[a-z][a-zA-Z0-9_.]*|\}|\])\s*(?:==|!=|>=|<=|<|>)\s*"\$\{/,
   },
   {
     what: "a CEL list element — use `engine in ${celStringList(xs)}`",
