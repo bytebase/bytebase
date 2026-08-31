@@ -192,14 +192,19 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 	// the same way; the residual timing difference between a skipped send and an
 	// SMTP round trip is accepted there and here.
 	answerUniformly := !s.profile.SaaS && restriction.DisallowSignup
-	if answerUniformly {
-		user, err := s.store.GetUserByEmail(ctx, email)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user by email"))
-		}
-		if user == nil {
-			return connect.NewResponse(&emptypb.Empty{}), nil
-		}
+	user, err := s.store.GetUserByEmail(ctx, email)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user by email"))
+	}
+	// A deactivated principal is not an account for this purpose: Login refuses
+	// it, so a code mailed there can never be redeemed. GetUserByEmail returns
+	// soft-deleted users, and DeleteUser leaves the workspace IAM binding behind,
+	// so both the gate and the budget below have to say so explicitly or a
+	// deactivated address stays mailable forever. PASSWORD_RESET already draws
+	// the line here.
+	canRedeem := user != nil && !user.MemberDeleted
+	if answerUniformly && !canRedeem {
+		return connect.NewResponse(&emptypb.Empty{}), nil
 	}
 
 	// Budget mail to strangers. The per-recipient cooldown bounds one address;
@@ -226,9 +231,15 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 			{Identity: "signup-code-deployment", Max: emailCodeSendPerDeployment},
 		}
 	} else {
-		known, err := s.emailBelongsToWorkspace(ctx, workspaceID, email)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
+		// An invitee has a binding but no account yet, and is expected traffic;
+		// a deactivated principal has a binding and cannot use what it receives,
+		// so it is charged like any other stranger.
+		known := false
+		if user == nil || canRedeem {
+			known, err = s.emailBelongsToWorkspace(ctx, workspaceID, email)
+			if err != nil {
+				return nil, connect.NewError(connect.CodeInternal, err)
+			}
 		}
 		if !known {
 			// Exhaustion here must be silent. Only strangers are charged, so
@@ -502,6 +513,34 @@ func sendEmailVerificationCode(ctx context.Context, stores *store.Store, secret,
 		return errors.Errorf("cannot found email config for workspace %v", workspaceID)
 	}
 
+	// Claim the budget before anything is written. The upsert below replaces the
+	// stored hash, so a claim made after it lets an exhausted bucket destroy a
+	// code the recipient is still holding and never send a replacement — an
+	// anonymous caller could then deny code sign-in to a whole domain for the
+	// window. Refusing here leaves the existing row exactly as it was.
+	//
+	// The read-only cooldown check keeps the budget off requests the upsert would
+	// silently skip, which is what claiming afterwards used to buy: repeated
+	// requests for one address must not drain a shared bucket. The upsert
+	// re-checks the cooldown authoritatively, so losing that race costs one
+	// budget slot and never a code.
+	if len(budgets) > 0 {
+		existing, err := stores.GetEmailVerificationCode(ctx, email, purpose)
+		if err != nil {
+			return errors.Wrap(err, "failed to read verification code")
+		}
+		if existing != nil && time.Since(existing.LastSentAt) < emailCodeResendCooldown {
+			return nil // cooldown active — silent skip, as the upsert would be
+		}
+		granted, err := stores.ClaimLoginAttemptBuckets(ctx, storepb.LoginAttemptKind_EMAIL_CODE_SEND, emailCodeSendWindow, budgets)
+		if err != nil {
+			return errors.Wrap(err, "failed to claim send budget")
+		}
+		if !granted {
+			return errSendBudgetExhausted
+		}
+	}
+
 	code, err := generateEmailCode()
 	if err != nil {
 		return errors.Wrap(err, "failed to generate code")
@@ -520,22 +559,6 @@ func sendEmailVerificationCode(ctx context.Context, stores *store.Store, secret,
 	}
 	if !sent {
 		return nil // cooldown active — silent skip
-	}
-
-	// Budget is claimed here rather than on entry so only mail that is actually
-	// about to go out spends it. Claiming earlier would let repeated requests
-	// for a single address drain a shared bucket through the cooldown's silent
-	// skips, turning the limit into the denial of service it exists to prevent.
-	granted, err := stores.ClaimLoginAttemptBuckets(ctx, storepb.LoginAttemptKind_EMAIL_CODE_SEND, emailCodeSendWindow, budgets)
-	if err != nil {
-		return errors.Wrap(err, "failed to claim send budget")
-	}
-	if !granted {
-		// Drop the code we just wrote, for the reason the delivery-failure path
-		// below drops its own: an undelivered code must not hold the cooldown
-		// against a later, deliverable one.
-		_ = stores.DeleteEmailVerificationCodeIfMatch(ctx, email, purpose, hashEmailCode(secret, code))
-		return errSendBudgetExhausted
 	}
 
 	sender, err := mailer.NewSender(emailSetting)

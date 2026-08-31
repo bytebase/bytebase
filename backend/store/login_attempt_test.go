@@ -311,6 +311,37 @@ func TestLoginAttemptBucketsClaim(t *testing.T) {
 		require.Equal(t, 2*perDirection, attemptsOf(second))
 	})
 
+	t.Run("claims and the stale purge do not deadlock", func(t *testing.T) {
+		// The purge is a multi-row DELETE, so without an ordered locking phase it
+		// takes rows in planner-scan order and can oppose a claim holding the same
+		// rows in identity order. Both now lock in primary-key order. A deadlock
+		// is timing-dependent, so this is a stress test rather than a
+		// deterministic reproduction: it asserts that neither side ever returns an
+		// error, which is what a 40P01 abort would surface as.
+		buckets := []store.LoginAttemptBucket{{Identity: "purge-a", Max: 1000}, {Identity: "purge-z", Max: 1000}}
+		var wg sync.WaitGroup
+		errs := make(chan error, 200)
+		for range 100 {
+			wg.Go(func() {
+				if _, err := s.ClaimLoginAttemptBuckets(ctx, kind, window, buckets); err != nil {
+					errs <- err
+				}
+			})
+			wg.Go(func() {
+				// Zero retention makes every row stale, so the purge and the claims
+				// contend for exactly the same rows on every pass.
+				if _, err := s.DeleteStaleLoginAttempts(ctx, 0); err != nil {
+					errs <- err
+				}
+			})
+		}
+		wg.Wait()
+		close(errs)
+		for err := range errs {
+			require.NoError(t, err, "a claim and the purge must not deadlock over the same rows")
+		}
+	})
+
 	t.Run("an unkeyed bucket is refused outright", func(t *testing.T) {
 		_, err := s.ClaimLoginAttemptBuckets(ctx, kind, window, []store.LoginAttemptBucket{{Identity: "ok", Max: 1}, {Identity: "", Max: 1}})
 		require.Error(t, err, "an empty identity must never write a row")

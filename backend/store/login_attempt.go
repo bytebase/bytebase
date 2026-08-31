@@ -150,9 +150,21 @@ func (s *Store) ClearLoginAttempt(ctx context.Context, identity string, kind sto
 
 // DeleteStaleLoginAttempts deletes rows whose latest attempt is older than
 // retention. Returns the number of deleted rows.
+//
+// Rows are locked in primary-key order, matching ClaimLoginAttemptBuckets. A
+// bare multi-row DELETE takes them in whatever order the planner scans, which
+// can oppose a concurrent claim over the same rows and deadlock one of them —
+// backend/store/AGENTS.md counts a DELETE's locks as part of the ordering.
 func (s *Store) DeleteStaleLoginAttempts(ctx context.Context, retention time.Duration) (int64, error) {
 	q := qb.Q().Space(`
-		DELETE FROM login_attempt WHERE last_attempt_at < now() - make_interval(secs => ?)
+		DELETE FROM login_attempt
+		WHERE (identity, kind) IN (
+			SELECT identity, kind
+			FROM login_attempt
+			WHERE last_attempt_at < now() - make_interval(secs => ?)
+			ORDER BY identity, kind
+			FOR UPDATE
+		)
 	`, retention.Seconds())
 
 	query, args, err := q.ToSQL()

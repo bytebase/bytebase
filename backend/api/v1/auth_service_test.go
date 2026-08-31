@@ -779,7 +779,80 @@ func TestSendEmailLoginCodeBudgetsWorkspaceStrangers(t *testing.T) {
 	require.NoError(t, err)
 	require.Nil(t, row, "a refused send must leave no code behind")
 
+	// A deactivated principal keeps its workspace IAM binding, so a membership
+	// check alone would exempt it forever — while Login refuses it, making every
+	// code mailed there unusable. It is charged like any other stranger, so with
+	// the bucket empty it is refused silently rather than reaching delivery.
+	deactivated, err := stores.CreateUser(ctx, &store.UserMessage{
+		Email:        "former@corp.example",
+		Name:         "Former",
+		PasswordHash: "unused",
+		Profile:      &storepb.UserProfile{},
+	})
+	require.NoError(t, err)
+	_, err = stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
+		Workspace: workspaceID,
+		Member:    common.FormatUserEmail(deactivated.Email),
+		Roles:     []string{common.FormatRole(store.WorkspaceMemberRole)},
+	})
+	require.NoError(t, err)
+	del := true
+	_, err = stores.UpdateUser(ctx, deactivated, &store.UpdateUserMessage{Delete: &del})
+	require.NoError(t, err)
+	require.NoError(t, send(deactivated.Email), "a deactivated address must be budgeted like a stranger, not exempted as a member")
+
 	// The workspace's own member is never charged, so sign-in still works while
 	// the stranger budget is empty.
 	requireAttempted(t, member.Email)
+}
+
+// TestSendEmailLoginCodeBudgetKeepsExistingCode pins that a refused budget is
+// inert. The upsert that stores a new code replaces whatever the recipient was
+// holding, so claiming the budget after it would let an anonymous caller with an
+// exhausted bucket destroy a pending code and send no replacement — denying code
+// sign-in to everyone on that domain for the window.
+func TestSendEmailLoginCodeBudgetKeepsExistingCode(t *testing.T) {
+	const secret = "test-secret"
+
+	ctx := context.Background()
+	stores := newAuthTestStore(t)
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
+	require.NoError(t, err)
+
+	// Workspaceless sends run on the deployment mail identity; port 1 refuses, so
+	// each call spends budget and reports Internal.
+	t.Setenv("EMAIL_CONFIG", `{"from":"bytebase@example.com","type":"SMTP","smtp":{"host":"127.0.0.1","port":1,"encryption":"ENCRYPTION_NONE","authentication":"AUTHENTICATION_NONE"}}`)
+	service := NewAuthService(stores, secret, licenseService, &config.Profile{SaaS: true}, nil)
+
+	send := func(email string) error {
+		_, err := service.SendEmailLoginCode(ctx, connect.NewRequest(&v1pb.SendEmailLoginCodeRequest{Email: email}))
+		return err
+	}
+
+	// A code the victim is still holding, last sent long enough ago that the
+	// resend cooldown has elapsed — the state in which the upsert would replace it.
+	const victim = "victim@victim.example"
+	const heldHash = "held-code-hash"
+	sent, err := stores.UpsertEmailVerificationCodeIfCooldownExpired(ctx, &store.EmailVerificationCodeMessage{
+		Email:      victim,
+		Purpose:    storepb.EmailVerificationCodePurpose_LOGIN,
+		CodeHash:   heldHash,
+		ExpiresAt:  time.Now().Add(emailCodeExpiry),
+		LastSentAt: time.Now().Add(-5 * time.Minute),
+	}, emailCodeResendCooldown)
+	require.NoError(t, err)
+	require.True(t, sent)
+
+	// Exhaust the victim's domain bucket from other addresses on that domain.
+	for i := range emailCodeSendPerDomain {
+		require.Equal(t, connect.CodeInternal, connect.CodeOf(send(fmt.Sprintf("filler%d@victim.example", i))))
+	}
+	require.Equal(t, connect.CodeResourceExhausted, connect.CodeOf(send("another@victim.example")))
+
+	// Now the attack: a request for the victim, with the bucket empty.
+	require.Equal(t, connect.CodeResourceExhausted, connect.CodeOf(send(victim)))
+	row, err := stores.GetEmailVerificationCode(ctx, victim, storepb.EmailVerificationCodePurpose_LOGIN)
+	require.NoError(t, err)
+	require.NotNil(t, row, "a refused budget must not delete the code the recipient is holding")
+	require.Equal(t, heldHash, row.CodeHash, "a refused budget must not replace the code the recipient is holding")
 }
