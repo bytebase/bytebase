@@ -131,12 +131,12 @@ func TestListDatabaseFilter(t *testing.T) {
 		},
 		{
 			input:    `name.contains("Employee")`,
-			wantSQL:  `(LOWER(db.name) LIKE $1)`,
+			wantSQL:  `(LOWER(db.name) LIKE $1 ESCAPE '\')`,
 			wantArgs: []any{"%employee%"},
 		},
 		{
 			input:    `table.contains("user")`,
-			wantSQL:  "(EXISTS (\n\t\t\t\t\t\tSELECT 1\n\t\t\t\t\t\tFROM json_array_elements(ds.metadata->'schemas') AS s,\n\t\t\t\t\t\t \t json_array_elements(s->'tables') AS t\n\t\t\t\t\t\tWHERE t->>'name' LIKE $1))",
+			wantSQL:  "(EXISTS (\n\t\t\t\t\t\tSELECT 1\n\t\t\t\t\t\tFROM json_array_elements(ds.metadata->'schemas') AS s,\n\t\t\t\t\t\t \t json_array_elements(s->'tables') AS t\n\t\t\t\t\t\tWHERE t->>'name' LIKE $1 ESCAPE '\\'))",
 			wantArgs: []any{"%user%"},
 		},
 		{
@@ -150,18 +150,18 @@ func TestListDatabaseFilter(t *testing.T) {
 		},
 		{
 			input:    `labels.region == "asia" && labels.tenant == "bytebase"`,
-			wantSQL:  `((db.metadata->'labels'->>'region' = $1 AND db.metadata->'labels'->>'tenant' = $2))`,
-			wantArgs: []any{"asia", "bytebase"},
+			wantSQL:  `((db.metadata->'labels'->>$1::text = $2 AND db.metadata->'labels'->>$3::text = $4))`,
+			wantArgs: []any{"region", "asia", "tenant", "bytebase"},
 		},
 		{
 			input:    `(labels.region == "asia" || labels.tenant == "bytebase") && exclude_unassigned == true`,
-			wantSQL:  `(((db.metadata->'labels'->>'region' = $1 OR db.metadata->'labels'->>'tenant' = $2) AND db.project != $3 AND db.project != 'default'))`,
-			wantArgs: []any{"asia", "bytebase", common.DefaultProjectID("test-workspace")},
+			wantSQL:  `(((db.metadata->'labels'->>$1::text = $2 OR db.metadata->'labels'->>$3::text = $4) AND db.project != $5 AND db.project != 'default'))`,
+			wantArgs: []any{"region", "asia", "tenant", "bytebase", common.DefaultProjectID("test-workspace")},
 		},
 		{
 			input:    `labels.region in ["asia", "europe"] && labels.tenant == "bytebase"`,
-			wantSQL:  `((db.metadata->'labels'->>'region' = ANY($1) AND db.metadata->'labels'->>'tenant' = $2))`,
-			wantArgs: []any{[]any{"asia", "europe"}, "bytebase"},
+			wantSQL:  `((db.metadata->'labels'->>$1::text = ANY($2) AND db.metadata->'labels'->>$3::text = $4))`,
+			wantArgs: []any{"region", []any{"asia", "europe"}, "tenant", "bytebase"},
 		},
 	}
 

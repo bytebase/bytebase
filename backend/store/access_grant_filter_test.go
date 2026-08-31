@@ -25,14 +25,14 @@ func TestGetListAccessGrantFilter(t *testing.T) {
 		{
 			name:     "query contains",
 			filter:   `query.contains("SELECT * FROM users")`,
-			wantSQL:  "(regexp_replace(access_grant.payload->>'query', '\\s+', ' ', 'g') ILIKE $1)",
+			wantSQL:  "(regexp_replace(access_grant.payload->>'query', '\\s+', ' ', 'g') ILIKE $1 ESCAPE '\\')",
 			wantArgs: []any{"%SELECT * FROM users%"},
 			wantErr:  false,
 		},
 		{
 			name:     "query contains normalizes whitespace",
 			filter:   `query.contains("SELECT   *   FROM users")`,
-			wantSQL:  "(regexp_replace(access_grant.payload->>'query', '\\s+', ' ', 'g') ILIKE $1)",
+			wantSQL:  "(regexp_replace(access_grant.payload->>'query', '\\s+', ' ', 'g') ILIKE $1 ESCAPE '\\')",
 			wantArgs: []any{"%SELECT * FROM users%"},
 			wantErr:  false,
 		},

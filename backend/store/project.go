@@ -887,29 +887,6 @@ func GetListProjectFilter(workspace, filter string) (*qb.Query, error) {
 
 	var getFilter func(expr celast.Expr) (*qb.Query, error)
 
-	parseToLabelFilterSQL := func(resource, key string, value any) (*qb.Query, error) {
-		switch v := value.(type) {
-		case string:
-			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' = ?", resource, key), v), nil
-		case []any:
-			if len(v) == 0 {
-				return nil, errors.Errorf("empty label filter")
-			}
-
-			labelValueList := make([]any, len(v))
-			for i, raw := range v {
-				str, ok := raw.(string)
-				if !ok {
-					return nil, errors.Errorf("label value must be string, got %T", raw)
-				}
-				labelValueList[i] = str
-			}
-			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' = ANY(?)", resource, key), labelValueList), nil
-		default:
-			return nil, errors.Errorf("empty value %v for label filter", value)
-		}
-	}
-
 	parseToSQL := func(variable, value any) (*qb.Query, error) {
 		switch variable {
 		case "name":
@@ -945,7 +922,7 @@ func GetListProjectFilter(workspace, filter string) (*qb.Query, error) {
 				return nil, errors.Errorf("unsupport variable %q", variable)
 			}
 			if labelKey, ok := strings.CutPrefix(varStr, "labels."); ok {
-				return parseToLabelFilterSQL("project.setting", labelKey, value)
+				return buildLabelFilterSQL("project.setting", labelKey, value)
 			}
 			return nil, errors.Errorf("unsupport variable %q", variable)
 		}
@@ -992,16 +969,16 @@ func GetListProjectFilter(workspace, filter string) (*qb.Query, error) {
 
 				switch variable {
 				case "name":
-					return qb.Q().Space("LOWER(project.name) LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+					return qb.Q().Space("LOWER(project.name) LIKE ? ESCAPE '\\'", containsPattern(strings.ToLower(strValue))), nil
 				case "resource_id":
-					return qb.Q().Space("LOWER(project.resource_id) LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+					return qb.Q().Space("LOWER(project.resource_id) LIKE ? ESCAPE '\\'", containsPattern(strings.ToLower(strValue))), nil
 				default:
 					return nil, errors.Errorf("unsupport variable %q", variable)
 				}
 			case celoperators.In:
 				variable, value := getVariableAndValueFromExpr(expr)
 				if labelKey, ok := strings.CutPrefix(variable, "labels."); ok {
-					return parseToLabelFilterSQL("project.setting", labelKey, value)
+					return buildLabelFilterSQL("project.setting", labelKey, value)
 				}
 				return nil, errors.Errorf("unexpected %v operator for %v", functionName, variable)
 			default:

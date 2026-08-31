@@ -7,6 +7,7 @@ import {
   GetChangelogRequestSchema,
   ListChangelogsRequestSchema,
 } from "@/types/proto-es/v1/changelog_service_pb";
+import { celString } from "@/utils/v1/celLiteral";
 import { extractChangelogUID } from "@/utils/v1/changelog";
 import type { AppSliceCreator, ChangelogSlice } from "./types";
 
@@ -202,7 +203,7 @@ export const createChangelogSlice: AppSliceCreator<ChangelogSlice> = (
       parent: database,
       pageSize: 1,
       view: ChangelogView.FULL,
-      filter: `has_schema_snapshot == true && create_time < "${createTime}"`,
+      filter: `has_schema_snapshot == true && create_time < ${celString(createTime)}`,
     });
     return changelogs[0];
   },

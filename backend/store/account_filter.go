@@ -115,7 +115,7 @@ func GetAccountListFilter(filter string) (*AccountListFilter, error) {
 				if !ok {
 					return nil, errors.Errorf("expect string, got %T, hint: filter literals should be string", value)
 				}
-				return qb.Q().Space("LOWER("+variable+") LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+				return qb.Q().Space("LOWER("+variable+") LIKE ? ESCAPE '\\'", containsPattern(strings.ToLower(strValue))), nil
 			default:
 				return nil, errors.Errorf("unexpected function %v", functionName)
 			}

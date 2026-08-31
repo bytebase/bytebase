@@ -18,25 +18,25 @@ func TestGetListInstanceFilter(t *testing.T) {
 		{
 			name:     "name contains",
 			filter:   `name.contains("sample")`,
-			wantSQL:  "(LOWER(instance.metadata->>'title') LIKE $1)",
+			wantSQL:  "(LOWER(instance.metadata->>'title') LIKE $1 ESCAPE '\\')",
 			wantArgs: []any{"%sample%"},
 		},
 		{
 			name:     "resource_id contains",
 			filter:   `resource_id.contains("prod")`,
-			wantSQL:  "(LOWER(instance.resource_id) LIKE $1)",
+			wantSQL:  "(LOWER(instance.resource_id) LIKE $1 ESCAPE '\\')",
 			wantArgs: []any{"%prod%"},
 		},
 		{
 			name:     "host contains",
 			filter:   `host.contains("127.0")`,
-			wantSQL:  "(EXISTS (SELECT 1 FROM jsonb_array_elements(instance.metadata -> 'dataSources') AS ds WHERE ds ->> 'host' LIKE $1))",
+			wantSQL:  "(EXISTS (SELECT 1 FROM jsonb_array_elements(instance.metadata -> 'dataSources') AS ds WHERE ds ->> 'host' LIKE $1 ESCAPE '\\'))",
 			wantArgs: []any{"%127.0%"},
 		},
 		{
 			name:     "port contains",
 			filter:   `port.contains("543")`,
-			wantSQL:  "(EXISTS (SELECT 1 FROM jsonb_array_elements(instance.metadata -> 'dataSources') AS ds WHERE ds ->> 'port' LIKE $1))",
+			wantSQL:  "(EXISTS (SELECT 1 FROM jsonb_array_elements(instance.metadata -> 'dataSources') AS ds WHERE ds ->> 'port' LIKE $1 ESCAPE '\\'))",
 			wantArgs: []any{"%543%"},
 		},
 		{

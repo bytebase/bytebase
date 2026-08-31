@@ -37,38 +37,38 @@ import {
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
 } from "@/utils";
+import { celString, celStringList } from "@/utils/v1/celLiteral";
 import type { AppSliceCreator, InstanceFilter, InstanceSlice } from "./types";
 import { getLabelFilter, toError } from "./utils";
 
-const getListInstanceFilter = (params: InstanceFilter): string => {
+export const getListInstanceFilter = (params: InstanceFilter): string => {
   const list: string[] = [];
   const search = params.query?.trim().toLowerCase();
   if (search) {
-    list.push(
-      `(name.contains("${search}") || resource_id.contains("${search}"))`
-    );
+    const value = celString(search);
+    list.push(`(name.contains(${value}) || resource_id.contains(${value}))`);
   }
   if (isValidProjectName(params.project)) {
-    list.push(`project == "${params.project}"`);
+    list.push(`project == ${celString(params.project)}`);
   }
   if (params.environment === unknownEnvironment().name) {
     list.push(`environment == ""`);
   } else if (isValidEnvironmentName(params.environment)) {
-    list.push(`environment == "${params.environment}"`);
+    list.push(`environment == ${celString(params.environment)}`);
   }
   if (params.host) {
-    list.push(`host.contains("${params.host}")`);
+    list.push(`host.contains(${celString(params.host)})`);
   }
   if (params.port) {
-    list.push(`port.contains("${params.port}")`);
+    list.push(`port.contains(${celString(params.port)})`);
   }
   if (params.engines && params.engines.length > 0) {
     list.push(
-      `engine in [${params.engines.map((e) => `"${Engine[e]}"`).join(", ")}]`
+      `engine in ${celStringList(params.engines.map((e) => Engine[e]))}`
     );
   }
   if (params.state === State.DELETED) {
-    list.push(`state == "${State[params.state]}"`);
+    list.push(`state == ${celString(State[params.state])}`);
   }
   if (params.labels) {
     list.push(...getLabelFilter(params.labels));

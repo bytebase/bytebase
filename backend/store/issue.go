@@ -415,7 +415,7 @@ func (s *Store) ListIssues(ctx context.Context, find *FindIssueMessage) ([]*Issu
 			searchCondition.Or("issue.ts_vector @@ query")
 			rankOrder = "ts_rank(issue.ts_vector, query) DESC"
 		}
-		searchCondition.Or("issue.name ILIKE ?", "%"+escapeLikePattern(*v)+"%")
+		searchCondition.Or("issue.name ILIKE ? ESCAPE '\\'", containsPattern(*v))
 		where.And("(?)", searchCondition)
 	}
 	if len(find.StatusList) != 0 {

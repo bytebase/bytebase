@@ -23,6 +23,7 @@ import {
   UpdateEmailRequestSchema,
   UpdateUserRequestSchema,
 } from "@/types/proto-es/v1/user_service_pb";
+import { celString } from "@/utils/v1/celLiteral";
 import { ensureUserFullName } from "@/utils/v1/user";
 import type { AppSliceCreator, UserFilter, UserSlice } from "./types";
 
@@ -32,16 +33,17 @@ export const buildUserFilter = (params: UserFilter) => {
   const filter = [];
   const search = params.query?.trim()?.toLowerCase();
   if (search) {
-    filter.push(`(name.contains("${search}") || email.contains("${search}"))`);
+    const value = celString(search);
+    filter.push(`(name.contains(${value}) || email.contains(${value}))`);
   }
   if (
     isValidProjectName(params.project) &&
     params.project !== UNKNOWN_PROJECT_NAME_LEGACY
   ) {
-    filter.push(`project == "${params.project}"`);
+    filter.push(`project == ${celString(params.project)}`);
   }
   if (params.state === State.DELETED) {
-    filter.push(`state == "${State[params.state]}"`);
+    filter.push(`state == ${celString(State[params.state])}`);
   }
   return filter.join(" && ");
 };

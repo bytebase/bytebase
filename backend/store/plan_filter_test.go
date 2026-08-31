@@ -60,7 +60,7 @@ func TestGetListPlanFilter(t *testing.T) {
 		{
 			name:     "title contains",
 			filter:   `title.contains("test")`,
-			wantSQL:  "(LOWER(plan.name) LIKE $1)",
+			wantSQL:  "(LOWER(plan.name) LIKE $1 ESCAPE '\\')",
 			wantArgs: []any{"%test%"},
 			wantErr:  false,
 		},
