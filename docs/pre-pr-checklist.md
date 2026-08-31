@@ -272,16 +272,7 @@ buf lint proto
 - For Go changes: `go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go`
 - For new migration files: update `TestLatestVersion` in `backend/migrator/migrator_test.go`
 
-## 9. SonarCloud Properties
-
-**Skip if:** no new files or directories added.
-
-Update `.sonarcloud.properties` to reflect the latest file structure:
-- `sonar.exclusions` for generated code, build artifacts, dependencies (directory paths)
-- `sonar.test.inclusions` for test file patterns (e.g., `**/*_test.go`)
-- `sonar.cpd.exclusions` to skip copy-paste detection on test files
-
-## 10. Final Verification
+## 9. Final Verification
 
 Before running `gh pr create`:
 
