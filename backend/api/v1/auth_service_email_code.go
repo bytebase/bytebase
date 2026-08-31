@@ -178,20 +178,33 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("email code login is not enabled for this workspace"))
 	}
 
-	// Send only a code that could be redeemed. authenticateEmailCodeLogin refuses
-	// to create an account when a self-hosted workspace disallows signup, so a
-	// code mailed to an address with no account there is mail the recipient can
-	// do nothing with, addressed by whoever called this.
+	// Everything this endpoint decides per address on a named workspace —
+	// whether a code could be redeemed at all, and whether the send is charged
+	// to the stranger budget — is decided by the caller's relationship to that
+	// workspace. Any of those decisions is only safe while it is unobservable,
+	// so a named workspace answers success for every address and never reports
+	// what happened to the mail: a skipped send, an exhausted budget and a
+	// broken SMTP server are one response. Reporting a delivery failure for the
+	// addresses that reach delivery would name exactly the addresses with an
+	// account, which is the oracle this audit item is about, so this is a
+	// property of the path rather than of any one branch on it — three separate
+	// leaks here were three spellings of the same mistake.
 	//
-	// Skipping the send is only safe if skipping is unobservable, so wherever
-	// this check applies the endpoint answers success for every address: an
-	// unknown one because nothing was sent, a known one because the send result
-	// is withheld. Surfacing a delivery failure for known addresses alone would
-	// turn the saved mail into the account-existence oracle this audit item is
-	// about. Same contract as RequestPasswordReset, which gates on the account
-	// the same way; the residual timing difference between a skipped send and an
-	// SMTP round trip is accepted there and here.
-	answerUniformly := !s.profile.SaaS && restriction.DisallowSignup
+	// A caller who names no workspace has no relationship to judge, so nothing
+	// varies per address and the actionable error is kept. That is also where it
+	// is worth most: self-service signup, where the sender is the deployment.
+	//
+	// Same contract as RequestPasswordReset. The residual timing difference
+	// between a skipped send and an SMTP round trip is accepted there and here.
+	answerUniformly := workspaceID != ""
+
+	// Distinct from answerUniformly, which says what the caller is told: this
+	// says whether the mail is worth sending at all. authenticateEmailCodeLogin
+	// refuses to create an account when a self-hosted workspace disallows signup,
+	// so a code mailed to an address with no account there can never be
+	// redeemed. Where signup is allowed a stranger is a prospective user, and
+	// their code must still go out.
+	skipUnredeemable := !s.profile.SaaS && restriction.DisallowSignup
 	user, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user by email"))
@@ -203,7 +216,7 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 	// deactivated address stays mailable forever. PASSWORD_RESET already draws
 	// the line here.
 	canRedeem := user != nil && !user.MemberDeleted
-	if answerUniformly && !canRedeem {
+	if skipUnredeemable && !canRedeem {
 		return connect.NewResponse(&emptypb.Empty{}), nil
 	}
 
@@ -224,7 +237,6 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 	// with is budgeted — a member or an invitee is expected traffic, and
 	// throttling them would lock a customer's own workforce out of sign-in.
 	var budgets []store.LoginAttemptBucket
-	budgetSilently := false
 	if workspaceID == "" {
 		budgets = []store.LoginAttemptBucket{
 			{Identity: "signup-code-domain:" + emailDomain(email), Max: emailCodeSendPerDomain},
@@ -242,11 +254,7 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 			}
 		}
 		if !known {
-			// Exhaustion here must be silent. Only strangers are charged, so
-			// answering ResourceExhausted once the bucket is empty would separate
-			// them from members — rebuilding the oracle the gate above closes.
 			budgets = []store.LoginAttemptBucket{{Identity: "signup-code-workspace:" + workspaceID, Max: emailCodeSendPerWorkspace}}
-			budgetSilently = true
 		}
 	}
 
@@ -262,17 +270,14 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 		"Hi,\n\nYour sign-in code is: %s\n\nThis code expires in %d minutes. If you didn't request this, you can safely ignore this email.\n\n— Bytebase",
 		budgets...,
 	); err != nil {
-		if errors.Is(err, errSendBudgetExhausted) {
-			if budgetSilently {
-				return connect.NewResponse(&emptypb.Empty{}), nil
-			}
-			return nil, connect.NewError(connect.CodeResourceExhausted, err)
-		}
 		if answerUniformly {
-			// The skipped send above returned success; this one must too. Logged
-			// so the failure is still visible to whoever runs the deployment.
+			// Logged so the failure stays visible to whoever runs the deployment,
+			// which is who can act on it — the caller cannot be told.
 			slog.Warn("failed to send sign-in code", slog.String("email", email), log.BBError(err))
 			return connect.NewResponse(&emptypb.Empty{}), nil
+		}
+		if errors.Is(err, errSendBudgetExhausted) {
+			return nil, connect.NewError(connect.CodeResourceExhausted, err)
 		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

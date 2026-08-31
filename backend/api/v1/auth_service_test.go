@@ -753,36 +753,51 @@ func TestSendEmailLoginCodeBudgetsWorkspaceStrangers(t *testing.T) {
 	service := NewAuthService(stores, secret, licenseService, &config.Profile{}, nil)
 	workspaceName := common.FormatWorkspace(workspaceID)
 
-	send := func(email string) error {
+	// A named workspace answers success for every address, so the response cannot
+	// say who was charged. The bucket counter can: it is the observable that
+	// distinguishes a send charged to the stranger budget from one exempted.
+	charged := func(t *testing.T) int {
+		t.Helper()
+		var attempts int
+		err := stores.GetDB().QueryRowContext(ctx, `
+			SELECT COALESCE((SELECT attempts FROM login_attempt WHERE identity = $1 AND kind = $2), 0)
+		`, "signup-code-workspace:"+workspaceID, storepb.LoginAttemptKind_EMAIL_CODE_SEND.String()).Scan(&attempts)
+		require.NoError(t, err)
+		return attempts
+	}
+	send := func(t *testing.T, email string) {
+		t.Helper()
 		_, err := service.SendEmailLoginCode(ctx, connect.NewRequest(&v1pb.SendEmailLoginCodeRequest{
 			Email:     email,
 			Workspace: &workspaceName,
 		}))
-		return err
-	}
-	// SMTP refuses on port 1, so a send that got as far as delivery reports
-	// Internal. That is the marker for "this address was charged and mailed".
-	requireAttempted := func(t *testing.T, email string) {
-		t.Helper()
-		require.Equal(t, connect.CodeInternal, connect.CodeOf(send(email)), "%s should have reached delivery", email)
+		// SMTP refuses on port 1, so a send that reached delivery failed — and the
+		// caller is told none of that, which is the contract under test.
+		require.NoError(t, err, "%s must not learn what happened to the mail", email)
 	}
 
 	for i := range emailCodeSendPerWorkspace {
-		requireAttempted(t, fmt.Sprintf("stranger%d@elsewhere.example", i))
+		send(t, fmt.Sprintf("stranger%d@elsewhere.example", i))
+		require.Equal(t, i+1, charged(t), "each stranger spends one slot")
 	}
 
-	// The stranger budget is spent. Further strangers are refused, and refused
-	// silently: only strangers are charged, so a ResourceExhausted here would
-	// separate them from members and rebuild the account-existence oracle.
-	require.NoError(t, send("stranger-over@elsewhere.example"), "an exhausted stranger budget must not answer differently from a member")
+	// The bucket is spent. Further strangers are refused, and the refusal is
+	// indistinguishable from a send: no code row, and no distinct error.
+	send(t, "stranger-over@elsewhere.example")
 	row, err := stores.GetEmailVerificationCode(ctx, "stranger-over@elsewhere.example", storepb.EmailVerificationCodePurpose_LOGIN)
 	require.NoError(t, err)
 	require.Nil(t, row, "a refused send must leave no code behind")
 
+	// The workspace's own member is never charged, so sign-in still works while
+	// the stranger budget is empty — and the response is the same one a refused
+	// stranger got, so the exemption is not observable.
+	before := charged(t)
+	send(t, member.Email)
+	require.Equal(t, before, charged(t), "a member must not spend the stranger budget")
+
 	// A deactivated principal keeps its workspace IAM binding, so a membership
 	// check alone would exempt it forever — while Login refuses it, making every
-	// code mailed there unusable. It is charged like any other stranger, so with
-	// the bucket empty it is refused silently rather than reaching delivery.
+	// code mailed there unusable. It is charged like any other stranger.
 	deactivated, err := stores.CreateUser(ctx, &store.UserMessage{
 		Email:        "former@corp.example",
 		Name:         "Former",
@@ -799,11 +814,12 @@ func TestSendEmailLoginCodeBudgetsWorkspaceStrangers(t *testing.T) {
 	del := true
 	_, err = stores.UpdateUser(ctx, deactivated, &store.UpdateUserMessage{Delete: &del})
 	require.NoError(t, err)
-	require.NoError(t, send(deactivated.Email), "a deactivated address must be budgeted like a stranger, not exempted as a member")
 
-	// The workspace's own member is never charged, so sign-in still works while
-	// the stranger budget is empty.
-	requireAttempted(t, member.Email)
+	// Refill the bucket so the charge is observable rather than hidden by the
+	// exhausted-bucket path, then confirm the deactivated address is charged.
+	require.NoError(t, stores.ClearLoginAttempt(ctx, "signup-code-workspace:"+workspaceID, storepb.LoginAttemptKind_EMAIL_CODE_SEND))
+	send(t, deactivated.Email)
+	require.Equal(t, 1, charged(t), "a deactivated address must be budgeted like a stranger, not exempted as a member")
 }
 
 // TestSendEmailLoginCodeBudgetKeepsExistingCode pins that a refused budget is
