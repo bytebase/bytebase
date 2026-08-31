@@ -657,6 +657,15 @@ export class BytebaseApiClient {
   // so the HTTP body is the IssueComment payload directly. Used by the
   // markdown-link spec (BYT-9664) to seed a comment with links via the API
   // rather than driving the review popover.
+  // Set an issue's description (AIP-134 PATCH with an explicit update_mask —
+  // the backend rejects unnamed paths since T15/#21279).
+  async updateIssueDescription(issueName: string, description: string): Promise<void> {
+    await this.request(
+      "PATCH", `/v1/${issueName}?updateMask=description`,
+      { name: issueName, description },
+    );
+  }
+
   async createIssueComment(issueName: string, comment: string): Promise<{ name: string }> {
     return this.request<{ name: string }>("POST", `/v1/${issueName}:comment`, {
       comment,

@@ -77,6 +77,15 @@ async function expectBackRestored({
   const rows = page.getByTestId(rowTestId);
   await expect(rows.first()).toBeVisible({ timeout: 20_000 });
   await loadAllRows(rows, rowCount);
+  // The fixtures are variable-height BY CONTRACT:each issue carries (i % 4) + 1
+  // description lines matching the search, and IssueTable auto-expands matching
+  // rows. Assert the expansion is really rendered so a silently failed
+  // description write (or a future fixture "simplification") cannot flatten the
+  // list back into uniformly collapsed rows and quietly weaken what these
+  // restoration tests cover.
+  await expect(rows.first()).toContainText("variable-height content", {
+    timeout: 10_000,
+  });
 
   // Mimic a real user dwelling on the loaded list before drilling into a row.
   // The app persists its paged-data snapshot in a passive effect that runs after
@@ -160,7 +169,7 @@ test.beforeAll(async ({ browser }) => {
   // the real create + submit workflow and stays correct if it changes again.
   await page.setViewportSize({ width: 1280, height: 900 }); // the create page needs room
   for (let i = 0; i < ISSUE_COUNT; i++) {
-    await createDatabaseChangePlanViaUI(page, {
+    const { planId } = await createDatabaseChangePlanViaUI(page, {
       baseURL: env.baseURL,
       projectId,
       database: env.database,
@@ -168,6 +177,21 @@ test.beforeAll(async ({ browser }) => {
       sql: "SELECT 1;",
     });
     await submitDraftForReviewViaUI(page);
+    // Variable-height rows: IssueTable auto-expands a row whose DESCRIPTION
+    // matches the search query, so give each issue (i % 4) + 1 matching lines
+    // — the restore must reproduce a list of unevenly sized expanded rows, not
+    // uniformly collapsed ones. The description is fixture data, not the
+    // workflow under test, so it is set through the API on the UI-created
+    // issue (resolved from Plan.issue).
+    const plan = await env.api.getPlan(`${env.project}/plans/${planId}`);
+    if (!plan.issue) throw new Error(`plan ${planId} has no review issue`);
+    await env.api.updateIssueDescription(
+      plan.issue,
+      Array.from(
+        { length: (i % 4) + 1 },
+        () => `${searchToken} variable-height content`,
+      ).join("\n"),
+    );
   }
   await page.setViewportSize({ width: 600, height: 720 });
 });
