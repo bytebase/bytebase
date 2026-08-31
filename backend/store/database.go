@@ -763,6 +763,16 @@ func (s *Store) withDatabaseLifecycleWrite(
 	lockChild func(*sql.Tx) error,
 	write func(*sql.Tx, *databaseOwnership) error,
 ) error {
+	return s.withDatabaseLifecycleWriteScope(ctx, instanceID, databaseName, requestedProjectID, lifecycleScope{}, lockChild, write)
+}
+
+func (s *Store) withDatabaseLifecycleWriteScope(
+	ctx context.Context,
+	instanceID, databaseName, requestedProjectID string,
+	additionalScope lifecycleScope,
+	lockChild func(*sql.Tx) error,
+	write func(*sql.Tx, *databaseOwnership) error,
+) error {
 	projectID, err := s.databaseLifecycleProject(ctx, instanceID, databaseName, requestedProjectID)
 	if err != nil {
 		return err
@@ -774,7 +784,7 @@ func (s *Store) withDatabaseLifecycleWrite(
 	}
 	slices.Sort(projectFences)
 	projectFences = slices.Compact(projectFences)
-	scope := lifecycleScope{}
+	scope := mergeLifecycleScopes(additionalScope)
 	for _, projectFence := range projectFences {
 		scope.addProject(projectFence, lifecycleExisting)
 	}

@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -51,6 +52,60 @@ func TestBatchUpdateIssueStatusesFailsWhenProjectLifecycleGateHeld(t *testing.T)
 	current, err := fixture.store.GetIssue(fixture.ctx, &store.FindIssueMessage{ProjectIDs: []string{"project-a"}, UID: &issue.UID})
 	require.NoError(t, err)
 	require.Equal(t, storepb.Issue_OPEN, current.Status)
+}
+
+func TestUpdateProjectsRequiresActiveProject(t *testing.T) {
+	fixture := newProjectDeletionLockOrderFixture(t, "")
+	title := "updated while archived"
+	err := fixture.store.UpdateProjects(fixture.ctx, &store.UpdateProjectMessage{
+		ResourceID: "project-a",
+		Workspace:  "default",
+		Title:      &title,
+	})
+	require.Equal(t, common.NotFound, common.ErrorCode(err))
+
+	var storedTitle string
+	require.NoError(t, fixture.db.QueryRowContext(fixture.ctx, "SELECT name FROM project WHERE resource_id = 'project-a'").Scan(&storedTitle))
+	require.Equal(t, "Project A", storedTitle)
+}
+
+func TestDeleteRevisionGatesProjectOwnedDeleter(t *testing.T) {
+	fixture := newProjectDeletionLockOrderFixture(t, `
+		UPDATE project SET deleted = FALSE WHERE resource_id = 'project-a';
+		INSERT INTO project (resource_id, workspace, name) VALUES ('project-b', 'default', 'Project B');
+		INSERT INTO instance (resource_id, workspace) VALUES ('instance-b', 'default');
+		INSERT INTO db (instance, name, project) VALUES ('instance-b', 'database-b', 'project-b');
+		INSERT INTO revision (resource_id, instance, db_name, version) VALUES
+			('revision-service-account', 'instance-b', 'database-b', 'v1'),
+			('revision-workload-identity', 'instance-b', 'database-b', 'v2');
+		INSERT INTO service_account (email, name, workspace, service_key_hash, project)
+		VALUES ('deleter@project-a.service.bytebase.com', 'Deleter', 'default', 'unused', 'project-a');
+		INSERT INTO workload_identity (email, name, workspace, project)
+		VALUES ('deleter@project-a.workload.bytebase.com', 'Deleter', 'default', 'project-a');
+	`)
+
+	for _, test := range []struct {
+		name       string
+		revisionID string
+		deleter    string
+	}{
+		{name: "service account", revisionID: "revision-service-account", deleter: "deleter@project-a.service.bytebase.com"},
+		{name: "workload identity", revisionID: "revision-workload-identity", deleter: "deleter@project-a.workload.bytebase.com"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			release := holdExclusiveLifecycleGate(fixture.ctx, t, fixture.db, store.AdvisoryLockKeyProjectLifecycle, "project-a")
+			err := fixture.store.DeleteRevision(fixture.ctx, test.revisionID, "instance-b", "database-b", test.deleter)
+			require.ErrorIs(t, err, store.ErrLifecycleBusy)
+			release()
+
+			var deleter, deletedAt sql.NullString
+			require.NoError(t, fixture.db.QueryRowContext(fixture.ctx, `
+				SELECT deleter, deleted_at::text FROM revision WHERE resource_id = $1
+			`, test.revisionID).Scan(&deleter, &deletedAt))
+			require.False(t, deleter.Valid)
+			require.False(t, deletedAt.Valid)
+		})
+	}
 }
 
 func TestUpdateInstanceFailsWhenLifecycleGateHeld(t *testing.T) {

@@ -313,7 +313,7 @@ func (s *Store) UpdateProjects(ctx context.Context, patches ...*UpdateProjectMes
 	exclusiveScope := lifecycleScope{}
 	for _, patch := range patches {
 		if patch.Delete == nil {
-			sharedScope.addProject(patch.ResourceID, lifecycleExisting)
+			sharedScope.addProject(patch.ResourceID, lifecycleActive)
 		} else {
 			exclusiveScope.addProject(patch.ResourceID, lifecycleExisting)
 		}

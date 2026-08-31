@@ -192,7 +192,11 @@ func (s *Store) DeleteRevision(ctx context.Context, resourceID, instanceID, data
 		SET deleter = $1, deleted_at = now()
 		WHERE resource_id = $2 AND instance = $3 AND db_name = $4`
 
-	if err := s.withDatabaseLifecycleWrite(ctx, instanceID, databaseName, "", nil, func(tx *sql.Tx, _ *databaseOwnership) error {
+	deleterScope, err := s.revisionDeleterLifecycleScope(ctx, deleter)
+	if err != nil {
+		return err
+	}
+	if err := s.withDatabaseLifecycleWriteScope(ctx, instanceID, databaseName, "", deleterScope, nil, func(tx *sql.Tx, _ *databaseOwnership) error {
 		_, err := tx.ExecContext(ctx, query, deleter, resourceID, instanceID, databaseName)
 		return err
 	}); err != nil {
@@ -200,4 +204,34 @@ func (s *Store) DeleteRevision(ctx context.Context, resourceID, instanceID, data
 	}
 
 	return nil
+}
+
+func (s *Store) revisionDeleterLifecycleScope(ctx context.Context, deleter string) (lifecycleScope, error) {
+	var project *string
+	switch {
+	case common.IsServiceAccountEmail(deleter):
+		account, err := s.GetServiceAccountByEmail(ctx, deleter)
+		if err != nil {
+			return lifecycleScope{}, errors.Wrap(err, "failed to resolve revision deleter service account")
+		}
+		if account != nil {
+			project = account.Project
+		}
+	case common.IsWorkloadIdentityEmail(deleter):
+		identity, err := s.GetWorkloadIdentityByEmail(ctx, deleter)
+		if err != nil {
+			return lifecycleScope{}, errors.Wrap(err, "failed to resolve revision deleter workload identity")
+		}
+		if identity != nil {
+			project = identity.Project
+		}
+	default:
+		return lifecycleScope{}, nil
+	}
+
+	scope := lifecycleScope{}
+	if project != nil {
+		scope.addProject(*project, lifecycleActive)
+	}
+	return scope, nil
 }
