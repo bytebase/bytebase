@@ -6,7 +6,7 @@ import { storageKeyAiConversations } from "@/utils/storage-keys";
 import type { Conversation, Message } from "../types";
 import {
   loadConversationHistory,
-  saveConversationHistory,
+  mutateConversationHistory,
 } from "./conversationStorage";
 
 type ConversationCreate = Omit<
@@ -61,14 +61,15 @@ type ConversationState = {
 let persistenceWarningShown = false;
 
 export const useConversationStore = create<ConversationState>((set, get) => {
-  const persist = () => {
-    const key = currentStorageKey();
-    const state = get();
-    if (!key || state.storageKey !== key) return;
-    const saved = saveConversationHistory(
-      key,
-      Object.values(state.conversationsById)
-    );
+  const persist = async (
+    key: string | undefined,
+    mutate: (conversations: Conversation[]) => Conversation[]
+  ) => {
+    if (!key || get().storageKey !== key || currentStorageKey() !== key) return;
+    const saved = await mutateConversationHistory(key, (conversations) => {
+      if (get().storageKey !== key || currentStorageKey() !== key) return;
+      return mutate(conversations);
+    });
     if (!saved && !persistenceWarningShown) {
       persistenceWarningShown = true;
       console.warn("[AI Assistant] Unable to persist conversation history");
@@ -99,7 +100,6 @@ export const useConversationStore = create<ConversationState>((set, get) => {
         [connectionKey(conn)]: true,
       },
     });
-    persist();
     return Object.values(conversationsById)
       .filter(
         (conversation) =>
@@ -135,13 +135,17 @@ export const useConversationStore = create<ConversationState>((set, get) => {
         state.storageKey === key ? state.readyByConnection : {},
       storageKey: key,
     }));
-    persist();
+    await persist(key, (conversations) => [
+      ...conversations.filter(({ id }) => id !== conversation.id),
+      conversation,
+    ]);
     return conversation;
   };
 
   const updateConversation = async (
     conversation: Conversation
   ): Promise<Conversation> => {
+    const key = currentStorageKey();
     const existing = get().conversationsById[conversation.id];
     const next = withMessageBackReferences(
       conversation,
@@ -153,22 +157,40 @@ export const useConversationStore = create<ConversationState>((set, get) => {
         [next.id]: next,
       },
     }));
-    persist();
+    await persist(key, (conversations) =>
+      conversations.map((stored) =>
+        stored.id === next.id
+          ? withMessageBackReferences(
+              {
+                ...stored,
+                name: next.name,
+                instance: next.instance,
+                database: next.database,
+              },
+              stored.messageList
+            )
+          : stored
+      )
+    );
     return next;
   };
 
   const deleteConversation = async (id: string): Promise<void> => {
+    const key = currentStorageKey();
     set((state) => {
       const conversationsById = { ...state.conversationsById };
       delete conversationsById[id];
       return { conversationsById };
     });
-    persist();
+    await persist(key, (conversations) =>
+      conversations.filter((conversation) => conversation.id !== id)
+    );
   };
 
   const createMessage = async (
     messageCreate: MessageCreate
   ): Promise<Message> => {
+    const key = currentStorageKey();
     const conversation = get().conversationsById[messageCreate.conversation_id];
     if (!conversation) {
       throw new Error(
@@ -194,11 +216,24 @@ export const useConversationStore = create<ConversationState>((set, get) => {
         [next.id]: next,
       },
     }));
-    persist();
+    await persist(key, (conversations) => {
+      const stored = conversations.find(({ id }) => id === next.id);
+      if (!stored) return [...conversations, next];
+      const messages = stored.messageList.some(({ id }) => id === message.id)
+        ? stored.messageList
+        : [...stored.messageList, message].sort(
+            (a, b) => a.created_ts - b.created_ts
+          );
+      const merged = withMessageBackReferences(stored, messages);
+      return conversations.map((conversation) =>
+        conversation.id === merged.id ? merged : conversation
+      );
+    });
     return next.messageList.at(-1)!;
   };
 
   const updateMessage = async (message: Message): Promise<Message> => {
+    const key = currentStorageKey();
     const conversation = get().conversationsById[message.conversation.id];
     if (!conversation) return message;
     const next = withMessageBackReferences(
@@ -213,7 +248,22 @@ export const useConversationStore = create<ConversationState>((set, get) => {
         [next.id]: next,
       },
     }));
-    persist();
+    await persist(key, (conversations) => {
+      const stored = conversations.find(({ id }) => id === next.id);
+      if (!stored) return conversations;
+      const exists = stored.messageList.some(({ id }) => id === message.id);
+      const messages = exists
+        ? stored.messageList.map((current) =>
+            current.id === message.id ? message : current
+          )
+        : [...stored.messageList, message].sort(
+            (a, b) => a.created_ts - b.created_ts
+          );
+      const merged = withMessageBackReferences(stored, messages);
+      return conversations.map((conversation) =>
+        conversation.id === merged.id ? merged : conversation
+      );
+    });
     return next.messageList.find(({ id }) => id === message.id) ?? message;
   };
 

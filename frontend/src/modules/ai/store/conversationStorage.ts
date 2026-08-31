@@ -27,6 +27,10 @@ type StoredConversationHistory = {
   conversations: StoredConversation[];
 };
 
+type ConversationHistoryMutation = (
+  conversations: Conversation[]
+) => Conversation[] | undefined;
+
 const serializedSize = (value: string) =>
   new TextEncoder().encode(value).byteLength;
 
@@ -136,7 +140,10 @@ const isStoredConversation = (value: unknown): value is StoredConversation => {
   );
 };
 
-export const loadConversationHistory = (key: string): Conversation[] => {
+const readConversationHistory = (
+  key: string,
+  recoverInterruptedMessages: boolean
+): Conversation[] => {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return [];
@@ -160,8 +167,14 @@ export const loadConversationHistory = (key: string): Conversation[] => {
       };
       conversation.messageList = stored.messageList.map<Message>((message) => ({
         ...message,
-        status: message.status === "LOADING" ? "FAILED" : message.status,
-        error: message.status === "LOADING" ? "Request timeout" : message.error,
+        status:
+          recoverInterruptedMessages && message.status === "LOADING"
+            ? "FAILED"
+            : message.status,
+        error:
+          recoverInterruptedMessages && message.status === "LOADING"
+            ? "Request timeout"
+            : message.error,
         conversation,
       }));
       return conversation;
@@ -170,6 +183,9 @@ export const loadConversationHistory = (key: string): Conversation[] => {
     return [];
   }
 };
+
+export const loadConversationHistory = (key: string): Conversation[] =>
+  readConversationHistory(key, true);
 
 export const saveConversationHistory = (
   key: string,
@@ -191,4 +207,18 @@ export const saveConversationHistory = (
       return false;
     }
   }
+};
+
+export const mutateConversationHistory = async (
+  key: string,
+  mutate: ConversationHistoryMutation
+): Promise<boolean> => {
+  const write = () => {
+    const conversations = mutate(readConversationHistory(key, false));
+    if (!conversations) return true;
+    return saveConversationHistory(key, conversations);
+  };
+  const locks = globalThis.navigator?.locks;
+  if (!locks) return write();
+  return locks.request(`${key}.write`, write);
 };

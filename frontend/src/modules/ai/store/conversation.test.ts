@@ -204,6 +204,69 @@ describe("AI conversation persistence", () => {
     expect(userBHistory).not.toContain("user A question");
   });
 
+  test("rebases writes from a stale browser tab on persisted history", async () => {
+    saveConversationHistory(storageKey, [storedConversation("existing")]);
+    await useConversationStore
+      .getState()
+      .fetchConversationListByConnection(connection as never);
+    const staleTabState = useConversationStore.getState().conversationsById;
+
+    const tabAConversation = await useConversationStore
+      .getState()
+      .createConversation({ ...connection, name: "tab A" });
+    await useConversationStore.getState().createMessage({
+      author: "USER",
+      content: "question from tab A",
+      error: "",
+      status: "DONE",
+      conversation_id: tabAConversation.id,
+    });
+
+    useConversationStore.setState({ conversationsById: staleTabState });
+    const tabBConversation = await useConversationStore
+      .getState()
+      .createConversation({ ...connection, name: "tab B" });
+    await useConversationStore.getState().createMessage({
+      author: "USER",
+      content: "question from tab B",
+      error: "",
+      status: "DONE",
+      conversation_id: tabBConversation.id,
+    });
+
+    expect(localStorage.getItem(storageKey)).toContain("question from tab A");
+    expect(localStorage.getItem(storageKey)).toContain("question from tab B");
+  });
+
+  test("merges messages written to the same conversation from stale tabs", async () => {
+    saveConversationHistory(storageKey, [storedConversation("shared")]);
+    await useConversationStore
+      .getState()
+      .fetchConversationListByConnection(connection as never);
+    const staleTabState = useConversationStore.getState().conversationsById;
+
+    await useConversationStore.getState().createMessage({
+      author: "USER",
+      content: "message from tab A",
+      error: "",
+      status: "DONE",
+      conversation_id: "shared",
+    });
+
+    useConversationStore.setState({ conversationsById: staleTabState });
+    await useConversationStore.getState().createMessage({
+      author: "USER",
+      content: "message from tab B",
+      error: "",
+      status: "DONE",
+      conversation_id: "shared",
+    });
+
+    const history = localStorage.getItem(storageKey) ?? "";
+    expect(history).toContain("message from tab A");
+    expect(history).toContain("message from tab B");
+  });
+
   test("always includes the workspace in self-host storage keys", async () => {
     useAppStore.setState({
       currentUser: {

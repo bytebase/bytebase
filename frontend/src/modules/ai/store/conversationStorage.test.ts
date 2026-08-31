@@ -3,6 +3,7 @@ import type { Conversation, Message } from "../types";
 import {
   loadConversationHistory,
   MAX_CONVERSATION_HISTORY_BYTES,
+  mutateConversationHistory,
   saveConversationHistory,
 } from "./conversationStorage";
 
@@ -36,6 +37,10 @@ const conversation = (
 beforeEach(() => {
   localStorage.clear();
   vi.restoreAllMocks();
+  Object.defineProperty(navigator, "locks", {
+    configurable: true,
+    value: undefined,
+  });
 });
 
 describe("AI conversation local storage", () => {
@@ -179,5 +184,26 @@ describe("AI conversation local storage", () => {
     expect(
       saveConversationHistory(STORAGE_KEY, [conversation("conversation-1", 1)])
     ).toBe(false);
+  });
+
+  test("coordinates history mutations with a cross-tab lock", async () => {
+    const request = vi.fn(async (_name: string, callback: () => boolean) =>
+      callback()
+    );
+    Object.defineProperty(navigator, "locks", {
+      configurable: true,
+      value: { request },
+    });
+
+    await mutateConversationHistory(STORAGE_KEY, (conversations) => [
+      ...conversations,
+      conversation("conversation-1", 1),
+    ]);
+
+    expect(request).toHaveBeenCalledWith(
+      `${STORAGE_KEY}.write`,
+      expect.any(Function)
+    );
+    expect(loadConversationHistory(STORAGE_KEY)).toHaveLength(1);
   });
 });
