@@ -200,8 +200,9 @@ func (s *DatabaseService) BatchGetDatabases(ctx context.Context, req *connect.Re
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
 		if !ok {
-			// AIP-211: the message must not confirm the database exists.
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission %q denied on database %q (or it might not exist)", permission.DatabasesGet, name))
+			// Same code and message as a missing database: a different one would
+			// tell the caller a database exists in a project they cannot see.
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", name))
 		}
 		database, err := s.convertToDatabase(ctx, databaseMessage)
 		if err != nil {
