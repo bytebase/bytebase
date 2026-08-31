@@ -216,6 +216,18 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
             )
           )
         );
+        // Record what did not come back, the way fetchByName does. A rejection
+        // here is one database missing from an already degraded view, not a
+        // reason to discard the ones that did resolve.
+        set((state) => ({
+          databaseErrorsByName: settled.reduce(
+            (errors, result, index) =>
+              result.status === "rejected"
+                ? { ...errors, [validNames[index]]: toError(result.reason) }
+                : errors,
+            state.databaseErrorsByName
+          ),
+        }));
         const found = settled.flatMap((result) =>
           result.status === "fulfilled" ? [result.value] : []
         );

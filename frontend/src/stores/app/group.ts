@@ -103,11 +103,21 @@ export const createGroupSlice: AppSliceCreator<GroupSlice> = (set, get) => ({
       const groups = settled.flatMap((result) =>
         result.status === "fulfilled" ? [result.value] : []
       );
+      // Record what did not come back, the way fetchGroup does. A rejection
+      // here is one group missing from an already degraded view, not a reason
+      // to discard the ones that did resolve.
       set((state) => ({
         groupsByName: {
           ...state.groupsByName,
           ...Object.fromEntries(groups.map((group) => [group.name, group])),
         },
+        groupErrorsByName: settled.reduce(
+          (errors, result, index) =>
+            result.status === "rejected"
+              ? { ...errors, [validNames[index]]: toError(result.reason) }
+              : errors,
+          state.groupErrorsByName
+        ),
       }));
       return groups;
     }
