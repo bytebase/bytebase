@@ -221,7 +221,7 @@ The canonical frontend ownership map is in `./frontend/AGENTS.md`. In summary:
 
 ## Pull Request Guidelines
 
-**Before running `gh pr create`, walk through [`docs/pre-pr-checklist.md`](docs/pre-pr-checklist.md).** It covers the breaking-change review, composite-PK query safety, lint/test gates, and SonarCloud properties — the checks that lint and CI can't catch on their own.
+**Before running `gh pr create`, walk through [`docs/pre-pr-checklist.md`](docs/pre-pr-checklist.md).** It covers the breaking-change review, composite-PK query safety, and lint/test gates — the checks that lint and CI can't catch on their own.
 
 - **Code Review** — Follow [Google's Code Review Guideline](https://google.github.io/eng-practices/)
 - **Author Responsibility** — Authors are responsible for driving discussions, resolving comments, and promptly merging pull requests

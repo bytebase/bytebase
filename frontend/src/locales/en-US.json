@@ -725,6 +725,7 @@
     "nullable": "Nullable",
     "partition-tables": "Partition tables",
     "partitioned": "Partitioned",
+    "project-instance-transfer-disabled": "Databases from a project-bound instance cannot be transferred or unassigned.",
     "revision": {
       "add-more-files": "Add More",
       "available-files": "Available Files",
@@ -1222,6 +1223,8 @@
     "port": "Port",
     "prepare-sample-instance-failed": "Failed to prepare Sample Project Instance.",
     "preparing-sample-instance": "Preparing Sample Project Instance…",
+    "project-bound-description": "This instance is bound to this project. All its databases are automatically transferred to the project and cannot be transferred or unassigned.",
+    "project-bound-title": "Project-bound instance",
     "project-id": "Project ID",
     "restore-instance-instance-name-to-normal-state": "Restore instance '{{0}}' to normal state?",
     "role-arn": "Role ARN",
@@ -1812,7 +1815,7 @@
       "actions": {
         "explain-code": "Explain code",
         "find-problems": "Find problems",
-        "insert-at-caret": "Insert at caret",
+        "insert-at-caret": "Insert at cursor",
         "new-chat-using-selection": "New chat using selection"
       },
       "ai-assistant": "AI Assistant",

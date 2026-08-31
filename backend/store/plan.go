@@ -348,7 +348,7 @@ func GetListPlanFilter(filter string) (*qb.Query, error) {
 
 				switch variable {
 				case "title":
-					return qb.Q().Space("LOWER(plan.name) LIKE ?", "%"+strValue+"%"), nil
+					return qb.Q().Space("LOWER(plan.name) LIKE ? ESCAPE '\\'", containsPattern(strValue)), nil
 				default:
 					return nil, errors.Errorf(`only "title" supports %q operator, but found %q`, celoverloads.Contains, variable)
 				}

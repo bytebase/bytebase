@@ -1,5 +1,5 @@
 import { create as createProto } from "@bufbuild/protobuf";
-import { createContextValues } from "@connectrpc/connect";
+import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { cloneDeep } from "lodash-es";
 import {
   projectServiceClientConnect,
@@ -51,6 +51,20 @@ const mergeBinding = ({
     next.bindings.push(createProto(BindingSchema, { role, members: [member] }));
   }
   return next;
+};
+
+// The server rejects a write whose etag no longer matches with ABORTED rather
+// than letting it overwrite the edit that got there first. The policy this
+// store holds is then the stale one that lost, so a retry would replay the same
+// conflict forever -- refetch it so the next attempt carries the etag it lost
+// to. The error itself is reported by the notification interceptor, as every
+// other request failure is.
+const recoverFromIamPolicyConflict = async (
+  error: unknown,
+  refetch: () => Promise<unknown>
+) => {
+  if (!(error instanceof ConnectError) || error.code !== Code.Aborted) return;
+  await refetch().catch(() => undefined);
 };
 
 export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
@@ -211,13 +225,32 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
         binding.members = [...new Set(binding.members)];
       }
     }
-    const updated = await projectServiceClientConnect.setIamPolicy(
-      createProto(SetIamPolicyRequestSchema, {
-        resource: project,
-        policy: deduped,
-        etag: deduped.etag,
-      })
-    );
+    // The etag rides in both fields: `policy.etag` is where GetIamPolicy
+    // returns it and so where the round-trip carries it, and the request field
+    // is what an older server reads.
+    const updated = await projectServiceClientConnect
+      .setIamPolicy(
+        createProto(SetIamPolicyRequestSchema, {
+          resource: project,
+          policy: deduped,
+          etag: deduped.etag,
+        })
+      )
+      .catch(async (error) => {
+        await recoverFromIamPolicyConflict(error, async () => {
+          const fresh = await projectServiceClientConnect.getIamPolicy(
+            createProto(GetIamPolicyRequestSchema, { resource: project }),
+            { contextValues: createContextValues().set(silentContextKey, true) }
+          );
+          set((state) => ({
+            projectPoliciesByName: {
+              ...state.projectPoliciesByName,
+              [project]: fresh,
+            },
+          }));
+        });
+        throw error;
+      });
     set((state) => ({
       projectPoliciesByName: {
         ...state.projectPoliciesByName,
@@ -284,13 +317,20 @@ export const createIamSlice: AppSliceCreator<IamSlice> = (set, get) => ({
       get().workspace?.name ||
       get().currentUser?.workspace ||
       `${workspaceNamePrefix}-`;
-    const updated = await workspaceServiceClientConnect.setIamPolicy(
-      createProto(SetIamPolicyRequestSchema, {
-        resource,
-        policy,
-        etag: policy.etag,
-      })
-    );
+    const updated = await workspaceServiceClientConnect
+      .setIamPolicy(
+        createProto(SetIamPolicyRequestSchema, {
+          resource,
+          policy,
+          etag: policy.etag,
+        })
+      )
+      .catch(async (error) => {
+        await recoverFromIamPolicyConflict(error, () =>
+          get().fetchWorkspaceIamPolicy(true)
+        );
+        throw error;
+      });
     set({ workspacePolicy: updated });
   },
 

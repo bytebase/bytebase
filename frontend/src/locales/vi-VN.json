@@ -725,6 +725,7 @@
     "nullable": "Có thể null",
     "partition-tables": "Bảng phân vùng",
     "partitioned": "Đã phân vùng",
+    "project-instance-transfer-disabled": "Không thể chuyển hoặc hủy gán cơ sở dữ liệu thuộc phiên bản gắn với dự án.",
     "revision": {
       "add-more-files": "Thêm nữa",
       "available-files": "Các tập tin có sẵn",
@@ -1222,6 +1223,8 @@
     "port": "Cổng",
     "prepare-sample-instance-failed": "Không thể chuẩn bị Phiên bản dự án mẫu.",
     "preparing-sample-instance": "Đang chuẩn bị Phiên bản dự án mẫu…",
+    "project-bound-description": "Phiên bản này được gắn với dự án này. Tất cả cơ sở dữ liệu của phiên bản sẽ tự động được chuyển vào dự án và không thể chuyển hoặc hủy gán.",
+    "project-bound-title": "Phiên bản gắn với dự án",
     "project-id": "ID dự án",
     "restore-instance-instance-name-to-normal-state": "Khôi phục phiên bản '{{0}}' về trạng thái bình thường?",
     "role-arn": "ARN vai trò",
@@ -1812,7 +1815,7 @@
       "actions": {
         "explain-code": "Giải thích mã",
         "find-problems": "Tìm vấn đề",
-        "insert-at-caret": "Chèn vào con trỏ",
+        "insert-at-caret": "Chèn tại con trỏ",
         "new-chat-using-selection": "Cuộc trò chuyện mới bằng nội dung đã chọn"
       },
       "ai-assistant": "Trợ lý AI",

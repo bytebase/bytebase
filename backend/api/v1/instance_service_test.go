@@ -526,3 +526,74 @@ func TestValidateExternalSecretForSaaS(t *testing.T) {
 		})
 	}
 }
+
+// TestApplyDataSourceUpdateMaskCredentials covers the T15 headline: the mask
+// path decides which IAM credential is written. The branch used to dispatch on
+// the request's authentication_type, which an AIP-134 client leaves unset when
+// it masks only the credential — so rotating a leaked key wrote nothing and
+// returned 200.
+func TestApplyDataSourceUpdateMaskCredentials(t *testing.T) {
+	gcpStored := func() *storepb.DataSource {
+		return &storepb.DataSource{
+			Id:                 "admin",
+			AuthenticationType: storepb.DataSource_GOOGLE_CLOUD_SQL_IAM,
+			IamExtension: &storepb.DataSource_GcpCredential{
+				GcpCredential: &storepb.DataSource_GCPCredential{Content: "leaked"},
+			},
+		}
+	}
+
+	t.Run("rotation without authentication_type in the body", func(t *testing.T) {
+		dataSource := gcpStored()
+		err := applyDataSourceUpdateMask(dataSource, &v1pb.DataSource{
+			IamExtension: &v1pb.DataSource_GcpCredential{
+				GcpCredential: &v1pb.DataSource_GCPCredential{Content: "rotated"},
+			},
+		}, []string{"gcp_credential"})
+		require.NoError(t, err)
+		require.Equal(t, "rotated", dataSource.GetGcpCredential().GetContent())
+	})
+
+	t.Run("credential path disagreeing with the stored type", func(t *testing.T) {
+		dataSource := gcpStored()
+		err := applyDataSourceUpdateMask(dataSource, &v1pb.DataSource{
+			AuthenticationType: v1pb.DataSource_AWS_RDS_IAM,
+			IamExtension: &v1pb.DataSource_AwsCredential{
+				AwsCredential: &v1pb.DataSource_AWSCredential{AccessKeyId: "AKIA"},
+			},
+		}, []string{"aws_credential"})
+		require.Error(t, err)
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		require.Equal(t, "leaked", dataSource.GetGcpCredential().GetContent())
+		require.Equal(t, storepb.DataSource_GOOGLE_CLOUD_SQL_IAM, dataSource.GetAuthenticationType())
+	})
+
+	t.Run("switching type and credential together, either path order", func(t *testing.T) {
+		for _, paths := range [][]string{
+			{"authentication_type", "aws_credential"},
+			{"aws_credential", "authentication_type"},
+		} {
+			dataSource := gcpStored()
+			err := applyDataSourceUpdateMask(dataSource, &v1pb.DataSource{
+				AuthenticationType: v1pb.DataSource_AWS_RDS_IAM,
+				IamExtension: &v1pb.DataSource_AwsCredential{
+					AwsCredential: &v1pb.DataSource_AWSCredential{AccessKeyId: "AKIA"},
+				},
+			}, paths)
+			require.NoError(t, err, paths)
+			require.Equal(t, "AKIA", dataSource.GetAwsCredential().GetAccessKeyId())
+		}
+	})
+
+	t.Run("a masked credential the body omits is cleared", func(t *testing.T) {
+		dataSource := gcpStored()
+		require.NoError(t, applyDataSourceUpdateMask(dataSource, &v1pb.DataSource{}, []string{"gcp_credential"}))
+		require.Nil(t, dataSource.GetIamExtension())
+	})
+
+	t.Run("unknown path", func(t *testing.T) {
+		err := applyDataSourceUpdateMask(gcpStored(), &v1pb.DataSource{}, []string{"nope"})
+		require.Error(t, err)
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+	})
+}

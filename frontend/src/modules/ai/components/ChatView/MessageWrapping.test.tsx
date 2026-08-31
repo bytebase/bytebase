@@ -2,10 +2,19 @@ import { render } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import type { Conversation, Message } from "../../types";
 import { AIMessageView } from "./AIMessageView";
+import { ChatView } from "./ChatView";
 import { UserMessageView } from "./UserMessageView";
 
 vi.mock("./Markdown/CodeBlock", () => ({
   CodeBlock: () => <div data-testid="code-block" />,
+}));
+
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({ t: (key: string) => key }),
+}));
+
+vi.mock("../context", () => ({
+  useAIContext: () => ({ events: { emit: vi.fn() } }),
 }));
 
 const longContent =
@@ -29,7 +38,6 @@ function createMessage(
     created_ts: 1,
     author,
     content: longContent,
-    prompt: longContent,
     status,
     error: "",
     conversation,
@@ -40,6 +48,20 @@ function createMessage(
 }
 
 describe("AI chat message wrapping", () => {
+  test("keeps the first message separated from the panel header", () => {
+    const message = createMessage("AI", "LOADING");
+    const scrollTo = vi.fn();
+    HTMLElement.prototype.scrollTo = scrollTo;
+
+    const { container } = render(
+      <ChatView conversation={message.conversation} />
+    );
+
+    expect(container.querySelector(".message")?.parentElement).toHaveClass(
+      "pt-2"
+    );
+  });
+
   test.each([
     ["AI", AIMessageView],
     ["USER", UserMessageView],

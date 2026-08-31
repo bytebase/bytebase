@@ -598,8 +598,13 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project iam policy with error"))
 	}
-	if req.Msg.Etag != "" && req.Msg.Etag != oldIamPolicyMsg.Etag {
-		return nil, connect.NewError(connect.CodeAborted, errors.Errorf("there is concurrent update to the project iam policy, please refresh and try again"))
+
+	// The etag is compared only in the write below, against the locked row.
+	// Comparing it here too would add a second answer to the same question from
+	// a read the write does not hold, and only the locked one decides.
+	expectedEtag, err := requestedIamPolicyEtag(req.Msg)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := validateIAMPolicy(ctx, s.store, !s.profile.SaaS, req.Msg, oldIamPolicyMsg); err != nil {
@@ -611,30 +616,22 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 		return nil, err
 	}
 
-	policyPayload, err := protojson.Marshal(policy)
+	replaced, iamPolicyMessage, err := s.store.SetIamPolicy(ctx, &store.SetIamPolicyMessage{
+		Workspace:    workspaceID,
+		ResourceType: storepb.Policy_PROJECT,
+		Resource:     common.FormatProject(project.ResourceID),
+		Policy:       policy,
+		ExpectedEtag: expectedEtag,
+	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-	if _, err = s.store.CreatePolicy(ctx, &store.PolicyMessage{
-		Workspace:         workspaceID,
-		Resource:          common.FormatProject(project.ResourceID),
-		ResourceType:      storepb.Policy_PROJECT,
-		Payload:           string(policyPayload),
-		Type:              storepb.Policy_IAM,
-		InheritFromParent: false,
-		// Enforce cannot be false while creating a policy.
-		Enforce: true,
-	}); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	iamPolicyMessage, err := s.store.GetProjectIamPolicy(ctx, workspaceID, project.ResourceID)
-	if err != nil {
+		if errors.Is(err, store.ErrIamPolicyEtagMismatch) {
+			return nil, connect.NewError(connect.CodeAborted, errors.Errorf("there is concurrent update to the project iam policy, please refresh and try again"))
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok {
-		deltas := findIamPolicyDeltas(oldIamPolicyMsg.Policy, iamPolicyMessage.Policy)
+		deltas := findIamPolicyDeltas(replaced.Policy, iamPolicyMessage.Policy)
 		p, err := convertToProtoAny(deltas)
 		if err != nil {
 			slog.Warn("audit: failed to convert to anypb.Any")
@@ -1124,6 +1121,22 @@ func getBindingIdentifier(role string, condition *expr.Expr) string {
 		)
 	}
 	return strings.Join(ids, ";")
+}
+
+// requestedIamPolicyEtag reads the etag the caller presented. GetIamPolicy
+// returns the etag inside the policy, so a read-modify-write round-trips it
+// there; the request field carries the same value for a caller that sets it
+// explicitly. Either alone is honored, and an empty etag asks for no check at
+// all. Two that disagree name two different reads, which no caller can mean.
+func requestedIamPolicyEtag(msg *v1pb.SetIamPolicyRequest) (string, error) {
+	policyEtag := msg.GetPolicy().GetEtag()
+	if msg.Etag != "" && policyEtag != "" && msg.Etag != policyEtag {
+		return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("request etag %q and policy etag %q disagree", msg.Etag, policyEtag))
+	}
+	if msg.Etag != "" {
+		return msg.Etag, nil
+	}
+	return policyEtag, nil
 }
 
 func validateIAMPolicy(

@@ -40,14 +40,14 @@ func TestGetAccountListFilter(t *testing.T) {
 		{
 			name:     "name contains",
 			filter:   `name.contains("ED")`,
-			wantSQL:  "(LOWER(name) LIKE $1)",
+			wantSQL:  "(LOWER(name) LIKE $1 ESCAPE '\\')",
 			wantArgs: []any{"%ed%"},
 			wantErr:  false,
 		},
 		{
 			name:     "email contains",
 			filter:   `email.contains("test")`,
-			wantSQL:  "(LOWER(email) LIKE $1)",
+			wantSQL:  "(LOWER(email) LIKE $1 ESCAPE '\\')",
 			wantArgs: []any{"%test%"},
 			wantErr:  false,
 		},

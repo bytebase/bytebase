@@ -80,6 +80,7 @@ import {
   getDefaultPagination,
   getInstanceResource,
 } from "@/utils";
+import { celString } from "@/utils/v1/celLiteral";
 import {
   extractDatabaseNameAndChangelogUID,
   isValidChangelogName,
@@ -751,7 +752,7 @@ function ChangelogSelector({
         await listChangelogs({
           parent: database,
           pageSize: getDefaultPagination(),
-          filter: `status == "${Changelog_Status[Changelog_Status.DONE]}"`,
+          filter: `status == ${celString(Changelog_Status[Changelog_Status.DONE])}`,
         });
 
       if (cancelled) return;
@@ -785,7 +786,7 @@ function ChangelogSelector({
       parent: database,
       pageToken: nextPageToken,
       pageSize: getDefaultPagination(),
-      filter: `status == "${Changelog_Status[Changelog_Status.DONE]}"`,
+      filter: `status == ${celString(Changelog_Status[Changelog_Status.DONE])}`,
     });
     setEntries((prev) => [...prev, ...more.map(toEntry)]);
     setNextPageToken(token);

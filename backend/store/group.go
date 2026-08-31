@@ -549,9 +549,9 @@ func GetListGroupFilter(find *FindGroupMessage, filter string) (*qb.Query, error
 
 				switch variable {
 				case "title":
-					return qb.Q().Space("LOWER(name) LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+					return qb.Q().Space("LOWER(name) LIKE ? ESCAPE '\\'", containsPattern(strings.ToLower(strValue))), nil
 				case "email":
-					return qb.Q().Space("LOWER(email) LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+					return qb.Q().Space("LOWER(email) LIKE ? ESCAPE '\\'", containsPattern(strings.ToLower(strValue))), nil
 				default:
 					return nil, errors.Errorf("unsupport variable %q", variable)
 				}

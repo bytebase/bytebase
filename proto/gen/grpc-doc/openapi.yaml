@@ -2511,14 +2511,6 @@ paths:
              `INVALID_ARGUMENT` error if any path is unmappable.
           schema:
             type: string
-        - name: allowMissing
-          in: query
-          description: |-
-            If set to true, and the database is not found, a new database will be created.
-             In this situation, `update_mask` is ignored.
-          schema:
-            type: boolean
-            title: allow_missing
       requestBody:
         description: |-
           The database to update.
@@ -2592,29 +2584,25 @@ paths:
           required: true
           schema:
             type: string
-        - name: allowMissing
-          in: query
-          description: |-
-            If set to true, and the database catalog is not found, a new database catalog will be created.
-             In this situation, `update_mask` is ignored.
-          schema:
-            type: boolean
-            title: allow_missing
       requestBody:
         description: |-
-          The database catalog to update.
-
-           The catalog's `name` field is used to identify the database catalog to update.
+          The database catalog to update, identified by its `name` field.
            Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
+
+           Replaces the whole catalog: send the complete value, since anything omitted
+           is erased. There is no `update_mask` because `schemas` is a repeated field,
+           and AIP-161 forbids addressing one element of one.
         content:
           application/json:
             schema:
               title: catalog
               description: |-
-                The database catalog to update.
-
-                 The catalog's `name` field is used to identify the database catalog to update.
+                The database catalog to update, identified by its `name` field.
                  Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
+
+                 Replaces the whole catalog: send the complete value, since anything omitted
+                 is erased. There is no `update_mask` because `schemas` is a repeated field,
+                 and AIP-161 forbids addressing one element of one.
               $ref: '#/components/schemas/bytebase.v1.DatabaseCatalog'
       responses:
         "200":
@@ -7633,14 +7621,6 @@ paths:
              `INVALID_ARGUMENT` error if any path is unmappable.
           schema:
             type: string
-        - name: allowMissing
-          in: query
-          description: |-
-            If set to true, and the database is not found, a new database will be created.
-             In this situation, `update_mask` is ignored.
-          schema:
-            type: boolean
-            title: allow_missing
       requestBody:
         description: |-
           The database to update.
@@ -7726,29 +7706,25 @@ paths:
           required: true
           schema:
             type: string
-        - name: allowMissing
-          in: query
-          description: |-
-            If set to true, and the database catalog is not found, a new database catalog will be created.
-             In this situation, `update_mask` is ignored.
-          schema:
-            type: boolean
-            title: allow_missing
       requestBody:
         description: |-
-          The database catalog to update.
-
-           The catalog's `name` field is used to identify the database catalog to update.
+          The database catalog to update, identified by its `name` field.
            Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
+
+           Replaces the whole catalog: send the complete value, since anything omitted
+           is erased. There is no `update_mask` because `schemas` is a repeated field,
+           and AIP-161 forbids addressing one element of one.
         content:
           application/json:
             schema:
               title: catalog
               description: |-
-                The database catalog to update.
-
-                 The catalog's `name` field is used to identify the database catalog to update.
+                The database catalog to update, identified by its `name` field.
                  Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
+
+                 Replaces the whole catalog: send the complete value, since anything omitted
+                 is erased. There is no `update_mask` because `schemas` is a repeated field,
+                 and AIP-161 forbids addressing one element of one.
               $ref: '#/components/schemas/bytebase.v1.DatabaseCatalog'
       responses:
         "200":
@@ -15330,7 +15306,9 @@ paths:
                 etag:
                   type: string
                   title: etag
-                  description: The current etag of the policy.
+                  description: |-
+                    (OPTIONAL) The current etag of the policy. Equivalent to setting `policy.etag`;
+                     supplying both with different values returns INVALID_ARGUMENT.
               title: SetIamPolicyRequest
               required:
                 - policy
@@ -19007,7 +18985,9 @@ paths:
                 etag:
                   type: string
                   title: etag
-                  description: The current etag of the policy.
+                  description: |-
+                    (OPTIONAL) The current etag of the policy. Equivalent to setting `policy.etag`;
+                     supplying both with different values returns INVALID_ARGUMENT.
               title: SetIamPolicyRequest
               required:
                 - policy
@@ -24227,9 +24207,10 @@ components:
           type: string
           title: etag
           description: |-
-            The current etag of the policy.
-             If an etag is provided and does not match the current etag of the policy,
-             the call will be blocked and an ABORTED error will be returned.
+            The current etag of the policy, returned by GetIamPolicy and SetIamPolicy.
+             Sending it back on SetIamPolicy makes the write conditional: if the policy
+             changed since the read, the call returns ABORTED. Omitting it applies the
+             write unconditionally, overwriting any concurrent change (AIP-154).
       title: IamPolicy
       additionalProperties: false
       description: IAM policy that binds members to roles.
@@ -30734,7 +30715,9 @@ components:
         etag:
           type: string
           title: etag
-          description: The current etag of the policy.
+          description: |-
+            (OPTIONAL) The current etag of the policy. Equivalent to setting `policy.etag`;
+             supplying both with different values returns INVALID_ARGUMENT.
       title: SetIamPolicyRequest
       required:
         - resource
@@ -32675,17 +32658,13 @@ components:
         catalog:
           title: catalog
           description: |-
-            The database catalog to update.
-
-             The catalog's `name` field is used to identify the database catalog to update.
+            The database catalog to update, identified by its `name` field.
              Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
+
+             Replaces the whole catalog: send the complete value, since anything omitted
+             is erased. There is no `update_mask` because `schemas` is a repeated field,
+             and AIP-161 forbids addressing one element of one.
           $ref: '#/components/schemas/bytebase.v1.DatabaseCatalog'
-        allowMissing:
-          type: boolean
-          title: allow_missing
-          description: |-
-            If set to true, and the database catalog is not found, a new database catalog will be created.
-             In this situation, `update_mask` is ignored.
       title: UpdateDatabaseCatalogRequest
       required:
         - catalog
@@ -32732,12 +32711,6 @@ components:
           title: update_mask
           description: The list of fields to update.
           $ref: '#/components/schemas/google.protobuf.FieldMask'
-        allowMissing:
-          type: boolean
-          title: allow_missing
-          description: |-
-            If set to true, and the database is not found, a new database will be created.
-             In this situation, `update_mask` is ignored.
       title: UpdateDatabaseRequest
       required:
         - database

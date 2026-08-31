@@ -17,7 +17,7 @@ import {
 } from "@/types/v1/environment";
 import { isValidInstanceName } from "@/types/v1/instance";
 import { workspaceCacheScope } from "@/utils/storage-keys";
-import { escapeCELStringLiteral } from "@/utils/v1/cel";
+import { celMapField, celString, celStringList } from "@/utils/v1/celLiteral";
 import { bindingScopesResources } from "@/utils/v1/iam";
 import type { AppStoreState } from "./types";
 
@@ -71,16 +71,15 @@ export function buildProjectFilter(query: string | undefined) {
   const filters = ["exclude_default == true"];
   const search = query?.trim().toLowerCase();
   if (search) {
-    filters.push(
-      `(name.contains("${search}") || resource_id.contains("${search}"))`
-    );
+    const value = celString(search);
+    filters.push(`(name.contains(${value}) || resource_id.contains(${value}))`);
   }
   return filters.join(" && ");
 }
 
 // Converts label selectors like "{key}:{v1},{v2}" into API filter clauses
-// (`labels.{key} == "v"` or `labels.{key} in [...]`). Ported verbatim from
-// the legacy Pinia database store.
+// (`labels["{key}"] == "v"` or `labels["{key}"] in [...]`). Index syntax, not
+// `labels.{key}` — label keys allow dashes, which CEL parses as subtraction.
 export function getLabelFilter(labels: string[]): string[] {
   const labelMap = new Map<string, string[]>();
   for (const label of labels) {
@@ -96,16 +95,15 @@ export function getLabelFilter(labels: string[]): string[] {
     labelMap.get(key)?.push(...values);
   }
   return [...labelMap.entries()].reduce((result, [key, values]) => {
+    const field = celMapField("labels", key);
     switch (values.length) {
       case 0:
         return result;
       case 1:
-        result.push(`labels.${key} == "${values[0]}"`);
+        result.push(`${field} == ${celString(values[0])}`);
         return result;
       default:
-        result.push(
-          `labels.${key} in [${values.map((v) => `"${v}"`).join(", ")}]`
-        );
+        result.push(`${field} in ${celStringList(values)}`);
         return result;
     }
   }, [] as string[]);
@@ -117,39 +115,37 @@ export function getLabelFilter(labels: string[]): string[] {
 export function buildDatabaseFilter(filter: DatabaseFilter): string {
   const params: string[] = [];
   if (isValidProjectName(filter.project)) {
-    params.push(`project == "${filter.project}"`);
+    params.push(`project == ${celString(filter.project)}`);
   }
   if (isValidInstanceName(filter.instance)) {
-    params.push(`instance == "${filter.instance}"`);
+    params.push(`instance == ${celString(filter.instance)}`);
   }
   if (filter.environment === unknownEnvironment().name) {
     params.push(`environment == ""`);
   } else if (isValidEnvironmentName(filter.environment)) {
-    params.push(`environment == "${filter.environment}"`);
+    params.push(`environment == ${celString(filter.environment)}`);
   }
   if (filter.excludeUnassigned) {
     params.push(`exclude_unassigned == true`);
   }
   if (filter.engines && filter.engines.length > 0) {
     params.push(
-      `engine in [${filter.engines.map((e) => `"${Engine[e]}"`).join(", ")}]`
+      `engine in ${celStringList(filter.engines.map((e) => Engine[e]))}`
     );
   } else if (filter.excludeEngines && filter.excludeEngines.length > 0) {
     params.push(
-      `!(engine in [${filter.excludeEngines
-        .map((e) => `"${Engine[e]}"`)
-        .join(", ")}])`
+      `!(engine in ${celStringList(filter.excludeEngines.map((e) => Engine[e]))})`
     );
   }
   const keyword = filter.query?.trim()?.toLowerCase();
   if (keyword) {
-    params.push(`name.contains("${escapeCELStringLiteral(keyword)}")`);
+    params.push(`name.contains(${celString(keyword)})`);
   }
   if (filter.labels) {
     params.push(...getLabelFilter(filter.labels));
   }
   if (filter.table) {
-    params.push(`table.contains("${filter.table}")`);
+    params.push(`table.contains(${celString(filter.table)})`);
   }
   return params.join(" && ");
 }

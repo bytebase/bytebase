@@ -32,6 +32,10 @@ const (
 	// AdvisoryLockKeyInstancePurge serializes instance lifecycle operations with
 	// descendant creation and purge when the descendant row may not exist yet.
 	AdvisoryLockKeyInstancePurge AdvisoryLockKey = 1007
+	// AdvisoryLockKeyIamPolicy serializes compare-and-swap writes to one
+	// resource's IAM policy, including the first write, when there is no policy
+	// row to lock yet.
+	AdvisoryLockKeyIamPolicy AdvisoryLockKey = 1008
 )
 
 // AcquirePlanIssueRolloutAdvisoryLock serializes coordinated Plan, linked Issue,
