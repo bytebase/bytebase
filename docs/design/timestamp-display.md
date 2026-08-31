@@ -100,25 +100,22 @@ The history views — database changelog, revision table, task-run history — f
 date-time always**, consistent with the audit log. They are records of execution, not queues.
 
 **D5 (proposed) — Operational times: absolute with explicit timezone, minute precision.**
-Scheduled rollout times and expirations render the absolute date-time with the short timezone name
-in the visible string, not just the tooltip: "Sep 15, 2026, 9:00 AM GMT+8". Precision caveat:
-minute-granular input covers only the `datetime-local` pickers. Day/second-count presets write
-`now() + offset` with real sub-minute tails (`computeExpirationTimestamp` in `MembersPage.tsx`,
-the SQL-editor access-grant drawer), so a minute display floors the enforced cutoff by up to 59
-seconds — in the safe direction: the value never expires earlier than displayed, and the full
-value stays in the tooltip (D6). Accepting D5 means accepting that bounded under-report;
-alternatives are retaining seconds for expiration values, or normalizing preset writes to the
-minute (a write-path change, out of scope for this display-only design). Scope note: the rule targets **wall-clock renderings** — the timezone trap it guards against
-cannot occur in a pure remaining-duration display ("expires in 3h20m"), which is
-timezone-unambiguous by construction and stays permitted for short horizons, provided the D6
-tooltip carries the full absolute + timezone. Driven by BYT-10023 — see Operational times below.
-Proposed, pending confirmation; the time *pickers* that write these values are explicitly
-deferred.
+Wall-clock renderings of scheduled rollouts and expirations show the absolute date-time with the
+short timezone name in the visible string: "Sep 15, 2026, 9:00 AM GMT+8". Two refinements from
+review: (a) preset-written expirations (`now() + N days`) carry real sub-minute tails, so a
+minute display floors the enforced cutoff by ≤59s — in the safe direction, exact value in the D6
+tooltip; alternatives are keeping seconds for expirations or normalizing preset writes (a
+write-path change, out of scope). (b) The rule targets wall-clock strings only — a pure countdown
+("expires in 3h20m") cannot be misread across timezones and stays permitted with the D6 tooltip.
+Driven by BYT-10023 — see Operational times below. Proposed, pending confirmation; the pickers
+that write these values are deferred.
 
 **D6 — Full date-time tooltip on every reduced display.**
 Any timestamp that does not show the full form — relative, date-only after the switch, or the
 compact history tier — carries the full absolute date-time with seconds and timezone in its
-tooltip. This is the universal escape hatch that keeps every reduced cell recoverable.
+tooltip. This is the universal escape hatch that keeps every reduced cell recoverable. Corollary:
+a context that cannot host a tooltip — i18n-interpolated strings, exports, titles — carries the
+full-precision string itself.
 
 **D7 (proposed) — History views carry two precision tiers.**
 *A history row orients; a history record testifies.* Full precision (seconds + timezone,
@@ -170,13 +167,13 @@ Where operational times are displayed today:
 | Surface | File | Today | Gap |
 |---|---|---|---|
 | Scheduled rollout pill | `routes/project/plan-detail/components/deploy/DeployTaskHeader.tsx` (task pinned to a run time) | `HumanizeTs` — relative ("in 7 hours"), tz only in tooltip | **The BYT-10023 display gap**: the one surface showing when a rollout will fire hides the timezone question entirely |
-| Task-run waiting message | `frontend/src/lib/taskRun.ts` ("enqueued, will run at …") | `formatAbsoluteDateTime` interpolated into a plain i18n string | None — a plain-string context cannot host a tooltip, so it keeps the full-precision form (invariant corollary below); seconds do **not** drop here |
-| SQL-editor access grant item, <24h remaining | `modules/sql-editor/components/AccessGrantItem.tsx` | Duration only ("expires in 3h20m"); the absolute value is discarded, no tooltip | The visible duration is permitted under D5's wall-clock scope note (a countdown is timezone-unambiguous); the gap is the missing D6 tooltip with the full absolute + timezone |
-| Access-grant expiration, issue detail | `routes/project/issue-detail/components/IssueDetailAccessGrantDetails.tsx` (renders the helper's string in JSX) | `formatAbsoluteDateTime` via `getAccessGrantExpirationText` | None today. Under D5: JSX context — adopts the operational mode with its D6 tooltip |
+| Task-run waiting message | `frontend/src/lib/taskRun.ts` ("enqueued, will run at …") | `formatAbsoluteDateTime` in an i18n string | None — plain-string context, keeps full precision (D6 corollary) |
+| SQL-editor access grant item, <24h remaining | `modules/sql-editor/components/AccessGrantItem.tsx` | Duration only ("expires in 3h20m"), no tooltip | Countdown stays (D5 scope note); add the D6 tooltip |
+| Access-grant expiration, issue detail | `routes/project/issue-detail/components/IssueDetailAccessGrantDetails.tsx` | `formatAbsoluteDateTime` via `getAccessGrantExpirationText`, in JSX | None today; adopts operational mode under D5 |
 | Masking exemption expiration | `routes/project/ProjectMaskingExemptionPage.tsx` | dayjs `YYYY-MM-DD HH:mm` | No timezone, no seconds, not locale-aware |
 | Role-grant expiration detail | `routes/project/issue-detail/components/IssueDetailRoleGrantDetails.tsx` | dayjs `LLL` | No timezone |
-| Member expiration preview | `routes/workspace/MembersPage.tsx` (`formatExpirationDate`) | `toLocaleDateString` + hour/minute, interpolated into `t("project.members.expires-at", …)` | No timezone, no seconds — and a plain-string context: gets the full-precision string per the corollary (a `Trans`-slot refactor is the alternative if minute display is wanted) |
-| Member expiration table, access grants, IAM remind dialog, sample expiration, subscription expiry | `MembersPage.tsx`, `ProjectAccessGrantsPage.tsx`, `utils/accessGrant.ts`, `IAMRemindDialog.tsx`, `SampleExpirationAlert.tsx`, `stores/app/workspace.ts` | `formatAbsoluteDateTime` | None today. Under D5, the JSX-rendered sites adopt the operational mode; the string-interpolated ones (subscription banner via `BannersWrapper.tsx`, `SampleExpirationAlert.tsx`) keep full precision — plain-string corollary |
+| Member expiration preview | `routes/workspace/MembersPage.tsx` (`formatExpirationDate`) | `toLocaleDateString` + hour/minute in an i18n string | No tz/seconds; plain-string context → full-precision string (D6 corollary) |
+| Member expiration table, access grants, IAM remind dialog, sample expiration, subscription expiry | `MembersPage.tsx`, `ProjectAccessGrantsPage.tsx`, `utils/accessGrant.ts`, `IAMRemindDialog.tsx`, `SampleExpirationAlert.tsx`, `stores/app/workspace.ts` | `formatAbsoluteDateTime` | None today; under D5, JSX sites adopt operational mode, string-interpolated ones (banner, sample alert) keep full precision (D6 corollary) |
 
 Fixes under D5: the scheduled pill, the masking exemption expiration, and the role-grant
 expiration converge on the operational format — absolute date-time + timezone at minute precision
@@ -247,101 +244,51 @@ their list views render relative. D4 makes each list agree with its own detail v
 - **Compact** = date + hh:mm, locale-aware: "Aug 26, 2026, 2:03 PM" / zh "2026年8月26日 14:03"
   (~21 characters). Seconds and timezone stay one hover away per D6.
 
-**Task-run log entries** (`components/task-run-log/model.ts::formatTime` — `HH:mm:ss.SSS`,
-embedded in changelog detail and task-run views) keep their time-only millisecond format: log
-lines are dense by design and the parent run header carries the full date. They are still reduced
-displays, so each entry gains the D6 tooltip with the full date-time — which also covers a run
-crossing midnight.
+**Task-run log entries** (`task-run-log/model.ts::formatTime`, `HH:mm:ss.SSS`): keep the dense
+time-only format — the parent run header carries the date — plus the D6 tooltip with the full
+date-time (which also covers a run crossing midnight).
 
-**Operational times** (scheduled rollouts, expirations): a new `formatOperationalDateTime` helper
-in `datetime.ts` — date + hh:mm + short timezone, locale-aware: "Sep 15, 2026, 9:00 AM GMT+8" / zh
-"2026年9月15日 09:00 GMT+8". The timezone lives in the visible string — not only in the tooltip,
-because the reader is about to act on the value and must not have to discover that a timezone
-question exists. No seconds per D5 (`formatAbsoluteDateTime` is the alternative if D5's
-minute-precision refinement is rejected). Relative age ("in 7 hours") may accompany it in the
-tooltip.
+**Operational times** (scheduled rollouts, expirations): `formatOperationalDateTime` — date +
+hh:mm + short timezone, locale-aware: "Sep 15, 2026, 9:00 AM GMT+8" / zh "2026年9月15日 09:00
+GMT+8". The timezone lives in the visible string because the reader is about to act on the value;
+no seconds per D5. Relative age may accompany it in the tooltip.
 
 ## Implementation shape
 
-- `HumanizeTs` adopts the switching behavior. The logic already exists as dead code: `humanizeTs()`
-  in `frontend/src/utils/util.ts` (30-day switch) + `RELATIVE_THRESHOLD_MS` and
-  `formatAbsoluteDate` in `frontend/src/utils/datetime.ts`. Consolidate into `datetime.ts`; delete
-  the dead `humanizeTs`/`humanizeDate` pair in `util.ts` / `utils/v1/common.ts`.
-- History views use a `mode` prop on `HumanizeTs` so the tooltip/i18n-resubscribe behavior stays
-  shared: `mode="datetime"` (full, existing `formatAbsoluteDateTime`) and `mode="compact"` (a new
-  `formatCompactDateTime` helper in `datetime.ts` — date + hh:mm, locale-aware). One canonical
-  component, modes matching the principle one-to-one; the audit log can keep its direct call.
-  `titleOfQueryHistory` in `HistoryPane.tsx` splits: the row display adopts the compact mode with
-  its D6 tooltip, while both tab-title paths — `titleOfQueryHistory` and the independently built
-  deep-link title in `SQLEditorRouteShell.tsx` — keep a full-precision string (plain-string
-  corollary). `ReleaseInfoCard.tsx` swaps its fixed string for `HumanizeTs` (queue mode).
-- Operational times render through the shared component, never as bare strings: `HumanizeTs` gains
-  `mode="operational"` (`formatOperationalDateTime` in the cell, D6 tooltip carrying the full
-  enforced value with seconds). The scheduled pill in `DeployTaskHeader.tsx` switches mode rather
-  than dropping the component — its tooltip survives; of the three bare-format expiration call
-  sites, masking exemption and role-grant details adopt the same mode (open item 4), which is what
-  makes the sub-minute preset tails recoverable, while the member preset preview is itself
-  i18n-interpolated and keeps a full-precision string per the corollary. Of the six
-  already-absolute sites, the JSX-rendered ones adopt the mode; the string-interpolated ones
-  (subscription banner, sample-expiration alert) keep the full-precision string.
-  `getAccessGrantExpirationText` itself stays a full-precision string builder — its output also
-  lands in string concatenations — while its JSX consumers (`AccessGrantItem.tsx`,
-  `ProjectAccessGrantsPage.tsx`, `IssueDetailAccessGrantDetails.tsx`) render the shared component
-  in operational mode instead of the helper's string. **Invariant: a reduced timestamp without a full-precision
-  tooltip is a bug** — bare formatter calls are reserved for full-precision strings and exports.
-  Corollary: a plain-string context that cannot host a tooltip — the i18n-interpolated task-run
-  waiting message, exports, document titles — must embed the full-precision string, never the
-  reduced one. The SQL-editor access grant item's <24h branch ("expires in 3h20m") is a relative
-  operational display and adopts the same tooltip treatment as the pill.
-- Staleness: `HumanizeTs` evaluates `Date.now()` only during render, so a long-mounted page shows
-  "5 minutes ago" indefinitely and a row can sit on the wrong side of the 30-day cutoff until an
-  unrelated render. Design requirement: **no time-varying display may go stale while mounted** —
-  relative buckets, countdowns, and `isExpired`/remaining-state derivations must track the
-  passage of time, and displays that never change with time must not pay for a refresh
-  subscription. The mechanism (a shared clock, its cadence, which components subscribe —
-  including consolidating the ad-hoc per-component timers that already exist) is the
-  implementation PR's design space, guarded there by a sweep of render-time `Date.now()` in
-  display components and fake-timer tests. GitHub's `relative-time` element, which schedules its
-  own updates at the next boundary, is the reference behavior.
-- Tests: update `HumanizeTs.test.tsx` for the switch; sweep the `*.test.tsx` files that assert
-  relative strings (`PlanDetailMeta.test.tsx`, `SchemaPane.test.tsx`,
-  `DeployTaskRunHistorySheet.test.tsx`, `IssueCommentActivity.test.tsx`,
-  `ProjectPlanDashboardPage.test.tsx`, `DatabaseChangelogTable.test.tsx`, …). New behavior gets new
-  tests: threshold boundary (29d/31d), same-year vs cross-year, zh locale, history-view tiers, and
-  the operational contract — a component test using an expiration with a sub-minute tail
-  (e.g. 9:00:47) asserting the visible label renders minute + timezone and the tooltip carries the
-  full seconds + timezone, plus the countdown carve-out (a <24h grant renders the remaining
-  duration with that same full tooltip), and fake-timer staleness tests: a mounted component
-  crossing a relative bucket boundary and the 30-day cutoff, plus representative
-  countdown-to-expired transitions.
+- `HumanizeTs` gains the 30-day switch (the logic exists as dead code — `humanizeTs()` in
+  `util.ts`, `RELATIVE_THRESHOLD_MS`/`formatAbsoluteDate` in `datetime.ts`; consolidate there,
+  delete the dead pair) plus three absolute modes, each with the D6 tooltip built in:
+  `compact` (new `formatCompactDateTime`), `datetime` (existing `formatAbsoluteDateTime`), and
+  `operational` (new `formatOperationalDateTime`).
+- Per-site work is the inventory tables above: each listed call site adopts its class's mode;
+  plain-string contexts keep full-precision strings per the D6 corollary. A helper that feeds
+  both JSX and string contexts stays a full-precision string builder — its JSX consumers render
+  the component instead.
+- Staleness: no time-varying display (relative buckets, countdowns, `isExpired` derivations) may
+  go stale while mounted; displays that never change with time pay nothing. The mechanism —
+  shared clock, cadence, subscribers, consolidating today's ad-hoc per-component timers — is the
+  implementation PR's design space, guarded by a render-time `Date.now()` sweep and fake-timer
+  tests. GitHub's `relative-time` element, which schedules updates at the next boundary, is the
+  reference behavior.
+- Tests: threshold boundary (29d/31d), year handling, zh locale, the three modes, the operational
+  label/tooltip contract on a sub-minute-tail expiration, the <24h countdown carve-out, and
+  fake-timer staleness; update the existing `*.test.tsx` files that assert relative strings.
 
 ## What does not change
 
 - The audit log (already correct).
-- Duration display (`humanizeDurationV1` — elapsed times like "4.2s" on task runs and query
-  results). Durations are elapsed quantities, not timestamps: they carry no calendar, timezone, or
-  precision question, so this design leaves them untouched.
-- Four further classes of date-formatting call sites are out of scope by kind, closing the
-  inventory — every `dayjs`/`Intl`/`toLocale*` call site under `frontend/src` now has a
-  disposition in this doc (a display class, a corollary context, or one of these):
-  - **SQL result cell values** (`utils/v1/sql.ts`): rendering of the database's own timestamp
-    data, with microsecond precision and stored offsets — data fidelity, never subject to UI
-    display tiers.
-  - **Generated content embedding times**: issue titles (`utils/v1/issue/issue.ts` — already
-    carries a UTC offset) and CEL request descriptions (`utils/issue/cel.ts`) are written into
-    resources at creation; reformatting them is a data change, not a display change.
-  - **Export/download filenames** (`DataExportButton.tsx`, SQL-editor result exports,
-    `SubscriptionPage.tsx`): filesystem-safe fixed format.
-  - **Picker value echoes and API wire strings**: `date-time-picker`, `TimeRangePicker`,
-    `expiration-picker` render the input's own value (deferred with the pickers);
-    `stores/app/issue.ts`/`plan.ts` and the audit-log filter emit ISO strings to the API.
+- Duration display (`humanizeDurationV1`, "4.2s"): durations are elapsed quantities with no
+  calendar or timezone question.
 - Relative wording under 30 days.
-- No user or workspace preference (revisit only if a customer asks for the opposite default —
-  GitLab's model is the known shape for that).
+- No user or workspace preference (GitLab's model is the known shape if a customer ever asks).
 - No backend or proto change.
-- The time *pickers* (schedule rollout, expiration inputs — `datetime-local` fields writing browser
-  local time): BYT-10023's input side. Deferred to its own design; the docs-side fix already landed
-  in bytebase.com#125.
+- The time *pickers*: BYT-10023's input side, deferred to its own design (docs-side fix already in
+  bytebase.com#125).
+- Out of scope by kind — with these, every `dayjs`/`Intl`/`toLocale*` call site under
+  `frontend/src` has a disposition in this doc: SQL result cell values (`utils/v1/sql.ts` — the
+  database's own data), generated content embedding times (issue titles, CEL descriptions —
+  reformatting them is a data change), export/download filenames, and picker value echoes / API
+  wire strings.
 
 ## Customer outcome check
 
