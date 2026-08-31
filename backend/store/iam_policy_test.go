@@ -113,11 +113,11 @@ func TestSetIamPolicyCompareAndSwap(t *testing.T) {
 	require.Nil(t, projectPolicyMembers(ctx, t, s, "default", "roles/projectDeveloper"))
 }
 
-// The compare has to read the row it is about to write, not a cached copy. The
-// policy cache is a per-process LRU that no other node invalidates, so a node
-// that did not perform the last write holds a stale etag indefinitely -- and
-// comparing against it would accept exactly the stale write the etag exists to
-// reject.
+// The compare has to read the row it is about to write, not a cached copy.
+// Nothing in a server deployment invalidates another process's cache, and the
+// recovery CLI opens its own store against the same database, so a cache can
+// disagree with the row -- and comparing against it would accept exactly the
+// stale write the etag exists to reject.
 func TestSetIamPolicyComparesAgainstTheRowNotTheCache(t *testing.T) {
 	const seedSQL = `
 		INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent)
@@ -130,7 +130,7 @@ func TestSetIamPolicyComparesAgainstTheRowNotTheCache(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, cached.Close()) })
 
-	// Warm this node's cache, then let another node write.
+	// Warm the cache, then write through a store that does not share it.
 	stale, err := cached.GetProjectIamPolicy(ctx, "default", "project-a")
 	require.NoError(t, err)
 	require.NotEmpty(t, stale.Etag)
@@ -180,9 +180,8 @@ func TestSetIamPolicyComparesAgainstTheRowNotTheCache(t *testing.T) {
 
 // A check that compares the new policy against the old one -- the workspace
 // seat guard -- has to see the policy the write replaces. Reading it in the
-// caller reads this node's cache, which may hold another node's obsolete copy,
-// and an over-limit workspace would be measured against a count that never
-// existed.
+// caller leaves a gap another request can land in, so two writes both pass a
+// guard neither would have passed against what the other stored.
 func TestSetIamPolicyValidatesAgainstTheReplacedPolicy(t *testing.T) {
 	const seedSQL = `
 		INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent)

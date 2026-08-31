@@ -47,17 +47,18 @@ type SetIamPolicyMessage struct {
 	ExpectedEtag string
 	// ValidateReplaced, when set, runs inside the write transaction against the
 	// policy being replaced. A check that compares the new policy to the old one
-	// belongs here rather than in the caller, where the old one comes from a
-	// cached read that may be another node's obsolete copy. Returning an error
+	// belongs here rather than in the caller, where reading the old one and
+	// writing are two steps another request can land between. Returning an error
 	// aborts the write, and the error reaches the caller unwrapped.
 	ValidateReplaced func(previous *storepb.IamPolicy) error
 }
 
 // SetIamPolicy replaces an IAM policy under compare-and-swap. The policy row is
 // locked and its etag compared inside the write transaction, so a
-// full-replacement write can never silently undo a concurrent revocation --
-// comparing against a read taken earlier cannot, because that read may come
-// from the policy cache, which no other node invalidates.
+// full-replacement write can never silently undo a concurrent revocation.
+// Comparing against a read taken earlier cannot promise that: two requests
+// reading the same policy would both pass, and the later write would win --
+// which is the defect this exists to close, one layer up.
 //
 // Returns the policy the write replaced, so the caller reports the delta it
 // actually applied rather than a snapshot that may have moved, and
@@ -77,9 +78,10 @@ func (s *Store) SetIamPolicy(ctx context.Context, set *SetIamPolicyMessage) (*Ia
 		return nil, nil, err
 	}
 	if set.ExpectedEtag != "" && set.ExpectedEtag != previous.Etag {
-		// This node's cached copy is what the caller's etag lost to, and it is
-		// still cached. Drop it, or the refetch the caller makes next is served
-		// the same stale etag from here and the retry conflicts again.
+		// The locked row just disagreed with what this process has cached, which
+		// only an out-of-band writer can cause -- the recovery CLI opens its own
+		// store against the same database. Drop it so the refetch the caller
+		// makes next is not served the etag it already lost with.
 		s.evictIamPolicyCache(set.Workspace, set.ResourceType, set.Resource)
 		return nil, nil, ErrIamPolicyEtagMismatch
 	}

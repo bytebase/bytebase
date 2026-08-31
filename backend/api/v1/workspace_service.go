@@ -434,9 +434,8 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find workspace iam policy"))
 	}
 	// The etag is compared only in the write below, against the locked row.
-	// Comparing it here as well would reject a caller holding the etag another
-	// node just wrote, because this read can be served by the policy cache,
-	// which no other node invalidates.
+	// Comparing it here too would add a second answer to the same question from
+	// a read the write does not hold, and only the locked one decides.
 	expectedEtag, err := requestedIamPolicyEtag(request)
 	if err != nil {
 		return nil, err
@@ -484,9 +483,10 @@ func (s *WorkspaceService) SetIamPolicy(ctx context.Context, req *connect.Reques
 		Policy:       iamPolicy,
 		ExpectedEtag: expectedEtag,
 		// The seat count this change is measured against is the one it replaces,
-		// so it is taken under the same lock. A count from the read above could
-		// be this node's obsolete copy, and an over-limit workspace would be let
-		// through to grow.
+		// so it is taken under the same lock. Counting from the read above left
+		// two concurrent writes both passing the guard, and the later one growing
+		// an over-limit workspace -- for an etag-less caller, which the
+		// compare-and-swap does not cover.
 		ValidateReplaced: func(previous *storepb.IamPolicy) error {
 			if newCount <= userLimit {
 				return nil

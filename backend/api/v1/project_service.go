@@ -600,9 +600,8 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 	}
 
 	// The etag is compared only in the write below, against the locked row.
-	// Comparing it here as well would reject a caller holding the etag another
-	// node just wrote, because this read can be served by the policy cache,
-	// which no other node invalidates.
+	// Comparing it here too would add a second answer to the same question from
+	// a read the write does not hold, and only the locked one decides.
 	expectedEtag, err := requestedIamPolicyEtag(req.Msg)
 	if err != nil {
 		return nil, err
