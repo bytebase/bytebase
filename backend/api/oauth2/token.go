@@ -465,7 +465,7 @@ func (s *Service) refuseIssuanceByCeiling(ctx context.Context, workspaceID strin
 		return nil
 	}
 	settings, err := s.mcpCeiling.GetMCPSettingsUncached(ctx, workspaceID)
-	switch verdict := auth.ClassifyMCPCeiling(settings.Capability, err); {
+	switch verdict := auth.ClassifyMCPCeiling(settings, err); {
 	case verdict == auth.MCPCeilingServes:
 		return nil
 	case verdict.IsPolicy():

@@ -24,6 +24,7 @@ const configWithProperties: BehaviorAnalyticsConfig = {
   apiKey: "phc_test",
   options: {},
   properties: {
+    deployment: "cloud",
     git_commit: "abc123",
   },
 };
@@ -106,6 +107,7 @@ describe("BehaviorAnalytics provider", () => {
     });
 
     expect(client.capture).toHaveBeenCalledWith("connect database clicked", {
+      deployment: "cloud",
       git_commit: "abc123",
       route_id: "workspace.project.database",
     });

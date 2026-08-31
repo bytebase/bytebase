@@ -42,12 +42,9 @@ export const AUTH_PASSWORD_RESET_MODULE = "auth.password.reset";
 export const AUTH_PASSWORD_FORGOT_MODULE = "auth.password.forgot";
 export const AUTH_OAUTH_CALLBACK_MODULE = "auth.oauth.callback";
 export const AUTH_OIDC_CALLBACK_MODULE = "auth.oidc.callback";
-export const AUTH_PROFILE_SETUP_MODULE = "auth.profile.setup";
+export const AUTH_SETUP_MODULE = "auth.setup";
 export const AUTH_2FA_SETUP_MODULE = "auth.2fa.setup";
 export const OAUTH2_CONSENT_MODULE = "oauth2.consent";
-
-// --- setup.ts ---
-export const SETUP_MODULE = "setup";
 
 // --- sqlEditor.ts ---
 export const SQL_EDITOR_HOME_MODULE = "sql-editor.home";

@@ -36,14 +36,14 @@ async function globalSetup() {
     // Playwright does NOT run globalTeardown when globalSetup throws, so tear
     // the half-started server down here — otherwise a failed boot orphans a
     // process group and temp dir that starve every subsequent run's boot.
-    stopServer();
+    await stopServer();
     throw err;
   }
 
-  const { baseURL, adminEmail, adminPassword } = server;
+  const { baseURL, adminEmail, adminPassword, project, instance } = server;
   saveTestEnv({
     baseURL, adminEmail, adminPassword,
-    project: "", instance: "", instanceId: "", database: "", databaseId: "",
+    project, instance, instanceId: instance.split("/").pop()!, database: "", databaseId: "",
   });
 }
 

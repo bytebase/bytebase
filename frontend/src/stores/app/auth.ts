@@ -6,9 +6,8 @@ import { ignoredCodesContextKey, silentContextKey } from "@/api/context-key";
 import {
   AUTH_MFA_MODULE,
   AUTH_PASSWORD_RESET_MODULE,
-  AUTH_PROFILE_SETUP_MODULE,
+  AUTH_SETUP_MODULE,
   AUTH_SIGNIN_MODULE,
-  SETUP_MODULE,
 } from "@/app/router/handles";
 import {
   navigateByName,
@@ -24,7 +23,6 @@ import type { User } from "@/types/proto-es/v1/user_service_pb";
 import { UNKNOWN_USER_NAME } from "@/types/v1/user";
 import { storageKeyResetPassword } from "@/utils/storage-keys";
 import type { AppSliceCreator, AuthSlice } from "./types";
-import { keepMfaEnrollment } from "./utils";
 
 // `users/{email}` → `{email}`.
 function emailOf(currentUserName: string | undefined): string {
@@ -146,17 +144,19 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
   // the server — login/signup need the fresh authenticated user).
   fetchCurrentUser: async (silent = false) => {
     try {
-      const fresh = await userServiceClientConnect.getCurrentUser(
+      const user = await userServiceClientConnect.getCurrentUser(
         {},
         { contextValues: createContextValues().set(silentContextKey, silent) }
       );
-      const user = keepMfaEnrollment(fresh, get().currentUser);
       set({ currentUser: user, currentUserName: user.name });
       return user;
     } catch {
       return undefined;
     }
   },
+
+  setCurrentUser: (user) =>
+    set({ currentUser: user, currentUserName: user.name }),
 
   // sometimes we have to redirect users even if we don't want to redirect them.
   // for example, the user is forced to reset their password,
@@ -208,8 +208,8 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
       });
       return;
     }
-    if (get().isSaaSMode() && resp.user && needsProfileSetup(resp.user)) {
-      navigateByName(AUTH_PROFILE_SETUP_MODULE, {
+    if (resp.user && needsProfileSetup(resp.user)) {
+      navigateByName(AUTH_SETUP_MODULE, {
         query: { redirect: nextPage },
       });
       return;
@@ -237,13 +237,13 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
     }
 
     await get().fetchServerInfo();
-    // See `login()`. Loaded above the onboarding branch because `SetupPage`
-    // reads the change mode too, and its skip button navigates to "/".
+    // See `login()`. The profile must be available before the next route is
+    // selected because the root redirect reads the database change mode.
     await get().loadWorkspaceProfile(true);
     set({ authSessionKey: uniqueId() });
 
     if (get().enableOnboarding()) {
-      navigateByName(SETUP_MODULE, { replace: true });
+      navigateByName(AUTH_SETUP_MODULE, { replace: true });
       return;
     }
 

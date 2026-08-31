@@ -41,14 +41,14 @@ func TestGetListGroupFilter(t *testing.T) {
 		{
 			name:     "title contains",
 			filter:   `title.contains("dev")`,
-			wantSQL:  "(LOWER(name) LIKE $1)",
+			wantSQL:  "(LOWER(name) LIKE $1 ESCAPE '\\')",
 			wantArgs: []any{"%dev%"},
 			wantErr:  false,
 		},
 		{
 			name:     "email contains",
 			filter:   `email.contains("example")`,
-			wantSQL:  "(LOWER(email) LIKE $1)",
+			wantSQL:  "(LOWER(email) LIKE $1 ESCAPE '\\')",
 			wantArgs: []any{"%example%"},
 			wantErr:  false,
 		},
@@ -69,7 +69,7 @@ func TestGetListGroupFilter(t *testing.T) {
 		{
 			name:     "complex nested AND/OR",
 			filter:   `(title == "Developers" || title == "Admins") && email.contains("example")`,
-			wantSQL:  "(((name = $1 OR name = $2) AND LOWER(email) LIKE $3))",
+			wantSQL:  "(((name = $1 OR name = $2) AND LOWER(email) LIKE $3 ESCAPE '\\'))",
 			wantArgs: []any{"Developers", "Admins", "%example%"},
 			wantErr:  false,
 		},

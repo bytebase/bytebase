@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"testing"
@@ -17,6 +18,7 @@ import (
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/sample"
 	"github.com/bytebase/bytebase/backend/component/sample/saas"
+	"github.com/bytebase/bytebase/backend/component/sample/selfhost"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -106,6 +108,23 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, nonSaaSResponse.Msg.Sample.Available)
 
+	selfHostManager := selfhost.NewManager(stores, profile, nil, sample.ManagerOptions{ReplicaID: "replica-a"})
+	actuatorService.sampleManager = selfHostManager
+	profile.PgURL = pgURL
+	externalMetadataResponse, err := actuatorService.GetActuatorInfo(authenticatedCtx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
+	require.NoError(t, err)
+	require.False(t, externalMetadataResponse.Msg.Sample.Available)
+	profile.PgURL = ""
+	embeddedMetadataResponse, err := actuatorService.GetActuatorInfo(authenticatedCtx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
+	require.NoError(t, err)
+	require.True(t, embeddedMetadataResponse.Msg.Sample.Available)
+
+	actuatorService.sampleManager = &sampleManagerStub{listInstancesErr: errors.New("failed to decode sample setup")}
+	degradedSampleResponse, err := actuatorService.GetActuatorInfo(authenticatedCtx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
+	require.NoError(t, err)
+	require.True(t, degradedSampleResponse.Msg.Sample.Available)
+	require.Empty(t, degradedSampleResponse.Msg.Sample.Instances)
+
 	profile.SaaS = true
 	actuatorService.sampleManager = sampleManager
 
@@ -144,7 +163,7 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	require.NotEmpty(t, privateResponse.Msg.DefaultProject)
 	require.True(t, privateResponse.Msg.Sample.Available)
 	require.Len(t, privateResponse.Msg.Sample.Instances, 1)
-	require.Equal(t, common.FormatInstance("sample-instance"), privateResponse.Msg.Sample.Instances[0].Instance)
+	require.Equal(t, common.FormatProjectInstance(projectID, "sample-instance"), privateResponse.Msg.Sample.Instances[0].Instance)
 	require.True(t, expiresAt.Equal(privateResponse.Msg.Sample.Instances[0].ExpireTime.AsTime()))
 
 	cleanupNow := expiresAt.Add(time.Second)
@@ -163,75 +182,6 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, deletedResponse.Msg.Sample.Available)
 	require.Len(t, deletedResponse.Msg.Sample.Instances, 1)
-	require.Equal(t, common.FormatInstance("sample-instance"), deletedResponse.Msg.Sample.Instances[0].Instance)
+	require.Equal(t, common.FormatProjectInstance(projectID, "sample-instance"), deletedResponse.Msg.Sample.Instances[0].Instance)
 	require.Nil(t, deletedResponse.Msg.Sample.Instances[0].ExpireTime)
 }
-
-func TestSetupSampleUsesUnifiedManagerAndAcceptsPair(t *testing.T) {
-	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	require.NoError(t, migrator.MigrateSchema(ctx, container.GetDB()))
-
-	stores, err := store.New(ctx, fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	), false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
-	const workspaceID = "setup-sample"
-	_, err = stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
-		ResourceID: workspaceID,
-		Payload:    &storepb.WorkspacePayload{Title: "Setup sample"},
-	}, "admin@example.com")
-	require.NoError(t, err)
-	user, err := stores.CreateUser(ctx, &store.UserMessage{
-		Email:   "admin@example.com",
-		Name:    "Admin",
-		Profile: &storepb.UserProfile{},
-	})
-	require.NoError(t, err)
-
-	manager := &actuatorSampleManagerStub{}
-	service := &ActuatorService{
-		store:         stores,
-		profile:       &config.Profile{},
-		sampleManager: manager,
-	}
-	requestCtx := context.WithValue(ctx, common.WorkspaceIDContextKey, workspaceID)
-	requestCtx = context.WithValue(requestCtx, common.UserContextKey, user)
-	_, err = service.SetupSample(requestCtx, connect.NewRequest(&v1pb.SetupSampleRequest{}))
-	require.NoError(t, err)
-	require.Equal(t, []sample.SetupRequest{{WorkspaceID: workspaceID, ProjectID: "project-sample"}}, manager.requests)
-	projectID := "project-sample"
-	project, err := stores.GetProject(ctx, &store.FindProjectMessage{Workspace: workspaceID, ResourceID: &projectID})
-	require.NoError(t, err)
-	require.NotNil(t, project)
-}
-
-type actuatorSampleManagerStub struct {
-	requests []sample.SetupRequest
-}
-
-func (s *actuatorSampleManagerStub) SetupSample(_ context.Context, request sample.SetupRequest) (*sample.SetupResult, error) {
-	s.requests = append(s.requests, request)
-	return &sample.SetupResult{Instances: []*store.InstanceMessage{{ResourceID: "sample-one"}, {ResourceID: "sample-two"}}}, nil
-}
-
-func (*actuatorSampleManagerStub) Info(context.Context, string) (*sample.Info, error) {
-	return &sample.Info{}, nil
-}
-
-func (*actuatorSampleManagerStub) Start(context.Context, string) error { return nil }
-
-func (*actuatorSampleManagerStub) Cleanup(context.Context) error { return nil }
-
-func (*actuatorSampleManagerStub) ValidateInstanceRestore(context.Context, string, string) error {
-	return nil
-}
-
-func (*actuatorSampleManagerStub) HandleInstanceLifecycle(context.Context, string, string, bool) error {
-	return nil
-}
-
-func (*actuatorSampleManagerStub) Stop() {}

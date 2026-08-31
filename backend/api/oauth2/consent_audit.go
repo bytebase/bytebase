@@ -15,19 +15,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/store"
 )
-
-// One heading per way the workspace's MCP policy refuses a consent. Only the
-// heading is local: it is page copy, this is its one consumer, and the three
-// states have different fixes, so a heading naming the wrong one is the part a
-// hurried reader acts on. The sentence under it is the verdict's own
-// (auth.MCPCeilingVerdict.Refusal), shared with every other door.
-var consentHeadings = map[auth.MCPCeilingVerdict]string{
-	auth.MCPCeilingDisabled:   "MCP access is turned off",
-	auth.MCPCeilingUnreadable: "This workspace's MCP setting cannot be read",
-	auth.MCPCeilingUnserved:   "This workspace's MCP setting is not one this version supports",
-}
 
 // consentAttempt is the consent a ceiling check may refuse: who is consenting,
 // which client asked, what was asked for, and where the client waits.
@@ -43,7 +31,7 @@ type consentAttempt struct {
 // *store.Store satisfies it; a test supplies its own, which is what lets the
 // outage arm be exercised — a real store cannot be made to fail a single read.
 type mcpCeilingReader interface {
-	GetMCPSettingsUncached(ctx context.Context, workspace string) (store.MCPSettings, error)
+	GetMCPSettingsUncached(ctx context.Context, workspace string) (*storepb.MCPSetting, error)
 }
 
 // refuseConsentByCeiling holds a consent about to be granted against the
@@ -63,7 +51,7 @@ type mcpCeilingReader interface {
 func (s *Service) refuseConsentByCeiling(c *echo.Context, attempt consentAttempt) (bool, error) {
 	ctx := c.Request().Context()
 	settings, err := s.mcpCeiling.GetMCPSettingsUncached(ctx, attempt.user.workspaceID)
-	verdict := auth.ClassifyMCPCeiling(settings.Capability, err)
+	verdict := auth.ClassifyMCPCeiling(settings, err)
 	if verdict == auth.MCPCeilingServes {
 		return false, nil
 	}
@@ -120,7 +108,7 @@ func (s *Service) refuseConsent(c *echo.Context, attempt consentAttempt, verdict
 // allows inline style and blocks inline script, so the page carries no
 // behavior.
 func consentRefusedHTML(verdict auth.MCPCeilingVerdict, redirectURI, state string) string {
-	heading := html.EscapeString(consentHeadings[verdict])
+	heading := html.EscapeString(verdict.Heading())
 	page := `<!DOCTYPE html>
 <html>
 <head>

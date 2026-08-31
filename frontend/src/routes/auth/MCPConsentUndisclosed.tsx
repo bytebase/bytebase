@@ -5,11 +5,7 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
 /** Why this page cannot say what approving would grant. */
-export type UndisclosedReason =
-  | "unknown"
-  | "unreadable"
-  | "unserved"
-  | "outdated";
+export type UndisclosedReason = "unknown" | "unserved" | "outdated";
 
 interface Props {
   readonly reason: UndisclosedReason;

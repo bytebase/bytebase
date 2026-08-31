@@ -100,18 +100,14 @@ func TestReadPathHidesTheWebhookURL(t *testing.T) {
 	}
 }
 
-// TestReadPathHidesTheMFAEnrollmentSecrets covers the third leak and the
-// constraint that makes it awkward: one converter serves both the reads and the
-// RPC that mints the enrollment. The mint has to keep the secrets — the console
-// renders the QR code and the recovery codes out of that response and the
-// server keeps no other copy to hand over — and every read has to lose them.
-//
-// GetUser is here beside GetCurrentUser because the leak was never
-// GetCurrentUser's: the converter exposed the fields to any read whose subject
-// was the caller, so reading your own profile through GetUser leaked the same
-// TOTP seed. GetUser stays EXCLUDED for MCP on other grounds, which is exactly
-// why the fix could not live in one RPC.
-func TestReadPathHidesTheMFAEnrollmentSecrets(t *testing.T) {
+// TestEnrollmentSecretsLiveOnlyInTheMintingResponses covers the third leak and
+// what replaced the fix for it. The secrets used to ride on the User resource,
+// where every read had to remember to drop them; they now exist only in the
+// responses of the two methods that mint them, and the User message has no
+// field left to leak. This asserts the half a type cannot: that the minting
+// responses do carry them, and that enrollment still completes against the
+// seed the caller was handed.
+func TestEnrollmentSecretsLiveOnlyInTheMintingResponses(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
@@ -121,63 +117,43 @@ func TestReadPathHidesTheMFAEnrollmentSecrets(t *testing.T) {
 	defer ctl.Close(ctx)
 
 	userName := common.FormatUserEmail("demo@example.com")
-	minted, err := ctl.userServiceClient.UpdateUser(ctx, connect.NewRequest(&v1pb.UpdateUserRequest{
-		User:                    &v1pb.User{Name: userName},
-		UpdateMask:              &fieldmaskpb.FieldMask{},
-		RegenerateTempMfaSecret: true,
+	minted, err := ctl.userServiceClient.StartMFAEnrollment(ctx, connect.NewRequest(&v1pb.StartMFAEnrollmentRequest{
+		Name: userName,
 	}))
 	a.NoError(err)
-	a.NotEmpty(minted.Msg.TempOtpSecret, "the minting response is the only place the console can read the TOTP seed")
-	a.NotEmpty(minted.Msg.TempRecoveryCodes, "and the only place it can read the recovery codes")
-	a.NotNil(minted.Msg.TempOtpSecretCreatedTime, "the countdown needs the moment the window opened")
+	a.NotEmpty(minted.Msg.OtpSecret, "the minting response is the only place the console can read the TOTP seed")
+	a.NotEmpty(minted.Msg.RecoveryCodes, "and the only place it can read the recovery codes")
+	a.NotNil(minted.Msg.ExpireTime, "the countdown needs to know when the window closes")
+
+	// The enrollment completes against the seed the console was handed, which
+	// is what makes it safe for the reads to carry nothing.
+	otp, err := totp.GenerateCode(minted.Msg.OtpSecret, time.Now())
+	a.NoError(err)
+	_, err = ctl.userServiceClient.EnableMFA(ctx, connect.NewRequest(&v1pb.EnableMFARequest{
+		Name:           userName,
+		OtpCode:        otp,
+		Credential:     &v1pb.CredentialProof{Proof: &v1pb.CredentialProof_CurrentPassword{CurrentPassword: "1024bytebase"}},
+		PendingVersion: minted.Msg.PendingVersion,
+	}))
+	a.NoError(err)
+
+	// A fresh code, not a replay of EnableMFA's: promotion is the moment MFA
+	// starts gating logins, and the download screen in between outlives one
+	// ~30s TOTP window.
+	confirmOTP, err := totp.GenerateCode(minted.Msg.OtpSecret, time.Now())
+	a.NoError(err)
+	confirmed, err := ctl.userServiceClient.ConfirmRecoveryCodes(ctx, connect.NewRequest(&v1pb.ConfirmRecoveryCodesRequest{
+		Name:           userName,
+		OtpCode:        confirmOTP,
+		Credential:     &v1pb.CredentialProof{Proof: &v1pb.CredentialProof_CurrentPassword{CurrentPassword: "1024bytebase"}},
+		PendingVersion: minted.Msg.PendingVersion,
+	}))
+	a.NoError(err)
+	a.True(confirmed.Msg.MfaEnabled, "confirming the codes is what makes the factor live")
 
 	current, err := ctl.userServiceClient.GetCurrentUser(ctx, connect.NewRequest(&emptypb.Empty{}))
 	a.NoError(err)
-	self, err := ctl.userServiceClient.GetUser(ctx, connect.NewRequest(&v1pb.GetUserRequest{Name: userName}))
-	a.NoError(err)
-
-	for rpc, user := range map[string]*v1pb.User{"GetCurrentUser": current.Msg, "GetUser": self.Msg} {
-		a.Empty(user.TempOtpSecret, "%s returns the TOTP seed of an open enrollment", rpc)
-		a.Empty(user.TempRecoveryCodes, "%s returns the recovery codes of an open enrollment", rpc)
-		a.NotNil(user.TempOtpSecretCreatedTime,
-			"%s must still say an enrollment is open and when it expires; that is not a secret", rpc)
-	}
-
-	// An update that mints nothing does not answer with the enrollment either,
-	// even though the window is open. UpdateUser is one RPC doing several jobs,
-	// and only the two that drive the enrollment carry it back.
-	renamed, err := ctl.userServiceClient.UpdateUser(ctx, connect.NewRequest(&v1pb.UpdateUserRequest{
-		User:       &v1pb.User{Name: userName, Title: "Demo Renamed"},
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"title"}},
-	}))
-	a.NoError(err)
-	a.Equal("Demo Renamed", renamed.Msg.Title)
-	a.Empty(renamed.Msg.TempOtpSecret, "a title update mints nothing and must carry nothing")
-	a.Empty(renamed.Msg.TempRecoveryCodes)
-
-	// The enrollment still completes, which is the whole point of leaving the
-	// minting response alone: the seed the console was handed is the seed the
-	// server validates against. The otp_code verification is the other request
-	// that answers with the enrollment, because it is the step the console
-	// moves to the recovery-code screen from.
-	otp, err := totp.GenerateCode(minted.Msg.TempOtpSecret, time.Now())
-	a.NoError(err)
-	verified, err := ctl.userServiceClient.UpdateUser(ctx, connect.NewRequest(&v1pb.UpdateUserRequest{
-		User:       &v1pb.User{Name: userName},
-		UpdateMask: &fieldmaskpb.FieldMask{},
-		OtpCode:    &otp,
-	}))
-	a.NoError(err)
-	a.NotEmpty(verified.Msg.TempRecoveryCodes,
-		"the console reads the recovery codes it asks the user to save out of this response")
-
-	enabled, err := ctl.userServiceClient.UpdateUser(ctx, connect.NewRequest(&v1pb.UpdateUserRequest{
-		User:       &v1pb.User{Name: userName, MfaEnabled: true},
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"mfa_enabled"}},
-		OtpCode:    &otp,
-	}))
-	a.NoError(err)
-	a.True(enabled.Msg.MfaEnabled)
+	a.True(current.Msg.MfaEnabled, "the read still reports that a factor exists")
 }
 
 // TestMCPServesTheReadsTheRedactionFreed is the regression this batch exists to
@@ -217,10 +193,8 @@ func TestMCPServesTheReadsTheRedactionFreed(t *testing.T) {
 	}))
 	a.NoError(err)
 
-	_, err = ctl.userServiceClient.UpdateUser(ctx, connect.NewRequest(&v1pb.UpdateUserRequest{
-		User:                    &v1pb.User{Name: common.FormatUserEmail("demo@example.com")},
-		UpdateMask:              &fieldmaskpb.FieldMask{},
-		RegenerateTempMfaSecret: true,
+	_, err = ctl.userServiceClient.StartMFAEnrollment(ctx, connect.NewRequest(&v1pb.StartMFAEnrollmentRequest{
+		Name: common.FormatUserEmail("demo@example.com"),
 	}))
 	a.NoError(err)
 
@@ -302,4 +276,236 @@ func TestMCPServesTheReadsTheRedactionFreed(t *testing.T) {
 		a.True(strings.Contains(got.Error, tc.reason),
 			"%s must still be refused for what it does; got %q", tc.operation, got.Error)
 	}
+}
+
+// TestMFAReplacementPromotesTheNewAuthenticator covers the enrollment the
+// account page reaches through Edit rather than Enable: a user who already has
+// a factor scans a new authenticator, and it is the new one that has to be live
+// afterwards. Confirming only the recovery codes while leaving the old secret in
+// place reports success and then rejects every code from the authenticator the
+// user just set up — a lockout as soon as they delete the old entry.
+func TestMFAReplacementPromotesTheNewAuthenticator(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	userName := common.FormatUserEmail("demo@example.com")
+	// liveSecret is empty for the account's first factor and holds the live
+	// one for the replacement: a factor-touching call on an account that has a
+	// factor must be proven with that factor, never with the password, since a
+	// password can be minted from mailbox possession alone.
+	enroll := func(liveSecret string) string {
+		t.Helper()
+		proof := func() *v1pb.CredentialProof {
+			t.Helper()
+			if liveSecret == "" {
+				return &v1pb.CredentialProof{Proof: &v1pb.CredentialProof_CurrentPassword{CurrentPassword: "1024bytebase"}}
+			}
+			live, err := totp.GenerateCode(liveSecret, time.Now())
+			a.NoError(err)
+			return &v1pb.CredentialProof{Proof: &v1pb.CredentialProof_OtpCode{OtpCode: live}}
+		}
+		minted, err := ctl.userServiceClient.StartMFAEnrollment(ctx, connect.NewRequest(&v1pb.StartMFAEnrollmentRequest{
+			Name: userName,
+		}))
+		a.NoError(err)
+		otp, err := totp.GenerateCode(minted.Msg.OtpSecret, time.Now())
+		a.NoError(err)
+		_, err = ctl.userServiceClient.EnableMFA(ctx, connect.NewRequest(&v1pb.EnableMFARequest{
+			Name:           userName,
+			OtpCode:        otp,
+			Credential:     proof(),
+			PendingVersion: minted.Msg.PendingVersion,
+		}))
+		a.NoError(err)
+		confirm := &v1pb.ConfirmRecoveryCodesRequest{
+			Name:           userName,
+			Credential:     proof(),
+			PendingVersion: minted.Msg.PendingVersion,
+		}
+		if liveSecret == "" {
+			// Only a first-time enrollment re-proves the new device here; a
+			// replacement is proven with the factor it is replacing.
+			confirmOTP, err := totp.GenerateCode(minted.Msg.OtpSecret, time.Now())
+			a.NoError(err)
+			confirm.OtpCode = confirmOTP
+		}
+		_, err = ctl.userServiceClient.ConfirmRecoveryCodes(ctx, connect.NewRequest(confirm))
+		a.NoError(err)
+		return minted.Msg.OtpSecret
+	}
+
+	firstSecret := enroll("")
+	replacementSecret := enroll(firstSecret)
+	a.NotEqual(firstSecret, replacementSecret)
+
+	// Sign in with the replacement authenticator. This is the assertion that
+	// matters: the login path validates against the stored live secret, so it
+	// passes only if the enrollment promoted the one just scanned.
+	adminToken := ctl.authInterceptor.token
+	ctl.authInterceptor.token = ""
+	defer func() { ctl.authInterceptor.token = adminToken }()
+
+	mfaStart, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:    "demo@example.com",
+		Password: "1024bytebase",
+	}))
+	a.NoError(err)
+	mfaTempToken := mfaStart.Msg.GetMfaTempToken()
+	a.NotEmpty(mfaTempToken, "the account must still require a second factor")
+
+	otp, err := totp.GenerateCode(replacementSecret, time.Now())
+	a.NoError(err)
+	loggedIn, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		OtpCode:      &otp,
+		MfaTempToken: &mfaTempToken,
+	}))
+	a.NoError(err, "a code from the newly enrolled authenticator must be accepted")
+	a.NotEmpty(loggedIn.Msg.Token)
+}
+
+// TestSupersededPendingStateIsRefused covers two flows racing for the one
+// pending slot: a recovery-code regeneration open in one tab while an
+// enrollment starts in another. The regeneration's confirmation must not
+// promote the enrollment's secret — the caller never saw it, and the codes it
+// downloaded are not the ones that would go live. Both are lockouts, so the
+// stale confirmation is refused instead.
+func TestSupersededPendingStateIsRefused(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	userName := common.FormatUserEmail("demo@example.com")
+	enrolled, err := ctl.userServiceClient.StartMFAEnrollment(ctx, connect.NewRequest(&v1pb.StartMFAEnrollmentRequest{
+		Name: userName,
+	}))
+	a.NoError(err)
+	otp, err := totp.GenerateCode(enrolled.Msg.OtpSecret, time.Now())
+	a.NoError(err)
+	_, err = ctl.userServiceClient.EnableMFA(ctx, connect.NewRequest(&v1pb.EnableMFARequest{
+		Name:           userName,
+		OtpCode:        otp,
+		Credential:     &v1pb.CredentialProof{Proof: &v1pb.CredentialProof_CurrentPassword{CurrentPassword: "1024bytebase"}},
+		PendingVersion: enrolled.Msg.PendingVersion,
+	}))
+	a.NoError(err)
+	confirmOTP, err := totp.GenerateCode(enrolled.Msg.OtpSecret, time.Now())
+	a.NoError(err)
+	_, err = ctl.userServiceClient.ConfirmRecoveryCodes(ctx, connect.NewRequest(&v1pb.ConfirmRecoveryCodesRequest{
+		Name:           userName,
+		OtpCode:        confirmOTP,
+		Credential:     &v1pb.CredentialProof{Proof: &v1pb.CredentialProof_CurrentPassword{CurrentPassword: "1024bytebase"}},
+		PendingVersion: enrolled.Msg.PendingVersion,
+	}))
+	a.NoError(err)
+
+	// Tab one opens the regeneration view and is shown a code set.
+	regenerated, err := ctl.userServiceClient.RegenerateRecoveryCodes(ctx, connect.NewRequest(&v1pb.RegenerateRecoveryCodesRequest{
+		Name: userName,
+	}))
+	a.NoError(err)
+
+	// Tab two starts replacing the authenticator, which takes over the one
+	// pending slot.
+	replacement, err := ctl.userServiceClient.StartMFAEnrollment(ctx, connect.NewRequest(&v1pb.StartMFAEnrollmentRequest{
+		Name: userName,
+	}))
+	a.NoError(err)
+	a.NotEqual(enrolled.Msg.OtpSecret, replacement.Msg.OtpSecret)
+
+	// Tab one saves its codes and confirms, proving the live factor it has.
+	liveOTPForConfirm, err := totp.GenerateCode(enrolled.Msg.OtpSecret, time.Now())
+	a.NoError(err)
+	_, err = ctl.userServiceClient.ConfirmRecoveryCodes(ctx, connect.NewRequest(&v1pb.ConfirmRecoveryCodesRequest{
+		Name:           userName,
+		Credential:     &v1pb.CredentialProof{Proof: &v1pb.CredentialProof_OtpCode{OtpCode: liveOTPForConfirm}},
+		PendingVersion: regenerated.Msg.PendingVersion,
+	}))
+	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err),
+		"a confirmation whose pending state was superseded must be refused")
+
+	// The account still signs in with the authenticator it had, which is the
+	// point: nothing was promoted behind the user's back.
+	adminToken := ctl.authInterceptor.token
+	ctl.authInterceptor.token = ""
+	defer func() { ctl.authInterceptor.token = adminToken }()
+
+	mfaStart, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:    "demo@example.com",
+		Password: "1024bytebase",
+	}))
+	a.NoError(err)
+	mfaTempToken := mfaStart.Msg.GetMfaTempToken()
+	a.NotEmpty(mfaTempToken)
+	liveOTP, err := totp.GenerateCode(enrolled.Msg.OtpSecret, time.Now())
+	a.NoError(err)
+	loggedIn, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		OtpCode:      &liveOTP,
+		MfaTempToken: &mfaTempToken,
+	}))
+	a.NoError(err, "the authenticator the user actually enrolled must still work")
+	a.NotEmpty(loggedIn.Msg.Token)
+}
+
+// TestConfirmationCannotRevivePendingStateItRaced pins the promotion's version
+// predicate rather than the read in front of it. An administrator clearing a
+// locked-out user's factor, or another tab minting a fresh enrollment, can land
+// between a confirmation's check and its write; without the predicate on the
+// write itself, that confirmation still promotes what it read and brings back a
+// factor the administrator just removed.
+func TestConfirmationCannotRevivePendingStateItRaced(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	userName := common.FormatUserEmail("demo@example.com")
+	minted, err := ctl.userServiceClient.StartMFAEnrollment(ctx, connect.NewRequest(&v1pb.StartMFAEnrollmentRequest{
+		Name: userName,
+	}))
+	a.NoError(err)
+	otp, err := totp.GenerateCode(minted.Msg.OtpSecret, time.Now())
+	a.NoError(err)
+	_, err = ctl.userServiceClient.EnableMFA(ctx, connect.NewRequest(&v1pb.EnableMFARequest{
+		Name:           userName,
+		OtpCode:        otp,
+		Credential:     &v1pb.CredentialProof{Proof: &v1pb.CredentialProof_CurrentPassword{CurrentPassword: "1024bytebase"}},
+		PendingVersion: minted.Msg.PendingVersion,
+	}))
+	a.NoError(err)
+
+	// The pending state is cleared out from under the open enrollment, the way
+	// DisableMFA clears it for an account being recovered. No CredentialProof:
+	// nothing was ever promoted, so there is no factor to prove.
+	_, err = ctl.userServiceClient.DisableMFA(ctx, connect.NewRequest(&v1pb.DisableMFARequest{
+		Name: userName,
+	}))
+	a.NoError(err)
+
+	// The stale tab confirms with the version it was handed.
+	staleOTP, err := totp.GenerateCode(minted.Msg.OtpSecret, time.Now())
+	a.NoError(err)
+	_, err = ctl.userServiceClient.ConfirmRecoveryCodes(ctx, connect.NewRequest(&v1pb.ConfirmRecoveryCodesRequest{
+		Name:           userName,
+		OtpCode:        staleOTP,
+		Credential:     &v1pb.CredentialProof{Proof: &v1pb.CredentialProof_CurrentPassword{CurrentPassword: "1024bytebase"}},
+		PendingVersion: minted.Msg.PendingVersion,
+	}))
+	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err),
+		"a confirmation whose pending state is gone must be refused")
+
+	current, err := ctl.userServiceClient.GetCurrentUser(ctx, connect.NewRequest(&emptypb.Empty{}))
+	a.NoError(err)
+	a.False(current.Msg.MfaEnabled, "MFA must stay off once it has been disabled")
 }

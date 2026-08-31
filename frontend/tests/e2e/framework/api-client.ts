@@ -84,8 +84,12 @@ export class BytebaseApiClient {
     }
   }
 
-  async setupSample(): Promise<void> {
-    await this.request<unknown>("POST", "/v1/actuator:setupSample", {});
+  async prepareSampleProjectInstance(parent: string): Promise<{ name: string }> {
+    return this.request<{ name: string }>(
+      "POST",
+      `/v1/${parent}/instances:prepareSampleProjectInstance`,
+      {},
+    );
   }
 
   // Generic workspace setting upsert. Mirrors the frontend store's
@@ -264,8 +268,9 @@ export class BytebaseApiClient {
   }
 
   // Discovery
-  async listInstances() {
-    return this.request<{ instances: { name: string; engine: string; title: string }[] }>("GET", "/v1/instances?pageSize=100&showDeleted=false");
+  async listInstances(parent?: string) {
+    const collection = parent ? `/v1/${parent}/instances` : "/v1/instances";
+    return this.request<{ instances: { name: string; engine: string; title: string }[] }>("GET", `${collection}?pageSize=100&showDeleted=false`);
   }
 
   async listDatabases(parent: string) {
@@ -294,6 +299,17 @@ export class BytebaseApiClient {
       "PATCH",
       `/v1/${databaseFullName}?updateMask=project`,
       { name: databaseFullName, project },
+    );
+  }
+
+  async updateDatabaseEnvironment(
+    databaseFullName: string,
+    environment: string,
+  ) {
+    return this.request<unknown>(
+      "PATCH",
+      `/v1/${databaseFullName}?updateMask=environment`,
+      { name: databaseFullName, environment },
     );
   }
 
@@ -345,6 +361,20 @@ export class BytebaseApiClient {
   // Instances
   async getInstance(instanceName: string) {
     return this.request<{ name: string; dataSources: { id: string; port: string; host: string }[] }>("GET", `/v1/${instanceName}`);
+  }
+
+  // Set the instance's database sync allowlist (Instance.sync_databases). A
+  // project-scoped sample instance is registered with an explicit allowlist of
+  // exactly its seeded database (selfhost sample manager: [hr_test]), and the
+  // schema syncer SKIPS any discovered database not on that list — so a
+  // database created directly in the sample Postgres is never persisted by
+  // syncInstance unless the allowlist is widened first.
+  async updateInstanceSyncDatabases(instanceName: string, databases: string[]) {
+    return this.request<unknown>(
+      "PATCH",
+      `/v1/${instanceName}?updateMask=sync_databases`,
+      { name: instanceName, syncDatabases: { databases } },
+    );
   }
 
   async updateInstanceDataSource(instanceName: string, dataSourceId: string, port: string) {
@@ -506,12 +536,9 @@ export class BytebaseApiClient {
     try { await this.request<unknown>("DELETE", `/v1/${name}`); } catch { /* ignore */ }
   }
 
-  // Locate a database by short name (e.g., "family_prod") across every
-  // instance reachable to the test user. Used by tests that need a database
-  // outside the env-discovered default (e.g., R7 needs both hr_prod and a
-  // MySQL family_prod).
-  async findDatabaseByShortName(shortName: string): Promise<{ database: string; instance: string; engine: string } | null> {
-    const { instances } = await this.listInstances();
+  // Locate a database by short name across every instance owned by a project.
+  async findDatabaseByShortName(shortName: string, parent: string): Promise<{ database: string; instance: string; engine: string } | null> {
+    const { instances } = await this.listInstances(parent);
     for (const inst of instances) {
       const { databases } = await this.listDatabases(inst.name);
       const match = databases.find((d) => d.name.endsWith(`/${shortName}`));
@@ -557,11 +584,15 @@ export class BytebaseApiClient {
     });
   }
 
+  // `specs` carries each spec's id + targets. UI-created plans get product-
+  // generated UUID spec ids, so callers asserting spec-scoped URLs must read
+  // the real ids here rather than assuming the ids they would have chosen.
   async getPlan(planName: string): Promise<{
     name: string;
     hasRollout: boolean;
     issue: string;
     state: string;
+    specs?: { id: string; changeDatabaseConfig?: { targets?: string[] } }[];
   }> {
     return this.request("GET", `/v1/${planName}`);
   }
@@ -626,6 +657,15 @@ export class BytebaseApiClient {
   // so the HTTP body is the IssueComment payload directly. Used by the
   // markdown-link spec (BYT-9664) to seed a comment with links via the API
   // rather than driving the review popover.
+  // Set an issue's description (AIP-134 PATCH with an explicit update_mask —
+  // the backend rejects unnamed paths since T15/#21279).
+  async updateIssueDescription(issueName: string, description: string): Promise<void> {
+    await this.request(
+      "PATCH", `/v1/${issueName}?updateMask=description`,
+      { name: issueName, description },
+    );
+  }
+
   async createIssueComment(issueName: string, comment: string): Promise<{ name: string }> {
     return this.request<{ name: string }>("POST", `/v1/${issueName}:comment`, {
       comment,

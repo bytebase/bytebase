@@ -31,7 +31,8 @@ Run SQL queries against databases managed by Bytebase.
    Filter examples:
    - \`name.contains("employee")\` - database name contains "employee"
    - \`project == "projects/{project-id}"\` - databases in a project
-   - \`instance == "instances/{instance-id}"\` - databases in an instance
+   - \`instance == "instances/{instance-id}"\` - databases in a workspace instance
+   - \`instance == "projects/{project-id}/instances/{instance-id}"\` - databases in a project instance
    - \`engine == "MYSQL"\` - MySQL databases only
    - \`environment == "environments/prod" && name.contains("user")\` - combine filters
 
@@ -40,7 +41,7 @@ Run SQL queries against databases managed by Bytebase.
 3. **Execute SQL**:
    \`\`\`
    call_api(operationId="SQLService/Query", body={
-     "name": "instances/{instance-id}/databases/{database-name}",
+     "name": "projects/{project-id}/instances/{instance-id}/databases/{database-name}",
      "statement": "SELECT * FROM users LIMIT 10"
    })
    \`\`\`
@@ -53,6 +54,7 @@ Run SQL queries against databases managed by Bytebase.
   - Full mask: \`******\`
   - Partial mask: \`**rn**\` (only "rn" visible)
 - **Displaying partial masks:** Use backticks or code blocks when presenting results. Without escaping, markdown interprets \`**text**\` as bold formatting.
+- Preserve the exact canonical database name returned by ListDatabases. Workspace databases use \`instances/{instance}/databases/{database}\`; project-instance databases use \`projects/{project}/instances/{instance}/databases/{database}\`.
 
 ## Common Errors
 

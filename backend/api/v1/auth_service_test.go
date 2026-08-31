@@ -278,7 +278,7 @@ func TestLoginEnforcesWorkspaceDomains(t *testing.T) {
 		_, err = stores.UpsertEmailVerificationCodeIfCooldownExpired(ctx, &store.EmailVerificationCodeMessage{
 			Email:      email,
 			Purpose:    storepb.EmailVerificationCodePurpose_LOGIN,
-			CodeHash:   service.hashEmailCode(code),
+			CodeHash:   hashEmailCode(service.secret, code),
 			ExpiresAt:  time.Now().Add(time.Minute),
 			LastSentAt: time.Now(),
 		}, 0)
@@ -299,7 +299,7 @@ func TestLoginEnforcesWorkspaceDomains(t *testing.T) {
 		_, err := stores.UpsertEmailVerificationCodeIfCooldownExpired(ctx, &store.EmailVerificationCodeMessage{
 			Email:      blockedAdmin.Email,
 			Purpose:    storepb.EmailVerificationCodePurpose_LOGIN,
-			CodeHash:   service.hashEmailCode(code),
+			CodeHash:   hashEmailCode(service.secret, code),
 			ExpiresAt:  time.Now().Add(time.Minute),
 			LastSentAt: time.Now(),
 		}, 0)
@@ -318,7 +318,7 @@ func TestLoginEnforcesWorkspaceDomains(t *testing.T) {
 		_, err := stores.UpsertEmailVerificationCodeIfCooldownExpired(ctx, &store.EmailVerificationCodeMessage{
 			Email:      email,
 			Purpose:    storepb.EmailVerificationCodePurpose_LOGIN,
-			CodeHash:   service.hashEmailCode(code),
+			CodeHash:   hashEmailCode(service.secret, code),
 			ExpiresAt:  time.Now().Add(time.Minute),
 			LastSentAt: time.Now(),
 		}, 0)

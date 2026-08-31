@@ -36,6 +36,8 @@ func newReauthorizeTestServer(ctx context.Context, t *testing.T) (*Server, *stor
 	require.NoError(t, migrator.MigrateSchema(ctx, db))
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('ws-test');
+		INSERT INTO setting (name, workspace, value)
+		VALUES ('MCP', 'ws-test', '{"capability":"READ_WRITE"}');
 		INSERT INTO principal (name, email, password_hash) VALUES ('demo', 'test@example.com', 'unused');
 		INSERT INTO oauth2_client (client_id, workspace, client_secret_hash, config)
 		VALUES ('client-A', NULL, 'unused-hash', '{"clientName":"test","redirectUris":["http://localhost/cb"],"grantTypes":["authorization_code","refresh_token"],"tokenEndpointAuthMethod":"none"}'::jsonb);

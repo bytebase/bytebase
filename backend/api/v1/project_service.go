@@ -23,6 +23,7 @@ import (
 	"github.com/bytebase/bytebase/backend/common/permission"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/iam"
+	"github.com/bytebase/bytebase/backend/component/sample"
 	"github.com/bytebase/bytebase/backend/utils"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -35,9 +36,10 @@ import (
 // ProjectService implements the project service.
 type ProjectService struct {
 	v1connect.UnimplementedProjectServiceHandler
-	store      *store.Store
-	profile    *config.Profile
-	iamManager *iam.Manager
+	store         *store.Store
+	profile       *config.Profile
+	iamManager    *iam.Manager
+	sampleManager sample.Manager
 }
 
 // NewProjectService creates a new ProjectService.
@@ -45,11 +47,13 @@ func NewProjectService(
 	store *store.Store,
 	profile *config.Profile,
 	iamManager *iam.Manager,
+	sampleManager sample.Manager,
 ) *ProjectService {
 	return &ProjectService{
-		store:      store,
-		profile:    profile,
-		iamManager: iamManager,
+		store:         store,
+		profile:       profile,
+		iamManager:    iamManager,
+		sampleManager: sampleManager,
 	}
 }
 
@@ -69,9 +73,6 @@ func (s *ProjectService) BatchGetProjects(ctx context.Context, req *connect.Requ
 		project, err := s.getProjectMessage(ctx, name)
 		if err != nil {
 			return nil, err
-		}
-		if project.Deleted {
-			continue
 		}
 		projects = append(projects, convertToProject(project))
 	}
@@ -401,6 +402,12 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("project %q must be archived before it can be deleted", req.Msg.Name))
 		}
 
+		if s.sampleManager != nil {
+			if err := s.sampleManager.HandleProjectPurge(ctx, project.Workspace, project.ResourceID); err != nil {
+				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to clean up sample project"))
+			}
+		}
+
 		// Permanently delete the project and all related resources (moves databases to default project)
 		if err := s.store.DeleteProject(ctx, project.Workspace, project.ResourceID); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to purge project"))
@@ -483,6 +490,11 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 
 		// Permanently delete all projects (moves databases to default project)
 		for _, project := range projectsToPurge {
+			if s.sampleManager != nil {
+				if err := s.sampleManager.HandleProjectPurge(ctx, project.Workspace, project.ResourceID); err != nil {
+					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to clean up sample project %q", project.Title))
+				}
+			}
 			if err := s.store.DeleteProject(ctx, project.Workspace, project.ResourceID); err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to purge project %q", project.Title))
 			}
@@ -583,8 +595,13 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find project iam policy with error"))
 	}
-	if req.Msg.Etag != "" && req.Msg.Etag != oldIamPolicyMsg.Etag {
-		return nil, connect.NewError(connect.CodeAborted, errors.Errorf("there is concurrent update to the project iam policy, please refresh and try again"))
+
+	// The etag is compared only in the write below, against the locked row.
+	// Comparing it here too would add a second answer to the same question from
+	// a read the write does not hold, and only the locked one decides.
+	expectedEtag, err := requestedIamPolicyEtag(req.Msg)
+	if err != nil {
+		return nil, err
 	}
 
 	if err := validateIAMPolicy(ctx, s.store, !s.profile.SaaS, req.Msg, oldIamPolicyMsg); err != nil {
@@ -596,30 +613,22 @@ func (s *ProjectService) SetIamPolicy(ctx context.Context, req *connect.Request[
 		return nil, err
 	}
 
-	policyPayload, err := protojson.Marshal(policy)
+	replaced, iamPolicyMessage, err := s.store.SetIamPolicy(ctx, &store.SetIamPolicyMessage{
+		Workspace:    workspaceID,
+		ResourceType: storepb.Policy_PROJECT,
+		Resource:     common.FormatProject(project.ResourceID),
+		Policy:       policy,
+		ExpectedEtag: expectedEtag,
+	})
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-	if _, err = s.store.CreatePolicy(ctx, &store.PolicyMessage{
-		Workspace:         workspaceID,
-		Resource:          common.FormatProject(project.ResourceID),
-		ResourceType:      storepb.Policy_PROJECT,
-		Payload:           string(policyPayload),
-		Type:              storepb.Policy_IAM,
-		InheritFromParent: false,
-		// Enforce cannot be false while creating a policy.
-		Enforce: true,
-	}); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, err)
-	}
-
-	iamPolicyMessage, err := s.store.GetProjectIamPolicy(ctx, workspaceID, project.ResourceID)
-	if err != nil {
+		if errors.Is(err, store.ErrIamPolicyEtagMismatch) {
+			return nil, connect.NewError(connect.CodeAborted, errors.Errorf("there is concurrent update to the project iam policy, please refresh and try again"))
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok {
-		deltas := findIamPolicyDeltas(oldIamPolicyMsg.Policy, iamPolicyMessage.Policy)
+		deltas := findIamPolicyDeltas(replaced.Policy, iamPolicyMessage.Policy)
 		p, err := convertToProtoAny(deltas)
 		if err != nil {
 			slog.Warn("audit: failed to convert to anypb.Any")
@@ -1109,6 +1118,22 @@ func getBindingIdentifier(role string, condition *expr.Expr) string {
 		)
 	}
 	return strings.Join(ids, ";")
+}
+
+// requestedIamPolicyEtag reads the etag the caller presented. GetIamPolicy
+// returns the etag inside the policy, so a read-modify-write round-trips it
+// there; the request field carries the same value for a caller that sets it
+// explicitly. Either alone is honored, and an empty etag asks for no check at
+// all. Two that disagree name two different reads, which no caller can mean.
+func requestedIamPolicyEtag(msg *v1pb.SetIamPolicyRequest) (string, error) {
+	policyEtag := msg.GetPolicy().GetEtag()
+	if msg.Etag != "" && policyEtag != "" && msg.Etag != policyEtag {
+		return "", connect.NewError(connect.CodeInvalidArgument, errors.Errorf("request etag %q and policy etag %q disagree", msg.Etag, policyEtag))
+	}
+	if msg.Etag != "" {
+		return msg.Etag, nil
+	}
+	return policyEtag, nil
 }
 
 func validateIAMPolicy(

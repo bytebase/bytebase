@@ -339,7 +339,7 @@ func GetStatementTypes(engine storepb.Engine, asts []AST) ([]storepb.StatementTy
 	return f(asts)
 }
 
-// IsAllDML checks if all statements are DML (INSERT, UPDATE, DELETE).
+// IsAllDML checks if all statements are DML (INSERT, UPDATE, DELETE, MERGE).
 // Returns false for unsupported engines or parse errors (conservative approach).
 // Results are cached to avoid repeated parsing of the same statement.
 // Safe for concurrent calls with the same statement.
@@ -382,7 +382,7 @@ func isAllDMLImpl(engine storepb.Engine, statement string) bool {
 	}
 	for _, t := range types {
 		switch t {
-		case storepb.StatementType_INSERT, storepb.StatementType_UPDATE, storepb.StatementType_DELETE:
+		case storepb.StatementType_INSERT, storepb.StatementType_UPDATE, storepb.StatementType_DELETE, storepb.StatementType_MERGE:
 			// DML statement, continue
 		default:
 			return false

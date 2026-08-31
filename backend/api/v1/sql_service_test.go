@@ -13,6 +13,44 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+func TestSQLIAMDatabaseResourceUsesCanonicalInstanceScope(t *testing.T) {
+	projectID := "project-a"
+	projectInstance := &store.InstanceMessage{ResourceID: "instance-a", ProjectID: &projectID}
+	workspaceInstance := &store.InstanceMessage{ResourceID: "instance-b"}
+	database := &store.DatabaseMessage{DatabaseName: "app"}
+	projectDatabaseName := formatDatabaseResourceName(projectInstance, &store.DatabaseMessage{
+		InstanceID:   projectInstance.ResourceID,
+		DatabaseName: database.DatabaseName,
+	})
+
+	require.Equal(t,
+		"projects/project-a/instances/instance-a/databases/app",
+		projectDatabaseName,
+	)
+	require.Equal(t,
+		"instances/instance-b/databases/app",
+		formatDatabaseResourceName(workspaceInstance, &store.DatabaseMessage{
+			InstanceID:   workspaceInstance.ResourceID,
+			DatabaseName: database.DatabaseName,
+		}),
+	)
+
+	attributes := map[string]any{common.CELAttributeResourceDatabase: projectDatabaseName}
+	allowed, err := evaluateQueryExportPolicyCondition(
+		`resource.database == "projects/project-a/instances/instance-a/databases/app"`, attributes)
+	require.NoError(t, err)
+	require.True(t, allowed)
+
+	allowed, err = evaluateQueryExportPolicyCondition(
+		`resource.database == "instances/instance-a/databases/app"`, attributes)
+	require.NoError(t, err)
+	require.False(t, allowed)
+	require.Equal(t,
+		"projects/project-a/instances/instance-a/databases/app/schemas/public/tables/users",
+		formatWriteTargetResource(projectDatabaseName, "public", "users"),
+	)
+}
+
 // TestExportRejectsRetiredRolloutNames pins the retired export-data routes:
 // rollout/stage names must fail name parsing with InvalidArgument, not fall
 // through as 500s.

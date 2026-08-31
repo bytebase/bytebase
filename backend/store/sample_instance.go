@@ -43,6 +43,34 @@ func (s *Store) GetSampleInstanceSetup(ctx context.Context, workspaceID string) 
 	return getSampleInstanceSetup(ctx, s.GetDB(), workspaceID)
 }
 
+// WithLockedSampleInstanceSetup locks one undeleted setup for a lifecycle
+// operation and invokes callback in the same transaction.
+func (s *Store) WithLockedSampleInstanceSetup(ctx context.Context, workspaceID string, callback func(context.Context, *SampleInstanceSetupTx, *SampleInstanceSetupMessage) error) error {
+	tx, err := s.GetDB().BeginTx(ctx, nil)
+	if err != nil {
+		return errors.Wrap(err, "failed to begin sample instance setup lifecycle")
+	}
+	defer tx.Rollback()
+
+	setup, err := scanSampleInstanceSetup(tx.QueryRowContext(ctx, `
+		SELECT workspace, replica_id, payload, created_at, updated_at,
+			activated_at, expires_at, deleted_at
+		FROM sample_instance_setup
+		WHERE workspace = $1 AND deleted_at IS NULL
+		FOR UPDATE
+	`, workspaceID))
+	if errors.Is(err, sql.ErrNoRows) {
+		return errors.Wrap(tx.Commit(), "failed to commit empty sample instance setup lifecycle")
+	}
+	if err != nil {
+		return errors.Wrap(err, "failed to lock sample instance setup lifecycle")
+	}
+	if err := callback(ctx, &SampleInstanceSetupTx{tx: tx, workspace: workspaceID, replica: setup.ReplicaID}, setup); err != nil {
+		return err
+	}
+	return errors.Wrap(tx.Commit(), "failed to commit sample instance setup lifecycle")
+}
+
 // ReserveSampleInstanceSetup atomically consumes a workspace's setup
 // entitlement and persists the complete implementation payload.
 func (s *Store) ReserveSampleInstanceSetup(ctx context.Context, create *SampleInstanceSetupMessage) (*SampleInstanceSetupMessage, bool, error) {

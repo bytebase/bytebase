@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"slices"
 	"sync"
 	"testing"
 	"time"
@@ -1638,5 +1639,152 @@ func waitForTransactionBlock(ctx context.Context, t *testing.T, db *sql.DB, tx *
 			t.Fatalf("timed out waiting for a session blocked by transaction PID %d", blockerPID)
 		}
 		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+func createIssueWithApproval(ctx context.Context, t *testing.T, stores *store.Store, title string, approval *storepb.IssuePayloadApproval) *store.IssueMessage {
+	t.Helper()
+
+	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      title + " plan",
+		Config:    &storepb.PlanConfig{},
+	}, "creator@example.com")
+	require.NoError(t, err)
+
+	issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+		ProjectID:    "project-a",
+		CreatorEmail: "creator@example.com",
+		Title:        title,
+		Type:         storepb.Issue_DATABASE_CHANGE,
+		Payload:      &storepb.Issue{Approval: approval},
+		PlanUID:      &plan.UID,
+	})
+	require.NoError(t, err)
+	return issue
+}
+
+func approvalTemplateWithRoles(roles ...string) *storepb.ApprovalTemplate {
+	return &storepb.ApprovalTemplate{Flow: &storepb.ApprovalFlow{Roles: roles}}
+}
+
+func issueApprover(status storepb.IssuePayloadApproval_Approver_Status) *storepb.IssuePayloadApproval_Approver {
+	return &storepb.IssuePayloadApproval_Approver{
+		Status:    status,
+		Principal: common.FormatUserEmail("creator@example.com"),
+	}
+}
+
+// TestIssueApprovalFiltersRunBeforePaging is the regression lock for audit
+// finding T13: approval_status and current_approver used to be applied to the
+// page after the store had already cut it and minted the page token, so
+// filtering the default My Issues view answered with an empty page and a live
+// next page token underneath it.
+func TestIssueApprovalFiltersRunBeforePaging(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+
+	// Created first, so the default id DESC ordering puts it behind both
+	// non-matching issues. With page size 1 the pre-fix code read the two
+	// non-matching rows, minted a token, and then dropped every row it had.
+	waiting := createIssueWithApproval(ctx, t, stores, "waiting on the caller", &storepb.IssuePayloadApproval{
+		ApprovalTemplate:    approvalTemplateWithRoles("roles/workspaceAdmin"),
+		ApprovalFindingDone: true,
+	})
+	createIssueWithApproval(ctx, t, stores, "already approved", &storepb.IssuePayloadApproval{
+		ApprovalTemplate:    approvalTemplateWithRoles("roles/workspaceAdmin"),
+		Approvers:           []*storepb.IssuePayloadApproval_Approver{issueApprover(storepb.IssuePayloadApproval_Approver_APPROVED)},
+		ApprovalFindingDone: true,
+	})
+	// The caller holds roles/workspaceAdmin, not roles/projectOwner, so this one
+	// is pending but waiting on somebody else.
+	createIssueWithApproval(ctx, t, stores, "waiting on another role", &storepb.IssuePayloadApproval{
+		ApprovalTemplate:    approvalTemplateWithRoles("roles/projectOwner"),
+		ApprovalFindingDone: true,
+	})
+
+	const filter = `approval_status == "PENDING" && current_approver == "users/creator@example.com"`
+	want := []string{common.FormatIssue("project-a", waiting.UID)}
+
+	list, err := service.ListIssues(ctx, connect.NewRequest(&v1pb.ListIssuesRequest{
+		Parent:   "projects/project-a",
+		Filter:   filter,
+		PageSize: 1,
+	}))
+	require.NoError(t, err)
+	require.Equal(t, want, issueNames(list.Msg.Issues))
+	require.Empty(t, list.Msg.GetNextPageToken())
+
+	search, err := service.SearchIssues(ctx, connect.NewRequest(&v1pb.SearchIssuesRequest{
+		Parent:   "projects/project-a",
+		Filter:   filter,
+		PageSize: 1,
+	}))
+	require.NoError(t, err)
+	require.Equal(t, want, issueNames(search.Msg.Issues))
+	require.Empty(t, search.Msg.GetNextPageToken())
+}
+
+// TestIssueApprovalStatusFilterMatchesConverter pins the SQL derivation of
+// approval_status to computeApprovalStatus. They are two implementations of one
+// rule, and the SQL side has to read an absent JSON key as a zero value because
+// payloads are written with a bare protojson.Marshal.
+func TestIssueApprovalStatusFilterMatchesConverter(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+
+	cases := []struct {
+		title    string
+		approval *storepb.IssuePayloadApproval
+	}{
+		{"no approval payload at all", nil},
+		{"approval finding not done", &storepb.IssuePayloadApproval{ApprovalTemplate: approvalTemplateWithRoles("roles/workspaceAdmin")}},
+		{"no template", &storepb.IssuePayloadApproval{ApprovalFindingDone: true}},
+		{"template with an empty flow", &storepb.IssuePayloadApproval{ApprovalFindingDone: true, ApprovalTemplate: approvalTemplateWithRoles()}},
+		{"no approvers yet", &storepb.IssuePayloadApproval{ApprovalFindingDone: true, ApprovalTemplate: approvalTemplateWithRoles("roles/workspaceAdmin")}},
+		{"one of two steps approved", &storepb.IssuePayloadApproval{
+			ApprovalFindingDone: true,
+			ApprovalTemplate:    approvalTemplateWithRoles("roles/workspaceAdmin", "roles/projectOwner"),
+			Approvers:           []*storepb.IssuePayloadApproval_Approver{issueApprover(storepb.IssuePayloadApproval_Approver_APPROVED)},
+		}},
+		{"rejected at the second step", &storepb.IssuePayloadApproval{
+			ApprovalFindingDone: true,
+			ApprovalTemplate:    approvalTemplateWithRoles("roles/workspaceAdmin", "roles/projectOwner"),
+			Approvers: []*storepb.IssuePayloadApproval_Approver{
+				issueApprover(storepb.IssuePayloadApproval_Approver_APPROVED),
+				issueApprover(storepb.IssuePayloadApproval_Approver_REJECTED),
+			},
+		}},
+		{"every step approved", &storepb.IssuePayloadApproval{
+			ApprovalFindingDone: true,
+			ApprovalTemplate:    approvalTemplateWithRoles("roles/workspaceAdmin"),
+			Approvers:           []*storepb.IssuePayloadApproval_Approver{issueApprover(storepb.IssuePayloadApproval_Approver_APPROVED)},
+		}},
+	}
+
+	want := map[v1pb.ApprovalStatus][]string{}
+	for _, tc := range cases {
+		issue := createIssueWithApproval(ctx, t, stores, tc.title, tc.approval)
+		status := computeApprovalStatus(tc.approval)
+		want[status] = append(want[status], common.FormatIssue("project-a", issue.UID))
+	}
+	// Every branch of computeApprovalStatus should be represented, otherwise the
+	// comparison below passes on empty sets.
+	require.Len(t, want, 5)
+
+	for status, wantNames := range want {
+		resp, err := service.ListIssues(ctx, connect.NewRequest(&v1pb.ListIssuesRequest{
+			Parent:   "projects/project-a",
+			Filter:   fmt.Sprintf("approval_status == %q", status),
+			PageSize: 100,
+		}))
+		require.NoError(t, err, "approval_status == %q", status)
+
+		gotNames := issueNames(resp.Msg.Issues)
+		slices.Sort(gotNames)
+		slices.Sort(wantNames)
+		require.Equal(t, wantNames, gotNames, "approval_status == %q", status)
 	}
 }

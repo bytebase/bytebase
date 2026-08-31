@@ -48,7 +48,9 @@ type ProjectServiceClient interface {
 	// Permissions required: bb.projects.get
 	GetProject(ctx context.Context, in *GetProjectRequest, opts ...grpc.CallOption) (*Project, error)
 	// BatchGetProjects retrieves multiple projects by their names.
-	// Permissions required: bb.projects.get
+	// One resource per requested name, in request order. The first name that
+	// does not resolve fails the whole call (AIP-231: no partial response).
+	// Permissions required: bb.projects.get (on each named project)
 	BatchGetProjects(ctx context.Context, in *BatchGetProjectsRequest, opts ...grpc.CallOption) (*BatchGetProjectsResponse, error)
 	// Lists all projects in the workspace with optional filtering.
 	// Permissions required: bb.projects.list
@@ -260,7 +262,9 @@ type ProjectServiceServer interface {
 	// Permissions required: bb.projects.get
 	GetProject(context.Context, *GetProjectRequest) (*Project, error)
 	// BatchGetProjects retrieves multiple projects by their names.
-	// Permissions required: bb.projects.get
+	// One resource per requested name, in request order. The first name that
+	// does not resolve fails the whole call (AIP-231: no partial response).
+	// Permissions required: bb.projects.get (on each named project)
 	BatchGetProjects(context.Context, *BatchGetProjectsRequest) (*BatchGetProjectsResponse, error)
 	// Lists all projects in the workspace with optional filtering.
 	// Permissions required: bb.projects.list

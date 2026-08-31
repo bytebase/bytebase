@@ -35,6 +35,7 @@ import { useAIActions } from "../Panels/common/useAIActions";
 import { monacoThemeName } from "../theme/derive";
 import { useActiveSQLEditorTheme } from "../theme/useActiveSQLEditorTheme";
 import { computeAppendedSelection } from "./appendSelection";
+import { prepareSnippetInsertion } from "./prepareSnippetInsertion";
 import { activeSQLEditorRef, activeStatementRef } from "./state";
 import { UploadFileButton } from "./UploadFileButton";
 
@@ -317,16 +318,35 @@ export function SQLEditor({ onExecute }: SQLEditorProps) {
     setPendingInsertAtCaret(undefined);
 
     requestAnimationFrame(() => {
+      const model = editor.getModel();
+      if (!model) return;
       const selection = editor.getSelection();
-      const maxLineNumber = editor.getModel()?.getLineCount() ?? 0;
-      const range =
-        selection ??
-        new monaco.Range(maxLineNumber + 1, 1, maxLineNumber + 1, 1);
+      const endPosition = model.getPositionAt(model.getValueLength());
+      const range = selection ?? monaco.Range.fromPositions(endPosition);
+      const startOffset = model.getOffsetAt({
+        lineNumber: range.startLineNumber,
+        column: range.startColumn,
+      });
+      const endOffset = model.getOffsetAt({
+        lineNumber: range.endLineNumber,
+        column: range.endColumn,
+      });
+      const value = model.getValue();
+      const insertion = prepareSnippetInsertion(
+        text,
+        value.slice(0, startOffset),
+        value.slice(endOffset),
+        model.getEOL()
+      );
       editor.executeEdits("bb.event.insert-at-caret", [
-        { forceMoveMarkers: true, text, range },
+        { forceMoveMarkers: true, text: insertion.text, range },
       ]);
+      const cursorPosition = model.getPositionAt(
+        startOffset + insertion.cursorOffset
+      );
+      editor.setPosition(cursorPosition);
       editor.focus();
-      editor.revealLine(range.startLineNumber);
+      editor.revealLine(cursorPosition.lineNumber);
     });
   }, [pendingInsertAtCaret, setPendingInsertAtCaret]);
 

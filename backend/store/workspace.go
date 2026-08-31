@@ -143,6 +143,9 @@ func (s *Store) CreateWorkspace(ctx context.Context, create *WorkspaceMessage, a
 			DisallowPasswordSignin: false,
 			PasswordRestriction:    &storepb.WorkspaceProfileSetting_PasswordRestriction{MinLength: 8},
 		}},
+		{storepb.SettingName_MCP, &storepb.MCPSetting{
+			Capability: storepb.MCPSetting_READ_ONLY,
+		}},
 		{storepb.SettingName_ENVIRONMENT, &storepb.EnvironmentSetting{
 			Environments: []*storepb.EnvironmentSetting_Environment{
 				{Title: "Test", Id: "test", Color: defaultEnvironmentColor()},

@@ -50,14 +50,9 @@ export declare type MCPInfo = Message<"bytebase.v1.MCPInfo"> & {
   workspace: string;
 
   /**
-   * The ceiling in force, resolved rather than stored: a workspace that never
-   * configured MCP resolves to READ_WRITE, so CAPABILITY_UNSPECIFIED never
-   * means unconfigured here. It means this build could not resolve a ceiling
-   * from the stored row, and every MCP connection is refused.
-   *
-   * Otherwise modes decides: a ceiling serves nothing exactly when modes has no
-   * row for it. A number a client's own enum cannot name is a newer release's,
-   * and modes still says whether it serves.
+   * The ceiling in force for this workspace. A value no row in modes serves,
+   * CAPABILITY_UNSPECIFIED included, means no ceiling could be resolved from
+   * the stored row and every MCP connection is refused.
    *
    * @generated from field: bytebase.v1.MCPSetting.Capability capability = 2;
    */

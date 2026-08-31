@@ -1231,7 +1231,7 @@ func (*AuthService) getAdditionalWorkspaceSettings() []store.AdditionalSetting {
 				Provider: storepb.AISetting_GEMINI,
 				ApiKey:   geminiAPIKey,
 				Endpoint: "https://generativelanguage.googleapis.com/v1beta",
-				Model:    "gemini-2.5-pro",
+				Model:    "gemini-3.7-flash",
 			},
 		})
 	}

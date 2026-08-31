@@ -60,35 +60,49 @@ func parseChangelogFilter(filter string, find *store.FindChangelogMessage) error
 				}
 			case celoperators.Equals:
 				variable, value := getVariableAndValueFromExpr(expr)
-				strValue, ok := value.(string)
-				if !ok {
-					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected string but found %q", value))
-				}
 				switch variable {
 				case "status":
+					strValue, ok := value.(string)
+					if !ok {
+						return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected string but found %q", value))
+					}
 					v1Status := v1pb.Changelog_Status_value[strValue]
 					storeStatus := convertToChangelogStoreStatus(v1pb.Changelog_Status(v1Status))
 					find.Status = &storeStatus
+				case "has_schema_snapshot":
+					hasSchemaSnapshot, ok := value.(bool)
+					if !ok {
+						return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected bool but found %q", value))
+					}
+					if !hasSchemaSnapshot {
+						return connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`"has_schema_snapshot" only supports true`))
+					}
+					find.HasSyncHistory = true
 				default:
 					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupport variable %v", variable))
 				}
-			case celoperators.GreaterEquals, celoperators.LessEquals:
+			case celoperators.GreaterEquals, celoperators.LessEquals, celoperators.Less:
 				variable, rawValue := getVariableAndValueFromExpr(expr)
 				value, ok := rawValue.(string)
 				if !ok {
 					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("expect string, got %T, hint: filter literals should be string", rawValue))
 				}
 				if variable != "create_time" {
-					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`">=" and "<=" are only supported for "create_time"`))
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`">=", "<=", and "<" are only supported for "create_time"`))
 				}
 				t, err := time.Parse(time.RFC3339, value)
 				if err != nil {
 					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse time %v, error: %v", value, err))
 				}
-				if functionName == celoperators.GreaterEquals {
+				switch functionName {
+				case celoperators.GreaterEquals:
 					find.CreatedAtAfter = &t
-				} else {
+				case celoperators.LessEquals:
 					find.CreatedAtBefore = &t
+				case celoperators.Less:
+					find.CreatedAtStrictlyBefore = &t
+				default:
+					return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected function %v", functionName))
 				}
 			default:
 				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unexpected function %v", functionName))

@@ -420,19 +420,6 @@ vi.mock(
   () => ({})
 );
 
-vi.mock("pouchdb", () => {
-  class MockPouchDB {
-    static plugin = vi.fn();
-  }
-  return {
-    default: MockPouchDB,
-  };
-});
-
-vi.mock("pouchdb-find", () => ({
-  default: {},
-}));
-
 const renderIntoContainer = (element: ReturnType<typeof createElement>) => {
   const container = document.createElement("div");
   const root = createRoot(container);
@@ -552,12 +539,49 @@ beforeEach(() => {
 });
 
 describe("ProjectDatabaseDetailPage", () => {
+  test("shows project binding attention for a project instance database", async () => {
+    mocks.useProjectDatabaseDetail.mockReturnValue({
+      database: {
+        name: "projects/proj1/instances/inst1/databases/db1",
+        project: "projects/proj1",
+        effectiveEnvironment: "environments/prod",
+        instanceResource: {
+          name: "projects/proj1/instances/inst1",
+          title: "Project instance",
+        },
+      },
+      databaseName: "projects/proj1/instances/inst1/databases/db1",
+      loading: false,
+      ready: true,
+      allowAlterSchema: true,
+      isDefaultProject: false,
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(ProjectDatabaseDetailPage, {
+        projectId: "proj1",
+        instanceId: "inst1",
+        databaseName: "db1",
+        routeQuery: { parent: "projects/proj1/instances/inst1" },
+      })
+    );
+
+    render();
+
+    expect(container.textContent).toContain("instance.project-bound-title");
+    expect(container.textContent).toContain(
+      "instance.project-bound-description"
+    );
+
+    unmount();
+  });
+
   test("shows the sample expiration warning for a sample database", async () => {
     mocks.serverInfo = {
       sample: {
         instances: [
           {
-            instance: "instances/inst1",
+            instance: "projects/proj1/instances/inst1",
             expireTime: {
               seconds: BigInt(
                 Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60

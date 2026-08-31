@@ -1,8 +1,8 @@
 import { create as createProto } from "@bufbuild/protobuf";
-import { createContextValues } from "@connectrpc/connect";
+import { Code, createContextValues } from "@connectrpc/connect";
 import { uniq } from "lodash-es";
 import { databaseServiceClientConnect } from "@/api";
-import { silentContextKey } from "@/api/context-key";
+import { ignoredCodesContextKey, silentContextKey } from "@/api/context-key";
 import {
   BatchGetDatabasesRequestSchema,
   BatchSyncDatabasesRequestSchema,
@@ -26,13 +26,18 @@ import { isValidDatabaseName } from "@/types/v1/database";
 import { unknownInstanceResource } from "@/types/v1/instance";
 import { createUnknownDatabase, setDatabaseAccess } from "./databaseAccess";
 import type { AppSliceCreator, DatabaseSlice } from "./types";
-import { buildDatabaseFilter, toError } from "./utils";
+import { buildDatabaseFilter, isMissingOrForbidden, toError } from "./utils";
 
 // Inlined to keep the app store's load graph free of the Pinia `@/stores`
 // barrel that `@/utils/v1/database` pulls in.
 function instanceResourceNameFromDatabase(databaseName: string): string {
-  const match = databaseName.match(/(?:^|\/)instances\/([^/]+)\/databases\//);
-  return match ? `instances/${match[1]}` : "";
+  const match = databaseName.match(
+    /^(?:(projects\/[^/]+)\/)?instances\/([^/]+)\/databases\//
+  );
+  if (!match) return "";
+  return match[1]
+    ? `${match[1]}/instances/${match[2]}`
+    : `instances/${match[2]}`;
 }
 
 export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
@@ -164,24 +169,70 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
     batchFetchDatabases: async (names, silent = false) => {
       const validNames = uniq(names).filter(isValidDatabaseName);
       if (!validNames.length) return [];
-      const response = await databaseServiceClientConnect.batchGetDatabases(
-        createProto(BatchGetDatabasesRequestSchema, {
-          parent: "-",
-          names: validNames,
-        }),
-        {
-          contextValues: createContextValues().set(silentContextKey, silent),
-        }
-      );
-      const composed = await composeDatabases(response.databases, silent);
-      set((state) => {
-        const next = { ...state.databasesByName };
-        for (const db of composed) {
-          next[db.name] = db;
-        }
-        return { databasesByName: next };
-      });
-      return composed;
+      try {
+        const response = await databaseServiceClientConnect.batchGetDatabases(
+          createProto(BatchGetDatabasesRequestSchema, {
+            parent: "-",
+            names: validNames,
+          }),
+          {
+            // A revoked name fails the whole batch; ignoring it here keeps the
+            // interceptor from navigating to /403. The fallback renders the rest.
+            contextValues: createContextValues()
+              .set(ignoredCodesContextKey, [
+                // Listing any code replaces the middleware defaults, so
+                // NotFound is repeated here. Unauthenticated is left out: an
+                // ignored code short-circuits before the token refresh.
+                Code.NotFound,
+                Code.PermissionDenied,
+              ])
+              .set(silentContextKey, silent),
+          }
+        );
+        const composed = await composeDatabases(response.databases, silent);
+        set((state) => {
+          const next = { ...state.databasesByName };
+          for (const db of composed) {
+            next[db.name] = db;
+          }
+          return { databasesByName: next };
+        });
+        return composed;
+      } catch (error) {
+        if (!isMissingOrForbidden(error)) throw error;
+        // Batch is all-or-nothing; refetch per name so one stale name isn't
+        // fatal. Raw gets, composed once: composeDatabases fans out to
+        // batchFetchProjects, so composing per database multiplies that call.
+        const settled = await Promise.allSettled(
+          validNames.map((name) =>
+            databaseServiceClientConnect.getDatabase(
+              createProto(GetDatabaseRequestSchema, { name }),
+              {
+                contextValues: createContextValues().set(
+                  silentContextKey,
+                  true
+                ),
+              }
+            )
+          )
+        );
+        // Record what did not come back, the way fetchByName does. A rejection
+        // here is one database missing from an already degraded view, not a
+        // reason to discard the ones that did resolve.
+        set((state) => ({
+          databaseErrorsByName: settled.reduce(
+            (errors, result, index) =>
+              result.status === "rejected"
+                ? { ...errors, [validNames[index]]: toError(result.reason) }
+                : errors,
+            state.databaseErrorsByName
+          ),
+        }));
+        const found = settled.flatMap((result) =>
+          result.status === "fulfilled" ? [result.value] : []
+        );
+        return found.length > 0 ? await upsertDatabases(found, true) : [];
+      }
     },
 
     batchGetOrFetchDatabases: async (names, silent = false) => {
@@ -227,7 +278,10 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
           ),
         }
       );
-      if (parent.startsWith("instances/") && !skipCacheRemoval) {
+      if (
+        /^(?:projects\/[^/]+\/)?instances\/[^/]+$/.test(parent) &&
+        !skipCacheRemoval
+      ) {
         get().removeCacheByInstance(parent);
       }
       const composed = await upsertDatabases(
@@ -255,7 +309,7 @@ export const createDatabaseSlice: AppSliceCreator<DatabaseSlice> = (
     batchSyncDatabases: async (databases) => {
       await databaseServiceClientConnect.batchSyncDatabases(
         createProto(BatchSyncDatabasesRequestSchema, {
-          parent: "instances/-",
+          parent: "-",
           names: databases,
         })
       );

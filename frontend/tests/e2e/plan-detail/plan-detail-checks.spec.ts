@@ -25,6 +25,7 @@ import {
 } from "@playwright/test";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import { BytebaseApiClient } from "../framework/api-client";
+import { createSubmittedMultiSpecChangePlanViaUI } from "../framework/ui-create-plan";
 import { PlanDetailPage } from "./plan-detail.page";
 import { waitForPlanChecksDone } from "./plan-helpers";
 
@@ -32,6 +33,11 @@ test.setTimeout(180_000);
 
 let env: TestEnv & { api: BytebaseApiClient };
 let projectId: string;
+// Two distinct sample databases for multi-spec plans. sqlMap in the UI create
+// URL is keyed by database, so two specs must target two different DBs — both
+// carry the same HR schema (employee), so the review SQL applies to either.
+let testDb: string;
+let prodDb: string;
 
 let sharedContext: BrowserContext;
 let page: Page;
@@ -48,6 +54,14 @@ test.beforeAll(async ({ browser }) => {
   env = loadTestEnv();
   projectId = env.project.split("/").pop()!;
   await env.api.login(env.adminEmail, env.adminPassword);
+
+  const hrTest = await env.api.findDatabaseByShortName("hr_test", env.project);
+  const hrProd = await env.api.findDatabaseByShortName("hr_prod", env.project);
+  if (!hrTest || !hrProd) {
+    throw new Error("plan-check multi-spec setup needs hr_test + hr_prod sample dbs");
+  }
+  testDb = hrTest.database;
+  prodDb = hrProd.database;
 
   const project = await env.api.getProject(env.project);
   originalSettings = {
@@ -108,35 +122,59 @@ async function attachReviewConfig(
   return cfg.name;
 }
 
-// Poll the latest planCheckRun on `planName` until status === "DONE",
-// then navigate to the plan detail page. Returns the planId.
+// Create an N-spec change plan through the UI (create + "Ready for Review"),
+// wait for its plan checks to finish, then navigate to the plan detail page.
+// Returns the planId. Submitting the review issue is what makes checks run and
+// (under permissive settings) a rollout auto-create — the same states the old
+// bare api.createPlan + api.createIssue fabricated, now produced via the real
+// user workflow so drift breaks loudly. Each spec is one DB; multi-spec callers
+// pass distinct DBs (sqlMap is keyed by database).
 async function createPlanAndWaitForChecks(
   titlePrefix: string,
-  specs: { id: string; targets: string[]; sql: string }[],
+  specs: { database: string; sql: string }[],
 ): Promise<string> {
   const ts = Date.now();
-  const planSpecs = await Promise.all(
-    specs.map(async (s) => ({
-      id: s.id,
-      targets: s.targets,
-      sheet: await env.api.createSheet(env.project, s.sql),
-    })),
-  );
-  const plan = await env.api.createPlan(
-    env.project,
-    `${titlePrefix} ${ts}`,
-    planSpecs,
-  );
-  const planName = plan.name;
-  const planId = planName.split("/").pop()!;
-  await env.api.createIssue(env.project, `${titlePrefix} ${ts}`, planName);
-  await env.api.runPlanChecks(planName);
-
+  const { planId } = await createSubmittedMultiSpecChangePlanViaUI(page, {
+    baseURL: env.baseURL,
+    projectId,
+    title: `${titlePrefix} ${ts}`,
+    specs,
+  });
+  const planName = `${env.project}/plans/${planId}`;
+  // Submitting the review issue already triggers the plan checks — no explicit
+  // runPlanChecks (an API-only escape hatch outside the user workflow that also
+  // contends with submit's rollout-creation transaction). Just wait for the
+  // submit-triggered checks to settle before the assertions read the summary.
   await waitForPlanChecksDone(env.api, planName);
 
   await planPage.goto(projectId, planId);
   await planPage.dismissModals();
   return planId;
+}
+
+// Read the CHANGES-section statement editors' text — the [role=code] Monaco
+// surfaces between the "Changes" and "Deploy" phase labels. Deliberately
+// excludes the DEPLOY task-statement preview (which shows the first task's SQL
+// and is independent of the spec tab), so the read is purely about CHANGES.
+function readChangesStatements(): Promise<string> {
+  return page.evaluate(() => {
+    const spans = Array.from(document.querySelectorAll("span"));
+    const changesLabel = spans.find((e) => e.textContent?.trim() === "Changes");
+    const deployLabel = spans.find((e) => e.textContent?.trim() === "Deploy");
+    if (!changesLabel) return "";
+    const FOLLOWING = Node.DOCUMENT_POSITION_FOLLOWING;
+    const PRECEDING = Node.DOCUMENT_POSITION_PRECEDING;
+    return Array.from(document.querySelectorAll('[role="code"]'))
+      .filter(
+        (c) =>
+          !!(changesLabel.compareDocumentPosition(c) & FOLLOWING) &&
+          (!deployLabel ||
+            !!(deployLabel.compareDocumentPosition(c) & PRECEDING)),
+      )
+      .flatMap((c) => Array.from(c.querySelectorAll(".view-line")))
+      .map((l) => l.textContent ?? "")
+      .join("\n");
+  });
 }
 
 test.describe("WARNING-level review rule", () => {
@@ -146,8 +184,7 @@ test.describe("WARNING-level review rule", () => {
     const ts = Date.now();
     await createPlanAndWaitForChecks("E2E Checks Warning", [
       {
-        id: `spec-${ts}`,
-        targets: [env.database],
+        database: env.database,
         // Nullable TEXT with no default → trips COLUMN_NO_NULL.
         sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_warn_${ts} TEXT;`,
       },
@@ -169,7 +206,7 @@ test.describe("WARNING-level review rule", () => {
 });
 
 test.describe("ERROR-level review rule with requirePlanCheckNoError=true", () => {
-  // Product contract observed on free-plan setupSample (2026-05):
+  // Product contract observed on the free-plan sample setup (2026-05):
   //   - ERROR check + requirePlanCheckNoError=true: rollout is BLOCKED.
   //     DEPLOY surfaces "Checks must pass. Failed" with helper text
   //     "Failed checks are blocking automatic rollout creation." NO
@@ -198,8 +235,7 @@ test.describe("ERROR-level review rule with requirePlanCheckNoError=true", () =>
     const ts = Date.now();
     await createPlanAndWaitForChecks("E2E Checks Error Gate-On", [
       {
-        id: `spec-${ts}`,
-        targets: [env.database],
+        database: env.database,
         sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_err_on_${ts} TEXT;`,
       },
     ]);
@@ -234,8 +270,7 @@ test.describe("ERROR-level review rule with requirePlanCheckNoError=true", () =>
     const ts = Date.now();
     await createPlanAndWaitForChecks("E2E Checks Error Gate-Off", [
       {
-        id: `spec-${ts}`,
-        targets: [env.database],
+        database: env.database,
         sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_err_off_${ts} TEXT;`,
       },
     ]);
@@ -265,56 +300,52 @@ test.describe("Per-spec check counts render plan-wide (BYT-9160)", () => {
   // BYT-9160 (original): the per-spec right SIDEBAR always showed the LAST
   // spec's check counts regardless of which spec tab was selected. The React
   // migration REMOVED that sidebar; check counts are now a single PLAN-WIDE
-  // aggregate summary (PlanDetailAggregateChecks). That UI element no longer
-  // exists, so the original bug cannot recur. This test locks the resolution:
-  // the aggregate summary renders and stays present regardless of the selected
-  // spec (it is plan-wide, not per-spec).
+  // aggregate summary (PlanDetailAggregateChecks, rendered once in
+  // PlanDetailChangesBranch.tsx). That per-spec UI no longer exists, so the
+  // original bug cannot recur — the aggregate is plan-wide by construction (one
+  // component, not one-per-spec). This test locks the resolution: the aggregate
+  // summary renders for a multi-spec plan.
   //
-  // NOTE: the separate contract "selecting a spec shows only THAT spec's
-  // STATEMENT" is a *different* concern, guarded separately below (BYT-9794 —
-  // a duplicate-key regression that stacked spec editors, fixed by #20662).
-  test("the aggregate check summary stays plan-wide across spec switches", async () => {
+  // (Originally this clicked through spec tabs to prove the summary stayed put;
+  // that dance is gone — clicking a spec tab currently collapses the CHANGES
+  // section, locked separately below as the spec-switch BUG.)
+  test("the plan-wide aggregate check summary renders for a multi-spec plan", async () => {
     const ts = Date.now();
     await createPlanAndWaitForChecks("E2E Plan-Wide Checks", [
       {
-        id: `spec-a-${ts}`,
-        targets: [env.database],
+        database: testDb,
         sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_pw_a_${ts} TEXT;`,
       },
       {
-        id: `spec-b-${ts}`,
-        targets: [env.database],
+        database: prodDb,
         sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_pw_b_${ts} TEXT;`,
       },
     ]);
 
     await planPage.expandSection("Changes");
 
-    // The plan-wide aggregate summary renders (the removed per-spec sidebar
-    // would have shown per-spec counts here instead).
-    await expect(page.getByText("Success").first()).toBeVisible({
+    // The single plan-wide aggregate summary renders a Success entry covering
+    // all specs (the removed per-spec sidebar would have shown per-spec counts).
+    await expect(page.getByText(/Success/).first()).toBeVisible({
       timeout: 15_000,
     });
-
-    // It is plan-wide: still present after switching specs (the BYT-9160
-    // sidebar would have re-bound to / gone stale on the selected spec).
-    await planPage.specTab(1).click();
-    await expect(page.getByText("Success").first()).toBeVisible();
-    await planPage.specTab(2).click();
-    await expect(page.getByText("Success").first()).toBeVisible();
   });
 });
 
-// Regression guard for BYT-9794 (distinct from BYT-9160's deleted sidebar):
-// switching spec tabs used to leave the PREVIOUSLY-selected spec's statement
-// editor mounted, so both specs' SQL stacked in CHANGES. Root cause: the
-// spec-detail sections (TargetsSection / StatementSection / OptionsSection)
-// each carried the SAME `key={selectedSpec.id}` — duplicate React keys on
-// siblings broke reconciliation, so the old sections weren't removed on
-// switch. Fixed by #20662, which consolidated them under a single keyed
-// wrapper `<div key={selectedSpec.id}>`. This was a test.fail() lock until the
-// fix landed; it now runs as a normal passing guard so a re-regression fails
-// loudly.
+// BYT-9794 (FIXED, #20662): switching spec tabs used to leave the
+// PREVIOUSLY-selected spec's statement editor mounted, so both specs' SQL
+// stacked in CHANGES. Root cause: the spec-detail sections (TargetsSection /
+// StatementSection / OptionsSection) each carried the SAME `key={selectedSpec
+// .id}` — duplicate React keys broke reconciliation. Fixed by consolidating
+// them under a single keyed wrapper `<div key={selectedSpec.id}>`. Guarded here
+// by switching between the two spec tabs and asserting only the selected
+// spec's statement is mounted at each step (never both stacked), alongside the
+// spec-scoped URL / history contract (BYT-9805 / BYT-9913).
+//
+// The plan is created through the UI with two DISTINCT target databases
+// (hr_test / hr_prod): the UI create page keys per-spec SQL by database, so a
+// two-spec plan needs two targets — which also makes each tab's label
+// ("Change N: <db>") distinct.
 test.describe(
   "Spec identity and resource routing stay synchronized (BYT-9794/BYT-9805/BYT-9913)",
   () => {
@@ -324,25 +355,30 @@ test.describe(
         const ts = Date.now();
         const colA = `e2e_stale_a_${ts}`;
         const colB = `e2e_stale_b_${ts}`;
-        const specA = `spec-a-${ts}`;
-        const specB = `spec-b-${ts}`;
         const planId = await createPlanAndWaitForChecks(
           "E2E Stale Spec Editor",
           [
             {
-              id: specA,
-              targets: [env.database],
+              database: testDb,
               sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS ${colA} TEXT;`,
             },
             {
-              id: specB,
-              targets: [env.database],
+              database: prodDb,
               sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS ${colB} TEXT;`,
             },
           ],
         );
+        // The plan was created through the UI, so the product assigned each
+        // spec a generated id. Read the real ids (in spec order — spec 1 targets
+        // testDb, spec 2 targets prodDb) for the spec-scoped URL assertions.
+        const created = await env.api.getPlan(`${env.project}/plans/${planId}`);
+        const specIds = (created.specs ?? []).map((sp) => sp.id);
+        expect(specIds).toHaveLength(2);
+        const [specA, specB] = specIds;
+        const testDbId = testDb.split("/").pop()!;
+        const prodDbId = prodDb.split("/").pop()!;
 
-        await planPage.expandSection("Changes");
+      await planPage.expandSection("Changes");
 
         // Read ONLY the CHANGES section's statement editors — the [role=code]
         // Monaco surfaces between the "Changes" and "Deploy" phase labels. This
@@ -375,12 +411,8 @@ test.describe(
 
         const tab1 = planPage.specTab(1);
         const tab2 = planPage.specTab(2);
-        await expect(tab1).toHaveAccessibleName(
-          `Change 1: ${env.databaseId}`,
-        );
-        await expect(tab2).toHaveAccessibleName(
-          `Change 2: ${env.databaseId}`,
-        );
+        await expect(tab1).toHaveAccessibleName(`Change 1: ${testDbId}`);
+        await expect(tab2).toHaveAccessibleName(`Change 2: ${prodDbId}`);
         await expect(
           page.getByRole("button", { name: /Database Change/ }),
         ).toHaveCount(0);

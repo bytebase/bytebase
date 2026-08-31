@@ -27,6 +27,7 @@ import {
 } from "@/types/proto-es/v1/plan_service_pb";
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { CreateRolloutRequestSchema } from "@/types/proto-es/v1/rollout_service_pb";
+import { celString, celStringList } from "@/utils/v1/celLiteral";
 import type { AppSliceCreator, IssueSlice } from "./types";
 
 // Resource names are `projects/{project}/issues/{issue}` — yank the project
@@ -40,41 +41,43 @@ function projectResourceFromIssueName(issueName: string): string {
 export const buildIssueFilter = (find: IssueFilter): string => {
   const filter: string[] = [];
   if (find.creator) {
-    filter.push(`creator == "${find.creator}"`);
+    filter.push(`creator == ${celString(find.creator)}`);
   }
   if (find.currentApprover) {
-    filter.push(`current_approver == "${find.currentApprover}"`);
+    filter.push(`current_approver == ${celString(find.currentApprover)}`);
   }
   if (find.approvalStatus) {
-    filter.push(`approval_status == "${ApprovalStatus[find.approvalStatus]}"`);
+    filter.push(
+      `approval_status == ${celString(ApprovalStatus[find.approvalStatus])}`
+    );
   }
   if (find.statusList && find.statusList.length > 0) {
     filter.push(
-      `status in [${find.statusList.map((s) => `"${IssueStatus[s]}"`).join(",")}]`
+      `status in ${celStringList(find.statusList.map((s) => IssueStatus[s]))}`
     );
   }
   if (find.riskLevelList && find.riskLevelList.length > 0) {
     filter.push(
-      `risk_level in [${find.riskLevelList.map((r) => `"${RiskLevel[r]}"`).join(",")}]`
+      `risk_level in ${celStringList(find.riskLevelList.map((r) => RiskLevel[r]))}`
     );
   }
   if (find.createdTsAfter) {
     filter.push(
-      `create_time >= "${dayjs(find.createdTsAfter).utc().format()}"`
+      `create_time >= ${celString(dayjs(find.createdTsAfter).utc().format())}`
     );
   }
   if (find.createdTsBefore) {
     filter.push(
-      `create_time <= "${dayjs(find.createdTsBefore).utc().format()}"`
+      `create_time <= ${celString(dayjs(find.createdTsBefore).utc().format())}`
     );
   }
   if (find.typeList && find.typeList.length > 0) {
     filter.push(
-      `type in [${find.typeList.map((t) => `"${Issue_Type[t]}"`).join(",")}]`
+      `type in ${celStringList(find.typeList.map((t) => Issue_Type[t]))}`
     );
   }
   if (find.labels && find.labels.length > 0) {
-    filter.push(`labels in [${find.labels.map((l) => `"${l}"`).join(",")}]`);
+    filter.push(`labels in ${celStringList(find.labels)}`);
   }
   return filter.join(" && ");
 };

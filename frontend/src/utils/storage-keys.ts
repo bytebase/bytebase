@@ -117,6 +117,8 @@ export const storageKeySqlEditorAiSuggestion = (email: string) =>
   `bb.sql-editor.ai-suggestion.${email}`;
 
 // --- AI ---
+export const storageKeyAiConversations = (scope: string, email: string) =>
+  withScope("bb.ai.conversations", scope, email);
 export const storageKeyAiSuggestions = (hash: string) =>
   `bb.ai.suggestions.${hash}`;
 

@@ -109,7 +109,7 @@ type AccessGrant struct {
 	// Format: projects/{project}/issues/{issue}
 	Issue string `protobuf:"bytes,5,opt,name=issue,proto3" json:"issue,omitempty"`
 	// The target databases for this access grant.
-	// Format: instances/{instance}/databases/{database}
+	// Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
 	Targets []string `protobuf:"bytes,6,rep,name=targets,proto3" json:"targets,omitempty"`
 	// The query permission granted.
 	Query string `protobuf:"bytes,7,opt,name=query,proto3" json:"query,omitempty"`

@@ -342,3 +342,64 @@ describe("SQLEditorSection theme", () => {
     expect(anyDisabled).toBeTruthy();
   });
 });
+
+// The data-export policy control was reworked from a bare "Enable data
+// export" checkbox (no description) to "Allow data export without approval"
+// + a description naming the access-grant path — customers read the old
+// title as a hard kill switch and never found approval-gated export.
+// These tests lock the retitled key pair and the `checked={!disableExport}`
+// inversion the new title depends on.
+describe("SQLEditorSection data-export policy toggle", () => {
+  function renderSection() {
+    const ref = createRef<SectionHandle>();
+    render(
+      <SQLEditorSection ref={ref} title="SQL Editor" onDirtyChange={() => {}} />
+    );
+    return ref;
+  }
+
+  function exportCheckbox(): HTMLElement {
+    // The checkbox renders inside the FormField title span, as a sibling of
+    // the label text (SQLEditorSection.tsx) — scope by that span.
+    const span = Array.from(container.querySelectorAll("span")).find((s) =>
+      s.textContent?.includes("settings.general.workspace.data-export.self")
+    );
+    expect(span).toBeTruthy();
+    const box = span?.querySelector<HTMLElement>('[role="checkbox"]');
+    expect(box).toBeTruthy();
+    return box as HTMLElement;
+  }
+
+  test("renders the retitled label with its description", () => {
+    renderSection();
+    expect(container.textContent).toContain(
+      "settings.general.workspace.data-export.self"
+    );
+    expect(container.textContent).toContain(
+      "settings.general.workspace.data-export.description"
+    );
+  });
+
+  test("export allowed without approval (disableExport=false) renders checked", () => {
+    mocks.policy.disableExport = false;
+    renderSection();
+    expect(exportCheckbox().getAttribute("aria-checked")).toBe("true");
+  });
+
+  test("approval-gated export (disableExport=true) renders unchecked", () => {
+    mocks.policy.disableExport = true;
+    renderSection();
+    expect(exportCheckbox().getAttribute("aria-checked")).toBe("false");
+  });
+
+  test("toggling the checkbox marks the section dirty for the Update bar", () => {
+    mocks.policy.disableExport = false;
+    const ref = renderSection();
+    expect(ref.current?.isDirty()).toBe(false);
+    act(() => {
+      exportCheckbox().click();
+    });
+    expect(ref.current?.isDirty()).toBe(true);
+    expect(exportCheckbox().getAttribute("aria-checked")).toBe("false");
+  });
+});

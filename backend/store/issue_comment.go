@@ -74,7 +74,11 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 		q.And("issue_id = ?", *v)
 	}
 
-	q.Space("ORDER BY created_at ASC")
+	// resource_id is the primary key. created_at alone would not be total —
+	// it defaults to now(), the transaction timestamp — so CreateIssueComments
+	// offsets each row of a batch by its ordinal to keep insertion order; see
+	// the comment there.
+	q.Space("ORDER BY issue_comment.created_at ASC, issue_comment.resource_id ASC")
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}
@@ -146,9 +150,19 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 	}
 
 	// Use UNNEST to insert all comments in one query.
+	//
+	// created_at defaults to now(), which is the transaction timestamp, so a
+	// batch would otherwise land on one instant and ListIssueComment could only
+	// fall back to its resource_id tiebreak — a random UUID, which scrambles the
+	// activity feed of a multi-field UpdateIssue. Offsetting each row by its
+	// ordinal keeps the batch in insertion order and makes created_at unique
+	// within it, at a cost of microseconds.
 	q := qb.Q().Space(`
-		INSERT INTO issue_comment (creator, project, issue_id, payload)
-		SELECT ?, unnest(?::TEXT[]), unnest(?::INT[]), unnest(?::JSONB[])
+		INSERT INTO issue_comment (creator, project, issue_id, payload, created_at, updated_at)
+		SELECT ?, c.project, c.issue_id, c.payload, t.at, t.at
+		FROM unnest(?::TEXT[], ?::INT[], ?::JSONB[])
+		     WITH ORDINALITY AS c(project, issue_id, payload, ordinality),
+		     LATERAL (SELECT now() + ((c.ordinality - 1) * interval '1 microsecond')) AS t(at)
 	`, creator, projectIDs, issueIDs, payloads)
 
 	// For single comment, use RETURNING to get the created comment details.

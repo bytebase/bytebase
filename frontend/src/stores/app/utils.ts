@@ -1,4 +1,11 @@
 import { Code, ConnectError } from "@connectrpc/connect";
+
+// The per-resource failures the all-or-nothing BatchGet contract introduces.
+// Only these are worth a per-name retry; anything else is a real error.
+export const isMissingOrForbidden = (error: unknown) =>
+  error instanceof ConnectError &&
+  (error.code === Code.NotFound || error.code === Code.PermissionDenied);
+
 import type { DatabaseFilter } from "@/lib/databaseFilter";
 import {
   getProjectName,
@@ -17,7 +24,7 @@ import {
 } from "@/types/v1/environment";
 import { isValidInstanceName } from "@/types/v1/instance";
 import { workspaceCacheScope } from "@/utils/storage-keys";
-import { escapeCELStringLiteral } from "@/utils/v1/cel";
+import { celMapField, celString, celStringList } from "@/utils/v1/celLiteral";
 import { bindingScopesResources } from "@/utils/v1/iam";
 import type { AppStoreState } from "./types";
 
@@ -71,16 +78,15 @@ export function buildProjectFilter(query: string | undefined) {
   const filters = ["exclude_default == true"];
   const search = query?.trim().toLowerCase();
   if (search) {
-    filters.push(
-      `(name.contains("${search}") || resource_id.contains("${search}"))`
-    );
+    const value = celString(search);
+    filters.push(`(name.contains(${value}) || resource_id.contains(${value}))`);
   }
   return filters.join(" && ");
 }
 
 // Converts label selectors like "{key}:{v1},{v2}" into API filter clauses
-// (`labels.{key} == "v"` or `labels.{key} in [...]`). Ported verbatim from
-// the legacy Pinia database store.
+// (`labels["{key}"] == "v"` or `labels["{key}"] in [...]`). Index syntax, not
+// `labels.{key}` — label keys allow dashes, which CEL parses as subtraction.
 export function getLabelFilter(labels: string[]): string[] {
   const labelMap = new Map<string, string[]>();
   for (const label of labels) {
@@ -96,16 +102,15 @@ export function getLabelFilter(labels: string[]): string[] {
     labelMap.get(key)?.push(...values);
   }
   return [...labelMap.entries()].reduce((result, [key, values]) => {
+    const field = celMapField("labels", key);
     switch (values.length) {
       case 0:
         return result;
       case 1:
-        result.push(`labels.${key} == "${values[0]}"`);
+        result.push(`${field} == ${celString(values[0])}`);
         return result;
       default:
-        result.push(
-          `labels.${key} in [${values.map((v) => `"${v}"`).join(", ")}]`
-        );
+        result.push(`${field} in ${celStringList(values)}`);
         return result;
     }
   }, [] as string[]);
@@ -117,39 +122,37 @@ export function getLabelFilter(labels: string[]): string[] {
 export function buildDatabaseFilter(filter: DatabaseFilter): string {
   const params: string[] = [];
   if (isValidProjectName(filter.project)) {
-    params.push(`project == "${filter.project}"`);
+    params.push(`project == ${celString(filter.project)}`);
   }
   if (isValidInstanceName(filter.instance)) {
-    params.push(`instance == "${filter.instance}"`);
+    params.push(`instance == ${celString(filter.instance)}`);
   }
   if (filter.environment === unknownEnvironment().name) {
     params.push(`environment == ""`);
   } else if (isValidEnvironmentName(filter.environment)) {
-    params.push(`environment == "${filter.environment}"`);
+    params.push(`environment == ${celString(filter.environment)}`);
   }
   if (filter.excludeUnassigned) {
     params.push(`exclude_unassigned == true`);
   }
   if (filter.engines && filter.engines.length > 0) {
     params.push(
-      `engine in [${filter.engines.map((e) => `"${Engine[e]}"`).join(", ")}]`
+      `engine in ${celStringList(filter.engines.map((e) => Engine[e]))}`
     );
   } else if (filter.excludeEngines && filter.excludeEngines.length > 0) {
     params.push(
-      `!(engine in [${filter.excludeEngines
-        .map((e) => `"${Engine[e]}"`)
-        .join(", ")}])`
+      `!(engine in ${celStringList(filter.excludeEngines.map((e) => Engine[e]))})`
     );
   }
   const keyword = filter.query?.trim()?.toLowerCase();
   if (keyword) {
-    params.push(`name.contains("${escapeCELStringLiteral(keyword)}")`);
+    params.push(`name.contains(${celString(keyword)})`);
   }
   if (filter.labels) {
     params.push(...getLabelFilter(filter.labels));
   }
   if (filter.table) {
-    params.push(`table.contains("${filter.table}")`);
+    params.push(`table.contains(${celString(filter.table)})`);
   }
   return params.join(" && ");
 }
@@ -285,57 +288,4 @@ export function projectResourceNameFromId(projectId: string | undefined) {
 
 export function getProjectResourceId(project: Project) {
   return getProjectName(project.name);
-}
-
-// The MFA enrollment secrets come back only from the two UpdateUser requests
-// that drive the enrollment. A GetCurrentUser read no longer carries them,
-// because a TOTP seed in a read response is a stored secret handed to whoever
-// can read the profile, and neither does an UpdateUser that mints nothing.
-//
-// Both of those overwrite the store's current user, and the enrollment window
-// is five minutes: AuthGate revalidates the session on that same interval, and
-// the account page saves a title or a phone number from the panel showing the
-// recovery codes. A plain overwrite would blank what the user is halfway
-// through saving, so both merges go through here.
-//
-// Carry them across while the response still describes the enrollment we hold.
-// temp_otp_secret_created_time is not a secret and reads keep it, so it
-// identifies the enrollment: it is nil once the enrollment commits, moves when
-// a new seed is minted, and is withheld once the window expires. Any of the
-// three stops what we hold from being carried, which is why there is no copy of
-// the five-minute rule here — the server does not report an expired enrollment
-// as an open one.
-export function keepMfaEnrollment(
-  fresh: User,
-  previous: User | undefined
-): User {
-  if (!previous || previous.name !== fresh.name) return fresh;
-  if (fresh.tempOtpSecret || fresh.tempRecoveryCodes.length > 0) return fresh;
-  if (!previous.tempOtpSecret && previous.tempRecoveryCodes.length === 0) {
-    return fresh;
-  }
-  // Carry them only while the read describes the same enrollment we hold. The
-  // server keeps one enrollment per user and replaces the seed, the codes and
-  // the created time together, so a created time that moved means another tab
-  // or another device minted a new seed. Keeping ours then would render a QR
-  // code the server has already discarded, and every code typed off it would
-  // be rejected.
-  const held = previous.tempOtpSecretCreatedTime;
-  const read = fresh.tempOtpSecretCreatedTime;
-  // Nanos as well as seconds: two mints inside the same wall-clock second are
-  // rare and not impossible, and comparing only seconds would call the second
-  // one the same enrollment and carry the seed it replaced.
-  if (
-    !held ||
-    !read ||
-    held.seconds !== read.seconds ||
-    held.nanos !== read.nanos
-  ) {
-    return fresh;
-  }
-  return {
-    ...fresh,
-    tempOtpSecret: previous.tempOtpSecret,
-    tempRecoveryCodes: previous.tempRecoveryCodes,
-  };
 }

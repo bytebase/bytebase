@@ -511,6 +511,16 @@
     "new-database-name": "New database name",
     "reserved-db-error": "{{databaseName}} is a reserved name"
   },
+  "credential-proof": {
+    "code-sent": "Code sent — check your email",
+    "email-label": "Email verification code",
+    "email-me-a-code": "Email me a code",
+    "email-placeholder": "6-digit code",
+    "factor-label": "Verification code",
+    "factor-placeholder": "Authenticator code or recovery code",
+    "password-label": "Current password",
+    "resend-in": "Resend in {{seconds}}s"
+  },
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "Fallback Rules",
@@ -715,6 +725,7 @@
     "nullable": "Nullable",
     "partition-tables": "Partition tables",
     "partitioned": "Partitioned",
+    "project-instance-transfer-disabled": "Databases from a project-bound instance cannot be transferred or unassigned.",
     "revision": {
       "add-more-files": "Add More",
       "available-files": "Available Files",
@@ -1212,6 +1223,8 @@
     "port": "Port",
     "prepare-sample-instance-failed": "Failed to prepare Sample Project Instance.",
     "preparing-sample-instance": "Preparing Sample Project Instance…",
+    "project-bound-description": "This instance is bound to this project. All its databases are automatically transferred to the project and cannot be transferred or unassigned.",
+    "project-bound-title": "Project-bound instance",
     "project-id": "Project ID",
     "restore-instance-instance-name-to-normal-state": "Restore instance '{{0}}' to normal state?",
     "role-arn": "Role ARN",
@@ -1221,6 +1234,7 @@
     "sample-expiration-future_one": "The sample instance will be removed in {{count}} day, at {{time}}.",
     "sample-expiration-future_other": "The sample instance will be removed in {{count}} days, at {{time}}.",
     "sample-project-instance-description": "Use a Sample Project Instance to explore Bytebase with a ready-to-use database for 7 days.",
+    "sample-project-instance-description-self-host": "Use a Sample Project Instance to explore Bytebase with a ready-to-use database.",
     "sample-project-instance-title": "Try a Sample Project Instance",
     "scan-interval": {
       "default-never": "Default (never)",
@@ -1317,6 +1331,7 @@
     "type-or-paste-credentials-write-only": "Type or paste CREDENTIALS - write only",
     "unable-to-connect": "Bytebase couldn't connect with these settings. Review the guidance above, or continue and update the connection later.\n\nTechnical details: {{0}}",
     "use-sample-instance": "Use sample instance (Available for 7 days)",
+    "use-sample-instance-self-host": "Use sample instance",
     "users": "Users",
     "your-snowflake-account-locator": "Your Snowflake account locator"
   },
@@ -1601,11 +1616,6 @@
             "retry": "Check again",
             "title": "The MCP policy could not be checked"
           },
-          "unreadable": {
-            "description": "This workspace stores a policy value Bytebase cannot understand. Every MCP connection is being refused.",
-            "line": "No AI session can connect until this workspace's MCP policy is repaired",
-            "title": "This workspace's MCP policy cannot be read"
-          },
           "unserved": {
             "description": "This workspace stores a policy value this Bytebase version does not serve. Every MCP connection is being refused.",
             "line": "No AI session can connect until an admin picks a supported policy",
@@ -1648,6 +1658,7 @@
       "reset-to-defaults": "Reset to defaults"
     },
     "go-to-plan-page": "Go to plan page",
+    "initial-sql-storage-failed": "Unable to temporarily save the SQL. Clear some browser storage and try again.",
     "isolation-level": {
       "read-committed": "Read Committed",
       "read-uncommitted": "Read Uncommitted",
@@ -1825,7 +1836,8 @@
       "actions": {
         "explain-code": "Explain code",
         "find-problems": "Find problems",
-        "insert-at-caret": "Insert at caret"
+        "insert-at-caret": "Insert at cursor",
+        "new-chat-using-selection": "New chat using selection"
       },
       "ai-assistant": "AI Assistant",
       "conversation": {
@@ -1955,7 +1967,7 @@
       "confirm-delete-project": "Deleting \"{{name}}\" will permanently remove the project and all associated data including issues, configurations, and history. All databases in this project will be moved to the default project. This action cannot be undone.",
       "issue-related": {
         "allow-access-grants": {
-          "description": "Allow project members to request time-boxed access grants for specific read-only statements.",
+          "description": "Allow project members to request time-boxed access grants for specific read-only statements. Grants can also cover exporting results and viewing unmasked data.",
           "self": "Allow access grants"
         },
         "allow-request-role": {
@@ -2428,7 +2440,10 @@
           "exiting": "Exiting..."
         },
         "data-copy": "Enable data copying",
-        "data-export": "Enable data export",
+        "data-export": {
+          "description": "When disabled, users cannot export query results directly. In projects that allow access grants, users can still click \"Request export\" to submit an access grant request and export after approval.",
+          "self": "Allow data export without approval"
+        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "The workspace's default view has been changed to SQL Editor.",
           "go-to-sql-editor": "Go to SQL Editor",
@@ -2998,26 +3013,6 @@
       }
     }
   },
-  "setup": {
-    "basic-info": "Basic info",
-    "data": {
-      "built-in": "Use built-in sample",
-      "built-in-desc": "Generate sample project and instances",
-      "self-setup": "Setup the project"
-    },
-    "purposes": {
-      "alter-schema": "Alter schema",
-      "query-data": "Query data",
-      "self": "What's your main purpose with Bytebase?"
-    },
-    "self": "Setup",
-    "skip-setup": "Skip setup",
-    "workflow": {
-      "self": "What's your workflow with database?",
-      "simple": "No complex workflow, just need UI tools",
-      "team": "Work with teammates, need CI/CD pipeline"
-    }
-  },
   "sheet": {
     "filter": {
       "only-show-starred": "Only show starred",
@@ -3180,6 +3175,8 @@
     "request-aborted": "User aborted the request",
     "request-access-grant": "Request access grant",
     "request-export": "Request export",
+    "request-query": "Request query",
+    "request-unmask": "Request unmask",
     "result-detail": {
       "cell": "Cell detail",
       "next-match": "Next match",
@@ -3532,6 +3529,7 @@
     },
     "self": "Two-factor authentication",
     "setup-steps": {
+      "confirm-code": "Enter a fresh code from your authenticator to finish",
       "download-recovery-codes": {
         "keep-safe": {
           "description": "These codes are the last resort for accessing your account in case you lose your two-factor authentication code. If you cannot find these codes, you will lose access to your account.",
@@ -3586,6 +3584,7 @@
     },
     "prepare-database-tip": "Select databases to transfer to the project.",
     "previous-step-required": "You need to finish the previous step.",
+    "product-model": "How Bytebase works",
     "self": "Set up Bytebase",
     "steps": {
       "database": "Explore databases",

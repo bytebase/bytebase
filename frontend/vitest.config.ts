@@ -16,6 +16,13 @@ export default mergeConfig(
           url: "http://localhost/",
         },
       },
+      // Vitest's 5s/10s defaults are tuned for a fast machine. Setting up a
+      // jsdom environment and rendering a page in one of the heavier
+      // beforeEach hooks runs comfortably under them locally but not on the
+      // self-hosted CI runner, where the suite is several times slower. These
+      // are still far below any real hang.
+      testTimeout: 15000,
+      hookTimeout: 30000,
       exclude: [...configDefaults.exclude, "e2e/*", "tests/e2e/**"],
       root: fileURLToPath(new URL("./", import.meta.url)),
       setupFiles: ["./vitest.setup.ts"],

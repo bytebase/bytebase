@@ -1,11 +1,6 @@
 package auth
 
-import (
-	"github.com/pkg/errors"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/store"
-)
+import storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 
 // MCPCeilingVerdict is what a read of a workspace's MCP capability ceiling
 // means to a caller deciding whether to proceed. Every reader of the setting
@@ -23,11 +18,8 @@ const (
 	MCPCeilingServes MCPCeilingVerdict = iota
 	// An admin turned MCP off. Raising the ceiling fixes it.
 	MCPCeilingDisabled
-	// The stored value is one this build cannot interpret — a mistyped enum
-	// name, a wrong-typed row. An admin has to write the setting again.
-	MCPCeilingUnreadable
-	// The value parsed but no mode this build has serves it: the reserved 2, or
-	// a ceiling a newer release wrote. An admin has to choose a known value.
+	// No mode this build has serves the parsed value: the reserved 2 or
+	// UNSPECIFIED. An admin has to choose a known value.
 	MCPCeilingUnserved
 	// The read itself failed. The only one of these a retry may fix.
 	MCPCeilingUnavailable
@@ -37,7 +29,7 @@ const (
 // is what makes a refusal an audited outcome.
 func (v MCPCeilingVerdict) IsPolicy() bool {
 	switch v {
-	case MCPCeilingDisabled, MCPCeilingUnreadable, MCPCeilingUnserved:
+	case MCPCeilingDisabled, MCPCeilingUnserved:
 		return true
 	default:
 		return false
@@ -48,20 +40,21 @@ func (v MCPCeilingVerdict) IsPolicy() bool {
 // verdict its caller acts on. Everything this build cannot act on refuses; what
 // the split decides is the message and the audit row. A value nobody can
 // interpret never succeeds on retry; an outage may.
-func ClassifyMCPCeiling(capability storepb.MCPSetting_Capability, err error) MCPCeilingVerdict {
+func ClassifyMCPCeiling(settings *storepb.MCPSetting, err error) MCPCeilingVerdict {
 	if err != nil {
-		if errors.Is(err, store.ErrMCPCapabilityUnreadable) {
-			return MCPCeilingUnreadable
-		}
 		return MCPCeilingUnavailable
 	}
-	if capability == storepb.MCPSetting_DISABLED {
-		return MCPCeilingDisabled
+	if settings == nil {
+		return MCPCeilingUnavailable
 	}
-	if !MCPCeilingServesAnything(capability) {
+	switch settings.Capability {
+	case storepb.MCPSetting_DISABLED:
+		return MCPCeilingDisabled
+	case storepb.MCPSetting_READ_ONLY, storepb.MCPSetting_READ_WRITE:
+		return MCPCeilingServes
+	default:
 		return MCPCeilingUnserved
 	}
-	return MCPCeilingServes
 }
 
 // Refusal is what a door tells the caller it is refusing: what is wrong with
@@ -82,9 +75,6 @@ func (v MCPCeilingVerdict) Refusal() string {
 	case MCPCeilingDisabled:
 		return "a workspace admin has turned MCP access off for this workspace. " +
 			"Ask them to raise the MCP ceiling in the workspace settings"
-	case MCPCeilingUnreadable:
-		return "this workspace's stored MCP capability ceiling is not one this build understands. " +
-			"Ask a workspace admin to set the MCP ceiling again in the workspace settings"
 	case MCPCeilingUnserved:
 		return "this workspace's stored MCP capability ceiling is not one this build serves. " +
 			"Ask a workspace admin to set the MCP ceiling to a supported value in the workspace settings"
@@ -96,9 +86,17 @@ func (v MCPCeilingVerdict) Refusal() string {
 	}
 }
 
-// PolicyMCPCeilingVerdicts is every verdict that is a decision about the
-// workspace rather than an outage, which is what decides whether a refusal is
-// recorded. Refusal covers the outage too; this list does not.
-func PolicyMCPCeilingVerdicts() []MCPCeilingVerdict {
-	return []MCPCeilingVerdict{MCPCeilingDisabled, MCPCeilingUnreadable, MCPCeilingUnserved}
+// Heading returns the short title for a refusal. Empty for MCPCeilingServes,
+// which refuses nothing.
+func (v MCPCeilingVerdict) Heading() string {
+	switch v {
+	case MCPCeilingDisabled:
+		return "MCP access is turned off"
+	case MCPCeilingUnserved:
+		return "This workspace's MCP setting is not one this version supports"
+	case MCPCeilingUnavailable:
+		return "MCP settings are temporarily unavailable"
+	default:
+		return ""
+	}
 }

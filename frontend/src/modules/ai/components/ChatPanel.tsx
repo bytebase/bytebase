@@ -86,53 +86,48 @@ export function ChatPanel() {
       if (!tab) return;
 
       const { messageList } = conversation;
+      const declaration = promptUtils.declaration(
+        context.databaseMetadata,
+        context.engine,
+        context.schema
+      );
+      const userMessage = await store.createMessage({
+        conversation_id: conversation.id,
+        content: query,
+        author: "USER",
+        error: "",
+        status: "DONE",
+      });
       if (messageList.length === 0) {
-        const engine = context.engine;
-        const databaseMetadata = context.databaseMetadata;
-        const schema = context.schema;
-        const prompts: string[] = [
-          promptUtils.declaration(databaseMetadata, engine, schema),
-          query,
-        ];
-        const prompt = prompts.join("\n");
-        await store.createMessage({
-          conversation_id: conversation.id,
-          content: query,
-          prompt,
-          author: "USER",
-          error: "",
-          status: "DONE",
-        });
-        console.debug("[AI Assistant] init chat:", prompt);
-      } else {
-        await store.createMessage({
-          conversation_id: conversation.id,
-          content: query,
-          prompt: query,
-          author: "USER",
-          error: "",
-          status: "DONE",
-        });
+        console.debug(
+          "[AI Assistant] init chat:",
+          [declaration, query].join("\n")
+        );
       }
 
       const answer = await store.createMessage({
         author: "AI",
-        prompt: "",
         content: "",
         error: "",
         conversation_id: conversation.id,
         status: "LOADING",
       });
-      const messages: AIChatMessage[] = conversation.messageList.map(
-        (message) =>
-          createProto(AIChatMessageSchema, {
+      let declarationAttached = false;
+      const messages: AIChatMessage[] =
+        userMessage.conversation.messageList.map((message) => {
+          let content = message.content;
+          if (message.author === "USER" && !declarationAttached) {
+            content = [declaration, content].join("\n");
+            declarationAttached = true;
+          }
+          return createProto(AIChatMessageSchema, {
             role:
               message.author === "USER"
                 ? AIChatMessageRole.AI_CHAT_MESSAGE_ROLE_USER
                 : AIChatMessageRole.AI_CHAT_MESSAGE_ROLE_ASSISTANT,
-            content: message.prompt,
-          })
-      );
+            content,
+          });
+        });
       setLoading(true);
       try {
         const response = await aiServiceClientConnect.chat({ messages });
@@ -140,10 +135,10 @@ export function ChatPanel() {
         console.debug("[AI Assistant] answer:", text);
         if (text) {
           answer.content = text;
-          answer.prompt = text;
         }
         answer.status = "DONE";
       } catch (err) {
+        console.error("[AI Assistant] chat failed:", err);
         answer.error = String(err);
         answer.status = "FAILED";
       } finally {

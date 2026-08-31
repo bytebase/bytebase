@@ -21,7 +21,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	"github.com/bytebase/bytebase/backend/store"
 )
 
 // mcpClassification is one v1 RPC's MCP annotations, as the compiled
@@ -127,6 +126,13 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.IssueServiceApproveIssueProcedure,
 		v1connect.IssueServiceRejectIssueProcedure,
 		v1connect.IssueServiceRetryIssueApprovalProcedure,
+		v1connect.UserServiceChangePasswordProcedure,
+		v1connect.UserServiceStartMFAEnrollmentProcedure,
+		v1connect.UserServiceEnableMFAProcedure,
+		v1connect.UserServiceDisableMFAProcedure,
+		v1connect.UserServiceRegenerateRecoveryCodesProcedure,
+		v1connect.UserServiceConfirmRecoveryCodesProcedure,
+		v1connect.UserServiceRequestReauthCodeProcedure,
 	}
 	got := forbiddenProceduresFromDescriptors(t)
 
@@ -160,6 +166,13 @@ func TestForbiddenClassMembership(t *testing.T) {
 		v1connect.WorkspaceServiceRotateDirectorySyncTokenProcedure:      v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
 		v1connect.UserServiceCreateUserProcedure:                         v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
 		v1connect.UserServiceUpdateEmailProcedure:                        v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
+		v1connect.UserServiceChangePasswordProcedure:                     v1pb.MCPDenialReason_TAKES_OVER_ACCOUNT,
+		v1connect.UserServiceStartMFAEnrollmentProcedure:                 v1pb.MCPDenialReason_MINTS_CREDENTIAL,
+		v1connect.UserServiceEnableMFAProcedure:                          v1pb.MCPDenialReason_TAKES_OVER_ACCOUNT,
+		v1connect.UserServiceDisableMFAProcedure:                         v1pb.MCPDenialReason_TAKES_OVER_ACCOUNT,
+		v1connect.UserServiceRegenerateRecoveryCodesProcedure:            v1pb.MCPDenialReason_MINTS_CREDENTIAL,
+		v1connect.UserServiceConfirmRecoveryCodesProcedure:               v1pb.MCPDenialReason_TAKES_OVER_ACCOUNT,
+		v1connect.UserServiceRequestReauthCodeProcedure:                  v1pb.MCPDenialReason_RESETS_CREDENTIAL,
 		v1connect.IdentityProviderServiceCreateIdentityProviderProcedure: v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
 		v1connect.IdentityProviderServiceUpdateIdentityProviderProcedure: v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
 		v1connect.IdentityProviderServiceTestIdentityProviderProcedure:   v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
@@ -382,21 +395,23 @@ func TestLintRefusedClassesMatchTheServingTable(t *testing.T) {
 
 // TestLintCeilingAdmissionMatchesTheServingTable is the connection gate's half
 // of the same arrangement. The /mcp boundary decides whether a session opens at
-// all, and it asks auth.MCPCeilingServesAnything, which cannot see this table.
-// This holds the two against each other over every ceiling value, so a mode
+// all through auth.ClassifyMCPCeiling, which cannot see this table. This holds
+// the two against each other over every ceiling value, so a mode
 // that serves no class cannot start admitting sessions — or the reverse, which
 // would refuse a connection whose methods the gate is ready to serve.
 func TestLintCeilingAdmissionMatchesTheServingTable(t *testing.T) {
 	values := storepb.MCPSetting_Capability(0).Descriptor().Values()
 	for i := range values.Len() {
 		capability := storepb.MCPSetting_Capability(values.Get(i).Number())
-		require.Equal(t, len(mcpServingClasses[capability]) > 0, auth.MCPCeilingServesAnything(capability),
-			"%v: the serving table and auth.MCPCeilingServesAnything disagree about whether this ceiling serves anything", capability)
+		verdict := auth.ClassifyMCPCeiling(&storepb.MCPSetting{Capability: capability}, nil)
+		require.Equal(t, len(mcpServingClasses[capability]) > 0, verdict == auth.MCPCeilingServes,
+			"%v: the serving table and auth.ClassifyMCPCeiling disagree about whether this ceiling serves anything", capability)
 	}
 	// A stored number no release ever wrote is refused too, and it cannot come
 	// from the descriptor because it is in no build's enum.
 	for _, unknown := range []storepb.MCPSetting_Capability{2, 99} {
-		require.False(t, auth.MCPCeilingServesAnything(unknown),
+		verdict := auth.ClassifyMCPCeiling(&storepb.MCPSetting{Capability: unknown}, nil)
+		require.NotEqual(t, auth.MCPCeilingServes, verdict,
 			"%v: a ceiling this build cannot interpret must not open a session", unknown)
 	}
 }
@@ -783,8 +798,11 @@ type mcpGateStore struct {
 	err                     error
 }
 
-func (s mcpGateStore) GetMCPSettingsUncached(context.Context, string) (store.MCPSettings, error) {
-	return store.MCPSettings{Capability: s.ceiling, IgnoreMaskingExemptions: s.ignoreMaskingExemptions}, s.err
+func (s mcpGateStore) GetMCPSettingsUncached(context.Context, string) (*storepb.MCPSetting, error) {
+	if s.err != nil {
+		return nil, s.err
+	}
+	return &storepb.MCPSetting{Capability: s.ceiling, IgnoreMaskingExemptions: s.ignoreMaskingExemptions}, nil
 }
 
 func readWriteCeiling() mcpGateStore {
@@ -920,19 +938,13 @@ func TestMCPGateFailsClosedOnTheCeiling(t *testing.T) {
 			"the denial rows an operator filters on must be denials; an outage is not one")
 	})
 
-	t.Run("a stored value this build cannot interpret is a policy refusal", func(t *testing.T) {
-		// The opposite half of the same failure. No retry fixes a mistyped
-		// ceiling, so promising one would be a lie, and an admin has to act —
-		// which makes it a denial, and an audited one. The /mcp connection
-		// gate splits the same two the same way.
-		got := invokeMCPGate(t, mcpGateStore{err: errors.Wrap(store.ErrMCPCapabilityUnreadable, "READ_WRTIE")},
+	t.Run("an unspecified stored value is a policy refusal", func(t *testing.T) {
+		got := invokeMCPGate(t, mcpGateStore{ceiling: storepb.MCPSetting_CAPABILITY_UNSPECIFIED},
 			classContext(v1pb.MCPMethodClass_READ),
 			v1connect.DatabaseServiceGetDatabaseProcedure, connect.NewRequest(&v1pb.GetDatabaseRequest{}))
 		require.Error(t, got.err)
 		require.False(t, got.dispatched)
 		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(got.err))
-		require.NotContains(t, got.err.Error(), "READ_WRTIE",
-			"the agent gets the outcome, not the workspace's storage state")
 		require.True(t, got.auditMarked)
 	})
 

@@ -18,6 +18,9 @@ const mocks = vi.hoisted(() => ({
   hasWorkspacePermission: true,
   databaseTableRows: [] as unknown[],
   databaseTableLoading: false,
+  databaseTableSelectedNames: [] as string[],
+  batchOperationDatabases: [] as { name: string }[],
+  scopeValues: {} as Record<string, string | undefined>,
 }));
 
 let DatabasesPage: typeof import("./DatabasesPage").DatabasesPage;
@@ -42,7 +45,7 @@ vi.mock("@/app/router", () => ({
 
 vi.mock("@/components/AdvancedSearch", () => ({
   AdvancedSearch: () => <div data-testid="advanced-search" />,
-  getValueFromScopes: () => undefined,
+  getValueFromScopes: (_params: unknown, id: string) => mocks.scopeValues[id],
 }));
 
 vi.mock("@/components/EditEnvironmentSheet", () => ({
@@ -83,21 +86,34 @@ vi.mock("@/components/database", () => ({
   CreateDatabaseSheet: ({ open }: { open: boolean }) => (
     <div data-testid="create-database-sheet" data-open={String(open)} />
   ),
-  DatabaseBatchOperationsBar: () => null,
+  DatabaseBatchOperationsBar: ({
+    databases,
+  }: {
+    databases: { name: string }[];
+  }) => {
+    mocks.batchOperationDatabases = databases;
+    return null;
+  },
   DatabaseTable: ({
+    filter,
     emptyPlaceholder,
     selectionColumnIntroTarget,
+    onSelectedNamesChange,
     onDatabasesChange,
     onLoadingChange,
   }: {
+    filter?: { instance?: string };
     emptyPlaceholder?: React.ReactNode;
     selectionColumnIntroTarget?: string;
+    onSelectedNamesChange?: (selectedNames: Set<string>) => void;
     onDatabasesChange?: (databases: unknown[]) => void;
     onLoadingChange?: (loading: boolean) => void;
   }) => (
     <DatabaseTableMock
+      filter={filter}
       emptyPlaceholder={emptyPlaceholder}
       selectionColumnIntroTarget={selectionColumnIntroTarget}
+      onSelectedNamesChange={onSelectedNamesChange}
       onDatabasesChange={onDatabasesChange}
       onLoadingChange={onLoadingChange}
     />
@@ -107,13 +123,17 @@ vi.mock("@/components/database", () => ({
 }));
 
 const DatabaseTableMock = ({
+  filter,
   emptyPlaceholder,
   selectionColumnIntroTarget,
+  onSelectedNamesChange,
   onDatabasesChange,
   onLoadingChange,
 }: {
+  filter?: { instance?: string };
   emptyPlaceholder?: React.ReactNode;
   selectionColumnIntroTarget?: string;
+  onSelectedNamesChange?: (selectedNames: Set<string>) => void;
   onDatabasesChange?: (databases: unknown[]) => void;
   onLoadingChange?: (loading: boolean) => void;
 }) => {
@@ -121,11 +141,15 @@ const DatabaseTableMock = ({
     onDatabasesChange?.(mocks.databaseTableRows);
   }, [onDatabasesChange]);
   useEffect(() => {
+    onSelectedNamesChange?.(new Set(mocks.databaseTableSelectedNames));
+  }, [onSelectedNamesChange]);
+  useEffect(() => {
     onLoadingChange?.(mocks.databaseTableLoading);
   }, [onLoadingChange]);
   return (
     <div
       data-testid="database-table"
+      data-instance-filter={filter?.instance ?? ""}
       data-has-empty-placeholder={String(!!emptyPlaceholder)}
       data-selection-column-intro-target={selectionColumnIntroTarget ?? ""}
     >
@@ -181,10 +205,61 @@ beforeEach(async () => {
   mocks.currentRoute = { query: {} };
   mocks.databaseTableRows = [];
   mocks.databaseTableLoading = false;
+  mocks.databaseTableSelectedNames = [];
+  mocks.batchOperationDatabases = [];
+  mocks.scopeValues = {};
   ({ DatabasesPage } = await import("./DatabasesPage"));
 });
 
 describe("DatabasesPage", () => {
+  test("passes selected project-instance databases to batch operations", async () => {
+    const databaseName =
+      "projects/app/instances/bound/databases/project-database";
+    mocks.databaseTableSelectedNames = [databaseName];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <DatabasesPage />
+        </MemoryRouter>
+      );
+      await Promise.resolve();
+    });
+
+    expect(mocks.batchOperationDatabases).toEqual([{ name: databaseName }]);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("preserves a canonical project-instance filter", async () => {
+    mocks.scopeValues.instance = "projects/app/instances/prod";
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <MemoryRouter>
+          <DatabasesPage />
+        </MemoryRouter>
+      );
+      await Promise.resolve();
+    });
+
+    expect(
+      container
+        .querySelector("[data-testid='database-table']")
+        ?.getAttribute("data-instance-filter")
+    ).toBe("projects/app/instances/prod");
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   test("does not pass an action as the empty table placeholder", async () => {
     const container = document.createElement("div");
     const root = createRoot(container);

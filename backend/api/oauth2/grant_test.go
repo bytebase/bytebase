@@ -69,6 +69,7 @@ func TestResourceScopeGrantLifecycle(t *testing.T) {
 		INSERT INTO principal (name, email, password_hash) VALUES ('demo', 'demo@example.com', 'unused');
 		INSERT INTO oauth2_client (client_id, workspace, client_secret_hash, config)
 		VALUES ('client-A', NULL, 'unused-hash', '{"clientName":"test","redirectUris":["http://localhost/cb"],"grantTypes":["authorization_code","refresh_token"],"tokenEndpointAuthMethod":"none"}'::jsonb);
+		INSERT INTO setting (name, workspace, value) VALUES ('MCP', 'ws-test', '{"capability":"READ_WRITE"}');
 	`)
 	require.NoError(t, err)
 

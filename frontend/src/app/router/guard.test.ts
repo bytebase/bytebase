@@ -164,6 +164,20 @@ describe("rootGuard", () => {
     expect(handle?.name).toBe(WORKSPACE_ROUTE_404);
   });
 
+  test("the legacy /setup path is no longer a setup route", () => {
+    const matched = matchRoutes(routes, "/setup");
+    const leafRoute = matched?.at(-1)?.route;
+    const handle = leafRoute?.handle as { name?: string } | undefined;
+
+    expect(handle?.name).toBe(WORKSPACE_ROUTE_404);
+  });
+
+  test("matches the unified workspace setup route under /auth", () => {
+    const matched = matchRoutes(routes, "/auth/setup");
+
+    expect(matched?.at(-1)?.route.handle).toEqual({ name: "auth.setup" });
+  });
+
   test("oauth callback is allowed directly", () => {
     expect(run(AUTH_OAUTH_CALLBACK_MODULE, "/auth/oauth/callback")).toBeNull();
   });

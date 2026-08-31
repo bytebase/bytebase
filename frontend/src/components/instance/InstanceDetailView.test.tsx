@@ -301,7 +301,7 @@ describe("InstanceDetailView", () => {
       sample: {
         instances: [
           {
-            instance: "instances/prod",
+            instance: "projects/app/instances/prod",
             expireTime: {
               seconds: BigInt(
                 Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60
@@ -347,6 +347,19 @@ describe("InstanceDetailView", () => {
     expect(container.textContent).toContain(
       "instance.sample-expiration-expired"
     );
+  });
+
+  it("does not show an expiration warning without sample expiration metadata", async () => {
+    mocks.serverInfo = {
+      defaultProject: "projects/default",
+      sample: {
+        instances: [{ instance: "instances/prod" }],
+      },
+    };
+
+    await render(<InstanceDetailView instanceName="instances/prod" />);
+
+    expect(container.textContent).not.toContain("instance.sample-expiration");
   });
 
   it("does not show the post-sync transfer action when there is no user project", async () => {
@@ -452,5 +465,9 @@ describe("InstanceDetailView", () => {
     expect(container.querySelector("[data-testid='create-database-sheet']"))
       .toBeNull();
     expect(mocks.fetchProjectList).not.toHaveBeenCalled();
+    expect(container.textContent).toContain("instance.project-bound-title");
+    expect(container.textContent).toContain(
+      "instance.project-bound-description"
+    );
   });
 });

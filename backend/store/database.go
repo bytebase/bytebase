@@ -192,15 +192,23 @@ func (s *Store) ListDatabases(ctx context.Context, find *FindDatabaseMessage) ([
 		WHERE ?
 	`, from, where)
 
-	if len(find.OrderByKeys) > 0 {
-		orderBy := []string{}
-		for _, v := range find.OrderByKeys {
-			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
-		}
-		q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
-	} else {
-		q.Space("ORDER BY db.project, db.instance, db.name")
+	// Neither project nor name identifies a database; (instance, name) is the
+	// primary key. That stays unique in the result only because every join
+	// above is at most 1:1 — db_schema is joined on its own full primary key,
+	// and instance.resource_id is a primary key. A one-to-many join added here
+	// would duplicate rows and silently un-stabilize paging again.
+	//
+	// A caller sorting by instance or name repeats that column below, which
+	// PostgreSQL ignores as a redundant sort key.
+	orderBy := []string{}
+	for _, v := range find.OrderByKeys {
+		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
 	}
+	if len(orderBy) == 0 {
+		orderBy = append(orderBy, "db.project ASC")
+	}
+	orderBy = append(orderBy, "db.instance ASC", "db.name ASC")
+	q.Space("ORDER BY " + strings.Join(orderBy, ", "))
 
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
@@ -936,24 +944,6 @@ func GetListDatabaseFilter(workspace, filter string) (*qb.Query, error) {
 
 	var getFilter func(expr celast.Expr) (*qb.Query, error)
 
-	parseToLabelFilterSQL := func(resource, key string, value any) (*qb.Query, error) {
-		switch v := value.(type) {
-		case string:
-			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' = ?", resource, key), v), nil
-		case []any:
-			if len(v) == 0 {
-				return nil, errors.Errorf("empty label filter")
-			}
-			labelValueList := []any{}
-			for _, raw := range v {
-				labelValueList = append(labelValueList, raw.(string))
-			}
-			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' = ANY(?)", resource, key), labelValueList), nil
-		default:
-			return nil, errors.Errorf("empty value %v for label filter", value)
-		}
-	}
-
 	parseToEngineSQL := func(expr celast.Expr) (*qb.Query, error) {
 		variable, value := getVariableAndValueFromExpr(expr)
 		if variable != "engine" {
@@ -989,11 +979,18 @@ func GetListDatabaseFilter(workspace, filter string) (*qb.Query, error) {
 			}
 			return qb.Q().Space("db.project = ?", projectID), nil
 		case "instance":
-			instanceID, err := common.GetInstanceID(value.(string))
+			instanceName, ok := value.(string)
+			if !ok {
+				return nil, errors.Errorf("invalid instance filter %q", value)
+			}
+			if projectID, instanceID, err := common.GetProjectIDInstanceID(instanceName); err == nil {
+				return qb.Q().Space("db.instance = ? AND instance.project = ?", instanceID, projectID), nil
+			}
+			instanceID, err := common.GetInstanceID(instanceName)
 			if err != nil {
 				return nil, errors.Errorf("invalid instance filter %q", value)
 			}
-			return qb.Q().Space("db.instance = ?", instanceID), nil
+			return qb.Q().Space("db.instance = ? AND instance.project IS NULL", instanceID), nil
 		case "environment":
 			environment, ok := value.(string)
 			if !ok {
@@ -1036,7 +1033,7 @@ func GetListDatabaseFilter(workspace, filter string) (*qb.Query, error) {
 				return nil, errors.Errorf("unsupport variable %q", variable)
 			}
 			if labelKey, ok := strings.CutPrefix(varStr, "labels."); ok {
-				return parseToLabelFilterSQL("db.metadata", labelKey, value)
+				return buildLabelFilterSQL("db.metadata", labelKey, value)
 			}
 			return nil, errors.Errorf("unsupport variable %q", variable)
 		}
@@ -1084,13 +1081,13 @@ func GetListDatabaseFilter(workspace, filter string) (*qb.Query, error) {
 
 				switch variable {
 				case "name":
-					return qb.Q().Space("LOWER(db.name) LIKE ?", "%"+strValue+"%"), nil
+					return qb.Q().Space("LOWER(db.name) LIKE ? ESCAPE '\\'", containsPattern(strValue)), nil
 				case "table":
 					return qb.Q().Space(`EXISTS (
 						SELECT 1
 						FROM json_array_elements(ds.metadata->'schemas') AS s,
 						 	 json_array_elements(s->'tables') AS t
-						WHERE t->>'name' LIKE ?)`, "%"+strValue+"%"), nil
+						WHERE t->>'name' LIKE ? ESCAPE '\')`, containsPattern(strValue)), nil
 				default:
 					return nil, errors.Errorf(`only "name" or "table" support %q operator, but found %q`, celoverloads.Contains, variable)
 				}
@@ -1099,7 +1096,7 @@ func GetListDatabaseFilter(workspace, filter string) (*qb.Query, error) {
 				if variable == "engine" {
 					return parseToEngineSQL(expr)
 				} else if labelKey, ok := strings.CutPrefix(variable, "labels."); ok {
-					return parseToLabelFilterSQL("db.metadata", labelKey, value)
+					return buildLabelFilterSQL("db.metadata", labelKey, value)
 				}
 				return nil, errors.Errorf("unsupport variable %q", variable)
 			case celoperators.LogicalNot:

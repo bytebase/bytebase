@@ -25,6 +25,13 @@ const mocks = vi.hoisted(() => ({
   pushNotification: vi.fn(),
   updateUser: vi.fn(),
   updateEmail: vi.fn(),
+  disableMFA: vi.fn(async () => activeUser),
+}));
+
+vi.mock("@/api", () => ({
+  userServiceClientConnect: {
+    disableMFA: mocks.disableMFA,
+  },
 }));
 
 vi.mock("@/utils", () => ({
@@ -61,8 +68,16 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
   DropdownMenuContent: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="menu">{children}</div>
   ),
-  DropdownMenuItem: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="menu-item">{children}</div>
+  DropdownMenuItem: ({
+    children,
+    onClick,
+  }: {
+    children: React.ReactNode;
+    onClick?: () => void;
+  }) => (
+    <button type="button" data-testid="menu-item" onClick={onClick}>
+      {children}
+    </button>
   ),
   DropdownMenuSeparator: () => <hr />,
 }));
@@ -140,6 +155,42 @@ describe("UserRowMenu", () => {
     const items = menuItems(container);
     expect(items[0]).toBe("settings.members.admin.reset-password");
     expect(items[1]).toBe("settings.members.admin.reset-mfa");
+
+    unmount();
+  });
+
+  // The menu is an administrator's recovery path for a locked-out member, and
+  // the only method that clears someone else's factor is DisableMFA. Sending
+  // this through UpdateUser instead is refused server-side, and nothing else
+  // in this file would notice.
+  test("resets MFA through DisableMFA", async () => {
+    const { container, unmount } = await renderMenu(activeUser);
+
+    const openDialog = [
+      ...container.querySelectorAll('[data-testid="menu-item"]'),
+    ].find(
+      (item) => item.textContent === "settings.members.admin.reset-mfa"
+    ) as HTMLElement;
+    await act(async () => {
+      openDialog.click();
+      await Promise.resolve();
+    });
+    // The dialog repeats the action's label on its confirming button; the
+    // menu item that opened it is gone by then.
+    const confirm = [...container.querySelectorAll("button")].find(
+      (button) =>
+        button.textContent === "settings.members.admin.reset-mfa" &&
+        button.getAttribute("data-testid") !== "menu-item"
+    ) as HTMLElement;
+    await act(async () => {
+      confirm.click();
+      await Promise.resolve();
+    });
+
+    expect(mocks.disableMFA).toHaveBeenCalledWith(
+      expect.objectContaining({ name: activeUser.name })
+    );
+    expect(mocks.updateUser).not.toHaveBeenCalled();
 
     unmount();
   });

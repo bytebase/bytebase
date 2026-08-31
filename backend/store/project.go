@@ -122,15 +122,13 @@ func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*
 		q.And("deleted = ?", false)
 	}
 
-	if len(find.OrderByKeys) > 0 {
-		orderBy := []string{}
-		for _, v := range find.OrderByKeys {
-			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
-		}
-		q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
-	} else {
-		q.Space("ORDER BY project.resource_id")
+	// Titles are not unique; resource_id is the primary key.
+	orderBy := []string{}
+	for _, v := range find.OrderByKeys {
+		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
 	}
+	orderBy = append(orderBy, "project.resource_id ASC")
+	q.Space("ORDER BY " + strings.Join(orderBy, ", "))
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}
@@ -553,6 +551,16 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		return errors.Wrapf(err, "failed to delete issue_comment for project %s", resourceID)
 	}
 
+	// Delete review_run entries for issues in this project
+	q = qb.Q().Space("DELETE FROM review_run WHERE project = ?", resourceID)
+	sql, args, err = q.ToSQL()
+	if err != nil {
+		return errors.Wrap(err, "failed to build review_run delete query")
+	}
+	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
+		return errors.Wrapf(err, "failed to delete review_run for project %s", resourceID)
+	}
+
 	// Delete issues associated with this project
 	q = qb.Q().Space("DELETE FROM issue WHERE project = ?", resourceID)
 	sql, args, err = q.ToSQL()
@@ -879,29 +887,6 @@ func GetListProjectFilter(workspace, filter string) (*qb.Query, error) {
 
 	var getFilter func(expr celast.Expr) (*qb.Query, error)
 
-	parseToLabelFilterSQL := func(resource, key string, value any) (*qb.Query, error) {
-		switch v := value.(type) {
-		case string:
-			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' = ?", resource, key), v), nil
-		case []any:
-			if len(v) == 0 {
-				return nil, errors.Errorf("empty label filter")
-			}
-
-			labelValueList := make([]any, len(v))
-			for i, raw := range v {
-				str, ok := raw.(string)
-				if !ok {
-					return nil, errors.Errorf("label value must be string, got %T", raw)
-				}
-				labelValueList[i] = str
-			}
-			return qb.Q().Space(fmt.Sprintf("%s->'labels'->>'%s' = ANY(?)", resource, key), labelValueList), nil
-		default:
-			return nil, errors.Errorf("empty value %v for label filter", value)
-		}
-	}
-
 	parseToSQL := func(variable, value any) (*qb.Query, error) {
 		switch variable {
 		case "name":
@@ -937,7 +922,7 @@ func GetListProjectFilter(workspace, filter string) (*qb.Query, error) {
 				return nil, errors.Errorf("unsupport variable %q", variable)
 			}
 			if labelKey, ok := strings.CutPrefix(varStr, "labels."); ok {
-				return parseToLabelFilterSQL("project.setting", labelKey, value)
+				return buildLabelFilterSQL("project.setting", labelKey, value)
 			}
 			return nil, errors.Errorf("unsupport variable %q", variable)
 		}
@@ -984,16 +969,16 @@ func GetListProjectFilter(workspace, filter string) (*qb.Query, error) {
 
 				switch variable {
 				case "name":
-					return qb.Q().Space("LOWER(project.name) LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+					return qb.Q().Space("LOWER(project.name) LIKE ? ESCAPE '\\'", containsPattern(strings.ToLower(strValue))), nil
 				case "resource_id":
-					return qb.Q().Space("LOWER(project.resource_id) LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+					return qb.Q().Space("LOWER(project.resource_id) LIKE ? ESCAPE '\\'", containsPattern(strings.ToLower(strValue))), nil
 				default:
 					return nil, errors.Errorf("unsupport variable %q", variable)
 				}
 			case celoperators.In:
 				variable, value := getVariableAndValueFromExpr(expr)
 				if labelKey, ok := strings.CutPrefix(variable, "labels."); ok {
-					return parseToLabelFilterSQL("project.setting", labelKey, value)
+					return buildLabelFilterSQL("project.setting", labelKey, value)
 				}
 				return nil, errors.Errorf("unexpected %v operator for %v", functionName, variable)
 			default:

@@ -1,11 +1,18 @@
 import { create } from "@bufbuild/protobuf";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import type { ConnectError } from "@connectrpc/connect";
 import { QRCodeSVG } from "qrcode.react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { userServiceClientConnect } from "@/api";
 import { router } from "@/app/router";
 import { ACCOUNT_ROUTE, AUTH_2FA_SETUP_MODULE } from "@/app/router/handles";
+import {
+  buildCredentialProof,
+  CredentialProofInput,
+  credentialProofCallOptions,
+  isCredentialProofReady,
+  useCredentialProofMode,
+} from "@/components/CredentialProofInput";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { Button } from "@/components/ui/button";
 import { OtpInput } from "@/components/ui/otp-input";
@@ -13,13 +20,20 @@ import { StepIndicator } from "@/components/ui/step-indicator";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
-import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
+import type {
+  StartMFAEnrollmentResponse,
+  User,
+} from "@/types/proto-es/v1/user_service_pb";
+import {
+  ConfirmRecoveryCodesRequestSchema,
+  EnableMFARequestSchema,
+  StartMFAEnrollmentRequestSchema,
+} from "@/types/proto-es/v1/user_service_pb";
 import { RecoveryCodesView } from "./RecoveryCodesView";
 import { TwoFactorSecretModal } from "./TwoFactorSecretModal";
 
 const ISSUER_NAME = "Bytebase";
 const DIGITS = 6;
-const MFA_TEMP_SECRET_EXPIRATION = 5 * 60 * 1000; // 5 minutes
 
 const SETUP_AUTH_APP_STEP = 0;
 const DOWNLOAD_RECOVERY_CODES_STEP = 1;
@@ -29,28 +43,45 @@ interface TwoFactorSetupPageProps {
   cancelAction?: () => void;
 }
 
+// The split enrollment (docs/design/reauthenticate-credential-changes.md):
+// StartMFAEnrollment mints the pending secret and recovery codes — the only
+// response that ever carries them — EnableMFA verifies the new device (and,
+// for a rotation, promotes the secret), and ConfirmRecoveryCodes promotes the
+// rest once the user confirms they saved the codes. Every step that changes
+// live credential material carries a CredentialProof.
 export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   const { t } = useTranslation();
-  const updateUser = useAppStore((state) => state.updateUser);
-  const legacyCurrentUser = useCurrentUser();
-  const [currentUser, setCurrentUser] = useState(legacyCurrentUser);
+  const currentUser = useCurrentUser();
+  const setCurrentUser = useAppStore((state) => state.setCurrentUser);
+  const proofMode = useCredentialProofMode();
+  // Captured at mount: EnableMFA flips mfaEnabled mid-flow on a rotation, and
+  // the confirm step's request shape depends on which flow this is.
+  const [rotation] = useState(currentUser.mfaEnabled);
 
+  const [enrollment, setEnrollment] = useState<
+    StartMFAEnrollmentResponse | undefined
+  >(undefined);
   const [currentStep, setCurrentStep] = useState<Step>(SETUP_AUTH_APP_STEP);
   const [showSecretModal, setShowSecretModal] = useState(false);
   const [otpCodes, setOtpCodes] = useState<string[]>([]);
+  const [proofValue, setProofValue] = useState("");
+  const [confirmOtpCodes, setConfirmOtpCodes] = useState<string[]>([]);
+  const [confirmProofValue, setConfirmProofValue] = useState("");
   const [recoveryCodesDownloaded, setRecoveryCodesDownloaded] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [timeRemaining, setTimeRemaining] = useState("5:00");
   const [isExpired, setIsExpired] = useState(false);
   const [isExpiringSoon, setIsExpiringSoon] = useState(false);
 
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  // Keep a ref to currentUser so the interval callback always reads fresh state
-  const currentUserRef = useRef(currentUser);
-  currentUserRef.current = currentUser;
+  // Keep a ref to the enrollment so the interval callback always reads fresh state
+  const enrollmentRef = useRef(enrollment);
+  enrollmentRef.current = enrollment;
 
-  useEffect(() => {
-    setCurrentUser(legacyCurrentUser);
-  }, [legacyCurrentUser]);
+  // EnableMFA needs no proof at all for a first-time enrollment on an account
+  // whose only possible proof is a single-use emailed code — that code is
+  // spent once, at the confirm step, where the mutation actually happens.
+  const needProofAtEnable = proofMode !== "email";
 
   const stopCountdown = useCallback(() => {
     if (countdownRef.current) {
@@ -60,15 +91,14 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   }, []);
 
   const updateCountdown = useCallback(() => {
-    const cu = currentUserRef.current;
-    if (!cu.tempOtpSecretCreatedTime) {
+    const expireTime = enrollmentRef.current?.expireTime;
+    if (!expireTime) {
       setIsExpired(true);
       setTimeRemaining("0:00");
       return;
     }
 
-    const createdAt = Number(cu.tempOtpSecretCreatedTime.seconds) * 1000;
-    const remaining = MFA_TEMP_SECRET_EXPIRATION - (Date.now() - createdAt);
+    const remaining = Number(expireTime.seconds) * 1000 - Date.now();
 
     if (remaining <= 0) {
       setIsExpired(true);
@@ -90,76 +120,81 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
     countdownRef.current = setInterval(updateCountdown, 1000);
   }, [updateCountdown, stopCountdown]);
 
-  const regenerateTempMfaSecret = useCallback(async () => {
-    const user = await updateUser(
-      create(UpdateUserRequestSchema, {
-        user: {
-          name: currentUser.name,
-        },
-        updateMask: create(FieldMaskSchema, {
-          paths: [],
-        }),
-        regenerateTempMfaSecret: true,
-      })
+  const startEnrollment = useCallback(async () => {
+    const response = await userServiceClientConnect.startMFAEnrollment(
+      create(StartMFAEnrollmentRequestSchema, { name: currentUser.name })
     );
-    setCurrentUser(user);
-  }, [currentUser.name, updateUser]);
+    setEnrollment(response);
+  }, [currentUser.name]);
 
-  // On mount: regenerate secret and start countdown
+  // On mount: mint an enrollment and start counting down to its expiry
   useEffect(() => {
-    regenerateTempMfaSecret().then(() => {
+    startEnrollment().then(() => {
       startCountdown();
     });
     return stopCountdown;
-  }, [regenerateTempMfaSecret, startCountdown, stopCountdown]);
+  }, [startEnrollment, startCountdown, stopCountdown]);
 
-  const otpauthUrl = `otpauth://totp/${ISSUER_NAME}:${currentUser.email}?algorithm=SHA1&digits=${DIGITS}&issuer=${ISSUER_NAME}&period=30&secret=${currentUser.tempOtpSecret}`;
+  const otpauthUrl = `otpauth://totp/${ISSUER_NAME}:${currentUser.email}?algorithm=SHA1&digits=${DIGITS}&issuer=${ISSUER_NAME}&period=30&secret=${enrollment?.otpSecret ?? ""}`;
 
-  const verifyOTPCode = useCallback(
+  const notifyError = useCallback((error: unknown) => {
+    pushNotification({
+      module: "bytebase",
+      style: "CRITICAL",
+      title: (error as ConnectError).message,
+    });
+  }, []);
+
+  const verifyNewDevice = useCallback(
     async (codes: string[]) => {
+      if (!enrollment) return false;
       try {
-        const user = await updateUser(
-          create(UpdateUserRequestSchema, {
-            user: {
-              name: currentUser.name,
-            },
-            updateMask: create(FieldMaskSchema, {
-              paths: [],
-            }),
+        await userServiceClientConnect.enableMFA(
+          create(EnableMFARequestSchema, {
+            name: currentUser.name,
             otpCode: codes.join(""),
-          })
+            credential: needProofAtEnable
+              ? buildCredentialProof(proofMode, proofValue)
+              : undefined,
+            pendingVersion: enrollment.pendingVersion,
+          }),
+          credentialProofCallOptions()
         );
-        setCurrentUser(user);
       } catch (error) {
-        pushNotification({
-          module: "bytebase",
-          style: "CRITICAL",
-          title: (error as ConnectError).message,
-        });
+        notifyError(error);
         return false;
       }
       return true;
     },
-    [currentUser.name, updateUser]
+    [
+      enrollment,
+      currentUser.name,
+      needProofAtEnable,
+      proofMode,
+      proofValue,
+      notifyError,
+    ]
   );
 
   const handleOtpFinish = useCallback(
     async (value: string[]) => {
       setOtpCodes(value);
-      const result = await verifyOTPCode(value);
+      if (needProofAtEnable && !isCredentialProofReady(proofMode, proofValue))
+        return;
+      const result = await verifyNewDevice(value);
       if (result && currentStep === SETUP_AUTH_APP_STEP) {
         setCurrentStep(DOWNLOAD_RECOVERY_CODES_STEP);
       }
     },
-    [verifyOTPCode, currentStep]
+    [verifyNewDevice, currentStep, needProofAtEnable, proofValue]
   );
 
   const handleNext = useCallback(async () => {
-    const result = await verifyOTPCode(otpCodes);
+    const result = await verifyNewDevice(otpCodes);
     if (result) {
       setCurrentStep(DOWNLOAD_RECOVERY_CODES_STEP);
     }
-  }, [verifyOTPCode, otpCodes]);
+  }, [verifyNewDevice, otpCodes]);
 
   const handleBack = useCallback(() => {
     setOtpCodes([]);
@@ -168,9 +203,9 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
 
   const handleRegenerateSecret = useCallback(async () => {
     setOtpCodes([]);
-    await regenerateTempMfaSecret();
+    await startEnrollment();
     startCountdown();
-  }, [regenerateTempMfaSecret, startCountdown]);
+  }, [startEnrollment, startCountdown]);
 
   const cancelSetup = useCallback(() => {
     if (cancelAction) {
@@ -183,17 +218,51 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
   }, [cancelAction]);
 
   const tryFinishSetup = useCallback(async () => {
-    await updateUser(
-      create(UpdateUserRequestSchema, {
-        user: {
-          name: currentUser.name,
-          mfaEnabled: true,
-        },
-        updateMask: create(FieldMaskSchema, {
-          paths: ["mfa_enabled"],
-        }),
-      })
-    );
+    if (!enrollment || submitting) return;
+    setSubmitting(true);
+    let enabled: User;
+    try {
+      const freshOtp = confirmOtpCodes.join("");
+      if (rotation) {
+        // Promotion happens here, so the proof binds here — and it is the
+        // factor being replaced, which is still the live one: EnableMFA
+        // verified the new device without promoting it. A fresh code, since
+        // the one spent at the previous step has aged out of its window.
+        enabled = await userServiceClientConnect.confirmRecoveryCodes(
+          create(ConfirmRecoveryCodesRequestSchema, {
+            name: currentUser.name,
+            credential: buildCredentialProof("factor", confirmProofValue),
+            pendingVersion: enrollment.pendingVersion,
+          }),
+          credentialProofCallOptions()
+        );
+      } else {
+        // First-time enrollment: nothing is live until here. The fresh code
+        // proves the device once more, and the credential proves the account
+        // — the password held from the previous step, or the emailed code.
+        enabled = await userServiceClientConnect.confirmRecoveryCodes(
+          create(ConfirmRecoveryCodesRequestSchema, {
+            name: currentUser.name,
+            otpCode: freshOtp,
+            credential: buildCredentialProof(
+              proofMode,
+              proofMode === "email" ? confirmProofValue : proofValue
+            ),
+            pendingVersion: enrollment.pendingVersion,
+          }),
+          credentialProofCallOptions()
+        );
+      }
+    } catch (error) {
+      notifyError(error);
+      setSubmitting(false);
+      return;
+    }
+    // Adopt the response rather than refetching. The navigation below runs
+    // through the router guard, which sends an account without a live factor
+    // back here; a refetch that failed would leave the store saying exactly
+    // that and mint a second enrollment for a factor already enabled.
+    setCurrentUser(enabled);
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -205,12 +274,35 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
     } else {
       router.replace({ name: ACCOUNT_ROUTE });
     }
-  }, [currentUser.name, t, updateUser]);
+  }, [
+    enrollment,
+    submitting,
+    rotation,
+    currentUser.name,
+    proofMode,
+    proofValue,
+    confirmProofValue,
+    confirmOtpCodes,
+    setCurrentUser,
+    notifyError,
+    t,
+  ]);
 
+  // Rotation proves the live factor here; a first-time enrollment re-proves
+  // the new device with a fresh code, plus the emailed code when that is the
+  // only proof the account has.
+  const confirmNeedsEmailProof = !rotation && proofMode === "email";
+  const confirmStepReady = rotation
+    ? isCredentialProofReady("factor", confirmProofValue)
+    : confirmOtpCodes.filter(Boolean).length === DIGITS &&
+      (!confirmNeedsEmailProof ||
+        isCredentialProofReady("email", confirmProofValue));
   const allowNext =
     currentStep === SETUP_AUTH_APP_STEP
-      ? otpCodes.filter((v) => v).length === DIGITS && !isExpired
-      : recoveryCodesDownloaded;
+      ? otpCodes.filter(Boolean).length === DIGITS &&
+        !isExpired &&
+        (!needProofAtEnable || isCredentialProofReady(proofMode, proofValue))
+      : recoveryCodesDownloaded && confirmStepReady;
 
   const steps = [
     { title: t("two-factor.setup-steps.setup-auth-app.self") },
@@ -260,13 +352,9 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
                     })}
               </p>
               {isExpired && (
-                <button
-                  type="button"
-                  className="ml-3 px-3 py-1 text-sm font-medium text-white bg-blue-600 rounded-sm hover:bg-blue-700"
-                  onClick={handleRegenerateSecret}
-                >
+                <Button size="sm" onClick={handleRegenerateSecret}>
                   {t("two-factor.setup-steps.setup-auth-app.regenerate")}
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -301,7 +389,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
               );
             })()}
           </p>
-          <div className="w-full flex flex-col justify-center items-center pb-8">
+          <div className="w-full flex flex-col justify-center items-center pb-4">
             <QRCodeSVG value={otpauthUrl} size={150} />
             <span className="mt-4 mb-2 text-sm font-medium">
               {t("two-factor.setup-steps.setup-auth-app.verify-code")}
@@ -313,15 +401,50 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
               length={DIGITS}
             />
           </div>
+          {needProofAtEnable && (
+            <div className="w-full max-w-sm mx-auto">
+              <CredentialProofInput
+                value={proofValue}
+                onChange={setProofValue}
+              />
+            </div>
+          )}
         </div>
       )}
 
       {currentStep === DOWNLOAD_RECOVERY_CODES_STEP && (
-        <div className="w-full max-w-2xl mx-auto">
+        <div className="w-full max-w-2xl mx-auto flex flex-col gap-y-6">
           <RecoveryCodesView
-            recoveryCodes={[...currentUser.tempRecoveryCodes]}
+            recoveryCodes={enrollment ? [...enrollment.recoveryCodes] : []}
             onDownload={() => setRecoveryCodesDownloaded(true)}
           />
+          {rotation ? (
+            <div className="w-full max-w-sm mx-auto">
+              <CredentialProofInput
+                value={confirmProofValue}
+                onChange={setConfirmProofValue}
+              />
+            </div>
+          ) : (
+            <div className="w-full flex flex-col justify-center items-center gap-y-2">
+              <span className="text-sm font-medium">
+                {t("two-factor.setup-steps.confirm-code")}
+              </span>
+              <OtpInput
+                value={confirmOtpCodes}
+                onChange={setConfirmOtpCodes}
+                length={DIGITS}
+              />
+            </div>
+          )}
+          {confirmNeedsEmailProof && (
+            <div className="w-full max-w-sm mx-auto">
+              <CredentialProofInput
+                value={confirmProofValue}
+                onChange={setConfirmProofValue}
+              />
+            </div>
+          )}
         </div>
       )}
 
@@ -342,7 +465,10 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
             </Button>
           )}
           {currentStep === DOWNLOAD_RECOVERY_CODES_STEP && (
-            <Button disabled={!allowNext} onClick={tryFinishSetup}>
+            <Button
+              disabled={!allowNext || submitting}
+              onClick={tryFinishSetup}
+            >
               {t("two-factor.setup-steps.recovery-codes-saved")}
             </Button>
           )}
@@ -350,7 +476,7 @@ export function TwoFactorSetupPage({ cancelAction }: TwoFactorSetupPageProps) {
       </div>
 
       <TwoFactorSecretModal
-        secret={currentUser.tempOtpSecret}
+        secret={enrollment?.otpSecret ?? ""}
         open={showSecretModal}
         onClose={() => setShowSecretModal(false)}
       />

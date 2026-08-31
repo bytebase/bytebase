@@ -11,7 +11,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
-	"github.com/bytebase/bytebase/backend/store"
 
 	// The clamp asks the parser registry what it can classify and how it
 	// splits, so this test binary has to register what the server registers.
@@ -489,12 +488,12 @@ func TestMCPClampAppliesOnlyToReadOnlyMCPSessions(t *testing.T) {
 		{
 			name: "an MCP session under a read-write ceiling is not clamped",
 			ctx: withMCPSettings(contextWithAuth(withGrant),
-				store.MCPSettings{Capability: storepb.MCPSetting_READ_WRITE}),
+				&storepb.MCPSetting{Capability: storepb.MCPSetting_READ_WRITE}),
 		},
 		{
 			name: "an MCP session under a read-only ceiling is clamped",
 			ctx: withMCPSettings(contextWithAuth(withGrant),
-				store.MCPSettings{Capability: storepb.MCPSetting_READ_ONLY}),
+				&storepb.MCPSetting{Capability: storepb.MCPSetting_READ_ONLY}),
 			applies: true,
 		},
 		{

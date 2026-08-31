@@ -95,6 +95,7 @@ describe("RouteBehaviorRecorder", () => {
           disable_session_recording: false,
         }),
         properties: {
+          deployment: "cloud",
           git_commit: "abc123",
         },
       })

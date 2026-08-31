@@ -12,23 +12,27 @@ const currentTimestamp = () => ({
   nanos: 0,
 });
 
-const legacyCurrentUser = {
+const currentUser = {
   name: "users/alice@example.com",
   email: "alice@example.com",
-  tempOtpSecret: "old-secret",
-  tempOtpSecretCreatedTime: currentTimestamp(),
-  tempRecoveryCodes: [],
+  mfaEnabled: false,
+  profile: { lastChangePasswordTime: currentTimestamp() },
 };
 
-const regeneratedCurrentUser = {
-  ...legacyCurrentUser,
-  tempOtpSecret: "new-secret",
-  tempOtpSecretCreatedTime: currentTimestamp(),
+const mintedEnrollment = {
+  otpSecret: "new-secret",
+  recoveryCodes: ["code-1", "code-2"],
+  expireTime: {
+    seconds: BigInt(Math.floor(Date.now() / 1000) + 300),
+    nanos: 0,
+  },
+  pendingVersion: currentTimestamp(),
 };
 
 const mocks = vi.hoisted(() => ({
-  useCurrentUser: vi.fn(() => legacyCurrentUser),
-  updateUser: vi.fn(async () => regeneratedCurrentUser),
+  useCurrentUser: vi.fn(() => currentUser),
+  startMFAEnrollment: vi.fn(async () => mintedEnrollment),
+  setCurrentUser: vi.fn(),
   pushNotification: vi.fn(),
   routerReplace: vi.fn(),
   currentRoute: {
@@ -40,10 +44,19 @@ vi.mock("@/hooks/useAppState", () => ({
   useCurrentUser: mocks.useCurrentUser,
 }));
 
+vi.mock("@/api", () => ({
+  userServiceClientConnect: {
+    startMFAEnrollment: mocks.startMFAEnrollment,
+    enableMFA: vi.fn(),
+    confirmRecoveryCodes: vi.fn(),
+  },
+}));
+
 vi.mock("@/stores/app", () => ({
   useAppStore: (selector: (state: unknown) => unknown) =>
     selector({
-      updateUser: mocks.updateUser,
+      setCurrentUser: mocks.setCurrentUser,
+      serverInfo: { saas: false },
     }),
 }));
 
@@ -74,7 +87,10 @@ vi.mock("@/types/proto-es/v1/user_service_pb", async (importOriginal) => {
     >();
   return {
     ...actual,
-    UpdateUserRequestSchema: {},
+    StartMFAEnrollmentRequestSchema: {},
+    EnableMFARequestSchema: {},
+    ConfirmRecoveryCodesRequestSchema: {},
+    CredentialProofSchema: {},
   };
 });
 
@@ -108,6 +124,14 @@ vi.mock("@/components/ui/button", () => ({
 
 vi.mock("@/components/ui/otp-input", () => ({
   OtpInput: () => <div data-testid="otp-input" />,
+}));
+
+vi.mock("@/components/CredentialProofInput", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("@/components/CredentialProofInput")
+  >()),
+  CredentialProofInput: () => <div data-testid="credential-proof" />,
+  useCredentialProofMode: () => "password" as const,
 }));
 
 vi.mock("./RecoveryCodesView", () => ({
@@ -146,17 +170,15 @@ beforeEach(async () => {
 });
 
 describe("TwoFactorSetupPage", () => {
-  test("renders regenerated MFA secret from the update response", async () => {
+  test("renders the secret from the enrollment response, not from the user", async () => {
     const { container, render, unmount } = renderIntoContainer(
       <TwoFactorSetupPage />
     );
 
     await render();
 
-    expect(mocks.updateUser).toHaveBeenCalledWith(
-      expect.objectContaining({
-        regenerateTempMfaSecret: true,
-      })
+    expect(mocks.startMFAEnrollment).toHaveBeenCalledWith(
+      expect.objectContaining({ name: currentUser.name })
     );
     expect(
       container
@@ -168,6 +190,10 @@ describe("TwoFactorSetupPage", () => {
         .querySelector('[data-testid="secret-modal"]')
         ?.getAttribute("data-secret")
     ).toBe("new-secret");
+    // An account with a password proves it before the swap.
+    expect(
+      container.querySelector('[data-testid="credential-proof"]')
+    ).not.toBeNull();
 
     unmount();
   });

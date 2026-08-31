@@ -67,9 +67,8 @@ export type ReactAIContext = {
 
   /**
    * One-shot trigger written by the `new-conversation` event handler when
-   * the host pre-fills a seed prompt (e.g. `OpenAIButton.tsx` "Ask AI
-   * about this query"). `PromptInput` reads + clears it on mount /
-   * pending-pre-input change.
+   * an editor action pre-fills a seed prompt. `PromptInput` reads + clears it
+   * on mount / pending-pre-input change.
    */
   pendingPreInput: string | undefined;
   setPendingPreInput: (next: string | undefined) => void;

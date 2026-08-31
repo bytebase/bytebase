@@ -1,5 +1,6 @@
 import { create as createProto } from "@bufbuild/protobuf";
 import { TimestampSchema } from "@bufbuild/protobuf/wkt";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { silentContextKey } from "@/api/context-key";
 import { isValidDatabaseGroupName, UNKNOWN_PROJECT_NAME } from "@/types";
@@ -118,6 +119,7 @@ const mocks = vi.hoisted(() => ({
   getSetting: vi.fn(),
   getProject: vi.fn(),
   getProjectIamPolicy: vi.fn(),
+  setProjectIamPolicy: vi.fn(),
   batchGetProjects: vi.fn(),
   searchProjects: vi.fn(),
   createProject: vi.fn(),
@@ -202,6 +204,7 @@ vi.mock("@/api", () => ({
   projectServiceClientConnect: {
     getProject: mocks.getProject,
     getIamPolicy: mocks.getProjectIamPolicy,
+    setIamPolicy: mocks.setProjectIamPolicy,
     batchGetProjects: mocks.batchGetProjects,
     searchProjects: mocks.searchProjects,
     createProject: mocks.createProject,
@@ -440,6 +443,11 @@ const changelogB = createProto(ChangelogSchema, {
   schema: "full",
 });
 
+const changelogCreateTime = createProto(TimestampSchema, {
+  seconds: 1735689599n,
+  nanos: 123456789,
+});
+
 const webhookA = createProto(WebhookSchema, {
   name: "projects/a/webhooks/hook-a",
   title: "Hook A",
@@ -507,6 +515,20 @@ describe("useAppStore", () => {
     expect(store.getState().isLoggedIn()).toBe(true);
   });
 
+  // Mutations that answer with the updated user adopt it directly: the router
+  // guard reads this state, and a refetch that failed would leave it stale
+  // while fetchCurrentUser swallowed the error.
+  test("adopts a user handed to setCurrentUser", () => {
+    const store = createAppStore();
+    const enabled = createProto(UserSchema, { ...user, mfaEnabled: true });
+
+    store.getState().setCurrentUser(enabled);
+
+    expect(store.getState().currentUser?.mfaEnabled).toBe(true);
+    expect(store.getState().currentUserName).toBe(enabled.name);
+    expect(store.getState().isLoggedIn()).toBe(true);
+  });
+
   test("fetches the current user silently when requested", async () => {
     mocks.getCurrentUser.mockResolvedValue(user);
     const store = createAppStore();
@@ -516,139 +538,6 @@ describe("useAppStore", () => {
     expect(
       mocks.getCurrentUser.mock.calls[0][1]?.contextValues.get(silentContextKey)
     ).toBe(true);
-  });
-
-  // The MFA enrollment secrets ride out only on the UpdateUser response that
-  // mints them; the read the session revalidation makes no longer carries them.
-  // That revalidation fires every five minutes, which is the whole enrollment
-  // window, so the two tests below are the difference between a QR code the
-  // user can finish scanning and one that disappears under them.
-  test("session revalidation keeps the MFA enrollment secrets it cannot refetch", async () => {
-    const enrolling = createProto(UserSchema, {
-      ...user,
-      tempOtpSecret: "SEEDFROMTHEMINT",
-      tempRecoveryCodes: ["code-1", "code-2"],
-      tempOtpSecretCreatedTime: createProto(TimestampSchema, { seconds: 1n }),
-    });
-    mocks.getCurrentUser.mockResolvedValue(
-      createProto(UserSchema, {
-        ...user,
-        tempOtpSecretCreatedTime: createProto(TimestampSchema, { seconds: 1n }),
-      })
-    );
-    const store = createAppStore();
-    store.setState({ currentUser: enrolling, currentUserName: enrolling.name });
-
-    await store.getState().fetchCurrentUser();
-
-    expect(store.getState().currentUser?.tempOtpSecret).toBe("SEEDFROMTHEMINT");
-    expect(store.getState().currentUser?.tempRecoveryCodes).toEqual([
-      "code-1",
-      "code-2",
-    ]);
-  });
-
-  test("session revalidation drops them once the enrollment window closes", async () => {
-    const enrolling = createProto(UserSchema, {
-      ...user,
-      tempOtpSecret: "SEEDFROMTHEMINT",
-      tempRecoveryCodes: ["code-1"],
-      tempOtpSecretCreatedTime: createProto(TimestampSchema, { seconds: 1n }),
-    });
-    // The server clears the created time when the enrollment commits, which is
-    // what says the secrets are gone rather than merely redacted.
-    mocks.getCurrentUser.mockResolvedValue(
-      createProto(UserSchema, { ...user, mfaEnabled: true })
-    );
-    const store = createAppStore();
-    store.setState({ currentUser: enrolling, currentUserName: enrolling.name });
-
-    await store.getState().fetchCurrentUser();
-
-    expect(store.getState().currentUser?.tempOtpSecret).toBe("");
-    expect(store.getState().currentUser?.tempRecoveryCodes).toEqual([]);
-  });
-
-  test("session revalidation drops them when another client minted a new seed", async () => {
-    const enrolling = createProto(UserSchema, {
-      ...user,
-      tempOtpSecret: "SEEDFROMTHEMINT",
-      tempRecoveryCodes: ["code-1"],
-      tempOtpSecretCreatedTime: createProto(TimestampSchema, { seconds: 1n }),
-    });
-    // A second tab regenerated: the read reports an open window, but a later
-    // one, so the seed we hold is the one the server threw away.
-    mocks.getCurrentUser.mockResolvedValue(
-      createProto(UserSchema, {
-        ...user,
-        tempOtpSecretCreatedTime: createProto(TimestampSchema, { seconds: 2n }),
-      })
-    );
-    const store = createAppStore();
-    store.setState({ currentUser: enrolling, currentUserName: enrolling.name });
-
-    await store.getState().fetchCurrentUser();
-
-    expect(store.getState().currentUser?.tempOtpSecret).toBe("");
-    expect(store.getState().currentUser?.tempRecoveryCodes).toEqual([]);
-  });
-
-  test("a non-minting self-update keeps the enrollment the console is showing", async () => {
-    // The account page saves a title from the same screen that shows the
-    // recovery codes, and that response no longer carries them.
-    const window = createProto(TimestampSchema, { seconds: 1n });
-    const enrolling = createProto(UserSchema, {
-      ...user,
-      tempOtpSecret: "SEEDFROMTHEMINT",
-      tempRecoveryCodes: ["code-1"],
-      tempOtpSecretCreatedTime: window,
-    });
-    mocks.getUser.mockResolvedValue(enrolling);
-    mocks.updateUser.mockResolvedValue(
-      createProto(UserSchema, {
-        ...user,
-        title: "Renamed",
-        tempOtpSecretCreatedTime: window,
-      })
-    );
-    const store = createAppStore();
-    store.setState({ currentUser: enrolling, currentUserName: enrolling.name });
-
-    await store.getState().updateUser({
-      user: { name: user.name, title: "Renamed" },
-      updateMask: { paths: ["title"] },
-    } as never);
-
-    expect(store.getState().currentUser?.title).toBe("Renamed");
-    expect(store.getState().currentUser?.tempOtpSecret).toBe("SEEDFROMTHEMINT");
-    expect(store.getState().currentUser?.tempRecoveryCodes).toEqual(["code-1"]);
-  });
-
-  test("and drops them for a reseed inside the same second", async () => {
-    const enrolling = createProto(UserSchema, {
-      ...user,
-      tempOtpSecret: "SEEDFROMTHEMINT",
-      tempRecoveryCodes: ["code-1"],
-      tempOtpSecretCreatedTime: createProto(TimestampSchema, {
-        seconds: 1n,
-        nanos: 100,
-      }),
-    });
-    mocks.getCurrentUser.mockResolvedValue(
-      createProto(UserSchema, {
-        ...user,
-        tempOtpSecretCreatedTime: createProto(TimestampSchema, {
-          seconds: 1n,
-          nanos: 200,
-        }),
-      })
-    );
-    const store = createAppStore();
-    store.setState({ currentUser: enrolling, currentUserName: enrolling.name });
-
-    await store.getState().fetchCurrentUser();
-
-    expect(store.getState().currentUser?.tempOtpSecret).toBe("");
   });
 
   test("auto logout preserves the full current path for signin redirect", async () => {
@@ -746,6 +635,32 @@ describe("useAppStore", () => {
     expect(mocks.navigateToPath).toHaveBeenCalledWith("/", { replace: true });
   });
 
+  test("self-host first login uses the unified workspace setup route", async () => {
+    const firstLoginUser = createProto(UserSchema, {
+      ...user,
+      title: user.email,
+    });
+    mocks.login.mockResolvedValue({
+      requireResetPassword: false,
+      user: firstLoginUser,
+    });
+    mocks.getCurrentUser.mockResolvedValue(firstLoginUser);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: user.workspace,
+      saas: false,
+    });
+    mocks.getWorkspace.mockResolvedValue({ name: user.workspace });
+    const store = createAppStore();
+
+    await store.getState().login({
+      request: { email: user.email, password: "secret" } as never,
+    });
+
+    expect(mocks.navigateByName).toHaveBeenCalledWith("auth.setup", {
+      query: { redirect: "/" },
+    });
+  });
+
   // Regression guard: `signup()` used to override the destination with the SQL
   // Editor whenever the mode read EDITOR, with no check for an explicit
   // redirect. That branch was dead (signup always boots signed out, so the mode
@@ -781,6 +696,48 @@ describe("useAppStore", () => {
     } as never);
 
     expect(mocks.navigateToPath).toHaveBeenCalledWith("/projects/foo", {
+      replace: true,
+    });
+  });
+
+  test("self-host signup uses the unified workspace setup route", async () => {
+    mocks.signup.mockResolvedValue({});
+    mocks.getCurrentUser.mockResolvedValue(user);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: user.workspace,
+      userCountInIam: 1,
+      saas: false,
+    });
+    const store = createAppStore();
+
+    await store.getState().signup({
+      email: user.email,
+      name: "Test",
+      password: "secret",
+    } as never);
+
+    expect(mocks.navigateByName).toHaveBeenCalledWith("auth.setup", {
+      replace: true,
+    });
+  });
+
+  test("SaaS signup uses the unified workspace setup route", async () => {
+    mocks.signup.mockResolvedValue({});
+    mocks.getCurrentUser.mockResolvedValue(user);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: user.workspace,
+      userCountInIam: 1,
+      saas: true,
+    });
+    const store = createAppStore();
+
+    await store.getState().signup({
+      email: user.email,
+      name: "Test",
+      password: "secret",
+    } as never);
+
+    expect(mocks.navigateByName).toHaveBeenCalledWith("auth.setup", {
       replace: true,
     });
   });
@@ -1132,6 +1089,138 @@ describe("useAppStore", () => {
       },
     ]);
     expect(store.getState().workspacePolicy).toBe(setPolicy);
+  });
+
+  test("patchWorkspaceIamPolicy round-trips the etag it read", async () => {
+    const existing = createProto(IamPolicySchema, {
+      etag: "1756000000000",
+      bindings: [
+        createProto(BindingSchema, {
+          role: "roles/workspaceMember",
+          members: ["user:alice@example.com"],
+        }),
+      ],
+    });
+    mocks.setIamPolicy.mockResolvedValue(existing);
+    const store = createAppStore();
+    store.setState({ workspacePolicy: existing });
+
+    await store
+      .getState()
+      .patchWorkspaceIamPolicy([
+        { member: "user:bob@example.com", roles: ["roles/workspaceMember"] },
+      ]);
+
+    // The server reads the etag from either field; sending both keeps an older
+    // server, which only reads the request field, checking it too.
+    const request = mocks.setIamPolicy.mock.calls[0][0] as {
+      etag: string;
+      policy: { etag: string };
+    };
+    expect(request.etag).toBe("1756000000000");
+    expect(request.policy.etag).toBe("1756000000000");
+  });
+
+  test("patchWorkspaceIamPolicy refetches after a concurrent edit", async () => {
+    const stale = createProto(IamPolicySchema, {
+      etag: "1756000000000",
+      bindings: [
+        createProto(BindingSchema, {
+          role: "roles/workspaceMember",
+          members: ["user:alice@example.com"],
+        }),
+      ],
+    });
+    // What the other admin left behind: alice revoked, and a new etag.
+    const current = createProto(IamPolicySchema, {
+      etag: "1756000009999",
+      bindings: [
+        createProto(BindingSchema, {
+          role: "roles/workspaceAdmin",
+          members: ["user:carol@example.com"],
+        }),
+      ],
+    });
+    mocks.setIamPolicy.mockRejectedValue(
+      new ConnectError("concurrent update", Code.Aborted)
+    );
+    mocks.getIamPolicy.mockResolvedValue(current);
+    const store = createAppStore();
+    store.setState({ workspacePolicy: stale });
+
+    await expect(
+      store
+        .getState()
+        .patchWorkspaceIamPolicy([
+          { member: "user:bob@example.com", roles: ["roles/workspaceMember"] },
+        ])
+    ).rejects.toThrow();
+
+    // Without the refetch the store would keep the losing policy, and every
+    // retry would replay the same stale etag.
+    expect(store.getState().workspacePolicy).toBe(current);
+  });
+
+  test("updateProjectIamPolicy refetches after a concurrent edit", async () => {
+    const stale = createProto(IamPolicySchema, {
+      etag: "1756000000000",
+      bindings: [
+        createProto(BindingSchema, {
+          role: "roles/projectDeveloper",
+          members: ["user:alice@example.com"],
+        }),
+      ],
+    });
+    const current = createProto(IamPolicySchema, {
+      etag: "1756000009999",
+      bindings: [
+        createProto(BindingSchema, {
+          role: "roles/projectOwner",
+          members: ["user:carol@example.com"],
+        }),
+      ],
+    });
+    mocks.setProjectIamPolicy.mockRejectedValue(
+      new ConnectError("concurrent update", Code.Aborted)
+    );
+    mocks.getProjectIamPolicy.mockResolvedValue(current);
+    const store = createAppStore();
+    store.setState({ projectPoliciesByName: { [projectA.name]: stale } });
+
+    await expect(
+      store.getState().updateProjectIamPolicy(projectA.name, stale)
+    ).rejects.toThrow();
+
+    expect(mocks.setProjectIamPolicy.mock.calls[0][0]).toMatchObject({
+      etag: "1756000000000",
+    });
+    expect(store.getState().projectPoliciesByName[projectA.name]).toBe(current);
+  });
+
+  test("updateProjectIamPolicy leaves the cached policy alone on other errors", async () => {
+    const stale = createProto(IamPolicySchema, {
+      etag: "1756000000000",
+      bindings: [
+        createProto(BindingSchema, {
+          role: "roles/projectDeveloper",
+          members: ["user:alice@example.com"],
+        }),
+      ],
+    });
+    mocks.setProjectIamPolicy.mockRejectedValue(
+      new ConnectError("at least one owner", Code.InvalidArgument)
+    );
+    const store = createAppStore();
+    store.setState({ projectPoliciesByName: { [projectA.name]: stale } });
+
+    await expect(
+      store.getState().updateProjectIamPolicy(projectA.name, stale)
+    ).rejects.toThrow();
+
+    // A rejected write left the server's policy where it was, so the etag this
+    // store holds is still good and refetching would be churn.
+    expect(mocks.getProjectIamPolicy).not.toHaveBeenCalled();
+    expect(store.getState().projectPoliciesByName[projectA.name]).toBe(stale);
   });
 
   test("workspaceUserMapToRoles inverts policy bindings to member -> roles", () => {
@@ -1563,6 +1652,37 @@ describe("useAppStore", () => {
     ).toBeUndefined();
   });
 
+  test("fetches the latest prior changelog with a schema snapshot", async () => {
+    const current = createProto(ChangelogSchema, {
+      ...changelogA,
+      createTime: changelogCreateTime,
+    });
+    mocks.getChangelog.mockResolvedValue(current);
+    mocks.listChangelogs.mockResolvedValue({ changelogs: [changelogB] });
+    const store = createAppStore();
+
+    const previous = await store
+      .getState()
+      .fetchPreviousChangelog(current.name);
+
+    expect(previous).toBe(changelogB);
+    expect(mocks.getChangelog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: current.name,
+        view: ChangelogView.FULL,
+      })
+    );
+    expect(mocks.listChangelogs).toHaveBeenCalledWith(
+      expect.objectContaining({
+        parent: "instances/i1/databases/db1",
+        pageSize: 1,
+        view: ChangelogView.FULL,
+        filter:
+          'has_schema_snapshot == true && create_time < "2024-12-31T23:59:59.123456789Z"',
+      })
+    );
+  });
+
   test("project webhook operations call through and lookup by id", async () => {
     const projectWithWebhook = createProto(ProjectSchema, {
       ...projectA,
@@ -1819,7 +1939,10 @@ describe("useAppStore", () => {
   });
 
   test("falls back to individual project fetches when batch fetch fails", async () => {
-    mocks.batchGetProjects.mockRejectedValue(new Error("batch failed"));
+    // BatchGetProjects is all-or-nothing, so one stale name fails the batch.
+    mocks.batchGetProjects.mockRejectedValue(
+      new ConnectError("project not found", Code.NotFound)
+    );
     mocks.getProject.mockImplementation(({ name }: { name: string }) => {
       return Promise.resolve(name === projectA.name ? projectA : projectB);
     });
@@ -2516,6 +2639,10 @@ describe("useAppStore", () => {
       key: "workspace-setup-guide.query-executed",
       newState: true,
     });
+    store.getState().saveIntroStateByKey({
+      key: "workspace-setup-guide.product-model-seen",
+      newState: true,
+    });
     store
       .getState()
       .saveIntroStateByKey({ key: "unrelated.intro", newState: true });
@@ -2534,6 +2661,11 @@ describe("useAppStore", () => {
       store
         .getState()
         .getIntroStateByKey("workspace-setup-guide.query-executed")
+    ).toBe(false);
+    expect(
+      store
+        .getState()
+        .getIntroStateByKey("workspace-setup-guide.product-model-seen")
     ).toBe(false);
     expect(store.getState().getIntroStateByKey("unrelated.intro")).toBe(true);
   });

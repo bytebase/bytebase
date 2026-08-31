@@ -238,6 +238,12 @@
     - [SQLReviewRule.Level](#bytebase-store-SQLReviewRule-Level)
     - [SQLReviewRule.Type](#bytebase-store-SQLReviewRule-Type)
   
+- [store/review_run.proto](#store_review_run-proto)
+    - [ReviewRun](#bytebase-store-ReviewRun)
+    - [ReviewRunPayload](#bytebase-store-ReviewRunPayload)
+  
+    - [ReviewRun.Status](#bytebase-store-ReviewRun-Status)
+  
 - [store/revision.proto](#store_revision-proto)
     - [RevisionPayload](#bytebase-store-RevisionPayload)
   
@@ -636,6 +642,7 @@ StatementType represents the type of SQL statement.
 | INSERT | 60 | DML statements |
 | UPDATE | 61 |  |
 | DELETE | 62 |  |
+| MERGE | 63 |  |
 
 
 
@@ -946,6 +953,7 @@ Stored as the enum name string in email_verification_code.purpose column.
 | EMAIL_VERIFICATION_CODE_PURPOSE_UNSPECIFIED | 0 |  |
 | LOGIN | 1 |  |
 | PASSWORD_RESET | 2 |  |
+| REAUTH | 3 | Re-authentication proof for a credential change (CredentialProof.email_code). Never accepted by Login. |
 
 
 
@@ -4095,6 +4103,63 @@ The severity level for SQL review rules.
 
 
 
+<a name="store_review_run-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## store/review_run.proto
+
+
+
+<a name="bytebase-store-ReviewRun"></a>
+
+### ReviewRun
+ReviewRun is the status slot of one reviewer (rule engine or AI) on one
+issue. Results live in issue comments; the run carries none.
+
+
+
+
+
+
+<a name="bytebase-store-ReviewRunPayload"></a>
+
+### ReviewRunPayload
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| error | [string](#string) |  | Fatal execution error for the FAILED status, e.g. &#34;metadata not synced: instances/prod/databases/db1, db2, db3 (&#43;497 more)&#34;. Written by the executor or by the reaper. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-store-ReviewRun-Status"></a>
+
+### ReviewRun.Status
+Strictly 1:1 with the status CHECK constraint — no unpersisted values.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| AVAILABLE | 1 |  |
+| RUNNING | 2 |  |
+| DONE | 3 |  |
+| FAILED | 4 |  |
+
+
+ 
+
+ 
+
+ 
+
+
+
 <a name="store_revision-proto"></a>
 <p align="right"><a href="#top">Top</a></p>
 
@@ -4197,7 +4262,6 @@ The severity level for SQL review rules.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| database_project_id | [string](#string) |  |  |
 | instances | [SelfHostSampleInstanceSetupPayload.Instance](#bytebase-store-SelfHostSampleInstanceSetupPayload-Instance) | repeated |  |
 
 
@@ -4219,6 +4283,7 @@ The severity level for SQL review rules.
 | port_offset | [int32](#int32) |  |  |
 | database_name | [string](#string) |  |  |
 | role_name | [string](#string) |  |  |
+| project_id | [string](#string) | optional |  |
 
 
 
@@ -5063,9 +5128,7 @@ It cannot force masking where there is none. Masking substitutes values in query
 <a name="bytebase-store-MCPSetting-Capability"></a>
 
 ### MCPSetting.Capability
-Capability is the ceiling: a session runs at this level or lower. An absent
-MCP setting resolves to READ_WRITE, so a workspace that never configured
-MCP is unaffected.
+Capability is the ceiling: a session runs at this level or lower.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |

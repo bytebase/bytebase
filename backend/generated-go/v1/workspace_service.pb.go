@@ -196,14 +196,9 @@ type MCPInfo struct {
 	// message's own resource name — MCPInfo is not a named resource and there is
 	// nothing to get it by.
 	Workspace string `protobuf:"bytes,1,opt,name=workspace,proto3" json:"workspace,omitempty"`
-	// The ceiling in force, resolved rather than stored: a workspace that never
-	// configured MCP resolves to READ_WRITE, so CAPABILITY_UNSPECIFIED never
-	// means unconfigured here. It means this build could not resolve a ceiling
-	// from the stored row, and every MCP connection is refused.
-	//
-	// Otherwise modes decides: a ceiling serves nothing exactly when modes has no
-	// row for it. A number a client's own enum cannot name is a newer release's,
-	// and modes still says whether it serves.
+	// The ceiling in force for this workspace. A value no row in modes serves,
+	// CAPABILITY_UNSPECIFIED included, means no ceiling could be resolved from
+	// the stored row and every MCP connection is refused.
 	Capability MCPSetting_Capability `protobuf:"varint,2,opt,name=capability,proto3,enum=bytebase.v1.MCPSetting_Capability" json:"capability,omitempty"`
 	// What each ceiling serves, including the one in force, so an admin can
 	// compare the choices rather than only read the current answer.

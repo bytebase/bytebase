@@ -2,7 +2,6 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import { Engine } from "@/types/proto-es/v1/common_pb";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -26,12 +25,7 @@ const mocks = vi.hoisted(() => ({
   // `useAppStore((s) => s.getOrFetchSettingByName)` in an effect.
   aiSetting: undefined as unknown,
   getOrFetchSettingByName: vi.fn().mockResolvedValue(undefined),
-  useConnectionOfCurrentSQLEditorTab: vi.fn(),
   hasWorkspacePermissionV2: vi.fn(() => true),
-  nextAnimationFrame: vi.fn(() => Promise.resolve()),
-  emit: vi.fn(),
-  explainCode: vi.fn((s: string) => `EXPLAIN:${s}`),
-  findProblems: vi.fn((s: string) => `FIND:${s}`),
   routerPush: vi.fn(),
 }));
 
@@ -55,11 +49,6 @@ vi.mock("@/stores/app", () => {
     ),
   };
 });
-
-// `useConnectionOfCurrentSQLEditorTab` now lives on the Pinia bridge hook.
-vi.mock("@/modules/sql-editor/hooks/useSQLEditorState", () => ({
-  useConnectionOfCurrentSQLEditorTab: mocks.useConnectionOfCurrentSQLEditorTab,
-}));
 
 // Zustand tab store — derived hook + selector hook for connection/mode.
 vi.mock("@/modules/sql-editor/store/tab", () => ({
@@ -91,16 +80,6 @@ vi.mock("@/modules/sql-editor/store", () => ({
 
 vi.mock("@/utils", () => ({
   hasWorkspacePermissionV2: mocks.hasWorkspacePermissionV2,
-  nextAnimationFrame: mocks.nextAnimationFrame,
-}));
-
-vi.mock("@/modules/ai/logic", () => ({
-  aiContextEvents: { emit: mocks.emit },
-}));
-
-vi.mock("@/modules/ai/logic/prompt", () => ({
-  explainCode: mocks.explainCode,
-  findProblems: mocks.findProblems,
 }));
 
 vi.mock("@/app/router", async (importOriginal) => ({
@@ -151,40 +130,17 @@ vi.mock("@/components/ui/popover", () => ({
   ),
 }));
 
-vi.mock("@/components/ui/dropdown-menu", () => ({
-  DropdownMenu: ({
+vi.mock("@/components/ui/tooltip", () => ({
+  Tooltip: ({
     children,
-    open,
+    content,
   }: {
     children: React.ReactNode;
-    open?: boolean;
+    content: React.ReactNode;
   }) => (
-    <div data-testid="dropdown-menu" data-open={String(open ?? false)}>
+    <div data-testid="tooltip" data-content={String(content)}>
       {children}
     </div>
-  ),
-  DropdownMenuTrigger: ({ render }: { render?: React.ReactElement }) => (
-    <div data-testid="dropdown-menu-trigger">{render}</div>
-  ),
-  DropdownMenuContent: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="dropdown-menu-content">{children}</div>
-  ),
-  DropdownMenuItem: ({
-    children,
-    onClick,
-    disabled,
-  }: {
-    children: React.ReactNode;
-    onClick?: () => void;
-    disabled?: boolean;
-  }) => (
-    <button
-      data-testid="dropdown-menu-item"
-      disabled={disabled}
-      onClick={onClick}
-    >
-      {children}
-    </button>
   ),
 }));
 
@@ -215,7 +171,6 @@ type VueStateValues = {
   isDisconnected: boolean;
   currentMode: string | undefined;
   showAIPanel: boolean;
-  instance: { engine: Engine };
   openAIEnabled: boolean;
 };
 
@@ -224,7 +179,6 @@ const setupDefaultMocks = (overrides: Partial<VueStateValues> = {}) => {
     isDisconnected: false,
     currentMode: "SAVED_QUERY",
     showAIPanel: false,
-    instance: { engine: Engine.POSTGRES },
     openAIEnabled: true,
     ...overrides,
   };
@@ -240,11 +194,6 @@ const setupDefaultMocks = (overrides: Partial<VueStateValues> = {}) => {
   mocks.aiSetting = values.openAIEnabled
     ? { value: { value: { case: "ai", value: { enabled: true } } } }
     : undefined;
-
-  // Migrated hook returns PLAIN values — no Vue `.value` wrapper.
-  mocks.useConnectionOfCurrentSQLEditorTab.mockReturnValue({
-    instance: values.instance,
-  });
 };
 
 beforeEach(async () => {
@@ -325,12 +274,22 @@ describe("OpenAIButton", () => {
     unmount();
   });
 
-  test("click toggles showAIPanel when enabled", () => {
+  test("uses the icon only to toggle the panel without an action menu", () => {
     setupDefaultMocks();
+    const LegacyOpenAIButton = OpenAIButton as React.ComponentType<{
+      statement?: string;
+    }>;
     const { container, render, unmount } = renderIntoContainer(
-      <OpenAIButton />
+      <LegacyOpenAIButton statement="SELECT 1" />
     );
     render();
+
+    expect(container.querySelector("[data-testid='dropdown-menu']")).toBeNull();
+    expect(
+      container
+        .querySelector("[data-testid='tooltip']")
+        ?.getAttribute("data-content")
+    ).toBe("plugin.ai.ai-assistant");
 
     const button = container.querySelector(
       "[data-testid='button']"
@@ -342,34 +301,6 @@ describe("OpenAIButton", () => {
     });
 
     expect(mocks.setShowAIPanel).toHaveBeenCalledWith(true);
-
-    unmount();
-  });
-
-  test("selecting explain-code action emits send-chat with prompt", async () => {
-    setupDefaultMocks();
-    const { container, render, unmount } = renderIntoContainer(
-      <OpenAIButton statement="SELECT 1" />
-    );
-    render();
-
-    const items = container.querySelectorAll(
-      "[data-testid='dropdown-menu-item']"
-    );
-    // First item = explain-code
-    const explainItem = items[0] as HTMLButtonElement | undefined;
-    expect(explainItem?.textContent).toBe("plugin.ai.actions.explain-code");
-
-    await act(async () => {
-      explainItem?.click();
-    });
-
-    expect(mocks.setShowAIPanel).toHaveBeenCalledWith(true);
-    expect(mocks.explainCode).toHaveBeenCalledWith("SELECT 1", Engine.POSTGRES);
-    expect(mocks.emit).toHaveBeenCalledWith("send-chat", {
-      content: "EXPLAIN:SELECT 1",
-      newChat: true,
-    });
 
     unmount();
   });

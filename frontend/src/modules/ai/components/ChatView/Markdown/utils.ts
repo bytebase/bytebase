@@ -102,7 +102,9 @@ function defaultMdNodeToReact(node: RootContent, state: State): ReactNode {
 function rootToReact(node: Root, state: State): ReactNode {
   return createElement(
     "div",
-    { className: "markdown" },
+    {
+      className: "markdown min-w-0 max-w-full wrap-anywhere text-sm leading-5",
+    },
     mapChildren(node.children, state)
   );
 }
@@ -169,12 +171,16 @@ function htmlToReact(node: RootContentMap["html"]): ReactNode {
 
 type ImageProps = {
   src: string;
+  className: string;
   alt?: string;
   title?: string;
 };
 
 function imageToReact(node: RootContentMap["image"]): ReactNode {
-  const props: ImageProps = { src: normalizeUri(node.url) };
+  const props: ImageProps = {
+    src: normalizeUri(node.url),
+    className: "h-auto max-w-full",
+  };
   if (node.alt) props.alt = node.alt;
   if (node.title) props.title = node.title;
   return createElement("img", props);
@@ -218,7 +224,10 @@ function imageReferenceToReact(
   if (!definition) {
     return referenceToText(node, state);
   }
-  const props: ImageProps = { src: normalizeUri(definition.url || "") };
+  const props: ImageProps = {
+    src: normalizeUri(definition.url || ""),
+    className: "h-auto max-w-full",
+  };
   if (node.alt) props.alt = node.alt;
   if (definition.title) props.title = definition.title;
   return createElement("img", props);
@@ -364,7 +373,7 @@ function tableToReact(node: RootContentMap["table"], state: State): ReactNode {
   if (bodyRows.length > 0) {
     sections.push(createElement("tbody", { key: "tbody" }, bodyRows));
   }
-  return createElement("table", null, sections);
+  return createElement("table", { className: "w-full table-fixed" }, sections);
 }
 
 function textToReact(node: RootContentMap["text"]): ReactNode {

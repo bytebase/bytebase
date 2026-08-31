@@ -25,6 +25,7 @@ const updatedCurrentUser = {
 };
 
 const mocks = vi.hoisted(() => ({
+  setCurrentUser: vi.fn(),
   useCurrentUser: vi.fn(() => legacyCurrentUser),
   getWorkspaceRolesByName: vi.fn(() => new Set<string>()),
   hasFeature: vi.fn(() => true),
@@ -49,6 +50,9 @@ vi.mock("@/stores/app", () => {
   const buildState = () => ({
     updateUser: mocks.updateUser,
     updateEmail: mocks.updateEmail,
+    // The page adopts the user its mutations answer with; without this the
+    // disable path throws an unhandled rejection that reads as a pass.
+    setCurrentUser: mocks.setCurrentUser,
     updateCurrentUserNameForEmailChange: () => {},
     roleList: [],
     workspacePolicy: undefined,

@@ -1196,12 +1196,6 @@
     },
     {
       "path": "src/modules/ai/components/HistoryPanel/ConversationList.tsx",
-      "rule": "no-native-control",
-      "token": "button",
-      "count": 2
-    },
-    {
-      "path": "src/modules/ai/components/HistoryPanel/ConversationList.tsx",
       "rule": "no-off-scale-gap",
       "token": "gap-x-0.5",
       "count": 1
@@ -1211,36 +1205,6 @@
       "rule": "no-off-scale-radius",
       "token": "rounded-md",
       "count": 1
-    },
-    {
-      "path": "src/modules/ai/components/HistoryPanel/ConversationList.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-indigo-100",
-      "count": 1
-    },
-    {
-      "path": "src/modules/ai/components/HistoryPanel/ConversationList.tsx",
-      "rule": "no-raw-color",
-      "token": "border-indigo-400",
-      "count": 1
-    },
-    {
-      "path": "src/modules/ai/components/HistoryPanel/ConversationList.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:bg-indigo-50",
-      "count": 3
-    },
-    {
-      "path": "src/modules/ai/components/HistoryPanel/ConversationList.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:border-indigo-400",
-      "count": 1
-    },
-    {
-      "path": "src/modules/ai/components/HistoryPanel/ConversationList.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-500",
-      "count": 3
     },
     {
       "path": "src/modules/ai/components/PromptInput.tsx",
@@ -1856,12 +1820,6 @@
     },
     {
       "path": "src/routes/auth/PasswordResetPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
-    },
-    {
-      "path": "src/routes/auth/SetupPage.tsx",
       "rule": "no-raw-color",
       "token": "bg-white",
       "count": 1
@@ -3194,18 +3152,6 @@
     },
     {
       "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
-      "rule": "no-native-control",
-      "token": "button",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-blue-600",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
       "rule": "no-raw-color",
       "token": "bg-red-50",
       "count": 1
@@ -3231,12 +3177,6 @@
     {
       "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
       "rule": "no-raw-color",
-      "token": "hover:bg-blue-700",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
-      "rule": "no-raw-color",
       "token": "text-blue-600",
       "count": 1
     },
@@ -3250,12 +3190,6 @@
       "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
       "rule": "no-raw-color",
       "token": "text-red-800",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/two-factor/TwoFactorSetupPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-white",
       "count": 1
     },
     {

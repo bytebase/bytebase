@@ -511,6 +511,16 @@
     "new-database-name": "Tên cơ sở dữ liệu mới",
     "reserved-db-error": "{{databaseName}} là một tên dành riêng"
   },
+  "credential-proof": {
+    "code-sent": "Đã gửi mã — kiểm tra email của bạn",
+    "email-label": "Mã xác minh qua email",
+    "email-me-a-code": "Gửi mã qua email",
+    "email-placeholder": "Mã 6 chữ số",
+    "factor-label": "Mã xác minh",
+    "factor-placeholder": "Mã ứng dụng xác thực hoặc mã khôi phục",
+    "password-label": "Mật khẩu hiện tại",
+    "resend-in": "Gửi lại sau {{seconds}} giây"
+  },
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "Quy tắc dự phòng",
@@ -715,6 +725,7 @@
     "nullable": "Có thể null",
     "partition-tables": "Bảng phân vùng",
     "partitioned": "Đã phân vùng",
+    "project-instance-transfer-disabled": "Không thể chuyển hoặc hủy gán cơ sở dữ liệu thuộc phiên bản gắn với dự án.",
     "revision": {
       "add-more-files": "Thêm nữa",
       "available-files": "Các tập tin có sẵn",
@@ -1212,6 +1223,8 @@
     "port": "Cổng",
     "prepare-sample-instance-failed": "Không thể chuẩn bị Phiên bản dự án mẫu.",
     "preparing-sample-instance": "Đang chuẩn bị Phiên bản dự án mẫu…",
+    "project-bound-description": "Phiên bản này được gắn với dự án này. Tất cả cơ sở dữ liệu của phiên bản sẽ tự động được chuyển vào dự án và không thể chuyển hoặc hủy gán.",
+    "project-bound-title": "Phiên bản gắn với dự án",
     "project-id": "ID dự án",
     "restore-instance-instance-name-to-normal-state": "Khôi phục phiên bản '{{0}}' về trạng thái bình thường?",
     "role-arn": "ARN vai trò",
@@ -1221,6 +1234,7 @@
     "sample-expiration-future_one": "Phiên bản mẫu sẽ bị xóa sau {{count}} ngày, vào {{time}}.",
     "sample-expiration-future_other": "Phiên bản mẫu sẽ bị xóa sau {{count}} ngày, vào {{time}}.",
     "sample-project-instance-description": "Sử dụng Phiên bản dự án mẫu để khám phá Bytebase với cơ sở dữ liệu sẵn sàng sử dụng trong 7 ngày.",
+    "sample-project-instance-description-self-host": "Sử dụng Phiên bản dự án mẫu để khám phá Bytebase với cơ sở dữ liệu sẵn sàng sử dụng.",
     "sample-project-instance-title": "Dùng thử Phiên bản dự án mẫu",
     "scan-interval": {
       "default-never": "Mặc định (không bao giờ)",
@@ -1317,6 +1331,7 @@
     "type-or-paste-credentials-write-only": "Nhập hoặc dán THÔNG TIN XÁC THỰC - chỉ ghi",
     "unable-to-connect": "Bytebase không thể kết nối với các cài đặt này. Hãy xem hướng dẫn ở trên hoặc tiếp tục và cập nhật kết nối sau.\n\nChi tiết kỹ thuật: {{0}}",
     "use-sample-instance": "Sử dụng phiên bản mẫu (Có sẵn trong 7 ngày)",
+    "use-sample-instance-self-host": "Sử dụng phiên bản mẫu",
     "users": "Người dùng",
     "your-snowflake-account-locator": "Định vị tài khoản Snowflake của bạn"
   },
@@ -1601,11 +1616,6 @@
             "retry": "Kiểm tra lại",
             "title": "Không kiểm tra được chính sách MCP"
           },
-          "unreadable": {
-            "description": "Không gian làm việc này lưu một giá trị chính sách mà Bytebase không hiểu. Mọi kết nối MCP đang bị từ chối.",
-            "line": "Không phiên AI nào kết nối được cho tới khi chính sách MCP của không gian làm việc này được sửa",
-            "title": "Không đọc được chính sách MCP của không gian làm việc này"
-          },
           "unserved": {
             "description": "Không gian làm việc này lưu một giá trị chính sách mà phiên bản Bytebase này không phục vụ. Mọi kết nối MCP đang bị từ chối.",
             "line": "Không phiên AI nào kết nối được cho tới khi quản trị viên chọn một chính sách được hỗ trợ",
@@ -1648,6 +1658,7 @@
       "reset-to-defaults": "Đặt lại về mặc định"
     },
     "go-to-plan-page": "Đi tới trang kế hoạch",
+    "initial-sql-storage-failed": "Không thể lưu tạm thời SQL. Hãy giải phóng dung lượng lưu trữ của trình duyệt rồi thử lại.",
     "isolation-level": {
       "read-committed": "Đọc đã cam kết",
       "read-uncommitted": "Đọc chưa cam kết",
@@ -1825,7 +1836,8 @@
       "actions": {
         "explain-code": "Giải thích mã",
         "find-problems": "Tìm vấn đề",
-        "insert-at-caret": "Chèn vào con trỏ"
+        "insert-at-caret": "Chèn tại con trỏ",
+        "new-chat-using-selection": "Cuộc trò chuyện mới bằng nội dung đã chọn"
       },
       "ai-assistant": "Trợ lý AI",
       "conversation": {
@@ -1955,7 +1967,7 @@
       "confirm-delete-project": "Việc xóa \"{{name}}\" sẽ xóa vĩnh viễn dự án và tất cả dữ liệu liên quan bao gồm issue, cấu hình và lịch sử. Tất cả cơ sở dữ liệu trong dự án này sẽ được chuyển sang dự án mặc định. Hành động này không thể hoàn tác.",
       "issue-related": {
         "allow-access-grants": {
-          "description": "Cho phép thành viên dự án yêu cầu cấp quyền truy cập có thời hạn cho các câu lệnh chỉ đọc cụ thể.",
+          "description": "Cho phép thành viên dự án yêu cầu cấp quyền truy cập có thời hạn cho các câu lệnh chỉ đọc cụ thể. Quyền được cấp cũng có thể bao gồm xuất kết quả và xem dữ liệu chưa che.",
           "self": "Cho phép cấp quyền truy cập"
         },
         "allow-request-role": {
@@ -2428,7 +2440,10 @@
           "exiting": "Đang rời..."
         },
         "data-copy": "Bật sao chép dữ liệu",
-        "data-export": "Bật xuất dữ liệu",
+        "data-export": {
+          "description": "Khi tắt, người dùng không thể xuất trực tiếp kết quả truy vấn. Trong các dự án cho phép cấp quyền truy cập, người dùng vẫn có thể nhấn \"Yêu cầu xuất dữ liệu\" để gửi yêu cầu cấp quyền truy cập và xuất sau khi được phê duyệt.",
+          "self": "Cho phép xuất dữ liệu mà không cần phê duyệt"
+        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "Chế độ xem mặc định của không gian làm việc đã được thay đổi thành SQL Editor.",
           "go-to-sql-editor": "Đi tới Trình soạn thảo SQL",
@@ -2998,26 +3013,6 @@
       }
     }
   },
-  "setup": {
-    "basic-info": "Thông tin cơ bản",
-    "data": {
-      "built-in": "Sử dụng mẫu tích hợp",
-      "built-in-desc": "Tạo dự án mẫu và các trường hợp",
-      "self-setup": "Thiết lập dự án"
-    },
-    "purposes": {
-      "alter-schema": "Thay đổi lược đồ",
-      "query-data": "Truy vấn dữ liệu",
-      "self": "Mục đích chính của bạn khi sử dụng Bytebase là gì?"
-    },
-    "self": "Thiết lập",
-    "skip-setup": "Bỏ qua thiết lập",
-    "workflow": {
-      "self": "Quy trình làm việc của bạn với cơ sở dữ liệu là gì?",
-      "simple": "Không có quy trình làm việc phức tạp, chỉ cần các công cụ UI",
-      "team": "Làm việc với đồng đội, cần có đường ống CI/CD"
-    }
-  },
   "sheet": {
     "filter": {
       "only-show-starred": "Chỉ hiển thị có dấu sao",
@@ -3180,6 +3175,8 @@
     "request-aborted": "Người dùng đã hủy yêu cầu",
     "request-access-grant": "Yêu cầu cấp quyền truy cập",
     "request-export": "Yêu cầu xuất dữ liệu",
+    "request-query": "Yêu cầu truy vấn",
+    "request-unmask": "Yêu cầu bỏ che",
     "result-detail": {
       "cell": "Chi tiết ô",
       "next-match": "Kết quả tiếp theo",
@@ -3532,6 +3529,7 @@
     },
     "self": "Xác thực hai yếu tố",
     "setup-steps": {
+      "confirm-code": "Nhập mã mới từ ứng dụng xác thực để hoàn tất",
       "download-recovery-codes": {
         "keep-safe": {
           "description": "Các mã này là phương sách cuối cùng để truy cập tài khoản của bạn trong trường hợp bạn mất mã xác thực hai yếu tố. Nếu bạn không thể tìm thấy các mã này, bạn sẽ mất quyền truy cập vào tài khoản của mình.",
@@ -3586,6 +3584,7 @@
     },
     "prepare-database-tip": "Chọn cơ sở dữ liệu để chuyển vào dự án.",
     "previous-step-required": "Bạn cần hoàn thành bước trước đó.",
+    "product-model": "Cách Bytebase hoạt động",
     "self": "Thiết lập Bytebase",
     "steps": {
       "database": "Khám phá cơ sở dữ liệu",

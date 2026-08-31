@@ -279,16 +279,14 @@ func TestMCPCannotRunAnIssuelessRollout(t *testing.T) {
 	a.NotEmpty(consoleRollout.Msg.Name)
 }
 
-// TestMCPAbsentRowResolvesReadWrite pins the one permissive default the
-// resolver has: a workspace that never configured MCP serves WRITE.
+// TestMCPDefaultRowIsReadOnly pins the safe default persisted by workspace
+// creation: a workspace whose admin never changed MCP does not serve WRITE.
 //
 // Every other gate test now sets a ceiling explicitly, which is right — each is
 // about what a NAMED ceiling serves, and depending on the default made them say
-// less than their names claimed. That left nothing exercising the unset case on
-// the live path, so changing store.GetMCPSettingsUncached's whenUnset would
-// silently refuse writes for every workspace that has not configured MCP —
-// which today is all of them — with no test to say so.
-func TestMCPAbsentRowResolvesReadWrite(t *testing.T) {
+// less than their names claimed. This keeps the persisted default on the live
+// path, so changing workspace creation would be caught.
+func TestMCPDefaultRowIsReadOnly(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
@@ -300,17 +298,15 @@ func TestMCPAbsentRowResolvesReadWrite(t *testing.T) {
 
 	project, err := ctl.projectServiceClient.CreateProject(ctx, connect.NewRequest(&v1pb.CreateProjectRequest{
 		ProjectId: "mcp-unset",
-		Project:   &v1pb.Project{Title: "MCP unset ceiling"},
+		Project:   &v1pb.Project{Title: "MCP default ceiling"},
 	}))
 	a.NoError(err)
 
-	// No setMCPCapability anywhere in this test: the absence IS the fixture.
+	// No setMCPCapability anywhere in this test: workspace creation owns the
+	// explicit READ_ONLY fixture.
 	setting, err := ctl.getMCPSetting(ctx)
 	a.NoError(err)
-	a.Equal(v1pb.MCPSetting_CAPABILITY_UNSPECIFIED, setting.GetCapability(),
-		"this test is about a workspace that never configured MCP")
-	a.False(setting.GetCapabilityUnreadable(),
-		"absent, not unreadable — the two resolve to opposite ceilings")
+	a.Equal(v1pb.MCPSetting_READ_ONLY, setting.GetCapability())
 
 	session := openMCPSession(ctx, t, ctl, ctl.authInterceptor.token)
 	defer session.Close()
@@ -319,6 +315,6 @@ func TestMCPAbsentRowResolvesReadWrite(t *testing.T) {
 		"parent": project.Msg.Name,
 		"sheet":  map[string]any{"content": base64.StdEncoding.EncodeToString([]byte("SELECT 1;"))},
 	})
-	a.Equal(http.StatusOK, sheet.Status,
-		"an unconfigured workspace resolves READ_WRITE, so a WRITE method is served: %s", sheet.Error)
+	a.Equal(http.StatusForbidden, sheet.Status,
+		"the default READ_ONLY policy must refuse a WRITE method: %s", sheet.Error)
 }

@@ -19,7 +19,7 @@ import {
 import { useAppProject } from "@/hooks/useAppProject";
 import { extractSavedQueryConnection } from "@/lib/sqlEditorConnection";
 import { useClampResultRowsLimitToPolicy } from "@/modules/sql-editor/hooks/useSQLEditorState";
-import { migrateLegacyCache } from "@/modules/sql-editor/legacy/migration";
+import { cleanupLegacyPouchDatabases } from "@/modules/sql-editor/legacy/migration";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import type { AsidePanelTab } from "@/modules/sql-editor/store";
 import { useSQLEditorStore } from "@/modules/sql-editor/store";
@@ -152,7 +152,7 @@ export function SQLEditorRouteShell() {
     void (async () => {
       getSQLEditorEditorState().setProjectContextReady(false);
       const project = await initializeProject();
-      await migrateLegacyCache();
+      await cleanupLegacyPouchDatabases();
       await getSQLEditorTabsState().initProject(project);
       await initializeConnectionFromQuery();
       setBootstrapDone(true);

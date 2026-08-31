@@ -15,6 +15,9 @@ export class SqlEditorPage {
   readonly gutterHistoryTab: Locator;
   readonly gutterAccessTab: Locator;
   readonly requestAccessGrantButton: Locator;
+  readonly requestQueryButton: Locator;
+  readonly requestExportButton: Locator;
+  readonly requestUnmaskButton: Locator;
   readonly requestRoleButton: Locator;
   readonly accessGrantDrawer: Locator;
   readonly accessGrantDrawerTitle: Locator;
@@ -62,16 +65,31 @@ export class SqlEditorPage {
       name: "Access Grants",
       exact: true,
     });
-    // "Request access grant" is ONE shared label (i18n key
-    // `sql-editor.request-access-grant`) used by every entry point that opens
-    // the grant drawer — ACCESS pane CTA, permission-denied result button,
-    // masked-cell popover, export-blocked toolbar button — AND by the drawer's
-    // own SheetTitle. Button and drawer title are therefore textually
-    // identical: match buttons by role=button, and match the drawer by its
-    // accessible name (SheetTitle wraps BaseDialog.Title, which labels the
-    // dialog), so the two never collide.
+    // Entry points into the access-grant drawer carry intent-specific labels
+    // ("Request query" / "Request export" / "Request unmask"); the generic
+    // "Request access grant" label (i18n key `sql-editor.request-access-grant`)
+    // remains only on the ACCESS pane CTA — where there is no prior intent —
+    // and on the drawer's own SheetTitle. Match buttons by role=button, and
+    // match the drawer by its accessible name (SheetTitle wraps
+    // BaseDialog.Title, which labels the dialog), so the two never collide.
     this.requestAccessGrantButton = page.getByRole("button", {
       name: "Request access grant",
+      exact: true,
+    });
+    // Permission-denied result CTA in JIT mode (i18n key
+    // `sql-editor.request-query`).
+    this.requestQueryButton = page.getByRole("button", {
+      name: "Request query",
+      exact: true,
+    });
+    // Export-blocked toolbar CTA (i18n key `sql-editor.request-export`).
+    this.requestExportButton = page.getByRole("button", {
+      name: "Request export",
+      exact: true,
+    });
+    // Masked-cell popover CTA (i18n key `sql-editor.request-unmask`).
+    this.requestUnmaskButton = page.getByRole("button", {
+      name: "Request unmask",
       exact: true,
     });
     // Non-JIT permission-denied CTA (opens RequestRoleSheet); label comes from
@@ -155,7 +173,12 @@ export class SqlEditorPage {
       opts.which === "last" ? this.codeEditor.last() : this.codeEditor;
     await editor.click();
     await this.page.waitForTimeout(150);
-    await this.page.keyboard.press("ControlOrMeta+a");
+    // `Control+a`, not `ControlOrMeta+a`: Monaco reads its CtrlCmd modifier
+    // from the user agent (Playwright's headless Chromium reports Windows on
+    // every host), while Playwright resolves ControlOrMeta from the host OS —
+    // on a macOS host that sent Meta+a, which Monaco ignored, so the "clear"
+    // only ever worked on editors that were already empty.
+    await this.page.keyboard.press("Control+a");
     await this.page.waitForTimeout(50);
     await this.page.keyboard.press("Delete");
     await this.page.waitForTimeout(50);

@@ -67,7 +67,6 @@ const DYNAMIC_PREFIXES = [
   // also exempt the two sibling keys named literally.
   "oauth2.consent.mcp.undisclosed.outdated.",
   "oauth2.consent.mcp.undisclosed.unknown.",
-  "oauth2.consent.mcp.undisclosed.unreadable.",
   "oauth2.consent.mcp.undisclosed.unserved.",
   // Keys consumed by SHARED non-React `.ts` modules that translate via
   // `@/lib/i18n` (the same react-i18next instance — vue-i18n is gone), but

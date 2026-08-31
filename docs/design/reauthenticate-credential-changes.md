@@ -1,15 +1,56 @@
 # Require re-authentication to change your own credentials
 
-Status: proposal · 2026-08-24
+Status: implemented with deltas · proposed 2026-08-24, shipped 2026-08-27
 
 `UpdateUser` lets an authenticated caller rewrite their own password, TOTP secret, and recovery
 codes without proving they still control the credential being replaced. Closes T10 in
 [`v1-api-audit-2026-08.md`](v1-api-audit-2026-08.md) for every path `UpdateUser` and its neighbors
 expose today: password and MFA lifecycle both move off `UpdateUser` onto their own methods, not just a
 field addition — see [Resource design](#resource-design). A stolen access token may keep answering
-requests until it expires (≤1h), but this design also stops it being *spent* on a replacement: every
-path that mints a new token from an existing one is bound to the account's credential generation. See
-G7 and Verification → Token-minting paths.
+requests until it expires (≤1h); this design stops it being *spent* on a replacement credential.
+
+> **What shipped differs from this document.** The change that landed is the
+> credential-proof surface only; several mechanisms below were cut or deferred,
+> and the text still describes them as designed.
+>
+> **Shipped.** `CredentialProof` — current password, OTP, recovery code, or an
+> emailed `RequestReauthCode` code — required by `ChangePassword`,
+> `EnableMFA`, `DisableMFA` (self-service), and `ConfirmRecoveryCodes`. Every
+> proof claims a T9 login-attempt slot, so no channel is an unbounded guessing
+> oracle. Factor-touching methods refuse the password while a live factor
+> exists. `email_code` is Bytebase Cloud only and only when no factor exists —
+> bootstrap proof for a Cloud account that has nothing else.
+>
+> **Cut.**
+>
+> - **Credential generation.** `Profile.last_credential_change_time`, the
+>   `cred_gen` JWT claim, and the consume-time checks are gone. Service
+>   accounts and SSO accounts stop being exceptions to a rule that only ever
+>   fit password users.
+> - **The enrollment stamp.** Whether a caller can prove a password is answered
+>   by whether they can supply one. With the stamp went the migration: this
+>   change needs none.
+> - **MFA revocation.** Enrolling, rotating, or disabling a factor no longer
+>   ends other sessions — MFA gates minting a session, not using one, so a new
+>   phone must not sign the owner out everywhere. Only a password change
+>   revokes, and only the account's web sessions; OAuth grants are untouched,
+>   which is a separate change with its own blast radius.
+>
+> **Deferred.** The fenced credential transaction (`store.RunUserCredentialTx`)
+> and the issuance guard are not here; they are a store-concurrency change of
+> their own. Handlers verify against a read and write through the ordinary
+> store methods, so read `Design → the fenced transaction` as intent, not as
+> shipped code.
+>
+> **Kept from the existing implementation.** Promotion stays in
+> `ConfirmRecoveryCodes` for every flow, under the `pending_version`
+> compare-and-set, so a first factor is never live with no saved recovery
+> codes and a replacement promotes the authenticator the user just scanned.
+> `EnableMFA` verifies and writes nothing. First-time enrollment therefore
+> submits a second, fresh `otp_code` at confirmation, since promotion — not
+> verification — is the moment MFA starts gating logins. `DisableMFA` asks for
+> a proof only when there is a live factor to prove, so an abandoned
+> enrollment can still be cancelled.
 
 ## Background
 
@@ -154,7 +195,7 @@ the factor itself to change the factor closes both. (`ChangePassword` is unaffec
 `current_password` with or without MFA, since changing the password is not touching the factor, and a
 password change already revokes sessions so it cannot be a step toward one.) "Check, then mutate"
 has to be one transaction with the account row locked (`SELECT ... FOR UPDATE`) from before the check
-to after the write, per this repo's own [row-lock ordering](../../backend/store/README.md#transaction-row-lock-ordering)
+to after the write, per this repo's own [row-lock ordering](../../backend/store/AGENTS.md#transaction-row-lock-ordering)
 convention — not a read-verify-then-later-write sequence against a row nothing is holding. Without the
 lock, two concurrent calls against the *same* still-current credential (an attacker who separately
 obtained it, and the legitimate owner racing to rotate away from it) can both pass verification before
@@ -287,7 +328,7 @@ keeps working until it expires regardless (see G7).
 Ordered wrong, though, as first written — [a sixth finding](https://github.com/bytebase/bytebase/pull/21235):
 locking the principal row and only then deleting its `web_refresh_token` rows is parent-then-child,
 backwards from this repo's mandatory rule of locking existing related rows child-to-parent
-(`backend/store/README.md#transaction-row-lock-ordering`), and `web_refresh_token.user_email` is a
+(`backend/store/AGENTS.md#transaction-row-lock-ordering`), and `web_refresh_token.user_email` is a
 real foreign key to `principal.email` (`LATEST.sql:715-720`) — a `DELETE` on those rows counts as
 acquiring a lock on them, same as an explicit `SELECT ... FOR UPDATE` would. Corrected order: lock the
 account's *existing* `web_refresh_token` rows first (in primary-key order, if there's more than one),

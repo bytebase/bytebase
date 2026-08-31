@@ -561,7 +561,7 @@ unreadable statements.
 ## Transaction lock ordering
 
 `sheet_blob_ref` is a project-owned branch and takes a position in the canonical sibling order in
-`backend/store/README.md`, updating that list, `DeleteProject`, and `DeleteInstance` together. It is
+`backend/store/AGENTS.md`, updating that list, `DeleteProject`, and `DeleteInstance` together. It is
 a direct child of `project` with no descendants, and every table that can reference a hash sits
 earlier, so it belongs immediately after `db` and before `project_webhook` — the same position as
 the purge delete.
@@ -671,7 +671,7 @@ decision, plus the migration matrix and the lock-order pair:
   abort-hazard guard (dangling blob, ghost project, bigint overflow, stale stamp, JSON null and
   malformed array shapes).
 - **Create versus purge** — the deterministic lock-order pair mandated by
-  `backend/store/README.md`: `CreateSheets` concurrent with a purge of its project ends in a
+  `backend/store/AGENTS.md`: `CreateSheets` concurrent with a purge of its project ends in a
   controlled NotFound, not a foreign-key error, in both lock-acquisition directions.
 - **Gate confinement** — a static AST test asserts nothing under `backend/api/v1/` calls
   `GetSheetFull`; the rest of the split is compiler-enforced by unexported store internals.

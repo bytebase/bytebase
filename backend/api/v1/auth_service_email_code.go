@@ -349,12 +349,26 @@ func resolvePreLoginEmailSetting(
 // Returns an error only on actionable failures (missing EMAIL setting, SMTP failure, DB error).
 // Callers decide whether to propagate the error: `SendEmailLoginCode` surfaces it (users need
 // to know email delivery failed), `RequestPasswordReset` swallows it to avoid revealing that
-// the account exists. `bodyFmt` must contain one %s for the 6-digit code.
+// the account exists.
 func (s *AuthService) sendEmailVerificationCode(ctx context.Context, workspaceID, email string, purpose storepb.EmailVerificationCodePurpose, subject, bodyFmt string) error {
+	return sendEmailVerificationCode(ctx, s.store, s.secret, workspaceID, email, purpose, emailCodeTemplate{Subject: subject, BodyFmt: bodyFmt})
+}
+
+// emailCodeTemplate is the message a verification code is delivered in.
+// BodyFmt must contain one %s for the 6-digit code.
+type emailCodeTemplate struct {
+	Subject string
+	BodyFmt string
+}
+
+// sendEmailVerificationCode is package-level because both AuthService (login
+// and password-reset codes) and UserService (the re-authentication code) send
+// them; the deps it needs are passed rather than reached through a receiver.
+func sendEmailVerificationCode(ctx context.Context, stores *store.Store, secret, workspaceID, email string, purpose storepb.EmailVerificationCodePurpose, mail emailCodeTemplate) error {
 	// For password reset, only send to active end users — no upsert or email for other targets.
 	// Login intentionally skips this account check because email-code login also supports signup.
 	if purpose == storepb.EmailVerificationCodePurpose_PASSWORD_RESET {
-		account, err := s.store.GetAccountByEmail(ctx, email)
+		account, err := stores.GetAccountByEmail(ctx, email)
 		if err != nil {
 			return errors.Wrap(err, "failed to look up account for password reset")
 		}
@@ -365,7 +379,7 @@ func (s *AuthService) sendEmailVerificationCode(ctx context.Context, workspaceID
 
 	// Resolve the EMAIL setting FIRST — fail fast if misconfigured so we don't write a
 	// verification row we can't actually deliver.
-	emailSetting, err := resolvePreLoginEmailSetting(ctx, s.store, workspaceID)
+	emailSetting, err := resolvePreLoginEmailSetting(ctx, stores, workspaceID)
 	if err != nil {
 		return err
 	}
@@ -379,10 +393,10 @@ func (s *AuthService) sendEmailVerificationCode(ctx context.Context, workspaceID
 	}
 
 	now := time.Now()
-	sent, err := s.store.UpsertEmailVerificationCodeIfCooldownExpired(ctx, &store.EmailVerificationCodeMessage{
+	sent, err := stores.UpsertEmailVerificationCodeIfCooldownExpired(ctx, &store.EmailVerificationCodeMessage{
 		Email:      email,
 		Purpose:    purpose,
-		CodeHash:   s.hashEmailCode(code),
+		CodeHash:   hashEmailCode(secret, code),
 		ExpiresAt:  now.Add(emailCodeExpiry),
 		LastSentAt: now,
 	}, emailCodeResendCooldown)
@@ -398,15 +412,15 @@ func (s *AuthService) sendEmailVerificationCode(ctx context.Context, workspaceID
 		return errors.Wrap(err, "failed to create mail sender")
 	}
 
-	body := fmt.Sprintf(bodyFmt, code, int(emailCodeExpiry.Minutes()))
+	body := fmt.Sprintf(mail.BodyFmt, code, int(emailCodeExpiry.Minutes()))
 	if err := sender.Send(ctx, &mailer.SendRequest{
 		To:       []string{email},
-		Subject:  subject,
+		Subject:  mail.Subject,
 		TextBody: body,
 	}); err != nil {
 		// Delete the row so the cooldown doesn't block an immediate retry.
 		// Match on code_hash to avoid wiping a newer code from a concurrent request.
-		_ = s.store.DeleteEmailVerificationCodeIfMatch(ctx, email, purpose, s.hashEmailCode(code))
+		_ = stores.DeleteEmailVerificationCodeIfMatch(ctx, email, purpose, hashEmailCode(secret, code))
 		return errors.Wrap(err, "failed to send email")
 	}
 	return nil
@@ -437,7 +451,7 @@ func (s *AuthService) verifyEmailCode(ctx context.Context, email string, purpose
 		_ = s.store.DeleteEmailVerificationCodeIfMatch(ctx, email, purpose, row.CodeHash)
 		return connect.NewError(connect.CodeUnauthenticated, errors.New(errMsgInvalidEmailCode))
 	}
-	if subtle.ConstantTimeCompare([]byte(s.hashEmailCode(submittedCode)), []byte(row.CodeHash)) != 1 {
+	if subtle.ConstantTimeCompare([]byte(hashEmailCode(s.secret, submittedCode)), []byte(row.CodeHash)) != 1 {
 		return connect.NewError(connect.CodeUnauthenticated, errors.New(errMsgInvalidEmailCode))
 	}
 	_ = s.store.DeleteEmailVerificationCodeIfMatch(ctx, email, purpose, row.CodeHash)
@@ -462,8 +476,8 @@ func generateEmailCode() (string, error) {
 // HMAC with a server-side secret (vs. bare SHA-256) prevents offline brute force of the
 // 10^6-size code space if the DB is ever compromised — the attacker would also need the
 // auth secret to verify candidate codes.
-func (s *AuthService) hashEmailCode(code string) string {
-	mac := hmac.New(sha256.New, []byte(s.secret))
+func hashEmailCode(secret, code string) string {
+	mac := hmac.New(sha256.New, []byte(secret))
 	mac.Write([]byte(code))
 	return hex.EncodeToString(mac.Sum(nil))
 }

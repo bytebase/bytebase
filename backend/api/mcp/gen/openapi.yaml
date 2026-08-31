@@ -294,44 +294,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ActuatorInfo'
-  /bytebase.v1.ActuatorService/SetupSample:
-    post:
-      tags:
-        - bytebase.v1.ActuatorService
-      summary: SetupSample
-      description: |-
-        Sets up sample data for demonstration and testing purposes.
-         Permissions required: bb.projects.create
-      operationId: bytebase.v1.ActuatorService.SetupSample
-      parameters:
-        - name: Connect-Protocol-Version
-          in: header
-          required: true
-          schema:
-            $ref: '#/components/schemas/connect-protocol-version'
-        - name: Connect-Timeout-Ms
-          in: header
-          schema:
-            $ref: '#/components/schemas/connect-timeout-header'
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/bytebase.v1.SetupSampleRequest'
-        required: true
-      responses:
-        default:
-          description: Error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/connect.error'
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/google.protobuf.Empty'
   /bytebase.v1.AuditLogService/ExportAuditLogs:
     post:
       tags:
@@ -607,6 +569,8 @@ paths:
       description: |-
         Requests a password reset email for the given email address.
          Always returns success to avoid leaking whether the email exists.
+         Requires the workspace's SMTP mail delivery setting; without it the
+         recovery route is an admin password reset.
          Permissions required: None
       operationId: bytebase.v1.AuthService.RequestPasswordReset
       parameters:
@@ -684,6 +648,8 @@ paths:
       description: |-
         Sends a 6-digit verification code to the email for login/signup.
          Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+         The signed-in counterpart is UserService.RequestReauthCode; LOGIN and
+         REAUTH codes are not interchangeable.
          Permissions required: None
       operationId: bytebase.v1.AuthService.SendEmailLoginCode
       parameters:
@@ -1219,7 +1185,9 @@ paths:
       summary: BatchGetDatabases
       description: |-
         Retrieves multiple databases by their names.
-         Permissions required: bb.databases.get
+         One resource per requested name, in request order. The first name that
+         does not resolve fails the whole call (AIP-231: no partial response).
+         Permissions required: bb.databases.get (on each named database's project)
       operationId: bytebase.v1.DatabaseService.BatchGetDatabases
       parameters:
         - name: Connect-Protocol-Version
@@ -1715,6 +1683,8 @@ paths:
       description: |-
         Gets multiple groups in a single request.
          Group members or users with bb.groups.get permission can get the group.
+         One resource per requested name, in request order. The first name that
+         does not resolve fails the whole call (AIP-231: no partial response).
          Permissions required: bb.groups.get OR caller is the group member
       operationId: bytebase.v1.GroupService.BatchGetGroups
       parameters:
@@ -3782,7 +3752,9 @@ paths:
       summary: BatchGetProjects
       description: |-
         BatchGetProjects retrieves multiple projects by their names.
-         Permissions required: bb.projects.get
+         One resource per requested name, in request order. The first name that
+         does not resolve fails the whole call (AIP-231: no partial response).
+         Permissions required: bb.projects.get (on each named project)
       operationId: bytebase.v1.ProjectService.BatchGetProjects
       parameters:
         - name: Connect-Protocol-Version
@@ -7120,6 +7092,8 @@ paths:
       description: |-
         Get the users in batch.
          Any authenticated user can batch get users.
+         One resource per requested name, in request order. The first name that
+         does not resolve fails the whole call (AIP-231: no partial response).
          Permissions required: bb.users.get
       operationId: bytebase.v1.UserService.BatchGetUsers
       parameters:
@@ -7151,6 +7125,87 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.BatchGetUsersResponse'
+  /bytebase.v1.UserService/ChangePassword:
+    post:
+      tags:
+        - bytebase.v1.UserService
+      summary: ChangePassword
+      description: |-
+        Changes the caller's own password. An administrator resetting someone
+         else's password uses UpdateUser with the `password` mask instead — that
+         is a different operation with a different audit story, even though both
+         end in a new password hash.
+         Permissions required: None beyond being signed in as `name`.
+      operationId: bytebase.v1.UserService.ChangePassword
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.ChangePasswordRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.User'
+  /bytebase.v1.UserService/ConfirmRecoveryCodes:
+    post:
+      tags:
+        - bytebase.v1.UserService
+      summary: ConfirmRecoveryCodes
+      description: |-
+        Promotes the pending recovery codes. During first-time enrollment this is
+         also where the pending TOTP secret goes live, so the factor and the codes
+         that recover it start existing in the same write.
+         Permissions required: None beyond being signed in as `name`.
+      operationId: bytebase.v1.UserService.ConfirmRecoveryCodes
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.ConfirmRecoveryCodesRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.User'
   /bytebase.v1.UserService/CreateUser:
     post:
       tags:
@@ -7228,6 +7283,91 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/google.protobuf.Empty'
+  /bytebase.v1.UserService/DisableMFA:
+    post:
+      tags:
+        - bytebase.v1.UserService
+      summary: DisableMFA
+      description: |-
+        Turns MFA off, clearing the entire MFA config — live and pending state
+         alike. Callers may disable their own; an administrator may disable
+         another user's with bb.users.update, which is how a locked-out user is
+         recovered.
+         Permissions required: bb.users.update, unless `name` is the caller's own.
+      operationId: bytebase.v1.UserService.DisableMFA
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.DisableMFARequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.User'
+  /bytebase.v1.UserService/EnableMFA:
+    post:
+      tags:
+        - bytebase.v1.UserService
+      summary: EnableMFA
+      description: |-
+        Verifies an otp_code against the pending enrollment. Nothing is written:
+         this is the step that catches a mistyped authenticator before the caller
+         is shown recovery codes, and promotion happens at ConfirmRecoveryCodes so
+         an account is never MFA-required with codes its owner never saved.
+         Permissions required: None beyond being signed in as `name`.
+         It writes nothing itself, but it is a required step of installing a
+         factor on the account, which is why it is denied on the same grounds as
+         the promotion it precedes.
+      operationId: bytebase.v1.UserService.EnableMFA
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.EnableMFARequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.User'
   /bytebase.v1.UserService/GetCurrentUser:
     post:
       tags:
@@ -7344,6 +7484,127 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ListUsersResponse'
+  /bytebase.v1.UserService/RegenerateRecoveryCodes:
+    post:
+      tags:
+        - bytebase.v1.UserService
+      summary: RegenerateRecoveryCodes
+      description: |-
+        Mints a pending recovery-code set beside the live one and returns it.
+         The old codes keep working until ConfirmRecoveryCodes promotes these, so
+         a caller who closes the page mid-way is not left without any.
+         Permissions required: None beyond being signed in as `name`.
+      operationId: bytebase.v1.UserService.RegenerateRecoveryCodes
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.RegenerateRecoveryCodesRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.RegenerateRecoveryCodesResponse'
+  /bytebase.v1.UserService/RequestReauthCode:
+    post:
+      tags:
+        - bytebase.v1.UserService
+      summary: RequestReauthCode
+      description: |-
+        Sends a one-time code to the caller's own email, usable as
+         CredentialProof.email_code. Bytebase Cloud only, and only while the
+         account has no live MFA factor. Not AuthService.SendEmailLoginCode: that
+         one starts a session, this one proves an existing one.
+         Permissions required: None beyond being signed in as `name`.
+      operationId: bytebase.v1.UserService.RequestReauthCode
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.RequestReauthCodeRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/google.protobuf.Empty'
+  /bytebase.v1.UserService/StartMFAEnrollment:
+    post:
+      tags:
+        - bytebase.v1.UserService
+      summary: StartMFAEnrollment
+      description: |-
+        Mints a pending TOTP secret and recovery codes for the caller's own
+         account and returns them. Nothing goes live until ConfirmRecoveryCodes,
+         so an abandoned enrollment leaves the account exactly as it was.
+         Permissions required: None beyond being signed in as `name`.
+      operationId: bytebase.v1.UserService.StartMFAEnrollment
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.StartMFAEnrollmentRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.StartMFAEnrollmentResponse'
   /bytebase.v1.UserService/UndeleteUser:
     post:
       tags:
@@ -8251,7 +8512,7 @@ components:
               title: targets
               description: |-
                 The target databases for this access grant.
-                 Format: instances/{instance}/databases/{database}
+                 Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
             query:
               type: string
               title: query
@@ -8464,7 +8725,8 @@ components:
           title: name
           description: |-
             The name is the instance name to execute the query against.
-             Format: instances/{instance}/databases/{databaseName}
+             Format: instances/{instance}/databases/{databaseName} or
+             projects/{project}/instances/{instance}/databases/{databaseName}
         statement:
           type: string
           title: statement
@@ -9188,7 +9450,7 @@ components:
           items:
             $ref: '#/components/schemas/bytebase.v1.Database'
           title: databases
-          description: The databases from the specified request.
+          description: One database per requested name, in the same order as `names`.
       title: BatchGetDatabasesResponse
       additionalProperties: false
     bytebase.v1.BatchGetGroupsRequest:
@@ -9213,7 +9475,7 @@ components:
           items:
             $ref: '#/components/schemas/bytebase.v1.Group'
           title: groups
-          description: The groups from the specified request.
+          description: One group per requested name, in the same order as `names`.
       title: BatchGetGroupsResponse
       additionalProperties: false
       description: Response message for batch getting groups.
@@ -9238,7 +9500,7 @@ components:
           items:
             $ref: '#/components/schemas/bytebase.v1.Project'
           title: projects
-          description: The projects from the specified request.
+          description: One project per requested name, in the same order as `names`.
       title: BatchGetProjectsResponse
       additionalProperties: false
     bytebase.v1.BatchGetUsersRequest:
@@ -9262,7 +9524,7 @@ components:
           items:
             $ref: '#/components/schemas/bytebase.v1.User'
           title: users
-          description: The users from the specified request.
+          description: One user per requested name, in the same order as `names`.
       title: BatchGetUsersResponse
       additionalProperties: false
     bytebase.v1.BatchParseRequest:
@@ -9529,7 +9791,7 @@ components:
              The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
              Support variables:
-             resource.database: the database full name in "instances/{instance}/databases/{database}" format, used by any role with SQL Editor read (e.g. "roles/sqlEditorUser", "roles/sqlEditorReadUser") or write (bb.sql.ddl / bb.sql.dml) access, support "==" operator.
+             resource.database: the canonical database full name in "instances/{instance}/databases/{database}" or "projects/{project}/instances/{instance}/databases/{database}" format, used by any role with SQL Editor read (e.g. "roles/sqlEditorUser", "roles/sqlEditorReadUser") or write (bb.sql.ddl / bb.sql.dml) access, support "==" operator.
              resource.schema_name: the schema name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
              resource.table_name: the table name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support "==" operator.
              resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support "in" operator.
@@ -9651,6 +9913,26 @@ components:
           title: comment
           description: Optional free-form comment. Max 500 chars (Stripe limit).
       title: CancelPurchaseRequest
+      additionalProperties: false
+    bytebase.v1.ChangePasswordRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          maxLength: 260
+          description: 'Format: users/{email}. Must be the caller''s own name.'
+        newPassword:
+          type: string
+          title: new_password
+          description: |
+            string.max_bytes = 72
+        credential:
+          title: credential
+          $ref: '#/components/schemas/bytebase.v1.CredentialProof'
+      title: ChangePasswordRequest
+      required:
+        - credential
       additionalProperties: false
     bytebase.v1.Changelog:
       type: object
@@ -10019,6 +10301,35 @@ components:
           title: comment
           description: The comment describing the composite type.
       title: CompositeTypeMetadata
+      additionalProperties: false
+    bytebase.v1.ConfirmRecoveryCodesRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          maxLength: 260
+          description: 'Format: users/{email}. Must be the caller''s own name.'
+        pendingVersion:
+          title: pending_version
+          description: |-
+            The pending_version of the codes being confirmed. Confirming promotes
+             exactly the set this version identifies, or nothing.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        credential:
+          title: credential
+          $ref: '#/components/schemas/bytebase.v1.CredentialProof'
+        otpCode:
+          type: string
+          title: otp_code
+          maxLength: 64
+          description: |-
+            Required for first-time enrollment, rejected otherwise. A *fresh* code,
+             not the one EnableMFA took.
+      title: ConfirmRecoveryCodesRequest
+      required:
+        - pendingVersion
+        - credential
       additionalProperties: false
     bytebase.v1.CreateAccessGrantRequest:
       type: object
@@ -10405,6 +10716,58 @@ components:
       title: CreateWorkloadIdentityRequest
       additionalProperties: false
       description: Request message for creating a workload identity.
+    bytebase.v1.CredentialProof:
+      type: object
+      oneOf:
+        - type: object
+          properties:
+            currentPassword:
+              type: string
+              title: current_password
+              description: |
+                The account's current password. Refused by a factor-touching method
+                 while a live MFA factor exists.
+                string.max_bytes = 72
+          title: current_password
+          required:
+            - currentPassword
+        - type: object
+          properties:
+            emailCode:
+              type: string
+              title: email_code
+              maxLength: 64
+              description: |-
+                A one-time code from RequestReauthCode. Bytebase Cloud only, and only
+                 while the account has no live MFA factor.
+          title: email_code
+          required:
+            - emailCode
+        - type: object
+          properties:
+            otpCode:
+              type: string
+              title: otp_code
+              maxLength: 64
+              description: A live code from the account's enrolled TOTP authenticator.
+          title: otp_code
+          required:
+            - otpCode
+        - type: object
+          properties:
+            recoveryCode:
+              type: string
+              title: recovery_code
+              maxLength: 64
+              description: A single-use MFA recovery code.
+          title: recovery_code
+          required:
+            - recoveryCode
+      title: CredentialProof
+      additionalProperties: false
+      description: |-
+        One proof that the caller currently controls a credential on the account.
+         Exactly one field must be set; enforced in the handler.
     bytebase.v1.DataClassificationSetting:
       type: object
       properties:
@@ -11553,6 +11916,24 @@ components:
       title: DimensionalConfig
       additionalProperties: false
       description: DimensionalConfig defines dimensional and constraint parameters for spatial indexes.
+    bytebase.v1.DisableMFARequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          maxLength: 260
+          description: |-
+            Format: users/{email}. The caller's own, or another user's with
+             bb.users.update.
+        credential:
+          title: credential
+          description: |-
+            Required for a self-service call against a live factor, and then only
+             otp_code or recovery_code. Unused on an admin-assisted call.
+          $ref: '#/components/schemas/bytebase.v1.CredentialProof'
+      title: DisableMFARequest
+      additionalProperties: false
     bytebase.v1.EmailSetting:
       type: object
       allOf:
@@ -11624,6 +12005,33 @@ components:
       enum:
         - TYPE_UNSPECIFIED
         - SMTP
+    bytebase.v1.EnableMFARequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          maxLength: 260
+          description: 'Format: users/{email}. Must be the caller''s own name.'
+        otpCode:
+          type: string
+          title: otp_code
+          maxLength: 64
+          description: A code from the authenticator the pending secret was just added to.
+        pendingVersion:
+          title: pending_version
+          description: The pending_version this enrollment was minted with.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        credential:
+          title: credential
+          description: |-
+            Proof of the *existing* factor, not the new device above. Required for a
+             rotation, and for first-time enrollment on an account with a password.
+          $ref: '#/components/schemas/bytebase.v1.CredentialProof'
+      title: EnableMFARequest
+      required:
+        - pendingVersion
+      additionalProperties: false
     bytebase.v1.Engine:
       type: string
       title: Engine
@@ -11868,8 +12276,8 @@ components:
           title: name
           description: |-
             The name is the resource name to execute the export against.
-             Format: instances/{instance}/databases/{database}
-             Format: instances/{instance}
+             Format: instances/{instance}/databases/{database} or
+             projects/{project}/instances/{instance}/databases/{database}
         statement:
           type: string
           title: statement
@@ -12738,9 +13146,10 @@ components:
           type: string
           title: etag
           description: |-
-            The current etag of the policy.
-             If an etag is provided and does not match the current etag of the policy,
-             the call will be blocked and an ABORTED error will be returned.
+            The current etag of the policy, returned by GetIamPolicy and SetIamPolicy.
+             Sending it back on SetIamPolicy makes the write conditional: if the policy
+             changed since the read, the call returns ABORTED. Omitting it applies the
+             write unconditionally, overwriting any concurrent change (AIP-154).
       title: IamPolicy
       additionalProperties: false
       description: IAM policy that binds members to roles.
@@ -13638,12 +14047,13 @@ components:
 
              Supported filter:
              - status: the changelog status, support "==" operation. check Changelog.Status for available values.
-             - create_time: the changelog create time in "2006-01-02T15:04:05Z07:00" format, support ">=" or "<=" operator.
+             - has_schema_snapshot: filters to changelogs with a schema snapshot; only "has_schema_snapshot == true" is supported.
+             - create_time: the changelog create time in RFC 3339 format, supports ">=", "<=", or "<" operator.
 
              Example:
              status == "DONE"
-             status == "FAILED" && type == "SDL"
-             create_time >= "2024-01-01T00:00:00Z" && create_time <= "2024-01-02T00:00:00Z"
+             status == "FAILED"
+             has_schema_snapshot == true && create_time < "2024-01-02T00:00:00Z"
       title: ListChangelogsRequest
       additionalProperties: false
     bytebase.v1.ListChangelogsResponse:
@@ -13731,7 +14141,7 @@ components:
              - environment: the environment full name in "environments/{id}" format, support "==" operator.
              - name: the database name, support ".contains()" operator.
              - project: the project full name in "projects/{id}" format, support "==" operator.
-             - instance: the instance full name in "instances/{id}" format, support "==" operator.
+             - instance: the instance full name in "instances/{id}" or "projects/{project}/instances/{id}" format, support "==" operator.
              - engine: the database engine, check Engine enum for values. Support "==", "in [xx]", "!(in [xx])" operator.
              - exclude_unassigned: should be "true" or "false", will not show unassigned databases if it's true, support "==" operator.
              - table: filter by the database table, support "==" and ".contains()" operator.
@@ -13742,6 +14152,7 @@ components:
              environment == "" (find databases which environment is not set)
              project == "projects/{project resource id}"
              instance == "instances/{instance resource id}"
+             instance == "projects/{project resource id}/instances/{instance resource id}"
              name.contains("database name")
              engine == "MYSQL"
              engine in ["MYSQL", "POSTGRES"]
@@ -15212,14 +15623,9 @@ components:
         capability:
           title: capability
           description: |-
-            The ceiling in force, resolved rather than stored: a workspace that never
-             configured MCP resolves to READ_WRITE, so CAPABILITY_UNSPECIFIED never
-             means unconfigured here. It means this build could not resolve a ceiling
-             from the stored row, and every MCP connection is refused.
-
-             Otherwise modes decides: a ceiling serves nothing exactly when modes has no
-             row for it. A number a client's own enum cannot name is a newer release's,
-             and modes still says whether it serves.
+            The ceiling in force for this workspace. A value no row in modes serves,
+             CAPABILITY_UNSPECIFIED included, means no ceiling could be resolved from
+             the stored row and every MCP connection is refused.
           $ref: '#/components/schemas/bytebase.v1.MCPSetting.Capability'
         modes:
           type: array
@@ -15363,34 +15769,6 @@ components:
              masking policy, and it does nothing on the engines Bytebase does not mask.
              It narrows what an agent reads through the paths Bytebase masks; it is not
              a confidentiality boundary.
-        capabilityUnreadable:
-          type: boolean
-          title: capability_unreadable
-          description: |-
-            True when the row carries a capability key that this build cannot resolve
-             to a ceiling. An enum name a newer release wrote is the legitimate trigger,
-             during a rolling upgrade; a hand-edited token reaches the same state.
-             False for every readable row, including one that was never configured.
-
-             The capability field cannot carry this on its own: the unmarshaler discards
-             an enum name it does not know, so an unreadable row and a never-configured
-             one both arrive as CAPABILITY_UNSPECIFIED, while MCP is refused for the
-             first and served at READ_WRITE for the second. A client reading only the
-             capability shows the most permissive ceiling over a workspace where every
-             MCP connection is being refused.
-
-             A row protojson cannot parse at all is NOT this state. There is no ceiling
-             in it to describe, so the read fails instead, and repairing it needs an
-             operator rather than this field.
-
-             The stored token itself is deliberately not returned. Telling a typo apart
-             from a value a newer release wrote would only pay off if this enum grew,
-             and it has not: its one reserved slot held a tier removed before any
-             release shipped it.
-
-             Set the row right by writing value.mcp.capability. Any other path is
-             refused while this is true, because the merge that saved it would erase the
-             value nobody could read.
       title: MCPSetting
       additionalProperties: false
       description: |-
@@ -15405,10 +15783,9 @@ components:
         - READ_ONLY
         - READ_WRITE
       description: |-
-        Capability is the ceiling: a session runs at this level or lower. An absent
-         MCP setting resolves to READ_WRITE, so a workspace that never configured
-         MCP is unaffected. Writing CAPABILITY_UNSPECIFIED explicitly is rejected —
-         omit the update mask path to leave the ceiling unset.
+        Capability is the ceiling: a session runs at this level or lower.
+         Writing CAPABILITY_UNSPECIFIED explicitly is rejected; omit the update mask
+         path to leave the current ceiling unchanged.
     bytebase.v1.MaskingExemptionPolicy:
       type: object
       properties:
@@ -16026,7 +16403,7 @@ components:
           title: target
           description: |-
             The resource name of the instance on which the database is created.
-             Format: instances/{instance}
+             Format: instances/{instance} or projects/{project}/instances/{instance}
         database:
           type: string
           title: database
@@ -16177,7 +16554,7 @@ components:
               title: target
               description: |-
                 Target identification for consolidated results.
-                 Format: instances/{instance}/databases/{database}
+                 Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
             type:
               title: type
               $ref: '#/components/schemas/bytebase.v1.PlanCheckRun.Result.Type'
@@ -16844,7 +17221,7 @@ components:
           title: database
           description: |-
             The database name to execute the query.
-             Format: instances/{instance}/databases/{databaseName}
+             Format: instances/{instance}/databases/{databaseName} or projects/{project}/instances/{instance}/databases/{databaseName}
         creator:
           type: string
           title: creator
@@ -16906,8 +17283,9 @@ components:
           type: string
           title: name
           description: |-
-            The name is the instance name to execute the query against.
-             Format: instances/{instance}/databases/{databaseName}
+            The name is the database resource name to execute the query against.
+             Format: instances/{instance}/databases/{databaseName} or
+             projects/{project}/instances/{instance}/databases/{databaseName}
         statement:
           type: string
           title: statement
@@ -17214,6 +17592,31 @@ components:
       title: RefreshResponse
       additionalProperties: false
       description: Response from refreshing the access token.
+    bytebase.v1.RegenerateRecoveryCodesRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          maxLength: 260
+          description: 'Format: users/{email}. Must be the caller''s own name.'
+      title: RegenerateRecoveryCodesRequest
+      additionalProperties: false
+    bytebase.v1.RegenerateRecoveryCodesResponse:
+      type: object
+      properties:
+        recoveryCodes:
+          type: array
+          items:
+            type: string
+          title: recovery_codes
+          description: The pending recovery codes, shown once for the caller to save.
+        pendingVersion:
+          title: pending_version
+          description: Identifies this mint; see StartMFAEnrollmentResponse.pending_version.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+      title: RegenerateRecoveryCodesResponse
+      additionalProperties: false
     bytebase.v1.RejectIssueRequest:
       type: object
       properties:
@@ -17403,6 +17806,16 @@ components:
              Unset for SaaS brand-new signup (no workspace exists yet).
              Format: workspaces/{workspace}
       title: RequestPasswordResetRequest
+      additionalProperties: false
+    bytebase.v1.RequestReauthCodeRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          maxLength: 260
+          description: 'Format: users/{email}. Must be the caller''s own name.'
+      title: RequestReauthCodeRequest
       additionalProperties: false
     bytebase.v1.ResetPasswordRequest:
       type: object
@@ -18223,7 +18636,7 @@ components:
           title: instance
           description: |-
             The provisioned sample instance.
-             Format: instances/{instance}
+             Format: instances/{instance} or projects/{project}/instances/{instance}
         expireTime:
           title: expire_time
           description: The time when the provisioned sample instance expires.
@@ -18251,7 +18664,7 @@ components:
             The connected database, which must belong to the saved query's own
              project. Empty when none is connected, or when the database no longer
              exists.
-             Format: instances/{instance}/databases/{database}
+             Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
         title:
           type: string
           title: title
@@ -19078,7 +19491,9 @@ components:
         etag:
           type: string
           title: etag
-          description: The current etag of the policy.
+          description: |-
+            The current etag of the policy. Equivalent to setting `policy.etag`;
+             supplying both with different values returns INVALID_ARGUMENT.
       title: SetIamPolicyRequest
       additionalProperties: false
       description: Request message for setting an IAM policy.
@@ -19206,11 +19621,6 @@ components:
       title: SettingValue
       additionalProperties: false
       description: The data in setting value.
-    bytebase.v1.SetupSampleRequest:
-      type: object
-      title: SetupSampleRequest
-      additionalProperties: false
-      description: Request message for setting up sample data.
     bytebase.v1.Sheet:
       type: object
       properties:
@@ -19314,6 +19724,45 @@ components:
           description: The tasks within this stage.
       title: Stage
       additionalProperties: false
+    bytebase.v1.StartMFAEnrollmentRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          maxLength: 260
+          description: 'Format: users/{email}. Must be the caller''s own name.'
+      title: StartMFAEnrollmentRequest
+      additionalProperties: false
+    bytebase.v1.StartMFAEnrollmentResponse:
+      type: object
+      properties:
+        otpSecret:
+          type: string
+          title: otp_secret
+          description: |-
+            The pending TOTP secret. The only response that carries it — it is never
+             readable from the User resource.
+        recoveryCodes:
+          type: array
+          items:
+            type: string
+          title: recovery_codes
+          description: The pending recovery codes, shown once for the caller to save.
+        expireTime:
+          title: expire_time
+          description: When this enrollment stops being confirmable.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        pendingVersion:
+          title: pending_version
+          description: |-
+            Identifies this mint. Echo it back to EnableMFA and
+             ConfirmRecoveryCodes; a mint from another tab or device replaces the
+             pending state, and those methods refuse a version that is no longer the
+             pending one rather than promoting something this caller never saw.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+      title: StartMFAEnrollmentResponse
+      additionalProperties: false
     bytebase.v1.State:
       type: string
       title: State
@@ -19367,6 +19816,7 @@ components:
         - INSERT
         - UPDATE
         - DELETE
+        - MERGE
       description: StatementType represents the type of SQL statement.
     bytebase.v1.StorageConfig:
       type: object
@@ -19916,8 +20366,8 @@ components:
               type: string
               title: target
               description: |-
-                Format: instances/{instance} if the task is DatabaseCreate.
-                 Format: instances/{instance}/databases/{database}
+                Format: instances/{instance} or projects/{project}/instances/{instance} if the task is DatabaseCreate.
+                 Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
             updateTime:
               oneOf:
                 - $ref: '#/components/schemas/google.protobuf.Timestamp'
@@ -20398,7 +20848,7 @@ components:
           title: database
           description: |-
             The database information.
-             Format: instances/{instance}/databases/{database}
+             Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database}
         schema:
           type: string
           title: schema
@@ -20927,17 +21377,13 @@ components:
         catalog:
           title: catalog
           description: |-
-            The database catalog to update.
-
-             The catalog's `name` field is used to identify the database catalog to update.
+            The database catalog to update, identified by its `name` field.
              Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
+
+             Replaces the whole catalog: send the complete value, since anything omitted
+             is erased. There is no `update_mask` because `schemas` is a repeated field,
+             and AIP-161 forbids addressing one element of one.
           $ref: '#/components/schemas/bytebase.v1.DatabaseCatalog'
-        allowMissing:
-          type: boolean
-          title: allow_missing
-          description: |-
-            If set to true, and the database catalog is not found, a new database catalog will be created.
-             In this situation, `update_mask` is ignored.
       title: UpdateDatabaseCatalogRequest
       additionalProperties: false
       description: Request message for updating a database catalog.
@@ -20980,12 +21426,6 @@ components:
           title: update_mask
           description: The list of fields to update.
           $ref: '#/components/schemas/google.protobuf.FieldMask'
-        allowMissing:
-          type: boolean
-          title: allow_missing
-          description: |-
-            If set to true, and the database is not found, a new database will be created.
-             In this situation, `update_mask` is ignored.
       title: UpdateDatabaseRequest
       additionalProperties: false
     bytebase.v1.UpdateEmailRequest:
@@ -21356,22 +21796,6 @@ components:
           title: update_mask
           description: The list of fields to update.
           $ref: '#/components/schemas/google.protobuf.FieldMask'
-        otpCode:
-          type:
-            - string
-            - "null"
-          title: otp_code
-          description: The otp_code is used to verify the user's identity by MFA.
-        regenerateTempMfaSecret:
-          type: boolean
-          title: regenerate_temp_mfa_secret
-          description: |-
-            The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user.
-             This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response.
-        regenerateRecoveryCodes:
-          type: boolean
-          title: regenerate_recovery_codes
-          description: The regenerate_recovery_codes flag means to regenerate recovery codes for user.
         allowMissing:
           type: boolean
           title: allow_missing
@@ -21470,21 +21894,9 @@ components:
         mfaEnabled:
           type: boolean
           title: mfa_enabled
-          description: The mfa_enabled flag means if the user has enabled MFA.
-        tempOtpSecret:
-          type: string
-          title: temp_otp_secret
-          description: Temporary OTP secret used during MFA setup and regeneration.
-        tempRecoveryCodes:
-          type: array
-          items:
-            type: string
-          title: temp_recovery_codes
-          description: Temporary recovery codes used during MFA setup and regeneration.
-        tempOtpSecretCreatedTime:
-          title: temp_otp_secret_created_time
-          description: Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer.
-          $ref: '#/components/schemas/google.protobuf.Timestamp'
+          description: |-
+            Whether the user has a live MFA factor. Set by ConfirmRecoveryCodes and
+             DisableMFA, never by an update.
         phone:
           type: string
           title: phone

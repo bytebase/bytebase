@@ -87,6 +87,8 @@ const sql = `SELECT "${col}" FROM "${schema}"."${table}" WHERE "${pkColumn}" = '
 
 Use `ControlOrMeta+a` (portable), not `Meta+a` (Mac-only) or `Control+a` (Linux/Windows-only).
 
+**Exception — Monaco editors:** Monaco derives its `CtrlCmd` modifier from the user agent, and Playwright's headless Chromium reports a Windows UA on every host, while Playwright resolves `ControlOrMeta` from the host OS. For Monaco's own keybindings (select-all, editor actions) use `Control+…`; `ControlOrMeta+…` is silently ignored on macOS hosts (Linux CI hosts happen to agree, so CI does not catch it). Browser-native editing commands (copy/paste) follow the host OS instead, so don't use a key for them at all — call `document.execCommand("copy")` from `page.evaluate` right after a keypress (see `SchemaEditorPage.planStatementText`).
+
 ### 7. Prefer `data-testid` over class-based selectors
 
 Tailwind class substrings like `[class*='border border-gray']` break on any CSS refactor. If you need a new locator, add a `data-testid` attribute to the component. Existing class-based selectors are technical debt.
@@ -136,15 +138,13 @@ frontend/tests/e2e/
 
 The Bytebase query API is **read-only**. For DDL/DML, use the `execSql` helper (see `masking-exemption.spec.ts`) which shells out to `psql` via Unix socket to the sample Postgres instance.
 
-**Port layout**: the disposable Bytebase server on `PORT` starts sample Postgres at:
-- `PORT + 3` → `test-sample-instance` (hr_test)
-- `PORT + 4` → `prod-sample-instance` (hr_prod)
+**Port layout**: the disposable Bytebase server on `PORT` starts the project-scoped sample Postgres instance (`hr_test`) at `PORT + 3`.
 
 Get the correct port from `getInstance(env.instance)` rather than hardcoding the offset.
 
 ## Known Constraints
 
-- **Sample-data bootstrap**: tests run against data provisioned by `SetupSample` (called from `globalSetup`). The two sample Postgres instances (`test-sample-instance`, `prod-sample-instance`) come up on `PORT+3` / `PORT+4`.
+- **Sample-data bootstrap**: `globalSetup` creates `project-sample` and calls `PrepareSampleProjectInstance`. The single project-scoped sample Postgres instance comes up on `PORT+3` with `hr_test`; the setup project adds `hr_prod` on that instance as an E2E-only multi-database fixture.
 - **License required**: the suite exercises enterprise-only features (masking, JIT, approval workflow, query-data-policy, database groups) and does NOT run on the free plan. Set `BYTEBASE_E2E_LICENSE` to a license JWT signed by Bytebase's license key (ask Bytebase ops for a dev/test license; not stored in this repo); `globalSetup` installs it via `PATCH /v1/subscription/license`. If the env var is absent the bootstrap throws and the whole run stops — there is no per-spec `test.skip` fallback.
 - **Serial execution**: `fullyParallel: false` + `workers: 1`. Tests within and across files are sequential.
 - **`psql` dependency**: must be on PATH for DDL/DML setup.

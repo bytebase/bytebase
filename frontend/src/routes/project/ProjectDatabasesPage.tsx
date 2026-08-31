@@ -50,11 +50,11 @@ import {
   PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
   useProductIntro,
 } from "@/lib/productIntro";
+import { normalizeInstanceName } from "@/lib/resourceName";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
   environmentNamePrefix,
-  instanceNamePrefix,
   projectNamePrefix,
 } from "@/stores/modules/v1/common";
 import type { Permission } from "@/types";
@@ -83,6 +83,24 @@ import {
 } from "@/utils";
 import { extractProjectResourceName } from "@/utils/v1/project";
 
+const fetchAvailableInstanceCount = async (
+  projectName: string,
+  shouldListProjectInstances: boolean
+) => {
+  const results = await Promise.all([
+    hasWorkspacePermissionV2("bb.instances.list")
+      ? useAppStore.getState().fetchInstanceList({ pageSize: 2 })
+      : Promise.resolve({ instances: [], nextPageToken: "" }),
+    shouldListProjectInstances
+      ? useAppStore
+          .getState()
+          .fetchInstanceList({ parent: projectName, pageSize: 2 })
+      : Promise.resolve({ instances: [], nextPageToken: "" }),
+  ]);
+  const instances = results.flatMap((result) => result.instances);
+  return new Set(instances.map((instance) => instance.name)).size;
+};
+
 export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const { t } = useTranslation();
   const currentRoute = useCurrentRoute();
@@ -103,6 +121,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
       project ? hasProjectPermissionV2(project, permission) : false,
     [project]
   );
+  const canListProjectInstances = hasProjectPermission("bb.instances.list");
 
   const [syncing, setSyncing] = useState(false);
   const [showCreateDrawer, setShowCreateDrawer] = useState(false);
@@ -111,13 +130,13 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const [showTransferDrawer, setShowTransferDrawer] = useState(false);
   const [showUnassignConfirm, setShowUnassignConfirm] = useState(false);
   const [refreshToken, setRefreshToken] = useState(0);
-  const [workspaceInstanceCount, setWorkspaceInstanceCount] = useState<
+  const [availableInstanceCount, setAvailableInstanceCount] = useState<
     number | undefined
   >(undefined);
-  const workspaceHasInstance =
-    workspaceInstanceCount === undefined
+  const hasAvailableInstance =
+    availableInstanceCount === undefined
       ? undefined
-      : workspaceInstanceCount > 0;
+      : availableInstanceCount > 0;
   const [syncingRefreshExhausted, setSyncingRefreshExhausted] = useState(false);
   const autoRefreshCountRef = useRef(0);
 
@@ -137,17 +156,31 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
 
   const searchInstances = useCallback(
     async (keyword: string): Promise<ValueOption[]> => {
-      if (!hasWorkspacePermissionV2("bb.instances.list")) return [];
-      const { instances } = await useAppStore.getState().fetchInstanceList({
+      const params = {
         pageSize: getDefaultPagination(),
         filter: keyword.trim() ? { query: keyword } : undefined,
-      });
+      };
+      const results = await Promise.all([
+        hasWorkspacePermissionV2("bb.instances.list")
+          ? useAppStore.getState().fetchInstanceList(params)
+          : Promise.resolve({ instances: [], nextPageToken: "" }),
+        canListProjectInstances && !isDefault
+          ? useAppStore
+              .getState()
+              .fetchInstanceList({ ...params, parent: projectName })
+          : Promise.resolve({ instances: [], nextPageToken: "" }),
+      ]);
+      const instances = [
+        ...new Map(
+          results.flatMap((result) => result.instances).map((i) => [i.name, i])
+        ).values(),
+      ];
       return instances.map((i) => {
         const id = extractInstanceResourceName(i.name);
-        return { value: id, keywords: [id, i.title] };
+        return { value: i.name, keywords: [id, i.title] };
       });
     },
-    []
+    [canListProjectInstances, isDefault, projectName]
   );
 
   const scopeOptions: ScopeOption[] = useMemo(() => {
@@ -207,7 +240,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
 
   const instanceVal = getValueFromScopes(searchParams, "instance");
   const selectedInstance = instanceVal
-    ? `${instanceNamePrefix}${instanceVal}`
+    ? normalizeInstanceName(instanceVal)
     : undefined;
 
   const selectedEngines = useMemo(
@@ -252,7 +285,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
       : undefined;
   }, [currentRoute.query]);
   const syncingInstanceName = syncingInstanceId
-    ? `${instanceNamePrefix}${syncingInstanceId}`
+    ? `${projectName}/instances/${syncingInstanceId}`
     : undefined;
 
   const selectedDatabases = useMemo(() => {
@@ -300,30 +333,27 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   }, [syncingInstanceId, visibleDatabases.length, refresh]);
 
   useEffect(() => {
-    if (!hasWorkspacePermissionV2("bb.instances.list")) {
-      setWorkspaceInstanceCount(0);
-      return;
-    }
-
     let cancelled = false;
-    useAppStore
-      .getState()
-      .fetchInstanceList({ pageSize: 2 })
-      .then(({ instances }) => {
+    setAvailableInstanceCount(undefined);
+    fetchAvailableInstanceCount(
+      projectName,
+      canListProjectInstances && !isDefault
+    )
+      .then((count) => {
         if (!cancelled) {
-          setWorkspaceInstanceCount(instances.length);
+          setAvailableInstanceCount(count);
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setWorkspaceInstanceCount(0);
+          setAvailableInstanceCount(0);
         }
       });
 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [canListProjectInstances, isDefault, projectName]);
 
   // Batch operation handlers
   const handleSyncSchema = useCallback(async () => {
@@ -508,21 +538,21 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     !!syncingInstanceId && !hasVisibleDatabase && !syncingRefreshExhausted;
   const showDatabaseNextAction =
     hasVisibleDatabase &&
-    ((workspaceInstanceCount === 1 && !!syncingInstanceId) ||
+    ((availableInstanceCount === 1 && !!syncingInstanceId) ||
       currentRoute.query[PRODUCT_INTRO_QUERY_KEY] ===
         PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO);
-  const checkingWorkspaceInstance =
+  const checkingAvailableInstance =
     !hasVisibleDatabase &&
     !showSyncingInstanceHint &&
     !syncingRefreshExhausted &&
-    workspaceHasInstance === undefined;
+    hasAvailableInstance === undefined;
   const emptyProjectHasInstance =
     !hasVisibleDatabase &&
-    (workspaceHasInstance === true || syncingRefreshExhausted) &&
+    (hasAvailableInstance === true || syncingRefreshExhausted) &&
     !showSyncingInstanceHint;
   const emptyProjectShouldConnectInstance =
     !hasVisibleDatabase &&
-    workspaceHasInstance === false &&
+    hasAvailableInstance === false &&
     !syncingRefreshExhausted &&
     !showSyncingInstanceHint;
 
@@ -554,7 +584,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     disabled:
       showSyncingInstanceHint ||
       hasVisibleDatabase ||
-      workspaceHasInstance !== false ||
+      hasAvailableInstance !== false ||
       !canCreateInstance,
   });
   useProductIntro({
@@ -565,7 +595,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   });
 
   const handleCreateDatabaseAction = useCallback(() => {
-    if (checkingWorkspaceInstance) return;
+    if (checkingAvailableInstance) return;
     if (emptyProjectShouldConnectInstance) {
       if (!hasProjectPermission("bb.instances.create")) return;
       behaviorAnalytics.captureMetric(
@@ -582,7 +612,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
     }
     setShowCreateDrawer(true);
   }, [
-    checkingWorkspaceInstance,
+    checkingAvailableInstance,
     emptyProjectShouldConnectInstance,
     hasProjectPermission,
     projectId,
@@ -618,7 +648,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
                   : undefined
               }
               disabled={
-                checkingWorkspaceInstance
+                checkingAvailableInstance
                   ? true
                   : hasVisibleDatabase || emptyProjectHasInstance
                     ? !hasProjectPermission("bb.instances.list") ||

@@ -3,6 +3,7 @@ package v1
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 	"testing"
 	"time"
@@ -20,55 +21,79 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func TestPrepareSampleProjectInstanceValidatesParentAndDeployment(t *testing.T) {
-	service := &InstanceService{profile: &config.Profile{SaaS: true}}
+func TestPrepareSampleProjectInstanceValidatesParentAndManager(t *testing.T) {
+	service := &InstanceService{}
 	_, err := service.PrepareSampleProjectInstance(context.Background(), connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{}))
 	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 
 	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
 	service = &InstanceService{
 		store:          stores,
-		profile:        &config.Profile{},
-		licenseService: &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 10},
-		sampleManager:  &instanceSampleManagerStub{},
+		licenseService: newInstanceServiceTestLicenseService(t, stores),
 	}
-	_, err = service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
-		Parent: common.FormatProject(projectID),
-	}))
-	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
-
-	service.profile = nil
 	_, err = service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
 		Parent: common.FormatProject(projectID),
 	}))
 	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
 }
 
-func TestPrepareSampleProjectInstanceRequiresSingleManagerResult(t *testing.T) {
+func TestPrepareSampleProjectInstanceUsesConfiguredManagerInBothDeployments(t *testing.T) {
 	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
-	manager := &instanceSampleManagerStub{
-		setupResult: &sample.SetupResult{Instances: []*store.InstanceMessage{
-			{ResourceID: "sample-one"},
-			{ResourceID: "sample-two"},
-		}},
+	for _, saas := range []bool{false, true} {
+		t.Run(fmt.Sprintf("saas=%t", saas), func(t *testing.T) {
+			manager := &sampleManagerStub{instance: &store.InstanceMessage{
+				ResourceID: "sample-one",
+				ProjectID:  &projectID,
+				Metadata:   &storepb.Instance{Title: "Sample Project Instance"},
+			}}
+			service := &InstanceService{
+				store:          stores,
+				profile:        &config.Profile{SaaS: saas},
+				licenseService: newInstanceServiceTestLicenseService(t, stores),
+				sampleManager:  manager,
+			}
+
+			response, err := service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
+				Parent: common.FormatProject(projectID),
+			}))
+			require.NoError(t, err)
+			require.Equal(t, common.FormatProjectInstance(projectID, "sample-one"), response.Msg.Name)
+			require.Equal(t, 1, manager.checkAvailableCalls)
+			require.Equal(t, []sample.PrepareRequest{{WorkspaceID: "default", ProjectID: projectID}}, manager.prepareRequests)
+		})
+	}
+}
+
+func TestPrepareSampleProjectInstanceChecksManagerAvailability(t *testing.T) {
+	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
+	manager := &sampleManagerStub{
+		checkAvailableErr: sample.NewFailure(sample.FailureUnavailable, errors.New("sample target unavailable")),
 	}
 	service := &InstanceService{
 		store:          stores,
-		profile:        &config.Profile{SaaS: true},
-		licenseService: &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 10},
+		licenseService: newInstanceServiceTestLicenseService(t, stores),
 		sampleManager:  manager,
 	}
 
 	_, err := service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
 		Parent: common.FormatProject(projectID),
 	}))
-	require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
-	require.Len(t, manager.setupRequests, 1)
+	require.Equal(t, connect.CodeUnavailable, connect.CodeOf(err))
+	require.Equal(t, 1, manager.checkAvailableCalls)
+	require.Empty(t, manager.prepareRequests)
 }
 
 func TestSampleInstanceLifecycleHooksWrapMetadataUpdate(t *testing.T) {
 	ctx, stores, projectID, instanceID, _ := setupProjectInstanceLifecycleAPITest(t)
-	manager := &instanceSampleManagerStub{}
+	_, err := stores.UpdateInstance(ctx, &store.UpdateInstanceMessage{
+		ResourceID: &instanceID,
+		Workspace:  "default",
+		Metadata: &storepb.Instance{
+			DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+		},
+	})
+	require.NoError(t, err)
+	manager := &sampleManagerStub{}
 	manager.validate = func(ctx context.Context, workspaceID, gotInstanceID string) error {
 		require.Equal(t, "default", workspaceID)
 		require.Equal(t, instanceID, gotInstanceID)
@@ -85,12 +110,12 @@ func TestSampleInstanceLifecycleHooksWrapMetadataUpdate(t *testing.T) {
 	}
 	service := &InstanceService{
 		store:          stores,
-		licenseService: &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 10},
+		licenseService: newInstanceServiceTestLicenseService(t, stores),
 		sampleManager:  manager,
 	}
 	instanceName := common.FormatProjectInstance(projectID, instanceID)
 
-	_, err := service.DeleteInstance(ctx, connect.NewRequest(&v1pb.DeleteInstanceRequest{Name: instanceName}))
+	_, err = service.DeleteInstance(ctx, connect.NewRequest(&v1pb.DeleteInstanceRequest{Name: instanceName}))
 	require.NoError(t, err)
 	require.Equal(t, []bool{true}, manager.lifecycleCalls)
 
@@ -126,8 +151,8 @@ func TestPrepareSampleProjectInstanceRejectsConsumedEntitlementAfterProjectDelet
 	service := &InstanceService{
 		store:          stores,
 		profile:        &config.Profile{SaaS: true},
-		licenseService: &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 10},
-		sampleManager:  &instanceSampleManagerStub{},
+		licenseService: newInstanceServiceTestLicenseService(t, stores),
+		sampleManager:  &sampleManagerStub{},
 	}
 
 	_, err = service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
@@ -142,11 +167,22 @@ func TestSampleProjectInstanceConnectErrorMapsUnknownFailure(t *testing.T) {
 }
 
 func TestSampleProjectInstanceCapacityGuardMapsCapacityDenial(t *testing.T) {
-	ctx, stores, _, _, _ := setupProjectInstanceLifecycleAPITest(t)
+	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
+	for i := 0; i < 9; i++ {
+		_, err := stores.CreateInstance(ctx, &store.InstanceMessage{
+			ResourceID: fmt.Sprintf("capacity-instance-%d", i),
+			Workspace:  "default",
+			ProjectID:  &projectID,
+			Metadata: &storepb.Instance{
+				DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
+			},
+		})
+		require.NoError(t, err)
+	}
 	service := &InstanceService{
 		store:          stores,
 		profile:        &config.Profile{SaaS: true},
-		licenseService: &instanceLicenseServiceStub{instanceLimit: 1, activatedInstanceLimit: 10},
+		licenseService: newInstanceServiceTestLicenseService(t, stores),
 	}
 	err := service.instanceCountGuard(ctx)
 	require.Equal(t, connect.CodeResourceExhausted, connect.CodeOf(err))
@@ -157,27 +193,55 @@ func TestSampleProjectInstanceCapacityGuardDoesNotConsumeActivationQuota(t *test
 	service := &InstanceService{
 		store:          stores,
 		profile:        &config.Profile{SaaS: true},
-		licenseService: &instanceLicenseServiceStub{instanceLimit: 10, activatedInstanceLimit: 0},
+		licenseService: newInstanceServiceTestLicenseService(t, stores),
 	}
 	require.NoError(t, service.instanceCountGuard(ctx))
 }
 
-type instanceSampleManagerStub struct {
-	setupResult    *sample.SetupResult
-	setupErr       error
-	setupRequests  []sample.SetupRequest
-	validate       func(context.Context, string, string) error
-	lifecycle      func(context.Context, string, string, bool) error
-	validateCalls  int
-	lifecycleCalls []bool
+type sampleManagerStub struct {
+	instance            *store.InstanceMessage
+	prepareErr          error
+	prepareRequests     []sample.PrepareRequest
+	checkAvailableErr   error
+	checkAvailableCalls int
+	listInstancesErr    error
+	projectPurge        func(context.Context, string, string) error
+	projectPurgeCalls   []string
+	validate            func(context.Context, string, string) error
+	lifecycle           func(context.Context, string, string, bool) error
+	validateCalls       int
+	lifecycleCalls      []bool
 }
 
-func (s *instanceSampleManagerStub) SetupSample(_ context.Context, request sample.SetupRequest) (*sample.SetupResult, error) {
-	s.setupRequests = append(s.setupRequests, request)
-	return s.setupResult, s.setupErr
+func (s *sampleManagerStub) CheckAvailable(context.Context) error {
+	s.checkAvailableCalls++
+	return s.checkAvailableErr
 }
 
-func (s *instanceSampleManagerStub) ValidateInstanceRestore(ctx context.Context, workspaceID, instanceID string) error {
+func (s *sampleManagerStub) ListInstances(context.Context, string) ([]*sample.Instance, error) {
+	return nil, s.listInstancesErr
+}
+
+func (s *sampleManagerStub) HandleProjectPurge(ctx context.Context, workspaceID, projectID string) error {
+	s.projectPurgeCalls = append(s.projectPurgeCalls, projectID)
+	if s.projectPurge != nil {
+		return s.projectPurge(ctx, workspaceID, projectID)
+	}
+	return nil
+}
+
+func (*sampleManagerStub) Start(context.Context, string) error { return nil }
+
+func (*sampleManagerStub) Cleanup(context.Context) error { return nil }
+
+func (*sampleManagerStub) Stop() {}
+
+func (s *sampleManagerStub) PrepareSampleProjectInstance(_ context.Context, request sample.PrepareRequest) (*store.InstanceMessage, error) {
+	s.prepareRequests = append(s.prepareRequests, request)
+	return s.instance, s.prepareErr
+}
+
+func (s *sampleManagerStub) ValidateInstanceRestore(ctx context.Context, workspaceID, instanceID string) error {
 	s.validateCalls++
 	if s.validate != nil {
 		return s.validate(ctx, workspaceID, instanceID)
@@ -185,7 +249,7 @@ func (s *instanceSampleManagerStub) ValidateInstanceRestore(ctx context.Context,
 	return nil
 }
 
-func (s *instanceSampleManagerStub) HandleInstanceLifecycle(ctx context.Context, workspaceID, instanceID string, deleted bool) error {
+func (s *sampleManagerStub) HandleInstanceLifecycle(ctx context.Context, workspaceID, instanceID string, deleted bool) error {
 	s.lifecycleCalls = append(s.lifecycleCalls, deleted)
 	if s.lifecycle != nil {
 		return s.lifecycle(ctx, workspaceID, instanceID, deleted)
@@ -461,4 +525,75 @@ func TestValidateExternalSecretForSaaS(t *testing.T) {
 			}
 		})
 	}
+}
+
+// TestApplyDataSourceUpdateMaskCredentials covers the T15 headline: the mask
+// path decides which IAM credential is written. The branch used to dispatch on
+// the request's authentication_type, which an AIP-134 client leaves unset when
+// it masks only the credential — so rotating a leaked key wrote nothing and
+// returned 200.
+func TestApplyDataSourceUpdateMaskCredentials(t *testing.T) {
+	gcpStored := func() *storepb.DataSource {
+		return &storepb.DataSource{
+			Id:                 "admin",
+			AuthenticationType: storepb.DataSource_GOOGLE_CLOUD_SQL_IAM,
+			IamExtension: &storepb.DataSource_GcpCredential{
+				GcpCredential: &storepb.DataSource_GCPCredential{Content: "leaked"},
+			},
+		}
+	}
+
+	t.Run("rotation without authentication_type in the body", func(t *testing.T) {
+		dataSource := gcpStored()
+		err := applyDataSourceUpdateMask(dataSource, &v1pb.DataSource{
+			IamExtension: &v1pb.DataSource_GcpCredential{
+				GcpCredential: &v1pb.DataSource_GCPCredential{Content: "rotated"},
+			},
+		}, []string{"gcp_credential"})
+		require.NoError(t, err)
+		require.Equal(t, "rotated", dataSource.GetGcpCredential().GetContent())
+	})
+
+	t.Run("credential path disagreeing with the stored type", func(t *testing.T) {
+		dataSource := gcpStored()
+		err := applyDataSourceUpdateMask(dataSource, &v1pb.DataSource{
+			AuthenticationType: v1pb.DataSource_AWS_RDS_IAM,
+			IamExtension: &v1pb.DataSource_AwsCredential{
+				AwsCredential: &v1pb.DataSource_AWSCredential{AccessKeyId: "AKIA"},
+			},
+		}, []string{"aws_credential"})
+		require.Error(t, err)
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		require.Equal(t, "leaked", dataSource.GetGcpCredential().GetContent())
+		require.Equal(t, storepb.DataSource_GOOGLE_CLOUD_SQL_IAM, dataSource.GetAuthenticationType())
+	})
+
+	t.Run("switching type and credential together, either path order", func(t *testing.T) {
+		for _, paths := range [][]string{
+			{"authentication_type", "aws_credential"},
+			{"aws_credential", "authentication_type"},
+		} {
+			dataSource := gcpStored()
+			err := applyDataSourceUpdateMask(dataSource, &v1pb.DataSource{
+				AuthenticationType: v1pb.DataSource_AWS_RDS_IAM,
+				IamExtension: &v1pb.DataSource_AwsCredential{
+					AwsCredential: &v1pb.DataSource_AWSCredential{AccessKeyId: "AKIA"},
+				},
+			}, paths)
+			require.NoError(t, err, paths)
+			require.Equal(t, "AKIA", dataSource.GetAwsCredential().GetAccessKeyId())
+		}
+	})
+
+	t.Run("a masked credential the body omits is cleared", func(t *testing.T) {
+		dataSource := gcpStored()
+		require.NoError(t, applyDataSourceUpdateMask(dataSource, &v1pb.DataSource{}, []string{"gcp_credential"}))
+		require.Nil(t, dataSource.GetIamExtension())
+	})
+
+	t.Run("unknown path", func(t *testing.T) {
+		err := applyDataSourceUpdateMask(gcpStored(), &v1pb.DataSource{}, []string{"nope"})
+		require.Error(t, err)
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+	})
 }

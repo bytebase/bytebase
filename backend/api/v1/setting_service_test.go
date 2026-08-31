@@ -283,16 +283,60 @@ func TestPreflightWorkspaceProfileSaaSRestrictedPaths(t *testing.T) {
 	}
 }
 
-// TestAlwaysPresentSettingsHaveAZeroValue pins the two halves of the
-// always-present rule against each other. ListSettings walks the slice to
-// synthesize absent rows; Get and Update key on emptySetting returning
-// non-nil. A name in one and not the other is a setting that lists but cannot
-// be read, or reads but cannot be patched.
-func TestAlwaysPresentSettingsHaveAZeroValue(t *testing.T) {
-	for _, name := range alwaysPresentSettings {
-		require.NotNil(t, emptySetting(name, "ws"), "%v is listed as always present", name)
-		require.True(t, settingIsAlwaysPresent(name))
+// TestMergeAppIMSetting covers the second T15 site: saving one provider used to
+// assign the request wholesale over the stored setting, erasing every provider
+// it left out.
+func TestMergeAppIMSetting(t *testing.T) {
+	stored := func() *storepb.AppIMSetting {
+		return &storepb.AppIMSetting{Settings: []*storepb.AppIMSetting_IMSetting{
+			{
+				Type:    storepb.WebhookType_SLACK,
+				Payload: &storepb.AppIMSetting_IMSetting_Slack{Slack: &storepb.AppIMSetting_Slack{Token: "slack-token"}},
+			},
+			{
+				Type:    storepb.WebhookType_FEISHU,
+				Payload: &storepb.AppIMSetting_IMSetting_Feishu{Feishu: &storepb.AppIMSetting_Feishu{AppSecret: "feishu-secret"}},
+			},
+		}}
 	}
-	require.False(t, settingIsAlwaysPresent(storepb.SettingName_WORKSPACE_PROFILE),
-		"a setting whose row always exists must keep 404 for a genuinely missing one")
+	feishuSecret := func(s *storepb.AppIMSetting) string {
+		return findIMSetting(s.GetSettings(), storepb.WebhookType_FEISHU).GetFeishu().GetAppSecret()
+	}
+
+	t.Run("saving one provider leaves the others alone", func(t *testing.T) {
+		payload := &storepb.AppIMSetting{Settings: []*storepb.AppIMSetting_IMSetting{{
+			Type:    storepb.WebhookType_SLACK,
+			Payload: &storepb.AppIMSetting_IMSetting_Slack{Slack: &storepb.AppIMSetting_Slack{Token: "new-token"}},
+		}}}
+		merged, err := mergeAppIMSetting(stored(), payload, []string{"value.app_im.slack"})
+		require.NoError(t, err)
+		require.Equal(t, "new-token", findIMSetting(merged.GetSettings(), storepb.WebhookType_SLACK).GetSlack().GetToken())
+		require.Equal(t, "feishu-secret", feishuSecret(merged))
+	})
+
+	t.Run("a masked provider the payload omits is removed", func(t *testing.T) {
+		merged, err := mergeAppIMSetting(stored(), &storepb.AppIMSetting{}, []string{"value.app_im.slack"})
+		require.NoError(t, err)
+		require.Nil(t, findIMSetting(merged.GetSettings(), storepb.WebhookType_SLACK))
+		require.Equal(t, "feishu-secret", feishuSecret(merged))
+	})
+
+	t.Run("adding a provider that is not configured yet", func(t *testing.T) {
+		payload := &storepb.AppIMSetting{Settings: []*storepb.AppIMSetting_IMSetting{{
+			Type:    storepb.WebhookType_TEAMS,
+			Payload: &storepb.AppIMSetting_IMSetting_Teams{Teams: &storepb.AppIMSetting_Teams{TenantId: "tenant"}},
+		}}}
+		merged, err := mergeAppIMSetting(stored(), payload, []string{"value.app_im_setting_value.teams"})
+		require.NoError(t, err)
+		require.Equal(t, "tenant", findIMSetting(merged.GetSettings(), storepb.WebhookType_TEAMS).GetTeams().GetTenantId())
+		require.Len(t, merged.GetSettings(), 3)
+	})
+
+	t.Run("unknown path, and the stored value is never mutated", func(t *testing.T) {
+		before := stored()
+		_, err := mergeAppIMSetting(before, &storepb.AppIMSetting{}, []string{"value.app_im.mattermost"})
+		require.Error(t, err)
+		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		require.Equal(t, "feishu-secret", feishuSecret(before))
+	})
 }

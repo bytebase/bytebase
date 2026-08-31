@@ -41,11 +41,11 @@ import {
   PRODUCT_INTRO_TIP_QUERY_KEY,
   useProductIntro,
 } from "@/lib/productIntro";
+import { normalizeInstanceName } from "@/lib/resourceName";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
   environmentNamePrefix,
-  instanceNamePrefix,
   projectNamePrefix,
 } from "@/stores/modules/v1/common";
 import {
@@ -250,7 +250,7 @@ export function DatabasesPage() {
 
   const instanceVal = getValueFromScopes(searchParams, "instance");
   const selectedInstance = instanceVal
-    ? `${instanceNamePrefix}${instanceVal}`
+    ? normalizeInstanceName(instanceVal)
     : undefined;
 
   const selectedEngines = useMemo(

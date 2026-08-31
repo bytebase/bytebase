@@ -18,6 +18,9 @@ type projectDeletionLockOrderFixture struct {
 	ctx   context.Context
 	db    *sql.DB
 	store *store.Store
+	// pgURL lets a test open a second store against the same database, e.g. one
+	// with the caches enabled.
+	pgURL string
 }
 
 func newProjectDeletionLockOrderFixture(t *testing.T, seedSQL string) *projectDeletionLockOrderFixture {
@@ -44,7 +47,7 @@ func newProjectDeletionLockOrderFixture(t *testing.T, seedSQL string) *projectDe
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, s.Close()) })
 
-	return &projectDeletionLockOrderFixture{ctx: ctx, db: db, store: s}
+	return &projectDeletionLockOrderFixture{ctx: ctx, db: db, store: s, pgURL: pgURL}
 }
 
 func runWithConcurrentProjectDeletion(

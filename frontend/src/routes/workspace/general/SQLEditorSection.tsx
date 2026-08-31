@@ -428,10 +428,13 @@ export const SQLEditorSection = forwardRef<
                     handleToggle("disableExport", !checked)
                   }
                 />
-                {t("settings.general.workspace.data-export")}
+                {t("settings.general.workspace.data-export.self")}
                 <FeatureBadge feature={PlanFeature.FEATURE_QUERY_POLICY} />
               </span>
             }
+            description={t(
+              "settings.general.workspace.data-export.description"
+            )}
           />
         </PermissionGuard>
 

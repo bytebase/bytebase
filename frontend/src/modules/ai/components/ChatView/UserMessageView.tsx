@@ -12,7 +12,7 @@ type Props = {
  */
 export function UserMessageView({ message }: Props) {
   return (
-    <div className="user-message max-w-[60%] min-w-36 border rounded-sm shadow-sm py-1 px-2 bg-accent/15 border-accent/50 text-control">
+    <div className="user-message min-w-0 max-w-[60%] border rounded-sm shadow-sm py-1 px-2 bg-accent/15 border-accent/50 text-control">
       <Markdown content={message.content} codeBlockProps={{ width: 0.6 }} />
     </div>
   );

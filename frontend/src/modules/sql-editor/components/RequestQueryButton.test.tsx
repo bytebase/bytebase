@@ -264,7 +264,7 @@ describe("RequestQueryButton", () => {
     unmount();
   });
 
-  test("renders the Request access grant label in JIT mode", () => {
+  test("renders the Request query label in JIT mode", () => {
     setupDefaultMocks(true, true);
     const { container, render, unmount } = renderIntoContainer(
       <RequestQueryButton
@@ -275,7 +275,22 @@ describe("RequestQueryButton", () => {
       />
     );
     render();
-    expect(container.textContent).toContain("sql-editor.request-access-grant");
+    expect(container.textContent).toContain("sql-editor.request-query");
+    unmount();
+  });
+
+  test("bb.sql.info-only denial also takes the JIT path", () => {
+    setupDefaultMocks(true, true);
+    const { container, render, unmount } = renderIntoContainer(
+      <RequestQueryButton
+        text={false}
+        permissionDeniedDetail={makePermissionDeniedDetail({
+          requiredPermissions: ["bb.sql.info"],
+        })}
+      />
+    );
+    render();
+    expect(container.textContent).toContain("sql-editor.request-query");
     unmount();
   });
 

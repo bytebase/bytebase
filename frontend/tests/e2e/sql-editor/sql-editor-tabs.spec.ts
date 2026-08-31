@@ -45,9 +45,8 @@ test.describe("Active tab text tracks the live connection", () => {
   //   - 01-tab-says-hrprod-actually-familyprod.png
   //
   // Test environment note: the QA evidence repro was hr_prod → family_prod
-  // (Postgres → MySQL across instances). The disposable test server's
-  // --demo seed includes only Postgres sample instances (hr_prod,
-  // hr_test). This test uses the available pair hr_prod → hr_test.
+  // (Postgres → MySQL across instances). The E2E setup adds hr_prod beside the
+  // hr_test sample database, so this test uses the pair hr_prod → hr_test.
   // The bug is engine-agnostic: the title binding has no engine-
   // specific code path.
 
@@ -61,8 +60,14 @@ test.describe("Active tab text tracks the live connection", () => {
   let sourceSavedQuery = "";
 
   test.beforeAll(async () => {
-    const source = await env.api.findDatabaseByShortName(SOURCE_DB_SHORT);
-    const target = await env.api.findDatabaseByShortName(TARGET_DB_SHORT);
+    const source = await env.api.findDatabaseByShortName(
+      SOURCE_DB_SHORT,
+      env.project,
+    );
+    const target = await env.api.findDatabaseByShortName(
+      TARGET_DB_SHORT,
+      env.project,
+    );
     if (!source) {
       throw new Error(
         `Setup failed: no database named ${SOURCE_DB_SHORT} found in any instance`,

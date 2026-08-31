@@ -9,7 +9,6 @@ import (
 	context "context"
 	errors "errors"
 	v1 "github.com/bytebase/bytebase/backend/generated-go/v1"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	http "net/http"
 	strings "strings"
 )
@@ -37,9 +36,6 @@ const (
 	// ActuatorServiceGetActuatorInfoProcedure is the fully-qualified name of the ActuatorService's
 	// GetActuatorInfo RPC.
 	ActuatorServiceGetActuatorInfoProcedure = "/bytebase.v1.ActuatorService/GetActuatorInfo"
-	// ActuatorServiceSetupSampleProcedure is the fully-qualified name of the ActuatorService's
-	// SetupSample RPC.
-	ActuatorServiceSetupSampleProcedure = "/bytebase.v1.ActuatorService/SetupSample"
 )
 
 // ActuatorServiceClient is a client for the bytebase.v1.ActuatorService service.
@@ -48,9 +44,6 @@ type ActuatorServiceClient interface {
 	// The workspace is resolved from the authenticated session.
 	// Permissions required: None (authentication required)
 	GetActuatorInfo(context.Context, *connect.Request[v1.GetActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
-	// Sets up sample data for demonstration and testing purposes.
-	// Permissions required: bb.projects.create
-	SetupSample(context.Context, *connect.Request[v1.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewActuatorServiceClient constructs a client for the bytebase.v1.ActuatorService service. By
@@ -70,29 +63,17 @@ func NewActuatorServiceClient(httpClient connect.HTTPClient, baseURL string, opt
 			connect.WithSchema(actuatorServiceMethods.ByName("GetActuatorInfo")),
 			connect.WithClientOptions(opts...),
 		),
-		setupSample: connect.NewClient[v1.SetupSampleRequest, emptypb.Empty](
-			httpClient,
-			baseURL+ActuatorServiceSetupSampleProcedure,
-			connect.WithSchema(actuatorServiceMethods.ByName("SetupSample")),
-			connect.WithClientOptions(opts...),
-		),
 	}
 }
 
 // actuatorServiceClient implements ActuatorServiceClient.
 type actuatorServiceClient struct {
 	getActuatorInfo *connect.Client[v1.GetActuatorInfoRequest, v1.ActuatorInfo]
-	setupSample     *connect.Client[v1.SetupSampleRequest, emptypb.Empty]
 }
 
 // GetActuatorInfo calls bytebase.v1.ActuatorService.GetActuatorInfo.
 func (c *actuatorServiceClient) GetActuatorInfo(ctx context.Context, req *connect.Request[v1.GetActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error) {
 	return c.getActuatorInfo.CallUnary(ctx, req)
-}
-
-// SetupSample calls bytebase.v1.ActuatorService.SetupSample.
-func (c *actuatorServiceClient) SetupSample(ctx context.Context, req *connect.Request[v1.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error) {
-	return c.setupSample.CallUnary(ctx, req)
 }
 
 // ActuatorServiceHandler is an implementation of the bytebase.v1.ActuatorService service.
@@ -101,9 +82,6 @@ type ActuatorServiceHandler interface {
 	// The workspace is resolved from the authenticated session.
 	// Permissions required: None (authentication required)
 	GetActuatorInfo(context.Context, *connect.Request[v1.GetActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error)
-	// Sets up sample data for demonstration and testing purposes.
-	// Permissions required: bb.projects.create
-	SetupSample(context.Context, *connect.Request[v1.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error)
 }
 
 // NewActuatorServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -119,18 +97,10 @@ func NewActuatorServiceHandler(svc ActuatorServiceHandler, opts ...connect.Handl
 		connect.WithSchema(actuatorServiceMethods.ByName("GetActuatorInfo")),
 		connect.WithHandlerOptions(opts...),
 	)
-	actuatorServiceSetupSampleHandler := connect.NewUnaryHandler(
-		ActuatorServiceSetupSampleProcedure,
-		svc.SetupSample,
-		connect.WithSchema(actuatorServiceMethods.ByName("SetupSample")),
-		connect.WithHandlerOptions(opts...),
-	)
 	return "/bytebase.v1.ActuatorService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case ActuatorServiceGetActuatorInfoProcedure:
 			actuatorServiceGetActuatorInfoHandler.ServeHTTP(w, r)
-		case ActuatorServiceSetupSampleProcedure:
-			actuatorServiceSetupSampleHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -142,8 +112,4 @@ type UnimplementedActuatorServiceHandler struct{}
 
 func (UnimplementedActuatorServiceHandler) GetActuatorInfo(context.Context, *connect.Request[v1.GetActuatorInfoRequest]) (*connect.Response[v1.ActuatorInfo], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ActuatorService.GetActuatorInfo is not implemented"))
-}
-
-func (UnimplementedActuatorServiceHandler) SetupSample(context.Context, *connect.Request[v1.SetupSampleRequest]) (*connect.Response[emptypb.Empty], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("bytebase.v1.ActuatorService.SetupSample is not implemented"))
 }

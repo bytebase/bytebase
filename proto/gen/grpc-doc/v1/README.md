@@ -37,7 +37,6 @@
     - [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest)
     - [SampleInfo](#bytebase-v1-SampleInfo)
     - [SampleInfo.Instance](#bytebase-v1-SampleInfo-Instance)
-    - [SetupSampleRequest](#bytebase-v1-SetupSampleRequest)
   
     - [ActuatorService](#bytebase-v1-ActuatorService)
   
@@ -311,11 +310,21 @@
 - [v1/user_service.proto](#v1_user_service-proto)
     - [BatchGetUsersRequest](#bytebase-v1-BatchGetUsersRequest)
     - [BatchGetUsersResponse](#bytebase-v1-BatchGetUsersResponse)
+    - [ChangePasswordRequest](#bytebase-v1-ChangePasswordRequest)
+    - [ConfirmRecoveryCodesRequest](#bytebase-v1-ConfirmRecoveryCodesRequest)
     - [CreateUserRequest](#bytebase-v1-CreateUserRequest)
+    - [CredentialProof](#bytebase-v1-CredentialProof)
     - [DeleteUserRequest](#bytebase-v1-DeleteUserRequest)
+    - [DisableMFARequest](#bytebase-v1-DisableMFARequest)
+    - [EnableMFARequest](#bytebase-v1-EnableMFARequest)
     - [GetUserRequest](#bytebase-v1-GetUserRequest)
     - [ListUsersRequest](#bytebase-v1-ListUsersRequest)
     - [ListUsersResponse](#bytebase-v1-ListUsersResponse)
+    - [RegenerateRecoveryCodesRequest](#bytebase-v1-RegenerateRecoveryCodesRequest)
+    - [RegenerateRecoveryCodesResponse](#bytebase-v1-RegenerateRecoveryCodesResponse)
+    - [RequestReauthCodeRequest](#bytebase-v1-RequestReauthCodeRequest)
+    - [StartMFAEnrollmentRequest](#bytebase-v1-StartMFAEnrollmentRequest)
+    - [StartMFAEnrollmentResponse](#bytebase-v1-StartMFAEnrollmentResponse)
     - [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest)
     - [UpdateEmailRequest](#bytebase-v1-UpdateEmailRequest)
     - [UpdateUserRequest](#bytebase-v1-UpdateUserRequest)
@@ -863,7 +872,7 @@ already keeps for the wording.
 | ---- | ------ | ----------- |
 | MCP_DENIAL_REASON_UNSPECIFIED | 0 | No reason recorded. The method is still denied — mcp_method_class is what enforces — and the denial falls back to generic wording. CI rejects this on a method classified FORBIDDEN or EXCLUDED. |
 | MINTS_CREDENTIAL | 1 | Puts a token for the caller&#39;s own principal in the response body. |
-| RESETS_CREDENTIAL | 2 | Drives the out-of-band reset flow that sets or delivers the secret a login accepts. |
+| RESETS_CREDENTIAL | 2 | Drives the out-of-band reset flow that sets or delivers the secret a login or a credential change accepts. |
 | TAKES_OVER_ACCOUNT | 3 | Rewrites an account&#39;s own credentials, which would let the session log in as that account. |
 | ENDS_SESSION | 4 | Destroys the human&#39;s own login session. |
 | ENDS_MEMBERSHIP | 5 | Destroys the caller&#39;s own workspace membership and mints a plain workspace token on the way out. |
@@ -949,7 +958,7 @@ The line against FORBIDDEN is reversibility. An admin-capable ceiling, if one is
 | expire_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The expiration time of the access grant. |
 | ttl | [google.protobuf.Duration](#google-protobuf-Duration) |  | Input only. The time-to-live duration for the access grant. The server computes `expire_time` from this value at activation time. |
 | issue | [string](#string) |  | The issue associated with the access grant. Can be empty. Format: projects/{project}/issues/{issue} |
-| targets | [string](#string) | repeated | The target databases for this access grant. Format: instances/{instance}/databases/{database} |
+| targets | [string](#string) | repeated | The target databases for this access grant. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | query | [string](#string) |  | The query permission granted. |
 | unmask | [bool](#bool) |  | Whether the grant allows unmasking sensitive data. |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
@@ -1206,18 +1215,8 @@ Instance describes one provisioned sample instance.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| instance | [string](#string) |  | The provisioned sample instance. Format: instances/{instance} |
+| instance | [string](#string) |  | The provisioned sample instance. Format: instances/{instance} or projects/{project}/instances/{instance} |
 | expire_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The time when the provisioned sample instance expires. |
-
-
-
-
-
-
-<a name="bytebase-v1-SetupSampleRequest"></a>
-
-### SetupSampleRequest
-Request message for setting up sample data.
 
 
 
@@ -1238,7 +1237,6 @@ ActuatorService manages system health and operational information.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetActuatorInfo | [GetActuatorInfoRequest](#bytebase-v1-GetActuatorInfoRequest) | [ActuatorInfo](#bytebase-v1-ActuatorInfo) | Gets system information and health status of the Bytebase instance. The workspace is resolved from the authenticated session. Permissions required: None (authentication required) |
-| SetupSample | [SetupSampleRequest](#bytebase-v1-SetupSampleRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sets up sample data for demonstration and testing purposes. Permissions required: bb.projects.create |
 
  
 
@@ -1620,6 +1618,7 @@ StatementType represents the type of SQL statement.
 | INSERT | 60 | DML statements |
 | UPDATE | 61 |  |
 | DELETE | 62 |  |
+| MERGE | 63 |  |
 
 
 
@@ -1683,7 +1682,7 @@ Binding associates members with a role and optional conditions.
 | members | [string](#string) | repeated | Specifies the principals requesting access for a Bytebase resource. For users, the member should be: user:{email} For groups, the member should be: group:{email} For service accounts, the member should be: serviceAccount:{email} For workload identities, the member should be: workloadIdentity:{email} |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition that is associated with this binding, only used in the project IAM policy. If the condition evaluates to true, then this binding applies to the current request. If the condition evaluates to false, then this binding does not apply to the current request. However, a different role binding might grant the same role to one or more of the principals in this binding. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Support variables: resource.database: the database full name in &#34;instances/{instance}/databases/{database}&#34; format, used by any role with SQL Editor read (e.g. &#34;roles/sqlEditorUser&#34;, &#34;roles/sqlEditorReadUser&#34;) or write (bb.sql.ddl / bb.sql.dml) access, support &#34;==&#34; operator. resource.schema_name: the schema name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator. resource.table_name: the table name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator. resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support &#34;in&#34; operator. request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)`.
+Support variables: resource.database: the canonical database full name in &#34;instances/{instance}/databases/{database}&#34; or &#34;projects/{project}/instances/{instance}/databases/{database}&#34; format, used by any role with SQL Editor read (e.g. &#34;roles/sqlEditorUser&#34;, &#34;roles/sqlEditorReadUser&#34;) or write (bb.sql.ddl / bb.sql.dml) access, support &#34;==&#34; operator. resource.schema_name: the schema name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator. resource.table_name: the table name, used by any role with SQL Editor read or write (bb.sql.ddl / bb.sql.dml) access; for writes it is evaluated per write-target table, support &#34;==&#34; operator. resource.environment_id: the environment to allow the DDL/DML operation in the SQL Editor, only works for the role with bb.sql.ddl or bb.sql.dml permissions. Support &#34;in&#34; operator. request.time: the expiration. Only support &#34;&lt;&#34; operation in `request.time &lt; timestamp(&#34;{ISO datetime string format}&#34;)`.
 
 Known limitations of table/schema-scoped DDL/DML grants: - The scope only gates the write target, not the read sources of a write: e.g. `INSERT INTO granted_table SELECT * FROM other_table` may read `other_table` without a grant on it, so a table-scoped write grant is not an exfiltration boundary. - It must be paired with a database/project-level read grant: a table-scoped grant alone does not satisfy the SQL Editor query method permission (bb.databases.get). - A resource.schema_name-scoped grant only authorizes a write whose schema is unambiguous — qualify the table (schema.table) or select the schema for the SQL Editor session. An unqualified write whose effective schema cannot be determined ahead of execution is denied (qualify it, or use a table-only grant). - Multi-statement batches are authorized at the database level: an earlier statement can rebind the session&#39;s default schema or database mid-batch, so per-table/schema scoping is dropped and a table/schema-scoped grant requires a database-level grant. The database-level check is still per target database — a qualified cross-database write is gated by a grant on its own database, not the request database — but an unqualified write whose session default is rebound mid-batch is evaluated against the database it literally names, so qualify cross-database writes or run them as single statements. - A write target in a different project than the SQL-Editor session&#39;s database is denied: the per-target check evaluates the session project&#39;s IAM policy, so a cross-project write is failed closed (to write it, open the SQL Editor on a database in the target project). - Enforcement is on the statement&#39;s literal write target; writes routed elsewhere by a view/synonym, or into a temporary schema (e.g. pg_temp), are evaluated against what the statement names, not the ultimate base object. - Write-target gating uses an ALLOWLIST of statement types the resolver models. It does NOT cover every syntactically-identifiable cross-database write; statement types off the allowlist are authorized against the request database. The allowlist is: - Modeled table/data writes (per-table/schema-scopable): INSERT/UPDATE/DELETE/TRUNCATE/MERGE, LOAD DATA, IMPORT INTO, CREATE TABLE AS / SELECT INTO, and table-level CREATE/DROP/ALTER/RENAME/index. - Modeled non-table object DDL (gated at the DATABASE level by the object&#39;s own explicit database/schema qualifier; an unqualified name keeps the request-database check): CREATE/ALTER/DROP of view, procedure/function/routine, trigger, sequence, synonym, type, and (Oracle) package and cluster; plus Oracle ALTER/DROP MATERIALIZED VIEW (Oracle CREATE MATERIALIZED VIEW is not modeled — see below). NOT modeled (these fall back to the request-database check, so a qualified cross-database one is authorized against the request database): MySQL CREATE TRIGGER and CREATE/ALTER/DROP EVENT (bare-string AST names); MSSQL ALTER of view/procedure/function/trigger (no ALTER node in the grammar); Oracle CREATE MATERIALIZED VIEW and the niche object DDL — dimension, attribute dimension, hierarchy, analytic view, JSON duality view, materialized zonemap, operator, in-memory join group, property graph, vector index, index type, domain; COPY ... FROM; and engine-specific bulk-load / deprecated text writes. A structural &#34;write-target object database&#34; extraction layer to remove this allowlist dependence is tracked as a follow-up. - Out of scope (read sources / indirect effects): the tables a write READS (INSERT … SELECT, MERGE … USING, CREATE TABLE AS … SELECT) and objects reached indirectly via views/synonyms/function bodies/triggers are NOT gated. Invariant: for a statement ON the modeled allowlist that explicitly names a different database as its write target, the ACL uses that target database, not the request database. Statement types OFF the allowlist are authorized against the request database.
 
@@ -1737,7 +1736,7 @@ IAM policy that binds members to roles.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | bindings | [Binding](#bytebase-v1-Binding) | repeated | Collection of binding. A binding binds one or more project members to a single project role. |
-| etag | [string](#string) |  | The current etag of the policy. If an etag is provided and does not match the current etag of the policy, the call will be blocked and an ABORTED error will be returned. |
+| etag | [string](#string) |  | The current etag of the policy, returned by GetIamPolicy and SetIamPolicy. Sending it back on SetIamPolicy makes the write conditional: if the policy changed since the read, the call returns ABORTED. Omitting it applies the write unconditionally, overwriting any concurrent change (AIP-154). |
 
 
 
@@ -1769,7 +1768,7 @@ Request message for setting an IAM policy.
 | ----- | ---- | ----- | ----------- |
 | resource | [string](#string) |  | The name of the resource to set the IAM policy. Format: projects/{project} Format: workspaces/{workspace} |
 | policy | [IamPolicy](#bytebase-v1-IamPolicy) |  |  |
-| etag | [string](#string) |  | The current etag of the policy. |
+| etag | [string](#string) |  | The current etag of the policy. Equivalent to setting `policy.etag`; supplying both with different values returns INVALID_ARGUMENT. |
 
 
 
@@ -2312,7 +2311,7 @@ For example: update_time &gt;= &#34;2025-01-02T15:04:05Z07:00&#34; task_type in 
 | status | [Task.Status](#bytebase-v1-Task-Status) |  | Status is the status of the task. |
 | skipped_reason | [string](#string) |  | The reason why the task was skipped. |
 | type | [Task.Type](#bytebase-v1-Task-Type) |  |  |
-| target | [string](#string) |  | Format: instances/{instance} if the task is DatabaseCreate. Format: instances/{instance}/databases/{database} |
+| target | [string](#string) |  | Format: instances/{instance} or projects/{project}/instances/{instance} if the task is DatabaseCreate. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | database_create | [Task.DatabaseCreate](#bytebase-v1-Task-DatabaseCreate) |  |  |
 | database_update | [Task.DatabaseUpdate](#bytebase-v1-Task-DatabaseUpdate) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) | optional | The update_time is the update time of latest task run. If there are no task runs, it will be empty. |
@@ -2597,7 +2596,7 @@ Table information.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| database | [string](#string) |  | The database information. Format: instances/{instance}/databases/{database} |
+| database | [string](#string) |  | The database information. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | schema | [string](#string) |  | The schema name. |
 | table | [string](#string) |  | The table name. |
 
@@ -2914,7 +2913,7 @@ For example: creator == &#34;users/{email}&#34; |
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name for the query history. Format: projects/{project}/queryHistories/{id} |
-| database | [string](#string) |  | The database name to execute the query. Format: instances/{instance}/databases/{databaseName} |
+| database | [string](#string) |  | The database name to execute the query. Format: instances/{instance}/databases/{databaseName} or projects/{project}/instances/{instance}/databases/{databaseName} |
 | creator | [string](#string) |  |  |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | statement | [string](#string) |  |  |
@@ -3014,7 +3013,7 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance}/databases/{databaseName} |
+| name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance}/databases/{databaseName} or projects/{project}/instances/{instance}/databases/{databaseName} |
 | statement | [string](#string) |  | The SQL statement to execute. |
 | limit | [int32](#int32) |  | The maximum number of rows to return. |
 | schema | [string](#string) | optional | The default schema to execute the statement. Equals to the current schema in Oracle and search path in Postgres. |
@@ -3069,7 +3068,7 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the resource name to execute the export against. Format: instances/{instance}/databases/{database} Format: instances/{instance} |
+| name | [string](#string) |  | The name is the resource name to execute the export against. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | statement | [string](#string) |  | The SQL statement to execute. |
 | limit | [int32](#int32) |  | The maximum number of rows to return. |
 | format | [ExportFormat](#bytebase-v1-ExportFormat) |  | The export format. |
@@ -3145,7 +3144,7 @@ QueryHistoryService manages query history records of SQL Editor queries and expo
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name is the instance name to execute the query against. Format: instances/{instance}/databases/{databaseName} |
+| name | [string](#string) |  | The name is the database resource name to execute the query against. Format: instances/{instance}/databases/{databaseName} or projects/{project}/instances/{instance}/databases/{databaseName} |
 | statement | [string](#string) |  | The SQL statement to execute. |
 | limit | [int32](#int32) |  | The maximum number of rows to return. |
 | data_source_id | [string](#string) |  | The id of data source. If omitted, Query resolves the data source server-side by using the single read-only data source when exactly one exists, or the admin data source otherwise. It can also be set explicitly to query the admin data source or a specific read-only data source. |
@@ -3637,7 +3636,7 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| target | [string](#string) |  | The resource name of the instance on which the database is created. Format: instances/{instance} |
+| target | [string](#string) |  | The resource name of the instance on which the database is created. Format: instances/{instance} or projects/{project}/instances/{instance} |
 | database | [string](#string) |  | The name of the database to create. |
 | table | [string](#string) |  | table is the name of the table, if it is not empty, Bytebase should create a table after creating the database. For example, in MongoDB, it only creates the database when we first store data in that database. |
 | character_set | [string](#string) |  | character_set is the character set of the database. |
@@ -3747,7 +3746,7 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; create_time &
 | title | [string](#string) |  |  |
 | content | [string](#string) |  |  |
 | code | [int32](#int32) |  |  |
-| target | [string](#string) |  | Target identification for consolidated results. Format: instances/{instance}/databases/{database} |
+| target | [string](#string) |  | Target identification for consolidated results. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | type | [PlanCheckRun.Result.Type](#bytebase-v1-PlanCheckRun-Result-Type) |  |  |
 | sql_summary_report | [PlanCheckRun.Result.SqlSummaryReport](#bytebase-v1-PlanCheckRun-Result-SqlSummaryReport) |  |  |
 | sql_review_report | [PlanCheckRun.Result.SqlReviewReport](#bytebase-v1-PlanCheckRun-Result-SqlReviewReport) |  |  |
@@ -4974,15 +4973,6 @@ workspace.
 | ignore_masking_exemptions | [bool](#bool) |  | Whether a request that arrived over MCP stops applying the caller&#39;s own unmasking provisioning. Two mechanisms let a user see a real value and this suppresses both: the masking exemptions granted to them, and the unmask carried by an access grant. The same user in the console is untouched.
 
 It cannot force masking where there is none. Masking substitutes values in query results, so this does not reach data copied into a column carrying no masking policy, and it does nothing on the engines Bytebase does not mask. It narrows what an agent reads through the paths Bytebase masks; it is not a confidentiality boundary. |
-| capability_unreadable | [bool](#bool) |  | True when the row carries a capability key that this build cannot resolve to a ceiling. An enum name a newer release wrote is the legitimate trigger, during a rolling upgrade; a hand-edited token reaches the same state. False for every readable row, including one that was never configured.
-
-The capability field cannot carry this on its own: the unmarshaler discards an enum name it does not know, so an unreadable row and a never-configured one both arrive as CAPABILITY_UNSPECIFIED, while MCP is refused for the first and served at READ_WRITE for the second. A client reading only the capability shows the most permissive ceiling over a workspace where every MCP connection is being refused.
-
-A row protojson cannot parse at all is NOT this state. There is no ceiling in it to describe, so the read fails instead, and repairing it needs an operator rather than this field.
-
-The stored token itself is deliberately not returned. Telling a typo apart from a value a newer release wrote would only pay off if this enum grew, and it has not: its one reserved slot held a tier removed before any release shipped it.
-
-Set the row right by writing value.mcp.capability. Any other path is refused while this is true, because the merge that saved it would erase the value nobody could read. |
 
 
 
@@ -5333,10 +5323,9 @@ For examples: resource.environment_id == &#34;prod&#34; &amp;&amp; statement.aff
 <a name="bytebase-v1-MCPSetting-Capability"></a>
 
 ### MCPSetting.Capability
-Capability is the ceiling: a session runs at this level or lower. An absent
-MCP setting resolves to READ_WRITE, so a workspace that never configured
-MCP is unaffected. Writing CAPABILITY_UNSPECIFIED explicitly is rejected —
-omit the update mask path to leave the ceiling unset.
+Capability is the ceiling: a session runs at this level or lower.
+Writing CAPABILITY_UNSPECIFIED explicitly is rejected; omit the update mask
+path to leave the current ceiling unchanged.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
@@ -5432,7 +5421,42 @@ SettingService manages workspace-level settings and configurations.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| users | [User](#bytebase-v1-User) | repeated | The users from the specified request. |
+| users | [User](#bytebase-v1-User) | repeated | One user per requested name, in the same order as `names`. |
+
+
+
+
+
+
+<a name="bytebase-v1-ChangePasswordRequest"></a>
+
+### ChangePasswordRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: users/{email}. Must be the caller&#39;s own name. |
+| new_password | [string](#string) |  |  |
+| credential | [CredentialProof](#bytebase-v1-CredentialProof) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-ConfirmRecoveryCodesRequest"></a>
+
+### ConfirmRecoveryCodesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: users/{email}. Must be the caller&#39;s own name. |
+| pending_version | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The pending_version of the codes being confirmed. Confirming promotes exactly the set this version identifies, or nothing. |
+| credential | [CredentialProof](#bytebase-v1-CredentialProof) |  |  |
+| otp_code | [string](#string) |  | Required for first-time enrollment, rejected otherwise. A *fresh* code, not the one EnableMFA took. |
 
 
 
@@ -5454,6 +5478,25 @@ SettingService manages workspace-level settings and configurations.
 
 
 
+<a name="bytebase-v1-CredentialProof"></a>
+
+### CredentialProof
+One proof that the caller currently controls a credential on the account.
+Exactly one field must be set; enforced in the handler.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| current_password | [string](#string) |  | The account&#39;s current password. Refused by a factor-touching method while a live MFA factor exists. |
+| otp_code | [string](#string) |  | A live code from the account&#39;s enrolled TOTP authenticator. |
+| recovery_code | [string](#string) |  | A single-use MFA recovery code. |
+| email_code | [string](#string) |  | A one-time code from RequestReauthCode. Bytebase Cloud only, and only while the account has no live MFA factor. |
+
+
+
+
+
+
 <a name="bytebase-v1-DeleteUserRequest"></a>
 
 ### DeleteUserRequest
@@ -5463,6 +5506,40 @@ SettingService manages workspace-level settings and configurations.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | The name of the user to delete. Format: users/{email} |
+
+
+
+
+
+
+<a name="bytebase-v1-DisableMFARequest"></a>
+
+### DisableMFARequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: users/{email}. The caller&#39;s own, or another user&#39;s with bb.users.update. |
+| credential | [CredentialProof](#bytebase-v1-CredentialProof) |  | Required for a self-service call against a live factor, and then only otp_code or recovery_code. Unused on an admin-assisted call. |
+
+
+
+
+
+
+<a name="bytebase-v1-EnableMFARequest"></a>
+
+### EnableMFARequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: users/{email}. Must be the caller&#39;s own name. |
+| otp_code | [string](#string) |  | A code from the authenticator the pending secret was just added to. |
+| pending_version | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | The pending_version this enrollment was minted with. |
+| credential | [CredentialProof](#bytebase-v1-CredentialProof) |  | Proof of the *existing* factor, not the new device above. Required for a rotation, and for first-time enrollment on an account with a password. |
 
 
 
@@ -5524,6 +5601,85 @@ For example: name == &#34;ed&#34; name.contains(&#34;ed&#34;) email == &#34;ed@b
 
 
 
+<a name="bytebase-v1-RegenerateRecoveryCodesRequest"></a>
+
+### RegenerateRecoveryCodesRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: users/{email}. Must be the caller&#39;s own name. |
+
+
+
+
+
+
+<a name="bytebase-v1-RegenerateRecoveryCodesResponse"></a>
+
+### RegenerateRecoveryCodesResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| recovery_codes | [string](#string) | repeated | The pending recovery codes, shown once for the caller to save. |
+| pending_version | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Identifies this mint; see StartMFAEnrollmentResponse.pending_version. |
+
+
+
+
+
+
+<a name="bytebase-v1-RequestReauthCodeRequest"></a>
+
+### RequestReauthCodeRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: users/{email}. Must be the caller&#39;s own name. |
+
+
+
+
+
+
+<a name="bytebase-v1-StartMFAEnrollmentRequest"></a>
+
+### StartMFAEnrollmentRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: users/{email}. Must be the caller&#39;s own name. |
+
+
+
+
+
+
+<a name="bytebase-v1-StartMFAEnrollmentResponse"></a>
+
+### StartMFAEnrollmentResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| otp_secret | [string](#string) |  | The pending TOTP secret. The only response that carries it — it is never readable from the User resource. |
+| recovery_codes | [string](#string) | repeated | The pending recovery codes, shown once for the caller to save. |
+| expire_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When this enrollment stops being confirmable. |
+| pending_version | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Identifies this mint. Echo it back to EnableMFA and ConfirmRecoveryCodes; a mint from another tab or device replaces the pending state, and those methods refuse a version that is no longer the pending one rather than promoting something this caller never saw. |
+
+
+
+
+
+
 <a name="bytebase-v1-UndeleteUserRequest"></a>
 
 ### UndeleteUserRequest
@@ -5567,9 +5723,6 @@ For example: name == &#34;ed&#34; name.contains(&#34;ed&#34;) email == &#34;ed@b
 
 The user&#39;s `name` field is used to identify the user to update. Format: users/{email} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| otp_code | [string](#string) | optional | The otp_code is used to verify the user&#39;s identity by MFA. |
-| regenerate_temp_mfa_secret | [bool](#bool) |  | The regenerate_temp_mfa_secret flag means to regenerate temporary MFA secret for user. This is used for MFA setup. The temporary MFA secret and recovery codes will be returned in the response. |
-| regenerate_recovery_codes | [bool](#bool) |  | The regenerate_recovery_codes flag means to regenerate recovery codes for user. |
 | allow_missing | [bool](#bool) |  | If set to true, and the user is not found, a new user will be created. In this situation, `update_mask` is ignored. |
 
 
@@ -5590,10 +5743,7 @@ The user&#39;s `name` field is used to identify the user to update. Format: user
 | email | [string](#string) |  | The email address of the user, used for login and notifications. |
 | title | [string](#string) |  | The display title or full name of the user. |
 | password | [string](#string) |  | The password for authentication. Only used during user creation or password updates. |
-| mfa_enabled | [bool](#bool) |  | The mfa_enabled flag means if the user has enabled MFA. |
-| temp_otp_secret | [string](#string) |  | Temporary OTP secret used during MFA setup and regeneration. |
-| temp_recovery_codes | [string](#string) | repeated | Temporary recovery codes used during MFA setup and regeneration. |
-| temp_otp_secret_created_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | Timestamp when temp_otp_secret was created. Used by frontend to show countdown timer. |
+| mfa_enabled | [bool](#bool) |  | Whether the user has a live MFA factor. Set by ConfirmRecoveryCodes and DisableMFA, never by an update. |
 | phone | [string](#string) |  | Should be a valid E.164 compliant phone number. Could be empty. |
 | profile | [User.Profile](#bytebase-v1-User-Profile) |  | User profile metadata. |
 | groups | [string](#string) | repeated | The groups for the user. Format: groups/{email} |
@@ -5635,7 +5785,7 @@ UserService manages user accounts and authentication.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetUser | [GetUserRequest](#bytebase-v1-GetUserRequest) | [User](#bytebase-v1-User) | Get the user. Any authenticated user can get the user. Permissions required: bb.users.get |
-| BatchGetUsers | [BatchGetUsersRequest](#bytebase-v1-BatchGetUsersRequest) | [BatchGetUsersResponse](#bytebase-v1-BatchGetUsersResponse) | Get the users in batch. Any authenticated user can batch get users. Permissions required: bb.users.get |
+| BatchGetUsers | [BatchGetUsersRequest](#bytebase-v1-BatchGetUsersRequest) | [BatchGetUsersResponse](#bytebase-v1-BatchGetUsersResponse) | Get the users in batch. Any authenticated user can batch get users. One resource per requested name, in request order. The first name that does not resolve fails the whole call (AIP-231: no partial response). Permissions required: bb.users.get |
 | GetCurrentUser | [.google.protobuf.Empty](#google-protobuf-Empty) | [User](#bytebase-v1-User) | Get the current authenticated user. Permissions required: None |
 | ListUsers | [ListUsersRequest](#bytebase-v1-ListUsersRequest) | [ListUsersResponse](#bytebase-v1-ListUsersResponse) | List all users. Any authenticated user can list users. Permissions required: bb.users.list |
 | CreateUser | [CreateUserRequest](#bytebase-v1-CreateUserRequest) | [User](#bytebase-v1-User) | Creates a user in the caller&#39;s workspace (admin action, self-hosted only). In SaaS mode, admins should add users via workspace IAM policy instead. Permissions required: bb.users.create |
@@ -5643,6 +5793,13 @@ UserService manages user accounts and authentication.
 | DeleteUser | [DeleteUserRequest](#bytebase-v1-DeleteUserRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a user. Requires bb.users.delete permission with additional validation: the last remaining workspace admin cannot be deleted. Permissions required: bb.users.delete |
 | UndeleteUser | [UndeleteUserRequest](#bytebase-v1-UndeleteUserRequest) | [User](#bytebase-v1-User) | Restores a deleted user. Permissions required: bb.users.undelete |
 | UpdateEmail | [UpdateEmailRequest](#bytebase-v1-UpdateEmailRequest) | [User](#bytebase-v1-User) | Updates a user&#39;s email address. Permissions required: bb.users.updateEmail |
+| RequestReauthCode | [RequestReauthCodeRequest](#bytebase-v1-RequestReauthCodeRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sends a one-time code to the caller&#39;s own email, usable as CredentialProof.email_code. Bytebase Cloud only, and only while the account has no live MFA factor. Not AuthService.SendEmailLoginCode: that one starts a session, this one proves an existing one. Permissions required: None beyond being signed in as `name`. |
+| ChangePassword | [ChangePasswordRequest](#bytebase-v1-ChangePasswordRequest) | [User](#bytebase-v1-User) | Changes the caller&#39;s own password. An administrator resetting someone else&#39;s password uses UpdateUser with the `password` mask instead — that is a different operation with a different audit story, even though both end in a new password hash. Permissions required: None beyond being signed in as `name`. |
+| StartMFAEnrollment | [StartMFAEnrollmentRequest](#bytebase-v1-StartMFAEnrollmentRequest) | [StartMFAEnrollmentResponse](#bytebase-v1-StartMFAEnrollmentResponse) | Mints a pending TOTP secret and recovery codes for the caller&#39;s own account and returns them. Nothing goes live until ConfirmRecoveryCodes, so an abandoned enrollment leaves the account exactly as it was. Permissions required: None beyond being signed in as `name`. |
+| EnableMFA | [EnableMFARequest](#bytebase-v1-EnableMFARequest) | [User](#bytebase-v1-User) | Verifies an otp_code against the pending enrollment. Nothing is written: this is the step that catches a mistyped authenticator before the caller is shown recovery codes, and promotion happens at ConfirmRecoveryCodes so an account is never MFA-required with codes its owner never saved. Permissions required: None beyond being signed in as `name`. It writes nothing itself, but it is a required step of installing a factor on the account, which is why it is denied on the same grounds as the promotion it precedes. |
+| DisableMFA | [DisableMFARequest](#bytebase-v1-DisableMFARequest) | [User](#bytebase-v1-User) | Turns MFA off, clearing the entire MFA config — live and pending state alike. Callers may disable their own; an administrator may disable another user&#39;s with bb.users.update, which is how a locked-out user is recovered. Permissions required: bb.users.update, unless `name` is the caller&#39;s own. |
+| RegenerateRecoveryCodes | [RegenerateRecoveryCodesRequest](#bytebase-v1-RegenerateRecoveryCodesRequest) | [RegenerateRecoveryCodesResponse](#bytebase-v1-RegenerateRecoveryCodesResponse) | Mints a pending recovery-code set beside the live one and returns it. The old codes keep working until ConfirmRecoveryCodes promotes these, so a caller who closes the page mid-way is not left without any. Permissions required: None beyond being signed in as `name`. |
+| ConfirmRecoveryCodes | [ConfirmRecoveryCodesRequest](#bytebase-v1-ConfirmRecoveryCodesRequest) | [User](#bytebase-v1-User) | Promotes the pending recovery codes. During first-time enrollment this is also where the pending TOTP secret goes live, so the factor and the codes that recover it start existing in the same write. Permissions required: None beyond being signed in as `name`. |
 
  
 
@@ -5959,9 +6116,9 @@ AuthService handles user authentication operations.
 | Signup | [SignupRequest](#bytebase-v1-SignupRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Registers a new user account. Creates a principal and assigns a workspace: - If the user&#39;s email was pre-invited to a workspace, joins that workspace. - Otherwise, creates a new workspace with the user as admin. Returns access tokens so the user is logged in immediately after signup. |
 | Refresh | [RefreshRequest](#bytebase-v1-RefreshRequest) | [RefreshResponse](#bytebase-v1-RefreshResponse) | Refreshes the access token using the refresh token cookie. Permissions required: None (validates via refresh token cookie) |
 | SwitchWorkspace | [SwitchWorkspaceRequest](#bytebase-v1-SwitchWorkspaceRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Switches the current user&#39;s active workspace and issues new tokens. The user must be a member of the target workspace. |
-| RequestPasswordReset | [RequestPasswordResetRequest](#bytebase-v1-RequestPasswordResetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Requests a password reset email for the given email address. Always returns success to avoid leaking whether the email exists. Permissions required: None |
+| RequestPasswordReset | [RequestPasswordResetRequest](#bytebase-v1-RequestPasswordResetRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Requests a password reset email for the given email address. Always returns success to avoid leaking whether the email exists. Requires the workspace&#39;s SMTP mail delivery setting; without it the recovery route is an admin password reset. Permissions required: None |
 | ResetPassword | [ResetPasswordRequest](#bytebase-v1-ResetPasswordRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Resets the user&#39;s password using a password reset token from email. Permissions required: None (validates via token) |
-| SendEmailLoginCode | [SendEmailLoginCodeRequest](#bytebase-v1-SendEmailLoginCodeRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sends a 6-digit verification code to the email for login/signup. Always returns success (no email enumeration). Enforces 60-sec resend cooldown. Permissions required: None |
+| SendEmailLoginCode | [SendEmailLoginCodeRequest](#bytebase-v1-SendEmailLoginCodeRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Sends a 6-digit verification code to the email for login/signup. Always returns success (no email enumeration). Enforces 60-sec resend cooldown. The signed-in counterpart is UserService.RequestReauthCode; LOGIN and REAUTH codes are not interchangeable. Permissions required: None |
 
  
 
@@ -6114,9 +6271,9 @@ When paginating, all other parameters provided must match the call that provided
 | view | [ChangelogView](#bytebase-v1-ChangelogView) |  |  |
 | filter | [string](#string) |  | Filter is used to filter changelogs returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - status: the changelog status, support &#34;==&#34; operation. check Changelog.Status for available values. - create_time: the changelog create time in &#34;2006-01-02T15:04:05Z07:00&#34; format, support &#34;&gt;=&#34; or &#34;&lt;=&#34; operator.
+Supported filter: - status: the changelog status, support &#34;==&#34; operation. check Changelog.Status for available values. - has_schema_snapshot: filters to changelogs with a schema snapshot; only &#34;has_schema_snapshot == true&#34; is supported. - create_time: the changelog create time in RFC 3339 format, supports &#34;&gt;=&#34;, &#34;&lt;=&#34;, or &#34;&lt;&#34; operator.
 
-Example: status == &#34;DONE&#34; status == &#34;FAILED&#34; &amp;&amp; type == &#34;SDL&#34; create_time &gt;= &#34;2024-01-01T00:00:00Z&#34; &amp;&amp; create_time &lt;= &#34;2024-01-02T00:00:00Z&#34; |
+Example: status == &#34;DONE&#34; status == &#34;FAILED&#34; has_schema_snapshot == true &amp;&amp; create_time &lt; &#34;2024-01-02T00:00:00Z&#34; |
 
 
 
@@ -6380,10 +6537,9 @@ Request message for updating a database catalog.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| catalog | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  | The database catalog to update.
+| catalog | [DatabaseCatalog](#bytebase-v1-DatabaseCatalog) |  | The database catalog to update, identified by its `name` field. Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
 
-The catalog&#39;s `name` field is used to identify the database catalog to update. Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog |
-| allow_missing | [bool](#bool) |  | If set to true, and the database catalog is not found, a new database catalog will be created. In this situation, `update_mask` is ignored. |
+Replaces the whole catalog: send the complete value, since anything omitted is erased. There is no `update_mask` because `schemas` is a repeated field, and AIP-161 forbids addressing one element of one. |
 
 
 
@@ -7493,7 +7649,7 @@ InstanceService manages database instances and their connections.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| databases | [Database](#bytebase-v1-Database) | repeated | The databases from the specified request. |
+| databases | [Database](#bytebase-v1-Database) | repeated | One database per requested name, in the same order as `names`. |
 
 
 
@@ -8195,9 +8351,9 @@ IndexMetadata is the metadata for indexes.
 When paginating, all other parameters provided to `ListDatabases` must match the call that provided the page token. |
 | filter | [string](#string) |  | Filter is used to filter databases returned in the list. The syntax and semantics of CEL are documented at https://github.com/google/cel-spec
 
-Supported filter: - environment: the environment full name in &#34;environments/{id}&#34; format, support &#34;==&#34; operator. - name: the database name, support &#34;.contains()&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - instance: the instance full name in &#34;instances/{id}&#34; format, support &#34;==&#34; operator. - engine: the database engine, check Engine enum for values. Support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator. - exclude_unassigned: should be &#34;true&#34; or &#34;false&#34;, will not show unassigned databases if it&#39;s true, support &#34;==&#34; operator. - table: filter by the database table, support &#34;==&#34; and &#34;.contains()&#34; operator. - labels.{key}: the database label, support &#34;==&#34; and &#34;in&#34; operators.
+Supported filter: - environment: the environment full name in &#34;environments/{id}&#34; format, support &#34;==&#34; operator. - name: the database name, support &#34;.contains()&#34; operator. - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator. - instance: the instance full name in &#34;instances/{id}&#34; or &#34;projects/{project}/instances/{id}&#34; format, support &#34;==&#34; operator. - engine: the database engine, check Engine enum for values. Support &#34;==&#34;, &#34;in [xx]&#34;, &#34;!(in [xx])&#34; operator. - exclude_unassigned: should be &#34;true&#34; or &#34;false&#34;, will not show unassigned databases if it&#39;s true, support &#34;==&#34; operator. - table: filter by the database table, support &#34;==&#34; and &#34;.contains()&#34; operator. - labels.{key}: the database label, support &#34;==&#34; and &#34;in&#34; operators.
 
-For example: environment == &#34;environments/{environment resource id}&#34; environment == &#34;&#34; (find databases which environment is not set) project == &#34;projects/{project resource id}&#34; instance == &#34;instances/{instance resource id}&#34; name.contains(&#34;database name&#34;) engine == &#34;MYSQL&#34; engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;] !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]) exclude_unassigned == true table == &#34;sample&#34; table.contains(&#34;sam&#34;) labels.environment == &#34;production&#34; labels.region == &#34;asia&#34; labels.region in [&#34;asia&#34;, &#34;europe&#34;]
+For example: environment == &#34;environments/{environment resource id}&#34; environment == &#34;&#34; (find databases which environment is not set) project == &#34;projects/{project resource id}&#34; instance == &#34;instances/{instance resource id}&#34; instance == &#34;projects/{project resource id}/instances/{instance resource id}&#34; name.contains(&#34;database name&#34;) engine == &#34;MYSQL&#34; engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;] !(engine in [&#34;MYSQL&#34;, &#34;POSTGRES&#34;]) exclude_unassigned == true table == &#34;sample&#34; table.contains(&#34;sam&#34;) labels.environment == &#34;production&#34; labels.region == &#34;asia&#34; labels.region in [&#34;asia&#34;, &#34;europe&#34;]
 
 You can combine filter conditions like: environment == &#34;environments/prod&#34; &amp;&amp; name.contains(&#34;employee&#34;) |
 | show_deleted | [bool](#bool) |  | Show deleted database if specified. |
@@ -8570,7 +8726,6 @@ TessellationConfig defines tessellation parameters for spatial indexes.
 
 The database&#39;s `name` field is used to identify the database to update. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| allow_missing | [bool](#bool) |  | If set to true, and the database is not found, a new database will be created. In this situation, `update_mask` is ignored. |
 
 
 
@@ -8747,7 +8902,7 @@ DatabaseService manages databases and their schemas.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetDatabase | [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest) | [Database](#bytebase-v1-Database) | Retrieves a database by name. Permissions required: bb.databases.get |
-| BatchGetDatabases | [BatchGetDatabasesRequest](#bytebase-v1-BatchGetDatabasesRequest) | [BatchGetDatabasesResponse](#bytebase-v1-BatchGetDatabasesResponse) | Retrieves multiple databases by their names. Permissions required: bb.databases.get |
+| BatchGetDatabases | [BatchGetDatabasesRequest](#bytebase-v1-BatchGetDatabasesRequest) | [BatchGetDatabasesResponse](#bytebase-v1-BatchGetDatabasesResponse) | Retrieves multiple databases by their names. One resource per requested name, in request order. The first name that does not resolve fails the whole call (AIP-231: no partial response). Permissions required: bb.databases.get (on each named database&#39;s project) |
 | ListDatabases | [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest) | [ListDatabasesResponse](#bytebase-v1-ListDatabasesResponse) | Lists databases in a project, instance, or workspace. Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent) |
 | UpdateDatabase | [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest) | [Database](#bytebase-v1-Database) | Updates database properties such as labels and project assignment. Permissions required: bb.databases.update |
 | BatchUpdateDatabases | [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest) | [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse) | Updates multiple databases in a single batch operation. Permissions required: bb.databases.update |
@@ -8794,7 +8949,7 @@ Response message for batch getting groups.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| groups | [Group](#bytebase-v1-Group) | repeated | The groups from the specified request. |
+| groups | [Group](#bytebase-v1-Group) | repeated | One group per requested name, in the same order as `names`. |
 
 
 
@@ -8970,7 +9125,7 @@ GroupService manages user groups for organizing users and permissions.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetGroup | [GetGroupRequest](#bytebase-v1-GetGroupRequest) | [Group](#bytebase-v1-Group) | Gets a group by name. Group members or users with bb.groups.get permission can get the group. Permissions required: bb.groups.get OR caller is the group member |
-| BatchGetGroups | [BatchGetGroupsRequest](#bytebase-v1-BatchGetGroupsRequest) | [BatchGetGroupsResponse](#bytebase-v1-BatchGetGroupsResponse) | Gets multiple groups in a single request. Group members or users with bb.groups.get permission can get the group. Permissions required: bb.groups.get OR caller is the group member |
+| BatchGetGroups | [BatchGetGroupsRequest](#bytebase-v1-BatchGetGroupsRequest) | [BatchGetGroupsResponse](#bytebase-v1-BatchGetGroupsResponse) | Gets multiple groups in a single request. Group members or users with bb.groups.get permission can get the group. One resource per requested name, in request order. The first name that does not resolve fails the whole call (AIP-231: no partial response). Permissions required: bb.groups.get OR caller is the group member |
 | ListGroups | [ListGroupsRequest](#bytebase-v1-ListGroupsRequest) | [ListGroupsResponse](#bytebase-v1-ListGroupsResponse) | Lists all groups in the workspace. Permissions required: bb.groups.list |
 | CreateGroup | [CreateGroupRequest](#bytebase-v1-CreateGroupRequest) | [Group](#bytebase-v1-Group) | Creates a new group. Permissions required: bb.groups.create |
 | UpdateGroup | [UpdateGroupRequest](#bytebase-v1-UpdateGroupRequest) | [Group](#bytebase-v1-Group) | Updates a group. Group owners or users with bb.groups.update permission can update. Permissions required: bb.groups.update OR caller is group owner When allow_missing=true, also requires: bb.groups.create |
@@ -9777,7 +9932,7 @@ Activity types for webhook notifications.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| projects | [Project](#bytebase-v1-Project) | repeated | The projects from the specified request. |
+| projects | [Project](#bytebase-v1-Project) | repeated | One project per requested name, in the same order as `names`. |
 
 
 
@@ -10149,7 +10304,7 @@ ProjectService manages projects that group databases and changes.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetProject | [GetProjectRequest](#bytebase-v1-GetProjectRequest) | [Project](#bytebase-v1-Project) | GetProject retrieves a project by name. Users with &#34;bb.projects.get&#34; permission on the workspace or the project owner can access this method. Permissions required: bb.projects.get |
-| BatchGetProjects | [BatchGetProjectsRequest](#bytebase-v1-BatchGetProjectsRequest) | [BatchGetProjectsResponse](#bytebase-v1-BatchGetProjectsResponse) | BatchGetProjects retrieves multiple projects by their names. Permissions required: bb.projects.get |
+| BatchGetProjects | [BatchGetProjectsRequest](#bytebase-v1-BatchGetProjectsRequest) | [BatchGetProjectsResponse](#bytebase-v1-BatchGetProjectsResponse) | BatchGetProjects retrieves multiple projects by their names. One resource per requested name, in request order. The first name that does not resolve fails the whole call (AIP-231: no partial response). Permissions required: bb.projects.get (on each named project) |
 | ListProjects | [ListProjectsRequest](#bytebase-v1-ListProjectsRequest) | [ListProjectsResponse](#bytebase-v1-ListProjectsResponse) | Lists all projects in the workspace with optional filtering. Permissions required: bb.projects.list |
 | SearchProjects | [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest) | [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse) | Searches for projects with advanced filtering capabilities. Permissions required: bb.projects.get (or project-level bb.projects.get for specific projects) |
 | CreateProject | [CreateProjectRequest](#bytebase-v1-CreateProjectRequest) | [Project](#bytebase-v1-Project) | Creates a new project in the workspace. Permissions required: bb.projects.create |
@@ -11359,7 +11514,7 @@ For example: creator == &#34;users/alice@example.com&#34; |
 | ----- | ---- | ----- | ----------- |
 | name | [string](#string) |  | Server-generated. Format: projects/{project}/savedQueries/{savedQuery} |
 | project | [string](#string) |  | Format: projects/{project} |
-| database | [string](#string) |  | The connected database, which must belong to the saved query&#39;s own project. Empty when none is connected, or when the database no longer exists. Format: instances/{instance}/databases/{database} |
+| database | [string](#string) |  | The connected database, which must belong to the saved query&#39;s own project. Empty when none is connected, or when the database no longer exists. Format: instances/{instance}/databases/{database} or projects/{project}/instances/{instance}/databases/{database} |
 | title | [string](#string) |  | The title of the saved query. |
 | creator | [string](#string) |  | The owner. Ownership does not transfer. Format: users/{email} |
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
@@ -12700,9 +12855,7 @@ cannot describe the rules of the build before it.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | workspace | [string](#string) |  | The workspace this describes. Format: workspaces/{workspace}. Not this message&#39;s own resource name — MCPInfo is not a named resource and there is nothing to get it by. |
-| capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  | The ceiling in force, resolved rather than stored: a workspace that never configured MCP resolves to READ_WRITE, so CAPABILITY_UNSPECIFIED never means unconfigured here. It means this build could not resolve a ceiling from the stored row, and every MCP connection is refused.
-
-Otherwise modes decides: a ceiling serves nothing exactly when modes has no row for it. A number a client&#39;s own enum cannot name is a newer release&#39;s, and modes still says whether it serves. |
+| capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  | The ceiling in force for this workspace. A value no row in modes serves, CAPABILITY_UNSPECIFIED included, means no ceiling could be resolved from the stored row and every MCP connection is refused. |
 | modes | [MCPCapabilityMode](#bytebase-v1-MCPCapabilityMode) | repeated | What each ceiling serves, including the one in force, so an admin can compare the choices rather than only read the current answer. |
 | methods | [MCPMethod](#bytebase-v1-MCPMethod) | repeated | Every API method some ceiling serves. A mode serves a method when the method&#39;s class is one of that mode&#39;s served_classes, which is the ceiling rule the gate evaluates. Methods no ceiling serves are absent.
 

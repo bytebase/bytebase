@@ -11,34 +11,37 @@ import {
   getValueFromSearchParams,
   type SearchParams,
 } from "@/utils";
+import { celString } from "@/utils/v1/celLiteral";
 import type { AppSliceCreator, PlanFind, PlanSlice } from "./types";
 
 export const buildPlanFilter = (find: PlanFind): string => {
   const filter: string[] = [];
   if (find.query) {
-    filter.push(`title.contains("${find.query.trim().toLowerCase()}")`);
+    filter.push(
+      `title.contains(${celString(find.query.trim().toLowerCase())})`
+    );
   }
   if (find.creator) {
-    filter.push(`creator == "${find.creator}"`);
+    filter.push(`creator == ${celString(find.creator)}`);
   }
   if (find.createdTsAfter) {
     filter.push(
-      `create_time >= "${dayjs(find.createdTsAfter).utc().format()}"`
+      `create_time >= ${celString(dayjs(find.createdTsAfter).utc().format())}`
     );
   }
   if (find.createdTsBefore) {
     filter.push(
-      `create_time <= "${dayjs(find.createdTsBefore).utc().format()}"`
+      `create_time <= ${celString(dayjs(find.createdTsBefore).utc().format())}`
     );
   }
   if (find.hasRollout !== undefined) {
     filter.push(`has_rollout == ${find.hasRollout}`);
   }
   if (find.specType) {
-    filter.push(`spec_type == "${find.specType}"`);
+    filter.push(`spec_type == ${celString(find.specType)}`);
   }
   if (find.state) {
-    filter.push(`state == "${find.state}"`);
+    filter.push(`state == ${celString(find.state)}`);
   }
   return filter.join(" && ");
 };

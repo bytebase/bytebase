@@ -4,8 +4,16 @@ import type { ConnectError } from "@connectrpc/connect";
 import { Ellipsis } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { userServiceClientConnect } from "@/api";
 import { router } from "@/app/router";
 import { ACCOUNT_ROUTE_TWO_FACTOR } from "@/app/router/handles";
+import {
+  buildCredentialProof,
+  CredentialProofInput,
+  credentialProofCallOptions,
+  isCredentialProofReady,
+  useCredentialProofMode,
+} from "@/components/CredentialProofInput";
 import { FeatureBadge } from "@/components/FeatureBadge";
 import { LearnMoreLink } from "@/components/LearnMoreLink";
 import { getAvatarColor, getInitials } from "@/components/UserAvatar";
@@ -32,7 +40,11 @@ import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { AccountType, getAccountTypeByEmail } from "@/types";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
+import {
+  ChangePasswordRequestSchema,
+  DisableMFARequestSchema,
+  UpdateUserRequestSchema,
+} from "@/types/proto-es/v1/user_service_pb";
 import { hasWorkspacePermissionV2, setDocumentTitle } from "@/utils";
 import { SettingsCard, SettingsRow } from "./SettingsCard";
 import { getPasswordErrors, UserPasswordSection } from "./UserPasswordSection";
@@ -56,6 +68,14 @@ export function AccountSettingsPage() {
     (s) => s.getWorkspaceProfile().passwordRestriction
   );
   const requireMfa = useAppStore((s) => s.getWorkspaceProfile().requireMfa);
+  // ChangePassword refuses when password sign-in is disallowed, and SaaS
+  // forces that on regardless of the stored setting (getAccountRestriction),
+  // so both are consulted — otherwise Cloud shows a button that always fails.
+  const passwordSigninAvailable = useAppStore(
+    (s) =>
+      !(s.serverInfo?.saas ?? false) &&
+      !s.getWorkspaceProfile().disallowPasswordSignin
+  );
   const has2FAFeature = useAppStore((s) =>
     s.hasFeature(PlanFeature.FEATURE_TWO_FA)
   );
@@ -74,13 +94,16 @@ export function AccountSettingsPage() {
   // --- Password section ---
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [passwordProofValue, setPasswordProofValue] = useState("");
   const [savingPassword, setSavingPassword] = useState(false);
+  const proofMode = useCredentialProofMode();
 
   // --- Password + 2FA dialogs ---
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [showFeatureModal, setShowFeatureModal] = useState(false);
   const [showDisable2FAConfirm, setShowDisable2FAConfirm] = useState(false);
   const [showRegenerateView, setShowRegenerateView] = useState(false);
+  const [disable2FAProofValue, setDisable2FAProofValue] = useState("");
   const [disabling2FA, setDisabling2FA] = useState(false);
 
   useEffect(() => {
@@ -106,6 +129,7 @@ export function AccountSettingsPage() {
   );
   const allowSavePassword =
     password.length > 0 &&
+    isCredentialProofReady(proofMode, passwordProofValue) &&
     !passwordErrors.hasHint &&
     !passwordErrors.hasMismatch;
 
@@ -161,15 +185,18 @@ export function AccountSettingsPage() {
     if (!allowSavePassword) return;
     setSavingPassword(true);
     try {
-      const updated = await updateUser(
-        create(UpdateUserRequestSchema, {
-          user: { ...user, password },
-          updateMask: create(FieldMaskSchema, { paths: ["password"] }),
-        })
+      const updated = await userServiceClientConnect.changePassword(
+        create(ChangePasswordRequestSchema, {
+          name: user.name,
+          newPassword: password,
+          credential: buildCredentialProof(proofMode, passwordProofValue),
+        }),
+        credentialProofCallOptions()
       );
       setCurrentUser(updated);
       setPassword("");
       setPasswordConfirm("");
+      setPasswordProofValue("");
       setShowChangePassword(false);
       notifyUpdated();
     } catch (error) {
@@ -180,8 +207,9 @@ export function AccountSettingsPage() {
   }, [
     allowSavePassword,
     password,
-    user,
-    updateUser,
+    passwordProofValue,
+    proofMode,
+    user.name,
     notifyUpdated,
     notifyError,
   ]);
@@ -212,15 +240,25 @@ export function AccountSettingsPage() {
     if (disabling2FA) return;
     setDisabling2FA(true);
     try {
-      const updated = await updateUser(
-        create(UpdateUserRequestSchema, {
-          user: { name: user.name, mfaEnabled: false },
-          updateMask: create(FieldMaskSchema, { paths: ["mfa_enabled"] }),
-        })
+      // Turning the factor off is proven with the factor itself — an OTP or
+      // a recovery code — never the password, which a mailbox reset could
+      // have minted (docs/design/reauthenticate-credential-changes.md).
+      const updated = await userServiceClientConnect.disableMFA(
+        create(DisableMFARequestSchema, {
+          name: user.name,
+          credential: buildCredentialProof("factor", disable2FAProofValue),
+        }),
+        credentialProofCallOptions()
       );
       setCurrentUser(updated);
+      // The router guard reads mfa_enabled off the shared store, not this
+      // page's copy: a workspace admin who turns their own factor off while
+      // the workspace requires MFA has to be sent back to enrollment now,
+      // not whenever the session next revalidates.
+      useAppStore.getState().setCurrentUser(updated);
       setShowDisable2FAConfirm(false);
       setShowRegenerateView(false);
+      setDisable2FAProofValue("");
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -231,7 +269,7 @@ export function AccountSettingsPage() {
     } finally {
       setDisabling2FA(false);
     }
-  }, [disabling2FA, user.name, updateUser, notifyError, t]);
+  }, [disabling2FA, user.name, disable2FAProofValue, notifyError, t]);
 
   return (
     <WorkspacePageLayout>
@@ -314,17 +352,19 @@ export function AccountSettingsPage() {
               {t("settings.account.security")}
             </h2>
             <SettingsCard>
-              <SettingsRow
-                label={t("settings.profile.password")}
-                description={t("settings.account.password-notice")}
-              >
-                <Button
-                  appearance="outline"
-                  onClick={() => setShowChangePassword(true)}
+              {passwordSigninAvailable && (
+                <SettingsRow
+                  label={t("settings.profile.password")}
+                  description={t("settings.account.password-notice")}
                 >
-                  {t("settings.account.update-password")}
-                </Button>
-              </SettingsRow>
+                  <Button
+                    appearance="outline"
+                    onClick={() => setShowChangePassword(true)}
+                  >
+                    {t("settings.account.update-password")}
+                  </Button>
+                </SettingsRow>
+              )}
 
               <SettingsRow
                 align="start"
@@ -393,7 +433,6 @@ export function AccountSettingsPage() {
                 to regenerate recovery codes the account no longer has. */}
             {isMFAEnabled && showRegenerateView && (
               <RegenerateRecoveryCodesView
-                recoveryCodes={currentUser.tempRecoveryCodes}
                 onClose={() => setShowRegenerateView(false)}
               />
             )}
@@ -414,6 +453,7 @@ export function AccountSettingsPage() {
             if (!next) {
               setPassword("");
               setPasswordConfirm("");
+              setPasswordProofValue("");
             }
           }}
         >
@@ -422,7 +462,11 @@ export function AccountSettingsPage() {
             <DialogDescription>
               {t("settings.account.password-notice")}
             </DialogDescription>
-            <div className="mt-4">
+            <div className="mt-4 flex flex-col gap-y-4">
+              <CredentialProofInput
+                value={passwordProofValue}
+                onChange={setPasswordProofValue}
+              />
               <UserPasswordSection
                 password={password}
                 passwordConfirm={passwordConfirm}
@@ -460,6 +504,12 @@ export function AccountSettingsPage() {
             <DialogDescription>
               {t("two-factor.disable.description")}
             </DialogDescription>
+            <div className="mt-4">
+              <CredentialProofInput
+                value={disable2FAProofValue}
+                onChange={setDisable2FAProofValue}
+              />
+            </div>
             <div className="mt-4 flex justify-end gap-x-2">
               <Button
                 appearance="outline"
@@ -469,7 +519,10 @@ export function AccountSettingsPage() {
               </Button>
               <Button
                 variant="destructive"
-                disabled={disabling2FA}
+                disabled={
+                  disabling2FA ||
+                  !isCredentialProofReady("factor", disable2FAProofValue)
+                }
                 onClick={handleDisable2FA}
               >
                 {t("common.disable")}

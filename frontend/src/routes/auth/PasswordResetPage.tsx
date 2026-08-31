@@ -1,14 +1,15 @@
 import { create } from "@bufbuild/protobuf";
-import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { useEffect, useRef, useState } from "react";
+import type { ConnectError } from "@connectrpc/connect";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { authServiceClientConnect } from "@/api";
+import { authServiceClientConnect, userServiceClientConnect } from "@/api";
 import { router } from "@/app/router";
 import { AUTH_SIGNIN_MODULE } from "@/app/router/handles";
 import logoFull from "@/assets/logo-full.svg";
 import { AuthDivider } from "@/components/auth/AuthDivider";
 import { UserPasswordFields } from "@/components/auth/UserPasswordFields";
 import { computePasswordValidation } from "@/components/auth/userPasswordValidation";
+import { credentialProofCallOptions } from "@/components/CredentialProofInput";
 import { RouterLink } from "@/components/RouterLink";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,12 +22,17 @@ import {
   LoginRequestSchema,
   ResetPasswordRequestSchema,
 } from "@/types/proto-es/v1/auth_service_pb";
-import { UpdateUserRequestSchema } from "@/types/proto-es/v1/user_service_pb";
+import {
+  ChangePasswordRequestSchema,
+  CredentialProofSchema,
+} from "@/types/proto-es/v1/user_service_pb";
 
 export function PasswordResetPage() {
   const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [codeParts, setCodeParts] = useState<string[]>([]);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const currentPasswordId = useId();
   const [password, setPassword] = useState("");
   const [passwordConfirm, setPasswordConfirm] = useState("");
   const [resendCountdown, setResendCountdown] = useState(60);
@@ -99,6 +105,7 @@ export function PasswordResetPage() {
   const allowConfirm = (() => {
     if (!password) return false;
     if (codeMode && (!email || codeParts.join("").length !== 6)) return false;
+    if (!codeMode && !currentPassword) return false;
     return !validation.hint && !validation.mismatch;
   })();
 
@@ -151,15 +158,31 @@ export function PasswordResetPage() {
       return;
     }
 
-    // Forced-reset mode
+    // Forced-reset mode: the caller just signed in with their password, so
+    // the current password is the proof ChangePassword requires.
     if (!currentUser) return;
-    const patch = { ...currentUser, password };
-    await useAppStore.getState().updateUser(
-      create(UpdateUserRequestSchema, {
-        user: patch,
-        updateMask: create(FieldMaskSchema, { paths: ["password"] }),
-      })
-    );
+    try {
+      const updated = await userServiceClientConnect.changePassword(
+        create(ChangePasswordRequestSchema, {
+          name: currentUser.name,
+          newPassword: password,
+          credential: create(CredentialProofSchema, {
+            proof: { case: "currentPassword", value: currentPassword },
+          }),
+        }),
+        credentialProofCallOptions()
+      );
+      // Adopt what the mutation answered with rather than refetching: the
+      // guard that stranded this user on this page reads the shared store.
+      useAppStore.getState().setCurrentUser(updated);
+    } catch (error) {
+      pushNotification({
+        module: "bytebase",
+        style: "CRITICAL",
+        title: (error as ConnectError).message,
+      });
+      return;
+    }
     pushNotification({
       module: "bytebase",
       style: "SUCCESS",
@@ -223,6 +246,27 @@ export function PasswordResetPage() {
               </div>
             </div>
           </>
+        )}
+
+        {!codeMode && (
+          <div>
+            <label
+              htmlFor={currentPasswordId}
+              className="block text-sm font-medium leading-5 text-control"
+            >
+              {t("credential-proof.password-label")}
+              <span className="text-error ml-0.5">*</span>
+            </label>
+            <Input
+              id={currentPasswordId}
+              className="mt-1"
+              type="password"
+              autoComplete="current-password"
+              value={currentPassword}
+              required
+              onChange={(e) => setCurrentPassword(e.target.value)}
+            />
+          </div>
         )}
 
         <UserPasswordFields

@@ -90,6 +90,8 @@ type AuthServiceClient interface {
 	SwitchWorkspace(context.Context, *connect.Request[v1.SwitchWorkspaceRequest]) (*connect.Response[v1.LoginResponse], error)
 	// Requests a password reset email for the given email address.
 	// Always returns success to avoid leaking whether the email exists.
+	// Requires the workspace's SMTP mail delivery setting; without it the
+	// recovery route is an admin password reset.
 	// Permissions required: None
 	RequestPasswordReset(context.Context, *connect.Request[v1.RequestPasswordResetRequest]) (*connect.Response[emptypb.Empty], error)
 	// Resets the user's password using a password reset token from email.
@@ -97,6 +99,8 @@ type AuthServiceClient interface {
 	ResetPassword(context.Context, *connect.Request[v1.ResetPasswordRequest]) (*connect.Response[emptypb.Empty], error)
 	// Sends a 6-digit verification code to the email for login/signup.
 	// Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+	// The signed-in counterpart is UserService.RequestReauthCode; LOGIN and
+	// REAUTH codes are not interchangeable.
 	// Permissions required: None
 	SendEmailLoginCode(context.Context, *connect.Request[v1.SendEmailLoginCodeRequest]) (*connect.Response[emptypb.Empty], error)
 }
@@ -267,6 +271,8 @@ type AuthServiceHandler interface {
 	SwitchWorkspace(context.Context, *connect.Request[v1.SwitchWorkspaceRequest]) (*connect.Response[v1.LoginResponse], error)
 	// Requests a password reset email for the given email address.
 	// Always returns success to avoid leaking whether the email exists.
+	// Requires the workspace's SMTP mail delivery setting; without it the
+	// recovery route is an admin password reset.
 	// Permissions required: None
 	RequestPasswordReset(context.Context, *connect.Request[v1.RequestPasswordResetRequest]) (*connect.Response[emptypb.Empty], error)
 	// Resets the user's password using a password reset token from email.
@@ -274,6 +280,8 @@ type AuthServiceHandler interface {
 	ResetPassword(context.Context, *connect.Request[v1.ResetPasswordRequest]) (*connect.Response[emptypb.Empty], error)
 	// Sends a 6-digit verification code to the email for login/signup.
 	// Always returns success (no email enumeration). Enforces 60-sec resend cooldown.
+	// The signed-in counterpart is UserService.RequestReauthCode; LOGIN and
+	// REAUTH codes are not interchangeable.
 	// Permissions required: None
 	SendEmailLoginCode(context.Context, *connect.Request[v1.SendEmailLoginCodeRequest]) (*connect.Response[emptypb.Empty], error)
 }

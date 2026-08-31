@@ -47,13 +47,14 @@ func TestConsentCeiling(t *testing.T) {
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES
-			('ws-disabled'), ('ws-readonly'), ('ws-unset'), ('ws-typo'), ('ws-reserved');
+			('ws-disabled'), ('ws-readonly'), ('ws-readwrite'), ('ws-typo'), ('ws-reserved');
 		INSERT INTO principal (name, email, password_hash) VALUES ('demo', 'demo@example.com', 'unused');
 		INSERT INTO oauth2_client (client_id, workspace, client_secret_hash, config)
 		VALUES ('client-A', NULL, 'unused-hash', '{"clientName":"test","redirectUris":["http://localhost/cb"],"grantTypes":["authorization_code","refresh_token"],"tokenEndpointAuthMethod":"none"}'::jsonb);
 		INSERT INTO setting (name, workspace, value) VALUES
 			('MCP', 'ws-disabled', '{"capability":"DISABLED"}'),
 			('MCP', 'ws-readonly', '{"capability":"READ_ONLY"}'),
+			('MCP', 'ws-readwrite', '{"capability":"READ_WRITE"}'),
 			('MCP', 'ws-typo', '{"capability":"READ_ONLYY"}'),
 			('MCP', 'ws-reserved', '{"capability":2}');
 	`)
@@ -112,20 +113,17 @@ func TestConsentCeiling(t *testing.T) {
 			"a consent never reached the /mcp boundary that mints one")
 	})
 
-	t.Run("a stored ceiling nobody can read is refused as a typo, not as policy", func(t *testing.T) {
+	t.Run("an unknown capability is refused as unserved", func(t *testing.T) {
 		rec := consentTo(t, s, "ws-typo")
 
 		require.Equal(t, http.StatusForbidden, rec.Code)
-		require.Contains(t, rec.Body.String(), "not one this build understands")
-		// The heading follows the verdict: a stored value nobody can read is
-		// not "an admin turned MCP off", and the heading is what a hurried
-		// reader acts on.
-		require.Contains(t, rec.Body.String(), "MCP setting cannot be read")
+		require.Contains(t, rec.Body.String(), "not one this build serves")
+		require.Contains(t, rec.Body.String(), "not one this version supports")
 		require.NotContains(t, rec.Body.String(), "MCP access is turned off")
 
 		rows := auditRows(t, "ws-typo")
 		require.Len(t, rows, 1)
-		require.Contains(t, rows[0].Payload.GetStatus().GetMessage(), "not one this build understands")
+		require.Contains(t, rows[0].Payload.GetStatus().GetMessage(), "not one this build serves")
 	})
 
 	t.Run("a ceiling this build does not serve is refused too", func(t *testing.T) {
@@ -139,7 +137,7 @@ func TestConsentCeiling(t *testing.T) {
 	})
 
 	t.Run("a serving ceiling consents and records nothing", func(t *testing.T) {
-		for _, workspace := range []string{"ws-readonly", "ws-unset"} {
+		for _, workspace := range []string{"ws-readonly", "ws-readwrite"} {
 			t.Run(workspace, func(t *testing.T) {
 				rec := consentTo(t, s, workspace)
 
@@ -283,8 +281,8 @@ func TestConsentCeilingOutageIsNotARefusal(t *testing.T) {
 // cannot be made to do for one call.
 type failingCeilingReader struct{ err error }
 
-func (f failingCeilingReader) GetMCPSettingsUncached(context.Context, string) (store.MCPSettings, error) {
-	return store.MCPSettings{}, f.err
+func (f failingCeilingReader) GetMCPSettingsUncached(context.Context, string) (*storepb.MCPSetting, error) {
+	return nil, f.err
 }
 
 // TestTokenIssuanceRechecksTheCeiling pins the half a consent-time check alone
@@ -307,6 +305,7 @@ func TestTokenIssuanceRechecksTheCeiling(t *testing.T) {
 		INSERT INTO principal (name, email, password_hash) VALUES ('demo', 'demo@example.com', 'unused');
 		INSERT INTO oauth2_client (client_id, workspace, client_secret_hash, config)
 		VALUES ('client-A', NULL, 'unused-hash', '{"clientName":"test","redirectUris":["http://localhost/cb"],"grantTypes":["authorization_code","refresh_token"],"tokenEndpointAuthMethod":"none"}'::jsonb);
+		INSERT INTO setting (name, workspace, value) VALUES ('MCP', 'ws-test', '{"capability":"READ_WRITE"}');
 	`)
 	require.NoError(t, err)
 
@@ -331,7 +330,7 @@ func TestTokenIssuanceRechecksTheCeiling(t *testing.T) {
 	require.NotEmpty(t, tokens.RefreshToken)
 
 	_, err = db.ExecContext(ctx,
-		`INSERT INTO setting (name, workspace, value) VALUES ('MCP', 'ws-test', '{"capability":"DISABLED"}')`)
+		`UPDATE setting SET value = '{"capability":"DISABLED"}' WHERE workspace = 'ws-test' AND name = 'MCP'`)
 	require.NoError(t, err)
 
 	refresh := func() *httptest.ResponseRecorder {
@@ -416,6 +415,6 @@ func TestTokenIssuanceRechecksTheCeiling(t *testing.T) {
 // the live ceiling would now refuse.
 type servingCeilingReader struct{}
 
-func (servingCeilingReader) GetMCPSettingsUncached(context.Context, string) (store.MCPSettings, error) {
-	return store.MCPSettings{Capability: storepb.MCPSetting_READ_WRITE}, nil
+func (servingCeilingReader) GetMCPSettingsUncached(context.Context, string) (*storepb.MCPSetting, error) {
+	return &storepb.MCPSetting{Capability: storepb.MCPSetting_READ_WRITE}, nil
 }

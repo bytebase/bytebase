@@ -511,6 +511,16 @@
     "new-database-name": "Nuevo nombre de la base de datos",
     "reserved-db-error": "{{databaseName}} es un nombre reservado"
   },
+  "credential-proof": {
+    "code-sent": "Código enviado; revisa tu correo",
+    "email-label": "Código de verificación por correo",
+    "email-me-a-code": "Enviarme un código por correo",
+    "email-placeholder": "Código de 6 dígitos",
+    "factor-label": "Código de verificación",
+    "factor-placeholder": "Código del autenticador o código de recuperación",
+    "password-label": "Contraseña actual",
+    "resend-in": "Reenviar en {{seconds}}s"
+  },
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "Reglas de respaldo",
@@ -715,6 +725,7 @@
     "nullable": "Anulable",
     "partition-tables": "Tablas de particiones",
     "partitioned": "Particionado",
+    "project-instance-transfer-disabled": "Las bases de datos de una instancia vinculada a un proyecto no se pueden transferir ni desasignar.",
     "revision": {
       "add-more-files": "Añadir más",
       "available-files": "Archivos disponibles",
@@ -1212,6 +1223,8 @@
     "port": "Puerto",
     "prepare-sample-instance-failed": "No se pudo preparar la instancia de proyecto de muestra.",
     "preparing-sample-instance": "Preparando la instancia de proyecto de muestra…",
+    "project-bound-description": "Esta instancia está vinculada a este proyecto. Todas sus bases de datos se transfieren automáticamente al proyecto y no se pueden transferir ni desasignar.",
+    "project-bound-title": "Instancia vinculada al proyecto",
     "project-id": "ID del proyecto",
     "restore-instance-instance-name-to-normal-state": "¿Restaurar la instancia '{{0}}' al estado normal?",
     "role-arn": "ARN del rol",
@@ -1221,6 +1234,7 @@
     "sample-expiration-future_one": "La instancia de muestra se eliminará en {{count}} día, a las {{time}}.",
     "sample-expiration-future_other": "La instancia de muestra se eliminará en {{count}} días, a las {{time}}.",
     "sample-project-instance-description": "Use una instancia de proyecto de muestra para explorar Bytebase con una base de datos lista para usar durante 7 días.",
+    "sample-project-instance-description-self-host": "Use una instancia de proyecto de muestra para explorar Bytebase con una base de datos lista para usar.",
     "sample-project-instance-title": "Pruebe una instancia de proyecto de muestra",
     "scan-interval": {
       "default-never": "Predeterminado (nunca)",
@@ -1317,6 +1331,7 @@
     "type-or-paste-credentials-write-only": "Escriba o pegue las CREDENCIALES - solo escritura",
     "unable-to-connect": "Bytebase no pudo conectarse con esta configuración. Revisa las indicaciones anteriores o continúa y actualiza la conexión más tarde.\n\nDetalles técnicos: {{0}}",
     "use-sample-instance": "Usar instancia de ejemplo (Disponible durante 7 días)",
+    "use-sample-instance-self-host": "Usar instancia de ejemplo",
     "users": "Usuarios",
     "your-snowflake-account-locator": "Su localizador de cuentas Snowflake"
   },
@@ -1601,11 +1616,6 @@
             "retry": "Comprobar de nuevo",
             "title": "No se pudo comprobar la política MCP"
           },
-          "unreadable": {
-            "description": "Este espacio de trabajo almacena un valor de política que Bytebase no entiende. Se está rechazando toda conexión MCP.",
-            "line": "Ninguna sesión de IA puede conectarse hasta que se repare la política MCP de este espacio de trabajo",
-            "title": "No se puede leer la política MCP de este espacio de trabajo"
-          },
           "unserved": {
             "description": "Este espacio de trabajo almacena un valor de política que esta versión de Bytebase no sirve. Se está rechazando toda conexión MCP.",
             "line": "Ninguna sesión de IA puede conectarse hasta que un administrador elija una política admitida",
@@ -1648,6 +1658,7 @@
       "reset-to-defaults": "Restablecer valores predeterminados"
     },
     "go-to-plan-page": "Ir a la página del plan",
+    "initial-sql-storage-failed": "No se pudo guardar temporalmente el SQL. Libera espacio de almacenamiento del navegador e inténtalo de nuevo.",
     "isolation-level": {
       "read-committed": "Lectura confirmada",
       "read-uncommitted": "Lectura no confirmada",
@@ -1825,7 +1836,8 @@
       "actions": {
         "explain-code": "Explicar el código",
         "find-problems": "encontrar problemas",
-        "insert-at-caret": "Insertar en el cursor"
+        "insert-at-caret": "Insertar en el cursor",
+        "new-chat-using-selection": "Nuevo chat con la selección"
       },
       "ai-assistant": "Asistente de IA",
       "conversation": {
@@ -1955,7 +1967,7 @@
       "confirm-delete-project": "Eliminar \"{{name}}\" eliminará permanentemente el proyecto y todos los datos asociados, incluidos issues, configuraciones e historial. Todas las bases de datos de este proyecto se moverán al proyecto predeterminado. Esta acción no se puede deshacer.",
       "issue-related": {
         "allow-access-grants": {
-          "description": "Permite a los miembros del proyecto solicitar concesiones de acceso con límite de tiempo para sentencias específicas de solo lectura.",
+          "description": "Permite a los miembros del proyecto solicitar concesiones de acceso con límite de tiempo para sentencias específicas de solo lectura. Las concesiones también pueden incluir la exportación de resultados y la visualización de datos sin enmascarar.",
           "self": "Permitir concesiones de acceso"
         },
         "allow-request-role": {
@@ -2428,7 +2440,10 @@
           "exiting": "Saliendo..."
         },
         "data-copy": "Habilitar la copia de datos",
-        "data-export": "Habilitar la exportación de datos",
+        "data-export": {
+          "description": "Si está deshabilitado, los usuarios no pueden exportar directamente los resultados de las consultas. En los proyectos que permiten concesiones de acceso, aún pueden pulsar \"Solicitar exportación\" para enviar una solicitud de concesión de acceso y exportar tras la aprobación.",
+          "self": "Permitir la exportación de datos sin aprobación"
+        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "La vista predeterminada del espacio de trabajo se ha cambiado al Editor SQL.",
           "go-to-sql-editor": "Ir al Editor SQL",
@@ -2998,26 +3013,6 @@
       }
     }
   },
-  "setup": {
-    "basic-info": "Información básica",
-    "data": {
-      "built-in": "Utilice la muestra incorporada",
-      "built-in-desc": "Generar proyecto de muestra e instancias",
-      "self-setup": "Configurar el proyecto"
-    },
-    "purposes": {
-      "alter-schema": "Alterar esquema",
-      "query-data": "Consultar datos",
-      "self": "¿Cuál es su propósito principal con Bytebase?"
-    },
-    "self": "Configuración",
-    "skip-setup": "Saltar configuración",
-    "workflow": {
-      "self": "¿Cuál es su flujo de trabajo con la base de datos?",
-      "simple": "No hay un flujo de trabajo complejo, solo se necesitan herramientas de interfaz de usuario",
-      "team": "Trabajar con compañeros de equipo, necesita una canalización de CI/CD"
-    }
-  },
   "sheet": {
     "filter": {
       "only-show-starred": "Mostrar solo destacadas",
@@ -3180,6 +3175,8 @@
     "request-aborted": "El usuario abortó la solicitud",
     "request-access-grant": "Solicitar concesión de acceso",
     "request-export": "Solicitar exportación",
+    "request-query": "Solicitar consulta",
+    "request-unmask": "Solicitar desenmascaramiento",
     "result-detail": {
       "cell": "Detalle de celda",
       "next-match": "Siguiente coincidencia",
@@ -3532,6 +3529,7 @@
     },
     "self": "Autenticación de dos factores",
     "setup-steps": {
+      "confirm-code": "Introduce un código nuevo de tu autenticador para finalizar",
       "download-recovery-codes": {
         "keep-safe": {
           "description": "Estos códigos son el último recurso para acceder a su cuenta en caso de que pierda su código de autenticación de dos factores. Si no puede encontrar estos códigos, perderá el acceso a su cuenta.",
@@ -3586,6 +3584,7 @@
     },
     "prepare-database-tip": "Selecciona las bases de datos para transferirlas al proyecto.",
     "previous-step-required": "Debes terminar el paso anterior.",
+    "product-model": "Cómo funciona Bytebase",
     "self": "Configurar Bytebase",
     "steps": {
       "database": "Explorar bases de datos",

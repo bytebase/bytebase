@@ -723,38 +723,6 @@ describe("OAuth2ConsentPage", () => {
     unmount();
   });
 
-  test("an unreadable ceiling says so and offers no grant", async () => {
-    const { container, unmount } = await renderWithCeiling({
-      capability: 0,
-      ignoreMaskingExemptions: false,
-      dataMaskingAvailable: true,
-      methods: [],
-      engines: [],
-    });
-    expect(container.textContent).toContain(
-      "oauth2.consent.mcp.undisclosed.unreadable.title"
-    );
-    expect(container.textContent).not.toContain("common.allow");
-    // Nothing an admin has not fixed will change this answer, so there is no
-    // button implying a retry might. The label is built from the reason, so
-    // this is the only key a retry here could render — naming any other
-    // reason's key would assert something this render cannot produce.
-    expect(container.textContent).not.toContain(
-      "oauth2.consent.mcp.undisclosed.unreadable.retry"
-    );
-    // The workspace row stays, so a SaaS user can switch to one that discloses.
-    expect(container.textContent).toContain("oauth2.consent.workspace-label");
-    // Codex, #21254: the line that explains why there is no Allow arrives after
-    // the policy read settles, so it has to be announced rather than merely
-    // styled. A plain div renders identically and says nothing.
-    const status = container.querySelector('[role="alert"]');
-    expect(status).not.toBeNull();
-    expect(status?.textContent).toContain(
-      "oauth2.consent.mcp.undisclosed.unreadable.line"
-    );
-    unmount();
-  });
-
   test("a ceiling no mode serves says so and offers no grant", async () => {
     const { container, unmount } = await renderWithCeiling({
       // The reserved 2, or a ceiling a newer release wrote. It parses, so only

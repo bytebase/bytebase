@@ -423,7 +423,7 @@ type QueryHistory struct {
 	// Format: projects/{project}/queryHistories/{id}
 	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	// The database name to execute the query.
-	// Format: instances/{instance}/databases/{databaseName}
+	// Format: instances/{instance}/databases/{databaseName} or projects/{project}/instances/{instance}/databases/{databaseName}
 	Database      string                 `protobuf:"bytes,2,opt,name=database,proto3" json:"database,omitempty"`
 	Creator       string                 `protobuf:"bytes,3,opt,name=creator,proto3" json:"creator,omitempty"`
 	CreateTime    *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`

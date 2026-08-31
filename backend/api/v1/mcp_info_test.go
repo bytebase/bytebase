@@ -359,14 +359,13 @@ func TestGetMCPInfoHandler(t *testing.T) {
 		require.NoError(t, err)
 	}
 
-	t.Run("a workspace that never configured MCP", func(t *testing.T) {
+	t.Run("a workspace with the default MCP policy", func(t *testing.T) {
 		info, err := get(workspaceCtx())
 		require.NoError(t, err)
 		require.Equal(t, "workspaces/"+workspaceID, info.Workspace)
-		require.Equal(t, v1pb.MCPSetting_READ_WRITE, info.Capability)
+		require.Equal(t, v1pb.MCPSetting_READ_ONLY, info.Capability,
+			"a new workspace is seeded READ_ONLY; only a workspace with no row at all falls back to READ_WRITE")
 		require.False(t, info.IgnoreMaskingExemptions)
-		require.Equal(t, v1pb.MCPSetting_READ_WRITE, info.Capability,
-			"never-configured resolves READ_WRITE, which is what keeps unspecified unambiguous")
 
 		// The list is the live registry's, not a fixture: every entry must be a
 		// method this build actually compiled, and the count must match what
@@ -421,18 +420,14 @@ func TestGetMCPInfoHandler(t *testing.T) {
 		require.NotEmpty(t, info.Engines)
 	})
 
-	// Codex, #21254: the subtest above covers only a mistyped enum NAME, which
-	// unmarshals away to unset. A wrong-TYPED value fails the whole unmarshal
-	// instead, and the store wraps both in ErrMCPCapabilityUnreadable — so this
-	// field is wider than MCPSetting.capability_unreadable, which never
-	// describes these rows because GetSetting refuses them outright
-	// (backend/tests/mcp_capability_setting_test.go). Untested, that difference
-	// is invisible until someone reads the field as if the two were the same.
-	//
-	// The last two rows are the ones that make "unreadable" a property of the
-	// row rather than of the capability: the capability is readable and a
-	// sibling field is not, and one failed unmarshal takes the whole row.
-	t.Run("a row that does not unmarshal is described the same way", func(t *testing.T) {
+	// The subtest above covers a mistyped enum NAME, which unmarshals away to
+	// unset and is therefore describable. A wrong-TYPED value is different: it
+	// fails the whole unmarshal, so the generic setting read errors and there is
+	// no ceiling in the row to describe. The last two rows are why that is a
+	// property of the row and not of the capability — the capability is
+	// readable and a sibling field is not, and one failed unmarshal takes the
+	// whole row with it.
+	t.Run("a row that does not unmarshal is refused, not described", func(t *testing.T) {
 		for _, row := range []string{
 			`{"capability":{}}`,
 			`{"capability":true}`,
@@ -441,15 +436,10 @@ func TestGetMCPInfoHandler(t *testing.T) {
 			`{"capability":"READ_ONLY","ignoreMaskingExemptions":[]}`,
 			`{"capability":"READ_ONLY","ignoreMaskingExemptions":"yes"}`,
 		} {
-			token := row
 			setCeiling(t, row)
-			info, err := get(workspaceCtx())
-			require.NoError(t, err, "%s: the mode contents do not come from the stored row", token)
-			require.Equal(t, v1pb.MCPSetting_CAPABILITY_UNSPECIFIED, info.Capability,
-				"%s: no ceiling can be resolved from this row", token)
-			require.Len(t, info.Modes, 3, "%s: the comparison this page exists for", token)
-			require.Equal(t, len(mcpServedMethods(protoregistry.GlobalFiles)), len(info.Methods), token)
-			require.NotEmpty(t, info.Engines, token)
+			_, err := get(workspaceCtx())
+			require.Error(t, err, "%s: no ceiling in the row to describe", row)
+			require.Equal(t, connect.CodeUnavailable, connect.CodeOf(err), row)
 		}
 	})
 
@@ -477,7 +467,7 @@ func TestGetMCPInfoHandler(t *testing.T) {
 		// request under READ_ONLY. Answering from the store would report a
 		// ceiling the request was not admitted under.
 		setCeiling(t, `{"capability":"DISABLED"}`)
-		stamped := withMCPSettings(workspaceCtx(), store.MCPSettings{
+		stamped := withMCPSettings(workspaceCtx(), &storepb.MCPSetting{
 			Capability:              storepb.MCPSetting_READ_ONLY,
 			IgnoreMaskingExemptions: true,
 		})

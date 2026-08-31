@@ -11,7 +11,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
 
-	"google.golang.org/protobuf/proto" // Added
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -66,74 +66,17 @@ func (s *SettingService) ListSettings(ctx context.Context, _ *connect.Request[v1
 	}
 
 	response := &v1pb.ListSettingsResponse{}
-	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	stored := map[storepb.SettingName]bool{}
 	for _, setting := range settings {
 		if s.isSettingDisallowed(setting.Name) {
 			continue
 		}
-		// The MCP setting is served below, from its own reader. The bulk read
-		// gives the parsed message and nothing else, and serving that would
-		// report a row whose capability this build cannot resolve as a
-		// never-configured workspace — the permissive default over one that is
-		// refusing every connection.
-		if setting.Name == storepb.SettingName_MCP {
-			continue
-		}
-		stored[setting.Name] = true
 		settingMessage, err := convertToSettingMessage(setting)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
 		}
 		response.Settings = append(response.Settings, settingMessage)
 	}
-	for _, name := range alwaysPresentSettings {
-		if stored[name] || s.isSettingDisallowed(name) {
-			continue
-		}
-		// One reader for the MCP setting, so a list and a get cannot describe
-		// the same row two ways — the unreadable state only one of them carried
-		// is the difference an admin acts on.
-		if name == storepb.SettingName_MCP {
-			settingMessage, err := s.mcpSettingMessage(ctx, workspaceID)
-			if err != nil {
-				return nil, err
-			}
-			response.Settings = append(response.Settings, settingMessage)
-			continue
-		}
-		settingMessage, err := convertToSettingMessage(emptySetting(name, workspaceID))
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
-		}
-		response.Settings = append(response.Settings, settingMessage)
-	}
 	return connect.NewResponse(response), nil
-}
-
-// alwaysPresentSettings are the settings whose absent row is a defined state
-// rather than a missing resource, so Get, List and Update all answer that they
-// exist. The MCP setting is one: no row means MCP was never configured, which
-// the resolver reads as the backward-compatible ceiling. Three different
-// answers is how a client reads the resource and then cannot patch it.
-var alwaysPresentSettings = []storepb.SettingName{storepb.SettingName_MCP}
-
-func settingIsAlwaysPresent(name storepb.SettingName) bool {
-	return emptySetting(name, "") != nil
-}
-
-// emptySetting is the zero value served for an always-present setting with no
-// row yet, or nil for one whose absence really is a 404. It must match what the
-// store writes for an empty row, or the resource would change shape the first
-// time anyone saves it. TestAlwaysPresentSettingsHaveAZeroValue pins that this
-// and alwaysPresentSettings agree.
-func emptySetting(name storepb.SettingName, workspaceID string) *store.SettingMessage {
-	switch name {
-	case storepb.SettingName_MCP:
-		return &store.SettingMessage{Name: name, Workspace: workspaceID, Value: &storepb.MCPSetting{}}
-	default:
-		return nil
-	}
 }
 
 // GetSetting gets the setting by name.
@@ -167,23 +110,12 @@ func (s *SettingService) GetSetting(ctx context.Context, request *connect.Reques
 		return nil, err
 	}
 
-	if storeSettingName == storepb.SettingName_MCP {
-		message, err := s.mcpSettingMessage(ctx, common.GetWorkspaceIDFromContext(ctx))
-		if err != nil {
-			return nil, err
-		}
-		return connect.NewResponse(message), nil
-	}
-
 	setting, err := s.store.GetSetting(ctx, common.GetWorkspaceIDFromContext(ctx), storeSettingName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get setting: %v", err))
 	}
 	if setting == nil {
-		if !settingIsAlwaysPresent(storeSettingName) {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("setting %s not found", settingName))
-		}
-		setting = emptySetting(storeSettingName, common.GetWorkspaceIDFromContext(ctx))
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("setting %s not found", settingName))
 	}
 	// Only return whitelisted setting.
 	settingMessage, err := convertToSettingMessage(setting)
@@ -233,22 +165,11 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 
-	// The MCP setting dispatches before the read below, not after. That read
-	// parses the stored row, and a ceiling this build cannot parse fails it —
-	// which would refuse the write that repairs the row, on the one path an
-	// admin has to repair it (BOT-107). updateMCPSetting needs nothing from it:
-	// it reads the row again under a lock, and takes its audit before-image
-	// from that locked read rather than from the cache this one consults.
-	if storeSettingName == storepb.SettingName_MCP {
-		s.stampMCPAuditBefore(ctx, workspaceID)
-		return s.updateMCPSetting(ctx, request, workspaceID)
-	}
-
 	existedSetting, err := s.store.GetSetting(ctx, workspaceID, storeSettingName)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", settingName, err))
 	}
-	if existedSetting == nil && !request.Msg.AllowMissing && !settingIsAlwaysPresent(storeSettingName) {
+	if existedSetting == nil && !request.Msg.AllowMissing {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("setting %s not found", settingName))
 	}
 	// audit log.
@@ -268,6 +189,38 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	var resetClassification bool
 
 	switch storeSettingName {
+	case storepb.SettingName_MCP:
+		if request.Msg.UpdateMask == nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
+		}
+		payload := request.Msg.Setting.Value.GetMcp()
+		if payload == nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("mcp setting is required"))
+		}
+
+		mcpSetting := &storepb.MCPSetting{Capability: storepb.MCPSetting_READ_WRITE}
+		if existedSetting != nil {
+			existing, ok := existedSetting.Value.(*storepb.MCPSetting)
+			if !ok {
+				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_MCP))
+			}
+			mcpSetting = proto.CloneOf(existing)
+		}
+
+		for _, path := range request.Msg.UpdateMask.Paths {
+			switch path {
+			case "value.mcp.capability":
+				mcpSetting.Capability = convertToStoreMCPCapability(payload.Capability)
+			case "value.mcp.ignore_masking_exemptions":
+				mcpSetting.IgnoreMaskingExemptions = payload.IgnoreMaskingExemptions
+			default:
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))
+			}
+		}
+		if err := validateMCPCapability(mcpSetting.GetCapability()); err != nil {
+			return nil, err
+		}
+		storeSettingValue = mcpSetting
 	case storepb.SettingName_WORKSPACE_PROFILE:
 		return s.updateWorkspaceProfileSetting(ctx, request, workspaceID)
 	case storepb.SettingName_WORKSPACE_APPROVAL:
@@ -311,84 +264,7 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 		}
 		storeSettingValue = payload
 	case storepb.SettingName_APP_IM:
-		payload, err := convertAppIMSetting(request.Msg.Setting.Value.GetAppIm())
-		if err != nil {
-			return nil, err
-		}
-
-		// Helper function to find or create an IM setting entry by type
-		findIMSetting := func(imType storepb.WebhookType) *storepb.AppIMSetting_IMSetting {
-			for _, s := range payload.Settings {
-				if s.Type == imType {
-					return s
-				}
-			}
-			return nil
-		}
-
-		for _, path := range request.Msg.GetUpdateMask().GetPaths() {
-			switch path {
-			case "value.app_im.slack":
-				slackSetting := findIMSetting(storepb.WebhookType_SLACK)
-				if slackSetting == nil || slackSetting.GetSlack() == nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found slack setting"))
-				}
-				if err := slack.ValidateToken(ctx, slackSetting.GetSlack().GetToken()); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
-				}
-
-			case "value.app_im.feishu":
-				feishuSetting := findIMSetting(storepb.WebhookType_FEISHU)
-				if feishuSetting == nil || feishuSetting.GetFeishu() == nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found feishu setting"))
-				}
-				if err := feishu.Validate(ctx, feishuSetting.GetFeishu().GetAppId(), feishuSetting.GetFeishu().GetAppSecret(), user.Email); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
-				}
-
-			case "value.app_im.wecom":
-				wecomSetting := findIMSetting(storepb.WebhookType_WECOM)
-				if wecomSetting == nil || wecomSetting.GetWecom() == nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found wecom setting"))
-				}
-				if err := wecom.Validate(ctx, wecomSetting.GetWecom().GetCorpId(), wecomSetting.GetWecom().GetAgentId(), wecomSetting.GetWecom().GetSecret()); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
-				}
-
-			case "value.app_im.lark":
-				larkSetting := findIMSetting(storepb.WebhookType_LARK)
-				if larkSetting == nil || larkSetting.GetLark() == nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found lark setting"))
-				}
-				if err := lark.Validate(ctx, larkSetting.GetLark().GetAppId(), larkSetting.GetLark().GetAppSecret(), user.Email); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
-				}
-
-			case "value.app_im.dingtalk":
-				dingtalkSetting := findIMSetting(storepb.WebhookType_DINGTALK)
-				if dingtalkSetting == nil || dingtalkSetting.GetDingtalk() == nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found dingtalk setting"))
-				}
-				if err := dingtalk.Validate(ctx, dingtalkSetting.GetDingtalk().GetClientId(), dingtalkSetting.GetDingtalk().GetClientSecret(), dingtalkSetting.GetDingtalk().GetRobotCode(), user.Phone); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
-				}
-
-			case "value.app_im_setting_value.teams":
-				teamsSetting := findIMSetting(storepb.WebhookType_TEAMS)
-				if teamsSetting == nil || teamsSetting.GetTeams() == nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("cannot found teams setting"))
-				}
-				if err := teams.Validate(ctx, teamsSetting.GetTeams().GetTenantId(), teamsSetting.GetTeams().GetClientId(), teamsSetting.GetTeams().GetClientSecret(), user.Email); err != nil {
-					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
-				}
-
-			default:
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
-			}
-		}
-
-		storeSettingValue = payload
-
+		return s.updateAppIMSetting(ctx, request, workspaceID, user)
 	case storepb.SettingName_DATA_CLASSIFICATION:
 		if err := s.licenseService.IsFeatureEnabled(ctx, workspaceID, v1pb.PlanFeature_FEATURE_DATA_CLASSIFICATION); err != nil {
 			return nil, connect.NewError(connect.CodePermissionDenied, err)
@@ -634,6 +510,199 @@ func (s *SettingService) UpdateSetting(ctx context.Context, request *connect.Req
 	return connect.NewResponse(settingMessage), nil
 }
 
+// appIMSettingMaskPath maps each accepted APP_IM mask path to the provider it
+// addresses. The paths do not name real proto fields — AppIMSetting holds one
+// repeated `settings`, and AIP-161 does not let a mask address a repeated
+// element — so they are matched as a fixed vocabulary rather than traversed.
+var appIMSettingMaskPath = map[string]storepb.WebhookType{
+	"value.app_im.slack":               storepb.WebhookType_SLACK,
+	"value.app_im.feishu":              storepb.WebhookType_FEISHU,
+	"value.app_im.wecom":               storepb.WebhookType_WECOM,
+	"value.app_im.lark":                storepb.WebhookType_LARK,
+	"value.app_im.dingtalk":            storepb.WebhookType_DINGTALK,
+	"value.app_im_setting_value.teams": storepb.WebhookType_TEAMS,
+}
+
+// updateAppIMSetting handles the APP_IM branch of UpdateSetting through the
+// store's row-locking read-modify-write primitive: the merge runs inside the
+// transaction against the value of the locked row, so two admins configuring
+// different providers at once cannot each merge onto the same stale snapshot
+// and have the later write restore the other's provider from it. The row is
+// seeded at workspace creation, so the primitive always finds it.
+func (s *SettingService) updateAppIMSetting(ctx context.Context, request *connect.Request[v1pb.UpdateSettingRequest], workspaceID string, user *store.UserMessage) (*connect.Response[v1pb.Setting], error) {
+	if request.Msg.UpdateMask == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
+	}
+	payload, err := convertAppIMSetting(request.Msg.Setting.Value.GetAppIm())
+	if err != nil {
+		return nil, err
+	}
+	if err := preflightAppIMPaths(ctx, payload, request.Msg.UpdateMask.Paths, user); err != nil {
+		return nil, err
+	}
+
+	var lockedBefore *storepb.AppIMSetting
+	apply := func(current proto.Message) (proto.Message, error) {
+		stored, ok := current.(*storepb.AppIMSetting)
+		if !ok {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_APP_IM))
+		}
+		// The audit before-image is the row this merge actually ran against,
+		// not the possibly stale pre-lock snapshot captured by UpdateSetting.
+		lockedBefore = proto.CloneOf(stored)
+		return mergeAppIMSetting(stored, payload, request.Msg.UpdateMask.Paths)
+	}
+
+	if request.Msg.ValidateOnly {
+		fresh, err := s.store.GetSettingUncached(ctx, workspaceID, storepb.SettingName_APP_IM)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to find setting %s with error: %v", storepb.SettingName_APP_IM, err))
+		}
+		if fresh == nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("cannot find setting %v", storepb.SettingName_APP_IM))
+		}
+		merged, err := apply(fresh.Value)
+		if err != nil {
+			return nil, err
+		}
+		// Return the merged value, not the request: the request carries only
+		// the masked providers, so echoing it would show every provider this
+		// update preserves as gone.
+		return newAppIMSettingResponse(workspaceID, merged)
+	}
+
+	setting, err := s.store.UpdateSettingAtomic(ctx, workspaceID, storepb.SettingName_APP_IM, apply, nil)
+	if err != nil {
+		var connectErr *connect.Error
+		if errors.As(err, &connectErr) {
+			return nil, err
+		}
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to set setting: %v", err))
+	}
+
+	// Re-capture the audit before-image from the locked row the merge ran
+	// against, overwriting UpdateSetting's earlier pre-lock snapshot.
+	if setServiceData, ok := common.GetSetServiceDataFromContext(ctx); ok && lockedBefore != nil {
+		v1pbSetting, err := convertToSettingMessage(&store.SettingMessage{
+			Name:      storepb.SettingName_APP_IM,
+			Workspace: workspaceID,
+			Value:     lockedBefore,
+		})
+		if err != nil {
+			slog.Warn("audit: failed to convert to v1.Setting", log.BBError(err))
+		}
+		p, err := anypb.New(v1pbSetting)
+		if err != nil {
+			slog.Warn("audit: failed to convert to anypb.Any", log.BBError(err))
+		}
+		setServiceData(p)
+	}
+
+	settingMessage, err := convertToSettingMessage(setting)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
+	}
+	return connect.NewResponse(settingMessage), nil
+}
+
+func newAppIMSettingResponse(workspaceID string, value proto.Message) (*connect.Response[v1pb.Setting], error) {
+	settingMessage, err := convertToSettingMessage(&store.SettingMessage{
+		Name:      storepb.SettingName_APP_IM,
+		Workspace: workspaceID,
+		Value:     value,
+	})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
+	}
+	return connect.NewResponse(settingMessage), nil
+}
+
+// preflightAppIMPaths validates the credentials of every provider the mask
+// names and the payload carries. It runs BEFORE the row-locking transaction:
+// each check is a round trip to the provider's own API, and holding the
+// setting row lock across one would let a slow vendor block every other write
+// to this row. None of it depends on the locked row.
+func preflightAppIMPaths(ctx context.Context, payload *storepb.AppIMSetting, paths []string, user *store.UserMessage) error {
+	for _, path := range paths {
+		imType, ok := appIMSettingMaskPath[path]
+		if !ok {
+			return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
+		}
+		incoming := findIMSetting(payload.GetSettings(), imType)
+		if incoming == nil || incoming.GetPayload() == nil {
+			// A masked provider the payload omits is a removal.
+			continue
+		}
+		if err := validateIMSetting(ctx, incoming, user); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// mergeAppIMSetting splices only the masked providers of payload into stored.
+// Assigning the request wholesale used to drop every provider it left out, so
+// saving Slack wiped the stored Feishu, WeCom, Lark, DingTalk and Teams
+// secrets. A masked provider the payload omits is removed, which is how one is
+// deleted. stored is not modified.
+func mergeAppIMSetting(stored, payload *storepb.AppIMSetting, paths []string) (*storepb.AppIMSetting, error) {
+	merged := proto.CloneOf(stored)
+	for _, path := range paths {
+		imType, ok := appIMSettingMaskPath[path]
+		if !ok {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %v", path))
+		}
+		incoming := findIMSetting(payload.GetSettings(), imType)
+		if incoming == nil || incoming.GetPayload() == nil {
+			merged.Settings = slices.DeleteFunc(merged.Settings, func(s *storepb.AppIMSetting_IMSetting) bool {
+				return s.GetType() == imType
+			})
+			continue
+		}
+		if existing := findIMSetting(merged.GetSettings(), imType); existing != nil {
+			proto.Reset(existing)
+			proto.Merge(existing, incoming)
+		} else {
+			merged.Settings = append(merged.Settings, incoming)
+		}
+	}
+	return merged, nil
+}
+
+func findIMSetting(settings []*storepb.AppIMSetting_IMSetting, imType storepb.WebhookType) *storepb.AppIMSetting_IMSetting {
+	for _, setting := range settings {
+		if setting.GetType() == imType {
+			return setting
+		}
+	}
+	return nil
+}
+
+// validateIMSetting checks the provider's credentials against its own API.
+func validateIMSetting(ctx context.Context, setting *storepb.AppIMSetting_IMSetting, user *store.UserMessage) error {
+	var err error
+	switch setting.GetType() {
+	case storepb.WebhookType_SLACK:
+		err = slack.ValidateToken(ctx, setting.GetSlack().GetToken())
+	case storepb.WebhookType_FEISHU:
+		err = feishu.Validate(ctx, setting.GetFeishu().GetAppId(), setting.GetFeishu().GetAppSecret(), user.Email)
+	case storepb.WebhookType_WECOM:
+		err = wecom.Validate(ctx, setting.GetWecom().GetCorpId(), setting.GetWecom().GetAgentId(), setting.GetWecom().GetSecret())
+	case storepb.WebhookType_LARK:
+		err = lark.Validate(ctx, setting.GetLark().GetAppId(), setting.GetLark().GetAppSecret(), user.Email)
+	case storepb.WebhookType_DINGTALK:
+		err = dingtalk.Validate(ctx, setting.GetDingtalk().GetClientId(), setting.GetDingtalk().GetClientSecret(), setting.GetDingtalk().GetRobotCode(), user.Phone)
+	case storepb.WebhookType_TEAMS:
+		err = teams.Validate(ctx, setting.GetTeams().GetTenantId(), setting.GetTeams().GetClientId(), setting.GetTeams().GetClientSecret(), user.Email)
+	default:
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unsupported IM type %v", setting.GetType()))
+	}
+	if err != nil {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "validation failed"))
+	}
+	return nil
+}
+
 // updateWorkspaceProfileSetting handles the WORKSPACE_PROFILE branch of
 // UpdateSetting through the store's row-locking read-modify-write primitive:
 // the update-mask merge and its validations run inside the transaction against
@@ -652,7 +721,7 @@ func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, requ
 		return nil, err
 	}
 	var lockedBefore *storepb.WorkspaceProfileSetting
-	apply := func(current proto.Message, _ []byte) (proto.Message, error) {
+	apply := func(current proto.Message) (proto.Message, error) {
 		oldSetting, ok := current.(*storepb.WorkspaceProfileSetting)
 		if !ok {
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_WORKSPACE_PROFILE))
@@ -685,7 +754,7 @@ func (s *SettingService) updateWorkspaceProfileSetting(ctx context.Context, requ
 		// longer populate the cache), but validate against a clone anyway so
 		// a validate-only request can never mutate shared state should the
 		// read path change.
-		if _, err := apply(proto.CloneOf(profileValue), nil); err != nil {
+		if _, err := apply(proto.CloneOf(profileValue)); err != nil {
 			return nil, err
 		}
 		return connect.NewResponse(&v1pb.Setting{
@@ -1164,283 +1233,10 @@ func validateAnnouncementTheme(t *storepb.WorkspaceProfileSetting_Announcement_A
 	return nil
 }
 
-// mcpSettingMessage answers the MCP setting from the row itself, carrying the
-// unreadable state the parsed value cannot.
-//
-// Uncached, unlike its sibling settings: the setting cache has no TTL and only
-// in-process writes refresh it, while every way a capability becomes unreadable
-// — a hand edit, a newer replica during a rolling upgrade — happens out of
-// band. A cached copy would show an admin the ceiling that was readable before
-// the edit, over a workspace where MCP is now refused every connection. The
-// enforcement gate reads the same row the same way
-// (store.GetMCPSettingsUncached).
-func (s *SettingService) mcpSettingMessage(ctx context.Context, workspaceID string) (*v1pb.Setting, error) {
-	raw, exists, err := s.store.RawSettingValue(ctx, workspaceID, storepb.SettingName_MCP)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get setting: %v", err))
-	}
-	stored := &storepb.MCPSetting{}
-	if exists {
-		if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(raw), stored); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("the mcp setting does not parse: %v", err))
-		}
-	}
-	message, err := convertToSettingMessage(&store.SettingMessage{
-		Name:      storepb.SettingName_MCP,
-		Workspace: workspaceID,
-		Value:     stored,
-	})
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
-	}
-	message.GetValue().GetMcp().CapabilityUnreadable = mcpCapabilityUnreadable(raw, exists, stored)
-	return message, nil
-}
-
-// mcpCapabilityUnreadable reports whether this build can resolve a ceiling from
-// the stored row.
-//
-// True when the row carries a capability key but protojson leaves the parsed
-// capability unspecified. An enum name a newer release wrote is the legitimate
-// trigger — a rolling upgrade — and a hand-edited token reaches the same state:
-// null, "", and an explicit CAPABILITY_UNSPECIFIED all parse away to unset
-// without erroring (TestMCPUnreadableCeilingIsVisibleToTheAdmin covers all
-// four).
-//
-// An absent key gives the same parsed value and means the opposite: never
-// configured, which resolves to the READ_WRITE default rather than a refusal
-// (BOT-100). A row that does not parse at all never gets this far; the read
-// fails, because there is no ceiling in it to describe.
-//
-// The page and the write path's repair guard both read this. Two copies drift
-// into a row the resolver refuses while the console reports a ceiling, or a
-// repair the page offers and the write rejects.
-func mcpCapabilityUnreadable(raw string, exists bool, stored *storepb.MCPSetting) bool {
-	if !exists || stored.GetCapability() != storepb.MCPSetting_CAPABILITY_UNSPECIFIED {
-		return false
-	}
-	key, err := store.RawMCPCapability(raw)
-	// No capability key is the ordinary never-configured state — a first edit
-	// that set only the masking toggle leaves exactly that — and resolves
-	// READ_WRITE.
-	return err == nil && key != ""
-}
-
-// stampMCPAuditBefore records the pre-lock MCP before-image on the audit row.
-//
-// The generic path below stamps one from the read it does before the merge.
-// MCP dispatches above that read, so without this a refused write — an
-// unreadable ceiling, a rejected mask, a dry run — audits with no before-image
-// at all, and a refusal is where the ceiling that was in force matters most.
-// updateMCPSetting overwrites it from the locked row when the write lands,
-// which is the value that was true at commit time.
-func (s *SettingService) stampMCPAuditBefore(ctx context.Context, workspaceID string) {
-	setServiceData, ok := common.GetSetServiceDataFromContext(ctx)
-	if !ok {
-		return
-	}
-	message, err := s.mcpSettingMessage(ctx, workspaceID)
-	if err != nil {
-		slog.Warn("audit: failed to read the mcp setting for the before-image", log.BBError(err))
-		return
-	}
-	p, err := anypb.New(message)
-	if err != nil {
-		slog.Warn("audit: failed to convert to anypb.Any", log.BBError(err))
-		return
-	}
-	setServiceData(p)
-}
-
-// updateMCPSetting merges the named update-mask paths into the stored MCP
-// setting under a row lock. Each path sets one field, so an admin changing the
-// masking toggle does not have to resend a ceiling they are not changing.
-//
-// Locked rather than read-merge-write, unlike the sibling settings: this row is
-// the MCP kill switch, and two concurrent saves that each merged onto their own
-// unlocked read would leave one of them silently reverted — for a ceiling, the
-// difference between off and on.
-//
-// The audit before-image is re-captured from the locked row, overwriting the
-// pre-lock snapshot UpdateSetting took from the setting cache. A ceiling flipped
-// out of band would otherwise be recorded as a transition from whatever the
-// cache still held, which never happened.
-func (s *SettingService) updateMCPSetting(ctx context.Context, request *connect.Request[v1pb.UpdateSettingRequest], workspaceID string) (*connect.Response[v1pb.Setting], error) {
-	if request.Msg.UpdateMask == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update mask is required"))
-	}
-	payload := request.Msg.Setting.Value.GetMcp()
-	if payload == nil {
-		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("mcp setting is required"))
-	}
-
-	repairsCapability := slices.Contains(request.Msg.UpdateMask.Paths, "value.mcp.capability")
-
-	var lockedBefore *storepb.MCPSetting
-	// The v1-only capability_unreadable the before-image cannot carry on its
-	// own: lockedBefore is a store message, and that field exists to tell a
-	// repair of an unreadable ceiling apart from configuring a workspace that
-	// never had one. Without it the audit row for the two is byte-identical.
-	var lockedBeforeUnreadable bool
-	apply := func(current proto.Message, raw []byte) (proto.Message, error) {
-		existing, ok := current.(*storepb.MCPSetting)
-		if !ok {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("invalid setting value type for %s", storepb.SettingName_MCP))
-		}
-		// Captured before anything below can refuse. Every decision here is made
-		// against the LOCKED row, so that is what the audit row has to show —
-		// a refusal most of all, since the refusal names a ceiling only the
-		// locked read saw. The pre-lock stamp can already be describing a value
-		// another replica has replaced, which is the same reason the guard
-		// below reads raw rather than a pre-flight.
-		lockedBefore = proto.CloneOf(existing)
-		lockedBeforeUnreadable = mcpCapabilityUnreadable(string(raw), len(raw) > 0, existing)
-		// A key this build does not define would be deleted by the merge below:
-		// the unmarshaler discarded it, so re-marshalling writes the row back
-		// without it. During a rolling upgrade that is an older replica erasing
-		// what a newer one configured. Reads stay lenient on purpose — one
-		// field from a newer release must not disable MCP — but a partial write
-		// refuses rather than corrupt.
-		if len(raw) > 0 {
-			unknown, err := store.UnknownSettingKeys(string(raw), existing)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to read the stored mcp setting: %v", err))
-			}
-			if len(unknown) > 0 {
-				return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf(
-					"this workspace's MCP setting carries %v, which this build does not understand, and saving another field would delete it. "+
-						"A newer Bytebase replica most likely wrote it; retry once the rollout has finished", unknown))
-			}
-		}
-
-		// A stored capability this build cannot read is enforced closed, and
-		// this merge would quietly erase it: the unmarshaler drops an enum name
-		// it does not know, and marshalling omits the zero enum, so the row
-		// would come back with no capability key at all and the next read would
-		// resolve it to the permissive default. Saving the masking toggle would
-		// reopen MCP. Refuse unless this same request sets a capability.
-		//
-		// Read from the locked row, not before the lock: a newer replica during
-		// a rolling upgrade can write a name this build has never heard of, and
-		// a pre-flight would have checked a value that is no longer there.
-		//
-		// The same predicate the page reads, so a row cannot be offered as
-		// repairable on one and refused on the other.
-		if lockedBeforeUnreadable && !repairsCapability {
-			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf(
-				"this workspace's stored MCP capability is not one this build understands, and saving another field would erase it. "+
-					"Set value.mcp.capability in the same request to repair it"))
-		}
-		merged := proto.CloneOf(existing)
-		for _, path := range request.Msg.UpdateMask.Paths {
-			switch path {
-			case "value.mcp.capability":
-				capability := convertToStoreMCPCapability(payload.Capability)
-				if err := validateMCPCapability(capability); err != nil {
-					return nil, err
-				}
-				merged.Capability = capability
-			case "value.mcp.ignore_masking_exemptions":
-				merged.IgnoreMaskingExemptions = payload.IgnoreMaskingExemptions
-			default:
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid update mask path %q", path))
-			}
-		}
-		return merged, nil
-	}
-
-	// A dry run must not reach the row or the served cache: flipping the ceiling
-	// on a request that asked for nothing would be the kill switch turning
-	// itself off.
-	if request.Msg.ValidateOnly {
-		// The same parse and the same apply the locked path runs, so the dry run
-		// cannot disagree with the write it stands in for in either direction.
-		raw, _, err := s.store.RawSettingValue(ctx, workspaceID, storepb.SettingName_MCP)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to read mcp setting: %v", err))
-		}
-		current := &storepb.MCPSetting{}
-		if raw != "" {
-			if err := common.ProtojsonUnmarshaler.Unmarshal([]byte(raw), current); err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("the mcp setting does not parse: %v", err))
-			}
-		}
-		validated, err := apply(current, []byte(raw))
-		if err != nil {
-			var connectErr *connect.Error
-			if errors.As(err, &connectErr) {
-				return nil, err
-			}
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-		settingMessage, err := convertToSettingMessage(&store.SettingMessage{
-			Name:      storepb.SettingName_MCP,
-			Workspace: workspaceID,
-			Value:     validated,
-		})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
-		}
-		return connect.NewResponse(settingMessage), nil
-	}
-
-	// UpdateSettingAtomic updates existing state only, and a workspace that
-	// never configured MCP has no row to lock.
-	if err := s.store.EnsureSettingRow(ctx, workspaceID, storepb.SettingName_MCP); err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create mcp setting: %v", err))
-	}
-	// Overwrites the pre-lock stamp on either outcome. apply captured this from
-	// the locked row, so it describes the state the write actually decided
-	// against; the pre-lock stamp stays only for failures that never reach the
-	// lock at all.
-	stampLocked := func() {
-		setServiceData, ok := common.GetSetServiceDataFromContext(ctx)
-		if !ok || lockedBefore == nil {
-			return
-		}
-		v1pbSetting, err := convertToSettingMessage(&store.SettingMessage{
-			Name:      storepb.SettingName_MCP,
-			Workspace: workspaceID,
-			Value:     lockedBefore,
-		})
-		if err != nil {
-			slog.Warn("audit: failed to convert to v1.Setting", log.BBError(err))
-			return
-		}
-		v1pbSetting.GetValue().GetMcp().CapabilityUnreadable = lockedBeforeUnreadable
-		p, err := anypb.New(v1pbSetting)
-		if err != nil {
-			slog.Warn("audit: failed to convert to anypb.Any", log.BBError(err))
-			return
-		}
-		setServiceData(p)
-	}
-
-	setting, err := s.store.UpdateSettingAtomic(ctx, workspaceID, storepb.SettingName_MCP, apply, nil)
-	if err != nil {
-		stampLocked()
-		var connectErr *connect.Error
-		if errors.As(err, &connectErr) {
-			return nil, err
-		}
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to set setting: %v", err))
-	}
-	stampLocked()
-
-	settingMessage, err := convertToSettingMessage(setting)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to convert setting message: %v", err))
-	}
-	return connect.NewResponse(settingMessage), nil
-}
-
-// validateMCPCapability rejects an explicit write of UNSPECIFIED — absent has
-// defined resolver semantics (it resolves to READ_WRITE), so writing
-// "unspecified" is a caller bug — and unknown enum numbers, which proto3 open
-// enums would otherwise let through.
+// validateMCPCapability rejects UNSPECIFIED and unknown enum numbers.
 func validateMCPCapability(capability storepb.MCPSetting_Capability) error {
 	if capability == storepb.MCPSetting_CAPABILITY_UNSPECIFIED {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("capability cannot be set to CAPABILITY_UNSPECIFIED; choose an explicit capability or omit the update mask path to leave it unset"))
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("capability must be specified"))
 	}
 	if _, ok := storepb.MCPSetting_Capability_name[int32(capability)]; !ok {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("unknown capability value %d", capability))

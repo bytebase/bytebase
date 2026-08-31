@@ -4,26 +4,12 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
-import type { EmptySchema, Timestamp } from "@bufbuild/protobuf/wkt";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
 
 /**
  * Describes the file v1/actuator_service.proto.
  */
 export declare const file_v1_actuator_service: GenFile;
-
-/**
- * Request message for setting up sample data.
- *
- * @generated from message bytebase.v1.SetupSampleRequest
- */
-export declare type SetupSampleRequest = Message<"bytebase.v1.SetupSampleRequest"> & {
-};
-
-/**
- * Describes the message bytebase.v1.SetupSampleRequest.
- * Use `create(SetupSampleRequestSchema)` to create a new message.
- */
-export declare const SetupSampleRequestSchema: GenMessage<SetupSampleRequest>;
 
 /**
  * Request message for getting actuator information.
@@ -74,7 +60,7 @@ export declare const SampleInfoSchema: GenMessage<SampleInfo>;
 export declare type SampleInfo_Instance = Message<"bytebase.v1.SampleInfo.Instance"> & {
   /**
    * The provisioned sample instance.
-   * Format: instances/{instance}
+   * Format: instances/{instance} or projects/{project}/instances/{instance}
    *
    * @generated from field: string instance = 1;
    */
@@ -232,17 +218,6 @@ export declare const ActuatorService: GenService<{
     methodKind: "unary";
     input: typeof GetActuatorInfoRequestSchema;
     output: typeof ActuatorInfoSchema;
-  },
-  /**
-   * Sets up sample data for demonstration and testing purposes.
-   * Permissions required: bb.projects.create
-   *
-   * @generated from rpc bytebase.v1.ActuatorService.SetupSample
-   */
-  setupSample: {
-    methodKind: "unary";
-    input: typeof SetupSampleRequestSchema;
-    output: typeof EmptySchema;
   },
 }>;
 

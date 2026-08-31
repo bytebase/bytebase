@@ -141,8 +141,13 @@ func (s *Store) ListGroups(ctx context.Context, find *FindGroupMessage) ([]*Grou
 			user_group.payload
 		FROM ?
 		WHERE ?
-		ORDER BY email
 	`, from, where)
+
+	// email is nullable — CreateGroup writes NULL for an empty one — and its
+	// unique index is partial, so it does not identify a group. id is the
+	// primary key, and stays unique in the result because the project filter
+	// joins a single-row ARRAY_AGG CTE rather than the member rows themselves.
+	q.Space("ORDER BY user_group.email ASC, user_group.id ASC")
 
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
@@ -544,9 +549,9 @@ func GetListGroupFilter(find *FindGroupMessage, filter string) (*qb.Query, error
 
 				switch variable {
 				case "title":
-					return qb.Q().Space("LOWER(name) LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+					return qb.Q().Space("LOWER(name) LIKE ? ESCAPE '\\'", containsPattern(strings.ToLower(strValue))), nil
 				case "email":
-					return qb.Q().Space("LOWER(email) LIKE ?", "%"+strings.ToLower(strValue)+"%"), nil
+					return qb.Q().Space("LOWER(email) LIKE ? ESCAPE '\\'", containsPattern(strings.ToLower(strValue))), nil
 				default:
 					return nil, errors.Errorf("unsupport variable %q", variable)
 				}

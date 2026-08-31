@@ -36,7 +36,7 @@ service DatabaseCatalogService {
         body: "catalog"
       }
     };
-    option (google.api.method_signature) = "catalog,update_mask";
+    option (google.api.method_signature) = "catalog";
     option (bytebase.v1.permission) = "bb.databaseCatalogs.update";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.audit) = true;
@@ -57,15 +57,18 @@ message GetDatabaseCatalogRequest {
 
 // Request message for updating a database catalog.
 message UpdateDatabaseCatalogRequest {
-  // The database catalog to update.
-  //
-  // The catalog's `name` field is used to identify the database catalog to update.
+  // The database catalog to update, identified by its `name` field.
   // Format: instances/{instance}/databases/{database}/catalog or projects/{project}/instances/{instance}/databases/{database}/catalog
+  //
+  // Replaces the whole catalog: send the complete value, since anything omitted
+  // is erased. There is no `update_mask` because `schemas` is a repeated field,
+  // and AIP-161 forbids addressing one element of one.
   DatabaseCatalog catalog = 1 [(google.api.field_behavior) = REQUIRED];
 
-  // If set to true, and the database catalog is not found, a new database catalog will be created.
-  // In this situation, `update_mask` is ignored.
-  bool allow_missing = 2;
+  // No allow_missing. A catalog is not independently creatable — it exists once
+  // its database is synced — so there is nothing for the flag to create.
+  reserved 2;
+  reserved "allow_missing";
 }
 
 // Catalog metadata for a database including schemas, tables, and columns.

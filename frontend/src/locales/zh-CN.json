@@ -511,6 +511,16 @@
     "new-database-name": "新数据库名称",
     "reserved-db-error": "{{databaseName}} 是一个预留名称"
   },
+  "credential-proof": {
+    "code-sent": "验证码已发送，请查收邮件",
+    "email-label": "邮箱验证码",
+    "email-me-a-code": "发送验证码到邮箱",
+    "email-placeholder": "6 位数字验证码",
+    "factor-label": "验证码",
+    "factor-placeholder": "身份验证器代码或恢复代码",
+    "password-label": "当前密码",
+    "resend-in": "{{seconds}} 秒后可重新发送"
+  },
   "custom-approval": {
     "approval-flow": {
       "fallback-rules": "兜底规则",
@@ -715,6 +725,7 @@
     "nullable": "可为空",
     "partition-tables": "分区表",
     "partitioned": "分区",
+    "project-instance-transfer-disabled": "项目绑定实例中的数据库无法转移或取消分配。",
     "revision": {
       "add-more-files": "添加更多",
       "available-files": "可用文件",
@@ -1212,6 +1223,8 @@
     "port": "端口",
     "prepare-sample-instance-failed": "准备示例项目实例失败。",
     "preparing-sample-instance": "正在准备示例项目实例…",
+    "project-bound-description": "此实例已绑定到该项目。其所有数据库都会自动转移到该项目，且无法转移或取消分配。",
+    "project-bound-title": "项目绑定实例",
     "project-id": "项目 ID",
     "restore-instance-instance-name-to-normal-state": "恢复实例'{{0}}'到正常状态?",
     "role-arn": "角色 ARN",
@@ -1221,6 +1234,7 @@
     "sample-expiration-future_one": "示例实例将在 {{count}} 天后的 {{time}} 被移除。",
     "sample-expiration-future_other": "示例实例将在 {{count}} 天后的 {{time}} 被移除。",
     "sample-project-instance-description": "使用示例项目实例探索 Bytebase，并在 7 天内使用预配置的数据库。",
+    "sample-project-instance-description-self-host": "使用带有预配置数据库的示例项目实例探索 Bytebase。",
     "sample-project-instance-title": "试用示例项目实例",
     "scan-interval": {
       "default-never": "默认（永不）",
@@ -1317,6 +1331,7 @@
     "type-or-paste-credentials-write-only": "输入或粘贴 CREDENTIALS - 仅写入",
     "unable-to-connect": "Bytebase 无法使用这些设置连接数据库。请检查上方指引，或继续操作并稍后更新连接。\n\n技术详情：{{0}}",
     "use-sample-instance": "使用示例实例（可用 7 天）",
+    "use-sample-instance-self-host": "使用示例实例",
     "users": "用户",
     "your-snowflake-account-locator": "您的 Snowflake 账户定位符"
   },
@@ -1601,11 +1616,6 @@
             "retry": "重新检查",
             "title": "无法确认 MCP 策略"
           },
-          "unreadable": {
-            "description": "本工作空间存储了 Bytebase 无法理解的策略值。所有 MCP 连接都在被拒绝。",
-            "line": "在修复此工作空间的 MCP 策略之前，任何 AI 会话都无法连接",
-            "title": "无法读取本工作空间的 MCP 策略"
-          },
           "unserved": {
             "description": "本工作空间存储了此 Bytebase 版本不支持的策略值。所有 MCP 连接都在被拒绝。",
             "line": "在管理员选择受支持的策略之前，任何 AI 会话都无法连接",
@@ -1648,6 +1658,7 @@
       "reset-to-defaults": "重置为默认值"
     },
     "go-to-plan-page": "前往计划页面",
+    "initial-sql-storage-failed": "无法临时保存 SQL。请清理部分浏览器存储空间后重试。",
     "isolation-level": {
       "read-committed": "已提交读",
       "read-uncommitted": "未提交读",
@@ -1825,7 +1836,8 @@
       "actions": {
         "explain-code": "解释代码",
         "find-problems": "找出问题",
-        "insert-at-caret": "在光标处插入"
+        "insert-at-caret": "在光标处插入",
+        "new-chat-using-selection": "使用选中内容新建对话"
       },
       "ai-assistant": "AI 助手",
       "conversation": {
@@ -1955,7 +1967,7 @@
       "confirm-delete-project": "删除「{{name}}」将永久移除该项目及所有关联数据，包括工单、配置和历史记录。该项目中的所有数据库将被移至默认项目。此操作无法撤销。",
       "issue-related": {
         "allow-access-grants": {
-          "description": "允许项目成员为特定只读语句申请限时访问授权。",
+          "description": "允许项目成员为特定只读语句申请限时访问授权。授权还可包含导出查询结果和查看未脱敏数据。",
           "self": "允许访问授权"
         },
         "allow-request-role": {
@@ -2428,7 +2440,10 @@
           "exiting": "退出中..."
         },
         "data-copy": "启用复制数据",
-        "data-export": "启用数据导出",
+        "data-export": {
+          "description": "关闭后，用户无法直接导出查询结果。在启用访问授权的项目中，用户仍可点击“申请导出”提交访问授权申请，审批通过后即可导出。",
+          "self": "允许无需审批导出数据"
+        },
         "default-landing-page": {
           "default-view-changed-to-sql-editor": "工作区的默认视图已更改为 SQL 编辑器。",
           "go-to-sql-editor": "转到 SQL 编辑器",
@@ -2998,26 +3013,6 @@
       }
     }
   },
-  "setup": {
-    "basic-info": "基本信息",
-    "data": {
-      "built-in": "使用内置示例",
-      "built-in-desc": "生成示例项目和实例",
-      "self-setup": "设置项目"
-    },
-    "purposes": {
-      "alter-schema": "变更 Schema",
-      "query-data": "查询数据",
-      "self": "您使用 Bytebase 的主要目的是什么？"
-    },
-    "self": "设置",
-    "skip-setup": "跳过设置",
-    "workflow": {
-      "self": "您使用数据库的工作流程是怎样的？",
-      "simple": "无需复杂的工作流程，需要 UI 工具",
-      "team": "与队友合作，需要 CI/CD 工作流"
-    }
-  },
   "sheet": {
     "filter": {
       "only-show-starred": "仅显示收藏",
@@ -3138,7 +3133,7 @@
     "format-sql": "格式化 SQL",
     "generate-sql": "生成 SQL",
     "grant-type-export": "导出",
-    "grant-type-unmask": "脱敏豁免",
+    "grant-type-unmask": "取消脱敏",
     "hex-format": "十六进制格式",
     "hint-tips": {
       "confirm-to-close-unsaved-sheet": {
@@ -3180,6 +3175,8 @@
     "request-aborted": "用户中止了请求",
     "request-access-grant": "申请访问授权",
     "request-export": "申请导出",
+    "request-query": "申请查询",
+    "request-unmask": "申请取消脱敏",
     "result-detail": {
       "cell": "单元格详情",
       "next-match": "下一个匹配项",
@@ -3532,6 +3529,7 @@
     },
     "self": "双重认证",
     "setup-steps": {
+      "confirm-code": "输入身份验证器中的最新代码以完成设置",
       "download-recovery-codes": {
         "keep-safe": {
           "description": "这些代码是在您无法收到双重认证代码的情况下访问您的账户。如果您找不到这些代码，您将失去对您账户的访问。",
@@ -3586,6 +3584,7 @@
     },
     "prepare-database-tip": "选择数据库并转移到项目。",
     "previous-step-required": "你需要先完成上一步。",
+    "product-model": "Bytebase 的运作方式",
     "self": "设置 Bytebase",
     "steps": {
       "database": "浏览数据库",

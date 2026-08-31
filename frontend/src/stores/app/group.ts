@@ -13,8 +13,9 @@ import {
   ListGroupsRequestSchema,
   UpdateGroupRequestSchema,
 } from "@/types/proto-es/v1/group_service_pb";
+import { celString } from "@/utils/v1/celLiteral";
 import type { AppSliceCreator, GroupFilter, GroupSlice } from "./types";
-import { toError } from "./utils";
+import { isMissingOrForbidden, toError } from "./utils";
 
 const groupNamePrefix = "groups/";
 
@@ -32,10 +33,11 @@ export const buildGroupFilter = (params: GroupFilter) => {
   const filter = [];
   const search = params.query?.trim()?.toLowerCase();
   if (search) {
-    filter.push(`(title.contains("${search}") || email.contains("${search}"))`);
+    const value = celString(search);
+    filter.push(`(title.contains(${value}) || email.contains(${value}))`);
   }
   if (isValidProjectName(params.project)) {
-    filter.push(`project == "${params.project}"`);
+    filter.push(`project == ${celString(params.project)}`);
   }
   return filter.join(" && ");
 };
@@ -71,19 +73,54 @@ export const createGroupSlice: AppSliceCreator<GroupSlice> = (set, get) => ({
   batchFetchGroups: async (names) => {
     const validNames = uniq(names).filter(Boolean).map(ensureGroupIdentifier);
     if (validNames.length === 0) return [];
-    const response = await groupServiceClientConnect.batchGetGroups(
-      createProto(BatchGetGroupsRequestSchema, { names: validNames }),
-      { contextValues: createContextValues().set(silentContextKey, true) }
-    );
-    set((state) => ({
-      groupsByName: {
-        ...state.groupsByName,
-        ...Object.fromEntries(
-          response.groups.map((group) => [group.name, group])
+    try {
+      const response = await groupServiceClientConnect.batchGetGroups(
+        createProto(BatchGetGroupsRequestSchema, { names: validNames }),
+        { contextValues: createContextValues().set(silentContextKey, true) }
+      );
+      set((state) => ({
+        groupsByName: {
+          ...state.groupsByName,
+          ...Object.fromEntries(
+            response.groups.map((group) => [group.name, group])
+          ),
+        },
+      }));
+      return response.groups;
+    } catch (error) {
+      if (!isMissingOrForbidden(error)) throw error;
+      // Batch is all-or-nothing; refetch per name so one stale name isn't fatal.
+      // Calls GetGroup directly rather than fetchGroup, whose workspace
+      // bb.groups.get guard would skip a group the caller reads as its member.
+      const settled = await Promise.allSettled(
+        validNames.map((name) =>
+          groupServiceClientConnect.getGroup(
+            createProto(GetGroupRequestSchema, { name }),
+            { contextValues: createContextValues().set(silentContextKey, true) }
+          )
+        )
+      );
+      const groups = settled.flatMap((result) =>
+        result.status === "fulfilled" ? [result.value] : []
+      );
+      // Record what did not come back, the way fetchGroup does. A rejection
+      // here is one group missing from an already degraded view, not a reason
+      // to discard the ones that did resolve.
+      set((state) => ({
+        groupsByName: {
+          ...state.groupsByName,
+          ...Object.fromEntries(groups.map((group) => [group.name, group])),
+        },
+        groupErrorsByName: settled.reduce(
+          (errors, result, index) =>
+            result.status === "rejected"
+              ? { ...errors, [validNames[index]]: toError(result.reason) }
+              : errors,
+          state.groupErrorsByName
         ),
-      },
-    }));
-    return response.groups;
+      }));
+      return groups;
+    }
   },
 
   batchGetOrFetchGroups: async (names) => {

@@ -185,10 +185,12 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 		return err
 	}
 
-	// Check allow_missing secondary permission if applicable
-	// This handles Update methods that can create resources via allow_missing=true
-	// When allow_missing is set, we additionally require create permission
-	if hasAllowMissingEnabled(request) {
+	// An Update that creates via allow_missing=true also needs the create permission.
+	// IAM only: doIAMPermissionCheck returns true for every other auth method, so
+	// running this on a CUSTOM method would verify nothing while reading as
+	// protection. CUSTOM handlers check for themselves, pinned by
+	// TestAllowMissingCreatePermission.
+	if authContext.AuthMethod == common.AuthMethodIAM && hasAllowMissingEnabled(request) {
 		// Derive create permission by replacing ".update" with ".create"
 		// Example: "bb.roles.update" -> "bb.roles.create"
 		createPerm := strings.Replace(string(authContext.Permission), ".update", ".create", 1)
@@ -627,6 +629,12 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 		}
 	default:
 	}
+	if r, ok := request.(*v1pb.UpdateDatabaseCatalogRequest); ok {
+		// The catalog is in `catalog`, not the `database_catalog` the Update
+		// convention below derives from the method name. Without this it
+		// resolves nothing and falls back to workspace scope.
+		return []string{r.GetCatalog().GetName()}, nil
+	}
 	if r, ok := request.(*v1pb.UpdateInstanceRequest); ok && r.AllowMissing && r.Instance != nil {
 		if projectID, _, err := common.GetProjectIDInstanceID(r.Instance.Name); err == nil {
 			// The instance does not exist yet, so authorize the implicit creation
@@ -648,6 +656,11 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 			resources = append(resources, getResourceFromSingleRequest(updateRequest.ProtoReflect(), "UpdateInstance"))
 		}
 		return resources, nil
+	}
+	if r, ok := request.(*v1pb.BatchSyncDatabasesRequest); ok {
+		// Batch schema sync has the same project-scoped authorization semantics
+		// as SyncDatabase. Resolve every database name to its owning project.
+		return r.Names, nil
 	}
 
 	if r, ok := request.(*v1pb.ListInstanceDatabaseRequest); ok && r.GetInstance() != nil {

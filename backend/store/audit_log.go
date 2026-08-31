@@ -72,15 +72,17 @@ func (s *Store) SearchAuditLogs(ctx context.Context, find *AuditLogFind) ([]*Aud
 		q.And("payload->>'parent' = ?", *v)
 	}
 
-	if len(find.OrderByKeys) > 0 {
-		orderBy := []string{}
-		for _, v := range find.OrderByKeys {
-			orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
-		}
-		q.Space(fmt.Sprintf("ORDER BY %s", strings.Join(orderBy, ", ")))
-	} else {
-		q.Space("ORDER BY created_at DESC")
+	// created_at defaults to now() and is not unique; resource_id is the
+	// primary key. Audit exports page through this at 5000 rows a time.
+	orderBy := []string{}
+	for _, v := range find.OrderByKeys {
+		orderBy = append(orderBy, fmt.Sprintf("%s %s", v.Key, v.SortOrder.String()))
 	}
+	if len(orderBy) == 0 {
+		orderBy = append(orderBy, "created_at DESC")
+	}
+	orderBy = append(orderBy, "audit_log.resource_id DESC")
+	q.Space("ORDER BY " + strings.Join(orderBy, ", "))
 	if v := find.Limit; v != nil {
 		q.Space("LIMIT ?", *v)
 	}

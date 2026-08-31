@@ -200,6 +200,10 @@ export type AuthSlice = {
   setRequireResetPassword: (value: boolean) => void;
   setUnauthenticatedOccurred: (value: boolean) => void;
   fetchCurrentUser: (silent?: boolean) => Promise<User | undefined>;
+  // Adopt a user a mutation just returned. Preferred over refetching when the
+  // caller already holds the authoritative row: a refetch can fail, and
+  // fetchCurrentUser swallows that, leaving guards reading stale state.
+  setCurrentUser: (user: User) => void;
   login: (params: {
     request: LoginRequest;
     redirect?: boolean;
@@ -309,7 +313,6 @@ export type WorkspaceSlice = {
   activeVcsUserCount: () => number;
   enableOnboarding: () => boolean;
   workspaceSetupGuideEnabled: () => boolean;
-  setupSample: () => Promise<void>;
   // Always returns a profile (never undefined), mirroring the Pinia
   // `workspaceProfile` getter so consumers read fields without null checks.
   getWorkspaceProfile: () => WorkspaceProfileSetting;

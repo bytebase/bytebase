@@ -12,38 +12,29 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// SetupRequest identifies the workspace and database-owning project.
-type SetupRequest struct {
+// PrepareRequest identifies the workspace and owning project.
+type PrepareRequest struct {
 	WorkspaceID string
 	ProjectID   string
 }
 
-// SetupResult contains every instance created by the selected implementation.
-type SetupResult struct {
-	Instances []*store.InstanceMessage
-}
-
-// InstanceInfo describes one provisioned sample instance.
-type InstanceInfo struct {
-	Instance   string
+// Instance describes one provisioned sample instance.
+type Instance struct {
+	Name       string
 	ExpireTime *time.Time
-}
-
-// Info describes availability and provisioned resources for one workspace.
-type Info struct {
-	Available bool
-	Instances []InstanceInfo
 }
 
 // Manager is the lifecycle interface implemented independently by self-host
 // and SaaS sample managers.
 type Manager interface {
-	SetupSample(context.Context, SetupRequest) (*SetupResult, error)
-	Info(context.Context, string) (*Info, error)
+	CheckAvailable(context.Context) error
+	PrepareSampleProjectInstance(context.Context, PrepareRequest) (*store.InstanceMessage, error)
+	ListInstances(context.Context, string) ([]*Instance, error)
 	Start(context.Context, string) error
 	Cleanup(context.Context) error
 	ValidateInstanceRestore(context.Context, string, string) error
 	HandleInstanceLifecycle(context.Context, string, string, bool) error
+	HandleProjectPurge(context.Context, string, string) error
 	Stop()
 }
 

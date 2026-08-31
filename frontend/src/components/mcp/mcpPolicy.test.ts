@@ -2,10 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { describe, expect, test } from "vitest";
 import { MCPMethodClass } from "@/types/proto-es/v1/annotation_pb";
 import { Engine } from "@/types/proto-es/v1/common_pb";
-import {
-  MCPSetting_Capability,
-  MCPSettingSchema,
-} from "@/types/proto-es/v1/setting_service_pb";
+import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
 import {
   MCPCapabilityModeSchema,
   MCPEngineEnforcement_Masking,
@@ -15,105 +12,23 @@ import {
   MCPMethodSchema,
 } from "@/types/proto-es/v1/workspace_service_pb";
 import {
-  ceilingIsBroken,
   groupEnginesByMasking,
   groupEnginesByReadOnlyDepth,
   groupMethodsByService,
-  initialCapabilityPick,
+  isMCPMode,
   methodsServedBy,
   readConsentCeiling,
-  readStoredCeiling,
   serviceOfMethod,
 } from "./mcpPolicy";
 
-const setting = (
-  fields: Partial<{ capability: number; unreadable: boolean }>
-) =>
-  create(MCPSettingSchema, {
-    capability:
-      fields.capability ?? MCPSetting_Capability.CAPABILITY_UNSPECIFIED,
-    capabilityUnreadable: fields.unreadable ?? false,
-  });
-
-describe("readStoredCeiling", () => {
-  test("a stored mode is the mode", () => {
-    expect(readStoredCeiling(setting({ capability: 3 }))).toEqual({
-      kind: "mode",
-      capability: MCPSetting_Capability.READ_ONLY,
-    });
-  });
-
-  test("no row is unconfigured, not a choice", () => {
-    expect(readStoredCeiling(setting({}))).toEqual({ kind: "unconfigured" });
-  });
-
-  test("an unreadable row is its own state, never read-write", () => {
-    // The defect BOT-100 records: the two arrive as the same capability and
-    // mean opposite things — one resolves READ_WRITE, the other is refused.
-    const stored = readStoredCeiling(setting({ unreadable: true }));
-    expect(stored).toEqual({ kind: "unreadable" });
-    expect(readStoredCeiling(setting({}))).toEqual({ kind: "unconfigured" });
-  });
-
-  test("the flag outranks a capability that parsed away to unset", () => {
-    // The row reads back CAPABILITY_UNSPECIFIED either way. Only the flag
-    // separates a ceiling nobody can resolve from a workspace that never
-    // configured one, and they resolve to opposite ceilings — refused, versus
-    // the READ_WRITE default (BOT-100).
-    expect(readStoredCeiling(setting({ unreadable: true }))).toEqual({
-      kind: "unreadable",
-    });
-    expect(readStoredCeiling(setting({}))).toEqual({ kind: "unconfigured" });
-  });
-
-  test("a number no mode serves is unserved", () => {
-    // The reserved 2 (was METADATA_ONLY), or a ceiling a newer release wrote.
-    expect(readStoredCeiling(setting({ capability: 2 }))).toEqual({
-      kind: "unserved",
-      stored: "2",
-    });
-  });
-});
-
-describe("initialCapabilityPick", () => {
-  test("a stored mode preselects itself", () => {
-    expect(
-      initialCapabilityPick({
-        kind: "mode",
-        capability: MCPSetting_Capability.DISABLED,
-      })
-    ).toBe(MCPSetting_Capability.DISABLED);
-  });
-
-  test("an unconfigured row preselects the ceiling it resolves to", () => {
-    expect(initialCapabilityPick({ kind: "unconfigured" })).toBe(
-      MCPSetting_Capability.READ_WRITE
-    );
-  });
-
-  test("a broken row preselects nothing, so every pick is savable", () => {
-    // Preselecting read-write here is what left an admin unable to repair the
-    // row to read-write at all: the pick matched the preselection, so the form
-    // was never dirty and the footer never enabled.
-    for (const stored of [
-      { kind: "unreadable" as const },
-      { kind: "unserved" as const, stored: "2" },
-    ]) {
-      expect(ceilingIsBroken(stored)).toBe(true);
-      expect(initialCapabilityPick(stored)).toBeUndefined();
-    }
-  });
-
-  test("a readable row is not broken", () => {
-    // Without this the whole suite passes on `ceilingIsBroken = () => true`,
-    // which would put every workspace into the repair banner.
-    expect(ceilingIsBroken({ kind: "unconfigured" })).toBe(false);
-    expect(
-      ceilingIsBroken({
-        kind: "mode",
-        capability: MCPSetting_Capability.READ_ONLY,
-      })
-    ).toBe(false);
+describe("isMCPMode", () => {
+  test("accepts only selectable capabilities", () => {
+    expect(isMCPMode(MCPSetting_Capability.DISABLED)).toBe(true);
+    expect(isMCPMode(MCPSetting_Capability.READ_ONLY)).toBe(true);
+    expect(isMCPMode(MCPSetting_Capability.READ_WRITE)).toBe(true);
+    expect(isMCPMode(MCPSetting_Capability.CAPABILITY_UNSPECIFIED)).toBe(false);
+    expect(isMCPMode(2 as MCPSetting_Capability)).toBe(false);
+    expect(isMCPMode(99 as MCPSetting_Capability)).toBe(false);
   });
 });
 
@@ -305,12 +220,12 @@ describe("readConsentCeiling", () => {
     expect(readConsentCeiling(info)).toEqual({ kind: "mode", info });
   });
 
-  test("unreadable outranks the serving table", () => {
-    // The capability arrives unspecified when the stored value cannot be
-    // resolved, and unspecified has no row, so both rules would fire. Only the
-    // first says what an admin has to do about it.
+  test("an unresolvable stored value is unserved, like any value no mode serves", () => {
+    // The capability arrives unspecified when nothing could be resolved from
+    // the row. It has no row in modes either, and the remedy is the same as for
+    // a value that parsed but nothing serves, so it is one state.
     expect(readConsentCeiling(infoWith({ capability: 0 }))).toEqual({
-      kind: "unreadable",
+      kind: "unserved",
     });
   });
 

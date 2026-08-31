@@ -20,7 +20,6 @@ const mocks = vi.hoisted(() => ({
       | {
           capability: number;
           ignoreMaskingExemptions: boolean;
-          capabilityUnreadable?: boolean;
         }
       | undefined,
   },
@@ -126,7 +125,6 @@ beforeEach(async () => {
   mocks.mcpSetting.value = {
     capability: 3, // READ_ONLY
     ignoreMaskingExemptions: false,
-    capabilityUnreadable: false,
   };
   mocks.upsertSetting.mockResolvedValue(undefined);
   mocks.hasFeature.mockReturnValue(true);
@@ -188,6 +186,46 @@ describe("MCPAccessPolicySection", () => {
       "settings.mcp.policy.read-failed.title"
     );
     expect(container.textContent).not.toContain("settings.mcp.policy.in-force");
+    unmount();
+  });
+
+  test("repairs an unspecified capability without a frontend fallback", async () => {
+    mocks.mcpSetting.value = {
+      capability: 0,
+      ignoreMaskingExemptions: false,
+    };
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+
+    expect(container.textContent).toContain(
+      "settings.mcp.policy.unreadable.title"
+    );
+    expect(container.textContent).not.toContain("settings.mcp.policy.in-force");
+
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+    expect(container.textContent).toContain(
+      "settings.mcp.policy.unreadable.pick"
+    );
+
+    clickText(container, "settings.mcp.policy.mode.read-write.title");
+    await flush();
+    clickText(container, "settings.mcp.policy.save");
+    await flush();
+
+    expect(mocks.upsertSetting).toHaveBeenCalledWith(
+      expect.objectContaining({
+        updateMask: expect.objectContaining({
+          paths: ["value.mcp.capability"],
+        }),
+      })
+    );
+    const request = mocks.upsertSetting.mock.calls.at(-1)?.[0];
+    expect(request.value.value.value.capability).toBe(4);
+
     unmount();
   });
 
@@ -338,15 +376,15 @@ describe("MCPAccessPolicySection", () => {
   // who most needs to compare the modes was the only one who could not. None of
   // the mode contents ever depended on the stored row, and the server now
   // answers them under a broken ceiling, which is the response mocked here.
-  test("the mode-contents drawer is available while repairing an unreadable ceiling", async () => {
+  test("the mode-contents drawer is available while repairing a broken ceiling", async () => {
+    // Capability 0 with no row for it in modes is the broken state: nothing
+    // this build serves resolves from the stored row.
     mocks.mcpSetting.value = {
       capability: 0,
       ignoreMaskingExemptions: false,
-      capabilityUnreadable: true,
     };
     mocks.getMCPInfo.mockResolvedValue({
       capability: 0,
-      capabilityUnreadable: true,
       ignoreMaskingExemptions: false,
       dataMaskingAvailable: true,
       modes: [{ capability: 1 }, { capability: 3 }, { capability: 4 }],
