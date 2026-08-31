@@ -579,10 +579,24 @@ func TestSignupChecksRestrictionBeforeExistence(t *testing.T) {
 	})
 
 	// Where signup is allowed the duplicate is still reported: the reorder moved
-	// the check behind the gates, it did not remove it.
+	// the check behind the DisallowSignup gate, it did not remove it.
 	t.Run("allowed signup still reports a duplicate", func(t *testing.T) {
 		service := NewAuthService(stores, secret, licenseService, &config.Profile{}, nil)
 		require.Equal(t, connect.CodeAlreadyExists, connect.CodeOf(signup(service, "taken@example.com")))
+	})
+
+	// Only DisallowSignup decides whether existence may be disclosed. The
+	// password policy is not a gate on it: a registered address must be told to
+	// log in rather than to pick a better password, and ordering the policy
+	// first would hide nothing from a caller who simply submits a valid one.
+	t.Run("a duplicate outranks the password policy", func(t *testing.T) {
+		service := NewAuthService(stores, secret, licenseService, &config.Profile{}, nil)
+		_, err := service.Signup(ctx, connect.NewRequest(&v1pb.SignupRequest{
+			Email:    "taken@example.com",
+			Title:    "Signup test",
+			Password: "short",
+		}))
+		require.Equal(t, connect.CodeAlreadyExists, connect.CodeOf(err))
 	})
 }
 

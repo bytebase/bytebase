@@ -322,20 +322,26 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		// exists to withhold.
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed for this workspace"))
 	}
-	if err := validatePasswordWithRestriction(request.Password, convertToStorePasswordRestriction(restriction.PasswordRestriction)); err != nil {
-		return nil, err
-	}
-
 	// Existence is checked only once the workspace would accept a signup at all.
-	// Answering AlreadyExists ahead of the gates makes a workspace that refuses
+	// Answering AlreadyExists ahead of that gate makes a workspace that refuses
 	// every signup — every SaaS workspace, since the override above always sets
 	// DisallowSignup — an account-existence oracle for anonymous callers.
+	//
+	// It stays ahead of the password policy, though. Only DisallowSignup decides
+	// whether existence may be disclosed here; past it, a workspace that accepts
+	// signups answers AlreadyExists to any caller who submits a valid password
+	// anyway, so ordering the policy first would hide nothing and would tell a
+	// registered user to pick a better password when what they need is to log in.
 	existingUser, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user by email"))
 	}
 	if existingUser != nil {
 		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("email %s is already registered", request.Email))
+	}
+
+	if err := validatePasswordWithRestriction(request.Password, convertToStorePasswordRestriction(restriction.PasswordRestriction)); err != nil {
+		return nil, err
 	}
 
 	workspaceID, err := s.provisionResolvedWorkspace(ctx, email, targetWorkspaceID, targetIsMember)
