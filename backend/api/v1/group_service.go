@@ -62,6 +62,11 @@ func (s *GroupService) BatchGetGroups(ctx context.Context, request *connect.Requ
 	for _, name := range request.Msg.Names {
 		group, err := s.GetGroup(ctx, connect.NewRequest(&v1pb.GetGroupRequest{Name: name}))
 		if err != nil {
+			// Missing and forbidden answer alike: a different code would tell the
+			// caller a group exists that they may not read.
+			if code := connect.CodeOf(err); code == connect.CodeNotFound || code == connect.CodePermissionDenied {
+				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("group %q not found", name))
+			}
 			return nil, err
 		}
 		response.Groups = append(response.Groups, group.Msg)
