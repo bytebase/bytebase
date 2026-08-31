@@ -16,29 +16,23 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-// An Update RPC that takes allow_missing creates the resource when it is absent,
-// so it needs the create permission on top of the update one. Two different
-// mechanisms supply that check, and each has a silent failure mode:
+// An allow_missing Update creates the resource when it is absent, so it needs
+// the create permission too. Two mechanisms supply that check, each failing
+// silently:
 //
-//   - IAM methods are covered by the ACL interceptor, which derives the create
-//     permission by rewriting ".update" to ".create" (acl.go). The rewrite is a
-//     string guess: it can miss (a permission not spelled with ".update" comes
-//     out unchanged, and the "second" check re-checks the first), and it can
-//     invent a permission no role holds (CheckPermission never matches an
-//     unknown string, so the RPC denies every caller — how the dead
-//     allow_missing on UpdateDatabaseCatalog denied Workspace Admin).
-//   - CUSTOM methods are not covered at all: doIAMPermissionCheck returns true
-//     for every non-IAM auth method, so the interceptor's secondary block is
-//     skipped. The handler owns the check, and when it forgets there is nothing
-//     to notice — UpdateGroup shipped an unchecked create path under a comment
-//     saying the interceptor handled it.
+//   - The ACL interceptor covers IAM methods, deriving the permission by
+//     rewriting ".update" to ".create". That guess can leave the string
+//     unchanged (re-checking what was already checked) or invent one no role
+//     holds (denying every caller, as the dead flag on UpdateDatabaseCatalog did).
+//   - CUSTOM methods it does not cover at all, and a handler that forgets to
+//     check leaves nothing to notice — how UpdateGroup shipped an unchecked
+//     create path.
 //
-// So every allow_missing RPC is listed here with the mechanism that authorizes
-// its create path. An RPC that gains or loses the flag fails the build, and
-// clearing the failure means naming where the create permission is checked.
+// So each allow_missing RPC is listed with what authorizes its create path.
+// Gaining or losing the flag fails the build.
 var allowMissingCreateChecks = map[string]allowMissingCreateCheck{
-	// Interceptor-enforced. The listed permission is what the rewrite must
-	// produce; the test proves it exists and is not the declared one.
+	// Interceptor-enforced: the permission the rewrite must produce. The test
+	// proves it exists and differs from the declared one.
 	"bytebase.v1.InstanceService.UpdateInstance":                 {createPermission: permission.InstancesCreate},
 	"bytebase.v1.InstanceService.UpdateDataSource":               {createPermission: permission.InstancesCreate},
 	"bytebase.v1.RoleService.UpdateRole":                         {createPermission: permission.RolesCreate},
@@ -49,13 +43,11 @@ var allowMissingCreateChecks = map[string]allowMissingCreateCheck{
 	"bytebase.v1.DatabaseGroupService.UpdateDatabaseGroup":       {createPermission: permission.DatabaseGroupsCreate},
 	"bytebase.v1.ProjectService.UpdateProject":                   {createPermission: permission.ProjectsCreate},
 	"bytebase.v1.ProjectService.UpdateWebhook":                   {createPermission: permission.ProjectsCreate},
-	// Nested: the flag rides on the repeated sub-request, which the interceptor
-	// reads only because hasAllowMissingEnabled names this type by hand. The
-	// test builds the request and proves the read rather than trusting this note.
+	// Nested: the flag rides on the sub-request, which the interceptor reads only
+	// because hasAllowMissingEnabled names this type by hand. Proven, not assumed.
 	"bytebase.v1.InstanceService.BatchUpdateInstances": {createPermission: permission.InstancesCreate},
 
-	// Handler-enforced. CUSTOM auth means the interceptor verifies nothing, so
-	// the note names the call that does.
+	// Handler-enforced: CUSTOM auth, so the note names the call that checks.
 	"bytebase.v1.OrgPolicyService.UpdatePolicy": {
 		handlerCheck: "org_policy_service.go createPolicyMessage -> checkPolicyPermission(PoliciesCreate, or the MASKING_RULE/MASKING_EXEMPTION variant)",
 	},
@@ -73,17 +65,15 @@ var allowMissingCreateChecks = map[string]allowMissingCreateCheck{
 	},
 }
 
-// allowMissingCreateCheck names how one RPC authorizes its create path.
-// Exactly one field is set: createPermission for the interceptor, handlerCheck
-// for a CUSTOM handler that checks for itself.
+// allowMissingCreateCheck names how one RPC authorizes its create path. Exactly
+// one field is set.
 type allowMissingCreateCheck struct {
 	createPermission string
 	handlerCheck     string
 }
 
-// TestAllowMissingCreatePermission fails when an allow_missing RPC's create path
-// is authorized by nobody, or by a permission string that cannot deny or cannot
-// grant.
+// TestAllowMissingCreatePermission fails when an allow_missing create path is
+// authorized by nobody, or by a permission that cannot deny or cannot grant.
 func TestAllowMissingCreatePermission(t *testing.T) {
 	found := allowMissingMethods(t)
 
@@ -139,14 +129,13 @@ func TestAllowMissingCreatePermission(t *testing.T) {
 type allowMissingMethod struct {
 	authMethod v1pb.AuthMethod
 	permission string
-	// nested is set when the flag arrives inside a repeated sub-request rather
-	// than on the request itself, the shape BatchUpdateInstances has.
+	// nested: the flag is on a sub-request, the BatchUpdateInstances shape.
 	nested bool
 	input  protoreflect.FullName
 }
 
-// allowMissingMethods returns every bytebase.v1 RPC whose request message has a
-// bool allow_missing field, keyed by full method name.
+// allowMissingMethods returns every bytebase.v1 RPC carrying allow_missing,
+// keyed by full method name.
 func allowMissingMethods(t *testing.T) map[string]allowMissingMethod {
 	t.Helper()
 	methods := map[string]allowMissingMethod{}
@@ -182,13 +171,10 @@ func allowMissingMethods(t *testing.T) map[string]allowMissingMethod {
 	return methods
 }
 
-// requireInterceptorSeesAllowMissing builds the request with allow_missing set
-// and asserts hasAllowMissingEnabled reads it.
-//
-// For a direct field that exercises the reflection path. For a nested one it is
-// the whole point: the interceptor reaches a sub-request only via the type
-// switch at the top of hasAllowMissingEnabled, so a batch RPC absent from that
-// switch reports false here and its create permission is never checked.
+// requireInterceptorSeesAllowMissing sets allow_missing on the real request and
+// asserts hasAllowMissingEnabled reads it. This is the point for nested shapes:
+// the interceptor reaches a sub-request only via its hand-written type switch,
+// so a batch RPC missing from that switch reports false here.
 func requireInterceptorSeesAllowMissing(t *testing.T, name string, method allowMissingMethod) {
 	t.Helper()
 
@@ -214,8 +200,7 @@ func requireInterceptorSeesAllowMissing(t *testing.T, name string, method allowM
 }
 
 // nestedAllowMissingField returns the sub-request field carrying allow_missing,
-// or nil. It accepts the same shapes allowMissingShape counts as nested, so the
-// two never disagree about what the request holds.
+// or nil. allowMissingShape defers to it so the two cannot disagree.
 func nestedAllowMissingField(md protoreflect.MessageDescriptor) protoreflect.FieldDescriptor {
 	fields := md.Fields()
 	for i := range fields.Len() {
@@ -230,13 +215,9 @@ func nestedAllowMissingField(md protoreflect.MessageDescriptor) protoreflect.Fie
 	return nil
 }
 
-// allowMissingShape reports how a request carries allow_missing: directly, or
-// on a sub-request nested one level down.
-//
-// Both shapes reach the same secondary check, and the interceptor reads the
-// nested one only for the request types hasAllowMissingEnabled names by hand.
-// So a new batch RPC over an allow_missing sub-request is silently uncovered,
-// and listing both shapes here is what surfaces it.
+// allowMissingShape reports how a request carries allow_missing: directly, or on
+// a sub-request one level down. Listing both is what surfaces a new batch RPC
+// the interceptor's type switch does not name.
 func allowMissingShape(md protoreflect.MessageDescriptor) (direct, nested bool) {
 	if hasAllowMissingField(md) {
 		return true, false
@@ -244,8 +225,8 @@ func allowMissingShape(md protoreflect.MessageDescriptor) (direct, nested bool) 
 	return false, nestedAllowMissingField(md) != nil
 }
 
-// hasAllowMissingField mirrors hasAllowMissingEnabled's field lookup: the
-// interceptor reads allow_missing only when it is a bool named exactly that.
+// hasAllowMissingField mirrors hasAllowMissingEnabled's lookup: a bool named
+// exactly allow_missing.
 func hasAllowMissingField(md protoreflect.MessageDescriptor) bool {
 	fd := md.Fields().ByName("allow_missing")
 	return fd != nil && fd.Kind() == protoreflect.BoolKind

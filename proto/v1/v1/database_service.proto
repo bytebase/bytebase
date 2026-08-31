@@ -340,13 +340,8 @@ message UpdateDatabaseRequest {
   // The list of fields to update.
   google.protobuf.FieldMask update_mask = 2;
 
-  // No allow_missing. A database is not independently creatable — it exists once
-  // its instance is synced, and there is no CreateDatabase RPC — so the flag had
-  // nothing to create and the handler never read it. It was not inert: there is
-  // no `bb.databases.create` permission, and the ACL interceptor derives one from
-  // the declared `bb.databases.update`, so setting the flag denied every caller.
-  reserved 3;
-  reserved "allow_missing";
+  // Never add allow_missing: a database is not independently creatable, it
+  // appears when its instance is synced, so the flag has nothing to create.
 }
 
 message BatchUpdateDatabasesRequest {

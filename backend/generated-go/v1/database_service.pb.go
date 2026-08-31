@@ -5470,11 +5470,11 @@ const file_v1_database_service_proto_rawDesc = "" +
 	"\border_by\x18\x06 \x01(\tR\aorderBy\"t\n" +
 	"\x15ListDatabasesResponse\x123\n" +
 	"\tdatabases\x18\x01 \x03(\v2\x15.bytebase.v1.DatabaseR\tdatabases\x12&\n" +
-	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\xa1\x01\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"\x8c\x01\n" +
 	"\x15UpdateDatabaseRequest\x126\n" +
 	"\bdatabase\x18\x01 \x01(\v2\x15.bytebase.v1.DatabaseB\x03\xe0A\x02R\bdatabase\x12;\n" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
-	"updateMaskJ\x04\b\x03\x10\x04R\rallow_missing\"z\n" +
+	"updateMask\"z\n" +
 	"\x1bBatchUpdateDatabasesRequest\x12\x16\n" +
 	"\x06parent\x18\x01 \x01(\tR\x06parent\x12C\n" +
 	"\brequests\x18\x02 \x03(\v2\".bytebase.v1.UpdateDatabaseRequestB\x03\xe0A\x02R\brequests\"S\n" +

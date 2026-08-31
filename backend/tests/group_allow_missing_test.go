@@ -11,15 +11,10 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
-// TestUpdateGroupAllowMissingRequiresCreatePermission pins the create-permission
-// check on UpdateGroup's allow_missing path.
-//
-// UpdateGroup is CUSTOM-authed, so the ACL interceptor's allow_missing secondary
-// check does not run (doIAMPermissionCheck returns true for every non-IAM auth
-// method), and the create path calls CreateGroup in-process, which bypasses the
-// interceptor entirely. For a while nothing checked either permission there, so
-// a caller holding no group permission at all could create a group — and name
-// itself OWNER, which the handler's own checkPermission then honors.
+// TestUpdateGroupAllowMissingRequiresCreatePermission pins the create check on
+// UpdateGroup's allow_missing path. Neither the ACL interceptor (CUSTOM auth) nor
+// CreateGroup (called in-process) covers it, so for a while a caller with no group
+// permission could create one — and name itself OWNER, which checkPermission honors.
 func TestUpdateGroupAllowMissingRequiresCreatePermission(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)
@@ -55,9 +50,8 @@ func TestUpdateGroupAllowMissingRequiresCreatePermission(t *testing.T) {
 	dbaEmail := createUserWithRole("dba", "roles/workspaceDBA")
 	dbaToken := login(dbaEmail)
 
-	// Establishes the fixture: this caller cannot create a group the front way.
-	// If this ever passes, the role gained bb.groups.create and the denial below
-	// would prove nothing.
+	// Fixture check: if this ever passes, the role gained bb.groups.create and the
+	// denial below would prove nothing.
 	ctl.authInterceptor.token = dbaToken
 	_, err = ctl.groupServiceClient.CreateGroup(ctx, connect.NewRequest(&v1pb.CreateGroupRequest{
 		Group:      &v1pb.Group{Title: "Front door"},
@@ -66,8 +60,7 @@ func TestUpdateGroupAllowMissingRequiresCreatePermission(t *testing.T) {
 	a.Error(err)
 	a.Equal(connect.CodePermissionDenied, connect.CodeOf(err), "workspace DBA must not hold bb.groups.create")
 
-	// The regression: the same caller must not reach creation through the back
-	// door either.
+	// The regression: no back door to creation either.
 	deniedGroupEmail := fmt.Sprintf("denied-%s@example.com", generateRandomString("g"))
 	deniedGroupName := "groups/" + deniedGroupEmail
 	_, err = ctl.groupServiceClient.UpdateGroup(ctx, connect.NewRequest(&v1pb.UpdateGroupRequest{
@@ -83,10 +76,9 @@ func TestUpdateGroupAllowMissingRequiresCreatePermission(t *testing.T) {
 	a.Error(err)
 	a.Equal(connect.CodeNotFound, connect.CodeOf(err), "the denied UpdateGroup must not have created the group")
 
-	// Positive control. Workspace Member holds bb.groups.create (though not
-	// bb.groups.update), so allow_missing still creates for it. This also proves
-	// the denial above is the permission and not the USER_GROUPS license guard,
-	// which runs first and would deny both callers alike.
+	// Positive control: Workspace Member holds bb.groups.create, so allow_missing
+	// still creates. Also proves the denial above is the permission, not the
+	// USER_GROUPS license guard, which runs first and would deny both alike.
 	memberEmail := createUserWithRole("member", "roles/workspaceMember")
 	ctl.authInterceptor.token = login(memberEmail)
 

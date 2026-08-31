@@ -174,11 +174,9 @@ func (s *GroupService) UpdateGroup(ctx context.Context, req *connect.Request[v1p
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)
 			}
-			// The create permission is checked here, not by the ACL interceptor:
-			// UpdateGroup is CUSTOM-authed, so the interceptor's allow_missing
-			// secondary check does not run, and CreateGroup is called in-process
-			// below, which bypasses the interceptor entirely. The group-owner
-			// bypass in checkPermission does not apply — there is no group yet.
+			// Checked here, not by the ACL interceptor: UpdateGroup is CUSTOM-authed,
+			// and the CreateGroup call below is in-process, so neither path reaches
+			// the interceptor. No group exists yet, so no owner bypass applies.
 			ok, err := s.iamManager.CheckPermission(ctx, permission.GroupsCreate, user, common.GetWorkspaceIDFromContext(ctx))
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
