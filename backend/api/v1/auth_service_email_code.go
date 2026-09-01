@@ -41,12 +41,12 @@ const (
 	errMsgInvalidEmailCode = "invalid or expired code"
 )
 
-// errSendBudgetExhausted reports that a send bucket is out of budget for the
-// window, so no mail went out. Distinguished from a delivery failure because
-// the caller answers it with ResourceExhausted rather than Internal.
 // signinCodeSendBudgetKey is the single sender bucket; see SendEmailLoginCode.
 const signinCodeSendBudgetKey = "signin-code"
 
+// errSendBudgetExhausted reports that the window is spent, so no mail went out.
+// Distinguished from a delivery failure because the caller answers it with
+// ResourceExhausted rather than Internal.
 var errSendBudgetExhausted = errors.New("too many sign-in codes requested, please try again later")
 
 // RequestPasswordReset sends a password reset email. Always returns success to avoid leaking email existence.
@@ -317,16 +317,19 @@ func (s *AuthService) parseAndSetAuditWorkspace(ctx context.Context, email strin
 		return "", err
 	}
 	if workspaceID != "" {
-		account, err := s.store.GetAccountByEmail(ctx, email)
-		if err == nil && account != nil && account.Type == storepb.PrincipalType_END_USER && !account.MemberDeleted {
-			workspace, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
-				WorkspaceID:    &workspaceID,
-				Email:          email,
-				IncludeAllUser: !s.profile.SaaS,
-			})
-			if err == nil && workspace != nil {
-				common.SetAuditWorkspaceID(ctx, workspace.ResourceID)
-			}
+		account, accountErr := s.store.GetAccountByEmail(ctx, email)
+		// Looked up for every address, not only one worth attributing. Callers
+		// here are anonymous and can reach a response without a send — an
+		// exhausted budget returns early — so a query skipped for strangers is a
+		// query a member can be recognised by.
+		workspace, workspaceErr := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+			WorkspaceID:    &workspaceID,
+			Email:          email,
+			IncludeAllUser: !s.profile.SaaS,
+		})
+		if accountErr == nil && account != nil && account.Type == storepb.PrincipalType_END_USER && !account.MemberDeleted &&
+			workspaceErr == nil && workspace != nil {
+			common.SetAuditWorkspaceID(ctx, workspace.ResourceID)
 		}
 	}
 	return workspaceID, nil
