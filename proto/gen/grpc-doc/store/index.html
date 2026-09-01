@@ -3207,7 +3207,7 @@ This information is not authenticated and should be treated accordingly. </p></t
         </table>
       
         <h3 id="bytebase.store.LoginAttemptKind">LoginAttemptKind</h3>
-        <p>LoginAttemptKind names which credential's attempt limit a login_attempt row</p><p>tracks. Stored as the enum name string in login_attempt.kind column.</p>
+        <p>LoginAttemptKind names what a login_attempt row counts. Stored as the enum</p><p>name string in login_attempt.kind column. The kind also says what the</p><p>identity column holds: the three credential kinds below count failed guesses</p><p>against a person, share one attempt limit, and are cleared by a successful</p><p>verification.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -3229,13 +3229,30 @@ This information is not authenticated and should be treated accordingly. </p></t
               <tr>
                 <td>EMAIL_CODE</td>
                 <td>2</td>
-                <td><p></p></td>
+                <td><p>Submitting a 6-digit code. Sign-in, password reset and re-authentication
+share one bucket per email, so a guess anywhere counts everywhere.</p></td>
               </tr>
             
               <tr>
                 <td>MFA</td>
                 <td>3</td>
                 <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>EMAIL_CODE_SEND</td>
+                <td>4</td>
+                <td><p>Sending those codes rather than guessing them — the opposite direction, and
+the reason it is a separate kind. Its identity is the sending deployment
+and not a person, so exhausting it throttles outbound
+mail and locks no account, and nothing clears it because a delivered email
+is the thing counted and there is no success to forgive.
+
+It also reads last_attempt_at differently: for this kind the column is the
+window&#39;s start, not the latest send, so the count resets on a fixed
+schedule. The kinds above intentionally reset only after a quiet window —
+wrong for a volume budget, where a steady trickle would never reset and
+&#34;N per hour&#34; would become &#34;N ever&#34;.</p></td>
               </tr>
             
           </tbody>

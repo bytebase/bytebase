@@ -138,6 +138,7 @@ psql -U bbdev bbdev
 - Write clean, minimal code; fewer lines is better
 - Prioritize simplicity for effective and maintainable software
 - Only include comments that are essential to understanding functionality or convey non-obvious information
+- Keep comments short while preserving necessary information
 
 ### Go
 

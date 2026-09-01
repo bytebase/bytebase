@@ -15,11 +15,28 @@ enum EmailVerificationCodePurpose {
   REAUTH = 3;
 }
 
-// LoginAttemptKind names which credential's attempt limit a login_attempt row
-// tracks. Stored as the enum name string in login_attempt.kind column.
+// LoginAttemptKind names what a login_attempt row counts. Stored as the enum
+// name string in login_attempt.kind column. The kind also says what the
+// identity column holds: the three credential kinds below count failed guesses
+// against a person, share one attempt limit, and are cleared by a successful
+// verification.
 enum LoginAttemptKind {
   LOGIN_ATTEMPT_KIND_UNSPECIFIED = 0;
   PASSWORD = 1;
+  // Submitting a 6-digit code. Sign-in, password reset and re-authentication
+  // share one bucket per email, so a guess anywhere counts everywhere.
   EMAIL_CODE = 2;
   MFA = 3;
+  // Sending those codes rather than guessing them — the opposite direction, and
+  // the reason it is a separate kind. Its identity is the sending deployment
+  // and not a person, so exhausting it throttles outbound
+  // mail and locks no account, and nothing clears it because a delivered email
+  // is the thing counted and there is no success to forgive.
+  //
+  // It also reads last_attempt_at differently: for this kind the column is the
+  // window's start, not the latest send, so the count resets on a fixed
+  // schedule. The kinds above intentionally reset only after a quiet window —
+  // wrong for a volume budget, where a steady trickle would never reset and
+  // "N per hour" would become "N ever".
+  EMAIL_CODE_SEND = 4;
 }
