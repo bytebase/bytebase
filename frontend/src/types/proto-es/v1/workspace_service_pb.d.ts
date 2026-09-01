@@ -50,7 +50,9 @@ export declare type MCPInfo = Message<"bytebase.v1.MCPInfo"> & {
   workspace: string;
 
   /**
-   * The ceiling in force for this workspace.
+   * The ceiling in force for this workspace. A value no row in modes serves,
+   * CAPABILITY_UNSPECIFIED included, means no ceiling could be resolved from
+   * the stored row and every MCP connection is refused.
    *
    * @generated from field: bytebase.v1.MCPSetting.Capability capability = 2;
    */

@@ -155,3 +155,46 @@ export const modeFor = (
   capability: MCPSetting_Capability
 ): MCPCapabilityMode | undefined =>
   info?.modes.find((mode) => mode.capability === capability);
+
+/**
+ * What the consent page can truthfully tell someone about to approve a client.
+ *
+ * Only `mode` is a policy it can disclose. The other four are the ways it can
+ * fail to hold one, kept apart because the remedy differs: retry, reload, or
+ * ask an admin (BOT-106).
+ */
+export type ConsentCeiling =
+  /** Carries the response, so the disclosure cannot be rendered without it. */
+  | { kind: "mode"; info: MCPInfo }
+  /** GetMCPInfo failed or timed out. The policy is not known to be anything. */
+  | { kind: "unknown" }
+  /** No row in modes serves the stored value, CAPABILITY_UNSPECIFIED included. */
+  | { kind: "unserved" }
+  /** The server serves it and this bundle has no name for it. */
+  | { kind: "outdated" };
+
+/**
+ * Reads a GetMCPInfo response — or its absence — into that state.
+ *
+ * modes is the serving table the gate evaluates; MCP_CAPABILITY_CHOICES is the
+ * set this bundle has copy for. A ceiling a newer release added is in the first
+ * and not the second, which is the one case where reloading helps rather than
+ * finding an admin.
+ */
+export const readConsentCeiling = (
+  info: MCPInfo | undefined
+): ConsentCeiling => {
+  if (!info) {
+    return { kind: "unknown" };
+  }
+  // Covers a value nothing could resolve as well as one that resolved to a
+  // ceiling no mode serves: both arrive with no row in modes, and both leave an
+  // admin the same job.
+  if (!modeFor(info, info.capability)) {
+    return { kind: "unserved" };
+  }
+  if (!isMCPMode(info.capability)) {
+    return { kind: "outdated" };
+  }
+  return { kind: "mode", info };
+};

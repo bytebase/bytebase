@@ -1599,10 +1599,31 @@
         },
         "see-contents": "查看此工作区策略允许的范围",
         "title": "此会话可以",
+        "undisclosed": {
+          "line": {
+            "nothing-approved": "尚未批准任何内容，也未建立任何连接"
+          },
+          "outdated": {
+            "description": "本工作空间的 MCP 策略比您打开的页面更新，因此这里无法显示会话被允许执行的操作。",
+            "line": "请先重新加载获取当前策略，再批准任何内容",
+            "retry": "重新加载",
+            "title": "此页面比本工作空间的 MCP 策略更旧"
+          },
+          "policy-label": "工作空间策略",
+          "unknown": {
+            "description": "Bytebase 目前无法读取本工作空间的 MCP 访问策略。",
+            "line": "无法显示本次会话将被允许执行的操作",
+            "retry": "重新检查",
+            "title": "无法确认 MCP 策略"
+          },
+          "unserved": {
+            "description": "本工作空间存储了此 Bytebase 版本不支持的策略值。所有 MCP 连接都在被拒绝。",
+            "line": "在管理员选择受支持的策略之前，任何 AI 会话都无法连接",
+            "title": "本工作空间的 MCP 策略不是此版本所支持的"
+          }
+        },
         "write-caution": "具有写权限的 AI 会话会造成真实变更。请仅在你可控的机器上批准。"
       },
-      "permission-access": "使用您的权限访问您的 Bytebase 账户",
-      "permissions": "此应用程序将能够:",
       "title": "授权请求",
       "workspace-label": "授权访问的工作空间"
     }

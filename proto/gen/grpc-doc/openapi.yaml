@@ -16756,7 +16756,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Subscription'
-  /v1/subscription/checkoutSession/{session_id}:
+  /v1/subscription/checkoutSession/{sessionId}:
     get:
       tags:
         - SubscriptionService
@@ -16764,7 +16764,7 @@ paths:
       description: VerifyCheckoutSession verifies a Stripe Checkout Session status (SaaS only).
       operationId: SubscriptionService_VerifyCheckoutSession
       parameters:
-        - name: session_id
+        - name: sessionId
           in: path
           description: |-
             The same Stripe Checkout Session ID PurchaseResponse mints, arriving back
@@ -26748,7 +26748,10 @@ components:
           readOnly: true
         capability:
           title: capability
-          description: The ceiling in force for this workspace.
+          description: |-
+            The ceiling in force for this workspace. A value no row in modes serves,
+             CAPABILITY_UNSPECIFIED included, means no ceiling could be resolved from
+             the stored row and every MCP connection is refused.
           readOnly: true
           $ref: '#/components/schemas/bytebase.v1.MCPSetting.Capability'
         modes:

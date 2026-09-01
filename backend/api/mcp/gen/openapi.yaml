@@ -15622,7 +15622,10 @@ components:
              nothing to get it by.
         capability:
           title: capability
-          description: The ceiling in force for this workspace.
+          description: |-
+            The ceiling in force for this workspace. A value no row in modes serves,
+             CAPABILITY_UNSPECIFIED included, means no ceiling could be resolved from
+             the stored row and every MCP connection is refused.
           $ref: '#/components/schemas/bytebase.v1.MCPSetting.Capability'
         modes:
           type: array

@@ -1599,10 +1599,31 @@
         },
         "see-contents": "See what this workspace's policy allows",
         "title": "This session may",
+        "undisclosed": {
+          "line": {
+            "nothing-approved": "Nothing has been approved and nothing is connected"
+          },
+          "outdated": {
+            "description": "This workspace's MCP policy is newer than the page you have open, so what a session may do cannot be shown here.",
+            "line": "Reload to get the current policy before you approve anything",
+            "retry": "Reload",
+            "title": "This page is older than this workspace's MCP policy"
+          },
+          "policy-label": "Workspace policy",
+          "unknown": {
+            "description": "Bytebase could not read this workspace's MCP access policy just now.",
+            "line": "What this session would be allowed to do cannot be shown",
+            "retry": "Check again",
+            "title": "The MCP policy could not be checked"
+          },
+          "unserved": {
+            "description": "This workspace stores a policy value this Bytebase version does not serve. Every MCP connection is being refused.",
+            "line": "No AI session can connect until an admin picks a supported policy",
+            "title": "This workspace's MCP policy is not one this version serves"
+          }
+        },
         "write-caution": "An AI session with write access makes real changes. Approve only on a machine you control."
       },
-      "permission-access": "Access your Bytebase account with your permissions",
-      "permissions": "This application will be able to:",
       "title": "Authorization Request",
       "workspace-label": "Granting access to workspace"
     }
