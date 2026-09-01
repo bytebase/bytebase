@@ -1674,17 +1674,17 @@ const file_v1_plan_service_proto_rawDesc = "" +
 	"\n" +
 	"\x06FAILED\x10\x03\x12\f\n" +
 	"\bCANCELED\x10\x04:L\xeaAI\n" +
-	"\x19bytebase.com/PlanCheckRun\x12,projects/{project}/plans/{plan}/planCheckRunJ\x04\b\x02\x10\x03J\x04\b\x04\x10\x062\xa2\t\n" +
-	"\vPlanService\x12\x7f\n" +
-	"\aGetPlan\x12\x1b.bytebase.v1.GetPlanRequest\x1a\x11.bytebase.v1.Plan\"D\xdaA\x04name\x8a\xea0\fbb.plans.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x1f\x12\x1d/v1/{name=projects/*/plans/*}\x12\x93\x01\n" +
-	"\tListPlans\x12\x1d.bytebase.v1.ListPlansRequest\x1a\x1e.bytebase.v1.ListPlansResponse\"G\xdaA\x06parent\x8a\xea0\rbb.plans.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x1f\x12\x1d/v1/{parent=projects/*}/plans\x12\x99\x01\n" +
+	"\x19bytebase.com/PlanCheckRun\x12,projects/{project}/plans/{plan}/planCheckRunJ\x04\b\x02\x10\x03J\x04\b\x04\x10\x062\xaf\t\n" +
+	"\vPlanService\x12\x83\x01\n" +
+	"\aGetPlan\x12\x1b.bytebase.v1.GetPlanRequest\x1a\x11.bytebase.v1.Plan\"H\xdaA\x04name\x8a\xea0\fbb.plans.get\x90\xea0\x01\xa0\xea0\x01\xb8\xea0\x01\x82\xd3\xe4\x93\x02\x1f\x12\x1d/v1/{name=projects/*/plans/*}\x12\x97\x01\n" +
+	"\tListPlans\x12\x1d.bytebase.v1.ListPlansRequest\x1a\x1e.bytebase.v1.ListPlansResponse\"K\xdaA\x06parent\x8a\xea0\rbb.plans.list\x90\xea0\x01\xa0\xea0\x01\xb8\xea0\x01\x82\xd3\xe4\x93\x02\x1f\x12\x1d/v1/{parent=projects/*}/plans\x12\x99\x01\n" +
 	"\n" +
-	"CreatePlan\x12\x1e.bytebase.v1.CreatePlanRequest\x1a\x11.bytebase.v1.Plan\"X\xdaA\vparent,plan\x8a\xea0\x0fbb.plans.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02%:\x04plan\"\x1d/v1/{parent=projects/*}/plans\x12\xa3\x01\n" +
+	"CreatePlan\x12\x1e.bytebase.v1.CreatePlanRequest\x1a\x11.bytebase.v1.Plan\"X\xdaA\vparent,plan\x8a\xea0\x0fbb.plans.create\x90\xea0\x01\xa0\xea0\x02\xb8\xea0\x02\x82\xd3\xe4\x93\x02%:\x04plan\"\x1d/v1/{parent=projects/*}/plans\x12\xa3\x01\n" +
 	"\n" +
-	"UpdatePlan\x12\x1e.bytebase.v1.UpdatePlanRequest\x1a\x11.bytebase.v1.Plan\"b\xdaA\x10plan,update_mask\x8a\xea0\x0fbb.plans.update\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02*:\x04plan2\"/v1/{plan.name=projects/*/plans/*}\x12\xac\x01\n" +
-	"\x0fGetPlanCheckRun\x12#.bytebase.v1.GetPlanCheckRunRequest\x1a\x19.bytebase.v1.PlanCheckRun\"Y\xdaA\x04name\x8a\xea0\x14bb.planCheckRuns.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02,\x12*/v1/{name=projects/*/plans/*/planCheckRun}\x12\xb9\x01\n" +
-	"\rRunPlanChecks\x12!.bytebase.v1.RunPlanChecksRequest\x1a\".bytebase.v1.RunPlanChecksResponse\"a\xdaA\x04name\x8a\xea0\x14bb.planCheckRuns.run\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{name=projects/*/plans/*}:runPlanChecks\x12\xce\x01\n" +
-	"\x12CancelPlanCheckRun\x12&.bytebase.v1.CancelPlanCheckRunRequest\x1a'.bytebase.v1.CancelPlanCheckRunResponse\"g\xdaA\x04name\x8a\xea0\x14bb.planCheckRuns.run\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x026:\x01*\"1/v1/{name=projects/*/plans/*/planCheckRun}:cancelB\xa6\x01\n" +
+	"UpdatePlan\x12\x1e.bytebase.v1.UpdatePlanRequest\x1a\x11.bytebase.v1.Plan\"b\xdaA\x10plan,update_mask\x8a\xea0\x0fbb.plans.update\x90\xea0\x02\xa0\xea0\x02\xb8\xea0\x02\x82\xd3\xe4\x93\x02*:\x04plan2\"/v1/{plan.name=projects/*/plans/*}\x12\xb0\x01\n" +
+	"\x0fGetPlanCheckRun\x12#.bytebase.v1.GetPlanCheckRunRequest\x1a\x19.bytebase.v1.PlanCheckRun\"]\xdaA\x04name\x8a\xea0\x14bb.planCheckRuns.get\x90\xea0\x01\xa0\xea0\x01\xb8\xea0\x01\x82\xd3\xe4\x93\x02,\x12*/v1/{name=projects/*/plans/*/planCheckRun}\x12\xb9\x01\n" +
+	"\rRunPlanChecks\x12!.bytebase.v1.RunPlanChecksRequest\x1a\".bytebase.v1.RunPlanChecksResponse\"a\xdaA\x04name\x8a\xea0\x14bb.planCheckRuns.run\x90\xea0\x01\xa0\xea0\x02\xb8\xea0\x02\x82\xd3\xe4\x93\x020:\x01*\"+/v1/{name=projects/*/plans/*}:runPlanChecks\x12\xce\x01\n" +
+	"\x12CancelPlanCheckRun\x12&.bytebase.v1.CancelPlanCheckRunRequest\x1a'.bytebase.v1.CancelPlanCheckRunResponse\"g\xdaA\x04name\x8a\xea0\x14bb.planCheckRuns.run\x90\xea0\x01\xa0\xea0\x02\xb8\xea0\x02\x82\xd3\xe4\x93\x026:\x01*\"1/v1/{name=projects/*/plans/*/planCheckRun}:cancelB\xa6\x01\n" +
 	"\x0fcom.bytebase.v1B\x10PlanServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

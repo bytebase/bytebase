@@ -56,7 +56,7 @@ func TestValidateOnlyAuditSkipAppliesOnlyToSuccess(t *testing.T) {
 	invoke := func(t *testing.T, correlationID string, request *v1pb.UpdateDataSourceRequest, rerr error) {
 		t.Helper()
 		authCtx := &common.AuthContext{
-			Audit:          true,
+			AuditMode:      v1pb.AuditMode_ALL,
 			AuthMethod:     common.AuthMethodIAM,
 			Resources:      []*common.Resource{{Type: common.ResourceTypeWorkspace, ID: auditTestWorkspace}},
 			DelegatedGrant: &common.DelegatedGrant{CorrelationID: correlationID},

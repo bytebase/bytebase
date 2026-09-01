@@ -179,7 +179,7 @@ func (s *UserService) ListUsers(ctx context.Context, request *connect.Request[v1
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check user permission"))
 		}
 		if !hasPermission {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.ProjectsGet))
+			return nil, markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.ProjectsGet)))
 		}
 	} else if s.profile.SaaS {
 		find.Workspace = common.GetWorkspaceIDFromContext(ctx)
@@ -342,7 +342,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 			}
 			if !ok {
-				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.UsersCreate))
+				return nil, markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.UsersCreate)))
 			}
 			return s.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
 				User: request.Msg.User,
@@ -365,7 +365,7 @@ func (s *UserService) UpdateUser(ctx context.Context, request *connect.Request[v
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
 		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.UsersUpdate))
+			return nil, markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.UsersUpdate)))
 		}
 	}
 
@@ -451,7 +451,7 @@ func (s *UserService) DeleteUser(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
 	if !ok {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.UsersDelete))
+		return nil, markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.UsersDelete)))
 	}
 
 	email, err := common.GetUserEmail(request.Msg.Name)
@@ -539,7 +539,7 @@ func (s *UserService) UndeleteUser(ctx context.Context, request *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
 	if !ok {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.UsersUndelete))
+		return nil, markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.UsersUndelete)))
 	}
 
 	email, err := common.GetUserEmail(request.Msg.Name)
@@ -591,7 +591,7 @@ func (s *UserService) UpdateEmail(ctx context.Context, request *connect.Request[
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 	}
 	if !ok {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.UsersUpdateEmail))
+		return nil, markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.UsersUpdateEmail)))
 	}
 
 	// Get user by email from the name field
@@ -916,7 +916,7 @@ func (s *UserService) DisableMFA(ctx context.Context, request *connect.Request[v
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
 		if !hasPermission {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.UsersUpdate))
+			return nil, markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.UsersUpdate)))
 		}
 	}
 

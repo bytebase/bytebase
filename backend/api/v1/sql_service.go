@@ -358,12 +358,12 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 	if clamped {
 		if err := refuseNonReadOnlyStatement(instance.Metadata.GetEngine(), statement); err != nil {
 			// The same kind of refusal the ceiling gate records, taken at the
-			// one point that can see the request's argument. It adds no row
-			// today — Query is annotated audit = true, so the denial is
-			// recorded either way — and it is here so that stays true if that
-			// annotation ever changes, which is the only thing the mark
-			// controls.
-			common.SetMCPPolicyDenied(ctx)
+			// one point that can see the request's argument. Query is
+			// annotated audit = ALL, so the mark adds no row here; what it
+			// does add is the WARNING severity that separates this refusal
+			// from the method's ordinary traffic. It also keeps the row itself
+			// if that annotation ever changes.
+			common.SetPolicyDenied(ctx)
 			return nil, err
 		}
 	}

@@ -2590,23 +2590,23 @@ const file_v1_issue_service_proto_rawDesc = "" +
 	"\x16bytebase.com/ReviewRun\x128projects/{project}/issues/{issue}/reviewRuns/{reviewRun}\"F\n" +
 	"\x10RunReviewRequest\x122\n" +
 	"\x04name\x18\x01 \x01(\tB\x1e\xe0A\x02\xfaA\x18\n" +
-	"\x16bytebase.com/ReviewRunR\x04name2\xd8\x12\n" +
-	"\fIssueService\x12\x84\x01\n" +
-	"\bGetIssue\x12\x1c.bytebase.v1.GetIssueRequest\x1a\x12.bytebase.v1.Issue\"F\xdaA\x04name\x8a\xea0\rbb.issues.get\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{name=projects/*/issues/*}\x12\xa0\x01\n" +
-	"\vCreateIssue\x12\x1f.bytebase.v1.CreateIssueRequest\x1a\x12.bytebase.v1.Issue\"\\\xdaA\fparent,issue\x8a\xea0\x10bb.issues.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02':\x05issue\"\x1e/v1/{parent=projects/*}/issues\x12\x98\x01\n" +
+	"\x16bytebase.com/ReviewRunR\x04name2\xe8\x12\n" +
+	"\fIssueService\x12\x88\x01\n" +
+	"\bGetIssue\x12\x1c.bytebase.v1.GetIssueRequest\x1a\x12.bytebase.v1.Issue\"J\xdaA\x04name\x8a\xea0\rbb.issues.get\x90\xea0\x01\xa0\xea0\x01\xb8\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{name=projects/*/issues/*}\x12\xa0\x01\n" +
+	"\vCreateIssue\x12\x1f.bytebase.v1.CreateIssueRequest\x1a\x12.bytebase.v1.Issue\"\\\xdaA\fparent,issue\x8a\xea0\x10bb.issues.create\x90\xea0\x01\xa0\xea0\x02\xb8\xea0\x02\x82\xd3\xe4\x93\x02':\x05issue\"\x1e/v1/{parent=projects/*}/issues\x12\x9c\x01\n" +
 	"\n" +
-	"ListIssues\x12\x1e.bytebase.v1.ListIssuesRequest\x1a\x1f.bytebase.v1.ListIssuesResponse\"I\xdaA\x06parent\x8a\xea0\x0ebb.issues.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{parent=projects/*}/issues\x12\x9e\x01\n" +
-	"\fSearchIssues\x12 .bytebase.v1.SearchIssuesRequest\x1a!.bytebase.v1.SearchIssuesResponse\"I\x8a\xea0\rbb.issues.get\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x02*:\x01*\"%/v1/{parent=projects/*}/issues:search\x12\xab\x01\n" +
-	"\vUpdateIssue\x12\x1f.bytebase.v1.UpdateIssueRequest\x1a\x12.bytebase.v1.Issue\"g\xdaA\x11issue,update_mask\x8a\xea0\x10bb.issues.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02-:\x05issue2$/v1/{issue.name=projects/*/issues/*}\x12\xc4\x01\n" +
-	"\x11ListIssueComments\x12%.bytebase.v1.ListIssueCommentsRequest\x1a&.bytebase.v1.ListIssueCommentsResponse\"`\xdaA\x06parent\x8a\xea0\x15bb.issueComments.list\x90\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x020\x12./v1/{parent=projects/*/issues/*}/issueComments\x12\xd6\x01\n" +
-	"\x12CreateIssueComment\x12&.bytebase.v1.CreateIssueCommentRequest\x1a\x19.bytebase.v1.IssueComment\"}\xdaA\x14parent,issue_comment\x8a\xea0\x17bb.issueComments.create\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x029:\rissue_comment\"(/v1/{parent=projects/*/issues/*}:comment\x12\xe3\x01\n" +
-	"\x12UpdateIssueComment\x12&.bytebase.v1.UpdateIssueCommentRequest\x1a\x19.bytebase.v1.IssueComment\"\x89\x01\xdaA parent,issue_comment,update_mask\x8a\xea0\x17bb.issueComments.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x029:\rissue_comment2(/v1/{parent=projects/*/issues/*}:comment\x12\xd1\x01\n" +
-	"\x17BatchUpdateIssuesStatus\x12+.bytebase.v1.BatchUpdateIssuesStatusRequest\x1a,.bytebase.v1.BatchUpdateIssuesStatusResponse\"[\x8a\xea0\x10bb.issues.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x025:\x01*\"0/v1/{parent=projects/*}/issues:batchUpdateStatus\x12\x87\x01\n" +
-	"\fApproveIssue\x12 .bytebase.v1.ApproveIssueRequest\x1a\x12.bytebase.v1.Issue\"A\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\b\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{name=projects/*/issues/*}:approve\x12\x84\x01\n" +
-	"\vRejectIssue\x12\x1f.bytebase.v1.RejectIssueRequest\x1a\x12.bytebase.v1.Issue\"@\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\b\x82\xd3\xe4\x93\x02*:\x01*\"%/v1/{name=projects/*/issues/*}:reject\x12\x83\x01\n" +
-	"\fRequestIssue\x12 .bytebase.v1.RequestIssueRequest\x1a\x12.bytebase.v1.Issue\"=\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{name=projects/*/issues/*}:request\x12\x99\x01\n" +
-	"\x12RetryIssueApproval\x12&.bytebase.v1.RetryIssueApprovalRequest\x1a\x12.bytebase.v1.Issue\"G\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\b\x82\xd3\xe4\x93\x021:\x01*\",/v1/{name=projects/*/issues/*}:retryApproval\x12\xa6\x01\n" +
-	"\tRunReview\x12\x1d.bytebase.v1.RunReviewRequest\x1a\x16.bytebase.v1.ReviewRun\"b\xdaA\x04name\x8a\xea0\x11bb.reviewRuns.run\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x02\x82\xd3\xe4\x93\x024:\x01*\"//v1/{name=projects/*/issues/*/reviewRuns/*}:runB\xa7\x01\n" +
+	"ListIssues\x12\x1e.bytebase.v1.ListIssuesRequest\x1a\x1f.bytebase.v1.ListIssuesResponse\"M\xdaA\x06parent\x8a\xea0\x0ebb.issues.list\x90\xea0\x01\xa0\xea0\x01\xb8\xea0\x01\x82\xd3\xe4\x93\x02 \x12\x1e/v1/{parent=projects/*}/issues\x12\xa2\x01\n" +
+	"\fSearchIssues\x12 .bytebase.v1.SearchIssuesRequest\x1a!.bytebase.v1.SearchIssuesResponse\"M\x8a\xea0\rbb.issues.get\x90\xea0\x02\xa0\xea0\x01\xb8\xea0\x01\x82\xd3\xe4\x93\x02*:\x01*\"%/v1/{parent=projects/*}/issues:search\x12\xab\x01\n" +
+	"\vUpdateIssue\x12\x1f.bytebase.v1.UpdateIssueRequest\x1a\x12.bytebase.v1.Issue\"g\xdaA\x11issue,update_mask\x8a\xea0\x10bb.issues.update\x90\xea0\x01\xa0\xea0\x02\xb8\xea0\x02\x82\xd3\xe4\x93\x02-:\x05issue2$/v1/{issue.name=projects/*/issues/*}\x12\xc8\x01\n" +
+	"\x11ListIssueComments\x12%.bytebase.v1.ListIssueCommentsRequest\x1a&.bytebase.v1.ListIssueCommentsResponse\"d\xdaA\x06parent\x8a\xea0\x15bb.issueComments.list\x90\xea0\x01\xa0\xea0\x01\xb8\xea0\x01\x82\xd3\xe4\x93\x020\x12./v1/{parent=projects/*/issues/*}/issueComments\x12\xd6\x01\n" +
+	"\x12CreateIssueComment\x12&.bytebase.v1.CreateIssueCommentRequest\x1a\x19.bytebase.v1.IssueComment\"}\xdaA\x14parent,issue_comment\x8a\xea0\x17bb.issueComments.create\x90\xea0\x01\xa0\xea0\x02\xb8\xea0\x02\x82\xd3\xe4\x93\x029:\rissue_comment\"(/v1/{parent=projects/*/issues/*}:comment\x12\xe3\x01\n" +
+	"\x12UpdateIssueComment\x12&.bytebase.v1.UpdateIssueCommentRequest\x1a\x19.bytebase.v1.IssueComment\"\x89\x01\xdaA parent,issue_comment,update_mask\x8a\xea0\x17bb.issueComments.update\x90\xea0\x01\xa0\xea0\x02\xb8\xea0\x02\x82\xd3\xe4\x93\x029:\rissue_comment2(/v1/{parent=projects/*/issues/*}:comment\x12\xd1\x01\n" +
+	"\x17BatchUpdateIssuesStatus\x12+.bytebase.v1.BatchUpdateIssuesStatusRequest\x1a,.bytebase.v1.BatchUpdateIssuesStatusResponse\"[\x8a\xea0\x10bb.issues.update\x90\xea0\x01\xa0\xea0\x02\xb8\xea0\x02\x82\xd3\xe4\x93\x025:\x01*\"0/v1/{parent=projects/*}/issues:batchUpdateStatus\x12\x87\x01\n" +
+	"\fApproveIssue\x12 .bytebase.v1.ApproveIssueRequest\x1a\x12.bytebase.v1.Issue\"A\x90\xea0\x02\xa0\xea0\x03\xa8\xea0\b\xb8\xea0\x02\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{name=projects/*/issues/*}:approve\x12\x84\x01\n" +
+	"\vRejectIssue\x12\x1f.bytebase.v1.RejectIssueRequest\x1a\x12.bytebase.v1.Issue\"@\x90\xea0\x02\xa0\xea0\x03\xa8\xea0\b\xb8\xea0\x02\x82\xd3\xe4\x93\x02*:\x01*\"%/v1/{name=projects/*/issues/*}:reject\x12\x83\x01\n" +
+	"\fRequestIssue\x12 .bytebase.v1.RequestIssueRequest\x1a\x12.bytebase.v1.Issue\"=\x90\xea0\x02\xa0\xea0\x02\xb8\xea0\x02\x82\xd3\xe4\x93\x02+:\x01*\"&/v1/{name=projects/*/issues/*}:request\x12\x99\x01\n" +
+	"\x12RetryIssueApproval\x12&.bytebase.v1.RetryIssueApprovalRequest\x1a\x12.bytebase.v1.Issue\"G\x90\xea0\x02\xa0\xea0\x03\xa8\xea0\b\xb8\xea0\x02\x82\xd3\xe4\x93\x021:\x01*\",/v1/{name=projects/*/issues/*}:retryApproval\x12\xa6\x01\n" +
+	"\tRunReview\x12\x1d.bytebase.v1.RunReviewRequest\x1a\x16.bytebase.v1.ReviewRun\"b\xdaA\x04name\x8a\xea0\x11bb.reviewRuns.run\x90\xea0\x01\xa0\xea0\x02\xb8\xea0\x02\x82\xd3\xe4\x93\x024:\x01*\"//v1/{name=projects/*/issues/*/reviewRuns/*}:runB\xa7\x01\n" +
 	"\x0fcom.bytebase.v1B\x11IssueServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

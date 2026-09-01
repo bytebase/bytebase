@@ -479,8 +479,8 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 	default:
 		return nil, errs.Errorf("unknown auth method %v for full method name %q", am, fullMethod)
 	}
-	auditAny := proto.GetExtension(md, v1pb.E_Audit)
-	audit, ok := auditAny.(bool)
+	auditModeAny := proto.GetExtension(md, v1pb.E_Audit)
+	auditMode, ok := auditModeAny.(v1pb.AuditMode)
 	if !ok {
 		return nil, errs.Errorf("invalid audit extension, full method name %q", fullMethod)
 	}
@@ -499,7 +499,7 @@ func getAuthContext(fullMethod string) (*common.AuthContext, error) {
 		AllowWithoutCredential: allowWithoutCredential,
 		Permission:             permission,
 		AuthMethod:             authMethod,
-		Audit:                  audit,
+		AuditMode:              auditMode,
 		MCPMethodClass:         mcpMethodClass,
 		MCPDenialReason:        mcpDenialReason,
 	}, nil

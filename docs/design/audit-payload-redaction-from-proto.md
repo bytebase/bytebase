@@ -162,7 +162,7 @@ The hook point is `marshalAuditPayload` (originally two functions, `getRequestSt
 streaming rows reach redaction only through those two: `auditConnectStreamingConn.Send`
 (`audit.go:171-193`) builds its own `auditEntry` and calls `createAuditLog` directly. `AdminExecute`
 is the only streaming RPC, is audited, and its response carries every row of an admin-mode query, so
-moving the walk up into `WrapUnary` — where the `service_data` and `mcpPolicyDenied` plumbing lives
+moving the walk up into `WrapUnary` — where the `service_data` and `policyDenied` plumbing lives
 — silently drops streaming redaction. One end-to-end assertion on the `Send` path is required:
 streaming persistence is otherwise exercised through the `createAuditLogFunc` stub seam
 (`audit.go:49-52`), which bypasses the real path.
@@ -369,7 +369,7 @@ walking each of the ten rebuilds for what it newly admits, is a precondition for
   matches.
 
   **That population is wider than the audited RPCs.** `WrapUnary` writes a row on
-  `needAudit(ctx) || mcpPolicyDenied` (`audit.go:102`), so the gate-refused methods carrying no
+  `needAudit(ctx) || policyDenied` (`audit.go`), so the refused methods carrying no
   audit annotation — `ListInstanceDatabaseRequest` and `SwitchWorkspaceRequest` among them — are in
   scope; deriving the inventory from audited methods alone would omit exactly the population
   `TestLintDenialRequestsAreReviewedForRedaction` exists to cover. Every registered `Any` type is

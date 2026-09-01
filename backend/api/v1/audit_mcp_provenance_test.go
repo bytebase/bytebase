@@ -98,7 +98,7 @@ func TestAuditRowCarriesMCPDelegationProvenance(t *testing.T) {
 	invoke := func(t *testing.T, grant *common.DelegatedGrant) {
 		t.Helper()
 		authCtx := &common.AuthContext{
-			Audit:          true,
+			AuditMode:      v1pb.AuditMode_ALL,
 			AuthMethod:     common.AuthMethodIAM,
 			Resources:      []*common.Resource{{Type: common.ResourceTypeWorkspace, ID: auditTestWorkspace}},
 			DelegatedGrant: grant,
@@ -167,7 +167,7 @@ func TestAuditParentsDeduplicated(t *testing.T) {
 	in := NewAuditInterceptor(st, "test-secret", &config.Profile{})
 
 	authCtx := &common.AuthContext{
-		Audit:      true,
+		AuditMode:  v1pb.AuditMode_ALL,
 		AuthMethod: common.AuthMethodIAM,
 		Resources: []*common.Resource{
 			{Type: common.ResourceTypeProject, ID: "proj-batch"},
@@ -198,20 +198,32 @@ func TestAuditParentsDeduplicated(t *testing.T) {
 		"one audit row per DISTINCT parent — repeated batch resources must not multiply rows")
 }
 
-// TestInternalChainAuditRecordsACLDenial pins PR 5b's denial-audit mechanism:
-// with the audit interceptor wrapped OUTSIDE the ACL interceptor (the internal
-// MCP chain's order), an ACL denial produces an audit row carrying the
-// provenance and the denied status; a method whose annotation opts out of
-// auditing stays silent for permitted and denied calls alike.
-func TestInternalChainAuditRecordsACLDenial(t *testing.T) {
+// TestAuditRecordsACLDenial pins what the audit annotation declares, at the
+// interceptor pair both chains now share. ALL records every call; DENIALS
+// records only the refused ones; a method declaring neither records nothing,
+// denied or not — no runtime signal can promote it.
+//
+// The last subtest is the one that matters for BYT-10124: before the annotation
+// became an enum, a marked denial wrote a row whatever the method declared, so
+// reading the protos did not tell you what the audit log contained.
+//
+// This is also the mutation check for the mark's ACL half. Break either end —
+// the common.SetPolicyDenied call inside acl.go's markPolicyDenied helper, or
+// the setter registration in audit.go — and the DENIALS subtest goes red while
+// the ALL ones stay green. The verdict it drives is the workspace mismatch at
+// acl.go's isolation loop, so deleting THAT `return markPolicyDenied` reddens
+// it too; the IAM and allow_missing verdicts are not reached here. The gate's
+// writer is pinned by TestMCPGateDenialIsAudited and the clamp's by
+// TestMCPReadOnlyCeilingRefusesAWrite.
+func TestAuditRecordsACLDenial(t *testing.T) {
 	st := newAuditLiveStore(t)
 	auditIn := NewAuditInterceptor(st, "test-secret", &config.Profile{})
 	aclIn := NewACLInterceptor(st, "test-secret", nil /* iamManager: unreached on these paths */, &config.Profile{})
 
-	invoke := func(t *testing.T, audited bool, correlationID, resource string) (handlerReached bool, rerr error) {
+	invoke := func(t *testing.T, mode v1pb.AuditMode, correlationID, resource string) (handlerReached bool, rerr error) {
 		t.Helper()
 		authCtx := &common.AuthContext{
-			Audit:      audited,
+			AuditMode:  mode,
 			AuthMethod: common.AuthMethodCustom,
 			DelegatedGrant: &common.DelegatedGrant{
 				Scope:         "mcp:read-only",
@@ -224,7 +236,7 @@ func TestInternalChainAuditRecordsACLDenial(t *testing.T) {
 			handlerReached = true
 			return connect.NewResponse(&v1pb.IamPolicy{}), nil
 		}
-		// The internal chain's order: audit outside, ACL inside.
+		// Both chains' order: audit outside, ACL inside.
 		chain := auditIn.WrapUnary(aclIn.WrapUnary(handler))
 		req := &specRequest{
 			AnyRequest: connect.NewRequest(&v1pb.SetIamPolicyRequest{Resource: resource}),
@@ -234,14 +246,14 @@ func TestInternalChainAuditRecordsACLDenial(t *testing.T) {
 		return handlerReached, rerr
 	}
 
-	t.Run("an ACL denial produces a provenance-carrying denied row", func(t *testing.T) {
-		handlerReached, err := invoke(t, true, "corr-denied", "workspaces/other-ws")
+	t.Run("ALL records a denial, with provenance", func(t *testing.T) {
+		handlerReached, err := invoke(t, v1pb.AuditMode_ALL, "corr-denied", "workspaces/other-ws")
 		require.Error(t, err)
 		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
 		require.False(t, handlerReached, "the denial must come from the ACL interceptor, not the handler")
 
 		rows := findRowsByCorrelation(t, st, "corr-denied")
-		require.Len(t, rows, 1, "an ACL-denied internal-chain call must still produce an audit row")
+		require.Len(t, rows, 1, "an ACL-denied call must produce an audit row")
 		row := rows[0].Payload
 		require.Equal(t, "workspaces/"+auditTestWorkspace, row.Parent,
 			"a denied cross-workspace attempt must be audited under the CALLER's workspace, never the foreign one it named")
@@ -250,22 +262,52 @@ func TestInternalChainAuditRecordsACLDenial(t *testing.T) {
 		require.NotNil(t, row.Status, "the row must reflect the denial")
 		require.Equal(t, int32(connect.CodePermissionDenied), row.Status.Code)
 		require.Equal(t, "mcp:read-only", row.GetMcpDelegation().GetScope())
+		require.Equal(t, storepb.AuditLog_WARNING, row.Severity)
 	})
 
-	t.Run("a method opted out of auditing stays silent for denials too", func(t *testing.T) {
-		_, err := invoke(t, false, "corr-optout", "workspaces/other-ws")
+	t.Run("DENIALS records the denial", func(t *testing.T) {
+		_, err := invoke(t, v1pb.AuditMode_DENIALS, "corr-denials-denied", "workspaces/other-ws")
 		require.Error(t, err)
-		require.Empty(t, findRowsByCorrelation(t, st, "corr-optout"),
-			"audit opt-out must behave consistently for permitted and denied calls")
+
+		rows := findRowsByCorrelation(t, st, "corr-denials-denied")
+		require.Len(t, rows, 1, "a DENIALS method records the call a policy refused")
+		require.Equal(t, int32(connect.CodePermissionDenied), rows[0].Payload.Status.Code)
+		require.Equal(t, storepb.AuditLog_WARNING, rows[0].Payload.Severity)
 	})
 
-	t.Run("a permitted call is audited exactly once", func(t *testing.T) {
-		handlerReached, err := invoke(t, true, "corr-permitted", "workspaces/"+auditTestWorkspace)
+	t.Run("DENIALS stays silent when the call is permitted", func(t *testing.T) {
+		handlerReached, err := invoke(t, v1pb.AuditMode_DENIALS, "corr-denials-permitted", "workspaces/"+auditTestWorkspace)
+		require.NoError(t, err)
+		require.True(t, handlerReached)
+		require.Empty(t, findRowsByCorrelation(t, st, "corr-denials-permitted"),
+			"DENIALS is what keeps a high-traffic read out of the log while keeping its refusals in")
+	})
+
+	t.Run("ALL records a permitted call exactly once", func(t *testing.T) {
+		handlerReached, err := invoke(t, v1pb.AuditMode_ALL, "corr-permitted", "workspaces/"+auditTestWorkspace)
 		require.NoError(t, err)
 		require.True(t, handlerReached)
 
 		rows := findRowsByCorrelation(t, st, "corr-permitted")
 		require.Len(t, rows, 1)
 		require.Nil(t, rows[0].Payload.Status, "a permitted call keeps its success status")
+		require.Equal(t, storepb.AuditLog_INFO, rows[0].Payload.Severity,
+			"routine traffic is not a refusal")
+	})
+
+	t.Run("a method declaring no mode records nothing, denied or not", func(t *testing.T) {
+		// The property BYT-10124 is about. ACL marks both of these denials, and
+		// the mark reaches the audit interceptor; the annotation still decides,
+		// so nothing is written and the protos remain a complete account of
+		// what the audit log contains.
+		_, err := invoke(t, v1pb.AuditMode_AUDIT_MODE_UNSPECIFIED, "corr-undeclared-denied", "workspaces/other-ws")
+		require.Error(t, err)
+		require.Empty(t, findRowsByCorrelation(t, st, "corr-undeclared-denied"),
+			"a marked denial must not promote a method that declared no audit mode")
+
+		handlerReached, err := invoke(t, v1pb.AuditMode_AUDIT_MODE_UNSPECIFIED, "corr-undeclared-permitted", "workspaces/"+auditTestWorkspace)
+		require.NoError(t, err)
+		require.True(t, handlerReached)
+		require.Empty(t, findRowsByCorrelation(t, st, "corr-undeclared-permitted"))
 	})
 }

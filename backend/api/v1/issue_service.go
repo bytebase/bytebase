@@ -398,7 +398,7 @@ func (s *IssueService) SearchIssues(ctx context.Context, req *connect.Request[v1
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission %q", permission.IssuesGet))
 		}
 		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q in %q", permission.IssuesGet, req.Msg.Parent))
+			return nil, markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q in %q", permission.IssuesGet, req.Msg.Parent)))
 		}
 		projectIDs = append(projectIDs, projectID)
 	}
@@ -910,7 +910,7 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
 			}
 			if !ok {
-				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.IssuesCreate))
+				return nil, markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.IssuesCreate)))
 			}
 
 			// Extract project ID from the issue name (format: projects/{project}/issues/{issue})
@@ -1335,7 +1335,7 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
 			}
 			if !ok {
-				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.IssueCommentsCreate))
+				return nil, markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.IssueCommentsCreate)))
 			}
 			return s.CreateIssueComment(ctx, connect.NewRequest(&v1pb.CreateIssueCommentRequest{
 				Parent:       req.Msg.Parent,

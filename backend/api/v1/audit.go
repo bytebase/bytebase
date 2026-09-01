@@ -71,31 +71,30 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 			handlerAuditWorkspaceID = workspaceID
 		})
 
-		// The MCP ceiling gate sits inside this interceptor and refuses a call
-		// before it reaches its handler. needAudit reads only the method's own
-		// audit annotation, and 47 of the 121 methods the gate refuses carry
-		// none: the four FORBIDDEN ones that were silent before the gate grew
-		// (Refresh, SwitchWorkspace, TestIdentityProvider, TestEmailSetting)
-		// plus 43 EXCLUDED ones. Their denials would leave no trace at all.
-		// A policy denial is recorded whatever the annotation says: the
-		// annotation decides whether ordinary use of a method is interesting,
-		// and a refused agent is interesting either way. Only the internal MCP
-		// chain runs the gate, so the public chain is unaffected.
+		// The method's audit annotation decides whether there is a row; this
+		// mark decides which calls to a DENIALS method count.
+		//
+		// Three refusals mark: the ACL interceptor on both chains, and on the
+		// internal chain the MCP ceiling gate and the read-only clamp inside
+		// SQLService.Query. Marking is what qualifies, not where the code sits
+		// — the clamp is handler code. A method's own permission check inside
+		// its handler marks nothing, so its refusals reach the log only under
+		// ALL.
 		//
 		// Recording a request that was never recorded is why redaction has to
 		// cover more than the audited RPCs: a denial must not transcribe the
 		// secret it refused. Since redaction is driven by the field annotation
-		// rather than by a per-RPC redactor, a gate-refused method is covered
-		// the moment its fields are annotated — the population is the one above,
-		// not the four named methods.
-		mcpPolicyDenied := false
-		ctx = common.WithSetMCPPolicyDenied(ctx, func() { mcpPolicyDenied = true })
+		// rather than by a per-RPC redactor, a refused method is covered the
+		// moment its fields are annotated. The population is every v1 method, on
+		// either chain.
+		policyDenied := false
+		ctx = common.WithSetPolicyDenied(ctx, func() { policyDenied = true })
 
 		startTime := time.Now()
 		response, rerr := next(ctx, req)
 		latency := time.Since(startTime)
 
-		if needAudit(ctx) || mcpPolicyDenied {
+		if needAudit(ctx, policyDenied) {
 			var respMsg any
 			if !common.IsNil(response) {
 				respMsg = response.Any()
@@ -110,6 +109,7 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 				headers:                 req.Header(),
 				peerAddr:                req.Peer().Addr,
 				latency:                 latency,
+				policyDenied:            policyDenied,
 			}
 			if err := in.createAuditLog(ctx, entry); err != nil {
 				slog.Warn("audit interceptor: failed to create audit log", log.BBError(err), slog.String("method", req.Spec().Procedure))
@@ -130,7 +130,10 @@ func (*AuditInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) c
 // WrapStreamingHandler implements the ConnectRPC interceptor interface for streaming handlers.
 func (in *AuditInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
 	return func(ctx context.Context, conn connect.StreamingHandlerConn) error {
-		if !needAudit(ctx) {
+		// A stream has no denial to pass: aclStreamingConn refuses in Receive,
+		// which never reaches the Send that writes rows. See the DEFER in
+		// acl.go.
+		if !needAudit(ctx, false) {
 			return next(ctx, conn)
 		}
 
@@ -206,6 +209,9 @@ type auditEntry struct {
 	headers                 http.Header
 	peerAddr                string
 	latency                 time.Duration
+	// policyDenied is set via common.SetPolicyDenied. With the method's audit
+	// annotation it decides whether there is a row, and it decides the severity.
+	policyDenied bool
 }
 
 func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) error {
@@ -356,6 +362,14 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 	auditStatus := redactAuditStatus(convertErrToStatus(e.rerr))
 	mcpDelegation := mcpDelegationFromAuthContext(authContext)
 
+	// status.code carries every failure, not only the refusals, so severity is
+	// what separates a refused caller from routine traffic. The recovery
+	// service already stamps WARNING for this class.
+	severity := storepb.AuditLog_INFO
+	if e.policyDenied {
+		severity = storepb.AuditLog_WARNING
+	}
+
 	createAuditLogCtx := context.WithoutCancel(ctx)
 	for _, ap := range parents {
 		resource := getRequestResource(e.request, e.method)
@@ -376,7 +390,7 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 			Parent:          ap.parent,
 			Method:          e.method,
 			Resource:        resource,
-			Severity:        storepb.AuditLog_INFO,
+			Severity:        severity,
 			User:            user,
 			Request:         requestString,
 			Response:        responseString,
@@ -513,13 +527,51 @@ func marshalAuditPayload(payload any) string {
 	return string(b)
 }
 
-func needAudit(ctx context.Context) bool {
+// markPolicyDenied records that a policy refused this request and returns the
+// error unchanged, so a DENIALS method's refusal reaches the audit log.
+//
+// Two kinds of caller. The ACL interceptor calls it at each of its verdicts,
+// not once on every error it returns: doACLCheck also returns store failures, a
+// missing auth context and unresolvable resource names, and the mark is for
+// decisions about the caller. A CUSTOM-auth handler calls it wherever it makes
+// the same IAM verdict ACL would have made — CheckPermission says no — because
+// for those methods the handler IS the access-control layer, and without the
+// mark their audit = DENIALS annotation would be false.
+//
+// TestLintHandlerIAMVerdictsAreMarked holds that second population.
+//
+// DEFER: a streaming denial reaches this too, but nothing records it —
+// AuditInterceptor.WrapStreamingHandler returns early on !needAudit and never
+// registers a setter, and it writes its rows on Send, which a denial in
+// Receive never reaches. AdminExecute is the only streaming RPC; upgrade when
+// a second one lands or AdminExecute's denials are wanted.
+func markPolicyDenied(ctx context.Context, err error) error {
+	common.SetPolicyDenied(ctx)
+	return err
+}
+
+// needAudit reports whether this call reaches the audit log.
+//
+// The annotation declares the method's eligibility; the mark says what
+// happened to this call. The mark selects within the declared mode and never
+// widens it.
+//
+// A lint requires every v1 method to declare a mode, so UNSPECIFIED here means
+// a call arrived with no auth context, or a build that was never linted.
+func needAudit(ctx context.Context, denied bool) bool {
 	authCtx, ok := common.GetAuthContextFromContext(ctx)
 	if !ok {
 		slog.Warn("audit interceptor: failed to get auth context")
 		return false
 	}
-	return authCtx.Audit
+	switch authCtx.AuditMode {
+	case v1pb.AuditMode_ALL:
+		return true
+	case v1pb.AuditMode_DENIALS:
+		return denied
+	default:
+		return false
+	}
 }
 
 // getRequestMetadataFromHeaders extracts request metadata from HTTP headers for ConnectRPC.

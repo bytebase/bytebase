@@ -428,20 +428,20 @@ func TestMCPCannotWriteTrustAnchorsOrShipStoredSecrets(t *testing.T) {
 		a.NotContains(wi.Email, wiID, "the workload identity must never have been written")
 	}
 
-	// All six produce a denial row, and two of them only since 1b-2. Four carry
-	// the audit annotation; TestIdentityProvider and TestEmailSetting carry
-	// none, so until the gate started marking its own refusals they were
-	// refused silently — the two methods in this batch that would have carried
-	// a stored secret to an address the agent chose were the two that left no
-	// trace. This assertion is what tells anyone who touches the marking that
-	// the coverage is load-bearing.
+	// All six produce a denial row. Four declare ALL; TestIdentityProvider and
+	// TestEmailSetting declare DENIALS, so their refusals are recorded and
+	// their ordinary admin use is not. Before the gate marked its refusals and
+	// before the annotation could say DENIALS, those two left no trace at all —
+	// the two methods in this batch that would have carried a stored secret to
+	// an address the agent chose. This assertion is what tells anyone who
+	// touches either half that the coverage is load-bearing.
 	for method, label := range map[string]string{
 		"/bytebase.v1.IdentityProviderService/CreateIdentityProvider": "CreateIdentityProvider",
 		"/bytebase.v1.IdentityProviderService/UpdateIdentityProvider": "UpdateIdentityProvider",
 		"/bytebase.v1.WorkloadIdentityService/CreateWorkloadIdentity": "CreateWorkloadIdentity",
 		"/bytebase.v1.WorkloadIdentityService/UpdateWorkloadIdentity": "UpdateWorkloadIdentity",
-		"/bytebase.v1.IdentityProviderService/TestIdentityProvider":   "TestIdentityProvider (no audit annotation)",
-		"/bytebase.v1.SettingService/TestEmailSetting":                "TestEmailSetting (no audit annotation)",
+		"/bytebase.v1.IdentityProviderService/TestIdentityProvider":   "TestIdentityProvider (audit = DENIALS)",
+		"/bytebase.v1.SettingService/TestEmailSetting":                "TestEmailSetting (audit = DENIALS)",
 	} {
 		rows := deniedMCPRows(ctx, t, ctl, workspaceName, method)
 		a.Len(rows, 1, "the denied %s must produce exactly one audit row", label)
@@ -556,7 +556,7 @@ func TestMCPCannotRetargetADataSource(t *testing.T) {
 	rows := deniedMCPRows(ctx, t, ctl, workspace.Msg.Name, "/bytebase.v1.InstanceService/UpdateDataSource")
 	t.Logf("audit rows for the two denied retargets (one validate-only): %d", len(rows))
 
-	// Both denials are on the audit page. UpdateDataSource carries audit = true
+	// Both denials are on the audit page. UpdateDataSource carries audit = ALL
 	// and is not carved out of workspace-parent resolution, and createAuditLog
 	// now skips a validate-only request only when the call SUCCEEDED — a dry
 	// run Bytebase accepted changed nothing worth recording, a refused one is
@@ -748,9 +748,9 @@ func TestMCPCannotRewriteItsOwnCeiling(t *testing.T) {
 // TestMCPResetFlowDenialsAreSilent pins a gap the audit annotation does NOT
 // close.
 //
-// #21162 gave RequestPasswordReset and ResetPassword `audit = true`, which
-// looks like it should give their MCP denials a row — needAudit reads that
-// annotation and nothing else. It does not, and the reason is one layer down.
+// #21162 gave RequestPasswordReset and ResetPassword an audit mode (now ALL),
+// which looks like it should give their MCP denials a row. It does not, and the
+// reason is one layer down.
 //
 // These three RPCs are allow_without_credential, so an unauthenticated caller
 // could name any workspace, and auditing against an unvalidated workspace would

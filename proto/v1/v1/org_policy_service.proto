@@ -27,6 +27,7 @@ service OrgPolicyService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.policies.get";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -43,6 +44,7 @@ service OrgPolicyService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.policies.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -66,7 +68,7 @@ service OrgPolicyService {
     option (google.api.method_signature) = "parent,policy";
     option (bytebase.v1.permission) = "bb.policies.create";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -90,7 +92,7 @@ service OrgPolicyService {
     option (google.api.method_signature) = "policy,update_mask";
     option (bytebase.v1.permission) = "bb.policies.update";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -107,7 +109,7 @@ service OrgPolicyService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.policies.delete";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }

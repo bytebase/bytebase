@@ -17,6 +17,7 @@ service CelService {
       post: "/v1/cel/batchParse"
       body: "*"
     };
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -27,6 +28,7 @@ service CelService {
       post: "/v1/cel/batchDeparse"
       body: "*"
     };
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 }

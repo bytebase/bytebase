@@ -19,7 +19,7 @@ const (
 	ServiceDataKey
 	WorkspaceIDContextKey
 	AuditWorkspaceIDKey
-	MCPPolicyDenialKey
+	PolicyDenialKey
 )
 
 func WithSetServiceData(ctx context.Context, setServiceData func(a *anypb.Any)) context.Context {
@@ -54,25 +54,29 @@ func SetAuditWorkspaceID(ctx context.Context, workspaceID string) {
 	setter(workspaceID)
 }
 
-// WithSetMCPPolicyDenied registers a callback the MCP ceiling gate uses to tell
-// the audit interceptor that it refused this request. The gate runs inside the
-// audit interceptor, so a value it puts on the context cannot travel back out;
-// this is the same setter shape WithSetAuditWorkspaceID already uses for the
-// same reason.
+// WithSetPolicyDenied registers a callback a policy interceptor uses to tell
+// the audit interceptor that it refused this request. Those interceptors run
+// inside the audit interceptor, so a value they put on the context cannot
+// travel back out; this is the same setter shape WithSetAuditWorkspaceID
+// already uses for the same reason.
 //
-// The signal is needed because the audit interceptor otherwise writes a row
-// only when the method's own audit annotation asks for one, and 47 of the
-// methods the gate refuses carry no such annotation. A denial nobody can see is
-// the outcome an operator most needs to see.
-func WithSetMCPPolicyDenied(ctx context.Context, setMCPPolicyDenied func()) context.Context {
-	return context.WithValue(ctx, MCPPolicyDenialKey, setMCPPolicyDenied)
+// The signal says what happened to this call; the method's audit annotation
+// says whether that is recorded. A DENIALS method records the refused call and
+// not the permitted one, which is the split no bool could express.
+func WithSetPolicyDenied(ctx context.Context, setPolicyDenied func()) context.Context {
+	return context.WithValue(ctx, PolicyDenialKey, setPolicyDenied)
 }
 
-// SetMCPPolicyDenied records that the MCP ceiling gate refused the current
-// request, if the audit interceptor registered a setter on the context. Safe to
-// call when it did not: the public chain never runs the gate at all.
-func SetMCPPolicyDenied(ctx context.Context) {
-	setter, ok := ctx.Value(MCPPolicyDenialKey).(func())
+// SetPolicyDenied records that a policy refused the current request, if the
+// audit interceptor registered a setter on the context. Safe to call when it
+// did not.
+//
+// The mark says a policy reached a verdict about the caller, not that the call
+// failed. A store read that failed, a missing auth context, or any other
+// outage leaves it unset: those are not decisions anyone made, and the row
+// they would write would describe a refusal that never happened.
+func SetPolicyDenied(ctx context.Context) {
+	setter, ok := ctx.Value(PolicyDenialKey).(func())
 	if !ok {
 		return
 	}
@@ -152,7 +156,11 @@ type DelegatedGrant struct {
 }
 
 type AuthContext struct {
-	Audit                  bool
+	// AuditMode is the method's bytebase.v1.audit annotation, and it is the
+	// whole declaration of what reaches the audit log: ALL records every call,
+	// DENIALS records only refused ones, and UNSPECIFIED records nothing that
+	// any runtime signal can override.
+	AuditMode              v1pb.AuditMode
 	AllowWithoutCredential bool
 	Permission             string
 	AuthMethod             AuthMethod

@@ -5,6 +5,7 @@
 
 - [v1/annotation.proto](#v1_annotation-proto)
     - [AuditBehavior](#bytebase-v1-AuditBehavior)
+    - [AuditMode](#bytebase-v1-AuditMode)
     - [AuthMethod](#bytebase-v1-AuthMethod)
     - [MCPDenialReason](#bytebase-v1-MCPDenialReason)
     - [MCPMethodClass](#bytebase-v1-MCPMethodClass)
@@ -838,6 +839,31 @@ behavior, because a field has exactly one classification.
 
 
 
+<a name="bytebase-v1-AuditMode"></a>
+
+### AuditMode
+Whether and how an RPC&#39;s calls reach the audit log. One enum rather than a
+bool because the population worth recording is not the population worth
+recording ON SUCCESS: reads such as GetSetting, ListUsers and GetIamPolicy
+are called constantly by the console and must not write a row each time,
+while their refusals are exactly what an operator investigating an agent
+needs to see.
+
+The bool could not say that, so the audit interceptor grew a runtime
+override for the MCP gate&#39;s denials, and the annotation stopped being the
+source of truth for what gets recorded. This enum removes the reason that
+override existed.
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| AUDIT_MODE_UNSPECIFIED | 0 | Not audited. A method that reaches the audit log while carrying this is a bug in the interceptor, not a policy decision taken elsewhere. |
+| DENIALS | 1 | Only refused calls are recorded. For methods whose ordinary use is routine console traffic but whose refusal is an event: the MCP ceiling refusing an agent, or RBAC refusing a caller.
+
+&#34;Refused&#34; means refused on the caller&#39;s permissions or on the MCP ceiling. A refusal on some other rule — a licence gate, a workflow state, &#34;only the assignee may do this&#34; — is recorded only under ALL. A refused streaming call is recorded under neither. |
+| ALL | 2 | Every call is recorded, refused or not. |
+
+
+
 <a name="bytebase-v1-AuthMethod"></a>
 
 ### AuthMethod
@@ -927,9 +953,11 @@ The line against FORBIDDEN is reversibility. An admin-capable ceiling, if one is
 | --------- | ---- | ---- | ------ | ----------- |
 | audit_behavior | AuditBehavior | .google.protobuf.FieldOptions | 100010 | How the audit log treats this field. |
 | allow_without_credential | bool | .google.protobuf.MethodOptions | 100000 | Whether the method allows access without authentication credentials. |
-| audit | bool | .google.protobuf.MethodOptions | 100003 | Whether to audit calls to this method. |
+| audit | AuditMode | .google.protobuf.MethodOptions | 100007 | Whether and how calls to this method are audited. This is the whole declaration: a method that sets no mode produces no audit row, ever, and nothing at runtime can override it. |
 | auth_method | AuthMethod | .google.protobuf.MethodOptions | 100002 | The authorization method to use for this RPC. |
 | mcp_denial_reason | MCPDenialReason | .google.protobuf.MethodOptions | 100005 | Why an MCP session may not call the method. Meaningful only alongside mcp_method_class = FORBIDDEN or EXCLUDED, and required on both: the denial names it so the agent, and the operator reading the audit row, learn why rather than just that it was refused, and an exclusion whose reason nobody wrote down is one nobody can revisit.
+
+100003 was `bool audit`, which had no way to say &#34;record refusals of this method but not its ordinary use&#34;. The audit interceptor grew a runtime override to express that state instead, which is how a method carrying no annotation came to produce rows. Replaced by AuditMode above; do not reuse the number, for the reason the next paragraph gives.
 
 100006 was mcp_exclusion_reason, folded into mcp_denial_reason above. Do not reuse the number: an extend block cannot carry a `reserved` statement, so this comment is the only marker, and a binary built before the merge reads 100006 as the old enum — giving that number a new meaning would let it read a confident wrong answer instead of nothing. |
 | mcp_method_class | MCPMethodClass | .google.protobuf.MethodOptions | 100004 | How the method is classified for MCP (AI agent) sessions. |

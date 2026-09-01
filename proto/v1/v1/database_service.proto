@@ -26,6 +26,7 @@ service DatabaseService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -41,6 +42,7 @@ service DatabaseService {
     };
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -58,6 +60,7 @@ service DatabaseService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.databases.list";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -75,7 +78,7 @@ service DatabaseService {
     option (google.api.method_signature) = "database,update_mask";
     option (bytebase.v1.permission) = "bb.databases.update";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -92,7 +95,7 @@ service DatabaseService {
     };
     option (bytebase.v1.permission) = "bb.databases.update";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -109,6 +112,7 @@ service DatabaseService {
     };
     option (bytebase.v1.permission) = "bb.databases.sync";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -125,6 +129,7 @@ service DatabaseService {
     };
     option (bytebase.v1.permission) = "bb.databases.sync";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -137,6 +142,7 @@ service DatabaseService {
     };
     option (bytebase.v1.permission) = "bb.databases.getSchema";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -149,6 +155,7 @@ service DatabaseService {
     };
     option (bytebase.v1.permission) = "bb.databases.getSchema";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -161,6 +168,7 @@ service DatabaseService {
     };
     option (bytebase.v1.permission) = "bb.databases.getSchema";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -188,6 +196,7 @@ service DatabaseService {
     // TODO(d): secure it.
     option (bytebase.v1.permission) = "bb.databases.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -205,6 +214,7 @@ service DatabaseService {
     };
     option (bytebase.v1.permission) = "bb.databases.diffMetadata";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -218,6 +228,7 @@ service DatabaseService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.databases.getSchema";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 }

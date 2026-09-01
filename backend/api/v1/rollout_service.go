@@ -285,7 +285,7 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 	}
 
 	if !hasPermission {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.New("permission denied to create rollout"))
+		return nil, markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.New("permission denied to create rollout")))
 	}
 
 	if err := rejectMCPOriginatedIssuelessRollout(ctx, project, issue, "create a rollout"); err != nil {

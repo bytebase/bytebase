@@ -29,6 +29,7 @@ service InstanceService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.instances.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -42,6 +43,7 @@ service InstanceService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.instances.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -59,7 +61,7 @@ service InstanceService {
     option (google.api.method_signature) = "instance";
     option (bytebase.v1.permission) = "bb.instances.create";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -74,7 +76,7 @@ service InstanceService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.instances.create";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -93,7 +95,7 @@ service InstanceService {
     option (google.api.method_signature) = "instance,update_mask";
     option (bytebase.v1.permission) = "bb.instances.update";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -110,7 +112,7 @@ service InstanceService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.instances.delete";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -130,7 +132,7 @@ service InstanceService {
     };
     option (bytebase.v1.permission) = "bb.instances.undelete";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -148,6 +150,7 @@ service InstanceService {
     };
     option (bytebase.v1.permission) = "bb.instances.sync";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -164,6 +167,7 @@ service InstanceService {
     };
     option (bytebase.v1.permission) = "bb.instances.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -181,6 +185,7 @@ service InstanceService {
     };
     option (bytebase.v1.permission) = "bb.instances.sync";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -197,7 +202,7 @@ service InstanceService {
     };
     option (bytebase.v1.permission) = "bb.instances.update";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -215,7 +220,7 @@ service InstanceService {
     };
     option (bytebase.v1.permission) = "bb.instances.update";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -233,7 +238,7 @@ service InstanceService {
     };
     option (bytebase.v1.permission) = "bb.instances.update";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -252,7 +257,7 @@ service InstanceService {
     option (google.api.method_signature) = "data_source,update_mask";
     option (bytebase.v1.permission) = "bb.instances.update";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }

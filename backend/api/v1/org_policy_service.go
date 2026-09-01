@@ -482,7 +482,7 @@ func (s *OrgPolicyService) checkPolicyPermission(ctx context.Context, req connec
 		}); detailErr == nil {
 			err.AddDetail(detail)
 		}
-		return err
+		return markPolicyDenied(ctx, err)
 	}
 	return nil
 }

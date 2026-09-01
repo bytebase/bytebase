@@ -25,6 +25,7 @@ service WorkspaceService {
   rpc GetWorkspace(GetWorkspaceRequest) returns (Workspace) {
     option (google.api.http) = {get: "/v1/{name=workspaces/*}"};
     option (bytebase.v1.allow_without_credential) = true;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -32,6 +33,7 @@ service WorkspaceService {
   rpc ListWorkspaces(ListWorkspacesRequest) returns (ListWorkspacesResponse) {
     option (google.api.http) = {get: "/v1/workspaces"};
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -43,7 +45,7 @@ service WorkspaceService {
     };
     option (bytebase.v1.permission) = "bb.workspaces.update";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -54,6 +56,7 @@ service WorkspaceService {
     option (google.api.http) = {get: "/v1/{resource=workspaces/*}:getIamPolicy"};
     option (bytebase.v1.permission) = "bb.workspaces.getIamPolicy";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -65,7 +68,7 @@ service WorkspaceService {
     option (google.api.http) = {delete: "/v1/{name=workspaces/*}"};
     option (bytebase.v1.permission) = "bb.workspaces.delete";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = ENDS_MEMBERSHIP;
   }
@@ -79,7 +82,7 @@ service WorkspaceService {
       body: "*"
     };
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = ENDS_MEMBERSHIP;
   }
@@ -93,7 +96,7 @@ service WorkspaceService {
     };
     option (bytebase.v1.permission) = "bb.workspaces.setIamPolicy";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -112,6 +115,7 @@ service WorkspaceService {
   rpc GetMCPInfo(GetMCPInfoRequest) returns (MCPInfo) {
     option (google.api.http) = {get: "/v1/mcp/info"};
     option (google.api.method_signature) = "";
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -128,7 +132,7 @@ service WorkspaceService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.workspaces.rotateDirectorySyncToken";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }

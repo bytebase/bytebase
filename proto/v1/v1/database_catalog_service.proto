@@ -22,6 +22,7 @@ service DatabaseCatalogService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.databaseCatalogs.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -39,7 +40,7 @@ service DatabaseCatalogService {
     option (google.api.method_signature) = "catalog";
     option (bytebase.v1.permission) = "bb.databaseCatalogs.update";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }

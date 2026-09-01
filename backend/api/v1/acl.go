@@ -162,7 +162,7 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 		switch resource.Type {
 		case common.ResourceTypeWorkspace:
 			if resource.ID != workspaceID {
-				return connect.NewError(connect.CodePermissionDenied, errors.Errorf("workspace mismatch"))
+				return markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("workspace mismatch")))
 			}
 		default:
 		}
@@ -182,7 +182,7 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 		}); detailErr == nil {
 			err.AddDetail(detail)
 		}
-		return err
+		return markPolicyDenied(ctx, err)
 	}
 
 	// An Update that creates via allow_missing=true also needs the create permission.
@@ -218,7 +218,7 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 			}); detailErr == nil {
 				err.AddDetail(detail)
 			}
-			return err
+			return markPolicyDenied(ctx, err)
 		}
 	}
 
@@ -368,11 +368,7 @@ func resolveRawResourceWithArchivedProject(ctx context.Context, stores *store.St
 	parts := strings.Split(name, "/")
 	route := getResourceRoute(parts)
 	if allowArchivedProject && route == (resourceRoute{projectCollection}) {
-		projectID, err := requiredResourceIdentifier(parts, 1, projectCollection)
-		if err != nil {
-			return nil, err
-		}
-		return &common.Resource{Type: common.ResourceTypeProject, ID: projectID}, nil
+		return resolveProjectResourceWithArchivedProject(ctx, stores, parts, true)
 	}
 	if allowArchivedProject && route == (resourceRoute{projectCollection, instanceCollection}) {
 		return resolveProjectInstanceResourceForLifecycle(ctx, stores, parts)
@@ -393,14 +389,29 @@ func resolveWorkspaceResource(_ context.Context, _ *store.Store, parts []string)
 }
 
 func resolveProjectResource(ctx context.Context, stores *store.Store, parts []string) (*common.Resource, error) {
+	return resolveProjectResourceWithArchivedProject(ctx, stores, parts, false)
+}
+
+// resolveProjectResourceWithArchivedProject reads the project the request
+// names. allowArchivedProject is for the instance lifecycle methods, which have
+// to resolve a project that may be archived so an instance inside one can be
+// undeleted.
+//
+// The read is not optional on either path: what this returns is published on
+// AuthContext.Resources, which the audit interceptor turns into a denied row's
+// parent. It confirms existence within the caller's workspace and nothing
+// more, so a denial is still filed under a project the caller holds no role
+// on — the shape denial rows have always had on the MCP chain.
+func resolveProjectResourceWithArchivedProject(ctx context.Context, stores *store.Store, parts []string, allowArchivedProject bool) (*common.Resource, error) {
 	projectID, err := requiredResourceIdentifier(parts, 1, projectCollection)
 	if err != nil {
 		return nil, err
 	}
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	project, err := stores.GetProject(ctx, &store.FindProjectMessage{
-		Workspace:  workspaceID,
-		ResourceID: &projectID,
+		Workspace:   workspaceID,
+		ResourceID:  &projectID,
+		ShowDeleted: allowArchivedProject,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get project"))

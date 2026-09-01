@@ -184,7 +184,7 @@ func (s *GroupService) UpdateGroup(ctx context.Context, req *connect.Request[v1p
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
 			}
 			if !ok {
-				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.GroupsCreate))
+				return nil, markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.GroupsCreate)))
 			}
 			return s.CreateGroup(ctx, connect.NewRequest(&v1pb.CreateGroupRequest{
 				Group:      req.Msg.Group,
@@ -286,7 +286,7 @@ func (s *GroupService) checkPermission(ctx context.Context, group *store.GroupMe
 		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
 	}
 	if !ok {
-		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission))
+		return markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission)))
 	}
 	return nil
 }
@@ -380,7 +380,7 @@ func (s *GroupService) checkGroupPermission(ctx context.Context, req connect.Any
 			}); detailErr == nil {
 				err.AddDetail(detail)
 			}
-			return err
+			return markPolicyDenied(ctx, err)
 		}
 	}
 

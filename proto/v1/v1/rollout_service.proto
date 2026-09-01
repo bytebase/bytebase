@@ -22,6 +22,7 @@ service RolloutService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.rollouts.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -32,6 +33,7 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.rollouts.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -44,7 +46,7 @@ service RolloutService {
     };
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     // WRITE, and it stays WRITE: executing an approved change is what a
     // read-write session is for. Two ways a change reaches execution without a
     // human approval ride this method, and they get OPPOSITE answers, because
@@ -96,6 +98,7 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -106,6 +109,7 @@ service RolloutService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -116,6 +120,7 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -126,6 +131,7 @@ service RolloutService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = OPENS_AN_ADMIN_CONNECTION;
   }
@@ -139,7 +145,7 @@ service RolloutService {
     };
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     // WRITE, and the same two cases as CreateRollout reach it — this is the
     // method that actually starts execution. Its approval check carries the
     // identical linked-issue guard, so 1b-2's rule covers this method too
@@ -158,7 +164,7 @@ service RolloutService {
     };
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -174,7 +180,7 @@ service RolloutService {
     };
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -188,6 +194,7 @@ service RolloutService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.taskRuns.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 }

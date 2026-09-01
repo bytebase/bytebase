@@ -299,7 +299,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err))
 		}
 		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q in %q", permission.InstancesGet, req.Msg.Parent))
+			return nil, markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q in %q", permission.InstancesGet, req.Msg.Parent)))
 		}
 		find.InstanceID = &instanceID
 	} else if projectID, err := common.GetProjectID(req.Msg.Parent); err == nil {
@@ -318,7 +318,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err))
 		}
 		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q in %q", permission.ProjectsGet, req.Msg.Parent))
+			return nil, markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q in %q", permission.ProjectsGet, req.Msg.Parent)))
 		}
 		find.ProjectID = &projectID
 	} else if _, err := common.GetWorkspaceID(req.Msg.Parent); err == nil {
@@ -327,7 +327,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
 		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.DatabasesList))
+			return nil, markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.DatabasesList)))
 		}
 	} else if instanceID, err := common.GetInstanceID(req.Msg.Parent); err == nil {
 		if _, err := s.getInstanceForDatabaseResource(ctx, nil, instanceID); err != nil {
@@ -338,7 +338,7 @@ func (s *DatabaseService) ListDatabases(ctx context.Context, req *connect.Reques
 			return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err.Error()))
 		}
 		if !ok {
-			return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.InstancesGet))
+			return nil, markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.InstancesGet)))
 		}
 		find.InstanceID = &instanceID
 	} else {

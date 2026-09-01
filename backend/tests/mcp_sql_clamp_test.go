@@ -218,6 +218,13 @@ func TestMCPReadOnlyCeilingRefusesAWrite(t *testing.T) {
 	}
 	a.NotNil(denied, "the denied query must have produced a row of its own")
 	a.Contains(denied.Status.Message, "READ_ONLY")
+	// The clamp is the third writer of the policy-denial mark, and severity is
+	// the only thing the mark decides here: Query is annotated audit = ALL, so
+	// the row exists either way. Without this assertion, deleting the clamp's
+	// common.SetPolicyDenied leaves every suite green while its denials drop
+	// back to INFO and stop being separable from the method's own traffic.
+	a.Equal(v1pb.AuditLog_WARNING, denied.Severity,
+		"a clamp refusal is a policy denial, not routine traffic")
 
 	// The control. Same principal, same credential, same statement; only the
 	// ceiling changed, and the INSERT now lands. It runs on a session opened

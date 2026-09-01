@@ -26,7 +26,7 @@ service ReviewConfigService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.reviewConfigs.create";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -38,6 +38,7 @@ service ReviewConfigService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.reviewConfigs.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -48,6 +49,7 @@ service ReviewConfigService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.reviewConfigs.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -62,7 +64,7 @@ service ReviewConfigService {
     option (google.api.method_signature) = "review_config,update_mask";
     option (bytebase.v1.permission) = "bb.reviewConfigs.update";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -74,7 +76,7 @@ service ReviewConfigService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.reviewConfigs.delete";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
