@@ -652,7 +652,7 @@ function SingleResultViewInner({
               {/* Floating buttons */}
               <div className="absolute bottom-2 right-4 flex items-end gap-x-2">
                 {searchCandidateRowIndexes.length > 0 && (
-                  <div className="flex flex-row gap-x-2 border shadow rounded bg-background py-1 px-2">
+                  <div className="flex flex-row gap-x-2 border shadow rounded-sm bg-background py-1 px-2">
                     <Button
                       size="sm"
                       appearance="secondary"

@@ -228,7 +228,7 @@ export function ToolCallCard({ toolCall, result }: Props) {
                 {askOptions.map((option) => (
                   <div
                     key={option.value}
-                    className="rounded border border-block-border bg-background px-2 py-1"
+                    className="rounded-sm border border-block-border bg-background px-2 py-1"
                   >
                     <div className="font-medium text-control">
                       {option.label}
@@ -296,7 +296,7 @@ export function ToolCallCard({ toolCall, result }: Props) {
   };
 
   return (
-    <div className="rounded border bg-control-bg text-xs">
+    <div className="rounded-sm border bg-control-bg text-xs">
       <div
         className="flex cursor-pointer items-center gap-x-2 px-2 py-1.5"
         onClick={() => setExpanded(!expanded)}

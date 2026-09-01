@@ -20,7 +20,7 @@ export function DatabaseOverviewInfo({ database }: { database: Database }) {
     : 0;
 
   return (
-    <div className="rounded border border-block-border px-5 py-4">
+    <div className="rounded-sm border border-block-border px-5 py-4">
       <dl
         className="grid grid-cols-1 gap-x-4 gap-y-4 sm:grid-cols-2"
         data-label="bb-database-overview-description-list"

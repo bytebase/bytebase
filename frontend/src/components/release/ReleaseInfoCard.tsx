@@ -75,7 +75,7 @@ export function ReleaseInfoCard({
 function LoadingBlock() {
   const { t } = useTranslation();
   return (
-    <div className="rounded-md border border-control-border bg-gray-50 px-4 py-3 text-sm text-control-light">
+    <div className="rounded-sm border border-control-border bg-gray-50 px-4 py-3 text-sm text-control-light">
       <div className="flex items-center gap-x-2">
         <Loader2 className="h-4 w-4 animate-spin" />
         <span>{t("common.loading")}</span>
@@ -87,7 +87,7 @@ function LoadingBlock() {
 function NotFoundBlock() {
   const { t } = useTranslation();
   return (
-    <div className="rounded-md border border-error/30 bg-error/5 px-4 py-3 text-sm text-error">
+    <div className="rounded-sm border border-error/30 bg-error/5 px-4 py-3 text-sm text-error">
       {t("release.not-found")}
     </div>
   );
@@ -103,7 +103,7 @@ function ReleaseBlock({ release }: Readonly<{ release: Release }>) {
     : undefined;
 
   return (
-    <div className="rounded-md border border-control-border bg-gray-50 px-4 py-3">
+    <div className="rounded-sm border border-control-border bg-gray-50 px-4 py-3">
       <div className="flex flex-col gap-y-3">
         {release.files.length > 0 && (
           <div className="flex flex-col gap-y-2">

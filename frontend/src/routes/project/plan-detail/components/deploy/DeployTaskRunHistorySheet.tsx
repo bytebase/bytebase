@@ -115,10 +115,10 @@ function TaskRunHistoryItem({
   const comment = getTaskRunComment(taskRun, t);
 
   return (
-    <div className="rounded-lg border">
+    <div className="rounded-sm border">
       <button
         aria-expanded={isExpanded}
-        className="flex w-full items-center gap-x-2 rounded-lg px-3 py-2 text-left hover:bg-control-bg focus-visible:ring-2 focus-visible:ring-accent"
+        className="flex w-full items-center gap-x-2 rounded-sm px-3 py-2 text-left hover:bg-control-bg focus-visible:ring-2 focus-visible:ring-accent"
         onClick={onToggle}
         type="button"
       >

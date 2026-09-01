@@ -495,7 +495,7 @@ function PhaseSection({
                 {t("plan.phase.hide-details")}
               </span>
             </div>
-            <div className="mt-1 overflow-hidden rounded-lg border bg-white">
+            <div className="mt-1 overflow-hidden rounded-sm border bg-white">
               {children}
             </div>
           </div>

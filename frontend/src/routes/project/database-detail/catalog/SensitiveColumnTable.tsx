@@ -160,7 +160,7 @@ export function SensitiveColumnTable({
   };
 
   return (
-    <div className="overflow-x-auto rounded border border-block-border">
+    <div className="overflow-x-auto rounded-sm border border-block-border">
       <Table className="min-w-full">
         <TableHeader className="bg-control-bg">
           <TableRow className="hover:bg-control-bg">

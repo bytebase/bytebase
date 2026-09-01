@@ -143,10 +143,10 @@ export function InfoPanelContent({ engine, section }: InfoPanelContentProps) {
       {snippet.codeBlock && (
         <div className="flex flex-col gap-y-1">
           <div className="flex flex-row">
-            <pre className="flex-1 min-w-0 w-full px-3 py-2 border border-control-border bg-control-bg whitespace-pre-line rounded-l-[3px] overflow-x-auto text-[12px]">
+            <pre className="flex-1 min-w-0 w-full px-3 py-2 border border-control-border bg-control-bg whitespace-pre-line rounded-l-xs overflow-x-auto text-[12px]">
               <code>{snippet.codeBlock.code}</code>
             </pre>
-            <div className="flex items-center -ml-px px-2 py-2 border border-control-border text-sm font-medium text-control-light bg-control-bg hover:bg-control-bg-hover rounded-r-[3px]">
+            <div className="flex items-center -ml-px px-2 py-2 border border-control-border text-sm font-medium text-control-light bg-control-bg hover:bg-control-bg-hover rounded-r-xs">
               <CopyButton content={snippet.codeBlock.code} />
             </div>
           </div>

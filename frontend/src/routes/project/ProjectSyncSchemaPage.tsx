@@ -1398,7 +1398,7 @@ function SelectTargetDatabasesView({
         sourceEngine={sourceEngine}
         changelogSourceSchema={changelogSourceSchema}
       />
-      <div className="relative border rounded-lg w-full flex flex-row flex-1 overflow-hidden">
+      <div className="relative border rounded-sm w-full flex flex-row flex-1 overflow-hidden">
         {/* Left panel: target database list */}
         <div className="w-1/4 min-w-[256px] max-w-xs h-full border-r">
           <div className="w-full h-full relative flex flex-col justify-start items-start overflow-y-auto pb-2">

@@ -554,7 +554,7 @@ export function PlanDetailChangesBranch({
 
   if (!selectedSpec) {
     return (
-      <div className="rounded-md border bg-white px-4 py-3 text-sm text-control-light">
+      <div className="rounded-sm border bg-white px-4 py-3 text-sm text-control-light">
         {t("common.no-data")}
       </div>
     );
@@ -584,7 +584,7 @@ export function PlanDetailChangesBranch({
                 aria-label={t("plan.add-spec")}
                 className={cn(
                   ICON_ACTION_CLASS,
-                  "size-7 rounded-md p-0 [touch-action:manipulation]"
+                  "size-7 rounded-xs p-0 [touch-action:manipulation]"
                 )}
                 disabled={Boolean(pendingNewSpec)}
                 onClick={() => setShowAddSpecSheet(true)}
@@ -1479,21 +1479,21 @@ function TargetsSection({
               isValidDatabaseName(target) ? (
                 <div
                   key={target}
-                  className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-lg border px-2 py-1"
+                  className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-sm border px-2 py-1"
                 >
                   <PlanTargetDisplay showEnvironment target={target} />
                 </div>
               ) : isValidDatabaseGroupName(target) ? (
                 <div
                   key={target}
-                  className="min-w-0 max-w-full rounded-lg border px-2 py-1"
+                  className="min-w-0 max-w-full rounded-sm border px-2 py-1"
                 >
                   <DatabaseGroupTarget className="py-1" target={target} />
                 </div>
               ) : (
                 <div
                   key={target}
-                  className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-lg border px-2 py-1"
+                  className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-sm border px-2 py-1"
                 >
                   <span className="truncate text-sm text-control-placeholder">
                     {target}
@@ -1543,7 +1543,7 @@ function TargetsSection({
                   {filteredTargets.map((target) => (
                     <div
                       key={target}
-                      className="w-full rounded-lg border px-2 py-1.5"
+                      className="w-full rounded-sm border px-2 py-1.5"
                     >
                       {isValidDatabaseName(target) ? (
                         <PlanTargetDisplay showEnvironment target={target} />
@@ -2071,7 +2071,7 @@ export function DatabaseGroupTarget({
           {inlineDatabases.map((database) => (
             <div
               key={database.name}
-              className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-lg border bg-gray-50 px-2 py-1 transition-all"
+              className="inline-flex max-w-full min-w-0 cursor-default items-center gap-x-1 rounded-sm border bg-gray-50 px-2 py-1 transition-all"
             >
               <PlanTargetDisplay showEnvironment target={database.name} />
             </div>

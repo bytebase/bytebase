@@ -128,7 +128,7 @@ export function TableNode({ schema, table }: TableNodeProps) {
   return (
     <div
       className={cn(
-        "absolute overflow-hidden rounded-md shadow-lg border-b border-control-border bg-background w-[16rem] divide-y divide-control-border z-10 transition-opacity",
+        "absolute overflow-hidden rounded-sm shadow-lg border-b border-control-border bg-background w-[16rem] divide-y divide-control-border z-10 transition-opacity",
         tableClasses
       )}
       data-bb-node-type="table"
@@ -138,7 +138,7 @@ export function TableNode({ schema, table }: TableNodeProps) {
     >
       <h3
         className={cn(
-          "group font-medium leading-6 text-white px-2 py-2 rounded-t-md gap-x-1 relative text-center whitespace-pre-wrap break-words"
+          "group font-medium leading-6 text-white px-2 py-2 rounded-t-sm gap-x-1 relative text-center whitespace-pre-wrap break-words"
         )}
         style={{ backgroundColor: tableColor }}
       >

@@ -114,7 +114,7 @@ export function PlanDetailTaskRunSession({
 
   if (!session?.session) {
     return (
-      <div className="rounded-md border bg-control-bg p-3 text-sm text-control-light">
+      <div className="rounded-sm border bg-control-bg p-3 text-sm text-control-light">
         {t("task-run.no-session-found")}
       </div>
     );
@@ -169,7 +169,7 @@ function SessionTable({ rows }: { rows: TaskRunSession_Postgres_Session[] }) {
 
   if (normalizedRows.length === 0) {
     return (
-      <div className="rounded-md border bg-control-bg p-3 text-sm text-control-light">
+      <div className="rounded-sm border bg-control-bg p-3 text-sm text-control-light">
         -
       </div>
     );

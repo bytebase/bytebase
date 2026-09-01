@@ -107,7 +107,7 @@ export function TableMetadataTable({
 
   if (loading) {
     return (
-      <div className="rounded-lg border border-dashed border-block-border px-4 py-6 text-sm text-control-light">
+      <div className="rounded-sm border border-dashed border-block-border px-4 py-6 text-sm text-control-light">
         {t("common.loading")}
       </div>
     );
@@ -115,14 +115,14 @@ export function TableMetadataTable({
 
   if (rows.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-block-border px-4 py-6 text-sm text-control-light">
+      <div className="rounded-sm border border-dashed border-block-border px-4 py-6 text-sm text-control-light">
         -
       </div>
     );
   }
 
   return (
-    <div className="overflow-hidden rounded border border-block-border">
+    <div className="overflow-hidden rounded-sm border border-block-border">
       <Table className="min-w-full">
         <TableHeader className="bg-control-bg">
           <TableRow className="hover:bg-control-bg">

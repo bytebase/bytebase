@@ -28,7 +28,10 @@ export function RowDataBlock({
   return (
     <div
       data-testid="row-data-block"
-      className={cn("relative rounded bg-control-bg/40 px-3 py-2", className)}
+      className={cn(
+        "relative rounded-sm bg-control-bg/40 px-3 py-2",
+        className
+      )}
     >
       {actions}
       {columns.map((column, columnIndex) => {

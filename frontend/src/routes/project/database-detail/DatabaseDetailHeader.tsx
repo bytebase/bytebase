@@ -80,7 +80,6 @@ export function DatabaseDetailHeader({ database }: { database: Database }) {
       borderTopColor: `rgb(${environmentColorRgb})`,
       color: `rgb(${environmentColorRgb})`,
       padding: "0 6px",
-      borderRadius: "4px",
     };
   }, [environmentColorRgb]);
 
@@ -127,7 +126,7 @@ export function DatabaseDetailHeader({ database }: { database: Database }) {
           {isValidEnv ? (
             <RouterLink
               to={{ path: `/${formatEnvironmentName(environment.id)}` }}
-              className="inline-flex cursor-pointer items-center gap-x-1 hover:underline"
+              className="inline-flex cursor-pointer items-center gap-x-1 rounded-sm hover:underline"
               style={environmentBadgeStyle}
               onClick={(e) => e.stopPropagation()}
             >

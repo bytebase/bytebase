@@ -12,6 +12,7 @@ import {
 } from "node:fs";
 import { dirname, relative, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import postcss from "postcss";
 import ts from "typescript-6";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url));
@@ -44,7 +45,8 @@ const enforcedRules = [
   "no-raw-table",
 ].sort();
 
-const ignoredPrefixes = ["src/apps/explain-visualizer/", "src/types/proto-es/"];
+const legacyIgnoredPrefixes = ["src/apps/explain-visualizer/"];
+const generatedPrefixes = ["src/types/proto-es/"];
 const nativeControls = new Set(["button", "input", "select", "textarea"]);
 const rawColorFamilies = [
   "slate",
@@ -91,11 +93,23 @@ const rawColorPattern = new RegExp(
 );
 const approvedGapValues = new Set(["0", "1", "1.5", "2", "3", "4", "6", "8"]);
 const approvedRadiusValues = new Set(["none", "xs", "sm", "full"]);
+const approvedCssRadiusValues = new Set([
+  "0",
+  "var(--radius-xs)",
+  "var(--radius-sm)",
+  "var(--radius-full)",
+]);
 const cssColorPropertyPattern = /^(?:color|[A-Za-z]+Color)$/;
 const literalColorPattern = /#[\da-f]{3,8}\b|\b(?:rgb|rgba|hsl|hsla)\s*\(/gi;
+const cssRadiusPropertyPattern = /^border(?:-[a-z]+)*-radius$/;
+const inlineRadiusPropertyPattern = /^border(?:[A-Z][a-z]*)*Radius$/;
+const dashedInlineRadiusPropertyPattern = /^border(?:-[a-z]+)*-radius$/;
 
-const isIgnoredPath = (path) =>
-  ignoredPrefixes.some((prefix) => path.startsWith(prefix));
+const isLegacyIgnoredPath = (path) =>
+  legacyIgnoredPrefixes.some((prefix) => path.startsWith(prefix));
+
+const isGeneratedPath = (path) =>
+  generatedPrefixes.some((prefix) => path.startsWith(prefix));
 
 const isSharedPrimitive = (path) => path.startsWith(sharedPrimitivePrefix);
 
@@ -139,6 +153,18 @@ const staticStrings = (node) => {
 
 const classTokens = (value) => value.split(/\s+/).filter(Boolean);
 
+const tailwindUtility = (token) => {
+  let bracketDepth = 0;
+  let utilityStart = 0;
+  for (let index = 0; index < token.length; index++) {
+    const character = token[index];
+    if (character === "[") bracketDepth++;
+    if (character === "]") bracketDepth--;
+    if (character === ":" && bracketDepth === 0) utilityStart = index + 1;
+  }
+  return token.slice(utilityStart).replace(/^!|!$/g, "");
+};
+
 const attributeTokens = (node, attributeNames) => {
   const attribute = node.attributes.properties.find(
     (property) =>
@@ -170,11 +196,18 @@ const rulesForToken = (token) => {
   if (gapMatch && !approvedGapValues.has(gapMatch[1])) {
     rules.push("no-off-scale-gap");
   }
-  const radiusMatch = token.match(
-    /(?:^|:)rounded(?:-[trblse]{1,2})?-(\[[^\]]+\]|[a-z0-9.]+)!?$/
-  );
-  if (radiusMatch && !approvedRadiusValues.has(radiusMatch[1])) {
-    rules.push("no-off-scale-radius");
+  const utility = tailwindUtility(token);
+  if (utility) {
+    const bareRadius = /^rounded(?:-[trblse]{1,2})?$/.test(utility);
+    const radiusMatch = utility.match(
+      /^rounded(?:-[trblse]{1,2})?-(\[[^\]]+\]|\([^)]+\)|[a-z0-9.]+)$/
+    );
+    if (
+      bareRadius ||
+      (radiusMatch && !approvedRadiusValues.has(radiusMatch[1]))
+    ) {
+      rules.push("no-off-scale-radius");
+    }
   }
   if (/(?:^|:)(?:text|leading)-\[[^\]]+\]/.test(token)) {
     rules.push("no-arbitrary-type");
@@ -205,6 +238,11 @@ export const isScannableSourcePath = (path) =>
   /\.(?:ts|tsx)$/.test(path) &&
   !path.endsWith(".d.ts") &&
   !/\.(?:test|spec)\.(?:ts|tsx)$/.test(path);
+
+const isScannableCssPath = (path) => path.endsWith(".css");
+
+const isScannablePath = (path) =>
+  isScannableSourcePath(path) || isScannableCssPath(path);
 
 const scanSheetWidth = (node, path, counts) => {
   if (getTagName(node.tagName) !== "SheetContent") return;
@@ -249,14 +287,34 @@ const scanLiteralColor = (node, path, counts) => {
   }
 };
 
+const propertyName = (node) =>
+  ts.isIdentifier(node) || ts.isStringLiteral(node) ? node.text : "";
+
+const scanInlineRadius = (node, path, counts) => {
+  if (!ts.isPropertyAssignment(node) && !ts.isShorthandPropertyAssignment(node)) {
+    return;
+  }
+  const name = propertyName(node.name);
+  if (
+    !inlineRadiusPropertyPattern.test(name) &&
+    !dashedInlineRadiusPropertyPattern.test(name)
+  ) {
+    return;
+  }
+  addViolation(counts, path, "no-off-scale-radius", name);
+};
+
 export function scanSource(source, path) {
-  if (isIgnoredPath(path)) return [];
+  if (isGeneratedPath(path)) return [];
 
   const sourceFile = createSourceFile(source, path);
   const counts = new Map();
   const scanTokenValue = (value) => {
     for (const token of classTokens(value)) {
       for (const rule of rulesForToken(token)) {
+        if (isLegacyIgnoredPath(path) && rule !== "no-off-scale-radius") {
+          continue;
+        }
         addViolation(counts, path, rule, token);
       }
     }
@@ -282,9 +340,37 @@ export function scanSource(source, path) {
       scanButtonDimensions(node, path, counts);
     }
     scanLiteralColor(node, path, counts);
+    scanInlineRadius(node, path, counts);
     ts.forEachChild(node, visit);
   };
   visit(sourceFile);
+  return sortViolations(counts.values());
+}
+
+export function scanCssSource(source, path) {
+  if (isGeneratedPath(path)) return [];
+
+  const counts = new Map();
+  const root = postcss.parse(source, { from: path });
+  root.walkDecls((declaration) => {
+    if (!cssRadiusPropertyPattern.test(declaration.prop)) return;
+    const value = declaration.value.trim();
+    if (!approvedCssRadiusValues.has(value)) {
+      addViolation(
+        counts,
+        path,
+        "no-off-scale-radius",
+        `${declaration.prop}: ${value}`
+      );
+    }
+  });
+  root.walkAtRules("apply", (atRule) => {
+    for (const token of classTokens(atRule.params)) {
+      if (rulesForToken(token).includes("no-off-scale-radius")) {
+        addViolation(counts, path, "no-off-scale-radius", token);
+      }
+    }
+  });
   return sortViolations(counts.values());
 }
 
@@ -370,7 +456,7 @@ const findSourceFiles = (directory) =>
   readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
     const path = resolve(directory, entry.name);
     if (entry.isDirectory()) return findSourceFiles(path);
-    if (!isScannableSourcePath(path)) return [];
+    if (!isScannablePath(path)) return [];
     return [path];
   });
 
@@ -378,7 +464,10 @@ const scanFrontend = () =>
   sortViolations(
     findSourceFiles(sourceRoot).flatMap((file) => {
       const path = relative(frontendRoot, file);
-      return scanSource(readFileSync(file, "utf8"), path);
+      const source = readFileSync(file, "utf8");
+      return isScannableCssPath(path)
+        ? scanCssSource(source, path)
+        : scanSource(source, path);
     })
   );
 

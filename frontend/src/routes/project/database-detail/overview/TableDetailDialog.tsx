@@ -341,7 +341,7 @@ function ClassificationLevelBadge({
         </span>
       )}
       {level && (
-        <span className={`rounded px-1 py-0.5 text-xs ${levelColor}`}>
+        <span className={`rounded-xs px-1 py-0.5 text-xs ${levelColor}`}>
           {level.title}
         </span>
       )}
@@ -526,7 +526,7 @@ function ClassificationPickerDialog({
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
           />
-          <div className="max-h-[28rem] overflow-y-auto rounded-lg border border-block-border">
+          <div className="max-h-[28rem] overflow-y-auto rounded-sm border border-block-border">
             {rows.length === 0 ? (
               <div className="px-4 py-6 text-sm text-control-light">
                 {t("common.no-data")}
@@ -639,7 +639,7 @@ function SemanticTypePickerDialog({
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
           />
-          <div className="max-h-[28rem] overflow-y-auto rounded-lg border border-block-border">
+          <div className="max-h-[28rem] overflow-y-auto rounded-sm border border-block-border">
             {filteredSemanticTypeList.length === 0 ? (
               <div className="px-4 py-6 text-sm text-control-light">
                 {t("common.no-data")}
@@ -1049,7 +1049,7 @@ export function TableDetailDialog({
 
         {showPartitionTables && (
           <DetailSection title={t("database.partition-tables")}>
-            <div className="rounded-lg border border-block-border">
+            <div className="rounded-sm border border-block-border">
               <Table className="min-w-full">
                 <TableHeader className="bg-control-bg">
                   <TableRow className="hover:bg-control-bg">
@@ -1086,7 +1086,7 @@ export function TableDetailDialog({
                 onChange={(event) => setColumnSearchKeyword(event.target.value)}
               />
             </div>
-            <div className="rounded-lg border border-block-border">
+            <div className="rounded-sm border border-block-border">
               <table className="min-w-full divide-y divide-block-border text-sm">
                 <thead className="bg-control-bg">
                   <tr className="text-left text-sm text-control-light">
@@ -1222,7 +1222,7 @@ export function TableDetailDialog({
             {table.indexes.map((index) => (
               <div
                 key={index.name}
-                className="rounded-lg border border-block-border"
+                className="rounded-sm border border-block-border"
               >
                 <div className="border-b border-block-border px-4 py-3 text-base font-medium text-main">
                   {index.name}
@@ -1276,7 +1276,7 @@ export function TableDetailDialog({
 
         {showTriggers && (
           <DetailSection title={t("db.triggers")}>
-            <div className="rounded-lg border border-block-border">
+            <div className="rounded-sm border border-block-border">
               <Table className="min-w-full">
                 <TableHeader className="bg-control-bg">
                   <TableRow className="hover:bg-control-bg">

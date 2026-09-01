@@ -1211,7 +1211,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
       <div className="w-full flex flex-col gap-y-6">
         {/* Engine Selector (create only) */}
         {isCreating && (
-          <div className="rounded-lg border border-block-border bg-background">
+          <div className="rounded-sm border border-block-border bg-background">
             <button
               type="button"
               className="w-full flex items-center justify-between gap-x-3 px-4 py-3 text-left transition-colors hover:bg-control-bg"
@@ -1267,7 +1267,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
         )}
 
         {/* Basic Info Card */}
-        <div className="border border-block-border rounded-lg p-5">
+        <div className="border border-block-border rounded-sm p-5">
           <h3 className="text-base font-medium text-main">
             {t("instance.section.basic-info")}
           </h3>
@@ -1441,7 +1441,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
         </div>
 
         {/* Connection Card */}
-        <div className="border border-block-border rounded-lg p-5">
+        <div className="border border-block-border rounded-sm p-5">
           <h3 className="text-base font-medium text-main">
             {t("instance.section.connection")}
           </h3>
@@ -1758,7 +1758,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
 
         {/* Connection Options Card */}
         {basicInfo.engine !== Engine.DYNAMODB && editingDataSource && (
-          <div className="border border-block-border rounded-lg bg-background">
+          <div className="border border-block-border rounded-sm bg-background">
             <button
               type="button"
               className="w-full flex items-center justify-between gap-x-3 px-5 py-4 text-left transition-colors hover:bg-control-bg"

@@ -718,7 +718,7 @@ function SpecDiffRow({
           <summary className="cursor-pointer text-control-light">
             {t("common.detail")}
           </summary>
-          <pre className="mt-1 max-h-48 overflow-auto rounded bg-control-bg p-2">
+          <pre className="mt-1 max-h-48 overflow-auto rounded-sm bg-control-bg p-2">
             {JSON.stringify({ from: entry.from, to: entry.to }, null, 2)}
           </pre>
         </details>

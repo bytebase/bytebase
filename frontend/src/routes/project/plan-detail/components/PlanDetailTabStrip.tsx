@@ -57,7 +57,7 @@ export function PlanDetailTabItem({
       className={cn(
         // No transition here: the tab body swaps in the same commit, so a
         // color fade makes the highlight lag the content and read as flicker.
-        "relative flex shrink-0 items-center rounded-t-lg border",
+        "relative flex shrink-0 items-center rounded-t-sm border",
         boundedWidth && "min-w-40 max-w-64",
         selected
           ? "border-gray-200 border-b-transparent bg-white"

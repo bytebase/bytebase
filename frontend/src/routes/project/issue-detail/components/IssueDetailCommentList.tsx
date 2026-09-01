@@ -413,7 +413,7 @@ function IssueDescriptionCommentRow({
           </div>
 
           <div className="ml-3 min-w-0 flex-1">
-            <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+            <div className="overflow-hidden rounded-sm border border-gray-200 bg-white">
               <div className="bg-gray-50 px-3 py-2">
                 <div className="flex items-center justify-between">
                   <div className="flex min-w-0 flex-wrap items-center gap-x-2 text-sm">

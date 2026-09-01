@@ -182,7 +182,7 @@ export const DeployTaskItem = memo(function DeployTaskItem({
 
   return (
     <>
-      <div className="group rounded-lg border bg-white" ref={hostRef}>
+      <div className="group rounded-sm border bg-white" ref={hostRef}>
         {/* Same padding in both modes: the header row is button-height (h-6)
             either way, so expanding only reveals content below — nothing
             above the fold moves. */}

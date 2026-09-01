@@ -5,7 +5,7 @@ export const DETAIL_SEARCH_ACTIVE_MATCH_SELECTOR =
   "[data-detail-search-active-match='true']";
 
 const matchClassName =
-  "rounded-[2px] px-0.5 bg-warning-bg text-main data-[detail-search-active-match=true]:bg-accent data-[detail-search-active-match=true]:text-accent-text";
+  "rounded-xs px-0.5 bg-warning-bg text-main data-[detail-search-active-match=true]:bg-accent data-[detail-search-active-match=true]:text-accent-text";
 
 export const normalizeSearchQuery = (query: string) => query.trim();
 

@@ -135,7 +135,7 @@ export function SignupPage() {
                 {t("common.email")}
                 <span className="text-error ml-0.5">*</span>
               </label>
-              <div className="mt-1 rounded-md shadow-xs">
+              <div className="mt-1 rounded-sm shadow-xs">
                 <Input
                   id="email"
                   type="email"
@@ -163,7 +163,7 @@ export function SignupPage() {
                 {t("common.username")}
                 <span className="text-error ml-0.5">*</span>
               </label>
-              <div className="mt-1 rounded-md shadow-xs">
+              <div className="mt-1 rounded-sm shadow-xs">
                 <Input
                   id="name"
                   required

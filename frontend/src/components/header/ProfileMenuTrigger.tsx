@@ -75,11 +75,11 @@ export function ProfileMenuTrigger({
 
   const wrapperClass = useMemo(() => {
     if (!customLogo) {
-      return "flex items-center justify-center rounded-3xl bg-gray-100";
+      return "flex items-center justify-center rounded-full bg-gray-100";
     }
     return size === "small"
-      ? "flex items-center justify-center rounded-3xl bg-gray-100 md:px-1 md:py-0.5"
-      : "flex items-center justify-center rounded-3xl bg-gray-100 md:px-2 md:py-1.5";
+      ? "flex items-center justify-center rounded-full bg-gray-100 md:px-1 md:py-0.5"
+      : "flex items-center justify-center rounded-full bg-gray-100 md:px-2 md:py-1.5";
   }, [customLogo, size]);
 
   const logoClass = size === "small" ? "mr-2" : "mr-4";
