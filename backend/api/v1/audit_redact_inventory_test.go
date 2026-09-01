@@ -29,8 +29,8 @@ import (
 // diff.
 //
 // The population is wider than the audited RPCs: WrapUnary writes a row on
-// `needAudit(ctx) || mcpPolicyDenied`, so gate-refused methods carrying no
-// audit annotation are in scope. Every registered Any type is in scope too,
+// `needAudit(ctx) || policyDenied`, so every method a policy can refuse is in
+// scope, annotation or not. Every registered Any type is in scope too,
 // since those reach the row without passing marshalAuditPayload — which is why
 // the registry is enforced at its call sites for this list to mean anything.
 //

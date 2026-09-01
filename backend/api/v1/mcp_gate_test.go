@@ -840,7 +840,7 @@ func invokeMCPGate(t *testing.T, stores mcpSettingsReader, authCtx *common.AuthC
 		ctx = context.WithValue(ctx, common.AuthContextKey, authCtx)
 	}
 	ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, auditTestWorkspace)
-	ctx = common.WithSetMCPPolicyDenied(ctx, func() { out.auditMarked = true })
+	ctx = common.WithSetPolicyDenied(ctx, func() { out.auditMarked = true })
 	_, out.err = NewInternalMCPGateInterceptor(stores).WrapUnary(next)(ctx,
 		&specRequest{AnyRequest: req, procedure: procedure})
 	return out
@@ -1158,8 +1158,8 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 // refusals: needAudit reads the annotation and nothing else.
 //
 // The first four are the FORBIDDEN half of that population, which was the whole
-// of it while the gate refused FORBIDDEN alone. Enforcing EXCLUDED raises it to
-// 47, and TestWebhook is the fifth case here because it is the member the wider
+// of it while the gate refused FORBIDDEN alone. Enforcing EXCLUDED widened it,
+// and TestWebhook is the fifth case here because it is the member the wider
 // population added whose request carries a credential.
 //
 // Each request below carries a secret or an unbounded body, which is why the

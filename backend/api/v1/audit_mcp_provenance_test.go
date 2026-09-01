@@ -198,12 +198,24 @@ func TestAuditParentsDeduplicated(t *testing.T) {
 		"one audit row per DISTINCT parent — repeated batch resources must not multiply rows")
 }
 
-// TestInternalChainAuditRecordsACLDenial pins PR 5b's denial-audit mechanism:
-// with the audit interceptor wrapped OUTSIDE the ACL interceptor (the internal
-// MCP chain's order), an ACL denial produces an audit row carrying the
-// provenance and the denied status; a method whose annotation opts out of
-// auditing stays silent for permitted and denied calls alike.
-func TestInternalChainAuditRecordsACLDenial(t *testing.T) {
+// TestAuditRecordsACLDenial pins the rule at the interceptor pair both chains
+// now share: with audit wrapped OUTSIDE ACL, an ACL denial produces a row
+// carrying the provenance and the denied status, whatever the method's audit
+// annotation says. A permitted call on an unannotated method still writes
+// nothing — the annotation governs ordinary use, and only that.
+//
+// This is the mutation check for the mark's ACL half. Break either end of it —
+// the common.SetPolicyDenied call inside acl.go's markPolicyDenied helper, or
+// the setter registration in audit.go — and the unannotated-denial subtest goes
+// red while the permitted ones stay green.
+//
+// The verdict it drives is the workspace mismatch at acl.go's isolation loop,
+// so deleting THAT `return markPolicyDenied` also reddens it. The other two
+// ACL sites — the IAM denial and the allow_missing create denial — are not
+// reached here. The gate's writer is pinned by
+// TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation and the clamp's by
+// TestMCPReadOnlyCeilingRefusesAWrite.
+func TestAuditRecordsACLDenial(t *testing.T) {
 	st := newAuditLiveStore(t)
 	auditIn := NewAuditInterceptor(st, "test-secret", &config.Profile{})
 	aclIn := NewACLInterceptor(st, "test-secret", nil /* iamManager: unreached on these paths */, &config.Profile{})
@@ -224,7 +236,7 @@ func TestInternalChainAuditRecordsACLDenial(t *testing.T) {
 			handlerReached = true
 			return connect.NewResponse(&v1pb.IamPolicy{}), nil
 		}
-		// The internal chain's order: audit outside, ACL inside.
+		// Both chains' order: audit outside, ACL inside.
 		chain := auditIn.WrapUnary(aclIn.WrapUnary(handler))
 		req := &specRequest{
 			AnyRequest: connect.NewRequest(&v1pb.SetIamPolicyRequest{Resource: resource}),
@@ -250,13 +262,20 @@ func TestInternalChainAuditRecordsACLDenial(t *testing.T) {
 		require.NotNil(t, row.Status, "the row must reflect the denial")
 		require.Equal(t, int32(connect.CodePermissionDenied), row.Status.Code)
 		require.Equal(t, "mcp:read-only", row.GetMcpDelegation().GetScope())
+		require.Equal(t, storepb.AuditLog_WARNING, row.Severity)
 	})
 
-	t.Run("a method opted out of auditing stays silent for denials too", func(t *testing.T) {
-		_, err := invoke(t, false, "corr-optout", "workspaces/other-ws")
+	t.Run("a method with no audit annotation records its denial", func(t *testing.T) {
+		// The rule decides, not the annotation. ACL marks the verdict and the
+		// audit interceptor records it, so the row exists even though needAudit
+		// is false for this method.
+		_, err := invoke(t, false, "corr-unannotated", "workspaces/other-ws")
 		require.Error(t, err)
-		require.Empty(t, findRowsByCorrelation(t, st, "corr-optout"),
-			"audit opt-out must behave consistently for permitted and denied calls")
+
+		rows := findRowsByCorrelation(t, st, "corr-unannotated")
+		require.Len(t, rows, 1, "a policy denial is recorded whatever the annotation says")
+		require.Equal(t, int32(connect.CodePermissionDenied), rows[0].Payload.Status.Code)
+		require.Equal(t, storepb.AuditLog_WARNING, rows[0].Payload.Severity)
 	})
 
 	t.Run("a permitted call is audited exactly once", func(t *testing.T) {
@@ -267,5 +286,16 @@ func TestInternalChainAuditRecordsACLDenial(t *testing.T) {
 		rows := findRowsByCorrelation(t, st, "corr-permitted")
 		require.Len(t, rows, 1)
 		require.Nil(t, rows[0].Payload.Status, "a permitted call keeps its success status")
+		require.Equal(t, storepb.AuditLog_INFO, rows[0].Payload.Severity,
+			"routine traffic is not a refusal")
+	})
+
+	t.Run("a permitted call on an unannotated method stays silent", func(t *testing.T) {
+		// The other half of the rule: the annotation still governs ordinary
+		// use. Only the denial above escapes it.
+		handlerReached, err := invoke(t, false, "corr-permitted-unannotated", "workspaces/"+auditTestWorkspace)
+		require.NoError(t, err)
+		require.True(t, handlerReached)
+		require.Empty(t, findRowsByCorrelation(t, st, "corr-permitted-unannotated"))
 	})
 }

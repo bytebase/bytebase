@@ -162,7 +162,7 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 		switch resource.Type {
 		case common.ResourceTypeWorkspace:
 			if resource.ID != workspaceID {
-				return connect.NewError(connect.CodePermissionDenied, errors.Errorf("workspace mismatch"))
+				return markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("workspace mismatch")))
 			}
 		default:
 		}
@@ -182,7 +182,7 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 		}); detailErr == nil {
 			err.AddDetail(detail)
 		}
-		return err
+		return markPolicyDenied(ctx, err)
 	}
 
 	// An Update that creates via allow_missing=true also needs the create permission.
@@ -218,11 +218,27 @@ func (in *ACLInterceptor) doACLCheck(ctx context.Context, request any, fullMetho
 			}); detailErr == nil {
 				err.AddDetail(detail)
 			}
-			return err
+			return markPolicyDenied(ctx, err)
 		}
 	}
 
 	return nil
+}
+
+// markPolicyDenied marks the request and returns the error unchanged.
+//
+// Called at each verdict, not once on every error leaving this interceptor:
+// doACLCheck also returns outages, which common.SetPolicyDenied excludes.
+//
+// DEFER: a streaming denial reaches this too, but nothing records it —
+// AuditInterceptor.WrapStreamingHandler returns early on !needAudit and never
+// registers a setter, and it writes its rows on Send, which a denial in
+// Receive never reaches. AdminExecute is the only streaming RPC and it is
+// audited, so the gap is one method's denials; upgrade when a second streaming
+// RPC lands or AdminExecute's denials are wanted.
+func markPolicyDenied(ctx context.Context, err error) error {
+	common.SetPolicyDenied(ctx)
+	return err
 }
 
 func resourceResolutionConnectError(err error) error {

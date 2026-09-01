@@ -307,14 +307,18 @@ func mcpSettingsFromContext(ctx context.Context) (*storepb.MCPSetting, bool) {
 //
 // A policy denial is recorded whatever the method's audit annotation says: the
 // gate marks the outcome and the audit interceptor records it (see
-// common.SetMCPPolicyDenied). 39 of the 113 refused methods carry no audit
-// annotation — the 4 FORBIDDEN ones that were silent before this gate
-// (Refresh, SwitchWorkspace, TestIdentityProvider, TestEmailSetting) plus 35
-// EXCLUDED ones — and TestEmailSetting and TestIdentityProvider are the rows an
-// operator would most want, since each would have carried a stored secret to an
-// address the agent chose. Recording requests that were never recorded is why
-// redaction has to cover more than the audited RPCs (audit.go): a denial must
-// not transcribe the secret it refused.
+// common.SetPolicyDenied). A substantial share of the refused methods carry no
+// audit annotation — the four FORBIDDEN ones that were silent before this gate
+// (Refresh, SwitchWorkspace, TestIdentityProvider, TestEmailSetting) and the
+// EXCLUDED ones alongside them — and TestEmailSetting and TestIdentityProvider
+// are the rows an operator would most want, since each would have carried a
+// stored secret to an address the agent chose. Recording requests that were
+// never recorded is why redaction has to cover more than the audited RPCs
+// (audit.go): a denial must not transcribe the secret it refused.
+//
+// testdata/mcp_method_classification.md carries the class totals but not the
+// audit annotation, so a live count of this population comes from the
+// descriptors.
 //
 // A ceiling the gate cannot act on splits in two, and the split is the same one
 // the /mcp connection gate makes. A stored value this build cannot interpret —
@@ -373,7 +377,7 @@ func (in *internalMCPGateInterceptor) WrapUnary(next connect.UnaryFunc) connect.
 			// wraps this one and reads the mark when the request comes back
 			// out. Only a verdict about the caller is marked — an unreadable
 			// ceiling and a broken chain are not policy denials.
-			common.SetMCPPolicyDenied(ctx)
+			common.SetPolicyDenied(ctx)
 		}
 		return nil, err
 	}

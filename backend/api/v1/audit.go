@@ -71,31 +71,38 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 			handlerAuditWorkspaceID = workspaceID
 		})
 
-		// The MCP ceiling gate sits inside this interceptor and refuses a call
-		// before it reaches its handler. needAudit reads only the method's own
-		// audit annotation, and 47 of the 121 methods the gate refuses carry
-		// none: the four FORBIDDEN ones that were silent before the gate grew
-		// (Refresh, SwitchWorkspace, TestIdentityProvider, TestEmailSetting)
-		// plus 43 EXCLUDED ones. Their denials would leave no trace at all.
-		// A policy denial is recorded whatever the annotation says: the
-		// annotation decides whether ordinary use of a method is interesting,
-		// and a refused agent is interesting either way. Only the internal MCP
-		// chain runs the gate, so the public chain is unaffected.
+		// A row is written when an access-control refusal marks itself, or
+		// when the method opts in. Three refusals mark: the ACL interceptor on
+		// both chains, and on the internal chain the MCP ceiling gate and the
+		// read-only clamp inside SQLService.Query. Marking is the
+		// discriminator, not where the code sits — the clamp is handler code.
+		// A method's own permission check inside its handler marks nothing, so
+		// its refusals ride the annotation like any other call.
+		//
+		// Unary only. WrapStreamingHandler below registers no setter and
+		// writes from Send, which a denial in Receive never reaches; the DEFER
+		// in acl.go carries the ceiling.
+		//
+		// The mark is what carries the denial half: needAudit reads the audit
+		// annotation and nothing else, and a substantial share of the refusable
+		// methods carry none (mcp_gate.go names the ones that matter most). The
+		// annotation decides whether ORDINARY use is interesting; a refused
+		// caller is interesting either way.
 		//
 		// Recording a request that was never recorded is why redaction has to
 		// cover more than the audited RPCs: a denial must not transcribe the
 		// secret it refused. Since redaction is driven by the field annotation
-		// rather than by a per-RPC redactor, a gate-refused method is covered
-		// the moment its fields are annotated — the population is the one above,
-		// not the four named methods.
-		mcpPolicyDenied := false
-		ctx = common.WithSetMCPPolicyDenied(ctx, func() { mcpPolicyDenied = true })
+		// rather than by a per-RPC redactor, a refused method is covered the
+		// moment its fields are annotated. The population is every v1 method, on
+		// either chain.
+		policyDenied := false
+		ctx = common.WithSetPolicyDenied(ctx, func() { policyDenied = true })
 
 		startTime := time.Now()
 		response, rerr := next(ctx, req)
 		latency := time.Since(startTime)
 
-		if needAudit(ctx) || mcpPolicyDenied {
+		if needAudit(ctx) || policyDenied {
 			var respMsg any
 			if !common.IsNil(response) {
 				respMsg = response.Any()
@@ -110,6 +117,7 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 				headers:                 req.Header(),
 				peerAddr:                req.Peer().Addr,
 				latency:                 latency,
+				policyDenied:            policyDenied,
 			}
 			if err := in.createAuditLog(ctx, entry); err != nil {
 				slog.Warn("audit interceptor: failed to create audit log", log.BBError(err), slog.String("method", req.Spec().Procedure))
@@ -206,6 +214,9 @@ type auditEntry struct {
 	headers                 http.Header
 	peerAddr                string
 	latency                 time.Duration
+	// policyDenied is set via common.SetPolicyDenied. With the method's audit
+	// annotation it decides whether there is a row, and it decides the severity.
+	policyDenied bool
 }
 
 func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) error {
@@ -356,6 +367,14 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 	auditStatus := redactAuditStatus(convertErrToStatus(e.rerr))
 	mcpDelegation := mcpDelegationFromAuthContext(authContext)
 
+	// status.code carries every failure, not only the refusals, so severity is
+	// what separates a refused caller from routine traffic. The recovery
+	// service already stamps WARNING for this class.
+	severity := storepb.AuditLog_INFO
+	if e.policyDenied {
+		severity = storepb.AuditLog_WARNING
+	}
+
 	createAuditLogCtx := context.WithoutCancel(ctx)
 	for _, ap := range parents {
 		resource := getRequestResource(e.request, e.method)
@@ -376,7 +395,7 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 			Parent:          ap.parent,
 			Method:          e.method,
 			Resource:        resource,
-			Severity:        storepb.AuditLog_INFO,
+			Severity:        severity,
 			User:            user,
 			Request:         requestString,
 			Response:        responseString,
