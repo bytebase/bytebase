@@ -19,7 +19,7 @@ func TestSavedQueryBindingsStoredShape(t *testing.T) {
 		INSERT INTO saved_query (resource_id, creator, project, name, statement)
 			VALUES ('saved-query-a', 'owner@example.com', 'project-a', 'Saved Query A', 'SELECT 1;');
 	`
-	fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
+	fixture := newStorePostgresFixture(t, seedSQL)
 
 	bindings := []*storepb.SavedQueryBinding{{
 		Level:   storepb.SavedQueryBinding_EDITOR,
@@ -102,7 +102,7 @@ func TestSavedQueryBindingsFollowGroupRename(t *testing.T) {
 		INSERT INTO saved_query (resource_id, creator, project, name, statement)
 			VALUES ('saved-query-a', 'owner@example.com', 'project-a', 'Saved Query A', 'SELECT 1;');
 	`
-	fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
+	fixture := newStorePostgresFixture(t, seedSQL)
 
 	emptyEtag, err := store.SavedQueryPolicyEtag(nil)
 	require.NoError(t, err)

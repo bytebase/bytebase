@@ -201,29 +201,16 @@ Read the canonical [store row-lock ordering](../backend/store/AGENTS.md#transact
 - Transaction-scoped advisory locks are acquired before row locks
 - Existing related rows are locked child-to-parent
 - Batches are locked in full primary-key order
-- Project-owned sibling branches follow the documented `DeleteProject` order
 - `nextProjectID` is called only after required existing-child locks
 - `nextProjectID` locks the project and requires it to be active before allocation;
   missing or deleted projects reject creation
 - `UPDATE`, `DELETE`, foreign-key checks, and conflicting upserts are included in the ordering analysis
 
-Row ordering prevents wait-for cycles on existing rows, but it cannot protect an
-absent child row. The `nextProjectID` active-project check covers only writers that
-call it, not every repository writer. For every new or modified writer of
-purge-managed data, define whether it requires an active project or merely an
-existing project, then serialize and validate that lifecycle policy against
-project deletion.
-
-If the transaction coordinates multiple rows or tables or races with project
-deletion, add deterministic real-PostgreSQL regression tests for both
-lock-acquisition directions. The tests must observe public store behavior, fail
-against the old behavior, and assert terminal outcomes. Verify that neither
-direction ends in a foreign-key failure; merely checking for the absence of
-SQLSTATE `40P01` is insufficient.
+If the transaction coordinates multiple rows or tables, add focused regression
+tests for credible ordinary contention paths and assert terminal outcomes.
 
 **STOP — do not proceed to PR creation if the transaction conflicts with the
-canonical order or lacks the required deterministic lock and lifecycle regression
-tests.**
+documented order or lacks required regression coverage.**
 
 ## 6. Image Compatibility Window
 

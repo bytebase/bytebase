@@ -459,10 +459,6 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		return errors.Wrap(err, "failed to begin transaction")
 	}
 	defer tx.Rollback()
-	if err := acquireProjectPurgeLock(ctx, tx, resourceID); err != nil {
-		return errors.Wrapf(err, "failed to lock project purge fence for %s", resourceID)
-	}
-
 	// Capture descendant cache keys before any descendant rows are removed so
 	// the post-commit invalidation is precise and does not require re-reading
 	// rows that no longer exist.
@@ -471,8 +467,7 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		return errors.Wrap(err, "failed to capture project descendant cache keys")
 	}
 
-	// Delete query history before locking database-scoped rows to preserve the
-	// canonical sibling-branch order.
+	// Delete query history before database-scoped rows.
 	q := qb.Q().Space("DELETE FROM query_history WHERE project = ?", resourceID)
 	sql, args, err := q.ToSQL()
 	if err != nil {
@@ -508,8 +503,6 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 					WHERE creator IN (SELECT email FROM service_account WHERE project = ? AND workspace = ?)
 					   OR creator IN (SELECT email FROM workload_identity WHERE project = ? AND workspace = ?)
 			   )
-			ORDER BY saved_query, principal
-			FOR UPDATE
 		)`, resourceID, workspace, resourceID, workspace, resourceID, workspace, resourceID, workspace)
 	sql, args, err = q.ToSQL()
 	if err != nil {
@@ -611,40 +604,7 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 		return errors.Wrapf(err, "failed to delete task_run for project %s", resourceID)
 	}
 
-	// Lock tasks in full primary-key order before deleting them. Pending Task Run
-	// creation uses the same order, so concurrent batches cannot form a wait cycle.
-	q = qb.Q().Space(`
-		SELECT project, id
-		FROM task
-		WHERE project = ?
-		ORDER BY project, id
-		FOR UPDATE`, resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build task lock query")
-	}
-	if err := func() error {
-		rows, err := tx.QueryContext(ctx, sql, args...)
-		if err != nil {
-			return errors.Wrapf(err, "failed to lock tasks for project %s", resourceID)
-		}
-		defer rows.Close()
-		for rows.Next() {
-			var lockedProjectID string
-			var lockedTaskID int64
-			if err := rows.Scan(&lockedProjectID, &lockedTaskID); err != nil {
-				return errors.Wrap(err, "failed to scan locked task")
-			}
-		}
-		if err := rows.Err(); err != nil {
-			return errors.Wrap(err, "failed to read locked tasks")
-		}
-		return nil
-	}(); err != nil {
-		return err
-	}
-
-	// Delete tasks in plans of this project after acquiring every task lock.
+	// Delete tasks in plans of this project.
 	q = qb.Q().Space("DELETE FROM task WHERE project = ?", resourceID)
 	sql, args, err = q.ToSQL()
 	if err != nil {
@@ -782,36 +742,6 @@ func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID 
 	}
 	if _, err := tx.ExecContext(ctx, sql, args...); err != nil {
 		return errors.Wrapf(err, "failed to delete workload identities for project %s", resourceID)
-	}
-
-	// Lock existing project instances after all of their descendants. A new
-	// project instance is rejected because this project is already soft-deleted.
-	q = qb.Q().Space(`
-		SELECT resource_id
-		FROM instance
-		WHERE project = ?
-		ORDER BY resource_id
-		FOR UPDATE
-	`, resourceID)
-	sql, args, err = q.ToSQL()
-	if err != nil {
-		return errors.Wrap(err, "failed to build project instance lock query")
-	}
-	if err := func() error {
-		rows, err := tx.QueryContext(ctx, sql, args...)
-		if err != nil {
-			return errors.Wrapf(err, "failed to lock project instances for project %s", resourceID)
-		}
-		defer rows.Close()
-		for rows.Next() {
-			var instanceID string
-			if err := rows.Scan(&instanceID); err != nil {
-				return errors.Wrap(err, "failed to scan locked project instance")
-			}
-		}
-		return rows.Err()
-	}(); err != nil {
-		return err
 	}
 
 	// Every project instance is deleted with its owner; they are never converted

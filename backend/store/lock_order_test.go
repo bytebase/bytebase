@@ -14,7 +14,7 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-type projectDeletionLockOrderFixture struct {
+type storePostgresFixture struct {
 	ctx   context.Context
 	db    *sql.DB
 	store *store.Store
@@ -23,7 +23,7 @@ type projectDeletionLockOrderFixture struct {
 	pgURL string
 }
 
-func newProjectDeletionLockOrderFixture(t *testing.T, seedSQL string) *projectDeletionLockOrderFixture {
+func newStorePostgresFixture(t *testing.T, seedSQL string) *storePostgresFixture {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	t.Cleanup(cancel)
@@ -47,163 +47,91 @@ func newProjectDeletionLockOrderFixture(t *testing.T, seedSQL string) *projectDe
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, s.Close()) })
 
-	return &projectDeletionLockOrderFixture{ctx: ctx, db: db, store: s, pgURL: pgURL}
+	return &storePostgresFixture{ctx: ctx, db: db, store: s, pgURL: pgURL}
 }
 
-func runWithConcurrentProjectDeletion(
-	t *testing.T,
-	seedSQL string,
-	blockedTable string,
-	advisoryLockID int,
-	operation func(context.Context, *store.Store) error,
-) error {
-	t.Helper()
-	fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
-	ctx, db, s := fixture.ctx, fixture.db, fixture.store
+const maintenanceLockWait = 10 * time.Second
 
-	lockConn, err := db.Conn(ctx)
+type maintenanceLockBarrier struct {
+	ctx  context.Context
+	conn *sql.Conn
+	id   int
+}
+
+func newMaintenanceLockBarrier(ctx context.Context, t *testing.T, db *sql.DB, id int) *maintenanceLockBarrier {
+	t.Helper()
+	conn, err := db.Conn(ctx)
 	require.NoError(t, err)
-	defer lockConn.Close()
-	_, err = lockConn.ExecContext(ctx, "SELECT pg_advisory_lock($1)", advisoryLockID)
+	_, err = conn.ExecContext(ctx, "SELECT pg_advisory_lock($1)", id)
 	require.NoError(t, err)
-	lockReleased := false
-	defer func() {
-		if !lockReleased {
-			_, _ = lockConn.ExecContext(context.Background(), "SELECT pg_advisory_unlock($1)", advisoryLockID)
-		}
-	}()
-	_, err = db.ExecContext(ctx, fmt.Sprintf(`
-		CREATE FUNCTION block_%[1]s_delete() RETURNS trigger AS $$
+	barrier := &maintenanceLockBarrier{ctx: ctx, conn: conn, id: id}
+	t.Cleanup(func() { barrier.release(t) })
+	return barrier
+}
+
+func (b *maintenanceLockBarrier) release(t *testing.T) {
+	t.Helper()
+	if b.conn == nil {
+		return
+	}
+	_, err := b.conn.ExecContext(b.ctx, "SELECT pg_advisory_unlock($1)", b.id)
+	require.NoError(t, err)
+	require.NoError(t, b.conn.Close())
+	b.conn = nil
+}
+
+func installMaintenanceLockBarrier(t *testing.T, db *sql.DB, id int, trigger string) {
+	t.Helper()
+	_, err := db.Exec(fmt.Sprintf(`
+		CREATE FUNCTION maintenance_lock_barrier_%[1]d() RETURNS trigger AS $$
 		BEGIN
-			PERFORM pg_advisory_xact_lock(%[2]d);
-			RETURN OLD;
+			PERFORM pg_advisory_xact_lock(%[1]d);
+			RETURN NEW;
 		END;
 		$$ LANGUAGE plpgsql;
-		CREATE TRIGGER block_%[1]s_delete
-		AFTER DELETE ON %[1]s
-		FOR EACH ROW EXECUTE FUNCTION block_%[1]s_delete();
-	`, blockedTable, advisoryLockID))
+		CREATE TRIGGER maintenance_lock_barrier_%[1]d
+		%[2]s EXECUTE FUNCTION maintenance_lock_barrier_%[1]d();
+	`, id, trigger))
 	require.NoError(t, err)
-
-	deleteResult := make(chan error, 1)
-	go func() {
-		deleteResult <- s.DeleteProject(ctx, "default", "project-a")
-	}()
-	require.Eventually(t, func() bool {
-		var waiting bool
-		err := db.QueryRowContext(ctx, `
-			SELECT EXISTS (
-				SELECT 1
-				FROM pg_locks
-				WHERE locktype = 'advisory'
-					AND objid = $1
-					AND NOT granted
-			)
-		`, advisoryLockID).Scan(&waiting)
-		return err == nil && waiting
-	}, 10*time.Second, 10*time.Millisecond, "project deletion should reach the blocked %s delete", blockedTable)
-
-	operationResult := make(chan error, 1)
-	go func() {
-		operationResult <- operation(ctx, s)
-	}()
-	require.Eventually(t, func() bool {
-		var waiting bool
-		err := db.QueryRowContext(ctx, `
-			WITH delete_backend AS (
-				SELECT pid
-				FROM pg_locks
-				WHERE locktype = 'advisory'
-					AND objid = $1
-					AND NOT granted
-				LIMIT 1
-			)
-			SELECT EXISTS (
-				SELECT 1
-				FROM pg_stat_activity AS activity, delete_backend
-				WHERE delete_backend.pid = ANY(pg_blocking_pids(activity.pid))
-			)
-		`, advisoryLockID).Scan(&waiting)
-		return err == nil && waiting
-	}, 10*time.Second, 10*time.Millisecond, "the competing operation should wait behind project deletion")
-
-	_, err = lockConn.ExecContext(ctx, "SELECT pg_advisory_unlock($1)", advisoryLockID)
-	require.NoError(t, err)
-	lockReleased = true
-	deleteErr := <-deleteResult
-	operationErr := <-operationResult
-	require.NoError(t, deleteErr)
-	return operationErr
 }
 
-func runWithCreationBeforeProjectDeletion(
-	t *testing.T,
-	seedSQL string,
-	lockedChildTable string,
-	operation func(context.Context, *store.Store) error,
-) (error, error) {
+func waitForMaintenanceBarrier(ctx context.Context, t *testing.T, db *sql.DB, id int) {
 	t.Helper()
-	fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
-	ctx, db, s := fixture.ctx, fixture.db, fixture.store
-
-	lockConn, err := db.Conn(ctx)
-	require.NoError(t, err)
-	defer lockConn.Close()
-	lockTx, err := lockConn.BeginTx(ctx, nil)
-	require.NoError(t, err)
-	lockReleased := false
-	defer func() {
-		if !lockReleased {
-			_ = lockTx.Rollback()
-		}
-	}()
-
-	var lockBackendPID int
-	require.NoError(t, lockTx.QueryRowContext(ctx, "SELECT pg_backend_pid()").Scan(&lockBackendPID))
-	var lockedProjectID string
-	require.NoError(t, lockTx.QueryRowContext(ctx, `
-		SELECT resource_id
-		FROM project
-		WHERE resource_id = 'project-a'
-		FOR UPDATE
-	`).Scan(&lockedProjectID))
-	require.Equal(t, "project-a", lockedProjectID)
-
-	operationResult := make(chan error, 1)
-	go func() {
-		operationResult <- operation(ctx, s)
-	}()
-
-	var operationBackendPID int
-	require.Eventually(t, func() bool {
-		return db.QueryRowContext(ctx, `
-			SELECT COALESCE((
-				SELECT pid
-				FROM pg_stat_activity
-				WHERE $1 = ANY(pg_blocking_pids(pid))
-				ORDER BY pid
-				LIMIT 1
-			), 0)
-		`, lockBackendPID).Scan(&operationBackendPID) == nil && operationBackendPID != 0
-	}, 10*time.Second, 10*time.Millisecond, "creation should lock %s, then wait for the project row", lockedChildTable)
-
-	deleteResult := make(chan error, 1)
-	go func() {
-		deleteResult <- s.DeleteProject(ctx, "default", "project-a")
-	}()
 	require.Eventually(t, func() bool {
 		var waiting bool
-		err := db.QueryRowContext(ctx, `
-			SELECT EXISTS (
-				SELECT 1
-				FROM pg_stat_activity
-				WHERE $1 = ANY(pg_blocking_pids(pid))
-			)
-		`, operationBackendPID).Scan(&waiting)
+		err := db.QueryRowContext(ctx, `SELECT EXISTS (
+			SELECT 1 FROM pg_locks WHERE locktype = 'advisory' AND objid = $1 AND NOT granted
+		)`, id).Scan(&waiting)
 		return err == nil && waiting
-	}, 10*time.Second, 10*time.Millisecond, "project deletion should pass empty child cleanup, then wait for the locked %s", lockedChildTable)
+	}, maintenanceLockWait, 10*time.Millisecond)
+}
 
-	require.NoError(t, lockTx.Commit())
-	lockReleased = true
-	return <-operationResult, <-deleteResult
+func maintenanceBarrierWaitingPID(ctx context.Context, t *testing.T, db *sql.DB, id int) int {
+	t.Helper()
+	var pid int
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT pid FROM pg_locks WHERE locktype = 'advisory' AND objid = $1 AND NOT granted LIMIT 1
+	`, id).Scan(&pid))
+	return pid
+}
+
+func waitForBackendBlockedByPID(ctx context.Context, t *testing.T, db *sql.DB, pid int) {
+	t.Helper()
+	require.Eventually(t, func() bool {
+		var waiting bool
+		err := db.QueryRowContext(ctx, `SELECT EXISTS (
+			SELECT 1 FROM pg_stat_activity WHERE $1 = ANY(pg_blocking_pids(pid))
+		)`, pid).Scan(&waiting)
+		return err == nil && waiting
+	}, maintenanceLockWait, 10*time.Millisecond)
+}
+
+func requireMaintenanceResult(t *testing.T, result <-chan error) {
+	t.Helper()
+	select {
+	case err := <-result:
+		require.NoError(t, err)
+	case <-time.After(maintenanceLockWait):
+		t.Fatal("timed out waiting for maintenance operation")
+	}
 }

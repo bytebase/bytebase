@@ -48,7 +48,7 @@ func TestSetIamPolicyCompareAndSwap(t *testing.T) {
 		INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent)
 			VALUES ('default', 'PROJECT', 'projects/project-a', 'IAM', '` + ownerAndDeveloperPolicy + `', FALSE);
 	`
-	fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
+	fixture := newStorePostgresFixture(t, seedSQL)
 	ctx, s := fixture.ctx, fixture.store
 	resource := common.FormatProject("project-a")
 
@@ -123,7 +123,7 @@ func TestSetIamPolicyComparesAgainstTheRowNotTheCache(t *testing.T) {
 		INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent)
 			VALUES ('default', 'PROJECT', 'projects/project-a', 'IAM', '` + ownerAndDeveloperPolicy + `', FALSE);
 	`
-	fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
+	fixture := newStorePostgresFixture(t, seedSQL)
 	ctx := fixture.ctx
 
 	cached, err := store.New(ctx, fixture.pgURL, true)
@@ -187,7 +187,7 @@ func TestSetIamPolicyValidatesAgainstTheReplacedPolicy(t *testing.T) {
 		INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent)
 			VALUES ('default', 'PROJECT', 'projects/project-a', 'IAM', '` + ownerAndDeveloperPolicy + `', FALSE);
 	`
-	fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
+	fixture := newStorePostgresFixture(t, seedSQL)
 	ctx, s := fixture.ctx, fixture.store
 
 	var seen []string
@@ -222,7 +222,7 @@ func TestSetIamPolicyIsScopedToItsWorkspace(t *testing.T) {
 			VALUES ('default', 'PROJECT', 'projects/project-a', 'IAM', '` + ownerAndDeveloperPolicy + `', FALSE),
 			       ('other', 'PROJECT', 'projects/project-a', 'IAM', '` + ownerAndDeveloperPolicy + `', FALSE);
 	`
-	fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
+	fixture := newStorePostgresFixture(t, seedSQL)
 	ctx, s := fixture.ctx, fixture.store
 
 	_, _, err := s.SetIamPolicy(ctx, &store.SetIamPolicyMessage{
@@ -242,7 +242,7 @@ func TestSetIamPolicyIsScopedToItsWorkspace(t *testing.T) {
 // A resource whose IAM policy was never written has no row to lock, so the
 // first write creates one rather than failing the compare.
 func TestSetIamPolicyCreatesTheFirstPolicy(t *testing.T) {
-	fixture := newProjectDeletionLockOrderFixture(t, "")
+	fixture := newStorePostgresFixture(t, "")
 	ctx, s := fixture.ctx, fixture.store
 
 	absent, err := s.GetProjectIamPolicy(ctx, "default", "project-a")
@@ -267,7 +267,7 @@ func TestSetIamPolicyCreatesTheFirstPolicy(t *testing.T) {
 // policy, and now does it inside the locked transaction. Its merge semantics
 // must be unchanged by that move.
 func TestPatchWorkspaceIamPolicyMerges(t *testing.T) {
-	fixture := newProjectDeletionLockOrderFixture(t, "")
+	fixture := newStorePostgresFixture(t, "")
 	ctx, s := fixture.ctx, fixture.store
 
 	_, err := s.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
@@ -320,7 +320,7 @@ func TestPatchIamPolicyMergesIntoTheStoredPolicy(t *testing.T) {
 		INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent)
 			VALUES ('default', 'PROJECT', 'projects/project-a', 'IAM', '` + ownerAndDeveloperPolicy + `', FALSE);
 	`
-	fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
+	fixture := newStorePostgresFixture(t, seedSQL)
 	ctx := fixture.ctx
 	resource := common.FormatProject("project-a")
 
@@ -365,7 +365,7 @@ func TestPatchIamPolicyRollsBackAFailedMutation(t *testing.T) {
 		INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent)
 			VALUES ('default', 'PROJECT', 'projects/project-a', 'IAM', '` + ownerAndDeveloperPolicy + `', FALSE);
 	`
-	fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
+	fixture := newStorePostgresFixture(t, seedSQL)
 	ctx, s := fixture.ctx, fixture.store
 
 	boom := errors.New("boom")
@@ -391,7 +391,7 @@ func TestSetIamPolicyDoesNotPublishItsOwnWrite(t *testing.T) {
 		INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent)
 			VALUES ('default', 'PROJECT', 'projects/project-a', 'IAM', '` + ownerAndDeveloperPolicy + `', FALSE);
 	`
-	fixture := newProjectDeletionLockOrderFixture(t, seedSQL)
+	fixture := newStorePostgresFixture(t, seedSQL)
 	ctx := fixture.ctx
 
 	cached, err := store.New(ctx, fixture.pgURL, true)

@@ -171,7 +171,7 @@ func (s *Store) CreateRevision(ctx context.Context, revision *RevisionMessage) (
 		return nil, errors.Wrapf(err, "failed to marshal revision payload")
 	}
 
-	err = s.withDatabasePurgeFence(ctx, revision.InstanceID, revision.DatabaseName, "", nil, func(tx *sql.Tx, _ *databaseOwnership) error {
+	err = s.withDatabaseWrite(ctx, revision.InstanceID, revision.DatabaseName, nil, func(tx *sql.Tx, _ *databaseOwnership) error {
 		return tx.QueryRowContext(ctx, query,
 			revision.InstanceID,
 			revision.DatabaseName,

@@ -786,8 +786,8 @@ func TestCreateSavedQueryRejectsArchivedProject(t *testing.T) {
 	}))
 	a.NoError(err)
 
-	// Resource resolution returns archived projects, so without an explicit
-	// check the create would reach the store's purge fence and read as a 500.
+	// Resource resolution returns archived projects, so reject them before the
+	// store write.
 	_, err = ctl.savedQueryServiceClient.CreateSavedQuery(ctx, connect.NewRequest(&v1pb.CreateSavedQueryRequest{
 		Parent: projectResp.Msg.Name,
 		SavedQuery: &v1pb.SavedQuery{

@@ -156,43 +156,25 @@ PostgreSQL holds row locks until a transaction ends. Transactions that acquire t
    - `changelog -> sync_history -> db -> instance -> project`
    - `revision -> db -> instance -> project`
    - `db_schema -> db -> instance -> project`
+
+   These workflow chains are writer-to-writer correctness invariants. The
+   best-effort lifecycle policy below does not relax them; in particular,
+   preserve `issue -> plan` and `plan_check_run -> plan` ordering.
 3. Identify project-scoped rows with every scope column plus either the remaining primary-key columns or every remaining column of a declared non-partial unique key. Verify alternate keys in `LATEST.sql`. Lock batches in full primary-key order; project-scoped `(project, id)` batches therefore use that order, not `id` alone.
 4. Treat locks acquired by `UPDATE`, `DELETE`, foreign-key checks, and `INSERT ... ON CONFLICT DO UPDATE` as part of the order. An upsert that can update an existing row is not a new-row-only insert.
 5. `nextProjectID` locks `project` and requires it to be active before allocating an ID. Call it after locking any existing descendants, and do not lock an existing descendant afterward. Creation is rejected when the project is missing or deleted.
 
-Row ordering prevents wait-for cycles on existing rows. It cannot protect an
-absent child row because there is no row to lock before a concurrent purge passes
-that branch. The active-project check in `nextProjectID` covers this case only for
-writers that call it; it is not a repository-wide purge fence because other
-writers bypass `nextProjectID`.
+Row ordering prevents wait-for cycles on existing rows. Keep transactions short
+and preserve this order whether locks are acquired explicitly or by `UPDATE` and
+`DELETE` statements.
 
-Database creation, database-sync, batch database updates, task-run creation,
-sheet creation, and Query History writers, together with direct instance
-archive and direct project/instance purge, additionally take the matching
-transaction-scoped purge fence before any row lock. This closes absent-descendant gaps; writers then
-retain the normal child-to-parent row-lock order. Database sync may continue for
-an archived project while its row exists, but never through a soft-deleted
-instance. Direct instance archive and restore fail while any targeting task run
-is pending, available, or running.
+Project and instance archive and physical purge are point-in-time lifecycle
+operations. Writers validate the current state required for their own work, but
+do not coordinate with archive or purge. A rare concurrent writer may fail with
+a PostgreSQL conflict or commit based on state it observed before the lifecycle
+transition; these are accepted best-effort outcomes and the user may retry.
 
-Every new or modified writer of purge-managed data must define its project
-lifecycle policy: require an active project for new resources, or require only an
-existing project when deleted-project continuation is intentional. Serialize and
-validate that policy against project deletion before writing the managed data.
-
-Transactions spanning project- or instance-owned sibling branches follow this canonical order:
-
-```text
-query_history -> policy -> saved_query_organizer -> saved_query
--> issue_comment -> review_run -> issue -> plan_webhook_delivery -> plan_check_run
--> task_run_log -> task_run -> task -> plan -> access_grant -> release
--> db_group -> changelog -> sync_history -> revision -> db_schema -> db
--> sheet_blob_ref -> project_webhook -> service_account -> workload_identity -> instance -> project
-```
-
-Update this list, `DeleteProject`, and `DeleteInstance` together. A transaction that needs another sibling branch must establish its position here before implementation. When one table is touched by multiple predicates, keep those mutations contiguous at that table's position. Keep transactions short and preserve this order whether locks are acquired explicitly or by `UPDATE` and `DELETE` statements.
-
-Examples:
+Examples of ordinary transaction ordering:
 
 - Pending Task Run creation: existing `task` rows ordered by `(project, id)`, then `project`, then new `task_run` rows.
 - Plan Check Run refresh: existing `plan_check_run`, then `plan`, then `project`, then the upsert.
@@ -200,7 +182,5 @@ Examples:
 - Task skipping: existing `task` rows ordered by `(project, id)`; it does not lock `task_run` rows.
 
 When adding or changing a transaction that coordinates multiple rows or tables,
-add deterministic real-PostgreSQL regression tests for both lock-acquisition
-directions. Assert the terminal outcomes, including that neither direction ends
-in a foreign-key failure; merely checking for the absence of SQLSTATE `40P01` is
-insufficient.
+add deterministic real-PostgreSQL regression tests for its ordinary contention
+paths and assert the terminal outcomes.
