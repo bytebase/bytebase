@@ -96,7 +96,7 @@ export function Feature() {
 
   test("flags radii outside the approved corner vocabulary", () => {
     const violations = scanSource(
-      '<div className="rounded-none rounded-xs rounded-sm rounded-full rounded-t-none rounded-r-xs rounded-b-sm rounded-l-full rounded rounded-t rounded-md rounded-lg rounded-3xl md:rounded-t-lg hover:!rounded-lg rounded-[3px] rounded-[length:3px]" />;',
+      '<div className="rounded-none rounded-xs rounded-sm rounded-full rounded-t-none rounded-r-xs rounded-b-sm rounded-l-full rounded rounded-t rounded-md rounded-lg rounded-3xl md:rounded-t-lg hover:!rounded-lg rounded-[3px] rounded-[length:3px] rounded-(--card-radius)" />;',
       FEATURE_FILE
     );
 
@@ -123,9 +123,13 @@ export function Feature() {
           rule: "no-off-scale-radius",
           token: "rounded-[length:3px]",
         }),
+        expect.objectContaining({
+          rule: "no-off-scale-radius",
+          token: "rounded-(--card-radius)",
+        }),
       ])
     );
-    expect(violations).toHaveLength(9);
+    expect(violations).toHaveLength(10);
   });
 
   test("flags inline React radius properties", () => {
@@ -160,6 +164,23 @@ const styles = {
     expect(violations).toHaveLength(3);
   });
 
+  test("flags shorthand inline React radius properties", () => {
+    const violations = scanSource(
+      `
+const borderRadius = "12px";
+const styles = { borderRadius };
+`,
+      FEATURE_FILE
+    );
+
+    expect(violations).toEqual([
+      expect.objectContaining({
+        rule: "no-off-scale-radius",
+        token: "borderRadius",
+      }),
+    ]);
+  });
+
   test("enforces the CSS radius vocabulary", () => {
     const violations = scanCssSource(
       `
@@ -173,6 +194,7 @@ const styles = {
   border-radius: 4px;
   border-top-left-radius: 50%;
   border-bottom-right-radius: 0 4px;
+  border-bottom-left-radius: var(--card-radius);
   border-start-start-radius: var(--radius-md);
 }
 .utility {
@@ -183,6 +205,10 @@ const styles = {
     );
 
     expect(violations).toEqual([
+      expect.objectContaining({
+        rule: "no-off-scale-radius",
+        token: "border-bottom-left-radius: var(--card-radius)",
+      }),
       expect.objectContaining({
         path: "src/assets/css/example.css",
         rule: "no-off-scale-radius",

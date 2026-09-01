@@ -200,7 +200,7 @@ const rulesForToken = (token) => {
   if (utility) {
     const bareRadius = /^rounded(?:-[trblse]{1,2})?$/.test(utility);
     const radiusMatch = utility.match(
-      /^rounded(?:-[trblse]{1,2})?-(\[[^\]]+\]|[a-z0-9.]+)$/
+      /^rounded(?:-[trblse]{1,2})?-(\[[^\]]+\]|\([^)]+\)|[a-z0-9.]+)$/
     );
     if (
       bareRadius ||
@@ -291,7 +291,9 @@ const propertyName = (node) =>
   ts.isIdentifier(node) || ts.isStringLiteral(node) ? node.text : "";
 
 const scanInlineRadius = (node, path, counts) => {
-  if (!ts.isPropertyAssignment(node)) return;
+  if (!ts.isPropertyAssignment(node) && !ts.isShorthandPropertyAssignment(node)) {
+    return;
+  }
   const name = propertyName(node.name);
   if (
     !inlineRadiusPropertyPattern.test(name) &&
