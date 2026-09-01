@@ -12,7 +12,7 @@ where noted. Fixed findings are removed and listed at the end.
 |---|---|---|
 | T12 | Anonymous callers can read your LDAP config | MED |
 | T18c i–iii | Half-finished delete, broken filter, unpaginated list, existence-leaking error codes | MED |
-| T18c-iv | `BatchDeleteProjects` checks its permission against the workspace, not the named projects | LOW |
+| T18c-iv | `BatchDeleteProjects` checks its permission against the workspace, not the named projects — latent, no predefined role reaches it | LOW |
 
 ---
 
@@ -48,10 +48,17 @@ it: the RPC is not a `BatchGet` (so the `names` branch does not apply), has no `
 returns `""` and `bb.projects.delete` is checked against the workspace. `DeleteProject`, same
 permission, resolves `name` to project scope.
 
-Fail-closed, so not a hole: a Project Owner is allowed on the singular path and denied on the batch
-one. But it is the same silent-convention-miss as `UpdateDatabaseCatalog` pointing the other way,
-and nothing in the proto says the batch form needs workspace-level rights.
-`acl.go:708-739`, `project_service.proto:394-400`
+Fail-closed, and latent: no predefined role reaches the mismatch. `bb.projects.delete` is held only
+by Workspace Admin and Workspace DBA, both of which satisfy the workspace-scoped check anyway, and
+Project Owner holds `bb.projects.update` but not `.delete` — so `DeleteProject` denies it too. It
+takes a custom role containing `bb.projects.delete` bound at project scope, which nothing prevents:
+`CreateRole` validates only that each permission exists. Such a principal deletes one project at a
+time and is denied the batch form.
+
+Worth recording anyway, because it is the same silent convention miss as `UpdateDatabaseCatalog`
+pointing the other way — the scope is decided by which field names the request happens to use, not
+by anything stated — and nothing in the proto says the batch form needs workspace-level rights.
+`acl.go:708-739`, `project_service.proto:394-400`, `predefined_roles.go:97`, `:249`, `:406`
 
 ---
 
