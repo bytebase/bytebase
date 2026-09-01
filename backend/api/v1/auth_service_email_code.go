@@ -417,20 +417,16 @@ func sendEmailVerificationCode(ctx context.Context, stores *store.Store, secret,
 		return errors.Errorf("cannot found email config for workspace %v", workspaceID)
 	}
 
-	// Claim before writing: the upsert below replaces the stored hash, so a claim
-	// made after it would let an exhausted budget destroy a code the recipient
-	// still holds and send no replacement. The read-only cooldown check keeps the
-	// budget off requests the upsert would skip anyway, so one address cannot
-	// drain it; the upsert re-checks the cooldown, so losing that race costs a
-	// slot and never a code.
+	// Claim before writing anything: the upsert below replaces the stored hash, so
+	// claiming after it would let an exhausted budget destroy a code the recipient
+	// still holds and send no replacement.
+	//
+	// Every request spends a slot, including one the cooldown will skip. Checking
+	// the cooldown first would be cheaper but cannot be done atomically with the
+	// claim, so concurrent requests would pass it together and spend slots anyway,
+	// and it would make the answer depend on whether that recipient has a recent
+	// code. Draining the budget costs the same number of requests either way.
 	if budgetKey != "" {
-		existing, err := stores.GetEmailVerificationCode(ctx, email, purpose)
-		if err != nil {
-			return errors.Wrap(err, "failed to read verification code")
-		}
-		if existing != nil && time.Since(existing.LastSentAt) < emailCodeResendCooldown {
-			return nil // cooldown active — silent skip, as the upsert would be
-		}
 		granted, err := stores.ClaimSendBudget(ctx, budgetKey, storepb.LoginAttemptKind_EMAIL_CODE_SEND, budgetMax, emailCodeSendWindow)
 		if err != nil {
 			return errors.Wrap(err, "failed to claim send budget")

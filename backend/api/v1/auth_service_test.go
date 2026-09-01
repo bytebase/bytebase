@@ -711,7 +711,7 @@ func TestSendEmailLoginCodeBudgetKeepsExistingCode(t *testing.T) {
 		return err
 	}
 
-	// A held code past its resend cooldown: the state the upsert would replace.
+	// A held code the upsert would replace once the cooldown passes.
 	const victim = "victim@victim.example"
 	const heldHash = "held-code-hash"
 	sent, err := stores.UpsertEmailVerificationCodeIfCooldownExpired(ctx, &store.EmailVerificationCodeMessage{
@@ -736,4 +736,20 @@ func TestSendEmailLoginCodeBudgetKeepsExistingCode(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, row, "a refused budget must not delete the code the recipient is holding")
 	require.Equal(t, heldHash, row.CodeHash, "a refused budget must not replace the code the recipient is holding")
+
+	// Holding a recent code must not change the answer either: the budget is
+	// claimed before the cooldown is consulted, so an address mid-cooldown is
+	// refused exactly as a fresh one is. Otherwise an exhausted bucket would let
+	// a caller probe who had just been sent a code.
+	sent, err = stores.UpsertEmailVerificationCodeIfCooldownExpired(ctx, &store.EmailVerificationCodeMessage{
+		Email:      "recent@victim.example",
+		Purpose:    storepb.EmailVerificationCodePurpose_LOGIN,
+		CodeHash:   "recent-code-hash",
+		ExpiresAt:  time.Now().Add(emailCodeExpiry),
+		LastSentAt: time.Now(),
+	}, emailCodeResendCooldown)
+	require.NoError(t, err)
+	require.True(t, sent)
+	require.Equal(t, connect.CodeResourceExhausted, connect.CodeOf(send("recent@victim.example")),
+		"an address mid-cooldown must be answered as any other is")
 }
