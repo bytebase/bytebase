@@ -87,6 +87,8 @@ const sql = `SELECT "${col}" FROM "${schema}"."${table}" WHERE "${pkColumn}" = '
 
 Use `ControlOrMeta+a` (portable), not `Meta+a` (Mac-only) or `Control+a` (Linux/Windows-only).
 
+**Exception — Monaco editors:** Monaco derives its `CtrlCmd` modifier from the user agent, and Playwright's headless Chromium reports a Windows UA on every host, while Playwright resolves `ControlOrMeta` from the host OS. For Monaco's own keybindings (select-all, editor actions) use `Control+…`; `ControlOrMeta+…` is silently ignored on macOS hosts (Linux CI hosts happen to agree, so CI does not catch it). Browser-native editing commands (copy/paste) follow the host OS instead, so don't use a key for them at all — call `document.execCommand("copy")` from `page.evaluate` right after a keypress (see `SchemaEditorPage.planStatementText`).
+
 ### 7. Prefer `data-testid` over class-based selectors
 
 Tailwind class substrings like `[class*='border border-gray']` break on any CSS refactor. If you need a new locator, add a `data-testid` attribute to the component. Existing class-based selectors are technical debt.

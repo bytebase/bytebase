@@ -15593,7 +15593,7 @@ Format: users/{email} </p></td>
                   <td>users</td>
                   <td><a href="#bytebase.v1.User">User</a></td>
                   <td>repeated</td>
-                  <td><p>The users from the specified request. </p></td>
+                  <td><p>One user per requested name, in the same order as `names`. </p></td>
                 </tr>
               
             </tbody>
@@ -16401,6 +16401,8 @@ Permissions required: bb.users.get</p></td>
                 <td><a href="#bytebase.v1.BatchGetUsersResponse">BatchGetUsersResponse</a></td>
                 <td><p>Get the users in batch.
 Any authenticated user can batch get users.
+One resource per requested name, in request order. The first name that
+does not resolve fails the whole call (AIP-231: no partial response).
 Permissions required: bb.users.get</p></td>
               </tr>
             
@@ -21796,7 +21798,7 @@ Use &#34;-&#34; as wildcard to batch get databases across parent. </p></td>
                   <td>databases</td>
                   <td><a href="#bytebase.v1.Database">Database</a></td>
                   <td>repeated</td>
-                  <td><p>The databases from the specified request. </p></td>
+                  <td><p>One database per requested name, in the same order as `names`. </p></td>
                 </tr>
               
             </tbody>
@@ -25343,7 +25345,9 @@ Permissions required: bb.databases.get</p></td>
                 <td><a href="#bytebase.v1.BatchGetDatabasesRequest">BatchGetDatabasesRequest</a></td>
                 <td><a href="#bytebase.v1.BatchGetDatabasesResponse">BatchGetDatabasesResponse</a></td>
                 <td><p>Retrieves multiple databases by their names.
-Permissions required: bb.databases.get</p></td>
+One resource per requested name, in request order. The first name that
+does not resolve fails the whole call (AIP-231: no partial response).
+Permissions required: bb.databases.get (on each named database&#39;s project)</p></td>
               </tr>
             
               <tr>
@@ -25760,7 +25764,7 @@ Format: groups/{email} </p></td>
                   <td>groups</td>
                   <td><a href="#bytebase.v1.Group">Group</a></td>
                   <td>repeated</td>
-                  <td><p>The groups from the specified request. </p></td>
+                  <td><p>One group per requested name, in the same order as `names`. </p></td>
                 </tr>
               
             </tbody>
@@ -26137,6 +26141,8 @@ Permissions required: bb.groups.get OR caller is the group member</p></td>
                 <td><a href="#bytebase.v1.BatchGetGroupsResponse">BatchGetGroupsResponse</a></td>
                 <td><p>Gets multiple groups in a single request.
 Group members or users with bb.groups.get permission can get the group.
+One resource per requested name, in request order. The first name that
+does not resolve fails the whole call (AIP-231: no partial response).
 Permissions required: bb.groups.get OR caller is the group member</p></td>
               </tr>
             
@@ -28287,7 +28293,7 @@ Format: projects/{project} </p></td>
                   <td>projects</td>
                   <td><a href="#bytebase.v1.Project">Project</a></td>
                   <td>repeated</td>
-                  <td><p>The projects from the specified request. </p></td>
+                  <td><p>One project per requested name, in the same order as `names`. </p></td>
                 </tr>
               
             </tbody>
@@ -29224,7 +29230,9 @@ Permissions required: bb.projects.get</p></td>
                 <td><a href="#bytebase.v1.BatchGetProjectsRequest">BatchGetProjectsRequest</a></td>
                 <td><a href="#bytebase.v1.BatchGetProjectsResponse">BatchGetProjectsResponse</a></td>
                 <td><p>BatchGetProjects retrieves multiple projects by their names.
-Permissions required: bb.projects.get</p></td>
+One resource per requested name, in request order. The first name that
+does not resolve fails the whole call (AIP-231: no partial response).
+Permissions required: bb.projects.get (on each named project)</p></td>
               </tr>
             
               <tr>
@@ -36456,7 +36464,9 @@ nothing to get it by. </p></td>
                   <td>capability</td>
                   <td><a href="#bytebase.v1.MCPSetting.Capability">MCPSetting.Capability</a></td>
                   <td></td>
-                  <td><p>The ceiling in force for this workspace. </p></td>
+                  <td><p>The ceiling in force for this workspace. A value no row in modes serves,
+CAPABILITY_UNSPECIFIED included, means no ceiling could be resolved from
+the stored row and every MCP connection is refused. </p></td>
                 </tr>
               
                 <tr>

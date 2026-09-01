@@ -50,6 +50,8 @@ type UserServiceClient interface {
 	GetUser(ctx context.Context, in *GetUserRequest, opts ...grpc.CallOption) (*User, error)
 	// Get the users in batch.
 	// Any authenticated user can batch get users.
+	// One resource per requested name, in request order. The first name that
+	// does not resolve fails the whole call (AIP-231: no partial response).
 	// Permissions required: bb.users.get
 	BatchGetUsers(ctx context.Context, in *BatchGetUsersRequest, opts ...grpc.CallOption) (*BatchGetUsersResponse, error)
 	// Get the current authenticated user.
@@ -300,6 +302,8 @@ type UserServiceServer interface {
 	GetUser(context.Context, *GetUserRequest) (*User, error)
 	// Get the users in batch.
 	// Any authenticated user can batch get users.
+	// One resource per requested name, in request order. The first name that
+	// does not resolve fails the whole call (AIP-231: no partial response).
 	// Permissions required: bb.users.get
 	BatchGetUsers(context.Context, *BatchGetUsersRequest) (*BatchGetUsersResponse, error)
 	// Get the current authenticated user.

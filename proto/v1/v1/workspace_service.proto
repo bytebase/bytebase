@@ -149,7 +149,9 @@ message MCPInfo {
   // nothing to get it by.
   string workspace = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // The ceiling in force for this workspace.
+  // The ceiling in force for this workspace. A value no row in modes serves,
+  // CAPABILITY_UNSPECIFIED included, means no ceiling could be resolved from
+  // the stored row and every MCP connection is refused.
   MCPSetting.Capability capability = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // What each ceiling serves, including the one in force, so an admin can

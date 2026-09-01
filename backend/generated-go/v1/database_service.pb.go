@@ -622,7 +622,7 @@ func (x *BatchGetDatabasesRequest) GetNames() []string {
 
 type BatchGetDatabasesResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The databases from the specified request.
+	// One database per requested name, in the same order as `names`.
 	Databases     []*Database `protobuf:"bytes,1,rep,name=databases,proto3" json:"databases,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

@@ -521,7 +521,15 @@ test.describe("access-grant drawer picker finds a database beyond the first page
       }
     }
 
-    // 2. Sync the instance and poll until Bytebase has discovered them all.
+    // 2. Widen the sample instance's sync allowlist to cover the new databases,
+    //    then sync. The project-scoped sample instance carries an explicit
+    //    `sync_databases` allowlist and the schema syncer skips any discovered
+    //    database not on it — without this the poll below can never see them.
+    const { databases: listed } = await env.api.listDatabases(env.instance);
+    const listedShort = (listed ?? []).map((d) => d.name.split("/").pop()!);
+    await env.api.updateInstanceSyncDatabases(env.instance, [
+      ...new Set([...listedShort, ...dbShortNames]),
+    ]);
     await env.api.syncInstance(env.instance);
     await expect
       .poll(

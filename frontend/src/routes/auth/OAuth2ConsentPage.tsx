@@ -1,12 +1,13 @@
 import { createContextValues } from "@connectrpc/connect";
-import { Building2, Check, Loader2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { Building2, Loader2 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { workspaceServiceClientConnect } from "@/api";
 import { silentContextKey } from "@/api/context-key";
 import { router } from "@/app/router";
 import { AUTH_SIGNIN_MODULE } from "@/app/router/handles";
 import { BytebaseLogo } from "@/components/BytebaseLogo";
+import { readConsentCeiling } from "@/components/mcp/mcpPolicy";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -21,6 +22,8 @@ import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
 import type { MCPInfo } from "@/types/proto-es/v1/workspace_service_pb";
 import { MCPConsentCeiling } from "./MCPConsentCeiling";
 import { MCPConsentDisabled } from "./MCPConsentDisabled";
+import type { UndisclosedReason } from "./MCPConsentUndisclosed";
+import { MCPConsentUndisclosed } from "./MCPConsentUndisclosed";
 
 const AUTHORIZE_URL = "/api/oauth2/authorize";
 
@@ -33,7 +36,11 @@ export function OAuth2ConsentPage() {
   // What the workspace's MCP ceiling lets this session do. Every grant this
   // server issues is an MCP grant, so the ceiling decides the POST too — this
   // is the same answer, shown before the person presses Approve.
+  //
+  // Undefined is not "no policy": it is this page not holding one, which is
+  // the state Allow is withheld under.
   const [mcpInfo, setMcpInfo] = useState<MCPInfo | undefined>(undefined);
+  const [retrying, setRetrying] = useState(false);
 
   const loadWorkspace = useAppStore((state) => state.loadWorkspace);
   const loadWorkspaceList = useAppStore((state) => state.loadWorkspaceList);
@@ -65,6 +72,30 @@ export function OAuth2ConsentPage() {
   // values this page posts back, so this page only has to not drop them.
   const resource = (query.resource as string) || "";
   const scope = (query.scope as string) || "";
+
+  // Silent: the interceptor's toast names a status code, not a fix, and the
+  // card this feeds says the same thing in words the person can act on.
+  const readCeiling = useCallback(async (): Promise<MCPInfo | undefined> => {
+    try {
+      return await workspaceServiceClientConnect.getMCPInfo(
+        {},
+        {
+          contextValues: createContextValues().set(silentContextKey, true),
+          // The shared transport has no deadline. Without one a stalled read
+          // leaves the page on its spinner with no way forward and no way out.
+          timeoutMs: 10_000,
+        }
+      );
+    } catch {
+      return undefined;
+    }
+  }, []);
+
+  const retryCeiling = async () => {
+    setRetrying(true);
+    setMcpInfo(await readCeiling());
+    setRetrying(false);
+  };
 
   const initRef = useRef(false);
   useEffect(() => {
@@ -114,30 +145,10 @@ export function OAuth2ConsentPage() {
         setLoading(false);
         return;
       }
-      // A ceiling this build cannot read refuses this call. That is the one
-      // policy state the backend still has to be the first to say, so the card
-      // falls back to its ceiling-free shape and the POST refuses with its own
-      // page. Silent: the interceptor's toast would be the only thing on
-      // screen about it, and it names a status code, not a fix.
-      try {
-        setMcpInfo(
-          await workspaceServiceClientConnect.getMCPInfo(
-            {},
-            {
-              contextValues: createContextValues().set(silentContextKey, true),
-              // The shared transport has no deadline. This request only
-              // enriches the card, so a stalled one must not leave the page on
-              // its spinner with no Allow and no Deny.
-              timeoutMs: 10_000,
-            }
-          )
-        );
-      } catch {
-        setMcpInfo(undefined);
-      }
+      setMcpInfo(await readCeiling());
       setLoading(false);
     })();
-  }, []);
+  }, [readCeiling]);
 
   // Prefetch workspace list on SaaS so the picker can render. This runs in
   // its own effect keyed on `isSaaSMode` because actuator's serverInfo may
@@ -245,9 +256,29 @@ export function OAuth2ConsentPage() {
     form.submit();
   };
 
-  // Four states share this slot. Early returns rather than a ternary chain,
-  // so each is named where it is decided and the consent card reads as the
-  // ordinary case it is.
+  // The way out of each state that has one. The two an admin has to repair get
+  // nothing: re-reading returns the same broken value, and a button that
+  // changes nothing reads as a promise that it might.
+  const retryFor = (reason: UndisclosedReason): (() => void) | undefined => {
+    switch (reason) {
+      case "unknown":
+        // Wrapped rather than passed: retryCeiling is async, and handing a
+        // Promise-returning function to a `() => void` prop floats the promise
+        // (SonarCloud S6544). readCeiling swallows its own failures, so there
+        // is no rejection to route anywhere.
+        return () => {
+          void retryCeiling();
+        };
+      case "outdated":
+        // Only a fresh bundle can name this ceiling. Re-reading the policy
+        // would return the same value this page has no word for.
+        return () => globalThis.location.reload();
+      default:
+        return undefined;
+    }
+  };
+
+  // Five branches share this slot and only the last offers a grant.
   const consentBody = () => {
     if (loading) {
       return (
@@ -266,16 +297,31 @@ export function OAuth2ConsentPage() {
         </div>
       );
     }
-    if (mcpInfo?.capability === MCPSetting_Capability.DISABLED) {
+    // Allow renders only below this line, and only where the page holds a
+    // ceiling the server serves and this bundle can name (BOT-106).
+    const ceiling = readConsentCeiling(mcpInfo);
+    if (ceiling.kind !== "mode") {
+      return (
+        <MCPConsentUndisclosed
+          reason={ceiling.kind}
+          workspaceCard={workspaceCard}
+          onRetry={retryFor(ceiling.kind)}
+          retrying={retrying}
+          // Not goBack: history leaves the client waiting on a callback that
+          // never comes. A deny POST returns access_denied to the registered
+          // redirect_uri, which is the answer the OAuth client is blocked on.
+          onDismiss={deny}
+          dismissing={submitting}
+        />
+      );
+    }
+    if (ceiling.info.capability === MCPSetting_Capability.DISABLED) {
       return (
         <MCPConsentDisabled
           workspaceTitle={
             currentWorkspace?.title || currentWorkspace?.name || ""
           }
           workspaceCard={workspaceCard}
-          // Not goBack: history leaves the client waiting on a callback that
-          // never comes. A deny POST returns access_denied to the registered
-          // redirect_uri, which is the answer the OAuth client is blocked on.
           onDismiss={deny}
           dismissing={submitting}
         />
@@ -292,28 +338,7 @@ export function OAuth2ConsentPage() {
           </p>
         </div>
         {workspaceCard}
-        {/* Only the two ceilings this bundle can describe. A value it
-              cannot name — a newer release's, against a cached page — would
-              otherwise fall through to the read-only wording and understate
-              what was approved. It gets the same card as no policy data,
-              which BOT-106 covers. */}
-        {mcpInfo &&
-        (mcpInfo.capability === MCPSetting_Capability.READ_ONLY ||
-          mcpInfo.capability === MCPSetting_Capability.READ_WRITE) ? (
-          <MCPConsentCeiling info={mcpInfo} />
-        ) : (
-          <div className="bg-control-bg rounded-sm p-4">
-            <p className="text-sm text-control-light mb-2">
-              {t("oauth2.consent.permissions")}
-            </p>
-            <ul className="text-sm text-main flex flex-col gap-1">
-              <li className="flex items-center gap-2">
-                <Check className="size-4 text-success" />
-                {t("oauth2.consent.permission-access")}
-              </li>
-            </ul>
-          </div>
-        )}
+        <MCPConsentCeiling info={ceiling.info} />
         <form method="POST" action={AUTHORIZE_URL}>
           <input type="hidden" name="client_id" value={clientId} />
           <input type="hidden" name="redirect_uri" value={redirectUri} />

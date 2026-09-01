@@ -66,7 +66,7 @@ export declare const BatchGetDatabasesRequestSchema: GenMessage<BatchGetDatabase
  */
 export declare type BatchGetDatabasesResponse = Message<"bytebase.v1.BatchGetDatabasesResponse"> & {
   /**
-   * The databases from the specified request.
+   * One database per requested name, in the same order as `names`.
    *
    * @generated from field: repeated bytebase.v1.Database databases = 1;
    */
@@ -3224,7 +3224,9 @@ export declare const DatabaseService: GenService<{
   },
   /**
    * Retrieves multiple databases by their names.
-   * Permissions required: bb.databases.get
+   * One resource per requested name, in request order. The first name that
+   * does not resolve fails the whole call (AIP-231: no partial response).
+   * Permissions required: bb.databases.get (on each named database's project)
    *
    * @generated from rpc bytebase.v1.DatabaseService.BatchGetDatabases
    */

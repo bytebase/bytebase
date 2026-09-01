@@ -120,7 +120,7 @@ func (x *BatchGetUsersRequest) GetNames() []string {
 
 type BatchGetUsersResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The users from the specified request.
+	// One user per requested name, in the same order as `names`.
 	Users         []*User `protobuf:"bytes,1,rep,name=users,proto3" json:"users,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

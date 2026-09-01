@@ -5421,7 +5421,7 @@ SettingService manages workspace-level settings and configurations.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| users | [User](#bytebase-v1-User) | repeated | The users from the specified request. |
+| users | [User](#bytebase-v1-User) | repeated | One user per requested name, in the same order as `names`. |
 
 
 
@@ -5785,7 +5785,7 @@ UserService manages user accounts and authentication.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetUser | [GetUserRequest](#bytebase-v1-GetUserRequest) | [User](#bytebase-v1-User) | Get the user. Any authenticated user can get the user. Permissions required: bb.users.get |
-| BatchGetUsers | [BatchGetUsersRequest](#bytebase-v1-BatchGetUsersRequest) | [BatchGetUsersResponse](#bytebase-v1-BatchGetUsersResponse) | Get the users in batch. Any authenticated user can batch get users. Permissions required: bb.users.get |
+| BatchGetUsers | [BatchGetUsersRequest](#bytebase-v1-BatchGetUsersRequest) | [BatchGetUsersResponse](#bytebase-v1-BatchGetUsersResponse) | Get the users in batch. Any authenticated user can batch get users. One resource per requested name, in request order. The first name that does not resolve fails the whole call (AIP-231: no partial response). Permissions required: bb.users.get |
 | GetCurrentUser | [.google.protobuf.Empty](#google-protobuf-Empty) | [User](#bytebase-v1-User) | Get the current authenticated user. Permissions required: None |
 | ListUsers | [ListUsersRequest](#bytebase-v1-ListUsersRequest) | [ListUsersResponse](#bytebase-v1-ListUsersResponse) | List all users. Any authenticated user can list users. Permissions required: bb.users.list |
 | CreateUser | [CreateUserRequest](#bytebase-v1-CreateUserRequest) | [User](#bytebase-v1-User) | Creates a user in the caller&#39;s workspace (admin action, self-hosted only). In SaaS mode, admins should add users via workspace IAM policy instead. Permissions required: bb.users.create |
@@ -7649,7 +7649,7 @@ InstanceService manages database instances and their connections.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| databases | [Database](#bytebase-v1-Database) | repeated | The databases from the specified request. |
+| databases | [Database](#bytebase-v1-Database) | repeated | One database per requested name, in the same order as `names`. |
 
 
 
@@ -8902,7 +8902,7 @@ DatabaseService manages databases and their schemas.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetDatabase | [GetDatabaseRequest](#bytebase-v1-GetDatabaseRequest) | [Database](#bytebase-v1-Database) | Retrieves a database by name. Permissions required: bb.databases.get |
-| BatchGetDatabases | [BatchGetDatabasesRequest](#bytebase-v1-BatchGetDatabasesRequest) | [BatchGetDatabasesResponse](#bytebase-v1-BatchGetDatabasesResponse) | Retrieves multiple databases by their names. Permissions required: bb.databases.get |
+| BatchGetDatabases | [BatchGetDatabasesRequest](#bytebase-v1-BatchGetDatabasesRequest) | [BatchGetDatabasesResponse](#bytebase-v1-BatchGetDatabasesResponse) | Retrieves multiple databases by their names. One resource per requested name, in request order. The first name that does not resolve fails the whole call (AIP-231: no partial response). Permissions required: bb.databases.get (on each named database&#39;s project) |
 | ListDatabases | [ListDatabasesRequest](#bytebase-v1-ListDatabasesRequest) | [ListDatabasesResponse](#bytebase-v1-ListDatabasesResponse) | Lists databases in a project, instance, or workspace. Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent) |
 | UpdateDatabase | [UpdateDatabaseRequest](#bytebase-v1-UpdateDatabaseRequest) | [Database](#bytebase-v1-Database) | Updates database properties such as labels and project assignment. Permissions required: bb.databases.update |
 | BatchUpdateDatabases | [BatchUpdateDatabasesRequest](#bytebase-v1-BatchUpdateDatabasesRequest) | [BatchUpdateDatabasesResponse](#bytebase-v1-BatchUpdateDatabasesResponse) | Updates multiple databases in a single batch operation. Permissions required: bb.databases.update |
@@ -8949,7 +8949,7 @@ Response message for batch getting groups.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| groups | [Group](#bytebase-v1-Group) | repeated | The groups from the specified request. |
+| groups | [Group](#bytebase-v1-Group) | repeated | One group per requested name, in the same order as `names`. |
 
 
 
@@ -9125,7 +9125,7 @@ GroupService manages user groups for organizing users and permissions.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetGroup | [GetGroupRequest](#bytebase-v1-GetGroupRequest) | [Group](#bytebase-v1-Group) | Gets a group by name. Group members or users with bb.groups.get permission can get the group. Permissions required: bb.groups.get OR caller is the group member |
-| BatchGetGroups | [BatchGetGroupsRequest](#bytebase-v1-BatchGetGroupsRequest) | [BatchGetGroupsResponse](#bytebase-v1-BatchGetGroupsResponse) | Gets multiple groups in a single request. Group members or users with bb.groups.get permission can get the group. Permissions required: bb.groups.get OR caller is the group member |
+| BatchGetGroups | [BatchGetGroupsRequest](#bytebase-v1-BatchGetGroupsRequest) | [BatchGetGroupsResponse](#bytebase-v1-BatchGetGroupsResponse) | Gets multiple groups in a single request. Group members or users with bb.groups.get permission can get the group. One resource per requested name, in request order. The first name that does not resolve fails the whole call (AIP-231: no partial response). Permissions required: bb.groups.get OR caller is the group member |
 | ListGroups | [ListGroupsRequest](#bytebase-v1-ListGroupsRequest) | [ListGroupsResponse](#bytebase-v1-ListGroupsResponse) | Lists all groups in the workspace. Permissions required: bb.groups.list |
 | CreateGroup | [CreateGroupRequest](#bytebase-v1-CreateGroupRequest) | [Group](#bytebase-v1-Group) | Creates a new group. Permissions required: bb.groups.create |
 | UpdateGroup | [UpdateGroupRequest](#bytebase-v1-UpdateGroupRequest) | [Group](#bytebase-v1-Group) | Updates a group. Group owners or users with bb.groups.update permission can update. Permissions required: bb.groups.update OR caller is group owner When allow_missing=true, also requires: bb.groups.create |
@@ -9932,7 +9932,7 @@ Activity types for webhook notifications.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| projects | [Project](#bytebase-v1-Project) | repeated | The projects from the specified request. |
+| projects | [Project](#bytebase-v1-Project) | repeated | One project per requested name, in the same order as `names`. |
 
 
 
@@ -10304,7 +10304,7 @@ ProjectService manages projects that group databases and changes.
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
 | GetProject | [GetProjectRequest](#bytebase-v1-GetProjectRequest) | [Project](#bytebase-v1-Project) | GetProject retrieves a project by name. Users with &#34;bb.projects.get&#34; permission on the workspace or the project owner can access this method. Permissions required: bb.projects.get |
-| BatchGetProjects | [BatchGetProjectsRequest](#bytebase-v1-BatchGetProjectsRequest) | [BatchGetProjectsResponse](#bytebase-v1-BatchGetProjectsResponse) | BatchGetProjects retrieves multiple projects by their names. Permissions required: bb.projects.get |
+| BatchGetProjects | [BatchGetProjectsRequest](#bytebase-v1-BatchGetProjectsRequest) | [BatchGetProjectsResponse](#bytebase-v1-BatchGetProjectsResponse) | BatchGetProjects retrieves multiple projects by their names. One resource per requested name, in request order. The first name that does not resolve fails the whole call (AIP-231: no partial response). Permissions required: bb.projects.get (on each named project) |
 | ListProjects | [ListProjectsRequest](#bytebase-v1-ListProjectsRequest) | [ListProjectsResponse](#bytebase-v1-ListProjectsResponse) | Lists all projects in the workspace with optional filtering. Permissions required: bb.projects.list |
 | SearchProjects | [SearchProjectsRequest](#bytebase-v1-SearchProjectsRequest) | [SearchProjectsResponse](#bytebase-v1-SearchProjectsResponse) | Searches for projects with advanced filtering capabilities. Permissions required: bb.projects.get (or project-level bb.projects.get for specific projects) |
 | CreateProject | [CreateProjectRequest](#bytebase-v1-CreateProjectRequest) | [Project](#bytebase-v1-Project) | Creates a new project in the workspace. Permissions required: bb.projects.create |
@@ -12855,7 +12855,7 @@ cannot describe the rules of the build before it.
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | workspace | [string](#string) |  | The workspace this describes. Format: workspaces/{workspace}. Not this message&#39;s own resource name — MCPInfo is not a named resource and there is nothing to get it by. |
-| capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  | The ceiling in force for this workspace. |
+| capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  | The ceiling in force for this workspace. A value no row in modes serves, CAPABILITY_UNSPECIFIED included, means no ceiling could be resolved from the stored row and every MCP connection is refused. |
 | modes | [MCPCapabilityMode](#bytebase-v1-MCPCapabilityMode) | repeated | What each ceiling serves, including the one in force, so an admin can compare the choices rather than only read the current answer. |
 | methods | [MCPMethod](#bytebase-v1-MCPMethod) | repeated | Every API method some ceiling serves. A mode serves a method when the method&#39;s class is one of that mode&#39;s served_classes, which is the ceiling rule the gate evaluates. Methods no ceiling serves are absent.
 

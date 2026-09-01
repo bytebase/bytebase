@@ -74,9 +74,6 @@ func (s *ProjectService) BatchGetProjects(ctx context.Context, req *connect.Requ
 		if err != nil {
 			return nil, err
 		}
-		if project.Deleted {
-			continue
-		}
 		projects = append(projects, convertToProject(project))
 	}
 	return connect.NewResponse(&v1pb.BatchGetProjectsResponse{Projects: projects}), nil

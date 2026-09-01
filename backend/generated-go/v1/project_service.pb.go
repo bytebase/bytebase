@@ -189,7 +189,7 @@ func (x *BatchGetProjectsRequest) GetNames() []string {
 
 type BatchGetProjectsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// The projects from the specified request.
+	// One project per requested name, in the same order as `names`.
 	Projects      []*Project `protobuf:"bytes,1,rep,name=projects,proto3" json:"projects,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache

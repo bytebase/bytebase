@@ -83,7 +83,7 @@ func (s *UserService) GetUser(ctx context.Context, request *connect.Request[v1pb
 
 // BatchGetUsers get users in batch.
 func (s *UserService) BatchGetUsers(ctx context.Context, request *connect.Request[v1pb.BatchGetUsersRequest]) (*connect.Response[v1pb.BatchGetUsersResponse], error) {
-	// Extract and validate emails from names
+	// Extract and validate emails from names.
 	emails := make([]string, 0, len(request.Msg.Names))
 	for _, name := range request.Msg.Names {
 		email, err := common.GetUserEmail(name)
@@ -105,10 +105,18 @@ func (s *UserService) BatchGetUsers(ctx context.Context, request *connect.Reques
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to batch get users"))
 	}
-
-	// Build a map for quick lookup
-	response := &v1pb.BatchGetUsersResponse{}
+	// The store returns its own order; answer in request order.
+	userByEmail := make(map[string]*store.UserMessage, len(users))
 	for _, user := range users {
+		userByEmail[strings.ToLower(user.Email)] = user
+	}
+
+	response := &v1pb.BatchGetUsersResponse{}
+	for i, name := range request.Msg.Names {
+		user, ok := userByEmail[strings.ToLower(emails[i])]
+		if !ok {
+			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("user %q not found", name))
+		}
 		v1User, err := convertToUser(ctx, s.iamManager, user)
 		if err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert user"))

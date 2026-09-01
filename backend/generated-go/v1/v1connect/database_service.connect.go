@@ -80,7 +80,9 @@ type DatabaseServiceClient interface {
 	// Permissions required: bb.databases.get
 	GetDatabase(context.Context, *connect.Request[v1.GetDatabaseRequest]) (*connect.Response[v1.Database], error)
 	// Retrieves multiple databases by their names.
-	// Permissions required: bb.databases.get
+	// One resource per requested name, in request order. The first name that
+	// does not resolve fails the whole call (AIP-231: no partial response).
+	// Permissions required: bb.databases.get (on each named database's project)
 	BatchGetDatabases(context.Context, *connect.Request[v1.BatchGetDatabasesRequest]) (*connect.Response[v1.BatchGetDatabasesResponse], error)
 	// Lists databases in a project, instance, or workspace.
 	// Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)
@@ -298,7 +300,9 @@ type DatabaseServiceHandler interface {
 	// Permissions required: bb.databases.get
 	GetDatabase(context.Context, *connect.Request[v1.GetDatabaseRequest]) (*connect.Response[v1.Database], error)
 	// Retrieves multiple databases by their names.
-	// Permissions required: bb.databases.get
+	// One resource per requested name, in request order. The first name that
+	// does not resolve fails the whole call (AIP-231: no partial response).
+	// Permissions required: bb.databases.get (on each named database's project)
 	BatchGetDatabases(context.Context, *connect.Request[v1.BatchGetDatabasesRequest]) (*connect.Response[v1.BatchGetDatabasesResponse], error)
 	// Lists databases in a project, instance, or workspace.
 	// Permissions required: bb.projects.get (for project parent), bb.databases.list (for workspace parent), or bb.instances.get (for instance parent)

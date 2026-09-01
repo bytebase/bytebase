@@ -60,6 +60,8 @@ type GroupServiceClient interface {
 	GetGroup(context.Context, *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.Group], error)
 	// Gets multiple groups in a single request.
 	// Group members or users with bb.groups.get permission can get the group.
+	// One resource per requested name, in request order. The first name that
+	// does not resolve fails the whole call (AIP-231: no partial response).
 	// Permissions required: bb.groups.get OR caller is the group member
 	BatchGetGroups(context.Context, *connect.Request[v1.BatchGetGroupsRequest]) (*connect.Response[v1.BatchGetGroupsResponse], error)
 	// Lists all groups in the workspace.
@@ -175,6 +177,8 @@ type GroupServiceHandler interface {
 	GetGroup(context.Context, *connect.Request[v1.GetGroupRequest]) (*connect.Response[v1.Group], error)
 	// Gets multiple groups in a single request.
 	// Group members or users with bb.groups.get permission can get the group.
+	// One resource per requested name, in request order. The first name that
+	// does not resolve fails the whole call (AIP-231: no partial response).
 	// Permissions required: bb.groups.get OR caller is the group member
 	BatchGetGroups(context.Context, *connect.Request[v1.BatchGetGroupsRequest]) (*connect.Response[v1.BatchGetGroupsResponse], error)
 	// Lists all groups in the workspace.

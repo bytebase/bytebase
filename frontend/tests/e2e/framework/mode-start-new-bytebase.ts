@@ -305,14 +305,46 @@ export async function startServer(): Promise<{
   };
 }
 
-export function stopServer(): void {
+export async function stopServer(): Promise<void> {
   if (serverProcess?.pid) {
-    try {
-      process.kill(-serverProcess.pid, "SIGTERM");
-    } catch {
-      /* already dead */
-    }
+    const child = serverProcess;
     serverProcess = undefined;
+    // Wait for the server to actually exit before removing its data
+    // directory. Deleting it while the embedded Postgres is still shutting down
+    // makes the checkpointer PANIC ("could not fsync pg_xact/0000") and leaves
+    // the metadata-Postgres socket (/tmp/.s.PGSQL.<PORT+2>) behind, which then
+    // trips the next boot's port probe. The wait must be asynchronous: Node
+    // reaps the child on the event loop, so a blocking poll of `kill(pid, 0)`
+    // would only ever see a zombie and run to its deadline. Bounded (ref'd
+    // timers keep the loop alive): a server that ignores SIGTERM for 15 s is
+    // SIGKILLed as a group and given a short grace so the directory is never
+    // deleted under a live Postgres.
+    const exited = () => child.exitCode !== null || child.signalCode !== null;
+    const waitExit = (ms: number) =>
+      new Promise<void>((resolve) => {
+        if (exited()) {
+          resolve();
+          return;
+        }
+        const timer = setTimeout(resolve, ms);
+        child.once("exit", () => {
+          clearTimeout(timer);
+          resolve();
+        });
+      });
+    const signalGroup = (signal: NodeJS.Signals) => {
+      try {
+        process.kill(-child.pid!, signal);
+      } catch {
+        /* already dead */
+      }
+    };
+    signalGroup("SIGTERM");
+    await waitExit(15_000);
+    if (!exited()) {
+      signalGroup("SIGKILL");
+      await waitExit(5_000);
+    }
   }
   if (tempDir && fs.existsSync(tempDir)) {
     fs.rmSync(tempDir, { recursive: true, force: true });

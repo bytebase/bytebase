@@ -176,7 +176,7 @@ test.describe("Review action and approval flow (CUJ A)", () => {
 
   test.beforeAll(async () => {
     await setupApproval(ONE_STEP_RULE);
-    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+    const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Review A",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_a_${Date.now()} TEXT;`,
     });
@@ -203,7 +203,7 @@ test.describe("Approve via the Review popover (CUJ B)", () => {
 
   test.beforeAll(async () => {
     await setupApproval(ONE_STEP_RULE);
-    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+    const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Review B",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_b_${Date.now()} TEXT;`,
     });
@@ -234,7 +234,7 @@ test.describe("Reject requires a comment; banner + in-stream decision (CUJ C)", 
 
   test.beforeAll(async () => {
     await setupApproval(ONE_STEP_RULE);
-    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+    const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Review C",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_c_${Date.now()} TEXT;`,
     });
@@ -274,7 +274,7 @@ test.describe("Creator re-requests review without changes (CUJ D)", () => {
 
   test.beforeAll(async () => {
     await setupApproval(ONE_STEP_RULE);
-    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+    const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Review D",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_d_${Date.now()} TEXT;`,
     });
@@ -301,7 +301,7 @@ test.describe("Comment composer: draft persistence + post (CUJ E)", () => {
 
   test.beforeAll(async () => {
     await setupApproval(ONE_STEP_RULE);
-    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+    const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Review E",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_e_${Date.now()} TEXT;`,
     });
@@ -340,7 +340,7 @@ test.describe("Long-history timeline fold (CUJ J)", () => {
 
   test.beforeAll(async () => {
     await setupApproval(ONE_STEP_RULE);
-    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+    const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Review J",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_j_${Date.now()} TEXT;`,
     });
@@ -385,7 +385,7 @@ test.describe("Permission boundary: non-candidate cannot review but can comment"
 
   test.beforeAll(async ({ browser }) => {
     await setupApproval(ONE_STEP_RULE);
-    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+    const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Review Perm",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_perm_${Date.now()} TEXT;`,
     });
@@ -438,7 +438,7 @@ test.describe("inline comment edit shows the edited marker in place (BYT-9746)",
 
   test.beforeAll(async () => {
     await setupApproval(ONE_STEP_RULE);
-    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+    const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Review O7",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_o7_${Date.now()} TEXT;`,
     });
@@ -485,7 +485,7 @@ test.describe("Bypass when approved but checks failed (CUJ F)", () => {
       "value.workspace_approval",
     );
     await attachErrorConfig();
-    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+    const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Review F",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_f_${Date.now()} TEXT;`,
       runChecks: true,
@@ -532,7 +532,7 @@ test.describe("Waiting-review bypass link is gated by requireIssueApproval (CUJ 
       { workspaceApproval: { rules: [ONE_STEP_RULE] } },
       "value.workspace_approval",
     );
-    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+    const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Review G",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_g_${Date.now()} TEXT;`,
       runChecks: true,
@@ -578,7 +578,7 @@ test.describe("A mandatory project gate hard-blocks the bypass confirm", () => {
       "value.workspace_approval",
     );
     await attachErrorConfig();
-    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+    const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Review Gate",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_gate_${Date.now()} TEXT;`,
       runChecks: true,
@@ -627,7 +627,7 @@ test.describe("confirm sheet shows the skipped state in its review box (BYT-9745
       "value.workspace_approval",
     );
     await attachErrorConfig();
-    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+    const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Review O5",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_o5_${Date.now()} TEXT;`,
       runChecks: true,
@@ -656,7 +656,7 @@ test.describe("Long approval flow adaptive rendering (CUJ I)", () => {
 
   test.beforeAll(async () => {
     await setupApproval(FIVE_STEP_RULE);
-    const seeded = await seedReviewPlan(env.api, env.project, env.database, {
+    const seeded = await seedReviewPlan(env, page, {
       prefix: "E2E Review Flow",
       sql: `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_flow_${Date.now()} TEXT;`,
     });

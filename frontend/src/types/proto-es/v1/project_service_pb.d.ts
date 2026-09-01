@@ -57,7 +57,7 @@ export declare const BatchGetProjectsRequestSchema: GenMessage<BatchGetProjectsR
  */
 export declare type BatchGetProjectsResponse = Message<"bytebase.v1.BatchGetProjectsResponse"> & {
   /**
-   * The projects from the specified request.
+   * One project per requested name, in the same order as `names`.
    *
    * @generated from field: repeated bytebase.v1.Project projects = 1;
    */
@@ -918,7 +918,9 @@ export declare const ProjectService: GenService<{
   },
   /**
    * BatchGetProjects retrieves multiple projects by their names.
-   * Permissions required: bb.projects.get
+   * One resource per requested name, in request order. The first name that
+   * does not resolve fails the whole call (AIP-231: no partial response).
+   * Permissions required: bb.projects.get (on each named project)
    *
    * @generated from rpc bytebase.v1.ProjectService.BatchGetProjects
    */

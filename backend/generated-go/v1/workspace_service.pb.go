@@ -196,7 +196,9 @@ type MCPInfo struct {
 	// message's own resource name — MCPInfo is not a named resource and there is
 	// nothing to get it by.
 	Workspace string `protobuf:"bytes,1,opt,name=workspace,proto3" json:"workspace,omitempty"`
-	// The ceiling in force for this workspace.
+	// The ceiling in force for this workspace. A value no row in modes serves,
+	// CAPABILITY_UNSPECIFIED included, means no ceiling could be resolved from
+	// the stored row and every MCP connection is refused.
 	Capability MCPSetting_Capability `protobuf:"varint,2,opt,name=capability,proto3,enum=bytebase.v1.MCPSetting_Capability" json:"capability,omitempty"`
 	// What each ceiling serves, including the one in force, so an admin can
 	// compare the choices rather than only read the current answer.

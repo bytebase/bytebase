@@ -55,7 +55,7 @@ export declare const BatchGetUsersRequestSchema: GenMessage<BatchGetUsersRequest
  */
 export declare type BatchGetUsersResponse = Message<"bytebase.v1.BatchGetUsersResponse"> & {
   /**
-   * The users from the specified request.
+   * One user per requested name, in the same order as `names`.
    *
    * @generated from field: repeated bytebase.v1.User users = 1;
    */
@@ -725,6 +725,8 @@ export declare const UserService: GenService<{
   /**
    * Get the users in batch.
    * Any authenticated user can batch get users.
+   * One resource per requested name, in request order. The first name that
+   * does not resolve fails the whole call (AIP-231: no partial response).
    * Permissions required: bb.users.get
    *
    * @generated from rpc bytebase.v1.UserService.BatchGetUsers
