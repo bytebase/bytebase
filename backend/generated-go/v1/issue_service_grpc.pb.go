@@ -90,6 +90,9 @@ type IssueServiceClient interface {
 	// Triggers a review run. The slot is reset unconditionally: a RUNNING
 	// execution is superseded (its completion is fenced off), the attempt
 	// number is bumped, and the returned run is AVAILABLE.
+	// Review results are not returned by this RPC and have no read RPC yet:
+	// findings will surface as issue comments once the review comment
+	// integration lands. The returned run carries execution status only.
 	// The audit log is the only record of who triggered a run.
 	// Permissions required: bb.reviewRuns.run
 	RunReview(ctx context.Context, in *RunReviewRequest, opts ...grpc.CallOption) (*ReviewRun, error)
@@ -298,6 +301,9 @@ type IssueServiceServer interface {
 	// Triggers a review run. The slot is reset unconditionally: a RUNNING
 	// execution is superseded (its completion is fenced off), the attempt
 	// number is bumped, and the returned run is AVAILABLE.
+	// Review results are not returned by this RPC and have no read RPC yet:
+	// findings will surface as issue comments once the review comment
+	// integration lands. The returned run carries execution status only.
 	// The audit log is the only record of who triggered a run.
 	// Permissions required: bb.reviewRuns.run
 	RunReview(context.Context, *RunReviewRequest) (*ReviewRun, error)
