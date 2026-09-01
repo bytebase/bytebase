@@ -1068,7 +1068,15 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.ReviewRun"><span class="badge">M</span>ReviewRun</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.RoleGrant"><span class="badge">M</span>RoleGrant</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.RunReviewRequest"><span class="badge">M</span>RunReviewRequest</a>
                 </li>
               
                 <li>
@@ -1098,6 +1106,14 @@
               
                 <li>
                   <a href="#bytebase.v1.IssueComment.Approval.Status"><span class="badge">E</span>IssueComment.Approval.Status</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ReviewRun.Status"><span class="badge">E</span>ReviewRun.Status</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.ReviewRun.Type"><span class="badge">E</span>ReviewRun.Type</a>
                 </li>
               
               
@@ -12590,6 +12606,70 @@ Format: projects/{project}/issues/{issue} </p></td>
 
         
       
+        <h3 id="bytebase.v1.ReviewRun">ReviewRun</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
+The {reviewRun} id is the reviewer: &#34;rule&#34; or &#34;guideline&#34;. The name
+addresses a slot, not an execution. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>type</td>
+                  <td><a href="#bytebase.v1.ReviewRun.Type">ReviewRun.Type</a></td>
+                  <td></td>
+                  <td><p>Derived from the name. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>status</td>
+                  <td><a href="#bytebase.v1.ReviewRun.Status">ReviewRun.Status</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+                <tr>
+                  <td>create_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>When the current run was triggered. Reset on every re-run. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_time</td>
+                  <td><a href="#google.protobuf.Timestamp">google.protobuf.Timestamp</a></td>
+                  <td></td>
+                  <td><p>When the run reached a terminal status. Unset while AVAILABLE or
+RUNNING. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>error</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Fatal execution error, set if and only if status is FAILED: the review
+failed to execute (a platform problem, never the SQL — SQL problems are
+review results on a DONE run). </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.RoleGrant">RoleGrant</h3>
         <p></p>
 
@@ -12628,6 +12708,30 @@ Format: users/{email}. </p></td>
                   <td><a href="#google.protobuf.Duration">google.protobuf.Duration</a></td>
                   <td></td>
                   <td><p>The duration for which the grant is valid. </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
+        <h3 id="bytebase.v1.RunReviewRequest">RunReviewRequest</h3>
+        <p></p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>name</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun} </p></td>
                 </tr>
               
             </tbody>
@@ -12944,6 +13048,77 @@ In this situation, `update_mask` is ignored. </p></td>
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.ReviewRun.Status">ReviewRun.Status</h3>
+        <p>States follow task_run, minus PENDING (review needs no admission</p><p>control) and minus CANCELED (runs are side-effect-free until the fenced</p><p>completion transaction, so re-running supersedes instead of canceling).</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>STATUS_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>AVAILABLE</td>
+                <td>1</td>
+                <td><p>Created and claimable by any replica.</p></td>
+              </tr>
+            
+              <tr>
+                <td>RUNNING</td>
+                <td>2</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>DONE</td>
+                <td>3</td>
+                <td><p>Every (spec, target) unit was evaluated. DONE does not mean the
+review passed: whether problems remain is judged from open comments.</p></td>
+              </tr>
+            
+              <tr>
+                <td>FAILED</td>
+                <td>4</td>
+                <td><p>At least one unit was not evaluated; the cause is in `error`.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.ReviewRun.Type">ReviewRun.Type</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>TYPE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RULE</td>
+                <td>1</td>
+                <td><p>Review against the standard rules.</p></td>
+              </tr>
+            
+              <tr>
+                <td>GUIDELINE</td>
+                <td>2</td>
+                <td><p>Review against natural-language guidelines, performed by AI.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
 
       
 
@@ -13065,6 +13240,20 @@ issue types. Idempotent: returns the existing issue unchanged when
 approval-finding has already completed.
 Permissions required: None (caller must be the issue creator;
 mirrors RequestIssue&#39;s authorization model).</p></td>
+              </tr>
+            
+              <tr>
+                <td>RunReview</td>
+                <td><a href="#bytebase.v1.RunReviewRequest">RunReviewRequest</a></td>
+                <td><a href="#bytebase.v1.ReviewRun">ReviewRun</a></td>
+                <td><p>Triggers a review run. The slot is reset unconditionally: a RUNNING
+execution is superseded (its completion is fenced off), the attempt
+number is bumped, and the returned run is AVAILABLE.
+Review results are not returned by this RPC and have no read RPC yet:
+findings will surface as issue comments once the review comment
+integration lands. The returned run carries execution status only.
+The audit log is the only record of who triggered a run.
+Permissions required: bb.reviewRuns.run</p></td>
               </tr>
             
           </tbody>
@@ -13211,6 +13400,16 @@ mirrors RequestIssue&#39;s authorization model).</p></td>
                 <td>RetryIssueApproval</td>
                 <td>POST</td>
                 <td>/v1/{name=projects/*/issues/*}:retryApproval</td>
+                <td>*</td>
+              </tr>
+              
+            
+              
+              
+              <tr>
+                <td>RunReview</td>
+                <td>POST</td>
+                <td>/v1/{name=projects/*/issues/*/reviewRuns/*}:run</td>
                 <td>*</td>
               </tr>
               

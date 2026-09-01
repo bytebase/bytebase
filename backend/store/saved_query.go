@@ -378,10 +378,7 @@ func (s *Store) SetSavedQueryBindings(ctx context.Context, projectID, resourceID
 // compare-and-swap write; the caller refetches and reapplies.
 var ErrSavedQueryEtagMismatch = errors.New("saved query policy etag mismatch")
 
-// CreateSavedQuery creates a new saved query. The insert transaction locks
-// the owning project row and requires it to be active, so a create racing a
-// project purge fails cleanly instead of as an FK violation — the parent
-// fence for a new child row that cannot be locked in advance.
+// CreateSavedQuery creates a new saved query under an active project.
 func (s *Store) CreateSavedQuery(ctx context.Context, create *SavedQueryMessage) (*SavedQueryMessage, error) {
 	payloadStr, err := protojson.Marshal(&storepb.SavedQueryPayload{Database: create.Database})
 	if err != nil {
@@ -394,9 +391,8 @@ func (s *Store) CreateSavedQuery(ctx context.Context, create *SavedQueryMessage)
 	}
 	defer tx.Rollback()
 
-	// A saved query is a new child row, so it takes the "requires an active
-	// project" fence: lock the parent and refuse if it is archived or purged.
-	if err := lockActiveProject(ctx, tx, create.ProjectID); err != nil {
+	// A saved query is a new child row, so its project must be active.
+	if err := requireActiveProject(ctx, tx, create.ProjectID); err != nil {
 		return nil, err
 	}
 
@@ -470,24 +466,15 @@ func (s *Store) PatchSavedQuery(ctx context.Context, patch *PatchSavedQueryMessa
 // DeleteSavedQuery deletes an existing saved query and reports whether it was
 // still there to delete. Star rows are deleted first, in full primary-key
 // order — explicitly, not via the FK cascade (which would lock the parent
-// first) — matching the star and purge lock order so a delete racing a star
-// toggle or a purge cannot deadlock.
+// first) — so a delete racing a star toggle cannot deadlock.
 //
-// Both statements scope by the project the caller was authorized in: a purge
-// reassigns surviving saved queries to the default project, and a delete
-// racing it must not land on the reassigned row. The row delete is the
-// arbiter — when it matches nothing (row gone, or reassigned after the star
-// statement's unlocked parent snapshot), the transaction rolls back, which
-// also restores any stars the first statement removed, and the caller gets
-// false to answer NotFound.
+// Both statements scope by the project the caller was authorized in. The row
+// delete is the arbiter — when it matches nothing, the transaction rolls back,
+// which also restores any stars the first statement removed, and the caller
+// gets false to answer NotFound.
 //
-// Lifecycle policy (per the store's purge-fence rule): writers on existing
-// rows — delete, patch, star — require the row in the authorized project,
-// not an active project. Archived projects are unreachable through every
-// read path (the project.deleted = FALSE fence on the fetches), so the only
-// archival exposure is a write already in flight when the archive lands,
-// and that completing is an ordinary serialization of concurrent requests.
-// Only creation, which adds a row a purge cannot see, requires an active
+// Writers on existing rows — delete, patch, star — require the row in the
+// authorized project, not an active project. Only creation requires an active
 // project.
 func (s *Store) DeleteSavedQuery(ctx context.Context, projectID, resourceID string) (bool, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
@@ -527,17 +514,12 @@ func (s *Store) DeleteSavedQuery(ctx context.Context, projectID, resourceID stri
 }
 
 // SetSavedQueryStar stars or unstars a saved query for a principal, and
-// reports whether the saved query was still there to star. Lock order per the
-// store row-lock rules: toggling or removing an existing star locks that child
-// row directly; only the first star for a (query, principal) inserts a child
-// that cannot be locked in advance — that case alone takes the parent fence
-// (lock the saved_query row), and its inserted key is novel so it never
-// contends with a purge's existing-child locks. The parent fence is also the
-// only path that can observe a concurrent delete or purge reassignment — it
-// requires the row in the project the caller was authorized in — and reports
-// either as false rather than an error so the caller decides what a vanished
-// row means. Removing an existing star stays project-blind: the star is the
-// caller's own marker, removable wherever its row went.
+// reports whether the saved query was still there to star. Toggling or removing
+// an existing star locks that row directly. The first star instead locks the
+// saved query row before inserting, so it serializes with deletion and verifies
+// that the query still belongs to the project the caller was authorized in.
+// Removing an existing star stays project-blind: the star is the caller's own
+// marker, removable wherever its row went.
 func (s *Store) SetSavedQueryStar(ctx context.Context, projectID, savedQueryResourceID, principal string, starred bool) (bool, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {

@@ -256,12 +256,7 @@ func (s *Store) filterSheetsForProject(ctx context.Context, projectID string, sh
 // Duplicate statements share the same blob (ON CONFLICT DO NOTHING); refs are
 // per project.
 //
-// Lifecycle policy: creating a sheet requires an active project. The
-// transaction takes the project purge fence before any row lock, then locks
-// the project row and rejects a missing or deleted project with NotFound,
-// serializing against project purge in both directions. Both inserts are
-// new-row-only; the foreign-key checks on project and sheet_blob are covered
-// by the fence and the project row lock.
+// Creating a sheet requires an active project. Both inserts are new-row-only.
 func (s *Store) CreateSheets(ctx context.Context, projectID string, creates ...*SheetMessage) ([]*SheetMessage, error) {
 	if projectID == "" {
 		return nil, errors.New("project is required to create sheets")
@@ -286,10 +281,7 @@ func (s *Store) CreateSheets(ctx context.Context, projectID string, creates ...*
 	}
 	defer tx.Rollback()
 
-	if err := acquireProjectPurgeLock(ctx, tx, projectID); err != nil {
-		return nil, errors.Wrapf(err, "failed to lock project purge fence for %s", projectID)
-	}
-	if err := lockActiveProject(ctx, tx, projectID); err != nil {
+	if err := requireActiveProject(ctx, tx, projectID); err != nil {
 		return nil, err
 	}
 

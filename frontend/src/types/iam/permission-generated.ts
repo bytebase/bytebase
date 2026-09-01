@@ -90,6 +90,7 @@ export type Permission =
   | "bb.reviewConfigs.get"
   | "bb.reviewConfigs.list"
   | "bb.reviewConfigs.update"
+  | "bb.reviewRuns.run"
   | "bb.revisions.create"
   | "bb.revisions.delete"
   | "bb.revisions.get"

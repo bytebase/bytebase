@@ -118,7 +118,7 @@ func (s *Store) UpsertDBSchema(
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	err = s.withDatabasePurgeFence(ctx, instanceID, databaseName, "", func(tx *sql.Tx) error {
+	err = s.withDatabaseWrite(ctx, instanceID, databaseName, func(tx *sql.Tx) error {
 		_, err := tx.ExecContext(ctx, "SELECT 1 FROM db_schema WHERE instance = $1 AND db_name = $2 FOR UPDATE", instanceID, databaseName)
 		return err
 	}, func(tx *sql.Tx, _ *databaseOwnership) error {
@@ -155,7 +155,7 @@ func (s *Store) UpdateDBSchema(ctx context.Context, instanceID, databaseName str
 		return errors.Wrapf(err, "failed to build sql")
 	}
 
-	err = s.withDatabasePurgeFence(ctx, instanceID, databaseName, "", func(tx *sql.Tx) error {
+	err = s.withDatabaseWrite(ctx, instanceID, databaseName, func(tx *sql.Tx) error {
 		_, err := tx.ExecContext(ctx, "SELECT 1 FROM db_schema WHERE instance = $1 AND db_name = $2 FOR UPDATE", instanceID, databaseName)
 		return err
 	}, func(tx *sql.Tx, _ *databaseOwnership) error {

@@ -183,14 +183,13 @@ func (s *Store) ActivateSampleInstanceSetup(ctx context.Context, workspaceID, re
 	for _, projectID := range projects {
 		var deleted bool
 		if err := tx.QueryRowContext(ctx, `
-			SELECT deleted FROM project
-			WHERE workspace = $1 AND resource_id = $2
-			FOR UPDATE
-		`, workspaceID, projectID).Scan(&deleted); err != nil {
+		SELECT deleted FROM project
+		WHERE workspace = $1 AND resource_id = $2
+	`, workspaceID, projectID).Scan(&deleted); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return false, common.Errorf(common.NotFound, "project %s not found", projectID)
 			}
-			return false, errors.Wrapf(err, "failed to lock project %s for sample instance setup activation", projectID)
+			return false, errors.Wrapf(err, "failed to find project %s for sample instance setup activation", projectID)
 		}
 		if deleted {
 			return false, common.Errorf(common.NotFound, "project %s is deleted", projectID)

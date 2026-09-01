@@ -1163,6 +1163,155 @@ export declare type IssueComment_PlanUpdate = Message<"bytebase.v1.IssueComment.
 export declare const IssueComment_PlanUpdateSchema: GenMessage<IssueComment_PlanUpdate>;
 
 /**
+ * @generated from message bytebase.v1.ReviewRun
+ */
+export declare type ReviewRun = Message<"bytebase.v1.ReviewRun"> & {
+  /**
+   * Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
+   * The {reviewRun} id is the reviewer: "rule" or "guideline". The name
+   * addresses a slot, not an execution.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * Derived from the name.
+   *
+   * @generated from field: bytebase.v1.ReviewRun.Type type = 2;
+   */
+  type: ReviewRun_Type;
+
+  /**
+   * @generated from field: bytebase.v1.ReviewRun.Status status = 3;
+   */
+  status: ReviewRun_Status;
+
+  /**
+   * When the current run was triggered. Reset on every re-run.
+   *
+   * @generated from field: google.protobuf.Timestamp create_time = 4;
+   */
+  createTime?: Timestamp | undefined;
+
+  /**
+   * When the run reached a terminal status. Unset while AVAILABLE or
+   * RUNNING.
+   *
+   * @generated from field: google.protobuf.Timestamp end_time = 5;
+   */
+  endTime?: Timestamp | undefined;
+
+  /**
+   * Fatal execution error, set if and only if status is FAILED: the review
+   * failed to execute (a platform problem, never the SQL — SQL problems are
+   * review results on a DONE run).
+   *
+   * @generated from field: string error = 6;
+   */
+  error: string;
+};
+
+/**
+ * Describes the message bytebase.v1.ReviewRun.
+ * Use `create(ReviewRunSchema)` to create a new message.
+ */
+export declare const ReviewRunSchema: GenMessage<ReviewRun>;
+
+/**
+ * @generated from enum bytebase.v1.ReviewRun.Type
+ */
+export enum ReviewRun_Type {
+  /**
+   * @generated from enum value: TYPE_UNSPECIFIED = 0;
+   */
+  TYPE_UNSPECIFIED = 0,
+
+  /**
+   * Review against the standard rules.
+   *
+   * @generated from enum value: RULE = 1;
+   */
+  RULE = 1,
+
+  /**
+   * Review against natural-language guidelines, performed by AI.
+   *
+   * @generated from enum value: GUIDELINE = 2;
+   */
+  GUIDELINE = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.ReviewRun.Type.
+ */
+export declare const ReviewRun_TypeSchema: GenEnum<ReviewRun_Type>;
+
+/**
+ * States follow task_run, minus PENDING (review needs no admission
+ * control) and minus CANCELED (runs are side-effect-free until the fenced
+ * completion transaction, so re-running supersedes instead of canceling).
+ *
+ * @generated from enum bytebase.v1.ReviewRun.Status
+ */
+export enum ReviewRun_Status {
+  /**
+   * @generated from enum value: STATUS_UNSPECIFIED = 0;
+   */
+  STATUS_UNSPECIFIED = 0,
+
+  /**
+   * Created and claimable by any replica.
+   *
+   * @generated from enum value: AVAILABLE = 1;
+   */
+  AVAILABLE = 1,
+
+  /**
+   * @generated from enum value: RUNNING = 2;
+   */
+  RUNNING = 2,
+
+  /**
+   * Every (spec, target) unit was evaluated. DONE does not mean the
+   * review passed: whether problems remain is judged from open comments.
+   *
+   * @generated from enum value: DONE = 3;
+   */
+  DONE = 3,
+
+  /**
+   * At least one unit was not evaluated; the cause is in `error`.
+   *
+   * @generated from enum value: FAILED = 4;
+   */
+  FAILED = 4,
+}
+
+/**
+ * Describes the enum bytebase.v1.ReviewRun.Status.
+ */
+export declare const ReviewRun_StatusSchema: GenEnum<ReviewRun_Status>;
+
+/**
+ * @generated from message bytebase.v1.RunReviewRequest
+ */
+export declare type RunReviewRequest = Message<"bytebase.v1.RunReviewRequest"> & {
+  /**
+   * Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+};
+
+/**
+ * Describes the message bytebase.v1.RunReviewRequest.
+ * Use `create(RunReviewRequestSchema)` to create a new message.
+ */
+export declare const RunReviewRequestSchema: GenMessage<RunReviewRequest>;
+
+/**
  * IssueService manages issues for tracking database changes and tasks.
  *
  * @generated from service bytebase.v1.IssueService
@@ -1317,6 +1466,23 @@ export declare const IssueService: GenService<{
     methodKind: "unary";
     input: typeof RetryIssueApprovalRequestSchema;
     output: typeof IssueSchema;
+  },
+  /**
+   * Triggers a review run. The slot is reset unconditionally: a RUNNING
+   * execution is superseded (its completion is fenced off), the attempt
+   * number is bumped, and the returned run is AVAILABLE.
+   * Review results are not returned by this RPC and have no read RPC yet:
+   * findings will surface as issue comments once the review comment
+   * integration lands. The returned run carries execution status only.
+   * The audit log is the only record of who triggered a run.
+   * Permissions required: bb.reviewRuns.run
+   *
+   * @generated from rpc bytebase.v1.IssueService.RunReview
+   */
+  runReview: {
+    methodKind: "unary";
+    input: typeof RunReviewRequestSchema;
+    output: typeof ReviewRunSchema;
   },
 }>;
 

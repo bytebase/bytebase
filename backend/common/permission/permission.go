@@ -95,6 +95,7 @@ const (
 	ReviewConfigsGet                     Permission = "bb.reviewConfigs.get"
 	ReviewConfigsList                    Permission = "bb.reviewConfigs.list"
 	ReviewConfigsUpdate                  Permission = "bb.reviewConfigs.update"
+	ReviewRunsRun                        Permission = "bb.reviewRuns.run"
 	RevisionsCreate                      Permission = "bb.revisions.create"
 	RevisionsDelete                      Permission = "bb.revisions.delete"
 	RevisionsGet                         Permission = "bb.revisions.get"

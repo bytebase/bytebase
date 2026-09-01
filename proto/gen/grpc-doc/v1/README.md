@@ -236,7 +236,9 @@
     - [RejectIssueRequest](#bytebase-v1-RejectIssueRequest)
     - [RequestIssueRequest](#bytebase-v1-RequestIssueRequest)
     - [RetryIssueApprovalRequest](#bytebase-v1-RetryIssueApprovalRequest)
+    - [ReviewRun](#bytebase-v1-ReviewRun)
     - [RoleGrant](#bytebase-v1-RoleGrant)
+    - [RunReviewRequest](#bytebase-v1-RunReviewRequest)
     - [SearchIssuesRequest](#bytebase-v1-SearchIssuesRequest)
     - [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse)
     - [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest)
@@ -245,6 +247,8 @@
     - [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status)
     - [Issue.Type](#bytebase-v1-Issue-Type)
     - [IssueComment.Approval.Status](#bytebase-v1-IssueComment-Approval-Status)
+    - [ReviewRun.Status](#bytebase-v1-ReviewRun-Status)
+    - [ReviewRun.Type](#bytebase-v1-ReviewRun-Type)
   
     - [IssueService](#bytebase-v1-IssueService)
   
@@ -4277,6 +4281,26 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#
 
 
 
+<a name="bytebase-v1-ReviewRun"></a>
+
+### ReviewRun
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun} The {reviewRun} id is the reviewer: &#34;rule&#34; or &#34;guideline&#34;. The name addresses a slot, not an execution. |
+| type | [ReviewRun.Type](#bytebase-v1-ReviewRun-Type) |  | Derived from the name. |
+| status | [ReviewRun.Status](#bytebase-v1-ReviewRun-Status) |  |  |
+| create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the current run was triggered. Reset on every re-run. |
+| end_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  | When the run reached a terminal status. Unset while AVAILABLE or RUNNING. |
+| error | [string](#string) |  | Fatal execution error, set if and only if status is FAILED: the review failed to execute (a platform problem, never the SQL — SQL problems are review results on a DONE run). |
+
+
+
+
+
+
 <a name="bytebase-v1-RoleGrant"></a>
 
 ### RoleGrant
@@ -4289,6 +4313,21 @@ For example: creator == &#34;users/ed@bytebase.com&#34; &amp;&amp; status in [&#
 | user | [string](#string) |  | The user to be granted. Format: users/{email}. |
 | condition | [google.type.Expr](#google-type-Expr) |  | The condition for the role. Same as the condition in IAM Binding message. |
 | expiration | [google.protobuf.Duration](#google-protobuf-Duration) |  | The duration for which the grant is valid. |
+
+
+
+
+
+
+<a name="bytebase-v1-RunReviewRequest"></a>
+
+### RunReviewRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun} |
 
 
 
@@ -4413,6 +4452,36 @@ Approval status values.
 | REJECTED | 3 | Rejected. |
 
 
+
+<a name="bytebase-v1-ReviewRun-Status"></a>
+
+### ReviewRun.Status
+States follow task_run, minus PENDING (review needs no admission
+control) and minus CANCELED (runs are side-effect-free until the fenced
+completion transaction, so re-running supersedes instead of canceling).
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| STATUS_UNSPECIFIED | 0 |  |
+| AVAILABLE | 1 | Created and claimable by any replica. |
+| RUNNING | 2 |  |
+| DONE | 3 | Every (spec, target) unit was evaluated. DONE does not mean the review passed: whether problems remain is judged from open comments. |
+| FAILED | 4 | At least one unit was not evaluated; the cause is in `error`. |
+
+
+
+<a name="bytebase-v1-ReviewRun-Type"></a>
+
+### ReviewRun.Type
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| TYPE_UNSPECIFIED | 0 |  |
+| RULE | 1 | Review against the standard rules. |
+| GUIDELINE | 2 | Review against natural-language guidelines, performed by AI. |
+
+
  
 
  
@@ -4438,6 +4507,7 @@ IssueService manages issues for tracking database changes and tasks.
 | RejectIssue | [RejectIssueRequest](#bytebase-v1-RejectIssueRequest) | [Issue](#bytebase-v1-Issue) | Rejects an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
 | RequestIssue | [RequestIssueRequest](#bytebase-v1-RequestIssueRequest) | [Issue](#bytebase-v1-Issue) | Requests changes on an issue. Access determined by approval flow configuration - caller must be a designated approver for the current approval step. Permissions required: None (determined by approval flow) |
 | RetryIssueApproval | [RetryIssueApprovalRequest](#bytebase-v1-RetryIssueApprovalRequest) | [Issue](#bytebase-v1-Issue) | Re-runs approval-template finding for an issue stuck in CHECKING. Useful when the synchronous post-create finding errored (e.g. against a malformed workspace approval rule) and the operator has since corrected it — without this, the issue would remain in CHECKING indefinitely because there is no other retry path for non-DATABASE_CHANGE issue types. Idempotent: returns the existing issue unchanged when approval-finding has already completed. Permissions required: None (caller must be the issue creator; mirrors RequestIssue&#39;s authorization model). |
+| RunReview | [RunReviewRequest](#bytebase-v1-RunReviewRequest) | [ReviewRun](#bytebase-v1-ReviewRun) | Triggers a review run. The slot is reset unconditionally: a RUNNING execution is superseded (its completion is fenced off), the attempt number is bumped, and the returned run is AVAILABLE. Review results are not returned by this RPC and have no read RPC yet: findings will surface as issue comments once the review comment integration lands. The returned run carries execution status only. The audit log is the only record of who triggered a run. Permissions required: bb.reviewRuns.run |
 
  
 

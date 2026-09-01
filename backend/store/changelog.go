@@ -94,7 +94,7 @@ func (s *Store) CreateChangelog(ctx context.Context, create *ChangelogMessage) (
 	}
 
 	var resourceID string
-	err = s.withDatabasePurgeFence(ctx, create.InstanceID, create.DatabaseName, "", func(tx *sql.Tx) error {
+	err = s.withDatabaseWrite(ctx, create.InstanceID, create.DatabaseName, func(tx *sql.Tx) error {
 		if create.SyncHistory == nil {
 			return nil
 		}

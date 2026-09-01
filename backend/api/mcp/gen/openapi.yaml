@@ -3098,6 +3098,50 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.Issue'
+  /bytebase.v1.IssueService/RunReview:
+    post:
+      tags:
+        - bytebase.v1.IssueService
+      summary: RunReview
+      description: |-
+        Triggers a review run. The slot is reset unconditionally: a RUNNING
+         execution is superseded (its completion is fenced off), the attempt
+         number is bumped, and the returned run is AVAILABLE.
+         Review results are not returned by this RPC and have no read RPC yet:
+         findings will surface as issue comments once the review comment
+         integration lands. The returned run carries execution status only.
+         The audit log is the only record of who triggered a run.
+         Permissions required: bb.reviewRuns.run
+      operationId: bytebase.v1.IssueService.RunReview
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.RunReviewRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ReviewRun'
   /bytebase.v1.IssueService/SearchIssues:
     post:
       tags:
@@ -17913,6 +17957,62 @@ components:
              Format: {resource}/{resource id}, e.g., environments/test.
       title: ReviewConfig
       additionalProperties: false
+    bytebase.v1.ReviewRun:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: |-
+            Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
+             The {reviewRun} id is the reviewer: "rule" or "guideline". The name
+             addresses a slot, not an execution.
+        type:
+          title: type
+          description: Derived from the name.
+          $ref: '#/components/schemas/bytebase.v1.ReviewRun.Type'
+        status:
+          title: status
+          $ref: '#/components/schemas/bytebase.v1.ReviewRun.Status'
+        createTime:
+          title: create_time
+          description: When the current run was triggered. Reset on every re-run.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        endTime:
+          title: end_time
+          description: |-
+            When the run reached a terminal status. Unset while AVAILABLE or
+             RUNNING.
+          $ref: '#/components/schemas/google.protobuf.Timestamp'
+        error:
+          type: string
+          title: error
+          description: |-
+            Fatal execution error, set if and only if status is FAILED: the review
+             failed to execute (a platform problem, never the SQL — SQL problems are
+             review results on a DONE run).
+      title: ReviewRun
+      additionalProperties: false
+    bytebase.v1.ReviewRun.Status:
+      type: string
+      title: Status
+      enum:
+        - STATUS_UNSPECIFIED
+        - AVAILABLE
+        - RUNNING
+        - DONE
+        - FAILED
+      description: |-
+        States follow task_run, minus PENDING (review needs no admission
+         control) and minus CANCELED (runs are side-effect-free until the fenced
+         completion transaction, so re-running supersedes instead of canceling).
+    bytebase.v1.ReviewRun.Type:
+      type: string
+      title: Type
+      enum:
+        - TYPE_UNSPECIFIED
+        - RULE
+        - GUIDELINE
     bytebase.v1.Revision:
       type: object
       properties:
@@ -18319,6 +18419,15 @@ components:
     bytebase.v1.RunPlanChecksResponse:
       type: object
       title: RunPlanChecksResponse
+      additionalProperties: false
+    bytebase.v1.RunReviewRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          title: name
+          description: 'Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}'
+      title: RunReviewRequest
       additionalProperties: false
     bytebase.v1.SASLConfig:
       type: object

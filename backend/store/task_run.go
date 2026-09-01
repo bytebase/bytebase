@@ -355,12 +355,6 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 		return errors.Wrapf(err, "failed to begin tx")
 	}
 	defer tx.Rollback()
-	for _, instanceID := range instanceIDs {
-		if err := acquireInstancePurgeLock(ctx, tx, instanceID); err != nil {
-			return errors.Wrapf(err, "failed to lock instance lifecycle fence for %s", instanceID)
-		}
-	}
-
 	lockQ := qb.Q().Space(`
 		SELECT task.project, task.id, task.instance
 		FROM (
@@ -411,19 +405,19 @@ func (s *Store) CreatePendingTaskRuns(ctx context.Context, creator string, creat
 	for _, instanceID := range lockedInstanceIDs {
 		var deleted bool
 		if err := tx.QueryRowContext(ctx, `
-			SELECT deleted FROM instance WHERE resource_id = $1 FOR UPDATE
+			SELECT deleted FROM instance WHERE resource_id = $1
 		`, instanceID).Scan(&deleted); err != nil {
 			if errors.Is(err, sql.ErrNoRows) {
 				return common.Errorf(common.NotFound, "instance %s not found", instanceID)
 			}
-			return errors.Wrapf(err, "failed to lock instance %s", instanceID)
+			return errors.Wrapf(err, "failed to find instance %s", instanceID)
 		}
 		if deleted {
 			return common.Errorf(common.Conflict, "instance %s is archived", instanceID)
 		}
 	}
 
-	// Keep the child-to-parent lock order used by project deletion: task, instance, then project.
+	// nextProjectID locks the project row to serialize ID allocation.
 	baseID, err := nextProjectID(ctx, tx, "task_run", projectID)
 	if err != nil {
 		return err

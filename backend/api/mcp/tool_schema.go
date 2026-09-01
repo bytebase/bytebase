@@ -240,7 +240,7 @@ func (s *Server) handleGetSchema(ctx context.Context, req *mcp.CallToolRequest, 
 		return nil, nil, err
 	}
 
-	resolved, resolveResult := s.resolveSchemaTarget(ctx, req, input)
+	resolved, resolveResult := s.resolveTarget(ctx, req, input.Database, input.Instance, input.Project)
 	if resolveResult != nil {
 		return resolveResult, nil, nil
 	}
@@ -288,27 +288,6 @@ func resolveIncludeLevel(input SchemaInput) (string, error) {
 		return "", errors.Errorf("invalid include value %q (must be summary|columns|details)", input.Include)
 	}
 	return include, nil
-}
-
-// resolveSchemaTarget runs the shared database resolver and handles the ambiguous
-// case with elicitation fallback. Returns either a resolved database (on success)
-// or a non-nil CallToolResult describing the error for the caller to return.
-func (s *Server) resolveSchemaTarget(ctx context.Context, req *mcp.CallToolRequest, input SchemaInput) (*resolvedDatabase, *mcp.CallToolResult) {
-	resolveCtx, resolveCancel := context.WithTimeout(ctx, resolveTimeout)
-	defer resolveCancel()
-
-	resolved, err := s.resolveDatabase(resolveCtx, input.Database, input.Instance, input.Project)
-	if err != nil {
-		return nil, formatToolError(err)
-	}
-	if !resolved.ambiguous {
-		return resolved, nil
-	}
-	picked, elicitErr := s.elicitDatabaseChoice(ctx, req, resolved)
-	if elicitErr != nil {
-		return nil, formatAmbiguousResult(input.Database, resolved.candidates)
-	}
-	return picked, nil
 }
 
 // renderTableResult dispatches the `table=` drill-down path: it picks the unique

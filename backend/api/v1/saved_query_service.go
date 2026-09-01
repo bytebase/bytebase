@@ -36,8 +36,8 @@ func NewSavedQueryService(store *store.Store, iamManager *iam.Manager) *SavedQue
 }
 
 // CreateSavedQuery creates a new saved query. The bb.savedQueries.create
-// permission is enforced at the interceptor; the store's insert transaction
-// fences against a concurrent project purge (active project required).
+// permission is enforced at the interceptor; the store also requires the
+// project to be active when it validates the insert.
 func (s *SavedQueryService) CreateSavedQuery(
 	ctx context.Context,
 	req *connect.Request[v1pb.CreateSavedQueryRequest],
@@ -57,8 +57,8 @@ func (s *SavedQueryService) CreateSavedQuery(
 	}
 
 	// Resource resolution returns archived projects (GetProject reports a
-	// project regardless of its deleted state), so this is what rejects a
-	// create into one. The store's fence covers the window after it.
+	// project regardless of its deleted state), so this rejects a create into
+	// one before the store repeats the point-in-time validation.
 	project, err := s.store.GetProject(ctx, &store.FindProjectMessage{
 		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		ResourceID: &projectResourceID,
@@ -92,7 +92,6 @@ func (s *SavedQueryService) CreateSavedQuery(
 	savedQuery, err := s.store.CreateSavedQuery(ctx, convertToStoreSavedQueryMessage(projectResourceID, database, user.Email, folder, request.SavedQuery))
 	if err != nil {
 		if common.ErrorCode(err) == common.NotFound {
-			// The fence lost to an archive or purge racing this create.
 			return nil, connect.NewError(connect.CodeNotFound, errors.Wrapf(err, "project %q not found", projectResourceID))
 		}
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create saved query: %v", err))

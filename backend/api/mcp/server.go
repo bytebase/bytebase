@@ -110,9 +110,27 @@ func newServerWithStore(stores serverStore, profile *config.Profile, secret stri
 	// the token — not network position — is the security boundary, and the
 	// rebinding threat targets unauthenticated, browser-reached localhost
 	// servers, which Bytebase is not.
+	//
+	// maxMCPRequestBodyBytes bounds the JSON-RPC envelope, which makes it the
+	// ceiling on a migration statement. It is written out rather than aliased to
+	// the SDK's default so it survives a change to that default: past
+	// common.MaxSheetCheckSize (2 MiB) SQL review and plan checks skip and prior
+	// backup refuses, and base64 inflates that by 4/3, so 4 MiB clears the
+	// largest statement worth admitting.
+	//
+	// Tripping it costs the session, not just the call: the transport answers a
+	// bare 413, which the SDK client does not count as transient, so it fails the
+	// connection and every later call on it.
+	//
+	// DEFER: no tool-level statement cap, so an oversized body is refused by the
+	// transport with no code, size or remedy; upgrade when a caller reports it,
+	// or when a multi-file CreateRelease needs more than the cap.
 	streamable := mcp.NewStreamableHTTPHandler(func(_ *http.Request) *mcp.Server {
 		return s.mcpServer
-	}, &mcp.StreamableHTTPOptions{DisableLocalhostProtection: true})
+	}, &mcp.StreamableHTTPOptions{
+		DisableLocalhostProtection: true,
+		MaxRequestBodyBytes:        maxMCPRequestBodyBytes,
+	})
 
 	// Refresh per-request metadata that would otherwise be frozen at session
 	// start. The SDK runs tool handlers on the initialize request's context, but
@@ -121,6 +139,7 @@ func newServerWithStore(stores serverStore, profile *config.Profile, secret stri
 	// from. Identity stays pinned to the session (see below), which is what
 	// makes trusting the live address safe: it cannot belong to another
 	// principal.
+	mcpServer.AddReceivingMiddleware(negotiateLegacyProtocol)
 	mcpServer.AddReceivingMiddleware(liveRequestMetadata)
 
 	// Pin each session to the identity it was opened with. The SDK captures
@@ -130,18 +149,85 @@ func newServerWithStore(stores serverStore, profile *config.Profile, secret stri
 	// check is inert, and since tool handlers run on the initialize request's
 	// context, a substituted-but-valid bearer would be admitted while the tool
 	// executed under the session's original identity.
-	s.httpHandler = mcpauth.RequireBearerToken(s.verifySessionBinding, nil)(streamable)
+	s.httpHandler = mcpauth.RequireBearerToken(s.verifySessionBinding, nil)(refuseSessionlessProtocol(streamable))
 
 	return s, nil
 }
 
+// sessionlessProtocolVersion is the first MCP revision the SDK serves only on a
+// stateless transport. This one is stateful and cannot become stateless: a
+// stateless transport gives every request its own session carrying no client
+// capabilities, which breaks elicitation for every older client.
+const (
+	sessionlessProtocolVersion = "2026-07-28"
+
+	// legacyProtocolCeiling is what the SDK answers an initialize handshake
+	// with, whatever the client asks for: negotiatedVersion caps there because
+	// the newer revision is negotiated through server/discover instead.
+	legacyProtocolCeiling = "2025-11-25"
+
+	// maxMCPRequestBodyBytes is documented at the handler that applies it.
+	maxMCPRequestBodyBytes = 4 << 20
+)
+
+// negotiateLegacyProtocol keeps a session's recorded revision equal to the one
+// its handshake answered.
+//
+// The SDK records the revision the client ASKED for and answers with the one it
+// negotiated, and for a client asking beyond legacyProtocolCeiling those differ.
+// Everything downstream reads the record, so the SDK would treat such a client
+// as multi round-trip capable and hand it an input-required result in place of
+// the elicitation it agreed to, which it has no obligation to know how to
+// retry. Rewriting the request to what was negotiated makes the two agree. The
+// client sees the same initialize response either way.
+//
+// With refuseSessionlessProtocol covering the header, no session on this route
+// records a revision this transport cannot serve.
+func negotiateLegacyProtocol(next mcp.MethodHandler) mcp.MethodHandler {
+	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+		if params, ok := req.GetParams().(*mcp.InitializeParams); ok &&
+			params.ProtocolVersion >= sessionlessProtocolVersion {
+			params.ProtocolVersion = legacyProtocolCeiling
+		}
+		return next(ctx, method, req)
+	}
+}
+
+// refuseSessionlessProtocol rejects requests announcing that revision or newer.
+//
+// The SDK refuses it for every method but server/discover, and answers discover
+// by opening a session: discover fills in InitializeParams, the field the
+// cleanup checks before closing a session nobody adopted, while a session ID is
+// returned only on an initialize response. The client never learns that ID and
+// never deletes it, and no SessionTimeout is set, so each connect would strand
+// one session for the process's life. Clients fall back to the initialize
+// handshake on any discover error, which is the path they take here anyway.
+//
+// DEFER: refuses the revision whole; upgrade when the transport can serve it.
+func refuseSessionlessProtocol(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if version := r.Header.Get("MCP-Protocol-Version"); version >= sessionlessProtocolVersion {
+			// Debug, not info: every go-sdk v1.7.0 client takes this branch once
+			// per connect.
+			slog.Debug("refused an MCP protocol revision this transport cannot serve",
+				slog.String("version", version))
+			http.Error(w, "Bad Request: unsupported protocol version", http.StatusBadRequest)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 // registerTools registers all MCP tools.
 //
-// The list is not filtered by the workspace's ceiling (BOT-89), and cannot be:
-// the SDK builds it once at session start while the ceiling is read per
-// request, so a filtered list would be a promise made under whatever the
-// ceiling was at connect time and would go stale the moment an admin changed
-// it. Revisit only if the SDK grows a way to revise a live session's tool list.
+// The list is not filtered by the workspace's ceiling (BOT-89). It could be:
+// the SDK re-reads its server-global tool registry on every tools/list, and
+// receiving middleware can trim that result using the live request's headers,
+// the way liveRequestMetadata already reads them. It is not, because a trimmed
+// list enforces nothing the per-request ceiling check does not already enforce,
+// and it would go stale in the client's hands the moment an admin changed the
+// ceiling: the SDK can invalidate a tool list only server-wide, never for one
+// session. Revisit if it grows per-session invalidation.
 func (s *Server) registerTools() {
 	s.registerSearchTool()
 	s.registerCallTool()

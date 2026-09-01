@@ -194,7 +194,7 @@ func (s *Server) handleChange(ctx context.Context, req *mcp.CallToolRequest, inp
 	}
 
 	// Step 2: Resolve database.
-	resolved, resolveResult := s.resolveChangeTarget(ctx, req, input)
+	resolved, resolveResult := s.resolveTarget(ctx, req, input.Database, input.Instance, input.Project)
 	if resolveResult != nil {
 		return resolveResult, nil, nil
 	}
@@ -293,27 +293,6 @@ func (s *Server) handleChange(ctx context.Context, req *mcp.CallToolRequest, inp
 	return &mcp.CallToolResult{
 		Content: []mcp.Content{&mcp.TextContent{Text: text}},
 	}, output, nil
-}
-
-// resolveChangeTarget runs the shared database resolver with elicitation fallback.
-// The project parameter is passed to the server-side filter so it can disambiguate
-// when the same database name exists in multiple projects.
-func (s *Server) resolveChangeTarget(ctx context.Context, req *mcp.CallToolRequest, input ChangeInput) (*resolvedDatabase, *mcp.CallToolResult) {
-	resolveCtx, resolveCancel := context.WithTimeout(ctx, resolveTimeout)
-	defer resolveCancel()
-
-	resolved, err := s.resolveDatabase(resolveCtx, input.Database, input.Instance, input.Project)
-	if err != nil {
-		return nil, formatToolError(err)
-	}
-	if !resolved.ambiguous {
-		return resolved, nil
-	}
-	picked, elicitErr := s.elicitDatabaseChoice(ctx, req, resolved)
-	if elicitErr != nil {
-		return nil, formatAmbiguousResult(input.Database, resolved.candidates)
-	}
-	return picked, nil
 }
 
 // createSheet creates a sheet with base64-encoded SQL content.

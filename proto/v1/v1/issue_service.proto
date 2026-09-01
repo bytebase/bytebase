@@ -223,6 +223,26 @@ service IssueService {
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = DRIVES_THE_APPROVAL_DECISION;
   }
+
+  // Triggers a review run. The slot is reset unconditionally: a RUNNING
+  // execution is superseded (its completion is fenced off), the attempt
+  // number is bumped, and the returned run is AVAILABLE.
+  // Review results are not returned by this RPC and have no read RPC yet:
+  // findings will surface as issue comments once the review comment
+  // integration lands. The returned run carries execution status only.
+  // The audit log is the only record of who triggered a run.
+  // Permissions required: bb.reviewRuns.run
+  rpc RunReview(RunReviewRequest) returns (ReviewRun) {
+    option (google.api.http) = {
+      post: "/v1/{name=projects/*/issues/*/reviewRuns/*}:run"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+    option (bytebase.v1.permission) = "bb.reviewRuns.run";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = WRITE;
+  }
 }
 
 message GetIssueRequest {
@@ -698,4 +718,62 @@ message IssueComment {
     repeated Plan.Spec from_specs = 1;
     repeated Plan.Spec to_specs = 2;
   }
+}
+
+message ReviewRun {
+  option (google.api.resource) = {
+    type: "bytebase.com/ReviewRun"
+    pattern: "projects/{project}/issues/{issue}/reviewRuns/{reviewRun}"
+  };
+
+  // Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
+  // The {reviewRun} id is the reviewer: "rule" or "guideline". The name
+  // addresses a slot, not an execution.
+  string name = 1;
+
+  enum Type {
+    TYPE_UNSPECIFIED = 0;
+    // Review against the standard rules.
+    RULE = 1;
+    // Review against natural-language guidelines, performed by AI.
+    GUIDELINE = 2;
+  }
+  // Derived from the name.
+  Type type = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // States follow task_run, minus PENDING (review needs no admission
+  // control) and minus CANCELED (runs are side-effect-free until the fenced
+  // completion transaction, so re-running supersedes instead of canceling).
+  enum Status {
+    STATUS_UNSPECIFIED = 0;
+    // Created and claimable by any replica.
+    AVAILABLE = 1;
+    RUNNING = 2;
+    // Every (spec, target) unit was evaluated. DONE does not mean the
+    // review passed: whether problems remain is judged from open comments.
+    DONE = 3;
+    // At least one unit was not evaluated; the cause is in `error`.
+    FAILED = 4;
+  }
+  Status status = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the current run was triggered. Reset on every re-run.
+  google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the run reached a terminal status. Unset while AVAILABLE or
+  // RUNNING.
+  google.protobuf.Timestamp end_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Fatal execution error, set if and only if status is FAILED: the review
+  // failed to execute (a platform problem, never the SQL — SQL problems are
+  // review results on a DONE run).
+  string error = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+message RunReviewRequest {
+  // Format: projects/{project}/issues/{issue}/reviewRuns/{reviewRun}
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/ReviewRun"}
+  ];
 }

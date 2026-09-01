@@ -26,12 +26,6 @@ const (
 	// AdvisoryLockKeyPlanIssueRollout serializes Plan review changes, linked
 	// Bytebase Issue creation, and Rollout creation for the same Plan.
 	AdvisoryLockKeyPlanIssueRollout AdvisoryLockKey = 1005
-	// AdvisoryLockKeyProjectPurge serializes project-owned writes with project
-	// purge, including writes to an otherwise absent database descendant.
-	AdvisoryLockKeyProjectPurge AdvisoryLockKey = 1006
-	// AdvisoryLockKeyInstancePurge serializes instance lifecycle operations with
-	// descendant creation and purge when the descendant row may not exist yet.
-	AdvisoryLockKeyInstancePurge AdvisoryLockKey = 1007
 	// AdvisoryLockKeyIamPolicy serializes compare-and-swap writes to one
 	// resource's IAM policy, including the first write, when there is no policy
 	// row to lock yet.
@@ -43,14 +37,6 @@ const (
 func AcquirePlanIssueRolloutAdvisoryLock(ctx context.Context, tx *sql.Tx, projectID string, planUID int64) error {
 	key := projectID + "/" + strconv.FormatInt(planUID, 10)
 	return AcquireAdvisoryXactLockWithStringKey(ctx, tx, AdvisoryLockKeyPlanIssueRollout, key)
-}
-
-func acquireProjectPurgeLock(ctx context.Context, tx *sql.Tx, projectID string) error {
-	return AcquireAdvisoryXactLockWithStringKey(ctx, tx, AdvisoryLockKeyProjectPurge, projectID)
-}
-
-func acquireInstancePurgeLock(ctx context.Context, tx *sql.Tx, instanceID string) error {
-	return AcquireAdvisoryXactLockWithStringKey(ctx, tx, AdvisoryLockKeyInstancePurge, instanceID)
 }
 
 // AdvisoryLock holds a dedicated connection for a session-level advisory lock.
@@ -70,12 +56,12 @@ func TryAdvisoryLock(ctx context.Context, db *sql.DB, key AdvisoryLockKey) (*Adv
 
 	var acquired bool
 	if err := conn.QueryRowContext(ctx, "SELECT pg_try_advisory_lock($1)", int64(key)).Scan(&acquired); err != nil {
-		conn.Close()
+		_ = conn.Close()
 		return nil, false, err
 	}
 
 	if !acquired {
-		conn.Close()
+		_ = conn.Close()
 		return nil, false, nil
 	}
 
@@ -143,7 +129,7 @@ func AcquireAdvisoryLock(ctx context.Context, db *sql.DB, key AdvisoryLockKey) (
 
 	// pg_advisory_lock blocks until the lock is acquired
 	if _, err := conn.ExecContext(ctx, "SELECT pg_advisory_lock($1)", int64(key)); err != nil {
-		conn.Close()
+		_ = conn.Close()
 		return nil, err
 	}
 
