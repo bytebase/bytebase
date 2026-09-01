@@ -34,8 +34,20 @@ const (
 	emailCodeExpiry         = 10 * time.Minute
 	emailCodeResendCooldown = 60 * time.Second
 
+	// How much sign-in-code mail this deployment may generate per window.
+	emailCodeSendWindow    = time.Hour
+	emailCodeSendPerWindow = 1000
+
 	errMsgInvalidEmailCode = "invalid or expired code"
 )
+
+// signinCodeSendBudgetKey is the single sender bucket; see SendEmailLoginCode.
+const signinCodeSendBudgetKey = "signin-code"
+
+// errSendBudgetExhausted reports that the window is spent, so no mail went out.
+// Distinguished from a delivery failure because the caller answers it with
+// ResourceExhausted rather than Internal.
+var errSendBudgetExhausted = errors.New("too many sign-in codes requested, please try again later")
 
 // RequestPasswordReset sends a password reset email. Always returns success to avoid leaking email existence.
 func (s *AuthService) RequestPasswordReset(ctx context.Context, req *connect.Request[v1pb.RequestPasswordResetRequest]) (*connect.Response[emptypb.Empty], error) {
@@ -59,6 +71,7 @@ func (s *AuthService) RequestPasswordReset(ctx context.Context, req *connect.Req
 		storepb.EmailVerificationCodePurpose_PASSWORD_RESET,
 		"[Bytebase] Reset your password",
 		"Hi,\n\nYour password reset code is: %s\n\nThis code expires in %d minutes. If you didn't request this, you can safely ignore this email.\n\n— Bytebase",
+		"", 0,
 	); err != nil {
 		slog.Warn("failed to send password reset email", slog.String("to", email), log.BBError(err))
 	}
@@ -162,6 +175,18 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("email code login is not enabled for this workspace"))
 	}
 
+	// One cap for the whole deployment, whatever workspace the caller names.
+	// SaaS copies EMAIL_CONFIG into every workspace it creates
+	// (getAdditionalWorkspaceSettings), so naming one does not change the sender
+	// — keying on the workspace would just hand each of them its own budget
+	// against a shared reputation, and the key is caller-supplied anyway.
+	//
+	// The 60s per-recipient cooldown bounds one address; only a sender-wide cap
+	// bounds a campaign, which writes each address once. Accepted: spending the
+	// cap delays sign-in codes deployment-wide until the window passes, and one
+	// address can spend it as cheaply as many, since the cost is the requests.
+	// Bounded and recoverable, unlike the deliverability damage it prevents.
+
 	// Send synchronously so the caller learns about actionable failures (missing EMAIL
 	// setting, SMTP unreachable, etc.). No enumeration risk here: LOGIN always attempts to
 	// send regardless of whether the email exists (sign-up is handled on verify).
@@ -172,7 +197,11 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 		storepb.EmailVerificationCodePurpose_LOGIN,
 		"[Bytebase] Your sign-in code",
 		"Hi,\n\nYour sign-in code is: %s\n\nThis code expires in %d minutes. If you didn't request this, you can safely ignore this email.\n\n— Bytebase",
+		signinCodeSendBudgetKey, emailCodeSendPerWindow,
 	); err != nil {
+		if errors.Is(err, errSendBudgetExhausted) {
+			return nil, connect.NewError(connect.CodeResourceExhausted, err)
+		}
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
@@ -288,16 +317,19 @@ func (s *AuthService) parseAndSetAuditWorkspace(ctx context.Context, email strin
 		return "", err
 	}
 	if workspaceID != "" {
-		account, err := s.store.GetAccountByEmail(ctx, email)
-		if err == nil && account != nil && account.Type == storepb.PrincipalType_END_USER && !account.MemberDeleted {
-			workspace, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
-				WorkspaceID:    &workspaceID,
-				Email:          email,
-				IncludeAllUser: !s.profile.SaaS,
-			})
-			if err == nil && workspace != nil {
-				common.SetAuditWorkspaceID(ctx, workspace.ResourceID)
-			}
+		account, accountErr := s.store.GetAccountByEmail(ctx, email)
+		// Looked up for every address, not only one worth attributing. Callers
+		// here are anonymous and can reach a response without a send — an
+		// exhausted budget returns early — so a query skipped for strangers is a
+		// query a member can be recognised by.
+		workspace, workspaceErr := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
+			WorkspaceID:    &workspaceID,
+			Email:          email,
+			IncludeAllUser: !s.profile.SaaS,
+		})
+		if accountErr == nil && account != nil && account.Type == storepb.PrincipalType_END_USER && !account.MemberDeleted &&
+			workspaceErr == nil && workspace != nil {
+			common.SetAuditWorkspaceID(ctx, workspace.ResourceID)
 		}
 	}
 	return workspaceID, nil
@@ -346,12 +378,13 @@ func resolvePreLoginEmailSetting(
 // and emails the plain code. Returns nil on a successful send as well as on silent-skip paths
 // (cooldown active, or PASSWORD_RESET for an unknown email) — both are intentionally
 // indistinguishable to the caller, since both correspond to "no new email was delivered".
-// Returns an error only on actionable failures (missing EMAIL setting, SMTP failure, DB error).
+// Returns an error only on actionable failures (missing EMAIL setting, SMTP failure, DB error,
+// or an exhausted send budget — see sendBudget, which only the caller's budgets can produce).
 // Callers decide whether to propagate the error: `SendEmailLoginCode` surfaces it (users need
 // to know email delivery failed), `RequestPasswordReset` swallows it to avoid revealing that
 // the account exists.
-func (s *AuthService) sendEmailVerificationCode(ctx context.Context, workspaceID, email string, purpose storepb.EmailVerificationCodePurpose, subject, bodyFmt string) error {
-	return sendEmailVerificationCode(ctx, s.store, s.secret, workspaceID, email, purpose, emailCodeTemplate{Subject: subject, BodyFmt: bodyFmt})
+func (s *AuthService) sendEmailVerificationCode(ctx context.Context, workspaceID, email string, purpose storepb.EmailVerificationCodePurpose, subject, bodyFmt string, budgetKey string, budgetMax int) error {
+	return sendEmailVerificationCode(ctx, s.store, s.secret, workspaceID, email, purpose, emailCodeTemplate{Subject: subject, BodyFmt: bodyFmt}, budgetKey, budgetMax)
 }
 
 // emailCodeTemplate is the message a verification code is delivered in.
@@ -364,7 +397,7 @@ type emailCodeTemplate struct {
 // sendEmailVerificationCode is package-level because both AuthService (login
 // and password-reset codes) and UserService (the re-authentication code) send
 // them; the deps it needs are passed rather than reached through a receiver.
-func sendEmailVerificationCode(ctx context.Context, stores *store.Store, secret, workspaceID, email string, purpose storepb.EmailVerificationCodePurpose, mail emailCodeTemplate) error {
+func sendEmailVerificationCode(ctx context.Context, stores *store.Store, secret, workspaceID, email string, purpose storepb.EmailVerificationCodePurpose, mail emailCodeTemplate, budgetKey string, budgetMax int) error {
 	// For password reset, only send to active end users — no upsert or email for other targets.
 	// Login intentionally skips this account check because email-code login also supports signup.
 	if purpose == storepb.EmailVerificationCodePurpose_PASSWORD_RESET {
@@ -385,6 +418,25 @@ func sendEmailVerificationCode(ctx context.Context, stores *store.Store, secret,
 	}
 	if emailSetting == nil {
 		return errors.Errorf("cannot found email config for workspace %v", workspaceID)
+	}
+
+	// Claim before writing anything: the upsert below replaces the stored hash, so
+	// claiming after it would let an exhausted budget destroy a code the recipient
+	// still holds and send no replacement.
+	//
+	// Every request is counted, including one the cooldown will skip. Checking the
+	// cooldown first would be cheaper but cannot be done atomically with the
+	// claim, so concurrent requests would pass it together and be counted anyway,
+	// and it would make the answer depend on whether that recipient has a recent
+	// code. Draining the budget costs the same number of requests either way.
+	if budgetKey != "" {
+		granted, err := stores.ClaimAttempt(ctx, budgetKey, storepb.LoginAttemptKind_EMAIL_CODE_SEND, budgetMax, emailCodeSendWindow)
+		if err != nil {
+			return errors.Wrap(err, "failed to claim send budget")
+		}
+		if !granted {
+			return errSendBudgetExhausted
+		}
 	}
 
 	code, err := generateEmailCode()

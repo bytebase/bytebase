@@ -697,6 +697,10 @@ func (s *UserService) RequestReauthCode(ctx context.Context, request *connect.Re
 			Subject: "[Bytebase] Confirm your identity",
 			BodyFmt: "Hi,\n\nYour verification code is: %s\n\nThis code expires in %d minutes. If you didn't request this, you can safely ignore this email.\n\n— Bytebase",
 		},
+		// Unbudgeted: the caller is already authenticated and the recipient is
+		// their own address, so this is not a path an anonymous sender can point
+		// at a recipient list.
+		"", 0,
 	); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, err)
 	}

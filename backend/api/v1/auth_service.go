@@ -294,7 +294,46 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		return nil, err
 	}
 
-	// Check if principal already exists.
+	// Whether signup is allowed at all never depends on the address, so decide it
+	// without reading anything the address selects. Otherwise a registered
+	// account and a stranger reach the same denial by different amounts of work
+	// and are told apart by latency: SaaS refuses every signup outright, and
+	// self-hosted takes its restriction from the singleton workspace, while
+	// resolving by email costs one query for a member and two for a stranger.
+	if s.profile.SaaS {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed for this workspace"))
+	}
+	workspaceID, err := s.store.GetWorkspaceID(ctx)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve workspace"))
+	}
+	// Announce it on every exit path so denied signups still produce audit entries.
+	common.SetAuditWorkspaceID(ctx, workspaceID)
+
+	restriction, err := getAccountRestriction(ctx, s.store, s.licenseService, s.profile.SaaS, workspaceID)
+	if err != nil {
+		return nil, err
+	}
+	if restriction.DisallowSignup {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed for this workspace"))
+	}
+
+	// Past the gates the address matters: resolve where it would land, read-only,
+	// so a rejected signup leaves no orphan user or workspace behind.
+	targetWorkspaceID, targetIsMember, err := s.resolveWorkspaceIDByEmail(ctx, email, "")
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve target workspace"))
+	}
+	// Existence is checked only once the workspace would accept a signup at all.
+	// Answering AlreadyExists ahead of that gate makes a workspace that refuses
+	// every signup — every SaaS workspace, since the override above always sets
+	// DisallowSignup — an account-existence oracle for anonymous callers.
+	//
+	// It stays ahead of the password policy, though. Only DisallowSignup decides
+	// whether existence may be disclosed here; past it, a workspace that accepts
+	// signups answers AlreadyExists to any caller who submits a valid password
+	// anyway, so ordering the policy first would hide nothing and would tell a
+	// registered user to pick a better password when what they need is to log in.
 	existingUser, err := s.store.GetUserByEmail(ctx, email)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user by email"))
@@ -303,35 +342,11 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("email %s is already registered", request.Email))
 	}
 
-	// Resolve the target workspace (read-only) so we can check restrictions BEFORE
-	// any write — otherwise a rejected signup would leave an orphan user/workspace behind.
-	targetWorkspaceID, targetIsMember, err := s.resolveWorkspaceIDByEmail(ctx, email, "")
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve target workspace"))
-	}
-	// Announce the workspace on every exit path so denied signups (DisallowSignup,
-	// password restriction) still produce audit entries. Uses targetWorkspaceID (resolved
-	// before any writes) rather than the provisioned workspaceID.
-	defer func() { common.SetAuditWorkspaceID(ctx, targetWorkspaceID) }()
-
-	restriction, err := getAccountRestriction(
-		ctx,
-		s.store,
-		s.licenseService,
-		s.profile.SaaS,
-		targetWorkspaceID,
-	)
-	if err != nil {
-		return nil, err
-	}
-	if restriction.DisallowSignup {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed for this workspace %v", targetWorkspaceID))
-	}
 	if err := validatePasswordWithRestriction(request.Password, convertToStorePasswordRestriction(restriction.PasswordRestriction)); err != nil {
 		return nil, err
 	}
 
-	workspaceID, err := s.provisionResolvedWorkspace(ctx, email, targetWorkspaceID, targetIsMember)
+	workspaceID, err = s.provisionResolvedWorkspace(ctx, email, targetWorkspaceID, targetIsMember)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to provision workspace"))
 	}

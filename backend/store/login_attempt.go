@@ -17,22 +17,26 @@ import (
 // comfortably under this structural bound.
 const maxIdentityBytes = 2048
 
-// ClaimLoginAttempt atomically takes one of maxAttempts slots for the identity
-// before the credential is checked (docs/design/login-attempt-lockout.md).
-// Returns (true, nil) when a slot was granted, or (false, nil) when the
-// identity already holds maxAttempts and the latest was under window ago — the
-// caller must refuse the attempt without touching the credential. A refused
-// claim leaves the row untouched, so a lock lasts exactly window from the
-// maxAttempts-th attempt; a claim more than window after the latest attempt
-// restarts the counter at one. The row lock serializes concurrent claims and
-// now() is database time, so replicas cannot disagree.
-func (s *Store) ClaimLoginAttempt(ctx context.Context, identity string, kind storepb.LoginAttemptKind, maxAttempts int, window time.Duration) (bool, error) {
+// ClaimAttempt records one attempt for (identity, kind) and reports whether it
+// is within maxAttempts for the window. Call it before the thing being limited
+// happens. Returns (false, nil) once the window is full, leaving the row
+// untouched. The row lock serializes concurrent claims and now() is database
+// time, so replicas cannot disagree.
+//
+// The kind decides what an attempt does to the window, as
+// proto/store/store/auth.proto records. A credential kind is a lockout: every
+// failure restarts the window, so a lock outlives the last attempt.
+// EMAIL_CODE_SEND counts outbound mail, so its window is anchored to the first
+// attempt — restarting it would mean a steady stream never resets and "N per
+// window" would become "N ever".
+func (s *Store) ClaimAttempt(ctx context.Context, identity string, kind storepb.LoginAttemptKind, maxAttempts int, window time.Duration) (bool, error) {
 	// Backstop against programmer error — request fields that become identities
-	// are bounded at the proto edge, so an unkeyed or structurally oversized
-	// row here means a caller composed an identity from an unbounded source.
+	// are bounded at the proto edge, so an unkeyed or structurally oversized row
+	// here means a caller composed an identity from an unbounded source.
 	if identity == "" || len(identity) > maxIdentityBytes || kind == storepb.LoginAttemptKind_LOGIN_ATTEMPT_KIND_UNSPECIFIED {
-		return false, errors.Errorf("login attempt requires a kind and an identity of at most %d bytes", maxIdentityBytes)
+		return false, errors.Errorf("an attempt requires a kind and an identity of at most %d bytes", maxIdentityBytes)
 	}
+	restartWindowOnAttempt := kind != storepb.LoginAttemptKind_EMAIL_CODE_SEND
 	q := qb.Q().Space(`
 		INSERT INTO login_attempt (identity, kind, attempts, last_attempt_at)
 		VALUES (?, ?, 1, now())
@@ -41,11 +45,14 @@ func (s *Store) ClaimLoginAttempt(ctx context.Context, identity string, kind sto
 				WHEN login_attempt.last_attempt_at < now() - make_interval(secs => ?) THEN 1
 				ELSE login_attempt.attempts + 1
 			END,
-			last_attempt_at = now()
+			last_attempt_at = CASE
+				WHEN ? OR login_attempt.last_attempt_at < now() - make_interval(secs => ?) THEN now()
+				ELSE login_attempt.last_attempt_at
+			END
 		WHERE login_attempt.attempts < ?
 			OR login_attempt.last_attempt_at < now() - make_interval(secs => ?)
 		RETURNING 1
-	`, identity, kind.String(), window.Seconds(), maxAttempts, window.Seconds())
+	`, identity, kind.String(), window.Seconds(), restartWindowOnAttempt, window.Seconds(), maxAttempts, window.Seconds())
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -54,9 +61,9 @@ func (s *Store) ClaimLoginAttempt(ctx context.Context, identity string, kind sto
 	var dummy int
 	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&dummy); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return false, nil // locked out — no slot granted
+			return false, nil // window full
 		}
-		return false, errors.Wrap(err, "failed to claim login attempt")
+		return false, errors.Wrap(err, "failed to claim attempt")
 	}
 	return true, nil
 }

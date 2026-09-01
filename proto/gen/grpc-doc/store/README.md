@@ -960,15 +960,21 @@ Stored as the enum name string in email_verification_code.purpose column.
 <a name="bytebase-store-LoginAttemptKind"></a>
 
 ### LoginAttemptKind
-LoginAttemptKind names which credential&#39;s attempt limit a login_attempt row
-tracks. Stored as the enum name string in login_attempt.kind column.
+LoginAttemptKind names what a login_attempt row counts. Stored as the enum
+name string in login_attempt.kind column. The kind also says what the
+identity column holds: the three credential kinds below count failed guesses
+against a person, share one attempt limit, and are cleared by a successful
+verification.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | LOGIN_ATTEMPT_KIND_UNSPECIFIED | 0 |  |
 | PASSWORD | 1 |  |
-| EMAIL_CODE | 2 |  |
+| EMAIL_CODE | 2 | Submitting a 6-digit code. Sign-in, password reset and re-authentication share one bucket per email, so a guess anywhere counts everywhere. |
 | MFA | 3 |  |
+| EMAIL_CODE_SEND | 4 | Sending those codes rather than guessing them — the opposite direction, and the reason it is a separate kind. Its identity is the sending deployment and not a person, so exhausting it throttles outbound mail and locks no account, and nothing clears it because a delivered email is the thing counted and there is no success to forgive.
+
+It also reads last_attempt_at differently: for this kind the column is the window&#39;s start, not the latest send, so the count resets on a fixed schedule. The kinds above intentionally reset only after a quiet window — wrong for a volume budget, where a steady trickle would never reset and &#34;N per hour&#34; would become &#34;N ever&#34;. |
 
 
  
