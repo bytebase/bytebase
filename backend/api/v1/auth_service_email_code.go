@@ -427,7 +427,7 @@ func sendEmailVerificationCode(ctx context.Context, stores *store.Store, secret,
 	// and it would make the answer depend on whether that recipient has a recent
 	// code. Draining the budget costs the same number of requests either way.
 	if budgetKey != "" {
-		granted, err := stores.ClaimSendBudget(ctx, budgetKey, storepb.LoginAttemptKind_EMAIL_CODE_SEND, budgetMax, emailCodeSendWindow)
+		granted, err := stores.ClaimSendBudget(ctx, budgetKey, budgetMax, emailCodeSendWindow)
 		if err != nil {
 			return errors.Wrap(err, "failed to claim send budget")
 		}

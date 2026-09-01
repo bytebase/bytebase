@@ -238,11 +238,11 @@ func TestSendBudgetClaim(t *testing.T) {
 	t.Run("grants exactly max per window", func(t *testing.T) {
 		const key = "sender-a"
 		for i := range 3 {
-			granted, err := s.ClaimSendBudget(ctx, key, kind, 3, window)
+			granted, err := s.ClaimSendBudget(ctx, key, 3, window)
 			require.NoError(t, err)
 			require.True(t, granted, "grant %d is within the window", i)
 		}
-		granted, err := s.ClaimSendBudget(ctx, key, kind, 3, window)
+		granted, err := s.ClaimSendBudget(ctx, key, 3, window)
 		require.NoError(t, err)
 		require.False(t, granted, "the window is full")
 	})
@@ -258,7 +258,7 @@ func TestSendBudgetClaim(t *testing.T) {
 		// itself rolling over between every pair. A lockout counter would reach
 		// its limit on the third; a fixed window starts over each time.
 		for i := range 6 {
-			granted, err := s.ClaimSendBudget(ctx, key, kind, 3, window)
+			granted, err := s.ClaimSendBudget(ctx, key, 3, window)
 			require.NoError(t, err, "send %d", i)
 			require.True(t, granted, "send %d must not be refused: no window ever held more than two", i)
 			if i%2 == 1 {
@@ -270,23 +270,23 @@ func TestSendBudgetClaim(t *testing.T) {
 	t.Run("a full window reopens once it expires", func(t *testing.T) {
 		const key = "sender-expiry"
 		for range 2 {
-			granted, err := s.ClaimSendBudget(ctx, key, kind, 2, window)
+			granted, err := s.ClaimSendBudget(ctx, key, 2, window)
 			require.NoError(t, err)
 			require.True(t, granted)
 		}
-		granted, err := s.ClaimSendBudget(ctx, key, kind, 2, window)
+		granted, err := s.ClaimSendBudget(ctx, key, 2, window)
 		require.NoError(t, err)
 		require.False(t, granted)
 
 		backdateWindow(key, window+time.Minute)
-		granted, err = s.ClaimSendBudget(ctx, key, kind, 2, window)
+		granted, err = s.ClaimSendBudget(ctx, key, 2, window)
 		require.NoError(t, err)
 		require.True(t, granted, "a new window starts once the old one expires")
 	})
 
 	t.Run("refusals do not extend the window", func(t *testing.T) {
 		const key = "sender-refusal"
-		granted, err := s.ClaimSendBudget(ctx, key, kind, 1, window)
+		granted, err := s.ClaimSendBudget(ctx, key, 1, window)
 		require.NoError(t, err)
 		require.True(t, granted)
 		var opened time.Time
@@ -295,7 +295,7 @@ func TestSendBudgetClaim(t *testing.T) {
 		`, key, kind.String()).Scan(&opened))
 
 		for range 5 {
-			granted, err := s.ClaimSendBudget(ctx, key, kind, 1, window)
+			granted, err := s.ClaimSendBudget(ctx, key, 1, window)
 			require.NoError(t, err)
 			require.False(t, granted)
 		}
@@ -307,10 +307,10 @@ func TestSendBudgetClaim(t *testing.T) {
 	})
 
 	t.Run("senders and kinds are independent", func(t *testing.T) {
-		granted, err := s.ClaimSendBudget(ctx, "sender-x", kind, 1, window)
+		granted, err := s.ClaimSendBudget(ctx, "sender-x", 1, window)
 		require.NoError(t, err)
 		require.True(t, granted)
-		granted, err = s.ClaimSendBudget(ctx, "sender-y", kind, 1, window)
+		granted, err = s.ClaimSendBudget(ctx, "sender-y", 1, window)
 		require.NoError(t, err)
 		require.True(t, granted, "one sender's full window must not bind another")
 		granted, err = s.ClaimLoginAttempt(ctx, "sender-x", storepb.LoginAttemptKind_PASSWORD, 1, window)
@@ -319,9 +319,7 @@ func TestSendBudgetClaim(t *testing.T) {
 	})
 
 	t.Run("an unkeyed claim is refused outright", func(t *testing.T) {
-		_, err := s.ClaimSendBudget(ctx, "", kind, 1, window)
-		require.Error(t, err)
-		_, err = s.ClaimSendBudget(ctx, "ok", storepb.LoginAttemptKind_LOGIN_ATTEMPT_KIND_UNSPECIFIED, 1, window)
+		_, err := s.ClaimSendBudget(ctx, "", 1, window)
 		require.Error(t, err)
 	})
 }
