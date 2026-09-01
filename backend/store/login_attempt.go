@@ -17,36 +17,24 @@ import (
 // comfortably under this structural bound.
 const maxIdentityBytes = 2048
 
-// ClaimLoginAttempt atomically takes one of maxAttempts slots for the identity
-// before the credential is checked (docs/design/login-attempt-lockout.md). A
-// refused claim leaves the row untouched, so a lock lasts exactly window from
-// the maxAttempts-th attempt.
-func (s *Store) ClaimLoginAttempt(ctx context.Context, identity string, kind storepb.LoginAttemptKind, maxAttempts int, window time.Duration) (bool, error) {
-	return s.claimSlot(ctx, identity, kind, maxAttempts, window, true /* extendWindow */)
-}
-
-// ClaimSendBudget takes one of perWindow slots for the sender, the window
-// opening on its first grant. Returns (false, nil) when it is spent.
-func (s *Store) ClaimSendBudget(ctx context.Context, key string, perWindow int, window time.Duration) (bool, error) {
-	return s.claimSlot(ctx, key, storepb.LoginAttemptKind_EMAIL_CODE_SEND, perWindow, window, false /* extendWindow */)
-}
-
-// claimSlot takes one of slots claims for (identity, kind) inside window. The row
-// lock serializes concurrent claims and now() is database time, so replicas
-// cannot disagree.
+// ClaimSlot atomically takes one of slots claims for (identity, kind) inside
+// window, before the thing being limited happens. Returns (false, nil) when the
+// slots are spent, leaving the row untouched. The row lock serializes concurrent
+// claims and now() is database time, so replicas cannot disagree.
 //
-// extendWindow says what a grant does to the window. True restarts it, so the
-// lock outlives the last attempt — what a lockout wants. False anchors it to the
-// first grant, so a steady stream still resets; a rate limit needs that, since
-// restarting on every grant would turn "N per window" into "N ever, until a
-// whole window of silence".
-func (s *Store) claimSlot(ctx context.Context, identity string, kind storepb.LoginAttemptKind, slots int, window time.Duration, extendWindow bool) (bool, error) {
+// The kind decides what a grant does to the window, as proto/store/store/auth.proto
+// records. A credential kind is a lockout: every failure restarts the window, so
+// a lock outlives the last attempt. EMAIL_CODE_SEND counts outbound mail, so its
+// window is anchored to the first claim — restarting it would mean a steady
+// stream never resets and "N per window" would become "N ever".
+func (s *Store) ClaimSlot(ctx context.Context, identity string, kind storepb.LoginAttemptKind, slots int, window time.Duration) (bool, error) {
 	// Backstop against programmer error — request fields that become identities
 	// are bounded at the proto edge, so an unkeyed or structurally oversized row
 	// here means a caller composed an identity from an unbounded source.
 	if identity == "" || len(identity) > maxIdentityBytes || kind == storepb.LoginAttemptKind_LOGIN_ATTEMPT_KIND_UNSPECIFIED {
-		return false, errors.Errorf("login attempt requires a kind and an identity of at most %d bytes", maxIdentityBytes)
+		return false, errors.Errorf("a claim requires a kind and an identity of at most %d bytes", maxIdentityBytes)
 	}
+	restartWindowOnClaim := kind != storepb.LoginAttemptKind_EMAIL_CODE_SEND
 	q := qb.Q().Space(`
 		INSERT INTO login_attempt (identity, kind, attempts, last_attempt_at)
 		VALUES (?, ?, 1, now())
@@ -62,7 +50,7 @@ func (s *Store) claimSlot(ctx context.Context, identity string, kind storepb.Log
 		WHERE login_attempt.attempts < ?
 			OR login_attempt.last_attempt_at < now() - make_interval(secs => ?)
 		RETURNING 1
-	`, identity, kind.String(), window.Seconds(), extendWindow, window.Seconds(), slots, window.Seconds())
+	`, identity, kind.String(), window.Seconds(), restartWindowOnClaim, window.Seconds(), slots, window.Seconds())
 
 	query, args, err := q.ToSQL()
 	if err != nil {
@@ -73,7 +61,7 @@ func (s *Store) claimSlot(ctx context.Context, identity string, kind storepb.Log
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, nil // no slot granted
 		}
-		return false, errors.Wrap(err, "failed to claim login attempt")
+		return false, errors.Wrap(err, "failed to claim slot")
 	}
 	return true, nil
 }

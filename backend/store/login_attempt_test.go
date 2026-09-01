@@ -64,12 +64,12 @@ func TestLoginAttemptClaim(t *testing.T) {
 	t.Run("grants exactly N slots then locks", func(t *testing.T) {
 		const identity = "victim@example.com"
 		for i := range 5 {
-			granted, err := s.ClaimLoginAttempt(ctx, identity, storepb.LoginAttemptKind_EMAIL_CODE, 5, window)
+			granted, err := s.ClaimSlot(ctx, identity, storepb.LoginAttemptKind_EMAIL_CODE, 5, window)
 			require.NoError(t, err)
 			require.True(t, granted, "claim %d must be granted", i+1)
 		}
 		for range 2 {
-			granted, err := s.ClaimLoginAttempt(ctx, identity, storepb.LoginAttemptKind_EMAIL_CODE, 5, window)
+			granted, err := s.ClaimSlot(ctx, identity, storepb.LoginAttemptKind_EMAIL_CODE, 5, window)
 			require.NoError(t, err)
 			require.False(t, granted, "claims beyond N must be refused")
 		}
@@ -78,12 +78,12 @@ func TestLoginAttemptClaim(t *testing.T) {
 	t.Run("locked claims do not extend the lock", func(t *testing.T) {
 		const identity = "locked@example.com"
 		for range 3 {
-			granted, err := s.ClaimLoginAttempt(ctx, identity, storepb.LoginAttemptKind_PASSWORD, 3, window)
+			granted, err := s.ClaimSlot(ctx, identity, storepb.LoginAttemptKind_PASSWORD, 3, window)
 			require.NoError(t, err)
 			require.True(t, granted)
 		}
 		lockedAt := lastAttemptAt(identity, storepb.LoginAttemptKind_PASSWORD)
-		granted, err := s.ClaimLoginAttempt(ctx, identity, storepb.LoginAttemptKind_PASSWORD, 3, window)
+		granted, err := s.ClaimSlot(ctx, identity, storepb.LoginAttemptKind_PASSWORD, 3, window)
 		require.NoError(t, err)
 		require.False(t, granted)
 		require.Equal(t, lockedAt, lastAttemptAt(identity, storepb.LoginAttemptKind_PASSWORD),
@@ -93,21 +93,21 @@ func TestLoginAttemptClaim(t *testing.T) {
 	t.Run("counter forgets after a quiet window", func(t *testing.T) {
 		const identity = "idle@example.com"
 		for range 3 {
-			granted, err := s.ClaimLoginAttempt(ctx, identity, storepb.LoginAttemptKind_PASSWORD, 3, window)
+			granted, err := s.ClaimSlot(ctx, identity, storepb.LoginAttemptKind_PASSWORD, 3, window)
 			require.NoError(t, err)
 			require.True(t, granted)
 		}
-		granted, err := s.ClaimLoginAttempt(ctx, identity, storepb.LoginAttemptKind_PASSWORD, 3, window)
+		granted, err := s.ClaimSlot(ctx, identity, storepb.LoginAttemptKind_PASSWORD, 3, window)
 		require.NoError(t, err)
 		require.False(t, granted, "identity must be locked before the window passes")
 
 		backdate(identity, storepb.LoginAttemptKind_PASSWORD, window+time.Second)
 		for range 3 {
-			granted, err := s.ClaimLoginAttempt(ctx, identity, storepb.LoginAttemptKind_PASSWORD, 3, window)
+			granted, err := s.ClaimSlot(ctx, identity, storepb.LoginAttemptKind_PASSWORD, 3, window)
 			require.NoError(t, err)
 			require.True(t, granted, "the counter must restart at one after D of quiet")
 		}
-		granted, err = s.ClaimLoginAttempt(ctx, identity, storepb.LoginAttemptKind_PASSWORD, 3, window)
+		granted, err = s.ClaimSlot(ctx, identity, storepb.LoginAttemptKind_PASSWORD, 3, window)
 		require.NoError(t, err)
 		require.False(t, granted)
 	})
@@ -115,13 +115,13 @@ func TestLoginAttemptClaim(t *testing.T) {
 	t.Run("clear deletes the row", func(t *testing.T) {
 		const identity = "cleared@example.com"
 		for range 3 {
-			granted, err := s.ClaimLoginAttempt(ctx, identity, storepb.LoginAttemptKind_PASSWORD, 3, window)
+			granted, err := s.ClaimSlot(ctx, identity, storepb.LoginAttemptKind_PASSWORD, 3, window)
 			require.NoError(t, err)
 			require.True(t, granted)
 		}
 		require.NoError(t, s.ClearLoginAttempt(ctx, identity, storepb.LoginAttemptKind_PASSWORD))
 		for range 3 {
-			granted, err := s.ClaimLoginAttempt(ctx, identity, storepb.LoginAttemptKind_PASSWORD, 3, window)
+			granted, err := s.ClaimSlot(ctx, identity, storepb.LoginAttemptKind_PASSWORD, 3, window)
 			require.NoError(t, err)
 			require.True(t, granted, "success must forget every prior failure")
 		}
@@ -134,19 +134,19 @@ func TestLoginAttemptClaim(t *testing.T) {
 	t.Run("kinds and identities are independent buckets", func(t *testing.T) {
 		const identity = "bucketed@example.com"
 		for range 3 {
-			granted, err := s.ClaimLoginAttempt(ctx, identity, storepb.LoginAttemptKind_MFA, 3, window)
+			granted, err := s.ClaimSlot(ctx, identity, storepb.LoginAttemptKind_MFA, 3, window)
 			require.NoError(t, err)
 			require.True(t, granted)
 		}
-		granted, err := s.ClaimLoginAttempt(ctx, identity, storepb.LoginAttemptKind_MFA, 3, window)
+		granted, err := s.ClaimSlot(ctx, identity, storepb.LoginAttemptKind_MFA, 3, window)
 		require.NoError(t, err)
 		require.False(t, granted)
 
-		granted, err = s.ClaimLoginAttempt(ctx, identity, storepb.LoginAttemptKind_PASSWORD, 3, window)
+		granted, err = s.ClaimSlot(ctx, identity, storepb.LoginAttemptKind_PASSWORD, 3, window)
 		require.NoError(t, err)
 		require.True(t, granted, "another kind for the same identity must have its own slots")
 
-		granted, err = s.ClaimLoginAttempt(ctx, "other-bucketed@example.com", storepb.LoginAttemptKind_MFA, 3, window)
+		granted, err = s.ClaimSlot(ctx, "other-bucketed@example.com", storepb.LoginAttemptKind_MFA, 3, window)
 		require.NoError(t, err)
 		require.True(t, granted, "another identity must have its own slots")
 	})
@@ -158,7 +158,7 @@ func TestLoginAttemptClaim(t *testing.T) {
 		grants := make(chan bool, 20)
 		for range 20 {
 			wg.Go(func() {
-				granted, err := s.ClaimLoginAttempt(ctx, identity, storepb.LoginAttemptKind_PASSWORD, n, window)
+				granted, err := s.ClaimSlot(ctx, identity, storepb.LoginAttemptKind_PASSWORD, n, window)
 				require.NoError(t, err)
 				grants <- granted
 			})
@@ -175,11 +175,11 @@ func TestLoginAttemptClaim(t *testing.T) {
 	})
 
 	t.Run("unkeyed claims are refused outright", func(t *testing.T) {
-		_, err := s.ClaimLoginAttempt(ctx, "", storepb.LoginAttemptKind_PASSWORD, 3, window)
+		_, err := s.ClaimSlot(ctx, "", storepb.LoginAttemptKind_PASSWORD, 3, window)
 		require.Error(t, err, "an empty identity must never write a row")
-		_, err = s.ClaimLoginAttempt(ctx, "someone@example.com", storepb.LoginAttemptKind_LOGIN_ATTEMPT_KIND_UNSPECIFIED, 3, window)
+		_, err = s.ClaimSlot(ctx, "someone@example.com", storepb.LoginAttemptKind_LOGIN_ATTEMPT_KIND_UNSPECIFIED, 3, window)
 		require.Error(t, err, "an unspecified kind must never write a row")
-		_, err = s.ClaimLoginAttempt(ctx, strings.Repeat("a", 2049), storepb.LoginAttemptKind_PASSWORD, 3, window)
+		_, err = s.ClaimSlot(ctx, strings.Repeat("a", 2049), storepb.LoginAttemptKind_PASSWORD, 3, window)
 		require.Error(t, err, "a structurally oversized identity must never write a row")
 	})
 
@@ -187,7 +187,7 @@ func TestLoginAttemptClaim(t *testing.T) {
 		const staleIdentity = "stale@example.com"
 		const freshIdentity = "fresh@example.com"
 		for _, identity := range []string{staleIdentity, freshIdentity} {
-			granted, err := s.ClaimLoginAttempt(ctx, identity, storepb.LoginAttemptKind_PASSWORD, 3, window)
+			granted, err := s.ClaimSlot(ctx, identity, storepb.LoginAttemptKind_PASSWORD, 3, window)
 			require.NoError(t, err)
 			require.True(t, granted)
 		}
@@ -205,8 +205,8 @@ func TestLoginAttemptClaim(t *testing.T) {
 	})
 }
 
-// TestSendBudgetClaim covers the outbound send budget, which shares the
-// login_attempt table with the lockout but deliberately not its semantics.
+// TestSendBudgetClaim covers the outbound send budget: the same ClaimSlot as the
+// lockout, under the window rule EMAIL_CODE_SEND selects.
 func TestSendBudgetClaim(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.GetTestPgContainer(ctx, t)
@@ -238,27 +238,26 @@ func TestSendBudgetClaim(t *testing.T) {
 	t.Run("grants exactly max per window", func(t *testing.T) {
 		const key = "sender-a"
 		for i := range 3 {
-			granted, err := s.ClaimSendBudget(ctx, key, 3, window)
+			granted, err := s.ClaimSlot(ctx, key, kind, 3, window)
 			require.NoError(t, err)
 			require.True(t, granted, "grant %d is within the window", i)
 		}
-		granted, err := s.ClaimSendBudget(ctx, key, 3, window)
+		granted, err := s.ClaimSlot(ctx, key, kind, 3, window)
 		require.NoError(t, err)
 		require.False(t, granted, "the window is full")
 	})
 
-	// The reason this is not ClaimLoginAttempt. A lockout resets only after a
-	// quiet window and every grant restarts that quiet period, so a steady
-	// trickle never resets it: "3 per hour" would silently become "3 ever, until
-	// an hour of silence" and would refuse traffic that never approached the
-	// rate. The window here is anchored to its first grant instead.
+	// Why EMAIL_CODE_SEND anchors its window to the first claim. Under a
+	// credential kind's rule every grant restarts the window, so a steady trickle
+	// never resets it and "3 per hour" would become "3 ever, until an hour of
+	// silence", refusing traffic that never approached the rate.
 	t.Run("a steady trickle does not accumulate across windows", func(t *testing.T) {
 		const key = "sender-trickle"
 		// Six sends, each arriving well inside the window but with the window
 		// itself rolling over between every pair. A lockout counter would reach
 		// its limit on the third; a fixed window starts over each time.
 		for i := range 6 {
-			granted, err := s.ClaimSendBudget(ctx, key, 3, window)
+			granted, err := s.ClaimSlot(ctx, key, kind, 3, window)
 			require.NoError(t, err, "send %d", i)
 			require.True(t, granted, "send %d must not be refused: no window ever held more than two", i)
 			if i%2 == 1 {
@@ -270,23 +269,23 @@ func TestSendBudgetClaim(t *testing.T) {
 	t.Run("a full window reopens once it expires", func(t *testing.T) {
 		const key = "sender-expiry"
 		for range 2 {
-			granted, err := s.ClaimSendBudget(ctx, key, 2, window)
+			granted, err := s.ClaimSlot(ctx, key, kind, 2, window)
 			require.NoError(t, err)
 			require.True(t, granted)
 		}
-		granted, err := s.ClaimSendBudget(ctx, key, 2, window)
+		granted, err := s.ClaimSlot(ctx, key, kind, 2, window)
 		require.NoError(t, err)
 		require.False(t, granted)
 
 		backdateWindow(key, window+time.Minute)
-		granted, err = s.ClaimSendBudget(ctx, key, 2, window)
+		granted, err = s.ClaimSlot(ctx, key, kind, 2, window)
 		require.NoError(t, err)
 		require.True(t, granted, "a new window starts once the old one expires")
 	})
 
 	t.Run("refusals do not extend the window", func(t *testing.T) {
 		const key = "sender-refusal"
-		granted, err := s.ClaimSendBudget(ctx, key, 1, window)
+		granted, err := s.ClaimSlot(ctx, key, kind, 1, window)
 		require.NoError(t, err)
 		require.True(t, granted)
 		var opened time.Time
@@ -295,7 +294,7 @@ func TestSendBudgetClaim(t *testing.T) {
 		`, key, kind.String()).Scan(&opened))
 
 		for range 5 {
-			granted, err := s.ClaimSendBudget(ctx, key, 1, window)
+			granted, err := s.ClaimSlot(ctx, key, kind, 1, window)
 			require.NoError(t, err)
 			require.False(t, granted)
 		}
@@ -307,19 +306,19 @@ func TestSendBudgetClaim(t *testing.T) {
 	})
 
 	t.Run("senders and kinds are independent", func(t *testing.T) {
-		granted, err := s.ClaimSendBudget(ctx, "sender-x", 1, window)
+		granted, err := s.ClaimSlot(ctx, "sender-x", kind, 1, window)
 		require.NoError(t, err)
 		require.True(t, granted)
-		granted, err = s.ClaimSendBudget(ctx, "sender-y", 1, window)
+		granted, err = s.ClaimSlot(ctx, "sender-y", kind, 1, window)
 		require.NoError(t, err)
 		require.True(t, granted, "one sender's full window must not bind another")
-		granted, err = s.ClaimLoginAttempt(ctx, "sender-x", storepb.LoginAttemptKind_PASSWORD, 1, window)
+		granted, err = s.ClaimSlot(ctx, "sender-x", storepb.LoginAttemptKind_PASSWORD, 1, window)
 		require.NoError(t, err)
 		require.True(t, granted, "a send budget must not consume a credential bucket")
 	})
 
 	t.Run("an unkeyed claim is refused outright", func(t *testing.T) {
-		_, err := s.ClaimSendBudget(ctx, "", 1, window)
+		_, err := s.ClaimSlot(ctx, "", kind, 1, window)
 		require.Error(t, err)
 	})
 }
