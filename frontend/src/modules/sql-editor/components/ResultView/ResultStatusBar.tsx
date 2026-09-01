@@ -108,7 +108,7 @@ export function ResultStatusBar({
               content={statement}
               size="xs"
               appearance="secondary"
-              className="h-auto shrink-0 px-0 text-control-light hover:bg-transparent hover:text-control"
+              className="shrink-0 text-control-light hover:bg-transparent hover:text-control"
             />
           )}
         </div>

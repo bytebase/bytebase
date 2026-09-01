@@ -97,12 +97,13 @@ function BannerExternalUrl() {
                 }}
                 className={buttonVariants({
                   appearance: "secondary",
+                  size: "lg",
                   className:
-                    "h-auto bg-white py-2 pr-2 pl-4 text-base font-medium text-accent shadow-xs hover:bg-indigo-50",
+                    "bg-background pr-2 text-base text-accent shadow-xs hover:bg-control-bg",
                 })}
               >
                 {t("common.configure-now")}
-                <Wrench className="ml-1 size-5" />
+                <Wrench className="size-5" />
               </RouterLink>
             </div>
           ) : null}

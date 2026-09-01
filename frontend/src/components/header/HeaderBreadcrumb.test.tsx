@@ -260,6 +260,8 @@ describe("HeaderBreadcrumb", () => {
       (button) => button.textContent?.includes("Recent Project")
     );
     expect(projectButton).not.toBeUndefined();
+    expect(projectButton?.classList.contains("h-7")).toBe(true);
+    expect(projectButton?.classList.contains("h-auto")).toBe(false);
 
     act(() => {
       projectButton?.click();
@@ -289,6 +291,8 @@ describe("HeaderBreadcrumb", () => {
       container.querySelectorAll("button")
     ).find((button) => button.textContent?.includes("Default Workspace"));
     expect(workspaceButton).not.toBeUndefined();
+    expect(workspaceButton?.classList.contains("h-7")).toBe(true);
+    expect(workspaceButton?.classList.contains("h-auto")).toBe(false);
 
     act(() => {
       workspaceButton?.click();

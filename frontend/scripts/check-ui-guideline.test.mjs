@@ -244,13 +244,14 @@ const styles = { borderRadius };
     expect(scanSource(source, "src/types/proto-es/generated.ts")).toEqual([]);
   });
 
-  test("allows responsive Button sizing but flags other dimension overrides", () => {
+  test("allows intrinsic and responsive Button sizing but flags fixed dimension overrides", () => {
     const violations = scanSource(
       `
 export function Feature() {
   return (
     <>
-      <Button size="sm" className="w-full" />
+      <Button appearance="link" className="h-auto p-0" />
+      <Button className="h-auto px-2 py-1" />
       <Button
         className={cn(
           "h-8",

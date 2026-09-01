@@ -15,7 +15,6 @@ import {
   LAYER_BACKDROP_CLASS,
   LAYER_SURFACE_CLASS,
 } from "@/components/ui/layer";
-import { WorkspaceSetupGuide } from "@/components/WorkspaceSetupGuide";
 import { useAppProject } from "@/hooks/useAppProject";
 import { applyPlanTitleToQuery } from "@/lib/plan/title";
 import { cn } from "@/lib/utils";
@@ -37,6 +36,7 @@ import {
   useCurrentSQLEditorTab,
   useIsDisconnected,
 } from "@/modules/sql-editor/store/tab";
+import { WorkspaceSetupGuide } from "@/modules/workspace-setup-guide/WorkspaceSetupGuide";
 import { useAppStore } from "@/stores/app";
 import { unknownProject } from "@/types";
 import {
