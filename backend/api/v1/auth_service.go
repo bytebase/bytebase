@@ -294,39 +294,35 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		return nil, err
 	}
 
-	// SaaS refuses every self-service signup, so answer before touching anything
-	// derived from the email. Resolving the workspace first reads that
-	// workspace's settings and license for a registered address and nothing for
-	// a stranger, which times the two apart even when the reply is identical.
+	// Whether signup is allowed at all never depends on the address, so decide it
+	// without reading anything the address selects. Otherwise a registered
+	// account and a stranger reach the same denial by different amounts of work
+	// and are told apart by latency: SaaS refuses every signup outright, and
+	// self-hosted takes its restriction from the singleton workspace, while
+	// resolving by email costs one query for a member and two for a stranger.
 	if s.profile.SaaS {
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed for this workspace"))
 	}
-
-	// Resolve the target workspace (read-only) so we can check restrictions BEFORE
-	// any write — otherwise a rejected signup would leave an orphan user/workspace behind.
-	targetWorkspaceID, targetIsMember, err := s.resolveWorkspaceIDByEmail(ctx, email, "")
+	workspaceID, err := s.store.GetWorkspaceID(ctx)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve target workspace"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve workspace"))
 	}
-	// Announce the workspace on every exit path so denied signups (DisallowSignup,
-	// password restriction) still produce audit entries. Uses targetWorkspaceID (resolved
-	// before any writes) rather than the provisioned workspaceID.
-	defer func() { common.SetAuditWorkspaceID(ctx, targetWorkspaceID) }()
+	// Announce it on every exit path so denied signups still produce audit entries.
+	common.SetAuditWorkspaceID(ctx, workspaceID)
 
-	restriction, err := getAccountRestriction(
-		ctx,
-		s.store,
-		s.licenseService,
-		s.profile.SaaS,
-		targetWorkspaceID,
-	)
+	restriction, err := getAccountRestriction(ctx, s.store, s.licenseService, s.profile.SaaS, workspaceID)
 	if err != nil {
 		return nil, err
 	}
 	if restriction.DisallowSignup {
-		// Names no workspace: targetWorkspaceID comes from the email, so
-		// interpolating it answers what the ordering below withholds.
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed for this workspace"))
+	}
+
+	// Past the gates the address matters: resolve where it would land, read-only,
+	// so a rejected signup leaves no orphan user or workspace behind.
+	targetWorkspaceID, targetIsMember, err := s.resolveWorkspaceIDByEmail(ctx, email, "")
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to resolve target workspace"))
 	}
 	// Existence is checked only once the workspace would accept a signup at all.
 	// Answering AlreadyExists ahead of that gate makes a workspace that refuses
@@ -350,7 +346,7 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		return nil, err
 	}
 
-	workspaceID, err := s.provisionResolvedWorkspace(ctx, email, targetWorkspaceID, targetIsMember)
+	workspaceID, err = s.provisionResolvedWorkspace(ctx, email, targetWorkspaceID, targetIsMember)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to provision workspace"))
 	}
