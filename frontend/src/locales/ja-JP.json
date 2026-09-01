@@ -1742,6 +1742,7 @@
         "no-reviewers": "レビュアーなし",
         "rejected-by": "{{user}} が却下"
       },
+      "candidate-last-changed-plan": "承認不可 — このプランを最後に変更",
       "comment-required-to-reject": "却下するにはコメントが必要です",
       "footer": {
         "all-gates-passed": "すべての条件を満たしました",
@@ -1771,7 +1772,7 @@
         "rollout-not-created": "ロールアウトは自動作成されませんでした",
         "waiting-on-review": "レビュー待ち"
       },
-      "last-plan-editor-cannot-approve": "最終プラン編集者はこのプランを承認できません。",
+      "last-plan-editor-cannot-approve": "この Issue を承認できません。最後にプランを変更したユーザーであるためです。別のレビュー担当者による承認が必要です。",
       "rejection": {
         "guidance-prefix": "フィードバックに対応して変更を更新するか、変更なしで",
         "guidance-suffix": "こともできます",
@@ -1972,20 +1973,24 @@
           "self": "アクセス付与を許可"
         },
         "allow-last-plan-editor-approval": {
-          "description": "プランの最終編集者がそのプランを承認できるようにします。",
-          "self": "最終プラン編集者の承認を許可"
+          "description": "プランを最後に変更したユーザーが、関連するデータベース変更 Issue を承認できるようにします。",
+          "self": "プランを最後に変更したユーザーによる承認を許可"
         },
         "allow-request-role": {
           "description": "プロジェクト所有者以外のユーザーがプロジェクトレベルのロールを自分でリクエストできます",
           "self": "ロールリクエストを許可"
         },
         "allow-self-approval": {
-          "description": "イシューの作成者がイシューを承認できるようにします。",
-          "self": "自己承認を許可する"
+          "description": "Issue の作成者がその Issue を承認できるようにします。",
+          "self": "Issue 作成者による自己承認を許可"
         },
         "approval-flow-configured": "承認フローが設定済み",
         "approval-flow-fallback": "フォールバック承認ルールを使用中",
         "approval-flow-not-configured": "承認フローが未設定",
+        "approval-permissions": {
+          "description": "これらの権限は累積して適用されます。レビュー担当者が Issue の作成者であり、かつプランを最後に変更したユーザーでもある場合、両方の権限を有効にする必要があります。",
+          "self": "承認権限"
+        },
         "ci-sampling-size": {
           "description": "CIデータ検証中にサンプリングするデータベースの最大数。\n無効（ゼロ）の場合、完全な検証が実行されます。",
           "self": "CIデータサンプリングサイズ"

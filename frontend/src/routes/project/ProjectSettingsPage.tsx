@@ -986,6 +986,14 @@ export function ProjectSettingsPage() {
                 "project.settings.issue-related.enforce-sql-review.description"
               )}
             />
+            <FormField
+              title={t(
+                "project.settings.issue-related.approval-permissions.self"
+              )}
+              description={t(
+                "project.settings.issue-related.approval-permissions.description"
+              )}
+            />
             <ToggleRow
               checked={allowSelfApproval}
               onCheckedChange={setAllowSelfApproval}

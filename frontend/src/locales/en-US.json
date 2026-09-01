@@ -1742,6 +1742,7 @@
         "no-reviewers": "No reviewers",
         "rejected-by": "Rejected by {{user}}"
       },
+      "candidate-last-changed-plan": "Can't approve — last changed this plan",
       "comment-required-to-reject": "A comment is required to reject",
       "footer": {
         "all-gates-passed": "All gates passed",
@@ -1771,7 +1772,7 @@
         "rollout-not-created": "Rollout was not created automatically",
         "waiting-on-review": "Waiting on review"
       },
-      "last-plan-editor-cannot-approve": "Last Plan Editor cannot approve this plan.",
+      "last-plan-editor-cannot-approve": "You can't approve this issue because you were the last person to change its plan. A different reviewer must approve it.",
       "rejection": {
         "guidance-prefix": "Update your changes to address the feedback, or",
         "guidance-suffix": "without changes",
@@ -1972,20 +1973,24 @@
           "self": "Allow access grants"
         },
         "allow-last-plan-editor-approval": {
-          "description": "Allow the last editor of a plan to approve it.",
-          "self": "Allow last plan editor approval"
+          "description": "Allow the person who most recently changed a plan to approve its related database change issue.",
+          "self": "Allow approval by the person who last changed the plan"
         },
         "allow-request-role": {
           "description": "Allow project members to request roles.",
           "self": "Allow request role"
         },
         "allow-self-approval": {
-          "description": "Allow the issue creator to approve the issue.",
-          "self": "Allow self approval"
+          "description": "Allow the person who created an issue to approve it.",
+          "self": "Allow issue creators to approve their own issues"
         },
         "approval-flow-configured": "Approval flow configured",
         "approval-flow-fallback": "Using fallback approval flow",
         "approval-flow-not-configured": "No approval flow configured",
+        "approval-permissions": {
+          "description": "These permissions are cumulative. If a reviewer both created the issue and last changed its plan, both permissions must be enabled.",
+          "self": "Approval permissions"
+        },
         "ci-sampling-size": {
           "description": "The maximum number of databases to sample during CI data validation. When disabled (zero), full validation will be performed.",
           "self": "CI Data Sampling Size"

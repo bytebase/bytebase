@@ -407,7 +407,7 @@ function NodeReviewers({
           {lastPlanEditorCandidate.user.title ||
             lastPlanEditorCandidate.user.email}
           {": "}
-          {t("plan.review.last-plan-editor-cannot-approve")}
+          {t("plan.review.candidate-last-changed-plan")}
         </div>
       )}
     </div>
@@ -427,7 +427,7 @@ function CandidateRow({ candidate }: { candidate: ApprovalCandidate }) {
         <div className="truncate text-xs text-control-light">{user.email}</div>
         {candidate.ineligibilities.includes("last-plan-editor") && (
           <div className="text-xs text-warning">
-            {t("plan.review.last-plan-editor-cannot-approve")}
+            {t("plan.review.candidate-last-changed-plan")}
           </div>
         )}
       </div>

@@ -435,7 +435,7 @@ function ApprovalCandidateRow({
       )}
       {candidate.ineligibilities.includes("last-plan-editor") && (
         <span className="text-xs text-warning">
-          {t("plan.review.last-plan-editor-cannot-approve")}
+          {t("plan.review.candidate-last-changed-plan")}
         </span>
       )}
     </div>

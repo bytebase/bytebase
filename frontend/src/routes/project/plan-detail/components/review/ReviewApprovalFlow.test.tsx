@@ -126,7 +126,7 @@ describe("ReviewApprovalFlow", () => {
 
     expect(container.textContent).toContain("Editor");
     expect(container.textContent).toContain(
-      "plan.review.last-plan-editor-cannot-approve"
+      "plan.review.candidate-last-changed-plan"
     );
 
     mocks.approvalCandidates = {
