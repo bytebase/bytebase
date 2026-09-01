@@ -43,11 +43,8 @@ type ReviewRunMessage struct {
 // completion transaction is fenced on the old attempt and will match zero
 // rows.
 //
-// Lifecycle policy: the slot requires an active project. The transaction
-// takes the project purge fence and then the project row lock (the sheet
-// creation shape), so it serializes against project purge; the INSERT reads
-// the issue row itself, so a missing issue returns NotFound instead of a
-// foreign-key error.
+// The slot requires an active project; the INSERT reads the issue row itself,
+// so a missing issue returns NotFound instead of a foreign-key error.
 func (s *Store) CreateReviewRun(ctx context.Context, projectID string, issueUID int64, reviewType string) (*ReviewRunMessage, error) {
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	if err != nil {
@@ -55,10 +52,7 @@ func (s *Store) CreateReviewRun(ctx context.Context, projectID string, issueUID 
 	}
 	defer tx.Rollback()
 
-	if err := acquireProjectPurgeLock(ctx, tx, projectID); err != nil {
-		return nil, err
-	}
-	if err := lockActiveProject(ctx, tx, projectID); err != nil {
+	if err := requireActiveProject(ctx, tx, projectID); err != nil {
 		return nil, err
 	}
 
