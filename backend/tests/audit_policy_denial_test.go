@@ -146,6 +146,28 @@ func TestPublicChainAuditsPolicyDenials(t *testing.T) {
 			"a permitted call on a DENIALS method must stay unrecorded")
 	})
 
+	t.Run("a handler's own IAM verdict is recorded too", func(t *testing.T) {
+		// GetSetting is auth_method = CUSTOM, so it clears the ACL interceptor
+		// — doIAMPermissionCheck returns true for every non-IAM method — and
+		// makes its own verdict in checkSettingPermission. For a CUSTOM method
+		// the handler IS the access-control layer, so without the mark there
+		// its audit = DENIALS annotation would be false for the caller it just
+		// refused. TestLintHandlerIAMVerdictsAreMarked holds the whole
+		// population; this proves one of them end to end through a real chain.
+		memberSettings := v1connect.NewSettingServiceClient(ctl.client, ctl.rootURL,
+			connect.WithInterceptors(&authInterceptor{token: memberLogin.Msg.Token}))
+		_, err := memberSettings.GetSetting(ctx, connect.NewRequest(&v1pb.GetSettingRequest{
+			Name: "settings/APP_IM",
+		}))
+		require.Error(t, err)
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
+
+		rows := rowsFor("/bytebase.v1.SettingService/GetSetting")
+		require.Len(t, rows, 1, "a CUSTOM method's own IAM verdict must reach the audit log")
+		require.Equal(t, "users/"+memberEmail, rows[0].User)
+		require.Equal(t, v1pb.AuditLog_WARNING, rows[0].Severity)
+	})
+
 	t.Run("a rejected credential is not a policy verdict", func(t *testing.T) {
 		// Auth sits outside audit and refuses before it. There is no
 		// authenticated caller to attribute a verdict to, so a 401 writes

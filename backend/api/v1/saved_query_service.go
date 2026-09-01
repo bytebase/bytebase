@@ -637,7 +637,7 @@ func (s *SavedQueryService) checkProjectWide(ctx context.Context, user *store.Us
 		return connect.NewError(connect.CodeInternal, errors.Errorf("failed to check permission with error: %v", err))
 	}
 	if !ok {
-		return connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied: %s", p))
+		return markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied: %s", p)))
 	}
 	return nil
 }

@@ -264,7 +264,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 				return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check permission"))
 			}
 			if !ok {
-				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.PlansCreate))
+				return nil, markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.PlansCreate)))
 			}
 			return s.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
 				Parent: common.FormatProject(projectID),
@@ -293,7 +293,7 @@ func (s *PlanService) UpdatePlan(ctx context.Context, request *connect.Request[v
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to check permission"))
 	}
 	if !ok {
-		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied to update plan"))
+		return nil, markPolicyDenied(ctx, connect.NewError(connect.CodePermissionDenied, errors.Errorf("permission denied to update plan")))
 	}
 
 	var title *string

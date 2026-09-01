@@ -77,6 +77,11 @@ export enum AuditMode {
    * console traffic but whose refusal is an event: the MCP ceiling refusing an
    * agent, or RBAC refusing a caller.
    *
+   * "Refused" means refused on the caller's permissions or on the MCP ceiling.
+   * A refusal on some other rule — a licence gate, a workflow state, "only the
+   * assignee may do this" — is recorded only under ALL. A refused streaming
+   * call is recorded under neither.
+   *
    * @generated from enum value: DENIALS = 1;
    */
   DENIALS = 1,

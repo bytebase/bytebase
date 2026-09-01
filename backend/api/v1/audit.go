@@ -527,6 +527,29 @@ func marshalAuditPayload(payload any) string {
 	return string(b)
 }
 
+// markPolicyDenied records that a policy refused this request and returns the
+// error unchanged, so a DENIALS method's refusal reaches the audit log.
+//
+// Two kinds of caller. The ACL interceptor calls it at each of its verdicts,
+// not once on every error it returns: doACLCheck also returns store failures, a
+// missing auth context and unresolvable resource names, and the mark is for
+// decisions about the caller. A CUSTOM-auth handler calls it wherever it makes
+// the same IAM verdict ACL would have made — CheckPermission says no — because
+// for those methods the handler IS the access-control layer, and without the
+// mark their audit = DENIALS annotation would be false.
+//
+// TestLintHandlerIAMVerdictsAreMarked holds that second population.
+//
+// DEFER: a streaming denial reaches this too, but nothing records it —
+// AuditInterceptor.WrapStreamingHandler returns early on !needAudit and never
+// registers a setter, and it writes its rows on Send, which a denial in
+// Receive never reaches. AdminExecute is the only streaming RPC; upgrade when
+// a second one lands or AdminExecute's denials are wanted.
+func markPolicyDenied(ctx context.Context, err error) error {
+	common.SetPolicyDenied(ctx)
+	return err
+}
+
 // needAudit reports whether this call reaches the audit log.
 //
 // The annotation declares the method's eligibility; the mark says what

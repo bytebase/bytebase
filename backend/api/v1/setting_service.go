@@ -1115,7 +1115,7 @@ func (s *SettingService) checkSettingPermission(ctx context.Context, req connect
 		}); detailErr == nil {
 			err.AddDetail(detail)
 		}
-		return err
+		return markPolicyDenied(ctx, err)
 	}
 	return nil
 }

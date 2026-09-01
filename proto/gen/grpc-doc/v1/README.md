@@ -857,7 +857,9 @@ override existed.
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | AUDIT_MODE_UNSPECIFIED | 0 | Not audited. A method that reaches the audit log while carrying this is a bug in the interceptor, not a policy decision taken elsewhere. |
-| DENIALS | 1 | Only refused calls are recorded. For methods whose ordinary use is routine console traffic but whose refusal is an event: the MCP ceiling refusing an agent, or RBAC refusing a caller. |
+| DENIALS | 1 | Only refused calls are recorded. For methods whose ordinary use is routine console traffic but whose refusal is an event: the MCP ceiling refusing an agent, or RBAC refusing a caller.
+
+&#34;Refused&#34; means refused on the caller&#39;s permissions or on the MCP ceiling. A refusal on some other rule — a licence gate, a workflow state, &#34;only the assignee may do this&#34; — is recorded only under ALL. A refused streaming call is recorded under neither. |
 | ALL | 2 | Every call is recorded, refused or not. |
 
 

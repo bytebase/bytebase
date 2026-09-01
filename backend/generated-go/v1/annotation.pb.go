@@ -100,6 +100,11 @@ const (
 	// Only refused calls are recorded. For methods whose ordinary use is routine
 	// console traffic but whose refusal is an event: the MCP ceiling refusing an
 	// agent, or RBAC refusing a caller.
+	//
+	// "Refused" means refused on the caller's permissions or on the MCP ceiling.
+	// A refusal on some other rule — a licence gate, a workflow state, "only the
+	// assignee may do this" — is recorded only under ALL. A refused streaming
+	// call is recorded under neither.
 	AuditMode_DENIALS AuditMode = 1
 	// Every call is recorded, refused or not.
 	AuditMode_ALL AuditMode = 2
