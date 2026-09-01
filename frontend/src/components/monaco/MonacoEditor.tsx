@@ -743,7 +743,7 @@ export function MonacoEditor({
             </pre>
           </div>
         ) : (
-          <div className="absolute inset-0 flex items-center justify-center rounded-md border bg-background/70">
+          <div className="absolute inset-0 flex items-center justify-center rounded-sm border bg-background/70">
             <Loader2 className="h-5 w-5 animate-spin text-control-light" />
           </div>
         ))}

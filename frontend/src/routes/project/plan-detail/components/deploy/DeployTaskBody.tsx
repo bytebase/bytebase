@@ -79,7 +79,7 @@ export function DeployTaskBody({
             <>
               <ReadonlyMonaco
                 className={cn(
-                  "relative rounded border text-sm",
+                  "relative rounded-sm border text-sm",
                   isTruncated && "rounded-b-none"
                 )}
                 content={statement}
@@ -88,7 +88,7 @@ export function DeployTaskBody({
                 max={256}
               />
               {isTruncated && (
-                <div className="rounded-b border border-t-0 bg-control-bg px-3 py-1.5 text-xs text-control-light">
+                <div className="rounded-b-sm border border-t-0 bg-control-bg px-3 py-1.5 text-xs text-control-light">
                   {t("rollout.task.statement-truncated-hint")}
                 </div>
               )}

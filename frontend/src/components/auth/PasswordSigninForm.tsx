@@ -69,7 +69,7 @@ export function PasswordSigninForm({
           {credentialLabel ?? t("common.email")}
           <span className="text-error ml-0.5">*</span>
         </label>
-        <div className="mt-1 rounded-md shadow-xs">
+        <div className="mt-1 rounded-sm shadow-xs">
           <Input
             id={credentialFieldID}
             type={credentialInputType}
@@ -104,7 +104,7 @@ export function PasswordSigninForm({
             </RouterLink>
           )}
         </label>
-        <div className="relative flex flex-row items-center mt-1 rounded-md shadow-xs">
+        <div className="relative flex flex-row items-center mt-1 rounded-sm shadow-xs">
           <Input
             id="password"
             type={showPassword ? "text" : "password"}

@@ -121,8 +121,8 @@ export function DocumentJSONView({
         options: {
           inlineClassName:
             index === selectedMatchIndex
-              ? "rounded-[2px] bg-accent text-accent-text"
-              : "rounded-[2px] bg-warning-bg text-main",
+              ? "rounded-xs bg-accent text-accent-text"
+              : "rounded-xs bg-warning-bg text-main",
         },
       }))
     );

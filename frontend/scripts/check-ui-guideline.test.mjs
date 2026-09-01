@@ -5,6 +5,7 @@ import {
   compareWithBaseline,
   getBaselineUpdateIssues,
   isScannableSourcePath,
+  scanCssSource,
   scanSource,
 } from "./check-ui-guideline.mjs";
 
@@ -95,13 +96,17 @@ export function Feature() {
 
   test("flags radii outside the approved corner vocabulary", () => {
     const violations = scanSource(
-      '<div className="rounded-none rounded-xs rounded-sm rounded-full rounded-md md:rounded-t-lg rounded-[3px]" />;',
+      '<div className="rounded-none rounded-xs rounded-sm rounded-full rounded-t-none rounded-r-xs rounded-b-sm rounded-l-full rounded rounded-t rounded-md rounded-lg rounded-3xl md:rounded-t-lg hover:!rounded-lg rounded-[3px] rounded-[length:3px]" />;',
       FEATURE_FILE
     );
 
     expect(violations).toEqual(
       expect.arrayContaining([
+        expect.objectContaining({ rule: "no-off-scale-radius", token: "rounded" }),
+        expect.objectContaining({ rule: "no-off-scale-radius", token: "rounded-t" }),
         expect.objectContaining({ rule: "no-off-scale-radius", token: "rounded-md" }),
+        expect.objectContaining({ rule: "no-off-scale-radius", token: "rounded-lg" }),
+        expect.objectContaining({ rule: "no-off-scale-radius", token: "rounded-3xl" }),
         expect.objectContaining({
           rule: "no-off-scale-radius",
           token: "md:rounded-t-lg",
@@ -110,9 +115,107 @@ export function Feature() {
           rule: "no-off-scale-radius",
           token: "rounded-[3px]",
         }),
+        expect.objectContaining({
+          rule: "no-off-scale-radius",
+          token: "hover:!rounded-lg",
+        }),
+        expect.objectContaining({
+          rule: "no-off-scale-radius",
+          token: "rounded-[length:3px]",
+        }),
+      ])
+    );
+    expect(violations).toHaveLength(9);
+  });
+
+  test("flags inline React radius properties", () => {
+    const violations = scanSource(
+      `
+const styles = {
+  borderRadius: "4px",
+  borderTopLeftRadius: radius,
+  "border-bottom-right-radius": "var(--radius-sm)",
+  padding: "4px",
+};
+`,
+      FEATURE_FILE
+    );
+
+    expect(violations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          rule: "no-off-scale-radius",
+          token: "borderRadius",
+        }),
+        expect.objectContaining({
+          rule: "no-off-scale-radius",
+          token: "borderTopLeftRadius",
+        }),
+        expect.objectContaining({
+          rule: "no-off-scale-radius",
+          token: "border-bottom-right-radius",
+        }),
       ])
     );
     expect(violations).toHaveLength(3);
+  });
+
+  test("enforces the CSS radius vocabulary", () => {
+    const violations = scanCssSource(
+      `
+.allowed {
+  border-radius: 0;
+  border-top-left-radius: var(--radius-xs);
+  border-top-right-radius: var(--radius-sm);
+  border-bottom-radius: var(--radius-full);
+}
+.invalid {
+  border-radius: 4px;
+  border-top-left-radius: 50%;
+  border-bottom-right-radius: 0 4px;
+  border-start-start-radius: var(--radius-md);
+}
+.utility {
+  @apply rounded-sm rounded-lg;
+}
+`,
+      "src/assets/css/example.css"
+    );
+
+    expect(violations).toEqual([
+      expect.objectContaining({
+        path: "src/assets/css/example.css",
+        rule: "no-off-scale-radius",
+        token: "border-bottom-right-radius: 0 4px",
+      }),
+      expect.objectContaining({
+        rule: "no-off-scale-radius",
+        token: "border-radius: 4px",
+      }),
+      expect.objectContaining({
+        rule: "no-off-scale-radius",
+        token: "border-start-start-radius: var(--radius-md)",
+      }),
+      expect.objectContaining({
+        rule: "no-off-scale-radius",
+        token: "border-top-left-radius: 50%",
+      }),
+      expect.objectContaining({ rule: "no-off-scale-radius", token: "rounded-lg" }),
+    ]);
+  });
+
+  test("enforces radius in legacy adapters but still ignores generated code", () => {
+    const source = '<div className="rounded-lg bg-gray-100" />;';
+
+    expect(
+      scanSource(source, "src/apps/explain-visualizer/Feature.tsx")
+    ).toEqual([
+      expect.objectContaining({
+        rule: "no-off-scale-radius",
+        token: "rounded-lg",
+      }),
+    ]);
+    expect(scanSource(source, "src/types/proto-es/generated.ts")).toEqual([]);
   });
 
   test("allows responsive Button sizing but flags other dimension overrides", () => {

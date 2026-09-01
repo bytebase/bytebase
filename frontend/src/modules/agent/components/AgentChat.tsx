@@ -116,14 +116,14 @@ export function AgentChat({ className }: AgentChatProps) {
       {displayMessages.map((msg) =>
         msg.role === "user" ? (
           <div key={msg.id} className="flex justify-end">
-            <div className="max-w-[80%] rounded-lg bg-blue-50 px-3 py-2 text-sm">
+            <div className="max-w-[80%] rounded-sm bg-blue-50 px-3 py-2 text-sm">
               {msg.content}
             </div>
           </div>
         ) : (
           <div key={msg.id} className="flex flex-col gap-y-2">
             {msg.content && (
-              <div className="max-w-[80%] rounded-lg bg-control-bg px-3 py-2 text-sm">
+              <div className="max-w-[80%] rounded-sm bg-control-bg px-3 py-2 text-sm">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
@@ -136,7 +136,7 @@ export function AgentChat({ className }: AgentChatProps) {
                       </pre>
                     ),
                     code: ({ children }) => (
-                      <code className="break-all rounded bg-control-bg-hover px-1 text-xs">
+                      <code className="break-all rounded-xs bg-control-bg-hover px-1 text-xs">
                         {children}
                       </code>
                     ),
@@ -216,7 +216,7 @@ export function AgentChat({ className }: AgentChatProps) {
       )}
 
       {showAIConfigurationRecovery ? (
-        <div className="max-w-[80%] rounded-lg border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900">
+        <div className="max-w-[80%] rounded-sm border border-amber-200 bg-amber-50 px-3 py-3 text-sm text-amber-900">
           <div className="font-medium">
             {t("agent.ai-not-configured.title")}
           </div>
@@ -249,7 +249,7 @@ export function AgentChat({ className }: AgentChatProps) {
         </div>
       ) : (
         error && (
-          <div className="rounded-lg bg-red-50 px-3 py-2 text-sm text-error">
+          <div className="rounded-sm bg-red-50 px-3 py-2 text-sm text-error">
             {error}
           </div>
         )

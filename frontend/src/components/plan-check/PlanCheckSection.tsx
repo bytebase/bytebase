@@ -219,7 +219,7 @@ function PlanCheckFilterPills({
         return (
           <button
             className={cn(
-              "flex cursor-pointer items-center gap-1 rounded-lg px-2 py-1 transition-colors",
+              "flex cursor-pointer items-center gap-1 rounded-sm px-2 py-1 transition-colors",
               textClass,
               isSelected ? "bg-gray-100" : "hover:bg-gray-100"
             )}
@@ -422,7 +422,7 @@ export function PlanCheckResultCard({
   );
 
   return (
-    <div className="flex items-start gap-3 rounded-lg border border-control-border bg-control-bg px-3 py-2">
+    <div className="flex items-start gap-3 rounded-sm border border-control-border bg-control-bg px-3 py-2">
       <div className="mt-0.5 shrink-0">{statusIcon(result.status)}</div>
       <div className="flex min-w-0 flex-1 flex-col gap-y-1">
         <div className="text-sm font-medium text-main">{displayTitle}</div>

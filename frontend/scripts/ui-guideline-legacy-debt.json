@@ -127,22 +127,10 @@
       "count": 1
     },
     {
-      "path": "src/components/auth/EmailCodeSigninForm.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-md",
-      "count": 1
-    },
-    {
       "path": "src/components/auth/PasswordSigninForm.tsx",
       "rule": "no-native-control",
       "token": "button",
       "count": 1
-    },
-    {
-      "path": "src/components/auth/PasswordSigninForm.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-md",
-      "count": 2
     },
     {
       "path": "src/components/auth/UserPasswordFields.tsx",
@@ -458,12 +446,6 @@
     },
     {
       "path": "src/components/header/ProfileMenuTrigger.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-3xl",
-      "count": 3
-    },
-    {
-      "path": "src/components/header/ProfileMenuTrigger.tsx",
       "rule": "no-raw-color",
       "token": "bg-gray-100",
       "count": 3
@@ -478,18 +460,6 @@
       "path": "src/components/instance/CreateDataSourceExample.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 1
-    },
-    {
-      "path": "src/components/instance/CreateDataSourceExample.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-l-[3px]",
-      "count": 1
-    },
-    {
-      "path": "src/components/instance/CreateDataSourceExample.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-r-[3px]",
       "count": 1
     },
     {
@@ -554,12 +524,6 @@
     },
     {
       "path": "src/components/instance/DataSourceForm.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-lg",
-      "count": 1
-    },
-    {
-      "path": "src/components/instance/DataSourceForm.tsx",
       "rule": "no-raw-color",
       "token": "bg-indigo-100",
       "count": 1
@@ -598,18 +562,6 @@
       "path": "src/components/instance/InfoPanel.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 1
-    },
-    {
-      "path": "src/components/instance/InfoPanel.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-l-[3px]",
-      "count": 1
-    },
-    {
-      "path": "src/components/instance/InfoPanel.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-r-[3px]",
       "count": 1
     },
     {
@@ -653,12 +605,6 @@
       "rule": "no-off-scale-gap",
       "token": "gap-x-0.5",
       "count": 1
-    },
-    {
-      "path": "src/components/instance/InstanceFormBody.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-lg",
-      "count": 4
     },
     {
       "path": "src/components/instance/SshConnectionForm.tsx",
@@ -751,28 +697,10 @@
       "count": 1
     },
     {
-      "path": "src/components/monaco/DiffMonaco.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-md",
-      "count": 2
-    },
-    {
-      "path": "src/components/monaco/MonacoEditor.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-md",
-      "count": 1
-    },
-    {
       "path": "src/components/plan-check/PlanCheckSection.tsx",
       "rule": "no-native-control",
       "token": "button",
       "count": 3
-    },
-    {
-      "path": "src/components/plan-check/PlanCheckSection.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-lg",
-      "count": 2
     },
     {
       "path": "src/components/plan-check/PlanCheckSection.tsx",
@@ -815,12 +743,6 @@
       "rule": "no-raw-color",
       "token": "text-gray-700",
       "count": 1
-    },
-    {
-      "path": "src/components/release/ReleaseInfoCard.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-md",
-      "count": 3
     },
     {
       "path": "src/components/release/ReleaseInfoCard.tsx",
@@ -904,18 +826,6 @@
       "path": "src/components/sql-review/RuleComponents.tsx",
       "rule": "no-native-control",
       "token": "select",
-      "count": 1
-    },
-    {
-      "path": "src/components/sql-review/RuleComponents.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-l",
-      "count": 1
-    },
-    {
-      "path": "src/components/sql-review/RuleComponents.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-r",
       "count": 1
     },
     {
@@ -1046,12 +956,6 @@
     },
     {
       "path": "src/modules/agent/components/AgentChat.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-lg",
-      "count": 4
-    },
-    {
-      "path": "src/modules/agent/components/AgentChat.tsx",
       "rule": "no-raw-color",
       "token": "bg-amber-50",
       "count": 1
@@ -1142,12 +1046,6 @@
     },
     {
       "path": "src/modules/agent/components/AgentWindow.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-lg",
-      "count": 1
-    },
-    {
-      "path": "src/modules/agent/components/AgentWindow.tsx",
       "rule": "no-raw-color",
       "token": "data-highlighted:bg-red-50",
       "count": 1
@@ -1201,12 +1099,6 @@
       "count": 1
     },
     {
-      "path": "src/modules/ai/components/HistoryPanel/ConversationList.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-md",
-      "count": 1
-    },
-    {
       "path": "src/modules/ai/components/PromptInput.tsx",
       "rule": "no-button-dimension-override",
       "token": "h-6",
@@ -1228,18 +1120,6 @@
       "path": "src/modules/schema-diagram/ER/TableNode.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 1
-    },
-    {
-      "path": "src/modules/schema-diagram/ER/TableNode.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-md",
-      "count": 1
-    },
-    {
-      "path": "src/modules/schema-diagram/ER/TableNode.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-t-md",
       "count": 1
     },
     {
@@ -1367,12 +1247,6 @@
       "rule": "no-button-dimension-override",
       "token": "h-6",
       "count": 2
-    },
-    {
-      "path": "src/modules/sql-editor/components/AccessGrantRequestDrawer.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-[3px]",
-      "count": 1
     },
     {
       "path": "src/modules/sql-editor/components/AdminModeButton.tsx",
@@ -1549,12 +1423,6 @@
       "count": 1
     },
     {
-      "path": "src/modules/sql-editor/components/ResultView/detail-panel-search.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-[2px]",
-      "count": 1
-    },
-    {
       "path": "src/modules/sql-editor/components/ResultView/DetailPanel.tsx",
       "rule": "no-button-dimension-override",
       "token": "h-6",
@@ -1577,12 +1445,6 @@
       "rule": "no-button-dimension-override",
       "token": "size-6",
       "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/ResultView/DocumentJSONView.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-[2px]",
-      "count": 2
     },
     {
       "path": "src/modules/sql-editor/components/ResultView/ResultStatusBar.tsx",
@@ -1753,12 +1615,6 @@
       "count": 1
     },
     {
-      "path": "src/modules/sql-editor/components/TabList.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-t",
-      "count": 1
-    },
-    {
       "path": "src/modules/sql-editor/components/TerminalPanel/TerminalPanel.tsx",
       "rule": "no-native-control",
       "token": "button",
@@ -1832,12 +1688,6 @@
     },
     {
       "path": "src/routes/auth/SignupPage.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-md",
-      "count": 2
-    },
-    {
-      "path": "src/routes/auth/SignupPage.tsx",
       "rule": "no-raw-color",
       "token": "bg-white",
       "count": 2
@@ -1853,12 +1703,6 @@
       "rule": "no-native-control",
       "token": "button",
       "count": 3
-    },
-    {
-      "path": "src/routes/project/database-detail/overview/TableDetailDialog.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-lg",
-      "count": 6
     },
     {
       "path": "src/routes/project/database-detail/overview/TableDetailDialog.tsx",
@@ -1894,12 +1738,6 @@
       "path": "src/routes/project/database-detail/overview/TableDetailDialog.tsx",
       "rule": "no-raw-table",
       "token": "table",
-      "count": 2
-    },
-    {
-      "path": "src/routes/project/database-detail/overview/TableMetadataTable.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-lg",
       "count": 2
     },
     {
@@ -1994,12 +1832,6 @@
     },
     {
       "path": "src/routes/project/issue-detail/components/IssueDetailCommentList.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-lg",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailCommentList.tsx",
       "rule": "no-raw-color",
       "token": "bg-gray-50",
       "count": 1
@@ -2057,24 +1889,6 @@
       "rule": "no-native-control",
       "token": "button",
       "count": 3
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailDatabaseChangeView.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-b-lg",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailDatabaseChangeView.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-lg",
-      "count": 3
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailDatabaseChangeView.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-t-md",
-      "count": 1
     },
     {
       "path": "src/routes/project/issue-detail/components/IssueDetailDatabaseChangeView.tsx",
@@ -2162,12 +1976,6 @@
     },
     {
       "path": "src/routes/project/issue-detail/components/IssueDetailStatementSection.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-md",
-      "count": 2
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailStatementSection.tsx",
       "rule": "no-raw-color",
       "token": "bg-white",
       "count": 2
@@ -2222,12 +2030,6 @@
     },
     {
       "path": "src/routes/project/plan-detail/components/deploy/DeployPendingTasksSection.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-lg",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/deploy/DeployPendingTasksSection.tsx",
       "rule": "no-raw-color",
       "token": "bg-gray-50",
       "count": 1
@@ -2257,12 +2059,6 @@
       "count": 1
     },
     {
-      "path": "src/routes/project/plan-detail/components/deploy/DeployTaskBody.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-b",
-      "count": 1
-    },
-    {
       "path": "src/routes/project/plan-detail/components/deploy/DeployTaskFilter.tsx",
       "rule": "no-native-control",
       "token": "button",
@@ -2281,18 +2077,6 @@
       "count": 2
     },
     {
-      "path": "src/routes/project/plan-detail/components/deploy/DeployTaskHeader.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-md",
-      "count": 2
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/deploy/DeployTaskItem.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-lg",
-      "count": 1
-    },
-    {
       "path": "src/routes/project/plan-detail/components/deploy/DeployTaskItem.tsx",
       "rule": "no-raw-color",
       "token": "bg-white",
@@ -2303,23 +2087,11 @@
       "rule": "no-native-control",
       "token": "button",
       "count": 1
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/deploy/DeployTaskRunHistorySheet.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-lg",
-      "count": 2
     },
     {
       "path": "src/routes/project/plan-detail/components/deploy/DeployTaskToolbar.tsx",
       "rule": "no-off-scale-gap",
       "token": "gap-x-0.5",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/deploy/DeployTaskToolbar.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-lg",
       "count": 1
     },
     {
@@ -2390,18 +2162,6 @@
     },
     {
       "path": "src/routes/project/plan-detail/components/PlanDetailChangesBranch.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-lg",
-      "count": 5
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/PlanDetailChangesBranch.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-md",
-      "count": 2
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/PlanDetailChangesBranch.tsx",
       "rule": "no-raw-color",
       "token": "bg-gray-50",
       "count": 1
@@ -2416,12 +2176,6 @@
       "path": "src/routes/project/plan-detail/components/PlanDetailHeader.tsx",
       "rule": "no-native-control",
       "token": "input",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/PlanDetailHeaderDetails.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-md",
       "count": 1
     },
     {
@@ -2441,12 +2195,6 @@
       "rule": "no-raw-color",
       "token": "bg-white",
       "count": 1
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/PlanDetailRollbackSheet.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-md",
-      "count": 3
     },
     {
       "path": "src/routes/project/plan-detail/components/PlanDetailRollbackSheet.tsx",
@@ -2480,12 +2228,6 @@
     },
     {
       "path": "src/routes/project/plan-detail/components/PlanDetailStatementSection.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-md",
-      "count": 2
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/PlanDetailStatementSection.tsx",
       "rule": "no-raw-color",
       "token": "bg-white",
       "count": 2
@@ -2500,12 +2242,6 @@
       "path": "src/routes/project/plan-detail/components/PlanDetailTabStrip.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/PlanDetailTabStrip.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-t-lg",
       "count": 1
     },
     {
@@ -2527,12 +2263,6 @@
       "count": 1
     },
     {
-      "path": "src/routes/project/plan-detail/components/PlanDetailTaskRunSession.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-md",
-      "count": 2
-    },
-    {
       "path": "src/routes/project/plan-detail/components/review/ReviewActionPopover.tsx",
       "rule": "no-off-scale-gap",
       "token": "gap-y-2.5",
@@ -2543,12 +2273,6 @@
       "rule": "no-arbitrary-type",
       "token": "text-[11px]",
       "count": 2
-    },
-    {
-      "path": "src/routes/project/plan-detail/ProjectPlanDetailPage.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-lg",
-      "count": 1
     },
     {
       "path": "src/routes/project/plan-detail/ProjectPlanDetailPage.tsx",
@@ -2753,12 +2477,6 @@
       "rule": "no-native-control",
       "token": "button",
       "count": 11
-    },
-    {
-      "path": "src/routes/project/ProjectSyncSchemaPage.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-lg",
-      "count": 1
     },
     {
       "path": "src/routes/project/ProjectSyncSchemaPage.tsx",
@@ -3008,12 +2726,6 @@
     },
     {
       "path": "src/routes/workspace/Page403.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-md",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/Page403.tsx",
       "rule": "no-raw-color",
       "token": "bg-red-50",
       "count": 1
@@ -3055,12 +2767,6 @@
       "count": 1
     },
     {
-      "path": "src/routes/workspace/profile/SettingsCard.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-md",
-      "count": 1
-    },
-    {
       "path": "src/routes/workspace/profile/UserPasswordSection.tsx",
       "rule": "no-native-control",
       "token": "button",
@@ -3088,18 +2794,6 @@
       "path": "src/routes/workspace/PurchaseSection.tsx",
       "rule": "no-off-scale-gap",
       "token": "gap-x-12",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/PurchaseSection.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-l",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/PurchaseSection.tsx",
-      "rule": "no-off-scale-radius",
-      "token": "rounded-r",
       "count": 1
     },
     {

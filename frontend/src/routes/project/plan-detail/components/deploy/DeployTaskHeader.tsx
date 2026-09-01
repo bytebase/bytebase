@@ -75,7 +75,7 @@ export function DeployTaskHeader({
             out to the caret. */}
         <button
           aria-expanded={isExpanded}
-          className="flex min-w-0 cursor-pointer items-center gap-x-2 rounded-md border-0 bg-transparent p-0 text-left outline-none hover:bg-control-bg/50 focus-visible:ring-2 focus-visible:ring-accent"
+          className="flex min-w-0 cursor-pointer items-center gap-x-2 rounded-sm border-0 bg-transparent p-0 text-left outline-none hover:bg-control-bg/50 focus-visible:ring-2 focus-visible:ring-accent"
           onClick={onToggleExpand}
           type="button"
         >
@@ -139,7 +139,7 @@ export function DeployTaskHeader({
               order. */}
           <button
             aria-hidden="true"
-            className="shrink-0 rounded-md p-1 text-control-light outline-none hover:bg-control-bg/50"
+            className="shrink-0 rounded-sm p-1 text-control-light outline-none hover:bg-control-bg/50"
             onClick={onToggleExpand}
             tabIndex={-1}
             type="button"

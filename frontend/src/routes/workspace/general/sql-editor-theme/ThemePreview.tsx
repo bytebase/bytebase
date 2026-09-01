@@ -90,7 +90,7 @@ export function ThemePreview({ theme }: Readonly<ThemePreviewProps>) {
   return (
     <SQLEditorThemeScope
       theme={theme}
-      className="overflow-hidden rounded border border-block-border bg-background text-main"
+      className="overflow-hidden rounded-sm border border-block-border bg-background text-main"
     >
       <div className="flex flex-col">
         {/* Tabs row. Each tab carries a top accent stripe + a right divider,

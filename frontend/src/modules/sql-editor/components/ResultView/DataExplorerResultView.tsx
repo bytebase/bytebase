@@ -150,7 +150,7 @@ export function DataExplorerResultView({
                 activeRowHighlight="strong"
               />
               {search.candidateRowIndexes.length > 0 && (
-                <div className="absolute bottom-4 right-3 z-1 flex gap-x-2 border shadow rounded bg-background py-1 px-2">
+                <div className="absolute bottom-4 right-3 z-1 flex gap-x-2 border shadow rounded-sm bg-background py-1 px-2">
                   <Button
                     size="sm"
                     appearance="secondary"

@@ -913,7 +913,7 @@ export function AgentWindow() {
           </div>
         </AgentDialogContent>
       </AgentDialog>
-      <div className="flex size-full flex-col overflow-hidden rounded-lg border border-block-border bg-background shadow-xl">
+      <div className="flex size-full flex-col overflow-hidden rounded-sm border border-block-border bg-background shadow-xl">
         {/* Header */}
         <div
           data-agent-window-header

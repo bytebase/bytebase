@@ -99,9 +99,9 @@ export function RuleLevelSwitch({
           disabled={disabled}
           className={cn(
             "w-[4.5rem] rounded-none px-0 text-control",
-            i === 0 && "rounded-l",
+            i === 0 && "rounded-l-sm",
             i > 0 && "-ml-px",
-            i === filtered.length - 1 && "rounded-r",
+            i === filtered.length - 1 && "rounded-r-sm",
             level === opt.level && activeClass(opt.level)
           )}
           onClick={() => onLevelChange(opt.level)}

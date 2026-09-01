@@ -478,7 +478,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
                           type="button"
                           appearance="secondary"
                           size="sm"
-                          className="h-full rounded-l rounded-r-none px-2"
+                          className="h-full rounded-l-sm rounded-r-none px-2"
                           disabled={
                             seats <= (card.userAdditional.minimumCount || 1)
                           }
@@ -498,7 +498,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
                           type="button"
                           appearance="secondary"
                           size="sm"
-                          className="h-full rounded-l-none rounded-r px-2"
+                          className="h-full rounded-l-none rounded-r-sm px-2"
                           disabled={
                             card.userAdditional.maximumCount > 0 &&
                             seats >= card.userAdditional.maximumCount

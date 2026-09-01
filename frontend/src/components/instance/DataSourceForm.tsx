@@ -841,7 +841,7 @@ export function DataSourceForm({
                   >
                     <div
                       className={cn(
-                        "mt-3 border-2 border-dashed rounded-lg p-6 text-center",
+                        "mt-3 border-2 border-dashed rounded-sm p-6 text-center",
                         keytabResupplyRequired && "border-error"
                       )}
                     >

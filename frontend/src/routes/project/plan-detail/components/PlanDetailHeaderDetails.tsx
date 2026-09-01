@@ -205,7 +205,7 @@ export function PlanDetailHeaderDetails() {
             <div
               aria-disabled={!allowDescriptionEdit}
               className={cn(
-                "relative w-full rounded-md border border-transparent px-2 py-1 text-left text-sm text-control-light transition-all duration-200",
+                "relative w-full rounded-sm border border-transparent px-2 py-1 text-left text-sm text-control-light transition-all duration-200",
                 !showFullDescription && "max-h-[4.5rem] overflow-hidden",
                 allowDescriptionEdit &&
                   "cursor-pointer hover:border-control-border"

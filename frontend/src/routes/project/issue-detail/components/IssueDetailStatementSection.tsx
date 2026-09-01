@@ -473,7 +473,7 @@ export function IssueDetailStatementSection({
         />
       )}
       {isLoading ? (
-        <div className="rounded-md border border-control-border bg-white px-4 py-3 text-sm text-control-light">
+        <div className="rounded-sm border border-control-border bg-white px-4 py-3 text-sm text-control-light">
           {t("common.loading")}
         </div>
       ) : statement || isEditing ? (
@@ -495,7 +495,7 @@ export function IssueDetailStatementSection({
           )}
         </div>
       ) : (
-        <div className="rounded-md border border-control-border bg-white px-4 py-3 text-sm text-control-light">
+        <div className="rounded-sm border border-control-border bg-white px-4 py-3 text-sm text-control-light">
           {t("common.no-data")}
         </div>
       )}

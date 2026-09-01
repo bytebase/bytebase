@@ -107,7 +107,7 @@ export function EmailCodeSigninForm({ loading, onSignin }: Props) {
         <label htmlFor="email-code-email" className="sr-only">
           {t("common.email")}
         </label>
-        <div className="rounded-md shadow-xs">
+        <div className="rounded-sm shadow-xs">
           <Input
             id="email-code-email"
             type="email"

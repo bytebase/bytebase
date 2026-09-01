@@ -128,7 +128,7 @@ export function ConversationList() {
                   key={conversation.id}
                   data-conversation-id={conversation.id}
                   className={cn(
-                    "flex items-start gap-x-0.5 border rounded-md py-2 pl-2 pr-0.5 hover:bg-control-bg hover:border-accent cursor-pointer",
+                    "flex items-start gap-x-0.5 border rounded-xs py-2 pl-2 pr-0.5 hover:bg-control-bg hover:border-accent cursor-pointer",
                     isActive && "bg-accent/10 border-accent",
                     isRenaming && "cursor-default"
                   )}
