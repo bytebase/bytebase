@@ -75,7 +75,7 @@ func (s *IssueService) RunReview(ctx context.Context, req *connect.Request[v1pb.
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get database group for plan"))
 	}
-	targets, err := plancheck.DeriveCheckTargets(ctx, s.store, project, plan, databaseGroup)
+	targets, err := plancheck.DeriveReviewTargets(ctx, s.store, project, plan, databaseGroup)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to derive review targets"))
 	}
