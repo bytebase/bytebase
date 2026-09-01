@@ -597,15 +597,22 @@ func TestSignupChecksRestrictionBeforeExistence(t *testing.T) {
 	})
 }
 
-// spendSendBudget drives the deployment bucket to its cap without sending mail,
-// so a test can reach the exhausted state in one step.
+// spendSendBudget drives the deployment bucket to its cap without sending mail.
+// Claims until refused rather than a fixed count, since a send earlier in the
+// test may already have taken a slot.
 func spendSendBudget(ctx context.Context, t *testing.T, stores *store.Store) {
 	t.Helper()
-	for range emailCodeSendPerWindow {
+	claim := func() bool {
 		granted, err := stores.ClaimSendBudget(ctx, signinCodeSendBudgetKey, emailCodeSendPerWindow, emailCodeSendWindow)
 		require.NoError(t, err)
-		require.True(t, granted)
+		return granted
 	}
+	for range emailCodeSendPerWindow {
+		if !claim() {
+			return
+		}
+	}
+	require.False(t, claim(), "the bucket must be spent")
 }
 
 // newBudgetTestService builds a SaaS service whose mail host refuses on connect,

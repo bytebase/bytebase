@@ -294,6 +294,14 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		return nil, err
 	}
 
+	// SaaS refuses every self-service signup, so answer before touching anything
+	// derived from the email. Resolving the workspace first reads that
+	// workspace's settings and license for a registered address and nothing for
+	// a stranger, which times the two apart even when the reply is identical.
+	if s.profile.SaaS {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed for this workspace"))
+	}
+
 	// Resolve the target workspace (read-only) so we can check restrictions BEFORE
 	// any write — otherwise a rejected signup would leave an orphan user/workspace behind.
 	targetWorkspaceID, targetIsMember, err := s.resolveWorkspaceIDByEmail(ctx, email, "")
@@ -316,10 +324,8 @@ func (s *AuthService) Signup(ctx context.Context, req *connect.Request[v1pb.Sign
 		return nil, err
 	}
 	if restriction.DisallowSignup {
-		// The denial names no workspace. targetWorkspaceID is resolved from the
-		// email — a member resolves to their workspace and a stranger to none —
-		// so interpolating it answers the very question the ordering below
-		// exists to withhold.
+		// Names no workspace: targetWorkspaceID comes from the email, so
+		// interpolating it answers what the ordering below withholds.
 		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("sign up is disallowed for this workspace"))
 	}
 	// Existence is checked only once the workspace would accept a signup at all.
