@@ -945,6 +945,42 @@ describe("SheetTree", () => {
     unmount();
   });
 
+  test("does not open the context menu for shared folders", () => {
+    const defaultMocks = setupDefaultMocks();
+    const folder = makeFolderNode("/shared/folder");
+    defaultMocks.viewContext._sheetTree.value = makeFolderNode("/shared", [
+      folder,
+    ]);
+    defaultMocks.viewContext.folderContext.rootPath = "/shared";
+
+    const handleContextMenu = vi.fn();
+    mocks.useDropdown.mockReturnValue({
+      currentNode: undefined,
+      options: [],
+      savedQueryEntity: undefined,
+      showSharePanel: false,
+      handleContextMenu,
+      handleSharePanelShow: vi.fn(),
+      handleClickOutside: vi.fn(),
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      <SheetTree view="shared" />
+    );
+    render();
+
+    const row = container.querySelector(
+      '[data-item-key="/shared/folder"]'
+    );
+    act(() => {
+      row?.dispatchEvent(new MouseEvent("contextmenu", { bubbles: true }));
+    });
+
+    expect(handleContextMenu).not.toHaveBeenCalled();
+
+    unmount();
+  });
+
   test("6. Delete confirm → fires savedQueryV1Store.deleteSavedQueryByName", async () => {
     const defaultMocks = setupDefaultMocks();
     const wsNode = makeSavedQueryNode("/my/ws2", "savedQueries/ws2");

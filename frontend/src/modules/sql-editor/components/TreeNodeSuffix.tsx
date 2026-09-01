@@ -115,6 +115,9 @@ export function TreeNodeSuffix({
 
   // Folder node: only show "More" button
   if (!node.savedQuery) {
+    if (view === "shared") {
+      return null;
+    }
     return (
       <MoreHorizontal
         className="size-4 text-control shrink-0 cursor-pointer"
