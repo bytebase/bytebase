@@ -949,12 +949,6 @@
       "count": 1
     },
     {
-      "path": "src/modules/workspace-setup-guide/WorkspaceSetupGuide.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
-    },
-    {
       "path": "src/modules/agent/components/AgentChat.tsx",
       "rule": "no-raw-color",
       "token": "bg-amber-50",

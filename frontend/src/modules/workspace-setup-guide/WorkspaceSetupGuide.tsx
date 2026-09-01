@@ -146,7 +146,7 @@ export function WorkspaceSetupGuide() {
 
   return (
     <>
-      <div className="flex w-full shrink-0 items-center gap-x-2 border-t border-block-border bg-white px-3 py-2 shadow-[0_-2px_10px_rgba(0,0,0,0.04)] 2xl:gap-x-4 2xl:px-5 2xl:py-4">
+      <div className="flex w-full shrink-0 items-center gap-x-2 border-t border-block-border bg-background px-3 py-2 shadow-[0_-2px_10px_rgba(0,0,0,0.04)] 2xl:gap-x-4 2xl:px-5 2xl:py-4">
         <div className="flex min-w-0 flex-1 items-center gap-x-2 overflow-hidden 2xl:gap-x-4">
           <div className="flex shrink-0 items-center gap-x-1">
             <div className="shrink-0 text-sm font-semibold text-main 2xl:text-base">
