@@ -132,7 +132,7 @@ export function WorkspaceSegment({
           appearance="secondary"
           size="sm"
           onClick={(event) => onSelectWorkspace(currentWorkspaceName, event)}
-          className="h-auto px-2 py-1 text-sm gap-x-1.5"
+          className="text-sm gap-x-1.5"
         >
           <Building2 className="size-4 text-control-light shrink-0" />
           <span className="truncate max-w-40">{workspace?.title}</span>
@@ -266,7 +266,7 @@ export function ProjectSegment({
               appearance="secondary"
               size="sm"
               onClick={(event) => onSelectProject(currentProject, event)}
-              className="h-auto px-2 py-1 text-sm gap-x-1.5"
+              className="text-sm gap-x-1.5"
             >
               <FolderKanban className="size-4 text-control-light shrink-0" />
               <span className="truncate max-w-48">{currentProject.title}</span>
@@ -307,7 +307,7 @@ export function ProjectSegment({
                   type="button"
                   appearance="secondary"
                   size="sm"
-                  className="h-auto px-2 py-1 text-sm gap-x-1.5 text-control-placeholder"
+                  className="text-sm gap-x-1.5 text-control-placeholder"
                 />
               )
             }

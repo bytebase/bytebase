@@ -199,8 +199,12 @@ describe("BannersWrapper", () => {
     );
     const configureButtonClasses =
       configureButton?.className.split(/\s+/) ?? [];
-    expect(configureButtonClasses).toContain("bg-white");
+    expect(configureButtonClasses).toContain("h-10");
+    expect(configureButtonClasses).toContain("bg-background");
+    expect(configureButtonClasses).toContain("hover:bg-control-bg");
     expect(configureButtonClasses).toContain("text-accent");
+    expect(configureButtonClasses).not.toContain("h-auto");
+    expect(configureButtonClasses).not.toContain("bg-white");
     expect(configureButtonClasses).not.toContain("bg-accent");
     expect(configureButtonClasses).not.toContain("text-accent-text");
 

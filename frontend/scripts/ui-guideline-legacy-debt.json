@@ -153,18 +153,6 @@
     {
       "path": "src/components/BannersWrapper.tsx",
       "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
-    },
-    {
-      "path": "src/components/BannersWrapper.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:bg-indigo-50",
-      "count": 1
-    },
-    {
-      "path": "src/components/BannersWrapper.tsx",
-      "rule": "no-raw-color",
       "token": "hover:bg-white/10",
       "count": 1
     },
@@ -419,12 +407,6 @@
       "rule": "no-arbitrary-type",
       "token": "text-[10px]",
       "count": 2
-    },
-    {
-      "path": "src/components/header/HeaderBreadcrumb.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-auto",
-      "count": 3
     },
     {
       "path": "src/components/header/HeaderBreadcrumb.tsx",
@@ -925,12 +907,6 @@
       "count": 1
     },
     {
-      "path": "src/components/UserCell.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-auto",
-      "count": 1
-    },
-    {
       "path": "src/components/UserHoverCard.tsx",
       "rule": "no-off-scale-gap",
       "token": "gap-y-0.5",
@@ -941,12 +917,6 @@
       "rule": "no-literal-color",
       "token": "rgba(",
       "count": 2
-    },
-    {
-      "path": "src/modules/workspace-setup-guide/WorkspaceSetupGuide.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-auto",
-      "count": 1
     },
     {
       "path": "src/modules/agent/components/AgentChat.tsx",
@@ -1438,12 +1408,6 @@
       "path": "src/modules/sql-editor/components/ResultView/DocumentJSONView.tsx",
       "rule": "no-button-dimension-override",
       "token": "size-6",
-      "count": 1
-    },
-    {
-      "path": "src/modules/sql-editor/components/ResultView/ResultStatusBar.tsx",
-      "rule": "no-button-dimension-override",
-      "token": "h-auto",
       "count": 1
     },
     {

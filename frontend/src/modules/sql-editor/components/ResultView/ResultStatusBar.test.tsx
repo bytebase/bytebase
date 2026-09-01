@@ -142,6 +142,8 @@ describe("ResultStatusBar", () => {
     expect(statement.className).not.toContain("max-w-3xl");
     expect(statementText?.classList.contains("flex-1")).toBe(false);
     expect(copyButton.className).toContain("shrink-0");
+    expect(copyButton.className).toContain("h-6");
+    expect(copyButton.className).not.toContain("h-auto");
   });
 
   test("hides the statement copy button when the statement is empty", () => {

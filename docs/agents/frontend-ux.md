@@ -76,6 +76,11 @@ The `size` prop on shared controls selects the complete base contract.
 Consumers MUST NOT override base dimensions or resize a managed icon
 independently. A layout owner MAY use standard breakpoint-prefixed classes to
 apply a complete responsive size contract; do not override only the height.
+A specialized content-sized control MAY use `h-auto` when its height is
+intentionally derived from its content and padding. This includes inline text
+actions with no control padding and composite controls with an explicit padding
+and typography contract. Icon-only controls MUST retain a shared size contract.
+Do not replace the managed height with another fixed `h-*` or `size-*` value.
 
 | Size | Height | Inline padding | Text | Icon | Internal gap |
 | --- | ---: | ---: | --- | ---: | ---: |
@@ -421,8 +426,8 @@ node frontend/scripts/check-ui-guideline.mjs
 
 The scanner enforces raw and literal colors, manual dark variants, `space-*`,
 arbitrary and off-scale gaps, unsupported radii, native feature controls, raw
-feature tables, shared `Button` height/size overrides, arbitrary typography,
-and ad hoc sheet widths. The committed
+feature tables, fixed shared `Button` height/size overrides, arbitrary
+typography, and ad hoc sheet widths. The committed
 `frontend/scripts/ui-guideline-legacy-debt.json` file records each temporary
 legacy exception by file, rule, token, and occurrence count.
 
