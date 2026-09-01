@@ -35,7 +35,7 @@ vi.mock("@/components/IAMRemindDialog", () => ({
   IAMRemindDialog: () => <div />,
 }));
 
-vi.mock("@/components/WorkspaceSetupGuide", () => ({
+vi.mock("@/modules/workspace-setup-guide/WorkspaceSetupGuide", () => ({
   WorkspaceSetupGuide: () => <div>unified-guide</div>,
 }));
 

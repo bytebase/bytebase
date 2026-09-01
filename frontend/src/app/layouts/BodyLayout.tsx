@@ -11,7 +11,7 @@ import { DashboardBodyShell } from "@/components/DashboardBodyShell";
 import { DashboardSidebar } from "@/components/DashboardSidebar";
 import { ProjectSidebar } from "@/components/ProjectSidebar";
 import { RoutePermissionGuardShell } from "@/components/RoutePermissionGuardShell";
-import { WorkspaceSetupGuide } from "@/components/WorkspaceSetupGuide";
+import { WorkspaceSetupGuide } from "@/modules/workspace-setup-guide/WorkspaceSetupGuide";
 
 // Ported from `src/layouts/BodyLayout.vue`. Mounts the workspace
 // `DashboardBodyShell` (header + sidebar slot + body slot) and portals the

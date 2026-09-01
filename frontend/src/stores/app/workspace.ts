@@ -20,6 +20,7 @@ import {
   workspaceSwitchChannel,
 } from "@/stores/workspaceSwitchChannel";
 import { defaultAppProfile } from "@/types/appProfile";
+import { PresetRoleType } from "@/types/iam/role";
 import {
   hasFeature as checkFeature,
   hasInstanceFeature as checkInstanceFeature,
@@ -688,12 +689,18 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
 
     enableOnboarding: () => get().userCountInIam() === 1,
 
-    workspaceSetupGuideEnabled: () =>
-      !get().appFeatures["bb.feature.hide-quick-start"] &&
-      get().userCountInIam() === 1 &&
-      get().hasWorkspacePermission("bb.projects.list") &&
-      get().hasWorkspacePermission("bb.instances.list") &&
-      get().hasWorkspacePermission("bb.databases.list"),
+    workspaceSetupGuideEnabled: () => {
+      const currentUserName = get().currentUser?.name;
+      return (
+        !get().appFeatures["bb.feature.hide-quick-start"] &&
+        get().workspacePolicy !== undefined &&
+        get().userCountInIam() === 1 &&
+        !!currentUserName &&
+        get()
+          .getWorkspaceRolesByName(currentUserName)
+          .has(PresetRoleType.WORKSPACE_ADMIN)
+      );
+    },
 
     fetchServerInfo: async () => {
       const info = await actuatorServiceClientConnect.getActuatorInfo({});

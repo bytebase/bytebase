@@ -2112,37 +2112,85 @@ describe("useAppStore", () => {
     expect(store.getState().appFeatures["bb.feature.hide-trial"]).toBe(false);
   });
 
-  test("enables the workspace setup guide only for an eligible sole IAM user", () => {
+  test("enables the workspace setup guide for the sole workspace admin", () => {
     const store = createAppStore();
-    store.setState({ hasWorkspacePermission: () => true });
+    store.setState({
+      currentUser: user,
+      serverInfo: createProto(ActuatorInfoSchema, { userCountInIam: 1 }),
+      workspacePolicy: createProto(IamPolicySchema, {
+        bindings: [
+          createProto(BindingSchema, {
+            role: "roles/workspaceAdmin",
+            members: [user.name],
+          }),
+        ],
+      }),
+    });
+    expect(store.getState().workspaceSetupGuideEnabled()).toBe(true);
+  });
 
-    for (const [userCountInIam, expected] of [
-      [0, false],
-      [1, true],
-      [2, false],
-    ] as const) {
-      store.setState({
-        serverInfo: createProto(ActuatorInfoSchema, { userCountInIam }),
-      });
-      expect(store.getState().workspaceSetupGuideEnabled()).toBe(expected);
-    }
+  test("keeps the workspace setup guide disabled until IAM loads", () => {
+    const store = createAppStore();
+    store.setState({
+      currentUser: user,
+      serverInfo: createProto(ActuatorInfoSchema, { userCountInIam: 1 }),
+      workspacePolicy: undefined,
+    });
+    expect(store.getState().workspaceSetupGuideEnabled()).toBe(false);
+  });
 
-    store.setState((state) => ({
+  test("disables the workspace setup guide for a sole non-admin", () => {
+    const store = createAppStore();
+    store.setState({
+      currentUser: user,
+      serverInfo: createProto(ActuatorInfoSchema, { userCountInIam: 1 }),
+      workspacePolicy: createProto(IamPolicySchema, {
+        bindings: [
+          createProto(BindingSchema, {
+            role: "roles/workspaceMember",
+            members: [user.name],
+          }),
+        ],
+      }),
+    });
+    expect(store.getState().workspaceSetupGuideEnabled()).toBe(false);
+  });
+
+  test("disables the workspace setup guide after another member joins", () => {
+    const store = createAppStore();
+    store.setState({
+      currentUser: user,
+      serverInfo: createProto(ActuatorInfoSchema, { userCountInIam: 2 }),
+      workspacePolicy: createProto(IamPolicySchema, {
+        bindings: [
+          createProto(BindingSchema, {
+            role: "roles/workspaceAdmin",
+            members: [user.name],
+          }),
+        ],
+      }),
+    });
+    expect(store.getState().workspaceSetupGuideEnabled()).toBe(false);
+  });
+
+  test("disables the workspace setup guide when quick start is hidden", () => {
+    const store = createAppStore();
+    store.setState({
+      currentUser: user,
       appFeatures: {
-        ...state.appFeatures,
+        ...store.getState().appFeatures,
         "bb.feature.hide-quick-start": true,
       },
-    }));
-    expect(store.getState().workspaceSetupGuideEnabled()).toBe(false);
-
-    store.setState((state) => ({
-      appFeatures: {
-        ...state.appFeatures,
-        "bb.feature.hide-quick-start": false,
-      },
       serverInfo: createProto(ActuatorInfoSchema, { userCountInIam: 1 }),
-      hasWorkspacePermission: () => false,
-    }));
+      workspacePolicy: createProto(IamPolicySchema, {
+        bindings: [
+          createProto(BindingSchema, {
+            role: "roles/workspaceAdmin",
+            members: [user.name],
+          }),
+        ],
+      }),
+    });
     expect(store.getState().workspaceSetupGuideEnabled()).toBe(false);
   });
 
