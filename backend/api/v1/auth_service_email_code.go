@@ -34,14 +34,9 @@ const (
 	emailCodeExpiry         = 10 * time.Minute
 	emailCodeResendCooldown = 60 * time.Second
 
-	// How much sign-in-code mail one sender may generate per window. A workspace
-	// sends over its own SMTP, so its cap is per workspace and sized like the
-	// comparable product default (Supabase caps a project at 30 auth OTPs/hour).
-	// A caller who names no workspace reaches the deployment's own identity, one
-	// sender shared by every self-service signup, so that cap is deployment-wide
-	// and sized well above real signup volume.
+	// How much sign-in-code mail the deployment's own sender may generate per
+	// window, sized well above real self-service signup volume.
 	emailCodeSendWindow        = time.Hour
-	emailCodeSendPerWorkspace  = 30
 	emailCodeSendPerDeployment = 100
 
 	errMsgInvalidEmailCode = "invalid or expired code"
@@ -178,22 +173,18 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("email code login is not enabled for this workspace"))
 	}
 
-	// Bound how much mail one sender can generate. The per-recipient cooldown
-	// already bounds a single address; this bounds a campaign across many, which
-	// is what an unauthenticated caller with a recipient list actually does, and
-	// is the whole of what this endpoint owes the mail relay finding.
+	// Budget the deployment's own sender: no admin opts into it and every tenant
+	// shares its reputation. The 60s per-recipient cooldown bounds one address;
+	// only a sender-wide cap bounds a campaign, which writes each address once.
 	//
-	// Charged on every send, whoever the recipient is. Exempting recipients the
-	// workspace knows would be kinder to a busy workspace, but it would make the
-	// response depend on whether an address has an account here — and this
-	// endpoint answers anonymous callers, so any behavior that varies per
-	// recipient is an account-existence oracle. That is not a hypothetical: the
-	// review of this change found three separate leaks, every one of them a
-	// recipient-dependent branch. Keeping the treatment uniform is what lets the
-	// endpoint stay simple and still report real errors to everyone.
-	budgetKey, budgetMax := "signin-code-deployment", emailCodeSendPerDeployment
-	if workspaceID != "" {
-		budgetKey, budgetMax = "signin-code-workspace:"+workspaceID, emailCodeSendPerWorkspace
+	// A named workspace is not budgeted. Its mail leaves over its own admin's
+	// SMTP, and the key would be the workspace the caller names — anonymously
+	// readable on self-hosted — so a bucket there would let a few dozen requests
+	// turn off sign-in codes for the whole workspace, a cheaper attack than the
+	// relay it would prevent.
+	budgetKey := ""
+	if workspaceID == "" {
+		budgetKey = "signin-code-deployment"
 	}
 
 	// Send synchronously so the caller learns about actionable failures (missing EMAIL
@@ -206,7 +197,7 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 		storepb.EmailVerificationCodePurpose_LOGIN,
 		"[Bytebase] Your sign-in code",
 		"Hi,\n\nYour sign-in code is: %s\n\nThis code expires in %d minutes. If you didn't request this, you can safely ignore this email.\n\n— Bytebase",
-		budgetKey, budgetMax,
+		budgetKey, emailCodeSendPerDeployment,
 	); err != nil {
 		if errors.Is(err, errSendBudgetExhausted) {
 			return nil, connect.NewError(connect.CodeResourceExhausted, err)
@@ -426,17 +417,12 @@ func sendEmailVerificationCode(ctx context.Context, stores *store.Store, secret,
 		return errors.Errorf("cannot found email config for workspace %v", workspaceID)
 	}
 
-	// Claim the budget before anything is written. The upsert below replaces the
-	// stored hash, so a claim made after it lets an exhausted bucket destroy a
-	// code the recipient is still holding and never send a replacement — an
-	// anonymous caller could then deny code sign-in to a whole domain for the
-	// window. Refusing here leaves the existing row exactly as it was.
-	//
-	// The read-only cooldown check keeps the budget off requests the upsert would
-	// silently skip, which is what claiming afterwards used to buy: repeated
-	// requests for one address must not drain a shared bucket. The upsert
-	// re-checks the cooldown authoritatively, so losing that race costs one
-	// budget slot and never a code.
+	// Claim before writing: the upsert below replaces the stored hash, so a claim
+	// made after it would let an exhausted budget destroy a code the recipient
+	// still holds and send no replacement. The read-only cooldown check keeps the
+	// budget off requests the upsert would skip anyway, so one address cannot
+	// drain it; the upsert re-checks the cooldown, so losing that race costs a
+	// slot and never a code.
 	if budgetKey != "" {
 		existing, err := stores.GetEmailVerificationCode(ctx, email, purpose)
 		if err != nil {

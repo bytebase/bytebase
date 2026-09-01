@@ -58,18 +58,13 @@ func (s *Store) ClaimLoginAttempt(ctx context.Context, identity string, kind sto
 	return true, nil
 }
 
-// ClaimSendBudget takes one slot of a fixed window: at most perWindow grants in each
-// window, where the window opens on the first grant and closes exactly window
-// later. Returns (false, nil) when the window is full.
+// ClaimSendBudget takes one slot of a fixed window: at most perWindow grants
+// per window, which opens on its first grant. Returns (false, nil) when full.
 //
-// Deliberately not ClaimLoginAttempt's semantics, though it shares the table.
-// A lockout counts failures and resets only after a quiet window, so a slow
-// steady stream never resets it — correct when N wrong passwords over any
-// timespan is the thing to catch, and wrong for a volume budget, where it would
-// turn "20 per hour" into "20 ever, until an hour of silence" and eventually
-// refuse legitimate traffic that never came close to the rate. So a grant here
-// advances the count but never the window: last_attempt_at is the window's
-// start for this kind, not the latest send.
+// Shares the table with ClaimLoginAttempt but not its semantics. A lockout
+// resets only after a quiet window, so a steady trickle never resets it and
+// "N per hour" would mean "N ever" — right for counting failures, wrong for a
+// volume budget. Here last_attempt_at is the window's start, not the last send.
 func (s *Store) ClaimSendBudget(ctx context.Context, key string, kind storepb.LoginAttemptKind, perWindow int, window time.Duration) (bool, error) {
 	if err := validateLoginAttemptKey(key, kind); err != nil {
 		return false, err

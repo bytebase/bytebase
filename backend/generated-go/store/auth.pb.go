@@ -92,8 +92,8 @@ const (
 	LoginAttemptKind_EMAIL_CODE LoginAttemptKind = 2
 	LoginAttemptKind_MFA        LoginAttemptKind = 3
 	// Sending those codes rather than guessing them — the opposite direction, and
-	// the reason it is a separate kind. Its identity is the sender (a workspace,
-	// or the deployment) and not a person, so exhausting it throttles outbound
+	// the reason it is a separate kind. Its identity is the sending deployment
+	// and not a person, so exhausting it throttles outbound
 	// mail and locks no account, and nothing clears it because a delivered email
 	// is the thing counted and there is no success to forgive.
 	//
