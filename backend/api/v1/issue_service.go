@@ -1351,6 +1351,9 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
 		case "comment":
+			if req.Msg.IssueComment.Comment == "" {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue comment is empty"))
+			}
 			update.Comment = &req.Msg.IssueComment.Comment
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unsupport update_mask: "%s"`, path))

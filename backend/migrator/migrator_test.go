@@ -21,8 +21,101 @@ import (
 func TestLatestVersion(t *testing.T) {
 	files, err := getSortedVersionedFiles()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("3.23.0"), *files[len(files)-1].version)
-	require.Equal(t, "migration/3.23/0000##review_run.sql", files[len(files)-1].path)
+	require.Equal(t, semver.MustParse("3.23.1"), *files[len(files)-1].version)
+	require.Equal(t, "migration/3.23/0001##issue_comment_thread.sql", files[len(files)-1].path)
+}
+
+func TestMigration3_23_1_IssueCommentThreads(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+
+	db := container.GetDB()
+
+	// Minimal pre-3.23.1 shape of issue_comment.
+	setup := `
+		CREATE TABLE issue_comment (
+			resource_id text NOT NULL,
+			project text NOT NULL DEFAULT 'p1',
+			issue_id integer NOT NULL DEFAULT 101,
+			payload jsonb NOT NULL DEFAULT '{}'
+		);
+		CREATE UNIQUE INDEX idx_issue_comment_unique_resource_id ON issue_comment(resource_id);
+		ALTER TABLE issue_comment ADD PRIMARY KEY (resource_id);
+		INSERT INTO issue_comment (resource_id, payload) VALUES
+			('comment-only', '{"comment": "hello"}'),
+			('empty-comment', '{"comment": ""}'),
+			('empty-object', '{}'),
+			('hybrid', '{"comment": "approved", "approval": {}}'),
+			('event-only', '{"issueUpdate": {"toTitle": "t"}}'),
+			('legacy-event', '{"planSpecUpdate": {}}'),
+			('numeric-comment', '{"comment": 123}'),
+			('null-comment', '{"comment": null}'),
+			('scalar', '"comment"');
+	`
+	_, err := db.ExecContext(ctx, setup)
+	require.NoError(t, err)
+
+	migration, err := migrationFS.ReadFile("migration/3.23/0001##issue_comment_thread.sql")
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, string(migration))
+	require.NoError(t, err)
+
+	wantOpen := map[string]bool{
+		"comment-only":    true,
+		"empty-comment":   true,
+		"empty-object":    true,
+		"hybrid":          false,
+		"event-only":      false,
+		"legacy-event":    false,
+		"numeric-comment": false,
+		"null-comment":    false,
+		"scalar":          false,
+	}
+	rows, err := db.QueryContext(ctx, `SELECT resource_id, thread_state = 'OPEN' FROM issue_comment`)
+	require.NoError(t, err)
+	defer rows.Close()
+	seen := 0
+	for rows.Next() {
+		var id string
+		var open *bool
+		require.NoError(t, rows.Scan(&id, &open))
+		want, ok := wantOpen[id]
+		require.True(t, ok, "unexpected row %s", id)
+		require.Equal(t, want, open != nil && *open, "thread classification for %s", id)
+		seen++
+	}
+	require.NoError(t, rows.Err())
+	require.Equal(t, len(wantOpen), seen)
+
+	var indexes int
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT count(*) FROM pg_indexes
+		WHERE indexname IN ('idx_issue_comment_parent_id', 'idx_issue_comment_open_thread')
+	`).Scan(&indexes))
+	require.Equal(t, 2, indexes)
+
+	// On upgraded databases the explicit-column FK binds the pre-existing
+	// duplicate unique index, not the primary key (this fixture recreates
+	// that index order). Accepted for now; the deferred cleanup that drops
+	// idx_issue_comment_unique_resource_id must swap the FK dependency and
+	// flip this assertion to issue_comment_pkey.
+	var referencedIndex string
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT referenced_index.relname
+		FROM pg_constraint
+		JOIN pg_class AS referenced_index ON referenced_index.oid = pg_constraint.conindid
+		WHERE pg_constraint.conname = 'issue_comment_parent_id_fkey'
+		  AND pg_constraint.conrelid = 'issue_comment'::regclass
+	`).Scan(&referencedIndex))
+	require.Equal(t, "idx_issue_comment_unique_resource_id", referencedIndex)
+
+	_, err = db.ExecContext(ctx, `INSERT INTO issue_comment (resource_id, payload, parent_id) VALUES ('reply', '{"comment": "re"}', 'comment-only')`)
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, `INSERT INTO issue_comment (resource_id, payload, parent_id) VALUES ('orphan', '{"comment": "re"}', 'missing')`)
+	require.Error(t, err, "parent_id must reference an existing comment")
+	_, err = db.ExecContext(ctx, `UPDATE issue_comment SET thread_state = 'INVALID' WHERE resource_id = 'comment-only'`)
+	require.Error(t, err, "thread_state must reject unknown values")
 }
 
 func TestVersionUnique(t *testing.T) {

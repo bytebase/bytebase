@@ -29,6 +29,40 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 )
 
+func TestUpdateIssueCommentRejectsEmptyComment(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+	parent := common.FormatIssue(issue.ProjectID, issue.UID)
+
+	created, err := service.CreateIssueComment(ctx, connect.NewRequest(&v1pb.CreateIssueCommentRequest{
+		Parent: parent,
+		IssueComment: &v1pb.IssueComment{
+			Comment: "keep me",
+		},
+	}))
+	require.NoError(t, err)
+
+	_, err = service.UpdateIssueComment(ctx, connect.NewRequest(&v1pb.UpdateIssueCommentRequest{
+		Parent: parent,
+		IssueComment: &v1pb.IssueComment{
+			Name:    created.Msg.Name,
+			Comment: "",
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"comment"}},
+	}))
+	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+
+	comments, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{
+		ProjectID: issue.ProjectID,
+		IssueUID:  &issue.UID,
+	})
+	require.NoError(t, err)
+	require.Len(t, comments, 1)
+	require.Equal(t, "keep me", comments[0].Payload.GetComment())
+}
+
 func TestDraftLabelUpdateConflictsWithConcurrentSubmission(t *testing.T) {
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
