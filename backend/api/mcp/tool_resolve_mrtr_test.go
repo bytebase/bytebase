@@ -1,6 +1,7 @@
 package mcp
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"io"
@@ -215,19 +216,20 @@ func TestAmbiguousDatabaseDeclinedFallsBack(t *testing.T) {
 	require.Contains(t, resultText(t, res), "AMBIGUOUS_TARGET")
 }
 
-// TestAmbiguousDatabaseReturnsInputRequestOnProductionRoute is the pin that this
-// migration matters in production. refuseSessionlessProtocol reads the
-// MCP-Protocol-Version header, which an initialize request does not carry, so a
-// client that asks for the multi round-trip revision in its initialize params is
-// admitted and its session records that revision — even though the handshake
-// answers 2025-11-25. Every later tool call on it must take the input-request
-// path, because the SDK refuses to elicit on such a session.
-func TestAmbiguousDatabaseReturnsInputRequestOnProductionRoute(t *testing.T) {
+// TestAmbiguousDatabaseCompletesForAClientAskingBeyondTheCeiling is the pin on
+// what a client actually negotiated.
+//
+// An initialize request carries no MCP-Protocol-Version header, so
+// refuseSessionlessProtocol does not see it, and a client asking for the
+// sessionless revision is admitted and answered 2025-11-25. Its session must
+// record what it was answered: served the newer revision's input-required
+// result instead, a client that honoured the downgrade would be handed a shape
+// it never agreed to and had no obligation to retry, and the call could never
+// finish. It gets a plain elicitation and the query runs.
+func TestAmbiguousDatabaseCompletesForAClientAskingBeyondTheCeiling(t *testing.T) {
 	_, endpoint, token := newAmbiguousServer(t, ambiguousDatabases())
 
-	// status, the returned session ID, and the SSE data line.
-	post := func(sessionID, body string) (int, string, string) {
-		t.Helper()
+	post := func(sessionID, body string) (*http.Response, error) {
 		req, err := http.NewRequest(http.MethodPost, endpoint, strings.NewReader(body))
 		require.NoError(t, err)
 		req.Header.Set("Content-Type", "application/json")
@@ -236,36 +238,63 @@ func TestAmbiguousDatabaseReturnsInputRequestOnProductionRoute(t *testing.T) {
 		if sessionID != "" {
 			req.Header.Set("Mcp-Session-Id", sessionID)
 		}
-		resp, err := (&http.Client{Timeout: 20 * time.Second}).Do(req)
-		require.NoError(t, err)
-		defer resp.Body.Close()
-		raw, err := io.ReadAll(resp.Body)
-		require.NoError(t, err)
-		payload := string(raw)
-		for _, line := range strings.Split(payload, "\n") {
-			if after, found := strings.CutPrefix(line, "data: "); found {
-				payload = after
-				break
-			}
-		}
-		return resp.StatusCode, resp.Header.Get("Mcp-Session-Id"), payload
+		return (&http.Client{Timeout: 30 * time.Second}).Do(req)
 	}
 
-	status, sessionID, payload := post("", `{"jsonrpc":"2.0","id":1,"method":"initialize","params":`+
+	resp, err := post("", `{"jsonrpc":"2.0","id":1,"method":"initialize","params":`+
 		`{"protocolVersion":"`+sessionlessProtocolVersion+`","capabilities":{"elicitation":{}},`+
 		`"clientInfo":{"name":"probe","version":"0"}}}`)
-	require.Equal(t, http.StatusOK, status)
+	require.NoError(t, err)
+	sessionID := resp.Header.Get("Mcp-Session-Id")
+	handshake, err := io.ReadAll(resp.Body)
+	require.NoError(t, resp.Body.Close())
+	require.NoError(t, err)
 	require.NotEmpty(t, sessionID)
-	require.Contains(t, payload, `"protocolVersion":"2025-11-25"`,
-		"the handshake answers the legacy revision even though the session records the newer one")
+	require.Contains(t, string(handshake), `"protocolVersion":"`+legacyProtocolCeiling+`"`,
+		"the handshake answers the ceiling this transport can serve")
 
-	post(sessionID, `{"jsonrpc":"2.0","method":"notifications/initialized"}`)
+	resp, err = post(sessionID, `{"jsonrpc":"2.0","method":"notifications/initialized"}`)
+	require.NoError(t, err)
+	require.NoError(t, resp.Body.Close())
 
-	_, _, payload = post(sessionID, `{"jsonrpc":"2.0","id":2,"method":"tools/call","params":`+
+	// The tool call's own stream carries the server's elicitation and, once it is
+	// answered on a second POST, the result.
+	call, err := post(sessionID, `{"jsonrpc":"2.0","id":2,"method":"tools/call","params":`+
 		`{"name":"query_database","arguments":{"database":"`+ambiguousShortName+`","statement":"SELECT 1"}}}`)
-	require.Contains(t, payload, `"resultType":"input_required"`)
-	require.Contains(t, payload, `"inputRequests"`)
-	require.Contains(t, payload, "Multiple databases match")
+	require.NoError(t, err)
+	defer call.Body.Close()
+
+	var answered bool
+	var final string
+	scanner := bufio.NewScanner(call.Body)
+	scanner.Buffer(make([]byte, 0, 64*1024), 1<<20)
+	for scanner.Scan() {
+		payload, found := strings.CutPrefix(scanner.Text(), "data: ")
+		if !found {
+			continue
+		}
+		var message struct {
+			ID     json.RawMessage `json:"id"`
+			Method string          `json:"method"`
+		}
+		require.NoError(t, json.Unmarshal([]byte(payload), &message))
+		if message.Method == "elicitation/create" {
+			require.Contains(t, payload, "Multiple databases match")
+			answer, err := post(sessionID, `{"jsonrpc":"2.0","id":`+string(message.ID)+
+				`,"result":{"action":"accept","content":{"database":"`+prodLabel+`"}}}`)
+			require.NoError(t, err)
+			require.NoError(t, answer.Body.Close())
+			answered = true
+			continue
+		}
+		final = payload
+		break
+	}
+	require.True(t, answered, "the client must be asked, not handed an input-required result")
+	require.NotContains(t, final, "input_required")
+	require.NotContains(t, final, "AMBIGUOUS_TARGET")
+	require.Contains(t, final, "instances/prod-pg/databases/employee_db",
+		"the call must complete against the database the client picked")
 }
 
 // shrinkingDatabases serves the full set on the first ListDatabases call and the

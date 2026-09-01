@@ -139,6 +139,7 @@ func newServerWithStore(stores serverStore, profile *config.Profile, secret stri
 	// from. Identity stays pinned to the session (see below), which is what
 	// makes trusting the live address safe: it cannot belong to another
 	// principal.
+	mcpServer.AddReceivingMiddleware(negotiateLegacyProtocol)
 	mcpServer.AddReceivingMiddleware(liveRequestMetadata)
 
 	// Pin each session to the identity it was opened with. The SDK captures
@@ -160,9 +161,37 @@ func newServerWithStore(stores serverStore, profile *config.Profile, secret stri
 const (
 	sessionlessProtocolVersion = "2026-07-28"
 
+	// legacyProtocolCeiling is what the SDK answers an initialize handshake
+	// with, whatever the client asks for: negotiatedVersion caps there because
+	// the newer revision is negotiated through server/discover instead.
+	legacyProtocolCeiling = "2025-11-25"
+
 	// maxMCPRequestBodyBytes is documented at the handler that applies it.
 	maxMCPRequestBodyBytes = 4 << 20
 )
+
+// negotiateLegacyProtocol keeps a session's recorded revision equal to the one
+// its handshake answered.
+//
+// The SDK records the revision the client ASKED for and answers with the one it
+// negotiated, and for a client asking beyond legacyProtocolCeiling those differ.
+// Everything downstream reads the record, so the SDK would treat such a client
+// as multi round-trip capable and hand it an input-required result in place of
+// the elicitation it agreed to, which it has no obligation to know how to
+// retry. Rewriting the request to what was negotiated makes the two agree. The
+// client sees the same initialize response either way.
+//
+// With refuseSessionlessProtocol covering the header, no session on this route
+// records a revision this transport cannot serve.
+func negotiateLegacyProtocol(next mcp.MethodHandler) mcp.MethodHandler {
+	return func(ctx context.Context, method string, req mcp.Request) (mcp.Result, error) {
+		if params, ok := req.GetParams().(*mcp.InitializeParams); ok &&
+			params.ProtocolVersion >= sessionlessProtocolVersion {
+			params.ProtocolVersion = legacyProtocolCeiling
+		}
+		return next(ctx, method, req)
+	}
+}
 
 // refuseSessionlessProtocol rejects requests announcing that revision or newer.
 //
