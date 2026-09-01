@@ -63,6 +63,46 @@ func TestUpdateIssueCommentRejectsEmptyComment(t *testing.T) {
 	require.Equal(t, "keep me", comments[0].Payload.GetComment())
 }
 
+// TestListIssueCommentsExcludesReplies pins the activity timeline to events
+// and root comments: the v1 message cannot represent a reply, so a reply must
+// neither render as a top-level row nor consume a page slot.
+func TestListIssueCommentsExcludesReplies(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+	parent := common.FormatIssue(issue.ProjectID, issue.UID)
+
+	created, err := service.CreateIssueComment(ctx, connect.NewRequest(&v1pb.CreateIssueCommentRequest{
+		Parent: parent,
+		IssueComment: &v1pb.IssueComment{
+			Comment: "root",
+		},
+	}))
+	require.NoError(t, err)
+
+	_, _, rootID, err := common.GetProjectIDIssueUIDIssueCommentID(created.Msg.Name)
+	require.NoError(t, err)
+	_, err = stores.CreateIssueCommentReply(ctx, "users/reply@example.com", &store.IssueCommentMessage{
+		ProjectID: issue.ProjectID,
+		IssueUID:  issue.UID,
+		ParentID:  &rootID,
+		Payload:   &storepb.IssueCommentPayload{Comment: "reply body"},
+	})
+	require.NoError(t, err)
+
+	resp, err := service.ListIssueComments(ctx, connect.NewRequest(&v1pb.ListIssueCommentsRequest{
+		Parent: parent,
+	}))
+	require.NoError(t, err)
+	names := make([]string, 0, len(resp.Msg.IssueComments))
+	for _, comment := range resp.Msg.IssueComments {
+		require.NotEqual(t, "reply body", comment.Comment, "replies must not appear in the activity timeline")
+		names = append(names, comment.Name)
+	}
+	require.Contains(t, names, created.Msg.Name, "the thread root stays in the timeline")
+}
+
 func TestDraftLabelUpdateConflictsWithConcurrentSubmission(t *testing.T) {
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
