@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { createContextValues } from "@connectrpc/connect";
+import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { Rows3 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -29,6 +29,7 @@ import {
   MCPSetting_Capability,
   MCPSettingSchema,
   Setting_SettingName,
+  SettingSchema,
   SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -58,6 +59,8 @@ const MODES: Record<
     badge: "warning",
   },
 };
+
+const mcpSettingName = `${settingNamePrefix}${Setting_SettingName[Setting_SettingName.MCP]}`;
 
 export function MCPAccessPolicySection() {
   const { t } = useTranslation();
@@ -150,7 +153,7 @@ export function MCPAccessPolicySection() {
     settingServiceClientConnect
       .getSetting(
         {
-          name: `${settingNamePrefix}${Setting_SettingName[Setting_SettingName.MCP]}`,
+          name: mcpSettingName,
         },
         {
           contextValues: createContextValues().set(silentContextKey, true),
@@ -166,10 +169,32 @@ export function MCPAccessPolicySection() {
         useAppStore.getState().setSettingByName(setting);
         settle(false);
       })
-      // A row this build cannot unmarshal fails this read. The store may still
-      // hold a value from an earlier visit, and rendering that would report a
-      // ceiling nobody is enforcing — the failure outranks it below.
-      .catch(() => settle(true));
+      .catch((error: unknown) => {
+        if (generation !== settingGeneration.current) {
+          return;
+        }
+        // Older workspaces can legitimately have no row. Match the backend's
+        // effective READ_WRITE policy; all other read failures still win over
+        // any value left in the frontend store.
+        if (error instanceof ConnectError && error.code === Code.NotFound) {
+          useAppStore.getState().setSettingByName(
+            create(SettingSchema, {
+              name: mcpSettingName,
+              value: create(SettingValueSchema, {
+                value: {
+                  case: "mcp",
+                  value: create(MCPSettingSchema, {
+                    capability: MCPSetting_Capability.READ_WRITE,
+                  }),
+                },
+              }),
+            })
+          );
+          settle(false);
+          return;
+        }
+        settle(true);
+      });
     loadInfo();
     // Retire both reads when this instance goes away. The generations are this
     // mount's; the setting store they write is the application's.
