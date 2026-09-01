@@ -200,6 +200,27 @@ describe("TreeNodeSuffix", () => {
     unmount();
   });
 
+  test("does not render an action suffix for shared folders", () => {
+    const node = makeNode({ key: "/shared/folder" });
+    const onContextMenuShow = vi.fn();
+
+    const { container, render, unmount } = renderIntoContainer(
+      <TreeNodeSuffix
+        node={node}
+        view="shared"
+        onToggleStar={vi.fn()}
+        onSharePanelShow={vi.fn()}
+        onContextMenuShow={onContextMenuShow}
+      />
+    );
+    render();
+
+    expect(container.querySelector("svg.lucide-ellipsis")).toBeNull();
+    expect(onContextMenuShow).not.toHaveBeenCalled();
+
+    unmount();
+  });
+
   test("fetches saved query creator before rendering the raw identifier", () => {
     mocks.getUserByIdentifier.mockReturnValue(undefined);
     const node = makeSavedQueryNode();
