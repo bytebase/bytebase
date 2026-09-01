@@ -127,7 +127,8 @@ func (s *Store) ListIssueComment(ctx context.Context, find *FindIssueCommentMess
 	return issueComments, nil
 }
 
-// CreateIssueComments creates one or more issue comments.
+// CreateIssueComments creates one or more root comments or events.
+// Reply creation is not supported by this writer yet.
 // For a single comment, it returns the created comment with UID, CreatedAt, and UpdatedAt filled in.
 // For multiple comments, it performs a batch insert and returns nil.
 func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates ...*IssueCommentMessage) (*IssueCommentMessage, error) {
@@ -139,6 +140,7 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 	projectIDs := make([]string, 0, len(creates))
 	issueIDs := make([]int64, 0, len(creates))
 	payloads := make([][]byte, 0, len(creates))
+	threadRoots := make([]bool, 0, len(creates))
 	for _, create := range creates {
 		payload, err := protojson.Marshal(create.Payload)
 		if err != nil {
@@ -147,6 +149,9 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 		projectIDs = append(projectIDs, create.ProjectID)
 		issueIDs = append(issueIDs, create.IssueUID)
 		payloads = append(payloads, payload)
+		// Current event-less writes are roots. Event and hybrid rows remain
+		// outside threads; replies will additionally require parent_id handling.
+		threadRoots = append(threadRoots, create.Payload.GetEvent() == nil)
 	}
 
 	// Use UNNEST to insert all comments in one query.
@@ -158,12 +163,12 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 	// ordinal keeps the batch in insertion order and makes created_at unique
 	// within it, at a cost of microseconds.
 	q := qb.Q().Space(`
-		INSERT INTO issue_comment (creator, project, issue_id, payload, created_at, updated_at)
-		SELECT ?, c.project, c.issue_id, c.payload, t.at, t.at
-		FROM unnest(?::TEXT[], ?::INT[], ?::JSONB[])
-		     WITH ORDINALITY AS c(project, issue_id, payload, ordinality),
+		INSERT INTO issue_comment (creator, project, issue_id, payload, thread_state, created_at, updated_at)
+		SELECT ?, c.project, c.issue_id, c.payload, CASE WHEN c.is_thread_root THEN 'OPEN' END, t.at, t.at
+		FROM unnest(?::TEXT[], ?::INT[], ?::JSONB[], ?::BOOLEAN[])
+		     WITH ORDINALITY AS c(project, issue_id, payload, is_thread_root, ordinality),
 		     LATERAL (SELECT now() + ((c.ordinality - 1) * interval '1 microsecond')) AS t(at)
-	`, creator, projectIDs, issueIDs, payloads)
+	`, creator, projectIDs, issueIDs, payloads, threadRoots)
 
 	// For single comment, use RETURNING to get the created comment details.
 	if len(creates) == 1 {

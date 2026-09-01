@@ -179,4 +179,56 @@ func TestIssueCommentBatchKeepsInsertionOrder(t *testing.T) {
 		order = append(order, comment.Payload.Comment)
 	}
 	require.Equal(t, want, order, "a batch of issue comments must read back in insertion order")
+
+	var openRoots int
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT count(*) FROM issue_comment
+		WHERE project = $1 AND issue_id = $2 AND thread_state = 'OPEN'
+	`, projectID, issueUID).Scan(&openRoots))
+	require.Equal(t, len(want), openRoots, "new comment-only rows must be OPEN roots")
+
+	_, err = stores.CreateIssueComments(ctx, "users/comment@example.com",
+		&store.IssueCommentMessage{
+			ProjectID: projectID,
+			IssueUID:  issueUID,
+			Payload: &storepb.IssueCommentPayload{
+				Event: &storepb.IssueCommentPayload_IssueUpdate_{
+					IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{},
+				},
+			},
+		},
+		&store.IssueCommentMessage{
+			ProjectID: projectID,
+			IssueUID:  issueUID,
+			Payload: &storepb.IssueCommentPayload{
+				Comment: "approved",
+				Event: &storepb.IssueCommentPayload_Approval_{
+					Approval: &storepb.IssueCommentPayload_Approval{},
+				},
+			},
+		},
+		&store.IssueCommentMessage{
+			ProjectID: projectID,
+			IssueUID:  issueUID,
+			Payload:   &storepb.IssueCommentPayload{},
+		},
+	)
+	require.NoError(t, err)
+
+	var eventsOutsideThreads int
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT count(*) FROM issue_comment
+		WHERE project = $1 AND issue_id = $2
+		  AND (payload ? 'issueUpdate' OR payload ? 'approval')
+		  AND thread_state IS NULL
+	`, projectID, issueUID).Scan(&eventsOutsideThreads))
+	require.Equal(t, 2, eventsOutsideThreads, "event and hybrid rows must stay outside threads")
+
+	var emptyRoots int
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT count(*) FROM issue_comment
+		WHERE project = $1 AND issue_id = $2
+		  AND payload = '{}'::jsonb AND thread_state = 'OPEN'
+	`, projectID, issueUID).Scan(&emptyRoots))
+	require.Equal(t, 1, emptyRoots, "an event-less payload is still a root comment")
 }
