@@ -49,6 +49,52 @@ export enum AuditBehavior {
 export declare const AuditBehaviorSchema: GenEnum<AuditBehavior>;
 
 /**
+ * Whether and how an RPC's calls reach the audit log. One enum rather than a
+ * bool because the population worth recording is not the population worth
+ * recording ON SUCCESS: reads such as GetSetting, ListUsers and GetIamPolicy
+ * are called constantly by the console and must not write a row each time,
+ * while their refusals are exactly what an operator investigating an agent
+ * needs to see.
+ *
+ * The bool could not say that, so the audit interceptor grew a runtime
+ * override for the MCP gate's denials, and the annotation stopped being the
+ * source of truth for what gets recorded. This enum removes the reason that
+ * override existed.
+ *
+ * @generated from enum bytebase.v1.AuditMode
+ */
+export enum AuditMode {
+  /**
+   * Not audited. A method that reaches the audit log while carrying this is a
+   * bug in the interceptor, not a policy decision taken elsewhere.
+   *
+   * @generated from enum value: AUDIT_MODE_UNSPECIFIED = 0;
+   */
+  AUDIT_MODE_UNSPECIFIED = 0,
+
+  /**
+   * Only refused calls are recorded. For methods whose ordinary use is routine
+   * console traffic but whose refusal is an event: the MCP ceiling refusing an
+   * agent, or RBAC refusing a caller.
+   *
+   * @generated from enum value: DENIALS = 1;
+   */
+  DENIALS = 1,
+
+  /**
+   * Every call is recorded, refused or not.
+   *
+   * @generated from enum value: ALL = 2;
+   */
+  ALL = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.AuditMode.
+ */
+export declare const AuditModeSchema: GenEnum<AuditMode>;
+
+/**
  * Authorization method for RPC calls.
  *
  * @generated from enum bytebase.v1.AuthMethod
@@ -342,11 +388,13 @@ export declare const permission: GenExtension<MethodOptions, string>;
 export declare const auth_method: GenExtension<MethodOptions, AuthMethod>;
 
 /**
- * Whether to audit calls to this method.
+ * Whether and how calls to this method are audited. This is the whole
+ * declaration: a method that sets no mode produces no audit row, ever, and
+ * nothing at runtime can override it.
  *
- * @generated from extension: bool audit = 100003;
+ * @generated from extension: bytebase.v1.AuditMode audit = 100007;
  */
-export declare const audit: GenExtension<MethodOptions, boolean>;
+export declare const audit: GenExtension<MethodOptions, AuditMode>;
 
 /**
  * How the method is classified for MCP (AI agent) sessions.
@@ -361,6 +409,12 @@ export declare const mcp_method_class: GenExtension<MethodOptions, MCPMethodClas
  * names it so the agent, and the operator reading the audit row, learn why
  * rather than just that it was refused, and an exclusion whose reason nobody
  * wrote down is one nobody can revisit.
+ *
+ * 100003 was `bool audit`, which had no way to say "record refusals of this
+ * method but not its ordinary use". The audit interceptor grew a runtime
+ * override to express that state instead, which is how a method carrying no
+ * annotation came to produce rows. Replaced by AuditMode above; do not reuse
+ * the number, for the reason the next paragraph gives.
  *
  * 100006 was mcp_exclusion_reason, folded into mcp_denial_reason above. Do
  * not reuse the number: an extend block cannot carry a `reserved` statement,

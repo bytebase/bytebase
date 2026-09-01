@@ -13,9 +13,11 @@ import (
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 )
 
-// TestPublicChainAuditsPolicyDenials drives the rule over the public chain a
-// browser and the public API use: a row is written when a policy denies the
-// call, or when the method opts in.
+// TestPublicChainAuditsPolicyDenials drives the audit annotation over the
+// public chain a browser and the public API use. ALL records every call;
+// DENIALS records only the refused ones; and after this change the ACL
+// interceptor marks its verdicts, so a refusal on the public chain reaches the
+// log exactly as one on the internal MCP chain already did.
 //
 // It has to be an e2e. The rule is carried by the ORDER of the interceptor
 // list in backend/server/grpc_routes.go — audit outside ACL — and only a real
@@ -114,9 +116,11 @@ func TestPublicChainAuditsPolicyDenials(t *testing.T) {
 			"a refused caller must be separable from routine traffic on severity alone")
 	})
 
-	t.Run("a denied call on an unannotated method is recorded too", func(t *testing.T) {
-		// GetInstance carries no audit annotation. The rule decides, not the
-		// annotation: a policy verdict is recorded either way.
+	t.Run("a denied call on a DENIALS method is recorded", func(t *testing.T) {
+		// GetInstance declares DENIALS: refusals recorded, ordinary console
+		// reads not. Before the annotation became an enum it could say only
+		// "audit everything" or nothing, so this method said nothing and its
+		// refusals were invisible on both chains.
 		_, err := memberInstances.GetInstance(ctx, connect.NewRequest(&v1pb.GetInstanceRequest{
 			Name: instanceName,
 		}))
@@ -129,17 +133,17 @@ func TestPublicChainAuditsPolicyDenials(t *testing.T) {
 		require.Equal(t, v1pb.AuditLog_WARNING, rows[0].Severity)
 	})
 
-	t.Run("a permitted call on that same unannotated method is not", func(t *testing.T) {
-		// The other half of the rule. The annotation still governs ordinary
-		// use, so this permitted call adds no row and the count stays at the
-		// one denial above.
+	t.Run("a permitted call on that same DENIALS method is not", func(t *testing.T) {
+		// The half that makes DENIALS worth having. GetInstance is console
+		// traffic; recording every success is the volume this mode avoids, and
+		// the count stays at the one denial above.
 		_, err := ctl.instanceServiceClient.GetInstance(ctx, connect.NewRequest(&v1pb.GetInstanceRequest{
 			Name: instanceName,
 		}))
 		require.NoError(t, err)
 
 		require.Len(t, rowsFor("/bytebase.v1.InstanceService/GetInstance"), 1,
-			"a permitted call on an unannotated method must stay unrecorded")
+			"a permitted call on a DENIALS method must stay unrecorded")
 	})
 
 	t.Run("a rejected credential is not a policy verdict", func(t *testing.T) {

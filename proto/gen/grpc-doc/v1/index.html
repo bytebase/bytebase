@@ -184,6 +184,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.AuditMode"><span class="badge">E</span>AuditMode</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.AuthMethod"><span class="badge">E</span>AuthMethod</a>
                 </li>
               
@@ -3312,6 +3316,38 @@ Unlike SENSITIVE it says nothing about the API contract.</p></td>
           </tbody>
         </table>
       
+        <h3 id="bytebase.v1.AuditMode">AuditMode</h3>
+        <p>Whether and how an RPC's calls reach the audit log. One enum rather than a</p><p>bool because the population worth recording is not the population worth</p><p>recording ON SUCCESS: reads such as GetSetting, ListUsers and GetIamPolicy</p><p>are called constantly by the console and must not write a row each time,</p><p>while their refusals are exactly what an operator investigating an agent</p><p>needs to see.</p><p>The bool could not say that, so the audit interceptor grew a runtime</p><p>override for the MCP gate's denials, and the annotation stopped being the</p><p>source of truth for what gets recorded. This enum removes the reason that</p><p>override existed.</p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>AUDIT_MODE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p>Not audited. A method that reaches the audit log while carrying this is a
+bug in the interceptor, not a policy decision taken elsewhere.</p></td>
+              </tr>
+            
+              <tr>
+                <td>DENIALS</td>
+                <td>1</td>
+                <td><p>Only refused calls are recorded. For methods whose ordinary use is routine
+console traffic but whose refusal is an event: the MCP ceiling refusing an
+agent, or RBAC refusing a caller.</p></td>
+              </tr>
+            
+              <tr>
+                <td>ALL</td>
+                <td>2</td>
+                <td><p>Every call is recorded, refused or not.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
         <h3 id="bytebase.v1.AuthMethod">AuthMethod</h3>
         <p>Authorization method for RPC calls.</p>
         <table class="enum-table">
@@ -3562,10 +3598,12 @@ re-litigate the credential-minting set alongside the ordinary admin API.</p></td
             
               <tr>
                 <td>audit</td>
-                <td><a href="#bool">bool</a></td>
+                <td><a href="#bytebase.v1.AuditMode">AuditMode</a></td>
                 <td><a href="#google.protobuf.MethodOptions">.google.protobuf.MethodOptions</a></td>
-                <td>100003</td>
-                <td><p>Whether to audit calls to this method.</p></td>
+                <td>100007</td>
+                <td><p>Whether and how calls to this method are audited. This is the whole
+declaration: a method that sets no mode produces no audit row, ever, and
+nothing at runtime can override it.</p></td>
               </tr>
             
               <tr>
@@ -3586,6 +3624,12 @@ mcp_method_class = FORBIDDEN or EXCLUDED, and required on both: the denial
 names it so the agent, and the operator reading the audit row, learn why
 rather than just that it was refused, and an exclusion whose reason nobody
 wrote down is one nobody can revisit.
+
+100003 was `bool audit`, which had no way to say &#34;record refusals of this
+method but not its ordinary use&#34;. The audit interceptor grew a runtime
+override to express that state instead, which is how a method carrying no
+annotation came to produce rows. Replaced by AuditMode above; do not reuse
+the number, for the reason the next paragraph gives.
 
 100006 was mcp_exclusion_reason, folded into mcp_denial_reason above. Do
 not reuse the number: an extend block cannot carry a `reserved` statement,

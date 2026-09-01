@@ -38,7 +38,7 @@ service SavedQueryService {
     option (google.api.method_signature) = "parent,saved_query";
     option (bytebase.v1.permission) = "bb.savedQueries.create";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -49,6 +49,7 @@ service SavedQueryService {
     option (google.api.http) = {get: "/v1/{name=projects/*/savedQueries/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -63,6 +64,7 @@ service SavedQueryService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.savedQueries.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = READS_OTHER_USERS_SQL;
   }
@@ -77,6 +79,7 @@ service SavedQueryService {
     };
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -90,6 +93,7 @@ service SavedQueryService {
     };
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -103,7 +107,7 @@ service SavedQueryService {
     };
     option (google.api.method_signature) = "saved_query,update_mask";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -120,6 +124,7 @@ service SavedQueryService {
     };
     option (google.api.method_signature) = "name,starred";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -136,7 +141,7 @@ service SavedQueryService {
     };
     option (google.api.method_signature) = "parent,source_folder,target_folder";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -148,7 +153,7 @@ service SavedQueryService {
     option (google.api.http) = {delete: "/v1/{name=projects/*/savedQueries/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -159,6 +164,7 @@ service SavedQueryService {
     option (google.api.http) = {get: "/v1/{resource=projects/*/savedQueries/*}:getPolicy"};
     option (google.api.method_signature) = "resource";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -174,7 +180,7 @@ service SavedQueryService {
     };
     option (google.api.method_signature) = "resource,policy";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }

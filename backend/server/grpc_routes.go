@@ -134,8 +134,8 @@ func configureGrpcRouters(
 	// Create validation interceptor.
 	validateInterceptor := validate.NewInterceptor()
 
-	// A unary row is written when an access-control refusal marks itself, or
-	// when the method opts in. The first-listed interceptor is outermost, so
+	// A unary row is written when the method's audit annotation says so — ALL
+	// for every call, DENIALS for a refused one. The first-listed interceptor is outermost, so
 	// audit must be listed BEFORE every interceptor that can reach a policy
 	// verdict — otherwise the verdict returns before audit runs and the denial
 	// leaves no trace. ACL is the only one here; the internal chain below adds

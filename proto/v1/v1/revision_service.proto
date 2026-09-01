@@ -24,6 +24,7 @@ service RevisionService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.revisions.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -37,6 +38,7 @@ service RevisionService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.revisions.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -53,7 +55,7 @@ service RevisionService {
     };
     option (bytebase.v1.permission) = "bb.revisions.create";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -67,7 +69,7 @@ service RevisionService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.revisions.delete";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 }

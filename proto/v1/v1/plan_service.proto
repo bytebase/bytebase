@@ -25,6 +25,7 @@ service PlanService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.plans.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -35,6 +36,7 @@ service PlanService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.plans.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -48,7 +50,7 @@ service PlanService {
     option (google.api.method_signature) = "parent,plan";
     option (bytebase.v1.permission) = "bb.plans.create";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     // This is the step that produces the issueless plan — it creates a plan
     // and links no issue. It stays WRITE and needs no rule of its own: the
     // rule the gate PR owes belongs at execution, not here, since a plan that
@@ -67,7 +69,7 @@ service PlanService {
     option (google.api.method_signature) = "plan,update_mask";
     option (bytebase.v1.permission) = "bb.plans.update";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -78,6 +80,7 @@ service PlanService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.planCheckRuns.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -91,7 +94,7 @@ service PlanService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.planCheckRuns.run";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -105,7 +108,7 @@ service PlanService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.planCheckRuns.run";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 }

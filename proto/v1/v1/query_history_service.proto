@@ -23,6 +23,7 @@ service QueryHistoryService {
     };
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -34,6 +35,7 @@ service QueryHistoryService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.queryHistories.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = READS_OTHER_USERS_SQL;
   }
@@ -43,6 +45,7 @@ service QueryHistoryService {
   rpc GetQueryHistory(GetQueryHistoryRequest) returns (QueryHistory) {
     option (google.api.http) = {get: "/v1/{name=projects/*/queryHistories/*}"};
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 }

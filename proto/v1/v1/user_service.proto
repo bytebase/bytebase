@@ -25,6 +25,7 @@ service UserService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.users.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -38,6 +39,7 @@ service UserService {
     option (google.api.http) = {get: "/v1/users:batchGet"};
     option (bytebase.v1.permission) = "bb.users.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -48,6 +50,7 @@ service UserService {
     option (google.api.http) = {get: "/v1/users/me"};
     option (bytebase.v1.allow_without_credential) = true;
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -59,6 +62,7 @@ service UserService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.users.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -74,7 +78,7 @@ service UserService {
     option (google.api.method_signature) = "user";
     option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.permission) = "bb.users.create";
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
@@ -89,7 +93,7 @@ service UserService {
     };
     option (google.api.method_signature) = "user,update_mask";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = TAKES_OVER_ACCOUNT;
   }
@@ -100,7 +104,7 @@ service UserService {
     option (google.api.http) = {delete: "/v1/{name=users/*}"};
     option (google.api.method_signature) = "name";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -113,7 +117,7 @@ service UserService {
       body: "*"
     };
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -128,7 +132,7 @@ service UserService {
     option (google.api.method_signature) = "name,email";
     option (bytebase.v1.permission) = "bb.users.updateEmail";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
@@ -145,7 +149,7 @@ service UserService {
     };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = RESETS_CREDENTIAL;
   }
@@ -162,7 +166,7 @@ service UserService {
     };
     option (google.api.method_signature) = "name,new_password";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = TAKES_OVER_ACCOUNT;
   }
@@ -178,7 +182,7 @@ service UserService {
     };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
   }
@@ -198,7 +202,7 @@ service UserService {
     };
     option (google.api.method_signature) = "name,otp_code";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = TAKES_OVER_ACCOUNT;
   }
@@ -215,7 +219,7 @@ service UserService {
     };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = TAKES_OVER_ACCOUNT;
   }
@@ -231,7 +235,7 @@ service UserService {
     };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL;
   }
@@ -247,7 +251,7 @@ service UserService {
     };
     option (google.api.method_signature) = "name";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = TAKES_OVER_ACCOUNT;
   }

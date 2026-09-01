@@ -359,7 +359,7 @@ func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryR
 		if err := refuseNonReadOnlyStatement(instance.Metadata.GetEngine(), statement); err != nil {
 			// The same kind of refusal the ceiling gate records, taken at the
 			// one point that can see the request's argument. Query is
-			// annotated audit = true, so the mark adds no row here; what it
+			// annotated audit = ALL, so the mark adds no row here; what it
 			// does add is the WARNING severity that separates this refusal
 			// from the method's ordinary traffic. It also keeps the row itself
 			// if that annotation ever changes.

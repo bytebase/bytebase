@@ -1016,18 +1016,18 @@ const file_v1_workspace_service_proto_rawDesc = "" +
 	"\vupdate_mask\x18\x02 \x01(\v2\x1a.google.protobuf.FieldMaskR\n" +
 	"updateMask\"0\n" +
 	"\x15LeaveWorkspaceRequest\x12\x17\n" +
-	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name2\x80\v\n" +
-	"\x10WorkspaceService\x12q\n" +
-	"\fGetWorkspace\x12 .bytebase.v1.GetWorkspaceRequest\x1a\x16.bytebase.v1.Workspace\"'\x80\xea0\x01\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x19\x12\x17/v1/{name=workspaces/*}\x12y\n" +
-	"\x0eListWorkspaces\x12\".bytebase.v1.ListWorkspacesRequest\x1a#.bytebase.v1.ListWorkspacesResponse\"\x1e\x90\xea0\x02\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x10\x12\x0e/v1/workspaces\x12\xa4\x01\n" +
-	"\x0fUpdateWorkspace\x12#.bytebase.v1.UpdateWorkspaceRequest\x1a\x16.bytebase.v1.Workspace\"T\x8a\xea0\x14bb.workspaces.update\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02&:\x01*2!/v1/{workspace.name=workspaces/*}\x12\xa4\x01\n" +
-	"\fGetIamPolicy\x12 .bytebase.v1.GetIamPolicyRequest\x1a\x16.bytebase.v1.IamPolicy\"Z\x8a\xea0\x1abb.workspaces.getIamPolicy\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02*\x12(/v1/{resource=workspaces/*}:getIamPolicy\x12\x9b\x01\n" +
-	"\x0fDeleteWorkspace\x12#.bytebase.v1.DeleteWorkspaceRequest\x1a\x1a.bytebase.v1.LoginResponse\"G\x8a\xea0\x14bb.workspaces.delete\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x05\x82\xd3\xe4\x93\x02\x19*\x17/v1/{name=workspaces/*}\x12\x8a\x01\n" +
-	"\x0eLeaveWorkspace\x12\".bytebase.v1.LeaveWorkspaceRequest\x1a\x1a.bytebase.v1.LoginResponse\"8\x90\xea0\x02\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x05\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/v1/{name=workspaces/*}:leave\x12\xab\x01\n" +
-	"\fSetIamPolicy\x12 .bytebase.v1.SetIamPolicyRequest\x1a\x16.bytebase.v1.IamPolicy\"a\x8a\xea0\x1abb.workspaces.setIamPolicy\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x04\xa8\xea0\t\x82\xd3\xe4\x93\x02-:\x01*\"(/v1/{resource=workspaces/*}:setIamPolicy\x12_\n" +
+	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x02R\x04name2\x90\v\n" +
+	"\x10WorkspaceService\x12u\n" +
+	"\fGetWorkspace\x12 .bytebase.v1.GetWorkspaceRequest\x1a\x16.bytebase.v1.Workspace\"+\x80\xea0\x01\xa0\xea0\x01\xb8\xea0\x01\x82\xd3\xe4\x93\x02\x19\x12\x17/v1/{name=workspaces/*}\x12}\n" +
+	"\x0eListWorkspaces\x12\".bytebase.v1.ListWorkspacesRequest\x1a#.bytebase.v1.ListWorkspacesResponse\"\"\x90\xea0\x02\xa0\xea0\x01\xb8\xea0\x01\x82\xd3\xe4\x93\x02\x10\x12\x0e/v1/workspaces\x12\xa4\x01\n" +
+	"\x0fUpdateWorkspace\x12#.bytebase.v1.UpdateWorkspaceRequest\x1a\x16.bytebase.v1.Workspace\"T\x8a\xea0\x14bb.workspaces.update\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\t\xb8\xea0\x02\x82\xd3\xe4\x93\x02&:\x01*2!/v1/{workspace.name=workspaces/*}\x12\xa8\x01\n" +
+	"\fGetIamPolicy\x12 .bytebase.v1.GetIamPolicyRequest\x1a\x16.bytebase.v1.IamPolicy\"^\x8a\xea0\x1abb.workspaces.getIamPolicy\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\t\xb8\xea0\x01\x82\xd3\xe4\x93\x02*\x12(/v1/{resource=workspaces/*}:getIamPolicy\x12\x9b\x01\n" +
+	"\x0fDeleteWorkspace\x12#.bytebase.v1.DeleteWorkspaceRequest\x1a\x1a.bytebase.v1.LoginResponse\"G\x8a\xea0\x14bb.workspaces.delete\x90\xea0\x01\xa0\xea0\x03\xa8\xea0\x05\xb8\xea0\x02\x82\xd3\xe4\x93\x02\x19*\x17/v1/{name=workspaces/*}\x12\x8a\x01\n" +
+	"\x0eLeaveWorkspace\x12\".bytebase.v1.LeaveWorkspaceRequest\x1a\x1a.bytebase.v1.LoginResponse\"8\x90\xea0\x02\xa0\xea0\x03\xa8\xea0\x05\xb8\xea0\x02\x82\xd3\xe4\x93\x02\":\x01*\"\x1d/v1/{name=workspaces/*}:leave\x12\xab\x01\n" +
+	"\fSetIamPolicy\x12 .bytebase.v1.SetIamPolicyRequest\x1a\x16.bytebase.v1.IamPolicy\"a\x8a\xea0\x1abb.workspaces.setIamPolicy\x90\xea0\x01\xa0\xea0\x04\xa8\xea0\t\xb8\xea0\x02\x82\xd3\xe4\x93\x02-:\x01*\"(/v1/{resource=workspaces/*}:setIamPolicy\x12c\n" +
 	"\n" +
-	"GetMCPInfo\x12\x1e.bytebase.v1.GetMCPInfoRequest\x1a\x14.bytebase.v1.MCPInfo\"\x1b\xdaA\x00\xa0\xea0\x01\x82\xd3\xe4\x93\x02\x0e\x12\f/v1/mcp/info\x12\xf5\x01\n" +
-	"\x18RotateDirectorySyncToken\x12,.bytebase.v1.RotateDirectorySyncTokenRequest\x1a-.bytebase.v1.RotateDirectorySyncTokenResponse\"|\xdaA\x04name\x8a\xea0&bb.workspaces.rotateDirectorySyncToken\x90\xea0\x01\x98\xea0\x01\xa0\xea0\x03\xa8\xea0\x06\x82\xd3\xe4\x93\x025:\x01*\"0/v1/{name=workspaces/*}:rotateDirectorySyncTokenB\xab\x01\n" +
+	"GetMCPInfo\x12\x1e.bytebase.v1.GetMCPInfoRequest\x1a\x14.bytebase.v1.MCPInfo\"\x1f\xdaA\x00\xa0\xea0\x01\xb8\xea0\x01\x82\xd3\xe4\x93\x02\x0e\x12\f/v1/mcp/info\x12\xf5\x01\n" +
+	"\x18RotateDirectorySyncToken\x12,.bytebase.v1.RotateDirectorySyncTokenRequest\x1a-.bytebase.v1.RotateDirectorySyncTokenResponse\"|\xdaA\x04name\x8a\xea0&bb.workspaces.rotateDirectorySyncToken\x90\xea0\x01\xa0\xea0\x03\xa8\xea0\x06\xb8\xea0\x02\x82\xd3\xe4\x93\x025:\x01*\"0/v1/{name=workspaces/*}:rotateDirectorySyncTokenB\xab\x01\n" +
 	"\x0fcom.bytebase.v1B\x15WorkspaceServiceProtoP\x01Z4github.com/bytebase/bytebase/backend/generated-go/v1\xa2\x02\x03BXX\xaa\x02\vBytebase.V1\xca\x02\vBytebase\\V1\xe2\x02\x17Bytebase\\V1\\GPBMetadata\xea\x02\fBytebase::V1b\x06proto3"
 
 var (

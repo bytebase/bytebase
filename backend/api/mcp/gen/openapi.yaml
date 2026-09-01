@@ -9316,6 +9316,25 @@ components:
         - ALERT
         - EMERGENCY
       description: Severity level for audit log entries.
+    bytebase.v1.AuditMode:
+      type: string
+      title: AuditMode
+      enum:
+        - AUDIT_MODE_UNSPECIFIED
+        - DENIALS
+        - ALL
+      description: |-
+        Whether and how an RPC's calls reach the audit log. One enum rather than a
+         bool because the population worth recording is not the population worth
+         recording ON SUCCESS: reads such as GetSetting, ListUsers and GetIamPolicy
+         are called constantly by the console and must not write a row each time,
+         while their refusals are exactly what an operator investigating an agent
+         needs to see.
+
+         The bool could not say that, so the audit interceptor grew a runtime
+         override for the MCP gate's denials, and the annotation stopped being the
+         source of truth for what gets recorded. This enum removes the reason that
+         override existed.
     bytebase.v1.AuthMethod:
       type: string
       title: AuthMethod

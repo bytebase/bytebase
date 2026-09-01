@@ -305,20 +305,18 @@ func mcpSettingsFromContext(ctx context.Context) (*storepb.MCPSetting, bool) {
 // row). An admin tightening the ceiling binds the next request of a session
 // already open; work already admitted finishes.
 //
-// A policy denial is recorded whatever the method's audit annotation says: the
-// gate marks the outcome and the audit interceptor records it (see
-// common.SetPolicyDenied). A substantial share of the refused methods carry no
-// audit annotation — the four FORBIDDEN ones that were silent before this gate
-// (Refresh, SwitchWorkspace, TestIdentityProvider, TestEmailSetting) and the
-// EXCLUDED ones alongside them — and TestEmailSetting and TestIdentityProvider
-// are the rows an operator would most want, since each would have carried a
-// stored secret to an address the agent chose. Recording requests that were
-// never recorded is why redaction has to cover more than the audited RPCs
-// (audit.go): a denial must not transcribe the secret it refused.
+// A refusal here is marked (common.SetPolicyDenied) so the audit interceptor
+// records it, and every refusable method declares at least audit = DENIALS, so
+// every refusal reaches the log. That matters most for TestEmailSetting and
+// TestIdentityProvider: each would have carried a stored secret to an address
+// the agent chose, and before either half existed their denials left no trace.
 //
-// testdata/mcp_method_classification.md carries the class totals but not the
-// audit annotation, so a live count of this population comes from the
-// descriptors.
+// The gate refuses by CLASS, not by annotation, so any method can be refused
+// here — DISABLED serves none of them. That is why DENIALS is the floor on
+// every method rather than only on the ones an operator thought to ask for.
+// Recording requests that were never recorded is why redaction has to cover
+// more than the ALL-audited RPCs (audit.go): a denial must not transcribe the
+// secret it refused.
 //
 // A ceiling the gate cannot act on splits in two, and the split is the same one
 // the /mcp connection gate makes. A stored value this build cannot interpret —

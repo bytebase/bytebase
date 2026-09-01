@@ -23,6 +23,7 @@ service DatabaseGroupService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.databaseGroups.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -33,6 +34,7 @@ service DatabaseGroupService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.databaseGroups.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -46,7 +48,7 @@ service DatabaseGroupService {
     option (google.api.method_signature) = "parent,databaseGroup";
     option (bytebase.v1.permission) = "bb.databaseGroups.create";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -61,7 +63,7 @@ service DatabaseGroupService {
     option (google.api.method_signature) = "database_group,update_mask";
     option (bytebase.v1.permission) = "bb.databaseGroups.update";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -72,7 +74,7 @@ service DatabaseGroupService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.databaseGroups.delete";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 }

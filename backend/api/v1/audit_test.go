@@ -17,7 +17,7 @@ import (
 )
 
 func TestFailedLoginWithoutWorkspaceIsSkipped(t *testing.T) {
-	ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{Audit: true})
+	ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{AuditMode: v1pb.AuditMode_ALL})
 	st := newAuditLiveStore(t)
 	t.Cleanup(func() { require.NoError(t, st.Close()) })
 	in := NewAuditInterceptor(st, "test-secret", &config.Profile{})
@@ -41,7 +41,7 @@ func TestFailedLoginWithoutWorkspaceIsSkipped(t *testing.T) {
 }
 
 func TestFailedLoginWithHandlerWorkspaceCreatesSingleAuditRow(t *testing.T) {
-	ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{Audit: true})
+	ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{AuditMode: v1pb.AuditMode_ALL})
 	st := newAuditLiveStore(t)
 	t.Cleanup(func() { require.NoError(t, st.Close()) })
 	in := NewAuditInterceptor(st, "test-secret", &config.Profile{})
@@ -90,7 +90,7 @@ func TestStreamingAuditPersistedBeforeSend(t *testing.T) {
 			return conn.Send(&v1pb.AdminExecuteResponse{})
 		})
 
-		ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{Audit: true})
+		ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{AuditMode: v1pb.AuditMode_ALL})
 		a.NoError(handler(ctx, &auditRecorderConn{recorder: recorder}))
 
 		a.Equal([]string{"audit", "send"}, recorder.events,
@@ -114,7 +114,7 @@ func TestStreamingAuditPersistedBeforeSend(t *testing.T) {
 			return conn.Send(&v1pb.AdminExecuteResponse{})
 		})
 
-		ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{Audit: true})
+		ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{AuditMode: v1pb.AuditMode_ALL})
 		a.ErrorIs(handler(ctx, &auditRecorderConn{recorder: recorder}), persistErr)
 		a.Equal([]string{"audit"}, recorder.events,
 			"response must not be delivered when the audit entry cannot be persisted")

@@ -607,7 +607,7 @@ func TestStreamingAuditRedactsRows(t *testing.T) {
 	})
 
 	ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{
-		Audit:     true,
+		AuditMode: v1pb.AuditMode_ALL,
 		Resources: []*common.Resource{{Type: common.ResourceTypeWorkspace, ID: auditTestWorkspace}},
 	})
 	require.NoError(t, handler(ctx, &auditStreamingConn{}))

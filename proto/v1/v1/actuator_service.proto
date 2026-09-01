@@ -19,6 +19,7 @@ service ActuatorService {
   rpc GetActuatorInfo(GetActuatorInfoRequest) returns (ActuatorInfo) {
     option (google.api.http) = {get: "/v1/actuator/info"};
     option (google.api.method_signature) = "";
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 }

@@ -25,6 +25,7 @@ service SettingService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.settings.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -36,6 +37,7 @@ service SettingService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.settings.get";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -49,7 +51,7 @@ service SettingService {
     };
     option (bytebase.v1.permission) = "bb.settings.set";
     option (bytebase.v1.auth_method) = CUSTOM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = REWRITES_SESSION_BOUNDARY;
   }
@@ -63,6 +65,7 @@ service SettingService {
     };
     option (bytebase.v1.permission) = "bb.settings.set";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }

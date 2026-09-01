@@ -28,9 +28,9 @@ import (
 // "what the audit row writes down" and a new credential shows up as one line of
 // diff.
 //
-// The population is wider than the audited RPCs: WrapUnary writes a row on
-// `needAudit(ctx) || policyDenied`, so every method a policy can refuse is in
-// scope, annotation or not. Every registered Any type is in scope too,
+// The population is wider than the ALL-audited RPCs: every v1 method declares
+// at least audit = DENIALS, so every one of them can put a refused request into
+// a row. Every registered Any type is in scope too,
 // since those reach the row without passing marshalAuditPayload — which is why
 // the registry is enforced at its call sites for this list to mean anything.
 //

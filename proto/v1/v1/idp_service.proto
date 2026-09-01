@@ -22,6 +22,7 @@ service IdentityProviderService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.identityProviders.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -36,6 +37,7 @@ service IdentityProviderService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.allow_without_credential) = true;
     // The method requires no authentication thus no authorization.
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -50,7 +52,7 @@ service IdentityProviderService {
     option (google.api.method_signature) = "";
     option (bytebase.v1.permission) = "bb.identityProviders.create";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
@@ -66,7 +68,7 @@ service IdentityProviderService {
     option (google.api.method_signature) = "identity_provider,update_mask";
     option (bytebase.v1.permission) = "bb.identityProviders.update";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
@@ -78,7 +80,7 @@ service IdentityProviderService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.identityProviders.delete";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -92,6 +94,7 @@ service IdentityProviderService {
     };
     option (bytebase.v1.permission) = "bb.identityProviders.update";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }

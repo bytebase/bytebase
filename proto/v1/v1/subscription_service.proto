@@ -18,6 +18,7 @@ service SubscriptionService {
   rpc GetSubscription(GetSubscriptionRequest) returns (Subscription) {
     option (google.api.http) = {get: "/v1/subscription"};
     option (google.api.method_signature) = "";
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -27,7 +28,7 @@ service SubscriptionService {
     option (google.api.http) = {get: "/v1/subscription:vcsProviderUsersExport"};
     option (bytebase.v1.permission) = "bb.subscription.manage";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -40,7 +41,7 @@ service SubscriptionService {
     };
     option (bytebase.v1.permission) = "bb.subscription.manage";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -54,7 +55,7 @@ service SubscriptionService {
     };
     option (bytebase.v1.permission) = "bb.subscription.manage";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -68,7 +69,7 @@ service SubscriptionService {
     };
     option (bytebase.v1.permission) = "bb.subscription.manage";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -81,7 +82,7 @@ service SubscriptionService {
     };
     option (bytebase.v1.permission) = "bb.subscription.manage";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -91,6 +92,7 @@ service SubscriptionService {
     option (google.api.http) = {get: "/v1/subscription/paymentInfo"};
     option (bytebase.v1.permission) = "bb.subscription.manage";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -100,6 +102,7 @@ service SubscriptionService {
     option (google.api.http) = {get: "/v1/subscription/checkoutSession/{session_id}"};
     option (bytebase.v1.permission) = "bb.subscription.manage";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -107,6 +110,7 @@ service SubscriptionService {
   // ListPurchasePlans returns available plans for self-service purchase.
   rpc ListPurchasePlans(ListPurchasePlansRequest) returns (ListPurchasePlansResponse) {
     option (google.api.http) = {get: "/v1/subscription/plans"};
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }

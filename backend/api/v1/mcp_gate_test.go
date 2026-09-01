@@ -30,7 +30,7 @@ type mcpClassification struct {
 	class      v1pb.MCPMethodClass
 	reason     v1pb.MCPDenialReason
 	permission string
-	audit      bool
+	auditMode  v1pb.AuditMode
 	// request is the method's input descriptor, which the redaction lint
 	// below reads to see what a denial would write into an audit row.
 	request protoreflect.MessageDescriptor
@@ -61,14 +61,14 @@ func mcpClassificationsFromDescriptors(t *testing.T) []mcpClassification {
 				require.True(t, ok, "method %s carries a malformed mcp_denial_reason", md.FullName())
 				permission, ok := proto.GetExtension(md.Options(), v1pb.E_Permission).(string)
 				require.True(t, ok, "method %s carries a malformed permission", md.FullName())
-				audit, ok := proto.GetExtension(md.Options(), v1pb.E_Audit).(bool)
+				audit, ok := proto.GetExtension(md.Options(), v1pb.E_Audit).(v1pb.AuditMode)
 				require.True(t, ok, "method %s carries a malformed audit annotation", md.FullName())
 				rows = append(rows, mcpClassification{
 					procedure:  fmt.Sprintf("/%s/%s", sd.FullName(), md.Name()),
 					class:      class,
 					reason:     reason,
 					permission: permission,
-					audit:      audit,
+					auditMode:  audit,
 					request:    md.Input(),
 				})
 			}
@@ -350,6 +350,31 @@ func checkEveryClassHasAServingDecision(
 
 func TestLintEveryMethodIsClassified(t *testing.T) {
 	require.Empty(t, checkEveryMethodIsClassified(mcpClassificationsFromDescriptors(t)))
+}
+
+// checkEveryMethodDeclaresAnAuditMode is the same clause for the audit
+// annotation, and it is what makes that annotation a complete account of the
+// audit log. A method declaring no mode records nothing, denied or not, so an
+// RPC that ships unannotated is one whose refusals are invisible — which is the
+// state BYT-10124 is about.
+//
+// DENIALS is the floor rather than the fallback: it costs nothing on the
+// success path and every method here is refusable, because the MCP ceiling
+// refuses by CLASS, not by annotation, and DISABLED serves no class at all.
+func checkEveryMethodDeclaresAnAuditMode(rows []mcpClassification) []string {
+	var violations []string
+	for _, row := range rows {
+		if row.auditMode == v1pb.AuditMode_AUDIT_MODE_UNSPECIFIED {
+			violations = append(violations, row.procedure+": carries no audit mode")
+		}
+	}
+	slices.Sort(violations)
+	return violations
+}
+
+func TestLintEveryMethodDeclaresAnAuditMode(t *testing.T) {
+	require.Empty(t, checkEveryMethodDeclaresAnAuditMode(mcpClassificationsFromDescriptors(t)),
+		"every v1 method must say whether its calls reach the audit log; DENIALS is the floor")
 }
 
 func TestLintReasonsMatchTheClass(t *testing.T) {
@@ -825,7 +850,7 @@ type mcpGateResult struct {
 // invokeMCPGate runs one request through the gate alone. auditMarked is what
 // the audit interceptor reads when the request comes back out; standing in for
 // it here keeps the class rules provable without a database, and
-// TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation proves the real
+// TestMCPGateDenialIsAudited proves the real
 // interceptor honors the mark.
 func invokeMCPGate(t *testing.T, stores mcpSettingsReader, authCtx *common.AuthContext, procedure string, req connect.AnyRequest) mcpGateResult {
 	t.Helper()
@@ -1151,11 +1176,11 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 	})
 }
 
-// TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation is the typed
-// policy-denial record, end to end through the real audit interceptor and a
-// real store. Every method below is refused and carries no audit annotation, so
-// its denial produced nothing at all before the gate started marking its own
-// refusals: needAudit reads the annotation and nothing else.
+// TestMCPGateDenialIsAudited is the typed policy-denial record, end to end
+// through the real audit interceptor and a real store. Every method below
+// declares audit = DENIALS: refused calls are recorded, ordinary console use is
+// not, which is the state the bool could not express and the runtime override
+// used to stand in for.
 //
 // The first four are the FORBIDDEN half of that population, which was the whole
 // of it while the gate refused FORBIDDEN alone. Enforcing EXCLUDED widened it,
@@ -1166,7 +1191,7 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 // rows are checked for what they wrote as well as that they wrote. The gate
 // refuses before dispatch, so nothing in them was ever used — recording one
 // verbatim would turn a silent denial into a worse one.
-func TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation(t *testing.T) {
+func TestMCPGateDenialIsAudited(t *testing.T) {
 	st := newAuditLiveStore(t)
 	auditIn := NewAuditInterceptor(st, "test-secret", &config.Profile{})
 	gate := NewInternalMCPGateInterceptor(readWriteCeiling())
@@ -1174,8 +1199,8 @@ func TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation(t *testing.T) {
 	invoke := func(t *testing.T, correlationID, procedure string, req connect.AnyRequest) {
 		t.Helper()
 		authCtx := &common.AuthContext{
-			// No audit annotation: the point of the test.
-			Audit:           false,
+			// Refusals recorded, ordinary use not: the point of the test.
+			AuditMode:       v1pb.AuditMode_DENIALS,
 			AuthMethod:      common.AuthMethodCustom,
 			MCPMethodClass:  v1pb.MCPMethodClass_FORBIDDEN,
 			MCPDenialReason: v1pb.MCPDenialReason_MINTS_CREDENTIAL_FOR_OTHERS,
@@ -1197,7 +1222,7 @@ func TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation(t *testing.T) {
 	assertOneDeniedRow := func(t *testing.T, correlationID, procedure string) *storepb.AuditLog {
 		t.Helper()
 		rows := findRowsByCorrelation(t, st, correlationID)
-		require.Len(t, rows, 1, "a policy denial must be recorded even where the method asks for no audit row")
+		require.Len(t, rows, 1, "a DENIALS method must record the call the gate refused")
 		row := rows[0].Payload
 		require.Equal(t, procedure, row.Method)
 		require.Equal(t, int32(connect.CodePermissionDenied), row.GetStatus().GetCode())
@@ -1513,7 +1538,9 @@ func mcpRequestFieldNeedsReview(field protoreflect.FieldDescriptor) bool {
 func TestLintDenialRequestsAreReviewedForRedaction(t *testing.T) {
 	needsReview := map[string][]string{}
 	for _, row := range mcpClassificationsFromDescriptors(t) {
-		if row.audit {
+		// A method recorded on every call has its payload reviewed as part of
+		// the ordinary audited surface; this lint is for the rest.
+		if row.auditMode == v1pb.AuditMode_ALL {
 			continue
 		}
 		fields := row.request.Fields()

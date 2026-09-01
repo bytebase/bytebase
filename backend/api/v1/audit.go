@@ -71,23 +71,15 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 			handlerAuditWorkspaceID = workspaceID
 		})
 
-		// A row is written when an access-control refusal marks itself, or
-		// when the method opts in. Three refusals mark: the ACL interceptor on
-		// both chains, and on the internal chain the MCP ceiling gate and the
-		// read-only clamp inside SQLService.Query. Marking is the
-		// discriminator, not where the code sits — the clamp is handler code.
-		// A method's own permission check inside its handler marks nothing, so
-		// its refusals ride the annotation like any other call.
+		// The method's audit annotation decides whether there is a row; this
+		// mark decides which calls to a DENIALS method count.
 		//
-		// Unary only. WrapStreamingHandler below registers no setter and
-		// writes from Send, which a denial in Receive never reaches; the DEFER
-		// in acl.go carries the ceiling.
-		//
-		// The mark is what carries the denial half: needAudit reads the audit
-		// annotation and nothing else, and a substantial share of the refusable
-		// methods carry none (mcp_gate.go names the ones that matter most). The
-		// annotation decides whether ORDINARY use is interesting; a refused
-		// caller is interesting either way.
+		// Three refusals mark: the ACL interceptor on both chains, and on the
+		// internal chain the MCP ceiling gate and the read-only clamp inside
+		// SQLService.Query. Marking is what qualifies, not where the code sits
+		// — the clamp is handler code. A method's own permission check inside
+		// its handler marks nothing, so its refusals reach the log only under
+		// ALL.
 		//
 		// Recording a request that was never recorded is why redaction has to
 		// cover more than the audited RPCs: a denial must not transcribe the
@@ -102,7 +94,7 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 		response, rerr := next(ctx, req)
 		latency := time.Since(startTime)
 
-		if needAudit(ctx) || policyDenied {
+		if needAudit(ctx, policyDenied) {
 			var respMsg any
 			if !common.IsNil(response) {
 				respMsg = response.Any()
@@ -138,7 +130,10 @@ func (*AuditInterceptor) WrapStreamingClient(next connect.StreamingClientFunc) c
 // WrapStreamingHandler implements the ConnectRPC interceptor interface for streaming handlers.
 func (in *AuditInterceptor) WrapStreamingHandler(next connect.StreamingHandlerFunc) connect.StreamingHandlerFunc {
 	return func(ctx context.Context, conn connect.StreamingHandlerConn) error {
-		if !needAudit(ctx) {
+		// A stream has no denial to pass: aclStreamingConn refuses in Receive,
+		// which never reaches the Send that writes rows. See the DEFER in
+		// acl.go.
+		if !needAudit(ctx, false) {
 			return next(ctx, conn)
 		}
 
@@ -532,13 +527,28 @@ func marshalAuditPayload(payload any) string {
 	return string(b)
 }
 
-func needAudit(ctx context.Context) bool {
+// needAudit reports whether this call reaches the audit log.
+//
+// The annotation declares the method's eligibility; the mark says what
+// happened to this call. The mark selects within the declared mode and never
+// widens it.
+//
+// A lint requires every v1 method to declare a mode, so UNSPECIFIED here means
+// a call arrived with no auth context, or a build that was never linted.
+func needAudit(ctx context.Context, denied bool) bool {
 	authCtx, ok := common.GetAuthContextFromContext(ctx)
 	if !ok {
 		slog.Warn("audit interceptor: failed to get auth context")
 		return false
 	}
-	return authCtx.Audit
+	switch authCtx.AuditMode {
+	case v1pb.AuditMode_ALL:
+		return true
+	case v1pb.AuditMode_DENIALS:
+		return denied
+	default:
+		return false
+	}
 }
 
 // getRequestMetadataFromHeaders extracts request metadata from HTTP headers for ConnectRPC.

@@ -24,6 +24,7 @@ service ReleaseService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.releases.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -34,6 +35,7 @@ service ReleaseService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.releases.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 
@@ -47,7 +49,7 @@ service ReleaseService {
     option (google.api.method_signature) = "parent,release";
     option (bytebase.v1.permission) = "bb.releases.create";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -62,7 +64,7 @@ service ReleaseService {
     option (google.api.method_signature) = "release,update_mask";
     option (bytebase.v1.permission) = "bb.releases.update";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -73,7 +75,7 @@ service ReleaseService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.releases.delete";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -83,7 +85,7 @@ service ReleaseService {
     option (google.api.http) = {post: "/v1/{name=projects/*/releases/*}:undelete"};
     option (bytebase.v1.permission) = "bb.releases.undelete";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -96,6 +98,7 @@ service ReleaseService {
     };
     option (bytebase.v1.permission) = "bb.releases.check";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = WRITE;
   }
 
@@ -106,6 +109,7 @@ service ReleaseService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.releases.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 }

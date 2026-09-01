@@ -80,6 +80,72 @@ func (AuditBehavior) EnumDescriptor() ([]byte, []int) {
 	return file_v1_annotation_proto_rawDescGZIP(), []int{0}
 }
 
+// Whether and how an RPC's calls reach the audit log. One enum rather than a
+// bool because the population worth recording is not the population worth
+// recording ON SUCCESS: reads such as GetSetting, ListUsers and GetIamPolicy
+// are called constantly by the console and must not write a row each time,
+// while their refusals are exactly what an operator investigating an agent
+// needs to see.
+//
+// The bool could not say that, so the audit interceptor grew a runtime
+// override for the MCP gate's denials, and the annotation stopped being the
+// source of truth for what gets recorded. This enum removes the reason that
+// override existed.
+type AuditMode int32
+
+const (
+	// Not audited. A method that reaches the audit log while carrying this is a
+	// bug in the interceptor, not a policy decision taken elsewhere.
+	AuditMode_AUDIT_MODE_UNSPECIFIED AuditMode = 0
+	// Only refused calls are recorded. For methods whose ordinary use is routine
+	// console traffic but whose refusal is an event: the MCP ceiling refusing an
+	// agent, or RBAC refusing a caller.
+	AuditMode_DENIALS AuditMode = 1
+	// Every call is recorded, refused or not.
+	AuditMode_ALL AuditMode = 2
+)
+
+// Enum value maps for AuditMode.
+var (
+	AuditMode_name = map[int32]string{
+		0: "AUDIT_MODE_UNSPECIFIED",
+		1: "DENIALS",
+		2: "ALL",
+	}
+	AuditMode_value = map[string]int32{
+		"AUDIT_MODE_UNSPECIFIED": 0,
+		"DENIALS":                1,
+		"ALL":                    2,
+	}
+)
+
+func (x AuditMode) Enum() *AuditMode {
+	p := new(AuditMode)
+	*p = x
+	return p
+}
+
+func (x AuditMode) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (AuditMode) Descriptor() protoreflect.EnumDescriptor {
+	return file_v1_annotation_proto_enumTypes[1].Descriptor()
+}
+
+func (AuditMode) Type() protoreflect.EnumType {
+	return &file_v1_annotation_proto_enumTypes[1]
+}
+
+func (x AuditMode) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use AuditMode.Descriptor instead.
+func (AuditMode) EnumDescriptor() ([]byte, []int) {
+	return file_v1_annotation_proto_rawDescGZIP(), []int{1}
+}
+
 // Authorization method for RPC calls.
 type AuthMethod int32
 
@@ -117,11 +183,11 @@ func (x AuthMethod) String() string {
 }
 
 func (AuthMethod) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_annotation_proto_enumTypes[1].Descriptor()
+	return file_v1_annotation_proto_enumTypes[2].Descriptor()
 }
 
 func (AuthMethod) Type() protoreflect.EnumType {
-	return &file_v1_annotation_proto_enumTypes[1]
+	return &file_v1_annotation_proto_enumTypes[2]
 }
 
 func (x AuthMethod) Number() protoreflect.EnumNumber {
@@ -130,7 +196,7 @@ func (x AuthMethod) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use AuthMethod.Descriptor instead.
 func (AuthMethod) EnumDescriptor() ([]byte, []int) {
-	return file_v1_annotation_proto_rawDescGZIP(), []int{1}
+	return file_v1_annotation_proto_rawDescGZIP(), []int{2}
 }
 
 // Classification of an RPC for MCP (AI agent) sessions. The effective
@@ -205,11 +271,11 @@ func (x MCPMethodClass) String() string {
 }
 
 func (MCPMethodClass) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_annotation_proto_enumTypes[2].Descriptor()
+	return file_v1_annotation_proto_enumTypes[3].Descriptor()
 }
 
 func (MCPMethodClass) Type() protoreflect.EnumType {
-	return &file_v1_annotation_proto_enumTypes[2]
+	return &file_v1_annotation_proto_enumTypes[3]
 }
 
 func (x MCPMethodClass) Number() protoreflect.EnumNumber {
@@ -218,7 +284,7 @@ func (x MCPMethodClass) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MCPMethodClass.Descriptor instead.
 func (MCPMethodClass) EnumDescriptor() ([]byte, []int) {
-	return file_v1_annotation_proto_rawDescGZIP(), []int{2}
+	return file_v1_annotation_proto_rawDescGZIP(), []int{3}
 }
 
 // Why an MCP session may not call an RPC. The mechanism, not the wording: each
@@ -357,11 +423,11 @@ func (x MCPDenialReason) String() string {
 }
 
 func (MCPDenialReason) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_annotation_proto_enumTypes[3].Descriptor()
+	return file_v1_annotation_proto_enumTypes[4].Descriptor()
 }
 
 func (MCPDenialReason) Type() protoreflect.EnumType {
-	return &file_v1_annotation_proto_enumTypes[3]
+	return &file_v1_annotation_proto_enumTypes[4]
 }
 
 func (x MCPDenialReason) Number() protoreflect.EnumNumber {
@@ -370,7 +436,7 @@ func (x MCPDenialReason) Number() protoreflect.EnumNumber {
 
 // Deprecated: Use MCPDenialReason.Descriptor instead.
 func (MCPDenialReason) EnumDescriptor() ([]byte, []int) {
-	return file_v1_annotation_proto_rawDescGZIP(), []int{3}
+	return file_v1_annotation_proto_rawDescGZIP(), []int{4}
 }
 
 var file_v1_annotation_proto_extTypes = []protoimpl.ExtensionInfo{
@@ -400,10 +466,10 @@ var file_v1_annotation_proto_extTypes = []protoimpl.ExtensionInfo{
 	},
 	{
 		ExtendedType:  (*descriptorpb.MethodOptions)(nil),
-		ExtensionType: (*bool)(nil),
-		Field:         100003,
+		ExtensionType: (*AuditMode)(nil),
+		Field:         100007,
 		Name:          "bytebase.v1.audit",
-		Tag:           "varint,100003,opt,name=audit",
+		Tag:           "varint,100007,opt,name=audit,enum=bytebase.v1.AuditMode",
 		Filename:      "v1/annotation.proto",
 	},
 	{
@@ -446,9 +512,11 @@ var (
 	//
 	// optional bytebase.v1.AuthMethod auth_method = 100002;
 	E_AuthMethod = &file_v1_annotation_proto_extTypes[2]
-	// Whether to audit calls to this method.
+	// Whether and how calls to this method are audited. This is the whole
+	// declaration: a method that sets no mode produces no audit row, ever, and
+	// nothing at runtime can override it.
 	//
-	// optional bool audit = 100003;
+	// optional bytebase.v1.AuditMode audit = 100007;
 	E_Audit = &file_v1_annotation_proto_extTypes[3]
 	// How the method is classified for MCP (AI agent) sessions.
 	//
@@ -480,7 +548,11 @@ const file_v1_annotation_proto_rawDesc = "" +
 	"\rAuditBehavior\x12\x1e\n" +
 	"\x1aAUDIT_BEHAVIOR_UNSPECIFIED\x10\x00\x12\r\n" +
 	"\tSENSITIVE\x10\x01\x12\b\n" +
-	"\x04OMIT\x10\x02*>\n" +
+	"\x04OMIT\x10\x02*=\n" +
+	"\tAuditMode\x12\x1a\n" +
+	"\x16AUDIT_MODE_UNSPECIFIED\x10\x00\x12\v\n" +
+	"\aDENIALS\x10\x01\x12\a\n" +
+	"\x03ALL\x10\x02*>\n" +
 	"\n" +
 	"AuthMethod\x12\x1b\n" +
 	"\x17AUTH_METHOD_UNSPECIFIED\x10\x00\x12\a\n" +
@@ -514,8 +586,8 @@ const file_v1_annotation_proto_rawDesc = "" +
 	"permission\x12\x1e.google.protobuf.MethodOptions\x18\xa1\x8d\x06 \x01(\tR\n" +
 	"permission:Z\n" +
 	"\vauth_method\x12\x1e.google.protobuf.MethodOptions\x18\xa2\x8d\x06 \x01(\x0e2\x17.bytebase.v1.AuthMethodR\n" +
-	"authMethod:6\n" +
-	"\x05audit\x12\x1e.google.protobuf.MethodOptions\x18\xa3\x8d\x06 \x01(\bR\x05audit:g\n" +
+	"authMethod:N\n" +
+	"\x05audit\x12\x1e.google.protobuf.MethodOptions\x18\xa7\x8d\x06 \x01(\x0e2\x16.bytebase.v1.AuditModeR\x05audit:g\n" +
 	"\x10mcp_method_class\x12\x1e.google.protobuf.MethodOptions\x18\xa4\x8d\x06 \x01(\x0e2\x1b.bytebase.v1.MCPMethodClassR\x0emcpMethodClass:j\n" +
 	"\x11mcp_denial_reason\x12\x1e.google.protobuf.MethodOptions\x18\xa5\x8d\x06 \x01(\x0e2\x1c.bytebase.v1.MCPDenialReasonR\x0fmcpDenialReason:b\n" +
 	"\x0eaudit_behavior\x12\x1d.google.protobuf.FieldOptions\x18\xaa\x8d\x06 \x01(\x0e2\x1a.bytebase.v1.AuditBehaviorR\rauditBehaviorB\xa5\x01\n" +
@@ -533,30 +605,32 @@ func file_v1_annotation_proto_rawDescGZIP() []byte {
 	return file_v1_annotation_proto_rawDescData
 }
 
-var file_v1_annotation_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_v1_annotation_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
 var file_v1_annotation_proto_goTypes = []any{
 	(AuditBehavior)(0),                 // 0: bytebase.v1.AuditBehavior
-	(AuthMethod)(0),                    // 1: bytebase.v1.AuthMethod
-	(MCPMethodClass)(0),                // 2: bytebase.v1.MCPMethodClass
-	(MCPDenialReason)(0),               // 3: bytebase.v1.MCPDenialReason
-	(*descriptorpb.MethodOptions)(nil), // 4: google.protobuf.MethodOptions
-	(*descriptorpb.FieldOptions)(nil),  // 5: google.protobuf.FieldOptions
+	(AuditMode)(0),                     // 1: bytebase.v1.AuditMode
+	(AuthMethod)(0),                    // 2: bytebase.v1.AuthMethod
+	(MCPMethodClass)(0),                // 3: bytebase.v1.MCPMethodClass
+	(MCPDenialReason)(0),               // 4: bytebase.v1.MCPDenialReason
+	(*descriptorpb.MethodOptions)(nil), // 5: google.protobuf.MethodOptions
+	(*descriptorpb.FieldOptions)(nil),  // 6: google.protobuf.FieldOptions
 }
 var file_v1_annotation_proto_depIdxs = []int32{
-	4,  // 0: bytebase.v1.allow_without_credential:extendee -> google.protobuf.MethodOptions
-	4,  // 1: bytebase.v1.permission:extendee -> google.protobuf.MethodOptions
-	4,  // 2: bytebase.v1.auth_method:extendee -> google.protobuf.MethodOptions
-	4,  // 3: bytebase.v1.audit:extendee -> google.protobuf.MethodOptions
-	4,  // 4: bytebase.v1.mcp_method_class:extendee -> google.protobuf.MethodOptions
-	4,  // 5: bytebase.v1.mcp_denial_reason:extendee -> google.protobuf.MethodOptions
-	5,  // 6: bytebase.v1.audit_behavior:extendee -> google.protobuf.FieldOptions
-	1,  // 7: bytebase.v1.auth_method:type_name -> bytebase.v1.AuthMethod
-	2,  // 8: bytebase.v1.mcp_method_class:type_name -> bytebase.v1.MCPMethodClass
-	3,  // 9: bytebase.v1.mcp_denial_reason:type_name -> bytebase.v1.MCPDenialReason
-	0,  // 10: bytebase.v1.audit_behavior:type_name -> bytebase.v1.AuditBehavior
-	11, // [11:11] is the sub-list for method output_type
-	11, // [11:11] is the sub-list for method input_type
-	7,  // [7:11] is the sub-list for extension type_name
+	5,  // 0: bytebase.v1.allow_without_credential:extendee -> google.protobuf.MethodOptions
+	5,  // 1: bytebase.v1.permission:extendee -> google.protobuf.MethodOptions
+	5,  // 2: bytebase.v1.auth_method:extendee -> google.protobuf.MethodOptions
+	5,  // 3: bytebase.v1.audit:extendee -> google.protobuf.MethodOptions
+	5,  // 4: bytebase.v1.mcp_method_class:extendee -> google.protobuf.MethodOptions
+	5,  // 5: bytebase.v1.mcp_denial_reason:extendee -> google.protobuf.MethodOptions
+	6,  // 6: bytebase.v1.audit_behavior:extendee -> google.protobuf.FieldOptions
+	2,  // 7: bytebase.v1.auth_method:type_name -> bytebase.v1.AuthMethod
+	1,  // 8: bytebase.v1.audit:type_name -> bytebase.v1.AuditMode
+	3,  // 9: bytebase.v1.mcp_method_class:type_name -> bytebase.v1.MCPMethodClass
+	4,  // 10: bytebase.v1.mcp_denial_reason:type_name -> bytebase.v1.MCPDenialReason
+	0,  // 11: bytebase.v1.audit_behavior:type_name -> bytebase.v1.AuditBehavior
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	7,  // [7:12] is the sub-list for extension type_name
 	0,  // [0:7] is the sub-list for extension extendee
 	0,  // [0:0] is the sub-list for field type_name
 }
@@ -571,7 +645,7 @@ func file_v1_annotation_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_annotation_proto_rawDesc), len(file_v1_annotation_proto_rawDesc)),
-			NumEnums:      4,
+			NumEnums:      5,
 			NumMessages:   0,
 			NumExtensions: 7,
 			NumServices:   0,

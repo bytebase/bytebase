@@ -20,6 +20,7 @@ service AccessGrantService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.accessGrants.get";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -30,6 +31,7 @@ service AccessGrantService {
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.accessGrants.list";
     option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -43,7 +45,7 @@ service AccessGrantService {
     option (google.api.method_signature) = "parent,access_grant";
     option (bytebase.v1.permission) = "bb.accessGrants.create";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -57,7 +59,7 @@ service AccessGrantService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.accessGrants.activate";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -71,7 +73,7 @@ service AccessGrantService {
     option (google.api.method_signature) = "name";
     option (bytebase.v1.permission) = "bb.accessGrants.revoke";
     option (bytebase.v1.auth_method) = IAM;
-    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.audit) = ALL;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -84,6 +86,7 @@ service AccessGrantService {
     };
     option (bytebase.v1.permission) = "bb.accessGrants.get";
     option (bytebase.v1.auth_method) = CUSTOM;
+    option (bytebase.v1.audit) = DENIALS;
     option (bytebase.v1.mcp_method_class) = READ;
   }
 }

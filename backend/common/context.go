@@ -60,10 +60,9 @@ func SetAuditWorkspaceID(ctx context.Context, workspaceID string) {
 // travel back out; this is the same setter shape WithSetAuditWorkspaceID
 // already uses for the same reason.
 //
-// The signal is needed because the audit interceptor otherwise writes a row
-// only when the method's own audit annotation asks for one, and a substantial
-// share of the methods a policy can refuse carry no such annotation. A denial
-// nobody can see is the outcome an operator most needs to see.
+// The signal says what happened to this call; the method's audit annotation
+// says whether that is recorded. A DENIALS method records the refused call and
+// not the permitted one, which is the split no bool could express.
 func WithSetPolicyDenied(ctx context.Context, setPolicyDenied func()) context.Context {
 	return context.WithValue(ctx, PolicyDenialKey, setPolicyDenied)
 }
@@ -157,7 +156,11 @@ type DelegatedGrant struct {
 }
 
 type AuthContext struct {
-	Audit                  bool
+	// AuditMode is the method's bytebase.v1.audit annotation, and it is the
+	// whole declaration of what reaches the audit log: ALL records every call,
+	// DENIALS records only refused ones, and UNSPECIFIED records nothing that
+	// any runtime signal can override.
+	AuditMode              v1pb.AuditMode
 	AllowWithoutCredential bool
 	Permission             string
 	AuthMethod             AuthMethod
