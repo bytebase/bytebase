@@ -603,7 +603,7 @@ func TestSignupChecksRestrictionBeforeExistence(t *testing.T) {
 func spendSendBudget(ctx context.Context, t *testing.T, stores *store.Store) {
 	t.Helper()
 	claim := func() bool {
-		granted, err := stores.ClaimSlot(ctx, signinCodeSendBudgetKey, storepb.LoginAttemptKind_EMAIL_CODE_SEND, emailCodeSendPerWindow, emailCodeSendWindow)
+		granted, err := stores.ClaimAttempt(ctx, signinCodeSendBudgetKey, storepb.LoginAttemptKind_EMAIL_CODE_SEND, emailCodeSendPerWindow, emailCodeSendWindow)
 		require.NoError(t, err)
 		return granted
 	}

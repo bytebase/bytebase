@@ -55,7 +55,7 @@ func (s *AuthService) claimLoginAttempt(ctx context.Context, identity string, ki
 // when it verifies a CredentialProof: a proof channel without that bound is a
 // guessing oracle.
 func claimLoginAttempt(ctx context.Context, stores *store.Store, identity string, kind storepb.LoginAttemptKind) error {
-	granted, err := stores.ClaimSlot(ctx, identity, kind, loginAttemptMax, loginAttemptWindow)
+	granted, err := stores.ClaimAttempt(ctx, identity, kind, loginAttemptMax, loginAttemptWindow)
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, err)
 	}

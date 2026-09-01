@@ -421,13 +421,13 @@ func sendEmailVerificationCode(ctx context.Context, stores *store.Store, secret,
 	// claiming after it would let an exhausted budget destroy a code the recipient
 	// still holds and send no replacement.
 	//
-	// Every request spends a slot, including one the cooldown will skip. Checking
-	// the cooldown first would be cheaper but cannot be done atomically with the
-	// claim, so concurrent requests would pass it together and spend slots anyway,
+	// Every request is counted, including one the cooldown will skip. Checking the
+	// cooldown first would be cheaper but cannot be done atomically with the
+	// claim, so concurrent requests would pass it together and be counted anyway,
 	// and it would make the answer depend on whether that recipient has a recent
 	// code. Draining the budget costs the same number of requests either way.
 	if budgetKey != "" {
-		granted, err := stores.ClaimSlot(ctx, budgetKey, storepb.LoginAttemptKind_EMAIL_CODE_SEND, budgetMax, emailCodeSendWindow)
+		granted, err := stores.ClaimAttempt(ctx, budgetKey, storepb.LoginAttemptKind_EMAIL_CODE_SEND, budgetMax, emailCodeSendWindow)
 		if err != nil {
 			return errors.Wrap(err, "failed to claim send budget")
 		}

@@ -39,7 +39,7 @@ func TestCollision_LoginAttempt(t *testing.T) {
 	// Fill the victim's PASSWORD bucket to its limit and park one attempt in
 	// each neighboring bucket that shares one PK column with it.
 	for range 3 {
-		granted, err := s.ClaimSlot(ctx, victim, storepb.LoginAttemptKind_PASSWORD, 3, window)
+		granted, err := s.ClaimAttempt(ctx, victim, storepb.LoginAttemptKind_PASSWORD, 3, window)
 		require.NoError(t, err)
 		require.True(t, granted)
 	}
@@ -50,7 +50,7 @@ func TestCollision_LoginAttempt(t *testing.T) {
 		{victim, storepb.LoginAttemptKind_MFA},        // same identity, other kind
 		{neighbor, storepb.LoginAttemptKind_PASSWORD}, // same kind, other identity
 	} {
-		granted, err := s.ClaimSlot(ctx, seed.identity, seed.kind, 3, window)
+		granted, err := s.ClaimAttempt(ctx, seed.identity, seed.kind, 3, window)
 		require.NoError(t, err)
 		require.True(t, granted)
 	}
@@ -65,7 +65,7 @@ func TestCollision_LoginAttempt(t *testing.T) {
 	}
 
 	// The victim's lock must not leak into either neighbor.
-	granted, err := s.ClaimSlot(ctx, victim, storepb.LoginAttemptKind_PASSWORD, 3, window)
+	granted, err := s.ClaimAttempt(ctx, victim, storepb.LoginAttemptKind_PASSWORD, 3, window)
 	require.NoError(t, err)
 	require.False(t, granted, "the victim bucket is at its limit")
 	require.Equal(t, 1, attempts(victim, storepb.LoginAttemptKind_MFA))
