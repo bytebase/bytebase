@@ -3,6 +3,11 @@
    `html-query-plan` CSS, none of which expect to coexist with the main
    app's design tokens. */
 
+:root {
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+}
+
 html,
 body,
 #app,
