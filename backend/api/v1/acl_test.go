@@ -322,6 +322,47 @@ func TestPopulateRawResourcesAllowsDeletedSampleProjectInstanceProject(t *testin
 	require.Equal(t, []*common.Resource{{Type: common.ResourceTypeProject, ID: projectID}}, resources)
 }
 
+// TestPopulateRawResourcesRejectsUnknownLifecycleProject is the other half of
+// the archived-project shortcut. Whatever populateRawResources returns is
+// published on AuthContext.Resources before the IAM check runs, and the audit
+// interceptor — which now wraps ACL on both chains — turns it into the audit
+// row's parent. The workspace-isolation loop in doACLCheck inspects workspace
+// resources only, so without the store lookup any authenticated caller could
+// file a denial row under a project they hold no role on, just by naming it.
+func TestPopulateRawResourcesRejectsUnknownLifecycleProject(t *testing.T) {
+	ctx, stores, _, _, _ := setupProjectInstanceLifecycleAPITest(t)
+
+	for _, tc := range []struct {
+		name    string
+		request any
+		method  string
+	}{
+		{
+			name:    "PrepareSampleProjectInstance",
+			request: &v1pb.PrepareSampleProjectInstanceRequest{Parent: common.FormatProject("no-such-project")},
+			method:  v1connect.InstanceServicePrepareSampleProjectInstanceProcedure,
+		},
+		{
+			name:    "DeleteInstance",
+			request: &v1pb.DeleteInstanceRequest{Name: common.FormatProject("no-such-project")},
+			method:  v1connect.InstanceServiceDeleteInstanceProcedure,
+		},
+		{
+			name:    "UndeleteInstance",
+			request: &v1pb.UndeleteInstanceRequest{Name: common.FormatProject("no-such-project")},
+			method:  v1connect.InstanceServiceUndeleteInstanceProcedure,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			resources, err := populateRawResources(ctx, stores, tc.request, tc.method)
+			require.Error(t, err)
+			require.Equal(t, connect.CodeNotFound, connect.CodeOf(err),
+				"an unresolved project must be refused here, not published for the IAM check to deny")
+			require.Nil(t, resources)
+		})
+	}
+}
+
 func TestGetResourceFromRequest(t *testing.T) {
 	tests := []struct {
 		request any
