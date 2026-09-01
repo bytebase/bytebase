@@ -344,7 +344,7 @@ func (s *Store) GetSheetForProject(ctx, projectID, sha256Hex string, raw bool) (
 func (s *Store) MissingSheetsForProject(ctx, projectID string, sha256Hexes ...string) ([]string, error)
 
 // Scoped creation: writes blobs and ref rows, both as set inserts, in one
-// transaction behind the project purge fence.
+// transaction after checking the project is active.
 func (s *Store) CreateSheets(ctx, projectID string, creates ...*SheetMessage) ([]*SheetMessage, error)
 
 // Unexported internals: filterSheetsForProject (the ref query),
@@ -435,9 +435,8 @@ path.
 The `project` foreign key makes `sheet_blob_ref` a dependent of `project`, and purge ends with
 `DELETE FROM project WHERE resource_id = ?` (`backend/store/project.go:826`) after clearing every
 other dependent table. Add `DELETE FROM sheet_blob_ref WHERE project = ?` after the `db` delete
-(`:704`) and before `project_webhook` (`:739`), matching the position established under
-[lock ordering](#transaction-lock-ordering). Without it, purging any project fails on the foreign
-key.
+(`:704`) and before `project_webhook` (`:739`). Without it, purging any project fails on the
+foreign key.
 
 Blobs whose only ref belonged to the purged project are left with zero refs, consistent with today's
 behavior — nothing has ever deleted from `sheet_blob` — and the state a future GC would collect.
@@ -558,35 +557,15 @@ A large count means either widespread project purges, reused project IDs, or a p
 revisions created without provenance — each worth understanding, since all of them end in
 unreadable statements.
 
-## Transaction lock ordering
+## Transactions
 
-`sheet_blob_ref` is a project-owned branch and takes a position in the canonical sibling order in
-`backend/store/AGENTS.md`, updating that list, `DeleteProject`, and `DeleteInstance` together. It is
-a direct child of `project` with no descendants, and every table that can reference a hash sits
-earlier, so it belongs immediately after `db` and before `project_webhook` — the same position as
-the purge delete.
-
-```text
-... -> changelog -> sync_history -> revision -> db_schema -> db
--> sheet_blob_ref -> project_webhook -> service_account -> ...
-```
-
-`CreateSheets` becomes a transaction spanning `sheet_blob` and `sheet_blob_ref`. Insert the blob
-first: the ref's foreign key requires it, so the order is forced. Both are `ON CONFLICT DO NOTHING`
-— new-row-only inserts, not upserts that can update an existing row, so the README's rule 4 upsert
-clause does not apply.
-
-As a writer of purge-managed data, `CreateSheets` must declare a lifecycle policy. **It requires an
-active project**: a sheet ref is a new resource with no deleted-project continuation case. The API
-create paths check the project before calling the store, but that check is not serialized with
-purge, so a concurrent purge would surface as a raw foreign-key violation rather than a controlled
-NotFound. `CreateSheets` therefore takes the same transaction-scoped purge fence that database
-creation and task-run creation already take; `withDatabasePurgeFence`
-(`backend/store/database.go:798-820`) is the pattern to mirror.
-
-Both need the deterministic real-PostgreSQL regression tests that section mandates, asserting
-terminal outcomes in both lock-acquisition directions rather than merely the absence of SQLSTATE
-`40P01`.
+`CreateSheets` inserts blobs before their `sheet_blob_ref` rows because the ref's foreign key
+requires it. Both inserts are `ON CONFLICT DO NOTHING` and the transaction verifies that the project
+is active before writing. Project and instance archive and physical purge are
+best-effort lifecycle operations: a rare concurrent writer may fail with a
+PostgreSQL conflict or commit based on state it observed before the lifecycle
+transition. These outcomes are accepted and the user can retry the lifecycle
+operation or write.
 
 ## Independent fixes
 
@@ -644,7 +623,7 @@ would flood this query with expected rows. They have their own list above.
 ## Tests
 
 Integration coverage is four tests in `backend/tests/sheet_scope_test.go`, one per independent
-decision, plus the migration matrix and the lock-order pair:
+decision, plus the migration matrix:
 
 - **Cross-project read and cache ordering** — `TestSheetProjectScope`: a sheet created in project A
   is readable there (raw and truncated), NotFound under project B — with the raw foreign read
@@ -670,9 +649,6 @@ decision, plus the migration matrix and the lock-order pair:
   exact ref-set match), the stamp outcomes per scenario, the three audits, and a probe per
   abort-hazard guard (dangling blob, ghost project, bigint overflow, stale stamp, JSON null and
   malformed array shapes).
-- **Create versus purge** — the deterministic lock-order pair mandated by
-  `backend/store/AGENTS.md`: `CreateSheets` concurrent with a purge of its project ends in a
-  controlled NotFound, not a foreign-key error, in both lock-acquisition directions.
 - **Gate confinement** — a static AST test asserts nothing under `backend/api/v1/` calls
   `GetSheetFull`; the rest of the split is compiler-enforced by unexported store internals.
 

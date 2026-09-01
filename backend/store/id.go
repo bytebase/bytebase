@@ -15,11 +15,24 @@ import (
 // reserving IDs below 101 for seed/test data.
 const idMinValue int64 = 101
 
-// lockActiveProject locks the project row and requires it to be active,
-// serializing the caller with project deletion. Creation is rejected with
-// NotFound when the project is missing or deleted. This is the "requires an
-// active project" lifecycle policy from backend/store/AGENTS.md; call it
-// after locking any existing child rows.
+// requireActiveProject requires the project to exist and be active.
+func requireActiveProject(ctx context.Context, tx *sql.Tx, projectID string) error {
+	var deleted bool
+	if err := tx.QueryRowContext(ctx,
+		"SELECT deleted FROM project WHERE resource_id = $1", projectID).Scan(&deleted); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return common.Errorf(common.NotFound, "project %s not found", projectID)
+		}
+		return errors.Wrapf(err, "failed to find project %s", projectID)
+	}
+	if deleted {
+		return common.Errorf(common.NotFound, "project %s is deleted", projectID)
+	}
+	return nil
+}
+
+// lockActiveProject locks the project row and requires it to be active. This
+// serializes MAX(id) + 1 allocation for project-scoped tables.
 func lockActiveProject(ctx context.Context, tx *sql.Tx, projectID string) error {
 	var deleted bool
 	if err := tx.QueryRowContext(ctx,
@@ -37,8 +50,7 @@ func lockActiveProject(ctx context.Context, tx *sql.Tx, projectID string) error 
 
 // nextProjectID returns the next per-project auto-increment ID for the given table.
 // Must be called within a transaction. Locks and validates the active project row to
-// serialize concurrent inserts with project deletion.
-// Callers must first lock existing child rows as described in backend/store/AGENTS.md.
+// serialize concurrent allocations.
 // Returns at least idMinValue (101) for new projects.
 func nextProjectID(ctx context.Context, tx *sql.Tx, table, projectID string) (int64, error) {
 	if err := lockActiveProject(ctx, tx, projectID); err != nil {

@@ -2,20 +2,18 @@ package store_test
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func newSampleInstanceFixture(t *testing.T) (context.Context, *sql.DB, *store.Store) {
+func newSampleInstanceFixture(t *testing.T) (context.Context, *store.Store) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	t.Cleanup(cancel)
@@ -40,11 +38,11 @@ func newSampleInstanceFixture(t *testing.T) (context.Context, *sql.DB, *store.St
 	stores, err := store.New(ctx, pgURL, false)
 	require.NoError(t, err)
 	t.Cleanup(func() { require.NoError(t, stores.Close()) })
-	return ctx, db, stores
+	return ctx, stores
 }
 
 func TestSampleInstanceSetupPersistsOpaquePayload(t *testing.T) {
-	ctx, _, stores := newSampleInstanceFixture(t)
+	ctx, stores := newSampleInstanceFixture(t)
 	create := &store.SampleInstanceSetupMessage{
 		WorkspaceID: "workspace-a",
 		ReplicaID:   "replica-a",
@@ -75,7 +73,7 @@ func TestSampleInstanceSetupPersistsOpaquePayload(t *testing.T) {
 }
 
 func TestSampleInstanceSetupPermanentLifecycle(t *testing.T) {
-	ctx, _, stores := newSampleInstanceFixture(t)
+	ctx, stores := newSampleInstanceFixture(t)
 	setup := &store.SampleInstanceSetupMessage{
 		WorkspaceID: "workspace-a",
 		ReplicaID:   "replica-a",
@@ -111,7 +109,7 @@ func TestSampleInstanceSetupPermanentLifecycle(t *testing.T) {
 }
 
 func TestSampleInstanceSetupCleanupIsWorkspaceScoped(t *testing.T) {
-	ctx, _, stores := newSampleInstanceFixture(t)
+	ctx, stores := newSampleInstanceFixture(t)
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	for _, workspace := range []string{"workspace-a", "workspace-b"} {
 		_, created, err := stores.ReserveSampleInstanceSetup(ctx, &store.SampleInstanceSetupMessage{
@@ -155,7 +153,7 @@ func TestSampleInstanceSetupCleanupIsWorkspaceScoped(t *testing.T) {
 }
 
 func TestSampleInstanceSetupDeletedRowRemainsTombstone(t *testing.T) {
-	ctx, _, stores := newSampleInstanceFixture(t)
+	ctx, stores := newSampleInstanceFixture(t)
 	now := time.Now().UTC().Truncate(time.Microsecond)
 	expiresAt := now.Add(time.Hour)
 	setup := &store.SampleInstanceSetupMessage{
@@ -197,154 +195,4 @@ func TestSampleInstanceSetupDeletedRowRemainsTombstone(t *testing.T) {
 	require.NoError(t, err)
 	require.False(t, created)
 	require.Equal(t, deleted, again)
-}
-
-func TestActivateSampleInstanceSetupSerializesWithProjectArchive(t *testing.T) {
-	ctx, db, stores := newSampleInstanceFixture(t)
-	_, created, err := stores.ReserveSampleInstanceSetup(ctx, &store.SampleInstanceSetupMessage{
-		WorkspaceID: "workspace-a",
-		ReplicaID:   "replica-a",
-		Payload:     []byte(`{"projectId":"project-workspace-a","instanceId":"sample-a"}`),
-	})
-	require.NoError(t, err)
-	require.True(t, created)
-
-	archiveTx, err := db.BeginTx(ctx, nil)
-	require.NoError(t, err)
-	committed := false
-	defer func() {
-		if !committed {
-			_ = archiveTx.Rollback()
-		}
-	}()
-	_, err = archiveTx.ExecContext(ctx, `
-		UPDATE project SET deleted = TRUE
-		WHERE workspace = 'workspace-a' AND resource_id = 'project-workspace-a'
-	`)
-	require.NoError(t, err)
-
-	result := make(chan error, 1)
-	go func() {
-		_, err := stores.ActivateSampleInstanceSetup(
-			ctx,
-			"workspace-a",
-			"replica-a",
-			[]string{"project-workspace-a"},
-			time.Now(),
-			nil,
-		)
-		result <- err
-	}()
-	require.Eventually(t, func() bool {
-		var waiting bool
-		err := db.QueryRowContext(ctx, `
-			SELECT EXISTS (
-				SELECT 1 FROM pg_stat_activity
-				WHERE wait_event_type = 'Lock'
-					AND query LIKE '%SELECT deleted FROM project%FOR UPDATE%'
-			)
-		`).Scan(&waiting)
-		return err == nil && waiting
-	}, 5*time.Second, 10*time.Millisecond)
-	require.NoError(t, archiveTx.Commit())
-	committed = true
-	require.Equal(t, common.NotFound, common.ErrorCode(<-result))
-
-	current, err := stores.GetSampleInstanceSetup(ctx, "workspace-a")
-	require.NoError(t, err)
-	require.Nil(t, current.ActivatedAt)
-}
-
-func TestProjectArchiveWaitsForSampleInstanceSetupActivation(t *testing.T) {
-	ctx, db, stores := newSampleInstanceFixture(t)
-	_, created, err := stores.ReserveSampleInstanceSetup(ctx, &store.SampleInstanceSetupMessage{
-		WorkspaceID: "workspace-a",
-		ReplicaID:   "replica-a",
-		Payload:     []byte(`{"projectId":"project-workspace-a","instanceId":"sample-a"}`),
-	})
-	require.NoError(t, err)
-	require.True(t, created)
-
-	workspaceTx, err := db.BeginTx(ctx, nil)
-	require.NoError(t, err)
-	committed := false
-	defer func() {
-		if !committed {
-			_ = workspaceTx.Rollback()
-		}
-	}()
-	var lockedWorkspace string
-	err = workspaceTx.QueryRowContext(ctx, `
-		SELECT resource_id FROM workspace
-		WHERE resource_id = 'workspace-a'
-		FOR UPDATE
-	`).Scan(&lockedWorkspace)
-	require.NoError(t, err)
-
-	activationResult := make(chan struct {
-		activated bool
-		err       error
-	}, 1)
-	go func() {
-		activated, err := stores.ActivateSampleInstanceSetup(
-			ctx,
-			"workspace-a",
-			"replica-a",
-			[]string{"project-workspace-a"},
-			time.Now(),
-			nil,
-		)
-		activationResult <- struct {
-			activated bool
-			err       error
-		}{activated: activated, err: err}
-	}()
-	require.Eventually(t, func() bool {
-		var waiting bool
-		err := db.QueryRowContext(ctx, `
-			SELECT EXISTS (
-				SELECT 1 FROM pg_stat_activity
-				WHERE wait_event_type = 'Lock'
-					AND query LIKE '%SELECT deleted FROM workspace%FOR UPDATE%'
-			)
-		`).Scan(&waiting)
-		return err == nil && waiting
-	}, 5*time.Second, 10*time.Millisecond)
-
-	archiveResult := make(chan error, 1)
-	go func() {
-		_, err := db.ExecContext(ctx, `
-			UPDATE project SET deleted = TRUE
-			WHERE workspace = 'workspace-a' AND resource_id = 'project-workspace-a'
-		`)
-		archiveResult <- err
-	}()
-	require.Eventually(t, func() bool {
-		var waiting bool
-		err := db.QueryRowContext(ctx, `
-			SELECT EXISTS (
-				SELECT 1 FROM pg_stat_activity
-				WHERE wait_event_type = 'Lock'
-					AND query LIKE '%UPDATE project SET deleted = TRUE%'
-			)
-		`).Scan(&waiting)
-		return err == nil && waiting
-	}, 5*time.Second, 10*time.Millisecond)
-
-	require.NoError(t, workspaceTx.Commit())
-	committed = true
-	activation := <-activationResult
-	require.NoError(t, activation.err)
-	require.True(t, activation.activated)
-	require.NoError(t, <-archiveResult)
-
-	current, err := stores.GetSampleInstanceSetup(ctx, "workspace-a")
-	require.NoError(t, err)
-	require.NotNil(t, current.ActivatedAt)
-	var projectDeleted bool
-	require.NoError(t, db.QueryRowContext(ctx, `
-		SELECT deleted FROM project
-		WHERE workspace = 'workspace-a' AND resource_id = 'project-workspace-a'
-	`).Scan(&projectDeleted))
-	require.True(t, projectDeleted)
 }
