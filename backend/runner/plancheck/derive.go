@@ -11,9 +11,22 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// DeriveCheckTargets derives check targets from a plan and optional database group.
+// DeriveCheckTargets derives check targets from a plan and optional database
+// group, applying the project's CI sampling limit: plan checks are CI
+// validation, and sampling bounds their cost.
 // This replaces the stored config by computing targets at runtime.
 func DeriveCheckTargets(ctx context.Context, s *store.Store, project *store.ProjectMessage, plan *store.PlanMessage, databaseGroup *v1pb.DatabaseGroup) ([]*CheckTarget, error) {
+	return deriveTargets(ctx, s, project, plan, databaseGroup, true)
+}
+
+// DeriveReviewTargets derives the same targets without CI sampling: a review
+// run's DONE means every (spec, target) unit was evaluated, so review must
+// see the full target set.
+func DeriveReviewTargets(ctx context.Context, s *store.Store, project *store.ProjectMessage, plan *store.PlanMessage, databaseGroup *v1pb.DatabaseGroup) ([]*CheckTarget, error) {
+	return deriveTargets(ctx, s, project, plan, databaseGroup, false)
+}
+
+func deriveTargets(ctx context.Context, s *store.Store, project *store.ProjectMessage, plan *store.PlanMessage, databaseGroup *v1pb.DatabaseGroup, applySampling bool) ([]*CheckTarget, error) {
 	var targets []*CheckTarget
 
 	for _, spec := range plan.Config.Specs {
@@ -36,8 +49,8 @@ func DeriveCheckTargets(ctx context.Context, s *store.Store, project *store.Proj
 			}
 
 			// Apply sampling upfront
-			if samplingSize := project.Setting.GetCiSamplingSize(); samplingSize > 0 {
-				if len(databases) > int(samplingSize) {
+			if applySampling {
+				if samplingSize := project.Setting.GetCiSamplingSize(); samplingSize > 0 && len(databases) > int(samplingSize) {
 					databases = databases[:samplingSize]
 				}
 			}
