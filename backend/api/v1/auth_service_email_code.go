@@ -34,10 +34,9 @@ const (
 	emailCodeExpiry         = 10 * time.Minute
 	emailCodeResendCooldown = 60 * time.Second
 
-	// How much sign-in-code mail the deployment's own sender may generate per
-	// window, sized well above real self-service signup volume.
-	emailCodeSendWindow        = time.Hour
-	emailCodeSendPerDeployment = 100
+	// How much sign-in-code mail this deployment may generate per window.
+	emailCodeSendWindow    = time.Hour
+	emailCodeSendPerWindow = 1000
 
 	errMsgInvalidEmailCode = "invalid or expired code"
 )
@@ -45,6 +44,9 @@ const (
 // errSendBudgetExhausted reports that a send bucket is out of budget for the
 // window, so no mail went out. Distinguished from a delivery failure because
 // the caller answers it with ResourceExhausted rather than Internal.
+// signinCodeSendBudgetKey is the single sender bucket; see SendEmailLoginCode.
+const signinCodeSendBudgetKey = "signin-code"
+
 var errSendBudgetExhausted = errors.New("too many sign-in codes requested, please try again later")
 
 // RequestPasswordReset sends a password reset email. Always returns success to avoid leaking email existence.
@@ -173,19 +175,17 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("email code login is not enabled for this workspace"))
 	}
 
-	// Budget the deployment's own sender: no admin opts into it and every tenant
-	// shares its reputation. The 60s per-recipient cooldown bounds one address;
-	// only a sender-wide cap bounds a campaign, which writes each address once.
+	// One cap for the whole deployment, whatever workspace the caller names.
+	// SaaS copies EMAIL_CONFIG into every workspace it creates
+	// (getAdditionalWorkspaceSettings), so naming one does not change the sender
+	// — keying on the workspace would just hand each of them its own budget
+	// against a shared reputation, and the key is caller-supplied anyway.
 	//
-	// A named workspace is not budgeted. Its mail leaves over its own admin's
-	// SMTP, and the key would be the workspace the caller names — anonymously
-	// readable on self-hosted — so a bucket there would let a few dozen requests
-	// turn off sign-in codes for the whole workspace, a cheaper attack than the
-	// relay it would prevent.
-	budgetKey := ""
-	if workspaceID == "" {
-		budgetKey = "signin-code-deployment"
-	}
+	// The 60s per-recipient cooldown bounds one address; only a sender-wide cap
+	// bounds a campaign, which writes each address once. Accepted: spending the
+	// cap delays sign-in codes deployment-wide until the window passes, and one
+	// address can spend it as cheaply as many, since the cost is the requests.
+	// Bounded and recoverable, unlike the deliverability damage it prevents.
 
 	// Send synchronously so the caller learns about actionable failures (missing EMAIL
 	// setting, SMTP unreachable, etc.). No enumeration risk here: LOGIN always attempts to
@@ -197,7 +197,7 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 		storepb.EmailVerificationCodePurpose_LOGIN,
 		"[Bytebase] Your sign-in code",
 		"Hi,\n\nYour sign-in code is: %s\n\nThis code expires in %d minutes. If you didn't request this, you can safely ignore this email.\n\n— Bytebase",
-		budgetKey, emailCodeSendPerDeployment,
+		signinCodeSendBudgetKey, emailCodeSendPerWindow,
 	); err != nil {
 		if errors.Is(err, errSendBudgetExhausted) {
 			return nil, connect.NewError(connect.CodeResourceExhausted, err)
