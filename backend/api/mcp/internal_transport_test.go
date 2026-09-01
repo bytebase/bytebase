@@ -115,7 +115,7 @@ func TestMCPAuthMiddlewareLegacySessionEmptyGrantState(t *testing.T) {
 
 // TestApiRequestMintsCredentialPerCall is the session-lifetime pin. The MCP SDK
 // hands every tool handler the context of the request that CREATED the session
-// (go-sdk v1.6.1 streamable.go: server.Connect(req.Context(), ...)), so anything
+// (go-sdk v1.7.0 streamable.go: connectStreamable(req.Context(), ...)), so anything
 // the boundary stashes in that context is frozen at session start. A credential
 // minted there would carry a fixed expiry and brick every tool call once its
 // short TTL elapsed — while the session stays open, since /mcp never re-runs

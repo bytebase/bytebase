@@ -87,20 +87,9 @@ func (s *Server) handleQueryDatabase(ctx context.Context, req *mcp.CallToolReque
 	}
 
 	// Resolve database.
-	resolveCtx, resolveCancel := context.WithTimeout(ctx, resolveTimeout)
-	defer resolveCancel()
-
-	resolved, err := s.resolveDatabase(resolveCtx, input.Database, input.Instance, input.Project)
-	if err != nil {
-		return formatToolError(err), nil, nil
-	}
-	if resolved.ambiguous {
-		picked, elicitErr := s.elicitDatabaseChoice(ctx, req, resolved)
-		if elicitErr != nil {
-			// Elicitation unsupported or user cancelled — fall back to AMBIGUOUS_TARGET.
-			return formatAmbiguousResult(input.Database, resolved.candidates), nil, nil
-		}
-		resolved = picked
+	resolved, resolveResult := s.resolveTarget(ctx, req, input.Database, input.Instance, input.Project)
+	if resolveResult != nil {
+		return resolveResult, nil, nil
 	}
 
 	// Execute query.

@@ -26,15 +26,17 @@ type Candidate struct {
 
 // resolvedDatabase holds the result of database resolution.
 type resolvedDatabase struct {
-	resourceName  string
-	dataSourceID  string
-	engine        string
-	project       string // "projects/{id}" from databaseEntry.Project
-	ambiguous     bool
-	candidates    []Candidate
-	dataSourceIDs map[string]string // resourceName -> dataSourceID (populated when ambiguous)
-	engines       map[string]string // resourceName -> engine (populated when ambiguous)
-	projects      map[string]string // resourceName -> project (populated when ambiguous)
+	resourceName string
+	dataSourceID string
+	engine       string
+	project      string // "projects/{id}" from databaseEntry.Project
+	ambiguous    bool
+	candidates   []Candidate
+	// Per-candidate lookups, filled for every match count. A unique match keeps
+	// them so an elicited answer can be reconciled against what matches now.
+	dataSourceIDs map[string]string // resourceName -> dataSourceID
+	engines       map[string]string // resourceName -> engine
+	projects      map[string]string // resourceName -> project
 }
 
 // listDatabasesResponse is the typed response from ListDatabases API.
@@ -171,21 +173,25 @@ func matchDatabases(databases []databaseEntry, database, instance, project strin
 		}
 	}
 
+	resolved := candidateView(matches)
 	if len(matches) > 1 {
-		return buildAmbiguousResult(matches), nil
+		resolved.ambiguous = true
+		return resolved, nil
 	}
 
 	db := matches[0]
-	return &resolvedDatabase{
-		resourceName: db.Name,
-		dataSourceID: selectDataSource(db.InstanceResource.DataSources),
-		engine:       db.InstanceResource.Engine,
-		project:      db.Project,
-	}, nil
+	resolved.resourceName = db.Name
+	resolved.dataSourceID = selectDataSource(db.InstanceResource.DataSources)
+	resolved.engine = db.InstanceResource.Engine
+	resolved.project = db.Project
+	return resolved, nil
 }
 
-// buildAmbiguousResult constructs a resolvedDatabase with multiple candidates.
-func buildAmbiguousResult(matches []databaseEntry) *resolvedDatabase {
+// candidateView fills the candidate list and the per-candidate lookups for a
+// match set. It is built for a unique match too: an answered elicitation is
+// reconciled against it, and a stale answer has to be recognized as naming
+// something else rather than silently replaced by what this resolve found.
+func candidateView(matches []databaseEntry) *resolvedDatabase {
 	candidates := make([]Candidate, 0, len(matches))
 	dsIDs := make(map[string]string, len(matches))
 	engines := make(map[string]string, len(matches))
@@ -202,7 +208,6 @@ func buildAmbiguousResult(matches []databaseEntry) *resolvedDatabase {
 		projects[db.Name] = db.Project
 	}
 	return &resolvedDatabase{
-		ambiguous:     true,
 		candidates:    candidates,
 		dataSourceIDs: dsIDs,
 		engines:       engines,
@@ -219,61 +224,173 @@ func (s *Server) resolveDatabase(ctx context.Context, database, instance, projec
 	return matchDatabases(databases, database, instance, project)
 }
 
-// elicitDatabaseChoice prompts the user to pick from ambiguous database matches
-// using MCP elicitation. Returns an error if elicitation is unsupported, the user
-// cancels/declines, or the selection is invalid.
-func (*Server) elicitDatabaseChoice(ctx context.Context, req *mcp.CallToolRequest, resolved *resolvedDatabase) (*resolvedDatabase, error) {
+// resolveTarget resolves the database a tool was asked for and settles any
+// elicitation it needs.
+//
+// Every tool that names a database goes through here. The answer has to be
+// consulted even when this resolve is unique, and a call site that re-derived
+// that condition and got it wrong would run against a database the caller never
+// chose. Returns either a resolved database or the result to return unchanged.
+func (s *Server) resolveTarget(ctx context.Context, req *mcp.CallToolRequest, database, instance, project string) (*resolvedDatabase, *mcp.CallToolResult) {
+	resolveCtx, resolveCancel := context.WithTimeout(ctx, resolveTimeout)
+	defer resolveCancel()
+
+	resolved, err := s.resolveDatabase(resolveCtx, database, instance, project)
+	if err != nil {
+		return nil, formatToolError(err)
+	}
+	if _, answered := elicitedDatabaseChoice(req); !resolved.ambiguous && !answered {
+		return resolved, nil
+	}
+	return s.elicitDatabaseChoice(req, resolved, database)
+}
+
+// databaseChoiceRequestID is the ID the ambiguous-database elicitation is filed
+// under, and databaseChoiceField the form field it asks for. The client echoes
+// both back, so the two halves of one tool call must agree on them.
+const (
+	databaseChoiceRequestID = "database"
+	databaseChoiceField     = "database"
+)
+
+// elicitDatabaseChoice picks one database out of an ambiguous match.
+//
+// It returns either a resolved database or a result the caller must return
+// unchanged, never both: an input request, or the AMBIGUOUS_TARGET listing when
+// no one can be asked or the answer is unusable.
+//
+// One shape serves both client generations (SEP-2322). A client on the
+// 2026-07-28 protocol answers the input request itself; for an older one the
+// SDK's middleware answers it by eliciting and re-invoking this handler.
+func (*Server) elicitDatabaseChoice(req *mcp.CallToolRequest, resolved *resolvedDatabase, database string) (*resolvedDatabase, *mcp.CallToolResult) {
+	fallback := formatAmbiguousResult(database, resolved.candidates)
 	if req == nil || req.Session == nil {
-		return nil, errors.New("elicitation unsupported: no session")
+		return nil, fallback
+	}
+	enumValues, resourceByLabel := candidateLabels(resolved.candidates)
+
+	// Read the answer before asking again: on the retry the SDK re-invokes this
+	// handler, which resolves a second time, so resourceByLabel holds whatever
+	// matches now. An answer naming something else finds no entry and falls back.
+	// It is read even when this resolve is no longer ambiguous, because dropping
+	// it there would run the statement against a database nobody chose.
+	if response, answered := elicitedDatabaseChoice(req); answered {
+		selected, accepted := acceptedDatabaseLabel(response)
+		if !accepted {
+			return nil, fallback
+		}
+		resourceName, current := resourceByLabel[selected]
+		if !current {
+			return nil, formatStaleChoiceResult(database, selected, resolved.candidates)
+		}
+		return &resolvedDatabase{
+			resourceName: resourceName,
+			dataSourceID: resolved.dataSourceIDs[resourceName],
+			engine:       resolved.engines[resourceName],
+			project:      resolved.projects[resourceName],
+		}, nil
 	}
 
-	// Build enum values and a lookup map from display label to resource name.
-	enumValues := make([]any, 0, len(resolved.candidates))
-	resourceByLabel := make(map[string]string, len(resolved.candidates))
-	for _, c := range resolved.candidates {
+	// For an older client the SDK answers the input request itself, and an error
+	// there fails the whole tool call instead of returning something the model
+	// can act on. So a client that cannot answer a form gets the listing.
+	//
+	// DEFER: only what the client declared up front is caught; an elicitation
+	// that fails once under way still fails the call. Upgrade when the SDK lets
+	// a handler see that error.
+	if !clientSupportsElicitation(req.Session) {
+		return nil, fallback
+	}
+
+	return nil, &mcp.CallToolResult{
+		InputRequests: mcp.InputRequestMap{
+			databaseChoiceRequestID: &mcp.ElicitParams{
+				Mode:    "form",
+				Message: "Multiple databases match. Which one do you want to query?",
+				RequestedSchema: map[string]any{
+					"type": "object",
+					"properties": map[string]any{
+						databaseChoiceField: map[string]any{
+							"type":        "string",
+							"enum":        enumValues,
+							"description": "Select the target database",
+						},
+					},
+					"required": []string{databaseChoiceField},
+				},
+			},
+		},
+	}
+}
+
+// elicitedDatabaseChoice returns the answer the client sent for the
+// ambiguous-database elicitation, if this call carries one.
+func elicitedDatabaseChoice(req *mcp.CallToolRequest) (mcp.InputResponse, bool) {
+	if req == nil || req.Params == nil {
+		return nil, false
+	}
+	response, answered := req.Params.InputResponses[databaseChoiceRequestID]
+	return response, answered
+}
+
+// candidateLabels returns the enum values in candidate order and a lookup from
+// label back to resource name.
+func candidateLabels(candidates []Candidate) ([]any, map[string]string) {
+	enumValues := make([]any, 0, len(candidates))
+	resourceByLabel := make(map[string]string, len(candidates))
+	for _, c := range candidates {
 		label := fmt.Sprintf("%s (%s, %s)", c.Database, c.Instance, c.Engine)
 		enumValues = append(enumValues, label)
 		resourceByLabel[label] = c.Database
 	}
+	return enumValues, resourceByLabel
+}
 
-	result, err := req.Session.Elicit(ctx, &mcp.ElicitParams{
-		Mode:    "form",
-		Message: "Multiple databases match. Which one do you want to query?",
-		RequestedSchema: map[string]any{
-			"type": "object",
-			"properties": map[string]any{
-				"database": map[string]any{
-					"type":        "string",
-					"enum":        enumValues,
-					"description": "Select the target database",
-				},
-			},
-			"required": []string{"database"},
-		},
-	})
-	if err != nil {
-		return nil, err
+// acceptedDatabaseLabel returns the label the client picked. It reports false
+// when the answer carries no pick: declined, cancelled, or malformed.
+func acceptedDatabaseLabel(response mcp.InputResponse) (string, bool) {
+	elicited, ok := response.(*mcp.ElicitResult)
+	if !ok || elicited.Action != "accept" {
+		return "", false
 	}
-	if result.Action != "accept" {
-		return nil, errors.Errorf("user %sd database selection", result.Action)
+	selected, ok := elicited.Content[databaseChoiceField].(string)
+	return selected, ok
+}
+
+func clientSupportsElicitation(session *mcp.ServerSession) bool {
+	params := session.InitializeParams()
+	if params == nil || params.Capabilities == nil || params.Capabilities.Elicitation == nil {
+		return false
+	}
+	// The input request asks for a form, and the SDK refuses form mode to a
+	// client that advertised URL elicitation without it. A client advertising
+	// neither is assumed to support form, for clients older than the split.
+	elicitation := params.Capabilities.Elicitation
+	return elicitation.Form != nil || elicitation.URL == nil
+}
+
+// formatStaleChoiceResult answers a pick that no longer matches.
+//
+// It cannot reuse formatAmbiguousResult: that one says to narrow by instance,
+// and one candidate is often all that is left, so following it would re-issue
+// the call against the database the caller did not pick.
+func formatStaleChoiceResult(database, selected string, candidates []Candidate) *mcp.CallToolResult {
+	result := struct {
+		Code       string      `json:"code"`
+		Message    string      `json:"message"`
+		Candidates []Candidate `json:"candidates"`
+	}{
+		Code: "STALE_TARGET",
+		Message: fmt.Sprintf("The database chosen for %q (%s) no longer matches. "+
+			"Choose again from the candidates below, or name one explicitly.", database, selected),
+		Candidates: candidates,
 	}
 
-	selected, ok := result.Content["database"].(string)
-	if !ok {
-		return nil, errors.New("invalid database selection")
+	jsonBytes, _ := json.MarshalIndent(result, "", "  ")
+	return &mcp.CallToolResult{
+		Content: []mcp.Content{&mcp.TextContent{Text: string(jsonBytes)}},
+		IsError: true,
 	}
-
-	resourceName, ok := resourceByLabel[selected]
-	if !ok {
-		return nil, errors.Errorf("unknown database selection: %s", selected)
-	}
-
-	return &resolvedDatabase{
-		resourceName: resourceName,
-		dataSourceID: resolved.dataSourceIDs[resourceName],
-		engine:       resolved.engines[resourceName],
-		project:      resolved.projects[resourceName],
-	}, nil
 }
 
 // matchExact returns databases whose short name exactly matches the input.
