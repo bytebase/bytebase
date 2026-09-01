@@ -34,16 +34,15 @@ const (
 	emailCodeExpiry         = 10 * time.Minute
 	emailCodeResendCooldown = 60 * time.Second
 
-	// Budgets for outbound sign-in codes; see SendEmailLoginCode for which sender
-	// is charged to which bucket. All sit far above real self-service signup
-	// volume, so reaching one is the abuse itself.
+	// How much sign-in-code mail one sender may generate per window. A workspace
+	// sends over its own SMTP, so its cap is per workspace and sized like the
+	// comparable product default (Supabase caps a project at 30 auth OTPs/hour).
+	// A caller who names no workspace reaches the deployment's own identity, one
+	// sender shared by every self-service signup, so that cap is deployment-wide
+	// and sized well above real signup volume.
 	emailCodeSendWindow        = time.Hour
-	emailCodeSendPerDomain     = 20
-	emailCodeSendPerDeployment = 500
-	// Mail a named workspace sends to addresses it has no relationship with,
-	// which is self-service signup traffic — members and invitees are exempt, so
-	// this bounds relay without bounding sign-in.
-	emailCodeSendPerWorkspace = 20
+	emailCodeSendPerWorkspace  = 30
+	emailCodeSendPerDeployment = 100
 
 	errMsgInvalidEmailCode = "invalid or expired code"
 )
@@ -75,6 +74,7 @@ func (s *AuthService) RequestPasswordReset(ctx context.Context, req *connect.Req
 		storepb.EmailVerificationCodePurpose_PASSWORD_RESET,
 		"[Bytebase] Reset your password",
 		"Hi,\n\nYour password reset code is: %s\n\nThis code expires in %d minutes. If you didn't request this, you can safely ignore this email.\n\n— Bytebase",
+		"", 0,
 	); err != nil {
 		slog.Warn("failed to send password reset email", slog.String("to", email), log.BBError(err))
 	}
@@ -178,84 +178,22 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("email code login is not enabled for this workspace"))
 	}
 
-	// Everything this endpoint decides per address on a named workspace —
-	// whether a code could be redeemed at all, and whether the send is charged
-	// to the stranger budget — is decided by the caller's relationship to that
-	// workspace. Any of those decisions is only safe while it is unobservable,
-	// so a named workspace answers success for every address and never reports
-	// what happened to the mail: a skipped send, an exhausted budget and a
-	// broken SMTP server are one response. Reporting a delivery failure for the
-	// addresses that reach delivery would name exactly the addresses with an
-	// account, which is the oracle this audit item is about, so this is a
-	// property of the path rather than of any one branch on it — three separate
-	// leaks here were three spellings of the same mistake.
+	// Bound how much mail one sender can generate. The per-recipient cooldown
+	// already bounds a single address; this bounds a campaign across many, which
+	// is what an unauthenticated caller with a recipient list actually does, and
+	// is the whole of what this endpoint owes the mail relay finding.
 	//
-	// A caller who names no workspace has no relationship to judge, so nothing
-	// varies per address and the actionable error is kept. That is also where it
-	// is worth most: self-service signup, where the sender is the deployment.
-	//
-	// Same contract as RequestPasswordReset. The residual timing difference
-	// between a skipped send and an SMTP round trip is accepted there and here.
-	answerUniformly := workspaceID != ""
-
-	// Distinct from answerUniformly, which says what the caller is told: this
-	// says whether the mail is worth sending at all. authenticateEmailCodeLogin
-	// refuses to create an account when a self-hosted workspace disallows signup,
-	// so a code mailed to an address with no account there can never be
-	// redeemed. Where signup is allowed a stranger is a prospective user, and
-	// their code must still go out.
-	skipUnredeemable := !s.profile.SaaS && restriction.DisallowSignup
-	user, err := s.store.GetUserByEmail(ctx, email)
-	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to find user by email"))
-	}
-	// A deactivated principal is not an account for this purpose: Login refuses
-	// it, so a code mailed there can never be redeemed. GetUserByEmail returns
-	// soft-deleted users, and DeleteUser leaves the workspace IAM binding behind,
-	// so both the gate and the budget below have to say so explicitly or a
-	// deactivated address stays mailable forever. PASSWORD_RESET already draws
-	// the line here.
-	canRedeem := user != nil && !user.MemberDeleted
-	if skipUnredeemable && !canRedeem {
-		return connect.NewResponse(&emptypb.Empty{}), nil
-	}
-
-	// Budget mail to strangers. The per-recipient cooldown bounds one address;
-	// these bound a campaign across many, which is what an unauthenticated
-	// sender with a recipient list actually does.
-	//
-	// A caller who named no workspace reaches the deployment's own mail identity
-	// (EMAIL_CONFIG) with no admin opt-in at all, and has no membership to be
-	// judged against — every address is a stranger. The domain bucket confines a
-	// mail-bomb to the domain it targets and the deployment bucket caps a broad
-	// list before it can burn the sender's reputation.
-	//
-	// A named workspace sends over its own SMTP, but nothing narrows who it may
-	// be addressed to: the domain restriction needs a license, EnforceIdentityDomain
-	// and a domain list, so a workspace with email-code sign-in and none of those
-	// relays to anyone. Only mail to an address the workspace has no relationship
-	// with is budgeted — a member or an invitee is expected traffic, and
-	// throttling them would lock a customer's own workforce out of sign-in.
-	var budgets []store.LoginAttemptBucket
-	if workspaceID == "" {
-		budgets = []store.LoginAttemptBucket{
-			{Identity: "signup-code-domain:" + emailDomain(email), Max: emailCodeSendPerDomain},
-			{Identity: "signup-code-deployment", Max: emailCodeSendPerDeployment},
-		}
-	} else {
-		// An invitee has a binding but no account yet, and is expected traffic;
-		// a deactivated principal has a binding and cannot use what it receives,
-		// so it is charged like any other stranger.
-		known := false
-		if user == nil || canRedeem {
-			known, err = s.emailBelongsToWorkspace(ctx, workspaceID, email)
-			if err != nil {
-				return nil, connect.NewError(connect.CodeInternal, err)
-			}
-		}
-		if !known {
-			budgets = []store.LoginAttemptBucket{{Identity: "signup-code-workspace:" + workspaceID, Max: emailCodeSendPerWorkspace}}
-		}
+	// Charged on every send, whoever the recipient is. Exempting recipients the
+	// workspace knows would be kinder to a busy workspace, but it would make the
+	// response depend on whether an address has an account here — and this
+	// endpoint answers anonymous callers, so any behavior that varies per
+	// recipient is an account-existence oracle. That is not a hypothetical: the
+	// review of this change found three separate leaks, every one of them a
+	// recipient-dependent branch. Keeping the treatment uniform is what lets the
+	// endpoint stay simple and still report real errors to everyone.
+	budgetKey, budgetMax := "signin-code-deployment", emailCodeSendPerDeployment
+	if workspaceID != "" {
+		budgetKey, budgetMax = "signin-code-workspace:"+workspaceID, emailCodeSendPerWorkspace
 	}
 
 	// Send synchronously so the caller learns about actionable failures (missing EMAIL
@@ -268,14 +206,8 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 		storepb.EmailVerificationCodePurpose_LOGIN,
 		"[Bytebase] Your sign-in code",
 		"Hi,\n\nYour sign-in code is: %s\n\nThis code expires in %d minutes. If you didn't request this, you can safely ignore this email.\n\n— Bytebase",
-		budgets...,
+		budgetKey, budgetMax,
 	); err != nil {
-		if answerUniformly {
-			// Logged so the failure stays visible to whoever runs the deployment,
-			// which is who can act on it — the caller cannot be told.
-			slog.Warn("failed to send sign-in code", slog.String("email", email), log.BBError(err))
-			return connect.NewResponse(&emptypb.Empty{}), nil
-		}
 		if errors.Is(err, errSendBudgetExhausted) {
 			return nil, connect.NewError(connect.CodeResourceExhausted, err)
 		}
@@ -283,30 +215,6 @@ func (s *AuthService) SendEmailLoginCode(ctx context.Context, req *connect.Reque
 	}
 
 	return connect.NewResponse(&emptypb.Empty{}), nil
-}
-
-// emailBelongsToWorkspace reports whether the address holds a workspace IAM
-// binding — a member, a group member, or an invitee who has not signed up yet.
-// allUsers is deliberately excluded: a blanket self-hosted grant would make
-// every address on earth "known" and retire the budget it gates.
-func (s *AuthService) emailBelongsToWorkspace(ctx context.Context, workspaceID, email string) (bool, error) {
-	workspace, err := s.store.FindWorkspace(ctx, &store.FindWorkspaceMessage{
-		WorkspaceID: &workspaceID,
-		Email:       email,
-	})
-	if err != nil {
-		return false, errors.Wrapf(err, "failed to resolve workspace membership")
-	}
-	return workspace != nil, nil
-}
-
-// emailDomain returns the part of a validated address after the "@", which is
-// the send bucket a workspaceless code is charged to.
-func emailDomain(email string) string {
-	if _, domain, ok := strings.Cut(email, "@"); ok {
-		return domain
-	}
-	return email
 }
 
 // authenticateEmailCodeLogin handles the email + 6-digit code flow.
@@ -481,8 +389,8 @@ func resolvePreLoginEmailSetting(
 // Callers decide whether to propagate the error: `SendEmailLoginCode` surfaces it (users need
 // to know email delivery failed), `RequestPasswordReset` swallows it to avoid revealing that
 // the account exists.
-func (s *AuthService) sendEmailVerificationCode(ctx context.Context, workspaceID, email string, purpose storepb.EmailVerificationCodePurpose, subject, bodyFmt string, budgets ...store.LoginAttemptBucket) error {
-	return sendEmailVerificationCode(ctx, s.store, s.secret, workspaceID, email, purpose, emailCodeTemplate{Subject: subject, BodyFmt: bodyFmt}, budgets...)
+func (s *AuthService) sendEmailVerificationCode(ctx context.Context, workspaceID, email string, purpose storepb.EmailVerificationCodePurpose, subject, bodyFmt string, budgetKey string, budgetMax int) error {
+	return sendEmailVerificationCode(ctx, s.store, s.secret, workspaceID, email, purpose, emailCodeTemplate{Subject: subject, BodyFmt: bodyFmt}, budgetKey, budgetMax)
 }
 
 // emailCodeTemplate is the message a verification code is delivered in.
@@ -495,7 +403,7 @@ type emailCodeTemplate struct {
 // sendEmailVerificationCode is package-level because both AuthService (login
 // and password-reset codes) and UserService (the re-authentication code) send
 // them; the deps it needs are passed rather than reached through a receiver.
-func sendEmailVerificationCode(ctx context.Context, stores *store.Store, secret, workspaceID, email string, purpose storepb.EmailVerificationCodePurpose, mail emailCodeTemplate, budgets ...store.LoginAttemptBucket) error {
+func sendEmailVerificationCode(ctx context.Context, stores *store.Store, secret, workspaceID, email string, purpose storepb.EmailVerificationCodePurpose, mail emailCodeTemplate, budgetKey string, budgetMax int) error {
 	// For password reset, only send to active end users — no upsert or email for other targets.
 	// Login intentionally skips this account check because email-code login also supports signup.
 	if purpose == storepb.EmailVerificationCodePurpose_PASSWORD_RESET {
@@ -529,7 +437,7 @@ func sendEmailVerificationCode(ctx context.Context, stores *store.Store, secret,
 	// requests for one address must not drain a shared bucket. The upsert
 	// re-checks the cooldown authoritatively, so losing that race costs one
 	// budget slot and never a code.
-	if len(budgets) > 0 {
+	if budgetKey != "" {
 		existing, err := stores.GetEmailVerificationCode(ctx, email, purpose)
 		if err != nil {
 			return errors.Wrap(err, "failed to read verification code")
@@ -537,7 +445,7 @@ func sendEmailVerificationCode(ctx context.Context, stores *store.Store, secret,
 		if existing != nil && time.Since(existing.LastSentAt) < emailCodeResendCooldown {
 			return nil // cooldown active — silent skip, as the upsert would be
 		}
-		granted, err := stores.ClaimLoginAttemptBuckets(ctx, storepb.LoginAttemptKind_EMAIL_CODE_SEND, emailCodeSendWindow, budgets)
+		granted, err := stores.ClaimSendBudget(ctx, budgetKey, storepb.LoginAttemptKind_EMAIL_CODE_SEND, budgetMax, emailCodeSendWindow)
 		if err != nil {
 			return errors.Wrap(err, "failed to claim send budget")
 		}

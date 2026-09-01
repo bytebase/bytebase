@@ -2,14 +2,12 @@ package store_test
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
@@ -207,13 +205,9 @@ func TestLoginAttemptClaim(t *testing.T) {
 	})
 }
 
-// TestLoginAttemptBucketsClaim covers the all-or-nothing multi-bucket claim used
-// by the outbound sign-in-code budget. A limit composed of several buckets must
-// not be partially spendable: if claiming them one at a time, every refusal by a
-// later bucket would still consume the earlier ones, so a caller who can no
-// longer send anything could keep draining the buckets ahead of the refusal —
-// locking them for their whole window at no cost.
-func TestLoginAttemptBucketsClaim(t *testing.T) {
+// TestSendBudgetClaim covers the outbound send budget, which shares the
+// login_attempt table with the lockout but deliberately not its semantics.
+func TestSendBudgetClaim(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.GetTestPgContainer(ctx, t)
 	t.Cleanup(func() { container.Close(ctx) })
@@ -232,125 +226,102 @@ func TestLoginAttemptBucketsClaim(t *testing.T) {
 	const window = time.Hour
 	const kind = storepb.LoginAttemptKind_EMAIL_CODE_SEND
 
-	attemptsOf := func(identity string) int {
+	backdateWindow := func(key string, by time.Duration) {
 		t.Helper()
-		var attempts int
-		err := db.QueryRowContext(ctx, `
-			SELECT attempts FROM login_attempt WHERE identity = $1 AND kind = $2
-		`, identity, kind.String()).Scan(&attempts)
-		if errors.Is(err, sql.ErrNoRows) {
-			return 0
-		}
+		_, err := db.ExecContext(ctx, `
+			UPDATE login_attempt SET last_attempt_at = last_attempt_at - make_interval(secs => $3)
+			WHERE identity = $1 AND kind = $2
+		`, key, kind.String(), by.Seconds())
 		require.NoError(t, err)
-		return attempts
 	}
 
-	t.Run("a refused bucket charges none of the others", func(t *testing.T) {
-		// The refusing bucket must sort AFTER the one that has headroom: buckets
-		// are claimed in identity order, so this is the ordering under which a
-		// non-atomic claim would already have charged `wide` by the time
-		// `narrow` refuses. Named the other way round the test passes against
-		// the very implementation it exists to reject.
-		const wide = "aaa-wide-bucket"
-		const narrow = "zzz-narrow-bucket"
-		buckets := []store.LoginAttemptBucket{{Identity: wide, Max: 10}, {Identity: narrow, Max: 2}}
-
-		for i := range 2 {
-			granted, err := s.ClaimLoginAttemptBuckets(ctx, kind, window, buckets)
+	t.Run("grants exactly max per window", func(t *testing.T) {
+		const key = "sender-a"
+		for i := range 3 {
+			granted, err := s.ClaimSendBudget(ctx, key, kind, 3, window)
 			require.NoError(t, err)
-			require.True(t, granted, "claim %d is within every bucket", i)
+			require.True(t, granted, "grant %d is within the window", i)
 		}
-		require.Equal(t, 2, attemptsOf(wide))
-		require.Equal(t, 2, attemptsOf(narrow))
+		granted, err := s.ClaimSendBudget(ctx, key, kind, 3, window)
+		require.NoError(t, err)
+		require.False(t, granted, "the window is full")
+	})
 
-		// The narrow bucket is now full. Every further claim must be refused
-		// without moving the wide bucket, however many times it is retried.
+	// The reason this is not ClaimLoginAttempt. A lockout resets only after a
+	// quiet window and every grant restarts that quiet period, so a steady
+	// trickle never resets it: "3 per hour" would silently become "3 ever, until
+	// an hour of silence" and would refuse traffic that never approached the
+	// rate. The window here is anchored to its first grant instead.
+	t.Run("a steady trickle does not accumulate across windows", func(t *testing.T) {
+		const key = "sender-trickle"
+		// Six sends, each arriving well inside the window but with the window
+		// itself rolling over between every pair. A lockout counter would reach
+		// its limit on the third; a fixed window starts over each time.
+		for i := range 6 {
+			granted, err := s.ClaimSendBudget(ctx, key, kind, 3, window)
+			require.NoError(t, err, "send %d", i)
+			require.True(t, granted, "send %d must not be refused: no window ever held more than two", i)
+			if i%2 == 1 {
+				backdateWindow(key, window+time.Minute)
+			}
+		}
+	})
+
+	t.Run("a full window reopens once it expires", func(t *testing.T) {
+		const key = "sender-expiry"
+		for range 2 {
+			granted, err := s.ClaimSendBudget(ctx, key, kind, 2, window)
+			require.NoError(t, err)
+			require.True(t, granted)
+		}
+		granted, err := s.ClaimSendBudget(ctx, key, kind, 2, window)
+		require.NoError(t, err)
+		require.False(t, granted)
+
+		backdateWindow(key, window+time.Minute)
+		granted, err = s.ClaimSendBudget(ctx, key, kind, 2, window)
+		require.NoError(t, err)
+		require.True(t, granted, "a new window starts once the old one expires")
+	})
+
+	t.Run("refusals do not extend the window", func(t *testing.T) {
+		const key = "sender-refusal"
+		granted, err := s.ClaimSendBudget(ctx, key, kind, 1, window)
+		require.NoError(t, err)
+		require.True(t, granted)
+		var opened time.Time
+		require.NoError(t, db.QueryRowContext(ctx, `
+			SELECT last_attempt_at FROM login_attempt WHERE identity = $1 AND kind = $2
+		`, key, kind.String()).Scan(&opened))
+
 		for range 5 {
-			granted, err := s.ClaimLoginAttemptBuckets(ctx, kind, window, buckets)
+			granted, err := s.ClaimSendBudget(ctx, key, kind, 1, window)
 			require.NoError(t, err)
 			require.False(t, granted)
 		}
-		require.Equal(t, 2, attemptsOf(wide), "a refused claim must not spend the buckets ahead of the refusal")
-		require.Equal(t, 2, attemptsOf(narrow), "a refused claim leaves the refusing bucket untouched too")
+		var after time.Time
+		require.NoError(t, db.QueryRowContext(ctx, `
+			SELECT last_attempt_at FROM login_attempt WHERE identity = $1 AND kind = $2
+		`, key, kind.String()).Scan(&after))
+		require.True(t, opened.Equal(after), "hammering a full window must not push its expiry out")
 	})
 
-	t.Run("buckets are claimed in identity order from either direction", func(t *testing.T) {
-		// Same two buckets, opposite request order, claimed concurrently. The
-		// store sorts by identity — full primary-key order, since kind is fixed —
-		// so both transactions take the rows in the same order and neither can
-		// wait on the other's first lock. Asserts terminal state, not just the
-		// absence of a deadlock error: every claim must be granted and counted.
-		const first = "aaa-bucket"
-		const second = "zzz-bucket"
-		ascending := []store.LoginAttemptBucket{{Identity: first, Max: 100}, {Identity: second, Max: 100}}
-		descending := []store.LoginAttemptBucket{{Identity: second, Max: 100}, {Identity: first, Max: 100}}
-
-		const perDirection = 20
-		var wg sync.WaitGroup
-		errs := make(chan error, 2*perDirection)
-		for _, order := range [][]store.LoginAttemptBucket{ascending, descending} {
-			for range perDirection {
-				wg.Go(func() {
-					granted, err := s.ClaimLoginAttemptBuckets(ctx, kind, window, order)
-					if err != nil {
-						errs <- err
-						return
-					}
-					if !granted {
-						errs <- errors.Errorf("claim refused with headroom left")
-					}
-				})
-			}
-		}
-		wg.Wait()
-		close(errs)
-		for err := range errs {
-			require.NoError(t, err, "opposing claim orders must not deadlock or refuse")
-		}
-		require.Equal(t, 2*perDirection, attemptsOf(first))
-		require.Equal(t, 2*perDirection, attemptsOf(second))
-	})
-
-	t.Run("claims and the stale purge do not deadlock", func(t *testing.T) {
-		// The purge is a multi-row DELETE, so without an ordered locking phase it
-		// takes rows in planner-scan order and can oppose a claim holding the same
-		// rows in identity order. Both now lock in primary-key order. A deadlock
-		// is timing-dependent, so this is a stress test rather than a
-		// deterministic reproduction: it asserts that neither side ever returns an
-		// error, which is what a 40P01 abort would surface as.
-		buckets := []store.LoginAttemptBucket{{Identity: "purge-a", Max: 1000}, {Identity: "purge-z", Max: 1000}}
-		var wg sync.WaitGroup
-		errs := make(chan error, 200)
-		for range 100 {
-			wg.Go(func() {
-				if _, err := s.ClaimLoginAttemptBuckets(ctx, kind, window, buckets); err != nil {
-					errs <- err
-				}
-			})
-			wg.Go(func() {
-				// Zero retention makes every row stale, so the purge and the claims
-				// contend for exactly the same rows on every pass.
-				if _, err := s.DeleteStaleLoginAttempts(ctx, 0); err != nil {
-					errs <- err
-				}
-			})
-		}
-		wg.Wait()
-		close(errs)
-		for err := range errs {
-			require.NoError(t, err, "a claim and the purge must not deadlock over the same rows")
-		}
-	})
-
-	t.Run("an unkeyed bucket is refused outright", func(t *testing.T) {
-		_, err := s.ClaimLoginAttemptBuckets(ctx, kind, window, []store.LoginAttemptBucket{{Identity: "ok", Max: 1}, {Identity: "", Max: 1}})
-		require.Error(t, err, "an empty identity must never write a row")
-		require.Equal(t, 0, attemptsOf("ok"), "validation must run before any bucket is charged")
-	})
-
-	t.Run("no buckets is a grant", func(t *testing.T) {
-		granted, err := s.ClaimLoginAttemptBuckets(ctx, kind, window, nil)
+	t.Run("senders and kinds are independent", func(t *testing.T) {
+		granted, err := s.ClaimSendBudget(ctx, "sender-x", kind, 1, window)
 		require.NoError(t, err)
-		require.True(t, granted, "a caller with no budget configured is not rate limited")
+		require.True(t, granted)
+		granted, err = s.ClaimSendBudget(ctx, "sender-y", kind, 1, window)
+		require.NoError(t, err)
+		require.True(t, granted, "one sender's full window must not bind another")
+		granted, err = s.ClaimLoginAttempt(ctx, "sender-x", storepb.LoginAttemptKind_PASSWORD, 1, window)
+		require.NoError(t, err)
+		require.True(t, granted, "a send budget must not consume a credential bucket")
+	})
+
+	t.Run("an unkeyed claim is refused outright", func(t *testing.T) {
+		_, err := s.ClaimSendBudget(ctx, "", kind, 1, window)
+		require.Error(t, err)
+		_, err = s.ClaimSendBudget(ctx, "ok", storepb.LoginAttemptKind_LOGIN_ATTEMPT_KIND_UNSPECIFIED, 1, window)
+		require.Error(t, err)
 	})
 }

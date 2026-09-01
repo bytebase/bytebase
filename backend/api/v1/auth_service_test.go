@@ -169,6 +169,7 @@ func TestPasswordResetEmailSkipsDeletedUser(t *testing.T) {
 		storepb.EmailVerificationCodePurpose_PASSWORD_RESET,
 		"subject",
 		"code: %s, expires in %d minutes",
+		"", 0,
 	))
 }
 
@@ -600,123 +601,15 @@ func TestSignupChecksRestrictionBeforeExistence(t *testing.T) {
 	})
 }
 
-func TestSendEmailLoginCodeBudgetsWorkspacelessSends(t *testing.T) {
-	const secret = "test-secret"
-
-	ctx := context.Background()
-	stores := newAuthTestStore(t)
-	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
-	require.NoError(t, err)
-
-	// Port 1 refuses immediately, so every send fails after its budget is spent
-	// — the shape a real campaign hits once the SMTP host starts rejecting.
-	t.Setenv("EMAIL_CONFIG", `{"from":"bytebase@example.com","type":"SMTP","smtp":{"host":"127.0.0.1","port":1,"encryption":"ENCRYPTION_NONE","authentication":"AUTHENTICATION_NONE"}}`)
-	service := NewAuthService(stores, secret, licenseService, &config.Profile{SaaS: true}, nil)
-
-	send := func(email string) error {
-		_, err := service.SendEmailLoginCode(ctx, connect.NewRequest(&v1pb.SendEmailLoginCodeRequest{Email: email}))
-		return err
-	}
-
-	// Distinct addresses so the per-recipient cooldown never masks the budget:
-	// this is the attack the cooldown does not bound.
-	for i := range emailCodeSendPerDomain {
-		require.Equal(t, connect.CodeInternal, connect.CodeOf(send(fmt.Sprintf("victim%d@target.example", i))),
-			"send %d is within budget and must fail only on delivery", i)
-	}
-	require.Equal(t, connect.CodeResourceExhausted, connect.CodeOf(send("victim-over@target.example")))
-
-	// The bucket is the recipient domain, so an exhausted campaign does not
-	// stop sign-in for anyone else.
-	require.Equal(t, connect.CodeInternal, connect.CodeOf(send("someone@other.example")))
-}
-
-// TestSendEmailLoginCodeAnswersUniformlyWhenSignupDisallowed pins the other half
-// of the redeemability gate: skipping the send for an address that has no
-// account is only safe while skipping it is unobservable. A workspace that
-// disallows signup cannot onboard an unknown address through an email code, so
-// no code is sent to one — and the known address must not be told anything the
-// unknown address isn't, including that delivery failed.
-func TestSendEmailLoginCodeAnswersUniformlyWhenSignupDisallowed(t *testing.T) {
+// TestSendEmailLoginCodeBudgetsWorkspaceSends pins that a named workspace's
+// sends are capped per workspace, that its own members are capped by the same
+// bucket as anyone else — the cap is on the sender, not on who is written to,
+// so nothing about the response depends on whether an address has an account —
+// and that the window is a real hourly window rather than a lockout that never
+// resets under steady traffic.
+func TestSendEmailLoginCodeBudgetsWorkspaceSends(t *testing.T) {
 	const (
-		workspaceID = "email-code-uniform-test"
-		secret      = "test-secret"
-	)
-
-	ctx := context.Background()
-	stores := newAuthTestStore(t)
-
-	member, err := stores.CreateUser(ctx, &store.UserMessage{
-		Email:        "member@example.com",
-		Name:         "Member",
-		PasswordHash: "unused",
-		Profile:      &storepb.UserProfile{},
-	})
-	require.NoError(t, err)
-	_, err = stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
-		ResourceID: workspaceID,
-		Payload:    &storepb.WorkspacePayload{Title: "Email code uniform test"},
-	}, member.Email)
-	require.NoError(t, err)
-	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{
-		Name:      storepb.SettingName_WORKSPACE_PROFILE,
-		Workspace: workspaceID,
-		Value: &storepb.WorkspaceProfileSetting{
-			AllowEmailCodeSignin: true,
-			DisallowSignup:       true,
-			PasswordRestriction:  &storepb.WorkspaceProfileSetting_PasswordRestriction{MinLength: 8},
-		},
-	})
-	require.NoError(t, err)
-	// Port 1 refuses immediately, so the known address takes the delivery-failure
-	// path — the branch that used to answer Internal while the unknown address
-	// answered success.
-	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{
-		Name:      storepb.SettingName_EMAIL,
-		Workspace: workspaceID,
-		Value: &storepb.EmailSetting{
-			From: "bytebase@example.com",
-			Type: storepb.EmailSetting_SMTP,
-			Config: &storepb.EmailSetting_Smtp{Smtp: &storepb.EmailSetting_SMTPConfig{
-				Host:           "127.0.0.1",
-				Port:           1,
-				Encryption:     storepb.EmailSetting_SMTPConfig_ENCRYPTION_NONE,
-				Authentication: storepb.EmailSetting_SMTPConfig_AUTHENTICATION_NONE,
-			}},
-		},
-	})
-	require.NoError(t, err)
-
-	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
-	require.NoError(t, err)
-	require.NoError(t, licenseService.StoreLicense(ctx, workspaceID, authTestEnterpriseLicense))
-	service := NewAuthService(stores, secret, licenseService, &config.Profile{}, nil)
-	workspaceName := common.FormatWorkspace(workspaceID)
-
-	for _, email := range []string{member.Email, "stranger@example.com"} {
-		_, err := service.SendEmailLoginCode(ctx, connect.NewRequest(&v1pb.SendEmailLoginCodeRequest{
-			Email:     email,
-			Workspace: &workspaceName,
-		}))
-		require.NoError(t, err, "%s must not learn whether it has an account here", email)
-	}
-
-	// The stranger is not merely answered the same — no code was written for
-	// them, so nothing was mailed anywhere on their behalf.
-	row, err := stores.GetEmailVerificationCode(ctx, "stranger@example.com", storepb.EmailVerificationCodePurpose_LOGIN)
-	require.NoError(t, err)
-	require.Nil(t, row, "an address that could never redeem a code must not be sent one")
-}
-
-// TestSendEmailLoginCodeBudgetsWorkspaceStrangers covers the relay a named
-// workspace still had: its SMTP will address anyone, since the domain
-// restriction needs a license, EnforceIdentityDomain and a domain list before it
-// narrows recipients at all. Mail to an address the workspace has no
-// relationship with is budgeted; members and invitees are exempt, so the limit
-// cannot lock a customer's own workforce out of sign-in.
-func TestSendEmailLoginCodeBudgetsWorkspaceStrangers(t *testing.T) {
-	const (
-		workspaceID = "email-code-stranger-test"
+		workspaceID = "email-code-budget-test"
 		secret      = "test-secret"
 	)
 
@@ -732,11 +625,9 @@ func TestSendEmailLoginCodeBudgetsWorkspaceStrangers(t *testing.T) {
 	require.NoError(t, err)
 	_, err = stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
 		ResourceID: workspaceID,
-		Payload:    &storepb.WorkspacePayload{Title: "Email code stranger test"},
+		Payload:    &storepb.WorkspacePayload{Title: "Email code budget test"},
 	}, member.Email)
 	require.NoError(t, err)
-	// Signup stays allowed, so the redeemability gate does not apply and every
-	// address below reaches the send path — this is the default self-hosted shape.
 	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{
 		Name:      storepb.SettingName_WORKSPACE_PROFILE,
 		Workspace: workspaceID,
@@ -746,6 +637,8 @@ func TestSendEmailLoginCodeBudgetsWorkspaceStrangers(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
+	// Port 1 refuses immediately, so a send that reached delivery reports
+	// Internal — the marker for "this address was charged and mailed".
 	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{
 		Name:      storepb.SettingName_EMAIL,
 		Workspace: workspaceID,
@@ -767,80 +660,66 @@ func TestSendEmailLoginCodeBudgetsWorkspaceStrangers(t *testing.T) {
 	service := NewAuthService(stores, secret, licenseService, &config.Profile{}, nil)
 	workspaceName := common.FormatWorkspace(workspaceID)
 
-	// A named workspace answers success for every address, so the response cannot
-	// say who was charged. The bucket counter can: it is the observable that
-	// distinguishes a send charged to the stranger budget from one exempted.
-	charged := func(t *testing.T) int {
-		t.Helper()
-		var attempts int
-		err := stores.GetDB().QueryRowContext(ctx, `
-			SELECT COALESCE((SELECT attempts FROM login_attempt WHERE identity = $1 AND kind = $2), 0)
-		`, "signup-code-workspace:"+workspaceID, storepb.LoginAttemptKind_EMAIL_CODE_SEND.String()).Scan(&attempts)
-		require.NoError(t, err)
-		return attempts
-	}
-	send := func(t *testing.T, email string) {
-		t.Helper()
+	send := func(email string) error {
 		_, err := service.SendEmailLoginCode(ctx, connect.NewRequest(&v1pb.SendEmailLoginCodeRequest{
 			Email:     email,
 			Workspace: &workspaceName,
 		}))
-		// SMTP refuses on port 1, so a send that reached delivery failed — and the
-		// caller is told none of that, which is the contract under test.
-		require.NoError(t, err, "%s must not learn what happened to the mail", email)
+		return err
 	}
 
 	for i := range emailCodeSendPerWorkspace {
-		send(t, fmt.Sprintf("stranger%d@elsewhere.example", i))
-		require.Equal(t, i+1, charged(t), "each stranger spends one slot")
+		require.Equal(t, connect.CodeInternal, connect.CodeOf(send(fmt.Sprintf("s%d@elsewhere.example", i))),
+			"send %d is within the workspace budget", i)
+	}
+	require.Equal(t, connect.CodeResourceExhausted, connect.CodeOf(send("over@elsewhere.example")))
+
+	// The workspace's own member is charged from the same bucket. Exempting
+	// members would be kinder to a busy workspace but would make the answer
+	// depend on whether the address has an account here, which an anonymous
+	// caller must not be able to ask.
+	require.Equal(t, connect.CodeResourceExhausted, connect.CodeOf(send(member.Email)),
+		"the cap is on the sender, so a member is answered exactly as a stranger is")
+}
+
+func TestSendEmailLoginCodeBudgetsWorkspacelessSends(t *testing.T) {
+	const secret = "test-secret"
+
+	ctx := context.Background()
+	stores := newAuthTestStore(t)
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
+	require.NoError(t, err)
+
+	// Port 1 refuses immediately, so every send fails after its budget is spent
+	// — the shape a real campaign hits once the SMTP host starts rejecting.
+	t.Setenv("EMAIL_CONFIG", `{"from":"bytebase@example.com","type":"SMTP","smtp":{"host":"127.0.0.1","port":1,"encryption":"ENCRYPTION_NONE","authentication":"AUTHENTICATION_NONE"}}`)
+	service := NewAuthService(stores, secret, licenseService, &config.Profile{SaaS: true}, nil)
+
+	send := func(email string) error {
+		_, err := service.SendEmailLoginCode(ctx, connect.NewRequest(&v1pb.SendEmailLoginCodeRequest{Email: email}))
+		return err
 	}
 
-	// The bucket is spent. Further strangers are refused, and the refusal is
-	// indistinguishable from a send: no code row, and no distinct error.
-	send(t, "stranger-over@elsewhere.example")
-	row, err := stores.GetEmailVerificationCode(ctx, "stranger-over@elsewhere.example", storepb.EmailVerificationCodePurpose_LOGIN)
-	require.NoError(t, err)
-	require.Nil(t, row, "a refused send must leave no code behind")
+	// Distinct addresses so the per-recipient cooldown never masks the budget:
+	// this is the attack the cooldown does not bound.
+	for i := range emailCodeSendPerDeployment {
+		require.Equal(t, connect.CodeInternal, connect.CodeOf(send(fmt.Sprintf("victim%d@target.example", i))),
+			"send %d is within budget and must fail only on delivery", i)
+	}
+	require.Equal(t, connect.CodeResourceExhausted, connect.CodeOf(send("victim-over@target.example")))
 
-	// The workspace's own member is never charged, so sign-in still works while
-	// the stranger budget is empty — and the response is the same one a refused
-	// stranger got, so the exemption is not observable.
-	before := charged(t)
-	send(t, member.Email)
-	require.Equal(t, before, charged(t), "a member must not spend the stranger budget")
-
-	// A deactivated principal keeps its workspace IAM binding, so a membership
-	// check alone would exempt it forever — while Login refuses it, making every
-	// code mailed there unusable. It is charged like any other stranger.
-	deactivated, err := stores.CreateUser(ctx, &store.UserMessage{
-		Email:        "former@corp.example",
-		Name:         "Former",
-		PasswordHash: "unused",
-		Profile:      &storepb.UserProfile{},
-	})
-	require.NoError(t, err)
-	_, err = stores.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{
-		Workspace: workspaceID,
-		Member:    common.FormatUserEmail(deactivated.Email),
-		Roles:     []string{common.FormatRole(store.WorkspaceMemberRole)},
-	})
-	require.NoError(t, err)
-	del := true
-	_, err = stores.UpdateUser(ctx, deactivated, &store.UpdateUserMessage{Delete: &del})
-	require.NoError(t, err)
-
-	// Refill the bucket so the charge is observable rather than hidden by the
-	// exhausted-bucket path, then confirm the deactivated address is charged.
-	require.NoError(t, stores.ClearLoginAttempt(ctx, "signup-code-workspace:"+workspaceID, storepb.LoginAttemptKind_EMAIL_CODE_SEND))
-	send(t, deactivated.Email)
-	require.Equal(t, 1, charged(t), "a deactivated address must be budgeted like a stranger, not exempted as a member")
+	// The bucket is the sender, not the recipient, so a spent budget stops the
+	// next send whatever address it names. Accepted: a campaign can spend the
+	// deployment's hourly signup budget. Bucketing by recipient instead would
+	// make the answer depend on who is being written to, which on an anonymous
+	// endpoint is an account-existence oracle.
+	require.Equal(t, connect.CodeResourceExhausted, connect.CodeOf(send("someone@other.example")))
 }
 
 // TestSendEmailLoginCodeBudgetKeepsExistingCode pins that a refused budget is
 // inert. The upsert that stores a new code replaces whatever the recipient was
 // holding, so claiming the budget after it would let an anonymous caller with an
-// exhausted bucket destroy a pending code and send no replacement — denying code
-// sign-in to everyone on that domain for the window.
+// exhausted bucket destroy a pending code and send no replacement.
 func TestSendEmailLoginCodeBudgetKeepsExistingCode(t *testing.T) {
 	const secret = "test-secret"
 
@@ -873,8 +752,8 @@ func TestSendEmailLoginCodeBudgetKeepsExistingCode(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, sent)
 
-	// Exhaust the victim's domain bucket from other addresses on that domain.
-	for i := range emailCodeSendPerDomain {
+	// Exhaust the sender's budget from other addresses.
+	for i := range emailCodeSendPerDeployment {
 		require.Equal(t, connect.CodeInternal, connect.CodeOf(send(fmt.Sprintf("filler%d@victim.example", i))))
 	}
 	require.Equal(t, connect.CodeResourceExhausted, connect.CodeOf(send("another@victim.example")))

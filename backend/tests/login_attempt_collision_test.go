@@ -77,21 +77,6 @@ func TestCollision_LoginAttempt(t *testing.T) {
 	require.Equal(t, 1, attempts(victim, storepb.LoginAttemptKind_MFA))
 	require.Equal(t, 1, attempts(neighbor, storepb.LoginAttemptKind_PASSWORD))
 
-	// A multi-bucket claim writes the same table under the same composite key, so
-	// it must respect the same boundaries: it charges its own buckets only, and a
-	// bucket it shares with a neighbor is charged once, not once per claim.
-	shared := []store.LoginAttemptBucket{
-		{Identity: victim, Max: 3},
-		{Identity: neighbor, Max: 3},
-	}
-	granted, err = s.ClaimLoginAttemptBuckets(ctx, storepb.LoginAttemptKind_EMAIL_CODE_SEND, window, shared)
-	require.NoError(t, err)
-	require.True(t, granted)
-	require.Equal(t, 1, attempts(victim, storepb.LoginAttemptKind_EMAIL_CODE_SEND))
-	require.Equal(t, 1, attempts(neighbor, storepb.LoginAttemptKind_EMAIL_CODE_SEND))
-	require.Equal(t, 1, attempts(victim, storepb.LoginAttemptKind_MFA), "a send bucket must not reach a credential bucket sharing its identity")
-	require.Equal(t, 1, attempts(neighbor, storepb.LoginAttemptKind_PASSWORD))
-
 	// The time-scoped purge must not use the lock as a shortcut: backdate only
 	// the neighbor and confirm the purge takes it and nothing else.
 	_, err = container.GetDB().ExecContext(ctx, `

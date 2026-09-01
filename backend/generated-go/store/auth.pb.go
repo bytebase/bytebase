@@ -92,11 +92,16 @@ const (
 	LoginAttemptKind_EMAIL_CODE LoginAttemptKind = 2
 	LoginAttemptKind_MFA        LoginAttemptKind = 3
 	// Sending those codes rather than guessing them — the opposite direction, and
-	// the reason it is a separate kind. Its identity is a mail path (a recipient
-	// domain, or the deployment) and not a person; it carries its own volume
-	// limit rather than the shared attempt limit; and nothing clears it, because
-	// a delivered email is the thing being counted and there is no success to
-	// forgive. Exhausting it throttles that mail path and locks no account.
+	// the reason it is a separate kind. Its identity is the sender (a workspace,
+	// or the deployment) and not a person, so exhausting it throttles outbound
+	// mail and locks no account, and nothing clears it because a delivered email
+	// is the thing counted and there is no success to forgive.
+	//
+	// It also reads last_attempt_at differently: for this kind the column is the
+	// window's start, not the latest send, so the count resets on a fixed
+	// schedule. The kinds above intentionally reset only after a quiet window —
+	// wrong for a volume budget, where a steady trickle would never reset and
+	// "N per hour" would become "N ever".
 	LoginAttemptKind_EMAIL_CODE_SEND LoginAttemptKind = 4
 )
 

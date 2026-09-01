@@ -3,8 +3,6 @@ package store
 import (
 	"context"
 	"database/sql"
-	"slices"
-	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -32,78 +30,7 @@ func (s *Store) ClaimLoginAttempt(ctx context.Context, identity string, kind sto
 	if err := validateLoginAttemptKey(identity, kind); err != nil {
 		return false, err
 	}
-	return claimLoginAttemptRow(ctx, s.GetDB(), identity, kind, maxAttempts, window)
-}
-
-// LoginAttemptBucket is one (identity, limit) pair of a multi-bucket claim.
-type LoginAttemptBucket struct {
-	Identity string
-	Max      int
-}
-
-// ClaimLoginAttemptBuckets takes one slot in every bucket or none at all, so a
-// limit composed of several buckets cannot be partially spent. A caller that
-// claimed them one at a time would leave the earlier buckets consumed whenever a
-// later one refused — turning every refusal into free consumption of the buckets
-// ahead of it, which is the denial of service a multi-bucket limit exists to
-// bound. Returns (false, nil) when any bucket is out of slots; the transaction
-// rolls back, so no bucket is charged for the refusal.
-//
-// Buckets are claimed in identity order. kind is fixed for the call, so that is
-// full primary-key order per backend/store/AGENTS.md, and two concurrent claims
-// over overlapping buckets cannot form a wait-for cycle.
-func (s *Store) ClaimLoginAttemptBuckets(ctx context.Context, kind storepb.LoginAttemptKind, window time.Duration, buckets []LoginAttemptBucket) (bool, error) {
-	if len(buckets) == 0 {
-		return true, nil
-	}
-	for _, bucket := range buckets {
-		if err := validateLoginAttemptKey(bucket.Identity, kind); err != nil {
-			return false, err
-		}
-	}
-	ordered := slices.Clone(buckets)
-	slices.SortFunc(ordered, func(a, b LoginAttemptBucket) int { return strings.Compare(a.Identity, b.Identity) })
-
-	tx, err := s.GetDB().BeginTx(ctx, nil)
-	if err != nil {
-		return false, errors.Wrap(err, "failed to begin transaction")
-	}
-	defer tx.Rollback()
-
-	for _, bucket := range ordered {
-		granted, err := claimLoginAttemptRow(ctx, tx, bucket.Identity, kind, bucket.Max, window)
-		if err != nil {
-			return false, err
-		}
-		if !granted {
-			return false, nil
-		}
-	}
-	if err := tx.Commit(); err != nil {
-		return false, errors.Wrap(err, "failed to commit transaction")
-	}
-	return true, nil
-}
-
-// validateLoginAttemptKey backstops against programmer error — request fields
-// that become identities are bounded at the proto edge, so an unkeyed or
-// structurally oversized row here means a caller composed an identity from an
-// unbounded source.
-func validateLoginAttemptKey(identity string, kind storepb.LoginAttemptKind) error {
-	if identity == "" || len(identity) > maxIdentityBytes || kind == storepb.LoginAttemptKind_LOGIN_ATTEMPT_KIND_UNSPECIFIED {
-		return errors.Errorf("login attempt requires a kind and an identity of at most %d bytes", maxIdentityBytes)
-	}
-	return nil
-}
-
-// rowQuerier is the subset of the database handle the claim statement needs, so
-// one statement serves both the direct claim and the transactional batch.
-type rowQuerier interface {
-	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
-}
-
-func claimLoginAttemptRow(ctx context.Context, q rowQuerier, identity string, kind storepb.LoginAttemptKind, maxAttempts int, window time.Duration) (bool, error) {
-	stmt := qb.Q().Space(`
+	q := qb.Q().Space(`
 		INSERT INTO login_attempt (identity, kind, attempts, last_attempt_at)
 		VALUES (?, ?, 1, now())
 		ON CONFLICT (identity, kind) DO UPDATE SET
@@ -117,18 +44,76 @@ func claimLoginAttemptRow(ctx context.Context, q rowQuerier, identity string, ki
 		RETURNING 1
 	`, identity, kind.String(), window.Seconds(), maxAttempts, window.Seconds())
 
-	query, args, err := stmt.ToSQL()
+	query, args, err := q.ToSQL()
 	if err != nil {
 		return false, err
 	}
 	var dummy int
-	if err := q.QueryRowContext(ctx, query, args...).Scan(&dummy); err != nil {
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&dummy); err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return false, nil // locked out — no slot granted
 		}
 		return false, errors.Wrap(err, "failed to claim login attempt")
 	}
 	return true, nil
+}
+
+// ClaimSendBudget takes one slot of a fixed window: at most perWindow grants in each
+// window, where the window opens on the first grant and closes exactly window
+// later. Returns (false, nil) when the window is full.
+//
+// Deliberately not ClaimLoginAttempt's semantics, though it shares the table.
+// A lockout counts failures and resets only after a quiet window, so a slow
+// steady stream never resets it — correct when N wrong passwords over any
+// timespan is the thing to catch, and wrong for a volume budget, where it would
+// turn "20 per hour" into "20 ever, until an hour of silence" and eventually
+// refuse legitimate traffic that never came close to the rate. So a grant here
+// advances the count but never the window: last_attempt_at is the window's
+// start for this kind, not the latest send.
+func (s *Store) ClaimSendBudget(ctx context.Context, key string, kind storepb.LoginAttemptKind, perWindow int, window time.Duration) (bool, error) {
+	if err := validateLoginAttemptKey(key, kind); err != nil {
+		return false, err
+	}
+	q := qb.Q().Space(`
+		INSERT INTO login_attempt (identity, kind, attempts, last_attempt_at)
+		VALUES (?, ?, 1, now())
+		ON CONFLICT (identity, kind) DO UPDATE SET
+			attempts = CASE
+				WHEN login_attempt.last_attempt_at < now() - make_interval(secs => ?) THEN 1
+				ELSE login_attempt.attempts + 1
+			END,
+			last_attempt_at = CASE
+				WHEN login_attempt.last_attempt_at < now() - make_interval(secs => ?) THEN now()
+				ELSE login_attempt.last_attempt_at
+			END
+		WHERE login_attempt.attempts < ?
+			OR login_attempt.last_attempt_at < now() - make_interval(secs => ?)
+		RETURNING 1
+	`, key, kind.String(), window.Seconds(), window.Seconds(), perWindow, window.Seconds())
+
+	query, args, err := q.ToSQL()
+	if err != nil {
+		return false, err
+	}
+	var dummy int
+	if err := s.GetDB().QueryRowContext(ctx, query, args...).Scan(&dummy); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return false, nil // window full — no slot granted
+		}
+		return false, errors.Wrap(err, "failed to claim send budget")
+	}
+	return true, nil
+}
+
+// validateLoginAttemptKey backstops against programmer error — request fields
+// that become identities are bounded at the proto edge, so an unkeyed or
+// structurally oversized row here means a caller composed an identity from an
+// unbounded source.
+func validateLoginAttemptKey(identity string, kind storepb.LoginAttemptKind) error {
+	if identity == "" || len(identity) > maxIdentityBytes || kind == storepb.LoginAttemptKind_LOGIN_ATTEMPT_KIND_UNSPECIFIED {
+		return errors.Errorf("login attempt requires a kind and an identity of at most %d bytes", maxIdentityBytes)
+	}
+	return nil
 }
 
 // ClearLoginAttempt forgets the identity's failed attempts after a successful
@@ -150,21 +135,9 @@ func (s *Store) ClearLoginAttempt(ctx context.Context, identity string, kind sto
 
 // DeleteStaleLoginAttempts deletes rows whose latest attempt is older than
 // retention. Returns the number of deleted rows.
-//
-// Rows are locked in primary-key order, matching ClaimLoginAttemptBuckets. A
-// bare multi-row DELETE takes them in whatever order the planner scans, which
-// can oppose a concurrent claim over the same rows and deadlock one of them —
-// backend/store/AGENTS.md counts a DELETE's locks as part of the ordering.
 func (s *Store) DeleteStaleLoginAttempts(ctx context.Context, retention time.Duration) (int64, error) {
 	q := qb.Q().Space(`
-		DELETE FROM login_attempt
-		WHERE (identity, kind) IN (
-			SELECT identity, kind
-			FROM login_attempt
-			WHERE last_attempt_at < now() - make_interval(secs => ?)
-			ORDER BY identity, kind
-			FOR UPDATE
-		)
+		DELETE FROM login_attempt WHERE last_attempt_at < now() - make_interval(secs => ?)
 	`, retention.Seconds())
 
 	query, args, err := q.ToSQL()
