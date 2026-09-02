@@ -1,0 +1,492 @@
+# Combined Dev Box and CI Runner on GCP
+
+One Spot VM with two jobs. It is the SSH target that agentic coding tools drive, and
+it hosts three self-hosted GitHub Actions runners for the whole org.
+
+## Goals
+
+1. **The cheapest VM that still performs.** Spot, N2 or N2D, 20 vCPU. Sized for
+   parallel Go builds and Docker-backed tests. Re-priced per region and family before
+   any rebuild.
+2. **One startup script, so the box is close to stateless.** Everything on the box is
+   produced by that script. Only `/home` and a shared toolchain in `/usr/local` are
+   yours to manage; nothing else is set up by hand.
+3. **GitHub Actions runners that set themselves up.** Three org-level slots. Each
+   re-registers at boot from a secret, so there is no registration state to preserve.
+4. **A clear split between Local SSD and the persistent disk.** Local SSD holds what
+   can be discarded: caches, Docker, temp files, swap. The boot disk holds repos and
+   uncommitted work. It can be lost too, so push your branches.
+5. **Cache cleanup that will not break a running job.** Leaked temp files are swept
+   always. Caches are evicted only under disk pressure, cheapest to rebuild first.
+   The one exception is a disk about to fill, which would fail every job anyway.
+6. **Guest memory and swap visible in Cloud Monitoring.** The hypervisor reports only
+   CPU and disk. The Ops Agent reports the rest, so RAM is sized from measurement
+   instead of a guess.
+7. **Usable as a desktop agent's SSH environment.** One SSH config entry is enough.
+   OS Login manages keys through IAM, and there is no static IP or bastion. An account
+   that first appears at connect time can run Docker and has `sudo`.
+
+## 1. Machine spec and cost
+
+| Property | Value |
+|---|---|
+| Project / zone | `bytebase-dev` / `northamerica-northeast2-a` (Toronto) |
+| Machine type | `n2-custom-20-32768` — 20 vCPU, 32 GB |
+| Provisioning | `SPOT`, `instanceTerminationAction=STOP` |
+| Image | `ubuntu-2404-lts-amd64` |
+| Boot disk | 100 GB pd-balanced, `--no-boot-disk-auto-delete` |
+| Scratch | 375 GB Local SSD (NVMe) |
+| External IP | ephemeral; carries all egress, and inbound SSH |
+| Inbound | SSH only, via the VPC default rule; no tag, no custom rules |
+| Service account | dedicated; reads one secret, writes metrics and logs, nothing else |
+| Availability | always on; preemption stops it, the start workflow restarts it |
+
+| Component | Rate | $/mo |
+|---|---|---|
+| 20 vCPU (N2) | $0.003290 / vCPU-hr | $48.03 |
+| 32 GiB RAM (N2) | $0.000441 / GiB-hr | $10.30 |
+| 375 GB Local SSD | $0.052800 / GB-mo | $19.80 |
+| 100 GB pd-balanced | $0.110 / GB-mo | $11.00 |
+| External IP (Spot) | $0.0025 / hr | $1.82 |
+| **Total** | | **$90.96** |
+
+Catalog prices, 2026-09-01. vCPU and RAM are changeable on a stopped instance with
+`set-machine-type`; Local SSD capacity is fixed at creation.
+
+### Re-checking the region
+
+Spot prices are set per family *per region*, and they drift. Re-check before any
+rebuild.
+
+Price the whole VM, not just the CPU. Keep only regions that can actually run the
+family: the catalog prices N1 in 14 regions that cannot run it. Prefer N2 or N2D,
+whichever is cheaper, and use N1 only when both are far more expensive.
+
+Moving is delete and recreate. Push any work in `/home` first; the startup script
+rebuilds the rest.
+
+### Create
+
+**1. GitHub PAT.** Fine-grained tokens cannot be created from an API, so this part is
+manual — at `github.com/settings/personal-access-tokens/new`:
+
+| Field | Value |
+|---|---|
+| Resource owner | `bytebase` (the org, not your account) |
+| Expiration | set one; rotation should be forced, not remembered |
+| Repository access | Public repositories (read-only) |
+| Organization permissions → **Self-hosted runners** | **Read and write** |
+| Repository permissions | none |
+
+Org-owned tokens may need an org admin to approve the request.
+
+Separately, grant yourself `roles/compute.osAdminLogin` on the project. That gives
+your OS Login account `sudo`. The script cannot grant it, because the account does not
+exist until you first connect.
+
+**2. Everything else.**
+
+```bash
+PROJECT=bytebase-dev
+ZONE=northamerica-northeast2-a
+SA=devbox@${PROJECT}.iam.gserviceaccount.com
+
+gcloud services enable secretmanager.googleapis.com --project=$PROJECT
+
+# Service account; its roles are granted below, nothing more.
+gcloud iam service-accounts create devbox --project=$PROJECT \
+  --display-name="devbox: dev host and CI runners"
+
+# The PAT, readable by that service account and nothing else.
+read -rsp 'GitHub PAT: ' GH_PAT && echo
+printf '%s' "$GH_PAT" | gcloud secrets create gh-runner-pat \
+  --project=$PROJECT --replication-policy=automatic --data-file=-
+unset GH_PAT
+
+gcloud secrets add-iam-policy-binding gh-runner-pat --project=$PROJECT \
+  --member="serviceAccount:${SA}" --role=roles/secretmanager.secretAccessor
+
+# Metrics and logs from the Ops Agent. Without these the agent gets 403s and goal 6
+# is silently unmet -- a scope is not a role.
+for r in monitoring.metricWriter logging.logWriter; do
+  gcloud projects add-iam-policy-binding $PROJECT \
+    --member="serviceAccount:${SA}" --role=roles/$r
+done
+
+# The instance.
+gcloud compute instances create devbox --project=$PROJECT --zone=$ZONE \
+  --machine-type=n2-custom-20-32768 \
+  --provisioning-model=SPOT --instance-termination-action=STOP \
+  --image-family=ubuntu-2404-lts-amd64 --image-project=ubuntu-os-cloud \
+  --boot-disk-size=100GB --boot-disk-type=pd-balanced --no-boot-disk-auto-delete \
+  --local-ssd=interface=NVME \
+  --service-account=$SA --scopes=cloud-platform \
+  --metadata=enable-oslogin=TRUE \
+  --metadata-from-file=startup-script=./startup.sh
+```
+
+The `cloud-platform` scope resolves to the intersection with the account's roles: one
+secret, metrics, logs. The scope is not the boundary. The IAM bindings are.
+
+There is no flag day. Runners register at the organization under the automatic
+`self-hosted` label, with host-qualified names. So this box only adds capacity
+alongside any existing runner, and you can delete the old one whenever.
+
+One step does have to happen in order. A preemption stops the instance, and
+`.github/workflows/start-runner-vm.yml` already restarts a runner box on a schedule.
+Repoint its instance name and zone at this one, in two places each, as the last step
+of cutover. Do it earlier and it stops restarting the box it serves today. Until then,
+start this one by hand.
+
+### Connect
+
+Run `gcloud compute config-ssh` once. It writes the `~/.ssh/config` entries, and this
+box's alias is `devbox.northamerica-northeast2-a.bytebase-dev`. Desktop agents take
+that alias as their SSH host: Claude Desktop under **Add SSH connection**, Codex in
+its SSH environment. Each developer gets their own account and home, created by OS
+Login on first connect.
+
+## 2. Startup script
+
+Saved as `startup.sh` and passed to the create command above. It runs as root on every
+boot and is idempotent. Local SSD is discarded on every stop, so anything living there
+is rebuilt. Anything on the boot disk is guarded, so it is not redone.
+
+### a. Disk layout
+
+Two kinds of account use the box, and they need opposite things from it.
+
+**Runner accounts** are `gha`, `ghb` and `ghc`. The script creates them, `nologin`,
+one per job slot. Nothing of theirs is worth keeping: software, work trees and caches
+all sit on Local SSD, and the `/home` that `useradd` creates goes unused. They are
+disposable, and are disposed of on every stop.
+
+**Interactive accounts** arrive through OS Login on first connect. Their `/home/<u>`
+is the only durable state on the box: repos, uncommitted changes, agent CLI state,
+`~/.ssh`. Nothing backs it up and nothing collects it. Push your branches, and keep an
+eye on the boot disk.
+
+| | Runner account | Interactive account |
+|---|---|---|
+| Created by | the startup script | OS Login, on first connect |
+| Boot disk | an unused `/home/<u>` | `/home/<u>` — **the only durable state** |
+| Local SSD | `/scratch/<u>/runner`, `/work`, `/cache` | `/scratch/<u>/cache` |
+| Cache wiring | `Environment=` in the systemd unit | `/etc/profile.d` symlinks the default paths onto scratch |
+| Lost on a rebuild | nothing | uncommitted work |
+
+Local SSD also carries Docker's `data-root`, the swapfile and `/tmp`. Container
+startup and database `fsync` are the heaviest I/O on this box. Docker starts before
+the script runs, so the script points it at Local SSD and restarts it.
+
+**Swap causes hangs; it does not prevent them.** Without swap, exhausting RAM is a
+fast OOM kill. With swap, the box thrashes until the job timeout. So there is 8 GB at
+`vm.swappiness=10`: enough to evict cold pages, too little to sustain a thrash. And
+`systemd-oomd` kills a runaway job before either happens.
+
+The `monitoring.metricWriter` role puts both in Cloud Monitoring, as
+`memory/percent_used` and `swap/percent_usage`. The suffixes differ. Sustained swap
+above zero means 32 GB is too little.
+
+Toolchains are not installed here. An agent session installs its own with `sudo`, to
+`/usr/local/go` and `/usr/local/node`, which the profile puts on every `PATH`. CI jobs
+bring their own through `setup-go` and `setup-node`.
+
+### b. Cache paths
+
+Four paths carry every cache. `XDG_CACHE_HOME` relocates the Go **build** cache,
+Playwright, yarn and pip. Three others ignore it: the Go **module** cache sits under
+`GOPATH`, npm uses `~/.npm`, and pnpm's store is under `XDG_DATA_HOME`. `TMPDIR` is
+unset, because `/tmp` is bind-mounted onto Local SSD and catches every process.
+
+The paths are per-account. Go writes module-cache files read-only, so one shared
+`GOMODCACHE` becomes a permissions problem.
+
+**Runner accounts** get them from `Environment=` in the unit. systemd owns a service's
+environment, so the setting always applies. A GitHub Actions `run:` step is a
+non-login shell and would never read a profile.
+
+**Interactive accounts** cannot be named in a unit. Instead `/etc/profile.d/devbox.sh`
+runs on every login and replaces each tool's default cache location with a symlink
+onto scratch:
+
+```
+~/.cache             ->  /scratch/<u>/cache
+~/go/pkg/mod         ->  /scratch/<u>/cache/go-mod
+~/.npm               ->  /scratch/<u>/cache/npm
+~/.local/share/pnpm  ->  /scratch/<u>/cache/pnpm
+```
+
+It creates the target directory first, then the link, and skips anything that is
+already a link. Nothing configures Go, npm or pnpm. They write to the paths they
+always use, and the filesystem sends those writes to Local SSD.
+
+Symlinks rather than variables. A variable's reach depends on how the SSH client
+invokes the shell. Some tools ignore `XDG_CACHE_HOME` anyway. And a missed variable
+fails *silently* onto the boot disk, while a dangling symlink fails loudly. The
+targets are recreated on every login, because a symlink on the durable disk pointing
+into the disposable one must be re-pointed after each wipe.
+
+Nothing outside the box needs to know any of this. `/tmp` and the default cache paths
+already resolve to Local SSD, so `AGENTS.md` stays environment-agnostic. Only output
+written *into* the repo tree follows the repo onto the boot disk — `./bytebase-build/`
+and `node_modules` — which is right for anything inside a working copy.
+
+### c. GitHub runners
+
+Three accounts, three job slots, one systemd template. That is one slot per
+self-hosted workflow that fires on a pull request. A fourth is one more name in the
+script's account list.
+
+The runner is stateless, so it lives on scratch and is re-fetched each boot: one
+~200 MB download, extracted per account. That costs seconds of boot time. In return
+the boot disk holds nothing of the runner's, and every start runs the version resolved
+at the top of the script. Only its system packages persist, guarded by a marker file
+so `apt` runs once per rebuild.
+
+`register-runner` reads the PAT from Secret Manager over the REST API, since the
+Ubuntu images ship no `gcloud`. It exchanges the PAT for a registration token and
+configures the runner. It deletes `.runner` and `.credentials` first, because
+`config.sh` refuses to run over an existing config. `--replace` then takes the
+server-side entry of the same name. Names are host-qualified, so two boxes never claim
+each other's.
+
+Re-registering rather than preserving credentials means the runner holds no identity
+on disk. Wipe the boot disk and the same service account brings back the same three
+runners. Registration is derived state, like `/scratch`.
+
+The units carry no `[Install]` section. The script starts them rather than enabling
+them, so they cannot race ahead of the scratch mount.
+
+### d. Cache cleanup
+
+Two problems, handled differently. **Garbage** is leaked `go-build*` sandboxes from
+cancelled or OOM-killed builds, and it is swept on every run. **Caches** are evicted
+only under disk pressure, because they are what make builds fast.
+
+The Go build cache dominates. On a comparable box it was 59% of all disk used. Go
+evicts by age with no size cap, so five days of CI output is about 55 GB per account,
+and it regrows after any cleanup.
+
+Eviction fires at 85% and cleans down to 70%. Cleaning to exactly the trigger would
+re-trigger immediately. Tiers escalate by rebuild cost, and the destructive ones wait
+for an idle box.
+
+It runs on a schedule, not at boot. A boot-time check cannot fire on a box that stays
+up for days, and Local SSD survives a guest *reboot*. It is discarded only on stop or
+preemption.
+
+### startup.sh
+
+```bash
+#!/bin/bash
+# GCE startup-script: root, every boot, idempotent. No `set -e` -- one failed step
+# must not abandon the boot; `journalctl -t devbox-startup` shows the exit status.
+set -uo pipefail
+trap 'logger -t devbox-startup "exited: status $?"' EXIT
+# Latest runner release, falling back to a known-good pin if the lookup fails. Every
+# boot uses this: the runner lives on scratch and is re-fetched, never updated in place.
+RUNNER_VERSION=$(curl -sf --retry 3 https://api.github.com/repos/actions/runner/releases/latest | python3 -c 'import sys,json; print(json.load(sys.stdin)["tag_name"].lstrip("v"))' 2>/dev/null || echo 2.336.0)
+
+# ---------- packages: the Ubuntu image ships neither ----------
+export DEBIAN_FRONTEND=noninteractive
+echo 'DPkg::Lock::Timeout "300";' > /etc/apt/apt.conf.d/99-lock-timeout   # unattended-upgrades holds the lock at boot
+dpkg -s docker.io cron &>/dev/null || { apt-get update -qq && apt-get install -y -qq docker.io cron; }   # any missing -> install
+
+# ---------- (a) disk layout ----------
+mkdir -p /scratch
+DEV=$(ls /dev/disk/by-id/google-local-* 2>/dev/null | head -1)
+if [[ -n "$DEV" ]] && ! mountpoint -q /scratch; then
+  # A stop discards Local SSD; a reboot does not. Format only when there is no filesystem.
+  [[ -n "$(blkid -s TYPE -o value "$DEV")" ]] || mkfs.ext4 -F -m 0 -E lazy_itable_init=0,lazy_journal_init=0,discard "$DEV"
+  mount -o noatime,discard "$DEV" /scratch || logger -t devbox-startup "WARN: /scratch mount failed; scratch is on the boot disk"
+fi
+chmod 1777 /scratch                                   # OS Login accounts create their own subtree
+mkdir -p /scratch/tmp && chmod 1777 /scratch/tmp
+# Bind unless /tmp already *is* /scratch/tmp: `mountpoint` would also be true for a
+# tmpfs /tmp, which would silently leave temp files in RAM.
+[ "$(stat -c '%d:%i' /tmp)" = "$(stat -c '%d:%i' /scratch/tmp)" ] || mount --bind /scratch/tmp /tmp
+if [[ ! -f /scratch/swapfile ]]; then
+  fallocate -l 8G /scratch/swapfile && chmod 600 /scratch/swapfile && mkswap /scratch/swapfile >/dev/null
+fi
+swapon /scratch/swapfile 2>/dev/null || true          # no-op if already active
+sysctl -qw vm.swappiness=10
+systemctl enable --now systemd-oomd 2>/dev/null || true
+
+# Docker on Local SSD with log rotation. The socket is opened to every account: OS
+# Login users appear on first connect and cannot be pre-added to the docker group.
+mkdir -p /scratch/docker /etc/systemd/system/docker.service.d
+echo '{"data-root":"/scratch/docker","log-driver":"json-file","log-opts":{"max-size":"10m","max-file":"3"}}' > /etc/docker/daemon.json
+printf '[Service]\nExecStartPost=/bin/chmod 666 /var/run/docker.sock\n' > /etc/systemd/system/docker.service.d/socket.conf
+systemctl daemon-reload && systemctl restart docker
+
+# ---------- (b) accounts and cache paths ----------
+for u in gha ghb ghc; do
+  id "$u" &>/dev/null || useradd -m -s /usr/sbin/nologin "$u"
+  usermod -aG docker "$u"
+  mkdir -p "/scratch/$u/cache" "/scratch/$u/work"
+  chown "$u:$u" "/scratch/$u" "/scratch/$u/cache" "/scratch/$u/work"   # not -R: contents are the user's own
+done
+
+# Interactive accounts appear on first OS Login connect, so the profile provisions them:
+# each tool's default cache path is symlinked onto scratch. Symlinks, not variables, so
+# an agent's `bash -c` -- which never sources a profile -- lands there too.
+cat > /etc/profile.d/devbox.sh <<'EOF'
+export PATH=/usr/local/go/bin:/usr/local/node/bin:$PATH   # the shared toolchain location; install once with sudo
+u=$(id -un); c=/scratch/$u/cache
+if [ -d /scratch ] && [ -n "$u" ] && [ -n "${HOME:-}" ] && mkdir -p "$c" 2>/dev/null; then
+  for pair in "$HOME/.cache:$c" "$HOME/go/pkg/mod:$c/go-mod" "$HOME/.npm:$c/npm" "$HOME/.local/share/pnpm:$c/pnpm"; do
+    link=${pair%%:*}; target=${pair#*:}
+    mkdir -p "$target"   # every login: scratch targets vanish on preemption, the symlink in HOME does not
+    [ -L "$link" ] || { mkdir -p "$(dirname "$link")" && rm -rf "$link" && ln -s "$target" "$link"; }
+  done 2>/dev/null
+fi
+unset u c pair link target
+EOF
+
+# ---------- (c) GitHub runners ----------
+# The runner is stateless, so it lives on scratch and is re-fetched each boot: one
+# download, extracted per account, always the version resolved above.
+curl -fsSL --retry 3 "https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz" -o /tmp/runner.tar.gz
+for u in gha ghb ghc; do
+  install -d -o "$u" -g "$u" "/scratch/$u/runner"
+  tar xzf /tmp/runner.tar.gz -C "/scratch/$u/runner"
+  chown -R "$u:$u" "/scratch/$u/runner"
+done
+rm -f /tmp/runner.tar.gz
+# Its system packages land on the boot disk and persist, so this runs once per rebuild.
+[[ -f /var/lib/devbox-runner-deps ]] || \
+  { /scratch/gha/runner/bin/installdependencies.sh >/dev/null && touch /var/lib/devbox-runner-deps; }
+
+cat > /usr/local/sbin/register-runner <<'EOF'
+#!/bin/bash
+# <account> <install-dir> <work-dir>. Runs as the account, every boot.
+set -euo pipefail
+NAME=$1 DIR=$2 WORK=$3 ORG=bytebase
+md() { curl -sf -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/$1"; }
+PROJECT=$(md project/project-id)
+ACCESS=$(md instance/service-accounts/default/token | python3 -c 'import sys,json; print(json.load(sys.stdin)["access_token"])')
+PAT=$(curl -sf -H "Authorization: Bearer $ACCESS" \
+  "https://secretmanager.googleapis.com/v1/projects/${PROJECT}/secrets/gh-runner-pat/versions/latest:access" \
+  | python3 -c 'import sys,base64,json; print(base64.b64decode(json.load(sys.stdin)["payload"]["data"]).decode())')
+TOKEN=$(curl -sfX POST -H "Authorization: Bearer $PAT" -H "Accept: application/vnd.github+json" \
+  "https://api.github.com/orgs/${ORG}/actions/runners/registration-token" \
+  | python3 -c 'import sys,json; print(json.load(sys.stdin)["token"])')
+cd "$DIR"
+rm -f .runner .credentials .credentials_rsakey   # config.sh refuses to overwrite an existing config
+./config.sh --unattended --replace --url "https://github.com/${ORG}" --token "$TOKEN" \
+  --name "$(hostname -s)-$NAME" --work "$WORK"   # host-qualified name: never collides with another box
+EOF
+chmod +x /usr/local/sbin/register-runner
+
+cat > /etc/systemd/system/actions-runner@.service <<'EOF'
+[Unit]
+Description=GitHub Actions runner (%i)
+Wants=network-online.target
+After=network-online.target docker.service
+[Service]
+User=%i
+WorkingDirectory=/scratch/%i/runner
+Environment=XDG_CACHE_HOME=/scratch/%i/cache GOMODCACHE=/scratch/%i/cache/go-mod npm_config_cache=/scratch/%i/cache/npm PNPM_CONFIG_STORE_DIR=/scratch/%i/cache/pnpm
+ExecStartPre=/usr/local/sbin/register-runner %i /scratch/%i/runner /scratch/%i/work
+ExecStart=/scratch/%i/runner/run.sh
+Restart=always
+RestartSec=30   # registration failure retries forever; 5s x3 runners would burn the API quota
+ManagedOOMMemoryPressure=kill
+EOF
+
+# ---------- (d) cache cleanup ----------
+cat > /usr/local/sbin/cache-gc <<'EOF'
+#!/bin/bash
+# Every 30 min. Leaked go-build sandboxes are swept unconditionally. Caches are evicted
+# only at 85% used, down to 70%, in order of rebuild cost; the destructive tiers wait
+# for an idle box unless ENOSPC is imminent. Removal is by path as root -- no toolchain.
+set -uo pipefail
+HIGH=85 LOW=70 CRITICAL=95
+find /tmp -maxdepth 1 -name 'go-build*' -type d -mmin +1440 -exec rm -rf {} +
+accounts() { for d in /scratch/*/; do u=${d%/}; u=${u##*/}; id "$u" &>/dev/null && echo "$u"; done; }
+used()  { df -P /scratch | awk 'NR==2 {print $5+0}'; }
+halt_() { [[ $(used) -le $LOW ]] && { logger -t cache-gc "$1 -> $(used)%"; exit 0; }; }
+drop()  { for u in $(accounts); do p=/scratch/$u/cache/$1; rm -rf "$p"; install -d -o "$u" -g "$u" "$p"; done; }   # recreate: symlinks must not dangle
+idle()  { ! pgrep -f Runner.Worker >/dev/null && [[ -z "$(ss -Htn state established '( sport = :22 )')" ]]; }
+
+[[ $(used) -ge $HIGH ]] || exit 0
+logger -t cache-gc "start: $(used)% used"
+# Safe while jobs run: only things idle >1h, and Go's content-addressed build cache.
+docker container prune -f --filter until=1h >/dev/null 2>&1
+docker image prune -f --filter until=1h >/dev/null 2>&1
+halt_ "docker garbage"
+for u in $(accounts); do find "/scratch/$u/cache/go-build" -type f -mmin +2880 -delete 2>/dev/null; done
+halt_ "go-build >2d"
+# Destructive from here.
+if ! idle && [[ $(used) -lt $CRITICAL ]]; then logger -t cache-gc "deferred: busy at $(used)%"; exit 0; fi
+docker builder prune -af >/dev/null 2>&1;                   halt_ "build cache"
+drop pnpm; drop npm;                                         halt_ "package stores"
+docker image prune -af --filter until=168h >/dev/null 2>&1;  halt_ "stale images"
+drop go-mod;                                                 halt_ "modcache"
+drop go-build
+logger -t cache-gc "full clean -> $(used)%"
+EOF
+chmod +x /usr/local/sbin/cache-gc
+# PATH first: cron's default omits /usr/sbin, and a missing `ss` would make idle()
+# look true and let the destructive tiers run during a live job.
+printf 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n*/30 * * * * root /usr/local/sbin/cache-gc\n' > /etc/cron.d/devbox
+
+# Guest memory and swap are invisible without the Ops Agent.
+systemctl is-active --quiet google-cloud-ops-agent || { curl -sSo /tmp/ops.sh --retry 3 https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh && bash /tmp/ops.sh --also-install; }
+
+systemctl daemon-reload
+systemctl restart actions-runner@gha actions-runner@ghb actions-runner@ghc
+```
+
+## 3. Considered
+
+**N2D** — its guaranteed Milan silicon avoids N2's Cascade-Lake-or-Ice-Lake lottery,
+but no region prices it close to Toronto N2. Spot rates are set per family *per
+region*, so there is no cheap region, only cheap region-and-family pairs.
+
+**Arm (C4A, T2A)** — not every testcontainer image ships arm64, and
+`mcr.microsoft.com/mssql/server` is one that does not. It is also not the saving it
+looks like: Arm has no custom shapes, so the nearest fit costs more for fewer cores.
+
+**48 GB or 64 GB RAM** — a comparable box runs two runner slots in 16 GB plus swap
+without an OOM kill, so 32 GB already doubles what has sufficed. Machine type is a
+stopped-instance change, so erring low costs one restart.
+
+**On-demand instead of Spot** — about 2.5x per hour. Reversible on a stopped instance
+with `set-scheduling`.
+
+**Two machines instead of one** — cheaper for the same work, because a combined box
+stays up for the union of both duty cycles at the sum of both sizes. Consolidation was
+chosen for operational simplicity.
+
+**750 GB Local SSD** — another $19.80/mo, against a projected 49% use of 375 GB. Local
+SSD is the one capacity fixed at creation, so it is the first thing to revisit if that
+projection is wrong.
+
+**A firewall rule and network tag** — the default VPC leaves several ports open to
+`0.0.0.0/0`, but nothing here listens on them. Tags can be added to a running instance,
+so a rule can follow later.
+
+**Repository-level runner registration** — it would bound a stolen credential to one
+repo, but its endpoints need the far broader *Administration* permission, and it would
+not give org-wide runners.
+
+**A Cloud Run service minting JIT configs** — it would keep the PAT off the box
+entirely, but it is too much infrastructure for a dev box. The accepted cost: any CI
+job can read the PAT from the metadata server, and an org-wide runner credential has
+org-wide reach by definition. It is bounded by a token expiry, and by alerting on any
+runner not named `devbox-*`.
+
+**Rootless Docker** — the socket is world-accessible, which is how an OS Login account
+the script cannot name gets Docker. That is root-equivalent, and accepted: the box
+holds only pushable work and an expiring PAT.
+
+**Pinning Ice Lake** — deferred. `cpuPlatform` after each restart shows what Toronto
+hands out. A pin, or a different region, is a stop-and-start away.
+
+## Reference
+
+- Local SSD: https://cloud.google.com/compute/docs/disks/local-ssd
+- Self-hosted runners: https://docs.github.com/en/actions/hosting-your-own-runners
+- Fine-grained PAT permissions: https://docs.github.com/en/rest/authentication/permissions-required-for-fine-grained-personal-access-tokens
+- CPU platforms: https://cloud.google.com/compute/docs/cpu-platforms
