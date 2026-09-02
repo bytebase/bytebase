@@ -1,7 +1,12 @@
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import {
+  MCPSetting_Capability,
+  type Setting,
+} from "@/types/proto-es/v1/setting_service_pb";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -15,6 +20,7 @@ const mocks = vi.hoisted(() => ({
   upsertSetting: vi.fn(),
   hasFeature: vi.fn(() => true),
   sheetProps: [] as Record<string, unknown>[],
+  settingsByName: { value: {} as Record<string, Setting> },
   mcpSetting: {
     value: undefined as
       | {
@@ -55,12 +61,23 @@ vi.mock("@/stores", () => ({ pushNotification: vi.fn() }));
 
 vi.mock("@/stores/app", () => {
   const state = {
-    settingsByName: {},
+    get settingsByName() {
+      return mocks.settingsByName.value;
+    },
     getSettingByName: () =>
       mocks.mcpSetting.value === undefined
         ? undefined
         : { value: { value: { case: "mcp", value: mocks.mcpSetting.value } } },
-    setSettingByName: mocks.setSettingByName,
+    setSettingByName: (setting: Setting) => {
+      mocks.setSettingByName(setting);
+      mocks.settingsByName.value = {
+        ...mocks.settingsByName.value,
+        [setting.name]: setting,
+      };
+      if (setting.value?.value?.case === "mcp") {
+        mocks.mcpSetting.value = setting.value.value.value;
+      }
+    },
     upsertSetting: mocks.upsertSetting,
     hasFeature: mocks.hasFeature,
   };
@@ -122,6 +139,7 @@ const clickText = (container: HTMLElement, text: string) => {
 beforeEach(async () => {
   vi.clearAllMocks();
   mocks.sheetProps.length = 0;
+  mocks.settingsByName.value = {};
   mocks.mcpSetting.value = {
     capability: 3, // READ_ONLY
     ignoreMaskingExemptions: false,
@@ -186,6 +204,60 @@ describe("MCPAccessPolicySection", () => {
       "settings.mcp.policy.read-failed.title"
     );
     expect(container.textContent).not.toContain("settings.mcp.policy.in-force");
+    unmount();
+  });
+
+  test("a missing row uses the READ_WRITE compatibility default", async () => {
+    mocks.getSetting.mockRejectedValue(
+      new ConnectError("setting MCP not found", Code.NotFound)
+    );
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+
+    expect(mocks.setSettingByName).toHaveBeenCalledWith(
+      expect.objectContaining({
+        name: "settings/MCP",
+        value: expect.objectContaining({
+          value: expect.objectContaining({
+            case: "mcp",
+            value: expect.objectContaining({
+              capability: MCPSetting_Capability.READ_WRITE,
+              ignoreMaskingExemptions: false,
+            }),
+          }),
+        }),
+      })
+    );
+    expect(container.textContent).toContain("settings.mcp.policy.in-force");
+    expect(container.textContent).not.toContain(
+      "settings.mcp.policy.read-failed.title"
+    );
+
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+    toggleMasking(container);
+    await flush();
+    clickText(container, "settings.mcp.policy.save");
+    await flush();
+
+    expect(mocks.upsertSetting).toHaveBeenCalledWith(
+      expect.objectContaining({
+        value: expect.objectContaining({
+          value: expect.objectContaining({
+            value: expect.objectContaining({
+              capability: MCPSetting_Capability.READ_WRITE,
+            }),
+          }),
+        }),
+        updateMask: expect.objectContaining({
+          paths: ["value.mcp.ignore_masking_exemptions"],
+        }),
+      })
+    );
+
     unmount();
   });
 
