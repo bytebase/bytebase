@@ -511,10 +511,13 @@ chmod +x /usr/local/sbin/cache-gc
 # look true and let the destructive tiers run during a live job.
 printf 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n*/30 * * * * root /usr/local/sbin/cache-gc\n' > /etc/cron.d/devbox
 
-# One outcome check before any runner is advertised. Covers a failed package
-# install, a dockerd that would not start, and a daemon.json it rejects -- all of
-# which otherwise register three healthy-looking runners that fail every job.
-docker info &>/dev/null || { logger -t devbox-startup "FATAL: docker unusable"; exit 1; }
+# One outcome check before any runner is advertised. An unset or unreadable
+# DockerRootDir catches a failed package install, a dockerd that would not start and a
+# daemon.json it rejected; requiring /scratch also catches one that was never written,
+# which starts dockerd cleanly on the boot disk. Otherwise: three healthy-looking
+# runners that fail every job, or quietly fill the disk holding /home.
+docker info --format '{{.DockerRootDir}}' 2>/dev/null | grep -q '^/scratch/' \
+  || { logger -t devbox-startup "FATAL: docker unusable or not on Local SSD"; exit 1; }
 
 systemctl daemon-reload
 systemctl restart actions-runner@runner1 actions-runner@runner2 actions-runner@runner3
