@@ -345,10 +345,13 @@ RUNNER_VERSION=$(curl -sf --retry 3 --max-time 30 https://api.github.com/repos/a
 export DEBIAN_FRONTEND=noninteractive
 echo 'DPkg::Lock::Timeout "300";' > /etc/apt/apt.conf.d/99-lock-timeout   # unattended-upgrades holds the lock at boot
 PKGS="docker.io cron systemd-oomd build-essential"
+# Unconditional: a preemption during any dpkg work -- an unattended upgrade of some
+# unrelated package -- blocks every later apt call, including installdependencies.sh.
+dpkg --configure -a 2>/dev/null
 # Count 'install ok installed', not dpkg -s: a preemption mid-apt leaves packages
 # unpacked but unconfigured, which dpkg -s still reports as success.
 [[ $(dpkg-query -W -f='${Status}\n' $PKGS 2>/dev/null | grep -c '^install ok installed$') -eq $(wc -w <<<"$PKGS") ]] \
-  || { dpkg --configure -a; apt-get update -qq && apt-get install -y -qq $PKGS; } \
+  || { apt-get update -qq && apt-get install -y -qq $PKGS; } \
   || { logger -t devbox-startup "FATAL: prerequisite install failed"; exit 1; }
 systemctl unmask docker.socket docker containerd 2>/dev/null
 stop_docker   # belt and braces once unmasked
