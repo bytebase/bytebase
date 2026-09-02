@@ -329,14 +329,14 @@ RUNNER_VERSION=$(curl -sf --retry 3 https://api.github.com/repos/actions/runner/
 # ---------- packages: the Ubuntu image ships neither ----------
 export DEBIAN_FRONTEND=noninteractive
 echo 'DPkg::Lock::Timeout "300";' > /etc/apt/apt.conf.d/99-lock-timeout   # unattended-upgrades holds the lock at boot
+# Docker down first. daemon.json persists, so a previous boot's dockerd is already up
+# with data-root=/scratch/docker -- on the boot disk until (a) mounts over it, and
+# still writing there through anything slow or fatal below. Absent on a first boot.
+systemctl stop docker.socket docker 2>/dev/null
 dpkg -s docker.io cron systemd-oomd &>/dev/null || { apt-get update -qq && apt-get install -y -qq docker.io cron systemd-oomd; } \
-  || { logger -t devbox-startup "FATAL: prerequisite install failed"; systemctl stop docker.socket docker; exit 1; }
+  || { logger -t devbox-startup "FATAL: prerequisite install failed"; exit 1; }
 
 # ---------- (a) disk layout ----------
-# Before /scratch changes shape: daemon.json persists, so dockerd is already up with
-# data-root=/scratch/docker. Mounting over an open data root leaves it writing to the
-# covered boot-disk tree, invisible under the mount. Restarted below.
-systemctl stop docker.socket docker
 mkdir -p /scratch
 DEV=$(ls /dev/disk/by-id/google-local-* 2>/dev/null | head -1)
 if [[ -n "$DEV" ]] && ! mountpoint -q /scratch; then
