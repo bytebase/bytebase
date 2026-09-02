@@ -388,7 +388,8 @@ mountpoint -q /var/lib/containerd || mount --bind /scratch/containerd /var/lib/c
 # disabled from here on: only this script starts Docker, so a reboot no longer brings
 # it up on the boot disk before the script has run.
 systemctl unmask docker.socket docker containerd 2>/dev/null
-systemctl disable docker.socket docker containerd 2>/dev/null
+systemctl disable docker.socket docker containerd 2>/dev/null \
+  || logger -t devbox-startup "WARN: docker autostart still enabled; the mask covers the next boot"
 systemctl daemon-reload && systemctl restart containerd docker || fatal "docker would not start"
 docker info --format '{{.DockerRootDir}}' 2>/dev/null | grep -q '^/scratch/' \
   || fatal "docker not on Local SSD"   # daemon.json unwritten or rejected: dockerd starts fine on the boot disk
