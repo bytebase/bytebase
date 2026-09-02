@@ -511,7 +511,9 @@ find /tmp -maxdepth 1 -name 'go-build*' -type d -mmin +1440 -exec rm -rf {} +
 accounts() { for d in /scratch/*/; do u=${d%/}; u=${u##*/}; id "$u" &>/dev/null && echo "$u"; done; }
 used()  { df -P /scratch | awk 'NR==2 {print $5+0}'; }
 halt_() { [[ $(used) -le $LOW ]] && { logger -t cache-gc "$1 -> $(used)%"; exit 0; }; }
-drop()  { for u in $(accounts); do p=/scratch/$u/cache/$1; rm -rf "$p"; install -d -o "$u" -g "$u" "$p"; done; }   # recreate: symlinks must not dangle
+mk()    { for d in "" /go-mod /npm /pnpm; do install -d -o "$1" -g "$1" "/scratch/$1/cache$d"; done; }   # recreate: symlinks must not dangle
+drop()  { for u in $(accounts); do rm -rf "/scratch/$u/cache/$1"; mk "$u"; done; }
+wipe()  { for u in $(accounts); do rm -rf "/scratch/$u/cache";    mk "$u"; done; }   # Playwright, pip, yarn and anything else under XDG_CACHE_HOME
 idle()  { ! pgrep -f Runner.Worker >/dev/null && [[ -z "$(ss -Htn state established '( sport = :22 )')" ]]; }
 
 [[ $(used) -ge $HIGH ]] || exit 0
@@ -528,7 +530,7 @@ docker builder prune -af >/dev/null 2>&1;                   halt_ "build cache"
 drop pnpm; drop npm;                                         halt_ "package stores"
 docker image prune -af --filter until=168h >/dev/null 2>&1;  halt_ "stale images"
 drop go-mod;                                                 halt_ "modcache"
-drop go-build
+wipe   # everything left under XDG_CACHE_HOME, go-build included
 logger -t cache-gc "full clean -> $(used)%"
 EOF
 chmod +x /usr/local/sbin/cache-gc
