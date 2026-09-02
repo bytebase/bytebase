@@ -448,13 +448,16 @@ cat > /usr/local/sbin/install-runner <<'EOF'
 # <account>. Root, from the unit. Re-runs whole on every retry, deps included.
 set -euo pipefail
 DIR=/scratch/$1/runner
-[[ -f $DIR/.installed ]] && exit 0   # written last, so a failed dep step is retried
 V=$(< /etc/devbox-runner-version)
+# Stamped with the version and written last: a reboot keeps scratch, so a bare marker
+# would pin the old release, and an unstamped one would skip a failed dep step.
+[[ "$(cat "$DIR/.installed" 2>/dev/null)" == "$V" ]] && exit 0
+rm -rf "$DIR"   # clean tree: extracting over an old release leaves its files behind
 install -d -o "$1" -g "$1" "$DIR"
 curl -fsSL --retry 3 "https://github.com/actions/runner/releases/download/v$V/actions-runner-linux-x64-$V.tar.gz" | tar xz -C "$DIR"
 chown -R "$1:$1" "$DIR"
 "$DIR"/bin/installdependencies.sh >/dev/null   # apt is a no-op once satisfied
-touch "$DIR/.installed"
+echo "$V" > "$DIR/.installed"
 EOF
 chmod +x /usr/local/sbin/install-runner
 
