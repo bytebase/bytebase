@@ -322,6 +322,10 @@ preemption.
 # must not abandon the boot; `journalctl -t devbox-startup` shows the exit status.
 set -uo pipefail
 trap 'logger -t devbox-startup "exited: status $?"' EXIT
+# First, before anything that can block or exit. daemon.json persists, so a previous
+# boot's dockerd is already up with data-root=/scratch/docker -- on the boot disk
+# until (a) mounts over it. Absent on a first boot. Restarted in (a).
+systemctl stop docker.socket docker 2>/dev/null
 # Latest runner release, falling back to a known-good pin if the lookup fails. Every
 # boot uses this: the runner lives on scratch and is re-fetched, never updated in place.
 RUNNER_VERSION=$(curl -sf --retry 3 https://api.github.com/repos/actions/runner/releases/latest | python3 -c 'import sys,json; print(json.load(sys.stdin)["tag_name"].lstrip("v"))' 2>/dev/null || echo 2.336.0)
@@ -329,10 +333,6 @@ RUNNER_VERSION=$(curl -sf --retry 3 https://api.github.com/repos/actions/runner/
 # ---------- packages: the Ubuntu image ships neither ----------
 export DEBIAN_FRONTEND=noninteractive
 echo 'DPkg::Lock::Timeout "300";' > /etc/apt/apt.conf.d/99-lock-timeout   # unattended-upgrades holds the lock at boot
-# Docker down first. daemon.json persists, so a previous boot's dockerd is already up
-# with data-root=/scratch/docker -- on the boot disk until (a) mounts over it, and
-# still writing there through anything slow or fatal below. Absent on a first boot.
-systemctl stop docker.socket docker 2>/dev/null
 dpkg -s docker.io cron systemd-oomd &>/dev/null || { apt-get update -qq && apt-get install -y -qq docker.io cron systemd-oomd; } \
   || { logger -t devbox-startup "FATAL: prerequisite install failed"; exit 1; }
 
