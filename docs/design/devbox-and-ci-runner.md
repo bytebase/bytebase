@@ -337,6 +337,7 @@ export DEBIAN_FRONTEND=noninteractive
 echo 'DPkg::Lock::Timeout "300";' > /etc/apt/apt.conf.d/99-lock-timeout   # unattended-upgrades holds the lock at boot
 dpkg -s docker.io cron systemd-oomd build-essential &>/dev/null || { apt-get update -qq && apt-get install -y -qq docker.io cron systemd-oomd build-essential; } \
   || { logger -t devbox-startup "FATAL: prerequisite install failed"; exit 1; }
+systemctl stop docker.socket docker 2>/dev/null   # again: docker.io's postinst starts it
 
 # ---------- (a) disk layout ----------
 mkdir -p /scratch
@@ -565,9 +566,11 @@ not give org-wide runners.
 
 **A Cloud Run service minting JIT configs** — it would keep the PAT off the box
 entirely, but it is too much infrastructure for a dev box. The accepted cost: any CI
-job can read the PAT from the metadata server, and an org-wide runner credential has
-org-wide reach by definition. It is bounded by a token expiry, and by alerting on any
-runner not named `devbox-*`.
+job can read the PAT from the metadata server, register its own runner, and keep
+taking org jobs until that registration is deleted. Neither obvious bound actually
+binds -- a runner credential outlives the PAT that created it, and a rogue host picks
+its own `--name`, so alerting on names outside `devbox-*` catches mistakes rather than
+an attacker. Removing a registration is the control; the alert is a convenience.
 
 **Rootless Docker** — the socket is world-accessible, which is how an OS Login account
 the script cannot name gets Docker. That is root-equivalent, and accepted. Be clear
