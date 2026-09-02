@@ -544,6 +544,7 @@ docker builder prune -af >/dev/null 2>&1;                   halt_ "build cache"
 drop pnpm; drop npm;                                         halt_ "package stores"
 docker image prune -af --filter until=168h >/dev/null 2>&1;  halt_ "stale images"
 drop go-mod;                                                 halt_ "modcache"
+docker image prune -af >/dev/null 2>&1   # the last tier keeps nothing: recent images too
 wipe   # the rest of XDG_CACHE_HOME, plus disposable homes and work trees
 logger -t cache-gc "full clean -> $(used)%"
 EOF
