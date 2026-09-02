@@ -1,5 +1,6 @@
-import { TriangleAlert } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { Alert } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Switch } from "@/components/ui/switch";
@@ -54,7 +55,7 @@ function GhostFlagRow({
 }) {
   const current = value[param.key];
   const isEnabled =
-    current !== undefined ? current === "true" : param.default === "true";
+    param.type === "bool" && isBooleanFlagEnabled(current, param.default);
   const set = (raw: string | number | boolean | null | undefined) =>
     onChange(withFlag(value, param, raw));
 
@@ -95,22 +96,31 @@ function GhostFlagRow({
         )}
       </div>
       {riskCaption && isEnabled && (
-        <div
+        <Alert
+          appearance="caption"
+          variant="warning"
           data-testid="skip-metadata-lock-check-risk"
-          className="flex items-center gap-x-1 text-xs text-warning"
         >
-          <TriangleAlert className="size-3.5 shrink-0" />
-          <span>{riskCaption.text}</span>
-          <a
-            href="https://github.com/github/gh-ost/pull/1536"
-            target="_blank"
-            rel="noreferrer"
-            className="shrink-0 text-warning hover:underline"
-          >
-            {riskCaption.link}
-          </a>
-        </div>
+          <span>
+            {riskCaption.text}{" "}
+            <a
+              href="https://github.com/github/gh-ost/pull/1536"
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-x-1 text-warning underline"
+            >
+              {riskCaption.link}
+              <ExternalLink className="size-3" />
+            </a>
+          </span>
+        </Alert>
       )}
     </div>
   );
+}
+
+const TRUE_BOOLEAN_VALUES = new Set(["1", "t", "T", "true", "TRUE", "True"]);
+
+function isBooleanFlagEnabled(value: string | undefined, defaultValue: string) {
+  return TRUE_BOOLEAN_VALUES.has(value ?? defaultValue);
 }
