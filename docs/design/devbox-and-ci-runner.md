@@ -263,9 +263,12 @@ and `node_modules` — which is right for anything inside a working copy.
 
 ### c. GitHub runners
 
-Three accounts, three job slots, one systemd template. That is one slot per
-self-hosted workflow that fires on a pull request. A fourth is one more name in the
-script's account list.
+Three accounts, three job slots, one systemd template. A pull request touching both
+backend and frontend schedules five self-hosted jobs -- one each from `backend-tests`,
+`golangci-lint` and `test_link`, two from `frontend-tests` -- so two of them queue,
+before counting any other repository in the org. That is deliberate: jobs queue, they
+do not fail, and 20 vCPU split five ways is thin. A fourth or fifth slot is one more
+name in the script's account list if the wait proves worse than the contention.
 
 The runner is stateless, so it lives on scratch and is re-fetched each boot: one
 ~200 MB download, extracted per account. That costs seconds of boot time. In return
@@ -328,8 +331,11 @@ DEV=$(ls /dev/disk/by-id/google-local-* 2>/dev/null | head -1)
 if [[ -n "$DEV" ]] && ! mountpoint -q /scratch; then
   # A stop discards Local SSD; a reboot does not. Format only when there is no filesystem.
   [[ -n "$(blkid -s TYPE -o value "$DEV")" ]] || mkfs.ext4 -F -m 0 -E lazy_itable_init=0,lazy_journal_init=0,discard "$DEV"
-  mount -o noatime,discard "$DEV" /scratch || logger -t devbox-startup "WARN: /scratch mount failed; scratch is on the boot disk"
+  mount -o noatime,discard "$DEV" /scratch
 fi
+# Everything below assumes /scratch is the Local SSD. Falling back to the boot disk
+# would put swap, Docker, work trees and caches on the 100 GB disk that holds /home.
+mountpoint -q /scratch || { logger -t devbox-startup "FATAL: no Local SSD at /scratch"; exit 1; }
 chmod 1777 /scratch                                   # OS Login accounts create their own subtree
 mkdir -p /scratch/tmp && chmod 1777 /scratch/tmp
 # Bind unless /tmp already *is* /scratch/tmp: `mountpoint` would also be true for a
@@ -341,6 +347,10 @@ fi
 swapon /scratch/swapfile 2>/dev/null || true          # no-op if already active
 sysctl -qw vm.swappiness=10
 systemctl enable --now systemd-oomd 2>/dev/null || true
+# On the slice, not the runner unit: Docker gives each container its own scope under
+# system.slice, so a unit-scoped policy would never see the containers under test.
+mkdir -p /etc/systemd/system/system.slice.d
+printf '[Slice]\nManagedOOMMemoryPressure=kill\n' > /etc/systemd/system/system.slice.d/oomd.conf
 
 # Docker on Local SSD with log rotation. The socket is opened to every account: OS
 # Login users appear on first connect and cannot be pre-added to the docker group.
@@ -380,6 +390,7 @@ EOF
 # ---------- (c) GitHub runners ----------
 # The runner is stateless, so it lives on scratch and is re-fetched each boot: one
 # download, extracted per account, always the version resolved above.
+echo "$RUNNER_VERSION" > /etc/devbox-runner-version   # register-runner re-reads this to self-heal
 curl -fsSL --retry 3 "https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz" -o /tmp/runner.tar.gz
 for u in runner1 runner2 runner3; do
   install -d -o "$u" -g "$u" "/scratch/$u/runner"
@@ -406,6 +417,12 @@ TOKEN=$(curl -sfX POST -H "Authorization: Bearer $PAT" -H "Accept: application/v
   "https://api.github.com/orgs/${ORG}/actions/runners/registration-token" \
   | python3 -c 'import sys,json; print(json.load(sys.stdin)["token"])')
 cd "$DIR"
+# systemd retries this unit forever, so re-fetch if the boot-time download failed. A
+# transient network error then heals itself instead of killing the slot until reboot.
+if [[ ! -x ./config.sh ]]; then
+  V=$(< /etc/devbox-runner-version)
+  curl -fsSL --retry 3 "https://github.com/actions/runner/releases/download/v$V/actions-runner-linux-x64-$V.tar.gz" | tar xz
+fi
 rm -f .runner .credentials .credentials_rsakey   # config.sh refuses to overwrite an existing config
 ./config.sh --unattended --replace --url "https://github.com/${ORG}" --token "$TOKEN" \
   --name "$(hostname -s)-$NAME" --work "$WORK"   # host-qualified name: never collides with another box
@@ -426,7 +443,6 @@ ExecStart=/scratch/%i/runner/run.sh
 Restart=always
 # Registration failure retries forever; at 5s x3 runners that would burn the API quota.
 RestartSec=30
-ManagedOOMMemoryPressure=kill
 EOF
 
 # ---------- (d) cache cleanup ----------
