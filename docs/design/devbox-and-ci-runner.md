@@ -508,7 +508,9 @@ chmod +x /usr/local/sbin/cache-gc
 printf 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n*/30 * * * * root /usr/local/sbin/cache-gc\n' > /etc/cron.d/devbox
 
 # Guest memory and swap are invisible without the Ops Agent.
-systemctl is-active --quiet google-cloud-ops-agent || { curl -sSo /tmp/ops.sh --retry 3 https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh && bash /tmp/ops.sh --also-install; }
+systemctl is-active --quiet google-cloud-ops-agent \
+  || { curl -sSo /tmp/ops.sh --retry 3 https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh && bash /tmp/ops.sh --also-install; } \
+  || logger -t devbox-startup "WARN: Ops Agent install failed; no memory or swap metrics"   # retried next boot
 
 systemctl daemon-reload
 systemctl restart actions-runner@runner1 actions-runner@runner2 actions-runner@runner3
