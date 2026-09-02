@@ -21,8 +21,8 @@ import (
 func TestLatestVersion(t *testing.T) {
 	files, err := getSortedVersionedFiles()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("3.24.0"), *files[len(files)-1].version)
-	require.Equal(t, "migration/3.24/0000##plan_last_editor_approval.sql", files[len(files)-1].path)
+	require.Equal(t, semver.MustParse("3.23.2"), *files[len(files)-1].version)
+	require.Equal(t, "migration/3.23/0002##plan_last_editor_approval.sql", files[len(files)-1].path)
 }
 
 func TestMigration3_23_1_IssueCommentThreads(t *testing.T) {
@@ -133,7 +133,7 @@ func TestVersionUnique(t *testing.T) {
 	}
 }
 
-func TestMigration3_24_0BackfillsLastPlanEditorApproval(t *testing.T) {
+func TestMigration3_23_2BackfillsLastPlanEditorApproval(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.GetTestPgContainer(ctx, t)
 	t.Cleanup(func() { container.Close(ctx) })
@@ -148,7 +148,7 @@ func TestMigration3_24_0BackfillsLastPlanEditorApproval(t *testing.T) {
 		INSERT INTO project (resource_id, deleted) VALUES ('active', false), ('deleted', true);
 	`)
 	require.NoError(t, err)
-	statement, err := migrationFS.ReadFile("migration/3.24/0000##plan_last_editor_approval.sql")
+	statement, err := migrationFS.ReadFile("migration/3.23/0002##plan_last_editor_approval.sql")
 	require.NoError(t, err)
 	_, err = db.ExecContext(ctx, string(statement))
 	require.NoError(t, err)
