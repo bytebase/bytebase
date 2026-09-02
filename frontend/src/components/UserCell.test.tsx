@@ -166,4 +166,34 @@ describe("UserCell", () => {
     expect(onRowClick).not.toHaveBeenCalled();
     unmount();
   });
+
+  test.each(["Enter", " "])(
+    "keeps %j activation on subtitle actions from reaching the row",
+    (key) => {
+      const onRowKeyDown = vi.fn();
+      const { container, unmount } = renderIntoContainer(
+        <div onKeyDown={onRowKeyDown}>
+          <UserCell
+            title="CI Bot"
+            subtitle="ci@example.com"
+            subtitleAction={<button type="button" aria-label="Copy email" />}
+          />
+        </div>
+      );
+
+      const copyButton = container.querySelector('[aria-label="Copy email"]');
+      act(() => {
+        copyButton?.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key,
+            bubbles: true,
+            cancelable: true,
+          })
+        );
+      });
+
+      expect(onRowKeyDown).not.toHaveBeenCalled();
+      unmount();
+    }
+  );
 });

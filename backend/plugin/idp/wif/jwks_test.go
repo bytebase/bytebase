@@ -75,6 +75,31 @@ func TestFetchJWKSUsesDiscoveredURLAsCacheKey(t *testing.T) {
 	require.Equal(t, 1, requestCount["https://keys.example.com/shared.json"])
 }
 
+func TestFetchJWKSReusesCachedDiscoveryResult(t *testing.T) {
+	requestCount := map[string]int{}
+	setJWKSHTTPClientForTest(t, roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		requestCount[request.URL.String()]++
+		switch request.URL.String() {
+		case "https://issuer.example.com/.well-known/openid-configuration":
+			return jsonHTTPResponse(http.StatusOK, `{"jwks_uri":"https://keys.example.com/discovered.json"}`), nil
+		case "https://keys.example.com/discovered.json":
+			return jsonHTTPResponse(http.StatusOK, `{"keys":[]}`), nil
+		default:
+			return jsonHTTPResponse(http.StatusNotFound, `{}`), nil
+		}
+	}))
+
+	for range 2 {
+		_, err := FetchJWKS(context.Background(), "https://issuer.example.com", "")
+		require.NoError(t, err)
+	}
+
+	require.Equal(t, map[string]int{
+		"https://issuer.example.com/.well-known/openid-configuration": 1,
+		"https://keys.example.com/discovered.json":                    1,
+	}, requestCount)
+}
+
 func TestFetchJWKSSeparatesDirectURLCacheEntries(t *testing.T) {
 	requestCount := map[string]int{}
 	setJWKSHTTPClientForTest(t, roundTripFunc(func(request *http.Request) (*http.Response, error) {
@@ -95,6 +120,30 @@ func TestFetchJWKSSeparatesDirectURLCacheEntries(t *testing.T) {
 		"https://keys.example.com/first.json":  1,
 		"https://keys.example.com/second.json": 1,
 	}, requestCount)
+}
+
+func TestFetchJWKSKeepsIssuerAndDirectURLCacheKeysSeparate(t *testing.T) {
+	requestCount := map[string]int{}
+	setJWKSHTTPClientForTest(t, roundTripFunc(func(request *http.Request) (*http.Response, error) {
+		requestCount[request.URL.String()]++
+		switch request.URL.String() {
+		case "https://issuer.example.com/.well-known/openid-configuration":
+			return jsonHTTPResponse(http.StatusOK, `{"jwks_uri":"https://keys.example.com/discovered.json"}`), nil
+		default:
+			return jsonHTTPResponse(http.StatusOK, `{"keys":[]}`), nil
+		}
+	}))
+
+	_, err := FetchJWKS(context.Background(), "https://issuer.example.com", "")
+	require.NoError(t, err)
+	_, err = FetchJWKS(
+		context.Background(),
+		"https://other-issuer.example.com",
+		"https://issuer.example.com",
+	)
+	require.NoError(t, err)
+
+	require.Equal(t, 1, requestCount["https://issuer.example.com"])
 }
 
 func TestFetchJWKSRejectsInvalidDirectURL(t *testing.T) {

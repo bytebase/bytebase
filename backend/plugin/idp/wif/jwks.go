@@ -41,8 +41,17 @@ func FetchJWKS(ctx context.Context, issuerURL, jwksURL string) (*jose.JSONWebKey
 		return nil, err
 	}
 
+	discoveryMode := jwksURL == ""
+	cacheKey := "jwks:" + jwksURL
+	if discoveryMode {
+		cacheKey = "issuer:" + issuerURL
+	}
+	if cached := getCachedJWKS(cacheKey); cached != nil {
+		return cached.jwks, nil
+	}
+
 	effectiveJWKSURL := jwksURL
-	if effectiveJWKSURL == "" {
+	if discoveryMode {
 		configURL := fmt.Sprintf("%s/.well-known/openid-configuration", issuerURL)
 		config, err := fetchOIDCConfig(ctx, configURL)
 		if err != nil {
@@ -54,15 +63,12 @@ func FetchJWKS(ctx context.Context, issuerURL, jwksURL string) (*jose.JSONWebKey
 		return nil, err
 	}
 
-	// Check cache by the endpoint that actually serves the signing keys.
-	jwksCacheLock.RLock()
-	if cached, ok := jwksCache[effectiveJWKSURL]; ok {
-		if time.Since(cached.fetchedAt) < cacheDuration {
-			jwksCacheLock.RUnlock()
+	if discoveryMode {
+		if cached := getCachedJWKS("jwks:" + effectiveJWKSURL); cached != nil {
+			setCachedJWKS(cached, "issuer:"+issuerURL)
 			return cached.jwks, nil
 		}
 	}
-	jwksCacheLock.RUnlock()
 
 	// Fetch JWKS
 	jwks, err := fetchJWKSFromURL(ctx, effectiveJWKSURL)
@@ -70,15 +76,36 @@ func FetchJWKS(ctx context.Context, issuerURL, jwksURL string) (*jose.JSONWebKey
 		return nil, err
 	}
 
-	// Update cache
-	jwksCacheLock.Lock()
-	jwksCache[effectiveJWKSURL] = &cachedJWKS{
+	cached := &cachedJWKS{
 		jwks:      jwks,
 		fetchedAt: time.Now(),
 	}
-	jwksCacheLock.Unlock()
+	setCachedJWKS(cached, "jwks:"+effectiveJWKSURL)
+	if discoveryMode {
+		setCachedJWKS(cached, "issuer:"+issuerURL)
+	}
 
 	return jwks, nil
+}
+
+func getCachedJWKS(key string) *cachedJWKS {
+	jwksCacheLock.RLock()
+	defer jwksCacheLock.RUnlock()
+
+	cached, ok := jwksCache[key]
+	if !ok || time.Since(cached.fetchedAt) >= cacheDuration {
+		return nil
+	}
+	return cached
+}
+
+func setCachedJWKS(cached *cachedJWKS, keys ...string) {
+	jwksCacheLock.Lock()
+	defer jwksCacheLock.Unlock()
+
+	for _, key := range keys {
+		jwksCache[key] = cached
+	}
 }
 
 // validateIssuerURL validates that the issuer URL is a valid HTTPS URL.

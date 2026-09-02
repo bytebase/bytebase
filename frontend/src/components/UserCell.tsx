@@ -120,7 +120,14 @@ export function UserCell({
               {subtitle}
             </span>
             {subtitleAction && (
-              <div onClick={(event) => event.stopPropagation()}>
+              <div
+                onClick={(event) => event.stopPropagation()}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.stopPropagation();
+                  }
+                }}
+              >
                 {subtitleAction}
               </div>
             )}

@@ -367,12 +367,27 @@ func convertToStoreWorkloadIdentityConfig(config *v1pb.WorkloadIdentityConfig) *
 	if config == nil {
 		return nil
 	}
+
+	issuerURL := config.IssuerUrl
+	jwksURL := config.JwksUrl
+	allowedAudiences := config.AllowedAudiences
+	subjectPattern := config.SubjectPattern
+	if config.ProviderType == v1pb.WorkloadIdentityConfig_OIDC {
+		issuerURL = strings.TrimSpace(issuerURL)
+		jwksURL = strings.TrimSpace(jwksURL)
+		allowedAudiences = make([]string, len(config.AllowedAudiences))
+		for i, audience := range config.AllowedAudiences {
+			allowedAudiences[i] = strings.TrimSpace(audience)
+		}
+		subjectPattern = strings.TrimSpace(subjectPattern)
+	}
+
 	return &storepb.WorkloadIdentityConfig{
 		ProviderType:     storepb.WorkloadIdentityConfig_ProviderType(config.ProviderType),
-		IssuerUrl:        config.IssuerUrl,
-		AllowedAudiences: config.AllowedAudiences,
-		SubjectPattern:   config.SubjectPattern,
-		JwksUrl:          config.JwksUrl,
+		IssuerUrl:        issuerURL,
+		AllowedAudiences: allowedAudiences,
+		SubjectPattern:   subjectPattern,
+		JwksUrl:          jwksURL,
 	}
 }
 

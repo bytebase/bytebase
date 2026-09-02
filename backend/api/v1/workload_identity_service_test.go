@@ -112,3 +112,21 @@ func TestValidateWorkloadIdentityConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestConvertToStoreWorkloadIdentityConfigNormalizesOIDCValues(t *testing.T) {
+	config := &v1pb.WorkloadIdentityConfig{
+		ProviderType:     v1pb.WorkloadIdentityConfig_OIDC,
+		IssuerUrl:        "  https://nomad.example.com  ",
+		JwksUrl:          "  https://keys.example.com/jwks.json  ",
+		AllowedAudiences: []string{"  bytebase  ", "  terraform  "},
+		SubjectPattern:   "  nomad_job:atlantis:*  ",
+	}
+	require.NoError(t, validateWorkloadIdentityConfig(config))
+
+	converted := convertToStoreWorkloadIdentityConfig(config)
+
+	require.Equal(t, "https://nomad.example.com", converted.IssuerUrl)
+	require.Equal(t, "https://keys.example.com/jwks.json", converted.JwksUrl)
+	require.Equal(t, []string{"bytebase", "terraform"}, converted.AllowedAudiences)
+	require.Equal(t, "nomad_job:atlantis:*", converted.SubjectPattern)
+}

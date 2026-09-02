@@ -268,7 +268,7 @@ describe("CreateWorkloadIdentitySheet", () => {
         providerType: WorkloadIdentityConfig_ProviderType.OIDC,
         issuerUrl: "https://nomad.example.com",
         jwksUrl: "https://nomad-verifier.example.com/jwks.json",
-        allowedAudiences: ["bytebase"],
+        allowedAudiences: ["bytebase", "terraform"],
         subjectPattern: "nomad_job:atlantis:namespace:production",
       }),
     });
@@ -313,9 +313,16 @@ describe("CreateWorkloadIdentitySheet", () => {
     expect(fieldInput("settings.members.workload-identity-jwks-url")?.value).toBe(
       "https://nomad-verifier.example.com/jwks.json"
     );
+    const audienceField = fields.find((field) =>
+      field.textContent?.includes(
+        "settings.members.workload-identity-audience"
+      )
+    );
     expect(
-      fieldInput("settings.members.workload-identity-audience")?.value
-    ).toBe("bytebase");
+      Array.from(audienceField?.querySelectorAll("input") ?? []).map(
+        (input) => input.value
+      )
+    ).toEqual(["bytebase", "terraform"]);
     expect(fieldInput("settings.members.workload-identity-subject")?.value).toBe(
       "nomad_job:atlantis:namespace:production"
     );
@@ -341,15 +348,118 @@ describe("CreateWorkloadIdentitySheet", () => {
     });
 
     expect(mocks.store.updateWorkloadIdentity).toHaveBeenCalledOnce();
-    const [updatedWorkloadIdentity] =
+    const [updatedWorkloadIdentity, updateMask] =
       mocks.store.updateWorkloadIdentity.mock.calls[0];
     expect(updatedWorkloadIdentity.workloadIdentityConfig).toMatchObject({
       providerType: WorkloadIdentityConfig_ProviderType.OIDC,
       issuerUrl: "https://nomad.example.com",
       jwksUrl: "https://nomad-verifier.example.com/jwks.json",
-      allowedAudiences: ["bytebase"],
+      allowedAudiences: ["bytebase", "terraform"],
       subjectPattern: "nomad_job:atlantis:namespace:production",
     });
+    expect(updateMask.paths).toEqual(["title"]);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("adds and removes generic OIDC audiences", async () => {
+    const workloadIdentity = create(WorkloadIdentitySchema, {
+      name: "workloadIdentities/atlantis@workload.bytebase.com",
+      email: "atlantis@workload.bytebase.com",
+      title: "Atlantis",
+      workloadIdentityConfig: create(WorkloadIdentityConfigSchema, {
+        providerType: WorkloadIdentityConfig_ProviderType.OIDC,
+        issuerUrl: "https://nomad.example.com",
+        allowedAudiences: ["bytebase", "terraform"],
+        subjectPattern: "nomad_job:atlantis:namespace:production",
+      }),
+    });
+    mocks.store.updateWorkloadIdentity.mockResolvedValue(workloadIdentity);
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <CreateWorkloadIdentitySheet
+          open
+          workloadIdentity={workloadIdentity}
+          onClose={() => undefined}
+          onCreated={() => undefined}
+        />
+      );
+    });
+
+    const audienceField = Array.from(
+      container.querySelectorAll('[data-slot="form-field"]')
+    ).find((field) =>
+      field.textContent?.includes(
+        "settings.members.workload-identity-audience"
+      )
+    );
+    const addButton = audienceField?.querySelector<HTMLButtonElement>(
+      'button[aria-label="common.add"]'
+    );
+    expect(addButton).toBeTruthy();
+
+    await act(async () => {
+      addButton?.click();
+    });
+
+    let audienceInputs = Array.from(
+      audienceField?.querySelectorAll("input") ?? []
+    );
+    expect(audienceInputs.map((input) => input.value)).toEqual([
+      "bytebase",
+      "terraform",
+      "",
+    ]);
+
+    const updateButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "common.update"
+    );
+    expect(updateButton?.disabled).toBe(true);
+
+    await act(async () => {
+      const newAudienceInput = audienceInputs[2];
+      Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value"
+      )?.set?.call(newAudienceInput, "deployment");
+      newAudienceInput.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    const removeButtons = audienceField?.querySelectorAll<HTMLButtonElement>(
+      'button[aria-label="common.remove"]'
+    );
+    expect(removeButtons).toHaveLength(3);
+    await act(async () => {
+      removeButtons?.[1]?.click();
+    });
+
+    audienceInputs = Array.from(
+      audienceField?.querySelectorAll("input") ?? []
+    );
+    expect(audienceInputs.map((input) => input.value)).toEqual([
+      "bytebase",
+      "deployment",
+    ]);
+    expect(updateButton?.disabled).toBe(false);
+
+    await act(async () => {
+      updateButton?.click();
+    });
+
+    expect(mocks.store.updateWorkloadIdentity).toHaveBeenCalledOnce();
+    const [updatedWorkloadIdentity, updateMask] =
+      mocks.store.updateWorkloadIdentity.mock.calls[0];
+    expect(
+      updatedWorkloadIdentity.workloadIdentityConfig?.allowedAudiences
+    ).toEqual(["bytebase", "deployment"]);
+    expect(updateMask.paths).toEqual(["workload_identity_config"]);
 
     act(() => {
       root.unmount();

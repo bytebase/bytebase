@@ -1,6 +1,6 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { ChevronDown, ChevronUp, PlusIcon, XIcon } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RoleSelect } from "@/components/RoleSelect";
@@ -22,6 +22,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -176,8 +177,11 @@ function WorkloadIdentityForm({
     workloadIdentity?.workloadIdentityConfig?.issuerUrl ??
     PLATFORM_PRESETS[initialProviderType]?.issuerUrl ??
     "";
-  const initialAudience =
-    workloadIdentity?.workloadIdentityConfig?.allowedAudiences[0] ?? "";
+  const initialAudiences = useMemo(() => {
+    const audiences =
+      workloadIdentity?.workloadIdentityConfig?.allowedAudiences;
+    return audiences?.length ? [...audiences] : [""];
+  }, []);
   const initialJwksUrl =
     workloadIdentity?.workloadIdentityConfig?.jwksUrl ?? "";
   const initialSubjectPattern =
@@ -214,7 +218,7 @@ function WorkloadIdentityForm({
   const [refType, setRefType] = useState<RefType>(initialRefType);
   const [issuerUrl, setIssuerUrl] = useState(initialIssuerUrl);
   const [jwksUrl, setJwksUrl] = useState(initialJwksUrl);
-  const [audience, setAudience] = useState(initialAudience);
+  const [audiences, setAudiences] = useState(initialAudiences);
   const [subjectPattern, setSubjectPattern] = useState(initialSubjectPattern);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [roles, setRoles] = useState<string[]>([]);
@@ -264,12 +268,12 @@ function WorkloadIdentityForm({
     const preset = PLATFORM_PRESETS[value];
     if (preset) {
       setIssuerUrl(preset.issuerUrl);
-      setAudience(preset.audience);
+      setAudiences([preset.audience]);
       setJwksUrl("");
     } else {
       setIssuerUrl("");
       setJwksUrl("");
-      setAudience("");
+      setAudiences([""]);
       setSubjectPattern("");
     }
     setRefType("all");
@@ -279,7 +283,12 @@ function WorkloadIdentityForm({
   const isFormValid = useMemo(() => {
     if (!emailPrefix && !workloadIdentity?.email) return false;
     if (isGenericOIDC) {
-      return !!issuerUrl.trim() && !!audience.trim() && !!subjectPattern.trim();
+      return (
+        !!issuerUrl.trim() &&
+        audiences.length > 0 &&
+        audiences.every((audience) => !!audience.trim()) &&
+        !!subjectPattern.trim()
+      );
     }
     if (!owner) return false;
     if (!issuerUrl) return false;
@@ -289,10 +298,18 @@ function WorkloadIdentityForm({
     workloadIdentity?.email,
     isGenericOIDC,
     issuerUrl,
-    audience,
+    audiences,
     subjectPattern,
     owner,
   ]);
+
+  const isWorkloadIdentityConfigDirty =
+    providerType !== initialProviderType ||
+    issuerUrl !== initialIssuerUrl ||
+    jwksUrl !== initialJwksUrl ||
+    audiences.length !== initialAudiences.length ||
+    audiences.some((audience, index) => audience !== initialAudiences[index]) ||
+    subjectPattern !== initialSubjectPattern;
 
   // Dirty tracking — compare current state to the initial values captured
   // at mount. In edit mode the Update button is disabled unless something
@@ -300,38 +317,24 @@ function WorkloadIdentityForm({
   const isDirty = useMemo(() => {
     if (!isEditMode) return true;
     if (title !== initialTitle) return true;
-    if (providerType !== initialProviderType) return true;
     if (owner !== initialOwner) return true;
     if (repo !== initialRepo) return true;
     if (branch !== initialBranch) return true;
     if (refType !== initialRefType) return true;
-    if (issuerUrl !== initialIssuerUrl) return true;
-    if (jwksUrl !== initialJwksUrl) return true;
-    if (audience !== initialAudience) return true;
-    if (subjectPattern !== initialSubjectPattern) return true;
-    return false;
+    return isWorkloadIdentityConfigDirty;
   }, [
     isEditMode,
     title,
-    providerType,
     owner,
     repo,
     branch,
     refType,
-    issuerUrl,
-    jwksUrl,
-    audience,
-    subjectPattern,
     initialTitle,
-    initialProviderType,
     initialOwner,
     initialRepo,
     initialBranch,
     initialRefType,
-    initialIssuerUrl,
-    initialJwksUrl,
-    initialAudience,
-    initialSubjectPattern,
+    isWorkloadIdentityConfigDirty,
   ]);
 
   const allowConfirm = isFormValid && isDirty;
@@ -398,7 +401,7 @@ function WorkloadIdentityForm({
           providerType,
           issuerUrl,
           jwksUrl,
-          allowedAudiences: audience ? [audience] : [],
+          allowedAudiences: audiences.map((audience) => audience.trim()),
           subjectPattern,
         }),
       },
@@ -443,12 +446,17 @@ function WorkloadIdentityForm({
           providerType,
           issuerUrl,
           jwksUrl,
-          allowedAudiences: audience ? [audience] : [],
+          allowedAudiences: audiences.map((audience) => audience.trim()),
           subjectPattern,
         }),
       }),
       create(FieldMaskSchema, {
-        paths: [...updateMask, "workload_identity_config"],
+        paths: [
+          ...updateMask,
+          ...(isWorkloadIdentityConfigDirty
+            ? ["workload_identity_config"]
+            : []),
+        ],
       })
     );
 
@@ -467,6 +475,59 @@ function WorkloadIdentityForm({
     (providerType === WorkloadIdentityConfig_ProviderType.GITHUB ||
       refType !== "all");
   const isTagRefType = isGitLab && refType === "tag";
+
+  const audienceInputs = (
+    <div className="flex flex-col gap-y-2">
+      {audiences.map((audience, index) => (
+        <div key={index} className="flex items-center gap-x-2">
+          <Input
+            value={audience}
+            aria-label={`${t("settings.members.workload-identity-audience")} ${index + 1}`}
+            onChange={(event) => {
+              const value = event.target.value;
+              setAudiences((current) =>
+                current.map((item, itemIndex) =>
+                  itemIndex === index ? value : item
+                )
+              );
+            }}
+            maxLength={500}
+            autoComplete="off"
+          />
+          {audiences.length > 1 && (
+            <Tooltip content={t("common.remove")}>
+              <Button
+                type="button"
+                appearance="outline"
+                size="md"
+                className="size-9 p-0"
+                aria-label={t("common.remove")}
+                onClick={() =>
+                  setAudiences((current) =>
+                    current.filter((_, itemIndex) => itemIndex !== index)
+                  )
+                }
+              >
+                <XIcon className="size-4" />
+              </Button>
+            </Tooltip>
+          )}
+        </div>
+      ))}
+      <Tooltip content={t("common.add")}>
+        <Button
+          type="button"
+          appearance="outline"
+          size="md"
+          className="size-9 p-0"
+          aria-label={t("common.add")}
+          onClick={() => setAudiences((current) => [...current, ""])}
+        >
+          <PlusIcon className="size-4" />
+        </Button>
+      </Tooltip>
+    </div>
+  );
 
   return (
     <>
@@ -707,12 +768,7 @@ function WorkloadIdentityForm({
                   </>
                 }
               >
-                <Input
-                  value={audience}
-                  onChange={(e) => setAudience(e.target.value)}
-                  maxLength={500}
-                  autoComplete="off"
-                />
+                {audienceInputs}
               </FormField>
 
               <FormField
@@ -761,12 +817,7 @@ function WorkloadIdentityForm({
               <FormField
                 title={<>{t("settings.members.workload-identity-audience")}</>}
               >
-                <Input
-                  value={audience}
-                  onChange={(e) => setAudience(e.target.value)}
-                  maxLength={500}
-                  autoComplete="off"
-                />
+                {audienceInputs}
               </FormField>
 
               {/* Subject Pattern */}
