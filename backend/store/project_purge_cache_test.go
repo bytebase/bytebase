@@ -208,7 +208,7 @@ func TestDeleteProjectFailedTransactionKeepsDescendantCaches(t *testing.T) {
 
 	projectInstanceID := "project-instance"
 	projectDBName := "project-db"
-	// project-a is not marked deleted, so DeleteProject removes all descendant
+	// project-a is not marked deleted, so DeleteProjects removes all descendant
 	// rows inside the transaction and then fails on the deleted guard, rolling
 	// the whole purge back.
 	_, err := db.ExecContext(ctx, `UPDATE project SET deleted = FALSE WHERE resource_id = 'project-a'`)

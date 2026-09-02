@@ -8,7 +8,7 @@ import (
 
 // saved_query_star is keyed (saved_query, principal) and its parent key is
 // globally unique, so it carries no project-scoped id-reuse risk. What it does
-// carry is the purge: DeleteProject is the one writer whose star predicate
+// carry is the purge: DeleteProjects is the one writer whose star predicate
 // reaches outside the project being purged, because a project principal may
 // have starred another project's saved query. This locks down that reach —
 // rows belonging to a surviving project must not be collateral.

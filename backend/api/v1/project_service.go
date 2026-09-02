@@ -505,7 +505,7 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 		// Permanently delete all projects in one transaction (moves databases to
 		// default project), so a failure partway leaves every project intact
 		// instead of irreversibly purging the ones already reached.
-		if err := s.store.DeleteProjects(ctx, projectsToPurge[0].Workspace, resourceIDs...); err != nil {
+		if err := s.store.DeleteProjects(ctx, common.GetWorkspaceIDFromContext(ctx), resourceIDs...); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to purge projects"))
 		}
 		return connect.NewResponse(&emptypb.Empty{}), nil
