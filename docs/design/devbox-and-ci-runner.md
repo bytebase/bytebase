@@ -306,6 +306,10 @@ Eviction fires at 85% and cleans down to 70%. Cleaning to exactly the trigger wo
 re-trigger immediately. Tiers escalate by rebuild cost, and the destructive ones wait
 for an idle box.
 
+The idle check is a sample, not a lock, so a job starting mid-sweep can still lose a
+cache it was using. Accepted: it only happens above 85%, and a failed job is retryable
+where a full disk is not.
+
 It runs on a schedule, not at boot. A boot-time check cannot fire on a box that stays
 up for days, and Local SSD survives a guest *reboot*. It is discarded only on stop or
 preemption.
@@ -325,8 +329,8 @@ RUNNER_VERSION=$(curl -sf --retry 3 https://api.github.com/repos/actions/runner/
 # ---------- packages: the Ubuntu image ships neither ----------
 export DEBIAN_FRONTEND=noninteractive
 echo 'DPkg::Lock::Timeout "300";' > /etc/apt/apt.conf.d/99-lock-timeout   # unattended-upgrades holds the lock at boot
-dpkg -s docker.io cron &>/dev/null || { apt-get update -qq && apt-get install -y -qq docker.io cron; } \
-  || { logger -t devbox-startup "FATAL: docker/cron install failed"; exit 1; }   # never advertise a runner that cannot run Docker
+dpkg -s docker.io cron systemd-oomd &>/dev/null || { apt-get update -qq && apt-get install -y -qq docker.io cron systemd-oomd; } \
+  || { logger -t devbox-startup "FATAL: prerequisite install failed"; exit 1; }   # never advertise a runner that cannot run Docker
 
 # ---------- (a) disk layout ----------
 mkdir -p /scratch
@@ -351,7 +355,7 @@ if [[ ! -f /scratch/swapfile ]]; then
 fi
 swapon /scratch/swapfile 2>/dev/null || true          # no-op if already active
 sysctl -qw vm.swappiness=10
-systemctl enable --now systemd-oomd 2>/dev/null || true
+systemctl enable --now systemd-oomd || logger -t devbox-startup "WARN: systemd-oomd inert"
 # On the slice, not the runner unit: Docker gives each container its own scope under
 # system.slice, so a unit-scoped policy would never see the containers under test.
 mkdir -p /etc/systemd/system/system.slice.d
@@ -545,8 +549,10 @@ org-wide reach by definition. It is bounded by a token expiry, and by alerting o
 runner not named `devbox-*`.
 
 **Rootless Docker** — the socket is world-accessible, which is how an OS Login account
-the script cannot name gets Docker. That is root-equivalent, and accepted: the box
-holds only pushable work and an expiring PAT.
+the script cannot name gets Docker. That is root-equivalent, and accepted. Be clear
+what that accepts: CI runs pull-request code with the same reach, so a job can read or
+change any `/home` on the box -- uncommitted work, agent CLI state, `~/.ssh`. Treat
+this as a shared machine and keep nothing on it you would not put on one.
 
 **Pinning Ice Lake** — deferred. `cpuPlatform` after each restart shows what Toronto
 hands out. A pin, or a different region, is a stop-and-start away.
