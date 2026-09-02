@@ -91,7 +91,8 @@ PROJECT=bytebase-dev
 ZONE=northamerica-northeast2-a
 SA=devbox@${PROJECT}.iam.gserviceaccount.com
 
-gcloud services enable secretmanager.googleapis.com --project=$PROJECT
+gcloud services enable secretmanager.googleapis.com oslogin.googleapis.com \
+  --project=$PROJECT
 
 # Service account; its roles are granted below, nothing more.
 gcloud iam service-accounts create devbox --project=$PROJECT \
@@ -171,7 +172,8 @@ Log in once interactively before pointing an agent at a new account. The cache l
 in (b) are made by the profile, and a non-login `bash -c` does not read one -- so an
 account whose very first session is an agent command would write that session's caches
 to the boot disk. After that first login the links exist and every later session
-follows them, non-login included.
+follows them, non-login included. `PATH` needs no such step: it comes from
+`/etc/environment`, which every session reads.
 
 ## 2. Startup script
 
@@ -215,7 +217,8 @@ The `monitoring.metricWriter` role puts both in Cloud Monitoring, as
 is too little.
 
 Toolchains are not installed here. An agent session installs its own with `sudo`, to
-`/usr/local/go` and `/usr/local/node`, which the profile puts on every `PATH`. CI jobs
+`/usr/local/go` and `/usr/local/node`, which `/etc/environment` puts on the `PATH` of
+every session, non-login included. CI jobs
 bring their own through `setup-go` and `setup-node`.
 
 ### b. Cache paths
@@ -357,8 +360,12 @@ done
 # Interactive accounts appear on first OS Login connect, so the profile provisions them:
 # each tool's default cache path is symlinked onto scratch. Symlinks, not variables, so
 # an agent's `bash -c` -- which never sources a profile -- lands there too.
+# PATH for every SSH session. pam_env reads this file, so an agent's non-login
+# `bash -c` -- which reads no profile -- still finds the shared toolchain. Unlike the
+# cache symlinks below, a PATH set in a profile would not outlive the login shell.
+echo 'PATH="/usr/local/go/bin:/usr/local/node/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"' > /etc/environment
+
 cat > /etc/profile.d/devbox.sh <<'EOF'
-export PATH=/usr/local/go/bin:/usr/local/node/bin:$PATH   # the shared toolchain location; install once with sudo
 u=$(id -un); c=/scratch/$u/cache
 if [ -d /scratch ] && [ -n "$u" ] && [ -n "${HOME:-}" ] && mkdir -p "$c" 2>/dev/null; then
   for pair in "$HOME/.cache:$c" "$HOME/go/pkg/mod:$c/go-mod" "$HOME/.npm:$c/npm" "$HOME/.local/share/pnpm:$c/pnpm"; do
