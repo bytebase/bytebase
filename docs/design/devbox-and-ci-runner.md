@@ -330,7 +330,7 @@ RUNNER_VERSION=$(curl -sf --retry 3 https://api.github.com/repos/actions/runner/
 export DEBIAN_FRONTEND=noninteractive
 echo 'DPkg::Lock::Timeout "300";' > /etc/apt/apt.conf.d/99-lock-timeout   # unattended-upgrades holds the lock at boot
 dpkg -s docker.io cron systemd-oomd &>/dev/null || { apt-get update -qq && apt-get install -y -qq docker.io cron systemd-oomd; } \
-  || { logger -t devbox-startup "FATAL: prerequisite install failed"; exit 1; }   # never advertise a runner that cannot run Docker
+  || { logger -t devbox-startup "FATAL: prerequisite install failed"; systemctl stop docker.socket docker; exit 1; }
 
 # ---------- (a) disk layout ----------
 mkdir -p /scratch
