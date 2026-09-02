@@ -513,6 +513,7 @@ docker system prune -af --volumes >/dev/null 2>&1
 docker volume prune -af >/dev/null 2>&1   # system prune takes anonymous volumes only
 # On scratch only the fixed entries and each account's runner/ install survive. The
 # rest -- whatever was written, wherever -- is by definition disposable.
+shopt -s dotglob   # a /scratch/.something must not hide from the glob
 for e in /scratch/*; do
   u=${e##*/}
   case $u in tmp|docker|containerd|swapfile|lost+found) continue;; esac
