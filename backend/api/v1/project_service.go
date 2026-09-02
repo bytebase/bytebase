@@ -488,16 +488,25 @@ func (s *ProjectService) BatchDeleteProjects(ctx context.Context, request *conne
 			}
 		}
 
-		// Permanently delete all projects (moves databases to default project)
+		// Sample cleanup runs first and outside the purge transaction because it
+		// releases resources outside the metadata database that no rollback can
+		// restore. It leaves the project rows untouched, so a failure here still
+		// purges nothing.
+		resourceIDs := make([]string, 0, len(projectsToPurge))
 		for _, project := range projectsToPurge {
 			if s.sampleManager != nil {
 				if err := s.sampleManager.HandleProjectPurge(ctx, project.Workspace, project.ResourceID); err != nil {
 					return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to clean up sample project %q", project.Title))
 				}
 			}
-			if err := s.store.DeleteProject(ctx, project.Workspace, project.ResourceID); err != nil {
-				return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to purge project %q", project.Title))
-			}
+			resourceIDs = append(resourceIDs, project.ResourceID)
+		}
+
+		// Permanently delete all projects in one transaction (moves databases to
+		// default project), so a failure partway leaves every project intact
+		// instead of irreversibly purging the ones already reached.
+		if err := s.store.DeleteProjects(ctx, projectsToPurge[0].Workspace, resourceIDs...); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to purge projects"))
 		}
 		return connect.NewResponse(&emptypb.Empty{}), nil
 	}
