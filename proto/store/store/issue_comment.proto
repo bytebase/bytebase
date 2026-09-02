@@ -3,6 +3,7 @@ syntax = "proto3";
 package bytebase.store;
 
 import "store/approval.proto";
+import "store/common.proto";
 import "store/issue.proto";
 import "store/plan.proto";
 
@@ -18,6 +19,10 @@ message IssueCommentPayload {
     PlanUpdate plan_update = 7;
     ReviewSubmission review_submission = 8;
   }
+
+  // The statement context an inline comment references. Set at creation and
+  // immutable afterward; never set together with an event.
+  StatementAnchor statement_anchor = 9;
 
   message Approval {
     IssuePayloadApproval.Approver.Status status = 1;
@@ -44,5 +49,24 @@ message IssueCommentPayload {
   message PlanUpdate {
     repeated PlanConfig.Spec from_specs = 1;
     repeated PlanConfig.Spec to_specs = 2;
+  }
+
+  // StatementAnchor records the anchored statement revision and range.
+  // The SQL excerpt and current/changed/unavailable state are computed on
+  // read against the anchored sheet and the current plan, not stored.
+  message StatementAnchor {
+    // UUID of the anchored plan spec (PlanConfig.Spec.id); may no longer
+    // resolve after the spec is deleted from the plan.
+    string spec_id = 1;
+    // SHA256 hex of the anchored sheet revision.
+    string sheet_sha256 = 2;
+    // The anchored range. When both columns are 0, the anchor spans whole
+    // lines from start_position.line to end_position.line inclusive —
+    // overriding Position's "column 0 means unknown" convention. When both
+    // columns are set, start_position is inclusive and end_position is
+    // exclusive, in one-based lines and code-point columns (see Position).
+    // Setting exactly one column to 0 is invalid.
+    Position start_position = 3;
+    Position end_position = 4;
   }
 }

@@ -30,9 +30,12 @@ type IssueCommentPayload struct {
 	//	*IssueCommentPayload_IssueUpdate_
 	//	*IssueCommentPayload_PlanUpdate_
 	//	*IssueCommentPayload_ReviewSubmission_
-	Event         isIssueCommentPayload_Event `protobuf_oneof:"event"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Event isIssueCommentPayload_Event `protobuf_oneof:"event"`
+	// The statement context an inline comment references. Set at creation and
+	// immutable afterward; never set together with an event.
+	StatementAnchor *IssueCommentPayload_StatementAnchor `protobuf:"bytes,9,opt,name=statement_anchor,json=statementAnchor,proto3" json:"statement_anchor,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *IssueCommentPayload) Reset() {
@@ -111,6 +114,13 @@ func (x *IssueCommentPayload) GetReviewSubmission() *IssueCommentPayload_ReviewS
 		if x, ok := x.Event.(*IssueCommentPayload_ReviewSubmission_); ok {
 			return x.ReviewSubmission
 		}
+	}
+	return nil
+}
+
+func (x *IssueCommentPayload) GetStatementAnchor() *IssueCommentPayload_StatementAnchor {
+	if x != nil {
+		return x.StatementAnchor
 	}
 	return nil
 }
@@ -380,18 +390,99 @@ func (x *IssueCommentPayload_PlanUpdate) GetToSpecs() []*PlanConfig_Spec {
 	return nil
 }
 
+// StatementAnchor records the anchored statement revision and range.
+// The SQL excerpt and current/changed/unavailable state are computed on
+// read against the anchored sheet and the current plan, not stored.
+type IssueCommentPayload_StatementAnchor struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// UUID of the anchored plan spec (PlanConfig.Spec.id); may no longer
+	// resolve after the spec is deleted from the plan.
+	SpecId string `protobuf:"bytes,1,opt,name=spec_id,json=specId,proto3" json:"spec_id,omitempty"`
+	// SHA256 hex of the anchored sheet revision.
+	SheetSha256 string `protobuf:"bytes,2,opt,name=sheet_sha256,json=sheetSha256,proto3" json:"sheet_sha256,omitempty"`
+	// The anchored range. When both columns are 0, the anchor spans whole
+	// lines from start_position.line to end_position.line inclusive —
+	// overriding Position's "column 0 means unknown" convention. When both
+	// columns are set, start_position is inclusive and end_position is
+	// exclusive, in one-based lines and code-point columns (see Position).
+	// Setting exactly one column to 0 is invalid.
+	StartPosition *Position `protobuf:"bytes,3,opt,name=start_position,json=startPosition,proto3" json:"start_position,omitempty"`
+	EndPosition   *Position `protobuf:"bytes,4,opt,name=end_position,json=endPosition,proto3" json:"end_position,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *IssueCommentPayload_StatementAnchor) Reset() {
+	*x = IssueCommentPayload_StatementAnchor{}
+	mi := &file_store_issue_comment_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *IssueCommentPayload_StatementAnchor) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*IssueCommentPayload_StatementAnchor) ProtoMessage() {}
+
+func (x *IssueCommentPayload_StatementAnchor) ProtoReflect() protoreflect.Message {
+	mi := &file_store_issue_comment_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use IssueCommentPayload_StatementAnchor.ProtoReflect.Descriptor instead.
+func (*IssueCommentPayload_StatementAnchor) Descriptor() ([]byte, []int) {
+	return file_store_issue_comment_proto_rawDescGZIP(), []int{0, 4}
+}
+
+func (x *IssueCommentPayload_StatementAnchor) GetSpecId() string {
+	if x != nil {
+		return x.SpecId
+	}
+	return ""
+}
+
+func (x *IssueCommentPayload_StatementAnchor) GetSheetSha256() string {
+	if x != nil {
+		return x.SheetSha256
+	}
+	return ""
+}
+
+func (x *IssueCommentPayload_StatementAnchor) GetStartPosition() *Position {
+	if x != nil {
+		return x.StartPosition
+	}
+	return nil
+}
+
+func (x *IssueCommentPayload_StatementAnchor) GetEndPosition() *Position {
+	if x != nil {
+		return x.EndPosition
+	}
+	return nil
+}
+
 var File_store_issue_comment_proto protoreflect.FileDescriptor
 
 const file_store_issue_comment_proto_rawDesc = "" +
 	"\n" +
-	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x14store/approval.proto\x1a\x11store/issue.proto\x1a\x10store/plan.proto\"\xe5\b\n" +
+	"\x19store/issue_comment.proto\x12\x0ebytebase.store\x1a\x14store/approval.proto\x1a\x12store/common.proto\x1a\x11store/issue.proto\x1a\x10store/plan.proto\"\x93\v\n" +
 	"\x13IssueCommentPayload\x12\x18\n" +
 	"\acomment\x18\x01 \x01(\tR\acomment\x12J\n" +
 	"\bapproval\x18\x02 \x01(\v2,.bytebase.store.IssueCommentPayload.ApprovalH\x00R\bapproval\x12T\n" +
 	"\fissue_update\x18\x03 \x01(\v2/.bytebase.store.IssueCommentPayload.IssueUpdateH\x00R\vissueUpdate\x12Q\n" +
 	"\vplan_update\x18\a \x01(\v2..bytebase.store.IssueCommentPayload.PlanUpdateH\x00R\n" +
 	"planUpdate\x12c\n" +
-	"\x11review_submission\x18\b \x01(\v24.bytebase.store.IssueCommentPayload.ReviewSubmissionH\x00R\x10reviewSubmission\x1aX\n" +
+	"\x11review_submission\x18\b \x01(\v24.bytebase.store.IssueCommentPayload.ReviewSubmissionH\x00R\x10reviewSubmission\x12^\n" +
+	"\x10statement_anchor\x18\t \x01(\v23.bytebase.store.IssueCommentPayload.StatementAnchorR\x0fstatementAnchor\x1aX\n" +
 	"\bApproval\x12L\n" +
 	"\x06status\x18\x01 \x01(\x0e24.bytebase.store.IssuePayloadApproval.Approver.StatusR\x06status\x1a\xd1\x03\n" +
 	"\vIssueUpdate\x12\"\n" +
@@ -418,7 +509,12 @@ const file_store_issue_comment_proto_rawDesc = "" +
 	"PlanUpdate\x12>\n" +
 	"\n" +
 	"from_specs\x18\x01 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\tfromSpecs\x12:\n" +
-	"\bto_specs\x18\x02 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\atoSpecsB\a\n" +
+	"\bto_specs\x18\x02 \x03(\v2\x1f.bytebase.store.PlanConfig.SpecR\atoSpecs\x1a\xcb\x01\n" +
+	"\x0fStatementAnchor\x12\x17\n" +
+	"\aspec_id\x18\x01 \x01(\tR\x06specId\x12!\n" +
+	"\fsheet_sha256\x18\x02 \x01(\tR\vsheetSha256\x12?\n" +
+	"\x0estart_position\x18\x03 \x01(\v2\x18.bytebase.store.PositionR\rstartPosition\x12;\n" +
+	"\fend_position\x18\x04 \x01(\v2\x18.bytebase.store.PositionR\vendPositionB\a\n" +
 	"\x05eventJ\x04\b\x04\x10\aB\x94\x01\n" +
 	"\x12com.bytebase.storeB\x11IssueCommentProtoP\x01Z\x12generated-go/store\xa2\x02\x03BSX\xaa\x02\x0eBytebase.Store\xca\x02\x0eBytebase\\Store\xe2\x02\x1aBytebase\\Store\\GPBMetadata\xea\x02\x0fBytebase::Storeb\x06proto3"
 
@@ -434,32 +530,37 @@ func file_store_issue_comment_proto_rawDescGZIP() []byte {
 	return file_store_issue_comment_proto_rawDescData
 }
 
-var file_store_issue_comment_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_store_issue_comment_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_store_issue_comment_proto_goTypes = []any{
 	(*IssueCommentPayload)(nil),                  // 0: bytebase.store.IssueCommentPayload
 	(*IssueCommentPayload_Approval)(nil),         // 1: bytebase.store.IssueCommentPayload.Approval
 	(*IssueCommentPayload_IssueUpdate)(nil),      // 2: bytebase.store.IssueCommentPayload.IssueUpdate
 	(*IssueCommentPayload_ReviewSubmission)(nil), // 3: bytebase.store.IssueCommentPayload.ReviewSubmission
 	(*IssueCommentPayload_PlanUpdate)(nil),       // 4: bytebase.store.IssueCommentPayload.PlanUpdate
-	(IssuePayloadApproval_Approver_Status)(0),    // 5: bytebase.store.IssuePayloadApproval.Approver.Status
-	(Issue_Status)(0),                            // 6: bytebase.store.Issue.Status
-	(*PlanConfig_Spec)(nil),                      // 7: bytebase.store.PlanConfig.Spec
+	(*IssueCommentPayload_StatementAnchor)(nil),  // 5: bytebase.store.IssueCommentPayload.StatementAnchor
+	(IssuePayloadApproval_Approver_Status)(0),    // 6: bytebase.store.IssuePayloadApproval.Approver.Status
+	(Issue_Status)(0),                            // 7: bytebase.store.Issue.Status
+	(*PlanConfig_Spec)(nil),                      // 8: bytebase.store.PlanConfig.Spec
+	(*Position)(nil),                             // 9: bytebase.store.Position
 }
 var file_store_issue_comment_proto_depIdxs = []int32{
-	1, // 0: bytebase.store.IssueCommentPayload.approval:type_name -> bytebase.store.IssueCommentPayload.Approval
-	2, // 1: bytebase.store.IssueCommentPayload.issue_update:type_name -> bytebase.store.IssueCommentPayload.IssueUpdate
-	4, // 2: bytebase.store.IssueCommentPayload.plan_update:type_name -> bytebase.store.IssueCommentPayload.PlanUpdate
-	3, // 3: bytebase.store.IssueCommentPayload.review_submission:type_name -> bytebase.store.IssueCommentPayload.ReviewSubmission
-	5, // 4: bytebase.store.IssueCommentPayload.Approval.status:type_name -> bytebase.store.IssuePayloadApproval.Approver.Status
-	6, // 5: bytebase.store.IssueCommentPayload.IssueUpdate.from_status:type_name -> bytebase.store.Issue.Status
-	6, // 6: bytebase.store.IssueCommentPayload.IssueUpdate.to_status:type_name -> bytebase.store.Issue.Status
-	7, // 7: bytebase.store.IssueCommentPayload.PlanUpdate.from_specs:type_name -> bytebase.store.PlanConfig.Spec
-	7, // 8: bytebase.store.IssueCommentPayload.PlanUpdate.to_specs:type_name -> bytebase.store.PlanConfig.Spec
-	9, // [9:9] is the sub-list for method output_type
-	9, // [9:9] is the sub-list for method input_type
-	9, // [9:9] is the sub-list for extension type_name
-	9, // [9:9] is the sub-list for extension extendee
-	0, // [0:9] is the sub-list for field type_name
+	1,  // 0: bytebase.store.IssueCommentPayload.approval:type_name -> bytebase.store.IssueCommentPayload.Approval
+	2,  // 1: bytebase.store.IssueCommentPayload.issue_update:type_name -> bytebase.store.IssueCommentPayload.IssueUpdate
+	4,  // 2: bytebase.store.IssueCommentPayload.plan_update:type_name -> bytebase.store.IssueCommentPayload.PlanUpdate
+	3,  // 3: bytebase.store.IssueCommentPayload.review_submission:type_name -> bytebase.store.IssueCommentPayload.ReviewSubmission
+	5,  // 4: bytebase.store.IssueCommentPayload.statement_anchor:type_name -> bytebase.store.IssueCommentPayload.StatementAnchor
+	6,  // 5: bytebase.store.IssueCommentPayload.Approval.status:type_name -> bytebase.store.IssuePayloadApproval.Approver.Status
+	7,  // 6: bytebase.store.IssueCommentPayload.IssueUpdate.from_status:type_name -> bytebase.store.Issue.Status
+	7,  // 7: bytebase.store.IssueCommentPayload.IssueUpdate.to_status:type_name -> bytebase.store.Issue.Status
+	8,  // 8: bytebase.store.IssueCommentPayload.PlanUpdate.from_specs:type_name -> bytebase.store.PlanConfig.Spec
+	8,  // 9: bytebase.store.IssueCommentPayload.PlanUpdate.to_specs:type_name -> bytebase.store.PlanConfig.Spec
+	9,  // 10: bytebase.store.IssueCommentPayload.StatementAnchor.start_position:type_name -> bytebase.store.Position
+	9,  // 11: bytebase.store.IssueCommentPayload.StatementAnchor.end_position:type_name -> bytebase.store.Position
+	12, // [12:12] is the sub-list for method output_type
+	12, // [12:12] is the sub-list for method input_type
+	12, // [12:12] is the sub-list for extension type_name
+	12, // [12:12] is the sub-list for extension extendee
+	0,  // [0:12] is the sub-list for field type_name
 }
 
 func init() { file_store_issue_comment_proto_init() }
@@ -468,6 +569,7 @@ func file_store_issue_comment_proto_init() {
 		return
 	}
 	file_store_approval_proto_init()
+	file_store_common_proto_init()
 	file_store_issue_proto_init()
 	file_store_plan_proto_init()
 	file_store_issue_comment_proto_msgTypes[0].OneofWrappers = []any{
@@ -483,7 +585,7 @@ func file_store_issue_comment_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_store_issue_comment_proto_rawDesc), len(file_store_issue_comment_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   5,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

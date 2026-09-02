@@ -1245,8 +1245,12 @@ func (s *IssueService) ListIssueComments(ctx context.Context, req *connect.Reque
 	issueComments, err := s.store.ListIssueComment(ctx, &store.FindIssueCommentMessage{
 		ProjectID: projectID,
 		IssueUID:  &issue.UID,
-		Limit:     &limitPlusOne,
-		Offset:    &offset.offset,
+		// The activity timeline holds events and root comments only. The v1
+		// message cannot represent a reply yet, and a reply must not consume
+		// a page slot; replies are read per thread through ParentIDs.
+		TopLevelOnly: true,
+		Limit:        &limitPlusOne,
+		Offset:       &offset.offset,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list issue comments, err: %v", err))
@@ -1369,6 +1373,9 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 	issueComment, err = s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{ProjectID: parentProjectID, ResourceID: &issueCommentID})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to get issue comment: %v", err))
+	}
+	if issueComment == nil {
+		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("issue comment not found"))
 	}
 
 	return connect.NewResponse(convertToIssueComment(req.Msg.Parent, issueComment)), nil

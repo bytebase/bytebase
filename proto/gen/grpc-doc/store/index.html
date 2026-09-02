@@ -845,6 +845,10 @@
                   <a href="#bytebase.store.IssueCommentPayload.ReviewSubmission"><span class="badge">M</span>IssueCommentPayload.ReviewSubmission</a>
                 </li>
               
+                <li>
+                  <a href="#bytebase.store.IssueCommentPayload.StatementAnchor"><span class="badge">M</span>IssueCommentPayload.StatementAnchor</a>
+                </li>
+              
               
               
               
@@ -9116,6 +9120,14 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
                   <td><p> </p></td>
                 </tr>
               
+                <tr>
+                  <td>statement_anchor</td>
+                  <td><a href="#bytebase.store.IssueCommentPayload.StatementAnchor">IssueCommentPayload.StatementAnchor</a></td>
+                  <td></td>
+                  <td><p>The statement context an inline comment references. Set at creation and
+immutable afterward; never set together with an event. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -9255,6 +9267,57 @@ Format: environments/prod where prod is the environment resource ID. </p></td>
         <p>ReviewSubmission records that an issue entered review.</p>
 
         
+
+        
+      
+        <h3 id="bytebase.store.IssueCommentPayload.StatementAnchor">IssueCommentPayload.StatementAnchor</h3>
+        <p>StatementAnchor records the anchored statement revision and range.</p><p>The SQL excerpt and current/changed/unavailable state are computed on</p><p>read against the anchored sheet and the current plan, not stored.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>spec_id</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>UUID of the anchored plan spec (PlanConfig.Spec.id); may no longer
+resolve after the spec is deleted from the plan. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet_sha256</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>SHA256 hex of the anchored sheet revision. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>start_position</td>
+                  <td><a href="#bytebase.store.Position">Position</a></td>
+                  <td></td>
+                  <td><p>The anchored range. When both columns are 0, the anchor spans whole
+lines from start_position.line to end_position.line inclusive —
+overriding Position&#39;s &#34;column 0 means unknown&#34; convention. When both
+columns are set, start_position is inclusive and end_position is
+exclusive, in one-based lines and code-point columns (see Position).
+Setting exactly one column to 0 is invalid. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_position</td>
+                  <td><a href="#bytebase.store.Position">Position</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
 
         
       

@@ -171,6 +171,7 @@
     - [IssueCommentPayload.IssueUpdate](#bytebase-store-IssueCommentPayload-IssueUpdate)
     - [IssueCommentPayload.PlanUpdate](#bytebase-store-IssueCommentPayload-PlanUpdate)
     - [IssueCommentPayload.ReviewSubmission](#bytebase-store-IssueCommentPayload-ReviewSubmission)
+    - [IssueCommentPayload.StatementAnchor](#bytebase-store-IssueCommentPayload-StatementAnchor)
   
 - [store/oauth2.proto](#store_oauth2-proto)
     - [OAuth2AuthorizationCodeConfig](#bytebase-store-OAuth2AuthorizationCodeConfig)
@@ -3037,6 +3038,7 @@ Type represents the category of issue.
 | issue_update | [IssueCommentPayload.IssueUpdate](#bytebase-store-IssueCommentPayload-IssueUpdate) |  |  |
 | plan_update | [IssueCommentPayload.PlanUpdate](#bytebase-store-IssueCommentPayload-PlanUpdate) |  |  |
 | review_submission | [IssueCommentPayload.ReviewSubmission](#bytebase-store-IssueCommentPayload-ReviewSubmission) |  |  |
+| statement_anchor | [IssueCommentPayload.StatementAnchor](#bytebase-store-IssueCommentPayload-StatementAnchor) |  | The statement context an inline comment references. Set at creation and immutable afterward; never set together with an event. |
 
 
 
@@ -3103,6 +3105,26 @@ add/remove/update from the snapshot pair.
 
 ### IssueCommentPayload.ReviewSubmission
 ReviewSubmission records that an issue entered review.
+
+
+
+
+
+
+<a name="bytebase-store-IssueCommentPayload-StatementAnchor"></a>
+
+### IssueCommentPayload.StatementAnchor
+StatementAnchor records the anchored statement revision and range.
+The SQL excerpt and current/changed/unavailable state are computed on
+read against the anchored sheet and the current plan, not stored.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| spec_id | [string](#string) |  | UUID of the anchored plan spec (PlanConfig.Spec.id); may no longer resolve after the spec is deleted from the plan. |
+| sheet_sha256 | [string](#string) |  | SHA256 hex of the anchored sheet revision. |
+| start_position | [Position](#bytebase-store-Position) |  | The anchored range. When both columns are 0, the anchor spans whole lines from start_position.line to end_position.line inclusive — overriding Position&#39;s &#34;column 0 means unknown&#34; convention. When both columns are set, start_position is inclusive and end_position is exclusive, in one-based lines and code-point columns (see Position). Setting exactly one column to 0 is invalid. |
+| end_position | [Position](#bytebase-store-Position) |  |  |
 
 
 
