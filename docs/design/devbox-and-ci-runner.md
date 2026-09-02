@@ -337,7 +337,7 @@ stop_docker() {
   fi
 }
 stop_docker   # before anything that can block or exit
-systemctl mask docker.socket docker containerd 2>/dev/null   # postinst must not start them
+systemctl mask --now docker.socket docker containerd 2>/dev/null   # --now: also stops one a postinst already queued
 # Latest runner release, falling back to a known-good pin if the lookup fails. Every
 # boot uses this: the runner lives on scratch and is re-fetched, never updated in place.
 RUNNER_VERSION=$(curl -sf --retry 3 --max-time 30 https://api.github.com/repos/actions/runner/releases/latest | python3 -c 'import sys,json; print(json.load(sys.stdin)["tag_name"].lstrip("v"))' 2>/dev/null || echo 2.336.0)
@@ -348,10 +348,12 @@ echo 'DPkg::Lock::Timeout "300";' > /etc/apt/apt.conf.d/99-lock-timeout   # unat
 PKGS="docker.io cron systemd-oomd build-essential"
 # Unconditional: a preemption during any dpkg work -- an unattended upgrade of some
 # unrelated package -- blocks every later apt call, including installdependencies.sh.
-# DPkg::Lock::Timeout is apt configuration and dpkg does not honour it, so wait here
-# instead: unattended-upgrades holds the lock at boot, which is not a wedged dpkg.
-for _ in $(seq 60); do dpkg --configure -a 2>/dev/null && { DPKG_OK=1; break; }; sleep 5; done
-[[ -n "${DPKG_OK:-}" ]] || { logger -t devbox-startup "FATAL: dpkg wedged; apt is unusable"; exit 1; }
+# One dpkg pass clears an interrupted transaction; its result is ignored on purpose.
+# Deps missing from an unpack cut short are apt's to install, not dpkg's, and a lock
+# held by unattended-upgrades means nothing to clear -- apt waits for that lock.
+dpkg --configure -a 2>/dev/null || true
+apt-get -y -qq --fix-broken install \
+  || { logger -t devbox-startup "FATAL: apt cannot repair the package state"; exit 1; }
 # Count 'install ok installed', not dpkg -s: a preemption mid-apt leaves packages
 # unpacked but unconfigured, which dpkg -s still reports as success.
 [[ $(dpkg-query -W -f='${Status}\n' $PKGS 2>/dev/null | grep -c '^install ok installed$') -eq $(wc -w <<<"$PKGS") ]] \
@@ -526,6 +528,7 @@ idle() { ! pgrep -f Runner.Worker >/dev/null && [[ -z "$(ss -Htn state establish
 if ! idle && [[ $(used) -lt $CRITICAL ]]; then logger -t cache-gc "deferred: busy at $(used)%"; exit 0; fi
 logger -t cache-gc "cleaning: $(used)% used"
 find /tmp -mindepth 1 -delete 2>/dev/null   # /tmp is on scratch; nothing is using it
+docker ps -q | xargs -r docker rm -f >/dev/null 2>&1   # idle, so a running container is orphaned
 docker system prune -af --volumes >/dev/null 2>&1
 docker volume prune -af >/dev/null 2>&1   # system prune takes anonymous volumes only
 for d in /scratch/*/; do
