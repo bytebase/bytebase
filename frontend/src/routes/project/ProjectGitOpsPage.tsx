@@ -435,7 +435,8 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
                 className="mb-3"
                 description={t("gitops.workflow.provider-not-match", {
                   provider: getWorkloadIdentityProviderText(
-                    selectedConfig!.providerType
+                    selectedConfig!.providerType,
+                    t("settings.members.workload-identity-generic-oidc")
                   ),
                 })}
               />
@@ -483,7 +484,8 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
                 className="mb-3"
                 description={t("gitops.workflow.provider-not-match", {
                   provider: getWorkloadIdentityProviderText(
-                    selectedConfig!.providerType
+                    selectedConfig!.providerType,
+                    t("settings.members.workload-identity-generic-oidc")
                   ),
                 })}
               />

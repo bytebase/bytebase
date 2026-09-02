@@ -30,7 +30,7 @@ func ValidateToken(ctx context.Context, tokenString string, config *storepb.Work
 	}
 
 	// Get JWKS from issuer
-	jwks, err := FetchJWKS(ctx, config.IssuerUrl)
+	jwks, err := FetchJWKS(ctx, config.IssuerUrl, config.JwksUrl)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to fetch JWKS")
 	}

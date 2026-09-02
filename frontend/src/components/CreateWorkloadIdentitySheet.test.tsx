@@ -1,6 +1,12 @@
+import { create } from "@bufbuild/protobuf";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
+import {
+  WorkloadIdentityConfig_ProviderType,
+  WorkloadIdentityConfigSchema,
+  WorkloadIdentitySchema,
+} from "@/types/proto-es/v1/workload_identity_service_pb";
 import { CreateWorkloadIdentitySheet } from "./CreateWorkloadIdentitySheet";
 
 (
@@ -76,7 +82,17 @@ vi.mock("@/utils", () => ({
     provider === 1 ? "GitLab" : "GitHub Actions",
   hasProjectPermissionV2: () => true,
   hasWorkspacePermissionV2: () => true,
-  parseWorkloadIdentitySubjectPattern: () => undefined,
+  parseWorkloadIdentitySubjectPattern: (workloadIdentity: {
+    workloadIdentityConfig?: { subjectPattern: string };
+  }) => {
+    if (
+      workloadIdentity.workloadIdentityConfig?.subjectPattern ===
+      "project_path:group/project:environment:production"
+    ) {
+      return { owner: "group", repo: "project", branch: "" };
+    }
+    return undefined;
+  },
 }));
 
 describe("CreateWorkloadIdentitySheet", () => {
@@ -155,6 +171,185 @@ describe("CreateWorkloadIdentitySheet", () => {
           : 0
       ).toBeTruthy();
     }
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("preserves a custom subject pattern when updating another field", async () => {
+    const subjectPattern =
+      "project_path:group/project:environment:production";
+    const workloadIdentity = create(WorkloadIdentitySchema, {
+      name: "workloadIdentities/atlantis@workload.bytebase.com",
+      email: "atlantis@workload.bytebase.com",
+      title: "Atlantis",
+      workloadIdentityConfig: create(WorkloadIdentityConfigSchema, {
+        providerType: WorkloadIdentityConfig_ProviderType.GITLAB,
+        issuerUrl: "https://nomad.example.com",
+        allowedAudiences: ["bytebase"],
+        subjectPattern,
+      }),
+    });
+    mocks.store.updateWorkloadIdentity.mockResolvedValue(workloadIdentity);
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <CreateWorkloadIdentitySheet
+          open
+          workloadIdentity={workloadIdentity}
+          onClose={() => undefined}
+          onCreated={() => undefined}
+        />
+      );
+    });
+
+    const advancedButton = Array.from(container.querySelectorAll("button")).find(
+      (button) =>
+        button.textContent?.includes(
+          "settings.members.workload-identity-advanced"
+        )
+    );
+    expect(advancedButton).toBeTruthy();
+    await act(async () => {
+      advancedButton?.click();
+    });
+
+    const subjectField = Array.from(
+      container.querySelectorAll('[data-slot="form-field"]')
+    ).find((field) =>
+      field.textContent?.includes("settings.members.workload-identity-subject")
+    );
+    const subjectInput = subjectField?.querySelector("input");
+    expect(subjectInput?.value).toBe(subjectPattern);
+
+    const titleInput = container.querySelector("input");
+    expect(titleInput).toBeTruthy();
+    await act(async () => {
+      if (titleInput) {
+        Object.getOwnPropertyDescriptor(
+          HTMLInputElement.prototype,
+          "value"
+        )?.set?.call(titleInput, "Updated Atlantis");
+        titleInput.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    });
+
+    const updateButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "common.update"
+    );
+    expect(updateButton).toBeTruthy();
+    await act(async () => {
+      updateButton?.click();
+    });
+
+    expect(mocks.store.updateWorkloadIdentity).toHaveBeenCalledOnce();
+    const [updatedWorkloadIdentity] =
+      mocks.store.updateWorkloadIdentity.mock.calls[0];
+    expect(
+      updatedWorkloadIdentity.workloadIdentityConfig?.subjectPattern
+    ).toBe(subjectPattern);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("shows and submits generic OIDC fields without preset controls", async () => {
+    const workloadIdentity = create(WorkloadIdentitySchema, {
+      name: "workloadIdentities/atlantis@workload.bytebase.com",
+      email: "atlantis@workload.bytebase.com",
+      title: "Atlantis",
+      workloadIdentityConfig: create(WorkloadIdentityConfigSchema, {
+        providerType: WorkloadIdentityConfig_ProviderType.OIDC,
+        issuerUrl: "https://nomad.example.com",
+        jwksUrl: "https://nomad-verifier.example.com/jwks.json",
+        allowedAudiences: ["bytebase"],
+        subjectPattern: "nomad_job:atlantis:namespace:production",
+      }),
+    });
+    mocks.store.updateWorkloadIdentity.mockResolvedValue(workloadIdentity);
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <CreateWorkloadIdentitySheet
+          open
+          workloadIdentity={workloadIdentity}
+          onClose={() => undefined}
+          onCreated={() => undefined}
+        />
+      );
+    });
+
+    const fields = Array.from(
+      container.querySelectorAll('[data-slot="form-field"]')
+    );
+    const fieldInput = (label: string) =>
+      fields
+        .find((field) => field.textContent?.includes(label))
+        ?.querySelector("input");
+
+    expect(
+      fields.some((field) =>
+        field.textContent?.includes("settings.members.workload-identity-owner")
+      )
+    ).toBe(false);
+    expect(
+      fields.some((field) =>
+        field.textContent?.includes("settings.members.workload-identity-repo")
+      )
+    ).toBe(false);
+    expect(fieldInput("settings.members.workload-identity-issuer")?.value).toBe(
+      "https://nomad.example.com"
+    );
+    expect(fieldInput("settings.members.workload-identity-jwks-url")?.value).toBe(
+      "https://nomad-verifier.example.com/jwks.json"
+    );
+    expect(
+      fieldInput("settings.members.workload-identity-audience")?.value
+    ).toBe("bytebase");
+    expect(fieldInput("settings.members.workload-identity-subject")?.value).toBe(
+      "nomad_job:atlantis:namespace:production"
+    );
+
+    const titleInput = container.querySelector("input");
+    expect(titleInput).toBeTruthy();
+    await act(async () => {
+      if (titleInput) {
+        Object.getOwnPropertyDescriptor(
+          HTMLInputElement.prototype,
+          "value"
+        )?.set?.call(titleInput, "Updated Atlantis");
+        titleInput.dispatchEvent(new Event("input", { bubbles: true }));
+      }
+    });
+
+    const updateButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "common.update"
+    );
+    expect(updateButton).toBeTruthy();
+    await act(async () => {
+      updateButton?.click();
+    });
+
+    expect(mocks.store.updateWorkloadIdentity).toHaveBeenCalledOnce();
+    const [updatedWorkloadIdentity] =
+      mocks.store.updateWorkloadIdentity.mock.calls[0];
+    expect(updatedWorkloadIdentity.workloadIdentityConfig).toMatchObject({
+      providerType: WorkloadIdentityConfig_ProviderType.OIDC,
+      issuerUrl: "https://nomad.example.com",
+      jwksUrl: "https://nomad-verifier.example.com/jwks.json",
+      allowedAudiences: ["bytebase"],
+      subjectPattern: "nomad_job:atlantis:namespace:production",
+    });
 
     act(() => {
       root.unmount();

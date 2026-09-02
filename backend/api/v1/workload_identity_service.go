@@ -90,6 +90,9 @@ func (s *WorkloadIdentityService) CreateWorkloadIdentity(ctx context.Context, re
 	// Convert API workload identity config to store workload identity config
 	var storeConfig *storepb.WorkloadIdentityConfig
 	if wi.WorkloadIdentityConfig != nil {
+		if err := validateWorkloadIdentityConfig(wi.WorkloadIdentityConfig); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid workload_identity_config"))
+		}
 		storeConfig = convertToStoreWorkloadIdentityConfig(wi.WorkloadIdentityConfig)
 	}
 
@@ -232,6 +235,9 @@ func (s *WorkloadIdentityService) UpdateWorkloadIdentity(ctx context.Context, re
 			patch.Name = &request.Msg.WorkloadIdentity.Title
 		case "workload_identity_config":
 			if request.Msg.WorkloadIdentity.WorkloadIdentityConfig != nil {
+				if err := validateWorkloadIdentityConfig(request.Msg.WorkloadIdentity.WorkloadIdentityConfig); err != nil {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid workload_identity_config"))
+				}
 				patch.Config = convertToStoreWorkloadIdentityConfig(request.Msg.WorkloadIdentity.WorkloadIdentityConfig)
 			} else {
 				patch.Config = &storepb.WorkloadIdentityConfig{}
@@ -308,6 +314,37 @@ func (s *WorkloadIdentityService) UndeleteWorkloadIdentity(ctx context.Context, 
 	return connect.NewResponse(convertToWorkloadIdentity(restoredWI)), nil
 }
 
+func validateWorkloadIdentityConfig(config *v1pb.WorkloadIdentityConfig) error {
+	if config == nil {
+		return nil
+	}
+
+	switch config.ProviderType {
+	case v1pb.WorkloadIdentityConfig_GITHUB, v1pb.WorkloadIdentityConfig_GITLAB:
+		return nil
+	case v1pb.WorkloadIdentityConfig_OIDC:
+		if strings.TrimSpace(config.IssuerUrl) == "" {
+			return errors.New("issuer_url is required for OIDC")
+		}
+		if len(config.AllowedAudiences) == 0 {
+			return errors.New("allowed_audiences is required for OIDC")
+		}
+		for _, audience := range config.AllowedAudiences {
+			if strings.TrimSpace(audience) == "" {
+				return errors.New("allowed_audiences must not contain an empty value")
+			}
+		}
+		if strings.TrimSpace(config.SubjectPattern) == "" {
+			return errors.New("subject_pattern is required for OIDC")
+		}
+		return nil
+	case v1pb.WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED:
+		return errors.New("provider_type is required")
+	default:
+		return errors.New("provider_type is invalid")
+	}
+}
+
 // convertToWorkloadIdentity converts a store.WorkloadIdentityMessage to a v1pb.WorkloadIdentity.
 func convertToWorkloadIdentity(wi *store.WorkloadIdentityMessage) *v1pb.WorkloadIdentity {
 	result := &v1pb.WorkloadIdentity{
@@ -335,6 +372,7 @@ func convertToStoreWorkloadIdentityConfig(config *v1pb.WorkloadIdentityConfig) *
 		IssuerUrl:        config.IssuerUrl,
 		AllowedAudiences: config.AllowedAudiences,
 		SubjectPattern:   config.SubjectPattern,
+		JwksUrl:          config.JwksUrl,
 	}
 }
 
@@ -348,5 +386,6 @@ func convertToAPIWorkloadIdentityConfig(config *storepb.WorkloadIdentityConfig) 
 		IssuerUrl:        config.IssuerUrl,
 		AllowedAudiences: config.AllowedAudiences,
 		SubjectPattern:   config.SubjectPattern,
+		JwksUrl:          config.JwksUrl,
 	}
 }

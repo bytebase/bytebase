@@ -22262,7 +22262,7 @@ components:
       properties:
         providerType:
           title: provider_type
-          description: Platform type (currently only GITHUB is supported)
+          description: Provider configuration mode.
           $ref: '#/components/schemas/bytebase.v1.WorkloadIdentityConfig.ProviderType'
         issuerUrl:
           type: string
@@ -22278,6 +22278,10 @@ components:
           type: string
           title: subject_pattern
           description: Subject pattern to match (e.g., "repo:owner/repo:ref:refs/heads/main")
+        jwksUrl:
+          type: string
+          title: jwks_url
+          description: Optional JWKS endpoint. When empty, use OIDC discovery from issuer_url.
       title: WorkloadIdentityConfig
       additionalProperties: false
       description: WorkloadIdentityConfig for API layer
@@ -22288,7 +22292,8 @@ components:
         - PROVIDER_TYPE_UNSPECIFIED
         - GITHUB
         - GITLAB
-      description: ProviderType identifies the CI/CD platform.
+        - OIDC
+      description: ProviderType identifies the workload identity configuration mode.
     bytebase.v1.Workspace:
       type: object
       properties:

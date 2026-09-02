@@ -34,16 +34,29 @@ type oidcConfig struct {
 	JwksURI string `json:"jwks_uri"`
 }
 
-// FetchJWKS fetches the JWKS from an OIDC issuer with caching.
-func FetchJWKS(ctx context.Context, issuerURL string) (*jose.JSONWebKeySet, error) {
+// FetchJWKS fetches the JWKS from an OIDC issuer or a direct JWKS URL with caching.
+func FetchJWKS(ctx context.Context, issuerURL, jwksURL string) (*jose.JSONWebKeySet, error) {
 	// Validate issuer URL format
 	if err := validateIssuerURL(issuerURL); err != nil {
 		return nil, err
 	}
 
-	// Check cache
+	effectiveJWKSURL := jwksURL
+	if effectiveJWKSURL == "" {
+		configURL := fmt.Sprintf("%s/.well-known/openid-configuration", issuerURL)
+		config, err := fetchOIDCConfig(ctx, configURL)
+		if err != nil {
+			return nil, err
+		}
+		effectiveJWKSURL = config.JwksURI
+	}
+	if err := validateJWKSURL(effectiveJWKSURL); err != nil {
+		return nil, err
+	}
+
+	// Check cache by the endpoint that actually serves the signing keys.
 	jwksCacheLock.RLock()
-	if cached, ok := jwksCache[issuerURL]; ok {
+	if cached, ok := jwksCache[effectiveJWKSURL]; ok {
 		if time.Since(cached.fetchedAt) < cacheDuration {
 			jwksCacheLock.RUnlock()
 			return cached.jwks, nil
@@ -51,22 +64,15 @@ func FetchJWKS(ctx context.Context, issuerURL string) (*jose.JSONWebKeySet, erro
 	}
 	jwksCacheLock.RUnlock()
 
-	// Fetch OIDC configuration
-	configURL := fmt.Sprintf("%s/.well-known/openid-configuration", issuerURL)
-	config, err := fetchOIDCConfig(ctx, configURL)
-	if err != nil {
-		return nil, err
-	}
-
 	// Fetch JWKS
-	jwks, err := fetchJWKSFromURL(ctx, config.JwksURI)
+	jwks, err := fetchJWKSFromURL(ctx, effectiveJWKSURL)
 	if err != nil {
 		return nil, err
 	}
 
 	// Update cache
 	jwksCacheLock.Lock()
-	jwksCache[issuerURL] = &cachedJWKS{
+	jwksCache[effectiveJWKSURL] = &cachedJWKS{
 		jwks:      jwks,
 		fetchedAt: time.Now(),
 	}
@@ -77,21 +83,29 @@ func FetchJWKS(ctx context.Context, issuerURL string) (*jose.JSONWebKeySet, erro
 
 // validateIssuerURL validates that the issuer URL is a valid HTTPS URL.
 func validateIssuerURL(issuerURL string) error {
-	parsed, err := url.Parse(issuerURL)
+	return validateRemoteURL(issuerURL, "issuer URL")
+}
+
+func validateJWKSURL(jwksURL string) error {
+	return validateRemoteURL(jwksURL, "JWKS URL")
+}
+
+func validateRemoteURL(rawURL, label string) error {
+	parsed, err := url.Parse(rawURL)
 	if err != nil {
-		return errors.Wrap(err, "invalid issuer URL")
+		return errors.Wrapf(err, "invalid %s", label)
 	}
 	if parsed.Scheme != "https" {
-		return errors.Errorf("issuer URL must use HTTPS: %s", issuerURL)
+		return errors.Errorf("%s must use HTTPS: %s", label, rawURL)
 	}
 	if parsed.Host == "" {
-		return errors.Errorf("issuer URL must have a host: %s", issuerURL)
+		return errors.Errorf("%s must have a host: %s", label, rawURL)
 	}
 	// Prevent localhost and private IPs in production (basic SSRF prevention)
 	host := strings.ToLower(parsed.Hostname())
 	if host == "localhost" || strings.HasPrefix(host, "127.") || strings.HasPrefix(host, "10.") ||
 		strings.HasPrefix(host, "192.168.") || strings.HasPrefix(host, "172.") {
-		return errors.Errorf("issuer URL cannot be a private address: %s", issuerURL)
+		return errors.Errorf("%s cannot be a private address: %s", label, rawURL)
 	}
 	return nil
 }

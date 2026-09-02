@@ -36224,7 +36224,7 @@ For project-level: {name}@{project-id}.workload.bytebase.com </p></td>
                   <td>provider_type</td>
                   <td><a href="#bytebase.v1.WorkloadIdentityConfig.ProviderType">WorkloadIdentityConfig.ProviderType</a></td>
                   <td></td>
-                  <td><p>Platform type (currently only GITHUB is supported) </p></td>
+                  <td><p>Provider configuration mode. </p></td>
                 </tr>
               
                 <tr>
@@ -36248,6 +36248,13 @@ For project-level: {name}@{project-id}.workload.bytebase.com </p></td>
                   <td><p>Subject pattern to match (e.g., &#34;repo:owner/repo:ref:refs/heads/main&#34;) </p></td>
                 </tr>
               
+                <tr>
+                  <td>jwks_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Optional JWKS endpoint. When empty, use OIDC discovery from issuer_url. </p></td>
+                </tr>
+
             </tbody>
           </table>
 
@@ -36258,7 +36265,7 @@ For project-level: {name}@{project-id}.workload.bytebase.com </p></td>
 
       
         <h3 id="bytebase.v1.WorkloadIdentityConfig.ProviderType">WorkloadIdentityConfig.ProviderType</h3>
-        <p>ProviderType identifies the CI/CD platform.</p>
+        <p>ProviderType identifies the workload identity configuration mode.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -36283,6 +36290,12 @@ For project-level: {name}@{project-id}.workload.bytebase.com </p></td>
                 <td><p></p></td>
               </tr>
             
+              <tr>
+                <td>OIDC</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+
           </tbody>
         </table>
       
@@ -37393,4 +37406,3 @@ Permissions required: bb.workspaces.rotateDirectorySyncToken</p></td>
     </table>
   </body>
 </html>
-

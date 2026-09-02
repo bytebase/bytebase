@@ -77,7 +77,7 @@ export declare const WorkloadIdentitySchema: GenMessage<WorkloadIdentity>;
  */
 export declare type WorkloadIdentityConfig = Message<"bytebase.v1.WorkloadIdentityConfig"> & {
   /**
-   * Platform type (currently only GITHUB is supported)
+   * Provider configuration mode.
    *
    * @generated from field: bytebase.v1.WorkloadIdentityConfig.ProviderType provider_type = 1;
    */
@@ -103,6 +103,13 @@ export declare type WorkloadIdentityConfig = Message<"bytebase.v1.WorkloadIdenti
    * @generated from field: string subject_pattern = 4;
    */
   subjectPattern: string;
+
+  /**
+   * Optional JWKS endpoint. When empty, use OIDC discovery from issuer_url.
+   *
+   * @generated from field: string jwks_url = 5;
+   */
+  jwksUrl: string;
 };
 
 /**
@@ -112,7 +119,7 @@ export declare type WorkloadIdentityConfig = Message<"bytebase.v1.WorkloadIdenti
 export declare const WorkloadIdentityConfigSchema: GenMessage<WorkloadIdentityConfig>;
 
 /**
- * ProviderType identifies the CI/CD platform.
+ * ProviderType identifies the workload identity configuration mode.
  *
  * @generated from enum bytebase.v1.WorkloadIdentityConfig.ProviderType
  */
@@ -131,6 +138,11 @@ export enum WorkloadIdentityConfig_ProviderType {
    * @generated from enum value: GITLAB = 2;
    */
   GITLAB = 2,
+
+  /**
+   * @generated from enum value: OIDC = 3;
+   */
+  OIDC = 3,
 }
 
 /**
