@@ -462,6 +462,9 @@ Environment=XDG_CACHE_HOME=/scratch/%i/cache GOMODCACHE=/scratch/%i/cache/go-mod
 ExecStartPre=+/usr/local/sbin/install-runner %i
 ExecStartPre=/usr/local/sbin/register-runner %i /scratch/%i/runner /scratch/%i/work
 ExecStart=/scratch/%i/runner/run.sh
+# install-runner fetches ~200 MB and waits on the apt lock, which the 90s default
+# would kill -- and the retry restarts the download from zero.
+TimeoutStartSec=600
 Restart=always
 # Registration failure retries forever; at 5s x3 runners that would burn the API quota.
 RestartSec=30
