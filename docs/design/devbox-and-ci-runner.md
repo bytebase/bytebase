@@ -188,7 +188,7 @@ Two kinds of account use the box, and they need opposite things from it.
 
 **Runner accounts** are `runner1`, `runner2` and `runner3`. The script creates them, `nologin`,
 one per job slot. Nothing of theirs is worth keeping: software, work trees and caches
-all sit on Local SSD, and the `/home` that `useradd` creates goes unused. They are
+all sit on Local SSD, and their home directories are on it too. They are
 disposable, and are disposed of on every stop.
 
 **Interactive accounts** arrive through OS Login on first connect. Their `/home/<u>`
@@ -357,7 +357,9 @@ mkdir -p /scratch/tmp && chmod 1777 /scratch/tmp
 [ "$(stat -c '%d:%i' /tmp)" = "$(stat -c '%d:%i' /scratch/tmp)" ] \
   || mount --bind /scratch/tmp /tmp \
   || { logger -t devbox-startup "FATAL: /tmp not on Local SSD"; exit 1; }
-if [[ ! -f /scratch/swapfile ]]; then
+# blkid, not -f: a partly written file satisfies -f and swapon then rejects it.
+if [[ "$(blkid -s TYPE -o value /scratch/swapfile 2>/dev/null)" != swap ]]; then
+  rm -f /scratch/swapfile
   fallocate -l 8G /scratch/swapfile && chmod 600 /scratch/swapfile && mkswap /scratch/swapfile >/dev/null
 fi
 swapon /scratch/swapfile 2>/dev/null || true          # no-op if already active
@@ -377,12 +379,14 @@ systemctl daemon-reload && systemctl restart docker
 
 # ---------- (b) accounts and cache paths ----------
 for u in runner1 runner2 runner3; do
-  id "$u" &>/dev/null || useradd -m -s /usr/sbin/nologin "$u"
+  # Home on scratch, not /home: whatever a job writes home-relative that the cache
+  # variables do not cover is disposable too, and the GC only looks at /scratch.
+  id "$u" &>/dev/null || useradd -M -d "/scratch/$u/home" -s /usr/sbin/nologin "$u"
   usermod -aG docker "$u"
   # runner/ too: systemd applies WorkingDirectory before ExecStartPre runs, so the
   # unit would fail on CHDIR before install-runner could create it.
-  mkdir -p "/scratch/$u"/{cache,work,runner}
-  chown "$u:$u" "/scratch/$u" "/scratch/$u"/{cache,work,runner}   # not -R: contents are the user's own
+  mkdir -p "/scratch/$u"/{cache,work,runner,home}
+  chown "$u:$u" "/scratch/$u" "/scratch/$u"/{cache,work,runner,home}   # not -R: contents are the user's own
 done
 
 # Interactive accounts appear on first OS Login connect, so the profile provisions them:
