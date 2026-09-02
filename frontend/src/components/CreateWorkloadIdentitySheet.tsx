@@ -503,7 +503,7 @@ function WorkloadIdentityForm({
                 type="button"
                 appearance="outline"
                 size="md"
-                className="size-9 p-0"
+                className="aspect-square p-0"
                 aria-label={t("common.remove")}
                 onClick={() =>
                   setAudiences((current) =>
@@ -522,7 +522,7 @@ function WorkloadIdentityForm({
           type="button"
           appearance="outline"
           size="md"
-          className="size-9 p-0"
+          className="aspect-square p-0"
           aria-label={t("common.add")}
           onClick={() => setAudiences((current) => [...current, ""])}
         >
@@ -688,21 +688,37 @@ function WorkloadIdentityForm({
                 </>
               }
             >
-              <select
+              <Select
                 value={refType}
-                onChange={(e) => setRefType(e.target.value as RefType)}
-                className="border border-control-border rounded-xs text-sm px-2 py-2 bg-background"
+                onValueChange={(value) => {
+                  if (value !== null) setRefType(value as RefType);
+                }}
               >
-                <option value="all">
-                  {t("settings.members.workload-identity-all-branches-tags")}
-                </option>
-                <option value="branch">
-                  {t("settings.members.workload-identity-specific-branch")}
-                </option>
-                <option value="tag">
-                  {t("settings.members.workload-identity-specific-tag")}
-                </option>
-              </select>
+                <SelectTrigger className="w-full">
+                  <SelectValue>
+                    {refType === "all"
+                      ? t(
+                          "settings.members.workload-identity-all-branches-tags"
+                        )
+                      : refType === "branch"
+                        ? t(
+                            "settings.members.workload-identity-specific-branch"
+                          )
+                        : t("settings.members.workload-identity-specific-tag")}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {t("settings.members.workload-identity-all-branches-tags")}
+                  </SelectItem>
+                  <SelectItem value="branch">
+                    {t("settings.members.workload-identity-specific-branch")}
+                  </SelectItem>
+                  <SelectItem value="tag">
+                    {t("settings.members.workload-identity-specific-tag")}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </FormField>
           )}
 
