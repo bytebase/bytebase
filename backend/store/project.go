@@ -276,6 +276,14 @@ func (s *Store) UpdateProjects(ctx context.Context, patches ...*UpdateProjectMes
 		return nil
 	}
 
+	// Evict on both sides of the write. Before, so no reader can be served a
+	// cache hit carrying the pre-update row once the write commits; after, so a
+	// reader that refilled the cache from the pre-update row during the write
+	// does not leave that entry behind it.
+	for _, patch := range patches {
+		s.removeProjectCache(patch.ResourceID)
+	}
+
 	// Prepare arrays for batch update
 	resourceIDs := make([]string, len(patches))
 	titles := make([]*string, len(patches))
@@ -314,10 +322,13 @@ func (s *Store) UpdateProjects(ctx context.Context, patches ...*UpdateProjectMes
 		return err
 	}
 
-	// Invalidate only after the write lands, the way DeletePolicy does.
-	// Removing beforehand leaves a window in which a concurrent reader loads
-	// the pre-update row and caches it, and that stale entry then outlives the
-	// write — project settings gate authorization, so it is read as policy.
+	// The second eviction: see the comment above. Project settings gate
+	// authorization — AllowLastPlanEditorApproval decides who may approve — so a
+	// stale entry reads as a revoked permission still being granted. One
+	// narrower window survives both evictions: a reader whose row read began
+	// before the commit and whose cache fill lands after this line. Closing it
+	// needs the cache to track a generation per key, which is more machinery
+	// than the exposure warrants.
 	for _, patch := range patches {
 		s.removeProjectCache(patch.ResourceID)
 	}
