@@ -195,7 +195,7 @@ operator who tops up `(requesting project, sha)` for the ones they confirm. That
 grant rather than an inferred one, and the operator has context the migration does not — whether a
 database was transferred, and who should see its history.
 
-**Corroboration is checked on the referenced row, not on the project.** `DeleteProject` hard-deletes
+**Corroboration is checked on the referenced row, not on the project.** `DeleteProjects` hard-deletes
 the `project` row and `CreateProject` accepts a caller-supplied `ProjectId`
 (`backend/api/v1/project_service.go:210`), so a purged ID can be reused; a surviving revision naming
 the *old* project would otherwise resolve to an unrelated *new* project of the same name and grant it
