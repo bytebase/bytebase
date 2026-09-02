@@ -96,10 +96,10 @@ type SearchQueryHistoriesRequest struct {
 	//
 	// Supported filter:
 	// - project: the project full name in "projects/{id}" format, support "==" operator.
-	// - database: the database full name in "instances/{id}/databases/{name}" format, support "==" operator.
-	// - instance: the instance full name in "instances/{id}" format, support "==" operator.
+	// - database: the database full name in "instances/{id}/databases/{name}" or "projects/{project}/instances/{id}/databases/{name}" format, support "==" operator.
+	// - instance: the instance full name in "instances/{id}" or "projects/{project}/instances/{id}" format, support "==" operator.
 	// - type: the type, should be "QUERY" or "EXPORT", support "==" operator.
-	// - statement: the SQL statement, support ".contains()" operator.
+	// - statement: the SQL statement, support "==" and ".contains()" operators.
 	//
 	// For example:
 	// project == "projects/{project}"
@@ -107,6 +107,7 @@ type SearchQueryHistoriesRequest struct {
 	// instance == "instances/{instance}"
 	// type == "QUERY"
 	// type == "EXPORT"
+	// statement == "SELECT 1;"
 	// statement.contains("select")
 	// type == "QUERY" && statement.contains("select")
 	Filter        string `protobuf:"bytes,3,opt,name=filter,proto3" json:"filter,omitempty"`

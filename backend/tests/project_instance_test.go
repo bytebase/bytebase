@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -86,6 +87,25 @@ func TestProjectInstanceCoreBehavior(t *testing.T) {
 	}))
 	a.NoError(err)
 	a.Len(query.Msg.Results, 1)
+
+	// The history row carries the project-scoped database name, so the
+	// `instance ==` filter must accept the project-scoped instance name
+	// (T18c-ii); the workspace form of the same ID names no instance here.
+	byInstance, err := ctl.queryHistoryServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+		Parent: ctl.project.Name,
+		Filter: fmt.Sprintf("instance == \"%s\"", projectInstance.Name),
+	}))
+	a.NoError(err)
+	a.NotEmpty(byInstance.Msg.QueryHistories)
+	for _, history := range byInstance.Msg.QueryHistories {
+		a.True(strings.HasPrefix(history.Database, projectInstance.Name+"/databases/"), history.Database)
+	}
+	byWorkspaceForm, err := ctl.queryHistoryServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+		Parent: ctl.project.Name,
+		Filter: fmt.Sprintf("instance == \"instances/%s\"", projectID),
+	}))
+	a.NoError(err)
+	a.Empty(byWorkspaceForm.Msg.QueryHistories)
 
 	for _, name := range []string{
 		projectInstance.Name + "/databases/missing",

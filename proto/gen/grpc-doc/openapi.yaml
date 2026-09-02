@@ -12393,6 +12393,28 @@ paths:
           required: true
           schema:
             type: string
+        - name: pageSize
+          in: query
+          description: |-
+            The maximum number of task runs to return. The service may return fewer
+             than this value.
+             If unspecified, at most 1000 task runs will be returned.
+             The maximum value is 1000; values above 1000 will be coerced to 1000.
+          schema:
+            type: integer
+            title: page_size
+            format: int32
+        - name: pageToken
+          in: query
+          description: |-
+            A page token, received from a previous `ListTaskRuns` call.
+             Provide this to retrieve the subsequent page.
+
+             When paginating, all other parameters provided to `ListTaskRuns` must match
+             the call that provided the page token.
+          schema:
+            type: string
+            title: page_token
       responses:
         "200":
           description: Success
@@ -13337,10 +13359,10 @@ paths:
 
                      Supported filter:
                      - project: the project full name in "projects/{id}" format, support "==" operator.
-                     - database: the database full name in "instances/{id}/databases/{name}" format, support "==" operator.
-                     - instance: the instance full name in "instances/{id}" format, support "==" operator.
+                     - database: the database full name in "instances/{id}/databases/{name}" or "projects/{project}/instances/{id}/databases/{name}" format, support "==" operator.
+                     - instance: the instance full name in "instances/{id}" or "projects/{project}/instances/{id}" format, support "==" operator.
                      - type: the type, should be "QUERY" or "EXPORT", support "==" operator.
-                     - statement: the SQL statement, support ".contains()" operator.
+                     - statement: the SQL statement, support "==" and ".contains()" operators.
 
                      For example:
                      project == "projects/{project}"
@@ -13348,6 +13370,7 @@ paths:
                      instance == "instances/{instance}"
                      type == "QUERY"
                      type == "EXPORT"
+                     statement == "SELECT 1;"
                      statement.contains("select")
                      type == "QUERY" && statement.contains("select")
               title: SearchQueryHistoriesRequest
@@ -26370,6 +26393,24 @@ components:
             The parent, which owns this collection of taskRuns.
              Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
              Use "projects/{project}/plans/{plan}/rollout/stages/-/tasks/-" to list all taskRuns from a rollout.
+        pageSize:
+          type: integer
+          title: page_size
+          format: int32
+          description: |-
+            The maximum number of task runs to return. The service may return fewer
+             than this value.
+             If unspecified, at most 1000 task runs will be returned.
+             The maximum value is 1000; values above 1000 will be coerced to 1000.
+        pageToken:
+          type: string
+          title: page_token
+          description: |-
+            A page token, received from a previous `ListTaskRuns` call.
+             Provide this to retrieve the subsequent page.
+
+             When paginating, all other parameters provided to `ListTaskRuns` must match
+             the call that provided the page token.
       title: ListTaskRunsRequest
       required:
         - parent
@@ -26383,6 +26424,12 @@ components:
             $ref: '#/components/schemas/bytebase.v1.TaskRun'
           title: task_runs
           description: The taskRuns from the specified request.
+        nextPageToken:
+          type: string
+          title: next_page_token
+          description: |-
+            A token, which can be sent as `page_token` to retrieve the next page.
+             If this field is omitted, there are no subsequent pages.
       title: ListTaskRunsResponse
       additionalProperties: false
     bytebase.v1.ListUsersRequest:
@@ -30550,10 +30597,10 @@ components:
 
              Supported filter:
              - project: the project full name in "projects/{id}" format, support "==" operator.
-             - database: the database full name in "instances/{id}/databases/{name}" format, support "==" operator.
-             - instance: the instance full name in "instances/{id}" format, support "==" operator.
+             - database: the database full name in "instances/{id}/databases/{name}" or "projects/{project}/instances/{id}/databases/{name}" format, support "==" operator.
+             - instance: the instance full name in "instances/{id}" or "projects/{project}/instances/{id}" format, support "==" operator.
              - type: the type, should be "QUERY" or "EXPORT", support "==" operator.
-             - statement: the SQL statement, support ".contains()" operator.
+             - statement: the SQL statement, support "==" and ".contains()" operators.
 
              For example:
              project == "projects/{project}"
@@ -30561,6 +30608,7 @@ components:
              instance == "instances/{instance}"
              type == "QUERY"
              type == "EXPORT"
+             statement == "SELECT 1;"
              statement.contains("select")
              type == "QUERY" && statement.contains("select")
       title: SearchQueryHistoriesRequest

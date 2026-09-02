@@ -372,19 +372,46 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 	if plan == nil {
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("rollout %d not found in project %s", planID, projectID))
 	}
+	// An unspecified page_size means the maximum rather than the usual 10: the
+	// wildcard parent reads a whole rollout, and bytebase-action binaries
+	// inside their compatibility window read it in one unpaginated call.
+	const maxPageSize = 1000
+	requestedPageSize := int(request.PageSize)
+	if requestedPageSize <= 0 {
+		requestedPageSize = maxPageSize
+	}
+	offset, err := parseLimitAndOffset(&pageSize{
+		token:   request.PageToken,
+		limit:   requestedPageSize,
+		maximum: maxPageSize,
+	})
+	if err != nil {
+		return nil, err
+	}
+	limitPlusOne := offset.limit + 1
 	taskRuns, err := s.store.ListTaskRuns(ctx, &store.FindTaskRunMessage{
 		Workspace:   common.GetWorkspaceIDFromContext(ctx),
 		ProjectID:   projectID,
 		PlanUID:     &planID,
 		Environment: maybeStageID,
 		TaskUID:     maybeTaskID,
+		Limit:       &limitPlusOne,
+		Offset:      &offset.offset,
 	})
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to list task runs"))
 	}
+	var nextPageToken string
+	if len(taskRuns) == limitPlusOne {
+		if nextPageToken, err = offset.getNextPageToken(); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to get next page token"))
+		}
+		taskRuns = taskRuns[:offset.limit]
+	}
 
 	return connect.NewResponse(&v1pb.ListTaskRunsResponse{
-		TaskRuns: convertToTaskRuns(taskRuns),
+		TaskRuns:      convertToTaskRuns(taskRuns),
+		NextPageToken: nextPageToken,
 	}), nil
 }
 

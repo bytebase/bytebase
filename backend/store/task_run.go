@@ -45,6 +45,9 @@ type FindTaskRunMessage struct {
 	Environment *string
 	PlanUID     *int64
 	Status      *[]storepb.TaskRun_Status
+
+	Limit  *int
+	Offset *int
 }
 
 // TaskRunStatusPatch is the API message for patching a task run.
@@ -119,7 +122,15 @@ func (s *Store) ListTaskRuns(ctx context.Context, find *FindTaskRunMessage) ([]*
 		q.Space("WHERE ?", where)
 	}
 
-	q.Space("ORDER BY task_run.id ASC")
+	// (project, id) is the primary key, so the order is total for the
+	// cross-project runner lists as well as the offset-paginated API list.
+	q.Space("ORDER BY task_run.project ASC, task_run.id ASC")
+	if v := find.Limit; v != nil {
+		q.Space("LIMIT ?", *v)
+	}
+	if v := find.Offset; v != nil {
+		q.Space("OFFSET ?", *v)
+	}
 
 	query, args, err := q.ToSQL()
 	if err != nil {

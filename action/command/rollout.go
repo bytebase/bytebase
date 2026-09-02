@@ -278,7 +278,7 @@ func cancelRollout(ctx context.Context, client *client, rolloutName string) erro
 		return errors.Wrapf(err, "failed to list task runs")
 	}
 	taskRunsToCancelByStage := map[string][]string{}
-	for _, taskRun := range taskRuns.TaskRuns {
+	for _, taskRun := range taskRuns {
 		if taskRun.Status == v1pb.TaskRun_RUNNING || taskRun.Status == v1pb.TaskRun_PENDING {
 			stage := strings.Split(taskRun.Name, "/tasks")[0]
 			taskRunsToCancelByStage[stage] = append(taskRunsToCancelByStage[stage], taskRun.Name)

@@ -6942,6 +6942,27 @@ Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
 Use &#34;projects/{project}/plans/{plan}/rollout/stages/-/tasks/-&#34; to list all taskRuns from a rollout. </p></td>
                 </tr>
               
+                <tr>
+                  <td>page_size</td>
+                  <td><a href="#int32">int32</a></td>
+                  <td></td>
+                  <td><p>The maximum number of task runs to return. The service may return fewer
+than this value.
+If unspecified, at most 1000 task runs will be returned.
+The maximum value is 1000; values above 1000 will be coerced to 1000. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A page token, received from a previous `ListTaskRuns` call.
+Provide this to retrieve the subsequent page.
+
+When paginating, all other parameters provided to `ListTaskRuns` must match
+the call that provided the page token. </p></td>
+                </tr>
+              
             </tbody>
           </table>
 
@@ -6964,6 +6985,14 @@ Use &#34;projects/{project}/plans/{plan}/rollout/stages/-/tasks/-&#34; to list a
                   <td><a href="#bytebase.v1.TaskRun">TaskRun</a></td>
                   <td>repeated</td>
                   <td><p>The taskRuns from the specified request. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>next_page_token</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>A token, which can be sent as `page_token` to retrieve the next page.
+If this field is omitted, there are no subsequent pages. </p></td>
                 </tr>
               
             </tbody>
@@ -8969,10 +8998,10 @@ The syntax and semantics of CEL are documented at https://github.com/google/cel-
 
 Supported filter:
 - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
-- database: the database full name in &#34;instances/{id}/databases/{name}&#34; format, support &#34;==&#34; operator.
-- instance: the instance full name in &#34;instances/{id}&#34; format, support &#34;==&#34; operator.
+- database: the database full name in &#34;instances/{id}/databases/{name}&#34; or &#34;projects/{project}/instances/{id}/databases/{name}&#34; format, support &#34;==&#34; operator.
+- instance: the instance full name in &#34;instances/{id}&#34; or &#34;projects/{project}/instances/{id}&#34; format, support &#34;==&#34; operator.
 - type: the type, should be &#34;QUERY&#34; or &#34;EXPORT&#34;, support &#34;==&#34; operator.
-- statement: the SQL statement, support &#34;.contains()&#34; operator.
+- statement: the SQL statement, support &#34;==&#34; and &#34;.contains()&#34; operators.
 
 For example:
 project == &#34;projects/{project}&#34;
@@ -8980,6 +9009,7 @@ database == &#34;instances/{instance}/databases/{database}&#34;
 instance == &#34;instances/{instance}&#34;
 type == &#34;QUERY&#34;
 type == &#34;EXPORT&#34;
+statement == &#34;SELECT 1;&#34;
 statement.contains(&#34;select&#34;)
 type == &#34;QUERY&#34; &amp;&amp; statement.contains(&#34;select&#34;) </p></td>
                 </tr>
@@ -10894,7 +10924,7 @@ Ordered by environment deployment order. Empty when no rollout exists. </p></td>
                   <td><p>The lifecycle status of the linked issue.
 Unspecified when no linked issue exists. </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>last_plan_editor</td>
                   <td><a href="#string">string</a></td>
@@ -28891,7 +28921,7 @@ If enabled, issues cannot be created when SQL review finds errors. </p></td>
                   <td></td>
                   <td><p>Once enabled, users can request and use the just-in-time access in the SQL Editor. </p></td>
                 </tr>
-
+              
                 <tr>
                   <td>allow_last_plan_editor_approval</td>
                   <td><a href="#bool">bool</a></td>
