@@ -538,6 +538,8 @@ for u in $(accounts); do find "/scratch/$u/cache/go-build" -type f -mmin +2880 -
 halt_ "go-build >2d"
 # Destructive from here.
 if ! idle && [[ $(used) -lt $CRITICAL ]]; then logger -t cache-gc "deferred: busy at $(used)%"; exit 0; fi
+docker container prune -f >/dev/null 2>&1
+docker volume prune -af >/dev/null 2>&1;                     halt_ "containers and volumes"
 docker builder prune -af >/dev/null 2>&1;                   halt_ "build cache"
 drop pnpm; drop npm;                                         halt_ "package stores"
 docker image prune -af --filter until=168h >/dev/null 2>&1;  halt_ "stale images"
