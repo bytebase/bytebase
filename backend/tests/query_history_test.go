@@ -111,6 +111,39 @@ func TestListQueryHistories(t *testing.T) {
 	a.GreaterOrEqual(len(searchResp.Msg.QueryHistories), 2)
 	historyName := searchResp.Msg.QueryHistories[0].Name
 
+	// 2c. T18c-ii: `instance ==` matches every database of the instance. It
+	// used to compare the stored database name against "instances/{id}" with
+	// LIKE and no wildcard, so it matched nothing.
+	instanceFilterResp, err := ctl.queryHistoryServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+		Parent: ctl.project.Name,
+		Filter: fmt.Sprintf("instance == \"%s\"", instance.Name),
+	}))
+	a.NoError(err)
+	a.Len(instanceFilterResp.Msg.QueryHistories, len(searchResp.Msg.QueryHistories))
+	for _, history := range instanceFilterResp.Msg.QueryHistories {
+		a.True(strings.HasPrefix(history.Database, instance.Name+"/databases/"), history.Database)
+	}
+	_, err = ctl.queryHistoryServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+		Parent: ctl.project.Name,
+		Filter: fmt.Sprintf("instance == \"%s/%%\"", instance.Name),
+	}))
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err), "a caller-supplied wildcard is not an instance name")
+
+	// `statement ==` is exact: "_" is a character, not a LIKE wildcard.
+	statementExactResp, err := ctl.queryHistoryServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+		Parent: ctl.project.Name,
+		Filter: `statement == "SELECT 1;"`,
+	}))
+	a.NoError(err)
+	a.Len(statementExactResp.Msg.QueryHistories, 1)
+	a.Equal("SELECT 1;", statementExactResp.Msg.QueryHistories[0].Statement)
+	statementWildcardResp, err := ctl.queryHistoryServiceClient.SearchQueryHistories(ctx, connect.NewRequest(&v1pb.SearchQueryHistoriesRequest{
+		Parent: ctl.project.Name,
+		Filter: `statement == "SELECT _;"`,
+	}))
+	a.NoError(err)
+	a.Empty(statementWildcardResp.Msg.QueryHistories)
+
 	// 3. Create an auditor user with no project role yet.
 	auditorEmail := fmt.Sprintf("auditor-%s@example.com", generateRandomString("u"))
 	auditorPassword := "1024bytebase"

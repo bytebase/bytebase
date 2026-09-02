@@ -52,7 +52,7 @@ export declare type SearchQueryHistoriesRequest = Message<"bytebase.v1.SearchQue
    * - database: the database full name in "instances/{id}/databases/{name}" format, support "==" operator.
    * - instance: the instance full name in "instances/{id}" format, support "==" operator.
    * - type: the type, should be "QUERY" or "EXPORT", support "==" operator.
-   * - statement: the SQL statement, support ".contains()" operator.
+   * - statement: the SQL statement, support "==" and ".contains()" operators.
    *
    * For example:
    * project == "projects/{project}"
@@ -60,6 +60,7 @@ export declare type SearchQueryHistoriesRequest = Message<"bytebase.v1.SearchQue
    * instance == "instances/{instance}"
    * type == "QUERY"
    * type == "EXPORT"
+   * statement == "SELECT 1;"
    * statement.contains("select")
    * type == "QUERY" && statement.contains("select")
    *

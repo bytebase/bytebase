@@ -4,6 +4,7 @@ import { Loader2 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { rolloutServiceClientConnect } from "@/api";
+import { listAllTaskRuns } from "@/api/taskRun";
 import { TaskStatusIcon } from "@/components/TaskStatusIcon";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -27,7 +28,6 @@ import {
   BatchCancelTaskRunsRequestSchema,
   BatchRunTasksRequestSchema,
   BatchSkipTasksRequestSchema,
-  ListTaskRunsRequestSchema,
   Task_Type,
   TaskRun_Status,
 } from "@/types/proto-es/v1/rollout_service_pb";
@@ -519,12 +519,10 @@ async function cancelTasks({
   const cancelableRuns = new Map<string, string[]>();
   for (const [stageId, stageTasks] of tasksByStage) {
     const taskNames = new Set(stageTasks.map((task) => task.name));
-    const response = await rolloutServiceClientConnect.listTaskRuns(
-      create(ListTaskRunsRequestSchema, {
-        parent: `${rolloutName}/stages/${stageId}/tasks/-`,
-      })
+    const taskRuns = await listAllTaskRuns(
+      `${rolloutName}/stages/${stageId}/tasks/-`
     );
-    const runs = response.taskRuns
+    const runs = taskRuns
       .filter((run) => {
         const taskName = run.name.split("/taskRuns/")[0];
         return (

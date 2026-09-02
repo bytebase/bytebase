@@ -919,7 +919,18 @@ type ListTaskRunsRequest struct {
 	// The parent, which owns this collection of taskRuns.
 	// Format: projects/{project}/plans/{plan}/rollout/stages/{stage}/tasks/{task}
 	// Use "projects/{project}/plans/{plan}/rollout/stages/-/tasks/-" to list all taskRuns from a rollout.
-	Parent        string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	Parent string `protobuf:"bytes,1,opt,name=parent,proto3" json:"parent,omitempty"`
+	// The maximum number of task runs to return. The service may return fewer
+	// than this value.
+	// If unspecified, at most 1000 task runs will be returned.
+	// The maximum value is 1000; values above 1000 will be coerced to 1000.
+	PageSize int32 `protobuf:"varint,2,opt,name=page_size,json=pageSize,proto3" json:"page_size,omitempty"`
+	// A page token, received from a previous `ListTaskRuns` call.
+	// Provide this to retrieve the subsequent page.
+	//
+	// When paginating, all other parameters provided to `ListTaskRuns` must match
+	// the call that provided the page token.
+	PageToken     string `protobuf:"bytes,3,opt,name=page_token,json=pageToken,proto3" json:"page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -961,10 +972,27 @@ func (x *ListTaskRunsRequest) GetParent() string {
 	return ""
 }
 
+func (x *ListTaskRunsRequest) GetPageSize() int32 {
+	if x != nil {
+		return x.PageSize
+	}
+	return 0
+}
+
+func (x *ListTaskRunsRequest) GetPageToken() string {
+	if x != nil {
+		return x.PageToken
+	}
+	return ""
+}
+
 type ListTaskRunsResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The taskRuns from the specified request.
-	TaskRuns      []*TaskRun `protobuf:"bytes,1,rep,name=task_runs,json=taskRuns,proto3" json:"task_runs,omitempty"`
+	TaskRuns []*TaskRun `protobuf:"bytes,1,rep,name=task_runs,json=taskRuns,proto3" json:"task_runs,omitempty"`
+	// A token, which can be sent as `page_token` to retrieve the next page.
+	// If this field is omitted, there are no subsequent pages.
+	NextPageToken string `protobuf:"bytes,2,opt,name=next_page_token,json=nextPageToken,proto3" json:"next_page_token,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1004,6 +1032,13 @@ func (x *ListTaskRunsResponse) GetTaskRuns() []*TaskRun {
 		return x.TaskRuns
 	}
 	return nil
+}
+
+func (x *ListTaskRunsResponse) GetNextPageToken() string {
+	if x != nil {
+		return x.NextPageToken
+	}
+	return ""
 }
 
 type GetTaskRunRequest struct {
@@ -3311,12 +3346,16 @@ const file_v1_rollout_service_proto_rawDesc = "" +
 	"\x06parent\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
 	"\x11bytebase.com/PlanR\x06parent\x12\x1b\n" +
 	"\x06target\x18\x03 \x01(\tH\x00R\x06target\x88\x01\x01B\t\n" +
-	"\a_targetJ\x04\b\x02\x10\x03\"H\n" +
+	"\a_targetJ\x04\b\x02\x10\x03\"\x84\x01\n" +
 	"\x13ListTaskRunsRequest\x121\n" +
 	"\x06parent\x18\x01 \x01(\tB\x19\xe0A\x02\xfaA\x13\n" +
-	"\x11bytebase.com/TaskR\x06parent\"I\n" +
+	"\x11bytebase.com/TaskR\x06parent\x12\x1b\n" +
+	"\tpage_size\x18\x02 \x01(\x05R\bpageSize\x12\x1d\n" +
+	"\n" +
+	"page_token\x18\x03 \x01(\tR\tpageToken\"q\n" +
 	"\x14ListTaskRunsResponse\x121\n" +
-	"\ttask_runs\x18\x01 \x03(\v2\x14.bytebase.v1.TaskRunR\btaskRuns\"E\n" +
+	"\ttask_runs\x18\x01 \x03(\v2\x14.bytebase.v1.TaskRunR\btaskRuns\x12&\n" +
+	"\x0fnext_page_token\x18\x02 \x01(\tR\rnextPageToken\"E\n" +
 	"\x11GetTaskRunRequest\x120\n" +
 	"\x04name\x18\x01 \x01(\tB\x1c\xe0A\x02\xfaA\x16\n" +
 	"\x14bytebase.com/TaskRunR\x04name\"L\n" +

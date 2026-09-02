@@ -254,10 +254,25 @@ func (c *client) listTaskRuns(ctx context.Context, r *v1pb.ListTaskRunsRequest) 
 	return resp.Msg, nil
 }
 
-func (c *client) listAllTaskRuns(ctx context.Context, rolloutName string) (*v1pb.ListTaskRunsResponse, error) {
-	return c.listTaskRuns(ctx, &v1pb.ListTaskRunsRequest{
-		Parent: rolloutName + "/stages/-/tasks/-",
-	})
+// listAllTaskRuns reads every task run of the rollout, following page tokens.
+func (c *client) listAllTaskRuns(ctx context.Context, rolloutName string) ([]*v1pb.TaskRun, error) {
+	var taskRuns []*v1pb.TaskRun
+	var pageToken string
+	for {
+		resp, err := c.listTaskRuns(ctx, &v1pb.ListTaskRunsRequest{
+			Parent:    rolloutName + "/stages/-/tasks/-",
+			PageSize:  1000,
+			PageToken: pageToken,
+		})
+		if err != nil {
+			return nil, err
+		}
+		taskRuns = append(taskRuns, resp.TaskRuns...)
+		if resp.NextPageToken == "" {
+			return taskRuns, nil
+		}
+		pageToken = resp.NextPageToken
+	}
 }
 
 func (c *client) batchCancelTaskRuns(ctx context.Context, r *v1pb.BatchCancelTaskRunsRequest) (*v1pb.BatchCancelTaskRunsResponse, error) {
