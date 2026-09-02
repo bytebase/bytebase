@@ -217,10 +217,12 @@ The `monitoring.metricWriter` role puts both in Cloud Monitoring, as
 `memory/percent_used` and `swap/percent_used`. Sustained swap above zero means 32 GB
 is too little.
 
-Toolchains are not installed here. An agent session installs its own with `sudo`, to
+Go and Node are not installed here. An agent session installs its own with `sudo`, to
 `/usr/local/go` and `/usr/local/node`, which `/etc/environment` puts on the `PATH` of
-every session, non-login included. CI jobs
-bring their own through `setup-go` and `setup-node`.
+every session, non-login included. CI jobs bring their own through `setup-go` and
+`setup-node`. The C toolchain is the exception and is a prerequisite: neither action
+installs one, and Go defaults to `CGO_ENABLED=1`, so dependencies carrying cgo files
+fail to build without it.
 
 ### b. Cache paths
 
@@ -333,7 +335,7 @@ RUNNER_VERSION=$(curl -sf --retry 3 https://api.github.com/repos/actions/runner/
 # ---------- packages: the Ubuntu image ships neither ----------
 export DEBIAN_FRONTEND=noninteractive
 echo 'DPkg::Lock::Timeout "300";' > /etc/apt/apt.conf.d/99-lock-timeout   # unattended-upgrades holds the lock at boot
-dpkg -s docker.io cron systemd-oomd &>/dev/null || { apt-get update -qq && apt-get install -y -qq docker.io cron systemd-oomd; } \
+dpkg -s docker.io cron systemd-oomd build-essential &>/dev/null || { apt-get update -qq && apt-get install -y -qq docker.io cron systemd-oomd build-essential; } \
   || { logger -t devbox-startup "FATAL: prerequisite install failed"; exit 1; }
 
 # ---------- (a) disk layout ----------
