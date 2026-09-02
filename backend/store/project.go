@@ -687,9 +687,21 @@ func (s *Store) DeleteProjects(ctx context.Context, workspace string, resourceID
 	if err != nil {
 		return errors.Wrap(err, "failed to build project delete query")
 	}
-	purged, err := scanProjectIDs(ctx, tx, sql, args...)
+	rows, err := tx.QueryContext(ctx, sql, args...)
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete projects %s", projectList)
+	}
+	defer rows.Close()
+	var purged []string
+	for rows.Next() {
+		var resourceID string
+		if err := rows.Scan(&resourceID); err != nil {
+			return errors.Wrap(err, "failed to scan purged project")
+		}
+		purged = append(purged, resourceID)
+	}
+	if err := rows.Err(); err != nil {
+		return errors.Wrapf(err, "failed to read purged projects %s", projectList)
 	}
 	for _, resourceID := range resourceIDs {
 		if !slices.Contains(purged, resourceID) {
@@ -706,24 +718,6 @@ func (s *Store) DeleteProjects(ctx context.Context, workspace string, resourceID
 	s.removeProjectDescendantCaches(cacheKeys, resourceIDs)
 
 	return nil
-}
-
-// scanProjectIDs runs a query returning one resource_id column.
-func scanProjectIDs(ctx context.Context, tx *stdsql.Tx, query string, args ...any) ([]string, error) {
-	rows, err := tx.QueryContext(ctx, query, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var projectIDs []string
-	for rows.Next() {
-		var projectID string
-		if err := rows.Scan(&projectID); err != nil {
-			return nil, err
-		}
-		projectIDs = append(projectIDs, projectID)
-	}
-	return projectIDs, rows.Err()
 }
 
 func GetListProjectFilter(workspace, filter string) (*qb.Query, error) {
