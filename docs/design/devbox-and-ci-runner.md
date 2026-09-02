@@ -333,6 +333,10 @@ dpkg -s docker.io cron systemd-oomd &>/dev/null || { apt-get update -qq && apt-g
   || { logger -t devbox-startup "FATAL: prerequisite install failed"; systemctl stop docker.socket docker; exit 1; }
 
 # ---------- (a) disk layout ----------
+# Before /scratch changes shape: daemon.json persists, so dockerd is already up with
+# data-root=/scratch/docker. Mounting over an open data root leaves it writing to the
+# covered boot-disk tree, invisible under the mount. Restarted below.
+systemctl stop docker.socket docker
 mkdir -p /scratch
 DEV=$(ls /dev/disk/by-id/google-local-* 2>/dev/null | head -1)
 if [[ -n "$DEV" ]] && ! mountpoint -q /scratch; then
@@ -342,16 +346,14 @@ if [[ -n "$DEV" ]] && ! mountpoint -q /scratch; then
 fi
 # Everything below assumes /scratch is the Local SSD. Falling back to the boot disk
 # would put swap, Docker, work trees and caches on the 100 GB disk that holds /home.
-# Stop Docker too: daemon.json persists on the boot disk and points data-root at
-# /scratch, and Docker starts before this script runs.
-mountpoint -q /scratch || { logger -t devbox-startup "FATAL: no Local SSD at /scratch"; systemctl stop docker.socket docker; exit 1; }
+mountpoint -q /scratch || { logger -t devbox-startup "FATAL: no Local SSD at /scratch"; exit 1; }
 chmod 1777 /scratch                                   # OS Login accounts create their own subtree
 mkdir -p /scratch/tmp && chmod 1777 /scratch/tmp
 # Bind unless /tmp already *is* /scratch/tmp: `mountpoint` would also be true for a
 # tmpfs /tmp, which would silently leave temp files in RAM.
 [ "$(stat -c '%d:%i' /tmp)" = "$(stat -c '%d:%i' /scratch/tmp)" ] \
   || mount --bind /scratch/tmp /tmp \
-  || { logger -t devbox-startup "FATAL: /tmp not on Local SSD"; systemctl stop docker.socket docker; exit 1; }
+  || { logger -t devbox-startup "FATAL: /tmp not on Local SSD"; exit 1; }
 if [[ ! -f /scratch/swapfile ]]; then
   fallocate -l 8G /scratch/swapfile && chmod 600 /scratch/swapfile && mkswap /scratch/swapfile >/dev/null
 fi
