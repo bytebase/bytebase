@@ -511,11 +511,15 @@ find /tmp -mindepth 1 -delete 2>/dev/null   # /tmp is on scratch; nothing is usi
 docker ps -q | xargs -r docker rm -f >/dev/null 2>&1   # idle, so a running container is orphaned
 docker system prune -af --volumes >/dev/null 2>&1
 docker volume prune -af >/dev/null 2>&1   # system prune takes anonymous volumes only
-for d in /scratch/*/; do
-  u=${d%/}; u=${u##*/}; id "$u" &>/dev/null || continue
-  rm -rf "$d"{cache,home,work}   # runner/ stays: it holds the install and its stamp
+# On scratch only the fixed entries and each account's runner/ install survive. The
+# rest -- whatever was written, wherever -- is by definition disposable.
+for e in /scratch/*; do
+  u=${e##*/}
+  case $u in tmp|docker|containerd|swapfile|lost+found) continue;; esac
+  id "$u" &>/dev/null || { rm -rf "$e"; continue; }   # not an account: dumped at the top level
+  find "$e" -mindepth 1 -maxdepth 1 ! -name runner -exec rm -rf {} +   # runner/ holds the install and its stamp
   for x in /cache /cache/go-mod /cache/npm /cache/pnpm /home /work; do
-    install -d -o "$u" -g "$u" "/scratch/$u$x"   # recreate: symlinks must not dangle
+    install -d -o "$u" -g "$u" "$e$x"   # recreate: symlinks must not dangle
   done
 done
 logger -t cache-gc "cleaned -> $(used)%"
