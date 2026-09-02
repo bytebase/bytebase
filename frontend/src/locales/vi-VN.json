@@ -1655,7 +1655,9 @@
       "configure": "Cấu hình",
       "parameters": "Tham số gh-ost",
       "requirements-not-met": "Các cơ sở dữ liệu sau không đáp ứng yêu cầu Ghost: {{databases}}",
-      "reset-to-defaults": "Đặt lại về mặc định"
+      "reset-to-defaults": "Đặt lại về mặc định",
+      "skip-metadata-lock-check-risk": "Bỏ qua bước kiểm tra này có thể làm mất các thao tác ghi trong quá trình cut-over.",
+      "skip-metadata-lock-check-why": "Tại sao?"
     },
     "go-to-plan-page": "Đi tới trang kế hoạch",
     "initial-sql-storage-failed": "Không thể lưu tạm thời SQL. Hãy giải phóng dung lượng lưu trữ của trình duyệt rồi thử lại.",

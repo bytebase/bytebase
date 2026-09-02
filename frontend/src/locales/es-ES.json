@@ -1655,7 +1655,9 @@
       "configure": "Configurar",
       "parameters": "Parámetros de gh-ost",
       "requirements-not-met": "Los requisitos de Ghost no se cumplen para: {{databases}}",
-      "reset-to-defaults": "Restablecer valores predeterminados"
+      "reset-to-defaults": "Restablecer valores predeterminados",
+      "skip-metadata-lock-check-risk": "Omitir esta comprobación puede provocar la pérdida de escrituras durante el corte.",
+      "skip-metadata-lock-check-why": "¿Por qué?"
     },
     "go-to-plan-page": "Ir a la página del plan",
     "initial-sql-storage-failed": "No se pudo guardar temporalmente el SQL. Libera espacio de almacenamiento del navegador e inténtalo de nuevo.",

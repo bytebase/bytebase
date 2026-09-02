@@ -1655,7 +1655,9 @@
       "configure": "Configure",
       "parameters": "gh-ost parameters",
       "requirements-not-met": "Ghost requirements not met: {{databases}}",
-      "reset-to-defaults": "Reset to defaults"
+      "reset-to-defaults": "Reset to defaults",
+      "skip-metadata-lock-check-risk": "Skipping this check can cause lost writes during cut-over.",
+      "skip-metadata-lock-check-why": "Why?"
     },
     "go-to-plan-page": "Go to plan page",
     "initial-sql-storage-failed": "Unable to temporarily save the SQL. Clear some browser storage and try again.",

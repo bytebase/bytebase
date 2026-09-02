@@ -1655,7 +1655,9 @@
       "configure": "設定",
       "parameters": "gh-ost パラメータ",
       "requirements-not-met": "次のデータベースは Ghost の要件を満たしていません: {{databases}}",
-      "reset-to-defaults": "デフォルトに戻す"
+      "reset-to-defaults": "デフォルトに戻す",
+      "skip-metadata-lock-check-risk": "このチェックをスキップすると、カットオーバー時に書き込みが失われる可能性があります。",
+      "skip-metadata-lock-check-why": "理由"
     },
     "go-to-plan-page": "プランページへ移動",
     "initial-sql-storage-failed": "SQL を一時保存できませんでした。ブラウザーのストレージを空けて、もう一度お試しください。",

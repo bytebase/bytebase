@@ -57,6 +57,7 @@ func TestFrontendFlagManifestInSync(t *testing.T) {
 		"default-retries":                  strconv.FormatInt(defaultConfig.defaultNumRetries, 10),
 		"cut-over-lock-timeout-seconds":    strconv.FormatInt(defaultConfig.cutoverLockTimeoutSeconds, 10),
 		"exponential-backoff-max-interval": strconv.FormatInt(defaultConfig.exponentialBackoffMaxInterval, 10),
+		"skip-metadata-lock-check":         strconv.FormatBool(defaultConfig.skipMetadataLockCheck),
 	}
 	for _, f := range manifest {
 		want, ok := backendDefaults[f.Key]

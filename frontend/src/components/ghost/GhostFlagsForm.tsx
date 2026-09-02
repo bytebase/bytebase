@@ -1,3 +1,5 @@
+import { TriangleAlert } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { NumberInput } from "@/components/ui/number-input";
 import { Switch } from "@/components/ui/switch";
@@ -15,6 +17,8 @@ interface GhostFlagsFormProps {
  * map (only non-default overrides); the parent decides when to persist it.
  */
 export function GhostFlagsForm({ value, onChange }: GhostFlagsFormProps) {
+  const { t } = useTranslation();
+
   return (
     <div className="flex flex-col gap-y-3">
       {GHOST_PARAMETERS.map((param) => (
@@ -23,6 +27,14 @@ export function GhostFlagsForm({ value, onChange }: GhostFlagsFormProps) {
           param={param}
           value={value}
           onChange={onChange}
+          riskCaption={
+            param.key === "skip-metadata-lock-check"
+              ? {
+                  text: t("plan.ghost.skip-metadata-lock-check-risk"),
+                  link: t("plan.ghost.skip-metadata-lock-check-why"),
+                }
+              : undefined
+          }
         />
       ))}
     </div>
@@ -33,55 +45,71 @@ function GhostFlagRow({
   param,
   value,
   onChange,
+  riskCaption,
 }: {
   param: GhostParameter;
   value: Record<string, string>;
   onChange: (next: Record<string, string>) => void;
+  riskCaption?: { text: string; link: string };
 }) {
   const current = value[param.key];
+  const isEnabled =
+    current !== undefined ? current === "true" : param.default === "true";
   const set = (raw: string | number | boolean | null | undefined) =>
     onChange(withFlag(value, param, raw));
 
   return (
-    <div
-      data-flag={param.key}
-      className="flex min-h-7 items-center justify-between gap-x-4"
-    >
-      <span
-        className="truncate font-mono text-sm text-control"
-        title={param.key}
-      >
-        {param.key}
-      </span>
-      {param.type === "bool" ? (
-        <Switch
-          size="sm"
-          checked={
-            current !== undefined
-              ? current === "true"
-              : param.default === "true"
-          }
-          onCheckedChange={(checked) => set(checked)}
-        />
-      ) : param.type === "string" ? (
-        <Input
-          size="sm"
-          className="w-48"
-          aria-label={param.key}
-          placeholder={param.default || param.key}
-          value={current ?? ""}
-          onChange={(e) => set(e.target.value)}
-        />
-      ) : (
-        <NumberInput
-          size="sm"
-          className="w-48"
-          aria-label={param.key}
-          placeholder={param.default}
-          value={current !== undefined ? Number(current) : null}
-          step={param.type === "float" ? 0.1 : 1}
-          onValueChange={(v) => set(v)}
-        />
+    <div data-flag={param.key} className="flex flex-col gap-y-1">
+      <div className="flex min-h-7 items-center justify-between gap-x-4">
+        <span
+          className="truncate font-mono text-sm text-control"
+          title={param.key}
+        >
+          {param.key}
+        </span>
+        {param.type === "bool" ? (
+          <Switch
+            size="sm"
+            checked={isEnabled}
+            onCheckedChange={(checked) => set(checked)}
+          />
+        ) : param.type === "string" ? (
+          <Input
+            size="sm"
+            className="w-48"
+            aria-label={param.key}
+            placeholder={param.default || param.key}
+            value={current ?? ""}
+            onChange={(e) => set(e.target.value)}
+          />
+        ) : (
+          <NumberInput
+            size="sm"
+            className="w-48"
+            aria-label={param.key}
+            placeholder={param.default}
+            value={current !== undefined ? Number(current) : null}
+            step={param.type === "float" ? 0.1 : 1}
+            onValueChange={(v) => set(v)}
+          />
+        )}
+      </div>
+      {riskCaption && isEnabled && (
+        <div
+          data-testid="skip-metadata-lock-check-risk"
+          className="flex items-center gap-x-1 text-xs text-warning"
+        >
+          <TriangleAlert className="size-3.5 shrink-0" />
+          <span>{riskCaption.text}</span>
+          <a
+            href="https://github.com/github/gh-ost/pull/1536"
+            target="_blank"
+            rel="noreferrer"
+            className="shrink-0 text-warning hover:underline"
+          >
+            {riskCaption.link}
+          </a>
+        </div>
       )}
     </div>
   );

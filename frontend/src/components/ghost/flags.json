@@ -11,6 +11,7 @@
   { "key": "throttle-control-replicas", "type": "string", "default": "" },
   { "key": "allow-on-master", "type": "bool", "default": "true" },
   { "key": "attempt-instant-ddl", "type": "bool", "default": "true" },
+  { "key": "skip-metadata-lock-check", "type": "bool", "default": "false" },
   { "key": "switch-to-rbr", "type": "bool", "default": "false" },
   { "key": "assume-rbr", "type": "bool", "default": "false" },
   { "key": "assume-master-host", "type": "bool", "default": "false" }
