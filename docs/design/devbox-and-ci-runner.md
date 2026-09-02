@@ -526,6 +526,7 @@ idle() { ! pgrep -f Runner.Worker >/dev/null && [[ -z "$(ss -Htn state establish
 if ! idle && [[ $(used) -lt $CRITICAL ]]; then logger -t cache-gc "deferred: busy at $(used)%"; exit 0; fi
 logger -t cache-gc "cleaning: $(used)% used"
 docker system prune -af --volumes >/dev/null 2>&1
+docker volume prune -af >/dev/null 2>&1   # system prune takes anonymous volumes only
 for d in /scratch/*/; do
   u=${d%/}; u=${u##*/}; id "$u" &>/dev/null || continue
   rm -rf "$d"{cache,home,work}   # runner/ stays: it holds the install and its stamp
