@@ -8998,8 +8998,8 @@ The syntax and semantics of CEL are documented at https://github.com/google/cel-
 
 Supported filter:
 - project: the project full name in &#34;projects/{id}&#34; format, support &#34;==&#34; operator.
-- database: the database full name in &#34;instances/{id}/databases/{name}&#34; format, support &#34;==&#34; operator.
-- instance: the instance full name in &#34;instances/{id}&#34; format, support &#34;==&#34; operator.
+- database: the database full name in &#34;instances/{id}/databases/{name}&#34; or &#34;projects/{project}/instances/{id}/databases/{name}&#34; format, support &#34;==&#34; operator.
+- instance: the instance full name in &#34;instances/{id}&#34; or &#34;projects/{project}/instances/{id}&#34; format, support &#34;==&#34; operator.
 - type: the type, should be &#34;QUERY&#34; or &#34;EXPORT&#34;, support &#34;==&#34; operator.
 - statement: the SQL statement, support &#34;==&#34; and &#34;.contains()&#34; operators.
 

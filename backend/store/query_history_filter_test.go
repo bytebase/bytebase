@@ -44,6 +44,13 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name:     "project-scoped instance filter",
+			filter:   `instance == "projects/test-project/instances/test-instance"`,
+			wantSQL:  "(query_history.database LIKE $1 ESCAPE '\\')",
+			wantArgs: []any{"projects/test-project/instances/test-instance/databases/%"},
+			wantErr:  false,
+		},
+		{
 			name:     "type filter",
 			filter:   `type == "QUERY"`,
 			wantSQL:  "(query_history.type = $1)",

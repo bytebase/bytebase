@@ -254,13 +254,18 @@ func GetListQueryHistoryFilter(filter string) (*qb.Query, error) {
 		case "database":
 			return qb.Q().Space("query_history.database = ?", strValue), nil
 		case "instance":
-			instanceID, err := common.GetInstanceID(strValue)
+			projectID, instanceID, err := common.GetInstanceResourceName(strValue)
 			if err != nil {
-				return nil, errors.Errorf("invalid instance filter %q, expect instances/{instance}", strValue)
+				return nil, errors.Errorf("invalid instance filter %q, expect instances/{instance} or projects/{project}/instances/{instance}", strValue)
 			}
-			// database holds instances/{instance}/databases/{database}, so an
-			// instance matches every database under it by prefix.
-			prefix := common.FormatInstance(instanceID) + "/" + common.DatabaseIDPrefix
+			// database holds the instance's own name plus /databases/{database},
+			// project-scoped instances included, so an instance matches every
+			// database under it by prefix.
+			instanceName := common.FormatInstance(instanceID)
+			if projectID != nil {
+				instanceName = common.FormatProjectInstance(*projectID, instanceID)
+			}
+			prefix := instanceName + "/" + common.DatabaseIDPrefix
 			return qb.Q().Space("query_history.database LIKE ? ESCAPE '\\'", escapeLikePattern(prefix)+"%"), nil
 		case "type":
 			return qb.Q().Space("query_history.type = ?", QueryHistoryType(strValue)), nil
