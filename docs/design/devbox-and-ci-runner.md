@@ -525,6 +525,7 @@ idle() { ! pgrep -f Runner.Worker >/dev/null && [[ -z "$(ss -Htn state establish
 [[ $(used) -ge $HIGH ]] || exit 0
 if ! idle && [[ $(used) -lt $CRITICAL ]]; then logger -t cache-gc "deferred: busy at $(used)%"; exit 0; fi
 logger -t cache-gc "cleaning: $(used)% used"
+find /tmp -mindepth 1 -delete 2>/dev/null   # /tmp is on scratch; nothing is using it
 docker system prune -af --volumes >/dev/null 2>&1
 docker volume prune -af >/dev/null 2>&1   # system prune takes anonymous volumes only
 for d in /scratch/*/; do
