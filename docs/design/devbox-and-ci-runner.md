@@ -81,9 +81,8 @@ manual — at `github.com/settings/personal-access-tokens/new`:
 
 Org-owned tokens may need an org admin to approve the request.
 
-Separately, grant yourself `roles/compute.osAdminLogin` on the project. That gives
-your OS Login account `sudo`. The script cannot grant it, because the account does not
-exist until you first connect.
+Developer access is granted below rather than by the script, because an OS Login
+account does not exist until its owner first connects.
 
 **2. Everything else.**
 
@@ -117,6 +116,17 @@ done
 # A reserved address. An ephemeral one is released when the instance stops, so every
 # preemption would hand the box a new IP and strand the generated SSH entry.
 gcloud compute addresses create devbox --project=$PROJECT --region=${ZONE%-*}
+
+# Each developer who will SSH in. OS Login checks both: osAdminLogin gives the
+# account `sudo`, and because the VM has a service account attached, connecting also
+# requires permission to act as it -- without that, OS Login refuses the connection
+# before it ever creates the account.
+for DEV in you@bytebase.com; do
+  gcloud projects add-iam-policy-binding $PROJECT \
+    --member="user:$DEV" --role=roles/compute.osAdminLogin
+  gcloud iam service-accounts add-iam-policy-binding $SA --project=$PROJECT \
+    --member="user:$DEV" --role=roles/iam.serviceAccountUser
+done
 
 # The instance.
 gcloud compute instances create devbox --project=$PROJECT --zone=$ZONE \
