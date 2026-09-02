@@ -127,27 +127,6 @@ describe("GhostFlagsForm", () => {
       "https://github.com/github/gh-ost/pull/1536"
     );
   });
-
-  test.each(["1", "t", "T", "true", "TRUE", "True"])(
-    "shows the metadata lock risk for accepted true value %s",
-    (value) => {
-      const { container } = render(
-        <GhostFlagsForm
-          value={{ "skip-metadata-lock-check": value }}
-          onChange={vi.fn()}
-        />
-      );
-
-      expect(
-        container
-          .querySelector('[data-flag="skip-metadata-lock-check"]')
-          ?.querySelector('[role="switch"]')
-      ).toBeChecked();
-      expect(
-        screen.getByTestId("skip-metadata-lock-check-risk")
-      ).toBeInTheDocument();
-    }
-  );
 });
 
 describe("GhostFlagsButton", () => {

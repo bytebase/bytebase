@@ -55,7 +55,7 @@ function GhostFlagRow({
 }) {
   const current = value[param.key];
   const isEnabled =
-    param.type === "bool" && isBooleanFlagEnabled(current, param.default);
+    param.type === "bool" && (current ?? param.default) === "true";
   const set = (raw: string | number | boolean | null | undefined) =>
     onChange(withFlag(value, param, raw));
 
@@ -117,10 +117,4 @@ function GhostFlagRow({
       )}
     </div>
   );
-}
-
-const TRUE_BOOLEAN_VALUES = new Set(["1", "t", "T", "true", "TRUE", "True"]);
-
-function isBooleanFlagEnabled(value: string | undefined, defaultValue: string) {
-  return TRUE_BOOLEAN_VALUES.has(value ?? defaultValue);
 }
