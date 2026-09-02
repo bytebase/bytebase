@@ -582,6 +582,13 @@ export declare type Project = Message<"bytebase.v1.Project"> & {
    * @generated from field: bool allow_just_in_time_access = 23;
    */
   allowJustInTimeAccess: boolean;
+
+  /**
+   * Whether to allow the last Plan editor to approve a database change issue.
+   *
+   * @generated from field: bool allow_last_plan_editor_approval = 24;
+   */
+  allowLastPlanEditorApproval: boolean;
 };
 
 /**

@@ -294,6 +294,15 @@ export declare type Plan = Message<"bytebase.v1.Plan"> & {
    * @generated from field: bytebase.v1.IssueStatus issue_status = 15;
    */
   issueStatus: IssueStatus;
+
+  /**
+   * The user who last created or updated the Plan specs.
+   * Format: users/hello@world.com. For legacy Plans without stored attribution,
+   * this falls back to the Plan creator.
+   *
+   * @generated from field: string last_plan_editor = 16;
+   */
+  lastPlanEditor: string;
 };
 
 /**

@@ -35,7 +35,8 @@ const base: PlanLifecycleResolverInput = {
   issueDraft: false,
   approvalStatus: ApprovalStatus.PENDING,
   hasCurrentStep: false,
-  isCurrentUserCandidate: false,
+  canCurrentUserApprove: false,
+  isCurrentUserReviewCandidate: false,
   checks: checks(),
   hasRollout: false,
   rollout: undefined,
@@ -124,14 +125,19 @@ describe("resolvePlanLifecycleHeaderState — review", () => {
 
   test("pending + current user's turn -> review-your-turn", () => {
     expect(
-      resolve({ hasCurrentStep: true, isCurrentUserCandidate: true }).kind
+      resolve({
+        canCurrentUserApprove: true,
+        hasCurrentStep: true,
+        isCurrentUserReviewCandidate: true,
+      }).kind
     ).toBe("review-your-turn");
   });
 
   test("readonly suppresses the your-turn advance -> plan-status", () => {
     const state = resolve({
       hasCurrentStep: true,
-      isCurrentUserCandidate: true,
+      canCurrentUserApprove: true,
+      isCurrentUserReviewCandidate: true,
       readonly: true,
     });
     expect(state.kind).toBe("plan-status");
@@ -140,6 +146,16 @@ describe("resolvePlanLifecycleHeaderState — review", () => {
   test("pending + not your turn + clean checks -> in-review", () => {
     const state = resolve({});
     expect(state).toMatchObject({ kind: "plan-status", reason: "in-review" });
+  });
+
+  test("last plan editor can review but cannot approve", () => {
+    expect(
+      resolve({
+        canCurrentUserApprove: false,
+        hasCurrentStep: true,
+        isCurrentUserReviewCandidate: true,
+      })
+    ).toEqual({ canApprove: false, kind: "review-your-turn" });
   });
 
   test("pending + checks failing -> still in-review (review is the active gate)", () => {

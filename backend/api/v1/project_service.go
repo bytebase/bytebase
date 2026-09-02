@@ -365,6 +365,9 @@ func (s *ProjectService) UpdateProject(ctx context.Context, req *connect.Request
 		case "allow_just_in_time_access":
 			projectSettings.AllowJustInTimeAccess = req.Msg.Project.AllowJustInTimeAccess
 			patch.Setting = projectSettings
+		case "allow_last_plan_editor_approval":
+			projectSettings.AllowLastPlanEditorApproval = req.Msg.Project.AllowLastPlanEditorApproval
+			patch.Setting = projectSettings
 		case "labels":
 			if err := validateLabels(req.Msg.Project.Labels); err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, err)

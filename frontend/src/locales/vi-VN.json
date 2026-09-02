@@ -1655,7 +1655,9 @@
       "configure": "Cấu hình",
       "parameters": "Tham số gh-ost",
       "requirements-not-met": "Các cơ sở dữ liệu sau không đáp ứng yêu cầu Ghost: {{databases}}",
-      "reset-to-defaults": "Đặt lại về mặc định"
+      "reset-to-defaults": "Đặt lại về mặc định",
+      "skip-metadata-lock-check-risk": "Bỏ qua bước kiểm tra này có thể làm mất các thao tác ghi trong quá trình cut-over.",
+      "skip-metadata-lock-check-why": "Tại sao?"
     },
     "go-to-plan-page": "Đi tới trang kế hoạch",
     "initial-sql-storage-failed": "Không thể lưu tạm thời SQL. Hãy giải phóng dung lượng lưu trữ của trình duyệt rồi thử lại.",
@@ -1742,6 +1744,7 @@
         "no-reviewers": "Không có người xét duyệt",
         "rejected-by": "Bị từ chối bởi {{user}}"
       },
+      "candidate-last-changed-plan": "Không thể phê duyệt — là người thay đổi kế hoạch gần đây nhất",
       "comment-required-to-reject": "Cần có bình luận để từ chối",
       "footer": {
         "all-gates-passed": "Đã đạt mọi điều kiện",
@@ -1771,6 +1774,7 @@
         "rollout-not-created": "Bản triển khai chưa được tạo tự động",
         "waiting-on-review": "Đang chờ xét duyệt"
       },
+      "last-plan-editor-cannot-approve": "Bạn không thể phê duyệt issue này vì bạn là người thay đổi kế hoạch gần đây nhất. Một người xét duyệt khác phải phê duyệt issue này.",
       "rejection": {
         "guidance-prefix": "Cập nhật thay đổi để xử lý phản hồi, hoặc",
         "guidance-suffix": "mà không thay đổi",
@@ -1970,17 +1974,25 @@
           "description": "Cho phép thành viên dự án yêu cầu cấp quyền truy cập có thời hạn cho các câu lệnh chỉ đọc cụ thể. Quyền được cấp cũng có thể bao gồm xuất kết quả và xem dữ liệu chưa che.",
           "self": "Cho phép cấp quyền truy cập"
         },
+        "allow-last-plan-editor-approval": {
+          "description": "Cho phép người thay đổi kế hoạch gần đây nhất phê duyệt issue thay đổi cơ sở dữ liệu liên quan.",
+          "self": "Cho phép người thay đổi kế hoạch gần đây nhất phê duyệt"
+        },
         "allow-request-role": {
           "description": "Người dùng không phải chủ sở hữu dự án có thể tự yêu cầu vai trò cấp dự án",
           "self": "Cho phép yêu cầu vai trò"
         },
         "allow-self-approval": {
-          "description": "Cho phép người tạo vấn đề phê duyệt vấn đề.",
-          "self": "Cho phép tự phê duyệt"
+          "description": "Cho phép người tạo issue phê duyệt issue đó.",
+          "self": "Cho phép người tạo issue tự phê duyệt"
         },
         "approval-flow-configured": "Quy trình phê duyệt đã được cấu hình",
         "approval-flow-fallback": "Đang sử dụng quy tắc phê duyệt mặc định",
         "approval-flow-not-configured": "Chưa cấu hình quy trình phê duyệt",
+        "approval-permissions": {
+          "description": "Các quyền này được áp dụng đồng thời. Nếu một người xét duyệt vừa tạo issue vừa là người thay đổi kế hoạch gần đây nhất, cả hai quyền phải được bật.",
+          "self": "Quyền phê duyệt"
+        },
         "ci-sampling-size": {
           "description": "Số lượng cơ sở dữ liệu tối đa để lấy mẫu trong quá trình xác thực dữ liệu CI. \nKhi bị vô hiệu hóa (không), xác thực đầy đủ sẽ được thực hiện.",
           "self": "Kích thước lấy mẫu dữ liệu CI"

@@ -396,6 +396,7 @@ export function IssueDetailActionBar() {
               onExecute={executeAction}
             >
               <IssueDetailReviewPopover
+                canApprove={context.permissions.canApproveIssue}
                 context={context}
                 mobile={page.sidebarMode === "MOBILE"}
                 onOpenChange={setPendingReviewOpen}
@@ -618,6 +619,7 @@ function IssueDetailConfirmDialog({
 type IssueReviewAction = "COMMENT" | "APPROVE" | "REJECT";
 
 function IssueDetailReviewPopover({
+  canApprove,
   context,
   mobile,
   onOpenChange,
@@ -625,6 +627,7 @@ function IssueDetailReviewPopover({
   onRefreshState,
   open,
 }: {
+  canApprove: boolean;
   context: ActionContext;
   mobile: boolean;
   onOpenChange: (open: boolean) => void;
@@ -641,7 +644,9 @@ function IssueDetailReviewPopover({
     useState<IssueReviewAction>("COMMENT");
   const issue = page.issue;
   const submitDisabled =
-    loading || (selectedAction === "COMMENT" && comment.trim().length === 0);
+    loading ||
+    (selectedAction === "APPROVE" && !canApprove) ||
+    (selectedAction === "COMMENT" && comment.trim().length === 0);
 
   useEffect(() => {
     if (!open) {
@@ -753,8 +758,14 @@ function IssueDetailReviewPopover({
           selected={selectedAction === "COMMENT"}
           value="COMMENT"
         />
-        {context.permissions.isApprovalCandidate && (
+        {context.permissions.isReviewCandidate && (
           <IssueDetailReviewOption
+            disabled={!canApprove}
+            disabledReason={
+              canApprove
+                ? undefined
+                : t("plan.review.last-plan-editor-cannot-approve")
+            }
             description={t("issue.review.approve-description")}
             icon={<Check className="size-4 text-success" />}
             label={t("common.approve")}
@@ -762,7 +773,7 @@ function IssueDetailReviewPopover({
             value="APPROVE"
           />
         )}
-        {context.permissions.isApprovalCandidate && (
+        {context.permissions.isReviewCandidate && (
           <IssueDetailReviewOption
             description={t("issue.review.reject-description")}
             icon={<X className="size-4 text-error" />}
@@ -825,20 +836,25 @@ function IssueDetailReviewPopover({
 }
 
 function IssueDetailReviewOption({
+  disabled = false,
+  disabledReason,
   description,
   icon,
   label,
   selected,
   value,
 }: {
+  disabled?: boolean;
+  disabledReason?: string;
   description?: string;
   icon?: ReactNode;
   label: string;
   selected: boolean;
   value: IssueReviewAction;
 }) {
-  return (
+  const option = (
     <RadioGroupItem
+      disabled={disabled}
       value={value}
       radioClassName="mt-1"
       className={cn(
@@ -855,5 +871,13 @@ function IssueDetailReviewOption({
         )}
       </span>
     </RadioGroupItem>
+  );
+  if (!disabledReason) {
+    return option;
+  }
+  return (
+    <Tooltip content={disabledReason}>
+      <span className="block">{option}</span>
+    </Tooltip>
   );
 }

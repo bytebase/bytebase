@@ -33,11 +33,17 @@ vi.mock("@/stores/app", () => ({
     }),
 }));
 
-vi.mock("./useApprovalCandidates", () => ({
-  useApprovalCandidates: () => ({
+const mocks: { approvalCandidates: ApprovalCandidates } = {
+  approvalCandidates: {
+    canCurrentUserApprove: false,
     candidates: [],
-    isCurrentUserCandidate: false,
-  }),
+    isCurrentUserReviewCandidate: false,
+    isCurrentUserRoleMember: false,
+  } as ApprovalCandidates,
+};
+
+vi.mock("./useApprovalCandidates", () => ({
+  useApprovalCandidates: () => mocks.approvalCandidates,
 }));
 
 vi.mock("../../shell/PlanDetailContext", () => ({
@@ -66,6 +72,7 @@ vi.mock("@/lib/role", () => ({
 }));
 
 import { ReviewApprovalFlow } from "./ReviewApprovalFlow";
+import type { ApprovalCandidates } from "./useApprovalCandidates";
 
 const makeIssue = ({
   approvalStatus = ApprovalStatus.PENDING,
@@ -93,6 +100,44 @@ const renderIntoContainer = (element: ReactElement) => {
 };
 
 describe("ReviewApprovalFlow", () => {
+  test("keeps the last plan editor visible with an ineligible reason", () => {
+    mocks.approvalCandidates = {
+      canCurrentUserApprove: false,
+      candidates: [
+        {
+          canApprove: false,
+          canReview: true,
+          ineligibilities: ["last-plan-editor"],
+          user: {
+            email: "editor@example.com",
+            name: "users/editor@example.com",
+            title: "Editor",
+          },
+        },
+      ],
+      isCurrentUserReviewCandidate: true,
+      isCurrentUserRoleMember: true,
+    } as unknown as ApprovalCandidates;
+    const { container, render, unmount } = renderIntoContainer(
+      <ReviewApprovalFlow issue={makeIssue()} />
+    );
+
+    render();
+
+    expect(container.textContent).toContain("Editor");
+    expect(container.textContent).toContain(
+      "plan.review.candidate-last-changed-plan"
+    );
+
+    mocks.approvalCandidates = {
+      canCurrentUserApprove: false,
+      candidates: [],
+      isCurrentUserReviewCandidate: false,
+      isCurrentUserRoleMember: false,
+    } as ApprovalCandidates;
+    unmount();
+  });
+
   // BYT-9745: a skipped approval has no flow to render. The component must show
   // the "no approval required" note instead of an empty box — otherwise callers
   // that forget to guard the skipped case (e.g. the bypass confirm sheet) show

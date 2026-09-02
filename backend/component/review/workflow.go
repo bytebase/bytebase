@@ -231,7 +231,7 @@ func (w *Workflow) ReviewIssue(ctx context.Context, input IssueInput) (*IssueRes
 	}
 
 	updatedApproval := proto.CloneOf(approval)
-	events, err := w.applyReviewAction(ctx, project, issue, input, updatedApproval)
+	events, err := w.applyReviewAction(ctx, project, issue, observedPlan, input, updatedApproval)
 	if err != nil {
 		return nil, err
 	}
@@ -323,7 +323,7 @@ func updateIssuePayload(ctx context.Context, tx *sql.Tx, issue *store.IssueMessa
 	).Scan(&issue.UpdatedAt)
 }
 
-func (w *Workflow) applyReviewAction(ctx context.Context, project *store.ProjectMessage, issue *store.IssueMessage, input IssueInput, approval *storepb.IssuePayloadApproval) ([]Event, error) {
+func (w *Workflow) applyReviewAction(ctx context.Context, project *store.ProjectMessage, issue *store.IssueMessage, plan *store.PlanMessage, input IssueInput, approval *storepb.IssuePayloadApproval) ([]Event, error) {
 	switch input.Action {
 	case ActionApprove, ActionReject:
 		verb := "approve"
@@ -344,6 +344,15 @@ func (w *Workflow) applyReviewAction(ctx context.Context, project *store.Project
 		}
 		if !project.Setting.GetAllowSelfApproval() && issue.CreatorEmail == input.Actor.Email {
 			return nil, workflowError(ErrorPermissionDenied, "cannot %s because self-approval is not allowed for this project", verb)
+		}
+		if input.Action == ActionApprove && !project.Setting.GetAllowLastPlanEditorApproval() && plan != nil {
+			lastPlanEditor := plan.Creator
+			if plan.LastPlanEditor != nil {
+				lastPlanEditor = *plan.LastPlanEditor
+			}
+			if lastPlanEditor == input.Actor.Email {
+				return nil, workflowError(ErrorFailedPrecondition, "cannot approve because the user is the last Plan editor")
+			}
 		}
 		approval.Approvers = append(approval.Approvers, &storepb.IssuePayloadApproval_Approver{
 			Status:    status,
@@ -466,7 +475,7 @@ func lockIssuePlan(ctx context.Context, tx *sql.Tx, issue *store.IssueMessage) (
 		return nil, nil
 	}
 	return scanIssuePlan(tx.QueryRowContext(ctx, `
-		SELECT id, creator, created_at, updated_at, project, name, description, config, deleted
+		SELECT id, creator, last_plan_editor, created_at, updated_at, project, name, description, config, deleted
 		FROM plan
 		WHERE project = $1
 		  AND id = $2
@@ -478,7 +487,7 @@ func getIssuePlan(ctx context.Context, tx *sql.Tx, issue *store.IssueMessage) (*
 		return nil, nil
 	}
 	return scanIssuePlan(tx.QueryRowContext(ctx, `
-		SELECT id, creator, created_at, updated_at, project, name, description, config, deleted
+		SELECT id, creator, last_plan_editor, created_at, updated_at, project, name, description, config, deleted
 		FROM plan
 		WHERE project = $1
 		  AND id = $2`, issue.ProjectID, *issue.PlanUID), "failed to get plan")
@@ -487,9 +496,11 @@ func getIssuePlan(ctx context.Context, tx *sql.Tx, issue *store.IssueMessage) (*
 func scanIssuePlan(row *sql.Row, queryErrorMessage string) (*store.PlanMessage, error) {
 	plan := &store.PlanMessage{Config: &storepb.PlanConfig{}}
 	var config []byte
+	var lastPlanEditor sql.NullString
 	err := row.Scan(
 		&plan.UID,
 		&plan.Creator,
+		&lastPlanEditor,
 		&plan.CreatedAt,
 		&plan.UpdatedAt,
 		&plan.ProjectID,
@@ -506,6 +517,9 @@ func scanIssuePlan(row *sql.Row, queryErrorMessage string) (*store.PlanMessage, 
 	}
 	if err := common.ProtojsonUnmarshaler.Unmarshal(config, plan.Config); err != nil {
 		return nil, workflowWrap(ErrorInternal, err, "failed to unmarshal plan config")
+	}
+	if lastPlanEditor.Valid {
+		plan.LastPlanEditor = &lastPlanEditor.String
 	}
 	return plan, nil
 }

@@ -21,13 +21,14 @@ import {
   RejectIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
-
-type ReviewAction = "COMMENT" | "APPROVE" | "REJECT";
+import { isReviewSubmitDisabled, type ReviewAction } from "./reviewAction";
 
 export function ReviewActionPopover({
+  canApprove,
   issue,
   onClose,
 }: {
+  canApprove: boolean;
   issue: Issue;
   onClose: () => void;
 }) {
@@ -43,10 +44,12 @@ export function ReviewActionPopover({
   }, [issue.name]);
 
   const commentMissing = comment.trim().length === 0;
-  const submitDisabled =
-    loading ||
-    (action === "COMMENT" && commentMissing) ||
-    (action === "REJECT" && commentMissing);
+  const submitDisabled = isReviewSubmitDisabled({
+    action,
+    canApprove,
+    commentMissing,
+    loading,
+  });
 
   const submit = async () => {
     if (submitDisabled) return;
@@ -102,6 +105,12 @@ export function ReviewActionPopover({
           value="COMMENT"
         />
         <ReviewOption
+          disabled={!canApprove}
+          disabledReason={
+            canApprove
+              ? undefined
+              : t("plan.review.last-plan-editor-cannot-approve")
+          }
           description={t("issue.review.approve-description")}
           icon={<DecisionIcon spec={REVIEW_DECISION_ICON.approved} />}
           label={t("common.approve")}
@@ -151,20 +160,25 @@ function DecisionIcon({ spec }: { spec: ActivityIconSpec }) {
 }
 
 function ReviewOption({
+  disabled = false,
+  disabledReason,
   description,
   icon,
   label,
   selected,
   value,
 }: {
+  disabled?: boolean;
+  disabledReason?: string;
   description?: string;
   icon?: ReactNode;
   label: string;
   selected: boolean;
   value: ReviewAction;
 }) {
-  return (
+  const option = (
     <RadioGroupItem
+      disabled={disabled}
       value={value}
       radioClassName="mt-1"
       className={cn(
@@ -181,5 +195,13 @@ function ReviewOption({
         )}
       </span>
     </RadioGroupItem>
+  );
+  if (!disabledReason) {
+    return option;
+  }
+  return (
+    <Tooltip content={disabledReason}>
+      <span className="block">{option}</span>
+    </Tooltip>
   );
 }

@@ -100,6 +100,33 @@ describe("GhostFlagsForm", () => {
     toggleFlag(container, "allow-on-master");
     expect(onChange).toHaveBeenCalledWith({ "allow-on-master": "false" });
   });
+
+  test("shows the metadata lock risk only when the skip check is enabled", () => {
+    const { rerender } = render(
+      <GhostFlagsForm value={{}} onChange={vi.fn()} />
+    );
+    expect(
+      screen.queryByTestId("skip-metadata-lock-check-risk")
+    ).not.toBeInTheDocument();
+
+    rerender(
+      <GhostFlagsForm
+        value={{ "skip-metadata-lock-check": "true" }}
+        onChange={vi.fn()}
+      />
+    );
+    expect(
+      screen.getByTestId("skip-metadata-lock-check-risk")
+    ).toHaveTextContent("plan.ghost.skip-metadata-lock-check-risk");
+    expect(
+      screen.getByRole("link", {
+        name: "plan.ghost.skip-metadata-lock-check-why",
+      })
+    ).toHaveAttribute(
+      "href",
+      "https://github.com/github/gh-ost/pull/1536"
+    );
+  });
 });
 
 describe("GhostFlagsButton", () => {

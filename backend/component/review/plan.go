@@ -3,6 +3,7 @@ package review
 import (
 	"context"
 	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/pkg/errors"
@@ -18,13 +19,14 @@ import (
 // issue's metadata and lifecycle synchronized with the Plan and resets review
 // state when submitted Plan specs change.
 type UpdatePlanInput struct {
-	Workspace   string
-	ProjectID   string
-	PlanUID     int64
-	Title       *string
-	Description *string
-	Deleted     *bool
-	Specs       *[]*storepb.PlanConfig_Spec
+	Workspace      string
+	ProjectID      string
+	PlanUID        int64
+	Title          *string
+	Description    *string
+	Deleted        *bool
+	Specs          *[]*storepb.PlanConfig_Spec
+	LastPlanEditor *string
 }
 
 // UpdatePlanResult is the committed Plan and linked review state.
@@ -37,13 +39,14 @@ type UpdatePlanResult struct {
 
 // UpdatePlanSpecsInput is retained for callers performing a spec mutation.
 type UpdatePlanSpecsInput struct {
-	Workspace   string
-	ProjectID   string
-	PlanUID     int64
-	Title       *string
-	Description *string
-	Deleted     *bool
-	Specs       []*storepb.PlanConfig_Spec
+	Workspace      string
+	ProjectID      string
+	PlanUID        int64
+	Title          *string
+	Description    *string
+	Deleted        *bool
+	Specs          []*storepb.PlanConfig_Spec
+	LastPlanEditor *string
 }
 
 // UpdatePlanSpecsResult is the result of a spec mutation.
@@ -52,13 +55,14 @@ type UpdatePlanSpecsResult = UpdatePlanResult
 // UpdatePlanSpecs commits a Plan spec mutation through UpdatePlan.
 func (w *Workflow) UpdatePlanSpecs(ctx context.Context, input UpdatePlanSpecsInput) (*UpdatePlanSpecsResult, error) {
 	return w.UpdatePlan(ctx, UpdatePlanInput{
-		Workspace:   input.Workspace,
-		ProjectID:   input.ProjectID,
-		PlanUID:     input.PlanUID,
-		Title:       input.Title,
-		Description: input.Description,
-		Deleted:     input.Deleted,
-		Specs:       &input.Specs,
+		Workspace:      input.Workspace,
+		ProjectID:      input.ProjectID,
+		PlanUID:        input.PlanUID,
+		Title:          input.Title,
+		Description:    input.Description,
+		Deleted:        input.Deleted,
+		Specs:          &input.Specs,
+		LastPlanEditor: input.LastPlanEditor,
 	})
 }
 
@@ -103,21 +107,27 @@ func (w *Workflow) UpdatePlan(ctx context.Context, input UpdatePlanInput) (*Upda
 	}
 
 	updatedAt := time.Now()
+	lastPlanEditor := ""
+	if input.LastPlanEditor != nil {
+		lastPlanEditor = strings.ToLower(*input.LastPlanEditor)
+	}
 	if err := tx.QueryRowContext(ctx, `
 		UPDATE plan
 		SET updated_at = $1,
 			name = CASE WHEN $2 THEN $3 ELSE name END,
 			description = CASE WHEN $4 THEN $5 ELSE description END,
 			deleted = CASE WHEN $6 THEN $7 ELSE deleted END,
-			config = CASE WHEN $8 THEN $9::jsonb ELSE config END
-		WHERE project = $10
-		  AND id = $11
+			config = CASE WHEN $8 THEN $9::jsonb ELSE config END,
+			last_plan_editor = CASE WHEN $10 THEN $11 ELSE last_plan_editor END
+		WHERE project = $12
+		  AND id = $13
 		RETURNING updated_at`,
 		updatedAt,
 		input.Title != nil, stringValue(input.Title),
 		input.Description != nil, stringValue(input.Description),
 		input.Deleted != nil, boolValue(input.Deleted),
 		input.Specs != nil, config,
+		input.LastPlanEditor != nil, lastPlanEditor,
 		input.ProjectID, input.PlanUID,
 	).Scan(&plan.UpdatedAt); err != nil {
 		return nil, workflowWrap(ErrorInternal, err, "failed to update Plan")
@@ -132,6 +142,9 @@ func (w *Workflow) UpdatePlan(ctx context.Context, input UpdatePlanInput) (*Upda
 		plan.Deleted = *input.Deleted
 	}
 	plan.Config = updatedConfig
+	if input.LastPlanEditor != nil {
+		plan.LastPlanEditor = &lastPlanEditor
+	}
 
 	result := &UpdatePlanResult{Plan: plan, Issue: issue}
 	if issue != nil && issue.Payload.GetDraft() {
@@ -199,8 +212,9 @@ func (w *Workflow) UpdatePlan(ctx context.Context, input UpdatePlanInput) (*Upda
 func lockPlan(ctx context.Context, tx *sql.Tx, workspace, projectID string, planUID int64) (*store.PlanMessage, error) {
 	plan := &store.PlanMessage{Config: &storepb.PlanConfig{}}
 	var config []byte
+	var lastPlanEditor sql.NullString
 	err := tx.QueryRowContext(ctx, `
-		SELECT plan.id, plan.creator, plan.created_at, plan.updated_at, plan.project, plan.name, plan.description, plan.config, plan.deleted
+		SELECT plan.id, plan.creator, plan.last_plan_editor, plan.created_at, plan.updated_at, plan.project, plan.name, plan.description, plan.config, plan.deleted
 		FROM plan
 		JOIN project ON project.resource_id = plan.project
 		WHERE project.workspace = $1
@@ -209,6 +223,7 @@ func lockPlan(ctx context.Context, tx *sql.Tx, workspace, projectID string, plan
 		FOR UPDATE OF plan`, workspace, projectID, planUID).Scan(
 		&plan.UID,
 		&plan.Creator,
+		&lastPlanEditor,
 		&plan.CreatedAt,
 		&plan.UpdatedAt,
 		&plan.ProjectID,
@@ -225,6 +240,9 @@ func lockPlan(ctx context.Context, tx *sql.Tx, workspace, projectID string, plan
 	}
 	if err := common.ProtojsonUnmarshaler.Unmarshal(config, plan.Config); err != nil {
 		return nil, workflowWrap(ErrorInternal, err, "failed to unmarshal Plan config")
+	}
+	if lastPlanEditor.Valid {
+		plan.LastPlanEditor = &lastPlanEditor.String
 	}
 	return plan, nil
 }

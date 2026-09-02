@@ -99,10 +99,10 @@ require (
 	golang.org/x/text v0.40.0
 	google.golang.org/api v0.290.0
 	google.golang.org/genproto v0.0.0-20260720211330-0afa2a65878a
-	google.golang.org/genproto/googleapis/api v0.0.0-20260729162451-8efbd57d26e0
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260729162451-8efbd57d26e0
+	google.golang.org/genproto/googleapis/api v0.0.0-20260831171406-18b4a7587f8a
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260831171406-18b4a7587f8a
 	google.golang.org/grpc v1.82.1
-	google.golang.org/protobuf v1.36.11
+	google.golang.org/protobuf v1.36.12
 	gopkg.in/inf.v0 v0.9.1
 	gopkg.in/yaml.v3 v3.0.1
 )

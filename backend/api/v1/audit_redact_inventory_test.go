@@ -740,6 +740,7 @@ var auditRecordedFields = []string{
 	"bytebase.v1.Plan.creator",
 	"bytebase.v1.Plan.description",
 	"bytebase.v1.Plan.issue",
+	"bytebase.v1.Plan.last_plan_editor",
 	"bytebase.v1.Plan.name",
 	"bytebase.v1.Plan.title",
 	"bytebase.v1.PlanCheckRun.Result.content",

@@ -952,8 +952,10 @@ type Project struct {
 	AllowRequestRole        bool `protobuf:"varint,22,opt,name=allow_request_role,json=allowRequestRole,proto3" json:"allow_request_role,omitempty"`
 	// Once enabled, users can request and use the just-in-time access in the SQL Editor.
 	AllowJustInTimeAccess bool `protobuf:"varint,23,opt,name=allow_just_in_time_access,json=allowJustInTimeAccess,proto3" json:"allow_just_in_time_access,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	// Whether to allow the last Plan editor to approve a database change issue.
+	AllowLastPlanEditorApproval bool `protobuf:"varint,24,opt,name=allow_last_plan_editor_approval,json=allowLastPlanEditorApproval,proto3" json:"allow_last_plan_editor_approval,omitempty"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *Project) Reset() {
@@ -1115,6 +1117,13 @@ func (x *Project) GetAllowRequestRole() bool {
 func (x *Project) GetAllowJustInTimeAccess() bool {
 	if x != nil {
 		return x.AllowJustInTimeAccess
+	}
+	return false
+}
+
+func (x *Project) GetAllowLastPlanEditorApproval() bool {
+	if x != nil {
+		return x.AllowLastPlanEditorApproval
 	}
 	return false
 }
@@ -1653,7 +1662,7 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12(\n" +
 	"\x05color\x18\x02 \x01(\v2\x12.google.type.ColorR\x05color\x12\x14\n" +
-	"\x05group\x18\x03 \x01(\tR\x05group\"\xa7\t\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\"\xed\t\n" +
 	"\aProject\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x1e\n" +
@@ -1674,7 +1683,8 @@ const file_v1_project_service_proto_rawDesc = "" +
 	"\x16require_issue_approval\x18\x14 \x01(\bR\x14requireIssueApproval\x12<\n" +
 	"\x1brequire_plan_check_no_error\x18\x15 \x01(\bR\x17requirePlanCheckNoError\x12,\n" +
 	"\x12allow_request_role\x18\x16 \x01(\bR\x10allowRequestRole\x128\n" +
-	"\x19allow_just_in_time_access\x18\x17 \x01(\bR\x15allowJustInTimeAccess\x1a?\n" +
+	"\x19allow_just_in_time_access\x18\x17 \x01(\bR\x15allowJustInTimeAccess\x12D\n" +
+	"\x1fallow_last_plan_editor_approval\x18\x18 \x01(\bR\x1ballowLastPlanEditorApproval\x1a?\n" +
 	"\x14ExecutionRetryPolicy\x12'\n" +
 	"\x0fmaximum_retries\x18\x01 \x01(\x05R\x0emaximumRetries\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +

@@ -45,9 +45,18 @@ import {
   isBindingPolicyExpired,
   memberMapToRolesInProjectIAM,
 } from "@/utils";
+import {
+  type ApprovalIneligibility,
+  getApprovalEligibility,
+} from "../../approvalEligibility";
 import { useIssueDetailContext } from "../context/IssueDetailContext";
 
 type ApprovalStepStatus = "approved" | "rejected" | "current" | "pending";
+
+type PotentialApprover = {
+  ineligibilities: ApprovalIneligibility[];
+  user: UserMessage;
+};
 
 export function IssueDetailApprovalFlow() {
   const { t } = useTranslation();
@@ -343,7 +352,7 @@ function ApprovalUserText({ candidate }: { candidate: string }) {
   );
 }
 
-function PotentialApprovers({ users }: { users: UserMessage[] }) {
+function PotentialApprovers({ users }: { users: PotentialApprover[] }) {
   const { t } = useTranslation();
 
   if (users.length === 0) {
@@ -354,7 +363,7 @@ function PotentialApprovers({ users }: { users: UserMessage[] }) {
     return (
       <div className="flex flex-col items-start gap-1">
         {users.map((user) => (
-          <ApprovalCandidateRow key={user.name} user={user} />
+          <ApprovalCandidateRow key={user.user.name} candidate={user} />
         ))}
       </div>
     );
@@ -362,7 +371,9 @@ function PotentialApprovers({ users }: { users: UserMessage[] }) {
 
   const visibleUsers = users.slice(0, 3);
   const names = visibleUsers
-    .map((user) => user.title || user.email.split("@")[0])
+    .map(
+      (candidate) => candidate.user.title || candidate.user.email.split("@")[0]
+    )
     .join(", ");
   const remainingCount = users.length - visibleUsers.length;
   const triggerText = t("custom-approval.issue-review.and-n-other-users", {
@@ -375,7 +386,11 @@ function PotentialApprovers({ users }: { users: UserMessage[] }) {
       content={
         <div className="flex max-w-xs flex-col gap-y-1">
           {users.map((user) => (
-            <ApprovalCandidateRow key={user.name} showEmail user={user} />
+            <ApprovalCandidateRow
+              candidate={user}
+              key={user.user.name}
+              showEmail
+            />
           ))}
         </div>
       }
@@ -389,14 +404,15 @@ function PotentialApprovers({ users }: { users: UserMessage[] }) {
 }
 
 function ApprovalCandidateRow({
+  candidate,
   showEmail = false,
-  user,
 }: {
+  candidate: PotentialApprover;
   showEmail?: boolean;
-  user: UserMessage;
 }) {
   const { t } = useTranslation();
   const currentUser = useCurrentUser();
+  const { user } = candidate;
   const displayName = user.title || user.email.split("@")[0];
   const isCurrentUser = currentUser?.name === user.name;
 
@@ -416,6 +432,11 @@ function ApprovalCandidateRow({
       )}
       {showEmail && (
         <span className="text-xs text-control-light">{user.email}</span>
+      )}
+      {candidate.ineligibilities.includes("last-plan-editor") && (
+        <span className="text-xs text-warning">
+          {t("plan.review.candidate-last-changed-plan")}
+        </span>
       )}
     </div>
   );
@@ -516,9 +537,9 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
     (identifier: string) => groupsByName[ensureGroupIdentifier(identifier)],
     [groupsByName]
   );
-  const [potentialApprovers, setPotentialApprovers] = useState<UserMessage[]>(
-    []
-  );
+  const [potentialApprovers, setPotentialApprovers] = useState<
+    PotentialApprover[]
+  >([]);
   const [reRequesting, setReRequesting] = useState(false);
   const projectName = `${projectNamePrefix}${page.projectId}`;
   const currentUserEmail = currentUser?.email ?? "";
@@ -608,23 +629,6 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
     return candidateEmails.includes(`${userNamePrefix}${currentUserEmail}`);
   }, [candidateEmails, currentUserEmail]);
 
-  const filteredCandidateEmails = useMemo(() => {
-    if (
-      !project.allowSelfApproval &&
-      issue.creator === `${userNamePrefix}${currentUserEmail}`
-    ) {
-      return candidateEmails.filter(
-        (candidate) => candidate !== `${userNamePrefix}${currentUserEmail}`
-      );
-    }
-    return candidateEmails;
-  }, [
-    candidateEmails,
-    currentUserEmail,
-    issue.creator,
-    project.allowSelfApproval,
-  ]);
-
   const showSelfApprovalTip = useMemo(() => {
     return (
       status === "current" &&
@@ -644,13 +648,13 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
     let canceled = false;
 
     const load = async () => {
-      if (status !== "current" || filteredCandidateEmails.length === 0) {
+      if (status !== "current" || candidateEmails.length === 0) {
         setPotentialApprovers([]);
         return;
       }
 
       const users = await batchGetOrFetchUsers(
-        filteredCandidateEmails.map(ensureUserFullName)
+        candidateEmails.map(ensureUserFullName)
       );
       if (canceled) {
         return;
@@ -668,7 +672,16 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
           if (left.email === currentUserEmail) return -1;
           if (right.email === currentUserEmail) return 1;
           return left.title.localeCompare(right.title);
-        });
+        })
+        .map((user) => ({
+          ineligibilities: getApprovalEligibility({
+            actor: user.name,
+            issueCreator: issue.creator,
+            lastPlanEditor: page.plan?.lastPlanEditor ?? "",
+            project,
+          }).ineligibilities,
+          user,
+        }));
       setPotentialApprovers(next);
     };
 
@@ -677,7 +690,15 @@ function useApprovalStep(issue: Issue, step: string, stepIndex: number) {
     return () => {
       canceled = true;
     };
-  }, [batchGetOrFetchUsers, currentUserEmail, filteredCandidateEmails, status]);
+  }, [
+    batchGetOrFetchUsers,
+    candidateEmails,
+    currentUserEmail,
+    issue.creator,
+    page.plan?.lastPlanEditor,
+    project,
+    status,
+  ]);
 
   const handleReRequestReview = async () => {
     if (reRequesting) {

@@ -288,6 +288,9 @@ func (x *Plan) Equal(y *Plan) bool {
 	if x.IssueStatus != y.IssueStatus {
 		return false
 	}
+	if x.LastPlanEditor != y.LastPlanEditor {
+		return false
+	}
 	return true
 }
 
