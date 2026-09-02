@@ -517,8 +517,9 @@ shopt -s dotglob   # a /scratch/.something must not hide from the glob
 for e in /scratch/*; do
   u=${e##*/}
   case $u in tmp|docker|containerd|swapfile|lost+found) continue;; esac
-  id "$u" &>/dev/null || { mountpoint -q "$e" || rm -rf --one-file-system "$e"; continue; }   # not an account: dumped at the top level
-  case $u in runner[1-9]) keep=(! -path "$e/runner" ! -path "$e/runner/*");; *) keep=();; esac   # only a CI account's runner/ holds an install
+  mountpoint -q "$e" && continue   # not ours, whatever it is: never delete through a mount
+  if ! id "$u" &>/dev/null || [[ ! -d $e ]]; then rm -rf --one-file-system "$e"; continue; fi   # dumped at the top level
+  case $u in runner[1-9]) keep=(! -path "$e/runner" ! -path "$e/runner/*");; *) keep=(-true);; esac   # only a CI account's runner/ holds an install
   find "$e" -mindepth 1 -xdev "${keep[@]}" -delete 2>/dev/null   # -delete cannot cross into, or remove, a foreign mount
   for x in /cache /cache/go-mod /cache/npm /cache/pnpm /home /work; do
     install -d -o "$u" -g "$u" "$e$x"   # recreate: symlinks must not dangle
