@@ -324,10 +324,17 @@ preemption.
 # must not abandon the boot; `journalctl -t devbox-startup` shows the exit status.
 set -uo pipefail
 trap 'logger -t devbox-startup "exited: status $?"' EXIT
-# First, before anything that can block or exit. daemon.json persists, so a previous
-# boot's dockerd is already up with data-root=/scratch/docker -- on the boot disk
-# until (a) mounts over it. Absent on a first boot. Restarted in (a).
-systemctl stop docker.socket docker 2>/dev/null
+# daemon.json persists, so a previous boot's dockerd is already up with
+# data-root=/scratch/docker -- on the boot disk until (a) mounts over it. Mounting
+# over a live data root is what this prevents, so a stop that did not take is fatal.
+# The socket counts: left active it reactivates dockerd on the next connection.
+stop_docker() {
+  systemctl stop docker.socket docker 2>/dev/null   # absent on a first boot
+  if pgrep -x dockerd >/dev/null || systemctl is-active --quiet docker.socket; then
+    logger -t devbox-startup "FATAL: docker would not stop"; exit 1
+  fi
+}
+stop_docker   # before anything that can block or exit
 # Latest runner release, falling back to a known-good pin if the lookup fails. Every
 # boot uses this: the runner lives on scratch and is re-fetched, never updated in place.
 RUNNER_VERSION=$(curl -sf --retry 3 --max-time 30 https://api.github.com/repos/actions/runner/releases/latest | python3 -c 'import sys,json; print(json.load(sys.stdin)["tag_name"].lstrip("v"))' 2>/dev/null || echo 2.336.0)
@@ -341,10 +348,7 @@ PKGS="docker.io cron systemd-oomd build-essential"
 [[ $(dpkg-query -W -f='${Status}\n' $PKGS 2>/dev/null | grep -c '^install ok installed$') -eq $(wc -w <<<"$PKGS") ]] \
   || { dpkg --configure -a; apt-get update -qq && apt-get install -y -qq $PKGS; } \
   || { logger -t devbox-startup "FATAL: prerequisite install failed"; exit 1; }
-systemctl stop docker.socket docker 2>/dev/null   # again: docker.io's postinst starts it
-# Confirm it actually stopped: mounting over a live data root is the failure the two
-# stops exist to prevent, and a stuck unit would walk straight into it.
-pgrep -x dockerd >/dev/null && { logger -t devbox-startup "FATAL: dockerd would not stop"; exit 1; }
+stop_docker   # again: docker.io's postinst starts it
 
 # ---------- (a) disk layout ----------
 mkdir -p /scratch
