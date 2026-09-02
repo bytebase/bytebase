@@ -366,7 +366,8 @@ if [[ "$(blkid -s TYPE -o value /scratch/swapfile 2>/dev/null)" != swap ]]; then
   rm -f /scratch/swapfile
   fallocate -l 8G /scratch/swapfile && chmod 600 /scratch/swapfile && mkswap /scratch/swapfile >/dev/null
 fi
-swapon /scratch/swapfile 2>/dev/null || true          # no-op if already active
+swapon /scratch/swapfile 2>/dev/null                  # fails harmlessly if already active
+swapon --show=NAME --noheadings | grep -q . || logger -t devbox-startup "WARN: no swap active"
 sysctl -qw vm.swappiness=10
 systemctl enable --now systemd-oomd || logger -t devbox-startup "WARN: systemd-oomd inert"
 # On the slice, not the runner unit: Docker gives each container its own scope under
