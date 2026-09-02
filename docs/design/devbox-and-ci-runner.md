@@ -156,7 +156,7 @@ is rebuilt. Anything on the boot disk is guarded, so it is not redone.
 
 Two kinds of account use the box, and they need opposite things from it.
 
-**Runner accounts** are `gha`, `ghb` and `ghc`. The script creates them, `nologin`,
+**Runner accounts** are `runner1`, `runner2` and `runner3`. The script creates them, `nologin`,
 one per job slot. Nothing of theirs is worth keeping: software, work trees and caches
 all sit on Local SSD, and the `/home` that `useradd` creates goes unused. They are
 disposable, and are disposed of on every stop.
@@ -320,7 +320,7 @@ printf '[Service]\nExecStartPost=/bin/chmod 666 /var/run/docker.sock\n' > /etc/s
 systemctl daemon-reload && systemctl restart docker
 
 # ---------- (b) accounts and cache paths ----------
-for u in gha ghb ghc; do
+for u in runner1 runner2 runner3; do
   id "$u" &>/dev/null || useradd -m -s /usr/sbin/nologin "$u"
   usermod -aG docker "$u"
   mkdir -p "/scratch/$u/cache" "/scratch/$u/work"
@@ -347,7 +347,7 @@ EOF
 # The runner is stateless, so it lives on scratch and is re-fetched each boot: one
 # download, extracted per account, always the version resolved above.
 curl -fsSL --retry 3 "https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz" -o /tmp/runner.tar.gz
-for u in gha ghb ghc; do
+for u in runner1 runner2 runner3; do
   install -d -o "$u" -g "$u" "/scratch/$u/runner"
   tar xzf /tmp/runner.tar.gz -C "/scratch/$u/runner"
   chown -R "$u:$u" "/scratch/$u/runner"
@@ -355,7 +355,7 @@ done
 rm -f /tmp/runner.tar.gz
 # Its system packages land on the boot disk and persist, so this runs once per rebuild.
 [[ -f /var/lib/devbox-runner-deps ]] || \
-  { /scratch/gha/runner/bin/installdependencies.sh >/dev/null && touch /var/lib/devbox-runner-deps; }
+  { /scratch/runner1/runner/bin/installdependencies.sh >/dev/null && touch /var/lib/devbox-runner-deps; }
 
 cat > /usr/local/sbin/register-runner <<'EOF'
 #!/bin/bash
@@ -390,7 +390,8 @@ Environment=XDG_CACHE_HOME=/scratch/%i/cache GOMODCACHE=/scratch/%i/cache/go-mod
 ExecStartPre=/usr/local/sbin/register-runner %i /scratch/%i/runner /scratch/%i/work
 ExecStart=/scratch/%i/runner/run.sh
 Restart=always
-RestartSec=30   # registration failure retries forever; 5s x3 runners would burn the API quota
+# Registration failure retries forever; at 5s x3 runners that would burn the API quota.
+RestartSec=30
 ManagedOOMMemoryPressure=kill
 EOF
 
@@ -435,7 +436,7 @@ printf 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n*/30 
 systemctl is-active --quiet google-cloud-ops-agent || { curl -sSo /tmp/ops.sh --retry 3 https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh && bash /tmp/ops.sh --also-install; }
 
 systemctl daemon-reload
-systemctl restart actions-runner@gha actions-runner@ghb actions-runner@ghc
+systemctl restart actions-runner@runner1 actions-runner@runner2 actions-runner@runner3
 ```
 
 ## 3. Considered
