@@ -95,7 +95,7 @@ func TestCheckReleaseHidesDatabasesOutsideProject(t *testing.T) {
 			Release: declarativeReleaseWithDisallowedStatement(),
 			Targets: []string{target},
 		}))
-		require.EqualError(t, err, fmt.Sprintf("not_found: database %q not found", target))
+		require.EqualError(t, err, fmt.Sprintf("not_found: database %s not found", target))
 	}
 }
 

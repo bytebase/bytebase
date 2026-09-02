@@ -92,7 +92,7 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 			// One error for missing, foreign, archived, and non-canonical: a
 			// distinct one would confirm what lives in a project the caller
 			// cannot see.
-			notFound := connect.NewError(connect.CodeNotFound, errors.Errorf("database %q not found", target))
+			notFound := connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", target))
 			if database == nil || database.ProjectID != projectID {
 				return nil, notFound
 			}
