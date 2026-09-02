@@ -177,6 +177,75 @@ describe("CreateWorkloadIdentitySheet", () => {
     });
   });
 
+  test("omits the blank preset audience when creating a GitHub identity", async () => {
+    const created = create(WorkloadIdentitySchema, {
+      name: "workloadIdentities/deploy@workload.bytebase.com",
+      email: "deploy@workload.bytebase.com",
+      title: "deploy",
+    });
+    mocks.store.createWorkloadIdentity.mockResolvedValue(created);
+
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(
+        <CreateWorkloadIdentitySheet
+          open
+          onClose={() => undefined}
+          onCreated={() => undefined}
+        />
+      );
+    });
+
+    const fields = Array.from(
+      container.querySelectorAll('[data-slot="form-field"]')
+    );
+    const fieldInput = (label: string) =>
+      fields
+        .find((field) => field.textContent?.includes(label))
+        ?.querySelector("input");
+    const setInputValue = (
+      input: HTMLInputElement | null | undefined,
+      value: string
+    ) => {
+      if (!input) return;
+      Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value"
+      )?.set?.call(input, value);
+      input.dispatchEvent(new Event("input", { bubbles: true }));
+    };
+
+    await act(async () => {
+      setInputValue(fieldInput("common.email"), "deploy");
+      setInputValue(
+        fieldInput("settings.members.workload-identity-owner"),
+        "bytebase"
+      );
+    });
+
+    const createButton = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "common.create"
+    );
+    expect(createButton?.disabled).toBe(false);
+    await act(async () => {
+      createButton?.click();
+    });
+
+    expect(mocks.store.createWorkloadIdentity).toHaveBeenCalledOnce();
+    const [, workloadIdentity] =
+      mocks.store.createWorkloadIdentity.mock.calls[0];
+    expect(
+      workloadIdentity.workloadIdentityConfig?.allowedAudiences
+    ).toEqual([]);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   test("preserves a custom subject pattern when updating another field", async () => {
     const subjectPattern =
       "project_path:group/project:environment:production";

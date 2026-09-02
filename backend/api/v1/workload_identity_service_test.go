@@ -49,6 +49,27 @@ func TestValidateWorkloadIdentityConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "oidc invalid issuer URL",
+			config: &v1pb.WorkloadIdentityConfig{
+				ProviderType:     v1pb.WorkloadIdentityConfig_OIDC,
+				IssuerUrl:        "not-a-url",
+				AllowedAudiences: []string{"bytebase"},
+				SubjectPattern:   "nomad_job:atlantis:*",
+			},
+			wantErr: "issuer URL must use HTTPS",
+		},
+		{
+			name: "oidc invalid JWKS URL",
+			config: &v1pb.WorkloadIdentityConfig{
+				ProviderType:     v1pb.WorkloadIdentityConfig_OIDC,
+				IssuerUrl:        "https://nomad.example.com",
+				JwksUrl:          "http://keys.example.com/jwks.json",
+				AllowedAudiences: []string{"bytebase"},
+				SubjectPattern:   "nomad_job:atlantis:*",
+			},
+			wantErr: "JWKS URL must use HTTPS",
+		},
+		{
 			name: "oidc missing issuer",
 			config: &v1pb.WorkloadIdentityConfig{
 				ProviderType:     v1pb.WorkloadIdentityConfig_OIDC,

@@ -338,6 +338,9 @@ function WorkloadIdentityForm({
   ]);
 
   const allowConfirm = isFormValid && isDirty;
+  const allowedAudiences = audiences
+    .map((audience) => audience.trim())
+    .filter(Boolean);
 
   const requiredPermission = isEditMode
     ? "bb.workloadIdentities.update"
@@ -401,7 +404,7 @@ function WorkloadIdentityForm({
           providerType,
           issuerUrl,
           jwksUrl,
-          allowedAudiences: audiences.map((audience) => audience.trim()),
+          allowedAudiences,
           subjectPattern,
         }),
       },
@@ -446,7 +449,7 @@ function WorkloadIdentityForm({
           providerType,
           issuerUrl,
           jwksUrl,
-          allowedAudiences: audiences.map((audience) => audience.trim()),
+          allowedAudiences,
           subjectPattern,
         }),
       }),

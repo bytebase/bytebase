@@ -37,7 +37,7 @@ type oidcConfig struct {
 // FetchJWKS fetches the JWKS from an OIDC issuer or a direct JWKS URL with caching.
 func FetchJWKS(ctx context.Context, issuerURL, jwksURL string) (*jose.JSONWebKeySet, error) {
 	// Validate issuer URL format
-	if err := validateIssuerURL(issuerURL); err != nil {
+	if err := ValidateIssuerURL(issuerURL); err != nil {
 		return nil, err
 	}
 
@@ -59,7 +59,7 @@ func FetchJWKS(ctx context.Context, issuerURL, jwksURL string) (*jose.JSONWebKey
 		}
 		effectiveJWKSURL = config.JwksURI
 	}
-	if err := validateJWKSURL(effectiveJWKSURL); err != nil {
+	if err := ValidateJWKSURL(effectiveJWKSURL); err != nil {
 		return nil, err
 	}
 
@@ -108,12 +108,13 @@ func setCachedJWKS(cached *cachedJWKS, keys ...string) {
 	}
 }
 
-// validateIssuerURL validates that the issuer URL is a valid HTTPS URL.
-func validateIssuerURL(issuerURL string) error {
+// ValidateIssuerURL validates that the issuer URL is a valid HTTPS URL.
+func ValidateIssuerURL(issuerURL string) error {
 	return validateRemoteURL(issuerURL, "issuer URL")
 }
 
-func validateJWKSURL(jwksURL string) error {
+// ValidateJWKSURL validates that the JWKS URL is a valid HTTPS URL.
+func ValidateJWKSURL(jwksURL string) error {
 	return validateRemoteURL(jwksURL, "JWKS URL")
 }
 

@@ -14,6 +14,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/backend/plugin/idp/wif"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -323,8 +324,18 @@ func validateWorkloadIdentityConfig(config *v1pb.WorkloadIdentityConfig) error {
 	case v1pb.WorkloadIdentityConfig_GITHUB, v1pb.WorkloadIdentityConfig_GITLAB:
 		return nil
 	case v1pb.WorkloadIdentityConfig_OIDC:
-		if strings.TrimSpace(config.IssuerUrl) == "" {
+		issuerURL := strings.TrimSpace(config.IssuerUrl)
+		if issuerURL == "" {
 			return errors.New("issuer_url is required for OIDC")
+		}
+		if err := wif.ValidateIssuerURL(issuerURL); err != nil {
+			return err
+		}
+		jwksURL := strings.TrimSpace(config.JwksUrl)
+		if jwksURL != "" {
+			if err := wif.ValidateJWKSURL(jwksURL); err != nil {
+				return err
+			}
 		}
 		if len(config.AllowedAudiences) == 0 {
 			return errors.New("allowed_audiences is required for OIDC")
