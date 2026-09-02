@@ -517,8 +517,9 @@ shopt -s dotglob   # a /scratch/.something must not hide from the glob
 for e in /scratch/*; do
   u=${e##*/}
   case $u in tmp|docker|containerd|swapfile|lost+found) continue;; esac
-  id "$u" &>/dev/null || { rm -rf "$e"; continue; }   # not an account: dumped at the top level
-  find "$e" -mindepth 1 -maxdepth 1 ! -name runner -exec rm -rf {} +   # runner/ holds the install and its stamp
+  id "$u" &>/dev/null || { rm -rf --one-file-system "$e"; continue; }   # not an account: dumped at the top level
+  case $u in runner[1-9]) keep='! -name runner';; *) keep=;; esac   # only a CI account's runner/ holds an install
+  find "$e" -mindepth 1 -maxdepth 1 -xdev $keep -exec rm -rf --one-file-system {} +   # never into a foreign mount
   for x in /cache /cache/go-mod /cache/npm /cache/pnpm /home /work; do
     install -d -o "$u" -g "$u" "$e$x"   # recreate: symlinks must not dangle
   done
