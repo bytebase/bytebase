@@ -304,13 +304,14 @@ The Go build cache dominates. On a comparable box it was 59% of all disk used. G
 evicts by age with no size cap, so five days of CI output is about 55 GB per account,
 and it regrows after any cleanup.
 
-Eviction fires at 85% and cleans down to 70%. Cleaning to exactly the trigger would
-re-trigger immediately. Tiers escalate by rebuild cost, and the destructive ones wait
-for an idle box.
+Eviction fires at 85% and deletes the lot: every cache, every home and work tree, and
+everything Docker holds. No tiers and no filters. Deciding what to spare would mean
+ranking rebuild costs against each other, and re-pulling an image or a module cache
+costs minutes where a full disk fails every job on the box.
 
-The idle check is a sample, not a lock, so a job starting mid-sweep can still lose a
-cache it was using. Accepted: it only happens above 85%, and a failed job is retryable
-where a full disk is not.
+It waits for an idle box, except above 95% where a failing disk is worse than a failed
+job. The idle check is a sample, not a lock, so a job starting mid-sweep can still lose
+what it was using. Accepted on the same grounds.
 
 It runs on a schedule, not at boot. A boot-time check cannot fire on a box that stays
 up for days, and Local SSD survives a guest *reboot*. It is discarded only on stop or
@@ -512,41 +513,27 @@ EOF
 # ---------- (d) cache cleanup ----------
 cat > /usr/local/sbin/cache-gc <<'EOF'
 #!/bin/bash
-# Every 30 min. Leaked go-build sandboxes are swept unconditionally. Caches are evicted
-# only at 85% used, down to 70%, in order of rebuild cost; the destructive tiers wait
-# for an idle box unless ENOSPC is imminent. Removal is by path as root -- no toolchain.
+# Every 30 min. Leaked go-build sandboxes are swept always. Above 85% used, wait for an
+# idle box -- unless it is nearly full -- then delete everything disposable. It all
+# rebuilds on the next job; a full disk does not.
 set -uo pipefail
-HIGH=85 LOW=70 CRITICAL=95
+HIGH=85 CRITICAL=95
 find /tmp -maxdepth 1 -name 'go-build*' -type d -mmin +1440 -exec rm -rf {} +
-accounts() { for d in /scratch/*/; do u=${d%/}; u=${u##*/}; id "$u" &>/dev/null && echo "$u"; done; }
-used()  { df -P /scratch | awk 'NR==2 {print $5+0}'; }
-halt_() { [[ $(used) -le $LOW ]] && { logger -t cache-gc "$1 -> $(used)%"; exit 0; }; }
-mk()    { for d in /cache /cache/go-mod /cache/npm /cache/pnpm /home /work; do install -d -o "$1" -g "$1" "/scratch/$1$d"; done; }   # recreate: symlinks must not dangle
-drop()  { for u in $(accounts); do rm -rf "/scratch/$u/cache/$1"; mk "$u"; done; }
-# Everything the account owns except runner/, which holds the install and its marker.
-wipe()  { for u in $(accounts); do rm -rf "/scratch/$u"/{cache,home,work}; mk "$u"; done; }
-idle()  { ! pgrep -f Runner.Worker >/dev/null && [[ -z "$(ss -Htn state established '( sport = :22 )')" ]]; }
+used() { df -P /scratch | awk 'NR==2 {print $5+0}'; }
+idle() { ! pgrep -f Runner.Worker >/dev/null && [[ -z "$(ss -Htn state established '( sport = :22 )')" ]]; }
 
 [[ $(used) -ge $HIGH ]] || exit 0
-logger -t cache-gc "start: $(used)% used"
-# Safe while jobs run. 24h, not 1h: a job can stop a container and restart it later,
-# so the window has to exceed any job's lifetime rather than merely look idle.
-docker container prune -f --filter until=24h >/dev/null 2>&1
-docker image prune -f --filter until=24h >/dev/null 2>&1
-halt_ "docker garbage"
-for u in $(accounts); do find "/scratch/$u/cache/go-build" -type f -mmin +2880 -delete 2>/dev/null; done
-halt_ "go-build >2d"
-# Destructive from here.
 if ! idle && [[ $(used) -lt $CRITICAL ]]; then logger -t cache-gc "deferred: busy at $(used)%"; exit 0; fi
-docker container prune -f >/dev/null 2>&1
-docker volume prune -af >/dev/null 2>&1;                     halt_ "containers and volumes"
-docker builder prune -af >/dev/null 2>&1;                   halt_ "build cache"
-drop pnpm; drop npm;                                         halt_ "package stores"
-docker image prune -af --filter until=168h >/dev/null 2>&1;  halt_ "stale images"
-drop go-mod;                                                 halt_ "modcache"
-docker image prune -af >/dev/null 2>&1   # the last tier keeps nothing: recent images too
-wipe   # the rest of XDG_CACHE_HOME, plus disposable homes and work trees
-logger -t cache-gc "full clean -> $(used)%"
+logger -t cache-gc "cleaning: $(used)% used"
+docker system prune -af --volumes >/dev/null 2>&1
+for d in /scratch/*/; do
+  u=${d%/}; u=${u##*/}; id "$u" &>/dev/null || continue
+  rm -rf "$d"{cache,home,work}   # runner/ stays: it holds the install and its stamp
+  for x in /cache /cache/go-mod /cache/npm /cache/pnpm /home /work; do
+    install -d -o "$u" -g "$u" "/scratch/$u$x"   # recreate: symlinks must not dangle
+  done
+done
+logger -t cache-gc "cleaned -> $(used)%"
 EOF
 chmod +x /usr/local/sbin/cache-gc
 # PATH first: cron's default omits /usr/sbin, and a missing `ss` would make idle()
