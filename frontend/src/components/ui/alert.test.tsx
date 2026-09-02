@@ -46,6 +46,21 @@ describe("Alert", () => {
     unmount();
   });
 
+  test("renders a compact caption alert", () => {
+    const { container, unmount } = renderIntoContainer(
+      createElement(Alert, { appearance: "caption", variant: "warning" }, "Risk")
+    );
+
+    const alert = container.querySelector('[role="alert"]');
+    expect(alert?.className).toContain("text-xs");
+    expect(alert?.className).toContain("border-0");
+    expect(alert?.querySelector("svg")?.getAttribute("class")).toContain(
+      "size-3.5"
+    );
+
+    unmount();
+  });
+
   test("only exports the alert primitive", () => {
     expect("AlertTitle" in alertModule).toBe(false);
     expect("AlertDescription" in alertModule).toBe(false);

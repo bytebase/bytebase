@@ -20,23 +20,34 @@ const alertVariants = cva(
         warning: "border-warning/40 bg-warning/10 text-warning",
         error: "border-error/40 bg-error/10 text-error",
       },
+      appearance: {
+        default: "",
+        caption:
+          "gap-x-1 rounded-none border-0 bg-transparent p-0 text-xs leading-4 shadow-none",
+      },
     },
     defaultVariants: {
       variant: "info",
+      appearance: "default",
     },
   }
 );
 
-const alertIconVariants = cva("mt-0.5 size-5 shrink-0", {
+const alertIconVariants = cva("shrink-0", {
   variants: {
     variant: {
       info: "text-info",
       warning: "text-warning",
       error: "text-error",
     },
+    appearance: {
+      default: "mt-0.5 size-5",
+      caption: "size-3.5",
+    },
   },
   defaultVariants: {
     variant: "info",
+    appearance: "default",
   },
 });
 
@@ -55,6 +66,7 @@ type AlertProps = Omit<ComponentProps<"div">, "title"> &
   };
 
 function Alert({
+  appearance = "default",
   className,
   variant = "info",
   showIcon = true,
@@ -70,10 +82,12 @@ function Alert({
   return (
     <div
       role="alert"
-      className={cn(alertVariants({ variant, className }))}
+      className={cn(alertVariants({ appearance, variant, className }))}
       {...props}
     >
-      {showIcon && <Icon className={alertIconVariants({ variant })} />}
+      {showIcon && (
+        <Icon className={alertIconVariants({ appearance, variant })} />
+      )}
       <div className="min-w-0 flex-1">
         {hasStructuredContent ? (
           <>

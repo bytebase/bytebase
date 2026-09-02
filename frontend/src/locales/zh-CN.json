@@ -1655,7 +1655,9 @@
       "configure": "配置",
       "parameters": "gh-ost 参数",
       "requirements-not-met": "以下数据库不满足 Ghost 要求：{{databases}}",
-      "reset-to-defaults": "重置为默认值"
+      "reset-to-defaults": "重置为默认值",
+      "skip-metadata-lock-check-risk": "跳过此检查可能导致切换期间的写入丢失。",
+      "skip-metadata-lock-check-why": "为什么？"
     },
     "go-to-plan-page": "前往计划页面",
     "initial-sql-storage-failed": "无法临时保存 SQL。请清理部分浏览器存储空间后重试。",
