@@ -342,6 +342,9 @@ PKGS="docker.io cron systemd-oomd build-essential"
   || { dpkg --configure -a; apt-get update -qq && apt-get install -y -qq $PKGS; } \
   || { logger -t devbox-startup "FATAL: prerequisite install failed"; exit 1; }
 systemctl stop docker.socket docker 2>/dev/null   # again: docker.io's postinst starts it
+# Confirm it actually stopped: mounting over a live data root is the failure the two
+# stops exist to prevent, and a stuck unit would walk straight into it.
+pgrep -x dockerd >/dev/null && { logger -t devbox-startup "FATAL: dockerd would not stop"; exit 1; }
 
 # ---------- (a) disk layout ----------
 mkdir -p /scratch
