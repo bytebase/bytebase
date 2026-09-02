@@ -349,7 +349,9 @@ chmod 1777 /scratch                                   # OS Login accounts create
 mkdir -p /scratch/tmp && chmod 1777 /scratch/tmp
 # Bind unless /tmp already *is* /scratch/tmp: `mountpoint` would also be true for a
 # tmpfs /tmp, which would silently leave temp files in RAM.
-[ "$(stat -c '%d:%i' /tmp)" = "$(stat -c '%d:%i' /scratch/tmp)" ] || mount --bind /scratch/tmp /tmp
+[ "$(stat -c '%d:%i' /tmp)" = "$(stat -c '%d:%i' /scratch/tmp)" ] \
+  || mount --bind /scratch/tmp /tmp \
+  || { logger -t devbox-startup "FATAL: /tmp not on Local SSD"; systemctl stop docker.socket docker; exit 1; }
 if [[ ! -f /scratch/swapfile ]]; then
   fallocate -l 8G /scratch/swapfile && chmod 600 /scratch/swapfile && mkswap /scratch/swapfile >/dev/null
 fi
@@ -388,7 +390,7 @@ echo 'PATH="/usr/local/go/bin:/usr/local/node/bin:/usr/local/sbin:/usr/local/bin
 
 cat > /etc/profile.d/devbox.sh <<'EOF'
 u=$(id -un); c=/scratch/$u/cache
-if [ -d /scratch ] && [ -n "$u" ] && [ -n "${HOME:-}" ] && mkdir -p "$c" 2>/dev/null; then
+if mountpoint -q /scratch && [ -n "$u" ] && [ -n "${HOME:-}" ] && mkdir -p "$c" 2>/dev/null; then
   for pair in "$HOME/.cache:$c" "$HOME/go/pkg/mod:$c/go-mod" "$HOME/.npm:$c/npm" "$HOME/.local/share/pnpm:$c/pnpm"; do
     link=${pair%%:*}; target=${pair#*:}
     mkdir -p "$target"   # every login: scratch targets vanish on preemption, the symlink in HOME does not
