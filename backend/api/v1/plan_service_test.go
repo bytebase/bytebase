@@ -7,9 +7,11 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	"github.com/bytebase/bytebase/backend/component/bus"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/migrator"
@@ -88,6 +90,84 @@ func TestPlanServiceListPlansHidesMalformedUIPlans(t *testing.T) {
 	}))
 	require.NoError(t, err)
 	require.Equal(t, oldMalformed.Name, gotMalformed.Msg.Title)
+}
+
+func TestPlanServiceCreatePlanRecordsAuthenticatedPrincipalAsLastEditor(t *testing.T) {
+	stores := setupPlanServiceTestStore(context.Background(), t)
+	eventBus, err := bus.New()
+	require.NoError(t, err)
+	service := NewPlanService(stores, eventBus, nil, nil, nil)
+
+	for _, test := range []struct {
+		name          string
+		email         string
+		principalType storepb.PrincipalType
+	}{
+		{name: "service account", email: "automation@service.bytebase.com", principalType: storepb.PrincipalType_SERVICE_ACCOUNT},
+		{name: "workload identity", email: "deployment@workload.bytebase.com", principalType: storepb.PrincipalType_WORKLOAD_IDENTITY},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
+			ctx = context.WithValue(ctx, common.UserContextKey, &store.UserMessage{
+				Email: test.email,
+				Name:  test.name,
+				Type:  test.principalType,
+			})
+
+			created, err := service.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
+				Parent: "projects/project-a",
+				Plan: &v1pb.Plan{
+					Title: test.name,
+					Specs: []*v1pb.Plan_Spec{{
+						Id: "create-" + test.principalType.String(),
+						Config: &v1pb.Plan_Spec_CreateDatabaseConfig{
+							CreateDatabaseConfig: &v1pb.Plan_CreateDatabaseConfig{},
+						},
+					}},
+				},
+			}))
+			require.NoError(t, err)
+			require.Equal(t, common.FormatUserEmail(test.email), created.Msg.LastPlanEditor)
+		})
+	}
+}
+
+func TestPlanServiceReleaseBackedPlanKeepsCreatorAsLastEditor(t *testing.T) {
+	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
+	ctx = context.WithValue(ctx, common.UserContextKey, &store.UserMessage{Email: "creator@example.com", Name: "creator"})
+	stores := setupPlanServiceTestStore(ctx, t)
+	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+		ProjectID: "project-a",
+		Name:      "release-backed",
+		Config: &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
+			Id: "release",
+			Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+				ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{Release: "projects/project-a/releases/release-a"},
+			},
+		}}},
+	}, "creator@example.com")
+	require.NoError(t, err)
+	require.Equal(t, "creator@example.com", *plan.LastPlanEditor)
+
+	service := NewPlanService(stores, nil, nil, nil, nil)
+	_, err = service.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
+		Plan: &v1pb.Plan{
+			Name: common.FormatPlan(plan.ProjectID, plan.UID),
+			Specs: []*v1pb.Plan_Spec{{
+				Id: "replacement",
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
+					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{},
+				},
+			}},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"specs"}},
+	}))
+	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+	require.ErrorContains(t, err, "created from a release")
+
+	got, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: plan.ProjectID, UID: &plan.UID})
+	require.NoError(t, err)
+	require.Equal(t, "creator@example.com", *got.LastPlanEditor)
 }
 
 func TestPlanServiceListPlansIncludesIssueStatus(t *testing.T) {

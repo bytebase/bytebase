@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -224,6 +225,24 @@ func TestPlanLastEditorAttributionAndApproval(t *testing.T) {
 
 	issue := createIssueForPlan(f.ctx, t, f.ctl, f.ctl.project, updated, "last plan editor approval")
 	waitForIssuePending(f.ctx, t, f.ctl, issue)
+
+	withImpersonation(f.ctx, t, f.ctl, editor, func() {
+		_, err := f.ctl.issueServiceClient.ApproveIssue(f.ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{Name: issue.Name}))
+		a.Error(err)
+		a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
+	})
+
+	renamedEmail := "renamed-" + editor.Email
+	renamed, err := f.ctl.userServiceClient.UpdateEmail(f.ctx, connect.NewRequest(&v1pb.UpdateEmailRequest{
+		Name:  common.FormatUserEmail(editor.Email),
+		Email: renamedEmail,
+	}))
+	a.NoError(err)
+	a.Equal(renamedEmail, renamed.Msg.Email)
+	editor.Email = renamedEmail
+	gotPlan, err := f.ctl.planServiceClient.GetPlan(f.ctx, connect.NewRequest(&v1pb.GetPlanRequest{Name: updated.Name}))
+	a.NoError(err)
+	a.Equal(common.FormatUserEmail(renamedEmail), gotPlan.Msg.LastPlanEditor)
 
 	withImpersonation(f.ctx, t, f.ctl, editor, func() {
 		_, err := f.ctl.issueServiceClient.ApproveIssue(f.ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{Name: issue.Name}))

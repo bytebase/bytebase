@@ -94,6 +94,9 @@ func (w *Workflow) UpdatePlan(ctx context.Context, input UpdatePlanInput) (*Upda
 	if input.Specs != nil && plan.Config.GetHasRollout() {
 		return nil, workflowError(ErrorFailedPrecondition, "cannot update specs for plan that has a rollout")
 	}
+	if w.beforePlanMutation != nil {
+		w.beforePlanMutation()
+	}
 
 	oldSpecs := plan.Config.GetSpecs()
 	updatedConfig := proto.CloneOf(plan.Config)

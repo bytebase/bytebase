@@ -160,11 +160,12 @@ type IssueResult struct {
 
 // Workflow owns transactional Bytebase Issue and Plan review transitions.
 type Workflow struct {
-	store             *store.Store
-	beforeCommit      func()
-	beforePlanCommit  func()
-	beforeSubmit      func()
-	beforeCreateDraft func()
+	store              *store.Store
+	beforeCommit       func()
+	beforePlanCommit   func()
+	beforePlanMutation func()
+	beforeSubmit       func()
+	beforeCreateDraft  func()
 }
 
 // NewWorkflow creates a review workflow.
@@ -346,11 +347,7 @@ func (w *Workflow) applyReviewAction(ctx context.Context, project *store.Project
 			return nil, workflowError(ErrorPermissionDenied, "cannot %s because self-approval is not allowed for this project", verb)
 		}
 		if input.Action == ActionApprove && !project.Setting.GetAllowLastPlanEditorApproval() && plan != nil {
-			lastPlanEditor := plan.Creator
-			if plan.LastPlanEditor != nil {
-				lastPlanEditor = *plan.LastPlanEditor
-			}
-			if lastPlanEditor == input.Actor.Email {
+			if effectiveLastPlanEditor(plan) == input.Actor.Email {
 				return nil, workflowError(ErrorFailedPrecondition, "cannot approve because the user is the last Plan editor")
 			}
 		}
@@ -395,6 +392,13 @@ func (w *Workflow) applyReviewAction(ctx context.Context, project *store.Project
 	default:
 		return nil, workflowError(ErrorInvalidAction, "unsupported review action")
 	}
+}
+
+func effectiveLastPlanEditor(plan *store.PlanMessage) string {
+	if plan.LastPlanEditor != nil {
+		return *plan.LastPlanEditor
+	}
+	return plan.Creator
 }
 
 func (w *Workflow) canReview(ctx context.Context, project *store.ProjectMessage, user *store.UserMessage, role string) bool {
