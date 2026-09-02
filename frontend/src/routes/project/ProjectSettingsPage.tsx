@@ -226,6 +226,8 @@ export function ProjectSettingsPage() {
   const [allowSelfApproval, setAllowSelfApproval] = useState(
     project?.allowSelfApproval ?? false
   );
+  const [allowLastPlanEditorApproval, setAllowLastPlanEditorApproval] =
+    useState(project?.allowLastPlanEditorApproval ?? false);
   const [requireIssueApproval, setRequireIssueApproval] = useState(
     project?.requireIssueApproval ?? false
   );
@@ -310,6 +312,8 @@ export function ProjectSettingsPage() {
     if (enforceIssueTitle !== project.enforceIssueTitle) return true;
     if (enforceSqlReview !== project.enforceSqlReview) return true;
     if (allowSelfApproval !== project.allowSelfApproval) return true;
+    if (allowLastPlanEditorApproval !== project.allowLastPlanEditorApproval)
+      return true;
     if (requireIssueApproval !== project.requireIssueApproval) return true;
     if (requirePlanCheckNoError !== project.requirePlanCheckNoError)
       return true;
@@ -341,6 +345,7 @@ export function ProjectSettingsPage() {
     enforceIssueTitle,
     enforceSqlReview,
     allowSelfApproval,
+    allowLastPlanEditorApproval,
     requireIssueApproval,
     requirePlanCheckNoError,
     postgresDatabaseTenantMode,
@@ -387,6 +392,7 @@ export function ProjectSettingsPage() {
     setEnforceIssueTitle(project.enforceIssueTitle);
     setEnforceSqlReview(project.enforceSqlReview);
     setAllowSelfApproval(project.allowSelfApproval);
+    setAllowLastPlanEditorApproval(project.allowLastPlanEditorApproval);
     setRequireIssueApproval(project.requireIssueApproval);
     setRequirePlanCheckNoError(project.requirePlanCheckNoError);
     setPostgresDatabaseTenantMode(project.postgresDatabaseTenantMode);
@@ -490,6 +496,10 @@ export function ProjectSettingsPage() {
         projectPatch.allowSelfApproval = allowSelfApproval;
         updateMask.push("allow_self_approval");
       }
+      if (allowLastPlanEditorApproval !== project.allowLastPlanEditorApproval) {
+        projectPatch.allowLastPlanEditorApproval = allowLastPlanEditorApproval;
+        updateMask.push("allow_last_plan_editor_approval");
+      }
       if (requireIssueApproval !== project.requireIssueApproval) {
         projectPatch.requireIssueApproval = requireIssueApproval;
         updateMask.push("require_issue_approval");
@@ -566,6 +576,7 @@ export function ProjectSettingsPage() {
     enforceIssueTitle,
     enforceSqlReview,
     allowSelfApproval,
+    allowLastPlanEditorApproval,
     requireIssueApproval,
     requirePlanCheckNoError,
     postgresDatabaseTenantMode,
@@ -975,6 +986,14 @@ export function ProjectSettingsPage() {
                 "project.settings.issue-related.enforce-sql-review.description"
               )}
             />
+            <FormField
+              title={t(
+                "project.settings.issue-related.approval-permissions.self"
+              )}
+              description={t(
+                "project.settings.issue-related.approval-permissions.description"
+              )}
+            />
             <ToggleRow
               checked={allowSelfApproval}
               onCheckedChange={setAllowSelfApproval}
@@ -984,6 +1003,17 @@ export function ProjectSettingsPage() {
               )}
               description={t(
                 "project.settings.issue-related.allow-self-approval.description"
+              )}
+            />
+            <ToggleRow
+              checked={allowLastPlanEditorApproval}
+              onCheckedChange={setAllowLastPlanEditorApproval}
+              disabled={!canUpdateProject}
+              label={t(
+                "project.settings.issue-related.allow-last-plan-editor-approval.self"
+              )}
+              description={t(
+                "project.settings.issue-related.allow-last-plan-editor-approval.description"
               )}
             />
             <ToggleRow

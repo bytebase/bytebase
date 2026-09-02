@@ -491,6 +491,9 @@ message Project {
 
   // Once enabled, users can request and use the just-in-time access in the SQL Editor.
   bool allow_just_in_time_access = 23;
+
+  // Whether to allow the last Plan editor to approve a database change issue.
+  bool allow_last_plan_editor_approval = 24;
 }
 
 message AddWebhookRequest {

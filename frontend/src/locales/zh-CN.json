@@ -1742,6 +1742,7 @@
         "no-reviewers": "无审批人",
         "rejected-by": "由 {{user}} 拒绝"
       },
+      "candidate-last-changed-plan": "无法审批 — 最后修改了此计划",
       "comment-required-to-reject": "拒绝时必须填写评论",
       "footer": {
         "all-gates-passed": "所有条件已满足",
@@ -1771,6 +1772,7 @@
         "rollout-not-created": "发布未自动创建",
         "waiting-on-review": "等待审批"
       },
+      "last-plan-editor-cannot-approve": "由于您最后修改了该计划，因此无法审批此工单。请由其他审批人进行审批。",
       "rejection": {
         "guidance-prefix": "请根据反馈修改变更，或",
         "guidance-suffix": "（不做修改）",
@@ -1970,17 +1972,25 @@
           "description": "允许项目成员为特定只读语句申请限时访问授权。授权还可包含导出查询结果和查看未脱敏数据。",
           "self": "允许访问授权"
         },
+        "allow-last-plan-editor-approval": {
+          "description": "允许最后修改计划的用户审批关联的数据库变更工单。",
+          "self": "允许最后修改计划的用户审批"
+        },
         "allow-request-role": {
           "description": "非项目所有者可以自行申请项目级角色",
           "self": "允许申请角色"
         },
         "allow-self-approval": {
-          "description": "允许创建者审批自己创建的工单。",
-          "self": "允许创建者审批"
+          "description": "允许工单创建者审批该工单。",
+          "self": "允许工单创建者审批自己的工单"
         },
         "approval-flow-configured": "审批流程已配置",
         "approval-flow-fallback": "使用默认审批规则",
         "approval-flow-not-configured": "未配置审批流程",
+        "approval-permissions": {
+          "description": "这些权限会同时生效。如果审批人既创建了工单又最后修改了计划，则必须同时启用这两项权限。",
+          "self": "审批权限"
+        },
         "ci-sampling-size": {
           "description": "在CI数据验证期间，要采样的数据库数量的最大数量。\n禁用（零）时，将执行完整验证。",
           "self": "CI 数据采样大小"

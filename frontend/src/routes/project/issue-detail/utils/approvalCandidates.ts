@@ -25,13 +25,5 @@ export const candidatesOfApprovalStepV1 = (issue: Issue, role: string) => {
   };
   const candidates = role ? candidatesForRoles(role) : [];
 
-  return uniq(
-    candidates.filter((user) => {
-      // If the project does not allow self-approval, exclude the creator.
-      if (!project.allowSelfApproval && user === issue.creator) {
-        return false;
-      }
-      return true;
-    })
-  );
+  return uniq(candidates);
 };

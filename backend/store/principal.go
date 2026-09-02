@@ -915,6 +915,9 @@ func (s *Store) UpdateUserEmail(ctx context.Context, user *UserMessage, newEmail
 	if err := updateReference("UPDATE plan SET creator = $1 WHERE creator = $2"); err != nil {
 		return nil, err
 	}
+	if err := updateReference("UPDATE plan SET last_plan_editor = $1 WHERE last_plan_editor = $2"); err != nil {
+		return nil, err
+	}
 	if err := updateReference("UPDATE access_grant SET creator = $1 WHERE creator = $2"); err != nil {
 		return nil, err
 	}

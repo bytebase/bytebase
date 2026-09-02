@@ -19,6 +19,7 @@ import {
   isValidIssueName,
   isValidPlanName,
 } from "@/utils";
+import { getApprovalEligibility } from "../../approvalEligibility";
 import { isApprovalCompleted } from "./approval";
 import { candidatesOfApprovalStepV1 } from "./approvalCandidates";
 
@@ -43,8 +44,9 @@ export interface ActionPermissions {
   createIssue: boolean;
   updateIssue: boolean;
   createRollout: boolean;
+  canApproveIssue: boolean;
+  isReviewCandidate: boolean;
   runTasks: boolean;
-  isApprovalCandidate: boolean;
 }
 
 export interface ActionValidation {
@@ -97,22 +99,24 @@ export interface ContextBuilderInput {
   isSpecEmpty: (spec: Plan["specs"][0]) => boolean;
 }
 
-const computeIsApprovalCandidate = (
+const computeApprovalEligibility = (
   issue: Issue | undefined,
   currentUser: User,
+  plan: Plan,
   project: Project
-): boolean => {
-  if (!issue) return false;
-  if (isApprovalCompleted(issue)) return false;
+) => {
+  if (!issue || isApprovalCompleted(issue)) {
+    return { canApprove: false, canReview: false };
+  }
 
   const { approvers, approvalTemplate } = issue;
   const hasRejection = approvers.some(
     (app) => app.status === Issue_Approver_Status.REJECTED
   );
-  if (hasRejection) return false;
+  if (hasRejection) return { canApprove: false, canReview: false };
 
   const roles = approvalTemplate?.flow?.roles ?? [];
-  if (roles.length === 0) return false;
+  if (roles.length === 0) return { canApprove: false, canReview: false };
 
   const rejectedIndex = approvers.findIndex(
     (approver) => approver.status === Issue_Approver_Status.REJECTED
@@ -120,18 +124,18 @@ const computeIsApprovalCandidate = (
   const currentRoleIndex =
     rejectedIndex >= 0 ? rejectedIndex : approvers.length;
   const currentRole = roles[currentRoleIndex];
-  if (!currentRole) return false;
+  if (!currentRole) return { canApprove: false, canReview: false };
 
   const candidates = candidatesOfApprovalStepV1(issue, currentRole);
-  if (!isUserIncludedInList(currentUser.email, candidates)) return false;
-
-  if (
-    !project.allowSelfApproval &&
-    currentUser.email === extractUserEmail(issue.creator)
-  ) {
-    return false;
+  if (!isUserIncludedInList(currentUser.email, candidates)) {
+    return { canApprove: false, canReview: false };
   }
-  return true;
+  return getApprovalEligibility({
+    actor: currentUser.name,
+    issueCreator: issue.creator,
+    lastPlanEditor: plan.lastPlanEditor,
+    project,
+  });
 };
 
 export const buildIssueDetailActionContext = (
@@ -160,6 +164,12 @@ export const buildIssueDetailActionContext = (
   const hasDeferredRollout = plan.specs.some(
     (spec) => spec.config?.case === "createDatabaseConfig"
   );
+  const reviewEligibility = computeApprovalEligibility(
+    issue,
+    currentUser,
+    plan,
+    project
+  );
   const permissions: ActionPermissions = {
     updatePlan:
       currentUserEmail === extractUserEmail(plan.creator || "") ||
@@ -168,11 +178,8 @@ export const buildIssueDetailActionContext = (
     updateIssue: hasProjectPermissionV2(project, "bb.issues.update"),
     createRollout: hasProjectPermissionV2(project, "bb.rollouts.create"),
     runTasks: hasProjectPermissionV2(project, "bb.taskRuns.create"),
-    isApprovalCandidate: computeIsApprovalCandidate(
-      issue,
-      currentUser,
-      project
-    ),
+    canApproveIssue: reviewEligibility.canApprove,
+    isReviewCandidate: reviewEligibility.canReview,
   };
 
   const validation: ActionValidation = {
@@ -269,7 +276,7 @@ export const createIssueDetailActions = (t: TFunction): ActionDefinition[] => {
         ctx.issueStatus === IssueStatus.OPEN &&
         ctx.approvalStatus !== ApprovalStatus.APPROVED &&
         ctx.approvalStatus !== ApprovalStatus.SKIPPED &&
-        ctx.permissions.isApprovalCandidate,
+        ctx.permissions.isReviewCandidate,
       isDisabled: () => false,
       disabledReason: () => undefined,
       executeType: "popover:review",

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"connectrpc.com/connect"
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/types/known/emptypb"
@@ -476,6 +477,20 @@ func TestUpdateUserEmail(t *testing.T) {
 	}))
 	a.NoError(err)
 
+	pgContainer, err := provisionPgInstance(ctx, t)
+	a.NoError(err)
+	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+		InstanceId: generateRandomString("email-update"),
+		Instance: &v1pb.Instance{
+			Title:       "email-update",
+			Engine:      v1pb.Engine_POSTGRES,
+			Environment: new("environments/prod"),
+			Activation:  true,
+			DataSources: []*v1pb.DataSource{pgContainer.adminDataSource()},
+		},
+	}))
+	a.NoError(err)
+
 	// 2. Login as user and create resources
 	loginResp, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
 		Email:    originalEmail,
@@ -512,6 +527,22 @@ func TestUpdateUserEmail(t *testing.T) {
 	}))
 	a.NoError(err)
 	comment := commentResp.Msg
+
+	planResp, err := ctl.planServiceClient.CreatePlan(userCtx, connect.NewRequest(&v1pb.CreatePlanRequest{
+		Parent: "projects/" + projectID,
+		Plan: &v1pb.Plan{Specs: []*v1pb.Plan_Spec{{
+			Id: uuid.NewString(),
+			Config: &v1pb.Plan_Spec_CreateDatabaseConfig{
+				CreateDatabaseConfig: &v1pb.Plan_CreateDatabaseConfig{
+					Target:   instanceResp.Msg.Name,
+					Database: "email_update_test",
+				},
+			},
+		}}},
+	}))
+	a.NoError(err)
+	plan := planResp.Msg
+	a.Equal(common.FormatUserEmail(originalEmail), plan.LastPlanEditor)
 
 	// 3. Update Email (as Admin)
 	// Login as admin
@@ -555,6 +586,12 @@ func TestUpdateUserEmail(t *testing.T) {
 		}
 	}
 	a.True(foundComment)
+
+	updatedPlanResp, err := ctl.planServiceClient.GetPlan(ctx, connect.NewRequest(&v1pb.GetPlanRequest{
+		Name: plan.Name,
+	}))
+	a.NoError(err)
+	a.Equal(common.FormatUserEmail(newEmail), updatedPlanResp.Msg.LastPlanEditor, "Plan last editor should be updated")
 
 	// Verify Project Policy
 	newPolicyResp, err := ctl.projectServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{

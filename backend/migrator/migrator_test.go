@@ -21,8 +21,8 @@ import (
 func TestLatestVersion(t *testing.T) {
 	files, err := getSortedVersionedFiles()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("3.23.1"), *files[len(files)-1].version)
-	require.Equal(t, "migration/3.23/0001##issue_comment_thread.sql", files[len(files)-1].path)
+	require.Equal(t, semver.MustParse("3.23.2"), *files[len(files)-1].version)
+	require.Equal(t, "migration/3.23/0002##plan_last_editor_approval.sql", files[len(files)-1].path)
 }
 
 func TestMigration3_23_1_IssueCommentThreads(t *testing.T) {
@@ -131,6 +131,43 @@ func TestVersionUnique(t *testing.T) {
 		}
 		versions[file.version.String()] = struct{}{}
 	}
+}
+
+func TestMigration3_23_2BackfillsLastPlanEditorApproval(t *testing.T) {
+	ctx := context.Background()
+	container := testcontainer.GetTestPgContainer(ctx, t)
+	t.Cleanup(func() { container.Close(ctx) })
+	db := container.GetDB()
+	_, err := db.ExecContext(ctx, `
+		CREATE TABLE project (
+			resource_id text PRIMARY KEY,
+			deleted boolean NOT NULL DEFAULT FALSE,
+			setting jsonb NOT NULL DEFAULT '{}'
+		);
+		CREATE TABLE plan (id bigint NOT NULL, project text NOT NULL, creator text NOT NULL);
+		INSERT INTO project (resource_id, deleted) VALUES ('active', false), ('deleted', true);
+	`)
+	require.NoError(t, err)
+	statement, err := migrationFS.ReadFile("migration/3.23/0002##plan_last_editor_approval.sql")
+	require.NoError(t, err)
+	_, err = db.ExecContext(ctx, string(statement))
+	require.NoError(t, err)
+
+	for _, projectID := range []string{"active", "deleted"} {
+		var enabled bool
+		err := db.QueryRowContext(ctx, `
+			SELECT (setting->>'allowLastPlanEditorApproval')::boolean
+			FROM project
+			WHERE resource_id = $1`, projectID).Scan(&enabled)
+		require.NoError(t, err)
+		require.True(t, enabled)
+	}
+	var nullable string
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT is_nullable
+		FROM information_schema.columns
+		WHERE table_name = 'plan' AND column_name = 'last_plan_editor'`).Scan(&nullable))
+	require.Equal(t, "YES", nullable)
 }
 
 func TestMigration3_22_12MigratesSampleProjectInstance(t *testing.T) {

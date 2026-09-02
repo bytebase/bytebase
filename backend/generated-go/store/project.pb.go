@@ -122,8 +122,10 @@ type Project struct {
 	DataClassificationConfigId string `protobuf:"bytes,18,opt,name=data_classification_config_id,json=dataClassificationConfigId,proto3" json:"data_classification_config_id,omitempty"`
 	// Once enabled, users can request and use the just-in-time access in the SQL Editor.
 	AllowJustInTimeAccess bool `protobuf:"varint,19,opt,name=allow_just_in_time_access,json=allowJustInTimeAccess,proto3" json:"allow_just_in_time_access,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	// Whether to allow the last Plan editor to approve a database change issue.
+	AllowLastPlanEditorApproval bool `protobuf:"varint,20,opt,name=allow_last_plan_editor_approval,json=allowLastPlanEditorApproval,proto3" json:"allow_last_plan_editor_approval,omitempty"`
+	unknownFields               protoimpl.UnknownFields
+	sizeCache                   protoimpl.SizeCache
 }
 
 func (x *Project) Reset() {
@@ -261,6 +263,13 @@ func (x *Project) GetAllowJustInTimeAccess() bool {
 	return false
 }
 
+func (x *Project) GetAllowLastPlanEditorApproval() bool {
+	if x != nil {
+		return x.AllowLastPlanEditorApproval
+	}
+	return false
+}
+
 // ExecutionRetryPolicy defines retry behavior for failed task executions.
 type Project_ExecutionRetryPolicy struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -315,7 +324,7 @@ const file_store_project_proto_rawDesc = "" +
 	"\x05Label\x12\x14\n" +
 	"\x05value\x18\x01 \x01(\tR\x05value\x12(\n" +
 	"\x05color\x18\x02 \x01(\v2\x12.google.type.ColorR\x05color\x12\x14\n" +
-	"\x05group\x18\x03 \x01(\tR\x05group\"\xf1\a\n" +
+	"\x05group\x18\x03 \x01(\tR\x05group\"\xb7\b\n" +
 	"\aProject\x128\n" +
 	"\fissue_labels\x18\x01 \x03(\v2\x15.bytebase.store.LabelR\vissueLabels\x12,\n" +
 	"\x12force_issue_labels\x18\x02 \x01(\bR\x10forceIssueLabels\x12.\n" +
@@ -332,7 +341,8 @@ const file_store_project_proto_rawDesc = "" +
 	"\x1brequire_plan_check_no_error\x18\x10 \x01(\bR\x17requirePlanCheckNoError\x12,\n" +
 	"\x12allow_request_role\x18\x11 \x01(\bR\x10allowRequestRole\x12A\n" +
 	"\x1ddata_classification_config_id\x18\x12 \x01(\tR\x1adataClassificationConfigId\x128\n" +
-	"\x19allow_just_in_time_access\x18\x13 \x01(\bR\x15allowJustInTimeAccess\x1a?\n" +
+	"\x19allow_just_in_time_access\x18\x13 \x01(\bR\x15allowJustInTimeAccess\x12D\n" +
+	"\x1fallow_last_plan_editor_approval\x18\x14 \x01(\bR\x1ballowLastPlanEditorApproval\x1a?\n" +
 	"\x14ExecutionRetryPolicy\x12'\n" +
 	"\x0fmaximum_retries\x18\x01 \x01(\x05R\x0emaximumRetries\x1a9\n" +
 	"\vLabelsEntry\x12\x10\n" +

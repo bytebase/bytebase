@@ -40,7 +40,7 @@ export type PlanLifecycleHeaderState =
   | { kind: "closed" } // terminal stamp
   // Review.
   | { kind: "review-generating" } // disabled + loading
-  | { kind: "review-your-turn" }
+  | { kind: "review-your-turn"; canApprove: boolean }
   | { kind: "plan-status"; reason: PlanStatusReason }
   // Pre-deploy → rollout creation.
   | { kind: "preparing-rollout" }
@@ -62,7 +62,8 @@ export interface PlanLifecycleResolverInput {
   issueDraft: boolean;
   approvalStatus: ApprovalStatus;
   hasCurrentStep: boolean;
-  isCurrentUserCandidate: boolean;
+  canCurrentUserApprove: boolean;
+  isCurrentUserReviewCandidate: boolean;
 
   checks: PlanCheckSummary;
 
@@ -165,8 +166,15 @@ export function resolvePlanLifecycleHeaderState(
   }
 
   // Pending review: the advance is the current reviewer's to take.
-  if (input.hasCurrentStep && input.isCurrentUserCandidate && !input.readonly) {
-    return { kind: "review-your-turn" };
+  if (
+    input.hasCurrentStep &&
+    input.isCurrentUserReviewCandidate &&
+    !input.readonly
+  ) {
+    return {
+      canApprove: input.canCurrentUserApprove,
+      kind: "review-your-turn",
+    };
   }
   // Review is the active gate — surface it plainly regardless of check state.
   return { kind: "plan-status", reason: "in-review" };
