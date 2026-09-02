@@ -335,7 +335,8 @@ fatal() {
 
 # Docker down and masked until (a) has mounted /scratch. daemon.json persists, so the
 # previous boot's dockerd is already up with its data root on the boot disk, and
-# mounting over it would leave it writing there unseen. Masked, apt cannot restart it.
+# mounting over it would leave it writing there unseen. Masked, nothing can restart it
+# -- not apt's postinst, not a connection to a still-listening socket -- until (a) is done.
 systemctl mask --now docker.socket docker containerd 2>/dev/null
 ! pgrep -x 'dockerd|containerd' >/dev/null || fatal "docker would not stop"   # a process stuck in I/O survives SIGKILL
 
@@ -346,7 +347,6 @@ PKGS="docker.io cron systemd-oomd build-essential"   # build-essential: Go defau
 dpkg --configure -a 2>/dev/null || true   # clears a transaction a preemption cut short; apt repairs the rest
 apt-get -y -qq -f install $PKGS 2>/dev/null || { apt-get update -qq && apt-get -y -qq -f install $PKGS; } \
   || fatal "prerequisite install failed"
-systemctl unmask docker.socket docker containerd 2>/dev/null
 
 # ---------- (a) disk layout ----------
 mkdir -p /scratch
@@ -383,6 +383,9 @@ printf '[Service]\nExecStartPost=/bin/chmod 666 /var/run/docker.sock\n' > /etc/s
 # bind needs no containerd config to track.
 mountpoint -q /var/lib/containerd || mount --bind /scratch/containerd /var/lib/containerd \
   || fatal "containerd store not on Local SSD"
+# Masked until here: an active docker.socket cannot spawn a masked service, so nothing
+# can start dockerd on the boot disk between the stop above and this restart.
+systemctl unmask docker.socket docker containerd 2>/dev/null
 systemctl daemon-reload && systemctl restart containerd docker || fatal "docker would not start"
 docker info --format '{{.DockerRootDir}}' 2>/dev/null | grep -q '^/scratch/' \
   || fatal "docker not on Local SSD"   # daemon.json unwritten or rejected: dockerd starts fine on the boot disk
