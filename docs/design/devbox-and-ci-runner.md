@@ -23,8 +23,9 @@ it hosts three self-hosted GitHub Actions runners for the whole org.
    CPU and disk. The Ops Agent reports the rest, so RAM is sized from measurement
    instead of a guess.
 7. **Usable as a desktop agent's SSH environment.** One SSH config entry is enough.
-   OS Login manages keys through IAM, and there is no static IP or bastion. An account
-   that first appears at connect time can run Docker and has `sudo`.
+   A reserved address keeps that entry valid across preemptions. OS Login manages
+   keys through IAM, with no bastion. An account that first appears at connect time
+   can run Docker and has `sudo`.
 
 ## 1. Machine spec and cost
 
@@ -36,10 +37,10 @@ it hosts three self-hosted GitHub Actions runners for the whole org.
 | Image | `ubuntu-2404-lts-amd64` |
 | Boot disk | 100 GB pd-balanced, `--no-boot-disk-auto-delete` |
 | Scratch | 375 GB Local SSD (NVMe) |
-| External IP | ephemeral; carries all egress, and inbound SSH |
+| External IP | reserved; carries all egress, and inbound SSH |
 | Inbound | SSH only, via the VPC default rule; no tag, no custom rules |
 | Service account | dedicated; reads one secret, writes metrics and logs, nothing else |
-| Availability | always on; preemption stops it, the start workflow restarts it |
+| Availability | always on; preemption stops it, the start workflow restarts it within its polling interval |
 
 | Component | Rate | $/mo |
 |---|---|---|
@@ -47,7 +48,7 @@ it hosts three self-hosted GitHub Actions runners for the whole org.
 | 32 GiB RAM (N2) | $0.000441 / GiB-hr | $10.30 |
 | 375 GB Local SSD | $0.052800 / GB-mo | $19.80 |
 | 100 GB pd-balanced | $0.110 / GB-mo | $11.00 |
-| External IP (Spot) | $0.0025 / hr | $1.82 |
+| Reserved external IP | $0.0025 / hr | $1.82 |
 | **Total** | | **$90.96** |
 
 Catalog prices, 2026-09-01. vCPU and RAM are changeable on a stopped instance with
@@ -113,8 +114,13 @@ for r in monitoring.metricWriter logging.logWriter; do
     --member="serviceAccount:${SA}" --role=roles/$r
 done
 
+# A reserved address. An ephemeral one is released when the instance stops, so every
+# preemption would hand the box a new IP and strand the generated SSH entry.
+gcloud compute addresses create devbox --project=$PROJECT --region=${ZONE%-*}
+
 # The instance.
 gcloud compute instances create devbox --project=$PROJECT --zone=$ZONE \
+  --address=devbox \
   --machine-type=n2-custom-20-32768 \
   --provisioning-model=SPOT --instance-termination-action=STOP \
   --image-family=ubuntu-2404-lts-amd64 --image-project=ubuntu-os-cloud \
@@ -138,6 +144,11 @@ Repoint its instance name and zone at this one, in two places each, as the last 
 of cutover. Do it earlier and it stops restarting the box it serves today. Until then,
 start this one by hand.
 
+Raise its cadence at the same time. It runs at three fixed hours, so a preemption just
+after one of them leaves the box stopped for up to fifteen -- which is not "always on"
+for either the dev box or CI. Every fifteen minutes bounds the outage at fifteen
+minutes, and starting a running instance is a no-op.
+
 ### Connect
 
 Run `gcloud compute config-ssh` once. It writes the `~/.ssh/config` entries, and this
@@ -145,6 +156,12 @@ box's alias is `devbox.northamerica-northeast2-a.bytebase-dev`. Desktop agents t
 that alias as their SSH host: Claude Desktop under **Add SSH connection**, Codex in
 its SSH environment. Each developer gets their own account and home, created by OS
 Login on first connect.
+
+Log in once interactively before pointing an agent at a new account. The cache links
+in (b) are made by the profile, and a non-login `bash -c` does not read one -- so an
+account whose very first session is an agent command would write that session's caches
+to the boot disk. After that first login the links exist and every later session
+follows them, non-login included.
 
 ## 2. Startup script
 
@@ -184,8 +201,8 @@ fast OOM kill. With swap, the box thrashes until the job timeout. So there is 8 
 `systemd-oomd` kills a runaway job before either happens.
 
 The `monitoring.metricWriter` role puts both in Cloud Monitoring, as
-`memory/percent_used` and `swap/percent_usage`. The suffixes differ. Sustained swap
-above zero means 32 GB is too little.
+`memory/percent_used` and `swap/percent_used`. Sustained swap above zero means 32 GB
+is too little.
 
 Toolchains are not installed here. An agent session installs its own with `sudo`, to
 `/usr/local/go` and `/usr/local/node`, which the profile puts on every `PATH`. CI jobs
