@@ -92,7 +92,7 @@ ZONE=northamerica-northeast2-a
 SA=devbox@${PROJECT}.iam.gserviceaccount.com
 
 gcloud services enable secretmanager.googleapis.com oslogin.googleapis.com \
-  --project=$PROJECT
+  monitoring.googleapis.com logging.googleapis.com --project=$PROJECT
 
 # Service account; its roles are granted below, nothing more.
 gcloud iam service-accounts create devbox --project=$PROJECT \
@@ -330,7 +330,7 @@ trap 'logger -t devbox-startup "exited: status $?"' EXIT
 systemctl stop docker.socket docker 2>/dev/null
 # Latest runner release, falling back to a known-good pin if the lookup fails. Every
 # boot uses this: the runner lives on scratch and is re-fetched, never updated in place.
-RUNNER_VERSION=$(curl -sf --retry 3 https://api.github.com/repos/actions/runner/releases/latest | python3 -c 'import sys,json; print(json.load(sys.stdin)["tag_name"].lstrip("v"))' 2>/dev/null || echo 2.336.0)
+RUNNER_VERSION=$(curl -sf --retry 3 --max-time 30 https://api.github.com/repos/actions/runner/releases/latest | python3 -c 'import sys,json; print(json.load(sys.stdin)["tag_name"].lstrip("v"))' 2>/dev/null || echo 2.336.0)
 
 # ---------- packages: the Ubuntu image ships neither ----------
 export DEBIAN_FRONTEND=noninteractive
