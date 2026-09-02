@@ -497,7 +497,7 @@ cat > /usr/local/sbin/cache-gc <<'EOF'
 # rebuilds on the next job; a full disk does not.
 set -uo pipefail
 HIGH=85 CRITICAL=95
-find /tmp -maxdepth 1 -name 'go-build*' -type d -mmin +1440 -exec rm -rf {} +
+find /tmp -maxdepth 1 -name 'go-build*' -type d -mmin +1440 ! -exec mountpoint -q {} \; -exec rm -rf --one-file-system {} +
 used() { df -P /scratch | awk 'NR==2 {print $5+0}'; }
 # Load catches detached work -- tmux, nohup, a container -- that holds neither an SSH
 # session nor a Runner.Worker. On 20 vCPU, anything actually working exceeds 2.
@@ -517,9 +517,9 @@ shopt -s dotglob   # a /scratch/.something must not hide from the glob
 for e in /scratch/*; do
   u=${e##*/}
   case $u in tmp|docker|containerd|swapfile|lost+found) continue;; esac
-  id "$u" &>/dev/null || { rm -rf --one-file-system "$e"; continue; }   # not an account: dumped at the top level
-  case $u in runner[1-9]) keep='! -name runner';; *) keep=;; esac   # only a CI account's runner/ holds an install
-  find "$e" -mindepth 1 -maxdepth 1 -xdev $keep -exec rm -rf --one-file-system {} +   # never into a foreign mount
+  id "$u" &>/dev/null || { mountpoint -q "$e" || rm -rf --one-file-system "$e"; continue; }   # not an account: dumped at the top level
+  case $u in runner[1-9]) keep=(! -path "$e/runner" ! -path "$e/runner/*");; *) keep=();; esac   # only a CI account's runner/ holds an install
+  find "$e" -mindepth 1 -xdev "${keep[@]}" -delete 2>/dev/null   # -delete cannot cross into, or remove, a foreign mount
   for x in /cache /cache/go-mod /cache/npm /cache/pnpm /home /work; do
     install -d -o "$u" -g "$u" "$e$x"   # recreate: symlinks must not dangle
   done
