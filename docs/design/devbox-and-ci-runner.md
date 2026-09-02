@@ -325,7 +325,8 @@ RUNNER_VERSION=$(curl -sf --retry 3 https://api.github.com/repos/actions/runner/
 # ---------- packages: the Ubuntu image ships neither ----------
 export DEBIAN_FRONTEND=noninteractive
 echo 'DPkg::Lock::Timeout "300";' > /etc/apt/apt.conf.d/99-lock-timeout   # unattended-upgrades holds the lock at boot
-dpkg -s docker.io cron &>/dev/null || { apt-get update -qq && apt-get install -y -qq docker.io cron; }   # any missing -> install
+dpkg -s docker.io cron &>/dev/null || { apt-get update -qq && apt-get install -y -qq docker.io cron; } \
+  || { logger -t devbox-startup "FATAL: docker/cron install failed"; exit 1; }   # never advertise a runner that cannot run Docker
 
 # ---------- (a) disk layout ----------
 mkdir -p /scratch
@@ -339,7 +340,7 @@ fi
 # would put swap, Docker, work trees and caches on the 100 GB disk that holds /home.
 # Stop Docker too: daemon.json persists on the boot disk and points data-root at
 # /scratch, and Docker starts before this script runs.
-mountpoint -q /scratch || { logger -t devbox-startup "FATAL: no Local SSD at /scratch"; systemctl stop docker; exit 1; }
+mountpoint -q /scratch || { logger -t devbox-startup "FATAL: no Local SSD at /scratch"; systemctl stop docker.socket docker; exit 1; }
 chmod 1777 /scratch                                   # OS Login accounts create their own subtree
 mkdir -p /scratch/tmp && chmod 1777 /scratch/tmp
 # Bind unless /tmp already *is* /scratch/tmp: `mountpoint` would also be true for a
@@ -367,8 +368,10 @@ systemctl daemon-reload && systemctl restart docker
 for u in runner1 runner2 runner3; do
   id "$u" &>/dev/null || useradd -m -s /usr/sbin/nologin "$u"
   usermod -aG docker "$u"
-  mkdir -p "/scratch/$u/cache" "/scratch/$u/work"
-  chown "$u:$u" "/scratch/$u" "/scratch/$u/cache" "/scratch/$u/work"   # not -R: contents are the user's own
+  # runner/ too: systemd applies WorkingDirectory before ExecStartPre runs, so the
+  # unit would fail on CHDIR before install-runner could create it.
+  mkdir -p "/scratch/$u"/{cache,work,runner}
+  chown "$u:$u" "/scratch/$u" "/scratch/$u"/{cache,work,runner}   # not -R: contents are the user's own
 done
 
 # Interactive accounts appear on first OS Login connect, so the profile provisions them:
@@ -410,12 +413,13 @@ cat > /usr/local/sbin/install-runner <<'EOF'
 # <account>. Root, from the unit. Re-runs whole on every retry, deps included.
 set -euo pipefail
 DIR=/scratch/$1/runner
-[[ -x $DIR/config.sh ]] && exit 0
+[[ -f $DIR/.installed ]] && exit 0   # written last, so a failed dep step is retried
 V=$(< /etc/devbox-runner-version)
 install -d -o "$1" -g "$1" "$DIR"
 curl -fsSL --retry 3 "https://github.com/actions/runner/releases/download/v$V/actions-runner-linux-x64-$V.tar.gz" | tar xz -C "$DIR"
 chown -R "$1:$1" "$DIR"
 "$DIR"/bin/installdependencies.sh >/dev/null   # apt is a no-op once satisfied
+touch "$DIR/.installed"
 EOF
 chmod +x /usr/local/sbin/install-runner
 
