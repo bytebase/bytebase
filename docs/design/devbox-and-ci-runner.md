@@ -509,11 +509,6 @@ chmod +x /usr/local/sbin/cache-gc
 # look true and let the destructive tiers run during a live job.
 printf 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n*/30 * * * * root /usr/local/sbin/cache-gc\n' > /etc/cron.d/devbox
 
-# Guest memory and swap are invisible without the Ops Agent.
-systemctl is-active --quiet google-cloud-ops-agent \
-  || { curl -sSo /tmp/ops.sh --retry 3 https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh && bash /tmp/ops.sh --also-install; } \
-  || logger -t devbox-startup "WARN: Ops Agent install failed; no memory or swap metrics"   # retried next boot
-
 # One outcome check before any runner is advertised. Covers a failed package
 # install, a dockerd that would not start, and a daemon.json it rejects -- all of
 # which otherwise register three healthy-looking runners that fail every job.
@@ -521,6 +516,13 @@ docker info &>/dev/null || { logger -t devbox-startup "FATAL: docker unusable"; 
 
 systemctl daemon-reload
 systemctl restart actions-runner@runner1 actions-runner@runner2 actions-runner@runner3
+
+# Last, and time-bounded: guest memory and swap are invisible without the Ops Agent,
+# but it is observability. A stall here must not hold up CI capacity.
+systemctl is-active --quiet google-cloud-ops-agent \
+  || { curl -sS --retry 3 --max-time 120 -o /tmp/ops.sh https://dl.google.com/cloudagents/add-google-cloud-ops-agent-repo.sh \
+       && timeout 300 bash /tmp/ops.sh --also-install; } \
+  || logger -t devbox-startup "WARN: Ops Agent install failed; no memory or swap metrics"   # retried next boot
 ```
 
 ## 3. Considered
