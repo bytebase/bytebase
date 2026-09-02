@@ -337,6 +337,7 @@ fatal() {
 # previous boot's dockerd is already up with its data root on the boot disk, and
 # mounting over it would leave it writing there unseen. Masked, apt cannot restart it.
 systemctl mask --now docker.socket docker containerd 2>/dev/null
+! pgrep -x 'dockerd|containerd' >/dev/null || fatal "docker would not stop"   # a process stuck in I/O survives SIGKILL
 
 # ---------- packages ----------
 export DEBIAN_FRONTEND=noninteractive
