@@ -400,7 +400,8 @@ printf '[Service]\nExecStartPost=/bin/chmod 666 /var/run/docker.sock\n' > /etc/s
 # images and snapshots live under containerd's own root. Bind it rather than edit
 # containerd's TOML, so there is no config format or default to track.
 mkdir -p /scratch/containerd /var/lib/containerd
-mountpoint -q /var/lib/containerd || mount --bind /scratch/containerd /var/lib/containerd
+mountpoint -q /var/lib/containerd || mount --bind /scratch/containerd /var/lib/containerd \
+  || { logger -t devbox-startup "FATAL: containerd store not on Local SSD"; exit 1; }
 systemctl daemon-reload && systemctl restart containerd docker
 
 # ---------- (b) accounts and cache paths ----------
@@ -556,8 +557,6 @@ printf 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n*/30 
 # runners that fail every job, or quietly fill the disk holding /home.
 docker info --format '{{.DockerRootDir}}' 2>/dev/null | grep -q '^/scratch/' \
   || { logger -t devbox-startup "FATAL: docker unusable or not on Local SSD"; exit 1; }
-mountpoint -q /var/lib/containerd \
-  || { logger -t devbox-startup "FATAL: containerd images not on Local SSD"; exit 1; }
 
 systemctl daemon-reload
 systemctl restart actions-runner@runner1 actions-runner@runner2 actions-runner@runner3
