@@ -172,8 +172,9 @@ Log in once interactively before pointing an agent at a new account. The cache l
 in (b) are made by the profile, and a non-login `bash -c` does not read one -- so an
 account whose very first session is an agent command would write that session's caches
 to the boot disk. After that first login the links exist and every later session
-follows them, non-login included. `PATH` needs no such step: it comes from
-`/etc/environment`, which every session reads.
+follows them, non-login included -- and the startup script remakes the targets on
+every boot, so a preemption does not repeat the exercise. `PATH` needs no such step
+at all: it comes from `/etc/environment`, which every session reads.
 
 ## 2. Startup script
 
@@ -270,11 +271,12 @@ before counting any other repository in the org. That is deliberate: jobs queue,
 do not fail, and 20 vCPU split five ways is thin. A fourth or fifth slot is one more
 name in the script's account list if the wait proves worse than the contention.
 
-The runner is stateless, so it lives on scratch and is re-fetched each boot: one
-~200 MB download, extracted per account. That costs seconds of boot time. In return
-the boot disk holds nothing of the runner's, and every start runs the version resolved
-at the top of the script. Only its system packages persist, guarded by a marker file
-so `apt` runs once per rebuild.
+The runner is stateless, so it lives on scratch and is installed by the unit rather
+than by the startup script: an `ExecStartPre` runs `install-runner` as root, before
+the account registers. systemd retries that step, so a failed download heals itself
+instead of leaving the slot dead until someone reboots the box. Each account fetches
+its own ~200 MB copy, which costs seconds. In return the boot disk holds nothing of
+the runner's, and every start runs the version resolved at boot.
 
 `register-runner` reads the PAT from Secret Manager over the REST API, since the
 Ubuntu images ship no `gcloud`. It exchanges the PAT for a registration token and
@@ -335,7 +337,9 @@ if [[ -n "$DEV" ]] && ! mountpoint -q /scratch; then
 fi
 # Everything below assumes /scratch is the Local SSD. Falling back to the boot disk
 # would put swap, Docker, work trees and caches on the 100 GB disk that holds /home.
-mountpoint -q /scratch || { logger -t devbox-startup "FATAL: no Local SSD at /scratch"; exit 1; }
+# Stop Docker too: daemon.json persists on the boot disk and points data-root at
+# /scratch, and Docker starts before this script runs.
+mountpoint -q /scratch || { logger -t devbox-startup "FATAL: no Local SSD at /scratch"; systemctl stop docker; exit 1; }
 chmod 1777 /scratch                                   # OS Login accounts create their own subtree
 mkdir -p /scratch/tmp && chmod 1777 /scratch/tmp
 # Bind unless /tmp already *is* /scratch/tmp: `mountpoint` would also be true for a
@@ -387,20 +391,33 @@ fi
 unset u c pair link target
 EOF
 
-# ---------- (c) GitHub runners ----------
-# The runner is stateless, so it lives on scratch and is re-fetched each boot: one
-# download, extracted per account, always the version resolved above.
-echo "$RUNNER_VERSION" > /etc/devbox-runner-version   # register-runner re-reads this to self-heal
-curl -fsSL --retry 3 "https://github.com/actions/runner/releases/download/v${RUNNER_VERSION}/actions-runner-linux-x64-${RUNNER_VERSION}.tar.gz" -o /tmp/runner.tar.gz
-for u in runner1 runner2 runner3; do
-  install -d -o "$u" -g "$u" "/scratch/$u/runner"
-  tar xzf /tmp/runner.tar.gz -C "/scratch/$u/runner"
-  chown -R "$u:$u" "/scratch/$u/runner"
+# Accounts that already exist keep their symlinks in /home across a stop, but the
+# scratch targets those point at are gone. Remake them, so only a brand-new account
+# still needs a first interactive login.
+for h in /home/*; do
+  u=${h##*/}; id "$u" &>/dev/null || continue
+  for d in "" /go-mod /npm /pnpm; do install -d -o "$u" -g "$u" "/scratch/$u/cache$d"; done
 done
-rm -f /tmp/runner.tar.gz
-# Its system packages land on the boot disk and persist, so this runs once per rebuild.
-[[ -f /var/lib/devbox-runner-deps ]] || \
-  { /scratch/runner1/runner/bin/installdependencies.sh >/dev/null && touch /var/lib/devbox-runner-deps; }
+
+# ---------- (c) GitHub runners ----------
+# The runner is stateless, so it lives on scratch and is installed from the unit
+# rather than from here. systemd retries that step forever, so a failed download
+# heals itself; doing it at boot gave a fresh VM no second chance.
+echo "$RUNNER_VERSION" > /etc/devbox-runner-version
+
+cat > /usr/local/sbin/install-runner <<'EOF'
+#!/bin/bash
+# <account>. Root, from the unit. Re-runs whole on every retry, deps included.
+set -euo pipefail
+DIR=/scratch/$1/runner
+[[ -x $DIR/config.sh ]] && exit 0
+V=$(< /etc/devbox-runner-version)
+install -d -o "$1" -g "$1" "$DIR"
+curl -fsSL --retry 3 "https://github.com/actions/runner/releases/download/v$V/actions-runner-linux-x64-$V.tar.gz" | tar xz -C "$DIR"
+chown -R "$1:$1" "$DIR"
+"$DIR"/bin/installdependencies.sh >/dev/null   # apt is a no-op once satisfied
+EOF
+chmod +x /usr/local/sbin/install-runner
 
 cat > /usr/local/sbin/register-runner <<'EOF'
 #!/bin/bash
@@ -417,12 +434,6 @@ TOKEN=$(curl -sfX POST -H "Authorization: Bearer $PAT" -H "Accept: application/v
   "https://api.github.com/orgs/${ORG}/actions/runners/registration-token" \
   | python3 -c 'import sys,json; print(json.load(sys.stdin)["token"])')
 cd "$DIR"
-# systemd retries this unit forever, so re-fetch if the boot-time download failed. A
-# transient network error then heals itself instead of killing the slot until reboot.
-if [[ ! -x ./config.sh ]]; then
-  V=$(< /etc/devbox-runner-version)
-  curl -fsSL --retry 3 "https://github.com/actions/runner/releases/download/v$V/actions-runner-linux-x64-$V.tar.gz" | tar xz
-fi
 rm -f .runner .credentials .credentials_rsakey   # config.sh refuses to overwrite an existing config
 ./config.sh --unattended --replace --url "https://github.com/${ORG}" --token "$TOKEN" \
   --name "$(hostname -s)-$NAME" --work "$WORK"   # host-qualified name: never collides with another box
@@ -438,6 +449,7 @@ After=network-online.target docker.service
 User=%i
 WorkingDirectory=/scratch/%i/runner
 Environment=XDG_CACHE_HOME=/scratch/%i/cache GOMODCACHE=/scratch/%i/cache/go-mod npm_config_cache=/scratch/%i/cache/npm PNPM_CONFIG_STORE_DIR=/scratch/%i/cache/pnpm
+ExecStartPre=+/usr/local/sbin/install-runner %i
 ExecStartPre=/usr/local/sbin/register-runner %i /scratch/%i/runner /scratch/%i/work
 ExecStart=/scratch/%i/runner/run.sh
 Restart=always
