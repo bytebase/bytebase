@@ -522,9 +522,10 @@ idle()  { ! pgrep -f Runner.Worker >/dev/null && [[ -z "$(ss -Htn state establis
 
 [[ $(used) -ge $HIGH ]] || exit 0
 logger -t cache-gc "start: $(used)% used"
-# Safe while jobs run: only things idle >1h, and Go's content-addressed build cache.
-docker container prune -f --filter until=1h >/dev/null 2>&1
-docker image prune -f --filter until=1h >/dev/null 2>&1
+# Safe while jobs run. 24h, not 1h: a job can stop a container and restart it later,
+# so the window has to exceed any job's lifetime rather than merely look idle.
+docker container prune -f --filter until=24h >/dev/null 2>&1
+docker image prune -f --filter until=24h >/dev/null 2>&1
 halt_ "docker garbage"
 for u in $(accounts); do find "/scratch/$u/cache/go-build" -type f -mmin +2880 -delete 2>/dev/null; done
 halt_ "go-build >2d"
