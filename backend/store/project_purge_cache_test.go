@@ -114,7 +114,7 @@ func TestDeleteProjectPurgeInvalidatesDescendantCaches(t *testing.T) {
 	workspaceInstanceID := "workspace-instance"
 	workspaceDBName := "workspace-db"
 
-	require.NoError(t, s.DeleteProject(ctx, "default", "project-a"))
+	require.NoError(t, s.DeleteProjects(ctx, "default", "project-a"))
 
 	// Observable seam: purged descendants are immediately unavailable through
 	// the cached getters.
@@ -164,7 +164,7 @@ func TestDeleteProjectPurgeSupportsDescendantIDReuse(t *testing.T) {
 	seedProjectPurgeFixture(ctx, t, db)
 	warmProjectPurgeCaches(ctx, t, s)
 
-	require.NoError(t, s.DeleteProject(ctx, "default", "project-a"))
+	require.NoError(t, s.DeleteProjects(ctx, "default", "project-a"))
 
 	projectInstanceID := "project-instance"
 	projectDBName := "project-db"
@@ -213,7 +213,7 @@ func TestDeleteProjectFailedTransactionKeepsDescendantCaches(t *testing.T) {
 	// the whole purge back.
 	_, err := db.ExecContext(ctx, `UPDATE project SET deleted = FALSE WHERE resource_id = 'project-a'`)
 	require.NoError(t, err)
-	err = s.DeleteProject(ctx, "default", "project-a")
+	err = s.DeleteProjects(ctx, "default", "project-a")
 	require.Error(t, err)
 
 	// Remove the descendant rows behind the store's back so that only a

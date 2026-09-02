@@ -446,61 +446,17 @@ func (s *Store) removeProjectDescendantCaches(keys *projectDescendantCacheKeys, 
 	}
 }
 
-// lockProjects locks the named project rows in primary-key order and reports
-// each one's deleted state, leaving the state requirement to the caller.
-// Ordering the lock is what keeps concurrent callers naming overlapping sets
-// from deadlocking; see the row-lock rules in backend/store/AGENTS.md.
-// project.resource_id is the whole primary key, so no other scope column
-// identifies the row.
-func lockProjects(ctx context.Context, tx *stdsql.Tx, projectIDs []string) (map[string]bool, error) {
-	ordered := slices.Compact(slices.Sorted(slices.Values(projectIDs)))
-	rows, err := tx.QueryContext(ctx, `
-		SELECT resource_id, deleted
-		FROM project
-		WHERE resource_id = ANY($1)
-		ORDER BY resource_id
-		FOR UPDATE
-	`, ordered)
-	if err != nil {
-		return nil, errors.Wrapf(err, "failed to lock projects %s", strings.Join(ordered, ", "))
-	}
-	defer rows.Close()
-	locked := make(map[string]bool, len(ordered))
-	for rows.Next() {
-		var projectID string
-		var deleted bool
-		if err := rows.Scan(&projectID, &deleted); err != nil {
-			return nil, errors.Wrap(err, "failed to scan locked project")
-		}
-		locked[projectID] = deleted
-	}
-	if err := rows.Err(); err != nil {
-		return nil, errors.Wrap(err, "failed to read locked projects")
-	}
-	return locked, nil
-}
-
-// DeleteProject permanently purges a soft-deleted project and all related resources.
-// This operation is irreversible and should only be used for:
+// DeleteProjects permanently purges soft-deleted projects and all related
+// resources in one transaction, so a batch either removes every named project
+// or leaves them all intact. This is irreversible and should only be used for:
 // - Administrative cleanup of old soft-deleted projects
 // - Test cleanup
 // Following AIP-164/165, this only works on projects where deleted = TRUE.
-func (s *Store) DeleteProject(ctx context.Context, workspace string, resourceID string) error {
-	return s.DeleteProjects(ctx, workspace, resourceID)
-}
-
-// DeleteProjects permanently purges soft-deleted projects and all related
-// resources in a single transaction, so a batch purge either removes every
-// named project or leaves them all intact. Purging is irreversible; see
-// DeleteProject for when it applies.
 func (s *Store) DeleteProjects(ctx context.Context, workspace string, resourceIDs ...string) error {
 	if len(resourceIDs) == 0 {
 		return nil
 	}
-	// Sort and dedupe so the project rows are locked in primary-key order and
-	// so a repeated name does not make the purged-row count disagree.
-	projectIDs := slices.Compact(slices.Sorted(slices.Values(resourceIDs)))
-	projectList := strings.Join(projectIDs, ", ")
+	projectList := strings.Join(resourceIDs, ", ")
 
 	defaultProjectID, err := s.GetDefaultProjectID(ctx, workspace)
 	if err != nil {
@@ -515,13 +471,13 @@ func (s *Store) DeleteProjects(ctx context.Context, workspace string, resourceID
 	// Capture descendant cache keys before any descendant rows are removed so
 	// the post-commit invalidation is precise and does not require re-reading
 	// rows that no longer exist.
-	cacheKeys, err := captureProjectDescendantCacheKeys(ctx, tx, projectIDs)
+	cacheKeys, err := captureProjectDescendantCacheKeys(ctx, tx, resourceIDs)
 	if err != nil {
 		return errors.Wrap(err, "failed to capture project descendant cache keys")
 	}
 
 	// Delete query history before database-scoped rows.
-	q := qb.Q().Space("DELETE FROM query_history WHERE project = ANY(?)", projectIDs)
+	q := qb.Q().Space("DELETE FROM query_history WHERE project = ANY(?)", resourceIDs)
 	sql, args, err := q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build query_history delete query")
@@ -530,9 +486,14 @@ func (s *Store) DeleteProjects(ctx context.Context, workspace string, resourceID
 		return errors.Wrapf(err, "failed to delete query_history for projects %s", projectList)
 	}
 
-	// Delete policy entries that reference these projects.
+	// Delete policy entries that reference these projects. Policy rows name the
+	// project by resource name, not by ID.
+	policyResources := make([]string, 0, len(resourceIDs))
+	for _, resourceID := range resourceIDs {
+		policyResources = append(policyResources, common.FormatProject(resourceID))
+	}
 	q = qb.Q().Space("DELETE FROM policy")
-	q.Space("WHERE (resource_type = ? AND resource = ANY(?))", storepb.Policy_PROJECT.String(), projectPolicyResources(projectIDs))
+	q.Space("WHERE (resource_type = ? AND resource = ANY(?))", storepb.Policy_PROJECT.String(), policyResources)
 	q.And("workspace = ?", workspace)
 	sql, args, err = q.ToSQL()
 	if err != nil {
@@ -556,7 +517,7 @@ func (s *Store) DeleteProjects(ctx context.Context, workspace string, resourceID
 					WHERE creator IN (SELECT email FROM service_account WHERE project = ANY(?) AND workspace = ?)
 					   OR creator IN (SELECT email FROM workload_identity WHERE project = ANY(?) AND workspace = ?)
 			   )
-		)`, projectIDs, workspace, projectIDs, workspace, projectIDs, workspace, projectIDs, workspace)
+		)`, resourceIDs, workspace, resourceIDs, workspace, resourceIDs, workspace, resourceIDs, workspace)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build saved_query_star delete query")
@@ -568,7 +529,7 @@ func (s *Store) DeleteProjects(ctx context.Context, workspace string, resourceID
 	// Delete saved queries created by project service accounts or workload identities.
 	q = qb.Q().Space(`DELETE FROM saved_query
 		WHERE creator IN (SELECT email FROM service_account WHERE project = ANY(?) AND workspace = ?)
-		   OR creator IN (SELECT email FROM workload_identity WHERE project = ANY(?) AND workspace = ?)`, projectIDs, workspace, projectIDs, workspace)
+		   OR creator IN (SELECT email FROM workload_identity WHERE project = ANY(?) AND workspace = ?)`, resourceIDs, workspace, resourceIDs, workspace)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build saved query delete query for principals")
@@ -578,7 +539,7 @@ func (s *Store) DeleteProjects(ctx context.Context, workspace string, resourceID
 	}
 
 	// Reassign remaining saved queries associated with these projects.
-	q = qb.Q().Space("UPDATE saved_query SET project = ? WHERE project = ANY(?)", defaultProjectID, projectIDs)
+	q = qb.Q().Space("UPDATE saved_query SET project = ? WHERE project = ANY(?)", defaultProjectID, resourceIDs)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build saved query update query")
@@ -607,7 +568,7 @@ func (s *Store) DeleteProjects(ctx context.Context, workspace string, resourceID
 		{"release", "DELETE FROM release WHERE project = ANY(?)"},
 		{"db_group", "DELETE FROM db_group WHERE project = ANY(?)"},
 	} {
-		q = qb.Q().Space(statement.sql, projectIDs)
+		q = qb.Q().Space(statement.sql, resourceIDs)
 		sql, args, err = q.ToSQL()
 		if err != nil {
 			return errors.Wrapf(err, "failed to build %s delete query", statement.name)
@@ -634,9 +595,9 @@ func (s *Store) DeleteProjects(ctx context.Context, workspace string, resourceID
 		{"database", "DELETE FROM db WHERE instance IN (SELECT resource_id FROM instance WHERE project = ANY(?))"},
 	} {
 		if statement.name == "revision deleter" {
-			q = qb.Q().Space(statement.sql, projectIDs, workspace, projectIDs, workspace)
+			q = qb.Q().Space(statement.sql, resourceIDs, workspace, resourceIDs, workspace)
 		} else {
-			q = qb.Q().Space(statement.sql, projectIDs)
+			q = qb.Q().Space(statement.sql, resourceIDs)
 		}
 		sql, args, err = q.ToSQL()
 		if err != nil {
@@ -656,7 +617,7 @@ func (s *Store) DeleteProjects(ctx context.Context, workspace string, resourceID
 		WHERE db.instance = instance.resource_id
 		  AND db.project = ANY(?)
 		  AND instance.project IS NULL
-	`, defaultProjectID, projectIDs)
+	`, defaultProjectID, resourceIDs)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build workspace database update query")
@@ -668,7 +629,7 @@ func (s *Store) DeleteProjects(ctx context.Context, workspace string, resourceID
 	// Delete sheet refs owned by these projects. Blobs stay: content-addressed
 	// rows may be shared with other projects, and unreferenced blobs are a
 	// future GC's concern (see the sheet_blob comment in LATEST.sql).
-	q = qb.Q().Space("DELETE FROM sheet_blob_ref WHERE project = ANY(?)", projectIDs)
+	q = qb.Q().Space("DELETE FROM sheet_blob_ref WHERE project = ANY(?)", resourceIDs)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build sheet_blob_ref delete query")
@@ -678,7 +639,7 @@ func (s *Store) DeleteProjects(ctx context.Context, workspace string, resourceID
 	}
 
 	// Delete project webhooks
-	q = qb.Q().Space("DELETE FROM project_webhook WHERE project = ANY(?)", projectIDs)
+	q = qb.Q().Space("DELETE FROM project_webhook WHERE project = ANY(?)", resourceIDs)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build project_webhook delete query")
@@ -688,7 +649,7 @@ func (s *Store) DeleteProjects(ctx context.Context, workspace string, resourceID
 	}
 
 	// Delete project service accounts
-	q = qb.Q().Space("DELETE FROM service_account WHERE project = ANY(?) AND workspace = ?", projectIDs, workspace)
+	q = qb.Q().Space("DELETE FROM service_account WHERE project = ANY(?) AND workspace = ?", resourceIDs, workspace)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build service_account delete query")
@@ -698,7 +659,7 @@ func (s *Store) DeleteProjects(ctx context.Context, workspace string, resourceID
 	}
 
 	// Delete project workload identities
-	q = qb.Q().Space("DELETE FROM workload_identity WHERE project = ANY(?) AND workspace = ?", projectIDs, workspace)
+	q = qb.Q().Space("DELETE FROM workload_identity WHERE project = ANY(?) AND workspace = ?", resourceIDs, workspace)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build workload_identity delete query")
@@ -709,7 +670,7 @@ func (s *Store) DeleteProjects(ctx context.Context, workspace string, resourceID
 
 	// Every project instance is deleted with its owner; they are never converted
 	// into workspace instances.
-	q = qb.Q().Space("DELETE FROM instance WHERE project = ANY(?)", projectIDs)
+	q = qb.Q().Space("DELETE FROM instance WHERE project = ANY(?)", resourceIDs)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build project instance delete query")
@@ -718,33 +679,22 @@ func (s *Store) DeleteProjects(ctx context.Context, workspace string, resourceID
 		return errors.Wrapf(err, "failed to delete project instances for projects %s", projectList)
 	}
 
-	locked, err := lockProjects(ctx, tx, projectIDs)
-	if err != nil {
-		return err
-	}
-	for _, projectID := range projectIDs {
-		if deleted, ok := locked[projectID]; !ok || !deleted {
-			return errors.Errorf("project %s not found or not marked as deleted", projectID)
-		}
-	}
-
-	// Finally, delete the projects themselves (only those marked as deleted)
-	q = qb.Q().Space("DELETE FROM project WHERE resource_id = ANY(?) AND deleted = TRUE AND workspace = ?", projectIDs, workspace)
+	// Finally, delete the projects themselves. The predicate is the archived
+	// guard: a name that is missing, still active, or in another workspace does
+	// not come back, and rolls the whole batch back.
+	q = qb.Q().Space("DELETE FROM project WHERE resource_id = ANY(?) AND deleted = TRUE AND workspace = ? RETURNING resource_id", resourceIDs, workspace)
 	sql, args, err = q.ToSQL()
 	if err != nil {
 		return errors.Wrap(err, "failed to build project delete query")
 	}
-	result, err := tx.ExecContext(ctx, sql, args...)
+	purged, err := scanProjectIDs(ctx, tx, sql, args...)
 	if err != nil {
 		return errors.Wrapf(err, "failed to delete projects %s", projectList)
 	}
-
-	rowsAffected, err := result.RowsAffected()
-	if err != nil {
-		return errors.Wrap(err, "failed to get rows affected")
-	}
-	if rowsAffected != int64(len(projectIDs)) {
-		return errors.Errorf("purged %d of %d projects: %s", rowsAffected, len(projectIDs), projectList)
+	for _, resourceID := range resourceIDs {
+		if !slices.Contains(purged, resourceID) {
+			return errors.Errorf("project %s not found or not marked as deleted", resourceID)
+		}
 	}
 
 	if err := tx.Commit(); err != nil {
@@ -753,19 +703,27 @@ func (s *Store) DeleteProjects(ctx context.Context, workspace string, resourceID
 
 	// Publish invalidation only after the purge commits: every captured
 	// descendant entry is removed while unrelated cache entries survive.
-	s.removeProjectDescendantCaches(cacheKeys, projectIDs)
+	s.removeProjectDescendantCaches(cacheKeys, resourceIDs)
 
 	return nil
 }
 
-// projectPolicyResources renders the policy resource names of the given
-// projects, matching the 'projects/' || resource_id form policy rows store.
-func projectPolicyResources(resourceIDs []string) []string {
-	resources := make([]string, 0, len(resourceIDs))
-	for _, resourceID := range resourceIDs {
-		resources = append(resources, common.FormatProject(resourceID))
+// scanProjectIDs runs a query returning one resource_id column.
+func scanProjectIDs(ctx context.Context, tx *stdsql.Tx, query string, args ...any) ([]string, error) {
+	rows, err := tx.QueryContext(ctx, query, args...)
+	if err != nil {
+		return nil, err
 	}
-	return resources
+	defer rows.Close()
+	var projectIDs []string
+	for rows.Next() {
+		var projectID string
+		if err := rows.Scan(&projectID); err != nil {
+			return nil, err
+		}
+		projectIDs = append(projectIDs, projectID)
+	}
+	return projectIDs, rows.Err()
 }
 
 func GetListProjectFilter(workspace, filter string) (*qb.Query, error) {

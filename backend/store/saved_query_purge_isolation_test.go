@@ -33,7 +33,7 @@ func TestDeleteProjectPurgeKeepsOtherProjectSavedQueryStars(t *testing.T) {
 	`
 
 	fixture := newStorePostgresFixture(t, seedSQL)
-	require.NoError(t, fixture.store.DeleteProject(fixture.ctx, "default", "project-a"))
+	require.NoError(t, fixture.store.DeleteProjects(fixture.ctx, "default", "project-a"))
 
 	savedQueryExists := func(resourceID string) bool {
 		var exists bool

@@ -409,7 +409,7 @@ func (s *ProjectService) DeleteProject(ctx context.Context, req *connect.Request
 		}
 
 		// Permanently delete the project and all related resources (moves databases to default project)
-		if err := s.store.DeleteProject(ctx, project.Workspace, project.ResourceID); err != nil {
+		if err := s.store.DeleteProjects(ctx, project.Workspace, project.ResourceID); err != nil {
 			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to purge project"))
 		}
 

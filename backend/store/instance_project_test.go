@@ -180,7 +180,7 @@ func TestDeleteProjectDeletesProjectInstancesAndKeepsWorkspaceInstanceDatabases(
 	`)
 	require.NoError(t, err)
 
-	require.NoError(t, s.DeleteProject(ctx, "default", "project-a"))
+	require.NoError(t, s.DeleteProjects(ctx, "default", "project-a"))
 
 	var projectInstanceCount, projectDatabaseCount int
 	require.NoError(t, db.QueryRowContext(ctx, `

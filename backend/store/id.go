@@ -34,13 +34,13 @@ func requireActiveProject(ctx context.Context, tx *sql.Tx, projectID string) err
 // lockActiveProject locks the project row and requires it to be active. This
 // serializes MAX(id) + 1 allocation for project-scoped tables.
 func lockActiveProject(ctx context.Context, tx *sql.Tx, projectID string) error {
-	locked, err := lockProjects(ctx, tx, []string{projectID})
-	if err != nil {
-		return err
-	}
-	deleted, ok := locked[projectID]
-	if !ok {
-		return common.Errorf(common.NotFound, "project %s not found", projectID)
+	var deleted bool
+	if err := tx.QueryRowContext(ctx,
+		"SELECT deleted FROM project WHERE resource_id = $1 FOR UPDATE", projectID).Scan(&deleted); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return common.Errorf(common.NotFound, "project %s not found", projectID)
+		}
+		return errors.Wrapf(err, "failed to lock project %s", projectID)
 	}
 	if deleted {
 		return common.Errorf(common.NotFound, "project %s is deleted", projectID)
