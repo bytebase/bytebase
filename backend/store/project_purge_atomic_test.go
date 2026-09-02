@@ -60,7 +60,9 @@ func projectRowCounts(t *testing.T, fixture *storePostgresFixture, projectID str
 func TestDeleteProjectsPurgesEveryNamedProject(t *testing.T) {
 	fixture := newStorePostgresFixture(t, seedPurgeableProjects)
 
-	require.NoError(t, fixture.store.DeleteProjects(fixture.ctx, "default", "project-a", "project-c"))
+	// project-a is named twice: a repeated name must purge once rather than
+	// fail the purged-row count against the number of names given.
+	require.NoError(t, fixture.store.DeleteProjects(fixture.ctx, "default", "project-a", "project-c", "project-a"))
 
 	for _, projectID := range []string{"project-a", "project-c"} {
 		for table, count := range projectRowCounts(t, fixture, projectID) {
@@ -76,43 +78,40 @@ func TestDeleteProjectsPurgesEveryNamedProject(t *testing.T) {
 	}
 }
 
-func TestDeleteProjectsPurgeRollsBackWhenOneProjectIsNotArchived(t *testing.T) {
-	fixture := newStorePostgresFixture(t, seedPurgeableProjects+`
-		UPDATE project SET deleted = FALSE WHERE resource_id = 'project-c';
-	`)
+// The batch fails late — at the project lock, after every descendant delete —
+// so both ways of failing it exercise the rollback.
+func TestDeleteProjectsPurgeRollsBackWholeBatch(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		seedSQL string
+		names   []string
+		wantErr string
+	}{
+		{
+			name:    "one project is not archived",
+			seedSQL: `UPDATE project SET deleted = FALSE WHERE resource_id = 'project-c';`,
+			names:   []string{"project-a", "project-b", "project-c"},
+			wantErr: "project project-c not found or not marked as deleted",
+		},
+		{
+			name:    "one project does not exist",
+			names:   []string{"project-a", "project-b", "project-missing"},
+			wantErr: "project project-missing not found or not marked as deleted",
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			fixture := newStorePostgresFixture(t, seedPurgeableProjects+tc.seedSQL)
 
-	err := fixture.store.DeleteProjects(fixture.ctx, "default", "project-a", "project-b", "project-c")
-	require.ErrorContains(t, err, "project project-c not found or not marked as deleted")
+			require.ErrorContains(t, fixture.store.DeleteProjects(fixture.ctx, "default", tc.names...), tc.wantErr)
 
-	// project-a and project-b are archived and sort before project-c, so the
-	// loop this replaced would have purged both before reaching the failure.
-	for _, projectID := range []string{"project-a", "project-b", "project-c", "default"} {
-		for table, count := range projectRowCounts(t, fixture, projectID) {
-			require.Equal(t, 1, count, "%s rows for project %s after the rolled-back purge", table, projectID)
-		}
-	}
-}
-
-func TestDeleteProjectsPurgeRollsBackWhenOneProjectIsMissing(t *testing.T) {
-	fixture := newStorePostgresFixture(t, seedPurgeableProjects)
-
-	err := fixture.store.DeleteProjects(fixture.ctx, "default", "project-a", "project-missing")
-	require.ErrorContains(t, err, "project project-missing not found or not marked as deleted")
-
-	for table, count := range projectRowCounts(t, fixture, "project-a") {
-		require.Equal(t, 1, count, "%s rows for project-a after the rolled-back purge", table)
-	}
-}
-
-// A name repeated in one batch must purge once rather than fail the
-// purged-row count against the number of names given.
-func TestDeleteProjectsPurgeDedupesRepeatedNames(t *testing.T) {
-	fixture := newStorePostgresFixture(t, seedPurgeableProjects)
-
-	require.NoError(t, fixture.store.DeleteProjects(fixture.ctx, "default", "project-a", "project-a"))
-
-	for table, count := range projectRowCounts(t, fixture, "project-a") {
-		require.Zero(t, count, "%s rows for purged project-a", table)
+			// project-a and project-b are archived and sort first, so the loop
+			// this replaced would have purged both before reaching the failure.
+			for _, projectID := range []string{"project-a", "project-b", "project-c", "default"} {
+				for table, count := range projectRowCounts(t, fixture, projectID) {
+					require.Equal(t, 1, count, "%s rows for project %s after the rolled-back purge", table, projectID)
+				}
+			}
+		})
 	}
 }
 

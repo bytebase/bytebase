@@ -446,39 +446,38 @@ func (s *Store) removeProjectDescendantCaches(keys *projectDescendantCacheKeys, 
 	}
 }
 
-// lockPurgeableProjects locks the project rows in primary-key order and
-// requires every requested project to exist and be archived. It runs last in
-// the purge transaction, after the descendant rows it protects.
-func lockPurgeableProjects(ctx context.Context, tx *stdsql.Tx, workspace string, resourceIDs []string) error {
+// lockProjects locks the named project rows in primary-key order and reports
+// each one's deleted state, leaving the state requirement to the caller.
+// Ordering the lock is what keeps concurrent callers naming overlapping sets
+// from deadlocking; see the row-lock rules in backend/store/AGENTS.md.
+// project.resource_id is the whole primary key, so no other scope column
+// identifies the row.
+func lockProjects(ctx context.Context, tx *stdsql.Tx, projectIDs []string) (map[string]bool, error) {
+	ordered := slices.Compact(slices.Sorted(slices.Values(projectIDs)))
 	rows, err := tx.QueryContext(ctx, `
 		SELECT resource_id, deleted
 		FROM project
-		WHERE resource_id = ANY($1) AND workspace = $2
+		WHERE resource_id = ANY($1)
 		ORDER BY resource_id
 		FOR UPDATE
-	`, resourceIDs, workspace)
+	`, ordered)
 	if err != nil {
-		return errors.Wrapf(err, "failed to lock projects %s", strings.Join(resourceIDs, ", "))
+		return nil, errors.Wrapf(err, "failed to lock projects %s", strings.Join(ordered, ", "))
 	}
 	defer rows.Close()
-	locked := make(map[string]bool, len(resourceIDs))
+	locked := make(map[string]bool, len(ordered))
 	for rows.Next() {
-		var resourceID string
+		var projectID string
 		var deleted bool
-		if err := rows.Scan(&resourceID, &deleted); err != nil {
-			return errors.Wrap(err, "failed to scan locked project")
+		if err := rows.Scan(&projectID, &deleted); err != nil {
+			return nil, errors.Wrap(err, "failed to scan locked project")
 		}
-		locked[resourceID] = deleted
+		locked[projectID] = deleted
 	}
 	if err := rows.Err(); err != nil {
-		return errors.Wrap(err, "failed to read locked projects")
+		return nil, errors.Wrap(err, "failed to read locked projects")
 	}
-	for _, resourceID := range resourceIDs {
-		if deleted, ok := locked[resourceID]; !ok || !deleted {
-			return errors.Errorf("project %s not found or not marked as deleted", resourceID)
-		}
-	}
-	return nil
+	return locked, nil
 }
 
 // DeleteProject permanently purges a soft-deleted project and all related resources.
@@ -719,8 +718,14 @@ func (s *Store) DeleteProjects(ctx context.Context, workspace string, resourceID
 		return errors.Wrapf(err, "failed to delete project instances for projects %s", projectList)
 	}
 
-	if err := lockPurgeableProjects(ctx, tx, workspace, projectIDs); err != nil {
+	locked, err := lockProjects(ctx, tx, projectIDs)
+	if err != nil {
 		return err
+	}
+	for _, projectID := range projectIDs {
+		if deleted, ok := locked[projectID]; !ok || !deleted {
+			return errors.Errorf("project %s not found or not marked as deleted", projectID)
+		}
 	}
 
 	// Finally, delete the projects themselves (only those marked as deleted)
