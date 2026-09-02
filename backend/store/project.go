@@ -276,11 +276,6 @@ func (s *Store) UpdateProjects(ctx context.Context, patches ...*UpdateProjectMes
 		return nil
 	}
 
-	// Remove all projects from cache first
-	for _, patch := range patches {
-		s.removeProjectCache(patch.ResourceID)
-	}
-
 	// Prepare arrays for batch update
 	resourceIDs := make([]string, len(patches))
 	titles := make([]*string, len(patches))
@@ -317,6 +312,14 @@ func (s *Store) UpdateProjects(ctx context.Context, patches ...*UpdateProjectMes
 
 	if _, err := s.GetDB().ExecContext(ctx, query, args...); err != nil {
 		return err
+	}
+
+	// Invalidate only after the write lands, the way DeletePolicy does.
+	// Removing beforehand leaves a window in which a concurrent reader loads
+	// the pre-update row and caches it, and that stale entry then outlives the
+	// write — project settings gate authorization, so it is read as policy.
+	for _, patch := range patches {
+		s.removeProjectCache(patch.ResourceID)
 	}
 
 	return nil
