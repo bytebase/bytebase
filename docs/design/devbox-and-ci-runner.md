@@ -162,7 +162,7 @@ minutes, and starting a running instance is a no-op.
 
 ### Connect
 
-Run `gcloud compute config-ssh` once. It writes the `~/.ssh/config` entries, and this
+Run `gcloud compute config-ssh --project=bytebase-dev` once. It writes the `~/.ssh/config` entries, and this
 box's alias is `devbox.northamerica-northeast2-a.bytebase-dev`. Desktop agents take
 that alias as their SSH host: Claude Desktop under **Add SSH connection**, Codex in
 its SSH environment. Each developer gets their own account and home, created by OS
@@ -507,7 +507,7 @@ idle() { ! pgrep -f Runner.Worker >/dev/null && [[ -z "$(ss -Htn state establish
 [[ $(used) -ge $HIGH ]] || exit 0
 if ! idle && [[ $(used) -lt $CRITICAL ]]; then logger -t cache-gc "deferred: busy at $(used)%"; exit 0; fi
 logger -t cache-gc "cleaning: $(used)% used"
-find /tmp -mindepth 1 -delete 2>/dev/null   # /tmp is on scratch; nothing is using it
+find /tmp -xdev -mindepth 1 -delete 2>/dev/null   # /tmp is on scratch; -xdev: never into a mount left beneath it
 docker ps -q | xargs -r docker rm -f >/dev/null 2>&1   # idle, so a running container is orphaned
 docker system prune -af --volumes >/dev/null 2>&1
 docker volume prune -af >/dev/null 2>&1   # system prune takes anonymous volumes only
