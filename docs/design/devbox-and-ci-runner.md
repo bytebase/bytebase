@@ -329,12 +329,14 @@ trap 'logger -t devbox-startup "exited: status $?"' EXIT
 # over a live data root is what this prevents, so a stop that did not take is fatal.
 # The socket counts: left active it reactivates dockerd on the next connection.
 stop_docker() {
-  systemctl stop docker.socket docker 2>/dev/null   # absent on a first boot
-  if pgrep -x dockerd >/dev/null || systemctl is-active --quiet docker.socket; then
+  systemctl stop docker.socket docker containerd 2>/dev/null   # absent on a first boot
+  if pgrep -x dockerd >/dev/null || pgrep -x containerd >/dev/null \
+     || systemctl is-active --quiet docker.socket; then
     logger -t devbox-startup "FATAL: docker would not stop"; exit 1
   fi
 }
 stop_docker   # before anything that can block or exit
+systemctl mask docker.socket docker containerd 2>/dev/null   # postinst must not start them
 # Latest runner release, falling back to a known-good pin if the lookup fails. Every
 # boot uses this: the runner lives on scratch and is re-fetched, never updated in place.
 RUNNER_VERSION=$(curl -sf --retry 3 --max-time 30 https://api.github.com/repos/actions/runner/releases/latest | python3 -c 'import sys,json; print(json.load(sys.stdin)["tag_name"].lstrip("v"))' 2>/dev/null || echo 2.336.0)
@@ -348,7 +350,8 @@ PKGS="docker.io cron systemd-oomd build-essential"
 [[ $(dpkg-query -W -f='${Status}\n' $PKGS 2>/dev/null | grep -c '^install ok installed$') -eq $(wc -w <<<"$PKGS") ]] \
   || { dpkg --configure -a; apt-get update -qq && apt-get install -y -qq $PKGS; } \
   || { logger -t devbox-startup "FATAL: prerequisite install failed"; exit 1; }
-stop_docker   # again: docker.io's postinst starts it
+systemctl unmask docker.socket docker containerd 2>/dev/null
+stop_docker   # belt and braces once unmasked
 
 # ---------- (a) disk layout ----------
 mkdir -p /scratch
@@ -387,7 +390,12 @@ printf '[Slice]\nManagedOOMMemoryPressure=kill\n' > /etc/systemd/system/system.s
 mkdir -p /scratch/docker /etc/systemd/system/docker.service.d
 echo '{"data-root":"/scratch/docker","log-driver":"json-file","log-opts":{"max-size":"10m","max-file":"3"}}' > /etc/docker/daemon.json
 printf '[Service]\nExecStartPost=/bin/chmod 666 /var/run/docker.sock\n' > /etc/systemd/system/docker.service.d/socket.conf
-systemctl daemon-reload && systemctl restart docker
+# Engine 29 defaults to the containerd image store, and data-root does not cover it:
+# images and snapshots live under containerd's own root. Bind it rather than edit
+# containerd's TOML, so there is no config format or default to track.
+mkdir -p /scratch/containerd /var/lib/containerd
+mountpoint -q /var/lib/containerd || mount --bind /scratch/containerd /var/lib/containerd
+systemctl daemon-reload && systemctl restart containerd docker
 
 # ---------- (b) accounts and cache paths ----------
 for u in runner1 runner2 runner3; do
@@ -535,6 +543,8 @@ printf 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n*/30 
 # runners that fail every job, or quietly fill the disk holding /home.
 docker info --format '{{.DockerRootDir}}' 2>/dev/null | grep -q '^/scratch/' \
   || { logger -t devbox-startup "FATAL: docker unusable or not on Local SSD"; exit 1; }
+mountpoint -q /var/lib/containerd \
+  || { logger -t devbox-startup "FATAL: containerd images not on Local SSD"; exit 1; }
 
 systemctl daemon-reload
 systemctl restart actions-runner@runner1 actions-runner@runner2 actions-runner@runner3
