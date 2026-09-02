@@ -325,6 +325,15 @@ preemption.
 # must not abandon the boot; `journalctl -t devbox-startup` shows the exit status.
 set -uo pipefail
 trap 'logger -t devbox-startup "exited: status $?"' EXIT
+# A fatal exit powers the box off rather than leaving it RUNNING with no runners,
+# which the start workflow would never touch. Off, it is restarted and retried on the
+# workflow's next tick; a transient DNS or mirror failure heals itself, a persistent
+# one shows as a box that keeps stopping. Five minutes keeps SSH usable first.
+fatal() {
+  logger -t devbox-startup "FATAL: $1"
+  systemctl stop docker.socket docker containerd 2>/dev/null
+  shutdown -h +5 "devbox-startup: $1"; exit 1
+}
 # daemon.json persists, so a previous boot's dockerd is already up with
 # data-root=/scratch/docker -- on the boot disk until (a) mounts over it. Mounting
 # over a live data root is what this prevents, so a stop that did not take is fatal.
@@ -332,9 +341,7 @@ trap 'logger -t devbox-startup "exited: status $?"' EXIT
 stop_docker() {
   systemctl stop docker.socket docker containerd 2>/dev/null   # absent on a first boot
   if pgrep -x dockerd >/dev/null || pgrep -x containerd >/dev/null \
-     || systemctl is-active --quiet docker.socket; then
-    logger -t devbox-startup "FATAL: docker would not stop"; exit 1
-  fi
+     || systemctl is-active --quiet docker.socket; then fatal "docker would not stop"; fi
 }
 stop_docker   # before anything that can block or exit
 systemctl mask --now docker.socket docker containerd 2>/dev/null   # --now: also stops one a postinst already queued
@@ -353,12 +360,12 @@ PKGS="docker.io cron systemd-oomd build-essential"
 # held by unattended-upgrades means nothing to clear -- apt waits for that lock.
 dpkg --configure -a 2>/dev/null || true
 apt-get -y -qq --fix-broken install \
-  || { logger -t devbox-startup "FATAL: apt cannot repair the package state"; exit 1; }
+  || fatal "apt cannot repair the package state"
 # Count 'install ok installed', not dpkg -s: a preemption mid-apt leaves packages
 # unpacked but unconfigured, which dpkg -s still reports as success.
 [[ $(dpkg-query -W -f='${Status}\n' $PKGS 2>/dev/null | grep -c '^install ok installed$') -eq $(wc -w <<<"$PKGS") ]] \
   || { apt-get update -qq && apt-get install -y -qq $PKGS; } \
-  || { logger -t devbox-startup "FATAL: prerequisite install failed"; exit 1; }
+  || fatal "prerequisite install failed"
 systemctl unmask docker.socket docker containerd 2>/dev/null
 stop_docker   # belt and braces once unmasked
 
@@ -372,14 +379,14 @@ if [[ -n "$DEV" ]] && ! mountpoint -q /scratch; then
 fi
 # Everything below assumes /scratch is the Local SSD. Falling back to the boot disk
 # would put swap, Docker, work trees and caches on the 100 GB disk that holds /home.
-mountpoint -q /scratch || { logger -t devbox-startup "FATAL: no Local SSD at /scratch"; exit 1; }
+mountpoint -q /scratch || fatal "no Local SSD at /scratch"
 chmod 1777 /scratch                                   # OS Login accounts create their own subtree
 mkdir -p /scratch/tmp && chmod 1777 /scratch/tmp
 # Bind unless /tmp already *is* /scratch/tmp: `mountpoint` would also be true for a
 # tmpfs /tmp, which would silently leave temp files in RAM.
 [ "$(stat -c '%d:%i' /tmp)" = "$(stat -c '%d:%i' /scratch/tmp)" ] \
   || mount --bind /scratch/tmp /tmp \
-  || { logger -t devbox-startup "FATAL: /tmp not on Local SSD"; exit 1; }
+  || fatal "/tmp not on Local SSD"
 # blkid, not -f: a partly written file satisfies -f and swapon then rejects it.
 if [[ "$(blkid -s TYPE -o value /scratch/swapfile 2>/dev/null)" != swap ]]; then
   rm -f /scratch/swapfile
@@ -404,7 +411,7 @@ printf '[Service]\nExecStartPost=/bin/chmod 666 /var/run/docker.sock\n' > /etc/s
 # containerd's TOML, so there is no config format or default to track.
 mkdir -p /scratch/containerd /var/lib/containerd
 mountpoint -q /var/lib/containerd || mount --bind /scratch/containerd /var/lib/containerd \
-  || { logger -t devbox-startup "FATAL: containerd store not on Local SSD"; exit 1; }
+  || fatal "containerd store not on Local SSD"
 systemctl daemon-reload && systemctl restart containerd docker
 
 # ---------- (b) accounts and cache paths ----------
@@ -522,7 +529,10 @@ set -uo pipefail
 HIGH=85 CRITICAL=95
 find /tmp -maxdepth 1 -name 'go-build*' -type d -mmin +1440 -exec rm -rf {} +
 used() { df -P /scratch | awk 'NR==2 {print $5+0}'; }
-idle() { ! pgrep -f Runner.Worker >/dev/null && [[ -z "$(ss -Htn state established '( sport = :22 )')" ]]; }
+# Load catches detached work -- tmux, nohup, a container -- that holds neither an SSH
+# session nor a Runner.Worker. On 20 vCPU, anything actually working exceeds 2.
+idle() { ! pgrep -f Runner.Worker >/dev/null && [[ -z "$(ss -Htn state established '( sport = :22 )')" ]] \
+         && (( $(cut -d. -f1 /proc/loadavg) < 2 )); }
 
 [[ $(used) -ge $HIGH ]] || exit 0
 if ! idle && [[ $(used) -lt $CRITICAL ]]; then logger -t cache-gc "deferred: busy at $(used)%"; exit 0; fi
@@ -551,7 +561,7 @@ printf 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n*/30 
 # which starts dockerd cleanly on the boot disk. Otherwise: three healthy-looking
 # runners that fail every job, or quietly fill the disk holding /home.
 docker info --format '{{.DockerRootDir}}' 2>/dev/null | grep -q '^/scratch/' \
-  || { logger -t devbox-startup "FATAL: docker unusable or not on Local SSD"; stop_docker; exit 1; }
+  || fatal "docker unusable or not on Local SSD"
 
 systemctl daemon-reload
 systemctl restart actions-runner@runner1 actions-runner@runner2 actions-runner@runner3
