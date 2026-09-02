@@ -335,7 +335,11 @@ RUNNER_VERSION=$(curl -sf --retry 3 --max-time 30 https://api.github.com/repos/a
 # ---------- packages: the Ubuntu image ships neither ----------
 export DEBIAN_FRONTEND=noninteractive
 echo 'DPkg::Lock::Timeout "300";' > /etc/apt/apt.conf.d/99-lock-timeout   # unattended-upgrades holds the lock at boot
-dpkg -s docker.io cron systemd-oomd build-essential &>/dev/null || { apt-get update -qq && apt-get install -y -qq docker.io cron systemd-oomd build-essential; } \
+PKGS="docker.io cron systemd-oomd build-essential"
+# Count 'install ok installed', not dpkg -s: a preemption mid-apt leaves packages
+# unpacked but unconfigured, which dpkg -s still reports as success.
+[[ $(dpkg-query -W -f='${Status}\n' $PKGS 2>/dev/null | grep -c '^install ok installed$') -eq $(wc -w <<<"$PKGS") ]] \
+  || { apt-get update -qq && apt-get install -y -qq $PKGS; } \
   || { logger -t devbox-startup "FATAL: prerequisite install failed"; exit 1; }
 systemctl stop docker.socket docker 2>/dev/null   # again: docker.io's postinst starts it
 
