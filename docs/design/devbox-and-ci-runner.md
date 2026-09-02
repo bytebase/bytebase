@@ -522,7 +522,7 @@ for e in /scratch/*; do
   case $u in runner[1-9]) keep=(! -path "$e/runner" ! -path "$e/runner/*");; *) keep=(-true);; esac   # only a CI account's runner/ holds an install
   find "$e" -mindepth 1 -xdev "${keep[@]}" -delete 2>/dev/null   # -delete cannot cross into, or remove, a foreign mount
   for x in /cache /cache/go-mod /cache/npm /cache/pnpm /home /work; do
-    install -d -o "$u" -g "$u" "$e$x"   # recreate: symlinks must not dangle
+    mountpoint -q "$e$x" || install -d -o "$u" -g "$u" "$e$x"   # recreate: symlinks must not dangle; never chown a mount
   done
 done
 logger -t cache-gc "cleaned -> $(used)%"
