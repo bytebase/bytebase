@@ -548,7 +548,7 @@ printf 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n*/30 
 # which starts dockerd cleanly on the boot disk. Otherwise: three healthy-looking
 # runners that fail every job, or quietly fill the disk holding /home.
 docker info --format '{{.DockerRootDir}}' 2>/dev/null | grep -q '^/scratch/' \
-  || { logger -t devbox-startup "FATAL: docker unusable or not on Local SSD"; exit 1; }
+  || { logger -t devbox-startup "FATAL: docker unusable or not on Local SSD"; stop_docker; exit 1; }
 
 systemctl daemon-reload
 systemctl restart actions-runner@runner1 actions-runner@runner2 actions-runner@runner3
