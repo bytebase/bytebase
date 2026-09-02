@@ -154,7 +154,7 @@ func TestPlanLastEditorAttributionAndApproval(t *testing.T) {
 	a.NoError(err)
 	a.False(newProject.Msg.AllowLastPlanEditorApproval)
 	a.Equal("users/demo@example.com", f.plan.LastPlanEditor)
-	_, err = f.ctl.projectServiceClient.UpdateProject(f.ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+	projectResp, err := f.ctl.projectServiceClient.UpdateProject(f.ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
 		Project: &v1pb.Project{
 			Name:                        f.ctl.project.Name,
 			AllowSelfApproval:           false,
@@ -163,6 +163,7 @@ func TestPlanLastEditorAttributionAndApproval(t *testing.T) {
 		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"allow_self_approval", "allow_last_plan_editor_approval"}},
 	}))
 	a.NoError(err)
+	a.False(projectResp.Msg.AllowLastPlanEditorApproval)
 
 	installWorkspaceApprovalRule(f.ctx, t, f.ctl, f.ctl.project, []string{"roles/projectOwner"})
 	editor := provisionApprover(f.ctx, t, f.ctl, f.ctl.project, "last-plan-editor", "roles/projectOwner")
@@ -232,7 +233,7 @@ func TestPlanLastEditorAttributionAndApproval(t *testing.T) {
 		a.NoError(err)
 	})
 
-	projectResp, err := f.ctl.projectServiceClient.UpdateProject(f.ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+	projectResp, err = f.ctl.projectServiceClient.UpdateProject(f.ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
 		Project: &v1pb.Project{
 			Name:                        f.ctl.project.Name,
 			AllowLastPlanEditorApproval: true,
