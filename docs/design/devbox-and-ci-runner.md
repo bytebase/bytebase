@@ -384,8 +384,11 @@ printf '[Service]\nExecStartPost=/bin/chmod 666 /var/run/docker.sock\n' > /etc/s
 mountpoint -q /var/lib/containerd || mount --bind /scratch/containerd /var/lib/containerd \
   || fatal "containerd store not on Local SSD"
 # Masked until here: an active docker.socket cannot spawn a masked service, so nothing
-# can start dockerd on the boot disk between the stop above and this restart.
+# can start dockerd on the boot disk between the stop above and this restart. And
+# disabled from here on: only this script starts Docker, so a reboot no longer brings
+# it up on the boot disk before the script has run.
 systemctl unmask docker.socket docker containerd 2>/dev/null
+systemctl disable docker.socket docker containerd 2>/dev/null
 systemctl daemon-reload && systemctl restart containerd docker || fatal "docker would not start"
 docker info --format '{{.DockerRootDir}}' 2>/dev/null | grep -q '^/scratch/' \
   || fatal "docker not on Local SSD"   # daemon.json unwritten or rejected: dockerd starts fine on the boot disk
@@ -515,6 +518,7 @@ for d in /scratch/*/; do
   done
 done
 logger -t cache-gc "cleaned -> $(used)%"
+[[ $(used) -lt $HIGH ]] || logger -t cache-gc "WARN: still $(used)% after cleaning; a docker prune may have failed"
 EOF
 chmod +x /usr/local/sbin/cache-gc
 # PATH first: cron's default omits /usr/sbin, and a missing `ss` would make idle() look true.
