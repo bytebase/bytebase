@@ -347,7 +347,8 @@ echo 'DPkg::Lock::Timeout "300";' > /etc/apt/apt.conf.d/99-lock-timeout   # unat
 PKGS="docker.io cron systemd-oomd build-essential"
 # Unconditional: a preemption during any dpkg work -- an unattended upgrade of some
 # unrelated package -- blocks every later apt call, including installdependencies.sh.
-dpkg --configure -a 2>/dev/null
+dpkg --configure -a 2>/dev/null \
+  || { logger -t devbox-startup "FATAL: dpkg wedged; apt is unusable"; exit 1; }
 # Count 'install ok installed', not dpkg -s: a preemption mid-apt leaves packages
 # unpacked but unconfigured, which dpkg -s still reports as success.
 [[ $(dpkg-query -W -f='${Status}\n' $PKGS 2>/dev/null | grep -c '^install ok installed$') -eq $(wc -w <<<"$PKGS") ]] \
