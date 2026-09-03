@@ -89,11 +89,12 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v", target))
 			}
-			if database == nil {
-				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", target))
-			}
-			if database.ProjectID != projectID {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database target %q does not belong to project %q", target, projectID))
+			// One error for missing, foreign, archived, and non-canonical: a
+			// distinct one would confirm what lives in a project the caller
+			// cannot see.
+			notFound := connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", target))
+			if database == nil || database.ProjectID != projectID {
+				return nil, notFound
 			}
 			instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
 				Workspace:  workspaceID,
@@ -102,12 +103,8 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, err)
 			}
-			if instance == nil || instance.Deleted {
-				return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("instance %q not found", instanceID))
-			}
-			if (targetProjectID == nil) != (instance.ProjectID == nil) ||
-				targetProjectID != nil && *targetProjectID != *instance.ProjectID {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database target %q is not canonical for its instance", target))
+			if instance == nil || instance.Deleted || database.ResourceName() != target {
+				return nil, notFound
 			}
 			targets = append(targets, &releaseCheckTarget{database: database, name: target})
 			continue
