@@ -62,6 +62,11 @@ type IdentityProviderServiceClient interface {
 	// Lists the identity providers configured for the caller's workspace.
 	// The login page reads AuthService.GetAuthenticationInfo instead,
 	// which publishes only the fields a browser needs to start an SSO redirect.
+	//
+	// Returns the same representation as GetIdentityProvider — secrets redacted,
+	// the rest of the configuration included — so granting
+	// bb.identityProviders.list conveys configuration read over the whole
+	// collection, not merely the names in it.
 	// Permissions required: bb.identityProviders.list
 	ListIdentityProviders(context.Context, *connect.Request[v1.ListIdentityProvidersRequest]) (*connect.Response[v1.ListIdentityProvidersResponse], error)
 	// Creates a new identity provider.
@@ -178,6 +183,11 @@ type IdentityProviderServiceHandler interface {
 	// Lists the identity providers configured for the caller's workspace.
 	// The login page reads AuthService.GetAuthenticationInfo instead,
 	// which publishes only the fields a browser needs to start an SSO redirect.
+	//
+	// Returns the same representation as GetIdentityProvider — secrets redacted,
+	// the rest of the configuration included — so granting
+	// bb.identityProviders.list conveys configuration read over the whole
+	// collection, not merely the names in it.
 	// Permissions required: bb.identityProviders.list
 	ListIdentityProviders(context.Context, *connect.Request[v1.ListIdentityProvidersRequest]) (*connect.Response[v1.ListIdentityProvidersResponse], error)
 	// Creates a new identity provider.
