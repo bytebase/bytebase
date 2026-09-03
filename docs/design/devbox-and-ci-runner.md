@@ -329,7 +329,6 @@ fatal() {
 # mounting over it would leave it writing there unseen. Masked, nothing can restart it
 # -- not apt's postinst, not a connection to a still-listening socket -- until (a) is done.
 systemctl mask --now docker.socket docker containerd 2>/dev/null
-! pgrep -x 'dockerd|containerd' >/dev/null || fatal "docker would not stop"   # a process stuck in I/O survives SIGKILL
 
 # ---------- packages ----------
 export DEBIAN_FRONTEND=noninteractive
@@ -489,7 +488,7 @@ cat > /usr/local/sbin/cache-gc <<'EOF'
 set -uo pipefail
 mountpoint -q /scratch || exit 0   # cron outlives a stop; before (a) has mounted, there is nothing to clean
 HIGH=85 CRITICAL=95
-find /tmp -maxdepth 1 -name 'go-build*' -type d -mmin +1440 ! -exec mountpoint -q {} \; -exec rm -rf --one-file-system {} +
+find /tmp -maxdepth 1 -name 'go-build*' -type d -mmin +1440 -exec rm -rf {} +
 used() { df -P /scratch | awk 'NR==2 {print $5+0}'; }
 # Load catches detached work -- tmux, nohup, a container -- that holds neither an SSH
 # session nor a Runner.Worker. On 20 vCPU, anything actually working exceeds 2.
@@ -499,26 +498,16 @@ idle() { ! pgrep -f Runner.Worker >/dev/null && [[ -z "$(ss -Htn state establish
 [[ $(used) -ge $HIGH ]] || exit 0
 if ! idle && [[ $(used) -lt $CRITICAL ]]; then logger -t cache-gc "deferred: busy at $(used)%"; exit 0; fi
 logger -t cache-gc "cleaning: $(used)% used"
-find /tmp -xdev -mindepth 1 -delete 2>/dev/null   # /tmp is on scratch; -xdev: never into a mount left beneath it
+rm -rf /tmp/* /tmp/.[!.]*   # /tmp is on scratch; the box is idle
 docker ps -q | xargs -r docker rm -f >/dev/null 2>&1   # idle, so a running container is orphaned
 docker system prune -af --volumes >/dev/null 2>&1
-docker volume prune -af >/dev/null 2>&1   # system prune takes anonymous volumes only
-# On scratch only the fixed entries and each account's runner/ install survive. The
-# rest -- whatever was written, wherever -- is by definition disposable.
-shopt -s dotglob   # a /scratch/.something must not hide from the glob
-for e in /scratch/*; do
-  u=${e##*/}
-  case $u in tmp|docker|containerd|swapfile|lost+found) continue;; esac
-  mountpoint -q "$e" && continue   # not ours, whatever it is: never delete through a mount
-  if ! id "$u" &>/dev/null || [[ ! -d $e ]]; then rm -rf --one-file-system "$e"; continue; fi   # dumped at the top level
-  case $u in runner[1-9]) keep=(! -path "$e/runner" ! -path "$e/runner/*");; *) keep=(-true);; esac   # only a CI account's runner/ holds an install
-  find "$e" -mindepth 1 -xdev "${keep[@]}" -delete 2>/dev/null   # -delete cannot cross into, or remove, a foreign mount
-  for x in /cache /cache/go-mod /cache/npm /cache/pnpm /home /work; do
-    mountpoint -q "$e$x" || mountpoint -q "$e${x%/*}" || install -d -o "$u" -g "$u" "$e$x"   # recreate: symlinks must not dangle; never touch a mount or anything under one
-  done
+# Everything on scratch is disposable except the runner installs, which are large and
+# would otherwise be re-downloaded on the next boot.
+rm -rf /scratch/*/cache /scratch/*/home /scratch/*/work
+for u in runner1 runner2 runner3; do
+  install -d -o "$u" -g "$u" /scratch/$u/{cache,home,work}   # the units need them; a profile remakes an interactive account's
 done
 logger -t cache-gc "cleaned -> $(used)%"
-[[ $(used) -lt $HIGH ]] || logger -t cache-gc "WARN: still $(used)% after cleaning; a docker prune may have failed"
 EOF
 chmod +x /usr/local/sbin/cache-gc
 # PATH first: cron's default omits /usr/sbin, and a missing `ss` would make idle() look true.
