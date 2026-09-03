@@ -3,7 +3,7 @@ peerDependencyRules:
     typescript: '6'
 
 catalog:
-  dompurify: 3.4.13
+  dompurify: 3.4.14
 
 overrides:
   # `@codingame/monaco-vscode-api` pins an exact dompurify version that lags
