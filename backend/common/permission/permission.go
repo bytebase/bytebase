@@ -38,6 +38,7 @@ const (
 	IdentityProvidersCreate              Permission = "bb.identityProviders.create"
 	IdentityProvidersDelete              Permission = "bb.identityProviders.delete"
 	IdentityProvidersGet                 Permission = "bb.identityProviders.get"
+	IdentityProvidersList                Permission = "bb.identityProviders.list"
 	IdentityProvidersUpdate              Permission = "bb.identityProviders.update"
 	InstancesCreate                      Permission = "bb.instances.create"
 	InstancesDelete                      Permission = "bb.instances.delete"

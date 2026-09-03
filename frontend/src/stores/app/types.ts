@@ -798,7 +798,7 @@ export type IdentityProviderSlice = {
     Promise<IdentityProvider | undefined>
   >;
   identityProviderList: () => IdentityProvider[];
-  listIdentityProviders: (parent?: string) => Promise<IdentityProvider[]>;
+  listIdentityProviders: (parent: string) => Promise<IdentityProvider[]>;
   fetchIdentityProvider: (
     name: string,
     silent?: boolean

@@ -156,6 +156,7 @@
       "failed-to-send-code": "認証コードの送信に失敗しました。{{error}}",
       "forget-password": "パスワードを忘れましたか？",
       "invited-email": "招待されました。{{email}} でログインしてください",
+      "load-failed": "サインインオプションを読み込めませんでした。もう一度お試しください。",
       "new-user": "Bytebase を初めて使用しますか?",
       "resend-code": "コードを再送信",
       "resend-in": "{{seconds}}秒後に再送信可能",
@@ -171,6 +172,11 @@
       "create-admin-account": "管理者アカウントを作成",
       "existing-user": "すでにアカウントをお持ちですか？",
       "title": "アカウントを登録してください"
+    },
+    "sso": {
+      "invalid-authorization-url": "認可URLが無効です。有効なHTTPまたはHTTPSのURLを指定してください。",
+      "no-authorization-endpoint": "IDプロバイダーが認可エンドポイントを公開していません。設定を確認してください。",
+      "unsupported-provider-type": "このIDプロバイダーの種類はSSOリダイレクトに対応していません。"
     },
     "token-expired-description": "トークンの有効期限が切れています。再度ログインしてください。",
     "token-expired-title": "トークンの期限切れ"

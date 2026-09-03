@@ -63,7 +63,7 @@ and only a sweep like this one finds it.
   following [#21184](https://github.com/bytebase/bytebase/pull/21184), so a new admin-side config
   field cannot become public by default. Tracked in
   [BYT-10156](https://linear.app/bytebase/issue/BYT-10156/listidentityproviders-leaks-ldap-config-to-anonymous-callers-t12).
-- **Workspace-existence oracle.** `GetAuthenticationRestriction` (which replaced the actuator leak,
+- **Workspace-existence oracle.** `GetAuthenticationInfo` (which replaced the actuator leak,
   now fixed) is anonymous by design and doesn't need membership. Naming a real workspace returns
   200, a fake one returns `InvalidArgument`. Left open on purpose: workspace IDs are
   `RandomString(16)` with no rename path, so this confirms an ID already held rather than

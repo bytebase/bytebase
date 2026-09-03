@@ -75,7 +75,7 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
 
   fetchAuthenticationInfo: async (workspace) => {
     try {
-      const info = await authServiceClientConnect.getAuthenticationRestriction({
+      const info = await authServiceClientConnect.getAuthenticationInfo({
         workspace: workspace ?? get().currentUser?.workspace ?? "",
       });
       set({ authenticationInfo: info });

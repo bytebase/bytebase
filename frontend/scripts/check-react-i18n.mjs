@@ -42,6 +42,10 @@ const DYNAMIC_PREFIXES = [
   // render, not as literal t("…") calls. See
   // frontend/src/routes/auth/OAuthCallbackPage.tsx.
   "auth.oauth-callback.",
+  // SSO redirect failures, thrown as SsoConfigError i18nKey string literals in
+  // utils/sso.ts and translated via t(error.i18nKey) by whichever page renders
+  // the notification (SigninPage, IdpTestConnection).
+  "auth.sso.",
   // Returned from getReviewBadge as labelKey string literals, not invoked
   // via t("…") in source. See frontend/src/routes/project/utils/reviewBadge.ts.
   "common.bypassed",

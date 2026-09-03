@@ -36,7 +36,7 @@ served by no ceiling.
 | AuditLogService/ExportAuditLogs | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.auditLogs.export |
 | AuditLogService/SearchAuditLogs | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.auditLogs.search |
 | AuthService/ExchangeToken | FORBIDDEN | MINTS_CREDENTIAL | — |
-| AuthService/GetAuthenticationRestriction | READ | — | — |
+| AuthService/GetAuthenticationInfo | READ | — | — |
 | AuthService/Login | FORBIDDEN | MINTS_CREDENTIAL | — |
 | AuthService/Logout | FORBIDDEN | ENDS_SESSION | — |
 | AuthService/Refresh | FORBIDDEN | MINTS_CREDENTIAL | — |
@@ -78,7 +78,7 @@ served by no ceiling.
 | IdentityProviderService/CreateIdentityProvider | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.identityProviders.create |
 | IdentityProviderService/DeleteIdentityProvider | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.identityProviders.delete |
 | IdentityProviderService/GetIdentityProvider | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.identityProviders.get |
-| IdentityProviderService/ListIdentityProviders | EXCLUDED | ADMINISTERS_THE_WORKSPACE | — |
+| IdentityProviderService/ListIdentityProviders | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.identityProviders.list |
 | IdentityProviderService/TestIdentityProvider | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.identityProviders.update |
 | IdentityProviderService/UpdateIdentityProvider | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.identityProviders.update |
 | InstanceRoleService/ListInstanceRoles | READ | — | bb.instanceRoles.list |

@@ -156,6 +156,7 @@
       "failed-to-send-code": "发送验证码失败。{{error}}",
       "forget-password": "忘记密码?",
       "invited-email": "您已被邀请，请使用 {{email}} 登录",
+      "load-failed": "无法加载登录选项，请重试。",
       "new-user": "第一次使用 Bytebase?",
       "resend-code": "重新发送验证码",
       "resend-in": "{{seconds}} 秒后重新发送",
@@ -171,6 +172,11 @@
       "create-admin-account": "注册管理员",
       "existing-user": "已有账号?",
       "title": "注册您的账号"
+    },
+    "sso": {
+      "invalid-authorization-url": "授权 URL 无效：必须是有效的 HTTP 或 HTTPS 地址。",
+      "no-authorization-endpoint": "身份提供商未公开授权端点，请检查其配置。",
+      "unsupported-provider-type": "该身份提供商类型不支持 SSO 跳转。"
     },
     "token-expired-description": "Token 已过期，请重新登录",
     "token-expired-title": "令牌已过期"

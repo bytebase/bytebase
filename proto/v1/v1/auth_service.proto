@@ -9,6 +9,7 @@ import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/empty.proto";
 import "v1/annotation.proto";
+import "v1/idp_service.proto";
 import "v1/setting_service.proto";
 import "v1/user_service.proto";
 
@@ -16,12 +17,13 @@ option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
 // AuthService handles user authentication operations.
 service AuthService {
-  // Gets the effective restrictions needed to render authentication flows.
+  // Gets everything the login page renders: the sign-in restrictions and the
+  // identity providers it offers.
   // Permissions required: None
-  rpc GetAuthenticationRestriction(GetAuthenticationRestrictionRequest) returns (AuthenticationInfo) {
+  rpc GetAuthenticationInfo(GetAuthenticationInfoRequest) returns (AuthenticationInfo) {
     option (google.api.http) = {
-      get: "/v1/auth/restriction"
-      additional_bindings: {get: "/v1/{workspace=workspaces/*}/auth/restriction"}
+      get: "/v1/auth/info"
+      additional_bindings: {get: "/v1/{workspace=workspaces/*}/auth/info"}
     };
     option (google.api.method_signature) = "";
     option (bytebase.v1.allow_without_credential) = true;
@@ -157,7 +159,7 @@ service AuthService {
   }
 }
 
-message GetAuthenticationRestrictionRequest {
+message GetAuthenticationInfoRequest {
   // Optional. The workspace whose authentication policy should be returned.
   // Format: workspaces/{workspace}
   // When unset, self-hosted resolves the singleton workspace and SaaS uses
@@ -172,6 +174,9 @@ message AuthenticationInfo {
 
   // The effective authentication restrictions.
   Restriction restriction = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The identity providers the login page renders, in display order.
+  repeated LoginIdentityProvider identity_providers = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message Restriction {
@@ -190,6 +195,39 @@ message Restriction {
   // Whether password reset via email is available for this workspace.
   // True when the workspace (or deployment) has an email setting configured.
   bool password_reset_enabled = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// LoginIdentityProvider is an identity provider as the login page sees it.
+// Deliberately not a view of IdentityProvider: this message is served without
+// a credential, so every field it exposes is published by hand and no
+// provider configuration reaches it by default.
+message LoginIdentityProvider {
+  // The name of the identity provider.
+  // Format: idps/{idp}
+  string name = 1;
+
+  // The type of identity provider protocol.
+  IdentityProviderType type = 2;
+
+  // The display title of the identity provider.
+  string title = 3;
+
+  // The parameters the browser needs to start the authorization redirect.
+  // Set for OAUTH2 and OIDC, absent for LDAP, whose bind happens server-side.
+  AuthorizationRequest authorization_request = 4;
+}
+
+// AuthorizationRequest is what a browser needs to start an SSO redirect.
+message AuthorizationRequest {
+  // The OAuth2 auth_url, or the authorization endpoint from the OIDC issuer's
+  // discovery document.
+  string endpoint = 1;
+
+  // The OAuth2 or OIDC client identifier.
+  string client_id = 2;
+
+  // The scopes to request.
+  repeated string scopes = 3;
 }
 
 message LoginRequest {

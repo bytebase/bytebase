@@ -156,6 +156,7 @@
       "failed-to-send-code": "Không gửi được mã xác minh. {{error}}",
       "forget-password": "Quên mật khẩu?",
       "invited-email": "Bạn đã được mời. Vui lòng đăng nhập bằng {{email}}",
+      "load-failed": "Không thể tải các tùy chọn đăng nhập. Vui lòng thử lại.",
       "new-user": "Mới sử dụng Bytebase?",
       "resend-code": "Gửi lại mã",
       "resend-in": "Gửi lại sau {{seconds}}s",
@@ -171,6 +172,11 @@
       "create-admin-account": "Tạo tài khoản quản trị",
       "existing-user": "Đã có tài khoản?",
       "title": "Đăng ký tài khoản của bạn"
+    },
+    "sso": {
+      "invalid-authorization-url": "URL ủy quyền không hợp lệ: phải là URL HTTP hoặc HTTPS hợp lệ.",
+      "no-authorization-endpoint": "Nhà cung cấp danh tính không công bố điểm cuối ủy quyền. Hãy kiểm tra cấu hình.",
+      "unsupported-provider-type": "Loại nhà cung cấp danh tính này không hỗ trợ chuyển hướng SSO."
     },
     "token-expired-description": "Mã thông báo đã hết hạn, vui lòng đăng nhập lại",
     "token-expired-title": "Mã thông báo đã hết hạn"
