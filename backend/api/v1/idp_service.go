@@ -51,29 +51,21 @@ func (s *IdentityProviderService) GetIdentityProvider(ctx context.Context, req *
 	return connect.NewResponse(identityProvider), nil
 }
 
-// ListIdentityProviders lists all identity providers.
+// ListIdentityProviders lists the identity providers of the parent workspace.
 func (s *IdentityProviderService) ListIdentityProviders(ctx context.Context, req *connect.Request[v1pb.ListIdentityProvidersRequest]) (*connect.Response[v1pb.ListIdentityProvidersResponse], error) {
-	// allow_without_credential: workspace may not be in context (login page).
-	// Workspace resolution order: request.parent -> JWT context -> default workspace (self-hosted).
-	var identityProviders []*store.IdentityProviderMessage
+	workspaceID, err := common.GetWorkspaceID(req.Msg.Parent)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+	// The permission was checked against the credential's workspace, so that is
+	// the only workspace this request may name.
+	if workspaceID != common.GetWorkspaceIDFromContext(ctx) {
+		return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("cannot list the identity providers of another workspace"))
+	}
 
-	if req.Msg.Parent != "" {
-		workspaceID, err := common.GetWorkspaceID(req.Msg.Parent)
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, err)
-		}
-
-		wsIDPs, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{Workspace: &workspaceID})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-		identityProviders = append(identityProviders, wsIDPs...)
-	} else {
-		globalIDPs, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{})
-		if err != nil {
-			return nil, connect.NewError(connect.CodeInternal, err)
-		}
-		identityProviders = append(identityProviders, globalIDPs...)
+	identityProviders, err := s.store.ListIdentityProviders(ctx, &store.FindIdentityProviderMessage{Workspace: &workspaceID})
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, err)
 	}
 
 	response := &v1pb.ListIdentityProvidersResponse{}

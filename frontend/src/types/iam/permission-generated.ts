@@ -33,6 +33,7 @@ export type Permission =
   | "bb.identityProviders.create"
   | "bb.identityProviders.delete"
   | "bb.identityProviders.get"
+  | "bb.identityProviders.list"
   | "bb.identityProviders.update"
   | "bb.instances.create"
   | "bb.instances.delete"

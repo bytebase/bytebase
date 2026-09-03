@@ -34,64 +34,106 @@ type oidcConfig struct {
 	JwksURI string `json:"jwks_uri"`
 }
 
-// FetchJWKS fetches the JWKS from an OIDC issuer with caching.
-func FetchJWKS(ctx context.Context, issuerURL string) (*jose.JSONWebKeySet, error) {
+// FetchJWKS fetches the JWKS from an OIDC issuer or a direct JWKS URL with caching.
+func FetchJWKS(ctx context.Context, issuerURL, jwksURL string) (*jose.JSONWebKeySet, error) {
 	// Validate issuer URL format
-	if err := validateIssuerURL(issuerURL); err != nil {
+	if err := ValidateIssuerURL(issuerURL); err != nil {
 		return nil, err
 	}
 
-	// Check cache
-	jwksCacheLock.RLock()
-	if cached, ok := jwksCache[issuerURL]; ok {
-		if time.Since(cached.fetchedAt) < cacheDuration {
-			jwksCacheLock.RUnlock()
+	discoveryMode := jwksURL == ""
+	cacheKey := "jwks:" + jwksURL
+	if discoveryMode {
+		cacheKey = "issuer:" + issuerURL
+	}
+	if cached := getCachedJWKS(cacheKey); cached != nil {
+		return cached.jwks, nil
+	}
+
+	effectiveJWKSURL := jwksURL
+	if discoveryMode {
+		configURL := fmt.Sprintf("%s/.well-known/openid-configuration", issuerURL)
+		config, err := fetchOIDCConfig(ctx, configURL)
+		if err != nil {
+			return nil, err
+		}
+		effectiveJWKSURL = config.JwksURI
+	}
+	if err := ValidateJWKSURL(effectiveJWKSURL); err != nil {
+		return nil, err
+	}
+
+	if discoveryMode {
+		if cached := getCachedJWKS("jwks:" + effectiveJWKSURL); cached != nil {
+			setCachedJWKS(cached, "issuer:"+issuerURL)
 			return cached.jwks, nil
 		}
 	}
-	jwksCacheLock.RUnlock()
-
-	// Fetch OIDC configuration
-	configURL := fmt.Sprintf("%s/.well-known/openid-configuration", issuerURL)
-	config, err := fetchOIDCConfig(ctx, configURL)
-	if err != nil {
-		return nil, err
-	}
 
 	// Fetch JWKS
-	jwks, err := fetchJWKSFromURL(ctx, config.JwksURI)
+	jwks, err := fetchJWKSFromURL(ctx, effectiveJWKSURL)
 	if err != nil {
 		return nil, err
 	}
 
-	// Update cache
-	jwksCacheLock.Lock()
-	jwksCache[issuerURL] = &cachedJWKS{
+	cached := &cachedJWKS{
 		jwks:      jwks,
 		fetchedAt: time.Now(),
 	}
-	jwksCacheLock.Unlock()
+	setCachedJWKS(cached, "jwks:"+effectiveJWKSURL)
+	if discoveryMode {
+		setCachedJWKS(cached, "issuer:"+issuerURL)
+	}
 
 	return jwks, nil
 }
 
-// validateIssuerURL validates that the issuer URL is a valid HTTPS URL.
-func validateIssuerURL(issuerURL string) error {
-	parsed, err := url.Parse(issuerURL)
+func getCachedJWKS(key string) *cachedJWKS {
+	jwksCacheLock.RLock()
+	defer jwksCacheLock.RUnlock()
+
+	cached, ok := jwksCache[key]
+	if !ok || time.Since(cached.fetchedAt) >= cacheDuration {
+		return nil
+	}
+	return cached
+}
+
+func setCachedJWKS(cached *cachedJWKS, keys ...string) {
+	jwksCacheLock.Lock()
+	defer jwksCacheLock.Unlock()
+
+	for _, key := range keys {
+		jwksCache[key] = cached
+	}
+}
+
+// ValidateIssuerURL validates that the issuer URL is a valid HTTPS URL.
+func ValidateIssuerURL(issuerURL string) error {
+	return validateRemoteURL(issuerURL, "issuer URL")
+}
+
+// ValidateJWKSURL validates that the JWKS URL is a valid HTTPS URL.
+func ValidateJWKSURL(jwksURL string) error {
+	return validateRemoteURL(jwksURL, "JWKS URL")
+}
+
+func validateRemoteURL(rawURL, label string) error {
+	parsed, err := url.Parse(rawURL)
 	if err != nil {
-		return errors.Wrap(err, "invalid issuer URL")
+		return errors.Wrapf(err, "invalid %s", label)
 	}
 	if parsed.Scheme != "https" {
-		return errors.Errorf("issuer URL must use HTTPS: %s", issuerURL)
+		return errors.Errorf("%s must use HTTPS: %s", label, rawURL)
 	}
 	if parsed.Host == "" {
-		return errors.Errorf("issuer URL must have a host: %s", issuerURL)
+		return errors.Errorf("%s must have a host: %s", label, rawURL)
 	}
 	// Prevent localhost and private IPs in production (basic SSRF prevention)
 	host := strings.ToLower(parsed.Hostname())
 	if host == "localhost" || strings.HasPrefix(host, "127.") || strings.HasPrefix(host, "10.") ||
 		strings.HasPrefix(host, "192.168.") || strings.HasPrefix(host, "172.") {
-		return errors.Errorf("issuer URL cannot be a private address: %s", issuerURL)
+		return errors.Errorf("%s cannot be a private address: %s", label, rawURL)
 	}
 	return nil
 }

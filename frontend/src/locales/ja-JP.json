@@ -156,6 +156,7 @@
       "failed-to-send-code": "認証コードの送信に失敗しました。{{error}}",
       "forget-password": "パスワードを忘れましたか？",
       "invited-email": "招待されました。{{email}} でログインしてください",
+      "load-failed": "サインインオプションを読み込めませんでした。もう一度お試しください。",
       "new-user": "Bytebase を初めて使用しますか?",
       "resend-code": "コードを再送信",
       "resend-in": "{{seconds}}秒後に再送信可能",
@@ -171,6 +172,11 @@
       "create-admin-account": "管理者アカウントを作成",
       "existing-user": "すでにアカウントをお持ちですか？",
       "title": "アカウントを登録してください"
+    },
+    "sso": {
+      "invalid-authorization-url": "認可URLが無効です。有効なHTTPまたはHTTPSのURLを指定してください。",
+      "no-authorization-endpoint": "IDプロバイダーが認可エンドポイントを公開していません。設定を確認してください。",
+      "unsupported-provider-type": "このIDプロバイダーの種類はSSOリダイレクトに対応していません。"
     },
     "token-expired-description": "トークンの有効期限が切れています。再度ログインしてください。",
     "token-expired-title": "トークンの期限切れ"
@@ -839,7 +845,11 @@
     "partitions": "パーティション",
     "procedures": "ストアドプロシージャ",
     "project-instance-synced-action": "データベース変更を作成",
+    "project-instance-synced-create-change-description": "このプロジェクトでデータベースを利用できます。管理されたデータベース変更を作成して続行してください。",
+    "project-instance-synced-create-change-title": "データベース変更の準備ができました",
     "project-instance-synced-description": "このプロジェクトでデータベースを利用できるようになりました。まず SQL Editor でデータをクエリし、必要に応じて管理されたデータベース変更を作成できます。",
+    "project-instance-synced-query-data-description": "このプロジェクトでデータベースを利用できます。SQL Editor を開いてクエリしてください。",
+    "project-instance-synced-query-data-title": "データベースをクエリする準備ができました",
     "project-instance-synced-sql-editor-action": "SQL Editor を開く",
     "project-instance-synced-title": "データベースが接続されました",
     "project-instance-syncing-description": "数秒から数分かかる場合があります。後でこのページを更新してください。",
@@ -2799,10 +2809,12 @@
       "workload-identity-audience": "Audience",
       "workload-identity-branch": "ブランチ",
       "workload-identity-branch-hint": "すべてのブランチを対象とする場合は空欄にしてください",
+      "workload-identity-generic-oidc": "汎用 OIDC",
       "workload-identity-gitlab-url": "GitLab URL",
       "workload-identity-gitlab-url-hint": "GitLab インスタンスの URL",
       "workload-identity-group": "グループ / ユーザー名",
       "workload-identity-issuer": "Issuer URL",
+      "workload-identity-jwks-url": "JWKS URL",
       "workload-identity-owner": "組織 / ユーザー名",
       "workload-identity-platform": "プラットフォーム",
       "workload-identity-project": "プロジェクト",
@@ -2821,6 +2833,8 @@
       "display-name-placeholder": "名前を入力してください",
       "email": "メールアドレス",
       "enable-sample-databases": "サンプルデータベースを有効にする",
+      "enable-sample-databases-create-change": "安全な変更対象としてサンプルデータベースを有効にする",
+      "enable-sample-databases-query-data": "すぐにクエリを試せるようサンプルデータベースを有効にする",
       "password": "パスワード",
       "password-confirm": "パスワードの確認",
       "password-confirm-placeholder": "新しいパスワードを確認します",
@@ -2830,10 +2844,36 @@
       "phone-tips": "国コードを必ず含めてください +81xxxxxx",
       "setup-failed": "プロフィールの更新に失敗しました。",
       "setup-first-project": "最初のプロジェクトを設定",
+      "setup-scenario": {
+        "continue": "続行",
+        "create-database-change": {
+          "description": "変更を定義し、追跡可能なイシューを作成します。",
+          "title": "データベース変更を作成"
+        },
+        "outcome-title": "Bytebase で何をしたいですか？",
+        "query-data": {
+          "description": "SQL Editor を開き、データベースでステートメントを実行します。",
+          "title": "データをクエリ"
+        },
+        "workspace-usage": {
+          "solo": {
+            "description": "自分だけで Bytebase を使用します。",
+            "title": "自分だけ"
+          },
+          "team": {
+            "description": "他のメンバーと一緒に使用します。",
+            "title": "チームで使用"
+          },
+          "title": "Bytebase を誰と使用しますか？"
+        }
+      },
       "setup-skip": "後で設定する",
+      "setup-steps": {
+        "scenario": "目標を選択",
+        "workspace": "ワークスペースを設定"
+      },
       "setup-submit": "ワークスペースをセットアップ",
       "setup-success": "プロフィールが更新されました。",
-      "setup-title": "ようこそ！ワークスペースを設定してください",
       "workspace-name": "ワークスペース名",
       "workspace-name-placeholder": "ワークスペース名を入力"
     },
@@ -3574,19 +3614,31 @@
   "workspace-setup-guide": {
     "actions": {
       "change": "データベース変更を作成",
+      "done": "完了",
       "query": "SQL Editor に移動"
     },
     "descriptions": {
-      "database": "接続したインスタンスのデータベースを確認し、必要に応じて作成または転送します。",
-      "instance": "インスタンスを接続して、Bytebase がデータベースを同期できるようにします。",
+      "add-teammate": "チームメンバーを招待し、ワークスペースへのアクセスを付与します。",
+      "create-database-change": "データベース変更を定義し、そのイシューを作成します。",
+      "database": "データベースを開き、スキーマとテーブルを確認します。",
+      "instance": "Bytebase がデータベースを同期できるようにインスタンスを接続します。",
       "project": "データベースと変更を整理するプロジェクトを作成します。",
-      "sql-editor": "SQL Editor でデータをクエリするか、ガバナンス付きデータベース変更を作成します。"
+      "query-data": "選択したデータベースを SQL Editor で開き、任意のステートメントを実行します。"
     },
     "dismiss": "ガイドを閉じる",
+    "generic": {
+      "completion-description": "プロジェクト、インスタンス、データベースのつながりを確認しました。",
+      "completion-title": "データベースワークスペースの準備ができました",
+      "title": "Bytebase をセットアップ"
+    },
     "getting-started": "はじめに",
     "intro": {
+      "create-user-description": "このセルフホスト型ワークスペースにチームメンバーのアカウントを作成します。",
+      "create-user-title": "ユーザーを作成",
       "database-description": "接続済みインスタンスにデータベースを作成します。",
       "database-title": "データベースを作成",
+      "grant-access-description": "チームメンバーを招待し、ワークスペースロールを割り当てます。",
+      "grant-access-title": "ワークスペースアクセスを付与",
       "instance-description": "Bytebase がデータベースサーバーに接続できるようにインスタンスを作成します。",
       "instance-title": "インスタンスを接続",
       "project-description": "まずプロジェクトを作成します。インスタンス接続後、データベースをそのプロジェクトに同期できます。",
@@ -3597,12 +3649,27 @@
     "prepare-database-tip": "プロジェクトに転送するデータベースを選択します。",
     "previous-step-required": "前のステップを先に完了する必要があります。",
     "product-model": "Bytebase の仕組み",
-    "self": "Bytebase をセットアップ",
+    "scenarios": {
+      "create-database-change": {
+        "completion-description": "データベース変更が Bytebase の追跡可能なイシューになりました。",
+        "completion-title": "最初のデータベース変更を作成しました",
+        "title": "データベース変更を作成"
+      },
+      "query-data": {
+        "completion-description": "SQL Editor を開き、データベースでステートメントを実行しました。",
+        "completion-title": "最初のステートメントを実行しました",
+        "title": "データをクエリ"
+      }
+    },
+    "step-progress": "{{total}} 件中 {{current}} 件目",
     "steps": {
-      "database": "データベースを探索",
+      "add-teammate": "メンバーを追加",
+      "create-database-change": "データベース変更を作成",
+      "database": "データベースを確認",
       "instance": "インスタンスを接続",
       "project": "プロジェクトを作成",
-      "query": "データをクエリ"
-    }
+      "query-data": "データをクエリ"
+    },
+    "view-all-steps": "すべてのステップを表示"
   }
 }

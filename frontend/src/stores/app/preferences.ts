@@ -60,17 +60,15 @@ export const createPreferencesSlice: AppSliceCreator<PreferencesSlice> = (
     );
   },
 
-  resetWorkspaceSetupGuide: () => {
+  resumeWorkspaceSetupGuide: () => {
     const email = getCurrentUserEmail(get);
     if (!email) return;
     const key = storageKeyIntroState(getWorkspaceResourceScope(get), email);
     const previous = readJson<Record<string, boolean>>(key, {});
-    const next: Record<string, boolean> = {
-      ...previous,
-      "workspace-setup-guide.dismissed": false,
-    };
-    for (const introStateKey of Object.keys(next)) {
-      if (introStateKey.startsWith("workspace-setup-guide.")) {
+    const next: Record<string, boolean> = { ...previous };
+    next["workspace-setup-guide.dismissed"] = false;
+    for (const introStateKey of Object.keys(previous)) {
+      if (introStateKey.startsWith("workspace-setup-guide.completed.")) {
         next[introStateKey] = false;
       }
     }

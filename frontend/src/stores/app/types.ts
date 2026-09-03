@@ -312,7 +312,7 @@ export type WorkspaceSlice = {
   userCountInIam: () => number;
   activeVcsUserCount: () => number;
   enableOnboarding: () => boolean;
-  workspaceSetupGuideEnabled: () => boolean;
+  workspaceSetupGuideEnabled: (allowMultipleMembers?: boolean) => boolean;
   // Always returns a profile (never undefined), mirroring the Pinia
   // `workspaceProfile` getter so consumers read fields without null checks.
   getWorkspaceProfile: () => WorkspaceProfileSetting;
@@ -798,7 +798,7 @@ export type IdentityProviderSlice = {
     Promise<IdentityProvider | undefined>
   >;
   identityProviderList: () => IdentityProvider[];
-  listIdentityProviders: (parent?: string) => Promise<IdentityProvider[]>;
+  listIdentityProviders: (parent: string) => Promise<IdentityProvider[]>;
   fetchIdentityProvider: (
     name: string,
     silent?: boolean
@@ -955,7 +955,7 @@ export type PreferencesSlice = {
   setRecentProject: (name: string) => void;
   recordRecentVisit: (path: string, workspaceName?: string) => void;
   removeRecentVisit: (path: string) => void;
-  resetWorkspaceSetupGuide: () => void;
+  resumeWorkspaceSetupGuide: () => void;
   getIntroStateByKey: (key: string) => boolean;
   saveIntroStateByKey: (params: { key: string; newState: boolean }) => void;
 };

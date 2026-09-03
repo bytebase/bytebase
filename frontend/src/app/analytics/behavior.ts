@@ -25,10 +25,8 @@ export type BehaviorMetricName =
   | "instance connection test clicked"
   | "instance create clicked"
   | "locked feature clicked"
-  | "setup guide action clicked"
-  | "setup guide dismissed"
-  | "workspace setup completed"
-  | "workspace setup skipped"
+  | "sample instance requested"
+  | "workspace setup submitted"
   | "post sync first change clicked"
   | "post sync sql editor clicked";
 

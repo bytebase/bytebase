@@ -57,13 +57,16 @@ export const parseWorkloadIdentitySubjectPattern = (wi: {
 };
 
 export const getWorkloadIdentityProviderText = (
-  providerType: WorkloadIdentityConfig_ProviderType
+  providerType: WorkloadIdentityConfig_ProviderType,
+  genericOIDCText = ""
 ) => {
   switch (providerType) {
     case WorkloadIdentityConfig_ProviderType.GITHUB:
       return "GitHub Actions";
     case WorkloadIdentityConfig_ProviderType.GITLAB:
       return "GitLab CI";
+    case WorkloadIdentityConfig_ProviderType.OIDC:
+      return genericOIDCText;
     default:
       return "";
   }

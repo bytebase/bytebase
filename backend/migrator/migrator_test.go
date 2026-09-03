@@ -21,8 +21,8 @@ import (
 func TestLatestVersion(t *testing.T) {
 	files, err := getSortedVersionedFiles()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("3.23.2"), *files[len(files)-1].version)
-	require.Equal(t, "migration/3.23/0002##plan_last_editor_approval.sql", files[len(files)-1].path)
+	require.Equal(t, semver.MustParse("3.23.3"), *files[len(files)-1].version)
+	require.Equal(t, "migration/3.23/0003##identity_provider_list_permission.sql", files[len(files)-1].path)
 }
 
 func TestMigration3_23_1_IssueCommentThreads(t *testing.T) {
@@ -162,6 +162,15 @@ func TestMigration3_23_2BackfillsLastPlanEditorApproval(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, enabled)
 	}
+	_, err = db.ExecContext(ctx, "UPDATE project SET deleted = false WHERE resource_id = 'deleted'")
+	require.NoError(t, err)
+	var restoredEnabled bool
+	err = db.QueryRowContext(ctx, `
+		SELECT (setting->>'allowLastPlanEditorApproval')::boolean
+		FROM project
+		WHERE resource_id = 'deleted' AND NOT deleted`).Scan(&restoredEnabled)
+	require.NoError(t, err)
+	require.True(t, restoredEnabled)
 	var nullable string
 	require.NoError(t, db.QueryRowContext(ctx, `
 		SELECT is_nullable

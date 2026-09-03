@@ -156,6 +156,7 @@
       "failed-to-send-code": "No se pudo enviar el código de verificación. {{error}}",
       "forget-password": "¿Olvidaste tu contraseña?",
       "invited-email": "Has sido invitado. Inicia sesión con {{email}}",
+      "load-failed": "No se pudieron cargar las opciones de inicio de sesión. Inténtalo de nuevo.",
       "new-user": "¿Nuevo en Bytebase?",
       "resend-code": "Reenviar código",
       "resend-in": "Reenviar en {{seconds}}s",
@@ -171,6 +172,11 @@
       "create-admin-account": "Crear cuenta de administrador",
       "existing-user": "¿Ya tienes una cuenta?",
       "title": "Registre su cuenta"
+    },
+    "sso": {
+      "invalid-authorization-url": "URL de autorización no válida: debe ser una URL HTTP o HTTPS válida.",
+      "no-authorization-endpoint": "El proveedor de identidad no publicó ningún punto de autorización. Revisa su configuración.",
+      "unsupported-provider-type": "Este tipo de proveedor de identidad no admite la redirección SSO."
     },
     "token-expired-description": "El token ha expirado, por favor inicia sesión nuevamente",
     "token-expired-title": "Token expirado"
@@ -839,7 +845,11 @@
     "partitions": "Particiones",
     "procedures": "Procedimientos",
     "project-instance-synced-action": "Crear cambio de base de datos",
+    "project-instance-synced-create-change-description": "Tu base de datos está lista en este proyecto. Crea un cambio de base de datos gobernado para continuar.",
+    "project-instance-synced-create-change-title": "Base de datos lista para cambios",
     "project-instance-synced-description": "Tu base de datos está lista en este proyecto. Empieza consultando datos en SQL Editor, o crea un cambio de base de datos gobernado cuando lo necesites.",
+    "project-instance-synced-query-data-description": "Tu base de datos está lista en este proyecto. Abre SQL Editor para consultarla.",
+    "project-instance-synced-query-data-title": "Base de datos lista para consultar",
     "project-instance-synced-sql-editor-action": "Abrir SQL Editor",
     "project-instance-synced-title": "Base de datos conectada",
     "project-instance-syncing-description": "Esto puede tardar de unos segundos a unos minutos. Puedes actualizar esta página más tarde.",
@@ -2799,10 +2809,12 @@
       "workload-identity-audience": "Audiencia",
       "workload-identity-branch": "Rama",
       "workload-identity-branch-hint": "Dejar vacío para todas las ramas",
+      "workload-identity-generic-oidc": "OIDC genérico",
       "workload-identity-gitlab-url": "GitLab URL",
       "workload-identity-gitlab-url-hint": "La URL de su instancia de GitLab",
       "workload-identity-group": "Grupo / Nombre de usuario",
       "workload-identity-issuer": "URL del emisor",
+      "workload-identity-jwks-url": "URL de JWKS",
       "workload-identity-owner": "Organización / Nombre de usuario",
       "workload-identity-platform": "Plataforma",
       "workload-identity-project": "Proyecto",
@@ -2821,6 +2833,8 @@
       "display-name-placeholder": "Ingrese su nombre",
       "email": "Correo electrónico",
       "enable-sample-databases": "Habilitar bases de datos de ejemplo",
+      "enable-sample-databases-create-change": "Habilitar bases de datos de ejemplo como destino seguro para el cambio",
+      "enable-sample-databases-query-data": "Habilitar bases de datos de ejemplo para empezar a consultar de inmediato",
       "password": "Contraseña",
       "password-confirm": "Confirmar contraseña",
       "password-confirm-placeholder": "Confirmar nueva contraseña",
@@ -2830,10 +2844,36 @@
       "phone-tips": "Asegúrese de incluir el código del país +1xxxxxx",
       "setup-failed": "Error al actualizar el perfil.",
       "setup-first-project": "Configurar el primer proyecto",
+      "setup-scenario": {
+        "continue": "Continuar",
+        "create-database-change": {
+          "description": "Defina un cambio y cree una incidencia rastreable.",
+          "title": "Crear un cambio de base de datos"
+        },
+        "outcome-title": "¿Qué le gustaría hacer con Bytebase?",
+        "query-data": {
+          "description": "Abra SQL Editor y ejecute una sentencia en una base de datos.",
+          "title": "Consultar datos"
+        },
+        "workspace-usage": {
+          "solo": {
+            "description": "Usaré Bytebase por mi cuenta.",
+            "title": "Solo yo"
+          },
+          "team": {
+            "description": "Trabajaré con otras personas.",
+            "title": "Mi equipo"
+          },
+          "title": "¿Quién usará Bytebase con usted?"
+        }
+      },
       "setup-skip": "Lo haré después",
+      "setup-steps": {
+        "scenario": "Elegir un objetivo",
+        "workspace": "Configurar espacio de trabajo"
+      },
       "setup-submit": "Configurar mi espacio de trabajo",
       "setup-success": "Perfil actualizado.",
-      "setup-title": "¡Bienvenido! Configure su espacio de trabajo",
       "workspace-name": "Nombre del espacio de trabajo",
       "workspace-name-placeholder": "Ingrese el nombre del espacio de trabajo"
     },
@@ -3574,19 +3614,31 @@
   "workspace-setup-guide": {
     "actions": {
       "change": "Crear cambio de base de datos",
+      "done": "Listo",
       "query": "Ir a SQL Editor"
     },
     "descriptions": {
-      "database": "Consulta una base de datos de tu instancia conectada, o crea o transfiere una cuando sea necesario.",
-      "instance": "Conecta una instancia para que Bytebase pueda sincronizar tus bases de datos.",
+      "add-teammate": "Invite a un compañero y concédale acceso al espacio de trabajo.",
+      "create-database-change": "Define un cambio de base de datos y crea su incidencia.",
+      "database": "Abre una base de datos y explora sus esquemas y tablas.",
+      "instance": "Conecta una instancia para que Bytebase pueda sincronizar sus bases de datos.",
       "project": "Crea un proyecto para organizar bases de datos y cambios.",
-      "sql-editor": "Consulta datos en SQL Editor o crea un cambio de base de datos gobernado."
+      "query-data": "Abre la base de datos seleccionada en SQL Editor y ejecuta cualquier sentencia."
     },
     "dismiss": "Cerrar guía",
+    "generic": {
+      "completion-description": "Exploraste cómo se conectan tu proyecto, instancia y base de datos.",
+      "completion-title": "Tu espacio de trabajo de bases de datos está listo",
+      "title": "Configurar Bytebase"
+    },
     "getting-started": "Primeros pasos",
     "intro": {
+      "create-user-description": "Cree una cuenta para un compañero en este espacio de trabajo autohospedado.",
+      "create-user-title": "Crear un usuario",
       "database-description": "Crea una base de datos en tu instancia conectada.",
       "database-title": "Crear base de datos",
+      "grant-access-description": "Invite a un compañero y asígnele un rol en el espacio de trabajo.",
+      "grant-access-title": "Conceder acceso al espacio de trabajo",
       "instance-description": "Crea una instancia para que Bytebase pueda conectarse a tu servidor de base de datos.",
       "instance-title": "Conectar la instancia",
       "project-description": "Crea primero un proyecto. Las bases de datos se pueden sincronizar en él después de conectar la instancia.",
@@ -3597,12 +3649,27 @@
     "prepare-database-tip": "Selecciona las bases de datos para transferirlas al proyecto.",
     "previous-step-required": "Debes terminar el paso anterior.",
     "product-model": "Cómo funciona Bytebase",
-    "self": "Configurar Bytebase",
+    "scenarios": {
+      "create-database-change": {
+        "completion-description": "Tu cambio de base de datos ya tiene una incidencia rastreable en Bytebase.",
+        "completion-title": "Creaste tu primer cambio de base de datos",
+        "title": "Crear un cambio de base de datos"
+      },
+      "query-data": {
+        "completion-description": "Abriste SQL Editor y ejecutaste una sentencia en tu base de datos.",
+        "completion-title": "Ejecutaste tu primera sentencia",
+        "title": "Consultar datos"
+      }
+    },
+    "step-progress": "{{current}} de {{total}}",
     "steps": {
-      "database": "Explorar bases de datos",
+      "add-teammate": "Añadir compañero",
+      "create-database-change": "Crear cambio de base de datos",
+      "database": "Explorar base de datos",
       "instance": "Conectar instancia",
       "project": "Crear proyecto",
-      "query": "Consultar datos"
-    }
+      "query-data": "Consultar datos"
+    },
+    "view-all-steps": "Ver todos los pasos"
   }
 }

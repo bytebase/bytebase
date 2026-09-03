@@ -23,6 +23,15 @@ func (s *Store) GetProjectByResourceID(ctx context.Context, resourceID string) (
 	if v, ok := s.projectCache.Get(resourceID); ok && s.enableCache {
 		return v, nil
 	}
+	if s.enableCache {
+		// Keep the database read and cache publication ordered with project
+		// invalidation for the same reason as ListProjects.
+		s.projectPublishMu.Lock()
+		defer s.projectPublishMu.Unlock()
+		if v, ok := s.projectCache.Get(resourceID); ok {
+			return v, nil
+		}
+	}
 
 	q := qb.Q().Space("SELECT resource_id, workspace, name, setting, deleted FROM project WHERE resource_id = ?", resourceID)
 	query, args, err := q.ToSQL()
@@ -49,7 +58,7 @@ func (s *Store) GetProjectByResourceID(ctx context.Context, resourceID string) (
 		return nil, err
 	}
 	project.Setting = setting
-	s.storeProjectCache(&project)
+	s.projectCache.Add(project.ResourceID, &project)
 	return &project, nil
 }
 

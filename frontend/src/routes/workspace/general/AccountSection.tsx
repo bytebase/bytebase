@@ -96,11 +96,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
   function AccountSection({ title, onDirtyChange }, ref) {
     const { t } = useTranslation();
 
-    const listIdentityProviders = useAppStore(
-      (state) => state.listIdentityProviders
-    );
-
-    const { isSaaSMode, workspaceResourceName } = useServerState();
+    const { isSaaSMode } = useServerState();
     const hasDisallowSignupFeature = usePlanFeature(
       PlanFeature.FEATURE_DISALLOW_SELF_SERVICE_SIGNUP
     );
@@ -118,7 +114,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
     const [allowEdit] = usePermissionCheck(["bb.settings.setWorkspaceProfile"]);
 
     const existActiveIdentityProvider = useAppStore(
-      (state) => state.identityProviderList().length > 0
+      (state) => (state.authenticationInfo?.identityProviders.length ?? 0) > 0
     );
 
     // Track whether the EMAIL setting is configured (required to enable email-code signin).
@@ -127,12 +123,12 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
       (s) => !!s.getSettingByName(Setting_SettingName.EMAIL)
     );
 
-    // Fetch identity providers after the workspace resource name is ready.
+    // Refresh the login providers that gate the disallow-password-signin
+    // toggle, which is self-hosted only.
     useEffect(() => {
-      if (workspaceResourceName) {
-        listIdentityProviders(workspaceResourceName);
-      }
-    }, [listIdentityProviders, workspaceResourceName]);
+      if (isSaaSMode) return;
+      useAppStore.getState().fetchAuthenticationInfo();
+    }, [isSaaSMode]);
 
     // Fetch EMAIL setting on mount.
     useEffect(() => {

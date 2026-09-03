@@ -227,7 +227,10 @@ const workspaceLevelRoutes: RouteObject[] = [
   {
     path: "idps",
     handle: {
-      requiredPermissionList: (): Permission[] => ["bb.identityProviders.get"],
+      requiredPermissionList: (): Permission[] => [
+        "bb.identityProviders.get",
+        "bb.identityProviders.list",
+      ],
     },
     element: <RouteGroupOutlet />,
     children: [

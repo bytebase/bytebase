@@ -16,6 +16,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -717,6 +718,109 @@ func TestWebhookIntegration(t *testing.T) {
 		waitForIssuePending(ctx, t, ctl, issue)
 
 		waitForWebhookCount(t, collector, project.Name, "Approval required", 1)
+	})
+
+	t.Run("IssueApprovalRequested_ExcludesLastPlanEditor", func(t *testing.T) {
+		project := ctl.createTestProject(ctx, t, "bot121-last-editor")
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "bot121_last_editor_db", ""))
+		_, err := ctl.projectServiceClient.UpdateProject(ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+			Project: &v1pb.Project{
+				Name:                        project.Name,
+				AllowLastPlanEditorApproval: false,
+			},
+			UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"allow_last_plan_editor_approval"}},
+		}))
+		require.NoError(t, err)
+
+		clearWorkspaceApprovalRules(ctx, t, ctl)
+		installWorkspaceApprovalRule(ctx, t, ctl, project, []string{"roles/projectOwner"})
+		editor := provisionApprover(ctx, t, ctl, project, "webhook-last-editor", "roles/projectOwner")
+		other := provisionApprover(ctx, t, ctl, project, "webhook-other", "roles/projectOwner")
+		for _, user := range []struct {
+			email string
+			phone string
+		}{
+			{editor.Email, "+8613800000001"},
+			{other.Email, "+8613800000002"},
+		} {
+			_, err := ctl.userServiceClient.UpdateUser(ctx, connect.NewRequest(&v1pb.UpdateUserRequest{
+				User:       &v1pb.User{Name: "users/" + user.email, Phone: user.phone},
+				UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"phone"}},
+			}))
+			require.NoError(t, err)
+		}
+
+		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
+			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "bot121_last_editor_db")},
+		})
+		withImpersonation(ctx, t, ctl, editor, func() {
+			resp, err := ctl.planServiceClient.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
+				Plan:       &v1pb.Plan{Name: plan.Name, Specs: plan.Specs},
+				UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"specs"}},
+			}))
+			require.NoError(t, err)
+			plan = resp.Msg
+		})
+
+		dingtalkCollector := &webhookCollector{}
+		dingtalkServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if err := dingtalkCollector.addRequest(r); err != nil {
+				http.Error(w, err.Error(), http.StatusInternalServerError)
+				return
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = w.Write([]byte(`{"errcode":0}`))
+		}))
+		defer dingtalkServer.Close()
+		webhookplugin.TestOnlyAllowedDomains[storepb.WebhookType_DINGTALK] = []string{"127.0.0.1", "localhost", "[::1]"}
+		t.Cleanup(func() {
+			delete(webhookplugin.TestOnlyAllowedDomains, storepb.WebhookType_DINGTALK)
+		})
+		_, err = ctl.projectServiceClient.AddWebhook(ctx, connect.NewRequest(&v1pb.AddWebhookRequest{
+			Project: project.Name,
+			Webhook: &v1pb.Webhook{
+				Type:              v1pb.WebhookType_DINGTALK,
+				Title:             "last-editor-recipient-test",
+				Url:               dingtalkServer.URL,
+				NotificationTypes: []v1pb.Activity_Type{v1pb.Activity_ISSUE_APPROVAL_REQUESTED},
+			},
+		}))
+		require.NoError(t, err)
+
+		issue := createIssueForPlan(ctx, t, ctl, project, plan, "last editor webhook recipients")
+		waitForIssuePending(ctx, t, ctl, issue)
+		require.Eventually(t, func() bool {
+			return len(dingtalkCollector.getRequests()) == 1
+		}, webhookWaitTimeout, 100*time.Millisecond)
+
+		var payload struct {
+			Markdown struct {
+				Text string `json:"text"`
+			} `json:"markdown"`
+		}
+		require.NoError(t, json.Unmarshal(dingtalkCollector.getRequests()[0].Body, &payload))
+		require.NotContains(t, payload.Markdown.Text, "@13800000001")
+		require.Contains(t, payload.Markdown.Text, "@13800000002")
+
+		dingtalkCollector.reset()
+		_, err = ctl.issueServiceClient.CreateIssue(ctx, connect.NewRequest(&v1pb.CreateIssueRequest{
+			Parent: project.Name,
+			Issue: &v1pb.Issue{
+				Title: "planless webhook recipients",
+				Type:  v1pb.Issue_ROLE_GRANT,
+				RoleGrant: &v1pb.RoleGrant{
+					Role: "roles/projectDeveloper",
+					User: "users/" + editor.Email,
+				},
+			},
+		}))
+		require.NoError(t, err)
+		require.Eventually(t, func() bool {
+			return len(dingtalkCollector.getRequests()) == 1
+		}, webhookWaitTimeout, 100*time.Millisecond)
+		require.NoError(t, json.Unmarshal(dingtalkCollector.getRequests()[0].Body, &payload))
+		require.Contains(t, payload.Markdown.Text, "@13800000001")
+		require.Contains(t, payload.Markdown.Text, "@13800000002")
 	})
 
 	t.Run("IssueApprovalRequested_NotFiredWhenUnused", func(t *testing.T) {

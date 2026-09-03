@@ -156,6 +156,7 @@
       "failed-to-send-code": "Failed to send verification code. {{error}}",
       "forget-password": "Forgot your password?",
       "invited-email": "You've been invited. Please sign in with {{email}}",
+      "load-failed": "Couldn't load sign-in options. Please retry.",
       "new-user": "New to Bytebase?",
       "resend-code": "Resend code",
       "resend-in": "Resend in {{seconds}}s",
@@ -171,6 +172,11 @@
       "create-admin-account": "Create admin account",
       "existing-user": "Already have an account?",
       "title": "Register your account"
+    },
+    "sso": {
+      "invalid-authorization-url": "Invalid authorization URL: it must be a valid HTTP or HTTPS URL.",
+      "no-authorization-endpoint": "The identity provider published no authorization endpoint. Check its configuration.",
+      "unsupported-provider-type": "This identity provider type does not support SSO redirect."
     },
     "token-expired-description": "Token has expired, please login again",
     "token-expired-title": "Token expired"
@@ -839,7 +845,11 @@
     "partitions": "Partitions",
     "procedures": "Procedures",
     "project-instance-synced-action": "Create database change",
+    "project-instance-synced-create-change-description": "Your database is ready in this project. Create a governed database change to continue.",
+    "project-instance-synced-create-change-title": "Ready to create a database change",
     "project-instance-synced-description": "Your database is ready in this project. Start by querying data in SQL Editor, or create a governed database change when needed.",
+    "project-instance-synced-query-data-description": "Your database is ready in this project. Open SQL Editor to query it.",
+    "project-instance-synced-query-data-title": "Database ready to query",
     "project-instance-synced-sql-editor-action": "Open SQL Editor",
     "project-instance-synced-title": "Database connected",
     "project-instance-syncing-description": "This may take a few seconds to a few minutes. You can refresh this page later.",
@@ -2799,10 +2809,12 @@
       "workload-identity-audience": "Audience",
       "workload-identity-branch": "Branch",
       "workload-identity-branch-hint": "Leave empty for all branches",
+      "workload-identity-generic-oidc": "Generic OIDC",
       "workload-identity-gitlab-url": "GitLab URL",
       "workload-identity-gitlab-url-hint": "Your GitLab instance URL",
       "workload-identity-group": "Group / Username",
       "workload-identity-issuer": "Issuer URL",
+      "workload-identity-jwks-url": "JWKS URL",
       "workload-identity-owner": "Organization / Username",
       "workload-identity-platform": "Platform",
       "workload-identity-project": "Project",
@@ -2821,6 +2833,8 @@
       "display-name-placeholder": "Enter your name",
       "email": "Email",
       "enable-sample-databases": "Enable sample databases",
+      "enable-sample-databases-create-change": "Enable sample databases as a safe database change target",
+      "enable-sample-databases-query-data": "Enable sample databases to start querying immediately",
       "password": "Password",
       "password-confirm": "Password Confirm",
       "password-confirm-placeholder": "Confirm new password",
@@ -2830,10 +2844,36 @@
       "phone-tips": "Be sure to include the country code +1xxxxxx",
       "setup-failed": "Failed to update profile.",
       "setup-first-project": "Setup 1st project",
+      "setup-scenario": {
+        "continue": "Continue",
+        "create-database-change": {
+          "description": "Define a change and create a traceable issue.",
+          "title": "Create a database change"
+        },
+        "outcome-title": "What would you like to do with Bytebase?",
+        "query-data": {
+          "description": "Open SQL Editor and run a statement against a database.",
+          "title": "Query data"
+        },
+        "workspace-usage": {
+          "solo": {
+            "description": "I will use Bytebase on my own.",
+            "title": "Just me"
+          },
+          "team": {
+            "description": "I will work with other people.",
+            "title": "My team"
+          },
+          "title": "Who will use Bytebase with you?"
+        }
+      },
       "setup-skip": "I'll do this later",
+      "setup-steps": {
+        "scenario": "Choose a goal",
+        "workspace": "Set up workspace"
+      },
       "setup-submit": "Setup my workspace",
       "setup-success": "Profile updated.",
-      "setup-title": "Welcome! Set up your workspace",
       "workspace-name": "Workspace name",
       "workspace-name-placeholder": "Enter workspace name"
     },
@@ -3574,19 +3614,31 @@
   "workspace-setup-guide": {
     "actions": {
       "change": "Create database change",
+      "done": "Done",
       "query": "Go to SQL Editor"
     },
     "descriptions": {
-      "database": "Open a database to explore its schemas and tables, or create one when needed.",
-      "instance": "Connect an instance so Bytebase can sync your databases.",
+      "add-teammate": "Invite a teammate and grant them workspace access.",
+      "create-database-change": "Define a database change and create its issue.",
+      "database": "Open a database and explore its schemas and tables.",
+      "instance": "Connect an instance so Bytebase can sync its databases.",
       "project": "Create a project to organize databases and changes.",
-      "sql-editor": "Query data in SQL Editor, or create a governed database change."
+      "query-data": "Open the selected database in SQL Editor and run any statement."
     },
     "dismiss": "Dismiss guide",
+    "generic": {
+      "completion-description": "You explored how your project, instance, and database connect.",
+      "completion-title": "Your database workspace is ready",
+      "title": "Set up Bytebase"
+    },
     "getting-started": "Getting started",
     "intro": {
+      "create-user-description": "Create an account for a teammate in this self-hosted workspace.",
+      "create-user-title": "Create a user",
       "database-description": "Create a database in your connected instance.",
       "database-title": "Create a database",
+      "grant-access-description": "Invite a teammate and assign their workspace role.",
+      "grant-access-title": "Grant workspace access",
       "instance-description": "Create an instance so Bytebase can connect to your database server.",
       "instance-title": "Connect the instance",
       "project-description": "Create a project first. Databases can be synced into it after the instance is connected.",
@@ -3597,12 +3649,27 @@
     "prepare-database-tip": "Select databases to transfer to the project.",
     "previous-step-required": "You need to finish the previous step.",
     "product-model": "How Bytebase works",
-    "self": "Set up Bytebase",
+    "scenarios": {
+      "create-database-change": {
+        "completion-description": "Your database change now has a traceable issue in Bytebase.",
+        "completion-title": "You created your first database change",
+        "title": "Create a database change"
+      },
+      "query-data": {
+        "completion-description": "You opened SQL Editor and ran a statement against your database.",
+        "completion-title": "You ran your first statement",
+        "title": "Query Data"
+      }
+    },
+    "step-progress": "{{current}} of {{total}}",
     "steps": {
-      "database": "Explore databases",
+      "add-teammate": "Add teammate",
+      "create-database-change": "Create database change",
+      "database": "Explore database",
       "instance": "Connect instance",
       "project": "Create project",
-      "query": "Query data"
-    }
+      "query-data": "Query data"
+    },
+    "view-all-steps": "View all steps"
   }
 }

@@ -54,7 +54,7 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	actuatorService := NewActuatorService(stores, profile, nil, licenseService, sampleManager)
 	authService := NewAuthService(stores, "test-secret", licenseService, profile, nil)
 
-	publicResponse, err := authService.GetAuthenticationRestriction(ctx, connect.NewRequest(&v1pb.GetAuthenticationRestrictionRequest{}))
+	publicResponse, err := authService.GetAuthenticationInfo(ctx, connect.NewRequest(&v1pb.GetAuthenticationInfoRequest{}))
 	require.NoError(t, err)
 
 	var populated []string
@@ -67,7 +67,7 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	require.Empty(t, publicResponse.Msg.Workspace)
 
 	profile.SaaS = true
-	saasPublicResponse, err := authService.GetAuthenticationRestriction(ctx, connect.NewRequest(&v1pb.GetAuthenticationRestrictionRequest{}))
+	saasPublicResponse, err := authService.GetAuthenticationInfo(ctx, connect.NewRequest(&v1pb.GetAuthenticationInfoRequest{}))
 	require.NoError(t, err)
 	require.True(t, saasPublicResponse.Msg.Restriction.DisallowSignup)
 	require.True(t, saasPublicResponse.Msg.Restriction.DisallowPasswordSignin)
@@ -80,7 +80,7 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	}, "admin@example.com")
 	require.NoError(t, err)
 
-	publicResponse, err = authService.GetAuthenticationRestriction(ctx, connect.NewRequest(&v1pb.GetAuthenticationRestrictionRequest{}))
+	publicResponse, err = authService.GetAuthenticationInfo(ctx, connect.NewRequest(&v1pb.GetAuthenticationInfoRequest{}))
 	require.NoError(t, err)
 	populated = nil
 	publicResponse.Msg.ProtoReflect().Range(func(field protoreflect.FieldDescriptor, _ protoreflect.Value) bool {

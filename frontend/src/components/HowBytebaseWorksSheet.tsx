@@ -1,7 +1,5 @@
-import type { MouseEvent, ReactElement } from "react";
+import type { ReactElement } from "react";
 import { useTranslation } from "react-i18next";
-import { createBehaviorMetric } from "@/app/analytics/behavior";
-import { behaviorAnalytics } from "@/app/analytics/provider";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import {
   Sheet,
@@ -42,27 +40,13 @@ export function HowBytebaseWorksSheet({
     return null;
   }
 
-  const handleContentClick = (event: MouseEvent<HTMLElement>) => {
-    if (!(event.target instanceof Element) || !event.target.closest("a")) {
-      return;
-    }
-    behaviorAnalytics.captureMetric(
-      createBehaviorMetric("setup guide action clicked", {
-        properties: {
-          action: "product_model_learn_more",
-          source: "drawer",
-        },
-      })
-    );
-  };
-
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent width="narrow">
         <SheetHeader>
           <SheetTitle>{t("workspace-setup-guide.product-model")}</SheetTitle>
         </SheetHeader>
-        <SheetBody onClick={handleContentClick}>
+        <SheetBody>
           <MarkdownEditor content={guideContent} mode="preview" />
         </SheetBody>
       </SheetContent>

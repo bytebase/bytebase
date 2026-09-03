@@ -2,27 +2,64 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import {
   INSTANCE_ROUTE_DATABASE_DETAIL,
   PROJECT_V1_ROUTE_DATABASE_DETAIL,
+  PROJECT_V1_ROUTE_DATABASES,
   SQL_EDITOR_DATABASE_MODULE,
 } from "@/app/router/handles";
 import { useIntroStateByKey } from "@/hooks/useAppState";
+import { planEvents } from "@/lib/plan/events";
 import { sqlEditorEvents } from "@/modules/sql-editor/model/events";
 import { useAppStore } from "@/stores/app";
 import { State } from "@/types/proto-es/v1/common_pb";
-import type { GuideContext, GuideRoute } from "./types";
+import { convertMemberToFullname } from "@/utils/v1/iam";
+import { extractProjectResourceName } from "@/utils/v1/project";
+import { GUIDE_PROGRESS_KEYS } from "./progress";
+import type {
+  GuideContext,
+  GuideRoute,
+  GuideScenarioId,
+  GuideWorkspaceUsage,
+} from "./types";
 
-const DATABASE_EXPLORED_KEY = "workspace-setup-guide.database-explored";
-const QUERY_EXECUTED_KEY = "workspace-setup-guide.query-executed";
-
-type GuideFacts = Omit<GuideContext, "route">;
+type GuideFacts = Omit<
+  GuideContext,
+  "route" | "isSaaS" | "hasOtherWorkspaceMember"
+>;
 
 const INITIAL_FACTS: GuideFacts = {
   hasProject: false,
   hasInstance: false,
   hasExploredDatabase: false,
-  hasFirstQuery: false,
+  hasRunStatement: false,
+  hasCreatedChangeIssue: false,
+  hasOtherHumanUser: false,
   projectName: "",
+  instanceName: "",
   databaseProjectName: "",
   databaseName: "",
+};
+
+export const hasOtherHumanWorkspaceMember = (
+  policy:
+    | {
+        bindings: readonly {
+          members: readonly string[];
+          role?: string;
+        }[];
+      }
+    | undefined,
+  currentUserName: string
+) => {
+  if (!currentUserName) return false;
+  return (policy?.bindings ?? []).some((binding) =>
+    binding.members.some((member) => {
+      const name = convertMemberToFullname(member);
+      return (
+        name.startsWith("users/") &&
+        name !== "users/allUsers" &&
+        name !== currentUserName
+      );
+    })
+  );
 };
 
 const hasRouteParams = (
@@ -54,17 +91,36 @@ const isConcreteDatabaseRoute = (
   }
 };
 
+const isPopulatedProjectDatabaseRoute = (
+  name: string | undefined,
+  params: Record<string, string | string[] | undefined>,
+  databaseProjectName: string,
+  databaseName: string
+) =>
+  name === PROJECT_V1_ROUTE_DATABASES &&
+  !!databaseName &&
+  params.projectId === extractProjectResourceName(databaseProjectName);
+
 export const useGuideContext = ({
   enabled,
   dismissed,
   route,
+  scenarioId,
+  workspaceUsage,
 }: {
   enabled: boolean;
   dismissed: boolean;
   route: GuideRoute;
+  scenarioId?: GuideScenarioId;
+  workspaceUsage?: GuideWorkspaceUsage;
 }): { context: GuideContext; loading: boolean } => {
-  const databaseExplored = useIntroStateByKey(DATABASE_EXPLORED_KEY);
-  const queryExecuted = useIntroStateByKey(QUERY_EXECUTED_KEY);
+  const databaseExplored = useIntroStateByKey(
+    GUIDE_PROGRESS_KEYS.databaseExplored
+  );
+  const statementRun = useIntroStateByKey(GUIDE_PROGRESS_KEYS.statementRun);
+  const changeIssueCreated = useIntroStateByKey(
+    GUIDE_PROGRESS_KEYS.changeIssueCreated
+  );
   const serverInfo = useAppStore((state) => state.serverInfo);
   const defaultProject = serverInfo?.defaultProject ?? "";
   const projectCacheSize = useAppStore(
@@ -76,70 +132,100 @@ export const useGuideContext = ({
   const databaseCacheSize = useAppStore(
     (state) => Object.keys(state.databasesByName).length
   );
+  const userCacheSize = useAppStore(
+    (state) => Object.keys(state.usersByName).length
+  );
   const workspaceResourceName = useAppStore((state) =>
     state.workspaceResourceName()
   );
+  const currentUserName = useAppStore((state) => state.currentUserName ?? "");
+  const workspacePolicy = useAppStore((state) => state.workspacePolicy);
+  const isSaaS = useAppStore((state) => state.isSaaSMode());
+  const hasOtherWorkspaceMember = hasOtherHumanWorkspaceMember(
+    workspacePolicy,
+    currentUserName
+  );
   const [facts, setFacts] = useState<GuideFacts>(INITIAL_FACTS);
   const [loading, setLoading] = useState(true);
-  const queryTargetRef = useRef<
+  const eventTargetRef = useRef<
     { projectName: string; databaseName: string } | undefined
   >(undefined);
+  const record = (key: string) => {
+    const store = useAppStore.getState();
+    if (store.getIntroStateByKey(key)) return;
+    store.saveIntroStateByKey({ key, newState: true });
+  };
 
   useEffect(() => {
-    const off = sqlEditorEvents.on(
+    if (
+      !enabled ||
+      dismissed ||
+      workspaceUsage !== "team" ||
+      !hasOtherWorkspaceMember
+    ) {
+      return;
+    }
+    record(GUIDE_PROGRESS_KEYS.teammateAdded);
+  }, [dismissed, enabled, hasOtherWorkspaceMember, workspaceUsage]);
+
+  useEffect(() => {
+    if (!enabled || dismissed) return;
+    const offStatement = sqlEditorEvents.on(
       "query-executed",
       ({ data: { database, project } }) => {
-        if (!database) {
-          return;
-        }
-
-        queryTargetRef.current = {
+        if (!database) return;
+        eventTargetRef.current = {
           projectName: project,
           databaseName: database,
         };
-        const store = useAppStore.getState();
-        if (!databaseExplored) {
-          store.saveIntroStateByKey({
-            key: DATABASE_EXPLORED_KEY,
-            newState: true,
-          });
-        }
-        if (!queryExecuted) {
-          store.saveIntroStateByKey({
-            key: QUERY_EXECUTED_KEY,
-            newState: true,
-          });
-        }
+        record(GUIDE_PROGRESS_KEYS.statementRun);
         setFacts((state) => ({
           ...state,
-          hasExploredDatabase: true,
-          hasFirstQuery: true,
+          hasRunStatement: true,
           databaseProjectName: project,
           databaseName: database,
         }));
       }
     );
+    const offChangeIssue =
+      scenarioId === "create-database-change"
+        ? planEvents.on("database-change-issue-created", () => {
+            record(GUIDE_PROGRESS_KEYS.changeIssueCreated);
+            setFacts((state) => ({
+              ...state,
+              hasCreatedChangeIssue: true,
+            }));
+          })
+        : () => undefined;
     return () => {
-      off();
+      offStatement();
+      offChangeIssue();
     };
-  }, [databaseExplored, queryExecuted]);
+  }, [dismissed, enabled, scenarioId]);
 
   useEffect(() => {
+    if (!enabled || dismissed) return;
+    const params = route.params ?? {};
     if (
-      dismissed ||
-      !enabled ||
-      databaseExplored ||
-      !isConcreteDatabaseRoute(route.name, route.params ?? {})
+      isConcreteDatabaseRoute(route.name, params) ||
+      isPopulatedProjectDatabaseRoute(
+        route.name,
+        params,
+        facts.databaseProjectName,
+        facts.databaseName
+      )
     ) {
-      return;
+      record(GUIDE_PROGRESS_KEYS.databaseExplored);
+      setFacts((state) => ({ ...state, hasExploredDatabase: true }));
     }
-
-    useAppStore.getState().saveIntroStateByKey({
-      key: DATABASE_EXPLORED_KEY,
-      newState: true,
-    });
-    setFacts((state) => ({ ...state, hasExploredDatabase: true }));
-  }, [databaseExplored, dismissed, enabled, route.name, route.params]);
+  }, [
+    dismissed,
+    enabled,
+    facts.databaseName,
+    facts.databaseProjectName,
+    route.name,
+    route.params,
+  ]);
 
   useEffect(() => {
     if (dismissed || !enabled) {
@@ -154,85 +240,98 @@ export const useGuideContext = ({
         const projectResponse = await store.fetchProjectList({
           pageSize: 1,
           silent: true,
-          filter: {
-            excludeDefault: true,
-            state: State.ACTIVE,
-          },
+          filter: { excludeDefault: true, state: State.ACTIVE },
         });
         const project = projectResponse.projects.find(
           ({ name }) => !!name && name !== defaultProject
         );
-        const [
-          workspaceInstanceResponse,
-          projectInstanceResponse,
-          databaseResponse,
-        ] = await Promise.all([
-          store.fetchInstanceList({
-            pageSize: 1,
-            filter: { state: State.ACTIVE },
-            silent: true,
-          }),
-          project
-            ? store.fetchInstanceList({
-                parent: project.name,
-                pageSize: 1,
-                filter: { state: State.ACTIVE },
-                silent: true,
-              })
-            : Promise.resolve({ instances: [], nextPageToken: "" }),
-          project && workspaceResourceName
-            ? store.fetchDatabases({
-                parent: workspaceResourceName,
-                pageSize: 1,
-                filter: { project: project.name },
-                silent: true,
-              })
-            : Promise.resolve(undefined),
-        ]);
+        const [workspaceInstances, projectInstances, databases, users] =
+          await Promise.all([
+            store.fetchInstanceList({
+              pageSize: 1,
+              filter: { state: State.ACTIVE },
+              silent: true,
+            }),
+            project
+              ? store.fetchInstanceList({
+                  parent: project.name,
+                  pageSize: 1,
+                  filter: { state: State.ACTIVE },
+                  silent: true,
+                })
+              : Promise.resolve({ instances: [], nextPageToken: "" }),
+            project && workspaceResourceName
+              ? store.fetchDatabases({
+                  parent: workspaceResourceName,
+                  pageSize: 1,
+                  filter: { project: project.name },
+                  silent: true,
+                })
+              : Promise.resolve(undefined),
+            workspaceUsage === "team" && !isSaaS
+              ? store
+                  .listUsers({
+                    pageSize: 100,
+                    filter: { state: State.ACTIVE },
+                  })
+                  .catch(() => ({ users: [], nextPageToken: "" }))
+              : Promise.resolve({ users: [], nextPageToken: "" }),
+          ]);
         const instance =
-          workspaceInstanceResponse.instances[0] ??
-          projectInstanceResponse.instances[0];
-        const database = databaseResponse?.databases.find(
+          workspaceInstances.instances[0] ?? projectInstances.instances[0];
+        const database = databases?.databases.find(
           ({ name, project }) => !!name && !!project
         );
+        const eventTarget = eventTargetRef.current;
 
-        const latestDatabaseExplored = store.getIntroStateByKey(
-          DATABASE_EXPLORED_KEY
-        );
-        const latestQueryExecuted =
-          store.getIntroStateByKey(QUERY_EXECUTED_KEY);
-        const queryTarget = latestQueryExecuted
-          ? queryTargetRef.current
-          : undefined;
-
-        setFacts({
+        setFacts((state) => ({
+          ...state,
           hasProject: !!project,
           hasInstance: !!instance,
-          hasExploredDatabase: latestDatabaseExplored,
-          hasFirstQuery: latestQueryExecuted,
+          hasExploredDatabase: databaseExplored || state.hasExploredDatabase,
+          hasRunStatement: statementRun || state.hasRunStatement,
+          hasCreatedChangeIssue:
+            changeIssueCreated || state.hasCreatedChangeIssue,
+          hasOtherHumanUser: users.users.some(
+            ({ name }) => !!name && name !== currentUserName
+          ),
           projectName: project?.name ?? "",
+          instanceName: instance?.name ?? "",
           databaseProjectName:
-            queryTarget?.projectName ?? database?.project ?? "",
-          databaseName: queryTarget?.databaseName ?? database?.name ?? "",
-        });
+            eventTarget?.projectName ?? database?.project ?? "",
+          databaseName: eventTarget?.databaseName ?? database?.name ?? "",
+        }));
       } catch {
-        // Keep the current progress when resource discovery is unavailable.
+        setFacts((state) => ({
+          ...state,
+          hasExploredDatabase: databaseExplored || state.hasExploredDatabase,
+          hasRunStatement: statementRun || state.hasRunStatement,
+          hasCreatedChangeIssue:
+            changeIssueCreated || state.hasCreatedChangeIssue,
+        }));
       }
       setLoading(false);
     })();
   }, [
+    changeIssueCreated,
     databaseCacheSize,
     databaseExplored,
     defaultProject,
     dismissed,
     enabled,
     instanceCacheSize,
+    isSaaS,
     projectCacheSize,
-    queryExecuted,
-    route.name,
+    statementRun,
+    currentUserName,
+    userCacheSize,
+    workspaceUsage,
     workspaceResourceName,
   ]);
 
-  const context = useMemo(() => ({ ...facts, route }), [facts, route]);
+  const context = useMemo(
+    () => ({ ...facts, isSaaS, hasOtherWorkspaceMember, route }),
+    [facts, hasOtherWorkspaceMember, isSaaS, route]
+  );
   return { context, loading };
 };
