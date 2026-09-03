@@ -8,6 +8,7 @@ import {
   AUTH_PASSWORD_RESET_MODULE,
   AUTH_SETUP_MODULE,
   AUTH_SIGNIN_MODULE,
+  WORKSPACE_ROUTE_LANDING,
 } from "@/app/router/handles";
 import {
   navigateByName,
@@ -173,7 +174,8 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
     const redirectQuery = new URLSearchParams(window.location.search).get(
       "redirect"
     );
-    const nextPage = redirectUrl ?? (redirectQuery || "/");
+    const explicitRedirect = redirectUrl ?? redirectQuery;
+    const nextPage = explicitRedirect || "/";
     if (resp.mfaTempToken) {
       set({ unauthenticatedOccurred: false });
       navigateByName(AUTH_MFA_MODULE, {
@@ -209,9 +211,19 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
       return;
     }
     if (resp.user && needsProfileSetup(resp.user)) {
-      navigateByName(AUTH_SETUP_MODULE, {
-        query: { redirect: nextPage },
-      });
+      set({ workspacePolicy: undefined });
+      await get()
+        .fetchWorkspaceIamPolicy(true)
+        .catch(() => undefined);
+      if (get().enableOnboarding()) {
+        navigateByName(AUTH_SETUP_MODULE, {
+          query: { redirect: nextPage },
+        });
+      } else if (explicitRedirect) {
+        navigateToPath(nextPage, { replace: true });
+      } else {
+        navigateByName(WORKSPACE_ROUTE_LANDING, { replace: true });
+      }
       return;
     }
     if (redirect) {
@@ -237,9 +249,13 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
     }
 
     await get().fetchServerInfo();
-    // See `login()`. The profile must be available before the next route is
-    // selected because the root redirect reads the database change mode.
-    await get().loadWorkspaceProfile(true);
+    set({ workspacePolicy: undefined });
+    await Promise.all([
+      get().loadWorkspaceProfile(true),
+      get()
+        .fetchWorkspaceIamPolicy(true)
+        .catch(() => undefined),
+    ]);
     set({ authSessionKey: uniqueId() });
 
     if (get().enableOnboarding()) {
@@ -250,7 +266,11 @@ export const createAuthSlice: AppSliceCreator<AuthSlice> = (set, get) => ({
     const redirectQuery = new URLSearchParams(window.location.search).get(
       "redirect"
     );
-    navigateToPath(redirectQuery || "/", { replace: true });
+    if (redirectQuery) {
+      navigateToPath(redirectQuery, { replace: true });
+      return;
+    }
+    navigateByName(WORKSPACE_ROUTE_LANDING, { replace: true });
   },
 
   logout: async () => {
