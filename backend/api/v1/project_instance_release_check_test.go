@@ -37,7 +37,7 @@ func TestCheckReleaseDatabaseTargetsKeepCanonicalNames(t *testing.T) {
 		Release: declarativeReleaseWithDisallowedStatement(),
 		Targets: []string{workspaceTarget},
 	}))
-	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+	require.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
 }
 
 func TestCheckReleaseRejectsCrossProjectTargets(t *testing.T) {
@@ -57,6 +57,45 @@ func TestCheckReleaseRejectsCrossProjectTargets(t *testing.T) {
 	} {
 		_, err := service.CheckRelease(ctx, request(target))
 		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err), target)
+	}
+}
+
+func TestCheckReleaseHidesDatabasesOutsideProject(t *testing.T) {
+	ctx, stores, _, _ := setupProjectInstanceReleaseCheckTest(t)
+	sharedInstanceID := "shared-instance"
+	_, err := stores.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: sharedInstanceID,
+		Workspace:  "default",
+		Metadata: &storepb.Instance{
+			Engine: storepb.Engine_POSTGRES,
+			DataSources: []*storepb.DataSource{{
+				Id:   "admin",
+				Type: storepb.DataSourceType_ADMIN,
+			}},
+		},
+	})
+	require.NoError(t, err)
+	_, err = stores.UpsertDatabase(ctx, &store.DatabaseMessage{
+		InstanceID:   sharedInstanceID,
+		DatabaseName: "other",
+		ProjectID:    "project-b",
+		Metadata:     &storepb.DatabaseMetadata{},
+	})
+	require.NoError(t, err)
+
+	// A database in another project and one that does not exist must be
+	// indistinguishable, or the check maps databases workspace-wide.
+	service := NewReleaseService(stores, sheet.NewManager(), nil, nil)
+	for _, target := range []string{
+		common.FormatDatabase(sharedInstanceID, "other"),
+		common.FormatDatabase(sharedInstanceID, "missing"),
+	} {
+		_, err := service.CheckRelease(ctx, connect.NewRequest(&v1pb.CheckReleaseRequest{
+			Parent:  common.FormatProject("project-a"),
+			Release: declarativeReleaseWithDisallowedStatement(),
+			Targets: []string{target},
+		}))
+		require.EqualError(t, err, fmt.Sprintf("not_found: database %s not found", target))
 	}
 }
 

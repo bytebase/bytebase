@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
+	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -154,7 +155,7 @@ func TestPlanLastEditorAttributionAndApproval(t *testing.T) {
 	a.NoError(err)
 	a.False(newProject.Msg.AllowLastPlanEditorApproval)
 	a.Equal("users/demo@example.com", f.plan.LastPlanEditor)
-	_, err = f.ctl.projectServiceClient.UpdateProject(f.ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+	projectResp, err := f.ctl.projectServiceClient.UpdateProject(f.ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
 		Project: &v1pb.Project{
 			Name:                        f.ctl.project.Name,
 			AllowSelfApproval:           false,
@@ -163,6 +164,7 @@ func TestPlanLastEditorAttributionAndApproval(t *testing.T) {
 		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"allow_self_approval", "allow_last_plan_editor_approval"}},
 	}))
 	a.NoError(err)
+	a.False(projectResp.Msg.AllowLastPlanEditorApproval)
 
 	installWorkspaceApprovalRule(f.ctx, t, f.ctl, f.ctl.project, []string{"roles/projectOwner"})
 	editor := provisionApprover(f.ctx, t, f.ctl, f.ctl.project, "last-plan-editor", "roles/projectOwner")
@@ -228,11 +230,29 @@ func TestPlanLastEditorAttributionAndApproval(t *testing.T) {
 		_, err := f.ctl.issueServiceClient.ApproveIssue(f.ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{Name: issue.Name}))
 		a.Error(err)
 		a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
+	})
+
+	renamedEmail := "renamed-" + editor.Email
+	renamed, err := f.ctl.userServiceClient.UpdateEmail(f.ctx, connect.NewRequest(&v1pb.UpdateEmailRequest{
+		Name:  common.FormatUserEmail(editor.Email),
+		Email: renamedEmail,
+	}))
+	a.NoError(err)
+	a.Equal(renamedEmail, renamed.Msg.Email)
+	editor.Email = renamedEmail
+	gotPlan, err := f.ctl.planServiceClient.GetPlan(f.ctx, connect.NewRequest(&v1pb.GetPlanRequest{Name: updated.Name}))
+	a.NoError(err)
+	a.Equal(common.FormatUserEmail(renamedEmail), gotPlan.Msg.LastPlanEditor)
+
+	withImpersonation(f.ctx, t, f.ctl, editor, func() {
+		_, err := f.ctl.issueServiceClient.ApproveIssue(f.ctx, connect.NewRequest(&v1pb.ApproveIssueRequest{Name: issue.Name}))
+		a.Error(err)
+		a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
 		_, err = f.ctl.issueServiceClient.RejectIssue(f.ctx, connect.NewRequest(&v1pb.RejectIssueRequest{Name: issue.Name}))
 		a.NoError(err)
 	})
 
-	projectResp, err := f.ctl.projectServiceClient.UpdateProject(f.ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
+	projectResp, err = f.ctl.projectServiceClient.UpdateProject(f.ctx, connect.NewRequest(&v1pb.UpdateProjectRequest{
 		Project: &v1pb.Project{
 			Name:                        f.ctl.project.Name,
 			AllowLastPlanEditorApproval: true,

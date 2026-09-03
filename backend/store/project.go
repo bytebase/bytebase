@@ -101,14 +101,19 @@ func (s *Store) GetProject(ctx context.Context, find *FindProjectMessage) (*Proj
 	if len(projects) > 1 {
 		return nil, &common.Error{Code: common.Conflict, Err: errors.Errorf("found %d projects with filter %+v, expect 1", len(projects), find)}
 	}
-	project := projects[0]
-
-	s.storeProjectCache(project)
-	return project, nil
+	return projects[0], nil
 }
 
 // ListProjects lists all projects.
 func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*ProjectMessage, error) {
+	if s.enableCache {
+		// Keep the database read and cache publication ordered with project
+		// invalidation. Otherwise this query can read the pre-update row and
+		// repopulate it after UpdateProjects has already removed the old entry.
+		s.projectPublishMu.Lock()
+		defer s.projectPublishMu.Unlock()
+	}
+
 	q := qb.Q().Space("SELECT resource_id, workspace, name, setting, deleted FROM project WHERE workspace = ?", find.Workspace)
 	if filterQ := find.FilterQ; filterQ != nil {
 		q.And("?", filterQ)
@@ -193,7 +198,7 @@ func (s *Store) ListProjects(ctx context.Context, find *FindProjectMessage) ([]*
 	}
 
 	for _, project := range projectMessages {
-		s.storeProjectCache(project)
+		s.projectCache.Add(project.ResourceID, project)
 	}
 	return projectMessages, nil
 }
@@ -323,12 +328,9 @@ func (s *Store) UpdateProjects(ctx context.Context, patches ...*UpdateProjectMes
 	}
 
 	// The second eviction: see the comment above. Project settings gate
-	// authorization — AllowLastPlanEditorApproval decides who may approve — so a
-	// stale entry reads as a revoked permission still being granted. One
-	// narrower window survives both evictions: a reader whose row read began
-	// before the commit and whose cache fill lands after this line. Closing it
-	// needs the cache to track a generation per key, which is more machinery
-	// than the exposure warrants.
+	// authorization, so stale entries could preserve revoked permissions. The
+	// publication mutex ensures a pre-update read cannot refill the cache after
+	// this eviction.
 	for _, patch := range patches {
 		s.removeProjectCache(patch.ResourceID)
 	}
@@ -337,10 +339,14 @@ func (s *Store) UpdateProjects(ctx context.Context, patches ...*UpdateProjectMes
 }
 
 func (s *Store) storeProjectCache(project *ProjectMessage) {
+	s.projectPublishMu.Lock()
+	defer s.projectPublishMu.Unlock()
 	s.projectCache.Add(project.ResourceID, project)
 }
 
 func (s *Store) removeProjectCache(resourceID string) {
+	s.projectPublishMu.Lock()
+	defer s.projectPublishMu.Unlock()
 	s.projectCache.Remove(resourceID)
 }
 
@@ -456,7 +462,7 @@ func (s *Store) removeProjectDescendantCaches(keys *projectDescendantCacheKeys, 
 		s.dbSchemaCache.Remove(getDBSchemaCacheKey(key.instanceID, key.databaseName))
 	}
 	for _, projectID := range projectIDs {
-		s.projectCache.Remove(projectID)
+		s.removeProjectCache(projectID)
 	}
 }
 

@@ -162,6 +162,15 @@ func TestMigration3_23_2BackfillsLastPlanEditorApproval(t *testing.T) {
 		require.NoError(t, err)
 		require.True(t, enabled)
 	}
+	_, err = db.ExecContext(ctx, "UPDATE project SET deleted = false WHERE resource_id = 'deleted'")
+	require.NoError(t, err)
+	var restoredEnabled bool
+	err = db.QueryRowContext(ctx, `
+		SELECT (setting->>'allowLastPlanEditorApproval')::boolean
+		FROM project
+		WHERE resource_id = 'deleted' AND NOT deleted`).Scan(&restoredEnabled)
+	require.NoError(t, err)
+	require.True(t, restoredEnabled)
 	var nullable string
 	require.NoError(t, db.QueryRowContext(ctx, `
 		SELECT is_nullable
