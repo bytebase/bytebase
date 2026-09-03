@@ -240,6 +240,8 @@ describe("WorkspaceSetupGuide", () => {
       hasInstance: true,
       hasExploredDatabase: true,
       hasRunStatement: true,
+      databaseProjectName: "projects/app",
+      databaseName: "instances/sample/databases/employee",
     });
 
     render(<WorkspaceSetupGuide />);
@@ -267,6 +269,8 @@ describe("WorkspaceSetupGuide", () => {
       hasRunStatement: true,
       hasOtherHumanUser: true,
       hasOtherWorkspaceMember: true,
+      databaseProjectName: "projects/app",
+      databaseName: "instances/sample/databases/employee",
     });
 
     const first = render(<WorkspaceSetupGuide />);
@@ -287,6 +291,8 @@ describe("WorkspaceSetupGuide", () => {
       hasInstance: true,
       hasExploredDatabase: true,
       hasOtherHumanUser,
+      databaseProjectName: "projects/app",
+      databaseName: "instances/sample/databases/employee",
     });
     render(<WorkspaceSetupGuide />);
 
@@ -307,6 +313,8 @@ describe("WorkspaceSetupGuide", () => {
       hasInstance: true,
       hasExploredDatabase: true,
       isSaaS: true,
+      databaseProjectName: "projects/app",
+      databaseName: "instances/sample/databases/employee",
     });
     render(<WorkspaceSetupGuide />);
 
