@@ -53,7 +53,14 @@ describe("GUIDE_STEP_REGISTRY", () => {
   test.each([
     ["create-project", { hasProject: true }],
     ["connect-instance", { hasInstance: true }],
-    ["explore-database", { hasExploredDatabase: true }],
+    [
+      "explore-database",
+      {
+        hasExploredDatabase: true,
+        databaseProjectName: "projects/app",
+        databaseName: "instances/sample/databases/employee",
+      },
+    ],
     ["query-data", { hasRunStatement: true }],
     ["create-database-change", { hasCreatedChangeIssue: true }],
     ["create-user", { hasOtherWorkspaceMember: true }],
@@ -62,6 +69,14 @@ describe("GUIDE_STEP_REGISTRY", () => {
     expect(
       GUIDE_STEP_REGISTRY[stepId].isComplete(createContext(completed))
     ).toBe(true);
+  });
+
+  test("keeps database exploration incomplete without a concrete target", () => {
+    expect(
+      GUIDE_STEP_REGISTRY["explore-database"].isComplete(
+        createContext({ hasExploredDatabase: true })
+      )
+    ).toBe(false);
   });
 
   test.each([createContext(), createContext({ projectName: "projects/app" })])(

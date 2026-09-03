@@ -92,7 +92,10 @@ export const GUIDE_STEP_REGISTRY: GuideStepRegistry = {
     analyticsKey: "explore-database",
     labelKey: "workspace-setup-guide.steps.database",
     descriptionKey: "workspace-setup-guide.descriptions.database",
-    isComplete: (context) => context.hasExploredDatabase,
+    isComplete: (context) =>
+      context.hasExploredDatabase &&
+      !!context.databaseProjectName &&
+      !!context.databaseName,
     matchesRoute: (route) =>
       isRouteInside(route.name, PROJECT_V1_ROUTE_DATABASES),
     resolveActions: databaseActions,
