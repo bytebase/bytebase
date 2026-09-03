@@ -2,14 +2,10 @@ import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { Rows3 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  settingServiceClientConnect,
-  workspaceServiceClientConnect,
-} from "@/api";
+import { settingServiceClientConnect } from "@/api";
 import { silentContextKey } from "@/api/context-key";
-import { MCPModeContentsSheet } from "@/components/mcp/MCPModeContentsSheet";
 import type { MCPMode } from "@/components/mcp/mcpPolicy";
 import { isMCPMode, MCP_CAPABILITY_CHOICES } from "@/components/mcp/mcpPolicy";
 import { PermissionGuard } from "@/components/PermissionGuard";
@@ -33,7 +29,6 @@ import {
   SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import type { MCPInfo } from "@/types/proto-es/v1/workspace_service_pb";
 
 // One row per ceiling an admin can pick: the locale-key stem, the glyph tone,
 // and the chip variant. The tone and the variant always agree, and carry from
@@ -66,9 +61,8 @@ export function MCPAccessPolicySection() {
   const { t } = useTranslation();
 
   const settingsByName = useAppStore((s) => s.settingsByName);
-  // Read from the licence, not from GetMCPInfo. That request can still fail —
-  // it answers under a broken ceiling now, but not through an outage — and
-  // hiding this line lets an admin arm a toggle that does nothing while
+  // Read from the licence the store already holds, not from a request that can
+  // fail: hiding this line lets an admin arm a toggle that does nothing while
   // believing they tightened masking.
   const dataMaskingAvailable = useAppStore((s) =>
     s.hasFeature(PlanFeature.FEATURE_DATA_MASKING)
@@ -83,50 +77,17 @@ export function MCPAccessPolicySection() {
     return undefined;
   }, [settingsByName]);
 
-  const [info, setInfo] = useState<MCPInfo | undefined>(undefined);
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pick, setPick] = useState<MCPMode | undefined>(undefined);
   const [ignoreMasking, setIgnoreMasking] = useState(false);
-  const [contentsFor, setContentsFor] = useState<MCPMode | undefined>(
-    undefined
-  );
 
-  // GetMCPInfo resolves what a mode contains from the live descriptors, so it
-  // is re-read after a save rather than patched: the ceiling in force is part
-  // of the same answer.
-  //
-  // Silent: this read fails only on an outage now, and the card below already
-  // says the page could not be read in words an admin can act on. The
-  // interceptor's toast would put the same fact on screen twice, once as a
-  // status code.
-  // Both reads carry a generation, and the effect retires them on unmount. A
+  // The read carries a generation, and the effect retires it on unmount. A
   // response has no way of knowing it was overtaken, and the store it writes is
   // shared: a read left flying by a visit the admin navigated away from would
   // otherwise land later and put that visit's row back, reverting a save made
-  // since. getMCPInfo is also re-issued after every save, so its two responses
-  // can land out of order on one mount.
-  const infoGeneration = useRef(0);
+  // since.
   const settingGeneration = useRef(0);
-
-  const loadInfo = useCallback(() => {
-    const generation = ++infoGeneration.current;
-    workspaceServiceClientConnect
-      .getMCPInfo(
-        {},
-        { contextValues: createContextValues().set(silentContextKey, true) }
-      )
-      .then((next) => {
-        if (generation === infoGeneration.current) {
-          setInfo(next);
-        }
-      })
-      .catch(() => {
-        if (generation === infoGeneration.current) {
-          setInfo(undefined);
-        }
-      });
-  }, []);
 
   // Read the setting past the store's cache. The server reads this row uncached
   // for a reason — a hand edit or a newer replica changes it out of band — and
@@ -195,14 +156,12 @@ export function MCPAccessPolicySection() {
         }
         settle(true);
       });
-    loadInfo();
-    // Retire both reads when this instance goes away. The generations are this
-    // mount's; the setting store they write is the application's.
+    // Retire the read when this instance goes away. The generation is this
+    // mount's; the setting store it writes is the application's.
     return () => {
       settingGeneration.current++;
-      infoGeneration.current++;
     };
-  }, [loadInfo]);
+  }, []);
 
   const storedCapability = mcpSetting?.capability;
   const storedMode =
@@ -262,7 +221,6 @@ export function MCPAccessPolicySection() {
         updateMask: create(FieldMaskSchema, { paths }),
       });
       setEditing(false);
-      loadInfo();
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",
@@ -272,15 +230,6 @@ export function MCPAccessPolicySection() {
       setSaving(false);
     }
   };
-
-  // The mode the drawer is showing, frozen while it closes. The Sheet unmounts
-  // after its close animation, so reading contentsFor directly would swap the
-  // contents for another mode's for those ~200ms.
-  const openContentsRef = useRef<MCPMode>(MCPSetting_Capability.READ_ONLY);
-  if (contentsFor !== undefined) {
-    openContentsRef.current = contentsFor;
-  }
-  const openContents = openContentsRef.current;
 
   // Three states share this slot and only the last renders a policy. Early
   // returns rather than a ternary chain, so each state is named where it is
@@ -382,8 +331,8 @@ export function MCPAccessPolicySection() {
                     key={capability}
                     value={String(capability)}
                     // The item wraps the whole card in a label, so without
-                    // this the radio's name absorbs the description, the
-                    // contents link and the "Best for" line.
+                    // this the radio's name absorbs the description and the
+                    // "Best for" line.
                     aria-label={t(`settings.mcp.policy.mode.${mode.key}.title`)}
                     className={cn(
                       "relative h-full flex-col items-stretch rounded-sm border p-4",
@@ -403,24 +352,6 @@ export function MCPAccessPolicySection() {
                     <p className="textinfolabel">
                       {t(`settings.mcp.policy.mode.${mode.key}.description`)}
                     </p>
-                    {info && capability !== MCPSetting_Capability.DISABLED && (
-                      <Button
-                        appearance="link"
-                        size="sm"
-                        className="self-start px-0"
-                        onClick={(e) => {
-                          // This sits inside the card's own label, so a click
-                          // here would otherwise pick the mode too.
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setContentsFor(capability);
-                        }}
-                      >
-                        {t("settings.mcp.policy.mode.contents", {
-                          mode: modeLabel(capability),
-                        })}
-                      </Button>
-                    )}
                     {/* Pinned to the bottom so the three "Best for" lines sit
                         on one row, however long each description runs. */}
                     <p className="textinfolabel mt-auto pt-2">
@@ -515,25 +446,6 @@ export function MCPAccessPolicySection() {
       </div>
 
       {policyBody()}
-
-      {/* No info, no drawer. The trigger is already gated on it, and rendering
-          without it would describe a mode that serves nothing rather than
-          admitting the contents are unknown. */}
-      {info && (
-        <MCPModeContentsSheet
-          open={contentsFor !== undefined}
-          capability={openContents}
-          info={info}
-          modeLabel={modeLabel(openContents)}
-          // While editing, the drawer previews the policy about to be saved,
-          // not the one stored — the admin opens it from a card they are
-          // choosing.
-          ignoreMaskingExemptions={
-            editing ? ignoreMasking : storedIgnoreMasking
-          }
-          onClose={() => setContentsFor(undefined)}
-        />
-      )}
     </div>
   );
 }

@@ -797,17 +797,11 @@
     - [LeaveWorkspaceRequest](#bytebase-v1-LeaveWorkspaceRequest)
     - [ListWorkspacesRequest](#bytebase-v1-ListWorkspacesRequest)
     - [ListWorkspacesResponse](#bytebase-v1-ListWorkspacesResponse)
-    - [MCPCapabilityMode](#bytebase-v1-MCPCapabilityMode)
-    - [MCPEngineEnforcement](#bytebase-v1-MCPEngineEnforcement)
     - [MCPInfo](#bytebase-v1-MCPInfo)
-    - [MCPMethod](#bytebase-v1-MCPMethod)
     - [RotateDirectorySyncTokenRequest](#bytebase-v1-RotateDirectorySyncTokenRequest)
     - [RotateDirectorySyncTokenResponse](#bytebase-v1-RotateDirectorySyncTokenResponse)
     - [UpdateWorkspaceRequest](#bytebase-v1-UpdateWorkspaceRequest)
     - [Workspace](#bytebase-v1-Workspace)
-  
-    - [MCPEngineEnforcement.Masking](#bytebase-v1-MCPEngineEnforcement-Masking)
-    - [MCPEngineEnforcement.ReadOnlyDepth](#bytebase-v1-MCPEngineEnforcement-ReadOnlyDepth)
   
     - [WorkspaceService](#bytebase-v1-WorkspaceService)
   
@@ -12882,85 +12876,23 @@ WorkloadIdentityService manages workload identities for external CI/CD integrati
 
 
 
-<a name="bytebase-v1-MCPCapabilityMode"></a>
-
-### MCPCapabilityMode
-MCPCapabilityMode is one ceiling and the method classes it serves.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  |  |
-| served_classes | [MCPMethodClass](#bytebase-v1-MCPMethodClass) | repeated | Empty means the ceiling serves nothing, which is what DISABLED is. |
-
-
-
-
-
-
-<a name="bytebase-v1-MCPEngineEnforcement"></a>
-
-### MCPEngineEnforcement
-MCPEngineEnforcement is what the read-only ceiling and the masking toggle
-reach on one database engine.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| engine | [Engine](#bytebase-v1-Engine) |  |  |
-| read_only_depth | [MCPEngineEnforcement.ReadOnlyDepth](#bytebase-v1-MCPEngineEnforcement-ReadOnlyDepth) |  |  |
-| masking | [MCPEngineEnforcement.Masking](#bytebase-v1-MCPEngineEnforcement-Masking) |  |  |
-| note | [string](#string) |  | Where the answers above are the floor rather than the whole story. Empty for most engines. |
-
-
-
-
-
-
 <a name="bytebase-v1-MCPInfo"></a>
 
 ### MCPInfo
-MCPInfo is what MCP does in this workspace: the ceiling in force, what each
-ceiling serves, and the per-engine facts a read-only session depends on.
+MCPInfo is what MCP does in this workspace: the ceiling in force, and
+whether masking narrows what a session reads under it.
 
-Everything here is resolved when the request is served, never from a stored
-copy: the method list comes off the compiled API descriptors and the engine
-answers off the code that enforces them, so a build whose rules changed
-cannot describe the rules of the build before it.
+This is the only API a served MCP session or the consent page can read the
+ceiling from. SettingService/GetSetting is served by no ceiling, and its
+answer is cached besides.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | workspace | [string](#string) |  | The workspace this describes. Format: workspaces/{workspace}. Not this message&#39;s own resource name — MCPInfo is not a named resource and there is nothing to get it by. |
-| capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  | The ceiling in force for this workspace. A value no row in modes serves, CAPABILITY_UNSPECIFIED included, means no ceiling could be resolved from the stored row and every MCP connection is refused. |
-| modes | [MCPCapabilityMode](#bytebase-v1-MCPCapabilityMode) | repeated | What each ceiling serves, including the one in force, so an admin can compare the choices rather than only read the current answer. |
-| methods | [MCPMethod](#bytebase-v1-MCPMethod) | repeated | Every API method some ceiling serves. A mode serves a method when the method&#39;s class is one of that mode&#39;s served_classes, which is the ceiling rule the gate evaluates. Methods no ceiling serves are absent.
-
-Being listed is necessary, not sufficient. The caller still needs the permission, and two further rules narrow what a served method does: a handful of methods are refused on the shape of the request (an issue that would grant a permission, a rollout that skips approval), and under READ_ONLY every statement SQLService/Query runs must classify as a read. |
-| engines | [MCPEngineEnforcement](#bytebase-v1-MCPEngineEnforcement) | repeated | What a read-only session and the masking toggle actually reach, per engine. Both are engine-conditional in ways the ceiling alone does not show. |
-| ignore_masking_exemptions | [bool](#bool) |  | Whether this workspace stops applying the caller&#39;s own unmasking provisioning to MCP requests. It decides which branch of each engine&#39;s masking state a caller is in, and no other API tells an MCP session: SettingService/GetSetting is served by no ceiling. |
-| data_masking_available | [bool](#bool) |  | Whether data masking is licensed for this workspace. When false nothing is masked whatever an engine supports, so the masking states below describe a mechanism that does not run. Licensing can also be set per instance, so a true here is the workspace answer, not a promise about every instance. |
-
-
-
-
-
-
-<a name="bytebase-v1-MCPMethod"></a>
-
-### MCPMethod
-MCPMethod is one API method an MCP session can reach, and what decides it.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| method | [string](#string) |  | The method as an audit entry names it, so a denial can be found by it. Example: /bytebase.v1.SQLService/Query |
-| operation_id | [string](#string) |  | The same method as call_api takes it. Example: bytebase.v1.SQLService.Query |
-| class | [MCPMethodClass](#bytebase-v1-MCPMethodClass) |  |  |
-| permission | [string](#string) |  | The IAM permission the method declares. The ceiling never grants: a session may call a served method only where the person it acts for could.
-
-Empty means the method declares no permission, which is NOT the same as needing none — a method that authorizes inside its handler declares nothing here. auth_method says which case an empty value is. |
-| auth_method | [AuthMethod](#bytebase-v1-AuthMethod) |  | How the method authorizes. IAM means the permission above is the primary rule, though not always the only one — an update carrying allow_missing additionally requires the matching create permission. CUSTOM means the handler decides and the permission field is silent. |
+| capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  | The ceiling in force for this workspace. Any value outside the enum this build serves, CAPABILITY_UNSPECIFIED included, means no ceiling could be resolved from the stored row and every MCP connection is refused. A stored name nothing resolves arrives as CAPABILITY_UNSPECIFIED; a number a newer release wrote arrives verbatim. |
+| ignore_masking_exemptions | [bool](#bool) |  | Whether this workspace stops applying the caller&#39;s own unmasking provisioning to MCP requests. It narrows what a session reads only where Bytebase masks by column and consults exemptions; elsewhere it suppresses nothing. |
+| data_masking_available | [bool](#bool) |  | Whether data masking is licensed for this workspace. When false nothing is masked whatever an engine supports, so the toggle above suppresses nothing. Licensing can also be set per instance, so a true here is the workspace answer, not a promise about every instance. |
 
 
 
@@ -13031,35 +12963,6 @@ Empty means the method declares no permission, which is NOT the same as needing 
 
  
 
-
-<a name="bytebase-v1-MCPEngineEnforcement-Masking"></a>
-
-### MCPEngineEnforcement.Masking
-How Bytebase masks results on this engine, which is what decides whether
-ignoring masking exemptions changes anything here.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MASKING_UNSPECIFIED | 0 |  |
-| NONE | 1 | Bytebase does not mask on this engine. Nothing narrows what a session reads, and ignoring masking exemptions does nothing. |
-| COLUMN | 2 | Column masking. A masking policy substitutes values in query results, and the exemptions granted to the caller are what let them see the real value — which is what ignoring exemptions suppresses. |
-| DOCUMENT | 3 | Document masking. Results are masked, but exemptions are never consulted on this path, so ignoring them changes nothing here either. |
-
-
-
-<a name="bytebase-v1-MCPEngineEnforcement-ReadOnlyDepth"></a>
-
-### MCPEngineEnforcement.ReadOnlyDepth
-How much of a read-only ceiling this engine can be held to.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| READ_ONLY_DEPTH_UNSPECIFIED | 0 |  |
-| UNSUPPORTED | 1 | Bytebase has no read-only classifier for this engine, so a read-only session is refused every statement on it, including a plain SELECT. |
-| STATEMENT | 2 | Every statement is classified before it runs and a request holding one that is not a read is refused whole. Nothing below that: the driver does not open a read-only database session, except where the note says otherwise. |
-| STATEMENT_AND_SESSION | 3 | Statement classification, and the driver opens the database session read-only as well, so the engine refuses most writes the classifier missed. Not a proof: a statement that classifies as a read can still call a function that switches the session setting back off. |
-
-
  
 
  
@@ -13079,7 +12982,7 @@ WorkspaceService manages workspace-level operations and profile.
 | DeleteWorkspace | [DeleteWorkspaceRequest](#bytebase-v1-DeleteWorkspaceRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Deletes a workspace. SaaS only. Cancels any active subscription and soft-deletes the workspace so all associated data becomes inaccessible. Requires workspace admin permission. |
 | LeaveWorkspace | [LeaveWorkspaceRequest](#bytebase-v1-LeaveWorkspaceRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Removes the calling user from a workspace and switches to the next available workspace. Available to any workspace member. Fails if the caller is the last workspace admin. |
 | SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Sets IAM policy for the workspace. Permissions required: bb.workspaces.setIamPolicy |
-| GetMCPInfo | [GetMCPInfoRequest](#bytebase-v1-GetMCPInfoRequest) | [MCPInfo](#bytebase-v1-MCPInfo) | Gets what MCP (Model Context Protocol) does in this workspace: the capability ceiling in force, what each ceiling serves, and the per-engine facts a read-only session depends on. The workspace is resolved from the authenticated session.
+| GetMCPInfo | [GetMCPInfoRequest](#bytebase-v1-GetMCPInfoRequest) | [MCPInfo](#bytebase-v1-MCPInfo) | Gets what MCP (Model Context Protocol) does in this workspace: the capability ceiling in force, and whether masking narrows what a session reads under it. The workspace is resolved from the authenticated session.
 
 Served to MCP sessions. An agent asking what it may do here is the point: the response says nothing a session&#39;s own denials do not already say, one refusal at a time, and knowing it up front is what stops the agent planning work the ceiling was never going to serve.
 

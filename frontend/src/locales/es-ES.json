@@ -1568,7 +1568,6 @@
     },
     "recovery-code": "Código de recuperación"
   },
-  "oauth": {},
   "oauth2": {
     "consent": {
       "description": "{{clientName}} está solicitando acceso a tu cuenta",
@@ -1597,29 +1596,22 @@
           "workflow": "Abrir incidencias, planes y despliegues, y exportar resultados de consultas",
           "write": "Hacer los cambios de datos y esquema que permitan sus permisos"
         },
-        "see-contents": "Ver lo que permite la política de este espacio de trabajo",
         "title": "Esta sesión puede",
         "undisclosed": {
           "line": {
             "nothing-approved": "No se ha aprobado nada y no hay nada conectado"
           },
-          "outdated": {
-            "description": "La política MCP de este espacio de trabajo es más reciente que la página que tiene abierta, así que aquí no se puede mostrar lo que una sesión puede hacer.",
-            "line": "Recargue para obtener la política actual antes de aprobar nada",
-            "retry": "Recargar",
-            "title": "Esta página es más antigua que la política MCP de este espacio de trabajo"
-          },
           "policy-label": "Política del espacio de trabajo",
+          "undisclosable": {
+            "description": "La política MCP de este espacio de trabajo es un valor que esta página no sabe describir. O es más reciente que la página que tiene abierta, o no es una política que sirva esta versión de Bytebase, en cuyo caso se rechazan todas las conexiones MCP.",
+            "line": "Vuelva a cargar para obtener la versión actual. Si esta página reaparece, pida a un administrador del espacio de trabajo que establezca una política compatible",
+            "title": "Esta página no puede mostrar lo que permite la política MCP de este espacio de trabajo"
+          },
           "unknown": {
             "description": "Bytebase no ha podido leer la política de acceso MCP de este espacio de trabajo en este momento.",
             "line": "No se puede mostrar lo que esta sesión tendría permitido hacer",
             "retry": "Comprobar de nuevo",
             "title": "No se pudo comprobar la política MCP"
-          },
-          "unserved": {
-            "description": "Este espacio de trabajo almacena un valor de política que esta versión de Bytebase no sirve. Se está rechazando toda conexión MCP.",
-            "line": "Ninguna sesión de IA puede conectarse hasta que un administrador elija una política admitida",
-            "title": "La política MCP de este espacio de trabajo no es una que sirva esta versión"
           }
         },
         "write-caution": "Una sesión de IA con acceso de escritura hace cambios reales. Apruébela solo en una máquina que usted controle."
@@ -2111,7 +2103,6 @@
     "create-project": "Crear proyecto",
     "new-project": "Nuevo Proyecto"
   },
-  "refresh-remind": {},
   "release": {
     "and-n-more-files": "y {{count}} archivos más",
     "change-tip": "Este cambio está vinculado a un artefacto de versión.",
@@ -2610,38 +2601,6 @@
         "json-note": "Este es el formato mcpServers. Los formatos de configuración varían según el cliente: VS Code, por ejemplo, espera servers en su propio mcp.json, así que use la pestaña de VS Code para eso.",
         "title": "Conectar un cliente"
       },
-      "contents": {
-        "depth": {
-          "description": "Hasta dónde se aplica el techo de solo lectura en cada motor.",
-          "not-a-proof": "Ninguna de las dos profundidades es una prueba. Una sentencia clasificada como lectura todavía puede llamar a una función que vuelva a desactivar el ajuste de sesión.",
-          "statement": "Cada sentencia se clasifica antes de ejecutarse. El controlador no abre la sesión de base de datos en solo lectura.",
-          "statement-and-session": "Cada sentencia se clasifica y el controlador abre la sesión de base de datos en solo lectura.",
-          "title": "Profundidad de solo lectura por motor",
-          "unspecified": "Esta versión no lo informa.",
-          "unsupported": "No hay clasificador de solo lectura, así que se rechaza cada sentencia, incluido un SELECT simple."
-        },
-        "masking": {
-          "column": "Enmascaramiento de columnas. Las exenciones deciden quién ve el valor real, así que ignorarlas cambia lo que lee una sesión.",
-          "description-off": "Este espacio de trabajo aplica las exenciones de enmascaramiento de cada usuario a las sesiones MCP. Ignorarlas solo alcanzaría a los motores de abajo que consultan exenciones.",
-          "description-on": "Este espacio de trabajo ignora las exenciones de enmascaramiento, así que lo que lee una sesión depende de cómo enmascara Bytebase cada motor.",
-          "document": "Enmascaramiento de documentos. Aquí nunca se consultan las exenciones, así que ignorarlas no cambia nada.",
-          "none": "Bytebase no enmascara en este motor. Ignorar las exenciones no cambia nada.",
-          "title": "Enmascaramiento por motor",
-          "unspecified": "Esta versión no lo informa."
-        },
-        "methods": {
-          "count": "{{served}} de {{total}} métodos que MCP puede alcanzar. Estar en la lista no es un permiso: el usuario que se conecta sigue necesitando el suyo.",
-          "handler": "Sin permiso de IAM declarado",
-          "none": "Este modo no ofrece ningún método de la API.",
-          "write-legend": "Los {{count}} resaltados son lo que este modo añade sobre Solo lectura."
-        },
-        "notes": {
-          "redshift": "Fuera de una base de datos datashare, el controlador también abre la sesión en solo lectura. Una base de datos datashare no puede ejecutar una transacción de solo lectura, así que allí solo hay clasificación de sentencias.",
-          "title": "Dónde la respuesta de arriba es el mínimo",
-          "unavailable": "Este motor tiene una salvedad que esta página aún no puede mostrar. Recargue para obtener la versión actual."
-        },
-        "title": "{{mode}}: qué ofrece este modo"
-      },
       "description": "Conecte asistentes de IA a Bytebase usando el Model Context Protocol.",
       "first-prompt": {
         "description": "Una vez conectado, intente preguntar a su asistente de IA:",
@@ -2662,7 +2621,6 @@
           "unavailable": "El enmascaramiento de datos no está licenciado para este espacio de trabajo, así que no se enmascara nada sea cual sea este ajuste."
         },
         "mode": {
-          "contents": "Ver qué ofrece {{mode}}",
           "disabled": {
             "best-for": "Ideal para: mantener MCP apagado hasta que esté listo para activarlo.",
             "description": "Ninguna sesión MCP puede conectarse a este espacio de trabajo.",
