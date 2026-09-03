@@ -1,13 +1,15 @@
-# Starts the github-runner GCE VM, which hosts this repo's self-hosted Actions
-# runner (used by jobs with `runs-on: self-hosted`, e.g. backend-tests,
-# frontend-tests, golangci-lint, test_link).
-name: Start github-runner VM
+# Starts the devbox GCE VM, which hosts the org's self-hosted Actions runners
+# (used by jobs with `runs-on: self-hosted`, e.g. backend-tests, frontend-tests,
+# golangci-lint, test_link). It is a Spot instance, so a preemption stops it and
+# this workflow is what brings it back. Design: docs/design/devbox-and-ci-runner.md
+name: Start devbox VM
 
 on:
   workflow_dispatch:
   schedule:
-    # Three times a day, at 21:00, 02:00 and 06:00 UTC.
-    - cron: "0 2,6,21 * * *"
+    # Every 15 minutes: that is the ceiling on how long a preemption leaves CI
+    # without runners. Starting an already-running instance is a no-op.
+    - cron: "*/15 * * * *"
 
 permissions:
   contents: read
@@ -24,12 +26,12 @@ jobs:
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@v3
 
-      - name: Start github-runner VM if stopped
+      - name: Start devbox VM if stopped
         run: |
-          STATUS=$(gcloud compute instances describe github-runner \
-            --zone southamerica-east1-b --project bytebase-dev \
+          STATUS=$(gcloud compute instances describe devbox \
+            --zone northamerica-northeast2-a --project bytebase-dev \
             --format='value(status)')
           if [ "$STATUS" != "RUNNING" ]; then
-            gcloud compute instances start github-runner \
-              --zone southamerica-east1-b --project bytebase-dev
+            gcloud compute instances start devbox \
+              --zone northamerica-northeast2-a --project bytebase-dev
           fi
