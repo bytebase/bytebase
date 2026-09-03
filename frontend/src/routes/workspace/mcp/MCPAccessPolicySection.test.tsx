@@ -15,11 +15,9 @@ import {
 const mocks = vi.hoisted(() => ({
   useUnsavedChangesGuard: vi.fn(),
   getSetting: vi.fn(),
-  getMCPInfo: vi.fn(),
   setSettingByName: vi.fn(),
   upsertSetting: vi.fn(),
   hasFeature: vi.fn(() => true),
-  sheetProps: [] as Record<string, unknown>[],
   settingsByName: { value: {} as Record<string, Setting> },
   mcpSetting: {
     value: undefined as
@@ -37,7 +35,6 @@ vi.mock("@/hooks/useUnsavedChangesGuard", () => ({
 
 vi.mock("@/api", () => ({
   settingServiceClientConnect: { getSetting: mocks.getSetting },
-  workspaceServiceClientConnect: { getMCPInfo: mocks.getMCPInfo },
 }));
 
 vi.mock("@/components/PermissionGuard", () => ({
@@ -46,15 +43,6 @@ vi.mock("@/components/PermissionGuard", () => ({
   }: {
     children: (props: { disabled: boolean }) => ReactElement;
   }) => children({ disabled: false }),
-}));
-
-// Stubbed to record its props: the drawer is rendered unconditionally, so this
-// captures what the section hands it on every render without opening it.
-vi.mock("@/components/mcp/MCPModeContentsSheet", () => ({
-  MCPModeContentsSheet: (props: Record<string, unknown>) => {
-    mocks.sheetProps.push(props);
-    return null;
-  },
 }));
 
 vi.mock("@/stores", () => ({ pushNotification: vi.fn() }));
@@ -138,7 +126,6 @@ const clickText = (container: HTMLElement, text: string) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  mocks.sheetProps.length = 0;
   mocks.settingsByName.value = {};
   mocks.mcpSetting.value = {
     capability: 3, // READ_ONLY
@@ -147,14 +134,6 @@ beforeEach(async () => {
   mocks.upsertSetting.mockResolvedValue(undefined);
   mocks.hasFeature.mockReturnValue(true);
   mocks.getSetting.mockResolvedValue({ name: "settings/MCP" });
-  mocks.getMCPInfo.mockResolvedValue({
-    capability: 3,
-    ignoreMaskingExemptions: false,
-    dataMaskingAvailable: true,
-    modes: [],
-    methods: [],
-    engines: [],
-  });
   ({ MCPAccessPolicySection } = await import("./MCPAccessPolicySection"));
 });
 
@@ -301,34 +280,6 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
-  // Codex, #21236: the drawer opens from a mode card the admin is choosing, so
-  // it previews the candidate policy. Reading the persisted value described the
-  // masking behavior they were about to replace.
-  test("the drawer previews the draft masking value, not the stored one", async () => {
-    const { container, render, unmount } = renderIntoContainer(
-      <MCPAccessPolicySection />
-    );
-    render();
-    await flush();
-
-    clickText(container, "settings.mcp.policy.edit");
-    await flush();
-    expect(
-      mocks.sheetProps.at(-1)?.ignoreMaskingExemptions
-    ).toBe(false);
-
-    toggleMasking(container);
-    await flush();
-
-    // Self-checking: if the click failed to flip the draft, the guard assertion
-    // fails rather than the prop assertion passing for the wrong reason.
-    expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(true);
-    expect(mocks.sheetProps.at(-1)?.ignoreMaskingExemptions).toBe(true);
-    expect(mocks.mcpSetting.value?.ignoreMaskingExemptions).toBe(false);
-
-    unmount();
-  });
-
   // Codex, #21236. Two halves of one race, both pinned here.
   test("waits for its own read before offering the cached policy for editing", async () => {
     // Second visit: the store already holds a value from visit one.
@@ -354,58 +305,12 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
-  test("a mode-contents read that lands after a save does not revert the page", async () => {
-    // The setting read is gated, so the save path cannot start until it
-    // answers. GetMCPInfo is not gated and genuinely fires twice — once on
-    // mount, once after the save — so this is the interleaving that survives.
-    const slowInfo = deferred<Record<string, unknown>>();
-    mocks.getMCPInfo.mockReturnValueOnce(slowInfo.promise);
-    const freshInfo = {
-      capability: 1,
-      ignoreMaskingExemptions: true,
-      dataMaskingAvailable: true,
-      modes: [],
-      methods: [],
-      engines: [],
-    };
-    mocks.getMCPInfo.mockResolvedValue(freshInfo);
-
-    const { container, render, unmount } = renderIntoContainer(
-      <MCPAccessPolicySection />
-    );
-    render();
-    await flush();
-
-    clickText(container, "settings.mcp.policy.edit");
-    await flush();
-    clickText(container, "settings.mcp.policy.mode.disabled.title");
-    await flush();
-    clickText(container, "settings.mcp.policy.save");
-    await flush();
-
-    // Now the mount's read finally answers, with what it captured beforehand.
-    act(() =>
-      slowInfo.resolve({
-        capability: 4,
-        ignoreMaskingExemptions: false,
-        dataMaskingAvailable: false,
-        modes: [],
-        methods: [],
-        engines: [],
-      })
-    );
-    await flush();
-
-    expect(mocks.sheetProps.at(-1)?.info).toBe(freshInfo);
-    unmount();
-  });
-
-  // Codex, #21236: this warning used to be gated on GetMCPInfo, which can still
-  // fail through an outage. Hiding it there lets an admin arm a toggle that
-  // does nothing while believing they tightened masking.
-  test("says masking is unlicensed even when the mode data fails", async () => {
+  // Codex, #21236: this warning was once gated on a GetMCPInfo response, which
+  // can fail through an outage. Hiding it there lets an admin arm a toggle that
+  // does nothing while believing they tightened masking, so it reads the
+  // licence the store already holds.
+  test("says masking is unlicensed", async () => {
     mocks.hasFeature.mockReturnValue(false);
-    mocks.getMCPInfo.mockRejectedValue(new Error("the ceiling cannot be read"));
 
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
@@ -418,76 +323,6 @@ describe("MCPAccessPolicySection", () => {
     expect(container.textContent).toContain(
       "settings.mcp.policy.masking.unavailable"
     );
-    unmount();
-  });
-
-  // Codex, #21236: the drawer's info is a required prop, so a pending or failed
-  // GetMCPInfo cannot render as a mode that serves nothing — "0 of 0" over the
-  // workspace whose ceiling the drawer exists to explain. Since BOT-106 that
-  // failure is an outage rather than a broken ceiling; the test below covers
-  // the ceiling case, which now answers.
-  test("no mode-contents drawer while the mode data is missing", async () => {
-    mocks.getMCPInfo.mockRejectedValue(new Error("the ceiling cannot be read"));
-
-    const { container, render, unmount } = renderIntoContainer(
-      <MCPAccessPolicySection />
-    );
-    render();
-    await flush();
-
-    // The policy itself still reads, so the page is up and editable.
-    expect(container.textContent).toContain("settings.mcp.policy.in-force");
-    expect(mocks.sheetProps).toHaveLength(0);
-
-    unmount();
-  });
-
-  // BOT-106, the settings half. GetMCPInfo used to refuse whole under an
-  // unreadable ceiling, so the mode cards lost their "See what Read-only
-  // serves" links on the one page whose job is repairing that row — the admin
-  // who most needs to compare the modes was the only one who could not. None of
-  // the mode contents ever depended on the stored row, and the server now
-  // answers them under a broken ceiling, which is the response mocked here.
-  test("the mode-contents drawer is available while repairing a broken ceiling", async () => {
-    // Capability 0 with no row for it in modes is the broken state: nothing
-    // this build serves resolves from the stored row.
-    mocks.mcpSetting.value = {
-      capability: 0,
-      ignoreMaskingExemptions: false,
-    };
-    mocks.getMCPInfo.mockResolvedValue({
-      capability: 0,
-      ignoreMaskingExemptions: false,
-      dataMaskingAvailable: true,
-      modes: [{ capability: 1 }, { capability: 3 }, { capability: 4 }],
-      methods: [],
-      engines: [],
-    });
-
-    const { container, render, unmount } = renderIntoContainer(
-      <MCPAccessPolicySection />
-    );
-    render();
-    await flush();
-
-    // The repair banner, so this is the state under test and not a healthy row.
-    expect(container.textContent).toContain(
-      "settings.mcp.policy.unreadable.title"
-    );
-
-    clickText(container, "settings.mcp.policy.edit");
-    await flush();
-
-    const contents = [...container.querySelectorAll("button")].filter((b) =>
-      b.textContent?.includes("settings.mcp.policy.mode.contents")
-    );
-    // One per ceiling that serves something; DISABLED has no contents to show.
-    expect(contents).toHaveLength(2);
-
-    act(() => contents[0].click());
-    await flush();
-    expect(mocks.sheetProps.at(-1)?.open).toBe(true);
-
     unmount();
   });
 
