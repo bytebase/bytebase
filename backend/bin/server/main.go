@@ -7,7 +7,9 @@ import (
 	"github.com/bytebase/bytebase/backend/bin/server/cmd"
 )
 
-// ...oops. related inline comments should be outdated?
+// ...oops
+// related inline comments should be outdated? Y
+// reverting changes.
 func main() {
 	if err := cmd.Execute(); err != nil {
 		os.Exit(1)
