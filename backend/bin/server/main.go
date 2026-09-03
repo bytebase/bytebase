@@ -7,7 +7,7 @@ import (
 	"github.com/bytebase/bytebase/backend/bin/server/cmd"
 )
 
-// ...oops
+// ...oops. related inline comments should be outdated?
 func main() {
 	if err := cmd.Execute(); err != nil {
 		os.Exit(1)
