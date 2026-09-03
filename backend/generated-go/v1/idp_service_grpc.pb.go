@@ -38,7 +38,7 @@ type IdentityProviderServiceClient interface {
 	// Permissions required: bb.identityProviders.get
 	GetIdentityProvider(ctx context.Context, in *GetIdentityProviderRequest, opts ...grpc.CallOption) (*IdentityProvider, error)
 	// Lists the identity providers configured for the caller's workspace.
-	// The login page reads AuthService.GetAuthenticationRestriction instead,
+	// The login page reads AuthService.GetAuthenticationInfo instead,
 	// which publishes only the fields a browser needs to start an SSO redirect.
 	// Permissions required: bb.identityProviders.list
 	ListIdentityProviders(ctx context.Context, in *ListIdentityProvidersRequest, opts ...grpc.CallOption) (*ListIdentityProvidersResponse, error)
@@ -135,7 +135,7 @@ type IdentityProviderServiceServer interface {
 	// Permissions required: bb.identityProviders.get
 	GetIdentityProvider(context.Context, *GetIdentityProviderRequest) (*IdentityProvider, error)
 	// Lists the identity providers configured for the caller's workspace.
-	// The login page reads AuthService.GetAuthenticationRestriction instead,
+	// The login page reads AuthService.GetAuthenticationInfo instead,
 	// which publishes only the fields a browser needs to start an SSO redirect.
 	// Permissions required: bb.identityProviders.list
 	ListIdentityProviders(context.Context, *ListIdentityProvidersRequest) (*ListIdentityProvidersResponse, error)

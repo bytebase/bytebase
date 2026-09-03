@@ -767,7 +767,7 @@ export declare const IdentityProviderService: GenService<{
   },
   /**
    * Lists the identity providers configured for the caller's workspace.
-   * The login page reads AuthService.GetAuthenticationRestriction instead,
+   * The login page reads AuthService.GetAuthenticationInfo instead,
    * which publishes only the fields a browser needs to start an SSO redirect.
    * Permissions required: bb.identityProviders.list
    *

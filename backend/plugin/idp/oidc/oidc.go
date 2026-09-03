@@ -206,13 +206,31 @@ type OpenIDConfigurationResponse struct {
 // openidConfigResponseCache is a concurrent-safe LRU cache with TTL for OpenID Configuration responses.
 var openidConfigResponseCache = expirable.NewLRU[string, *OpenIDConfigurationResponse](128, nil, 5*time.Minute)
 
+// openidConfigFailureCache remembers issuers that just failed. GetAuthenticationInfo
+// is on the login page and the dashboard's pre-mount path, so without it an
+// unreachable issuer would spend the client timeout on every single request.
+var openidConfigFailureCache = expirable.NewLRU[string, error](128, nil, time.Minute)
+
 // GetOpenIDConfiguration fetches the OpenID Configuration from the given issuer.
 func GetOpenIDConfiguration(issuer string, insecureSkipVerify bool) (*OpenIDConfigurationResponse, error) {
 	// Return from cache if available.
 	if config, found := openidConfigResponseCache.Get(issuer); found {
 		return config, nil
 	}
+	if err, found := openidConfigFailureCache.Get(issuer); found {
+		return nil, err
+	}
 
+	config, err := fetchOpenIDConfiguration(issuer, insecureSkipVerify)
+	if err != nil {
+		openidConfigFailureCache.Add(issuer, err)
+		return nil, err
+	}
+	openidConfigResponseCache.Add(issuer, config)
+	return config, nil
+}
+
+func fetchOpenIDConfiguration(issuer string, insecureSkipVerify bool) (*OpenIDConfigurationResponse, error) {
 	req, err := http.NewRequest(http.MethodGet, strings.TrimSuffix(issuer, "/")+"/.well-known/openid-configuration", nil)
 	if err != nil {
 		return nil, errors.Wrap(err, "construct GET request")
@@ -247,7 +265,5 @@ func GetOpenIDConfiguration(issuer string, insecureSkipVerify bool) (*OpenIDConf
 	if err := json.Unmarshal(b, &config); err != nil {
 		return nil, errors.Wrapf(err, "unmarshal openid configuration, body: %s", string(b))
 	}
-
-	openidConfigResponseCache.Add(issuer, &config)
 	return &config, nil
 }

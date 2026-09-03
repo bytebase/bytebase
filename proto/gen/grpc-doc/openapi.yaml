@@ -1305,7 +1305,7 @@ paths:
       summary: ListIdentityProviders
       description: |-
         Lists the identity providers configured for the caller's workspace.
-         The login page reads AuthService.GetAuthenticationRestriction instead,
+         The login page reads AuthService.GetAuthenticationInfo instead,
          which publishes only the fields a browser needs to start an SSO redirect.
          Permissions required: bb.identityProviders.list
       operationId: IdentityProviderService_ListIdentityProviders
@@ -18286,6 +18286,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ListDatabasesResponse'
+  /v1/workspaces/{workspace}/idps:
+    get:
+      tags:
+        - IdentityProviderService
+      summary: ListIdentityProviders
+      description: |-
+        Lists the identity providers configured for the caller's workspace.
+         The login page reads AuthService.GetAuthenticationInfo instead,
+         which publishes only the fields a browser needs to start an SSO redirect.
+         Permissions required: bb.identityProviders.list
+      operationId: IdentityProviderService_ListIdentityProviders2
+      parameters:
+        - name: workspace
+          in: path
+          description: The workspace id.
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.ListIdentityProvidersResponse'
   /v1/workspaces/{workspace}/policies:
     get:
       tags:

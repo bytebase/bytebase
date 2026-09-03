@@ -27,11 +27,14 @@ service IdentityProviderService {
   }
 
   // Lists the identity providers configured for the caller's workspace.
-  // The login page reads AuthService.GetAuthenticationRestriction instead,
+  // The login page reads AuthService.GetAuthenticationInfo instead,
   // which publishes only the fields a browser needs to start an SSO redirect.
   // Permissions required: bb.identityProviders.list
   rpc ListIdentityProviders(ListIdentityProvidersRequest) returns (ListIdentityProvidersResponse) {
-    option (google.api.http) = {get: "/v1/idps"};
+    option (google.api.http) = {
+      get: "/v1/idps"
+      additional_bindings: {get: "/v1/{parent=workspaces/*}/idps"}
+    };
     option (google.api.method_signature) = "parent";
     option (bytebase.v1.permission) = "bb.identityProviders.list";
     option (bytebase.v1.auth_method) = IAM;

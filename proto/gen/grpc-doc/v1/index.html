@@ -7462,7 +7462,7 @@ Permissions required: bb.identityProviders.get</p></td>
                 <td><a href="#bytebase.v1.ListIdentityProvidersRequest">ListIdentityProvidersRequest</a></td>
                 <td><a href="#bytebase.v1.ListIdentityProvidersResponse">ListIdentityProvidersResponse</a></td>
                 <td><p>Lists the identity providers configured for the caller&#39;s workspace.
-The login page reads AuthService.GetAuthenticationRestriction instead,
+The login page reads AuthService.GetAuthenticationInfo instead,
 which publishes only the fields a browser needs to start an SSO redirect.
 Permissions required: bb.identityProviders.list</p></td>
               </tr>
@@ -7534,6 +7534,13 @@ Permissions required: bb.identityProviders.update</p></td>
                 <td>ListIdentityProviders</td>
                 <td>GET</td>
                 <td>/v1/idps</td>
+                <td></td>
+              </tr>
+              
+              <tr>
+                <td>ListIdentityProviders</td>
+                <td>GET</td>
+                <td>/v1/{parent=workspaces/*}/idps</td>
                 <td></td>
               </tr>
               
