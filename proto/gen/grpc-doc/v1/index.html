@@ -36366,21 +36366,26 @@ For project-level: {name}@{project-id}.workload.bytebase.com </p></td>
                   <td>issuer_url</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>OIDC Issuer URL (auto-filled based on provider_type, can be overridden) </p></td>
+                  <td><p>HTTPS URL of the OIDC issuer. The exchange fetches
+{issuer_url}/.well-known/openid-configuration to verify a token, unless
+jwks_url names the key set directly. </p></td>
                 </tr>
               
                 <tr>
                   <td>allowed_audiences</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>Allowed audiences for token validation </p></td>
+                  <td><p>Audiences a token may be minted for. A token authenticates if its `aud`
+claim matches any entry. </p></td>
                 </tr>
               
                 <tr>
                   <td>subject_pattern</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>Subject pattern to match (e.g., &#34;repo:owner/repo:ref:refs/heads/main&#34;) </p></td>
+                  <td><p>The subject a token must carry, e.g. &#34;repo:owner/repo:ref:refs/heads/main&#34;.
+A trailing &#34;*&#34; is a prefix match and must complete an owner segment, so
+&#34;repo:my-org/*&#34; is accepted and &#34;repo:*&#34; is not. </p></td>
                 </tr>
               
                 <tr>
@@ -36389,7 +36394,7 @@ For project-level: {name}@{project-id}.workload.bytebase.com </p></td>
                   <td></td>
                   <td><p>Optional JWKS endpoint. When empty, use OIDC discovery from issuer_url. </p></td>
                 </tr>
-
+              
             </tbody>
           </table>
 
@@ -36430,7 +36435,7 @@ For project-level: {name}@{project-id}.workload.bytebase.com </p></td>
                 <td>3</td>
                 <td><p></p></td>
               </tr>
-
+            
           </tbody>
         </table>
       
@@ -37291,3 +37296,4 @@ Permissions required: bb.workspaces.rotateDirectorySyncToken</p></td>
     </table>
   </body>
 </html>
+
