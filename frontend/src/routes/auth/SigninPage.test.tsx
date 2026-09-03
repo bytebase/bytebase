@@ -17,8 +17,7 @@ const mocks = vi.hoisted(() => ({
   pushNotification: vi.fn(),
   openWindowForSSO: vi.fn(),
   actuatorStore: null as unknown,
-  identityProviderList: [] as unknown[],
-  listIdentityProviders: vi.fn(),
+  identityProviders: [] as unknown[],
   authStore: null as unknown,
 }));
 
@@ -38,12 +37,18 @@ vi.mock("@/stores", () => ({
 }));
 
 vi.mock("@/stores/app", () => {
-  const getState = () => ({
-    ...(mocks.actuatorStore as Record<string, unknown>),
-    identityProviderList: () => mocks.identityProviderList,
-    listIdentityProviders: mocks.listIdentityProviders,
-    login: (mocks.authStore as { login: unknown }).login,
-  });
+  const getState = () => {
+    const store = mocks.actuatorStore as Record<string, unknown>;
+    const info = store.authenticationInfo as Record<string, unknown> | undefined;
+    return {
+      ...store,
+      // The login page reads its providers off the authentication info.
+      authenticationInfo: info
+        ? { ...info, identityProviders: mocks.identityProviders }
+        : info,
+      login: (mocks.authStore as { login: unknown }).login,
+    };
+  };
   return {
     useAppStore: Object.assign(
       (selector?: (state: ReturnType<typeof getState>) => unknown) =>
@@ -120,20 +125,13 @@ beforeEach(async () => {
     },
     fetchAuthenticationInfo: vi.fn(async () => ({})),
   };
-  mocks.identityProviderList = [
+  mocks.identityProviders = [
     {
       name: "idps/corp-ldap",
       title: "Corp LDAP",
       type: IdentityProviderType.LDAP,
     },
   ];
-  mocks.listIdentityProviders.mockResolvedValue([
-    {
-      name: "idps/corp-ldap",
-      title: "Corp LDAP",
-      type: IdentityProviderType.LDAP,
-    },
-  ]);
   mocks.authStore = {
     login: vi.fn(async () => {}),
   };
@@ -153,8 +151,7 @@ describe("SigninPage", () => {
       },
       fetchAuthenticationInfo: vi.fn(async () => ({})),
     };
-    mocks.identityProviderList = [];
-    mocks.listIdentityProviders.mockResolvedValue([]);
+    mocks.identityProviders = [];
 
     const { render, unmount } = renderIntoContainer(<SigninPage />);
     render();
@@ -179,8 +176,7 @@ describe("SigninPage", () => {
       },
       fetchAuthenticationInfo: vi.fn(async () => ({})),
     };
-    mocks.identityProviderList = [];
-    mocks.listIdentityProviders.mockResolvedValue([]);
+    mocks.identityProviders = [];
 
     const { render, unmount } = renderIntoContainer(<SigninPage />);
     render();
@@ -238,15 +234,20 @@ describe("SigninPage", () => {
         name: "idps/github",
         title: "GitHub",
         type: IdentityProviderType.OAUTH2,
+        authorizationRequest: {
+          endpoint: "https://github.com/login/oauth/authorize",
+        },
       },
       {
         name: "idps/google",
         title: "Google",
         type: IdentityProviderType.OAUTH2,
+        authorizationRequest: {
+          endpoint: "https://accounts.google.com/o/oauth2/v2/auth",
+        },
       },
     ];
-    mocks.identityProviderList = idps;
-    mocks.listIdentityProviders.mockResolvedValue(idps);
+    mocks.identityProviders = idps;
 
     const { container, render, unmount } = renderIntoContainer(<SigninPage />);
     render();
@@ -313,8 +314,7 @@ describe("SigninPage", () => {
       },
       fetchAuthenticationInfo: vi.fn(async () => ({})),
     };
-    mocks.identityProviderList = [];
-    mocks.listIdentityProviders.mockResolvedValue([]);
+    mocks.identityProviders = [];
 
     const { container, render, unmount } = renderIntoContainer(<SigninPage />);
     render();
@@ -342,8 +342,7 @@ describe("SigninPage", () => {
       },
       fetchAuthenticationInfo: vi.fn(async () => ({})),
     };
-    mocks.identityProviderList = [];
-    mocks.listIdentityProviders.mockResolvedValue([]);
+    mocks.identityProviders = [];
 
     const { container, render, unmount } = renderIntoContainer(
       <SigninPage allowSignup={false} />
@@ -372,8 +371,7 @@ describe("SigninPage", () => {
       },
       fetchAuthenticationInfo: vi.fn(async () => ({})),
     };
-    mocks.identityProviderList = [];
-    mocks.listIdentityProviders.mockResolvedValue([]);
+    mocks.identityProviders = [];
 
     const { container, render, unmount } = renderIntoContainer(<SigninPage />);
     render();

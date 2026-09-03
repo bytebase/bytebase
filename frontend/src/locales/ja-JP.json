@@ -156,6 +156,7 @@
       "failed-to-send-code": "認証コードの送信に失敗しました。{{error}}",
       "forget-password": "パスワードを忘れましたか？",
       "invited-email": "招待されました。{{email}} でログインしてください",
+      "load-failed": "サインインオプションを読み込めませんでした。もう一度お試しください。",
       "new-user": "Bytebase を初めて使用しますか?",
       "resend-code": "コードを再送信",
       "resend-in": "{{seconds}}秒後に再送信可能",

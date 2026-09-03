@@ -156,6 +156,7 @@
       "failed-to-send-code": "Không gửi được mã xác minh. {{error}}",
       "forget-password": "Quên mật khẩu?",
       "invited-email": "Bạn đã được mời. Vui lòng đăng nhập bằng {{email}}",
+      "load-failed": "Không thể tải các tùy chọn đăng nhập. Vui lòng thử lại.",
       "new-user": "Mới sử dụng Bytebase?",
       "resend-code": "Gửi lại mã",
       "resend-in": "Gửi lại sau {{seconds}}s",

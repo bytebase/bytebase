@@ -5,6 +5,7 @@
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { WorkspaceProfileSetting_PasswordRestriction } from "./setting_service_pb";
+import type { IdentityProviderType } from "./idp_service_pb";
 import type { User } from "./user_service_pb";
 import type { EmptySchema } from "@bufbuild/protobuf/wkt";
 
@@ -14,9 +15,9 @@ import type { EmptySchema } from "@bufbuild/protobuf/wkt";
 export declare const file_v1_auth_service: GenFile;
 
 /**
- * @generated from message bytebase.v1.GetAuthenticationRestrictionRequest
+ * @generated from message bytebase.v1.GetAuthenticationInfoRequest
  */
-export declare type GetAuthenticationRestrictionRequest = Message<"bytebase.v1.GetAuthenticationRestrictionRequest"> & {
+export declare type GetAuthenticationInfoRequest = Message<"bytebase.v1.GetAuthenticationInfoRequest"> & {
   /**
    * Optional. The workspace whose authentication policy should be returned.
    * Format: workspaces/{workspace}
@@ -29,10 +30,10 @@ export declare type GetAuthenticationRestrictionRequest = Message<"bytebase.v1.G
 };
 
 /**
- * Describes the message bytebase.v1.GetAuthenticationRestrictionRequest.
- * Use `create(GetAuthenticationRestrictionRequestSchema)` to create a new message.
+ * Describes the message bytebase.v1.GetAuthenticationInfoRequest.
+ * Use `create(GetAuthenticationInfoRequestSchema)` to create a new message.
  */
-export declare const GetAuthenticationRestrictionRequestSchema: GenMessage<GetAuthenticationRestrictionRequest>;
+export declare const GetAuthenticationInfoRequestSchema: GenMessage<GetAuthenticationInfoRequest>;
 
 /**
  * @generated from message bytebase.v1.AuthenticationInfo
@@ -52,6 +53,13 @@ export declare type AuthenticationInfo = Message<"bytebase.v1.AuthenticationInfo
    * @generated from field: bytebase.v1.Restriction restriction = 2;
    */
   restriction?: Restriction | undefined;
+
+  /**
+   * The identity providers the login page renders, in display order.
+   *
+   * @generated from field: repeated bytebase.v1.LoginIdentityProvider identity_providers = 3;
+   */
+  identityProviders: LoginIdentityProvider[];
 };
 
 /**
@@ -106,6 +114,87 @@ export declare type Restriction = Message<"bytebase.v1.Restriction"> & {
  * Use `create(RestrictionSchema)` to create a new message.
  */
 export declare const RestrictionSchema: GenMessage<Restriction>;
+
+/**
+ * LoginIdentityProvider is an identity provider as the login page sees it.
+ * Deliberately not a view of IdentityProvider: this message is served without
+ * a credential, so every field it exposes is published by hand and no
+ * provider configuration reaches it by default.
+ *
+ * @generated from message bytebase.v1.LoginIdentityProvider
+ */
+export declare type LoginIdentityProvider = Message<"bytebase.v1.LoginIdentityProvider"> & {
+  /**
+   * The name of the identity provider.
+   * Format: idps/{idp}
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * The type of identity provider protocol.
+   *
+   * @generated from field: bytebase.v1.IdentityProviderType type = 2;
+   */
+  type: IdentityProviderType;
+
+  /**
+   * The display title of the identity provider.
+   *
+   * @generated from field: string title = 3;
+   */
+  title: string;
+
+  /**
+   * The parameters the browser needs to start the authorization redirect.
+   * Set for OAUTH2 and OIDC, absent for LDAP, whose bind happens server-side.
+   *
+   * @generated from field: bytebase.v1.AuthorizationRequest authorization_request = 4;
+   */
+  authorizationRequest?: AuthorizationRequest | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.LoginIdentityProvider.
+ * Use `create(LoginIdentityProviderSchema)` to create a new message.
+ */
+export declare const LoginIdentityProviderSchema: GenMessage<LoginIdentityProvider>;
+
+/**
+ * AuthorizationRequest is what a browser needs to start an SSO redirect.
+ *
+ * @generated from message bytebase.v1.AuthorizationRequest
+ */
+export declare type AuthorizationRequest = Message<"bytebase.v1.AuthorizationRequest"> & {
+  /**
+   * The OAuth2 auth_url, or the authorization endpoint from the OIDC issuer's
+   * discovery document.
+   *
+   * @generated from field: string endpoint = 1;
+   */
+  endpoint: string;
+
+  /**
+   * The OAuth2 or OIDC client identifier.
+   *
+   * @generated from field: string client_id = 2;
+   */
+  clientId: string;
+
+  /**
+   * The scopes to request.
+   *
+   * @generated from field: repeated string scopes = 3;
+   */
+  scopes: string[];
+};
+
+/**
+ * Describes the message bytebase.v1.AuthorizationRequest.
+ * Use `create(AuthorizationRequestSchema)` to create a new message.
+ */
+export declare const AuthorizationRequestSchema: GenMessage<AuthorizationRequest>;
 
 /**
  * @generated from message bytebase.v1.LoginRequest
@@ -581,14 +670,15 @@ export declare const SwitchWorkspaceRequestSchema: GenMessage<SwitchWorkspaceReq
  */
 export declare const AuthService: GenService<{
   /**
-   * Gets the effective restrictions needed to render authentication flows.
+   * Gets everything the login page renders: the sign-in restrictions and the
+   * identity providers it offers.
    * Permissions required: None
    *
-   * @generated from rpc bytebase.v1.AuthService.GetAuthenticationRestriction
+   * @generated from rpc bytebase.v1.AuthService.GetAuthenticationInfo
    */
-  getAuthenticationRestriction: {
+  getAuthenticationInfo: {
     methodKind: "unary";
-    input: typeof GetAuthenticationRestrictionRequestSchema;
+    input: typeof GetAuthenticationInfoRequestSchema;
     output: typeof AuthenticationInfoSchema;
   },
   /**

@@ -219,6 +219,9 @@ func GetOpenIDConfiguration(issuer string, insecureSkipVerify bool) (*OpenIDConf
 	}
 	req.Header.Set("Content-Type", "application/json")
 	client := &http.Client{
+		// Reached before authentication through GetAuthenticationInfo, so an
+		// issuer that blackholes packets must not hold the request open.
+		Timeout: 10 * time.Second,
 		Transport: &http.Transport{
 			TLSClientConfig: &tls.Config{
 				InsecureSkipVerify: insecureSkipVerify,

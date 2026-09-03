@@ -1456,7 +1456,7 @@ var mcpDenialRequestsUnderReview = map[string]mcpDenialRequestReview{
 	v1connect.IssueServiceSearchIssuesProcedure: {
 		[]string{"query"}, "recorded: the caller's own search text",
 	},
-	v1connect.AuthServiceGetAuthenticationRestrictionProcedure: {
+	v1connect.AuthServiceGetAuthenticationInfoProcedure: {
 		[]string{"workspace"}, "recorded: a workspace resource name",
 	},
 	v1connect.IssueServiceGetIssueProcedure: {

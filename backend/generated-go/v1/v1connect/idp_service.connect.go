@@ -59,8 +59,10 @@ type IdentityProviderServiceClient interface {
 	// Gets an identity provider by name.
 	// Permissions required: bb.identityProviders.get
 	GetIdentityProvider(context.Context, *connect.Request[v1.GetIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error)
-	// Lists all configured identity providers (public endpoint for login page).
-	// Permissions required: None
+	// Lists the identity providers configured for the caller's workspace.
+	// The login page reads AuthService.GetAuthenticationRestriction instead,
+	// which publishes only the fields a browser needs to start an SSO redirect.
+	// Permissions required: bb.identityProviders.list
 	ListIdentityProviders(context.Context, *connect.Request[v1.ListIdentityProvidersRequest]) (*connect.Response[v1.ListIdentityProvidersResponse], error)
 	// Creates a new identity provider.
 	// Permissions required: bb.identityProviders.create
@@ -173,8 +175,10 @@ type IdentityProviderServiceHandler interface {
 	// Gets an identity provider by name.
 	// Permissions required: bb.identityProviders.get
 	GetIdentityProvider(context.Context, *connect.Request[v1.GetIdentityProviderRequest]) (*connect.Response[v1.IdentityProvider], error)
-	// Lists all configured identity providers (public endpoint for login page).
-	// Permissions required: None
+	// Lists the identity providers configured for the caller's workspace.
+	// The login page reads AuthService.GetAuthenticationRestriction instead,
+	// which publishes only the fields a browser needs to start an SSO redirect.
+	// Permissions required: bb.identityProviders.list
 	ListIdentityProviders(context.Context, *connect.Request[v1.ListIdentityProvidersRequest]) (*connect.Response[v1.ListIdentityProvidersResponse], error)
 	// Creates a new identity provider.
 	// Permissions required: bb.identityProviders.create

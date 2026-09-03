@@ -105,7 +105,7 @@ const mocks = vi.hoisted(() => ({
     }
   ),
   signup: vi.fn(),
-  getAuthenticationRestriction: vi.fn(),
+  getAuthenticationInfo: vi.fn(),
   getActuatorInfo: vi.fn(),
   getWorkspace: vi.fn(),
   updateWorkspace: vi.fn(),
@@ -196,7 +196,7 @@ vi.mock("@/api", () => ({
     getActuatorInfo: mocks.getActuatorInfo,
   },
   authServiceClientConnect: {
-    getAuthenticationRestriction: mocks.getAuthenticationRestriction,
+    getAuthenticationInfo: mocks.getAuthenticationInfo,
     login: mocks.login,
     logout: mocks.logout,
     signup: mocks.signup,
@@ -1821,7 +1821,9 @@ describe("useAppStore", () => {
       },
     });
 
-    const providers = await store.getState().listIdentityProviders();
+    const providers = await store
+      .getState()
+      .listIdentityProviders("workspaces/default");
 
     expect(providers).toEqual([identityProviderA]);
     expect(store.getState().identityProviderList()).toEqual([
@@ -2223,12 +2225,12 @@ describe("useAppStore", () => {
     const info = createProto(AuthenticationInfoSchema, {
       workspace: "workspaces/pre-login",
     });
-    mocks.getAuthenticationRestriction.mockResolvedValue(info);
+    mocks.getAuthenticationInfo.mockResolvedValue(info);
     const store = createAppStore();
 
     await store.getState().loadAuthenticationInfo();
 
-    expect(mocks.getAuthenticationRestriction).toHaveBeenCalledWith({
+    expect(mocks.getAuthenticationInfo).toHaveBeenCalledWith({
       workspace: "",
     });
     expect(mocks.getActuatorInfo).not.toHaveBeenCalled();

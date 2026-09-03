@@ -1,4 +1,13 @@
+import { create } from "@bufbuild/protobuf";
 import type { OAuthState } from "@/types";
+import type {
+  AuthorizationRequest,
+  LoginIdentityProvider,
+} from "@/types/proto-es/v1/auth_service_pb";
+import {
+  AuthorizationRequestSchema,
+  LoginIdentityProviderSchema,
+} from "@/types/proto-es/v1/auth_service_pb";
 import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
 import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
 
@@ -86,15 +95,38 @@ export function clearOAuthState(token: string): void {
     console.error("Failed to clear OAuth state:", error);
   }
 }
-
 export async function openWindowForSSO(
-  identityProvider: IdentityProvider,
+  identityProvider: LoginIdentityProvider,
   popup = true,
   redirect?: string
 ) {
+  // The callback route differs by protocol; anything else has no redirect flow.
+  let callbackPath: string;
+  if (identityProvider.type === IdentityProviderType.OAUTH2) {
+    callbackPath = "/oauth/callback";
+  } else if (identityProvider.type === IdentityProviderType.OIDC) {
+    callbackPath = "/oidc/callback";
+  } else {
+    throw new Error(
+      `identity provider type ${identityProvider.type.toString()} is not supported`
+    );
+  }
+
+  const request = identityProvider.authorizationRequest;
+  if (!request || request.endpoint === "") {
+    throw new Error(
+      "The identity provider published no authorization endpoint; check its configuration"
+    );
+  }
+  // Validate the endpoint to prevent XSS via javascript: URIs.
+  if (!isValidHttpUrl(request.endpoint)) {
+    throw new Error(
+      "Invalid authentication URL: must be a valid HTTP or HTTPS URL"
+    );
+  }
+
   // Generate cryptographically secure random token for CSRF protection
   const token = generateSecureToken();
-
   const state: OAuthState = {
     token,
     // we use type to determine oauth type when receiving the callback
@@ -105,88 +137,59 @@ export async function openWindowForSSO(
     // Store IdP type to determine correct context type in callback
     idpType: identityProvider.type,
   };
-
   // Store state in localStorage before redirecting
   storeOAuthState(state);
 
-  const uri = {
-    basePath: "",
-    query: {
-      // Only send the opaque token as per RFC 6749 and Auth0 best practices
-      // All other state data is stored server-side for security
-      state: token,
-      response_type: "code",
-    } as Record<string, string>,
-  };
-
-  if (identityProvider.type === IdentityProviderType.OAUTH2) {
-    if (identityProvider.config?.config?.case !== "oauth2Config") {
-      return null;
-    }
-    const oauth2Config = identityProvider.config.config.value;
-
-    // Validate auth URL to prevent XSS via javascript: URIs
-    if (!isValidHttpUrl(oauth2Config.authUrl)) {
-      throw new Error(
-        "Invalid authentication URL: must be a valid HTTP or HTTPS URL"
-      );
-    }
-
-    uri.basePath = oauth2Config.authUrl;
-    Object.assign(uri.query, {
-      client_id: oauth2Config.clientId,
-      scope: oauth2Config.scopes.join(" "),
-      redirect_uri: `${window.location.origin}/oauth/callback`,
-    });
-  } else if (identityProvider.type === IdentityProviderType.OIDC) {
-    if (identityProvider.config?.config?.case !== "oidcConfig") {
-      return null;
-    }
-    const oidcConfig = identityProvider.config.config.value;
-    if (oidcConfig.authEndpoint === "") {
-      throw new Error(
-        `Invalid authentication URL from issuer ${oidcConfig.issuer}, please check your configuration`
-      );
-    }
-
-    // Validate auth endpoint to prevent XSS via javascript: URIs
-    if (!isValidHttpUrl(oidcConfig.authEndpoint)) {
-      throw new Error(
-        "Invalid authentication endpoint: must be a valid HTTP or HTTPS URL"
-      );
-    }
-
-    uri.basePath = oidcConfig.authEndpoint;
-    Object.assign(uri.query, {
-      client_id: oidcConfig.clientId,
-      scope: oidcConfig.scopes.join(" "),
-      redirect_uri: `${window.location.origin}/oidc/callback`,
-    });
-  } else {
-    throw new Error(
-      `identity provider type ${identityProvider.type.toString()} is not supported`
-    );
-  }
-
-  // Use URL API for safe URL construction with query parameters
-  const authUrl = new URL(uri.basePath);
-  Object.entries(uri.query).forEach(([key, value]) => {
-    authUrl.searchParams.set(key, value);
-  });
-
-  const authUrlString = authUrl.toString();
-  if (!authUrlString) {
-    throw new Error("Invalid authentication URL");
-  }
+  const authUrl = new URL(request.endpoint);
+  // Only send the opaque token as per RFC 6749 and Auth0 best practices;
+  // all other state data is stored client-side under that token.
+  authUrl.searchParams.set("state", token);
+  authUrl.searchParams.set("response_type", "code");
+  authUrl.searchParams.set("client_id", request.clientId);
+  authUrl.searchParams.set("scope", request.scopes.join(" "));
+  authUrl.searchParams.set(
+    "redirect_uri",
+    `${window.location.origin}${callbackPath}`
+  );
 
   if (popup) {
     window.open(
-      authUrlString,
+      authUrl.toString(),
       "oauth",
       "location=yes,left=200,top=200,height=640,width=480,scrollbars=yes,status=yes"
     );
   } else {
     // Redirect to the auth URL.
-    window.location.href = authUrlString;
+    window.location.href = authUrl.toString();
   }
+}
+
+/**
+ * Projects a full IdentityProvider onto the shape the redirect needs, so the
+ * SSO admin test drives the same path the login page does.
+ */
+export function toLoginIdentityProvider(
+  identityProvider: IdentityProvider
+): LoginIdentityProvider {
+  let authorizationRequest: AuthorizationRequest | undefined;
+  const config = identityProvider.config?.config;
+  if (config?.case === "oauth2Config") {
+    authorizationRequest = create(AuthorizationRequestSchema, {
+      endpoint: config.value.authUrl,
+      clientId: config.value.clientId,
+      scopes: config.value.scopes,
+    });
+  } else if (config?.case === "oidcConfig") {
+    authorizationRequest = create(AuthorizationRequestSchema, {
+      endpoint: config.value.authEndpoint,
+      clientId: config.value.clientId,
+      scopes: config.value.scopes,
+    });
+  }
+  return create(LoginIdentityProviderSchema, {
+    name: identityProvider.name,
+    type: identityProvider.type,
+    title: identityProvider.title,
+    authorizationRequest,
+  });
 }

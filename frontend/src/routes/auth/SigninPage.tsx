@@ -12,13 +12,14 @@ import { RouterLink } from "@/components/RouterLink";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
-import { useIdentityProviderList } from "@/hooks/useAppState";
 import { resolveWorkspaceName } from "@/lib/workspace";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { idpNamePrefix } from "@/stores/modules/v1/common";
-import type { LoginRequest } from "@/types/proto-es/v1/auth_service_pb";
-import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
+import type {
+  LoginIdentityProvider,
+  LoginRequest,
+} from "@/types/proto-es/v1/auth_service_pb";
 import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
 import { openWindowForSSO } from "@/utils";
 
@@ -43,7 +44,7 @@ export function SigninPage(props: SigninPageProps) {
   const [initialized, setInitialized] = useState(false);
 
   const authenticationInfo = useAppStore((s) => s.authenticationInfo);
-  const identityProviders = useIdentityProviderList();
+  const identityProviders = authenticationInfo?.identityProviders ?? [];
 
   const query = router.currentRoute.value.query;
   const invitedEmail = (query.email as string | undefined) ?? "";
@@ -79,7 +80,7 @@ export function SigninPage(props: SigninPageProps) {
     }
   }, [initialized, needsInitialSetup, disallowSignup]);
 
-  const trySigninWithIdp = async (idp: IdentityProvider) => {
+  const trySigninWithIdp = async (idp: LoginIdentityProvider) => {
     try {
       await openWindowForSSO(idp, false, query.redirect as string);
     } catch (error) {
@@ -106,40 +107,30 @@ export function SigninPage(props: SigninPageProps) {
     }
   };
 
-  // Initial load: fetch authentication info + IDPs + handle `idp` query param.
-  // Ref guard is critical — the `?idp=<name>` path triggers an SSO redirect
-  // via `trySigninWithIdp`, which must not fire twice under StrictMode.
+  // Initial load: fetch authentication info, which carries the providers this
+  // page renders, then handle the `idp` query param. Ref guard is critical —
+  // the `?idp=<name>` path triggers an SSO redirect via `trySigninWithIdp`,
+  // which must not fire twice under StrictMode.
   const initRef = useRef(false);
   useEffect(() => {
     if (initRef.current) return;
     initRef.current = true;
     (async () => {
-      const workspaceName = resolveWorkspaceName();
-      const listIdentityProviders =
-        useAppStore.getState().listIdentityProviders;
-      try {
-        const [idpList] = await Promise.all([
-          listIdentityProviders(workspaceName),
-          useAppStore.getState().fetchAuthenticationInfo(workspaceName),
-        ]);
-        if (idpList.length === 0 && workspaceName) {
-          await listIdentityProviders();
-        }
-      } catch (error) {
+      const info = await useAppStore
+        .getState()
+        .fetchAuthenticationInfo(resolveWorkspaceName());
+      if (!info) {
         pushNotification({
           module: "bytebase",
           style: "CRITICAL",
           title: "Request error occurred",
-          description: (error as Error).message,
+          description: t("auth.sign-in.load-failed"),
         });
       }
       const idpQuery = query.idp;
       if (idpQuery) {
         const name = `${idpNamePrefix}${idpQuery}`;
-        const idp = useAppStore
-          .getState()
-          .identityProviderList()
-          .find((i: IdentityProvider) => i.name === name);
+        const idp = info?.identityProviders.find((i) => i.name === name);
         if (idp) {
           // On success this navigates away; on failure `trySigninWithIdp`
           // pushes a notification and we still need to show the form so the

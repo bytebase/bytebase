@@ -156,6 +156,7 @@
       "failed-to-send-code": "发送验证码失败。{{error}}",
       "forget-password": "忘记密码?",
       "invited-email": "您已被邀请，请使用 {{email}} 登录",
+      "load-failed": "无法加载登录选项，请重试。",
       "new-user": "第一次使用 Bytebase?",
       "resend-code": "重新发送验证码",
       "resend-in": "{{seconds}} 秒后重新发送",

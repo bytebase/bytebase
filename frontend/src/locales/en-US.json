@@ -156,6 +156,7 @@
       "failed-to-send-code": "Failed to send verification code. {{error}}",
       "forget-password": "Forgot your password?",
       "invited-email": "You've been invited. Please sign in with {{email}}",
+      "load-failed": "Couldn't load sign-in options. Please retry.",
       "new-user": "New to Bytebase?",
       "resend-code": "Resend code",
       "resend-in": "Resend in {{seconds}}s",

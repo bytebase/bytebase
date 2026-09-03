@@ -17,7 +17,7 @@ import {
   IdentityProviderType,
   TestIdentityProviderRequestSchema,
 } from "@/types/proto-es/v1/idp_service_pb";
-import { openWindowForSSO } from "@/utils";
+import { openWindowForSSO, toLoginIdentityProvider } from "@/utils";
 
 // ============================================================
 // KeyValueBox
@@ -349,7 +349,7 @@ export function TestConnectionButton({
       currentEventNameRef.current = eventName;
 
       try {
-        await openWindowForSSO(idpForTesting);
+        await openWindowForSSO(toLoginIdentityProvider(idpForTesting));
       } catch (error) {
         pushNotification({
           module: "bytebase",

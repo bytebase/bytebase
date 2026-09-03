@@ -1,9 +1,10 @@
-import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
+import type { LoginIdentityProvider } from "@/types/proto-es/v1/auth_service_pb";
+import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
 
 type Brand = "github" | "google" | "gitlab";
 
 type Props = {
-  readonly idp: IdentityProvider;
+  readonly idp: LoginIdentityProvider;
   readonly className?: string;
 };
 
@@ -30,20 +31,21 @@ function brandFromTitle(title: string): Brand | undefined {
   return undefined;
 }
 
-function configUrlOf(idp: IdentityProvider): string {
-  const config = idp.config?.config;
-  if (config?.case === "oauth2Config") return config.value.authUrl;
-  if (config?.case === "oidcConfig") return config.value.issuer;
-  return "";
-}
-
-// The config URL identifies where the user actually authenticates, so it is
-// authoritative: when present, a non-brand host renders no icon rather than
+// The authorization endpoint is where the user actually authenticates, so it
+// is authoritative: when present, a non-brand host renders no icon rather than
 // falling back to the admin-editable title (which could claim another brand).
-function resolveBrand(idp: IdentityProvider): Brand | undefined {
-  const configUrl = configUrlOf(idp);
-  if (configUrl) {
-    return brandFromHost(hostnameOf(configUrl));
+function resolveBrand(idp: LoginIdentityProvider): Brand | undefined {
+  const endpoint = idp.authorizationRequest?.endpoint ?? "";
+  if (endpoint) {
+    return brandFromHost(hostnameOf(endpoint));
+  }
+  // A redirect provider with no endpoint is misconfigured or its issuer was
+  // unreachable. Falling back to the title here would let it claim a brand.
+  if (
+    idp.type === IdentityProviderType.OAUTH2 ||
+    idp.type === IdentityProviderType.OIDC
+  ) {
+    return undefined;
   }
   return brandFromTitle(idp.title);
 }

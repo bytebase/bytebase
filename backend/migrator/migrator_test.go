@@ -21,8 +21,8 @@ import (
 func TestLatestVersion(t *testing.T) {
 	files, err := getSortedVersionedFiles()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("3.23.2"), *files[len(files)-1].version)
-	require.Equal(t, "migration/3.23/0002##plan_last_editor_approval.sql", files[len(files)-1].path)
+	require.Equal(t, semver.MustParse("3.23.3"), *files[len(files)-1].version)
+	require.Equal(t, "migration/3.23/0003##identity_provider_list_permission.sql", files[len(files)-1].path)
 }
 
 func TestMigration3_23_1_IssueCommentThreads(t *testing.T) {
