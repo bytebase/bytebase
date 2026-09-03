@@ -1,5 +1,7 @@
 # Backend test execution time
 
+Status: in progress
+
 ## Scope
 
 Cut the execution time of `go test ./backend/...`. It takes 14–19.5 minutes in
@@ -90,7 +92,7 @@ cost inside a package that runs 3.7× parallel, and effort 1's saving sits insid
 effort 4's, so they do not simply add. Together they should take it from 635 s
 of wall clock to roughly 330 s.
 
-### 1. Close idle connections before shutting the server down
+### [✓] 1. Close idle connections before shutting the server down
 
 **Three lines.** `httpServer.Shutdown` burns 1036 ms on every one of the 207
 boots. It is waiting out an idle HTTP/2 connection that nobody will reuse: the
@@ -112,6 +114,13 @@ to 676 ms. Across 207 boots that is ~217 s.
 That 217 s is part of effort 4's total, not on top of it. This goes first only
 because it is three lines and needs no restructuring, and it stops mattering
 once effort 4 collapses the boot count.
+
+**What it bought.** Over 5 cycles the shutdown went from 1058 ms to **1 ms**
+and the boot-and-shutdown cycle from 1720 ms to **691 ms**, as projected. A
+package-isolated `go test ./backend/tests/` — not the full-suite figure above —
+went from **679 s to 611 s** across its 233 boots: 227 s off the summed test
+time, compressed 3.3× by the package's own parallelism. Measure the efforts
+below against 611 s.
 
 ### 2. One shared container per package, then turn parallelism on
 
