@@ -483,6 +483,47 @@ func TestGetResourceFromRequest(t *testing.T) {
 			},
 		},
 		{
+			// Each named project, as DeleteProject does for the one it names. No
+			// parent and no requests, so this resolved nothing before.
+			request: &v1pb.BatchDeleteProjectsRequest{
+				Names: []string{"projects/hello", "projects/world"},
+			},
+			method: "/bytebase.v1.ProjectService/BatchDeleteProjects",
+			want:   []string{"projects/hello", "projects/world"},
+		},
+		{
+			// Empty batch: the workspace fallback lets the handler answer.
+			request: &v1pb.BatchDeleteProjectsRequest{},
+			method:  "/bytebase.v1.ProjectService/BatchDeleteProjects",
+			want:    []string{""},
+		},
+		{
+			// The rule widened to every Batch* verb; it did not move off BatchGet.
+			request: &v1pb.BatchGetProjectsRequest{
+				Names: []string{"projects/hello", "projects/world"},
+			},
+			method: "/bytebase.v1.ProjectService/BatchGetProjects",
+			want:   []string{"projects/hello", "projects/world"},
+		},
+		{
+			// Parent and every name, in that order.
+			request: &v1pb.BatchGetDatabasesRequest{
+				Parent: "projects/hello",
+				Names:  []string{"instances/i/databases/a", "instances/i/databases/b"},
+			},
+			method: "/bytebase.v1.DatabaseService/BatchGetDatabases",
+			want:   []string{"projects/hello", "instances/i/databases/a", "instances/i/databases/b"},
+		},
+		{
+			// Untouched: BatchUpdateIssuesStatus names its issues in `issues`.
+			request: &v1pb.BatchUpdateIssuesStatusRequest{
+				Parent: "projects/hello",
+				Issues: []string{"projects/hello/issues/1"},
+			},
+			method: "/bytebase.v1.IssueService/BatchUpdateIssuesStatus",
+			want:   []string{"projects/hello/issues/1"},
+		},
+		{
 			request: &v1pb.BatchUpdateDatabasesRequest{
 				Requests: []*v1pb.UpdateDatabaseRequest{
 					{Database: &v1pb.Database{Name: "instances/hello/databases/hello", Project: "projects/a"}, UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"project"}}},

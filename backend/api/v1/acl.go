@@ -710,18 +710,22 @@ func getResourceFromRequest(ctx context.Context, request any, method string) ([]
 		if parentDesc != nil && proto.HasExtension(parentDesc.Options(), annotationsproto.E_ResourceReference) && mr.Has(parentDesc) {
 			resources = append(resources, mr.Get(parentDesc).String())
 		}
-		// Handle batch get requests.
-		if strings.HasPrefix(shortMethod, "BatchGet") {
-			namesDesc := mr.Descriptor().Fields().ByName("names")
-			if namesDesc != nil {
-				namesValue := mr.Get(namesDesc)
-				namesValueList := namesValue.List()
-				for i := 0; i < namesValueList.Len(); i++ {
-					v := namesValueList.Get(i)
-					resources = append(resources, v.String())
-				}
-				return resources, nil
+		// Every Batch* verb authorizes the targets in `names`, not just BatchGet:
+		// BatchDeleteProjects has no parent, requests or name, so it resolved
+		// nothing and checked bb.projects.delete against the workspace.
+		namesDesc := mr.Descriptor().Fields().ByName("names")
+		if namesDesc != nil && proto.HasExtension(namesDesc.Options(), annotationsproto.E_ResourceReference) {
+			namesValueList := mr.Get(namesDesc).List()
+			for i := 0; i < namesValueList.Len(); i++ {
+				resources = append(resources, namesValueList.Get(i).String())
 			}
+			if len(resources) == 0 {
+				// An empty batch authorizes nothing; the workspace fallback lets
+				// the handler answer instead of doIAMPermissionCheck erroring on
+				// an empty resource list.
+				return []string{""}, nil
+			}
+			return resources, nil
 		}
 
 		requestsDesc := mr.Descriptor().Fields().ByName("requests")
