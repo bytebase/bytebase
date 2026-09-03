@@ -84,9 +84,11 @@ Org-owned tokens may need an org admin to approve the request.
 Developers already have access: the developer group holds Editor on the project,
 which covers OS Login with `sudo` and acting as the service account.
 
-**2. Everything else.**
+**2. Everything else.** Run as a project Owner: it sets IAM policy on the project and
+on the secret, which Editor cannot do. It stops at the first failed step.
 
 ```bash
+set -e
 PROJECT=bytebase-dev
 ZONE=northamerica-northeast2-a
 SA=devbox@${PROJECT}.iam.gserviceaccount.com
