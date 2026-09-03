@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"connectrpc.com/connect"
-	"github.com/google/cel-go/cel"
 	celast "github.com/google/cel-go/common/ast"
 	celoperators "github.com/google/cel-go/common/operators"
 	"github.com/pkg/errors"
@@ -466,14 +465,9 @@ func parseCategoryFilter(filter string) (string, error) {
 		return "", nil
 	}
 
-	e, err := cel.NewEnv()
+	ast, err := common.ParseCELFilter(filter)
 	if err != nil {
-		return "", errors.Wrap(err, "failed to create CEL environment")
-	}
-
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return "", errors.Errorf("failed to parse filter: %v", iss.String())
+		return "", err
 	}
 
 	category, err := extractCategoryFromExpr(ast.NativeRep().Expr())

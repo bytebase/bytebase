@@ -94,13 +94,9 @@ func (s *IssueService) getIssueFind(
 		return issueFind, nil, nil
 	}
 
-	e, err := cel.NewEnv()
+	ast, err := common.ParseCELFilter(filter)
 	if err != nil {
-		return nil, nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create cel env"))
-	}
-	ast, iss := e.Parse(filter)
-	if iss != nil {
-		return nil, nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("failed to parse filter %v, error: %v", filter, iss.String()))
+		return nil, nil, connect.NewError(connect.CodeInvalidArgument, err)
 	}
 
 	var approver *store.UserMessage
