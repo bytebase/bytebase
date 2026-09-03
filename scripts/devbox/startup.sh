@@ -20,7 +20,7 @@ systemctl mask --now docker.socket docker containerd 2>/dev/null
 # ---------- packages ----------
 export DEBIAN_FRONTEND=noninteractive
 echo 'DPkg::Lock::Timeout "300";' > /etc/apt/apt.conf.d/99-lock-timeout   # unattended-upgrades holds the lock at boot
-PKGS="docker.io cron systemd-oomd build-essential mdadm"   # build-essential: Go defaults to CGO_ENABLED=1
+PKGS="docker.io cron systemd-oomd build-essential mdadm gh"   # build-essential: Go defaults to CGO_ENABLED=1
 dpkg --configure -a 2>/dev/null || true   # clears a transaction a preemption cut short; apt repairs the rest
 apt-get -y -qq -f install $PKGS 2>/dev/null || { apt-get update -qq && apt-get -y -qq -f install $PKGS; } \
   || fatal "prerequisite install failed"
