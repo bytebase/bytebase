@@ -173,6 +173,11 @@
       "existing-user": "Đã có tài khoản?",
       "title": "Đăng ký tài khoản của bạn"
     },
+    "sso": {
+      "invalid-authorization-url": "URL ủy quyền không hợp lệ: phải là URL HTTP hoặc HTTPS hợp lệ.",
+      "no-authorization-endpoint": "Nhà cung cấp danh tính không công bố điểm cuối ủy quyền. Hãy kiểm tra cấu hình.",
+      "unsupported-provider-type": "Loại nhà cung cấp danh tính này không hỗ trợ chuyển hướng SSO."
+    },
     "token-expired-description": "Mã thông báo đã hết hạn, vui lòng đăng nhập lại",
     "token-expired-title": "Mã thông báo đã hết hạn"
   },

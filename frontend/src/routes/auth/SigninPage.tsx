@@ -21,7 +21,7 @@ import type {
   LoginRequest,
 } from "@/types/proto-es/v1/auth_service_pb";
 import { IdentityProviderType } from "@/types/proto-es/v1/idp_service_pb";
-import { openWindowForSSO } from "@/utils";
+import { openWindowForSSO, SsoConfigError } from "@/utils";
 
 export type SigninPageProps = {
   readonly redirect?: boolean;
@@ -88,7 +88,10 @@ export function SigninPage(props: SigninPageProps) {
         module: "bytebase",
         style: "CRITICAL",
         title: "Request error occurred",
-        description: (error as Error).message,
+        description:
+          error instanceof SsoConfigError
+            ? t(error.i18nKey)
+            : (error as Error).message,
       });
     }
   };

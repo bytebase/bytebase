@@ -95,6 +95,17 @@ export function clearOAuthState(token: string): void {
     console.error("Failed to clear OAuth state:", error);
   }
 }
+/**
+ * An SSO failure whose message is an i18n key. `sso.ts` has no translator, so
+ * the caller that renders the failure translates it.
+ */
+export class SsoConfigError extends Error {
+  constructor(readonly i18nKey: string) {
+    super(i18nKey);
+    this.name = "SsoConfigError";
+  }
+}
+
 export async function openWindowForSSO(
   identityProvider: LoginIdentityProvider,
   popup = true,
@@ -107,22 +118,16 @@ export async function openWindowForSSO(
   } else if (identityProvider.type === IdentityProviderType.OIDC) {
     callbackPath = "/oidc/callback";
   } else {
-    throw new Error(
-      `identity provider type ${identityProvider.type.toString()} is not supported`
-    );
+    throw new SsoConfigError("auth.sso.unsupported-provider-type");
   }
 
   const request = identityProvider.authorizationRequest;
   if (!request || request.endpoint === "") {
-    throw new Error(
-      "The identity provider published no authorization endpoint; check its configuration"
-    );
+    throw new SsoConfigError("auth.sso.no-authorization-endpoint");
   }
   // Validate the endpoint to prevent XSS via javascript: URIs.
   if (!isValidHttpUrl(request.endpoint)) {
-    throw new Error(
-      "Invalid authentication URL: must be a valid HTTP or HTTPS URL"
-    );
+    throw new SsoConfigError("auth.sso.invalid-authorization-url");
   }
 
   // Generate cryptographically secure random token for CSRF protection

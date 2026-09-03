@@ -173,6 +173,11 @@
       "existing-user": "Already have an account?",
       "title": "Register your account"
     },
+    "sso": {
+      "invalid-authorization-url": "Invalid authorization URL: it must be a valid HTTP or HTTPS URL.",
+      "no-authorization-endpoint": "The identity provider published no authorization endpoint. Check its configuration.",
+      "unsupported-provider-type": "This identity provider type does not support SSO redirect."
+    },
     "token-expired-description": "Token has expired, please login again",
     "token-expired-title": "Token expired"
   },

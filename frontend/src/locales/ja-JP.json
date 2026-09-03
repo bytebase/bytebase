@@ -173,6 +173,11 @@
       "existing-user": "すでにアカウントをお持ちですか？",
       "title": "アカウントを登録してください"
     },
+    "sso": {
+      "invalid-authorization-url": "認可URLが無効です。有効なHTTPまたはHTTPSのURLを指定してください。",
+      "no-authorization-endpoint": "IDプロバイダーが認可エンドポイントを公開していません。設定を確認してください。",
+      "unsupported-provider-type": "このIDプロバイダーの種類はSSOリダイレクトに対応していません。"
+    },
     "token-expired-description": "トークンの有効期限が切れています。再度ログインしてください。",
     "token-expired-title": "トークンの期限切れ"
   },

@@ -173,6 +173,11 @@
       "existing-user": "已有账号?",
       "title": "注册您的账号"
     },
+    "sso": {
+      "invalid-authorization-url": "授权 URL 无效：必须是有效的 HTTP 或 HTTPS 地址。",
+      "no-authorization-endpoint": "身份提供商未公开授权端点，请检查其配置。",
+      "unsupported-provider-type": "该身份提供商类型不支持 SSO 跳转。"
+    },
     "token-expired-description": "Token 已过期，请重新登录",
     "token-expired-title": "令牌已过期"
   },

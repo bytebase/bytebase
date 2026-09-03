@@ -173,6 +173,11 @@
       "existing-user": "¿Ya tienes una cuenta?",
       "title": "Registre su cuenta"
     },
+    "sso": {
+      "invalid-authorization-url": "URL de autorización no válida: debe ser una URL HTTP o HTTPS válida.",
+      "no-authorization-endpoint": "El proveedor de identidad no publicó ningún punto de autorización. Revisa su configuración.",
+      "unsupported-provider-type": "Este tipo de proveedor de identidad no admite la redirección SSO."
+    },
     "token-expired-description": "El token ha expirado, por favor inicia sesión nuevamente",
     "token-expired-title": "Token expirado"
   },

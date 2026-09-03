@@ -17,7 +17,11 @@ import {
   IdentityProviderType,
   TestIdentityProviderRequestSchema,
 } from "@/types/proto-es/v1/idp_service_pb";
-import { openWindowForSSO, toLoginIdentityProvider } from "@/utils";
+import {
+  openWindowForSSO,
+  SsoConfigError,
+  toLoginIdentityProvider,
+} from "@/utils";
 
 // ============================================================
 // KeyValueBox
@@ -355,7 +359,10 @@ export function TestConnectionButton({
           module: "bytebase",
           style: "CRITICAL",
           title: "Request error occurred",
-          description: (error as ConnectError).message,
+          description:
+            error instanceof SsoConfigError
+              ? t(error.i18nKey)
+              : (error as ConnectError).message,
         });
       }
     } else if (idp.type === IdentityProviderType.LDAP) {
