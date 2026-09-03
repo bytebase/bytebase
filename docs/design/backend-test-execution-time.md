@@ -272,6 +272,30 @@ first. The ownership split above is the plan: all 475 s of `plugin/schema/*`
 moves, of which Oracle alone is 315 s; all 339 s of `plugin/db/*` stays, because
 that is our driver.
 
+For most engines the metadata model is not the near blocker — omni has no engine
+to move to. It ships a parser and AST for Oracle and for MSSQL and nothing more,
+so `schema/oracle` (272 s) and `schema/mssql` (51 s) have no destination; both
+already use omni, but only for the AST their own extractors walk. omni does own
+a TiDB catalog and deparser, and `schema/tidb` imports neither. Only pg and
+mysql delegate, and only in part: pg's SDL diff is a 140-line adapter over
+`omni/pg/catalog`, while `get_database_definition.go` (4855 lines) and
+`metadata_migration.go` (2956 lines) are ours; mysql's `GetDatabaseMetadata` is
+a 46-line adapter, while its `GenerateMigration` (1121 lines) is not. Every
+container test in `plugin/schema/*` calls one of those Bytebase-owned entry
+points, so the tests follow the implementation and not the other way round.
+
+What was already omni's is gone. 24 files and 150 tests in `schema/pg` called
+`omni/pg/catalog` directly — `LoadSDL`, `Diff`, `GenerateMigration` — with no
+Bytebase symbol in them. Read against omni's own `pg/catalog` suite, all but
+four of their behaviors were already covered there by more cases and stronger
+assertions: they matched substrings of the rendered SQL where omni inspects
+typed migration ops. Two of them could not fail at all — the pair named for
+EXCLUDE constraints has no EXCLUDE constraint in either fixture. The four
+genuine gaps went into omni beside the cases they belong with; the rest were
+deleted rather than moved. That is 3 s of the 403 s this effort is about, which
+is the measure of how much of the cost sits behind the port rather than beside
+it.
+
 This plan does not address `plugin/db/starrocks` (158 s). It tests our own
 driver against a heavyweight engine, every test runs on every PR, and skipping
 is not an option — so it stays as accepted cost.
