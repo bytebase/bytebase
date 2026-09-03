@@ -26,6 +26,7 @@ import {
 } from "@/components/WorkspacePageLayout";
 import { useCurrentUser } from "@/hooks/useAppState";
 import { PagedTableFooter, usePagedData } from "@/hooks/usePagedData";
+import { CREATE_USER_PRODUCT_INTRO, useProductIntro } from "@/lib/productIntro";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { getUserFullNameByType } from "@/stores/modules/v1/common";
@@ -332,6 +333,14 @@ export function UsersPage() {
     s.hasInstanceFeature(PlanFeature.FEATURE_DIRECTORY_SYNC)
   );
   const canAccessSettings = hasWorkspacePermissionV2("bb.settings.get");
+  const canCreateUser = hasWorkspacePermissionV2("bb.users.create");
+
+  useProductIntro({
+    id: CREATE_USER_PRODUCT_INTRO,
+    title: t("workspace-setup-guide.intro.create-user-title"),
+    description: t("workspace-setup-guide.intro.create-user-description"),
+    disabled: !canCreateUser,
+  });
 
   const [userSearchText, setUserSearchText] = useState("");
   const [showInactiveUsers, setShowInactiveUsers] = useState(false);
@@ -435,10 +444,11 @@ export function UsersPage() {
             {t("settings.members.entra-sync.self")}
           </Button>
           <Button
-            disabled={!hasWorkspacePermissionV2("bb.users.create")}
+            data-product-intro-target={CREATE_USER_PRODUCT_INTRO}
+            disabled={!canCreateUser}
             onClick={() => setShowCreateUserDrawer(true)}
           >
-            <Plus className="h-4 w-4 mr-1" />
+            <Plus />
             {t("common.create")}
           </Button>
         </div>

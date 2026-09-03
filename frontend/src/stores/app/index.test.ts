@@ -2156,7 +2156,7 @@ describe("useAppStore", () => {
     expect(store.getState().workspaceSetupGuideEnabled()).toBe(false);
   });
 
-  test("disables the workspace setup guide after another member joins", () => {
+  test("allows the original admin to finish an explicit team guide", () => {
     const store = createAppStore();
     store.setState({
       currentUser: user,
@@ -2171,6 +2171,25 @@ describe("useAppStore", () => {
       }),
     });
     expect(store.getState().workspaceSetupGuideEnabled()).toBe(false);
+    expect(store.getState().workspaceSetupGuideEnabled(true)).toBe(true);
+  });
+
+  test("does not allow the multi-member exception for a non-admin", () => {
+    const store = createAppStore();
+    store.setState({
+      currentUser: user,
+      serverInfo: createProto(ActuatorInfoSchema, { userCountInIam: 2 }),
+      workspacePolicy: createProto(IamPolicySchema, {
+        bindings: [
+          createProto(BindingSchema, {
+            role: "roles/workspaceMember",
+            members: [user.name, "users/teammate@example.com"],
+          }),
+        ],
+      }),
+    });
+
+    expect(store.getState().workspaceSetupGuideEnabled(true)).toBe(false);
   });
 
   test("disables the workspace setup guide when quick start is hidden", () => {
@@ -2652,7 +2671,7 @@ describe("useAppStore", () => {
       key: "workspace-setup-guide.dismissed",
       newState: true,
     });
-    store.getState().resetWorkspaceSetupGuide();
+    store.getState().resumeWorkspaceSetupGuide();
 
     expect(
       JSON.parse(
@@ -2671,7 +2690,7 @@ describe("useAppStore", () => {
     ).toEqual({ "workspace-setup-guide.dismissed": false });
   });
 
-  test("resets all workspace setup guide progress", () => {
+  test("resumes the setup guide without clearing progress", () => {
     const store = createAppStore();
     store.setState({ currentUser: user });
 
@@ -2684,18 +2703,26 @@ describe("useAppStore", () => {
       newState: true,
     });
     store.getState().saveIntroStateByKey({
-      key: "workspace-setup-guide.query-executed",
+      key: "workspace-setup-guide.statement-run",
       newState: true,
     });
     store.getState().saveIntroStateByKey({
       key: "workspace-setup-guide.product-model-seen",
       newState: true,
     });
+    store.getState().saveIntroStateByKey({
+      key: "workspace-setup-guide.completed.query-data",
+      newState: true,
+    });
+    store.getState().saveIntroStateByKey({
+      key: "workspace-setup-guide.started.query-data",
+      newState: true,
+    });
     store
       .getState()
       .saveIntroStateByKey({ key: "unrelated.intro", newState: true });
 
-    store.getState().resetWorkspaceSetupGuide();
+    store.getState().resumeWorkspaceSetupGuide();
 
     expect(
       store.getState().getIntroStateByKey("workspace-setup-guide.dismissed")
@@ -2704,17 +2731,25 @@ describe("useAppStore", () => {
       store
         .getState()
         .getIntroStateByKey("workspace-setup-guide.database-explored")
-    ).toBe(false);
+    ).toBe(true);
     expect(
-      store
-        .getState()
-        .getIntroStateByKey("workspace-setup-guide.query-executed")
-    ).toBe(false);
+      store.getState().getIntroStateByKey("workspace-setup-guide.statement-run")
+    ).toBe(true);
     expect(
       store
         .getState()
         .getIntroStateByKey("workspace-setup-guide.product-model-seen")
+    ).toBe(true);
+    expect(
+      store
+        .getState()
+        .getIntroStateByKey("workspace-setup-guide.completed.query-data")
     ).toBe(false);
+    expect(
+      store
+        .getState()
+        .getIntroStateByKey("workspace-setup-guide.started.query-data")
+    ).toBe(true);
     expect(store.getState().getIntroStateByKey("unrelated.intro")).toBe(true);
   });
 

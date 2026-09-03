@@ -22,11 +22,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
+  useIntroStateByKey,
   useOptionalCurrentUser,
   useSubscription,
   useWorkspace,
-  useWorkspaceSetupGuideReset,
+  useWorkspaceSetupGuideResume,
 } from "@/hooks/useAppState";
+import { guideCompletionAcknowledgedKey } from "@/modules/workspace-setup-guide/progress";
+import { getGuideJourney } from "@/modules/workspace-setup-guide/scenarios";
+import {
+  readGuideWorkspaceUsage,
+  readSelectedGuideScenarioId,
+} from "@/modules/workspace-setup-guide/selection";
 import { useAppStore } from "@/stores/app";
 import { PlanType } from "@/types/proto-es/v1/subscription_service_pb";
 import { isDev } from "@/utils/util";
@@ -48,9 +55,17 @@ export function ProfileMenuTrigger({
   const workspace = useWorkspace();
   const route = useCurrentRoute();
   const navigate = useNavigate();
-  const resetWorkspaceSetupGuide = useWorkspaceSetupGuideReset();
+  const resumeWorkspaceSetupGuide = useWorkspaceSetupGuideResume();
+  const scenarioId = readSelectedGuideScenarioId();
+  const workspaceUsage = readGuideWorkspaceUsage();
+  const journey = getGuideJourney(scenarioId, workspaceUsage);
+  const completionAcknowledged = useIntroStateByKey(
+    guideCompletionAcknowledgedKey(journey.id)
+  );
+  const allowMultipleMembers =
+    workspaceUsage === "team" && !completionAcknowledged;
   const workspaceSetupGuideEnabled = useAppStore((state) =>
-    state.workspaceSetupGuideEnabled()
+    state.workspaceSetupGuideEnabled(allowMultipleMembers)
   );
   const currentPlan = subscription?.plan ?? PlanType.FREE;
   const devLicenseOptions = [
@@ -224,7 +239,7 @@ export function ProfileMenuTrigger({
           {workspaceSetupGuideEnabled ? (
             <DropdownMenuItem
               onClick={() => {
-                resetWorkspaceSetupGuide();
+                resumeWorkspaceSetupGuide();
                 setOpen(false);
               }}
             >

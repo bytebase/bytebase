@@ -61,6 +61,14 @@ export const storageKeyCollapseState = (email: string) =>
 // outlive the server data associated with a workspace id.
 export const storageKeyIntroState = (scope: string, email: string) =>
   withScope("bb.intro-state", scope, email);
+export const storageKeyWorkspaceSetupGuideScenario = (
+  scope: string,
+  email: string
+) => withScope("bb.workspace-setup-guide.scenario", scope, email);
+export const storageKeyWorkspaceSetupGuideWorkspaceUsage = (
+  scope: string,
+  email: string
+) => withScope("bb.workspace-setup-guide.workspace-usage", scope, email);
 // Workspace-scoped: value keys embed project resource names.
 export const storageKeyIamRemind = (scope: string, email: string) =>
   withScope("bb.iam-remind", scope, email);

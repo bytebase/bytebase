@@ -17,6 +17,10 @@ const mocks = vi.hoisted(() => ({
   batchUpdateDatabases: vi.fn(),
   useProductIntro: vi.fn(),
   captureMetric: vi.fn(),
+  scenarioId: undefined as
+    | "query-data"
+    | "create-database-change"
+    | undefined,
   removeDatabaseMetadataCache: vi.fn(),
   fetchInstance: vi.fn(),
   fetchInstanceList: vi.fn(async (_params?: { parent?: string }) => ({
@@ -81,6 +85,10 @@ vi.mock("@/app/analytics/provider", () => ({
   behaviorAnalytics: {
     captureMetric: mocks.captureMetric,
   },
+}));
+
+vi.mock("@/modules/workspace-setup-guide/selection", () => ({
+  readSelectedGuideScenarioId: () => mocks.scenarioId,
 }));
 
 vi.mock("@/components/AdvancedSearch", () => ({
@@ -282,6 +290,7 @@ beforeEach(async () => {
   mocks.instancesByName = {};
   mocks.routerCurrentName = "workspace.project.database";
   mocks.routerCurrentQuery = {};
+  mocks.scenarioId = undefined;
   mocks.batchUpdateDatabases.mockResolvedValue(undefined);
   mocks.workspacePermissions = new Set([
     "bb.instances.create",
@@ -743,6 +752,107 @@ describe("ProjectDatabasesPage", () => {
     });
   });
 
+  test("only offers a database change for the change scenario", async () => {
+    mocks.scenarioId = "create-database-change";
+    mocks.routerCurrentQuery = { intro: "project-instance-synced" };
+    mocks.visibleDatabases = [
+      {
+        name: "projects/demo/instances/prod/databases/app",
+        project: "projects/demo",
+      },
+    ];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-create-change-title"
+    );
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-create-change-description"
+    );
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-action"
+    );
+    expect(container.textContent).not.toContain(
+      "db.project-instance-synced-sql-editor-action"
+    );
+    expect(mocks.useProductIntro).toHaveBeenCalledWith({
+      id: "project-instance-synced",
+      title: "db.project-instance-synced-create-change-title",
+      description: "db.project-instance-synced-create-change-description",
+      disabled: false,
+    });
+
+    const changeButton = Array.from(container.querySelectorAll("button")).find(
+      (button) =>
+        button.textContent?.includes("db.project-instance-synced-action")
+    ) as HTMLButtonElement;
+    expect(changeButton.className).toContain("bg-accent");
+
+    await act(async () => {
+      changeButton.click();
+    });
+    expect(preCreateIssue).toHaveBeenCalledWith("projects/demo", [
+      "projects/demo/instances/prod/databases/app",
+    ]);
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("only offers SQL Editor for the query scenario", async () => {
+    mocks.scenarioId = "query-data";
+    mocks.routerCurrentQuery = { intro: "project-instance-synced" };
+    mocks.visibleDatabases = [
+      {
+        name: "projects/demo/instances/prod/databases/app",
+        project: "projects/demo",
+      },
+    ];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-query-data-title"
+    );
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-query-data-description"
+    );
+    expect(container.textContent).toContain(
+      "db.project-instance-synced-sql-editor-action"
+    );
+    expect(container.textContent).not.toContain(
+      "db.project-instance-synced-action"
+    );
+    expect(mocks.useProductIntro).toHaveBeenCalledWith({
+      id: "project-instance-synced",
+      title: "db.project-instance-synced-query-data-title",
+      description: "db.project-instance-synced-query-data-description",
+      disabled: false,
+    });
+
+    const sqlEditorButton = Array.from(container.querySelectorAll("a")).find(
+      (link) =>
+        link.textContent?.includes(
+          "db.project-instance-synced-sql-editor-action"
+        )
+    ) as HTMLAnchorElement;
+    expect(sqlEditorButton.className).toContain("bg-accent");
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
   test("shows database next actions when requested by the setup guide", async () => {
     mocks.routerCurrentQuery = { intro: "project-instance-synced" };
     mocks.visibleDatabases = [
@@ -769,6 +879,34 @@ describe("ProjectDatabasesPage", () => {
       description: "db.project-instance-synced-description",
       disabled: false,
     });
+
+    act(() => {
+      root.unmount();
+    });
+  });
+
+  test("keeps database next actions after the product intro is dismissed", async () => {
+    mocks.routerCurrentQuery = { intro: "project-instance-synced" };
+    mocks.visibleDatabases = [
+      {
+        name: "projects/demo/instances/prod/databases/app",
+        project: "projects/demo",
+      },
+    ];
+    const container = document.createElement("div");
+    const root = createRoot(container);
+
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+    expect(container.querySelector("[role='alert']")).not.toBe(null);
+
+    mocks.routerCurrentQuery = {};
+    await act(async () => {
+      root.render(<ProjectDatabasesPage projectId="demo" />);
+    });
+
+    expect(container.querySelector("[role='alert']")).not.toBe(null);
 
     act(() => {
       root.unmount();

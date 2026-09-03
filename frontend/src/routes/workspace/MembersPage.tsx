@@ -75,6 +75,10 @@ import {
   groupProjectRoleBindings,
 } from "@/lib/memberBindings";
 import {
+  GRANT_ACCESS_PRODUCT_INTRO,
+  useProductIntro,
+} from "@/lib/productIntro";
+import {
   getRoleEnvironmentLimitationKind,
   roleHasDatabaseLimitation,
 } from "@/lib/project-member/utils";
@@ -2102,6 +2106,13 @@ export function MembersPage({ projectId }: { projectId?: string }) {
       hasProjectPermissionV2(project, "bb.projects.setIamPolicy")
     : hasWorkspacePermissionV2("bb.workspaces.setIamPolicy");
 
+  useProductIntro({
+    id: GRANT_ACCESS_PRODUCT_INTRO,
+    title: t("workspace-setup-guide.intro.grant-access-title"),
+    description: t("workspace-setup-guide.intro.grant-access-description"),
+    disabled: !!projectName || !canSetIamPolicy,
+  });
+
   // Whether the current user already holds every PROJECT_OWNER permission
   // (workspace- or project-scoped). hasProjectPermissionV2 falls back to
   // workspace permissions, so a single check covers both contexts. Mirrors the
@@ -2277,13 +2288,14 @@ export function MembersPage({ projectId }: { projectId?: string }) {
                   </Button>
                 )}
                 <Button
+                  data-product-intro-target={GRANT_ACCESS_PRODUCT_INTRO}
                   disabled={disabled || !canSetIamPolicy}
                   onClick={() => {
                     setEditingMember(undefined);
                     setShowEditMemberDrawer(true);
                   }}
                 >
-                  <Plus className="h-4 w-4 mr-1" />
+                  <Plus />
                   {t("settings.members.grant-access")}
                 </Button>
               </div>

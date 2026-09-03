@@ -12,6 +12,7 @@ const mocks = vi.hoisted(() => ({
   onDismiss: vi.fn(),
   onCreated: vi.fn(),
   prepareSampleProjectInstance: vi.fn(),
+  captureMetric: vi.fn(),
   pushNotification: vi.fn(),
   isSaaSMode: false,
   sampleAvailable: true,
@@ -60,6 +61,10 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("@/hooks/useUnsavedChangesGuard", () => ({
   useUnsavedChangesGuard: mocks.useUnsavedChangesGuard,
+}));
+
+vi.mock("@/app/analytics/provider", () => ({
+  behaviorAnalytics: { captureMetric: mocks.captureMetric },
 }));
 
 vi.mock("@/stores/app", () => ({
@@ -351,6 +356,13 @@ describe("CreateInstanceView", () => {
     expect(mocks.prepareSampleProjectInstance).toHaveBeenCalledWith(
       "projects/demo"
     );
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "sample instance requested",
+      properties: { source: "instance_creation" },
+    });
+    expect(mocks.captureMetric.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.prepareSampleProjectInstance.mock.invocationCallOrder[0]
+    );
     expect(mocks.onCreated).toHaveBeenCalledWith(instance);
 
     act(() => {
@@ -530,6 +542,10 @@ describe("CreateInstanceView", () => {
       title: "Failed to prepare Sample Project Instance.",
       description:
         "[internal] The sample instance cannot be provisioned. Try again later.",
+    });
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "sample instance requested",
+      properties: { source: "instance_creation" },
     });
 
     act(() => {

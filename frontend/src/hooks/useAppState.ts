@@ -484,8 +484,8 @@ export function useNotify() {
   return useAppStore((state) => state.notify);
 }
 
-export function useWorkspaceSetupGuideReset() {
-  return useAppStore((state) => state.resetWorkspaceSetupGuide);
+export function useWorkspaceSetupGuideResume() {
+  return useAppStore((state) => state.resumeWorkspaceSetupGuide);
 }
 
 export function useIntroStateByKey(key: string) {

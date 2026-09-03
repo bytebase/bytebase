@@ -1,228 +1,230 @@
 import { describe, expect, test } from "vitest";
 import {
   resolveGuide,
-  validateGuideScenario,
-  validateGuideScenarios,
+  validateGuideJourney,
+  validateGuideJourneys,
 } from "./resolve";
 import type {
   GuideContext,
-  GuideScenario,
+  GuideJourney,
   GuideStepDefinition,
   GuideStepId,
   GuideStepRegistry,
 } from "./types";
 
-const context = (
-  completed: Partial<Record<GuideStepId, boolean>> = {}
+const STEP_IDS: GuideStepId[] = [
+  "create-project",
+  "connect-instance",
+  "explore-database",
+  "query-data",
+  "create-database-change",
+  "create-user",
+  "grant-access",
+];
+
+const createContext = (
+  overrides: Partial<GuideContext> = {}
 ): GuideContext => ({
-  hasProject: completed["create-project"] ?? false,
-  hasInstance: completed["connect-instance"] ?? false,
-  hasExploredDatabase: completed["explore-database"] ?? false,
-  hasFirstQuery: completed["query-data"] ?? false,
+  hasProject: false,
+  hasInstance: false,
+  hasExploredDatabase: false,
+  hasRunStatement: false,
+  hasCreatedChangeIssue: false,
+  isSaaS: false,
+  hasOtherHumanUser: false,
+  hasOtherWorkspaceMember: false,
   projectName: "",
+  instanceName: "",
   databaseProjectName: "",
   databaseName: "",
   route: { name: "workspace.home", params: {} },
+  ...overrides,
 });
 
-const definition = (
-  id: GuideStepId,
-  isComplete: GuideStepDefinition["isComplete"]
-): GuideStepDefinition => ({
+const completionById: Record<GuideStepId, keyof GuideContext> = {
+  "create-project": "hasProject",
+  "connect-instance": "hasInstance",
+  "explore-database": "hasExploredDatabase",
+  "query-data": "hasRunStatement",
+  "create-database-change": "hasCreatedChangeIssue",
+  "create-user": "hasOtherWorkspaceMember",
+  "grant-access": "hasOtherWorkspaceMember",
+};
+
+const definition = (id: GuideStepId): GuideStepDefinition => ({
   id,
-  analyticsKey: (
-    {
-      "create-project": "hasProject",
-      "connect-instance": "hasInstance",
-      "explore-database": "hasExploredDatabase",
-      "query-data": "hasFirstQuery",
-    } as const
-  )[id],
+  analyticsKey:
+    id === "create-user" || id === "grant-access" ? "add-teammate" : id,
   labelKey: `label.${id}`,
   descriptionKey: `description.${id}`,
-  isComplete,
+  isComplete: (context) => Boolean(context[completionById[id]]),
   matchesRoute: (route) => route.name === `route.${id}`,
   resolveActions: () => ({}),
 });
 
-const registry: GuideStepRegistry = {
-  "create-project": definition("create-project", (value) => value.hasProject),
-  "connect-instance": definition(
-    "connect-instance",
-    (value) => value.hasInstance
-  ),
-  "explore-database": definition(
-    "explore-database",
-    (value) => value.hasExploredDatabase
-  ),
-  "query-data": definition("query-data", (value) => value.hasFirstQuery),
-};
+const registry = Object.fromEntries(
+  STEP_IDS.map((id) => [id, definition(id)])
+) as GuideStepRegistry;
 
-const scenario: GuideScenario = {
-  id: "learn-bytebase-basics",
+const generic: GuideJourney = {
+  id: "workspace-setup",
+  completionTitleKey: "completion.generic.title",
+  completionDescriptionKey: "completion.generic.description",
+  completionActions: ["open-sql-editor", "create-change"],
   steps: [
     { stepId: "create-project" },
-    { stepId: "connect-instance" },
+    { stepId: "connect-instance", dependsOn: ["create-project"] },
+    { stepId: "explore-database", dependsOn: ["connect-instance"] },
+  ],
+};
+
+const queryData: GuideJourney = {
+  id: "query-data",
+  scenarioId: "query-data",
+  completionTitleKey: "completion.query.title",
+  completionDescriptionKey: "completion.query.description",
+  completionActions: ["create-change"],
+  steps: [
+    { stepId: "create-project", kind: "prerequisite" },
+    {
+      stepId: "connect-instance",
+      kind: "prerequisite",
+      dependsOn: ["create-project"],
+    },
     {
       stepId: "explore-database",
-      dependsOn: ["create-project", "connect-instance"],
+      kind: "prerequisite",
+      dependsOn: ["connect-instance"],
     },
     { stepId: "query-data", dependsOn: ["explore-database"] },
   ],
 };
 
-describe("validateGuideScenario", () => {
-  test("accepts the basics dependency graph", () => {
-    expect(() => validateGuideScenario(scenario, registry)).not.toThrow();
+describe("validateGuideJourney", () => {
+  test("accepts selected and generic graphs", () => {
+    expect(() => validateGuideJourney(generic, registry)).not.toThrow();
+    expect(() => validateGuideJourney(queryData, registry)).not.toThrow();
   });
 
   test.each([
+    ["empty", { ...generic, steps: [] }, "at least one step"],
     [
-      "empty scenario",
-      { ...scenario, steps: [] },
-      "must contain at least one step",
-    ],
-    [
-      "duplicate step",
+      "duplicate",
       {
-        ...scenario,
+        ...generic,
         steps: [{ stepId: "create-project" }, { stepId: "create-project" }],
       },
       "duplicate step",
     ],
     [
-      "unknown step",
-      { ...scenario, steps: [{ stepId: "missing" as GuideStepId }] },
+      "unknown",
+      { ...generic, steps: [{ stepId: "missing" as GuideStepId }] },
       "unregistered step",
     ],
     [
-      "dependency outside scenario",
+      "external dependency",
       {
-        ...scenario,
-        steps: [{ stepId: "query-data", dependsOn: ["explore-database"] }],
+        ...generic,
+        steps: [{ stepId: "create-project", dependsOn: ["connect-instance"] }],
       },
-      "dependency outside scenario",
+      "dependency outside journey",
     ],
     [
       "self dependency",
       {
-        ...scenario,
+        ...generic,
         steps: [{ stepId: "create-project", dependsOn: ["create-project"] }],
       },
       "cannot depend on itself",
     ],
-    [
-      "forward dependency",
-      {
-        ...scenario,
-        steps: [
-          { stepId: "query-data", dependsOn: ["explore-database"] },
-          { stepId: "explore-database" },
-        ],
-      },
-      "must appear before",
-    ],
-  ])("rejects %s", (_name, invalid, message) => {
+  ])("rejects an %s graph", (_name, journey, message) => {
     expect(() =>
-      validateGuideScenario(invalid as GuideScenario, registry)
+      validateGuideJourney(journey as GuideJourney, registry)
     ).toThrow(message);
   });
 
-  test("rejects cycles before reporting display order", () => {
-    const invalid: GuideScenario = {
-      id: "learn-bytebase-basics",
-      steps: [
-        { stepId: "create-project", dependsOn: ["connect-instance"] },
-        { stepId: "connect-instance", dependsOn: ["create-project"] },
-      ],
-    };
-    expect(() => validateGuideScenario(invalid, registry)).toThrow("cycle");
-  });
-
-  test("rejects duplicate scenario IDs", () => {
-    expect(() =>
-      validateGuideScenarios([scenario, scenario], registry)
-    ).toThrow("duplicate scenario");
+  test("rejects duplicate journey ids", () => {
+    expect(() => validateGuideJourneys([generic, generic], registry)).toThrow(
+      "duplicate journey"
+    );
   });
 });
 
 describe("resolveGuide", () => {
-  test("uses scenario order and dependencies to find the active step", () => {
-    const resolved = resolveGuide({ scenario, registry, context: context() });
-    expect(resolved.steps.map(({ definition }) => definition.id)).toEqual([
+  test("uses generic setup order and dependencies", () => {
+    const guide = resolveGuide({
+      journey: generic,
+      registry,
+      context: createContext(),
+    });
+    expect(guide.steps.map((step) => step.definition.id)).toEqual([
+      "create-project",
+      "connect-instance",
+      "explore-database",
+    ]);
+    expect(guide.activeStep?.definition.id).toBe("create-project");
+  });
+
+  test("keeps satisfied prerequisites visible", () => {
+    const guide = resolveGuide({
+      journey: queryData,
+      registry,
+      context: createContext({
+        hasProject: true,
+        hasInstance: true,
+        hasExploredDatabase: true,
+      }),
+    });
+    expect(guide.steps.map((step) => step.definition.id)).toEqual([
       "create-project",
       "connect-instance",
       "explore-database",
       "query-data",
     ]);
-    expect(resolved.steps.map(({ blocked }) => blocked)).toEqual([
-      false,
-      false,
-      true,
-      true,
+    expect(guide.steps.slice(0, 3).every((step) => step.done)).toBe(true);
+    expect(guide.activeStep?.definition.id).toBe("query-data");
+  });
+
+  test("shows the full chain and blocks on missing prerequisites", () => {
+    const guide = resolveGuide({
+      journey: queryData,
+      registry,
+      context: createContext(),
+    });
+    expect(guide.steps.map((step) => step.definition.id)).toEqual([
+      "create-project",
+      "connect-instance",
+      "explore-database",
+      "query-data",
     ]);
-    expect(resolved.activeStep.definition.id).toBe("create-project");
+    expect(guide.steps[1].blocked).toBe(true);
+    expect(guide.steps[3].blocked).toBe(true);
   });
 
-  test("allows the second independent root step to become active", () => {
-    const resolved = resolveGuide({
-      scenario,
+  test("allows a completed visible prerequisite to stay selected", () => {
+    const guide = resolveGuide({
+      journey: queryData,
       registry,
-      context: context({ "create-project": true }),
+      context: createContext({ hasProject: true }),
+      selectedStepId: "create-project",
     });
-    expect(resolved.activeStep.definition.id).toBe("connect-instance");
+    expect(guide.highlightedStep?.definition.id).toBe("create-project");
+    expect(guide.actionStep?.definition.id).toBe("connect-instance");
   });
 
-  test("uses a valid manual selection for highlight and action", () => {
-    const resolved = resolveGuide({
-      scenario,
+  test("returns completion without an active action", () => {
+    const guide = resolveGuide({
+      journey: queryData,
       registry,
-      context: context(),
-      selectedStepId: "connect-instance",
-    });
-    expect(resolved.highlightedStep?.definition.id).toBe("connect-instance");
-    expect(resolved.actionStep.definition.id).toBe("connect-instance");
-  });
-
-  test("falls from a completed route match to the active step", () => {
-    const value = context({
-      "create-project": true,
-      "connect-instance": true,
-      "explore-database": true,
-    });
-    value.route = { name: "route.explore-database", params: {} };
-    const resolved = resolveGuide({ scenario, registry, context: value });
-    expect(resolved.highlightedStep?.definition.id).toBe("query-data");
-  });
-
-  test("does not highlight a step on unrelated routes", () => {
-    const resolved = resolveGuide({ scenario, registry, context: context() });
-    expect(resolved.highlightedStep).toBeUndefined();
-  });
-
-  test("ignores a selected ID that is not part of the scenario", () => {
-    const resolved = resolveGuide({
-      scenario,
-      registry,
-      context: context(),
-      selectedStepId: "missing" as GuideStepId,
-    });
-    expect(resolved.highlightedStep).toBeUndefined();
-    expect(resolved.actionStep.definition.id).toBe("create-project");
-  });
-
-  test("retains the final step after all steps complete", () => {
-    const resolved = resolveGuide({
-      scenario,
-      registry,
-      context: context({
-        "create-project": true,
-        "connect-instance": true,
-        "explore-database": true,
-        "query-data": true,
+      context: createContext({
+        hasProject: true,
+        hasInstance: true,
+        hasExploredDatabase: true,
+        hasRunStatement: true,
       }),
     });
-    expect(resolved.activeStep.definition.id).toBe("query-data");
-    expect(resolved.actionStep.definition.id).toBe("query-data");
+    expect(guide.complete).toBe(true);
+    expect(guide.activeStep).toBeUndefined();
+    expect(guide.actionStep).toBeUndefined();
   });
 });

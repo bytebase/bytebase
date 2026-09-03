@@ -839,7 +839,11 @@
     "partitions": "Phân vùng",
     "procedures": "Thủ tục",
     "project-instance-synced-action": "Tạo thay đổi cơ sở dữ liệu",
+    "project-instance-synced-create-change-description": "Cơ sở dữ liệu của bạn đã sẵn sàng trong dự án này. Hãy tạo một thay đổi cơ sở dữ liệu được quản trị để tiếp tục.",
+    "project-instance-synced-create-change-title": "Cơ sở dữ liệu đã sẵn sàng để thay đổi",
     "project-instance-synced-description": "Cơ sở dữ liệu của bạn đã sẵn sàng trong dự án này. Hãy bắt đầu bằng cách truy vấn dữ liệu trong SQL Editor, hoặc tạo thay đổi cơ sở dữ liệu được quản trị khi cần.",
+    "project-instance-synced-query-data-description": "Cơ sở dữ liệu của bạn đã sẵn sàng trong dự án này. Hãy mở SQL Editor để truy vấn.",
+    "project-instance-synced-query-data-title": "Cơ sở dữ liệu đã sẵn sàng để truy vấn",
     "project-instance-synced-sql-editor-action": "Mở SQL Editor",
     "project-instance-synced-title": "Đã kết nối cơ sở dữ liệu",
     "project-instance-syncing-description": "Quá trình này có thể mất vài giây đến vài phút. Bạn có thể làm mới trang này sau.",
@@ -2823,6 +2827,8 @@
       "display-name-placeholder": "Nhập tên của bạn",
       "email": "Email",
       "enable-sample-databases": "Bật cơ sở dữ liệu mẫu",
+      "enable-sample-databases-create-change": "Bật cơ sở dữ liệu mẫu làm đích thay đổi an toàn",
+      "enable-sample-databases-query-data": "Bật cơ sở dữ liệu mẫu để bắt đầu truy vấn ngay",
       "password": "Mật khẩu",
       "password-confirm": "Xác nhận mật khẩu",
       "password-confirm-placeholder": "Xác nhận mật khẩu mới",
@@ -2832,10 +2838,36 @@
       "phone-tips": "Nhớ bao gồm mã quốc gia +1xxxxxx",
       "setup-failed": "Cập nhật hồ sơ thất bại.",
       "setup-first-project": "Thiết lập dự án đầu tiên",
+      "setup-scenario": {
+        "continue": "Tiếp tục",
+        "create-database-change": {
+          "description": "Xác định thay đổi và tạo issue có thể theo dõi.",
+          "title": "Tạo thay đổi cơ sở dữ liệu"
+        },
+        "outcome-title": "Bạn muốn làm gì với Bytebase?",
+        "query-data": {
+          "description": "Mở SQL Editor và chạy một câu lệnh trên cơ sở dữ liệu.",
+          "title": "Truy vấn dữ liệu"
+        },
+        "workspace-usage": {
+          "solo": {
+            "description": "Tôi sẽ tự sử dụng Bytebase.",
+            "title": "Chỉ mình tôi"
+          },
+          "team": {
+            "description": "Tôi sẽ làm việc cùng những người khác.",
+            "title": "Nhóm của tôi"
+          },
+          "title": "Ai sẽ sử dụng Bytebase cùng bạn?"
+        }
+      },
       "setup-skip": "Để sau",
+      "setup-steps": {
+        "scenario": "Chọn mục tiêu",
+        "workspace": "Thiết lập không gian làm việc"
+      },
       "setup-submit": "Thiết lập không gian làm việc của tôi",
       "setup-success": "Hồ sơ đã được cập nhật.",
-      "setup-title": "Chào mừng! Thiết lập không gian làm việc của bạn",
       "workspace-name": "Tên không gian làm việc",
       "workspace-name-placeholder": "Nhập tên không gian làm việc"
     },
@@ -3576,19 +3608,31 @@
   "workspace-setup-guide": {
     "actions": {
       "change": "Tạo thay đổi cơ sở dữ liệu",
+      "done": "Xong",
       "query": "Đi tới SQL Editor"
     },
     "descriptions": {
-      "database": "Xem cơ sở dữ liệu từ instance đã kết nối, hoặc tạo hay chuyển một cơ sở dữ liệu khi cần.",
-      "instance": "Kết nối instance để Bytebase có thể đồng bộ cơ sở dữ liệu của bạn.",
-      "project": "Tạo dự án để quản lý cơ sở dữ liệu và thay đổi.",
-      "sql-editor": "Truy vấn dữ liệu trong SQL Editor hoặc tạo thay đổi cơ sở dữ liệu được quản trị."
+      "add-teammate": "Mời một thành viên và cấp quyền truy cập không gian làm việc.",
+      "create-database-change": "Xác định thay đổi cơ sở dữ liệu và tạo issue cho thay đổi đó.",
+      "database": "Mở một cơ sở dữ liệu và khám phá schema cùng các bảng của cơ sở dữ liệu đó.",
+      "instance": "Kết nối một instance để Bytebase có thể đồng bộ các cơ sở dữ liệu.",
+      "project": "Tạo một dự án để tổ chức cơ sở dữ liệu và các thay đổi.",
+      "query-data": "Mở cơ sở dữ liệu đã chọn trong SQL Editor và chạy bất kỳ câu lệnh nào."
     },
     "dismiss": "Đóng hướng dẫn",
+    "generic": {
+      "completion-description": "Bạn đã khám phá cách dự án, instance và cơ sở dữ liệu kết nối với nhau.",
+      "completion-title": "Không gian làm việc cơ sở dữ liệu của bạn đã sẵn sàng",
+      "title": "Thiết lập Bytebase"
+    },
     "getting-started": "Bắt đầu",
     "intro": {
+      "create-user-description": "Tạo tài khoản cho một thành viên trong không gian làm việc tự lưu trữ này.",
+      "create-user-title": "Tạo người dùng",
       "database-description": "Tạo cơ sở dữ liệu trong instance đã kết nối.",
       "database-title": "Tạo cơ sở dữ liệu",
+      "grant-access-description": "Mời một thành viên và gán vai trò không gian làm việc cho họ.",
+      "grant-access-title": "Cấp quyền truy cập không gian làm việc",
       "instance-description": "Tạo instance để Bytebase có thể kết nối tới máy chủ cơ sở dữ liệu của bạn.",
       "instance-title": "Kết nối instance",
       "project-description": "Tạo một dự án trước. Cơ sở dữ liệu có thể được đồng bộ vào dự án đó sau khi instance được kết nối.",
@@ -3599,12 +3643,27 @@
     "prepare-database-tip": "Chọn cơ sở dữ liệu để chuyển vào dự án.",
     "previous-step-required": "Bạn cần hoàn thành bước trước đó.",
     "product-model": "Cách Bytebase hoạt động",
-    "self": "Thiết lập Bytebase",
+    "scenarios": {
+      "create-database-change": {
+        "completion-description": "Thay đổi cơ sở dữ liệu của bạn hiện có một issue có thể theo dõi trong Bytebase.",
+        "completion-title": "Bạn đã tạo thay đổi cơ sở dữ liệu đầu tiên",
+        "title": "Tạo thay đổi cơ sở dữ liệu"
+      },
+      "query-data": {
+        "completion-description": "Bạn đã mở SQL Editor và chạy một câu lệnh trên cơ sở dữ liệu.",
+        "completion-title": "Bạn đã chạy câu lệnh đầu tiên",
+        "title": "Truy vấn dữ liệu"
+      }
+    },
+    "step-progress": "{{current}} / {{total}}",
     "steps": {
+      "add-teammate": "Thêm thành viên",
+      "create-database-change": "Tạo thay đổi cơ sở dữ liệu",
       "database": "Khám phá cơ sở dữ liệu",
       "instance": "Kết nối instance",
       "project": "Tạo dự án",
-      "query": "Truy vấn dữ liệu"
-    }
+      "query-data": "Truy vấn dữ liệu"
+    },
+    "view-all-steps": "Xem tất cả các bước"
   }
 }

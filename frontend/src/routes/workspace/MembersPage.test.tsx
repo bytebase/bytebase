@@ -12,11 +12,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const {
+  mockUseProductIntro,
   mockPushNotification,
   mockUpdateProjectIamPolicy,
   maximumRoleExpirationSeconds,
   maximumRequestExpirationSeconds,
 } = vi.hoisted(() => ({
+  mockUseProductIntro: vi.fn(),
   mockPushNotification: vi.fn(),
   mockUpdateProjectIamPolicy: vi.fn(),
   maximumRoleExpirationSeconds: { value: undefined as number | undefined },
@@ -117,10 +119,16 @@ vi.mock("@/components/ui/button", () => ({
     onClick,
     variant: _variant,
     size: _size,
+    ...props
   }: ButtonHTMLAttributes<HTMLButtonElement> & {
     size?: string;
     variant?: string;
-  }) => createElement("button", { disabled, onClick }, children),
+  }) => createElement("button", { ...props, disabled, onClick }, children),
+}));
+
+vi.mock("@/lib/productIntro", () => ({
+  GRANT_ACCESS_PRODUCT_INTRO: "grant-access",
+  useProductIntro: mockUseProductIntro,
 }));
 
 vi.mock("@/components/ui/checkbox", () => ({
@@ -379,6 +387,13 @@ async function renderPage(): Promise<void> {
   });
 }
 
+async function renderWorkspacePage(): Promise<void> {
+  await act(async () => {
+    root.render(createElement(MembersPage));
+    await Promise.resolve();
+  });
+}
+
 async function flush(): Promise<void> {
   await act(async () => {
     await Promise.resolve();
@@ -536,5 +551,31 @@ describe("MembersPage project role grant drawer", () => {
       title: "project.members.request-role.failed-to-build-expression",
     });
     expect(mockUpdateProjectIamPolicy).not.toHaveBeenCalled();
+  });
+});
+
+describe("MembersPage onboarding intro", () => {
+  it("binds Grant Access only on the editable workspace page", async () => {
+    await renderWorkspacePage();
+
+    expect(mockUseProductIntro).toHaveBeenCalledWith({
+      id: "grant-access",
+      title: "workspace-setup-guide.intro.grant-access-title",
+      description: "workspace-setup-guide.intro.grant-access-description",
+      disabled: false,
+    });
+    const grantButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "settings.members.grant-access"
+    );
+    expect(grantButton).toHaveAttribute(
+      "data-product-intro-target",
+      "grant-access"
+    );
+
+    mockUseProductIntro.mockClear();
+    await renderPage();
+    expect(mockUseProductIntro).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "grant-access", disabled: true })
+    );
   });
 });
