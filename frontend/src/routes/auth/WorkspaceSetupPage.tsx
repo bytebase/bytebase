@@ -10,11 +10,11 @@ import {
   PROJECT_V1_ROUTE_DATABASES,
 } from "@/app/router/handles";
 import { ResourceIdField } from "@/components/ResourceIdField";
-import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { StepIndicator } from "@/components/ui/step-indicator";
 import {
   useCreateProject,
   useCurrentUser,
@@ -28,6 +28,16 @@ import {
   PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
 } from "@/lib/productIntro";
 import { cn } from "@/lib/utils";
+import {
+  clearGuideWorkspaceUsage,
+  clearSelectedGuideScenarioId,
+  saveGuideWorkspaceUsage,
+  saveSelectedGuideScenarioId,
+} from "@/modules/workspace-setup-guide/selection";
+import type {
+  GuideScenarioId,
+  GuideWorkspaceUsage,
+} from "@/modules/workspace-setup-guide/types";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
@@ -39,6 +49,7 @@ import {
   extractProjectResourceName,
 } from "@/utils";
 import { extractGrpcErrorMessage } from "@/utils/connect";
+import { WorkspaceSetupQuestionnaireStep } from "./WorkspaceSetupQuestionnaireStep";
 
 export function WorkspaceSetupPage() {
   const { t } = useTranslation();
@@ -55,9 +66,6 @@ export function WorkspaceSetupPage() {
     (state) => (state.serverInfo?.sample?.instances.length ?? 0) > 0
   );
   const canPrepareSample = sampleAvailable && !sampleProvisioned;
-  const deployment = useAppStore((state) =>
-    state.isSaaSMode() ? "cloud" : "self-host"
-  );
   const { createProject, setRecentProject } = useCreateProject();
   const workspace = useWorkspace();
   const workspacePolicy = useAppStore((state) => state.workspacePolicy);
@@ -72,6 +80,12 @@ export function WorkspaceSetupPage() {
       (count, b) => count + b.members.length,
       0
     ) === 1;
+  const [setupStep, setSetupStep] = useState<"scenario" | "workspace">(
+    "scenario"
+  );
+  const [selectedScenarioId, setSelectedScenarioId] =
+    useState<GuideScenarioId>();
+  const [workspaceUsage, setWorkspaceUsage] = useState<GuideWorkspaceUsage>();
 
   // `currentUser` loads asynchronously (unknownUser with an empty email until
   // then), so seed the name field once the real user is known rather than
@@ -149,7 +163,6 @@ export function WorkspaceSetupPage() {
       }
       let createdProjectName = "";
       let sampleInstanceName = "";
-      let sampleSucceeded = false;
       if (shouldCreateProject) {
         const createdProject = await createProject(
           projectTitle.trim(),
@@ -158,12 +171,16 @@ export function WorkspaceSetupPage() {
         setRecentProject(createdProject.name);
         createdProjectName = createdProject.name;
         if (sampleRequested && createdProject.name) {
+          behaviorAnalytics.captureMetric(
+            createBehaviorMetric("sample instance requested", {
+              properties: { source: "workspace_setup" },
+            })
+          );
           try {
             const sampleInstance = await prepareSampleProjectInstance(
               createdProject.name
             );
             sampleInstanceName = sampleInstance.name;
-            sampleSucceeded = true;
           } catch (error) {
             pushNotification({
               module: "bytebase",
@@ -180,12 +197,11 @@ export function WorkspaceSetupPage() {
         title: t("settings.profile.setup-success"),
       });
       behaviorAnalytics.captureMetric(
-        createBehaviorMetric("workspace setup completed", {
+        createBehaviorMetric("workspace setup submitted", {
           properties: {
-            deployment,
-            project_created: !!createdProjectName,
-            sample_requested: sampleRequested,
-            sample_succeeded: sampleSucceeded,
+            scenario: selectedScenarioId ?? "unselected",
+            result: "finished",
+            sample_enabled: sampleRequested,
           },
         })
       );
@@ -230,30 +246,68 @@ export function WorkspaceSetupPage() {
 
   const handleSkip = () => {
     behaviorAnalytics.captureMetric(
-      createBehaviorMetric("workspace setup skipped", {
-        properties: { deployment },
+      createBehaviorMetric("workspace setup submitted", {
+        properties: {
+          scenario: selectedScenarioId ?? "unselected",
+          result: "skipped",
+          sample_enabled: false,
+        },
       })
     );
     goToDashboard();
   };
 
-  const displayName = name.trim() || currentUser?.email || "?";
+  const setupSteps = [
+    {
+      key: "scenario",
+      title: t("settings.profile.setup-steps.scenario"),
+    },
+    {
+      key: "workspace",
+      title: t("settings.profile.setup-steps.workspace"),
+    },
+  ];
+
+  if (setupStep === "scenario") {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4">
+        <div className="flex w-full max-w-lg flex-col gap-y-6">
+          <StepIndicator steps={setupSteps} currentKey={setupStep} />
+          <WorkspaceSetupQuestionnaireStep
+            scenarioValue={selectedScenarioId}
+            workspaceUsageValue={workspaceUsage}
+            onScenarioChange={setSelectedScenarioId}
+            onWorkspaceUsageChange={setWorkspaceUsage}
+            onContinue={() => {
+              if (selectedScenarioId) {
+                saveSelectedGuideScenarioId(selectedScenarioId);
+              } else {
+                clearSelectedGuideScenarioId();
+              }
+              if (workspaceUsage) {
+                saveGuideWorkspaceUsage(workspaceUsage);
+              } else {
+                clearGuideWorkspaceUsage();
+              }
+              setSetupStep("workspace");
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen px-4">
       <div className="w-full max-w-lg mx-4 flex flex-col items-center gap-y-6">
-        <UserAvatar
-          title={displayName}
-          colorSeed={currentUser?.email}
-          size="md"
-          className="size-16! text-2xl!"
+        <StepIndicator
+          className="w-full"
+          steps={setupSteps}
+          currentKey={setupStep}
         />
-
-        <div className="text-center">
-          <h1 className="text-xl font-semibold">
-            {t("settings.profile.setup-title")}
-          </h1>
-        </div>
+        <h1 className="sr-only">
+          {t("settings.profile.setup-steps.workspace")}
+        </h1>
 
         <div className="w-full flex flex-col gap-y-4">
           <FormField title={t("settings.profile.display-name")}>
@@ -325,28 +379,34 @@ export function WorkspaceSetupPage() {
                         "cursor-not-allowed text-control-placeholder"
                     )}
                   >
-                    {t("settings.profile.enable-sample-databases")}
+                    {t(
+                      selectedScenarioId === "query-data"
+                        ? "settings.profile.enable-sample-databases-query-data"
+                        : selectedScenarioId === "create-database-change"
+                          ? "settings.profile.enable-sample-databases-create-change"
+                          : "settings.profile.enable-sample-databases"
+                    )}
                   </label>
                 </div>
               )}
             </FormField>
           )}
 
-          <div className="flex flex-col gap-y-2 mt-2">
-            <Button
-              onClick={() => void handleSave()}
-              disabled={!canSave}
-              className="w-full"
-            >
-              {t("settings.profile.setup-submit")}
-            </Button>
+          <div className="mt-2 flex items-center justify-between gap-x-2 border-t border-block-border pt-4">
             <Button
               appearance="secondary"
-              onClick={handleSkip}
-              className="w-full"
+              onClick={() => setSetupStep("scenario")}
             >
-              {t("settings.profile.setup-skip")}
+              {t("common.back")}
             </Button>
+            <div className="flex flex-col items-end gap-y-2 sm:flex-row sm:items-center sm:gap-x-2 sm:gap-y-0">
+              <Button appearance="secondary" onClick={handleSkip}>
+                {t("settings.profile.setup-skip")}
+              </Button>
+              <Button onClick={() => void handleSave()} disabled={!canSave}>
+                {t("settings.profile.setup-submit")}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

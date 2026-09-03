@@ -24,7 +24,11 @@ const mocks = vi.hoisted(() => ({
     params: {},
     query: {},
   },
-  resetQuickstart: vi.fn(),
+  resumeQuickstart: vi.fn(),
+  captureMetric: vi.fn(),
+  scenarioId: "query-data" as string | undefined,
+  workspaceUsage: undefined as string | undefined,
+  introState: {} as Record<string, boolean>,
   hideQuickStart: false,
   canReadSetupResources: true,
   userCountInIam: 1,
@@ -143,17 +147,29 @@ vi.mock("@/hooks/useAppState", () => ({
     logo: "",
   }),
   useAppFeature: () => mocks.hideQuickStart,
-  useWorkspaceSetupGuideReset: () => mocks.resetQuickstart,
+  useWorkspaceSetupGuideResume: () => mocks.resumeQuickstart,
+  useIntroStateByKey: (key: string) => mocks.introState[key] ?? false,
+}));
+
+vi.mock("@/app/analytics/provider", () => ({
+  behaviorAnalytics: {
+    captureMetric: mocks.captureMetric,
+  },
+}));
+
+vi.mock("@/modules/workspace-setup-guide/selection", () => ({
+  readGuideWorkspaceUsage: () => mocks.workspaceUsage,
+  readSelectedGuideScenarioId: () => mocks.scenarioId,
 }));
 
 vi.mock("@/stores/app", () => ({
   useAppStore: Object.assign(
     (selector: (state: unknown) => unknown) =>
       selector({
-        workspaceSetupGuideEnabled: () =>
+        workspaceSetupGuideEnabled: (allowMultipleMembers = false) =>
           !mocks.hideQuickStart &&
           mocks.canReadSetupResources &&
-          mocks.userCountInIam === 1,
+          (mocks.userCountInIam === 1 || allowMultipleMembers),
       }),
     {
       getState: () => ({
@@ -194,6 +210,9 @@ beforeEach(async () => {
   mocks.canReadSetupResources = true;
   mocks.userCountInIam = 1;
   mocks.isDev = false;
+  mocks.scenarioId = "query-data";
+  mocks.workspaceUsage = undefined;
+  mocks.introState = {};
   mocks.currentRoute.name = "sql-editor.home";
   window.open = vi.fn();
   ({ ProfileMenuTrigger } = await import("./ProfileMenuTrigger"));
@@ -283,7 +302,7 @@ describe("ProfileMenuTrigger", () => {
     unmount();
   });
 
-  test("restores the unified guide", () => {
+  test("resumes the selected guide", () => {
     const { container, render, unmount } = renderIntoContainer(
       <ProfileMenuTrigger size="medium" link />
     );
@@ -295,12 +314,70 @@ describe("ProfileMenuTrigger", () => {
     ).find((button) => button.textContent === "Getting started");
     expect(gettingStartedButton).not.toBeUndefined();
     act(() => gettingStartedButton?.click());
-    expect(mocks.resetQuickstart).toHaveBeenCalledTimes(1);
+    expect(mocks.resumeQuickstart).toHaveBeenCalledTimes(1);
+    expect(mocks.captureMetric).not.toHaveBeenCalled();
+    unmount();
+  });
+
+  test("resumes the generic setup journey without scenario analytics", () => {
+    mocks.scenarioId = undefined;
+    const { container, render, unmount } = renderIntoContainer(
+      <ProfileMenuTrigger size="medium" link />
+    );
+
+    render();
+
+    const gettingStartedButton = Array.from(
+      container.querySelectorAll("button")
+    ).find((button) => button.textContent === "Getting started");
+    act(() => gettingStartedButton?.click());
+    expect(mocks.resumeQuickstart).toHaveBeenCalledTimes(1);
+    expect(mocks.captureMetric).not.toHaveBeenCalled();
     unmount();
   });
 
   test.each([0, 2])("hides getting started for IAM user count %s", (count) => {
     mocks.userCountInIam = count;
+    const { container, render, unmount } = renderIntoContainer(
+      <ProfileMenuTrigger size="medium" link />
+    );
+
+    render();
+
+    expect(container.textContent).not.toContain("Getting started");
+    unmount();
+  });
+
+  test("keeps the original admin's unfinished team guide resumable", () => {
+    mocks.userCountInIam = 2;
+    mocks.workspaceUsage = "team";
+    const { container, render, unmount } = renderIntoContainer(
+      <ProfileMenuTrigger size="medium" link />
+    );
+
+    render();
+
+    expect(container.textContent).toContain("Getting started");
+    unmount();
+  });
+
+  test("ends the multi-member exception after completion acknowledgment", () => {
+    mocks.userCountInIam = 2;
+    mocks.workspaceUsage = "team";
+    mocks.introState["workspace-setup-guide.completed.query-data"] = true;
+    const { container, render, unmount } = renderIntoContainer(
+      <ProfileMenuTrigger size="medium" link />
+    );
+
+    render();
+
+    expect(container.textContent).not.toContain("Getting started");
+    unmount();
+  });
+
+  test("does not give an invited member the local team exception", () => {
+    mocks.userCountInIam = 2;
+    mocks.workspaceUsage = undefined;
     const { container, render, unmount } = renderIntoContainer(
       <ProfileMenuTrigger size="medium" link />
     );

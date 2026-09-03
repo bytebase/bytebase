@@ -14,6 +14,8 @@ export const PREPARE_DATABASE_TRANSFER_TIP = "transfer-databases-to-project";
 export const EXTERNAL_URL_PRODUCT_INTRO = "external-url";
 export const AI_ASSISTANT_PRODUCT_INTRO = "ai-assistant";
 export const DOMAIN_RESTRICTION_PRODUCT_INTRO = "domain-restriction";
+export const CREATE_USER_PRODUCT_INTRO = "create-user";
+export const GRANT_ACCESS_PRODUCT_INTRO = "grant-access";
 
 export type ProductIntroOptions = {
   id: string;

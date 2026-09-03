@@ -51,6 +51,7 @@ import {
   useProductIntro,
 } from "@/lib/productIntro";
 import { normalizeInstanceName } from "@/lib/resourceName";
+import { readSelectedGuideScenarioId } from "@/modules/workspace-setup-guide/selection";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
@@ -536,11 +537,44 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   const hasVisibleDatabase = visibleDatabases.length > 0;
   const showSyncingInstanceHint =
     !!syncingInstanceId && !hasVisibleDatabase && !syncingRefreshExhausted;
+  const databaseNextActionRequested =
+    (availableInstanceCount === 1 && !!syncingInstanceId) ||
+    currentRoute.query[PRODUCT_INTRO_QUERY_KEY] ===
+      PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO;
+  const [databaseNextActionProject, setDatabaseNextActionProject] = useState<
+    string | undefined
+  >(() => (databaseNextActionRequested ? projectName : undefined));
+  useEffect(() => {
+    if (databaseNextActionRequested) {
+      setDatabaseNextActionProject(projectName);
+    }
+  }, [databaseNextActionRequested, projectName]);
   const showDatabaseNextAction =
-    hasVisibleDatabase &&
-    ((availableInstanceCount === 1 && !!syncingInstanceId) ||
-      currentRoute.query[PRODUCT_INTRO_QUERY_KEY] ===
-        PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO);
+    hasVisibleDatabase && databaseNextActionProject === projectName;
+  const selectedGuideScenarioId = readSelectedGuideScenarioId();
+  const databaseNextAction =
+    selectedGuideScenarioId === "create-database-change"
+      ? {
+          title: t("db.project-instance-synced-create-change-title"),
+          description: t(
+            "db.project-instance-synced-create-change-description"
+          ),
+          showCreateChange: true,
+          showSqlEditor: false,
+        }
+      : selectedGuideScenarioId === "query-data"
+        ? {
+            title: t("db.project-instance-synced-query-data-title"),
+            description: t("db.project-instance-synced-query-data-description"),
+            showCreateChange: false,
+            showSqlEditor: true,
+          }
+        : {
+            title: t("db.project-instance-synced-title"),
+            description: t("db.project-instance-synced-description"),
+            showCreateChange: true,
+            showSqlEditor: true,
+          };
   const checkingAvailableInstance =
     !hasVisibleDatabase &&
     !showSyncingInstanceHint &&
@@ -589,8 +623,8 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
   });
   useProductIntro({
     id: PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO,
-    title: t("db.project-instance-synced-title"),
-    description: t("db.project-instance-synced-description"),
+    title: databaseNextAction.title,
+    description: databaseNextAction.description,
     disabled: !showDatabaseNextAction,
   });
 
@@ -702,38 +736,46 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
         <Alert
           variant="info"
           data-product-intro-target={PROJECT_INSTANCE_SYNCED_PRODUCT_INTRO}
-          title={t("db.project-instance-synced-title")}
+          title={databaseNextAction.title}
           description={
             <div className="flex flex-col gap-y-3">
-              <span>{t("db.project-instance-synced-description")}</span>
+              <span>{databaseNextAction.description}</span>
               <div className="ml-auto flex flex-wrap items-center gap-x-2 gap-y-2">
-                <PermissionGuard
-                  permissions={PERMISSIONS_FOR_DATABASE_CREATE_ISSUE}
-                  project={project}
-                >
-                  <Button
-                    size="sm"
-                    appearance="outline"
-                    onClick={handleCreateFirstChange}
+                {databaseNextAction.showCreateChange && (
+                  <PermissionGuard
+                    permissions={PERMISSIONS_FOR_DATABASE_CREATE_ISSUE}
+                    project={project}
                   >
-                    {t("db.project-instance-synced-action")}
-                  </Button>
-                </PermissionGuard>
-                <PermissionGuard
-                  permissions={["bb.sql.select"]}
-                  project={project}
-                >
-                  <span
-                    className="inline-flex"
-                    onClickCapture={handleOpenFirstDatabaseInSQLEditor}
-                  >
-                    <SQLEditorButton
+                    <Button
                       size="sm"
-                      database={visibleDatabases[0]}
-                      label={t("db.project-instance-synced-sql-editor-action")}
-                    />
-                  </span>
-                </PermissionGuard>
+                      appearance={
+                        databaseNextAction.showSqlEditor ? "outline" : undefined
+                      }
+                      onClick={handleCreateFirstChange}
+                    >
+                      {t("db.project-instance-synced-action")}
+                    </Button>
+                  </PermissionGuard>
+                )}
+                {databaseNextAction.showSqlEditor && (
+                  <PermissionGuard
+                    permissions={["bb.sql.select"]}
+                    project={project}
+                  >
+                    <span
+                      className="inline-flex"
+                      onClickCapture={handleOpenFirstDatabaseInSQLEditor}
+                    >
+                      <SQLEditorButton
+                        size="sm"
+                        database={visibleDatabases[0]}
+                        label={t(
+                          "db.project-instance-synced-sql-editor-action"
+                        )}
+                      />
+                    </span>
+                  </PermissionGuard>
+                )}
               </div>
             </div>
           }

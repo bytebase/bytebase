@@ -53,9 +53,17 @@ const DYNAMIC_PREFIXES = [
   // Role-grant expiration presets, rendered via t(preset.labelKey) in
   // MembersPage.tsx (EXPIRATION_PRESETS), not as literal t("…") calls.
   "project.members.expiration-presets.",
+  // Scenario option, sample, and guide outcome keys are stored in typed
+  // definitions and translated through those definitions at render time.
+  "settings.profile.enable-sample-databases",
+  "settings.profile.setup-scenario.create-database-change.",
+  "settings.profile.setup-scenario.query-data.",
+  "settings.profile.setup-scenario.workspace-usage.",
   // Workspace setup guide step definitions store label and description keys;
   // the presentation translates them via t(step.definition.<key>).
   "workspace-setup-guide.descriptions.",
+  "workspace-setup-guide.generic.",
+  "workspace-setup-guide.scenarios.",
   "workspace-setup-guide.steps.",
   // MCP mode cards and the broken-ceiling banner, rendered via
   // t(`settings.mcp.policy.mode.${key}.title`) and a ternary over two key

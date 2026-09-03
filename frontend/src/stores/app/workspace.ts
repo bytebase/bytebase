@@ -689,12 +689,12 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
 
     enableOnboarding: () => get().userCountInIam() === 1,
 
-    workspaceSetupGuideEnabled: () => {
+    workspaceSetupGuideEnabled: (allowMultipleMembers = false) => {
       const currentUserName = get().currentUser?.name;
       return (
         !get().appFeatures["bb.feature.hide-quick-start"] &&
         get().workspacePolicy !== undefined &&
-        get().userCountInIam() === 1 &&
+        (get().userCountInIam() === 1 || allowMultipleMembers) &&
         !!currentUserName &&
         get()
           .getWorkspaceRolesByName(currentUserName)

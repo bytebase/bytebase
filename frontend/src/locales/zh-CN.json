@@ -839,7 +839,11 @@
     "partitions": "分区",
     "procedures": "存储过程",
     "project-instance-synced-action": "创建数据库变更",
+    "project-instance-synced-create-change-description": "你的数据库已在此项目中就绪。请创建受管数据库变更以继续。",
+    "project-instance-synced-create-change-title": "数据库已可进行变更",
     "project-instance-synced-description": "你的数据库已在此项目中就绪。可以先在 SQL Editor 中查询数据，也可以在需要时创建受管数据库变更。",
+    "project-instance-synced-query-data-description": "你的数据库已在此项目中就绪。请打开 SQL Editor 进行查询。",
+    "project-instance-synced-query-data-title": "数据库已可查询",
     "project-instance-synced-sql-editor-action": "打开 SQL Editor",
     "project-instance-synced-title": "数据库已连接",
     "project-instance-syncing-description": "这可能需要几秒到几分钟。你可以稍后刷新此页面。",
@@ -2821,6 +2825,8 @@
       "display-name-placeholder": "输入您的姓名",
       "email": "邮箱",
       "enable-sample-databases": "启用示例数据库",
+      "enable-sample-databases-create-change": "启用示例数据库作为安全的变更目标",
+      "enable-sample-databases-query-data": "启用示例数据库以立即开始查询",
       "password": "密码",
       "password-confirm": "确认密码",
       "password-confirm-placeholder": "确认新密码",
@@ -2830,10 +2836,36 @@
       "phone-tips": "请包含国家代码前缀 +86xxxxxx",
       "setup-failed": "更新个人资料失败。",
       "setup-first-project": "设置第一个项目",
+      "setup-scenario": {
+        "continue": "继续",
+        "create-database-change": {
+          "description": "定义变更并创建可追踪的工单。",
+          "title": "创建数据库变更"
+        },
+        "outcome-title": "您想使用 Bytebase 做什么？",
+        "query-data": {
+          "description": "打开 SQL Editor 并对数据库运行一条语句。",
+          "title": "查询数据"
+        },
+        "workspace-usage": {
+          "solo": {
+            "description": "我会独自使用 Bytebase。",
+            "title": "仅我自己"
+          },
+          "team": {
+            "description": "我会和其他成员一起使用。",
+            "title": "我的团队"
+          },
+          "title": "谁会和您一起使用 Bytebase？"
+        }
+      },
       "setup-skip": "稍后再说",
+      "setup-steps": {
+        "scenario": "选择目标",
+        "workspace": "设置工作空间"
+      },
       "setup-submit": "设置我的工作空间",
       "setup-success": "个人资料已更新。",
-      "setup-title": "欢迎！设置您的工作空间",
       "workspace-name": "工作空间名称",
       "workspace-name-placeholder": "输入工作空间名称"
     },
@@ -3574,19 +3606,31 @@
   "workspace-setup-guide": {
     "actions": {
       "change": "创建数据库变更",
+      "done": "完成",
       "query": "前往 SQL Editor"
     },
     "descriptions": {
-      "database": "查看已连接实例中的数据库；如有需要，可创建或转移数据库。",
-      "instance": "连接实例，让 Bytebase 可以同步你的数据库。",
-      "project": "创建项目来管理数据库和变更。",
-      "sql-editor": "在 SQL Editor 中查询数据，或创建受管数据库变更。"
+      "add-teammate": "邀请团队成员并授予工作空间访问权限。",
+      "create-database-change": "定义数据库变更并创建对应工单。",
+      "database": "打开数据库，浏览其中的 schema 和表。",
+      "instance": "连接实例，以便 Bytebase 同步其中的数据库。",
+      "project": "创建项目来组织数据库和变更。",
+      "query-data": "在 SQL Editor 中打开所选数据库并运行任意语句。"
     },
     "dismiss": "关闭指南",
+    "generic": {
+      "completion-description": "你已了解项目、实例和数据库之间的连接关系。",
+      "completion-title": "你的数据库工作空间已准备就绪",
+      "title": "设置 Bytebase"
+    },
     "getting-started": "入门指南",
     "intro": {
+      "create-user-description": "在此自托管工作空间中为团队成员创建账户。",
+      "create-user-title": "创建用户",
       "database-description": "在已连接的实例中创建数据库。",
       "database-title": "创建数据库",
+      "grant-access-description": "邀请团队成员并分配工作空间角色。",
+      "grant-access-title": "授予工作空间访问权限",
       "instance-description": "创建实例，让 Bytebase 可以连接到你的数据库服务器。",
       "instance-title": "连接实例",
       "project-description": "先创建一个项目。实例连接后，数据库可以同步到该项目中。",
@@ -3597,12 +3641,27 @@
     "prepare-database-tip": "选择数据库并转移到项目。",
     "previous-step-required": "你需要先完成上一步。",
     "product-model": "Bytebase 的运作方式",
-    "self": "设置 Bytebase",
+    "scenarios": {
+      "create-database-change": {
+        "completion-description": "你的数据库变更现在已在 Bytebase 中创建为可追踪工单。",
+        "completion-title": "你已创建第一个数据库变更",
+        "title": "创建数据库变更"
+      },
+      "query-data": {
+        "completion-description": "你已打开 SQL Editor 并对数据库运行了一条语句。",
+        "completion-title": "你已运行第一条语句",
+        "title": "查询数据"
+      }
+    },
+    "step-progress": "第 {{current}} 步，共 {{total}} 步",
     "steps": {
+      "add-teammate": "添加团队成员",
+      "create-database-change": "创建数据库变更",
       "database": "浏览数据库",
       "instance": "连接实例",
       "project": "创建项目",
-      "query": "查询数据"
-    }
+      "query-data": "查询数据"
+    },
+    "view-all-steps": "查看所有步骤"
   }
 }

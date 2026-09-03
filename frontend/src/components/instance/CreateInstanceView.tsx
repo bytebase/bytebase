@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { createBehaviorMetric } from "@/app/analytics/behavior";
+import { behaviorAnalytics } from "@/app/analytics/provider";
 import {
   InfoPanel,
   InfoPanelContent,
@@ -178,6 +180,11 @@ function CreateInstanceFormInner({
     if (!parent || isPreparingSampleProjectInstance || state.isRequesting) {
       return;
     }
+    behaviorAnalytics.captureMetric(
+      createBehaviorMetric("sample instance requested", {
+        properties: { source: "instance_creation" },
+      })
+    );
     setIsPreparingSampleProjectInstance(true);
     setState((prev) => ({ ...prev, isRequesting: true }));
     try {

@@ -61,7 +61,7 @@ describe("HowBytebaseWorksSheet", () => {
     expect(learnMoreLink).toHaveAttribute("target", "_blank");
   });
 
-  test("captures the learn more action", async () => {
+  test("does not record guide analytics for the learn more action", async () => {
     render(<HowBytebaseWorksSheet open onOpenChange={vi.fn()} />);
 
     fireEvent.click(
@@ -69,14 +69,7 @@ describe("HowBytebaseWorksSheet", () => {
         name: "Learn more about how Bytebase organizes resources",
       })
     );
-
-    expect(mocks.captureMetric).toHaveBeenCalledWith({
-      event: "setup guide action clicked",
-      properties: {
-        action: "product_model_learn_more",
-        source: "drawer",
-      },
-    });
+    expect(mocks.captureMetric).not.toHaveBeenCalled();
   });
 
   test.each([
