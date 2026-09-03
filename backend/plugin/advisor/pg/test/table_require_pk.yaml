@@ -93,3 +93,41 @@
         line: 2
         column: 0
       endposition: null
+- statement: ALTER TABLE public.no_index_table ADD COLUMN x INT
+  changeType: 1
+- statement: ALTER TABLE tech_book ADD COLUMN x INT
+  changeType: 1
+- statement: ALTER TABLE public.tech_book DROP CONSTRAINT old_pk
+  changeType: 1
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: 'Table "public"."tech_book" requires PRIMARY KEY, related statement: "ALTER TABLE public.tech_book DROP CONSTRAINT old_pk"'
+      startposition:
+        line: 1
+        column: 0
+      endposition: null
+- statement: |-
+    DROP TABLE tech_book;
+    CREATE TABLE tech_book(id INT, name TEXT);
+  changeType: 1
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: 'Table "public"."tech_book" requires PRIMARY KEY, related statement: "CREATE TABLE tech_book(id INT, name TEXT)"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: ALTER TABLE ghost_table ADD COLUMN x INT
+  changeType: 1
+- statement: |-
+    ALTER TABLE no_index_table ADD PRIMARY KEY (col_a);
+    ALTER TABLE no_index_table DROP CONSTRAINT no_index_table_pkey;
+  changeType: 1
+- statement: |-
+    ALTER TABLE tech_book DROP CONSTRAINT old_pk;
+    ALTER TABLE tech_book ADD PRIMARY KEY (id);
+  changeType: 1
