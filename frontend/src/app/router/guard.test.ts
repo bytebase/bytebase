@@ -24,6 +24,7 @@ const resets = {
 };
 
 const workspaceSetup = {
+  fetchServerInfo: vi.fn<() => Promise<unknown>>(),
   fetchWorkspaceIamPolicy: vi.fn<() => Promise<unknown>>(),
 };
 
@@ -37,6 +38,7 @@ vi.mock("@/stores/app", () => ({
       hasFeature: () => session.hasTwoFa,
       isSaaSMode: () => session.isSaaSMode,
       enableOnboarding: () => session.enableOnboarding,
+      fetchServerInfo: workspaceSetup.fetchServerInfo,
       fetchWorkspaceIamPolicy: workspaceSetup.fetchWorkspaceIamPolicy,
       authenticationInfo: {
         restriction: { disallowSignup: session.disallowSignup },
@@ -85,6 +87,7 @@ beforeEach(() => {
   session.currentUser = undefined;
   session.databaseChangeMode = DatabaseChangeMode.PIPELINE;
   vi.clearAllMocks();
+  workspaceSetup.fetchServerInfo.mockResolvedValue({});
   workspaceSetup.fetchWorkspaceIamPolicy.mockResolvedValue({});
   setRouteNameIndex(
     new Map<string, string>([
@@ -214,6 +217,17 @@ describe("rootGuard", () => {
 
   test("redirects an ineligible user away from workspace setup", async () => {
     session.isLoggedIn = true;
+
+    expect(location(await runWorkspaceSetupLoader())).toBe("/landing");
+  });
+
+  test("refreshes the member count before checking setup eligibility", async () => {
+    session.isLoggedIn = true;
+    session.enableOnboarding = true;
+    workspaceSetup.fetchServerInfo.mockImplementation(async () => {
+      session.enableOnboarding = false;
+      return {};
+    });
 
     expect(location(await runWorkspaceSetupLoader())).toBe("/landing");
   });

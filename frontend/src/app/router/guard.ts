@@ -83,7 +83,10 @@ export async function workspaceSetupGuard(url: URL): Promise<Response | null> {
   }
 
   try {
-    await store.fetchWorkspaceIamPolicy(true);
+    await Promise.all([
+      store.fetchServerInfo(),
+      store.fetchWorkspaceIamPolicy(true),
+    ]);
   } catch {
     return redirect(resolvePath(WORKSPACE_ROUTE_LANDING));
   }
