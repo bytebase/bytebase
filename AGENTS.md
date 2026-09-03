@@ -38,6 +38,18 @@ there and not in the service layer — plus the raw metadata reads in the
 `backend/tests/` collision tests. Read it before adding or modifying a query, a
 paginated list, or a multi-row transaction.
 
+## Testing
+
+Test API and workflow behavior against Postgres only — engine dialects and DDL
+fidelity belong in [omni](https://github.com/bytebase/omni), so never write
+`TestFooForMySQL` beside `TestFooForPostgreSQL`. A test earns a Bytebase server
+boot only if it needs a background runner, a real rollout, or the audit trail —
+those live in `backend/tests`, the only package that may start one; everything
+else asserts in `backend/api/v1` or `backend/store`. Packages needing a
+real database share one container via `TestMain` and give each test its own
+`CREATE DATABASE`, never a container per test — a Postgres container costs 4.3s
+against a 0.7s server boot.
+
 ## Development Workflow
 
 **ALWAYS follow these steps after making code changes:**
