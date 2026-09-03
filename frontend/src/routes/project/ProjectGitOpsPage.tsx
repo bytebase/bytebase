@@ -25,6 +25,7 @@ import {
   getWorkloadIdentityProviderText,
   hasProjectPermissionV2,
   parseWorkloadIdentitySubjectPattern,
+  resolveWorkloadIdentityProviderType,
 } from "@/utils";
 import { WorkloadIdentitySelect } from "./WorkloadIdentitySelect";
 
@@ -87,21 +88,24 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   }, [selectedIdentityName, fetchWorkloadIdentity]);
 
   const selectedConfig = selectedIdentity?.workloadIdentityConfig;
+  // Resolved, not read raw: the subject parser below resolves an unspecified
+  // provider from the subject prefix, so a page reading the stored enum would
+  // render this identity's repository under a "provider does not match" alert
+  // naming no provider.
+  const selectedProviderType =
+    resolveWorkloadIdentityProviderType(selectedConfig) ??
+    WorkloadIdentityConfig_ProviderType.PROVIDER_TYPE_UNSPECIFIED;
 
   // Sync active tab with selected identity provider
   useEffect(() => {
-    if (
-      selectedConfig?.providerType ===
-      WorkloadIdentityConfig_ProviderType.GITLAB
-    ) {
+    if (selectedProviderType === WorkloadIdentityConfig_ProviderType.GITLAB) {
       setActiveTab("gitlab");
     } else if (
-      selectedConfig?.providerType ===
-      WorkloadIdentityConfig_ProviderType.GITHUB
+      selectedProviderType === WorkloadIdentityConfig_ProviderType.GITHUB
     ) {
       setActiveTab("github");
     }
-  }, [selectedConfig?.providerType]);
+  }, [selectedProviderType]);
 
   const parsedSubject = useMemo(() => {
     if (!selectedIdentity) return undefined;
@@ -111,17 +115,16 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   const repoUrl = useMemo(() => {
     const parsed = parsedSubject;
     if (!parsed?.owner || !parsed.repo) return "";
-    const providerType = selectedConfig?.providerType;
-    if (providerType === WorkloadIdentityConfig_ProviderType.GITHUB) {
+    if (selectedProviderType === WorkloadIdentityConfig_ProviderType.GITHUB) {
       return `https://github.com/${parsed.owner}/${parsed.repo}`;
     }
-    if (providerType === WorkloadIdentityConfig_ProviderType.GITLAB) {
+    if (selectedProviderType === WorkloadIdentityConfig_ProviderType.GITLAB) {
       const issuer = selectedConfig?.issuerUrl ?? "https://gitlab.com";
       const base = issuer.replace(/\/$/, "");
       return `${base}/${parsed.owner}/${parsed.repo}`;
     }
     return "";
-  }, [parsedSubject, selectedConfig]);
+  }, [parsedSubject, selectedConfig, selectedProviderType]);
 
   const branch = parsedSubject?.branch || "main";
 
@@ -225,11 +228,11 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   const providerMismatchGithub =
     selectedConfig &&
     activeTab === "github" &&
-    selectedConfig.providerType !== WorkloadIdentityConfig_ProviderType.GITHUB;
+    selectedProviderType !== WorkloadIdentityConfig_ProviderType.GITHUB;
   const providerMismatchGitlab =
     selectedConfig &&
     activeTab === "gitlab" &&
-    selectedConfig.providerType !== WorkloadIdentityConfig_ProviderType.GITLAB;
+    selectedProviderType !== WorkloadIdentityConfig_ProviderType.GITLAB;
 
   return (
     <ProjectPageLayout className="gap-y-1">
@@ -435,7 +438,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
                 className="mb-3"
                 description={t("gitops.workflow.provider-not-match", {
                   provider: getWorkloadIdentityProviderText(
-                    selectedConfig!.providerType,
+                    selectedProviderType,
                     t("settings.members.workload-identity-generic-oidc")
                   ),
                 })}
@@ -484,7 +487,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
                 className="mb-3"
                 description={t("gitops.workflow.provider-not-match", {
                   provider: getWorkloadIdentityProviderText(
-                    selectedConfig!.providerType,
+                    selectedProviderType,
                     t("settings.members.workload-identity-generic-oidc")
                   ),
                 })}
