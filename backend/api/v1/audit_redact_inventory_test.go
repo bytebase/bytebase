@@ -1052,6 +1052,7 @@ var auditRecordedFields = []string{
 	"bytebase.v1.WorkloadIdentity.title",
 	"bytebase.v1.WorkloadIdentityConfig.allowed_audiences",
 	"bytebase.v1.WorkloadIdentityConfig.issuer_url",
+	"bytebase.v1.WorkloadIdentityConfig.jwks_url",
 	"bytebase.v1.WorkloadIdentityConfig.subject_pattern",
 	"bytebase.v1.Workspace.logo",
 	"bytebase.v1.Workspace.name",

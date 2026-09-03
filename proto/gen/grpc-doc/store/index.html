@@ -15660,7 +15660,7 @@ Used to auto-select workspace on next login instead of requiring a workspace pic
                   <td>provider_type</td>
                   <td><a href="#bytebase.store.WorkloadIdentityConfig.ProviderType">WorkloadIdentityConfig.ProviderType</a></td>
                   <td></td>
-                  <td><p>Provider type (currently only GITHUB is supported) </p></td>
+                  <td><p>Provider configuration mode. </p></td>
                 </tr>
               
                 <tr>
@@ -15684,6 +15684,13 @@ Used to auto-select workspace on next login instead of requiring a workspace pic
                   <td><p>Subject pattern to match against token subject claim </p></td>
                 </tr>
               
+                <tr>
+                  <td>jwks_url</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>Optional JWKS endpoint. When empty, use OIDC discovery from issuer_url. </p></td>
+                </tr>
+
             </tbody>
           </table>
 
@@ -15729,7 +15736,7 @@ Used to auto-select workspace on next login instead of requiring a workspace pic
         </table>
       
         <h3 id="bytebase.store.WorkloadIdentityConfig.ProviderType">WorkloadIdentityConfig.ProviderType</h3>
-        <p>ProviderType identifies the CI/CD platform.</p>
+        <p>ProviderType identifies the workload identity configuration mode.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -15754,6 +15761,12 @@ Used to auto-select workspace on next login instead of requiring a workspace pic
                 <td><p></p></td>
               </tr>
             
+              <tr>
+                <td>OIDC</td>
+                <td>3</td>
+                <td><p></p></td>
+              </tr>
+
           </tbody>
         </table>
       
@@ -16044,4 +16057,3 @@ Used to auto-select workspace on next login instead of requiring a workspace pic
     </table>
   </body>
 </html>
-

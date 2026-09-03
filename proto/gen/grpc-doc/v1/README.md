@@ -12748,10 +12748,11 @@ WorkloadIdentityConfig for API layer
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| provider_type | [WorkloadIdentityConfig.ProviderType](#bytebase-v1-WorkloadIdentityConfig-ProviderType) |  | Platform type (currently only GITHUB is supported) |
+| provider_type | [WorkloadIdentityConfig.ProviderType](#bytebase-v1-WorkloadIdentityConfig-ProviderType) |  | Provider configuration mode. |
 | issuer_url | [string](#string) |  | OIDC Issuer URL (auto-filled based on provider_type, can be overridden) |
 | allowed_audiences | [string](#string) | repeated | Allowed audiences for token validation |
 | subject_pattern | [string](#string) |  | Subject pattern to match (e.g., &#34;repo:owner/repo:ref:refs/heads/main&#34;) |
+| jwks_url | [string](#string) |  | Optional JWKS endpoint. When empty, use OIDC discovery from issuer_url. |
 
 
 
@@ -12763,13 +12764,14 @@ WorkloadIdentityConfig for API layer
 <a name="bytebase-v1-WorkloadIdentityConfig-ProviderType"></a>
 
 ### WorkloadIdentityConfig.ProviderType
-ProviderType identifies the CI/CD platform.
+ProviderType identifies the workload identity configuration mode.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | PROVIDER_TYPE_UNSPECIFIED | 0 |  |
 | GITHUB | 1 |  |
 | GITLAB | 2 |  |
+| OIDC | 3 |  |
 
 
  

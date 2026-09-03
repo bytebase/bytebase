@@ -136,14 +136,15 @@ message WorkloadIdentity {
 
 // WorkloadIdentityConfig for API layer
 message WorkloadIdentityConfig {
-  // ProviderType identifies the CI/CD platform.
+  // ProviderType identifies the workload identity configuration mode.
   enum ProviderType {
     PROVIDER_TYPE_UNSPECIFIED = 0;
     GITHUB = 1;
     GITLAB = 2;
+    OIDC = 3;
   }
 
-  // Platform type (currently only GITHUB is supported)
+  // Provider configuration mode.
   ProviderType provider_type = 1;
   // OIDC Issuer URL (auto-filled based on provider_type, can be overridden)
   string issuer_url = 2;
@@ -151,6 +152,8 @@ message WorkloadIdentityConfig {
   repeated string allowed_audiences = 3;
   // Subject pattern to match (e.g., "repo:owner/repo:ref:refs/heads/main")
   string subject_pattern = 4;
+  // Optional JWKS endpoint. When empty, use OIDC discovery from issuer_url.
+  string jwks_url = 5;
 }
 
 // Request message for creating a workload identity.

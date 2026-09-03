@@ -185,7 +185,7 @@ func TestValidateIssuerURL(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateIssuerURL(tc.issuerURL)
+			err := ValidateIssuerURL(tc.issuerURL)
 			if tc.wantErr {
 				require.Error(t, err)
 			} else {

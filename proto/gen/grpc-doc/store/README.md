@@ -5908,10 +5908,11 @@ WorkloadIdentityConfig stores OIDC configuration for workload identity.
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| provider_type | [WorkloadIdentityConfig.ProviderType](#bytebase-store-WorkloadIdentityConfig-ProviderType) |  | Provider type (currently only GITHUB is supported) |
+| provider_type | [WorkloadIdentityConfig.ProviderType](#bytebase-store-WorkloadIdentityConfig-ProviderType) |  | Provider configuration mode. |
 | issuer_url | [string](#string) |  | OIDC issuer URL |
 | allowed_audiences | [string](#string) | repeated | Allowed audiences for token validation |
 | subject_pattern | [string](#string) |  | Subject pattern to match against token subject claim |
+| jwks_url | [string](#string) |  | Optional JWKS endpoint. When empty, use OIDC discovery from issuer_url. |
 
 
 
@@ -5937,13 +5938,14 @@ PrincipalType is the type of a principal.
 <a name="bytebase-store-WorkloadIdentityConfig-ProviderType"></a>
 
 ### WorkloadIdentityConfig.ProviderType
-ProviderType identifies the CI/CD platform.
+ProviderType identifies the workload identity configuration mode.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | PROVIDER_TYPE_UNSPECIFIED | 0 |  |
 | GITHUB | 1 |  |
 | GITLAB | 2 |  |
+| OIDC | 3 |  |
 
 
  
