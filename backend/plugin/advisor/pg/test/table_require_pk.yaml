@@ -74,3 +74,22 @@
         line: 3
         column: 0
       endposition: null
+- statement: ALTER TABLE no_index_table ADD COLUMN note TEXT
+  changeType: 1
+- statement: ALTER TABLE no_index_table DROP COLUMN col_b
+  changeType: 1
+- statement: ALTER TABLE no_index_table ALTER COLUMN col_a TYPE bigint
+  changeType: 1
+- statement: |-
+    CREATE TABLE audit_log(id INT, payload TEXT);
+    ALTER TABLE audit_log ADD COLUMN note TEXT;
+  changeType: 1
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: 'Table "public"."audit_log" requires PRIMARY KEY, related statement: "ALTER TABLE audit_log ADD COLUMN note TEXT"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null

@@ -22,6 +22,11 @@ func init() {
 }
 
 // TableRequirePKAdvisor is the advisor checking table requires PK.
+//
+// The rule only guards the net change of a batch: a table created in the batch
+// must end with a PRIMARY KEY, and a table that had a PRIMARY KEY before the
+// batch must still have one afterwards. ALTER TABLE on a pre-existing table
+// without a PRIMARY KEY is out of scope so unrelated changes are not blocked.
 type TableRequirePKAdvisor struct {
 }
 
@@ -37,8 +42,9 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 			Level: level,
 			Title: checkCtx.Rule.Type.String(),
 		},
-		finalMetadata: checkCtx.FinalMetadata,
-		tableMentions: make(map[string]*tableMention),
+		originalMetadata: checkCtx.OriginalMetadata,
+		finalMetadata:    checkCtx.FinalMetadata,
+		tableMentions:    make(map[string]*tableMention),
 	}
 
 	// Manually iterate statements instead of using RunOmniRules because
@@ -67,7 +73,8 @@ type tableMention struct {
 
 type tableRequirePKRule struct {
 	OmniBaseRule
-	finalMetadata *model.DatabaseMetadata
+	originalMetadata *model.DatabaseMetadata
+	finalMetadata    *model.DatabaseMetadata
 
 	// Track last mention of each table
 	tableMentions map[string]*tableMention // key: "schema.table", value: last mention info
@@ -106,7 +113,9 @@ func (r *tableRequirePKRule) handleCreateStmt(n *ast.CreateStmt) {
 	}
 }
 
-// handleAlterTableStmt records ALTER TABLE statements.
+// handleAlterTableStmt records ALTER TABLE statements on tables that had a
+// PRIMARY KEY before this batch. Tables created in this batch are already
+// tracked by handleCreateStmt.
 func (r *tableRequirePKRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
 	tableName := omniTableName(n.Relation)
 	if tableName == "" {
@@ -115,6 +124,9 @@ func (r *tableRequirePKRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
 	schema := omniSchemaName(n.Relation)
 
 	key := fmt.Sprintf("%s.%s", schema, tableName)
+	if _, tracked := r.tableMentions[key]; !tracked && !r.originalTableHasPK(schema, tableName) {
+		return
+	}
 	r.tableMentions[key] = &tableMention{
 		startLine: int(r.ContentStartLine()) + r.BaseLine,
 		text:      r.TrimmedStmtText(),
@@ -131,6 +143,15 @@ func (r *tableRequirePKRule) handleDropStmt(n *ast.DropStmt) {
 		key := fmt.Sprintf("%s.%s", obj[0], obj[1])
 		delete(r.tableMentions, key)
 	}
+}
+
+// originalTableHasPK reports whether the table had a PRIMARY KEY before this batch.
+func (r *tableRequirePKRule) originalTableHasPK(schemaName, tableName string) bool {
+	if r.originalMetadata == nil {
+		return false
+	}
+	table := r.originalMetadata.GetSchemaMetadata(schemaName).GetTable(tableName)
+	return table != nil && table.GetPrimaryKey() != nil
 }
 
 // validateFinalState checks all mentioned tables against FinalMetadata for PRIMARY KEY.
