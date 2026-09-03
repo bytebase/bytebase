@@ -20,7 +20,7 @@ systemctl mask --now docker.socket docker containerd 2>/dev/null
 # ---------- packages ----------
 export DEBIAN_FRONTEND=noninteractive
 echo 'DPkg::Lock::Timeout "300";' > /etc/apt/apt.conf.d/99-lock-timeout   # unattended-upgrades holds the lock at boot
-PKGS="docker.io cron systemd-oomd build-essential mdadm gh"   # build-essential: Go defaults to CGO_ENABLED=1
+PKGS="docker.io cron systemd-oomd build-essential mdadm"   # build-essential: Go defaults to CGO_ENABLED=1
 dpkg --configure -a 2>/dev/null || true   # clears a transaction a preemption cut short; apt repairs the rest
 apt-get -y -qq -f install $PKGS 2>/dev/null || { apt-get update -qq && apt-get -y -qq -f install $PKGS; } \
   || fatal "prerequisite install failed"
@@ -115,6 +115,21 @@ for h in /home/*; do
   u=${h##*/}; id "$u" &>/dev/null || continue
   for d in "" /go-mod /npm /pnpm; do install -d -o "$u" -g "$u" "/scratch/$u/cache$d"; done
 done
+
+# ---------- gh ----------
+# Upstream, not apt: Ubuntu 24.04 ships 2.45.0. /usr/local/bin is on the boot disk, so
+# this is a no-op on a reboot and only refetches after a rebuild or a new release.
+# Never fatal -- gh is a convenience, and a boot must not turn on GitHub being reachable.
+GH=$(curl -sf --retry 3 --max-time 30 https://api.github.com/repos/cli/cli/releases/latest \
+     | python3 -c 'import sys,json; print(json.load(sys.stdin)["tag_name"].lstrip("v"))' 2>/dev/null) \
+  || GH=$(gh --version 2>/dev/null | awk 'NR==1{print $3}')
+if [[ -n "${GH:-}" && "$(gh --version 2>/dev/null | awk 'NR==1{print $3}')" != "$GH" ]]; then
+  curl -fsSL --retry 3 "https://github.com/cli/cli/releases/download/v$GH/gh_${GH}_linux_amd64.tar.gz" \
+    | tar xz -C /tmp \
+    && install -m 0755 "/tmp/gh_${GH}_linux_amd64/bin/gh" /usr/local/bin/gh \
+    || logger -t devbox-startup "WARN: gh $GH install failed"
+  rm -rf "/tmp/gh_${GH}_linux_amd64"
+fi
 
 # ---------- (c) GitHub runners ----------
 # Stateless, so it lives on scratch and is installed from the unit rather than from

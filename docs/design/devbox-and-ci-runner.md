@@ -206,7 +206,10 @@ is too little.
 
 Go and Node are not installed here. An agent session installs its own with `sudo`, to
 `/usr/local/go` and `/usr/local/node`, which `/etc/environment` puts on the `PATH` of
-every session, non-login included. CI jobs bring their own through `setup-go` and
+every session, non-login included. `gh` is the exception the script does install, from
+upstream rather than apt, which ships 2.45.0. It lands in `/usr/local/bin` on the boot
+disk, so a reboot is a no-op and only a rebuild or a new release refetches. A failure
+there warns rather than being fatal: a boot must not depend on GitHub being reachable. CI jobs bring their own through `setup-go` and
 `setup-node`. The C toolchain is the exception and is a prerequisite: neither action
 installs one, and Go defaults to `CGO_ENABLED=1`, so dependencies carrying cgo files
 fail to build without it.
