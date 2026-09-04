@@ -1,0 +1,125 @@
+{
+  "schemaA": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "ITEMS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "type": "NUMBER"
+              },
+              {
+                "name": "NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000001",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ]
+          },
+          {
+            "name": "SALES_ORDERS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"ORDER_SEQ\".NEXTVAL",
+                "type": "NUMBER"
+              },
+              {
+                "name": "ITEM_ID",
+                "position": 2,
+                "type": "NUMBER"
+              },
+              {
+                "name": "QUANTITY",
+                "position": 3,
+                "type": "NUMBER"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000002",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ],
+            "foreignKeys": [
+              {
+                "name": "FK_ITEM",
+                "columns": [
+                  "ITEM_ID"
+                ],
+                "referencedTable": "ITEMS",
+                "referencedColumns": [
+                  "ID"
+                ]
+              }
+            ]
+          }
+        ],
+        "sequences": [
+          {
+            "name": "ORDER_SEQ"
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  },
+  "schemaB": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "ITEMS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "type": "NUMBER"
+              },
+              {
+                "name": "NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000001",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  }
+}

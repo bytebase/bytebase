@@ -1,0 +1,275 @@
+{
+  "schemaA": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "ORDERS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000001\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "PRODUCT_ID",
+                "position": 2,
+                "type": "NUMBER"
+              },
+              {
+                "name": "QUANTITY",
+                "position": 3,
+                "type": "NUMBER"
+              },
+              {
+                "name": "TOTAL",
+                "position": 4,
+                "nullable": true,
+                "type": "NUMBER(10,2)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000001",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ],
+            "foreignKeys": [
+              {
+                "name": "FK_PRODUCT",
+                "columns": [
+                  "PRODUCT_ID"
+                ],
+                "referencedTable": "PRODUCTS",
+                "referencedColumns": [
+                  "ID"
+                ]
+              }
+            ]
+          },
+          {
+            "name": "PRODUCTS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000002\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "PRICE",
+                "position": 3,
+                "type": "NUMBER(10,2)"
+              },
+              {
+                "name": "STOCK",
+                "position": 4,
+                "default": "0",
+                "nullable": true,
+                "type": "NUMBER"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000002",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ]
+          }
+        ],
+        "views": [
+          {
+            "name": "PRODUCT_INVENTORY",
+            "definition": "SELECT \n    P.ID,\n    P.NAME,\n    P.PRICE,\n    P.STOCK,\n    NVL(SUM(O.QUANTITY), 0) AS TOTAL_ORDERED\nFROM PRODUCTS P\nLEFT JOIN ORDERS O ON P.ID = O.PRODUCT_ID\nGROUP BY P.ID, P.NAME, P.PRICE, P.STOCK",
+            "dependencyColumns": [
+              {
+                "schema": "TESTSCHEMA",
+                "table": "ORDERS",
+                "column": "*"
+              },
+              {
+                "schema": "TESTSCHEMA",
+                "table": "PRODUCTS",
+                "column": "*"
+              }
+            ],
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "type": "NUMBER"
+              },
+              {
+                "name": "NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "PRICE",
+                "position": 3,
+                "type": "NUMBER(10,2)"
+              },
+              {
+                "name": "STOCK",
+                "position": 4,
+                "nullable": true,
+                "type": "NUMBER"
+              },
+              {
+                "name": "TOTAL_ORDERED",
+                "position": 5,
+                "nullable": true,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        ],
+        "functions": [
+          {
+            "name": "CALCULATE_ORDER_TOTAL",
+            "definition": "FUNCTION CALCULATE_ORDER_TOTAL(P_PRODUCT_ID NUMBER, P_QUANTITY NUMBER)\nRETURN NUMBER\nIS\n    V_PRICE NUMBER(10, 2);\nBEGIN\n    SELECT PRICE INTO V_PRICE FROM PRODUCTS WHERE ID = P_PRODUCT_ID;\n    RETURN P_QUANTITY * V_PRICE;\nEXCEPTION\n    WHEN NO_DATA_FOUND THEN\n        RETURN 0;\nEND;"
+          }
+        ],
+        "materializedViews": [
+          {
+            "name": "PRODUCT_STATS",
+            "definition": "SELECT \n    PRODUCT_ID,\n    COUNT(*) AS ORDER_COUNT,\n    SUM(QUANTITY) AS TOTAL_QUANTITY,\n    SUM(TOTAL) AS TOTAL_REVENUE\nFROM ORDERS\nGROUP BY PRODUCT_ID\n",
+            "comment": "snapshot table for snapshot TESTSCHEMA.PRODUCT_STATS",
+            "dependencyColumns": [
+              {
+                "schema": "TESTSCHEMA",
+                "table": "ORDERS",
+                "column": "*"
+              },
+              {
+                "schema": "TESTSCHEMA",
+                "table": "PRODUCT_STATS",
+                "column": "*"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  },
+  "schemaB": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "ORDERS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000001\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "PRODUCT_ID",
+                "position": 2,
+                "type": "NUMBER"
+              },
+              {
+                "name": "QUANTITY",
+                "position": 3,
+                "type": "NUMBER"
+              },
+              {
+                "name": "TOTAL",
+                "position": 4,
+                "nullable": true,
+                "type": "NUMBER(10,2)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000001",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ],
+            "foreignKeys": [
+              {
+                "name": "FK_PRODUCT",
+                "columns": [
+                  "PRODUCT_ID"
+                ],
+                "referencedTable": "PRODUCTS",
+                "referencedColumns": [
+                  "ID"
+                ]
+              }
+            ]
+          },
+          {
+            "name": "PRODUCTS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000002\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "PRICE",
+                "position": 3,
+                "type": "NUMBER(10,2)"
+              },
+              {
+                "name": "STOCK",
+                "position": 4,
+                "default": "0",
+                "nullable": true,
+                "type": "NUMBER"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000002",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  }
+}

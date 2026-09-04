@@ -1,0 +1,321 @@
+{
+  "schemaA": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "COMMENTS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000001\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "POST_ID",
+                "position": 2,
+                "type": "NUMBER"
+              },
+              {
+                "name": "USER_ID",
+                "position": 3,
+                "type": "NUMBER"
+              },
+              {
+                "name": "CONTENT",
+                "position": 4,
+                "type": "CLOB",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "CREATED_AT",
+                "position": 5,
+                "default": "CURRENT_TIMESTAMP",
+                "nullable": true,
+                "type": "TIMESTAMP(6)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000001",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ],
+            "foreignKeys": [
+              {
+                "name": "FK_COMMENT_USER",
+                "columns": [
+                  "USER_ID"
+                ],
+                "referencedTable": "USERS",
+                "referencedColumns": [
+                  "ID"
+                ]
+              },
+              {
+                "name": "FK_POST",
+                "columns": [
+                  "POST_ID"
+                ],
+                "referencedTable": "POSTS",
+                "referencedColumns": [
+                  "ID"
+                ]
+              }
+            ]
+          },
+          {
+            "name": "POSTS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000002\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "USER_ID",
+                "position": 2,
+                "type": "NUMBER"
+              },
+              {
+                "name": "TITLE",
+                "position": 3,
+                "type": "VARCHAR2(200 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "CONTENT",
+                "position": 4,
+                "nullable": true,
+                "type": "CLOB",
+                "collation": "USING_NLS_COMP"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000002",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              },
+              {
+                "name": "IDX_POSTS_USER_ID",
+                "expressions": [
+                  "\"USER_ID\""
+                ],
+                "descending": [
+                  false
+                ],
+                "type": "NORMAL",
+                "visible": true
+              }
+            ],
+            "foreignKeys": [
+              {
+                "name": "FK_USER",
+                "columns": [
+                  "USER_ID"
+                ],
+                "referencedTable": "USERS",
+                "referencedColumns": [
+                  "ID"
+                ]
+              }
+            ],
+            "checkConstraints": [
+              {
+                "name": "CHECK_TITLE_LENGTH",
+                "expression": "LENGTH(TITLE) \u003e 0"
+              }
+            ]
+          },
+          {
+            "name": "USERS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000003\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "USERNAME",
+                "position": 2,
+                "type": "VARCHAR2(50 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "EMAIL",
+                "position": 3,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "CREATED_AT",
+                "position": 4,
+                "default": "CURRENT_TIMESTAMP",
+                "nullable": true,
+                "type": "TIMESTAMP(6)"
+              },
+              {
+                "name": "IS_ACTIVE",
+                "position": 5,
+                "default": "1",
+                "nullable": true,
+                "type": "NUMBER(1)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000003",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              },
+              {
+                "name": "IDX_USERS_EMAIL",
+                "expressions": [
+                  "\"EMAIL\""
+                ],
+                "descending": [
+                  false
+                ],
+                "type": "NORMAL",
+                "visible": true
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  },
+  "schemaB": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "POSTS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000002\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "USER_ID",
+                "position": 2,
+                "type": "NUMBER"
+              },
+              {
+                "name": "TITLE",
+                "position": 3,
+                "type": "VARCHAR2(200 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "CONTENT",
+                "position": 4,
+                "nullable": true,
+                "type": "CLOB",
+                "collation": "USING_NLS_COMP"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000002",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              },
+              {
+                "name": "IDX_POSTS_USER_ID",
+                "expressions": [
+                  "\"USER_ID\""
+                ],
+                "descending": [
+                  false
+                ],
+                "type": "NORMAL",
+                "visible": true
+              }
+            ],
+            "foreignKeys": [
+              {
+                "name": "FK_USER",
+                "columns": [
+                  "USER_ID"
+                ],
+                "referencedTable": "USERS",
+                "referencedColumns": [
+                  "ID"
+                ]
+              }
+            ]
+          },
+          {
+            "name": "USERS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000003\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "USERNAME",
+                "position": 2,
+                "type": "VARCHAR2(50 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "EMAIL",
+                "position": 3,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "CREATED_AT",
+                "position": 4,
+                "default": "CURRENT_TIMESTAMP",
+                "nullable": true,
+                "type": "TIMESTAMP(6)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000003",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  }
+}

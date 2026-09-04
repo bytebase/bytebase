@@ -1,0 +1,163 @@
+{
+  "schemaA": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "TEST_COLUMNS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000001\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "COL_VARCHAR",
+                "position": 2,
+                "nullable": true,
+                "type": "VARCHAR2(50 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "COL_NUMBER",
+                "position": 3,
+                "nullable": true,
+                "type": "NUMBER(10,2)"
+              },
+              {
+                "name": "COL_DATE",
+                "position": 4,
+                "nullable": true,
+                "type": "DATE"
+              },
+              {
+                "name": "COL_CLOB",
+                "position": 5,
+                "nullable": true,
+                "type": "CLOB",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "COL_NULLABLE",
+                "position": 6,
+                "nullable": true,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "COL_WITH_DEFAULT",
+                "position": 7,
+                "default": "'DEFAULT_VALUE'",
+                "nullable": true,
+                "type": "VARCHAR2(50 BYTE)",
+                "collation": "USING_NLS_COMP"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000001",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  },
+  "schemaB": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "TEST_COLUMNS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000001\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "COL_VARCHAR",
+                "position": 2,
+                "nullable": true,
+                "type": "VARCHAR2(200 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "COL_NUMBER",
+                "position": 3,
+                "nullable": true,
+                "type": "NUMBER(15,3)"
+              },
+              {
+                "name": "COL_DATE",
+                "position": 4,
+                "nullable": true,
+                "type": "DATE"
+              },
+              {
+                "name": "COL_NULLABLE",
+                "position": 5,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "COL_WITH_DEFAULT",
+                "position": 6,
+                "default": "'NEW_DEFAULT'",
+                "nullable": true,
+                "type": "VARCHAR2(50 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "COL_TIMESTAMP",
+                "position": 7,
+                "default": "CURRENT_TIMESTAMP",
+                "nullable": true,
+                "type": "TIMESTAMP(6)"
+              },
+              {
+                "name": "COL_BOOLEAN",
+                "position": 8,
+                "nullable": true,
+                "type": "NUMBER(1)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000001",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ],
+            "checkConstraints": [
+              {
+                "name": "CHK_NUMBER_POSITIVE",
+                "expression": "COL_NUMBER \u003e 0"
+              },
+              {
+                "name": "CHK_VARCHAR_LENGTH",
+                "expression": "LENGTH(COL_VARCHAR) \u003e= 5"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  }
+}

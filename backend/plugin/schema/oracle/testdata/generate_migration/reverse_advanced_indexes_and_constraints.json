@@ -1,0 +1,144 @@
+{
+  "schemaA": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "SALES_DATA",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000001\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "SALE_DATE",
+                "position": 2,
+                "type": "DATE"
+              },
+              {
+                "name": "CUSTOMER_ID",
+                "position": 3,
+                "type": "NUMBER"
+              },
+              {
+                "name": "PRODUCT_ID",
+                "position": 4,
+                "type": "NUMBER"
+              },
+              {
+                "name": "AMOUNT",
+                "position": 5,
+                "type": "NUMBER(10,2)"
+              },
+              {
+                "name": "REGION",
+                "position": 6,
+                "type": "VARCHAR2(50 BYTE)",
+                "collation": "USING_NLS_COMP"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "UK_SALES_DATE_CUSTOMER",
+                "expressions": [
+                  "SALE_DATE",
+                  "CUSTOMER_ID",
+                  "PRODUCT_ID"
+                ],
+                "unique": true,
+                "isConstraint": true
+              },
+              {
+                "name": "IDX_SALES_MONTH_YEAR",
+                "expressions": [
+                  "EXTRACT(YEAR FROM \"SALE_DATE\")",
+                  "EXTRACT(MONTH FROM \"SALE_DATE\")"
+                ],
+                "descending": [
+                  false,
+                  false
+                ],
+                "type": "FUNCTION-BASED NORMAL",
+                "visible": true
+              },
+              {
+                "name": "IDX_SALES_REGION_AMOUNT",
+                "expressions": [
+                  "\"REGION\"",
+                  "\"AMOUNT\""
+                ],
+                "descending": [
+                  false,
+                  true
+                ],
+                "type": "FUNCTION-BASED NORMAL",
+                "visible": true
+              }
+            ],
+            "checkConstraints": [
+              {
+                "name": "CHK_AMOUNT_RANGE",
+                "expression": "AMOUNT \u003e 0 AND AMOUNT \u003c= 999999.99"
+              },
+              {
+                "name": "CHK_REGION_VALID",
+                "expression": "REGION IN ('NORTH', 'SOUTH', 'EAST', 'WEST', 'CENTRAL')"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  },
+  "schemaB": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "SALES_DATA",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000001\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "SALE_DATE",
+                "position": 2,
+                "type": "DATE"
+              },
+              {
+                "name": "CUSTOMER_ID",
+                "position": 3,
+                "type": "NUMBER"
+              },
+              {
+                "name": "PRODUCT_ID",
+                "position": 4,
+                "type": "NUMBER"
+              },
+              {
+                "name": "AMOUNT",
+                "position": 5,
+                "type": "NUMBER(10,2)"
+              },
+              {
+                "name": "REGION",
+                "position": 6,
+                "type": "VARCHAR2(50 BYTE)",
+                "collation": "USING_NLS_COMP"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  }
+}

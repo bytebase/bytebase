@@ -1,0 +1,321 @@
+{
+  "schemaA": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "AUTHORS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000001\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "EMAIL",
+                "position": 3,
+                "nullable": true,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000001",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              },
+              {
+                "name": "SYS_C0000002",
+                "expressions": [
+                  "EMAIL"
+                ],
+                "unique": true,
+                "isConstraint": true
+              }
+            ]
+          },
+          {
+            "name": "BOOKS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000002\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "TITLE",
+                "position": 2,
+                "type": "VARCHAR2(200 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "AUTHOR_ID",
+                "position": 3,
+                "type": "NUMBER"
+              },
+              {
+                "name": "ISBN",
+                "position": 4,
+                "nullable": true,
+                "type": "VARCHAR2(20 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "PUBLISHED_YEAR",
+                "position": 5,
+                "nullable": true,
+                "type": "NUMBER"
+              },
+              {
+                "name": "PRICE",
+                "position": 6,
+                "nullable": true,
+                "type": "NUMBER(8,2)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000003",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              },
+              {
+                "name": "SYS_C0000004",
+                "expressions": [
+                  "ISBN"
+                ],
+                "unique": true,
+                "isConstraint": true
+              },
+              {
+                "name": "IDX_BOOKS_AUTHOR",
+                "expressions": [
+                  "\"AUTHOR_ID\""
+                ],
+                "descending": [
+                  false
+                ],
+                "type": "NORMAL",
+                "visible": true
+              },
+              {
+                "name": "IDX_BOOKS_YEAR",
+                "expressions": [
+                  "\"PUBLISHED_YEAR\""
+                ],
+                "descending": [
+                  false
+                ],
+                "type": "NORMAL",
+                "visible": true
+              }
+            ],
+            "foreignKeys": [
+              {
+                "name": "FK_AUTHOR",
+                "columns": [
+                  "AUTHOR_ID"
+                ],
+                "referencedTable": "AUTHORS",
+                "referencedColumns": [
+                  "ID"
+                ]
+              }
+            ],
+            "checkConstraints": [
+              {
+                "name": "CHECK_PRICE_POSITIVE",
+                "expression": "PRICE \u003e 0"
+              },
+              {
+                "name": "CHECK_YEAR_VALID",
+                "expression": "PUBLISHED_YEAR \u003e= 1000 AND PUBLISHED_YEAR \u003c= 2100"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  },
+  "schemaB": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "AUTHORS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000001\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "EMAIL",
+                "position": 3,
+                "nullable": true,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000001",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              },
+              {
+                "name": "SYS_C0000002",
+                "expressions": [
+                  "EMAIL"
+                ],
+                "unique": true,
+                "isConstraint": true
+              }
+            ]
+          },
+          {
+            "name": "BOOKS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000002\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "TITLE",
+                "position": 2,
+                "type": "VARCHAR2(200 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "AUTHOR_ID",
+                "position": 3,
+                "type": "NUMBER"
+              },
+              {
+                "name": "ISBN",
+                "position": 4,
+                "nullable": true,
+                "type": "VARCHAR2(20 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "PUBLISHED_YEAR",
+                "position": 5,
+                "nullable": true,
+                "type": "NUMBER"
+              },
+              {
+                "name": "PRICE",
+                "position": 6,
+                "nullable": true,
+                "type": "NUMBER(8,2)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000003",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              },
+              {
+                "name": "SYS_C0000004",
+                "expressions": [
+                  "ISBN"
+                ],
+                "unique": true,
+                "isConstraint": true
+              },
+              {
+                "name": "IDX_BOOKS_AUTHOR",
+                "expressions": [
+                  "\"AUTHOR_ID\""
+                ],
+                "descending": [
+                  false
+                ],
+                "type": "NORMAL",
+                "visible": true
+              },
+              {
+                "name": "IDX_BOOKS_YEAR",
+                "expressions": [
+                  "\"PUBLISHED_YEAR\""
+                ],
+                "descending": [
+                  false
+                ],
+                "type": "NORMAL",
+                "visible": true
+              }
+            ],
+            "foreignKeys": [
+              {
+                "name": "FK_AUTHOR_NEW",
+                "columns": [
+                  "AUTHOR_ID"
+                ],
+                "referencedTable": "AUTHORS",
+                "referencedColumns": [
+                  "ID"
+                ],
+                "onDelete": "CASCADE"
+              }
+            ],
+            "checkConstraints": [
+              {
+                "name": "CHECK_PRICE_POSITIVE",
+                "expression": "PRICE \u003e 0"
+              },
+              {
+                "name": "CHECK_TITLE_LENGTH",
+                "expression": "LENGTH(TITLE) \u003e= 3"
+              },
+              {
+                "name": "CHECK_YEAR_EXTENDED",
+                "expression": "PUBLISHED_YEAR \u003e= 1000 AND PUBLISHED_YEAR \u003c= 2030"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  }
+}

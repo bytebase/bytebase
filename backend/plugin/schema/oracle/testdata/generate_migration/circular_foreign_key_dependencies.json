@@ -1,0 +1,258 @@
+{
+  "schemaA": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "CUSTOMERS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000001\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "PREFERRED_ORDER_ID",
+                "position": 3,
+                "nullable": true,
+                "type": "NUMBER"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000001",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ]
+          },
+          {
+            "name": "ORDERS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000002\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "CUSTOMER_ID",
+                "position": 2,
+                "type": "NUMBER"
+              },
+              {
+                "name": "ORDER_DATE",
+                "position": 3,
+                "default": "SYSDATE",
+                "nullable": true,
+                "type": "DATE"
+              },
+              {
+                "name": "TOTAL_AMOUNT",
+                "position": 4,
+                "nullable": true,
+                "type": "NUMBER(10,2)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000002",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  },
+  "schemaB": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "CUSTOMERS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000001\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "PREFERRED_ORDER_ID",
+                "position": 3,
+                "nullable": true,
+                "type": "NUMBER"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000001",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ],
+            "foreignKeys": [
+              {
+                "name": "FK_PREFERRED_ORDER",
+                "columns": [
+                  "PREFERRED_ORDER_ID"
+                ],
+                "referencedTable": "ORDERS",
+                "referencedColumns": [
+                  "ID"
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ORDERS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000002\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "CUSTOMER_ID",
+                "position": 2,
+                "type": "NUMBER"
+              },
+              {
+                "name": "ORDER_DATE",
+                "position": 3,
+                "default": "SYSDATE",
+                "nullable": true,
+                "type": "DATE"
+              },
+              {
+                "name": "TOTAL_AMOUNT",
+                "position": 4,
+                "nullable": true,
+                "type": "NUMBER(10,2)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000002",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ],
+            "foreignKeys": [
+              {
+                "name": "FK_CUSTOMER",
+                "columns": [
+                  "CUSTOMER_ID"
+                ],
+                "referencedTable": "CUSTOMERS",
+                "referencedColumns": [
+                  "ID"
+                ]
+              }
+            ]
+          },
+          {
+            "name": "ORDER_ITEMS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000003\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "ORDER_ID",
+                "position": 2,
+                "type": "NUMBER"
+              },
+              {
+                "name": "PRODUCT_NAME",
+                "position": 3,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "QUANTITY",
+                "position": 4,
+                "type": "NUMBER"
+              },
+              {
+                "name": "UNIT_PRICE",
+                "position": 5,
+                "type": "NUMBER(10,2)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000003",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ],
+            "foreignKeys": [
+              {
+                "name": "FK_ORDER_ITEM",
+                "columns": [
+                  "ORDER_ID"
+                ],
+                "referencedTable": "ORDERS",
+                "referencedColumns": [
+                  "ID"
+                ],
+                "onDelete": "CASCADE"
+              }
+            ],
+            "triggers": [
+              {
+                "name": "TRG_UPDATE_ORDER_TOTAL",
+                "event": "INSERT OR UPDATE OR DELETE",
+                "timing": "AFTER EACH ROW",
+                "body": "CREATE OR REPLACE TRIGGER TRG_UPDATE_ORDER_TOTAL\nAFTER INSERT OR UPDATE OR DELETE ON ORDER_ITEMS\nFOR EACH ROW\nDECLARE\n    V_ORDER_ID NUMBER;\n    V_TOTAL NUMBER(10, 2);\nBEGIN\n    -- Get order ID\n    IF INSERTING OR UPDATING THEN\n        V_ORDER_ID := :NEW.ORDER_ID;\n    ELSE\n        V_ORDER_ID := :OLD.ORDER_ID;\n    END IF;\n    \n    -- Calculate new total\n    SELECT NVL(SUM(QUANTITY * UNIT_PRICE), 0) INTO V_TOTAL\n    FROM ORDER_ITEMS\n    WHERE ORDER_ID = V_ORDER_ID;\n    \n    -- Update order total\n    UPDATE ORDERS SET TOTAL_AMOUNT = V_TOTAL WHERE ID = V_ORDER_ID;\nEND;"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  }
+}

@@ -1,0 +1,373 @@
+{
+  "schemaA": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "DEPARTMENTS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000001\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "MANAGER_ID",
+                "position": 3,
+                "nullable": true,
+                "type": "NUMBER"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000001",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ],
+            "foreignKeys": [
+              {
+                "name": "FK_MANAGER",
+                "columns": [
+                  "MANAGER_ID"
+                ],
+                "referencedTable": "EMPLOYEES",
+                "referencedColumns": [
+                  "ID"
+                ]
+              }
+            ]
+          },
+          {
+            "name": "EMPLOYEES",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000002\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "DEPARTMENT_ID",
+                "position": 3,
+                "nullable": true,
+                "type": "NUMBER"
+              },
+              {
+                "name": "SALARY",
+                "position": 4,
+                "nullable": true,
+                "type": "NUMBER(10,2)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000002",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ],
+            "foreignKeys": [
+              {
+                "name": "FK_DEPT",
+                "columns": [
+                  "DEPARTMENT_ID"
+                ],
+                "referencedTable": "DEPARTMENTS",
+                "referencedColumns": [
+                  "ID"
+                ]
+              }
+            ]
+          }
+        ],
+        "views": [
+          {
+            "name": "DEPT_EMPLOYEE_COUNT",
+            "definition": "SELECT D.ID AS DEPT_ID, D.NAME AS DEPT_NAME, COUNT(E.ID) AS EMP_COUNT\nFROM DEPARTMENTS D\nLEFT JOIN EMPLOYEES E ON D.ID = E.DEPARTMENT_ID\nGROUP BY D.ID, D.NAME",
+            "dependencyColumns": [
+              {
+                "schema": "TESTSCHEMA",
+                "table": "DEPARTMENTS",
+                "column": "*"
+              },
+              {
+                "schema": "TESTSCHEMA",
+                "table": "EMPLOYEES",
+                "column": "*"
+              }
+            ],
+            "columns": [
+              {
+                "name": "DEPT_ID",
+                "position": 1,
+                "type": "NUMBER"
+              },
+              {
+                "name": "DEPT_NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "EMP_COUNT",
+                "position": 3,
+                "nullable": true,
+                "type": "NUMBER"
+              }
+            ]
+          },
+          {
+            "name": "DEPT_MANAGER_SUMMARY",
+            "definition": "SELECT \n    DS.DEPT_ID,\n    DS.DEPT_NAME,\n    DS.EMP_COUNT,\n    DS.AVG_SALARY,\n    M.NAME AS MANAGER_NAME\nFROM DEPT_SUMMARY DS\nJOIN DEPARTMENTS D ON DS.DEPT_ID = D.ID\nLEFT JOIN EMPLOYEES M ON D.MANAGER_ID = M.ID",
+            "dependencyColumns": [
+              {
+                "schema": "TESTSCHEMA",
+                "table": "DEPARTMENTS",
+                "column": "*"
+              },
+              {
+                "schema": "TESTSCHEMA",
+                "table": "DEPT_SUMMARY",
+                "column": "*"
+              },
+              {
+                "schema": "TESTSCHEMA",
+                "table": "EMPLOYEES",
+                "column": "*"
+              }
+            ],
+            "columns": [
+              {
+                "name": "DEPT_ID",
+                "position": 1,
+                "type": "NUMBER"
+              },
+              {
+                "name": "DEPT_NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "EMP_COUNT",
+                "position": 3,
+                "nullable": true,
+                "type": "NUMBER"
+              },
+              {
+                "name": "AVG_SALARY",
+                "position": 4,
+                "nullable": true,
+                "type": "NUMBER"
+              },
+              {
+                "name": "MANAGER_NAME",
+                "position": 5,
+                "nullable": true,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              }
+            ]
+          },
+          {
+            "name": "DEPT_SUMMARY",
+            "definition": "SELECT \n    DEC.DEPT_ID,\n    DEC.DEPT_NAME,\n    DEC.EMP_COUNT,\n    NVL(AVG(E.SALARY), 0) AS AVG_SALARY\nFROM DEPT_EMPLOYEE_COUNT DEC\nLEFT JOIN EMPLOYEES E ON DEC.DEPT_ID = E.DEPARTMENT_ID\nGROUP BY DEC.DEPT_ID, DEC.DEPT_NAME, DEC.EMP_COUNT",
+            "dependencyColumns": [
+              {
+                "schema": "TESTSCHEMA",
+                "table": "DEPT_EMPLOYEE_COUNT",
+                "column": "*"
+              },
+              {
+                "schema": "TESTSCHEMA",
+                "table": "EMPLOYEES",
+                "column": "*"
+              }
+            ],
+            "columns": [
+              {
+                "name": "DEPT_ID",
+                "position": 1,
+                "type": "NUMBER"
+              },
+              {
+                "name": "DEPT_NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "EMP_COUNT",
+                "position": 3,
+                "nullable": true,
+                "type": "NUMBER"
+              },
+              {
+                "name": "AVG_SALARY",
+                "position": 4,
+                "nullable": true,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        ],
+        "materializedViews": [
+          {
+            "name": "MV_DEPT_STATS",
+            "definition": "SELECT \n    D.ID AS DEPT_ID,\n    D.NAME AS DEPT_NAME,\n    COUNT(E.ID) AS TOTAL_EMPLOYEES,\n    NVL(SUM(E.SALARY), 0) AS TOTAL_PAYROLL,\n    NVL(AVG(E.SALARY), 0) AS AVG_SALARY,\n    NVL(MAX(E.SALARY), 0) AS MAX_SALARY,\n    NVL(MIN(E.SALARY), 0) AS MIN_SALARY\nFROM DEPARTMENTS D\nLEFT JOIN EMPLOYEES E ON D.ID = E.DEPARTMENT_ID\nGROUP BY D.ID, D.NAME\n",
+            "comment": "snapshot table for snapshot TESTSCHEMA.MV_DEPT_STATS",
+            "dependencyColumns": [
+              {
+                "schema": "TESTSCHEMA",
+                "table": "DEPARTMENTS",
+                "column": "*"
+              },
+              {
+                "schema": "TESTSCHEMA",
+                "table": "EMPLOYEES",
+                "column": "*"
+              },
+              {
+                "schema": "TESTSCHEMA",
+                "table": "MV_DEPT_STATS",
+                "column": "*"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  },
+  "schemaB": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "DEPARTMENTS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000001\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "MANAGER_ID",
+                "position": 3,
+                "nullable": true,
+                "type": "NUMBER"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000001",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ],
+            "foreignKeys": [
+              {
+                "name": "FK_MANAGER",
+                "columns": [
+                  "MANAGER_ID"
+                ],
+                "referencedTable": "EMPLOYEES",
+                "referencedColumns": [
+                  "ID"
+                ]
+              }
+            ]
+          },
+          {
+            "name": "EMPLOYEES",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000002\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "DEPARTMENT_ID",
+                "position": 3,
+                "nullable": true,
+                "type": "NUMBER"
+              },
+              {
+                "name": "SALARY",
+                "position": 4,
+                "nullable": true,
+                "type": "NUMBER(10,2)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C0000002",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ],
+            "foreignKeys": [
+              {
+                "name": "FK_DEPT",
+                "columns": [
+                  "DEPARTMENT_ID"
+                ],
+                "referencedTable": "DEPARTMENTS",
+                "referencedColumns": [
+                  "ID"
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  }
+}
