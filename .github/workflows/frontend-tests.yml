@@ -27,15 +27,9 @@ jobs:
           # The runner's pnpm store persists between runs, so the Actions
           # cache adds nothing and downloading it is slow.
           cache: ''
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/setup@v2
         with:
           version: '11.17.0'
-          # Fetch the pnpm binary instead of running the npm-based
-          # self-installer: the self-hosted runner's bundled npm
-          # (externals/node24) is missing lib/cli.js, so the installer dies
-          # before pnpm exists. Ordering setup-node first also keeps this off
-          # the runner's bundled toolchain.
-          standalone: true
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         working-directory: frontend
@@ -57,15 +51,9 @@ jobs:
           # The runner's pnpm store persists between runs, so the Actions
           # cache adds nothing and downloading it is slow.
           cache: ''
-      - uses: pnpm/action-setup@v6
+      - uses: pnpm/setup@v2
         with:
           version: '11.17.0'
-          # Fetch the pnpm binary instead of running the npm-based
-          # self-installer: the self-hosted runner's bundled npm
-          # (externals/node24) is missing lib/cli.js, so the installer dies
-          # before pnpm exists. Ordering setup-node first also keeps this off
-          # the runner's bundled toolchain.
-          standalone: true
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         working-directory: frontend
