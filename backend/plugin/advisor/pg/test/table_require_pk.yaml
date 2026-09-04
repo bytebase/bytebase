@@ -131,3 +131,51 @@
     ALTER TABLE tech_book DROP CONSTRAINT old_pk;
     ALTER TABLE tech_book ADD PRIMARY KEY (id);
   changeType: 1
+- statement: |-
+    DROP TABLE no_index_table;
+    CREATE TABLE no_index_table(id INT);
+  changeType: 1
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: 'Table "public"."no_index_table" requires PRIMARY KEY, related statement: "CREATE TABLE no_index_table(id INT)"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: CREATE TABLE IF NOT EXISTS no_index_table(id INT)
+  changeType: 1
+- statement: |-
+    CREATE TABLE t(id INT);
+    ALTER TABLE t RENAME TO u;
+  changeType: 1
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: 'Table "public"."u" requires PRIMARY KEY, related statement: "ALTER TABLE t RENAME TO u"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
+- statement: |-
+    CREATE TABLE t(id INT);
+    ALTER TABLE t RENAME TO u;
+    ALTER TABLE u ADD PRIMARY KEY (id);
+  changeType: 1
+- statement: ALTER TABLE no_index_table RENAME TO legacy_renamed
+  changeType: 1
+- statement: |-
+    CREATE TABLE t(id INT);
+    ALTER TABLE public.t ADD COLUMN note TEXT;
+  changeType: 1
+  want:
+    - status: 2
+      code: 601
+      title: TABLE_REQUIRE_PK
+      content: 'Table "public"."t" requires PRIMARY KEY, related statement: "ALTER TABLE public.t ADD COLUMN note TEXT"'
+      startposition:
+        line: 2
+        column: 0
+      endposition: null
