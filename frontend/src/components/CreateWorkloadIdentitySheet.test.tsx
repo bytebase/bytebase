@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -170,7 +171,7 @@ describe("CreateWorkloadIdentitySheet", () => {
     });
   });
 
-  test("omits the blank preset audience when creating a GitHub identity", async () => {
+  test("presets the generated-workflow audience when creating a GitHub identity", async () => {
     const created = create(WorkloadIdentitySchema, {
       name: "workloadIdentities/deploy@workload.bytebase.com",
       email: "deploy@workload.bytebase.com",
@@ -230,9 +231,12 @@ describe("CreateWorkloadIdentitySheet", () => {
     expect(mocks.store.createWorkloadIdentity).toHaveBeenCalledOnce();
     const [, workloadIdentity] =
       mocks.store.createWorkloadIdentity.mock.calls[0];
+    // BYT-10151: this shipped as [] and the exchange skipped the audience
+    // check when the list was empty, so the identity accepted a token minted
+    // for anyone. The preset is what the generated workflows request.
     expect(
       workloadIdentity.workloadIdentityConfig?.allowedAudiences
-    ).toEqual([]);
+    ).toEqual(["bytebase"]);
 
     act(() => {
       root.unmount();
@@ -673,6 +677,112 @@ describe("CreateWorkloadIdentitySheet", () => {
 
     type(inputFor(container, "settings.members.workload-identity-branch"), "dev");
     expect(subject()).toBe("repo:acme-two/release:ref:refs/heads/dev");
+
+    act(() => root.unmount());
+  });
+
+  const audienceField = (container: HTMLElement) =>
+    Array.from(container.querySelectorAll('[data-slot="form-field"]')).find(
+      (field) =>
+        field.textContent?.includes("settings.members.workload-identity-audience")
+    );
+
+  const audienceInput = (container: HTMLElement) =>
+    audienceField(container)?.querySelector("input") as HTMLInputElement;
+
+  test("shows the audience field without opening Advanced Settings", () => {
+    const { container, root } = renderSheet();
+
+    // A required field the operator cannot see leaves Create disabled with
+    // nothing on screen to explain why.
+    expect(audienceInput(container)).toBeTruthy();
+    expect(audienceInput(container).value).toBe("bytebase");
+    expect(audienceField(container)?.textContent).toContain("*");
+
+    act(() => root.unmount());
+  });
+
+  test("blocks a save with no audience", () => {
+    const identity = editableIdentity(
+      WorkloadIdentityConfig_ProviderType.GITHUB,
+      "repo:acme-corp/deploy:ref:refs/heads/main"
+    );
+    const { container, root } = renderSheet(identity);
+    const update = () =>
+      Array.from(container.querySelectorAll("button")).find(
+        (button) => button.textContent === "common.update"
+      );
+
+    type(audienceInput(container), "   ");
+    expect(update()?.hasAttribute("disabled")).toBe(true);
+
+    type(audienceInput(container), "https://bytebase.acme.com/wi/ci");
+    expect(update()?.hasAttribute("disabled")).toBe(false);
+
+    act(() => root.unmount());
+  });
+
+  // The migration leaves some rows without a derivable audience and tells the
+  // operator to set one. Prefilling would make the form look unchanged, so
+  // Update would stay disabled and the row could never be repaired.
+  test("does not prefill an audience the identity does not hold", () => {
+    const unrepaired = create(WorkloadIdentitySchema, {
+      name: "workloadIdentities/ghes@workload.bytebase.com",
+      email: "ghes@workload.bytebase.com",
+      title: "GHES deploy",
+      workloadIdentityConfig: create(WorkloadIdentityConfigSchema, {
+        providerType: WorkloadIdentityConfig_ProviderType.GITHUB,
+        issuerUrl: "https://ghes.acme.com",
+        allowedAudiences: [],
+        subjectPattern: "repo:acme-corp/deploy:ref:refs/heads/main",
+      }),
+    });
+    const { container, root } = renderSheet(unrepaired);
+
+    expect(audienceInput(container).value).toBe("");
+    type(audienceInput(container), "https://ghes.acme.com/oidc");
+    expect(
+      Array.from(container.querySelectorAll("button"))
+        .find((button) => button.textContent === "common.update")
+        ?.hasAttribute("disabled")
+    ).toBe(false);
+
+    act(() => root.unmount());
+  });
+
+  // validateWorkloadIdentityConfig owns the configuration rules; the form does
+  // not restate them. What it owes the operator is the server's reason, beside
+  // the fields, with Advanced open so the field the reason names is visible.
+  test("shows the server's rejection beside the fields", async () => {
+    const identity = editableIdentity(
+      WorkloadIdentityConfig_ProviderType.GITHUB,
+      "repo:acme-corp/deploy:ref:refs/heads/main"
+    );
+    const { container, root } = renderSheet(identity);
+    mocks.store.updateWorkloadIdentity.mockRejectedValueOnce(
+      new ConnectError(
+        'subject pattern "repo:acme*" matches every repository from this issuer',
+        Code.InvalidArgument
+      )
+    );
+    expect(container.textContent).not.toContain(
+      "settings.members.workload-identity-subject"
+    );
+
+    type(audienceInput(container), "bytebase-prod");
+    const update = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "common.update"
+    );
+    await act(async () => {
+      update?.click();
+    });
+
+    expect(
+      container.querySelector('[data-slot="form-error"]')?.textContent
+    ).toContain("matches every repository");
+    expect(container.textContent).toContain(
+      "settings.members.workload-identity-subject"
+    );
 
     act(() => root.unmount());
   });

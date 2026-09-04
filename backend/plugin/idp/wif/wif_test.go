@@ -4,19 +4,76 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func TestMatchSubjectPattern(t *testing.T) {
 	tests := []struct {
-		name     string
-		subject  string
-		pattern  string
-		expected bool
+		name         string
+		providerType storepb.WorkloadIdentityConfig_ProviderType
+		subject      string
+		pattern      string
+		expected     bool
 	}{
 		{
-			name:     "empty pattern matches any subject",
+			name:     "empty pattern matches nothing",
 			subject:  "repo:owner/repo:ref:refs/heads/main",
 			pattern:  "",
+			expected: false,
+		},
+		{
+			name:     "bare wildcard matches nothing",
+			subject:  "repo:owner/repo:ref:refs/heads/main",
+			pattern:  "*",
+			expected: false,
+		},
+		{
+			// A trailing "*" is a prefix test, so "repo:*" is every repository
+			// on the issuer: the same hole as "*", refused the same way.
+			name:     "wildcard over every repository matches nothing",
+			subject:  "repo:owner/repo:ref:refs/heads/main",
+			pattern:  "repo:*",
+			expected: false,
+		},
+		{
+			name:     "wildcard over a partial owner matches nothing",
+			subject:  "repo:owner/repo:ref:refs/heads/main",
+			pattern:  "repo:own*",
+			expected: false,
+		},
+		{
+			// Only a declared GitHub identity reads "r*" as the whole
+			// "repo:" vocabulary.
+			name:         "wildcard inside the marker matches nothing on GitHub",
+			providerType: storepb.WorkloadIdentityConfig_GITHUB,
+			subject:      "repo:owner/repo:ref:refs/heads/main",
+			pattern:      "r*",
+			expected:     false,
+		},
+		{
+			// A generic OIDC issuer may sign "role:admin", so "r*" there is
+			// the operator's call, not a GitHub rule.
+			name:         "wildcard inside the marker still matches on a custom issuer",
+			providerType: storepb.WorkloadIdentityConfig_OIDC,
+			subject:      "role:admin",
+			pattern:      "r*",
+			expected:     true,
+		},
+		{
+			// A row written before provider_type was required cannot say which
+			// vocabulary it meant, so it is judged against both.
+			name:         "wildcard inside the marker matches nothing with no declared provider",
+			providerType: storepb.WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED,
+			subject:      "repo:owner/repo:ref:refs/heads/main",
+			pattern:      "r*",
+			expected:     false,
+		},
+		{
+			// Not a modelled vocabulary, so the owner rule does not apply.
+			name:     "custom issuer wildcard still matches by prefix",
+			subject:  "system:serviceaccount:prod:deployer",
+			pattern:  "system:serviceaccount:prod:*",
 			expected: true,
 		},
 		{
@@ -71,7 +128,7 @@ func TestMatchSubjectPattern(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			result := matchSubjectPattern(tc.subject, tc.pattern)
+			result := matchSubjectPattern(tc.providerType, tc.subject, tc.pattern)
 			require.Equal(t, tc.expected, result, "subject=%q pattern=%q", tc.subject, tc.pattern)
 		})
 	}
