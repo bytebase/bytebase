@@ -2,16 +2,13 @@ package store_test
 
 import (
 	"context"
-	"fmt"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
@@ -24,11 +21,7 @@ import (
 // and a second sequential redemption must observe consumed=false.
 func TestOAuth2AtomicConsume(t *testing.T) {
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, s, _ := newTestDB(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('ws-test');
@@ -36,13 +29,6 @@ func TestOAuth2AtomicConsume(t *testing.T) {
 		INSERT INTO oauth2_client (client_id, workspace, client_secret_hash, config)
 		VALUES ('client-A', NULL, 'unused-hash', '{}'::jsonb);
 	`)
-	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	s, err := store.New(ctx, pgURL, false)
 	require.NoError(t, err)
 
 	t.Run("authorization code is single-use", func(t *testing.T) {

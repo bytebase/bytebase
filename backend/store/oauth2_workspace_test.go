@@ -2,15 +2,12 @@ package store_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
@@ -32,11 +29,7 @@ import (
 //     singleton can take over.
 func TestOAuth2WorkspaceBinding(t *testing.T) {
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, s, _ := newTestDB(t)
 
 	// Seed the minimal fixtures needed by the FK constraints on the OAuth2
 	// tables: a workspace and a principal.
@@ -46,13 +39,6 @@ func TestOAuth2WorkspaceBinding(t *testing.T) {
 		INSERT INTO oauth2_client (client_id, workspace, client_secret_hash, config)
 		VALUES ('client-A', NULL, 'unused-hash', '{}'::jsonb);
 	`)
-	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	s, err := store.New(ctx, pgURL, false)
 	require.NoError(t, err)
 
 	t.Run("auth code round-trips workspace bound at consent time", func(t *testing.T) {

@@ -3,7 +3,6 @@ package store_test
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -13,9 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -32,21 +29,12 @@ func newSettingAtomicFixtureWithCache(t *testing.T, enableCache bool) (context.C
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	t.Cleanup(cancel)
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(context.Background()) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, _, url := newTestDB(t)
 
 	_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('default');`)
 	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	s, err := store.New(ctx, pgURL, enableCache)
+	s, err := store.New(ctx, url, enableCache)
 	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, s.Close()) })
 
 	_, err = s.UpsertSetting(ctx, &store.SettingMessage{
 		Name:      storepb.SettingName_WORKSPACE_PROFILE,

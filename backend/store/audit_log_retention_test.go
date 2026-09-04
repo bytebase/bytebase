@@ -1,4 +1,4 @@
-package v1
+package store_test
 
 import (
 	"context"
@@ -14,12 +14,11 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -36,13 +35,9 @@ const (
 //   - ENTERPRISE: unlimited retention, so rows older than the cutoff remain
 //     visible.
 //
-// The license service is constructed normally (NewLicenseService with the
-// embedded dev public key) and then given a test-only RSA keypair so the test
-// can mint a license for each plan. The license is stored in the SYSTEM
-// setting and loaded through the real subscription path, so the feature gate,
-// retention cutoff, filter application, and SQL execution are all exercised.
-// The keypair swap uses the same reflect/unsafe access to the unexported
-// config field as backend/tests/sql_query_data_source_test.go.
+// The license is minted with a test keypair and stored through the real
+// subscription path, so the feature gate, retention cutoff, filter application
+// and SQL execution are all exercised.
 func TestAuditLogRetentionFilteringEndToEnd(t *testing.T) {
 	ctx, stores, licenseService := setupAuditLogRetentionTest(t)
 
@@ -52,7 +47,7 @@ func TestAuditLogRetentionFilteringEndToEnd(t *testing.T) {
 	seedAuditLog(ctx, t, stores, "old-log", oldLogTime)
 	seedAuditLog(ctx, t, stores, "new-log", newLogTime)
 
-	service := NewAuditLogService(stores, licenseService)
+	service := apiv1.NewAuditLogService(stores, licenseService)
 
 	t.Run("FREE plan has no audit log access", func(t *testing.T) {
 		setAuditLogLicense(ctx, t, stores, licenseService, v1pb.PlanType_FREE)
@@ -97,10 +92,8 @@ func TestAuditLogRetentionFilteringEndToEnd(t *testing.T) {
 }
 
 // TestAuditLogRetentionFilterIncludesExactCutoffRow pins the >= boundary of
-// ApplyRetentionFilter against real PostgreSQL rows: a row created exactly at
-// the cutoff is retained and a row one microsecond earlier is dropped. This
-// exercises the same filter wiring SearchAuditLogs uses (ApplyRetentionFilter
-// feeding store.SearchAuditLogs) with a fixed, deterministic cutoff.
+// ApplyRetentionFilter against real rows: a row created exactly at the cutoff
+// is retained and a row one microsecond earlier is dropped.
 func TestAuditLogRetentionFilterIncludesExactCutoffRow(t *testing.T) {
 	ctx, stores, _ := setupAuditLogRetentionTest(t)
 
@@ -120,33 +113,15 @@ func TestAuditLogRetentionFilterIncludesExactCutoffRow(t *testing.T) {
 		resourceIDs = append(resourceIDs, l.ResourceID)
 	}
 	require.Equal(t, []string{"after-cutoff", "at-cutoff"}, resourceIDs)
-
-	var names []string
-	for _, l := range convertToAuditLogs(logs) {
-		names = append(names, l.Name)
-	}
-	require.Equal(t, []string{
-		fmt.Sprintf("%s/%s%s", testAuditLogParent, common.AuditLogPrefix, "after-cutoff"),
-		fmt.Sprintf("%s/%s%s", testAuditLogParent, common.AuditLogPrefix, "at-cutoff"),
-	}, names)
 }
 
 func setupAuditLogRetentionTest(t *testing.T) (context.Context, *store.Store, *enterprise.LicenseService) {
 	t.Helper()
 	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, testAuditLogWorkspace)
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
+	_, stores, _ := newTestDB(t)
 
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
-	_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('default')`)
+	_, err := stores.GetDB().ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('default')`)
 	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort())
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
 
 	// The SYSTEM setting must exist before UpdateLicense can write the license.
 	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{
@@ -162,11 +137,10 @@ func setupAuditLogRetentionTest(t *testing.T) (context.Context, *store.Store, *e
 	return ctx, stores, licenseService
 }
 
-// installTestLicenseKeypair replaces the license service's embedded dev public
-// key with a test-only RSA keypair so the test can mint a license for any
-// plan. The private key matching the embedded dev public key is not checked
-// in, and the LicenseService config field is unexported, so this uses the same
-// reflect/unsafe access as backend/tests/sql_query_data_source_test.go.
+// installTestLicenseKeypair replaces the embedded dev public key with a
+// test-only keypair so the test can mint a license for any plan. The matching
+// private key is not checked in and the config field is unexported, hence the
+// reflect/unsafe access.
 func installTestLicenseKeypair(t *testing.T, licenseService *enterprise.LicenseService) {
 	t.Helper()
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
@@ -179,10 +153,8 @@ func installTestLicenseKeypair(t *testing.T, licenseService *enterprise.LicenseS
 	config.PublicKey = &privateKey.PublicKey
 }
 
-// setAuditLogLicense signs a license for the given plan with the test keypair,
-// stores it through the real subscription setting, and invalidates the
-// subscription cache so the next SearchAuditLogs call reloads it from the
-// database.
+// setAuditLogLicense signs a license for the plan, stores it through the real
+// subscription setting, and drops the cache so the next call reloads it.
 func setAuditLogLicense(ctx context.Context, t *testing.T, stores *store.Store, licenseService *enterprise.LicenseService, plan v1pb.PlanType) {
 	t.Helper()
 	token, err := licenseService.CreateLicense(&enterprise.LicenseParams{
@@ -196,8 +168,7 @@ func setAuditLogLicense(ctx context.Context, t *testing.T, stores *store.Store, 
 	licenseService.InvalidateCache(testAuditLogWorkspace)
 }
 
-// seedAuditLog inserts an audit_log row directly with a controlled created_at
-// and a canonical project-scoped payload.
+// seedAuditLog inserts a row directly with a controlled created_at.
 func seedAuditLog(ctx context.Context, t *testing.T, stores *store.Store, resourceID string, createdAt time.Time) {
 	t.Helper()
 	payload, err := protojson.Marshal(&storepb.AuditLog{

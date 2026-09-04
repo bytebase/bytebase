@@ -2,14 +2,11 @@ package store_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
@@ -25,24 +22,13 @@ import (
 //     "<", excluding an issue at the exact boundary.
 func TestIssueListFilterEdgeCases(t *testing.T) {
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, stores, _ := newTestDB(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
 		INSERT INTO principal (name, email, password_hash) VALUES ('c', 'c@example.com', 'x');
 		INSERT INTO project (resource_id, workspace, name) VALUES ('p1', 'default', 'P1'), ('p2', 'default', 'P2');
 	`)
 	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
 
 	createIn := func(projectID, title string, approval *storepb.IssuePayloadApproval) *store.IssueMessage {
 		plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
@@ -104,24 +90,13 @@ func TestIssueListFilterEdgeCases(t *testing.T) {
 // assertion in this file and fails this one.
 func TestIssueListNextApproverIsProjectScoped(t *testing.T) {
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, stores, _ := newTestDB(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
 		INSERT INTO principal (name, email, password_hash) VALUES ('c', 'c@example.com', 'x');
 		INSERT INTO project (resource_id, workspace, name) VALUES ('p1', 'default', 'P1'), ('p2', 'default', 'P2');
 	`)
 	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
 
 	waiting := &storepb.IssuePayloadApproval{
 		ApprovalTemplate:    &storepb.ApprovalTemplate{Flow: &storepb.ApprovalFlow{Roles: []string{"roles/projectOwner"}}},

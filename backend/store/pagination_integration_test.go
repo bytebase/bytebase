@@ -8,9 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
@@ -33,24 +31,13 @@ func TestPaginationStabilityAcrossProjects(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, stores, _ := newTestDB(t)
 
 	projectIDs := make([]string, 0, projectCount)
 	for i := range projectCount {
 		projectIDs = append(projectIDs, fmt.Sprintf("pagination-p%d", i))
 	}
 	seedTiedIssues(ctx, t, db, workspaceID, projectIDs, perProject)
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
 
 	// Walk the list the way the API does: a fresh LIMIT/OFFSET query per page.
 	seen := map[string]int{}
@@ -122,10 +109,7 @@ func seedTiedIssues(ctx context.Context, t *testing.T, db *sql.DB, workspaceID s
 // changed", permanently, for that issue.
 func TestIssueCommentBatchKeepsInsertionOrder(t *testing.T) {
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, stores, _ := newTestDB(t)
 
 	const (
 		workspaceID = "comment-ws"
@@ -146,14 +130,6 @@ func TestIssueCommentBatchKeepsInsertionOrder(t *testing.T) {
 		VALUES ($1, $2, 'users/comment@example.com', 'issue', 'OPEN', 'DATABASE_CHANGE', '')`,
 		issueUID, projectID)
 	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
 
 	want := []string{"title", "description", "labels", "status", "assignee"}
 	creates := make([]*store.IssueCommentMessage, 0, len(want))

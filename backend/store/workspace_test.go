@@ -2,7 +2,6 @@ package store_test
 
 import (
 	"context"
-	"fmt"
 	"slices"
 	"testing"
 
@@ -11,9 +10,7 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
@@ -21,21 +18,10 @@ import (
 
 func TestCreateWorkspaceInitializesDefaults(t *testing.T) {
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
+	_, stores, _ := newTestDB(t)
 
 	const workspaceID = "workspace-defaults"
-	_, err = stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
+	_, err := stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
 		ResourceID: workspaceID,
 		AdditionalSettings: []store.AdditionalSetting{{
 			Name:    storepb.SettingName_AI,
@@ -86,18 +72,7 @@ func TestCreateWorkspaceInitializesDefaults(t *testing.T) {
 
 func TestListWorkspacesByEmailEvaluatesBindingConditions(t *testing.T) {
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
+	db, stores, _ := newTestDB(t)
 
 	const email = "member@example.com"
 	activeCondition := `request.time < timestamp("2099-01-01T00:00:00Z")`
