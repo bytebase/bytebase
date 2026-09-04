@@ -1958,6 +1958,25 @@ describe("useAppStore", () => {
     );
   });
 
+  test("lists service accounts without caching when requested", async () => {
+    mocks.listServiceAccounts.mockResolvedValue({
+      serviceAccounts: [serviceAccountA],
+      nextPageToken: "",
+    });
+    const store = createAppStore();
+
+    await store.getState().listServiceAccounts({
+      parent: "workspaces/default",
+      pageSize: 20,
+      showDeleted: false,
+      skipCache: true,
+    });
+
+    expect(store.getState().serviceAccountsByName).not.toHaveProperty(
+      serviceAccountA.name
+    );
+  });
+
   test("marks cached service account deleted after delete", async () => {
     mocks.deleteServiceAccount.mockResolvedValue({});
     const store = createAppStore();
@@ -1990,6 +2009,25 @@ describe("useAppStore", () => {
     expect(
       store.getState().workloadIdentitiesByName[workloadIdentityA.name]
     ).toBe(workloadIdentityA);
+  });
+
+  test("lists workload identities without caching when requested", async () => {
+    mocks.listWorkloadIdentities.mockResolvedValue({
+      workloadIdentities: [workloadIdentityA],
+      nextPageToken: "",
+    });
+    const store = createAppStore();
+
+    await store.getState().listWorkloadIdentities({
+      parent: "workspaces/default",
+      pageSize: 20,
+      showDeleted: false,
+      skipCache: true,
+    });
+
+    expect(store.getState().workloadIdentitiesByName).not.toHaveProperty(
+      workloadIdentityA.name
+    );
   });
 
   test("lists identity providers and replaces the identity provider cache", async () => {
