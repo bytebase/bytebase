@@ -120,7 +120,7 @@ export function MCPPage() {
           </p>
         </div>
         <Tabs defaultValue="claude-code">
-          <TabsList className="overflow-x-auto">
+          <TabsList className="overflow-x-auto overflow-y-hidden">
             {tabs.map((tab) => (
               <TabsTrigger key={tab.id} value={tab.id} className="shrink-0">
                 {tab.title}

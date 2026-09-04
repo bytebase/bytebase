@@ -326,6 +326,41 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
+  test("keeps policy-card content compact", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+
+    const bestForLines = [...container.querySelectorAll("p")].filter((line) =>
+      line.textContent?.includes(".best-for")
+    );
+    expect(bestForLines).toHaveLength(3);
+    expect(bestForLines.every((line) => !line.classList.contains("mt-auto"))).toBe(
+      true
+    );
+    unmount();
+  });
+
+  test("keeps the masking switch intrinsic", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+
+    const maskingSwitch = container.querySelector(
+      '[aria-label="settings.mcp.policy.masking.title"]'
+    );
+    expect(maskingSwitch?.classList.contains("shrink-0")).toBe(true);
+    unmount();
+  });
+
   // Codex, #21236: setSaving gated only the footer buttons. The request has
   // already captured pick and ignoreMasking, so a card clicked after Save went
   // out changed the visible draft and nothing else — then the success path
