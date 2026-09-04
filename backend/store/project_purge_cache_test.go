@@ -30,6 +30,7 @@ func newProjectPurgeCacheFixture(t *testing.T) (context.Context, *sql.DB, *store
 
 	s, err := store.New(ctx, url, true)
 	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, s.Close()) })
 	return ctx, db, s
 }
 

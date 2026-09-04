@@ -35,6 +35,7 @@ func newSettingAtomicFixtureWithCache(t *testing.T, enableCache bool) (context.C
 	require.NoError(t, err)
 	s, err := store.New(ctx, url, enableCache)
 	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, s.Close()) })
 
 	_, err = s.UpsertSetting(ctx, &store.SettingMessage{
 		Name:      storepb.SettingName_WORKSPACE_PROFILE,
