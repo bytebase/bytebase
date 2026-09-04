@@ -100,7 +100,7 @@ export function AccessGrantItem({
   return (
     <div
       className={cn(
-        "w-full p-2 gap-y-2 border-b flex flex-col justify-start items-start hover:bg-control-bg",
+        "w-full min-w-0 p-2 gap-y-2 border-b flex flex-col justify-start items-start hover:bg-control-bg",
         highlight
           ? "bb-access-grant-highlight"
           : "transition-colors duration-1000"
@@ -159,7 +159,7 @@ export function AccessGrantItem({
       >
         <p
           className={cn(
-            "max-w-full text-xs wrap-break-word whitespace-pre-wrap font-mono line-clamp-2",
+            "w-full min-w-0 text-xs wrap-anywhere whitespace-pre-wrap font-mono line-clamp-2",
             (isExpired || isRejectedOrCanceled) &&
               "line-through text-control-placeholder"
           )}

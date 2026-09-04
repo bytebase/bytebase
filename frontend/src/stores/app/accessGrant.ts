@@ -15,6 +15,8 @@ import type {
   AppSliceCreator,
 } from "./types";
 
+export const MAX_CEL_FILTER_CODE_POINTS = 100_000;
+
 export const buildAccessGrantFilter = (
   filter: AccessGrantFilter | undefined
 ): string => {
@@ -66,6 +68,12 @@ export const buildAccessGrantFilter = (
   }
   return parts.join(" && ");
 };
+
+export const isAccessGrantFilterWithinCELLimit = (
+  filter: AccessGrantFilter
+): boolean =>
+  Array.from(buildAccessGrantFilter(filter)).length <=
+  MAX_CEL_FILTER_CODE_POINTS;
 
 const upsertAccessGrants = (
   set: Parameters<AppSliceCreator<AccessGrantSlice>>[0],

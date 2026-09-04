@@ -1,5 +1,9 @@
 import { describe, expect, test } from "vitest";
-import { buildAccessGrantFilter } from "./accessGrant";
+import {
+  buildAccessGrantFilter,
+  isAccessGrantFilterWithinCELLimit,
+  MAX_CEL_FILTER_CODE_POINTS,
+} from "./accessGrant";
 
 describe("buildAccessGrantFilter", () => {
   test("empty filter returns empty string", () => {
@@ -66,12 +70,6 @@ describe("buildAccessGrantFilter", () => {
     );
   });
 
-  // statementExact pins the distinction from `statement` (substring search)
-  // and mirrors the backend JIT authorization predicate `query == "..."`.
-  // PR #20491 bot review #3349385091: a substring match like running
-  // `SELECT * FROM t` against a grant for `SELECT * FROM t WHERE id = 1`
-  // must NOT enable the Export button because the backend exact-match
-  // would still deny.
   test("statementExact emits exact CEL equality", () => {
     expect(buildAccessGrantFilter({ statementExact: "SELECT * FROM t" })).toBe(
       `query == "SELECT * FROM t"`
@@ -93,9 +91,6 @@ describe("buildAccessGrantFilter", () => {
   });
 
   test("statement and statementExact emit different predicates", () => {
-    // Same input: `statement` → substring; `statementExact` → exact.
-    // Both must coexist for different UX cases (search box vs.
-    // authorization-eligibility check).
     expect(buildAccessGrantFilter({ statement: "SELECT 1" })).toBe(
       `query.contains("SELECT 1")`
     );
@@ -105,9 +100,14 @@ describe("buildAccessGrantFilter", () => {
   });
 
   test("empty-string statementExact still emits exact predicate", () => {
-    // `statementExact === ""` is a meaningful filter (match grants whose
-    // stored query is empty), distinct from `statementExact === undefined`
-    // which means "no constraint". Don't conflate them.
     expect(buildAccessGrantFilter({ statementExact: "" })).toBe(`query == ""`);
+  });
+
+  test("does not submit a filter exceeding the CEL code point limit", () => {
+    expect(
+      isAccessGrantFilterWithinCELLimit({
+        statementExact: "x".repeat(MAX_CEL_FILTER_CODE_POINTS),
+      })
+    ).toBe(false);
   });
 });

@@ -110,7 +110,7 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 			name:        "invalid filter syntax",
 			filter:      `invalid syntax {{`,
 			wantErr:     true,
-			errContains: "failed to parse filter",
+			errContains: "invalid filter expression",
 		},
 		{
 			name:        "unsupported variable",
@@ -353,7 +353,7 @@ func TestGetListQueryHistoriesCreatorFilter(t *testing.T) {
 		{
 			name:        "invalid CEL",
 			filter:      `creator ==`,
-			errContains: "failed to parse filter",
+			errContains: "invalid filter expression",
 		},
 	}
 

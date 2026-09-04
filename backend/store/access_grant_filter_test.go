@@ -2,9 +2,29 @@ package store
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
+
+func TestGetActiveAccessGrantFilter(t *testing.T) {
+	expireTime := time.Date(2026, time.September, 3, 0, 0, 0, 0, time.UTC)
+	q := getActiveAccessGrantFilter(&FindActiveAccessGrantMessage{
+		Target:     "instances/prod/databases/app",
+		Statement:  "SELECT 1",
+		Schema:     "public",
+		Container:  "orders",
+		ExpireTime: expireTime,
+	})
+
+	sql, args, err := q.ToSQL()
+	require.NoError(t, err)
+	require.Contains(t, sql, "access_grant.payload->'targets' @> jsonb_build_array(to_jsonb($3::text))")
+	require.Contains(t, sql, "btrim(access_grant.payload->>'query', E' \\t\\n\\r\\v\\f') = $4")
+	require.Contains(t, sql, "COALESCE(access_grant.payload->>'schema', '') = $5")
+	require.Contains(t, sql, "COALESCE(access_grant.payload->>'container', '') = $6")
+	require.Equal(t, []any{"ACTIVE", expireTime, "instances/prod/databases/app", "SELECT 1", "public", "orders"}, args)
+}
 
 func TestGetListAccessGrantFilter(t *testing.T) {
 	tests := []struct {

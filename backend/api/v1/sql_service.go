@@ -191,7 +191,7 @@ func buildExportQueryContext(restriction *store.EffectiveQueryDataPolicy, userEm
 }
 
 // preCheckAccess returns the user's most capable active access grant matching
-// the given query, or nil if none. When `requireExport` is true the CEL
+// the given query, or nil if none. When `requireExport` is true the SQL
 // filter is narrowed to grants with `export == true`, so an unmask-only
 // grant on the same statement can't shadow a separately-active export
 // grant via slice-order ties (see PR #20491 review).
@@ -221,36 +221,27 @@ func (s *SQLService) preCheckAccess(ctx context.Context, statement string, insta
 		return nil
 	}
 
-	databaseFullName := formatDatabaseResourceName(instance, database)
-	now := time.Now().UTC().Format(time.RFC3339)
-
-	filter := fmt.Sprintf(
-		`status == "ACTIVE" && target == %q && expire_time > %q && query == %q`,
-		databaseFullName,
-		now,
-		strings.TrimSpace(statement),
-	)
-	if requireExport {
-		filter += ` && export == true`
+	requestSchema := ""
+	if schema != nil {
+		requestSchema = *schema
 	}
-	filterQ, err := store.GetListAccessGrantFilter(filter)
-	if err != nil {
-		slog.Warn("failed to build access grant filter", log.BBError(err))
-		return nil
-	}
-
-	grants, err := s.store.ListAccessGrants(ctx, &store.FindAccessGrantMessage{
-		Workspace: common.GetWorkspaceIDFromContext(ctx),
-		ProjectID: &database.ProjectID,
-		Creator:   &user.Email,
-		FilterQ:   filterQ,
+	grants, err := s.store.ListActiveAccessGrants(ctx, &store.FindActiveAccessGrantMessage{
+		Workspace:     common.GetWorkspaceIDFromContext(ctx),
+		ProjectID:     database.ProjectID,
+		Creator:       user.Email,
+		Target:        formatDatabaseResourceName(instance, database),
+		Statement:     strings.Trim(statement, " \t\n\r\v\f"),
+		Schema:        requestSchema,
+		Container:     container,
+		RequireExport: requireExport,
+		ExpireTime:    time.Now().UTC(),
 	})
 	if err != nil {
-		slog.Warn("failed to list access grants", log.BBError(err))
+		slog.Warn("failed to find active access grant", log.BBError(err))
 		return nil
 	}
-
-	if len(grants) == 0 {
+	grant := selectBestAccessGrant(grants)
+	if grant == nil {
 		return nil
 	}
 	readOnly, err := isReadOnlyStatementForAccessGrant(ctx, instance.Metadata.GetEngine(), statement)
@@ -262,13 +253,7 @@ func (s *SQLService) preCheckAccess(ctx context.Context, statement string, insta
 		slog.Warn("skip access grant for non-read-only query", slog.String("instance", instance.ResourceID), slog.String("database", database.DatabaseName))
 		return nil
 	}
-	matchingGrants := make([]*store.AccessGrantMessage, 0, len(grants))
-	for _, grant := range grants {
-		if accessGrantMatchesExecutionContext(grant, schema, container) {
-			matchingGrants = append(matchingGrants, grant)
-		}
-	}
-	return selectBestAccessGrant(matchingGrants)
+	return grant
 }
 
 // selectBestAccessGrant picks the highest-ranked grant by capability count
@@ -289,8 +274,8 @@ func selectBestAccessGrant(grants []*store.AccessGrantMessage) *store.AccessGran
 		}
 		// Rank by Unmask only — Export plays no role in selection:
 		//
-		//   - Export callers pass `requireExport=true`, which pushes
-		//     `&& export == true` into the CEL filter, so every grant in
+		//   - Export callers pass `requireExport=true`, which adds
+		//     `export == true` to the SQL filter, so every grant in
 		//     this slice already has `Export=true` and a per-grant Export
 		//     bump would just be a uniform constant.
 		//   - Query callers don't read `Payload.Export` from the returned
@@ -310,17 +295,6 @@ func selectBestAccessGrant(grants []*store.AccessGrantMessage) *store.AccessGran
 		}
 	}
 	return best
-}
-
-func accessGrantMatchesExecutionContext(grant *store.AccessGrantMessage, schema *string, container string) bool {
-	if grant.Payload == nil {
-		return false
-	}
-	requestSchema := ""
-	if schema != nil {
-		requestSchema = *schema
-	}
-	return grant.Payload.Schema == requestSchema && grant.Payload.Container == container
 }
 
 func (s *SQLService) Query(ctx context.Context, req *connect.Request[v1pb.QueryRequest]) (*connect.Response[v1pb.QueryResponse], error) {

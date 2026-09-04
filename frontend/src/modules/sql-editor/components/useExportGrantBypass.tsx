@@ -2,6 +2,8 @@ import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RouterLink } from "@/components/RouterLink";
 import { useAppStore } from "@/stores/app";
+import { isAccessGrantFilterWithinCELLimit } from "@/stores/app/accessGrant";
+import type { AccessGrantFilter } from "@/stores/app/types";
 import type { AccessGrant } from "@/types/proto-es/v1/access_grant_service_pb";
 
 interface UseExportGrantBypassArgs {
@@ -16,7 +18,7 @@ interface UseExportGrantBypassArgs {
    * The hook is a no-op when this is empty / undefined.
    */
   project: string | undefined;
-  /** Exact statement to match against grant.payload.query. */
+  /** Statement to match against grant.payload.query. */
   statement: string;
   /**
    * Queried target database resource names. Single-element OK —
@@ -25,6 +27,7 @@ interface UseExportGrantBypassArgs {
    *
    * Internally the hook fires one `searchMyAccessGrants` call per
    * target in parallel (each with `target == "x"` and `pageSize: 1`).
+   * Oversized CEL filters are not sent.
    * The fan-out shape is correct by construction: a single multi-
    * target `target in [...]` query with a row-limit could cluster all
    * results on one target and silently hide coverage for the others.
@@ -145,14 +148,18 @@ export function useExportGrantBypass({
         const chunkResults = await Promise.all(
           chunk.map(async (target) => {
             try {
+              const filter: AccessGrantFilter = {
+                statementExact: statement,
+                status: ["ACTIVE"],
+                export: true,
+                target,
+              };
+              if (!isAccessGrantFilterWithinCELLimit(filter)) {
+                return { target, grant: undefined as AccessGrant | undefined };
+              }
               const res = await searchMyAccessGrants({
                 parent: project,
-                filter: {
-                  statementExact: statement,
-                  status: ["ACTIVE"],
-                  export: true,
-                  target,
-                },
+                filter,
                 pageSize: 1,
               });
               return { target, grant: res.accessGrants[0] };

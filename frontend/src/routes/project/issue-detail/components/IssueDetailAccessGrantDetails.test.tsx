@@ -100,4 +100,16 @@ describe("IssueDetailAccessGrantDetails", () => {
     expect(screen.getByText("common.schema")).toBeInTheDocument();
     expect(screen.getByText("issue.access-grant.container")).toBeInTheDocument();
   });
+
+  test("wraps an unbroken long statement", async () => {
+    const statement = "x".repeat(100_000);
+    mocks.accessGrant = { ...mocks.accessGrant!, query: statement };
+
+    render(<IssueDetailAccessGrantDetails />);
+
+    const preview = await screen.findByText(statement);
+    expect(preview.tagName).toBe("PRE");
+    expect(preview.className).toContain("whitespace-pre-wrap");
+    expect(preview.className).toContain("wrap-anywhere");
+  });
 });
