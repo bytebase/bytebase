@@ -1357,6 +1357,7 @@ function EditMemberRoleDrawer({
     (state) => state.updateProjectIamPolicy
   );
   const isSaaSMode = useAppStore((s) => s.isSaaSMode());
+  const workspaceResourceName = useAppStore((s) => s.workspaceResourceName());
   const roleList = useAppStore((state) => state.roleList);
   const settingsByName = useAppStore((s) => s.settingsByName);
   const hasEmailSetting = useMemo(
@@ -1372,6 +1373,16 @@ function EditMemberRoleDrawer({
   const isEditMode = !!member;
   const isProjectCreateMode = !!projectName && !isEditMode;
   const isProjectEditMode = !!projectName && isEditMode;
+  const accountParents = useMemo(
+    () => [
+      ...new Set(
+        [workspaceResourceName, projectName].filter(
+          (parent): parent is string => !!parent
+        )
+      ),
+    ],
+    [workspaceResourceName, projectName]
+  );
 
   // Live project role bindings for the member (reactively updated when IAM policy changes).
   // Active bindings come first, expired ones last; original order is preserved within each group.
@@ -1950,6 +1961,7 @@ function EditMemberRoleDrawer({
                   value={selectedBindings}
                   onChange={setSelectedBindings}
                   includeAllUsers={!isSaaSMode}
+                  accountParents={accountParents}
                 />
               )}
             </FormField>
