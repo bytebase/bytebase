@@ -18,7 +18,7 @@ import (
 // resolution: the configured search_path, in-batch SET search_path, and drops
 // that change which same-named table an unqualified name refers to.
 // with_pk and without_pk live only in app_schema; shadow exists in both
-// schemas, with a PK only in public.
+// schemas, with a PK only in public; legacy exists in both without a PK.
 func TestTableRequirePKSearchPath(t *testing.T) {
 	dbSchema := &storepb.DatabaseSchemaMetadata{
 		Name:       "test",
@@ -34,6 +34,10 @@ func TestTableRequirePKSearchPath(t *testing.T) {
 							{Name: "shadow_pkey", Expressions: []string{"id"}, Unique: true, Primary: true},
 						},
 					},
+					{
+						Name:    "legacy",
+						Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}},
+					},
 				},
 			},
 			{
@@ -41,6 +45,10 @@ func TestTableRequirePKSearchPath(t *testing.T) {
 				Tables: []*storepb.TableMetadata{
 					{
 						Name:    "shadow",
+						Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}},
+					},
+					{
+						Name:    "legacy",
 						Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}},
 					},
 					{
@@ -111,6 +119,11 @@ func TestTableRequirePKSearchPath(t *testing.T) {
 		{
 			name: "unrelated ALTER on same-named table without PK in first schema",
 			stmt: "ALTER TABLE shadow ADD COLUMN note TEXT;",
+		},
+		{
+			name:        "qualified drop and recreate does not touch same-named legacy table elsewhere",
+			stmt:        "DROP TABLE app_schema.legacy; CREATE TABLE app_schema.legacy(id INT);",
+			wantContent: `Table "app_schema"."legacy" requires PRIMARY KEY`,
 		},
 	}
 
