@@ -95,13 +95,19 @@ vi.mock("@/components/SQLEditorButton", () => ({
   SQLEditorButton: ({
     label,
     size,
+    className,
     "data-testid": testId,
   }: {
     label?: ReactNode;
     size?: string;
+    className?: string;
     "data-testid"?: string;
   }) => (
-    <button data-testid={testId ?? "sql-editor-action"} data-size={size}>
+    <button
+      className={className}
+      data-testid={testId ?? "sql-editor-action"}
+      data-size={size}
+    >
       {label}
     </button>
   ),
@@ -224,7 +230,10 @@ describe("WorkspaceSetupGuide", () => {
     expect(screen.getByTestId("active-action")).toHaveTextContent(
       "workspace-setup-guide.actions.query"
     );
-    expect(screen.getByTestId("active-action")).not.toHaveAttribute("data-size");
+    expect(screen.getByTestId("active-action")).toHaveAttribute(
+      "data-size",
+      "sm"
+    );
     expect(screen.getByTestId("open-product-model")).toBeVisible();
   });
 
@@ -486,7 +495,7 @@ describe("WorkspaceSetupGuide", () => {
     expect(await screen.findAllByRole("menuitem")).toHaveLength(5);
   });
 
-  test("uses a compact active action only while the step row overflows", () => {
+  test("sizes the active action independently of step overflow", () => {
     mocks.scenarioId = "query-data";
     mocks.guideContext = guideContext({
       hasProject: true,
@@ -496,6 +505,16 @@ describe("WorkspaceSetupGuide", () => {
       databaseName: "instances/sample/databases/employee",
     });
     render(<WorkspaceSetupGuide />);
+
+    expect(screen.getByTestId("active-action")).toHaveAttribute(
+      "data-size",
+      "sm"
+    );
+    expect(screen.getByTestId("active-action")).toHaveClass(
+      "2xl:h-9",
+      "2xl:px-3",
+      "2xl:text-sm"
+    );
 
     const viewport = screen.getByTestId("guide-step-viewport");
     const measurement = screen.getByTestId("guide-step-measurement");
@@ -518,16 +537,10 @@ describe("WorkspaceSetupGuide", () => {
       "sm"
     );
 
-    Object.defineProperty(measurement, "scrollWidth", {
-      configurable: true,
-      value: 400,
-    });
-    act(() => {
-      for (const callback of resizeObserverCallbacks) {
-        callback([], {} as ResizeObserver);
-      }
-    });
-    expect(screen.getByTestId("active-action")).not.toHaveAttribute("data-size");
+    expect(screen.getByTestId("active-action")).toHaveAttribute(
+      "data-size",
+      "sm"
+    );
   });
 
   test("routes generic actions without recording guide analytics", () => {

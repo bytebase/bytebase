@@ -436,7 +436,8 @@ export function WorkspaceSetupGuide() {
               data-testid="active-action"
               database={primaryAction.database}
               openInNewTab
-              size={stepsOverflow ? "sm" : undefined}
+              size="sm"
+              className="2xl:h-9 2xl:gap-1.5 2xl:px-3 2xl:text-sm 2xl:leading-5"
               label={t("workspace-setup-guide.actions.query")}
             />
           )}
