@@ -137,7 +137,7 @@ export function IssueDetailAccessGrantDetails() {
                 {t("common.statement")}
               </span>
               <div className="max-h-[30em] overflow-auto rounded-xs bg-gray-50 p-4">
-                <pre className="whitespace-pre-wrap font-mono text-sm">
+                <pre className="wrap-anywhere whitespace-pre-wrap font-mono text-sm">
                   {accessGrant.query}
                 </pre>
               </div>

@@ -232,6 +232,13 @@ func TestGetDatabaseMetadataFilter(t *testing.T) {
 	}
 }
 
+func TestGetDatabaseMetadataFilterRedactsSyntaxError(t *testing.T) {
+	_, err := getDatabaseMetadataFilter(`table == "sensitive SQL" &&`)
+	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+	require.ErrorContains(t, err, "invalid filter expression")
+	require.NotContains(t, err.Error(), "sensitive SQL")
+}
+
 func ptrValue[T any](v T) *T {
 	return &v
 }

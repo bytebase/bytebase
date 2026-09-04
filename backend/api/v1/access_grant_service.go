@@ -90,7 +90,7 @@ func (s *AccessGrantService) ListAccessGrants(ctx context.Context, request *conn
 	if req.Filter != "" {
 		filterQ, err := store.GetListAccessGrantFilter(req.Filter)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse filter"))
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 		find.FilterQ = filterQ
 	}
@@ -444,7 +444,7 @@ func (s *AccessGrantService) SearchMyAccessGrants(ctx context.Context, request *
 	if req.Filter != "" {
 		filterQ, err := store.GetListAccessGrantFilter(req.Filter)
 		if err != nil {
-			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrapf(err, "failed to parse filter"))
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
 		}
 		find.FilterQ = filterQ
 	}
