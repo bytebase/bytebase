@@ -17,28 +17,34 @@ const {
   mockUpdateProjectIamPolicy,
   maximumRoleExpirationSeconds,
   maximumRequestExpirationSeconds,
+  accountSelectProps,
 } = vi.hoisted(() => ({
   mockUseProductIntro: vi.fn(),
   mockPushNotification: vi.fn(),
   mockUpdateProjectIamPolicy: vi.fn(),
   maximumRoleExpirationSeconds: { value: undefined as number | undefined },
   maximumRequestExpirationSeconds: { value: undefined as number | undefined },
+  accountSelectProps: { value: undefined as { accountParents?: string[] } | undefined },
 }));
 
 vi.mock("@/components/AccountMultiSelect", () => ({
   AccountMultiSelect: ({
     onChange,
+    accountParents,
   }: {
     onChange: (members: string[]) => void;
-  }) =>
-    createElement(
+    accountParents?: string[];
+  }) => {
+    accountSelectProps.value = { accountParents };
+    return createElement(
       "button",
       {
         "data-testid": "account-select",
         onClick: () => onChange(["user:dev1@example.com"]),
       },
       "select account"
-    ),
+    );
+  },
 }));
 
 vi.mock("@/components/DatabaseResourceSelector", () => ({
@@ -321,6 +327,7 @@ vi.mock("@/stores/app", () => {
     }),
     // Migrated off the Pinia actuator/setting/subscription store mocks.
     isSaaSMode: () => false,
+    workspaceResourceName: () => "workspaces/default",
     userCountInIam: () => 1,
     userCountLimit: () => 10,
     hasFeature: () => true,
@@ -367,6 +374,7 @@ beforeEach(() => {
   vi.clearAllMocks();
   maximumRoleExpirationSeconds.value = undefined;
   maximumRequestExpirationSeconds.value = undefined;
+  accountSelectProps.value = undefined;
   projectIamPolicy.bindings = [];
   container = document.createElement("div");
   document.body.appendChild(container);
@@ -402,6 +410,23 @@ async function flush(): Promise<void> {
 }
 
 describe("MembersPage project role grant drawer", () => {
+  it("provides workspace and project parents to the account selector", async () => {
+    await renderPage();
+
+    const grantButton = [...container.querySelectorAll("button")].find(
+      (button) => button.textContent === "settings.members.grant-access"
+    ) as HTMLButtonElement;
+    await act(async () => {
+      grantButton.click();
+    });
+    await flush();
+
+    expect(accountSelectProps.value?.accountParents).toEqual([
+      "workspaces/default",
+      "projects/sample-project",
+    ]);
+  });
+
   it("uses maximum role expiration instead of request expiration for direct role grants", async () => {
     maximumRequestExpirationSeconds.value = 30 * 24 * 60 * 60;
 

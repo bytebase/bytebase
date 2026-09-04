@@ -369,7 +369,8 @@ CREATE TABLE issue_comment (
     -- The root comment of this reply's thread; NULL on root comments and
     -- events. A reply references the root directly, never another reply.
     parent_id text REFERENCES issue_comment(resource_id),
-    -- OPEN/RESOLVED on root comments; NULL on replies and events.
+    -- OPEN/RESOLVED on thread roots, the comments with a statement anchor;
+    -- NULL on plain comments, replies, and events.
     thread_state text CHECK (thread_state IN ('OPEN', 'RESOLVED')),
     PRIMARY KEY (resource_id),
     FOREIGN KEY (project, issue_id) REFERENCES issue(project, id)

@@ -1,11 +1,8 @@
 import { Check, EyeOff, ScrollText, X } from "lucide-react";
 import type { ReactNode } from "react";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { MCPModeContentsSheet } from "@/components/mcp/MCPModeContentsSheet";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
 import type { MCPInfo } from "@/types/proto-es/v1/workspace_service_pb";
 
@@ -29,7 +26,6 @@ interface Props {
  */
 export function MCPConsentCeiling({ info }: Props) {
   const { t } = useTranslation();
-  const [contentsOpen, setContentsOpen] = useState(false);
 
   const readWrite = info.capability === MCPSetting_Capability.READ_WRITE;
   const modeKey = readWrite ? "read-write" : "read-only";
@@ -106,14 +102,6 @@ export function MCPConsentCeiling({ info }: Props) {
             </li>
           ))}
         </ul>
-        <Button
-          appearance="link"
-          size="sm"
-          className="self-start px-0"
-          onClick={() => setContentsOpen(true)}
-        >
-          {t("oauth2.consent.mcp.see-contents")}
-        </Button>
       </div>
 
       {readWrite && (
@@ -122,16 +110,6 @@ export function MCPConsentCeiling({ info }: Props) {
           description={t("oauth2.consent.mcp.write-caution")}
         />
       )}
-
-      <MCPModeContentsSheet
-        open={contentsOpen}
-        capability={info.capability}
-        info={info}
-        modeLabel={modeLabel}
-        // No draft here: this page describes the policy in force.
-        ignoreMaskingExemptions={info.ignoreMaskingExemptions}
-        onClose={() => setContentsOpen(false)}
-      />
     </div>
   );
 }

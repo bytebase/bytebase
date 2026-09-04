@@ -5,13 +5,13 @@ import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 
 /** Why this page cannot say what approving would grant. */
-export type UndisclosedReason = "unknown" | "unserved" | "outdated";
+export type UndisclosedReason = "unknown" | "undisclosable";
 
 interface Props {
   readonly reason: UndisclosedReason;
   /** The workspace row, so a SaaS user can switch to one that permits MCP. */
   readonly workspaceCard: ReactNode;
-  /** Omitted for the two reasons an admin has to fix. See retryFor. */
+  /** Omitted where re-reading returns the same answer. See retryFor. */
   readonly onRetry?: () => void;
   readonly retrying: boolean;
   readonly onDismiss: () => void;
@@ -25,9 +25,9 @@ interface Props {
  * decides what one is worth, so with no ceiling to disclose there is no Allow:
  * the disclosure is the consent (BOT-106).
  *
- * The button has to go rather than be left to fail. Only two of these four
- * states also refuse the POST (backend/api/oauth2/consent_audit.go); a failed
- * read here says nothing about the read the POST makes for itself.
+ * The button has to go rather than be left to fail. Of the two states, only
+ * undisclosable also refuses the POST (backend/api/oauth2/consent_audit.go); a
+ * failed read here says nothing about the read the POST makes for itself.
  */
 export function MCPConsentUndisclosed({
   reason,

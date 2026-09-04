@@ -256,26 +256,21 @@ export function OAuth2ConsentPage() {
     form.submit();
   };
 
-  // The way out of each state that has one. The two an admin has to repair get
-  // nothing: re-reading returns the same broken value, and a button that
-  // changes nothing reads as a promise that it might.
+  // The way out of the one state that has one. undisclosable gets nothing:
+  // re-reading returns the same value this page has no word for, and a button
+  // that changes nothing reads as a promise that it might. Its two repairs —
+  // reload, then ask an admin — are named in its own copy instead.
   const retryFor = (reason: UndisclosedReason): (() => void) | undefined => {
-    switch (reason) {
-      case "unknown":
-        // Wrapped rather than passed: retryCeiling is async, and handing a
-        // Promise-returning function to a `() => void` prop floats the promise
-        // (SonarCloud S6544). readCeiling swallows its own failures, so there
-        // is no rejection to route anywhere.
-        return () => {
-          void retryCeiling();
-        };
-      case "outdated":
-        // Only a fresh bundle can name this ceiling. Re-reading the policy
-        // would return the same value this page has no word for.
-        return () => globalThis.location.reload();
-      default:
-        return undefined;
+    if (reason !== "unknown") {
+      return undefined;
     }
+    // Wrapped rather than passed: retryCeiling is async, and handing a
+    // Promise-returning function to a `() => void` prop floats the promise
+    // (SonarCloud S6544). readCeiling swallows its own failures, so there is no
+    // rejection to route anywhere.
+    return () => {
+      void retryCeiling();
+    };
   };
 
   // Five branches share this slot and only the last offers a grant.
@@ -298,7 +293,7 @@ export function OAuth2ConsentPage() {
       );
     }
     // Allow renders only below this line, and only where the page holds a
-    // ceiling the server serves and this bundle can name (BOT-106).
+    // ceiling this bundle can name (BOT-106).
     const ceiling = readConsentCeiling(mcpInfo);
     if (ceiling.kind !== "mode") {
       return (

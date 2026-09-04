@@ -65,14 +65,16 @@ export const createServiceAccountSlice: AppSliceCreator<ServiceAccountSlice> = (
           filter: buildAccountListFilter(params.filter ?? {}),
         })
       );
-    set((state) => ({
-      serviceAccountsByName: {
-        ...state.serviceAccountsByName,
-        ...Object.fromEntries(
-          response.serviceAccounts.map((sa) => [sa.name, sa])
-        ),
-      },
-    }));
+    if (!params.skipCache) {
+      set((state) => ({
+        serviceAccountsByName: {
+          ...state.serviceAccountsByName,
+          ...Object.fromEntries(
+            response.serviceAccounts.map((sa) => [sa.name, sa])
+          ),
+        },
+      }));
+    }
     return {
       serviceAccounts: response.serviceAccounts,
       nextPageToken: response.nextPageToken,

@@ -76,6 +76,16 @@ func TestIssueCommentThreads(t *testing.T) {
 	require.NotNil(t, root.ThreadState)
 	require.Equal(t, store.ThreadStateOpen, *root.ThreadState)
 
+	// An unanchored comment is a plain comment: no thread state, no replies.
+	plain, err := stores.CreateIssueComments(ctx, creator, &store.IssueCommentMessage{
+		ProjectID: projectID,
+		IssueUID:  issueUID,
+		Payload:   &storepb.IssueCommentPayload{Comment: "plain"},
+	})
+	require.NoError(t, err)
+	require.Nil(t, plain.ParentID)
+	require.Nil(t, plain.ThreadState, "an unanchored comment is not a thread root")
+
 	event, err := stores.CreateIssueComments(ctx, creator, &store.IssueCommentMessage{
 		ProjectID: projectID,
 		IssueUID:  issueUID,
@@ -121,6 +131,14 @@ func TestIssueCommentThreads(t *testing.T) {
 		Payload:   &storepb.IssueCommentPayload{Comment: "on event"},
 	})
 	require.Equal(t, common.Invalid, common.ErrorCode(err), "events cannot be replied to")
+
+	_, err = stores.CreateIssueCommentReply(ctx, creator, &store.IssueCommentMessage{
+		ProjectID: projectID,
+		IssueUID:  issueUID,
+		ParentID:  &plain.ResourceID,
+		Payload:   &storepb.IssueCommentPayload{Comment: "on plain"},
+	})
+	require.Equal(t, common.Invalid, common.ErrorCode(err), "plain comments cannot be replied to")
 
 	missing := "no-such-comment"
 	_, err = stores.CreateIssueCommentReply(ctx, creator, &store.IssueCommentMessage{
@@ -218,7 +236,7 @@ func TestIssueCommentThreads(t *testing.T) {
 		IssueUID:  &uid,
 	})
 	require.NoError(t, err)
-	require.Len(t, all, 3, "unfiltered list returns roots, events, and replies")
+	require.Len(t, all, 4, "unfiltered list returns roots, plain comments, events, and replies")
 
 	topLevel, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{
 		ProjectID:    projectID,
@@ -226,7 +244,7 @@ func TestIssueCommentThreads(t *testing.T) {
 		TopLevelOnly: true,
 	})
 	require.NoError(t, err)
-	require.Len(t, topLevel, 2, "timeline entries are the root and the event")
+	require.Len(t, topLevel, 3, "timeline entries are the root, the plain comment, and the event")
 	for _, comment := range topLevel {
 		require.Nil(t, comment.ParentID)
 	}
@@ -356,6 +374,18 @@ func TestIssueCommentThreads(t *testing.T) {
 		ThreadState: &resolved,
 	})
 	require.Equal(t, common.NotFound, common.ErrorCode(err), "events carry no thread state")
+	err = stores.UpdateIssueComment(ctx, &store.UpdateIssueCommentMessage{
+		ProjectID:   projectID,
+		ResourceID:  plain.ResourceID,
+		ThreadState: &resolved,
+	})
+	require.Equal(t, common.NotFound, common.ErrorCode(err), "plain comments carry no thread state")
+	plainEdit := "plain (edited)"
+	require.NoError(t, stores.UpdateIssueComment(ctx, &store.UpdateIssueCommentMessage{
+		ProjectID:  projectID,
+		ResourceID: plain.ResourceID,
+		Comment:    &plainEdit,
+	}), "plain comments stay editable")
 
 	open := store.ThreadStateOpen
 	require.NoError(t, stores.UpdateIssueComment(ctx, &store.UpdateIssueCommentMessage{

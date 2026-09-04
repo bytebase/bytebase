@@ -23,130 +23,6 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// How much of a read-only ceiling this engine can be held to.
-type MCPEngineEnforcement_ReadOnlyDepth int32
-
-const (
-	MCPEngineEnforcement_READ_ONLY_DEPTH_UNSPECIFIED MCPEngineEnforcement_ReadOnlyDepth = 0
-	// Bytebase has no read-only classifier for this engine, so a read-only
-	// session is refused every statement on it, including a plain SELECT.
-	MCPEngineEnforcement_UNSUPPORTED MCPEngineEnforcement_ReadOnlyDepth = 1
-	// Every statement is classified before it runs and a request holding one
-	// that is not a read is refused whole. Nothing below that: the driver does
-	// not open a read-only database session, except where the note says
-	// otherwise.
-	MCPEngineEnforcement_STATEMENT MCPEngineEnforcement_ReadOnlyDepth = 2
-	// Statement classification, and the driver opens the database session
-	// read-only as well, so the engine refuses most writes the classifier
-	// missed. Not a proof: a statement that classifies as a read can still call
-	// a function that switches the session setting back off.
-	MCPEngineEnforcement_STATEMENT_AND_SESSION MCPEngineEnforcement_ReadOnlyDepth = 3
-)
-
-// Enum value maps for MCPEngineEnforcement_ReadOnlyDepth.
-var (
-	MCPEngineEnforcement_ReadOnlyDepth_name = map[int32]string{
-		0: "READ_ONLY_DEPTH_UNSPECIFIED",
-		1: "UNSUPPORTED",
-		2: "STATEMENT",
-		3: "STATEMENT_AND_SESSION",
-	}
-	MCPEngineEnforcement_ReadOnlyDepth_value = map[string]int32{
-		"READ_ONLY_DEPTH_UNSPECIFIED": 0,
-		"UNSUPPORTED":                 1,
-		"STATEMENT":                   2,
-		"STATEMENT_AND_SESSION":       3,
-	}
-)
-
-func (x MCPEngineEnforcement_ReadOnlyDepth) Enum() *MCPEngineEnforcement_ReadOnlyDepth {
-	p := new(MCPEngineEnforcement_ReadOnlyDepth)
-	*p = x
-	return p
-}
-
-func (x MCPEngineEnforcement_ReadOnlyDepth) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (MCPEngineEnforcement_ReadOnlyDepth) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_workspace_service_proto_enumTypes[0].Descriptor()
-}
-
-func (MCPEngineEnforcement_ReadOnlyDepth) Type() protoreflect.EnumType {
-	return &file_v1_workspace_service_proto_enumTypes[0]
-}
-
-func (x MCPEngineEnforcement_ReadOnlyDepth) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use MCPEngineEnforcement_ReadOnlyDepth.Descriptor instead.
-func (MCPEngineEnforcement_ReadOnlyDepth) EnumDescriptor() ([]byte, []int) {
-	return file_v1_workspace_service_proto_rawDescGZIP(), []int{4, 0}
-}
-
-// How Bytebase masks results on this engine, which is what decides whether
-// ignoring masking exemptions changes anything here.
-type MCPEngineEnforcement_Masking int32
-
-const (
-	MCPEngineEnforcement_MASKING_UNSPECIFIED MCPEngineEnforcement_Masking = 0
-	// Bytebase does not mask on this engine. Nothing narrows what a session
-	// reads, and ignoring masking exemptions does nothing.
-	MCPEngineEnforcement_NONE MCPEngineEnforcement_Masking = 1
-	// Column masking. A masking policy substitutes values in query results,
-	// and the exemptions granted to the caller are what let them see the real
-	// value — which is what ignoring exemptions suppresses.
-	MCPEngineEnforcement_COLUMN MCPEngineEnforcement_Masking = 2
-	// Document masking. Results are masked, but exemptions are never consulted
-	// on this path, so ignoring them changes nothing here either.
-	MCPEngineEnforcement_DOCUMENT MCPEngineEnforcement_Masking = 3
-)
-
-// Enum value maps for MCPEngineEnforcement_Masking.
-var (
-	MCPEngineEnforcement_Masking_name = map[int32]string{
-		0: "MASKING_UNSPECIFIED",
-		1: "NONE",
-		2: "COLUMN",
-		3: "DOCUMENT",
-	}
-	MCPEngineEnforcement_Masking_value = map[string]int32{
-		"MASKING_UNSPECIFIED": 0,
-		"NONE":                1,
-		"COLUMN":              2,
-		"DOCUMENT":            3,
-	}
-)
-
-func (x MCPEngineEnforcement_Masking) Enum() *MCPEngineEnforcement_Masking {
-	p := new(MCPEngineEnforcement_Masking)
-	*p = x
-	return p
-}
-
-func (x MCPEngineEnforcement_Masking) String() string {
-	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
-}
-
-func (MCPEngineEnforcement_Masking) Descriptor() protoreflect.EnumDescriptor {
-	return file_v1_workspace_service_proto_enumTypes[1].Descriptor()
-}
-
-func (MCPEngineEnforcement_Masking) Type() protoreflect.EnumType {
-	return &file_v1_workspace_service_proto_enumTypes[1]
-}
-
-func (x MCPEngineEnforcement_Masking) Number() protoreflect.EnumNumber {
-	return protoreflect.EnumNumber(x)
-}
-
-// Deprecated: Use MCPEngineEnforcement_Masking.Descriptor instead.
-func (MCPEngineEnforcement_Masking) EnumDescriptor() ([]byte, []int) {
-	return file_v1_workspace_service_proto_rawDescGZIP(), []int{4, 1}
-}
-
 type GetMCPInfoRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	unknownFields protoimpl.UnknownFields
@@ -183,48 +59,33 @@ func (*GetMCPInfoRequest) Descriptor() ([]byte, []int) {
 	return file_v1_workspace_service_proto_rawDescGZIP(), []int{0}
 }
 
-// MCPInfo is what MCP does in this workspace: the ceiling in force, what each
-// ceiling serves, and the per-engine facts a read-only session depends on.
+// MCPInfo is what MCP does in this workspace: the ceiling in force, and
+// whether masking narrows what a session reads under it.
 //
-// Everything here is resolved when the request is served, never from a stored
-// copy: the method list comes off the compiled API descriptors and the engine
-// answers off the code that enforces them, so a build whose rules changed
-// cannot describe the rules of the build before it.
+// This is the only API a served MCP session or the consent page can read the
+// ceiling from. SettingService/GetSetting is served by no ceiling, and its
+// answer is cached besides.
 type MCPInfo struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The workspace this describes. Format: workspaces/{workspace}. Not this
 	// message's own resource name — MCPInfo is not a named resource and there is
 	// nothing to get it by.
 	Workspace string `protobuf:"bytes,1,opt,name=workspace,proto3" json:"workspace,omitempty"`
-	// The ceiling in force for this workspace. A value no row in modes serves,
-	// CAPABILITY_UNSPECIFIED included, means no ceiling could be resolved from
-	// the stored row and every MCP connection is refused.
+	// The ceiling in force for this workspace. Any value outside the enum this
+	// build serves, CAPABILITY_UNSPECIFIED included, means no ceiling could be
+	// resolved from the stored row and every MCP connection is refused. A stored
+	// name nothing resolves arrives as CAPABILITY_UNSPECIFIED; a number a newer
+	// release wrote arrives verbatim.
 	Capability MCPSetting_Capability `protobuf:"varint,2,opt,name=capability,proto3,enum=bytebase.v1.MCPSetting_Capability" json:"capability,omitempty"`
-	// What each ceiling serves, including the one in force, so an admin can
-	// compare the choices rather than only read the current answer.
-	Modes []*MCPCapabilityMode `protobuf:"bytes,3,rep,name=modes,proto3" json:"modes,omitempty"`
-	// Every API method some ceiling serves. A mode serves a method when the
-	// method's class is one of that mode's served_classes, which is the ceiling
-	// rule the gate evaluates. Methods no ceiling serves are absent.
-	//
-	// Being listed is necessary, not sufficient. The caller still needs the
-	// permission, and two further rules narrow what a served method does: a
-	// handful of methods are refused on the shape of the request (an issue that
-	// would grant a permission, a rollout that skips approval), and under
-	// READ_ONLY every statement SQLService/Query runs must classify as a read.
-	Methods []*MCPMethod `protobuf:"bytes,4,rep,name=methods,proto3" json:"methods,omitempty"`
-	// What a read-only session and the masking toggle actually reach, per engine.
-	// Both are engine-conditional in ways the ceiling alone does not show.
-	Engines []*MCPEngineEnforcement `protobuf:"bytes,5,rep,name=engines,proto3" json:"engines,omitempty"`
 	// Whether this workspace stops applying the caller's own unmasking
-	// provisioning to MCP requests. It decides which branch of each engine's
-	// masking state a caller is in, and no other API tells an MCP session:
-	// SettingService/GetSetting is served by no ceiling.
+	// provisioning to MCP requests. It narrows what a session reads only where
+	// Bytebase masks by column and consults exemptions; elsewhere it suppresses
+	// nothing.
 	IgnoreMaskingExemptions bool `protobuf:"varint,6,opt,name=ignore_masking_exemptions,json=ignoreMaskingExemptions,proto3" json:"ignore_masking_exemptions,omitempty"`
 	// Whether data masking is licensed for this workspace. When false nothing is
-	// masked whatever an engine supports, so the masking states below describe a
-	// mechanism that does not run. Licensing can also be set per instance, so a
-	// true here is the workspace answer, not a promise about every instance.
+	// masked whatever an engine supports, so the toggle above suppresses nothing.
+	// Licensing can also be set per instance, so a true here is the workspace
+	// answer, not a promise about every instance.
 	DataMaskingAvailable bool `protobuf:"varint,7,opt,name=data_masking_available,json=dataMaskingAvailable,proto3" json:"data_masking_available,omitempty"`
 	unknownFields        protoimpl.UnknownFields
 	sizeCache            protoimpl.SizeCache
@@ -274,27 +135,6 @@ func (x *MCPInfo) GetCapability() MCPSetting_Capability {
 	return MCPSetting_CAPABILITY_UNSPECIFIED
 }
 
-func (x *MCPInfo) GetModes() []*MCPCapabilityMode {
-	if x != nil {
-		return x.Modes
-	}
-	return nil
-}
-
-func (x *MCPInfo) GetMethods() []*MCPMethod {
-	if x != nil {
-		return x.Methods
-	}
-	return nil
-}
-
-func (x *MCPInfo) GetEngines() []*MCPEngineEnforcement {
-	if x != nil {
-		return x.Engines
-	}
-	return nil
-}
-
 func (x *MCPInfo) GetIgnoreMaskingExemptions() bool {
 	if x != nil {
 		return x.IgnoreMaskingExemptions
@@ -309,223 +149,6 @@ func (x *MCPInfo) GetDataMaskingAvailable() bool {
 	return false
 }
 
-// MCPCapabilityMode is one ceiling and the method classes it serves.
-type MCPCapabilityMode struct {
-	state      protoimpl.MessageState `protogen:"open.v1"`
-	Capability MCPSetting_Capability  `protobuf:"varint,1,opt,name=capability,proto3,enum=bytebase.v1.MCPSetting_Capability" json:"capability,omitempty"`
-	// Empty means the ceiling serves nothing, which is what DISABLED is.
-	ServedClasses []MCPMethodClass `protobuf:"varint,2,rep,packed,name=served_classes,json=servedClasses,proto3,enum=bytebase.v1.MCPMethodClass" json:"served_classes,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *MCPCapabilityMode) Reset() {
-	*x = MCPCapabilityMode{}
-	mi := &file_v1_workspace_service_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *MCPCapabilityMode) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*MCPCapabilityMode) ProtoMessage() {}
-
-func (x *MCPCapabilityMode) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workspace_service_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use MCPCapabilityMode.ProtoReflect.Descriptor instead.
-func (*MCPCapabilityMode) Descriptor() ([]byte, []int) {
-	return file_v1_workspace_service_proto_rawDescGZIP(), []int{2}
-}
-
-func (x *MCPCapabilityMode) GetCapability() MCPSetting_Capability {
-	if x != nil {
-		return x.Capability
-	}
-	return MCPSetting_CAPABILITY_UNSPECIFIED
-}
-
-func (x *MCPCapabilityMode) GetServedClasses() []MCPMethodClass {
-	if x != nil {
-		return x.ServedClasses
-	}
-	return nil
-}
-
-// MCPMethod is one API method an MCP session can reach, and what decides it.
-type MCPMethod struct {
-	state protoimpl.MessageState `protogen:"open.v1"`
-	// The method as an audit entry names it, so a denial can be found by it.
-	// Example: /bytebase.v1.SQLService/Query
-	Method string `protobuf:"bytes,1,opt,name=method,proto3" json:"method,omitempty"`
-	// The same method as call_api takes it.
-	// Example: bytebase.v1.SQLService.Query
-	OperationId string         `protobuf:"bytes,4,opt,name=operation_id,json=operationId,proto3" json:"operation_id,omitempty"`
-	Class       MCPMethodClass `protobuf:"varint,2,opt,name=class,proto3,enum=bytebase.v1.MCPMethodClass" json:"class,omitempty"`
-	// The IAM permission the method declares. The ceiling never grants: a session
-	// may call a served method only where the person it acts for could.
-	//
-	// Empty means the method declares no permission, which is NOT the same as
-	// needing none — a method that authorizes inside its handler declares nothing
-	// here. auth_method says which case an empty value is.
-	Permission string `protobuf:"bytes,3,opt,name=permission,proto3" json:"permission,omitempty"`
-	// How the method authorizes. IAM means the permission above is the primary
-	// rule, though not always the only one — an update carrying allow_missing
-	// additionally requires the matching create permission. CUSTOM means the
-	// handler decides and the permission field is silent.
-	AuthMethod    AuthMethod `protobuf:"varint,5,opt,name=auth_method,json=authMethod,proto3,enum=bytebase.v1.AuthMethod" json:"auth_method,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *MCPMethod) Reset() {
-	*x = MCPMethod{}
-	mi := &file_v1_workspace_service_proto_msgTypes[3]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *MCPMethod) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*MCPMethod) ProtoMessage() {}
-
-func (x *MCPMethod) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workspace_service_proto_msgTypes[3]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use MCPMethod.ProtoReflect.Descriptor instead.
-func (*MCPMethod) Descriptor() ([]byte, []int) {
-	return file_v1_workspace_service_proto_rawDescGZIP(), []int{3}
-}
-
-func (x *MCPMethod) GetMethod() string {
-	if x != nil {
-		return x.Method
-	}
-	return ""
-}
-
-func (x *MCPMethod) GetOperationId() string {
-	if x != nil {
-		return x.OperationId
-	}
-	return ""
-}
-
-func (x *MCPMethod) GetClass() MCPMethodClass {
-	if x != nil {
-		return x.Class
-	}
-	return MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED
-}
-
-func (x *MCPMethod) GetPermission() string {
-	if x != nil {
-		return x.Permission
-	}
-	return ""
-}
-
-func (x *MCPMethod) GetAuthMethod() AuthMethod {
-	if x != nil {
-		return x.AuthMethod
-	}
-	return AuthMethod_AUTH_METHOD_UNSPECIFIED
-}
-
-// MCPEngineEnforcement is what the read-only ceiling and the masking toggle
-// reach on one database engine.
-type MCPEngineEnforcement struct {
-	state         protoimpl.MessageState             `protogen:"open.v1"`
-	Engine        Engine                             `protobuf:"varint,1,opt,name=engine,proto3,enum=bytebase.v1.Engine" json:"engine,omitempty"`
-	ReadOnlyDepth MCPEngineEnforcement_ReadOnlyDepth `protobuf:"varint,2,opt,name=read_only_depth,json=readOnlyDepth,proto3,enum=bytebase.v1.MCPEngineEnforcement_ReadOnlyDepth" json:"read_only_depth,omitempty"`
-	Masking       MCPEngineEnforcement_Masking       `protobuf:"varint,3,opt,name=masking,proto3,enum=bytebase.v1.MCPEngineEnforcement_Masking" json:"masking,omitempty"`
-	// Where the answers above are the floor rather than the whole story. Empty
-	// for most engines.
-	Note          string `protobuf:"bytes,4,opt,name=note,proto3" json:"note,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *MCPEngineEnforcement) Reset() {
-	*x = MCPEngineEnforcement{}
-	mi := &file_v1_workspace_service_proto_msgTypes[4]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *MCPEngineEnforcement) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*MCPEngineEnforcement) ProtoMessage() {}
-
-func (x *MCPEngineEnforcement) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workspace_service_proto_msgTypes[4]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use MCPEngineEnforcement.ProtoReflect.Descriptor instead.
-func (*MCPEngineEnforcement) Descriptor() ([]byte, []int) {
-	return file_v1_workspace_service_proto_rawDescGZIP(), []int{4}
-}
-
-func (x *MCPEngineEnforcement) GetEngine() Engine {
-	if x != nil {
-		return x.Engine
-	}
-	return Engine_ENGINE_UNSPECIFIED
-}
-
-func (x *MCPEngineEnforcement) GetReadOnlyDepth() MCPEngineEnforcement_ReadOnlyDepth {
-	if x != nil {
-		return x.ReadOnlyDepth
-	}
-	return MCPEngineEnforcement_READ_ONLY_DEPTH_UNSPECIFIED
-}
-
-func (x *MCPEngineEnforcement) GetMasking() MCPEngineEnforcement_Masking {
-	if x != nil {
-		return x.Masking
-	}
-	return MCPEngineEnforcement_MASKING_UNSPECIFIED
-}
-
-func (x *MCPEngineEnforcement) GetNote() string {
-	if x != nil {
-		return x.Note
-	}
-	return ""
-}
-
 type RotateDirectorySyncTokenRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The workspace whose directory sync token is rotated.
@@ -537,7 +160,7 @@ type RotateDirectorySyncTokenRequest struct {
 
 func (x *RotateDirectorySyncTokenRequest) Reset() {
 	*x = RotateDirectorySyncTokenRequest{}
-	mi := &file_v1_workspace_service_proto_msgTypes[5]
+	mi := &file_v1_workspace_service_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -549,7 +172,7 @@ func (x *RotateDirectorySyncTokenRequest) String() string {
 func (*RotateDirectorySyncTokenRequest) ProtoMessage() {}
 
 func (x *RotateDirectorySyncTokenRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workspace_service_proto_msgTypes[5]
+	mi := &file_v1_workspace_service_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -562,7 +185,7 @@ func (x *RotateDirectorySyncTokenRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RotateDirectorySyncTokenRequest.ProtoReflect.Descriptor instead.
 func (*RotateDirectorySyncTokenRequest) Descriptor() ([]byte, []int) {
-	return file_v1_workspace_service_proto_rawDescGZIP(), []int{5}
+	return file_v1_workspace_service_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *RotateDirectorySyncTokenRequest) GetName() string {
@@ -582,7 +205,7 @@ type RotateDirectorySyncTokenResponse struct {
 
 func (x *RotateDirectorySyncTokenResponse) Reset() {
 	*x = RotateDirectorySyncTokenResponse{}
-	mi := &file_v1_workspace_service_proto_msgTypes[6]
+	mi := &file_v1_workspace_service_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -594,7 +217,7 @@ func (x *RotateDirectorySyncTokenResponse) String() string {
 func (*RotateDirectorySyncTokenResponse) ProtoMessage() {}
 
 func (x *RotateDirectorySyncTokenResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workspace_service_proto_msgTypes[6]
+	mi := &file_v1_workspace_service_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -607,7 +230,7 @@ func (x *RotateDirectorySyncTokenResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RotateDirectorySyncTokenResponse.ProtoReflect.Descriptor instead.
 func (*RotateDirectorySyncTokenResponse) Descriptor() ([]byte, []int) {
-	return file_v1_workspace_service_proto_rawDescGZIP(), []int{6}
+	return file_v1_workspace_service_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *RotateDirectorySyncTokenResponse) GetToken() string {
@@ -625,7 +248,7 @@ type ListWorkspacesRequest struct {
 
 func (x *ListWorkspacesRequest) Reset() {
 	*x = ListWorkspacesRequest{}
-	mi := &file_v1_workspace_service_proto_msgTypes[7]
+	mi := &file_v1_workspace_service_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -637,7 +260,7 @@ func (x *ListWorkspacesRequest) String() string {
 func (*ListWorkspacesRequest) ProtoMessage() {}
 
 func (x *ListWorkspacesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workspace_service_proto_msgTypes[7]
+	mi := &file_v1_workspace_service_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -650,7 +273,7 @@ func (x *ListWorkspacesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListWorkspacesRequest.ProtoReflect.Descriptor instead.
 func (*ListWorkspacesRequest) Descriptor() ([]byte, []int) {
-	return file_v1_workspace_service_proto_rawDescGZIP(), []int{7}
+	return file_v1_workspace_service_proto_rawDescGZIP(), []int{4}
 }
 
 type ListWorkspacesResponse struct {
@@ -662,7 +285,7 @@ type ListWorkspacesResponse struct {
 
 func (x *ListWorkspacesResponse) Reset() {
 	*x = ListWorkspacesResponse{}
-	mi := &file_v1_workspace_service_proto_msgTypes[8]
+	mi := &file_v1_workspace_service_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -674,7 +297,7 @@ func (x *ListWorkspacesResponse) String() string {
 func (*ListWorkspacesResponse) ProtoMessage() {}
 
 func (x *ListWorkspacesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workspace_service_proto_msgTypes[8]
+	mi := &file_v1_workspace_service_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -687,7 +310,7 @@ func (x *ListWorkspacesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListWorkspacesResponse.ProtoReflect.Descriptor instead.
 func (*ListWorkspacesResponse) Descriptor() ([]byte, []int) {
-	return file_v1_workspace_service_proto_rawDescGZIP(), []int{8}
+	return file_v1_workspace_service_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListWorkspacesResponse) GetWorkspaces() []*Workspace {
@@ -708,7 +331,7 @@ type GetWorkspaceRequest struct {
 
 func (x *GetWorkspaceRequest) Reset() {
 	*x = GetWorkspaceRequest{}
-	mi := &file_v1_workspace_service_proto_msgTypes[9]
+	mi := &file_v1_workspace_service_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -720,7 +343,7 @@ func (x *GetWorkspaceRequest) String() string {
 func (*GetWorkspaceRequest) ProtoMessage() {}
 
 func (x *GetWorkspaceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workspace_service_proto_msgTypes[9]
+	mi := &file_v1_workspace_service_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -733,7 +356,7 @@ func (x *GetWorkspaceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetWorkspaceRequest.ProtoReflect.Descriptor instead.
 func (*GetWorkspaceRequest) Descriptor() ([]byte, []int) {
-	return file_v1_workspace_service_proto_rawDescGZIP(), []int{9}
+	return file_v1_workspace_service_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *GetWorkspaceRequest) GetName() string {
@@ -756,7 +379,7 @@ type Workspace struct {
 
 func (x *Workspace) Reset() {
 	*x = Workspace{}
-	mi := &file_v1_workspace_service_proto_msgTypes[10]
+	mi := &file_v1_workspace_service_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -768,7 +391,7 @@ func (x *Workspace) String() string {
 func (*Workspace) ProtoMessage() {}
 
 func (x *Workspace) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workspace_service_proto_msgTypes[10]
+	mi := &file_v1_workspace_service_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -781,7 +404,7 @@ func (x *Workspace) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Workspace.ProtoReflect.Descriptor instead.
 func (*Workspace) Descriptor() ([]byte, []int) {
-	return file_v1_workspace_service_proto_rawDescGZIP(), []int{10}
+	return file_v1_workspace_service_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *Workspace) GetName() string {
@@ -815,7 +438,7 @@ type DeleteWorkspaceRequest struct {
 
 func (x *DeleteWorkspaceRequest) Reset() {
 	*x = DeleteWorkspaceRequest{}
-	mi := &file_v1_workspace_service_proto_msgTypes[11]
+	mi := &file_v1_workspace_service_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -827,7 +450,7 @@ func (x *DeleteWorkspaceRequest) String() string {
 func (*DeleteWorkspaceRequest) ProtoMessage() {}
 
 func (x *DeleteWorkspaceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workspace_service_proto_msgTypes[11]
+	mi := &file_v1_workspace_service_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -840,7 +463,7 @@ func (x *DeleteWorkspaceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteWorkspaceRequest.ProtoReflect.Descriptor instead.
 func (*DeleteWorkspaceRequest) Descriptor() ([]byte, []int) {
-	return file_v1_workspace_service_proto_rawDescGZIP(), []int{11}
+	return file_v1_workspace_service_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *DeleteWorkspaceRequest) GetName() string {
@@ -860,7 +483,7 @@ type UpdateWorkspaceRequest struct {
 
 func (x *UpdateWorkspaceRequest) Reset() {
 	*x = UpdateWorkspaceRequest{}
-	mi := &file_v1_workspace_service_proto_msgTypes[12]
+	mi := &file_v1_workspace_service_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -872,7 +495,7 @@ func (x *UpdateWorkspaceRequest) String() string {
 func (*UpdateWorkspaceRequest) ProtoMessage() {}
 
 func (x *UpdateWorkspaceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workspace_service_proto_msgTypes[12]
+	mi := &file_v1_workspace_service_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -885,7 +508,7 @@ func (x *UpdateWorkspaceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdateWorkspaceRequest.ProtoReflect.Descriptor instead.
 func (*UpdateWorkspaceRequest) Descriptor() ([]byte, []int) {
-	return file_v1_workspace_service_proto_rawDescGZIP(), []int{12}
+	return file_v1_workspace_service_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *UpdateWorkspaceRequest) GetWorkspace() *Workspace {
@@ -912,7 +535,7 @@ type LeaveWorkspaceRequest struct {
 
 func (x *LeaveWorkspaceRequest) Reset() {
 	*x = LeaveWorkspaceRequest{}
-	mi := &file_v1_workspace_service_proto_msgTypes[13]
+	mi := &file_v1_workspace_service_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -924,7 +547,7 @@ func (x *LeaveWorkspaceRequest) String() string {
 func (*LeaveWorkspaceRequest) ProtoMessage() {}
 
 func (x *LeaveWorkspaceRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_v1_workspace_service_proto_msgTypes[13]
+	mi := &file_v1_workspace_service_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -937,7 +560,7 @@ func (x *LeaveWorkspaceRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use LeaveWorkspaceRequest.ProtoReflect.Descriptor instead.
 func (*LeaveWorkspaceRequest) Descriptor() ([]byte, []int) {
-	return file_v1_workspace_service_proto_rawDescGZIP(), []int{13}
+	return file_v1_workspace_service_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *LeaveWorkspaceRequest) GetName() string {
@@ -951,48 +574,15 @@ var File_v1_workspace_service_proto protoreflect.FileDescriptor
 
 const file_v1_workspace_service_proto_rawDesc = "" +
 	"\n" +
-	"\x1av1/workspace_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\x1a\x15v1/auth_service.proto\x1a\x0fv1/common.proto\x1a\x13v1/iam_policy.proto\x1a\x18v1/setting_service.proto\"\x13\n" +
-	"\x11GetMCPInfoRequest\"\xa5\x03\n" +
+	"\x1av1/workspace_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a google/protobuf/field_mask.proto\x1a\x13v1/annotation.proto\x1a\x15v1/auth_service.proto\x1a\x13v1/iam_policy.proto\x1a\x18v1/setting_service.proto\"\x13\n" +
+	"\x11GetMCPInfoRequest\"\x9c\x02\n" +
 	"\aMCPInfo\x12!\n" +
 	"\tworkspace\x18\x01 \x01(\tB\x03\xe0A\x03R\tworkspace\x12G\n" +
 	"\n" +
 	"capability\x18\x02 \x01(\x0e2\".bytebase.v1.MCPSetting.CapabilityB\x03\xe0A\x03R\n" +
-	"capability\x129\n" +
-	"\x05modes\x18\x03 \x03(\v2\x1e.bytebase.v1.MCPCapabilityModeB\x03\xe0A\x03R\x05modes\x125\n" +
-	"\amethods\x18\x04 \x03(\v2\x16.bytebase.v1.MCPMethodB\x03\xe0A\x03R\amethods\x12@\n" +
-	"\aengines\x18\x05 \x03(\v2!.bytebase.v1.MCPEngineEnforcementB\x03\xe0A\x03R\aengines\x12?\n" +
+	"capability\x12?\n" +
 	"\x19ignore_masking_exemptions\x18\x06 \x01(\bB\x03\xe0A\x03R\x17ignoreMaskingExemptions\x129\n" +
-	"\x16data_masking_available\x18\a \x01(\bB\x03\xe0A\x03R\x14dataMaskingAvailable\"\x9b\x01\n" +
-	"\x11MCPCapabilityMode\x12B\n" +
-	"\n" +
-	"capability\x18\x01 \x01(\x0e2\".bytebase.v1.MCPSetting.CapabilityR\n" +
-	"capability\x12B\n" +
-	"\x0eserved_classes\x18\x02 \x03(\x0e2\x1b.bytebase.v1.MCPMethodClassR\rservedClasses\"\xd3\x01\n" +
-	"\tMCPMethod\x12\x16\n" +
-	"\x06method\x18\x01 \x01(\tR\x06method\x12!\n" +
-	"\foperation_id\x18\x04 \x01(\tR\voperationId\x121\n" +
-	"\x05class\x18\x02 \x01(\x0e2\x1b.bytebase.v1.MCPMethodClassR\x05class\x12\x1e\n" +
-	"\n" +
-	"permission\x18\x03 \x01(\tR\n" +
-	"permission\x128\n" +
-	"\vauth_method\x18\x05 \x01(\x0e2\x17.bytebase.v1.AuthMethodR\n" +
-	"authMethod\"\xaa\x03\n" +
-	"\x14MCPEngineEnforcement\x12+\n" +
-	"\x06engine\x18\x01 \x01(\x0e2\x13.bytebase.v1.EngineR\x06engine\x12W\n" +
-	"\x0fread_only_depth\x18\x02 \x01(\x0e2/.bytebase.v1.MCPEngineEnforcement.ReadOnlyDepthR\rreadOnlyDepth\x12C\n" +
-	"\amasking\x18\x03 \x01(\x0e2).bytebase.v1.MCPEngineEnforcement.MaskingR\amasking\x12\x12\n" +
-	"\x04note\x18\x04 \x01(\tR\x04note\"k\n" +
-	"\rReadOnlyDepth\x12\x1f\n" +
-	"\x1bREAD_ONLY_DEPTH_UNSPECIFIED\x10\x00\x12\x0f\n" +
-	"\vUNSUPPORTED\x10\x01\x12\r\n" +
-	"\tSTATEMENT\x10\x02\x12\x19\n" +
-	"\x15STATEMENT_AND_SESSION\x10\x03\"F\n" +
-	"\aMasking\x12\x17\n" +
-	"\x13MASKING_UNSPECIFIED\x10\x00\x12\b\n" +
-	"\x04NONE\x10\x01\x12\n" +
-	"\n" +
-	"\x06COLUMN\x10\x02\x12\f\n" +
-	"\bDOCUMENT\x10\x03\"U\n" +
+	"\x16data_masking_available\x18\a \x01(\bB\x03\xe0A\x03R\x14dataMaskingAvailableJ\x04\b\x03\x10\x04J\x04\b\x04\x10\x05J\x04\b\x05\x10\x06R\x05modesR\amethodsR\aengines\"U\n" +
 	"\x1fRotateDirectorySyncTokenRequest\x122\n" +
 	"\x04name\x18\x01 \x01(\tB\x1e\xe0A\x02\xfaA\x18\n" +
 	"\x16bytebase.com/WorkspaceR\x04name\"A\n" +
@@ -1042,73 +632,54 @@ func file_v1_workspace_service_proto_rawDescGZIP() []byte {
 	return file_v1_workspace_service_proto_rawDescData
 }
 
-var file_v1_workspace_service_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_v1_workspace_service_proto_msgTypes = make([]protoimpl.MessageInfo, 14)
+var file_v1_workspace_service_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
 var file_v1_workspace_service_proto_goTypes = []any{
-	(MCPEngineEnforcement_ReadOnlyDepth)(0),  // 0: bytebase.v1.MCPEngineEnforcement.ReadOnlyDepth
-	(MCPEngineEnforcement_Masking)(0),        // 1: bytebase.v1.MCPEngineEnforcement.Masking
-	(*GetMCPInfoRequest)(nil),                // 2: bytebase.v1.GetMCPInfoRequest
-	(*MCPInfo)(nil),                          // 3: bytebase.v1.MCPInfo
-	(*MCPCapabilityMode)(nil),                // 4: bytebase.v1.MCPCapabilityMode
-	(*MCPMethod)(nil),                        // 5: bytebase.v1.MCPMethod
-	(*MCPEngineEnforcement)(nil),             // 6: bytebase.v1.MCPEngineEnforcement
-	(*RotateDirectorySyncTokenRequest)(nil),  // 7: bytebase.v1.RotateDirectorySyncTokenRequest
-	(*RotateDirectorySyncTokenResponse)(nil), // 8: bytebase.v1.RotateDirectorySyncTokenResponse
-	(*ListWorkspacesRequest)(nil),            // 9: bytebase.v1.ListWorkspacesRequest
-	(*ListWorkspacesResponse)(nil),           // 10: bytebase.v1.ListWorkspacesResponse
-	(*GetWorkspaceRequest)(nil),              // 11: bytebase.v1.GetWorkspaceRequest
-	(*Workspace)(nil),                        // 12: bytebase.v1.Workspace
-	(*DeleteWorkspaceRequest)(nil),           // 13: bytebase.v1.DeleteWorkspaceRequest
-	(*UpdateWorkspaceRequest)(nil),           // 14: bytebase.v1.UpdateWorkspaceRequest
-	(*LeaveWorkspaceRequest)(nil),            // 15: bytebase.v1.LeaveWorkspaceRequest
-	(MCPSetting_Capability)(0),               // 16: bytebase.v1.MCPSetting.Capability
-	(MCPMethodClass)(0),                      // 17: bytebase.v1.MCPMethodClass
-	(AuthMethod)(0),                          // 18: bytebase.v1.AuthMethod
-	(Engine)(0),                              // 19: bytebase.v1.Engine
-	(*fieldmaskpb.FieldMask)(nil),            // 20: google.protobuf.FieldMask
-	(*GetIamPolicyRequest)(nil),              // 21: bytebase.v1.GetIamPolicyRequest
-	(*SetIamPolicyRequest)(nil),              // 22: bytebase.v1.SetIamPolicyRequest
-	(*IamPolicy)(nil),                        // 23: bytebase.v1.IamPolicy
-	(*LoginResponse)(nil),                    // 24: bytebase.v1.LoginResponse
+	(*GetMCPInfoRequest)(nil),                // 0: bytebase.v1.GetMCPInfoRequest
+	(*MCPInfo)(nil),                          // 1: bytebase.v1.MCPInfo
+	(*RotateDirectorySyncTokenRequest)(nil),  // 2: bytebase.v1.RotateDirectorySyncTokenRequest
+	(*RotateDirectorySyncTokenResponse)(nil), // 3: bytebase.v1.RotateDirectorySyncTokenResponse
+	(*ListWorkspacesRequest)(nil),            // 4: bytebase.v1.ListWorkspacesRequest
+	(*ListWorkspacesResponse)(nil),           // 5: bytebase.v1.ListWorkspacesResponse
+	(*GetWorkspaceRequest)(nil),              // 6: bytebase.v1.GetWorkspaceRequest
+	(*Workspace)(nil),                        // 7: bytebase.v1.Workspace
+	(*DeleteWorkspaceRequest)(nil),           // 8: bytebase.v1.DeleteWorkspaceRequest
+	(*UpdateWorkspaceRequest)(nil),           // 9: bytebase.v1.UpdateWorkspaceRequest
+	(*LeaveWorkspaceRequest)(nil),            // 10: bytebase.v1.LeaveWorkspaceRequest
+	(MCPSetting_Capability)(0),               // 11: bytebase.v1.MCPSetting.Capability
+	(*fieldmaskpb.FieldMask)(nil),            // 12: google.protobuf.FieldMask
+	(*GetIamPolicyRequest)(nil),              // 13: bytebase.v1.GetIamPolicyRequest
+	(*SetIamPolicyRequest)(nil),              // 14: bytebase.v1.SetIamPolicyRequest
+	(*IamPolicy)(nil),                        // 15: bytebase.v1.IamPolicy
+	(*LoginResponse)(nil),                    // 16: bytebase.v1.LoginResponse
 }
 var file_v1_workspace_service_proto_depIdxs = []int32{
-	16, // 0: bytebase.v1.MCPInfo.capability:type_name -> bytebase.v1.MCPSetting.Capability
-	4,  // 1: bytebase.v1.MCPInfo.modes:type_name -> bytebase.v1.MCPCapabilityMode
-	5,  // 2: bytebase.v1.MCPInfo.methods:type_name -> bytebase.v1.MCPMethod
-	6,  // 3: bytebase.v1.MCPInfo.engines:type_name -> bytebase.v1.MCPEngineEnforcement
-	16, // 4: bytebase.v1.MCPCapabilityMode.capability:type_name -> bytebase.v1.MCPSetting.Capability
-	17, // 5: bytebase.v1.MCPCapabilityMode.served_classes:type_name -> bytebase.v1.MCPMethodClass
-	17, // 6: bytebase.v1.MCPMethod.class:type_name -> bytebase.v1.MCPMethodClass
-	18, // 7: bytebase.v1.MCPMethod.auth_method:type_name -> bytebase.v1.AuthMethod
-	19, // 8: bytebase.v1.MCPEngineEnforcement.engine:type_name -> bytebase.v1.Engine
-	0,  // 9: bytebase.v1.MCPEngineEnforcement.read_only_depth:type_name -> bytebase.v1.MCPEngineEnforcement.ReadOnlyDepth
-	1,  // 10: bytebase.v1.MCPEngineEnforcement.masking:type_name -> bytebase.v1.MCPEngineEnforcement.Masking
-	12, // 11: bytebase.v1.ListWorkspacesResponse.workspaces:type_name -> bytebase.v1.Workspace
-	12, // 12: bytebase.v1.UpdateWorkspaceRequest.workspace:type_name -> bytebase.v1.Workspace
-	20, // 13: bytebase.v1.UpdateWorkspaceRequest.update_mask:type_name -> google.protobuf.FieldMask
-	11, // 14: bytebase.v1.WorkspaceService.GetWorkspace:input_type -> bytebase.v1.GetWorkspaceRequest
-	9,  // 15: bytebase.v1.WorkspaceService.ListWorkspaces:input_type -> bytebase.v1.ListWorkspacesRequest
-	14, // 16: bytebase.v1.WorkspaceService.UpdateWorkspace:input_type -> bytebase.v1.UpdateWorkspaceRequest
-	21, // 17: bytebase.v1.WorkspaceService.GetIamPolicy:input_type -> bytebase.v1.GetIamPolicyRequest
-	13, // 18: bytebase.v1.WorkspaceService.DeleteWorkspace:input_type -> bytebase.v1.DeleteWorkspaceRequest
-	15, // 19: bytebase.v1.WorkspaceService.LeaveWorkspace:input_type -> bytebase.v1.LeaveWorkspaceRequest
-	22, // 20: bytebase.v1.WorkspaceService.SetIamPolicy:input_type -> bytebase.v1.SetIamPolicyRequest
-	2,  // 21: bytebase.v1.WorkspaceService.GetMCPInfo:input_type -> bytebase.v1.GetMCPInfoRequest
-	7,  // 22: bytebase.v1.WorkspaceService.RotateDirectorySyncToken:input_type -> bytebase.v1.RotateDirectorySyncTokenRequest
-	12, // 23: bytebase.v1.WorkspaceService.GetWorkspace:output_type -> bytebase.v1.Workspace
-	10, // 24: bytebase.v1.WorkspaceService.ListWorkspaces:output_type -> bytebase.v1.ListWorkspacesResponse
-	12, // 25: bytebase.v1.WorkspaceService.UpdateWorkspace:output_type -> bytebase.v1.Workspace
-	23, // 26: bytebase.v1.WorkspaceService.GetIamPolicy:output_type -> bytebase.v1.IamPolicy
-	24, // 27: bytebase.v1.WorkspaceService.DeleteWorkspace:output_type -> bytebase.v1.LoginResponse
-	24, // 28: bytebase.v1.WorkspaceService.LeaveWorkspace:output_type -> bytebase.v1.LoginResponse
-	23, // 29: bytebase.v1.WorkspaceService.SetIamPolicy:output_type -> bytebase.v1.IamPolicy
-	3,  // 30: bytebase.v1.WorkspaceService.GetMCPInfo:output_type -> bytebase.v1.MCPInfo
-	8,  // 31: bytebase.v1.WorkspaceService.RotateDirectorySyncToken:output_type -> bytebase.v1.RotateDirectorySyncTokenResponse
-	23, // [23:32] is the sub-list for method output_type
-	14, // [14:23] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	11, // 0: bytebase.v1.MCPInfo.capability:type_name -> bytebase.v1.MCPSetting.Capability
+	7,  // 1: bytebase.v1.ListWorkspacesResponse.workspaces:type_name -> bytebase.v1.Workspace
+	7,  // 2: bytebase.v1.UpdateWorkspaceRequest.workspace:type_name -> bytebase.v1.Workspace
+	12, // 3: bytebase.v1.UpdateWorkspaceRequest.update_mask:type_name -> google.protobuf.FieldMask
+	6,  // 4: bytebase.v1.WorkspaceService.GetWorkspace:input_type -> bytebase.v1.GetWorkspaceRequest
+	4,  // 5: bytebase.v1.WorkspaceService.ListWorkspaces:input_type -> bytebase.v1.ListWorkspacesRequest
+	9,  // 6: bytebase.v1.WorkspaceService.UpdateWorkspace:input_type -> bytebase.v1.UpdateWorkspaceRequest
+	13, // 7: bytebase.v1.WorkspaceService.GetIamPolicy:input_type -> bytebase.v1.GetIamPolicyRequest
+	8,  // 8: bytebase.v1.WorkspaceService.DeleteWorkspace:input_type -> bytebase.v1.DeleteWorkspaceRequest
+	10, // 9: bytebase.v1.WorkspaceService.LeaveWorkspace:input_type -> bytebase.v1.LeaveWorkspaceRequest
+	14, // 10: bytebase.v1.WorkspaceService.SetIamPolicy:input_type -> bytebase.v1.SetIamPolicyRequest
+	0,  // 11: bytebase.v1.WorkspaceService.GetMCPInfo:input_type -> bytebase.v1.GetMCPInfoRequest
+	2,  // 12: bytebase.v1.WorkspaceService.RotateDirectorySyncToken:input_type -> bytebase.v1.RotateDirectorySyncTokenRequest
+	7,  // 13: bytebase.v1.WorkspaceService.GetWorkspace:output_type -> bytebase.v1.Workspace
+	5,  // 14: bytebase.v1.WorkspaceService.ListWorkspaces:output_type -> bytebase.v1.ListWorkspacesResponse
+	7,  // 15: bytebase.v1.WorkspaceService.UpdateWorkspace:output_type -> bytebase.v1.Workspace
+	15, // 16: bytebase.v1.WorkspaceService.GetIamPolicy:output_type -> bytebase.v1.IamPolicy
+	16, // 17: bytebase.v1.WorkspaceService.DeleteWorkspace:output_type -> bytebase.v1.LoginResponse
+	16, // 18: bytebase.v1.WorkspaceService.LeaveWorkspace:output_type -> bytebase.v1.LoginResponse
+	15, // 19: bytebase.v1.WorkspaceService.SetIamPolicy:output_type -> bytebase.v1.IamPolicy
+	1,  // 20: bytebase.v1.WorkspaceService.GetMCPInfo:output_type -> bytebase.v1.MCPInfo
+	3,  // 21: bytebase.v1.WorkspaceService.RotateDirectorySyncToken:output_type -> bytebase.v1.RotateDirectorySyncTokenResponse
+	13, // [13:22] is the sub-list for method output_type
+	4,  // [4:13] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_v1_workspace_service_proto_init() }
@@ -1118,7 +689,6 @@ func file_v1_workspace_service_proto_init() {
 	}
 	file_v1_annotation_proto_init()
 	file_v1_auth_service_proto_init()
-	file_v1_common_proto_init()
 	file_v1_iam_policy_proto_init()
 	file_v1_setting_service_proto_init()
 	type x struct{}
@@ -1126,14 +696,13 @@ func file_v1_workspace_service_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_v1_workspace_service_proto_rawDesc), len(file_v1_workspace_service_proto_rawDesc)),
-			NumEnums:      2,
-			NumMessages:   14,
+			NumEnums:      0,
+			NumMessages:   11,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
 		GoTypes:           file_v1_workspace_service_proto_goTypes,
 		DependencyIndexes: file_v1_workspace_service_proto_depIdxs,
-		EnumInfos:         file_v1_workspace_service_proto_enumTypes,
 		MessageInfos:      file_v1_workspace_service_proto_msgTypes,
 	}.Build()
 	File_v1_workspace_service_proto = out.File

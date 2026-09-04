@@ -57,14 +57,16 @@ export const createWorkloadIdentitySlice: AppSliceCreator<
           filter: buildAccountListFilter(params.filter ?? {}),
         })
       );
-    set((state) => ({
-      workloadIdentitiesByName: {
-        ...state.workloadIdentitiesByName,
-        ...Object.fromEntries(
-          response.workloadIdentities.map((wi) => [wi.name, wi])
-        ),
-      },
-    }));
+    if (!params.skipCache) {
+      set((state) => ({
+        workloadIdentitiesByName: {
+          ...state.workloadIdentitiesByName,
+          ...Object.fromEntries(
+            response.workloadIdentities.map((wi) => [wi.name, wi])
+          ),
+        },
+      }));
+    }
     return {
       workloadIdentities: response.workloadIdentities,
       nextPageToken: response.nextPageToken,
