@@ -341,6 +341,16 @@ const user = createProto(UserSchema, {
   workspace: "workspaces/default",
 });
 
+const workspacePolicyForUser = (role: string) =>
+  createProto(IamPolicySchema, {
+    bindings: [
+      createProto(BindingSchema, {
+        role,
+        members: [`user:${user.email}`],
+      }),
+    ],
+  });
+
 const projectA = createProto(ProjectSchema, {
   name: "projects/a",
   title: "A",
@@ -647,9 +657,13 @@ describe("useAppStore", () => {
     mocks.getCurrentUser.mockResolvedValue(firstLoginUser);
     mocks.getActuatorInfo.mockResolvedValue({
       workspace: user.workspace,
+      userCountInIam: 1,
       saas: false,
     });
     mocks.getWorkspace.mockResolvedValue({ name: user.workspace });
+    mocks.getIamPolicy.mockResolvedValue(
+      workspacePolicyForUser("roles/workspaceAdmin")
+    );
     const store = createAppStore();
 
     await store.getState().login({
@@ -659,6 +673,81 @@ describe("useAppStore", () => {
     expect(mocks.navigateByName).toHaveBeenCalledWith("auth.setup", {
       query: { redirect: "/" },
     });
+  });
+
+  test("invited SaaS first login skips workspace setup and opens the workspace landing page", async () => {
+    vi.stubGlobal("location", {
+      search: "?workspace=default&email=alice%40example.com",
+    });
+    const firstLoginUser = createProto(UserSchema, {
+      ...user,
+      title: user.email,
+    });
+    mocks.login.mockResolvedValue({
+      requireResetPassword: false,
+      user: firstLoginUser,
+    });
+    mocks.getCurrentUser.mockResolvedValue(firstLoginUser);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: user.workspace,
+      userCountInIam: 2,
+      saas: true,
+    });
+    mocks.getWorkspace.mockResolvedValue({ name: user.workspace });
+    mocks.getIamPolicy.mockResolvedValue(
+      workspacePolicyForUser("roles/workspaceMember")
+    );
+    const store = createAppStore();
+
+    await store.getState().login({
+      request: { email: user.email, password: "secret" } as never,
+    });
+
+    expect(mocks.navigateByName).toHaveBeenCalledWith("workspace.landing", {
+      replace: true,
+    });
+    expect(mocks.navigateByName).not.toHaveBeenCalledWith(
+      "auth.setup",
+      expect.anything()
+    );
+  });
+
+  test("invited SaaS first login preserves an explicit redirect", async () => {
+    vi.stubGlobal("location", {
+      search:
+        "?workspace=default&email=alice%40example.com&redirect=%2Fprojects%2Ffoo",
+    });
+    const firstLoginUser = createProto(UserSchema, {
+      ...user,
+      title: user.email,
+    });
+    mocks.login.mockResolvedValue({
+      requireResetPassword: false,
+      user: firstLoginUser,
+    });
+    mocks.getCurrentUser.mockResolvedValue(firstLoginUser);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: user.workspace,
+      userCountInIam: 2,
+      saas: true,
+    });
+    mocks.getWorkspace.mockResolvedValue({ name: user.workspace });
+    mocks.getIamPolicy.mockResolvedValue(
+      workspacePolicyForUser("roles/workspaceMember")
+    );
+    const store = createAppStore();
+
+    await store.getState().login({
+      request: { email: user.email, password: "secret" } as never,
+    });
+
+    expect(mocks.navigateToPath).toHaveBeenCalledWith("/projects/foo", {
+      replace: true,
+    });
+    expect(mocks.navigateByName).not.toHaveBeenCalledWith(
+      "auth.setup",
+      expect.anything()
+    );
   });
 
   // Regression guard: `signup()` used to override the destination with the SQL
@@ -675,6 +764,9 @@ describe("useAppStore", () => {
       workspace: user.workspace,
       userCountInIam: 2,
     });
+    mocks.getIamPolicy.mockResolvedValue(
+      workspacePolicyForUser("roles/workspaceMember")
+    );
     mocks.getSetting.mockResolvedValue(
       createProto(SettingSchema, {
         value: createProto(SettingValueSchema, {
@@ -708,6 +800,9 @@ describe("useAppStore", () => {
       userCountInIam: 1,
       saas: false,
     });
+    mocks.getIamPolicy.mockResolvedValue(
+      workspacePolicyForUser("roles/workspaceAdmin")
+    );
     const store = createAppStore();
 
     await store.getState().signup({
@@ -729,6 +824,9 @@ describe("useAppStore", () => {
       userCountInIam: 1,
       saas: true,
     });
+    mocks.getIamPolicy.mockResolvedValue(
+      workspacePolicyForUser("roles/workspaceAdmin")
+    );
     const store = createAppStore();
 
     await store.getState().signup({
@@ -742,17 +840,101 @@ describe("useAppStore", () => {
     });
   });
 
-  // Guards signup's own `loadWorkspaceProfile` call. The explicit-redirect test
-  // above returns before `rootGuard` is consulted, so it passes with or without
-  // the load; this one pins that a no-redirect signup hands the guard a loaded
-  // profile, which is what sends an EDITOR workspace to the SQL Editor.
-  test("signup loads the workspace profile before choosing the next page", async () => {
+  test("invited SaaS signup skips workspace setup and opens the workspace landing page", async () => {
+    mocks.signup.mockResolvedValue({});
+    mocks.getCurrentUser.mockResolvedValue(user);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: user.workspace,
+      userCountInIam: 2,
+      saas: true,
+    });
+    mocks.getIamPolicy.mockResolvedValue(
+      workspacePolicyForUser("roles/workspaceMember")
+    );
+    const store = createAppStore();
+
+    await store.getState().signup({
+      email: user.email,
+      name: "Test",
+      password: "secret",
+    } as never);
+
+    expect(mocks.navigateByName).toHaveBeenCalledWith("workspace.landing", {
+      replace: true,
+    });
+    expect(mocks.navigateByName).not.toHaveBeenCalledWith(
+      "auth.setup",
+      expect.anything()
+    );
+  });
+
+  test("non-admin signup skips workspace setup even with one IAM user", async () => {
+    mocks.signup.mockResolvedValue({});
+    mocks.getCurrentUser.mockResolvedValue(user);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: user.workspace,
+      userCountInIam: 1,
+      saas: true,
+    });
+    mocks.getIamPolicy.mockResolvedValue(
+      workspacePolicyForUser("roles/workspaceMember")
+    );
+    const store = createAppStore();
+
+    await store.getState().signup({
+      email: user.email,
+      name: "Test",
+      password: "secret",
+    } as never);
+
+    expect(mocks.navigateByName).toHaveBeenCalledWith("workspace.landing", {
+      replace: true,
+    });
+    expect(mocks.navigateByName).not.toHaveBeenCalledWith(
+      "auth.setup",
+      expect.anything()
+    );
+  });
+
+  test("signup skips workspace setup when the workspace policy cannot be loaded", async () => {
+    mocks.signup.mockResolvedValue({});
+    mocks.getCurrentUser.mockResolvedValue(user);
+    mocks.getActuatorInfo.mockResolvedValue({
+      workspace: user.workspace,
+      userCountInIam: 1,
+      saas: true,
+    });
+    mocks.getIamPolicy.mockRejectedValue(new Error("policy unavailable"));
+    const store = createAppStore();
+    store.setState({
+      workspacePolicy: workspacePolicyForUser("roles/workspaceAdmin"),
+    });
+
+    await store.getState().signup({
+      email: user.email,
+      name: "Test",
+      password: "secret",
+    } as never);
+
+    expect(mocks.navigateByName).toHaveBeenCalledWith("workspace.landing", {
+      replace: true,
+    });
+    expect(mocks.navigateByName).not.toHaveBeenCalledWith(
+      "auth.setup",
+      expect.anything()
+    );
+  });
+
+  test("signup loads the workspace profile before opening the landing page", async () => {
     mocks.signup.mockResolvedValue({});
     mocks.getCurrentUser.mockResolvedValue(user);
     mocks.getActuatorInfo.mockResolvedValue({
       workspace: user.workspace,
       userCountInIam: 2,
     });
+    mocks.getIamPolicy.mockResolvedValue(
+      workspacePolicyForUser("roles/workspaceMember")
+    );
     mocks.getSetting.mockResolvedValue(
       createProto(SettingSchema, {
         value: createProto(SettingValueSchema, {
@@ -776,7 +958,9 @@ describe("useAppStore", () => {
     expect(
       store.getState().appFeatures["bb.feature.database-change-mode"]
     ).toBe(DatabaseChangeMode.EDITOR);
-    expect(mocks.navigateToPath).toHaveBeenCalledWith("/", { replace: true });
+    expect(mocks.navigateByName).toHaveBeenCalledWith("workspace.landing", {
+      replace: true,
+    });
   });
 
   test("lists groups and populates the group cache", async () => {

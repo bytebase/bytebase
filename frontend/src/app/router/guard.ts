@@ -76,6 +76,32 @@ export function buildSigninRedirectQuery(url: URL): Record<string, string> {
   return query;
 }
 
+export async function workspaceSetupGuard(url: URL): Promise<Response | null> {
+  const store = useAppStore.getState();
+  if (!store.isLoggedIn()) {
+    return null;
+  }
+
+  try {
+    await Promise.all([
+      store.fetchServerInfo(),
+      store.fetchWorkspaceIamPolicy(true),
+    ]);
+  } catch {
+    return redirect(resolvePath(WORKSPACE_ROUTE_LANDING));
+  }
+  if (store.enableOnboarding()) {
+    return null;
+  }
+
+  const redirectParam = url.searchParams.get("redirect");
+  const target =
+    redirectParam?.startsWith("/") && !redirectParam.startsWith("//")
+      ? redirectParam
+      : resolvePath(WORKSPACE_ROUTE_LANDING);
+  return redirect(target);
+}
+
 // Route-name prefixes that an authenticated user may always access.
 const ALLOWED_ROUTE_PATTERNS = [
   ACCOUNT_ROUTE,

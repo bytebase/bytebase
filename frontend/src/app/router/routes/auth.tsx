@@ -1,5 +1,6 @@
 import type { RouteObject } from "react-router";
 import { SplashLayout } from "@/app/layouts/SplashLayout";
+import { workspaceSetupGuard } from "@/app/router/guard";
 import {
   AUTH_2FA_SETUP_MODULE,
   AUTH_MFA_MODULE,
@@ -89,6 +90,7 @@ export const authRoutes: RouteObject[] = [
       {
         path: "setup",
         handle: { name: AUTH_SETUP_MODULE },
+        loader: ({ request }) => workspaceSetupGuard(new URL(request.url)),
         lazy: lazyPage(
           () => import("@/routes/auth/WorkspaceSetupPage"),
           (m) => m.WorkspaceSetupPage
