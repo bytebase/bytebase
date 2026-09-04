@@ -9,8 +9,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -27,10 +25,7 @@ func newStorePostgresFixture(t *testing.T, seedSQL string) *storePostgresFixture
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	t.Cleanup(cancel)
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(context.Background()) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, s, url := newTestDB(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
@@ -39,15 +34,7 @@ func newStorePostgresFixture(t *testing.T, seedSQL string) *storePostgresFixture
 	`+seedSQL)
 	require.NoError(t, err)
 
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	s, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, s.Close()) })
-
-	return &storePostgresFixture{ctx: ctx, db: db, store: s, pgURL: pgURL}
+	return &storePostgresFixture{ctx: ctx, db: db, store: s, pgURL: url}
 }
 
 const maintenanceLockWait = 10 * time.Second

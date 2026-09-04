@@ -125,7 +125,7 @@ went from **679 s to 611 s** across its 233 boots: 227 s off the summed test
 time, compressed 3.3× by the package's own parallelism. Measure the efforts
 below against 611 s.
 
-### 2. One shared container per package, then turn parallelism on
+### [✓ step 1, store] 2. One shared container per package, then turn parallelism on
 
 **459 s of wall clock, 390 s of it container starts.** `store` starts 90
 containers, and because it runs serially that cost is its wall clock almost
@@ -161,6 +161,25 @@ ordering coupling.
 
 Step 1 alone takes `store` from 459 s to roughly 75 s. Step 2 should take it
 below that; what remains is real work across 128 tests.
+
+**What it bought, measured on one Mac, same tests both sides.** `backend/store`
+went from **382.95 s to 12.0 s** — 90 container starts down to 1, and 20 files
+off `GetTestPgContainer`. `main_test.go` holds the whole mechanism in one
+helper: `newTestDB` returns a raw handle for seeding, a Store for the code under
+test, and the URL for tests that open their own connections, all on a database
+copied from the template.
+
+The copies are never dropped, deliberately. They are physical — 140 tests hold
+roughly 1.3 GB — but they live inside the package's own container, which
+`TestMain` terminates on the way out, so the space comes back with it. Dropping
+each database costs about 54 ms, or 7 s across the package, to reclaim disk that
+is already reclaimed.
+
+**Step 2 is not done.** Nothing calls `t.Parallel()` yet, so this is step 1
+alone. Two things that would have blocked it are already checked: Postgres
+advisory locks are per-database, so the lock and claim tests cannot reach each
+other across per-test databases, and eight concurrent
+`CREATE DATABASE … TEMPLATE` from one template all succeed.
 
 ### 3. Pool the provisioned Postgres instances
 
@@ -258,11 +277,11 @@ Three keep their engine. Each needs a comment saying why:
 
 ### 6. Seams instead of containers
 
-**912 s of wall clock, 680 s of it container starts.** AGENTS.md confines a real
-metadata Postgres to `store` and `tests`. `api/v1`, `component/review` and
-`migrator` are not on that list and start 157 containers between them.
-`backend/api/mcp` is the proof this is livable: 168 tests in 39.5 s, 16 of its
-18 files containerless.
+**822 s of wall clock, 611 s of it container starts**, after `migrator` was
+settled by deletion below. AGENTS.md confines a real metadata Postgres to
+`store` and `tests`; `api/v1` and `component/review` are not on that list and
+start 141 containers between them. `backend/api/mcp` is the proof this is
+livable: 168 tests in 39.5 s, 16 of its 18 files containerless.
 
 Effort 2 declined a fake store on two grounds, and both fail here. `api/v1` is
 not testing its API — `mcp_info_test.go` calls `service.GetMCPInfo` as a Go
@@ -272,19 +291,48 @@ calls 181, but `api/mcp` needed five (`serverStore`, faked in 62 lines) and
 `mcp_gate.go` needed one (`mcpSettingsReader`). Interfaces go beside the handler
 that reads them, never over the store.
 
-Fourteen files in `api/v1` start containers, ~90 tests. Read from names, not
-bodies — verify the back two rows:
+Fourteen files in `api/v1` start containers, 90 tests, classified from their
+bodies:
 
 | Disposition | Tests | Shape |
 | --- | ---: | --- |
-| Move to `backend/store` | ~20 | `Test*Claims`, concurrent-update and serialization, `TestMixedIssuePatchRollsBackWhenLabelsFail`, retention filter boundaries, `TestIssueApprovalFiltersRunBeforePaging` |
-| Pure function over plain data | ~40 | canonical-name tests, the four `TestCheckRelease*`, converters |
-| Narrow interface and a fake | ~30 | `TestGetMCPInfoHandler`, the list-and-hide tests, `TestApproveIssueFailsClosedWhenIAMLookupFails` |
+| Move to `backend/store` | 18 | the 7 lockout and claims tests, 6 concurrency and transaction tests, 2 retention-filter boundaries, `TestIssueApprovalFiltersRunBeforePaging` |
+| Replace with a fake | 66 | canonical-name assertions through real services, the list-and-hide tests, validation rejections, `TestGetMCPInfoHandler`, `TestApproveIssueFailsClosedWhenIAMLookupFails` |
+| Pure function over plain data | 6 | `TestExtractDomain`, `TestLDAPLoginIdentity`, the MFA temp-token shapes |
 
-`component/review` splits the same way:
-`TestApplyApprovalTemplateAndCreatePlanCheckRunDoNotDeadlock` is lock ordering
-and moves to `store`; the CEL, template-matching and target-unfolding tests are
-pure functions already, wearing a container for the package's sake.
+The last two rows are one boundary, not two: a fake test becomes a pure one as
+soon as its decide-half is extracted, so 66 is a ceiling on the fakes and 6 a
+floor on the pure functions.
+
+The rest of `backend/api` adds 14, all fakes — `oauth2` 6, `mcp` 5, `auth` 2,
+`lsp` 1. `oauth2`'s consent-ceiling tests seed five workspaces and their MCP
+settings in raw SQL to exercise one ceiling read each. The 6 pure tests need no
+work: verified by call closure, none reaches a container.
+
+**Outside `api/`, seven more packages hold a metadata Postgres**, 73 tests
+between them, classified the same way by call closure:
+
+| Package | → `store` | → fake |
+| --- | ---: | ---: |
+| `component/review` | 12 | 29 |
+| `runner/schemasync` | 5 | 2 |
+| `runner/taskrun` | 5 | 4 |
+| `runner/plancheck` | 1 | 5 |
+| `server` | 2 | 2 |
+| `component/recovery` | 0 | 5 |
+| `enterprise` | 0 | 1 |
+
+`component/review`'s 12 are the largest store-bound group anywhere — approval
+lock ordering, concurrent approvals, staleness races — and share helpers with
+their own 29, so fakes-first applies there too. `runner/schemasync`'s five hold
+`AdvisoryLockKeySchemaSyncer` in a live transaction, which nothing but Postgres
+can do. `plugin/db/*` and `plugin/schema/*` are out of scope: target engines,
+not metadata, and effort 7's business.
+
+Two places already have the right shape: 39 of `backend/store`'s 140 tests never
+touch a database (the CEL-to-SQL builders assert generated SQL rather than
+executing it), and 52 tests across the seven packages above are already
+container-free.
 
 Prefer the middle row: a handler is fetch, decide, convert, and only the fetch
 needs a store.
@@ -304,6 +352,30 @@ than one per test.
 **Every fake needs a contract test** — one table run against both the fake and
 the real store — or effort 2's objection is right. Since none of these packages
 may hold a container, that suite lives in `backend/store`. No `mockgen`, no SQLite.
+
+**Fakes before moves.** The 18 do not move first, because their helpers are
+shared with the tests that stay: 9 of the 11 helpers the 8 issue tests need are
+also used by the 27 `issue_service_test.go` tests bound for fakes, so moving now
+would duplicate them across two packages. Converting the 27 first lets those
+helpers diverge naturally, and the 8 then move with helpers of their own. The
+exception is a file whose tests all move — `audit_log_service_test.go` had two
+tests and four file-local helpers, so it moved whole (**done**: now
+`backend/store/audit_log_retention_test.go`, 0.14 s and 0.11 s against 4.3 s
+each before). Its one unexported dependency, `convertToAuditLogs`, stayed behind
+as a pure converter test with no database.
+
+**Done anyway, duplication accepted.** The 8 issue tests moved to
+`backend/store/issue_service_concurrency_test.go` with copies of the 9 shared
+helpers; `api/v1` keeps its own for the 27 that stay, which get rewritten against
+a fake regardless. All 8 run in 0.04–0.07 s against 4.3 s. Two snags, neither
+needing a production change: they asserted on `IssueService.bus`, unexported, so
+the helper now returns the bus it built; and `errDraftIssueNotSubmitted` is
+unexported, but `IsDraftIssueNotSubmittedError` sits exported beside it.
+
+Five of the 18 call unexported `api/v1` methods — `getAndVerifyUser`,
+`verifyEmailCode`, `completeMFALogin`, `getOrCreateUserWithIDP` — and cannot
+move without exporting them. `TestLoginAttemptRetentionOutlivesLockouts` is not
+a database test at all; it compares two constants.
 
 Convert `mcp_info_test.go` first — `mcpSettingsReader` exists and the test is 60
 lines — and measure before doing the rest. Server boots go the same way:

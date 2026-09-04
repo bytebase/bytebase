@@ -8,8 +8,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -17,10 +15,7 @@ func newSampleInstanceFixture(t *testing.T) (context.Context, *store.Store) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	t.Cleanup(cancel)
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(context.Background()) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, stores, _ := newTestDB(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES
 			('workspace-a'), ('workspace-b'), ('workspace-c'), ('workspace-d');
@@ -31,13 +26,6 @@ func newSampleInstanceFixture(t *testing.T) (context.Context, *store.Store) {
 			('project-workspace-d', 'workspace-d', 'Project D');
 	`)
 	require.NoError(t, err)
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
 	return ctx, stores
 }
 

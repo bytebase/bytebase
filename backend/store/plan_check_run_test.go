@@ -2,14 +2,11 @@ package store_test
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
@@ -644,11 +641,7 @@ func TestFailStalePlanCheckRunsPreservesApprovalInputVersion(t *testing.T) {
 func setupPlanCheckRunVersionStore(ctx context.Context, t *testing.T) *store.Store {
 	t.Helper()
 
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, s, _ := newTestDB(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
@@ -656,14 +649,6 @@ func setupPlanCheckRunVersionStore(ctx context.Context, t *testing.T) *store.Sto
 		INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A');
 	`)
 	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	s, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, s.Close()) })
 	return s
 }
 
