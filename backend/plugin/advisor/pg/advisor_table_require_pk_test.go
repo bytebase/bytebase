@@ -14,18 +14,35 @@ import (
 	"github.com/bytebase/bytebase/backend/store/model"
 )
 
-// TestTableRequirePKSearchPath proves unqualified names resolve through the
-// database search_path, matching the walkthrough that builds FinalMetadata.
-// Both tables live only in app_schema; public is empty.
+// TestTableRequirePKSearchPath proves the rule follows the walkthrough's name
+// resolution: the configured search_path, in-batch SET search_path, and drops
+// that change which same-named table an unqualified name refers to.
+// with_pk and without_pk live only in app_schema; shadow exists in both
+// schemas, with a PK only in public.
 func TestTableRequirePKSearchPath(t *testing.T) {
 	dbSchema := &storepb.DatabaseSchemaMetadata{
 		Name:       "test",
 		SearchPath: "app_schema, public",
 		Schemas: []*storepb.SchemaMetadata{
-			{Name: "public"},
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name:    "shadow",
+						Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}},
+						Indexes: []*storepb.IndexMetadata{
+							{Name: "shadow_pkey", Expressions: []string{"id"}, Unique: true, Primary: true},
+						},
+					},
+				},
+			},
 			{
 				Name: "app_schema",
 				Tables: []*storepb.TableMetadata{
+					{
+						Name:    "shadow",
+						Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}},
+					},
 					{
 						Name: "with_pk",
 						Columns: []*storepb.ColumnMetadata{
@@ -49,6 +66,7 @@ func TestTableRequirePKSearchPath(t *testing.T) {
 
 	tests := []struct {
 		name        string
+		searchPath  string // overrides the fixture search_path when set
 		stmt        string
 		wantContent string // empty means no advice
 	}{
@@ -79,6 +97,21 @@ func TestTableRequirePKSearchPath(t *testing.T) {
 			name: "create then drop unqualified table in same batch",
 			stmt: "CREATE TABLE fresh(id INT); DROP TABLE fresh;",
 		},
+		{
+			name:        "in-batch SET search_path redirects unqualified name",
+			searchPath:  "public",
+			stmt:        "SET search_path TO app_schema, public; ALTER TABLE with_pk DROP CONSTRAINT with_pk_pkey;",
+			wantContent: `Table "app_schema"."with_pk" requires PRIMARY KEY`,
+		},
+		{
+			name:        "in-batch drop changes which same-named table is altered",
+			stmt:        "DROP TABLE app_schema.shadow; ALTER TABLE shadow DROP CONSTRAINT shadow_pkey;",
+			wantContent: `Table "public"."shadow" requires PRIMARY KEY`,
+		},
+		{
+			name: "unrelated ALTER on same-named table without PK in first schema",
+			stmt: "ALTER TABLE shadow ADD COLUMN note TEXT;",
+		},
 	}
 
 	rule := &storepb.SQLReviewRule{
@@ -90,7 +123,10 @@ func TestTableRequirePKSearchPath(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			original, ok := proto.Clone(dbSchema).(*storepb.DatabaseSchemaMetadata)
 			require.True(t, ok)
-			final, ok := proto.Clone(dbSchema).(*storepb.DatabaseSchemaMetadata)
+			if tc.searchPath != "" {
+				original.SearchPath = tc.searchPath
+			}
+			final, ok := proto.Clone(original).(*storepb.DatabaseSchemaMetadata)
 			require.True(t, ok)
 			checkCtx := advisor.Context{
 				DBType:           storepb.Engine_POSTGRES,

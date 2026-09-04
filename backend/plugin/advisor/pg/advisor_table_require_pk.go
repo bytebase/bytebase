@@ -3,6 +3,7 @@ package pg
 import (
 	"context"
 	"fmt"
+	"slices"
 
 	"github.com/bytebase/omni/pg/ast"
 
@@ -23,10 +24,12 @@ func init() {
 
 // TableRequirePKAdvisor is the advisor checking table requires PK.
 //
-// The rule only guards the net change of a batch: a table created in the batch
-// must end with a PRIMARY KEY, and a table that had a PRIMARY KEY before the
-// batch must still have one afterwards. ALTER TABLE on a pre-existing table
-// without a PRIMARY KEY is out of scope so unrelated changes are not blocked.
+// The rule guards the net change of a batch by comparing the metadata before
+// and after the walkthrough: a table created in the batch must end with a
+// PRIMARY KEY, and a table that had one must still have one. Pre-existing
+// tables without a PRIMARY KEY are out of scope, so unrelated changes to them
+// are not blocked. Name resolution (search_path, SET ROLE, drops) is left to
+// the walkthrough; statements are only tracked to attribute the advice.
 type TableRequirePKAdvisor struct {
 }
 
@@ -44,15 +47,7 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 		},
 		originalMetadata: checkCtx.OriginalMetadata,
 		finalMetadata:    checkCtx.FinalMetadata,
-		searchPath:       []string{"public"},
 		tableMentions:    make(map[string]*tableMention),
-	}
-	if checkCtx.OriginalMetadata != nil {
-		// Resolve $user against SessionUser so unqualified names land in the
-		// same schema the walkthrough uses when building FinalMetadata.
-		if sp := checkCtx.OriginalMetadata.GetSearchPathForCurrentUser(checkCtx.SessionUser); len(sp) > 0 {
-			rule.searchPath = sp
-		}
 	}
 
 	// Manually iterate statements instead of using RunOmniRules because
@@ -77,17 +72,19 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 type tableMention struct {
 	startLine int
 	text      string
+	// created is set when the batch contains a CREATE TABLE for this name.
+	created bool
 }
 
 type tableRequirePKRule struct {
 	OmniBaseRule
 	originalMetadata *model.DatabaseMetadata
 	finalMetadata    *model.DatabaseMetadata
-	// searchPath resolves unqualified table names; never empty.
-	searchPath []string
 
-	// Track last mention of each table
-	tableMentions map[string]*tableMention // key: "schema.table", value: last mention info
+	// tableMentions records the last CREATE/ALTER TABLE per name for advice
+	// attribution. The key is "schema.table" with the schema as written, so an
+	// unqualified name is keyed ".table".
+	tableMentions map[string]*tableMention
 }
 
 // Name returns the rule name.
@@ -99,103 +96,40 @@ func (*tableRequirePKRule) Name() string {
 func (r *tableRequirePKRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateStmt:
-		r.handleCreateStmt(n)
+		r.recordMention(n.Relation, true)
 	case *ast.AlterTableStmt:
-		r.handleAlterTableStmt(n)
-	case *ast.DropStmt:
-		r.handleDropStmt(n)
+		r.recordMention(n.Relation, false)
 	default:
 	}
 }
 
-// handleCreateStmt records CREATE TABLE statements.
-func (r *tableRequirePKRule) handleCreateStmt(n *ast.CreateStmt) {
-	tableName := omniTableName(n.Relation)
+func (r *tableRequirePKRule) recordMention(rv *ast.RangeVar, created bool) {
+	tableName := omniTableName(rv)
 	if tableName == "" {
 		return
 	}
-	schema := r.resolveSchema(n.Relation.Schemaname, tableName)
-
-	key := fmt.Sprintf("%s.%s", schema, tableName)
-	r.tableMentions[key] = &tableMention{
-		startLine: int(r.ContentStartLine()) + r.BaseLine,
-		text:      r.TrimmedStmtText(),
-	}
-}
-
-// handleAlterTableStmt records ALTER TABLE statements on tables that had a
-// PRIMARY KEY before this batch. Tables created in this batch are already
-// tracked by handleCreateStmt.
-func (r *tableRequirePKRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
-	tableName := omniTableName(n.Relation)
-	if tableName == "" {
-		return
-	}
-	schema := r.resolveSchema(n.Relation.Schemaname, tableName)
-
-	key := fmt.Sprintf("%s.%s", schema, tableName)
-	if _, tracked := r.tableMentions[key]; !tracked {
-		if table := r.originalTable(schema, tableName); table == nil || table.GetPrimaryKey() == nil {
-			return
-		}
+	key := mentionKey(rv.Schemaname, tableName)
+	if prev := r.tableMentions[key]; prev != nil && prev.created {
+		created = true
 	}
 	r.tableMentions[key] = &tableMention{
 		startLine: int(r.ContentStartLine()) + r.BaseLine,
 		text:      r.TrimmedStmtText(),
+		created:   created,
 	}
 }
 
-// handleDropStmt handles DROP TABLE - remove from tracking.
-func (r *tableRequirePKRule) handleDropStmt(n *ast.DropStmt) {
-	if n.RemoveType != int(ast.OBJECT_TABLE) {
-		return
-	}
-
-	if n.Objects == nil {
-		return
-	}
-	for _, item := range n.Objects.Items {
-		list, ok := item.(*ast.List)
-		if !ok {
-			continue
-		}
-		var parts []string
-		for _, nameItem := range list.Items {
-			if s, ok := nameItem.(*ast.String); ok {
-				parts = append(parts, s.Str)
-			}
-		}
-		var schema, tableName string
-		switch len(parts) {
-		case 1:
-			tableName = parts[0]
-		case 2:
-			schema, tableName = parts[0], parts[1]
-		default:
-			continue
-		}
-		delete(r.tableMentions, fmt.Sprintf("%s.%s", r.resolveSchema(schema, tableName), tableName))
-	}
+func mentionKey(schema, table string) string {
+	return schema + "." + table
 }
 
-// resolveSchema mirrors PostgreSQL name resolution. A qualified name is taken
-// as-is. An unqualified name maps to the first search_path schema that already
-// holds the table, either created earlier in this batch or present in the
-// original metadata; otherwise to the first search_path schema, which is
-// where CREATE TABLE places a new table.
-func (r *tableRequirePKRule) resolveSchema(schema, tableName string) string {
-	if schema != "" {
-		return schema
+// mentionFor returns the mention for a table in the final metadata, trying
+// the qualified name first and then the unqualified one.
+func (r *tableRequirePKRule) mentionFor(schema, table string) *tableMention {
+	if m := r.tableMentions[mentionKey(schema, table)]; m != nil {
+		return m
 	}
-	for _, candidate := range r.searchPath {
-		if _, ok := r.tableMentions[fmt.Sprintf("%s.%s", candidate, tableName)]; ok {
-			return candidate
-		}
-		if r.originalTable(candidate, tableName) != nil {
-			return candidate
-		}
-	}
-	return r.searchPath[0]
+	return r.tableMentions[mentionKey("", table)]
 }
 
 // originalTable returns the table from the metadata before this batch, or nil.
@@ -206,47 +140,57 @@ func (r *tableRequirePKRule) originalTable(schemaName, tableName string) *model.
 	return r.originalMetadata.GetSchemaMetadata(schemaName).GetTable(tableName)
 }
 
-// validateFinalState checks all mentioned tables against FinalMetadata for PRIMARY KEY.
+// validateFinalState flags tables that end the batch without a PRIMARY KEY and
+// either were created by the batch or had a PRIMARY KEY before it.
 func (r *tableRequirePKRule) validateFinalState() {
-	for tableKey, mention := range r.tableMentions {
-		schemaName, tableName := parseTableKey(tableKey)
-
+	if r.finalMetadata == nil {
+		return
+	}
+	schemaNames := r.finalMetadata.ListSchemaNames()
+	slices.Sort(schemaNames)
+	for _, schemaName := range schemaNames {
 		schema := r.finalMetadata.GetSchemaMetadata(schemaName)
-		var hasPK bool
-		if schema != nil {
-			table := schema.GetTable(tableName)
-			if table != nil {
-				hasPK = table.GetPrimaryKey() != nil
+		tableNames := schema.ListTableNames()
+		slices.Sort(tableNames)
+		for _, tableName := range tableNames {
+			if schema.GetTable(tableName).GetPrimaryKey() != nil {
+				continue
 			}
-		}
-
-		if !hasPK {
-			content := fmt.Sprintf("Table %q.%q requires PRIMARY KEY", schemaName, tableName)
-
-			if mention.text != "" {
-				content = fmt.Sprintf("%s, related statement: %q", content, mention.text)
+			mention := r.mentionFor(schemaName, tableName)
+			original := r.originalTable(schemaName, tableName)
+			switch {
+			case original == nil:
+				// New in this batch: only tables the batch created are in scope.
+				if mention == nil || !mention.created {
+					continue
+				}
+			case original.GetPrimaryKey() == nil:
+				// Pre-existing table without a PRIMARY KEY is out of scope.
+				continue
+			default:
 			}
-
-			r.AddAdviceAbsolute(&storepb.Advice{
-				Status:  r.Level,
-				Code:    code.TableNoPK.Int32(),
-				Title:   r.Title,
-				Content: content,
-				StartPosition: &storepb.Position{
-					Line:   int32(mention.startLine),
-					Column: 0,
-				},
-			})
+			r.addAdvice(schemaName, tableName, mention)
 		}
 	}
 }
 
-// parseTableKey splits "schema.table" into schema and table name.
-func parseTableKey(key string) (string, string) {
-	for i := 0; i < len(key); i++ {
-		if key[i] == '.' {
-			return key[:i], key[i+1:]
+func (r *tableRequirePKRule) addAdvice(schemaName, tableName string, mention *tableMention) {
+	content := fmt.Sprintf("Table %q.%q requires PRIMARY KEY", schemaName, tableName)
+	line := 0
+	if mention != nil {
+		line = mention.startLine
+		if mention.text != "" {
+			content = fmt.Sprintf("%s, related statement: %q", content, mention.text)
 		}
 	}
-	return "public", key
+	r.AddAdviceAbsolute(&storepb.Advice{
+		Status:  r.Level,
+		Code:    code.TableNoPK.Int32(),
+		Title:   r.Title,
+		Content: content,
+		StartPosition: &storepb.Position{
+			Line:   int32(line),
+			Column: 0,
+		},
+	})
 }
