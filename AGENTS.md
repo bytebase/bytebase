@@ -45,10 +45,15 @@ fidelity belong in [omni](https://github.com/bytebase/omni), so never write
 `TestFooForMySQL` beside `TestFooForPostgreSQL`. A test earns a Bytebase server
 boot only if it needs a background runner, a real rollout, or the audit trail —
 those live in `backend/tests`, the only package that may start one; everything
-else asserts in `backend/api/v1` or `backend/store`. Packages needing a
-real database share one container via `TestMain` and give each test its own
-`CREATE DATABASE`, never a container per test — a Postgres container costs 4.3s
-against a 0.7s server boot.
+else asserts in `backend/api/v1` or `backend/store`.
+
+Only `backend/store` and `backend/tests` may run a real metadata Postgres.
+Everywhere else, extract the decide-and-convert half of a handler as functions
+over plain data, and where state is genuinely read declare an interface beside
+the handler and fake it, as `backend/api/mcp` does with `serverStore` — never
+one interface over the whole store, which has 305 methods.
+Every fake needs a contract test run against the real store too, or it drifts
+into testing itself.
 
 ## Development Workflow
 
