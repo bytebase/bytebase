@@ -77,6 +77,8 @@ type tableMention struct {
 	created bool
 	// dropped is set when the batch contains a DROP TABLE for this name.
 	dropped bool
+	// renamedFrom is the name the table had before the batch renamed it.
+	renamedFrom string
 }
 
 type tableRequirePKRule struct {
@@ -84,9 +86,10 @@ type tableRequirePKRule struct {
 	originalMetadata *model.DatabaseMetadata
 	finalMetadata    *model.DatabaseMetadata
 
-	// tableMentions tracks, per table name, what the batch did to the table
-	// and the last CREATE/ALTER statement for advice attribution. Keys ignore
-	// schema qualification; the final metadata supplies the schema.
+	// tableMentions tracks what the batch did to each table and the last
+	// CREATE/ALTER statement for advice attribution. Keys are "schema.table"
+	// with the schema as written, so an unqualified name is keyed ".table";
+	// validation merges the qualified and unqualified entries of a table.
 	tableMentions map[string]*tableMention
 }
 
@@ -99,59 +102,124 @@ func (*tableRequirePKRule) Name() string {
 func (r *tableRequirePKRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateStmt:
-		if m := r.recordMention(omniTableName(n.Relation)); m != nil {
+		if m := r.recordMention(n.Relation); m != nil {
 			m.created = true
 		}
 	case *ast.AlterTableStmt:
-		r.recordMention(omniTableName(n.Relation))
+		r.recordMention(n.Relation)
 	case *ast.DropStmt:
-		if n.RemoveType != int(ast.OBJECT_TABLE) {
+		if n.RemoveType != int(ast.OBJECT_TABLE) || n.Objects == nil {
 			return
 		}
-		for _, obj := range omniDropObjects(n) {
-			r.mention(obj[1]).dropped = true
+		for _, item := range n.Objects.Items {
+			if schema, tableName, ok := dropObjectName(item); ok {
+				r.mention(schema, tableName).dropped = true
+			}
 		}
 	case *ast.RenameStmt:
 		if n.RenameType != ast.OBJECT_TABLE || n.Relation == nil {
 			return
 		}
-		r.renameMention(n.Relation.Relname, n.Newname)
+		r.renameMention(n.Relation, n.Newname)
 	default:
 	}
 }
 
-func (r *tableRequirePKRule) mention(tableName string) *tableMention {
-	m := r.tableMentions[tableName]
+// dropObjectName splits a DROP TABLE object into schema (empty when
+// unqualified) and table name.
+func dropObjectName(item ast.Node) (string, string, bool) {
+	list, ok := item.(*ast.List)
+	if !ok {
+		return "", "", false
+	}
+	var parts []string
+	for _, nameItem := range list.Items {
+		if s, ok := nameItem.(*ast.String); ok {
+			parts = append(parts, s.Str)
+		}
+	}
+	switch len(parts) {
+	case 1:
+		return "", parts[0], true
+	case 2:
+		return parts[0], parts[1], true
+	default:
+		return "", "", false
+	}
+}
+
+func mentionKey(schema, tableName string) string {
+	return schema + "." + tableName
+}
+
+func (r *tableRequirePKRule) mention(schema, tableName string) *tableMention {
+	key := mentionKey(schema, tableName)
+	m := r.tableMentions[key]
 	if m == nil {
 		m = &tableMention{}
-		r.tableMentions[tableName] = m
+		r.tableMentions[key] = m
 	}
 	return m
 }
 
 // recordMention points the table's advice attribution at the current statement.
-func (r *tableRequirePKRule) recordMention(tableName string) *tableMention {
+func (r *tableRequirePKRule) recordMention(rv *ast.RangeVar) *tableMention {
+	tableName := omniTableName(rv)
 	if tableName == "" {
 		return nil
 	}
-	m := r.mention(tableName)
+	m := r.mention(rv.Schemaname, tableName)
 	m.startLine = int(r.ContentStartLine()) + r.BaseLine
 	m.text = r.TrimmedStmtText()
 	return m
 }
 
-// renameMention carries the batch state of oldName over to newName.
-func (r *tableRequirePKRule) renameMention(oldName, newName string) {
+// renameMention carries the batch state of rv over to newName and remembers
+// the pre-batch name so the original metadata can still be found.
+func (r *tableRequirePKRule) renameMention(rv *ast.RangeVar, newName string) {
+	oldName := omniTableName(rv)
 	if oldName == "" || newName == "" {
 		return
 	}
-	old := r.tableMentions[oldName]
-	delete(r.tableMentions, oldName)
-	m := r.recordMention(newName)
+	oldKey := mentionKey(rv.Schemaname, oldName)
+	old := r.tableMentions[oldKey]
+	delete(r.tableMentions, oldKey)
+
+	m := r.mention(rv.Schemaname, newName)
+	m.startLine = int(r.ContentStartLine()) + r.BaseLine
+	m.text = r.TrimmedStmtText()
+	m.renamedFrom = oldName
 	if old != nil {
 		m.created = m.created || old.created
 		m.dropped = m.dropped || old.dropped
+		if old.renamedFrom != "" {
+			m.renamedFrom = old.renamedFrom
+		}
 	}
+}
+
+// mentionFor merges the qualified and unqualified entries of a table, taking
+// the attribution from the later statement.
+func (r *tableRequirePKRule) mentionFor(schema, tableName string) *tableMention {
+	q := r.tableMentions[mentionKey(schema, tableName)]
+	u := r.tableMentions[mentionKey("", tableName)]
+	switch {
+	case q == nil:
+		return u
+	case u == nil:
+		return q
+	default:
+	}
+	m := *q
+	if u.startLine > q.startLine {
+		m.startLine, m.text = u.startLine, u.text
+	}
+	m.created = q.created || u.created
+	m.dropped = q.dropped || u.dropped
+	if m.renamedFrom == "" {
+		m.renamedFrom = u.renamedFrom
+	}
+	return &m
 }
 
 // originalTable returns the table from the metadata before this batch, or nil.
@@ -178,8 +246,11 @@ func (r *tableRequirePKRule) validateFinalState() {
 			if schema.GetTable(tableName).GetPrimaryKey() != nil {
 				continue
 			}
-			mention := r.tableMentions[tableName]
+			mention := r.mentionFor(schemaName, tableName)
 			original := r.originalTable(schemaName, tableName)
+			if original == nil && mention != nil && mention.renamedFrom != "" {
+				original = r.originalTable(schemaName, mention.renamedFrom)
+			}
 			switch {
 			case original == nil:
 				// New in this batch: only tables the batch created are in scope.
