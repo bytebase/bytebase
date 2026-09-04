@@ -29,7 +29,8 @@ func init() {
 // PRIMARY KEY, and a table that had one must still have one. Pre-existing
 // tables without a PRIMARY KEY are out of scope, so unrelated changes to them
 // are not blocked. Name resolution (search_path, SET ROLE, drops) is left to
-// the walkthrough; statements are only tracked to attribute the advice.
+// the walkthrough; statements are only tracked to tell created tables from
+// pre-existing ones and to attribute the advice.
 type TableRequirePKAdvisor struct {
 }
 
@@ -74,6 +75,8 @@ type tableMention struct {
 	text      string
 	// created is set when the batch contains a CREATE TABLE for this name.
 	created bool
+	// dropped is set when the batch contains a DROP TABLE for this name.
+	dropped bool
 }
 
 type tableRequirePKRule struct {
@@ -81,9 +84,9 @@ type tableRequirePKRule struct {
 	originalMetadata *model.DatabaseMetadata
 	finalMetadata    *model.DatabaseMetadata
 
-	// tableMentions records the last CREATE/ALTER TABLE per name for advice
-	// attribution. The key is "schema.table" with the schema as written, so an
-	// unqualified name is keyed ".table".
+	// tableMentions tracks, per table name, what the batch did to the table
+	// and the last CREATE/ALTER statement for advice attribution. Keys ignore
+	// schema qualification; the final metadata supplies the schema.
 	tableMentions map[string]*tableMention
 }
 
@@ -96,40 +99,59 @@ func (*tableRequirePKRule) Name() string {
 func (r *tableRequirePKRule) OnStatement(node ast.Node) {
 	switch n := node.(type) {
 	case *ast.CreateStmt:
-		r.recordMention(n.Relation, true)
+		if m := r.recordMention(omniTableName(n.Relation)); m != nil {
+			m.created = true
+		}
 	case *ast.AlterTableStmt:
-		r.recordMention(n.Relation, false)
+		r.recordMention(omniTableName(n.Relation))
+	case *ast.DropStmt:
+		if n.RemoveType != int(ast.OBJECT_TABLE) {
+			return
+		}
+		for _, obj := range omniDropObjects(n) {
+			r.mention(obj[1]).dropped = true
+		}
+	case *ast.RenameStmt:
+		if n.RenameType != ast.OBJECT_TABLE || n.Relation == nil {
+			return
+		}
+		r.renameMention(n.Relation.Relname, n.Newname)
 	default:
 	}
 }
 
-func (r *tableRequirePKRule) recordMention(rv *ast.RangeVar, created bool) {
-	tableName := omniTableName(rv)
+func (r *tableRequirePKRule) mention(tableName string) *tableMention {
+	m := r.tableMentions[tableName]
+	if m == nil {
+		m = &tableMention{}
+		r.tableMentions[tableName] = m
+	}
+	return m
+}
+
+// recordMention points the table's advice attribution at the current statement.
+func (r *tableRequirePKRule) recordMention(tableName string) *tableMention {
 	if tableName == "" {
+		return nil
+	}
+	m := r.mention(tableName)
+	m.startLine = int(r.ContentStartLine()) + r.BaseLine
+	m.text = r.TrimmedStmtText()
+	return m
+}
+
+// renameMention carries the batch state of oldName over to newName.
+func (r *tableRequirePKRule) renameMention(oldName, newName string) {
+	if oldName == "" || newName == "" {
 		return
 	}
-	key := mentionKey(rv.Schemaname, tableName)
-	if prev := r.tableMentions[key]; prev != nil && prev.created {
-		created = true
+	old := r.tableMentions[oldName]
+	delete(r.tableMentions, oldName)
+	m := r.recordMention(newName)
+	if old != nil {
+		m.created = m.created || old.created
+		m.dropped = m.dropped || old.dropped
 	}
-	r.tableMentions[key] = &tableMention{
-		startLine: int(r.ContentStartLine()) + r.BaseLine,
-		text:      r.TrimmedStmtText(),
-		created:   created,
-	}
-}
-
-func mentionKey(schema, table string) string {
-	return schema + "." + table
-}
-
-// mentionFor returns the mention for a table in the final metadata, trying
-// the qualified name first and then the unqualified one.
-func (r *tableRequirePKRule) mentionFor(schema, table string) *tableMention {
-	if m := r.tableMentions[mentionKey(schema, table)]; m != nil {
-		return m
-	}
-	return r.tableMentions[mentionKey("", table)]
 }
 
 // originalTable returns the table from the metadata before this batch, or nil.
@@ -156,7 +178,7 @@ func (r *tableRequirePKRule) validateFinalState() {
 			if schema.GetTable(tableName).GetPrimaryKey() != nil {
 				continue
 			}
-			mention := r.mentionFor(schemaName, tableName)
+			mention := r.tableMentions[tableName]
 			original := r.originalTable(schemaName, tableName)
 			switch {
 			case original == nil:
@@ -165,8 +187,11 @@ func (r *tableRequirePKRule) validateFinalState() {
 					continue
 				}
 			case original.GetPrimaryKey() == nil:
-				// Pre-existing table without a PRIMARY KEY is out of scope.
-				continue
+				// A pre-existing table without a PRIMARY KEY is out of scope
+				// unless the batch dropped and recreated it.
+				if mention == nil || !mention.created || !mention.dropped {
+					continue
+				}
 			default:
 			}
 			r.addAdvice(schemaName, tableName, mention)
