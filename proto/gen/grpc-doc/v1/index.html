@@ -3224,19 +3224,7 @@
                 </li>
               
                 <li>
-                  <a href="#bytebase.v1.MCPCapabilityMode"><span class="badge">M</span>MCPCapabilityMode</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.MCPEngineEnforcement"><span class="badge">M</span>MCPEngineEnforcement</a>
-                </li>
-              
-                <li>
                   <a href="#bytebase.v1.MCPInfo"><span class="badge">M</span>MCPInfo</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.MCPMethod"><span class="badge">M</span>MCPMethod</a>
                 </li>
               
                 <li>
@@ -3255,14 +3243,6 @@
                   <a href="#bytebase.v1.Workspace"><span class="badge">M</span>Workspace</a>
                 </li>
               
-              
-                <li>
-                  <a href="#bytebase.v1.MCPEngineEnforcement.Masking"><span class="badge">E</span>MCPEngineEnforcement.Masking</a>
-                </li>
-              
-                <li>
-                  <a href="#bytebase.v1.MCPEngineEnforcement.ReadOnlyDepth"><span class="badge">E</span>MCPEngineEnforcement.ReadOnlyDepth</a>
-                </li>
               
               
               
@@ -36731,85 +36711,8 @@ Use &#34;workspaces/-&#34; to get the current/default workspace. </p></td>
 
         
       
-        <h3 id="bytebase.v1.MCPCapabilityMode">MCPCapabilityMode</h3>
-        <p>MCPCapabilityMode is one ceiling and the method classes it serves.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>capability</td>
-                  <td><a href="#bytebase.v1.MCPSetting.Capability">MCPSetting.Capability</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>served_classes</td>
-                  <td><a href="#bytebase.v1.MCPMethodClass">MCPMethodClass</a></td>
-                  <td>repeated</td>
-                  <td><p>Empty means the ceiling serves nothing, which is what DISABLED is. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.MCPEngineEnforcement">MCPEngineEnforcement</h3>
-        <p>MCPEngineEnforcement is what the read-only ceiling and the masking toggle</p><p>reach on one database engine.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>engine</td>
-                  <td><a href="#bytebase.v1.Engine">Engine</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>read_only_depth</td>
-                  <td><a href="#bytebase.v1.MCPEngineEnforcement.ReadOnlyDepth">MCPEngineEnforcement.ReadOnlyDepth</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>masking</td>
-                  <td><a href="#bytebase.v1.MCPEngineEnforcement.Masking">MCPEngineEnforcement.Masking</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>note</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Where the answers above are the floor rather than the whole story. Empty
-for most engines. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
         <h3 id="bytebase.v1.MCPInfo">MCPInfo</h3>
-        <p>MCPInfo is what MCP does in this workspace: the ceiling in force, what each</p><p>ceiling serves, and the per-engine facts a read-only session depends on.</p><p>Everything here is resolved when the request is served, never from a stored</p><p>copy: the method list comes off the compiled API descriptors and the engine</p><p>answers off the code that enforces them, so a build whose rules changed</p><p>cannot describe the rules of the build before it.</p>
+        <p>MCPInfo is what MCP does in this workspace: the ceiling in force, and</p><p>whether masking narrows what a session reads under it.</p><p>This is the only API a served MCP session or the consent page can read the</p><p>ceiling from. SettingService/GetSetting is served by no ceiling, and its</p><p>answer is cached besides.</p>
 
         
           <table class="field-table">
@@ -36831,40 +36734,11 @@ nothing to get it by. </p></td>
                   <td>capability</td>
                   <td><a href="#bytebase.v1.MCPSetting.Capability">MCPSetting.Capability</a></td>
                   <td></td>
-                  <td><p>The ceiling in force for this workspace. A value no row in modes serves,
-CAPABILITY_UNSPECIFIED included, means no ceiling could be resolved from
-the stored row and every MCP connection is refused. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>modes</td>
-                  <td><a href="#bytebase.v1.MCPCapabilityMode">MCPCapabilityMode</a></td>
-                  <td>repeated</td>
-                  <td><p>What each ceiling serves, including the one in force, so an admin can
-compare the choices rather than only read the current answer. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>methods</td>
-                  <td><a href="#bytebase.v1.MCPMethod">MCPMethod</a></td>
-                  <td>repeated</td>
-                  <td><p>Every API method some ceiling serves. A mode serves a method when the
-method&#39;s class is one of that mode&#39;s served_classes, which is the ceiling
-rule the gate evaluates. Methods no ceiling serves are absent.
-
-Being listed is necessary, not sufficient. The caller still needs the
-permission, and two further rules narrow what a served method does: a
-handful of methods are refused on the shape of the request (an issue that
-would grant a permission, a rollout that skips approval), and under
-READ_ONLY every statement SQLService/Query runs must classify as a read. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>engines</td>
-                  <td><a href="#bytebase.v1.MCPEngineEnforcement">MCPEngineEnforcement</a></td>
-                  <td>repeated</td>
-                  <td><p>What a read-only session and the masking toggle actually reach, per engine.
-Both are engine-conditional in ways the ceiling alone does not show. </p></td>
+                  <td><p>The ceiling in force for this workspace. Any value outside the enum this
+build serves, CAPABILITY_UNSPECIFIED included, means no ceiling could be
+resolved from the stored row and every MCP connection is refused. A stored
+name nothing resolves arrives as CAPABILITY_UNSPECIFIED; a number a newer
+release wrote arrives verbatim. </p></td>
                 </tr>
               
                 <tr>
@@ -36872,9 +36746,9 @@ Both are engine-conditional in ways the ceiling alone does not show. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Whether this workspace stops applying the caller&#39;s own unmasking
-provisioning to MCP requests. It decides which branch of each engine&#39;s
-masking state a caller is in, and no other API tells an MCP session:
-SettingService/GetSetting is served by no ceiling. </p></td>
+provisioning to MCP requests. It narrows what a session reads only where
+Bytebase masks by column and consults exemptions; elsewhere it suppresses
+nothing. </p></td>
                 </tr>
               
                 <tr>
@@ -36882,71 +36756,9 @@ SettingService/GetSetting is served by no ceiling. </p></td>
                   <td><a href="#bool">bool</a></td>
                   <td></td>
                   <td><p>Whether data masking is licensed for this workspace. When false nothing is
-masked whatever an engine supports, so the masking states below describe a
-mechanism that does not run. Licensing can also be set per instance, so a
-true here is the workspace answer, not a promise about every instance. </p></td>
-                </tr>
-              
-            </tbody>
-          </table>
-
-          
-
-        
-      
-        <h3 id="bytebase.v1.MCPMethod">MCPMethod</h3>
-        <p>MCPMethod is one API method an MCP session can reach, and what decides it.</p>
-
-        
-          <table class="field-table">
-            <thead>
-              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
-            </thead>
-            <tbody>
-              
-                <tr>
-                  <td>method</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The method as an audit entry names it, so a denial can be found by it.
-Example: /bytebase.v1.SQLService/Query </p></td>
-                </tr>
-              
-                <tr>
-                  <td>operation_id</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The same method as call_api takes it.
-Example: bytebase.v1.SQLService.Query </p></td>
-                </tr>
-              
-                <tr>
-                  <td>class</td>
-                  <td><a href="#bytebase.v1.MCPMethodClass">MCPMethodClass</a></td>
-                  <td></td>
-                  <td><p> </p></td>
-                </tr>
-              
-                <tr>
-                  <td>permission</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>The IAM permission the method declares. The ceiling never grants: a session
-may call a served method only where the person it acts for could.
-
-Empty means the method declares no permission, which is NOT the same as
-needing none — a method that authorizes inside its handler declares nothing
-here. auth_method says which case an empty value is. </p></td>
-                </tr>
-              
-                <tr>
-                  <td>auth_method</td>
-                  <td><a href="#bytebase.v1.AuthMethod">AuthMethod</a></td>
-                  <td></td>
-                  <td><p>How the method authorizes. IAM means the permission above is the primary
-rule, though not always the only one — an update carrying allow_missing
-additionally requires the matching create permission. CUSTOM means the
-handler decides and the permission field is silent. </p></td>
+masked whatever an engine supports, so the toggle above suppresses nothing.
+Licensing can also be set per instance, so a true here is the workspace
+answer, not a promise about every instance. </p></td>
                 </tr>
               
             </tbody>
@@ -37076,87 +36888,6 @@ Format: workspaces/{workspace} </p></td>
       
 
       
-        <h3 id="bytebase.v1.MCPEngineEnforcement.Masking">MCPEngineEnforcement.Masking</h3>
-        <p>How Bytebase masks results on this engine, which is what decides whether</p><p>ignoring masking exemptions changes anything here.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>MASKING_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>NONE</td>
-                <td>1</td>
-                <td><p>Bytebase does not mask on this engine. Nothing narrows what a session
-reads, and ignoring masking exemptions does nothing.</p></td>
-              </tr>
-            
-              <tr>
-                <td>COLUMN</td>
-                <td>2</td>
-                <td><p>Column masking. A masking policy substitutes values in query results,
-and the exemptions granted to the caller are what let them see the real
-value — which is what ignoring exemptions suppresses.</p></td>
-              </tr>
-            
-              <tr>
-                <td>DOCUMENT</td>
-                <td>3</td>
-                <td><p>Document masking. Results are masked, but exemptions are never consulted
-on this path, so ignoring them changes nothing here either.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
-        <h3 id="bytebase.v1.MCPEngineEnforcement.ReadOnlyDepth">MCPEngineEnforcement.ReadOnlyDepth</h3>
-        <p>How much of a read-only ceiling this engine can be held to.</p>
-        <table class="enum-table">
-          <thead>
-            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
-          </thead>
-          <tbody>
-            
-              <tr>
-                <td>READ_ONLY_DEPTH_UNSPECIFIED</td>
-                <td>0</td>
-                <td><p></p></td>
-              </tr>
-            
-              <tr>
-                <td>UNSUPPORTED</td>
-                <td>1</td>
-                <td><p>Bytebase has no read-only classifier for this engine, so a read-only
-session is refused every statement on it, including a plain SELECT.</p></td>
-              </tr>
-            
-              <tr>
-                <td>STATEMENT</td>
-                <td>2</td>
-                <td><p>Every statement is classified before it runs and a request holding one
-that is not a read is refused whole. Nothing below that: the driver does
-not open a read-only database session, except where the note says
-otherwise.</p></td>
-              </tr>
-            
-              <tr>
-                <td>STATEMENT_AND_SESSION</td>
-                <td>3</td>
-                <td><p>Statement classification, and the driver opens the database session
-read-only as well, so the engine refuses most writes the classifier
-missed. Not a proof: a statement that classifies as a read can still call
-a function that switches the session setting back off.</p></td>
-              </tr>
-            
-          </tbody>
-        </table>
-      
 
       
 
@@ -37233,9 +36964,8 @@ Permissions required: bb.workspaces.setIamPolicy</p></td>
                 <td><a href="#bytebase.v1.GetMCPInfoRequest">GetMCPInfoRequest</a></td>
                 <td><a href="#bytebase.v1.MCPInfo">MCPInfo</a></td>
                 <td><p>Gets what MCP (Model Context Protocol) does in this workspace: the
-capability ceiling in force, what each ceiling serves, and the per-engine
-facts a read-only session depends on. The workspace is resolved from the
-authenticated session.
+capability ceiling in force, and whether masking narrows what a session
+reads under it. The workspace is resolved from the authenticated session.
 
 Served to MCP sessions. An agent asking what it may do here is the point:
 the response says nothing a session&#39;s own denials do not already say, one
