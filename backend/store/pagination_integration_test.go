@@ -185,7 +185,7 @@ func TestIssueCommentBatchKeepsInsertionOrder(t *testing.T) {
 		SELECT count(*) FROM issue_comment
 		WHERE project = $1 AND issue_id = $2 AND thread_state = 'OPEN'
 	`, projectID, issueUID).Scan(&openRoots))
-	require.Equal(t, len(want), openRoots, "new comment-only rows must be OPEN roots")
+	require.Equal(t, 0, openRoots, "unanchored comments are plain comments, not thread roots")
 
 	_, err = stores.CreateIssueComments(ctx, "users/comment@example.com",
 		&store.IssueCommentMessage{
@@ -224,11 +224,11 @@ func TestIssueCommentBatchKeepsInsertionOrder(t *testing.T) {
 	`, projectID, issueUID).Scan(&eventsOutsideThreads))
 	require.Equal(t, 2, eventsOutsideThreads, "event and hybrid rows must stay outside threads")
 
-	var emptyRoots int
+	var emptyPlain int
 	require.NoError(t, db.QueryRowContext(ctx, `
 		SELECT count(*) FROM issue_comment
 		WHERE project = $1 AND issue_id = $2
-		  AND payload = '{}'::jsonb AND thread_state = 'OPEN'
-	`, projectID, issueUID).Scan(&emptyRoots))
-	require.Equal(t, 1, emptyRoots, "an event-less payload is still a root comment")
+		  AND payload = '{}'::jsonb AND parent_id IS NULL AND thread_state IS NULL
+	`, projectID, issueUID).Scan(&emptyPlain))
+	require.Equal(t, 1, emptyPlain, "an event-less, unanchored payload is a plain comment")
 }

@@ -15,8 +15,9 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
-// ThreadState is the resolvable state carried by a thread's root comment.
-// Events and replies have no state (NULL thread_state).
+// ThreadState is the resolvable state carried by a thread's root comment: a
+// comment created with a statement anchor. Plain comments, events, and
+// replies have no state (NULL thread_state).
 type ThreadState string
 
 const (
@@ -35,7 +36,8 @@ type IssueCommentMessage struct {
 	// ParentID names the thread's root comment on a reply; nil on root
 	// comments and events.
 	ParentID *string
-	// ThreadState is set on thread roots; nil on replies and events.
+	// ThreadState is set on thread roots; nil on plain comments, replies,
+	// and events.
 	ThreadState *ThreadState
 }
 
@@ -252,7 +254,7 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 			return nil, common.Errorf(common.Invalid, "replies must be created through CreateIssueCommentReply")
 		}
 		if create.ThreadState != nil {
-			return nil, common.Errorf(common.Invalid, "thread state is derived on create; a new root starts OPEN")
+			return nil, common.Errorf(common.Invalid, "thread state is derived on create; an anchored root starts OPEN")
 		}
 		if err := validateIssueCommentPayload(create.Payload); err != nil {
 			return nil, err
@@ -264,8 +266,10 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 		projectIDs = append(projectIDs, create.ProjectID)
 		issueIDs = append(issueIDs, create.IssueUID)
 		payloads = append(payloads, payload)
-		// Event-less writes are roots. Event and hybrid rows remain outside threads.
-		threadRoots = append(threadRoots, create.Payload.GetEvent() == nil)
+		// An anchored comment starts a thread; validateIssueCommentPayload
+		// already rejects an anchor on an event. Plain comments, events, and
+		// hybrid rows remain outside threads.
+		threadRoots = append(threadRoots, create.Payload.GetStatementAnchor() != nil)
 	}
 
 	// Use UNNEST to insert all comments in one query.
@@ -320,9 +324,9 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 // CreateIssueCommentReply creates a reply in the thread rooted at
 // create.ParentID and returns it with ResourceID, CreatedAt, and UpdatedAt
 // filled in. The insert-select pins every reply invariant in one statement:
-// the parent is a root comment (thread_state set, so never an event or a
-// reply) in the same project and issue, and replying never changes the
-// thread state. Like CreateIssueComments, it requires only the referenced
+// the parent is a thread root (thread_state set, so never a plain comment,
+// an event, or a reply) in the same project and issue, and replying never
+// changes the thread state. Like CreateIssueComments, it requires only the referenced
 // rows to exist, regardless of project lifecycle.
 func (s *Store) CreateIssueCommentReply(ctx context.Context, creator string, create *IssueCommentMessage) (*IssueCommentMessage, error) {
 	if create.ParentID == nil {
@@ -387,7 +391,7 @@ func (s *Store) replyTargetError(ctx context.Context, create *IssueCommentMessag
 		// concurrent write landed between the insert and this diagnosis.
 		return common.Errorf(common.Conflict, "comment %s changed concurrently; retry the reply", *create.ParentID)
 	default:
-		// Events, hybrid comment+event rows, and unclassified legacy rows
+		// Plain comments, events, hybrid comment+event rows, and legacy rows
 		// all carry NULL thread_state.
 		return common.Errorf(common.Invalid, "comment %s is not a thread root and cannot be replied to", *create.ParentID)
 	}
@@ -418,10 +422,11 @@ func (s *Store) UpdateIssueComment(ctx context.Context, patch *UpdateIssueCommen
 	if patch.ThreadState != nil {
 		q.And("thread_state IS NOT NULL")
 	}
-	// Text edits apply to rows that already render text: roots, replies, and
-	// hybrid event+comment rows — never to pure events.
+	// Text edits apply to rows that already render text: thread roots,
+	// replies, hybrid event+comment rows, and plain comments (protojson omits
+	// an empty comment, so a contentless one is {}) — never to pure events.
 	if patch.Comment != nil {
-		q.And("(payload ?? 'comment' OR thread_state IS NOT NULL OR parent_id IS NOT NULL)")
+		q.And("(payload ?? 'comment' OR payload = '{}'::jsonb OR thread_state IS NOT NULL OR parent_id IS NOT NULL)")
 	}
 
 	query, args, err := q.ToSQL()
