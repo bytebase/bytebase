@@ -13,7 +13,13 @@ import {
   workloadIdentityNamePrefix,
 } from "@/stores/modules/v1/common";
 import {
+  AccountType,
   ALL_USERS_USER_EMAIL,
+  getAccountTypeByFullname,
+  getGroupEmailInBinding,
+  getServiceAccountNameInBinding,
+  getUserEmailInBinding,
+  getWorkloadIdentityNameInBinding,
   groupBindingPrefix,
   type QueryPermission,
   QueryPermissionQueryAny,
@@ -157,6 +163,28 @@ export const convertMemberToFullname = (member: string) => {
   } else {
     // ATTENTION: the email can be ALL_USERS_USER_EMAIL
     return ensureUserFullName(member);
+  }
+};
+
+export const convertFullnameToMember = (fullname: string) => {
+  if (fullname === ALL_USERS_USER_EMAIL) {
+    return fullname;
+  }
+  if (fullname.startsWith(groupNamePrefix)) {
+    return getGroupEmailInBinding(fullname.slice(groupNamePrefix.length));
+  }
+  switch (getAccountTypeByFullname(fullname)) {
+    case AccountType.SERVICE_ACCOUNT:
+      return getServiceAccountNameInBinding(extractServiceAccountId(fullname));
+    case AccountType.WORKLOAD_IDENTITY:
+      return getWorkloadIdentityNameInBinding(
+        extractWorkloadIdentityId(fullname)
+      );
+    default:
+      if (fullname.startsWith(userNamePrefix)) {
+        return getUserEmailInBinding(fullname.slice(userNamePrefix.length));
+      }
+      return fullname;
   }
 };
 

@@ -139,6 +139,7 @@ export type ListServiceAccountsParams = {
   pageToken?: string;
   showDeleted: boolean;
   filter?: AccountFilter;
+  skipCache?: boolean;
 };
 
 export type ListWorkloadIdentitiesParams = {
@@ -147,6 +148,7 @@ export type ListWorkloadIdentitiesParams = {
   pageToken?: string;
   showDeleted: boolean;
   filter?: AccountFilter;
+  skipCache?: boolean;
 };
 
 export type AccessGrantFilter = {

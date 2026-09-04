@@ -5,7 +5,11 @@ import {
   ExprSchema,
 } from "@/types/proto-es/google/api/expr/v1alpha1/syntax_pb";
 import type { Binding } from "@/types/proto-es/v1/iam_policy_pb";
-import { bindingScopesResources } from "./iam";
+import {
+  bindingScopesResources,
+  convertFullnameToMember,
+  convertMemberToFullname,
+} from "./iam";
 
 const binding = (expression?: string, parsedExpr?: Expr) =>
   ({
@@ -86,5 +90,28 @@ describe("bindingScopesResources", () => {
 
     const mixed = call("_&&_", [requestTimeOnly, resourceScoped]);
     expect(bindingScopesResources(binding("...", mixed))).toBe(true);
+  });
+});
+
+describe("member fullname conversion", () => {
+  test("round-trips supported IAM member identifiers", () => {
+    const members = [
+      "allUsers",
+      "user:alice@example.com",
+      "group:engineering@example.com",
+      "serviceAccount:deployer@service.bytebase.com",
+      "workloadIdentity:ci@workload.bytebase.com",
+    ];
+
+    expect(members.map(convertMemberToFullname)).toEqual([
+      "users/allUsers",
+      "users/alice@example.com",
+      "groups/engineering@example.com",
+      "serviceAccounts/deployer@service.bytebase.com",
+      "workloadIdentities/ci@workload.bytebase.com",
+    ]);
+    expect(
+      members.map(convertMemberToFullname).map(convertFullnameToMember)
+    ).toEqual(members);
   });
 });
