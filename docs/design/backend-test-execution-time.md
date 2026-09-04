@@ -92,6 +92,9 @@ cost inside a package that runs 3.7× parallel, and effort 1's saving sits insid
 effort 4's, so they do not simply add. Together they should take it from 635 s
 of wall clock to roughly 330 s.
 
+Effort 6 was rescoped and now runs ahead of effort 2 for `api/v1`; the numbering
+is kept so existing references resolve.
+
 ### [✓] 1. Close idle connections before shutting the server down
 
 **Three lines.** `httpServer.Shutdown` burns 1036 ms on every one of the 207
@@ -124,10 +127,13 @@ below against 611 s.
 
 ### 2. One shared container per package, then turn parallelism on
 
-**1371 s of wall clock across four packages, about 1070 s of it container
-starts.** `store`, `api/v1`, `component/review` and `migrator` start 247
-containers between them, and because they run serially that cost is their wall
-clock almost exactly.
+**459 s of wall clock, 390 s of it container starts.** `store` starts 90
+containers, and because it runs serially that cost is its wall clock almost
+exactly.
+
+`api/v1`, `component/review` and `migrator` were in this effort's original
+scope. AGENTS.md now confines a real metadata Postgres to `store` and `tests`,
+so all three move to effort 6 instead.
 
 Two changes, in this order:
 
@@ -143,18 +149,18 @@ Measured on the migrated Bytebase schema (9.5 MB): migrating the template costs
 `CREATE DATABASE … TEMPLATE` is **44 ms** — 98× cheaper than the 4328 ms
 container it replaces.
 
-Two details. `api/v1` shares a Postgres rather than using a fake store: it is
-the smaller change, and a fake risks testing the fake. And close the template
-connection after migrating, because `TEMPLATE` refuses to copy a database that
-still has a session attached.
+One detail. Close the template connection after migrating, because `TEMPLATE`
+refuses to copy a database that still has a session attached.
+
+This section originally called for `api/v1` to share a Postgres "rather than
+using a fake store". Effort 6 reverses that.
 
 Expect tests that silently assumed a virgin database to fail. That is the point.
 Fix them with per-test databases, not with cleanup hooks — those reintroduce
 ordering coupling.
 
-Step 1 alone takes those four packages from 1371 s to roughly 320 s. Step 2
-should take them well below that: what remains is about 300 s of real work
-spread across 550 tests.
+Step 1 alone takes `store` from 459 s to roughly 75 s. Step 2 should take it
+below that; what remains is real work across 128 tests.
 
 ### 3. Pool the provisioned Postgres instances
 
@@ -250,24 +256,61 @@ Three keep their engine. Each needs a comment saying why:
   under test. It covers MySQL, Postgres, Oracle and MSSQL in one table, and
   boots no server.
 
-### 6. Push tests down a level
+### 6. Seams instead of containers
 
-**Mostly architectural.** A test earns a server boot only if it needs a
-background runner, a real rollout, or the audit trail. `backend/api/mcp` shows
-the payoff: 168 tests in 39.5 s, no containers.
+**912 s of wall clock, 680 s of it container starts.** AGENTS.md confines a real
+metadata Postgres to `store` and `tests`. `api/v1`, `component/review` and
+`migrator` are not on that list and start 157 containers between them.
+`backend/api/mcp` is the proof this is livable: 168 tests in 39.5 s, 16 of its
+18 files containerless.
 
-Candidates: `mcp_capability_setting_test.go` (6 boots to read and write one
-settings row), the saved-query list and filter tests (12), and GitOps
-`CheckRelease` validation (11 of 17 — one stateless call against different
-releases).
+Effort 2 declined a fake store on two grounds, and both fail here. `api/v1` is
+not testing its API — `mcp_info_test.go` calls `service.GetMCPInfo` as a Go
+method, so the container buys a `*store.Store` and nothing the test asserts. And
+"a fake store" was the wrong unit: `store.Store` has 305 methods and `api/v1`
+calls 181, but `api/mcp` needed five (`serverStore`, faked in 62 lines) and
+`mcp_gate.go` needed one (`mcpSettingsReader`). Interfaces go beside the handler
+that reads them, never over the store.
 
-Effort 4 makes a boot cheap, which takes most of the money out of this. Treat it
-as a rule to hold going forward, not a saving to bank.
+Fourteen files in `api/v1` start containers, ~90 tests. Read from names, not
+bodies — verify the back two rows:
 
-Keep the 27 `TestCollision*` and `TestClaim*` tests where they are.
+| Disposition | Tests | Shape |
+| --- | ---: | --- |
+| Move to `backend/store` | ~20 | `Test*Claims`, concurrent-update and serialization, `TestMixedIssuePatchRollsBackWhenLabelsFail`, retention filter boundaries, `TestIssueApprovalFiltersRunBeforePaging` |
+| Pure function over plain data | ~40 | canonical-name tests, the four `TestCheckRelease*`, converters |
+| Narrow interface and a fake | ~30 | `TestGetMCPInfoHandler`, the list-and-hide tests, `TestApproveIssueFailsClosedWhenIAMLookupFails` |
+
+`component/review` splits the same way:
+`TestApplyApprovalTemplateAndCreatePlanCheckRunDoNotDeadlock` is lock ordering
+and moves to `store`; the CEL, template-matching and target-unfolding tests are
+pure functions already, wearing a container for the package's sake.
+
+Prefer the middle row: a handler is fetch, decide, convert, and only the fetch
+needs a store.
+
+`migrator` is done, by deletion rather than by moving. `TestLatestVersion` and
+`TestVersionUnique` need no database and stay; the other 16 booted a container
+each to apply one migration to a hand-built fixture and assert the transform.
+Moving them to `backend/store` would have relocated the 90 s, not removed it, so
+they were deleted outright. The package now runs in under 2 s.
+
+That is 90 s bought at a real price, and the price should be stated plainly: the
+migration SQL — including irreversible data transforms over customer metadata —
+now has no test coverage, and no fake can restore it. Anyone reintroducing
+coverage here should bring back the fixtures against a shared container rather
+than one per test.
+
+**Every fake needs a contract test** — one table run against both the fake and
+the real store — or effort 2's objection is right. Since none of these packages
+may hold a container, that suite lives in `backend/store`. No `mockgen`, no SQLite.
+
+Convert `mcp_info_test.go` first — `mcpSettingsReader` exists and the test is 60
+lines — and measure before doing the rest. Server boots go the same way:
+`mcp_capability_setting_test.go` spends 6 to read and write one settings row,
+the saved-query list and filter tests 12, GitOps `CheckRelease` 11 of 17. Keep
+the 27 `TestCollision*` and `TestClaim*` tests where they are —
 `backend/store/AGENTS.md` requires them for a bug class unit tests cannot catch.
-25 of them already build on `setupCollidingProjects`, so effort 4 gives them a
-shared workspace almost for free.
 
 ### 7. Engine conformance to omni
 
@@ -305,9 +348,12 @@ deleted rather than moved. That is 3 s of the 403 s this effort is about, which
 is the measure of how much of the cost sits behind the port rather than beside
 it.
 
-This plan does not address `plugin/db/starrocks` (158 s). It tests our own
-driver against a heavyweight engine, every test runs on every PR, and skipping
-is not an option — so it stays as accepted cost.
+`plugin/db/starrocks` (158 s) is gone. Nearly all of it was two testcontainer
+tests booting the `allin1` image — an FE and a BE in one container, with a
+readiness wait measured in minutes — to assert materialized-view sync and dump
+round-trip. That is engine fidelity, which belongs in omni, paid for on every PR
+by every engineer. The two tests and the `GetStarRocksContainer` helpers were
+deleted; the package now runs in under 2 s on its remaining unit tests.
 
 ### One loose end
 
