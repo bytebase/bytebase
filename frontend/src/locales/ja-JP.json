@@ -3572,7 +3572,6 @@
   "workspace-setup-guide": {
     "actions": {
       "change": "データベース変更を作成",
-      "done": "完了",
       "query": "SQL Editor に移動"
     },
     "descriptions": {

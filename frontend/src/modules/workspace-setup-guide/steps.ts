@@ -134,42 +134,35 @@ export const GUIDE_STEP_REGISTRY: GuideStepRegistry = {
       },
     }),
   },
-  "create-user": {
-    id: "create-user",
+  "add-member": {
+    id: "add-member",
     analyticsKey: "add-teammate",
     labelKey: "workspace-setup-guide.steps.add-teammate",
     descriptionKey: "workspace-setup-guide.descriptions.add-teammate",
     isComplete: (context) => context.hasOtherWorkspaceMember,
-    matchesRoute: (route) => isRouteInside(route.name, WORKSPACE_ROUTE_USERS),
-    resolveActions: () => ({
-      select: {
-        type: "navigate",
-        target: {
-          name: WORKSPACE_ROUTE_USERS,
-          query: {
-            [PRODUCT_INTRO_QUERY_KEY]: CREATE_USER_PRODUCT_INTRO,
-          },
+    matchesRoute: (route) =>
+      isRouteInside(route.name, WORKSPACE_ROUTE_USERS) ||
+      isRouteInside(route.name, WORKSPACE_ROUTE_MEMBERS),
+    resolveActions: (context) => {
+      const grantAccess = context.isSaaS || context.hasOtherHumanUser;
+      return {
+        select: {
+          type: "navigate",
+          target: grantAccess
+            ? {
+                name: WORKSPACE_ROUTE_MEMBERS,
+                query: {
+                  [PRODUCT_INTRO_QUERY_KEY]: GRANT_ACCESS_PRODUCT_INTRO,
+                },
+              }
+            : {
+                name: WORKSPACE_ROUTE_USERS,
+                query: {
+                  [PRODUCT_INTRO_QUERY_KEY]: CREATE_USER_PRODUCT_INTRO,
+                },
+              },
         },
-      },
-    }),
-  },
-  "grant-access": {
-    id: "grant-access",
-    analyticsKey: "add-teammate",
-    labelKey: "workspace-setup-guide.steps.add-teammate",
-    descriptionKey: "workspace-setup-guide.descriptions.add-teammate",
-    isComplete: (context) => context.hasOtherWorkspaceMember,
-    matchesRoute: (route) => isRouteInside(route.name, WORKSPACE_ROUTE_MEMBERS),
-    resolveActions: () => ({
-      select: {
-        type: "navigate",
-        target: {
-          name: WORKSPACE_ROUTE_MEMBERS,
-          query: {
-            [PRODUCT_INTRO_QUERY_KEY]: GRANT_ACCESS_PRODUCT_INTRO,
-          },
-        },
-      },
-    }),
+      };
+    },
   },
 };

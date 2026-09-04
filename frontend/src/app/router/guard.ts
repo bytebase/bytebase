@@ -96,7 +96,9 @@ export async function workspaceSetupGuard(url: URL): Promise<Response | null> {
 
   const redirectParam = url.searchParams.get("redirect");
   const target =
-    redirectParam?.startsWith("/") && !redirectParam.startsWith("//")
+    redirectParam?.startsWith("/") &&
+    !redirectParam.startsWith("//") &&
+    !redirectParam.includes("\\")
       ? redirectParam
       : resolvePath(WORKSPACE_ROUTE_LANDING);
   return redirect(target);

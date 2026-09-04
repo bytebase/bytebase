@@ -85,29 +85,19 @@ describe("workspace setup guide journeys", () => {
   ])(
     "appends the team modifier after the %s journey",
     (scenarioId, baseSteps) => {
-      const journey = getGuideJourney(scenarioId, "team", false);
+      const journey = getGuideJourney(scenarioId, "team");
 
       expect(journey.steps.map(({ stepId }) => stepId)).toEqual([
         ...baseSteps,
-        "create-user",
+        "add-member",
       ]);
       expect(journey.steps.at(-1)).toEqual({
-        stepId: "create-user",
+        stepId: "add-member",
         kind: "modifier",
         dependsOn: [baseSteps.at(-1)],
       });
     }
   );
-
-  test("uses a fixed grant-access step for SaaS team journeys", () => {
-    const journey = getGuideJourney("query-data", "team", true);
-
-    expect(journey.steps.at(-1)).toEqual({
-      stepId: "grant-access",
-      kind: "modifier",
-      dependsOn: ["query-data"],
-    });
-  });
 
   test.each([undefined, "solo" as const])(
     "does not append the team modifier for workspace usage %s",
