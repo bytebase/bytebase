@@ -3572,7 +3572,6 @@
   "workspace-setup-guide": {
     "actions": {
       "change": "创建数据库变更",
-      "done": "完成",
       "query": "前往 SQL Editor"
     },
     "descriptions": {

@@ -3572,7 +3572,6 @@
   "workspace-setup-guide": {
     "actions": {
       "change": "Tạo thay đổi cơ sở dữ liệu",
-      "done": "Xong",
       "query": "Đi tới SQL Editor"
     },
     "descriptions": {

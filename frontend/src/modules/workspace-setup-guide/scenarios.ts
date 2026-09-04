@@ -64,8 +64,7 @@ export const GUIDE_SCENARIO_REGISTRY: Readonly<
 
 export const getGuideJourney = (
   scenarioId: GuideScenarioId | undefined,
-  workspaceUsage?: GuideWorkspaceUsage,
-  isSaaS = false
+  workspaceUsage?: GuideWorkspaceUsage
 ): GuideJourney => {
   const journey = scenarioId
     ? GUIDE_SCENARIO_REGISTRY[scenarioId]
@@ -79,7 +78,7 @@ export const getGuideJourney = (
     steps: [
       ...journey.steps,
       {
-        stepId: isSaaS ? "grant-access" : "create-user",
+        stepId: "add-member",
         kind: "modifier",
         dependsOn: [previousStep.stepId],
       },

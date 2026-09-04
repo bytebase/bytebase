@@ -45,8 +45,7 @@ describe("GUIDE_STEP_REGISTRY", () => {
       "explore-database",
       "query-data",
       "create-database-change",
-      "create-user",
-      "grant-access",
+      "add-member",
     ]);
   });
 
@@ -63,8 +62,7 @@ describe("GUIDE_STEP_REGISTRY", () => {
     ],
     ["query-data", { hasRunStatement: true }],
     ["create-database-change", { hasCreatedChangeIssue: true }],
-    ["create-user", { hasOtherWorkspaceMember: true }],
-    ["grant-access", { hasOtherWorkspaceMember: true }],
+    ["add-member", { hasOtherWorkspaceMember: true }],
   ] as const)("uses observable evidence for %s", (stepId, completed) => {
     expect(
       GUIDE_STEP_REGISTRY[stepId].isComplete(createContext(completed))
@@ -209,43 +207,38 @@ describe("GUIDE_STEP_REGISTRY", () => {
     }
   );
 
-  test.each([createContext(), createContext({ isSaaS: true })])(
-    "always opens Users for the self-host teammate step",
-    (context) => {
-      expect(
-        GUIDE_STEP_REGISTRY["create-user"].resolveActions(context)
-      ).toEqual({
-        select: {
-          type: "navigate",
-          target: {
-            name: WORKSPACE_ROUTE_USERS,
-            query: {
-              [PRODUCT_INTRO_QUERY_KEY]: CREATE_USER_PRODUCT_INTRO,
-            },
-          },
-        },
-      });
-    }
-  );
+  test("opens Users when self-host has no other human user", () => {
+    const context = createContext();
 
-  test.each([createContext(), createContext({ hasOtherHumanUser: true })])(
-    "always opens Members for the SaaS teammate step",
-    (context) => {
-      expect(
-        GUIDE_STEP_REGISTRY["grant-access"].resolveActions(context)
-      ).toEqual({
-        select: {
-          type: "navigate",
-          target: {
-            name: WORKSPACE_ROUTE_MEMBERS,
-            query: {
-              [PRODUCT_INTRO_QUERY_KEY]: GRANT_ACCESS_PRODUCT_INTRO,
-            },
+    expect(GUIDE_STEP_REGISTRY["add-member"].resolveActions(context)).toEqual({
+      select: {
+        type: "navigate",
+        target: {
+          name: WORKSPACE_ROUTE_USERS,
+          query: {
+            [PRODUCT_INTRO_QUERY_KEY]: CREATE_USER_PRODUCT_INTRO,
           },
         },
-      });
-    }
-  );
+      },
+    });
+  });
+
+  test.each([
+    createContext({ isSaaS: true }),
+    createContext({ hasOtherHumanUser: true }),
+  ])("opens Members when the teammate can be granted access", (context) => {
+    expect(GUIDE_STEP_REGISTRY["add-member"].resolveActions(context)).toEqual({
+      select: {
+        type: "navigate",
+        target: {
+          name: WORKSPACE_ROUTE_MEMBERS,
+          query: {
+            [PRODUCT_INTRO_QUERY_KEY]: GRANT_ACCESS_PRODUCT_INTRO,
+          },
+        },
+      },
+    });
+  });
 
   test.each([
     ["create-project", PROJECT_V1_ROUTE_DASHBOARD, true],
@@ -253,8 +246,8 @@ describe("GUIDE_STEP_REGISTRY", () => {
     ["explore-database", "workspace.project.database.detail", true],
     ["query-data", "sql-editor.database", true],
     ["create-database-change", PROJECT_V1_ROUTE_PLAN_DETAIL, true],
-    ["create-user", WORKSPACE_ROUTE_USERS, true],
-    ["grant-access", WORKSPACE_ROUTE_MEMBERS, true],
+    ["add-member", WORKSPACE_ROUTE_USERS, true],
+    ["add-member", WORKSPACE_ROUTE_MEMBERS, true],
   ] as const)("matches %s on %s", (stepId, name, expected) => {
     expect(
       GUIDE_STEP_REGISTRY[stepId as GuideStepId].matchesRoute({

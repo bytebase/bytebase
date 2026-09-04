@@ -18,8 +18,7 @@ const STEP_IDS: GuideStepId[] = [
   "explore-database",
   "query-data",
   "create-database-change",
-  "create-user",
-  "grant-access",
+  "add-member",
 ];
 
 const createContext = (
@@ -47,14 +46,12 @@ const completionById: Record<GuideStepId, keyof GuideContext> = {
   "explore-database": "hasExploredDatabase",
   "query-data": "hasRunStatement",
   "create-database-change": "hasCreatedChangeIssue",
-  "create-user": "hasOtherWorkspaceMember",
-  "grant-access": "hasOtherWorkspaceMember",
+  "add-member": "hasOtherWorkspaceMember",
 };
 
 const definition = (id: GuideStepId): GuideStepDefinition => ({
   id,
-  analyticsKey:
-    id === "create-user" || id === "grant-access" ? "add-teammate" : id,
+  analyticsKey: id === "add-member" ? "add-teammate" : id,
   labelKey: `label.${id}`,
   descriptionKey: `description.${id}`,
   isComplete: (context) => Boolean(context[completionById[id]]),

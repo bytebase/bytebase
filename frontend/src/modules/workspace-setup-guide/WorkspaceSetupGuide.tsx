@@ -39,10 +39,9 @@ export function WorkspaceSetupGuide() {
   const currentRoute = useCurrentRoute();
   const scenarioId = readSelectedGuideScenarioId();
   const workspaceUsage = readGuideWorkspaceUsage();
-  const isSaaS = useAppStore((state) => state.isSaaSMode());
   const journey = useMemo(
-    () => getGuideJourney(scenarioId, workspaceUsage, isSaaS),
-    [isSaaS, scenarioId, workspaceUsage]
+    () => getGuideJourney(scenarioId, workspaceUsage),
+    [scenarioId, workspaceUsage]
   );
   const dismissed = useIntroStateByKey(GUIDE_PROGRESS_KEYS.dismissed);
   const completionAcknowledged = useIntroStateByKey(
@@ -68,6 +67,10 @@ export function WorkspaceSetupGuide() {
   const [productModelOpen, setProductModelOpen] = useState(false);
   const [selectedStepId, setSelectedStepId] = useState<GuideStepId>();
   const [stepsOverflow, setStepsOverflow] = useState(false);
+  const [completionCompact, setCompletionCompact] = useState(false);
+  const guideBarRef = useRef<HTMLDivElement>(null);
+  const completionTitleRef = useRef<HTMLDivElement>(null);
+  const completionWideWidthRef = useRef(0);
   const stepViewportRef = useRef<HTMLDivElement>(null);
   const stepMeasurementRef = useRef<HTMLDivElement>(null);
   const guide = useMemo(
@@ -107,6 +110,44 @@ export function WorkspaceSetupGuide() {
     updateOverflow();
     return () => observer.disconnect();
   }, [guide.complete, guide.steps, i18n.resolvedLanguage]);
+
+  useLayoutEffect(() => {
+    completionWideWidthRef.current = 0;
+    setCompletionCompact(false);
+  }, [i18n.resolvedLanguage, journey.id]);
+
+  useLayoutEffect(() => {
+    if (!guide.complete) {
+      completionWideWidthRef.current = 0;
+      setCompletionCompact(false);
+      return;
+    }
+    const guideBar = guideBarRef.current;
+    const completionTitle = completionTitleRef.current;
+    if (!guideBar || !completionTitle) return;
+
+    const updateOverflow = () => {
+      if (guideBar.clientWidth === 0) return;
+      if (completionCompact) {
+        if (guideBar.clientWidth >= completionWideWidthRef.current) {
+          setCompletionCompact(false);
+        }
+        return;
+      }
+
+      const clippedWidth =
+        completionTitle.scrollWidth - completionTitle.clientWidth;
+      if (clippedWidth > 0) {
+        completionWideWidthRef.current = guideBar.clientWidth + clippedWidth;
+        setCompletionCompact(true);
+      }
+    };
+    const observer = new ResizeObserver(updateOverflow);
+    observer.observe(guideBar);
+    observer.observe(completionTitle);
+    updateOverflow();
+    return () => observer.disconnect();
+  }, [completionCompact, guide.complete, i18n.resolvedLanguage, journey.id]);
   const onSelectStep = (step: ResolvedGuideStep) => {
     setSelectedStepId(step.definition.id);
     const action = step.actions.select;
@@ -118,7 +159,9 @@ export function WorkspaceSetupGuide() {
 
   const handleDismiss = () => {
     useAppStore.getState().saveIntroStateByKey({
-      key: GUIDE_PROGRESS_KEYS.dismissed,
+      key: guide.complete
+        ? guideCompletionAcknowledgedKey(journey.id)
+        : GUIDE_PROGRESS_KEYS.dismissed,
       newState: true,
     });
   };
@@ -134,10 +177,15 @@ export function WorkspaceSetupGuide() {
 
   const hasDatabaseTarget =
     !!context.databaseName && !!context.databaseProjectName;
+  const completionPrimaryAction = journey.completionActions[0];
 
   return (
     <>
-      <div className="flex w-full shrink-0 items-center gap-x-2 border-t border-block-border bg-background px-4 py-3 shadow-[0_-2px_10px_rgba(0,0,0,0.04)] 2xl:gap-x-4 2xl:px-5 2xl:py-4">
+      <div
+        ref={guideBarRef}
+        data-testid="workspace-setup-guide"
+        className="flex w-full shrink-0 items-center gap-x-2 border-t border-block-border bg-background px-4 py-3 shadow-[0_-2px_10px_rgba(0,0,0,0.04)] 2xl:gap-x-4 2xl:px-5 2xl:py-4"
+      >
         <div className="flex min-w-0 flex-1 items-center gap-x-2 overflow-hidden 2xl:gap-x-4">
           <div className="flex shrink-0 items-center gap-x-1">
             <div className="shrink-0 text-sm font-semibold text-main 2xl:text-base">
@@ -160,12 +208,18 @@ export function WorkspaceSetupGuide() {
           </div>
           {guide.complete ? (
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-medium text-main">
+              <div
+                ref={completionTitleRef}
+                data-testid="completion-title"
+                className="truncate text-sm font-medium whitespace-nowrap text-main"
+              >
                 {t(journey.completionTitleKey)}
               </div>
-              <div className="truncate text-sm text-control-light">
-                {t(journey.completionDescriptionKey)}
-              </div>
+              {!completionCompact && (
+                <div className="truncate text-sm text-control-light">
+                  {t(journey.completionDescriptionKey)}
+                </div>
+              )}
             </div>
           ) : (
             <div
@@ -346,10 +400,13 @@ export function WorkspaceSetupGuide() {
         <div className="ml-auto flex shrink-0 items-center gap-x-2">
           {guide.complete &&
             hasDatabaseTarget &&
-            journey.completionActions.includes("create-change") && (
+            journey.completionActions.includes("create-change") &&
+            (!completionCompact ||
+              completionPrimaryAction === "create-change") && (
               <Button
                 type="button"
                 appearance="secondary"
+                size={completionCompact ? "sm" : undefined}
                 onClick={() => {
                   void preCreateIssue(context.databaseProjectName, [
                     context.databaseName,
@@ -361,37 +418,25 @@ export function WorkspaceSetupGuide() {
             )}
           {guide.complete &&
             hasDatabaseTarget &&
-            journey.completionActions.includes("open-sql-editor") && (
+            journey.completionActions.includes("open-sql-editor") &&
+            (!completionCompact ||
+              completionPrimaryAction === "open-sql-editor") && (
               <SQLEditorButton
                 database={{
                   name: context.databaseName,
                   project: context.databaseProjectName,
                 }}
                 openInNewTab
-                size="sm"
+                size={completionCompact ? "sm" : undefined}
                 label={t("workspace-setup-guide.actions.query")}
               />
             )}
-          {guide.complete && (
-            <Button
-              type="button"
-              data-testid="complete-guide"
-              onClick={() =>
-                useAppStore.getState().saveIntroStateByKey({
-                  key: guideCompletionAcknowledgedKey(journey.id),
-                  newState: true,
-                })
-              }
-            >
-              {t("workspace-setup-guide.actions.done")}
-            </Button>
-          )}
           {!guide.complete && primaryAction?.type === "open-sql-editor" && (
             <SQLEditorButton
               data-testid="active-action"
               database={primaryAction.database}
               openInNewTab
-              size="sm"
+              size={stepsOverflow ? "sm" : undefined}
               label={t("workspace-setup-guide.actions.query")}
             />
           )}

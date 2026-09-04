@@ -94,11 +94,17 @@ vi.mock("@/components/HowBytebaseWorksSheet", () => ({
 vi.mock("@/components/SQLEditorButton", () => ({
   SQLEditorButton: ({
     label,
+    size,
     "data-testid": testId,
   }: {
     label?: ReactNode;
+    size?: string;
     "data-testid"?: string;
-  }) => <button data-testid={testId ?? "sql-editor-action"}>{label}</button>,
+  }) => (
+    <button data-testid={testId ?? "sql-editor-action"} data-size={size}>
+      {label}
+    </button>
+  ),
 }));
 
 vi.mock("@/hooks/useAppState", () => ({
@@ -218,6 +224,7 @@ describe("WorkspaceSetupGuide", () => {
     expect(screen.getByTestId("active-action")).toHaveTextContent(
       "workspace-setup-guide.actions.query"
     );
+    expect(screen.getByTestId("active-action")).not.toHaveAttribute("data-size");
     expect(screen.getByTestId("open-product-model")).toBeVisible();
   });
 
@@ -258,7 +265,7 @@ describe("WorkspaceSetupGuide", () => {
     expect(screen.getByTestId("setup-step-add-teammate")).toBeEnabled();
   });
 
-  test("keeps a completed multi-member team journey until Done", () => {
+  test("acknowledges a completed multi-member team journey when closed", () => {
     mocks.scenarioId = "query-data";
     mocks.workspaceUsage = "team";
     mocks.guideUserCount = 2;
@@ -274,36 +281,52 @@ describe("WorkspaceSetupGuide", () => {
     });
 
     const first = render(<WorkspaceSetupGuide />);
-    expect(screen.getByTestId("complete-guide")).toBeVisible();
-    fireEvent.click(screen.getByTestId("complete-guide"));
+    expect(screen.queryByTestId("complete-guide")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("dismiss-guide"));
     first.unmount();
 
     render(<WorkspaceSetupGuide />);
-    expect(screen.queryByTestId("complete-guide")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("dismiss-guide")).not.toBeInTheDocument();
   });
 
-  test.each([false, true])(
-    "keeps the self-host teammate action fixed when a user exists: %s",
-    (hasOtherHumanUser) => {
+  test("opens Users for a self-host team journey without another user", () => {
     mocks.workspaceUsage = "team";
     mocks.guideContext = guideContext({
       hasProject: true,
       hasInstance: true,
       hasExploredDatabase: true,
-      hasOtherHumanUser,
       databaseProjectName: "projects/app",
       databaseName: "instances/sample/databases/employee",
     });
     render(<WorkspaceSetupGuide />);
 
-      fireEvent.click(screen.getByTestId("setup-step-add-teammate"));
+    fireEvent.click(screen.getByTestId("setup-step-add-teammate"));
 
     expect(mocks.routerPush).toHaveBeenCalledWith({
-        name: "workspace.users",
-        query: { intro: "create-user" },
+      name: "workspace.users",
+      query: { intro: "create-user" },
     });
-    }
-  );
+  });
+
+  test("opens Members for a self-host team journey with an existing user", () => {
+    mocks.workspaceUsage = "team";
+    mocks.guideContext = guideContext({
+      hasProject: true,
+      hasInstance: true,
+      hasExploredDatabase: true,
+      hasOtherHumanUser: true,
+      databaseProjectName: "projects/app",
+      databaseName: "instances/sample/databases/employee",
+    });
+    render(<WorkspaceSetupGuide />);
+
+    fireEvent.click(screen.getByTestId("setup-step-add-teammate"));
+
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "workspace.members",
+      query: { intro: "grant-access" },
+    });
+  });
 
   test("uses the fixed SaaS grant-access teammate action", () => {
     mocks.isSaaS = true;
@@ -463,6 +486,50 @@ describe("WorkspaceSetupGuide", () => {
     expect(await screen.findAllByRole("menuitem")).toHaveLength(5);
   });
 
+  test("uses a compact active action only while the step row overflows", () => {
+    mocks.scenarioId = "query-data";
+    mocks.guideContext = guideContext({
+      hasProject: true,
+      hasInstance: true,
+      hasExploredDatabase: true,
+      databaseProjectName: "projects/app",
+      databaseName: "instances/sample/databases/employee",
+    });
+    render(<WorkspaceSetupGuide />);
+
+    const viewport = screen.getByTestId("guide-step-viewport");
+    const measurement = screen.getByTestId("guide-step-measurement");
+    Object.defineProperty(viewport, "clientWidth", {
+      configurable: true,
+      value: 500,
+    });
+    Object.defineProperty(measurement, "scrollWidth", {
+      configurable: true,
+      value: 900,
+    });
+
+    act(() => {
+      for (const callback of resizeObserverCallbacks) {
+        callback([], {} as ResizeObserver);
+      }
+    });
+    expect(screen.getByTestId("active-action")).toHaveAttribute(
+      "data-size",
+      "sm"
+    );
+
+    Object.defineProperty(measurement, "scrollWidth", {
+      configurable: true,
+      value: 400,
+    });
+    act(() => {
+      for (const callback of resizeObserverCallbacks) {
+        callback([], {} as ResizeObserver);
+      }
+    });
+    expect(screen.getByTestId("active-action")).not.toHaveAttribute("data-size");
+  });
+
   test("routes generic actions without recording guide analytics", () => {
     render(<WorkspaceSetupGuide />);
     fireEvent.click(screen.getByTestId("setup-step-create-project"));
@@ -505,11 +572,78 @@ describe("WorkspaceSetupGuide", () => {
     ).toBeVisible();
     expect(screen.getByText("workspace-setup-guide.actions.change")).toBeVisible();
     expect(screen.getByText("workspace-setup-guide.actions.query")).toBeVisible();
-    fireEvent.click(screen.getByTestId("complete-guide"));
+    expect(screen.queryByTestId("complete-guide")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId("dismiss-guide"));
     expect(mocks.saveIntroStateByKey).toHaveBeenCalledWith({
       key: guideCompletionAcknowledgedKey("workspace-setup"),
       newState: true,
     });
+  });
+
+  test("compacts completion actions only when the completion row overflows", () => {
+    mocks.guideContext = guideContext({
+      hasProject: true,
+      hasInstance: true,
+      hasExploredDatabase: true,
+      databaseProjectName: "projects/app",
+      databaseName: "instances/sample/databases/employee",
+    });
+
+    render(<WorkspaceSetupGuide />);
+
+    const guideBar = screen.getByTestId("workspace-setup-guide");
+    const completionTitle = screen.getByTestId("completion-title");
+    Object.defineProperty(guideBar, "clientWidth", {
+      configurable: true,
+      value: 800,
+    });
+    Object.defineProperty(completionTitle, "clientWidth", {
+      configurable: true,
+      value: 160,
+    });
+    Object.defineProperty(completionTitle, "scrollWidth", {
+      configurable: true,
+      value: 260,
+    });
+
+    act(() => {
+      for (const callback of resizeObserverCallbacks) {
+        callback([], {} as ResizeObserver);
+      }
+    });
+
+    expect(
+      screen.queryByText("workspace-setup-guide.generic.completion-description")
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("workspace-setup-guide.actions.change")
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("sql-editor-action")).toHaveAttribute(
+      "data-size",
+      "sm"
+    );
+
+    Object.defineProperty(guideBar, "clientWidth", {
+      configurable: true,
+      value: 900,
+    });
+    Object.defineProperty(completionTitle, "clientWidth", {
+      configurable: true,
+      value: 260,
+    });
+    act(() => {
+      for (const callback of resizeObserverCallbacks) {
+        callback([], {} as ResizeObserver);
+      }
+    });
+
+    expect(
+      screen.getByText("workspace-setup-guide.generic.completion-description")
+    ).toBeVisible();
+    expect(screen.getByText("workspace-setup-guide.actions.change")).toBeVisible();
+    expect(screen.getByTestId("sql-editor-action")).not.toHaveAttribute(
+      "data-size"
+    );
   });
 
   test("Query completion offers a database change", () => {
@@ -543,6 +677,9 @@ describe("WorkspaceSetupGuide", () => {
     render(<WorkspaceSetupGuide />);
 
     expect(screen.getByText("workspace-setup-guide.actions.query")).toBeVisible();
+    expect(screen.getByTestId("sql-editor-action")).not.toHaveAttribute(
+      "data-size"
+    );
     expect(screen.queryByText("workspace-setup-guide.actions.change")).not.toBeInTheDocument();
   });
 

@@ -6,8 +6,7 @@ export type GuideStepId =
   | "explore-database"
   | "query-data"
   | "create-database-change"
-  | "create-user"
-  | "grant-access";
+  | "add-member";
 
 export type GuideScenarioId = "query-data" | "create-database-change";
 
@@ -16,7 +15,7 @@ export type GuideWorkspaceUsage = "team" | "solo";
 export type GuideJourneyId = "workspace-setup" | GuideScenarioId;
 
 export type GuideAnalyticsKey =
-  | Exclude<GuideStepId, "create-user" | "grant-access">
+  | Exclude<GuideStepId, "add-member">
   | "add-teammate";
 
 export type GuideRoute = Pick<ReactRoute, "name" | "params">;

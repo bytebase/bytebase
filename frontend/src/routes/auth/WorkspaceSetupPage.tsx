@@ -200,6 +200,7 @@ export function WorkspaceSetupPage() {
         createBehaviorMetric("workspace setup submitted", {
           properties: {
             scenario: selectedScenarioId ?? "unselected",
+            collaboration_type: workspaceUsage ?? "unselected",
             result: "finished",
             sample_enabled: sampleRequested,
           },
@@ -249,6 +250,7 @@ export function WorkspaceSetupPage() {
       createBehaviorMetric("workspace setup submitted", {
         properties: {
           scenario: selectedScenarioId ?? "unselected",
+          collaboration_type: workspaceUsage ?? "unselected",
           result: "skipped",
           sample_enabled: false,
         },

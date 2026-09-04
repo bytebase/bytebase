@@ -256,6 +256,36 @@ describe("rootGuard", () => {
     ).toBe("/landing");
   });
 
+  test("rejects a same-origin full URL setup redirect", async () => {
+    session.isLoggedIn = true;
+
+    expect(
+      location(
+        await runWorkspaceSetupLoader(
+          "/auth/setup?redirect=https%3A%2F%2Fapp.example.com%2Fprojects%2Fexample"
+        )
+      )
+    ).toBe("/landing");
+  });
+
+  test("rejects a backslash-normalized external setup redirect", async () => {
+    session.isLoggedIn = true;
+
+    expect(
+      location(
+        await runWorkspaceSetupLoader("/auth/setup?redirect=%2F%5Cevil.example")
+      )
+    ).toBe("/landing");
+  });
+
+  test("rejects a malformed setup redirect", async () => {
+    session.isLoggedIn = true;
+
+    expect(
+      location(await runWorkspaceSetupLoader("/auth/setup?redirect=%2F%5C"))
+    ).toBe("/landing");
+  });
+
   test("redirects away from workspace setup when IAM loading fails", async () => {
     session.isLoggedIn = true;
     session.enableOnboarding = true;

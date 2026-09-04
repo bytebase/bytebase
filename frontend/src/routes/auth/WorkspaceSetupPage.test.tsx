@@ -409,6 +409,25 @@ describe("WorkspaceSetupPage", () => {
     );
     expect(mocks.saveGuideWorkspaceUsage).toHaveBeenCalledWith("team");
     expect(mocks.captureMetric).not.toHaveBeenCalled();
+
+    const submit = [...page.container.querySelectorAll("button")].find(
+      (button) => button.textContent?.includes("Setup my workspace")
+    )!;
+    await act(async () => {
+      fireEvent.click(submit);
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.captureMetric).toHaveBeenCalledWith({
+      event: "workspace setup submitted",
+      properties: {
+        scenario: "query-data",
+        collaboration_type: "team",
+        result: "finished",
+        sample_enabled: true,
+      },
+    });
     page.unmount();
   });
 
@@ -453,6 +472,7 @@ describe("WorkspaceSetupPage", () => {
       event: "workspace setup submitted",
       properties: {
         scenario: "query-data",
+        collaboration_type: "unselected",
         result: "finished",
         sample_enabled: true,
       },
@@ -528,6 +548,7 @@ describe("WorkspaceSetupPage", () => {
       event: "workspace setup submitted",
       properties: {
         scenario: "query-data",
+        collaboration_type: "unselected",
         result: "skipped",
         sample_enabled: false,
       },
@@ -565,6 +586,7 @@ describe("WorkspaceSetupPage", () => {
       event: "workspace setup submitted",
       properties: {
         scenario: "unselected",
+        collaboration_type: "unselected",
         result: "finished",
         sample_enabled: true,
       },
@@ -762,6 +784,7 @@ describe("WorkspaceSetupPage", () => {
       event: "workspace setup submitted",
       properties: {
         scenario: "unselected",
+        collaboration_type: "unselected",
         result: "finished",
         sample_enabled: false,
       },
@@ -825,6 +848,7 @@ describe("WorkspaceSetupPage", () => {
       event: "workspace setup submitted",
       properties: {
         scenario: "unselected",
+        collaboration_type: "unselected",
         result: "finished",
         sample_enabled: false,
       },
@@ -863,6 +887,7 @@ describe("WorkspaceSetupPage", () => {
       event: "workspace setup submitted",
       properties: {
         scenario: "unselected",
+        collaboration_type: "unselected",
         result: "finished",
         sample_enabled: true,
       },
@@ -917,6 +942,7 @@ describe("WorkspaceSetupPage", () => {
       event: "workspace setup submitted",
       properties: {
         scenario: "unselected",
+        collaboration_type: "unselected",
         result: "skipped",
         sample_enabled: false,
       },
@@ -949,6 +975,7 @@ describe("WorkspaceSetupPage", () => {
         event: "workspace setup submitted",
         properties: {
           scenario: "unselected",
+          collaboration_type: "unselected",
           result: "finished",
           sample_enabled: true,
         },

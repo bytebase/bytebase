@@ -3572,7 +3572,6 @@
   "workspace-setup-guide": {
     "actions": {
       "change": "Crear cambio de base de datos",
-      "done": "Listo",
       "query": "Ir a SQL Editor"
     },
     "descriptions": {
