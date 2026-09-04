@@ -44,7 +44,15 @@ func (*TableRequirePKAdvisor) Check(_ context.Context, checkCtx advisor.Context)
 		},
 		originalMetadata: checkCtx.OriginalMetadata,
 		finalMetadata:    checkCtx.FinalMetadata,
+		searchPath:       []string{"public"},
 		tableMentions:    make(map[string]*tableMention),
+	}
+	if checkCtx.OriginalMetadata != nil {
+		// Resolve $user against SessionUser so unqualified names land in the
+		// same schema the walkthrough uses when building FinalMetadata.
+		if sp := checkCtx.OriginalMetadata.GetSearchPathForCurrentUser(checkCtx.SessionUser); len(sp) > 0 {
+			rule.searchPath = sp
+		}
 	}
 
 	// Manually iterate statements instead of using RunOmniRules because
@@ -75,6 +83,8 @@ type tableRequirePKRule struct {
 	OmniBaseRule
 	originalMetadata *model.DatabaseMetadata
 	finalMetadata    *model.DatabaseMetadata
+	// searchPath resolves unqualified table names; never empty.
+	searchPath []string
 
 	// Track last mention of each table
 	tableMentions map[string]*tableMention // key: "schema.table", value: last mention info
@@ -104,7 +114,7 @@ func (r *tableRequirePKRule) handleCreateStmt(n *ast.CreateStmt) {
 	if tableName == "" {
 		return
 	}
-	schema := omniSchemaName(n.Relation)
+	schema := r.resolveSchema(n.Relation.Schemaname, tableName)
 
 	key := fmt.Sprintf("%s.%s", schema, tableName)
 	r.tableMentions[key] = &tableMention{
@@ -121,11 +131,13 @@ func (r *tableRequirePKRule) handleAlterTableStmt(n *ast.AlterTableStmt) {
 	if tableName == "" {
 		return
 	}
-	schema := omniSchemaName(n.Relation)
+	schema := r.resolveSchema(n.Relation.Schemaname, tableName)
 
 	key := fmt.Sprintf("%s.%s", schema, tableName)
-	if _, tracked := r.tableMentions[key]; !tracked && !r.originalTableHasPK(schema, tableName) {
-		return
+	if _, tracked := r.tableMentions[key]; !tracked {
+		if table := r.originalTable(schema, tableName); table == nil || table.GetPrimaryKey() == nil {
+			return
+		}
 	}
 	r.tableMentions[key] = &tableMention{
 		startLine: int(r.ContentStartLine()) + r.BaseLine,
@@ -139,19 +151,59 @@ func (r *tableRequirePKRule) handleDropStmt(n *ast.DropStmt) {
 		return
 	}
 
-	for _, obj := range omniDropObjects(n) {
-		key := fmt.Sprintf("%s.%s", obj[0], obj[1])
-		delete(r.tableMentions, key)
+	if n.Objects == nil {
+		return
+	}
+	for _, item := range n.Objects.Items {
+		list, ok := item.(*ast.List)
+		if !ok {
+			continue
+		}
+		var parts []string
+		for _, nameItem := range list.Items {
+			if s, ok := nameItem.(*ast.String); ok {
+				parts = append(parts, s.Str)
+			}
+		}
+		var schema, tableName string
+		switch len(parts) {
+		case 1:
+			tableName = parts[0]
+		case 2:
+			schema, tableName = parts[0], parts[1]
+		default:
+			continue
+		}
+		delete(r.tableMentions, fmt.Sprintf("%s.%s", r.resolveSchema(schema, tableName), tableName))
 	}
 }
 
-// originalTableHasPK reports whether the table had a PRIMARY KEY before this batch.
-func (r *tableRequirePKRule) originalTableHasPK(schemaName, tableName string) bool {
-	if r.originalMetadata == nil {
-		return false
+// resolveSchema mirrors PostgreSQL name resolution. A qualified name is taken
+// as-is. An unqualified name maps to the first search_path schema that already
+// holds the table, either created earlier in this batch or present in the
+// original metadata; otherwise to the first search_path schema, which is
+// where CREATE TABLE places a new table.
+func (r *tableRequirePKRule) resolveSchema(schema, tableName string) string {
+	if schema != "" {
+		return schema
 	}
-	table := r.originalMetadata.GetSchemaMetadata(schemaName).GetTable(tableName)
-	return table != nil && table.GetPrimaryKey() != nil
+	for _, candidate := range r.searchPath {
+		if _, ok := r.tableMentions[fmt.Sprintf("%s.%s", candidate, tableName)]; ok {
+			return candidate
+		}
+		if r.originalTable(candidate, tableName) != nil {
+			return candidate
+		}
+	}
+	return r.searchPath[0]
+}
+
+// originalTable returns the table from the metadata before this batch, or nil.
+func (r *tableRequirePKRule) originalTable(schemaName, tableName string) *model.TableMetadata {
+	if r.originalMetadata == nil {
+		return nil
+	}
+	return r.originalMetadata.GetSchemaMetadata(schemaName).GetTable(tableName)
 }
 
 // validateFinalState checks all mentioned tables against FinalMetadata for PRIMARY KEY.
