@@ -182,6 +182,133 @@ func findDollarQuotedBody(definition string) (tag string, bodyStart int, bodyEnd
 	return "", 0, 0
 }
 
+// findUnresolvedRelations reports the relations in accesses whose columns the
+// stored snapshot does not describe. It reads the snapshot directly rather than
+// inspecting the analyzer's output, so it says the same thing regardless of
+// which lineage path produced the span.
+//
+// A relation the snapshot lists with no columns is the state a schema sync
+// leaves behind when the connecting role lost its privileges. Column-granular
+// masking cannot be evaluated against it, and no other span field records that:
+// SELECT * simply yields no results at all, which is indistinguishable from a
+// query that legitimately projects nothing.
+//
+// Tables, views and foreign tables are all checked: the syncer fills each
+// column list from the same map, so an empty one means the same thing for
+// every one of them. Materialized views are excluded because their metadata
+// carries no column list at all, making an empty one uninformative.
+//
+// Two shapes are known not to reach this set, so they stay unmasked and are
+// tracked separately rather than silently assumed covered:
+//   - a relation the snapshot does not carry at all, which column resolution
+//     drops upstream.
+//   - a relation read only inside a SQL-language function body, whose accesses
+//     the body analysis does not surface (BYT-10075).
+//
+// scope is the analyzer's scope resolution for this statement, used to drop the
+// accesses that name a CTE rather than a table. It is nil when the analyzer
+// failed and produced no query to read; every access is then checked. See
+// unresolvedColumnsError.
+//
+// On PostgreSQL a current sync cannot produce this state: #20581 moved the
+// column query to pg_catalog so privileges no longer hide columns. What
+// reaches it is a snapshot written before that fix and never re-synced.
+func (e *omniQuerySpanExtractor) findUnresolvedRelations(accesses base.SourceColumnSet, scope *analyzedScope) []base.ColumnResource {
+	seen := make(map[base.ColumnResource]bool, len(accesses))
+	var unresolved []base.ColumnResource
+	for access := range accesses {
+		relation := base.ColumnResource{
+			Server:   access.Server,
+			Database: access.Database,
+			Schema:   access.Schema,
+			Table:    access.Table,
+		}
+		if relation.Table == "" || seen[relation] {
+			continue
+		}
+		seen[relation] = true
+		// ExtractAccessTables walks every RangeVar without tracking CTE scope, so
+		// a reference to a CTE that shares a table's name arrives here resolved to
+		// that table. The analyzer already did that scope resolution, so ask it
+		// which names are relations the statement really reads.
+		if !scope.reads(relation.Schema, relation.Table) {
+			continue
+		}
+		if e.relationHasNoSyncedColumns(relation) {
+			unresolved = append(unresolved, relation)
+		}
+	}
+	return unresolved
+}
+
+// relationHasNoSyncedColumns reports whether the snapshot carries the relation
+// with an empty column list. It answers false for anything it cannot judge:
+// a database or schema it cannot read, and any object kind that does not carry
+// a column list of its own.
+func (e *omniQuerySpanExtractor) relationHasNoSyncedColumns(relation base.ColumnResource) bool {
+	meta, err := e.getDatabaseMetadata(relation.Database)
+	if err != nil || meta == nil {
+		// A database we cannot read is not evidence about this relation.
+		return false
+	}
+	schema := meta.GetSchemaMetadata(relation.Schema)
+	if schema == nil {
+		return false
+	}
+	// Tables, views and foreign tables all take their column list from the same
+	// map in the syncer, so an empty one means the same thing for each.
+	if table := schema.GetTable(relation.Table); table != nil {
+		return len(table.GetProto().GetColumns()) == 0
+	}
+	if view := schema.GetView(relation.Table); view != nil {
+		return len(view.GetColumns()) == 0
+	}
+	if external := schema.GetExternalTable(relation.Table); external != nil {
+		return len(external.GetProto().GetColumns()) == 0
+	}
+	return false
+}
+
+// unresolvedColumnsError builds the span signal for accesses whose columns the
+// snapshot cannot describe, or nil when every accessed table resolves.
+//
+// scope is the analyzer's scope resolution, which says which of the accesses
+// name a relation the statement really reads. Pass nil when there is none.
+func (e *omniQuerySpanExtractor) unresolvedColumnsError(accesses base.SourceColumnSet, scope *analyzedScope) *base.UnresolvedColumnsError {
+	unresolved := e.findUnresolvedRelations(accesses, scope)
+	if len(unresolved) == 0 {
+		return nil
+	}
+	return &base.UnresolvedColumnsError{Relations: unresolved}
+}
+
+// analyzedScopeOf reads the analyzer's scope resolution for query and widens it
+// with the relations the function body analysis surfaced.
+//
+// Those reads are real and they reach accessesMap, but they happen inside a
+// function body that the top-level analyzed query does not contain, so the walk
+// over that query cannot find them. Dropping them would stop checking a table a
+// PL/pgSQL body reads.
+func (e *omniQuerySpanExtractor) analyzedScopeOf(query *catalog.Query, selStmt *ast.SelectStmt) *analyzedScope {
+	scope := collectAnalyzedScope(e.cat, query)
+	for access := range e.funcSourceColumns {
+		scope.relations.add(access.Schema, access.Table)
+	}
+	// Floor the analyzer's answer with the parse tree's schema-qualified names.
+	// A CTE cannot shadow a qualified reference, so every one of these is a real
+	// read no matter what the walk found. This is a second, independent oracle
+	// for the same question, and it covers the positions the analyzed tree drops
+	// outright — an aggregate's FILTER and ORDER BY subqueries reach neither
+	// catalog.AggExpr nor therefore the walk.
+	ast.Inspect(selStmt, func(node ast.Node) bool {
+		if rv, ok := node.(*ast.RangeVar); ok && rv.Schemaname != "" && rv.Relname != "" {
+			scope.relations.add(rv.Schemaname, rv.Relname)
+		}
+		return true
+	})
+	return scope
+}
+
 // getQuerySpan extracts the query span for the given SQL statement.
 func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*base.QuerySpan, error) {
 	e.ctx = ctx
@@ -271,23 +398,33 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 		// gate behavior — the fallback below always runs on analyzer errors.
 		e.lastFallbackReason = classifyAnalyzeError(err)
 
+		// Both returns below pass a nil scope: analysis failed, so there is no
+		// scope resolution to consult and every access is checked. The accesses
+		// that name a CTE rather than a table stay in, which can refuse a query
+		// that reads only a CTE named like a degraded relation. That is the safe
+		// direction for a masking guard, and the alternative — the name-based
+		// shadowing heuristic this replaced — drops a real read whenever any CTE
+		// anywhere in the statement shares an unqualified relation's name.
+		//
 		// Before falling back, try to handle user-defined table-returning functions
 		// that omni's AnalyzeSelectStmt can't resolve (e.g., RETURNS TABLE functions
 		// used as table sources: SELECT * FROM func()).
 		if results := e.tryUserFuncTableSource(selStmt, accessesMap); results != nil {
 			return &base.QuerySpan{
-				Type:          base.Select,
-				SourceColumns: accessesMap,
-				Results:       results,
+				Type:                   base.Select,
+				SourceColumns:          accessesMap,
+				Results:                results,
+				UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap, nil),
 			}, nil
 		}
 		// Fail-open: return access tables with best-effort column names and lineage
 		// when analysis fails (e.g., unsupported built-in functions).
 		return &base.QuerySpan{
-			Type:             base.Select,
-			SourceColumns:    accessesMap,
-			Results:          e.extractFallbackColumns(selStmt),
-			PredicateColumns: e.funcPredicateColumns,
+			Type:                   base.Select,
+			SourceColumns:          accessesMap,
+			Results:                e.extractFallbackColumns(selStmt),
+			PredicateColumns:       e.funcPredicateColumns,
+			UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap, nil),
 		}, nil
 	}
 
@@ -301,11 +438,14 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 		accessesMap[col] = true
 	}
 
+	// Analysis succeeded, so the analyzer's scope resolution is available and
+	// decides which accesses are relation reads.
 	return &base.QuerySpan{
-		Type:             base.Select,
-		SourceColumns:    accessesMap,
-		PredicateColumns: e.funcPredicateColumns,
-		Results:          results,
+		Type:                   base.Select,
+		SourceColumns:          accessesMap,
+		PredicateColumns:       e.funcPredicateColumns,
+		Results:                results,
+		UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap, e.analyzedScopeOf(query, selStmt)),
 	}, nil
 }
 
