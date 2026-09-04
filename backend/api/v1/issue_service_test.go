@@ -73,23 +73,30 @@ func TestListIssueCommentsExcludesReplies(t *testing.T) {
 	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
 	parent := common.FormatIssue(issue.ProjectID, issue.UID)
 
-	created, err := service.CreateIssueComment(ctx, connect.NewRequest(&v1pb.CreateIssueCommentRequest{
-		Parent: parent,
-		IssueComment: &v1pb.IssueComment{
+	// Only an anchored comment starts a thread, and v1 cannot set the anchor
+	// yet, so the root is created through the store.
+	root, err := stores.CreateIssueComments(ctx, "users/root@example.com", &store.IssueCommentMessage{
+		ProjectID: issue.ProjectID,
+		IssueUID:  issue.UID,
+		Payload: &storepb.IssueCommentPayload{
 			Comment: "root",
+			StatementAnchor: &storepb.IssueCommentPayload_StatementAnchor{
+				SpecId:        "spec-1",
+				SheetSha256:   "0be1f01d6ee8e6f6c6a2ce9b418ba10ea9d16c9b9bfae5548b8fa0e26c04a5e0",
+				StartPosition: &storepb.Position{Line: 1},
+				EndPosition:   &storepb.Position{Line: 1},
+			},
 		},
-	}))
-	require.NoError(t, err)
-
-	_, _, rootID, err := common.GetProjectIDIssueUIDIssueCommentID(created.Msg.Name)
+	})
 	require.NoError(t, err)
 	_, err = stores.CreateIssueCommentReply(ctx, "users/reply@example.com", &store.IssueCommentMessage{
 		ProjectID: issue.ProjectID,
 		IssueUID:  issue.UID,
-		ParentID:  &rootID,
+		ParentID:  &root.ResourceID,
 		Payload:   &storepb.IssueCommentPayload{Comment: "reply body"},
 	})
 	require.NoError(t, err)
+	rootName := fmt.Sprintf("%s/%s%s", parent, common.IssueCommentNamePrefix, root.ResourceID)
 
 	resp, err := service.ListIssueComments(ctx, connect.NewRequest(&v1pb.ListIssueCommentsRequest{
 		Parent: parent,
@@ -100,7 +107,7 @@ func TestListIssueCommentsExcludesReplies(t *testing.T) {
 		require.NotEqual(t, "reply body", comment.Comment, "replies must not appear in the activity timeline")
 		names = append(names, comment.Name)
 	}
-	require.Contains(t, names, created.Msg.Name, "the thread root stays in the timeline")
+	require.Contains(t, names, rootName, "the thread root stays in the timeline")
 }
 
 func TestDraftLabelUpdateConflictsWithConcurrentSubmission(t *testing.T) {
