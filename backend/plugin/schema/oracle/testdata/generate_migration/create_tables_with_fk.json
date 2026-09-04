@@ -1,0 +1,153 @@
+{
+  "schemaA": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "POSTS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_73373\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "USER_ID",
+                "position": 2,
+                "type": "NUMBER"
+              },
+              {
+                "name": "TITLE",
+                "position": 3,
+                "type": "VARCHAR2(200 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "CONTENT",
+                "position": 4,
+                "nullable": true,
+                "type": "CLOB",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "PUBLISHED_AT",
+                "position": 5,
+                "nullable": true,
+                "type": "TIMESTAMP(6)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008742",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              },
+              {
+                "name": "IDX_USER_ID",
+                "expressions": [
+                  "\"USER_ID\""
+                ],
+                "descending": [
+                  false
+                ],
+                "type": "NORMAL",
+                "visible": true
+              }
+            ],
+            "foreignKeys": [
+              {
+                "name": "FK_USER",
+                "columns": [
+                  "USER_ID"
+                ],
+                "referencedTable": "USERS",
+                "referencedColumns": [
+                  "ID"
+                ],
+                "onDelete": "CASCADE"
+              }
+            ]
+          },
+          {
+            "name": "USERS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_73347\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "USERNAME",
+                "position": 2,
+                "type": "VARCHAR2(50 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "EMAIL",
+                "position": 3,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "CREATED_AT",
+                "position": 4,
+                "default": "CURRENT_TIMESTAMP",
+                "nullable": true,
+                "type": "TIMESTAMP(6)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008737",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              },
+              {
+                "name": "IDX_USERNAME",
+                "expressions": [
+                  "\"USERNAME\""
+                ],
+                "descending": [
+                  false
+                ],
+                "type": "NORMAL",
+                "visible": true
+              },
+              {
+                "name": "UK_EMAIL",
+                "expressions": [
+                  "\"EMAIL\""
+                ],
+                "descending": [
+                  false
+                ],
+                "type": "NORMAL",
+                "unique": true,
+                "visible": true
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  },
+  "schemaB": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {}
+    ],
+    "serviceName": "FREEPDB1"
+  }
+}

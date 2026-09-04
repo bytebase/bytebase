@@ -1,0 +1,164 @@
+{
+  "schemaA": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "AUDIT_LOG",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_73561\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "TABLE_NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "OPERATION",
+                "position": 3,
+                "type": "VARCHAR2(10 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "OLD_VALUES",
+                "position": 4,
+                "nullable": true,
+                "type": "CLOB",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "NEW_VALUES",
+                "position": 5,
+                "nullable": true,
+                "type": "CLOB",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "TIMESTAMP",
+                "position": 6,
+                "default": "CURRENT_TIMESTAMP",
+                "nullable": true,
+                "type": "TIMESTAMP(6)"
+              },
+              {
+                "name": "USER_NAME",
+                "position": 7,
+                "default": "USER",
+                "nullable": true,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008926",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ]
+          }
+        ],
+        "functions": [
+          {
+            "name": "CALCULATE_BUSINESS_DAYS",
+            "definition": "FUNCTION CALCULATE_BUSINESS_DAYS(\n    P_START_DATE DATE,\n    P_END_DATE DATE\n) RETURN NUMBER\nIS\n    V_DAYS NUMBER := 0;\n    V_CURRENT_DATE DATE := P_START_DATE;\nBEGIN\n    WHILE V_CURRENT_DATE \u003c= P_END_DATE LOOP\n        -- Skip weekends (Saturday = 7, Sunday = 1)\n        IF TO_CHAR(V_CURRENT_DATE, 'D') NOT IN ('1', '7') THEN\n            V_DAYS := V_DAYS + 1;\n        END IF;\n        V_CURRENT_DATE := V_CURRENT_DATE + 1;\n    END LOOP;\n    \n    RETURN V_DAYS;\nEND;"
+          },
+          {
+            "name": "GET_AUDIT_COUNT",
+            "definition": "FUNCTION GET_AUDIT_COUNT(P_TABLE_NAME VARCHAR2) RETURN NUMBER\nIS\n    V_COUNT NUMBER;\nBEGIN\n    SELECT COUNT(*) INTO V_COUNT\n    FROM AUDIT_LOG\n    WHERE TABLE_NAME = P_TABLE_NAME;\n    \n    RETURN V_COUNT;\nEND;"
+          }
+        ],
+        "procedures": [
+          {
+            "name": "LOG_AUDIT",
+            "definition": "PROCEDURE LOG_AUDIT(\n    P_TABLE_NAME VARCHAR2,\n    P_OPERATION VARCHAR2,\n    P_OLD_VALUES CLOB DEFAULT NULL,\n    P_NEW_VALUES CLOB DEFAULT NULL\n)\nIS\nBEGIN\n    INSERT INTO AUDIT_LOG (TABLE_NAME, OPERATION, OLD_VALUES, NEW_VALUES)\n    VALUES (P_TABLE_NAME, P_OPERATION, P_OLD_VALUES, P_NEW_VALUES);\n    COMMIT;\nEXCEPTION\n    WHEN OTHERS THEN\n        ROLLBACK;\n        RAISE;\nEND;"
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  },
+  "schemaB": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "AUDIT_LOG",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_73561\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "TABLE_NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "OPERATION",
+                "position": 3,
+                "type": "VARCHAR2(10 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "OLD_VALUES",
+                "position": 4,
+                "nullable": true,
+                "type": "CLOB",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "NEW_VALUES",
+                "position": 5,
+                "nullable": true,
+                "type": "CLOB",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "TIMESTAMP",
+                "position": 6,
+                "default": "CURRENT_TIMESTAMP",
+                "nullable": true,
+                "type": "TIMESTAMP(6)"
+              },
+              {
+                "name": "USER_NAME",
+                "position": 7,
+                "default": "USER",
+                "nullable": true,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008926",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  }
+}

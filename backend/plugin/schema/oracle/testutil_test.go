@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -102,4 +103,147 @@ func executeStatements(ctx context.Context, driver db.Driver, statements string)
 	}
 
 	return nil
+}
+func normalizeMetadataForComparison(metadata *storepb.DatabaseSchemaMetadata) {
+	// Clear database name as it might differ
+	metadata.Name = ""
+
+	// Normalize schemas
+	for _, schema := range metadata.Schemas {
+		// Normalize tables
+		for _, table := range schema.Tables {
+			table.DataSize = 0
+			table.IndexSize = 0
+			table.RowCount = 0
+
+			// Filter out system-generated indexes that reference virtual columns
+			var filteredIndexes []*storepb.IndexMetadata
+			for _, idx := range table.Indexes {
+				// Skip indexes that reference system-generated virtual columns
+				hasVirtualColumn := false
+				for _, expr := range idx.Expressions {
+					if strings.HasPrefix(expr, "SYS_NC") {
+						hasVirtualColumn = true
+						break
+					}
+				}
+				if !hasVirtualColumn {
+					filteredIndexes = append(filteredIndexes, idx)
+				}
+			}
+			table.Indexes = filteredIndexes
+
+			// Sort columns by name for consistent comparison
+			sortColumnsByName(table.Columns)
+
+			// Sort indexes by name
+			sortIndexesByName(table.Indexes)
+
+			// Sort foreign keys by name
+			sortForeignKeysByName(table.ForeignKeys)
+
+			// Sort check constraints by name
+			sortCheckConstraintsByName(table.CheckConstraints)
+		}
+
+		// Filter out system-generated sequences
+		var filteredSequences []*storepb.SequenceMetadata
+		for _, seq := range schema.Sequences {
+			if !strings.HasPrefix(seq.Name, "ISEQ$$_") {
+				filteredSequences = append(filteredSequences, seq)
+			}
+		}
+		schema.Sequences = filteredSequences
+
+		// Sort all collections for consistent comparison
+		sortTablesByName(schema.Tables)
+		sortViewsByName(schema.Views)
+		sortMaterializedViewsByName(schema.MaterializedViews)
+		sortFunctionsByName(schema.Functions)
+		sortSequencesByName(schema.Sequences)
+	}
+
+	// Sort schemas by name
+	sortSchemasByName(metadata.Schemas)
+
+	// Sort extensions by name
+	sortExtensionsByName(metadata.Extensions)
+}
+
+// Sorting helper functions
+func sortSchemasByName(schemas []*storepb.SchemaMetadata) {
+	slices.SortFunc(schemas, func(a, b *storepb.SchemaMetadata) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+}
+
+func sortTablesByName(tables []*storepb.TableMetadata) {
+	slices.SortFunc(tables, func(a, b *storepb.TableMetadata) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+}
+
+func sortColumnsByName(columns []*storepb.ColumnMetadata) {
+	slices.SortFunc(columns, func(a, b *storepb.ColumnMetadata) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+}
+
+func sortIndexesByName(indexes []*storepb.IndexMetadata) {
+	slices.SortFunc(indexes, func(a, b *storepb.IndexMetadata) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+}
+
+func sortForeignKeysByName(fks []*storepb.ForeignKeyMetadata) {
+	slices.SortFunc(fks, func(a, b *storepb.ForeignKeyMetadata) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+}
+
+func sortCheckConstraintsByName(checks []*storepb.CheckConstraintMetadata) {
+	slices.SortFunc(checks, func(a, b *storepb.CheckConstraintMetadata) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+}
+
+// normalizeColumnPositions sets all column positions to 0 to ignore position differences during comparison
+func normalizeColumnPositions(metadata *storepb.DatabaseSchemaMetadata) {
+	for _, schema := range metadata.Schemas {
+		for _, table := range schema.Tables {
+			for _, column := range table.Columns {
+				column.Position = 0
+			}
+		}
+	}
+}
+
+func sortViewsByName(views []*storepb.ViewMetadata) {
+	slices.SortFunc(views, func(a, b *storepb.ViewMetadata) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+}
+
+func sortMaterializedViewsByName(mvs []*storepb.MaterializedViewMetadata) {
+	slices.SortFunc(mvs, func(a, b *storepb.MaterializedViewMetadata) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+}
+
+func sortFunctionsByName(functions []*storepb.FunctionMetadata) {
+	slices.SortFunc(functions, func(a, b *storepb.FunctionMetadata) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+}
+
+func sortSequencesByName(sequences []*storepb.SequenceMetadata) {
+	slices.SortFunc(sequences, func(a, b *storepb.SequenceMetadata) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+}
+
+func sortExtensionsByName(extensions []*storepb.ExtensionMetadata) {
+	slices.SortFunc(extensions, func(a, b *storepb.ExtensionMetadata) int {
+		return strings.Compare(a.Name, b.Name)
+	})
 }

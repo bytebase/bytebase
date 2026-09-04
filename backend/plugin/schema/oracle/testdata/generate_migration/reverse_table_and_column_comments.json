@@ -1,0 +1,375 @@
+{
+  "schemaA": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "CUSTOMERS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_73532\".nextval",
+                "type": "NUMBER",
+                "comment": "Primary key for customer records"
+              },
+              {
+                "name": "NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP",
+                "comment": "Full name of the customer"
+              },
+              {
+                "name": "EMAIL",
+                "position": 3,
+                "nullable": true,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP",
+                "comment": "Customer email address (unique)"
+              },
+              {
+                "name": "PHONE",
+                "position": 4,
+                "nullable": true,
+                "type": "VARCHAR2(20 BYTE)",
+                "collation": "USING_NLS_COMP",
+                "comment": "Contact phone number"
+              },
+              {
+                "name": "ADDRESS",
+                "position": 5,
+                "nullable": true,
+                "type": "CLOB",
+                "collation": "USING_NLS_COMP",
+                "comment": "Full mailing address with multiple lines"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008895",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              },
+              {
+                "name": "IDX_CUSTOMERS_EMAIL",
+                "expressions": [
+                  "\"EMAIL\""
+                ],
+                "descending": [
+                  false
+                ],
+                "type": "NORMAL",
+                "unique": true,
+                "visible": true
+              }
+            ],
+            "comment": "Customer information and contact details"
+          },
+          {
+            "name": "ORDERS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_73541\".nextval",
+                "type": "NUMBER",
+                "comment": "Unique order identifier"
+              },
+              {
+                "name": "CUSTOMER_ID",
+                "position": 2,
+                "type": "NUMBER",
+                "comment": "Reference to customer who placed the order"
+              },
+              {
+                "name": "PRODUCT_ID",
+                "position": 3,
+                "type": "NUMBER",
+                "comment": "Reference to ordered product"
+              },
+              {
+                "name": "ORDER_DATE",
+                "position": 4,
+                "default": "SYSDATE",
+                "nullable": true,
+                "type": "DATE",
+                "comment": "Date when the order was placed"
+              },
+              {
+                "name": "QUANTITY",
+                "position": 5,
+                "type": "NUMBER",
+                "comment": "Number of items ordered"
+              },
+              {
+                "name": "TOTAL_AMOUNT",
+                "position": 6,
+                "nullable": true,
+                "type": "NUMBER(12,2)",
+                "comment": "Total order amount including taxes"
+              },
+              {
+                "name": "STATUS",
+                "position": 7,
+                "default": "'PENDING'",
+                "nullable": true,
+                "type": "VARCHAR2(20 BYTE)",
+                "collation": "USING_NLS_COMP",
+                "comment": "Current order status (PENDING, SHIPPED, DELIVERED, CANCELLED)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008901",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ],
+            "comment": "Customer orders linking products and customers",
+            "foreignKeys": [
+              {
+                "name": "FK_ORDER_CUSTOMER",
+                "columns": [
+                  "CUSTOMER_ID"
+                ],
+                "referencedTable": "CUSTOMERS",
+                "referencedColumns": [
+                  "ID"
+                ]
+              },
+              {
+                "name": "FK_ORDER_PRODUCT",
+                "columns": [
+                  "PRODUCT_ID"
+                ],
+                "referencedTable": "PRODUCTS",
+                "referencedColumns": [
+                  "ID"
+                ]
+              }
+            ]
+          },
+          {
+            "name": "PRODUCTS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_73518\".nextval",
+                "type": "NUMBER",
+                "comment": "Unique product identifier (auto-generated)"
+              },
+              {
+                "name": "NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP",
+                "comment": "Product name - must be unique and descriptive"
+              },
+              {
+                "name": "PRICE",
+                "position": 3,
+                "type": "NUMBER(10,2)",
+                "comment": "Product price in USD with 2 decimal places"
+              },
+              {
+                "name": "DESCRIPTION",
+                "position": 4,
+                "nullable": true,
+                "type": "CLOB",
+                "collation": "USING_NLS_COMP",
+                "comment": "Detailed product description with HTML formatting support"
+              },
+              {
+                "name": "CATEGORY",
+                "position": 5,
+                "nullable": true,
+                "type": "VARCHAR2(50 BYTE)",
+                "collation": "USING_NLS_COMP",
+                "comment": "Product category for filtering and organization"
+              },
+              {
+                "name": "CREATED_AT",
+                "position": 6,
+                "default": "CURRENT_TIMESTAMP",
+                "nullable": true,
+                "type": "TIMESTAMP(6)",
+                "comment": "Timestamp when the product was added to catalog"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008885",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              },
+              {
+                "name": "IDX_PRODUCTS_CATEGORY",
+                "expressions": [
+                  "\"CATEGORY\""
+                ],
+                "descending": [
+                  false
+                ],
+                "type": "NORMAL",
+                "visible": true
+              }
+            ],
+            "comment": "Product catalog table containing all product information"
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  },
+  "schemaB": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "CUSTOMERS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_73532\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "EMAIL",
+                "position": 3,
+                "nullable": true,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "PHONE",
+                "position": 4,
+                "nullable": true,
+                "type": "VARCHAR2(20 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "ADDRESS",
+                "position": 5,
+                "nullable": true,
+                "type": "CLOB",
+                "collation": "USING_NLS_COMP"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008895",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              },
+              {
+                "name": "IDX_CUSTOMERS_EMAIL",
+                "expressions": [
+                  "\"EMAIL\""
+                ],
+                "descending": [
+                  false
+                ],
+                "type": "NORMAL",
+                "unique": true,
+                "visible": true
+              }
+            ]
+          },
+          {
+            "name": "PRODUCTS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_73518\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "PRICE",
+                "position": 3,
+                "type": "NUMBER(10,2)"
+              },
+              {
+                "name": "DESCRIPTION",
+                "position": 4,
+                "nullable": true,
+                "type": "CLOB",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "CATEGORY",
+                "position": 5,
+                "nullable": true,
+                "type": "VARCHAR2(50 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "CREATED_AT",
+                "position": 6,
+                "default": "CURRENT_TIMESTAMP",
+                "nullable": true,
+                "type": "TIMESTAMP(6)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008885",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              },
+              {
+                "name": "IDX_PRODUCTS_CATEGORY",
+                "expressions": [
+                  "\"CATEGORY\""
+                ],
+                "descending": [
+                  false
+                ],
+                "type": "NORMAL",
+                "visible": true
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  }
+}

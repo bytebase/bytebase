@@ -1,0 +1,160 @@
+{
+  "schemaA": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "SALES",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_73426\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "PRODUCT_NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "SALE_AMOUNT",
+                "position": 3,
+                "type": "NUMBER(10,2)"
+              },
+              {
+                "name": "SALE_DATE",
+                "position": 4,
+                "type": "DATE"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008793",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  },
+  "schemaB": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "SALES",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_73426\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "PRODUCT_NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "SALE_AMOUNT",
+                "position": 3,
+                "type": "NUMBER(10,2)"
+              },
+              {
+                "name": "SALE_DATE",
+                "position": 4,
+                "type": "DATE"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008793",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ]
+          }
+        ],
+        "views": [
+          {
+            "name": "MONTHLY_SALES",
+            "definition": "SELECT \n    EXTRACT(YEAR FROM SALE_DATE) AS YEAR_VAL,\n    EXTRACT(MONTH FROM SALE_DATE) AS MONTH_VAL,\n    SUM(SALE_AMOUNT) AS TOTAL_SALES\nFROM SALES\nGROUP BY EXTRACT(YEAR FROM SALE_DATE), EXTRACT(MONTH FROM SALE_DATE)",
+            "dependencyColumns": [
+              {
+                "schema": "TESTSCHEMA",
+                "table": "SALES",
+                "column": "*"
+              }
+            ],
+            "columns": [
+              {
+                "name": "YEAR_VAL",
+                "position": 1,
+                "nullable": true,
+                "type": "NUMBER"
+              },
+              {
+                "name": "MONTH_VAL",
+                "position": 2,
+                "nullable": true,
+                "type": "NUMBER"
+              },
+              {
+                "name": "TOTAL_SALES",
+                "position": 3,
+                "nullable": true,
+                "type": "NUMBER"
+              }
+            ]
+          }
+        ],
+        "functions": [
+          {
+            "name": "CALCULATE_DISCOUNT",
+            "definition": "FUNCTION CALCULATE_DISCOUNT(AMOUNT NUMBER)\nRETURN NUMBER\nIS\nBEGIN\n    RETURN AMOUNT * 0.1;\nEND;"
+          },
+          {
+            "name": "GET_MONTHLY_TOTAL",
+            "definition": "FUNCTION GET_MONTHLY_TOTAL(YEAR_PARAM NUMBER, MONTH_PARAM NUMBER)\nRETURN NUMBER\nIS\n    V_TOTAL NUMBER;\nBEGIN\n    SELECT NVL(SUM(SALE_AMOUNT), 0) INTO V_TOTAL\n    FROM SALES\n    WHERE EXTRACT(YEAR FROM SALE_DATE) = YEAR_PARAM\n    AND EXTRACT(MONTH FROM SALE_DATE) = MONTH_PARAM;\n    \n    RETURN V_TOTAL;\nEND;"
+          }
+        ],
+        "materializedViews": [
+          {
+            "name": "TOP_PRODUCTS",
+            "definition": "SELECT \n    PRODUCT_NAME,\n    COUNT(*) AS SALE_COUNT,\n    SUM(SALE_AMOUNT) AS TOTAL_REVENUE\nFROM SALES\nGROUP BY PRODUCT_NAME\n",
+            "comment": "snapshot table for snapshot TESTSCHEMA.TOP_PRODUCTS",
+            "dependencyColumns": [
+              {
+                "schema": "TESTSCHEMA",
+                "table": "SALES",
+                "column": "*"
+              },
+              {
+                "schema": "TESTSCHEMA",
+                "table": "TOP_PRODUCTS",
+                "column": "*"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  }
+}

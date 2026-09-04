@@ -1,0 +1,228 @@
+{
+  "schemaA": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "PRODUCTS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_73488\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "NAME",
+                "position": 2,
+                "type": "VARCHAR2(50 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "PRICE",
+                "position": 3,
+                "type": "NUMBER(8,2)"
+              },
+              {
+                "name": "DESCRIPTION",
+                "position": 4,
+                "nullable": true,
+                "type": "CLOB",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "CATEGORY",
+                "position": 5,
+                "nullable": true,
+                "type": "VARCHAR2(30 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "IS_ACTIVE",
+                "position": 6,
+                "default": "1",
+                "nullable": true,
+                "type": "NUMBER(1)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008857",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              },
+              {
+                "name": "IDX_PRODUCTS_CATEGORY",
+                "expressions": [
+                  "\"CATEGORY\""
+                ],
+                "descending": [
+                  false
+                ],
+                "type": "NORMAL",
+                "visible": true
+              },
+              {
+                "name": "IDX_PRODUCTS_PRICE",
+                "expressions": [
+                  "\"PRICE\""
+                ],
+                "descending": [
+                  false
+                ],
+                "type": "NORMAL",
+                "visible": true
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  },
+  "schemaB": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "PRODUCTS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_73488\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "PRICE",
+                "position": 3,
+                "type": "NUMBER(10,2)"
+              },
+              {
+                "name": "DESCRIPTION",
+                "position": 4,
+                "type": "CLOB",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "CATEGORY",
+                "position": 5,
+                "nullable": true,
+                "type": "VARCHAR2(30 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "IS_ACTIVE",
+                "position": 6,
+                "default": "1",
+                "nullable": true,
+                "type": "NUMBER(1)"
+              },
+              {
+                "name": "CREATED_AT",
+                "position": 7,
+                "default": "CURRENT_TIMESTAMP",
+                "nullable": true,
+                "type": "TIMESTAMP(6)"
+              },
+              {
+                "name": "STOCK_QUANTITY",
+                "position": 8,
+                "default": "0",
+                "nullable": true,
+                "type": "NUMBER"
+              },
+              {
+                "name": "WEIGHT",
+                "position": 9,
+                "nullable": true,
+                "type": "NUMBER(5,2)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008857",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              },
+              {
+                "name": "IDX_PRODUCTS_CATEGORY",
+                "expressions": [
+                  "\"CATEGORY\""
+                ],
+                "descending": [
+                  false
+                ],
+                "type": "NORMAL",
+                "visible": true
+              },
+              {
+                "name": "IDX_PRODUCTS_CREATED_AT",
+                "expressions": [
+                  "\"CREATED_AT\""
+                ],
+                "descending": [
+                  false
+                ],
+                "type": "NORMAL",
+                "visible": true
+              },
+              {
+                "name": "IDX_PRODUCTS_NAME_CATEGORY",
+                "expressions": [
+                  "\"NAME\"",
+                  "\"CATEGORY\""
+                ],
+                "descending": [
+                  false,
+                  false
+                ],
+                "type": "NORMAL",
+                "unique": true,
+                "visible": true
+              },
+              {
+                "name": "IDX_PRODUCTS_PRICE",
+                "expressions": [
+                  "\"PRICE\""
+                ],
+                "descending": [
+                  false
+                ],
+                "type": "NORMAL",
+                "visible": true
+              }
+            ],
+            "checkConstraints": [
+              {
+                "name": "CHECK_PRICE_POSITIVE",
+                "expression": "PRICE \u003e 0"
+              },
+              {
+                "name": "CHECK_STOCK_NON_NEGATIVE",
+                "expression": "STOCK_QUANTITY \u003e= 0"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  }
+}

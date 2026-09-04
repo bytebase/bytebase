@@ -1,0 +1,250 @@
+{
+  "schemaA": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "INVENTORY",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_73467\".nextval",
+                "type": "NUMBER",
+                "comment": "Primary key for inventory records"
+              },
+              {
+                "name": "PRODUCT_CODE",
+                "position": 2,
+                "type": "VARCHAR2(50 BYTE)",
+                "collation": "USING_NLS_COMP",
+                "comment": "Product identification code"
+              },
+              {
+                "name": "STOCK_LEVEL",
+                "position": 3,
+                "type": "NUMBER",
+                "comment": "Current stock quantity"
+              },
+              {
+                "name": "MIN_STOCK",
+                "position": 4,
+                "default": "10",
+                "nullable": true,
+                "type": "NUMBER",
+                "comment": "Minimum stock threshold"
+              },
+              {
+                "name": "MAX_STOCK",
+                "position": 5,
+                "default": "1000",
+                "nullable": true,
+                "type": "NUMBER",
+                "comment": "Maximum stock capacity"
+              },
+              {
+                "name": "WAREHOUSE_ID",
+                "position": 6,
+                "nullable": true,
+                "type": "NUMBER",
+                "comment": "Warehouse location identifier"
+              },
+              {
+                "name": "LAST_UPDATED",
+                "position": 7,
+                "default": "CURRENT_TIMESTAMP",
+                "nullable": true,
+                "type": "TIMESTAMP(6)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008829",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ],
+            "comment": "Initial inventory tracking table"
+          },
+          {
+            "name": "SUPPLIERS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_73475\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP",
+                "comment": "Supplier company name"
+              },
+              {
+                "name": "CONTACT_EMAIL",
+                "position": 3,
+                "nullable": true,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP",
+                "comment": "Primary contact email"
+              },
+              {
+                "name": "RATING",
+                "position": 4,
+                "nullable": true,
+                "type": "NUMBER(2,1)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008834",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ],
+            "comment": "Supplier information table"
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  },
+  "schemaB": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "INVENTORY",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_73467\".nextval",
+                "type": "NUMBER",
+                "comment": "Primary key for inventory records"
+              },
+              {
+                "name": "PRODUCT_CODE",
+                "position": 2,
+                "type": "VARCHAR2(50 BYTE)",
+                "collation": "USING_NLS_COMP",
+                "comment": "Updated: Standardized product SKU following new naming convention"
+              },
+              {
+                "name": "STOCK_LEVEL",
+                "position": 3,
+                "type": "NUMBER",
+                "comment": "Updated: Real-time stock quantity with automated updates"
+              },
+              {
+                "name": "MIN_STOCK",
+                "position": 4,
+                "default": "10",
+                "nullable": true,
+                "type": "NUMBER",
+                "comment": "Updated: Dynamic minimum threshold based on sales velocity"
+              },
+              {
+                "name": "MAX_STOCK",
+                "position": 5,
+                "default": "1000",
+                "nullable": true,
+                "type": "NUMBER"
+              },
+              {
+                "name": "WAREHOUSE_ID",
+                "position": 6,
+                "nullable": true,
+                "type": "NUMBER"
+              },
+              {
+                "name": "LAST_UPDATED",
+                "position": 7,
+                "default": "CURRENT_TIMESTAMP",
+                "nullable": true,
+                "type": "TIMESTAMP(6)",
+                "comment": "Timestamp of last inventory update or modification"
+              },
+              {
+                "name": "REORDER_POINT",
+                "position": 8,
+                "default": "0",
+                "nullable": true,
+                "type": "NUMBER",
+                "comment": "Calculated reorder point based on lead time and demand"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008829",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ],
+            "comment": "Updated inventory management system with enhanced tracking capabilities"
+          },
+          {
+            "name": "SUPPLIERS",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_73475\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "NAME",
+                "position": 2,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP",
+                "comment": "Supplier company name"
+              },
+              {
+                "name": "CONTACT_EMAIL",
+                "position": 3,
+                "nullable": true,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "RATING",
+                "position": 4,
+                "nullable": true,
+                "type": "NUMBER(2,1)",
+                "comment": "Supplier performance rating (1.0 to 5.0 scale)"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008834",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  }
+}

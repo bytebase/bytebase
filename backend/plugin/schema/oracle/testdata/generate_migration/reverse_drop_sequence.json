@@ -1,0 +1,52 @@
+{
+  "schemaA": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {}
+    ],
+    "serviceName": "FREEPDB1"
+  },
+  "schemaB": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "SIMPLE_LOG",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TRANSACTION_SEQ\".NEXTVAL",
+                "type": "NUMBER"
+              },
+              {
+                "name": "MESSAGE",
+                "position": 2,
+                "type": "CLOB",
+                "collation": "USING_NLS_COMP"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008785",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ]
+          }
+        ],
+        "sequences": [
+          {
+            "name": "TRANSACTION_SEQ"
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  }
+}

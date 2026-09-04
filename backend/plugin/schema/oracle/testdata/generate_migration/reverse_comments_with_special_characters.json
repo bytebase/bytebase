@@ -1,0 +1,331 @@
+{
+  "schemaA": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "COMPLEX_TYPES",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "type": "NUMBER"
+              },
+              {
+                "name": "XML_DATA",
+                "position": 2,
+                "nullable": true,
+                "type": "XMLTYPE",
+                "comment": "XMLType column for structured XML storage\nExample: \u003c?xml version=\"1.0\" encoding=\"UTF-8\"?\u003e\n\u003croot\u003e\u003citem id=\"1\" name=\"test\"\u003eContent\u003c/item\u003e\u003c/root\u003e"
+              },
+              {
+                "name": "TIMESTAMP_TZ",
+                "position": 3,
+                "default": "SYSTIMESTAMP",
+                "nullable": true,
+                "type": "TIMESTAMP(6) WITH TIME ZONE",
+                "comment": "Timestamp with timezone: YYYY-MM-DD HH24:MI:SS.FF TZR\nDefault: SYSTIMESTAMP (system timestamp with session timezone)"
+              },
+              {
+                "name": "INTERVAL_DS",
+                "position": 4,
+                "nullable": true,
+                "type": "INTERVAL DAY(2) TO SECOND(6)",
+                "comment": "Interval Day to Second: +/-DD HH:MI:SS.FFFFFF\nRange: +/-999999999 days, precision up to nanoseconds"
+              },
+              {
+                "name": "RAW_DATA",
+                "position": 5,
+                "nullable": true,
+                "type": "RAW(100)"
+              },
+              {
+                "name": "LONG_RAW_DATA",
+                "position": 6,
+                "nullable": true,
+                "type": "LONG RAW"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008744",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ],
+            "comment": "Advanced data types testing table\nSupports: XMLType, Timestamps with timezone, Intervals, RAW data\nPerformance: Optimized for OLTP workloads @ 10K+ TPS\nSecurity: Row-level security enabled, audit trails maintained"
+          },
+          {
+            "name": "MULTILANG_CONTENT",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_73361\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "TITLE_EN",
+                "position": 2,
+                "nullable": true,
+                "type": "VARCHAR2(200 BYTE)",
+                "collation": "USING_NLS_COMP",
+                "comment": "English title field"
+              },
+              {
+                "name": "TITLE_ES",
+                "position": 3,
+                "nullable": true,
+                "type": "VARCHAR2(200 BYTE)",
+                "collation": "USING_NLS_COMP",
+                "comment": "Título en español"
+              },
+              {
+                "name": "TITLE_ZH",
+                "position": 4,
+                "nullable": true,
+                "type": "NVARCHAR2(400)",
+                "collation": "USING_NLS_COMP",
+                "comment": "中文标题字段 - 支持简体和繁体中文"
+              },
+              {
+                "name": "CONTENT_TEXT",
+                "position": 5,
+                "nullable": true,
+                "type": "CLOB",
+                "collation": "USING_NLS_COMP",
+                "comment": "Content field supporting:\n1. HTML tags: \u003cb\u003ebold\u003c/b\u003e, \u003ci\u003eitalic\u003c/i\u003e, \u003ca href=\"http://example.com\"\u003elinks\u003c/a\u003e\n2. Markdown: **bold**, *italic*, [link](url), backtick-code-backtick\n3. Special symbols: © ® ™ § ¶ † ‡ • … ‰ ′ ″\n4. Emojis: 😀 😃 😄 😁 🚀 ⭐ 🎉 💯\n5. Mathematical: ∀x∈ℝ: x² ≥ 0, ∑(i=1 to n) i = n(n+1)/2"
+              },
+              {
+                "name": "TAGS",
+                "position": 6,
+                "nullable": true,
+                "type": "VARCHAR2(1000 BYTE)",
+                "collation": "USING_NLS_COMP",
+                "comment": "XML tags: \u003ctag type=\"category\" value=\"news\"/\u003e\u003ctag type=\"priority\" value=\"high\"/\u003eEnd of XML"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008732",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ],
+            "comment": "Multilingual content: English, Español, 中文, العربية, Русский, 日本語"
+          },
+          {
+            "name": "SPECIAL_DATA",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_73348\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "DATA_VALUE",
+                "position": 2,
+                "nullable": true,
+                "type": "VARCHAR2(500 BYTE)",
+                "collation": "USING_NLS_COMP",
+                "comment": "Data value field - supports NULL, empty strings, and 'quoted' content"
+              },
+              {
+                "name": "METADATA_JSON",
+                "position": 3,
+                "nullable": true,
+                "type": "CLOB",
+                "collation": "USING_NLS_COMP",
+                "comment": "JSON metadata: {\"key\": \"value\", \"array\": [1,2,3]}"
+              },
+              {
+                "name": "UNICODE_TEXT",
+                "position": 4,
+                "nullable": true,
+                "type": "NVARCHAR2(400)",
+                "collation": "USING_NLS_COMP",
+                "comment": "Unicode text support:\nLine 1: Basic ASCII text\nLine 2: Special chars !@#$%^\u0026*()_+-={}[]|;:,.\u003c\u003e?\nLine 3: Math symbols ≤ ≥ ± × ÷ ∑ ∏ ∆ π\nLine 4: Currencies $ € £ ¥ ₹"
+              },
+              {
+                "name": "BINARY_DATA",
+                "position": 5,
+                "nullable": true,
+                "type": "BLOB",
+                "comment": "Binary data storage\\nSupports: images, documents, archives\\tTab-separated info\\r\\nWindows line endings"
+              },
+              {
+                "name": "CATEGORY",
+                "position": 6,
+                "nullable": true,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP",
+                "comment": "Category field: use % for wildcard searches, _ for single char matching"
+              },
+              {
+                "name": "STATUS",
+                "position": 7,
+                "nullable": true,
+                "type": "VARCHAR2(50 BYTE)",
+                "collation": "USING_NLS_COMP",
+                "comment": "Status field - values: 'ACTIVE', 'INACTIVE', 'PENDING'; DROP TABLE users; --"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008723",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ],
+            "comment": "Table containing \"special\" data with various formats \u0026 types"
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  },
+  "schemaB": {
+    "name": "TESTSCHEMA",
+    "schemas": [
+      {
+        "tables": [
+          {
+            "name": "MULTILANG_CONTENT",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_73361\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "TITLE_EN",
+                "position": 2,
+                "nullable": true,
+                "type": "VARCHAR2(200 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "TITLE_ES",
+                "position": 3,
+                "nullable": true,
+                "type": "VARCHAR2(200 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "TITLE_ZH",
+                "position": 4,
+                "nullable": true,
+                "type": "NVARCHAR2(400)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "CONTENT_TEXT",
+                "position": 5,
+                "nullable": true,
+                "type": "CLOB",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "TAGS",
+                "position": 6,
+                "nullable": true,
+                "type": "VARCHAR2(1000 BYTE)",
+                "collation": "USING_NLS_COMP"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008732",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ]
+          },
+          {
+            "name": "SPECIAL_DATA",
+            "columns": [
+              {
+                "name": "ID",
+                "position": 1,
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_73348\".nextval",
+                "type": "NUMBER"
+              },
+              {
+                "name": "DATA_VALUE",
+                "position": 2,
+                "nullable": true,
+                "type": "VARCHAR2(500 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "METADATA_JSON",
+                "position": 3,
+                "nullable": true,
+                "type": "CLOB",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "UNICODE_TEXT",
+                "position": 4,
+                "nullable": true,
+                "type": "NVARCHAR2(400)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "BINARY_DATA",
+                "position": 5,
+                "nullable": true,
+                "type": "BLOB"
+              },
+              {
+                "name": "CATEGORY",
+                "position": 6,
+                "nullable": true,
+                "type": "VARCHAR2(100 BYTE)",
+                "collation": "USING_NLS_COMP"
+              },
+              {
+                "name": "STATUS",
+                "position": 7,
+                "nullable": true,
+                "type": "VARCHAR2(50 BYTE)",
+                "collation": "USING_NLS_COMP"
+              }
+            ],
+            "indexes": [
+              {
+                "name": "SYS_C008723",
+                "expressions": [
+                  "ID"
+                ],
+                "unique": true,
+                "primary": true,
+                "isConstraint": true
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "serviceName": "FREEPDB1"
+  }
+}
