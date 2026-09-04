@@ -139,6 +139,7 @@ export type ListServiceAccountsParams = {
   pageToken?: string;
   showDeleted: boolean;
   filter?: AccountFilter;
+  skipCache?: boolean;
 };
 
 export type ListWorkloadIdentitiesParams = {
@@ -147,6 +148,7 @@ export type ListWorkloadIdentitiesParams = {
   pageToken?: string;
   showDeleted: boolean;
   filter?: AccountFilter;
+  skipCache?: boolean;
 };
 
 export type AccessGrantFilter = {
@@ -798,7 +800,7 @@ export type IdentityProviderSlice = {
     Promise<IdentityProvider | undefined>
   >;
   identityProviderList: () => IdentityProvider[];
-  listIdentityProviders: (parent?: string) => Promise<IdentityProvider[]>;
+  listIdentityProviders: (parent: string) => Promise<IdentityProvider[]>;
   fetchIdentityProvider: (
     name: string,
     silent?: boolean

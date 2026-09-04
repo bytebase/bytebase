@@ -21,8 +21,8 @@ import (
 func TestLatestVersion(t *testing.T) {
 	files, err := getSortedVersionedFiles()
 	require.NoError(t, err)
-	require.Equal(t, semver.MustParse("3.23.2"), *files[len(files)-1].version)
-	require.Equal(t, "migration/3.23/0002##plan_last_editor_approval.sql", files[len(files)-1].path)
+	require.Equal(t, semver.MustParse("3.23.3"), *files[len(files)-1].version)
+	require.Equal(t, "migration/3.23/0003##identity_provider_list_permission.sql", files[len(files)-1].path)
 }
 
 func TestMigration3_23_1_IssueCommentThreads(t *testing.T) {
@@ -61,32 +61,14 @@ func TestMigration3_23_1_IssueCommentThreads(t *testing.T) {
 	_, err = db.ExecContext(ctx, string(migration))
 	require.NoError(t, err)
 
-	wantOpen := map[string]bool{
-		"comment-only":    true,
-		"empty-comment":   true,
-		"empty-object":    true,
-		"hybrid":          false,
-		"event-only":      false,
-		"legacy-event":    false,
-		"numeric-comment": false,
-		"null-comment":    false,
-		"scalar":          false,
-	}
-	rows, err := db.QueryContext(ctx, `SELECT resource_id, thread_state = 'OPEN' FROM issue_comment`)
-	require.NoError(t, err)
-	defer rows.Close()
-	seen := 0
-	for rows.Next() {
-		var id string
-		var open *bool
-		require.NoError(t, rows.Scan(&id, &open))
-		want, ok := wantOpen[id]
-		require.True(t, ok, "unexpected row %s", id)
-		require.Equal(t, want, open != nil && *open, "thread classification for %s", id)
-		seen++
-	}
-	require.NoError(t, rows.Err())
-	require.Equal(t, len(wantOpen), seen)
+	// Legacy comments have no statement anchor, so none becomes a thread root.
+	var rowCount, stateless int
+	require.NoError(t, db.QueryRowContext(ctx, `
+		SELECT count(*), count(*) FILTER (WHERE parent_id IS NULL AND thread_state IS NULL)
+		FROM issue_comment
+	`).Scan(&rowCount, &stateless))
+	require.Equal(t, 9, rowCount)
+	require.Equal(t, rowCount, stateless, "the migration must not classify any legacy row as a thread root")
 
 	var indexes int
 	require.NoError(t, db.QueryRowContext(ctx, `

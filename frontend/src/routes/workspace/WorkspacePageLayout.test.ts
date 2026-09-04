@@ -145,6 +145,22 @@ describe("workspace list page layout", () => {
     }
   });
 
+  test("limits inactive account toggles to their checkbox and label", () => {
+    for (const file of [
+      "UsersPage.tsx",
+      "ServiceAccountsPage.tsx",
+      "WorkloadIdentitiesPage.tsx",
+    ] as const) {
+      const source = readSettingsPage(file);
+
+      expect(source, file).not.toContain(
+        '<label className="flex items-center gap-x-2 text-sm cursor-pointer">'
+      );
+      expect(source, file).toContain('htmlFor="show-inactive-');
+      expect(source, file).toContain('id="show-inactive-');
+    }
+  });
+
   test("uses shared workspace info surfaces for persistent page descriptions", () => {
     for (const file of workspaceInfoPages) {
       const source = readSettingsPage(file);

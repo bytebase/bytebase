@@ -482,13 +482,16 @@ export function UsersPage() {
 
         {/* Inactive users toggle (only shown with list permission) */}
         {hasUserListPermission && (
-          <label className="flex items-center gap-x-2 text-sm cursor-pointer">
+          <div className="flex items-center gap-x-2 text-sm">
             <Checkbox
+              id="show-inactive-users"
               checked={showInactiveUsers}
               onCheckedChange={(checked) => setShowInactiveUsers(checked)}
             />
-            {t("settings.members.show-inactive")}
-          </label>
+            <label className="cursor-pointer" htmlFor="show-inactive-users">
+              {t("settings.members.show-inactive")}
+            </label>
+          </div>
         )}
 
         {showInactiveUsers && (

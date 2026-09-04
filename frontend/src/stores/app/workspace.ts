@@ -687,7 +687,17 @@ export const createWorkspaceSlice: AppSliceCreator<WorkspaceSlice> = (
 
     activeVcsUserCount: () => get().serverInfo?.activeVcsUserCount ?? 0,
 
-    enableOnboarding: () => get().userCountInIam() === 1,
+    enableOnboarding: () => {
+      const currentUserName = get().currentUser?.name;
+      return (
+        get().userCountInIam() === 1 &&
+        get().workspacePolicy !== undefined &&
+        !!currentUserName &&
+        get()
+          .getWorkspaceRolesByName(currentUserName)
+          .has(PresetRoleType.WORKSPACE_ADMIN)
+      );
+    },
 
     workspaceSetupGuideEnabled: (allowMultipleMembers = false) => {
       const currentUserName = get().currentUser?.name;

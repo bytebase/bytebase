@@ -61,9 +61,8 @@ type WorkspaceServiceClient interface {
 	// Permissions required: bb.workspaces.setIamPolicy
 	SetIamPolicy(ctx context.Context, in *SetIamPolicyRequest, opts ...grpc.CallOption) (*IamPolicy, error)
 	// Gets what MCP (Model Context Protocol) does in this workspace: the
-	// capability ceiling in force, what each ceiling serves, and the per-engine
-	// facts a read-only session depends on. The workspace is resolved from the
-	// authenticated session.
+	// capability ceiling in force, and whether masking narrows what a session
+	// reads under it. The workspace is resolved from the authenticated session.
 	//
 	// Served to MCP sessions. An agent asking what it may do here is the point:
 	// the response says nothing a session's own denials do not already say, one
@@ -209,9 +208,8 @@ type WorkspaceServiceServer interface {
 	// Permissions required: bb.workspaces.setIamPolicy
 	SetIamPolicy(context.Context, *SetIamPolicyRequest) (*IamPolicy, error)
 	// Gets what MCP (Model Context Protocol) does in this workspace: the
-	// capability ceiling in force, what each ceiling serves, and the per-engine
-	// facts a read-only session depends on. The workspace is resolved from the
-	// authenticated session.
+	// capability ceiling in force, and whether masking narrows what a session
+	// reads under it. The workspace is resolved from the authenticated session.
 	//
 	// Served to MCP sessions. An agent asking what it may do here is the point:
 	// the response says nothing a session's own denials do not already say, one

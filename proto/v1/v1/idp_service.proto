@@ -26,16 +26,23 @@ service IdentityProviderService {
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
-  // Lists all configured identity providers (public endpoint for login page).
-  // Permissions required: None
+  // Lists the identity providers configured for the caller's workspace.
+  // The login page reads AuthService.GetAuthenticationInfo instead,
+  // which publishes only the fields a browser needs to start an SSO redirect.
+  //
+  // Returns the same representation as GetIdentityProvider — secrets redacted,
+  // the rest of the configuration included — so granting
+  // bb.identityProviders.list conveys configuration read over the whole
+  // collection, not merely the names in it.
+  // Permissions required: bb.identityProviders.list
   rpc ListIdentityProviders(ListIdentityProvidersRequest) returns (ListIdentityProvidersResponse) {
     option (google.api.http) = {
       get: "/v1/idps"
       additional_bindings: {get: "/v1/{parent=workspaces/*}/idps"}
     };
-    option (google.api.method_signature) = "";
-    option (bytebase.v1.allow_without_credential) = true;
-    // The method requires no authentication thus no authorization.
+    option (google.api.method_signature) = "parent";
+    option (bytebase.v1.permission) = "bb.identityProviders.list";
+    option (bytebase.v1.auth_method) = IAM;
     option (bytebase.v1.mcp_method_class) = EXCLUDED;
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
@@ -107,10 +114,15 @@ message GetIdentityProviderRequest {
 }
 
 message ListIdentityProvidersRequest {
-  // The parent workspace whose identity providers should be listed.
+  // The parent workspace whose identity providers should be listed. It must be
+  // the workspace the caller's credential belongs to.
   // Format: workspaces/{workspace}
-  // When unset, the workspace is resolved from the request context.
-  string parent = 1 [(google.api.resource_reference) = {type: "bytebase.com/Workspace"}];
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "bytebase.com/Workspace"},
+    (buf.validate.field).required = true,
+    (buf.validate.field).string.pattern = "^workspaces/[^/]+$"
+  ];
 }
 
 message ListIdentityProvidersResponse {
@@ -227,7 +239,6 @@ enum IdentityProviderType {
   // LDAP directory service authentication.
   LDAP = 3;
 }
-
 message IdentityProviderConfig {
   oneof config {
     // OAuth2 protocol configuration.

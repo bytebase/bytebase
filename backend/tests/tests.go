@@ -330,7 +330,7 @@ func (ctl *controller) waitForHealthz(ctx context.Context) error {
 	for {
 		select {
 		case <-ticker.C:
-			_, err := ctl.authServiceClient.GetAuthenticationRestriction(ctx, &connect.Request[v1pb.GetAuthenticationRestrictionRequest]{})
+			_, err := ctl.authServiceClient.GetAuthenticationInfo(ctx, &connect.Request[v1pb.GetAuthenticationInfoRequest]{})
 			if err != nil && status.Code(err) == codes.Unavailable {
 				continue
 			}
@@ -347,6 +347,11 @@ func (ctl *controller) waitForHealthz(ctx context.Context) error {
 // Close closes long running resources.
 func (ctl *controller) Close(ctx context.Context) error {
 	var e error
+	// Drop the client's idle HTTP/2 connection before shutting the server down.
+	// Otherwise httpServer.Shutdown waits out the idle connection, ~1s per test.
+	if ctl.client != nil {
+		ctl.client.CloseIdleConnections()
+	}
 	if ctl.server != nil {
 		if err := ctl.server.Shutdown(ctx); err != nil {
 			e = multierr.Append(e, err)

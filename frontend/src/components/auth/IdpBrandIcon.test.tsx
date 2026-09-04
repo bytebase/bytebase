@@ -2,7 +2,7 @@ import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { describe, expect, test } from "vitest";
-import type { IdentityProvider } from "@/types/proto-es/v1/idp_service_pb";
+import type { LoginIdentityProvider } from "@/types/proto-es/v1/auth_service_pb";
 import { IdpBrandIcon } from "./IdpBrandIcon";
 
 (
@@ -18,22 +18,22 @@ const renderIntoContainer = (element: ReactElement) => {
   return container;
 };
 
-const oauth2Idp = (title: string, authUrl: string) =>
+const oauth2Idp = (title: string, endpoint: string) =>
   ({
     name: "idps/test",
     title,
-    config: { config: { case: "oauth2Config", value: { authUrl } } },
-  }) as IdentityProvider;
+    authorizationRequest: { endpoint },
+  }) as LoginIdentityProvider;
 
-const oidcIdp = (title: string, issuer: string) =>
+const oidcIdp = (title: string, endpoint: string) =>
   ({
     name: "idps/test",
     title,
-    config: { config: { case: "oidcConfig", value: { issuer } } },
-  }) as IdentityProvider;
+    authorizationRequest: { endpoint },
+  }) as LoginIdentityProvider;
 
 const configlessIdp = (title: string) =>
-  ({ name: "idps/test", title }) as IdentityProvider;
+  ({ name: "idps/test", title }) as LoginIdentityProvider;
 
 // The Google "G" carries its mandatory brand blue; GitHub is currentColor.
 const GOOGLE_BLUE = "#4285F4";

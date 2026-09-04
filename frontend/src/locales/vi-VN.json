@@ -156,6 +156,7 @@
       "failed-to-send-code": "Không gửi được mã xác minh. {{error}}",
       "forget-password": "Quên mật khẩu?",
       "invited-email": "Bạn đã được mời. Vui lòng đăng nhập bằng {{email}}",
+      "load-failed": "Không thể tải các tùy chọn đăng nhập. Vui lòng thử lại.",
       "new-user": "Mới sử dụng Bytebase?",
       "resend-code": "Gửi lại mã",
       "resend-in": "Gửi lại sau {{seconds}}s",
@@ -171,6 +172,11 @@
       "create-admin-account": "Tạo tài khoản quản trị",
       "existing-user": "Đã có tài khoản?",
       "title": "Đăng ký tài khoản của bạn"
+    },
+    "sso": {
+      "invalid-authorization-url": "URL ủy quyền không hợp lệ: phải là URL HTTP hoặc HTTPS hợp lệ.",
+      "no-authorization-endpoint": "Nhà cung cấp danh tính không công bố điểm cuối ủy quyền. Hãy kiểm tra cấu hình.",
+      "unsupported-provider-type": "Loại nhà cung cấp danh tính này không hỗ trợ chuyển hướng SSO."
     },
     "token-expired-description": "Mã thông báo đã hết hạn, vui lòng đăng nhập lại",
     "token-expired-title": "Mã thông báo đã hết hạn"
@@ -1572,7 +1578,6 @@
     },
     "recovery-code": "Mã khôi phục"
   },
-  "oauth": {},
   "oauth2": {
     "consent": {
       "description": "{{clientName}} đang yêu cầu truy cập vào tài khoản của bạn",
@@ -1601,29 +1606,22 @@
           "workflow": "Tạo vấn đề, kế hoạch và triển khai, và xuất kết quả truy vấn",
           "write": "Thay đổi dữ liệu và lược đồ trong phạm vi quyền của bạn"
         },
-        "see-contents": "Xem những gì chính sách của không gian làm việc này cho phép",
         "title": "Phiên này có thể",
         "undisclosed": {
           "line": {
             "nothing-approved": "Chưa có gì được phê duyệt và chưa có gì được kết nối"
           },
-          "outdated": {
-            "description": "Chính sách MCP của không gian làm việc này mới hơn trang bạn đang mở, nên không thể hiển thị ở đây những gì một phiên được phép làm.",
-            "line": "Hãy tải lại để lấy chính sách hiện tại trước khi phê duyệt bất kỳ điều gì",
-            "retry": "Tải lại",
-            "title": "Trang này cũ hơn chính sách MCP của không gian làm việc"
-          },
           "policy-label": "Chính sách không gian làm việc",
+          "undisclosable": {
+            "description": "Chính sách MCP của không gian làm việc này là một giá trị mà trang này không có cách diễn đạt. Nó hoặc mới hơn trang bạn đang mở, hoặc không phải là chính sách mà phiên bản Bytebase này phục vụ, trong trường hợp đó mọi kết nối MCP đều bị từ chối.",
+            "line": "Hãy tải lại để lấy phiên bản hiện tại. Nếu trang này xuất hiện lại, hãy nhờ quản trị viên không gian làm việc đặt một chính sách được hỗ trợ",
+            "title": "Trang này không thể hiển thị những gì chính sách MCP của không gian làm việc này cho phép"
+          },
           "unknown": {
             "description": "Bytebase hiện chưa đọc được chính sách truy cập MCP của không gian làm việc này.",
             "line": "Không thể hiển thị những gì phiên này sẽ được phép làm",
             "retry": "Kiểm tra lại",
             "title": "Không kiểm tra được chính sách MCP"
-          },
-          "unserved": {
-            "description": "Không gian làm việc này lưu một giá trị chính sách mà phiên bản Bytebase này không phục vụ. Mọi kết nối MCP đang bị từ chối.",
-            "line": "Không phiên AI nào kết nối được cho tới khi quản trị viên chọn một chính sách được hỗ trợ",
-            "title": "Chính sách MCP của không gian làm việc này không được phiên bản này phục vụ"
           }
         },
         "write-caution": "Phiên AI có quyền ghi sẽ tạo ra thay đổi thật. Chỉ phê duyệt trên máy bạn kiểm soát."
@@ -2115,7 +2113,6 @@
     "create-project": "Tạo dự án",
     "new-project": "Mới Dự án"
   },
-  "refresh-remind": {},
   "release": {
     "and-n-more-files": "và {{count}} tệp khác",
     "change-tip": "Thay đổi này được liên kết với một artifact phát hành.",
@@ -2614,38 +2611,6 @@
         "json-note": "Đây là định dạng mcpServers. Mỗi client có định dạng cấu hình khác nhau: ví dụ VS Code dùng servers trong mcp.json của nó, nên hãy dùng tab VS Code cho trường hợp đó.",
         "title": "Kết nối một client"
       },
-      "contents": {
-        "depth": {
-          "description": "Mức trần chỉ đọc được thực thi sâu tới đâu trên mỗi công cụ.",
-          "not-a-proof": "Không mức nào trong hai mức là một bằng chứng. Một câu lệnh được phân loại là đọc vẫn có thể gọi một hàm tắt lại thiết lập phiên.",
-          "statement": "Mọi câu lệnh đều được phân loại trước khi chạy. Trình điều khiển không mở phiên cơ sở dữ liệu ở chế độ chỉ đọc.",
-          "statement-and-session": "Mọi câu lệnh đều được phân loại, và trình điều khiển mở phiên cơ sở dữ liệu ở chế độ chỉ đọc.",
-          "title": "Mức độ chỉ đọc theo công cụ",
-          "unspecified": "Bản dựng này không báo cáo.",
-          "unsupported": "Không có bộ phân loại chỉ đọc, nên mọi câu lệnh đều bị từ chối, kể cả một câu SELECT đơn giản."
-        },
-        "masking": {
-          "column": "Che theo cột. Miễn trừ quyết định ai thấy giá trị thật, nên bỏ qua chúng sẽ thay đổi những gì một phiên đọc được.",
-          "description-off": "Không gian làm việc này vẫn áp dụng miễn trừ che dữ liệu của từng người dùng cho phiên MCP. Bỏ qua chúng chỉ ảnh hưởng tới các công cụ bên dưới có tra cứu miễn trừ.",
-          "description-on": "Không gian làm việc này bỏ qua miễn trừ che dữ liệu, nên một phiên đọc được gì tuỳ thuộc vào cách Bytebase che trên từng công cụ.",
-          "document": "Che theo tài liệu. Đường đi này không bao giờ tra cứu miễn trừ, nên bỏ qua chúng không thay đổi gì.",
-          "none": "Bytebase không che trên công cụ này. Bỏ qua miễn trừ không thay đổi gì.",
-          "title": "Che dữ liệu theo công cụ",
-          "unspecified": "Bản dựng này không báo cáo."
-        },
-        "methods": {
-          "count": "{{served}} trong {{total}} phương thức MCP có thể gọi. Có tên trong danh sách không phải là quyền: người dùng kết nối vẫn cần quyền của chính họ.",
-          "handler": "Không khai báo quyền IAM",
-          "none": "Chế độ này không phục vụ phương thức API nào.",
-          "write-legend": "{{count}} mục được làm nổi bật là phần chế độ này thêm so với Chỉ đọc."
-        },
-        "notes": {
-          "redshift": "Ngoài cơ sở dữ liệu datashare, trình điều khiển còn mở phiên ở chế độ chỉ đọc. Cơ sở dữ liệu datashare không chạy được giao dịch chỉ đọc, nên ở đó chỉ có phân loại câu lệnh.",
-          "title": "Nơi câu trả lời ở trên chỉ là mức sàn",
-          "unavailable": "Công cụ này có một lưu ý mà trang này chưa hiển thị được. Hãy tải lại để lấy phiên bản hiện tại."
-        },
-        "title": "{{mode}} — chế độ này phục vụ những gì"
-      },
       "description": "Kết nối trợ lý AI với Bytebase bằng Model Context Protocol.",
       "first-prompt": {
         "description": "Sau khi kết nối, hãy thử hỏi trợ lý AI của bạn:",
@@ -2666,7 +2631,6 @@
           "unavailable": "Không gian làm việc này chưa có giấy phép che dữ liệu, nên sẽ không có gì bị che dù thiết lập này ra sao."
         },
         "mode": {
-          "contents": "Xem {{mode}} phục vụ những gì",
           "disabled": {
             "best-for": "Phù hợp khi: giữ MCP tắt cho tới khi bạn sẵn sàng bật.",
             "description": "Không phiên MCP nào có thể kết nối tới không gian làm việc này.",
@@ -2803,10 +2767,12 @@
       "workload-identity-audience": "Audience",
       "workload-identity-branch": "Branch",
       "workload-identity-branch-hint": "Để trống cho tất cả branch",
+      "workload-identity-generic-oidc": "OIDC chung",
       "workload-identity-gitlab-url": "GitLab URL",
       "workload-identity-gitlab-url-hint": "URL phiên bản GitLab của bạn",
       "workload-identity-group": "Nhóm / Tên người dùng",
       "workload-identity-issuer": "Issuer URL",
+      "workload-identity-jwks-url": "URL JWKS",
       "workload-identity-owner": "Tổ chức / Tên người dùng",
       "workload-identity-platform": "Nền tảng",
       "workload-identity-project": "Dự án",

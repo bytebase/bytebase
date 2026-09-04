@@ -209,7 +209,12 @@ func normalizeFilter(filter string) (string, []string, error) {
 }
 
 func convertToEngine(engine storepb.Engine) v1pb.Engine {
+	// A missing arm reports as unspecified, which reads as "Bytebase does not
+	// know this engine". golangci checks only switches that ask for it
+	// (.golangci.yaml, explicit-exhaustive-switch).
+	//exhaustive:enforce
 	switch engine {
+	case storepb.Engine_ENGINE_UNSPECIFIED:
 	case storepb.Engine_CLICKHOUSE:
 		return v1pb.Engine_CLICKHOUSE
 	case storepb.Engine_MYSQL:

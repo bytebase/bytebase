@@ -211,12 +211,6 @@
       "count": 1
     },
     {
-      "path": "src/components/CreateWorkloadIdentitySheet.tsx",
-      "rule": "no-native-control",
-      "token": "select",
-      "count": 2
-    },
-    {
       "path": "src/components/CustomApproval/RulesSection.tsx",
       "rule": "no-native-control",
       "token": "button",

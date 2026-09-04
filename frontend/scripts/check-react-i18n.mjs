@@ -42,6 +42,10 @@ const DYNAMIC_PREFIXES = [
   // render, not as literal t("…") calls. See
   // frontend/src/routes/auth/OAuthCallbackPage.tsx.
   "auth.oauth-callback.",
+  // SSO redirect failures, thrown as SsoConfigError i18nKey string literals in
+  // utils/sso.ts and translated via t(error.i18nKey) by whichever page renders
+  // the notification (SigninPage, IdpTestConnection).
+  "auth.sso.",
   // Returned from getReviewBadge as labelKey string literals, not invoked
   // via t("…") in source. See frontend/src/routes/project/utils/reviewBadge.ts.
   "common.bypassed",
@@ -74,12 +78,11 @@ const DYNAMIC_PREFIXES = [
   "settings.mcp.policy.unserved.description",
   "settings.mcp.policy.unserved.title",
   // Built as `…undisclosed.${reason}.<suffix>` over a reason the consent page
-  // derives: title, description and line for all four, plus retry for the two
-  // that offer one. Listed per reason rather than as one subtree, which would
-  // also exempt the two sibling keys named literally.
-  "oauth2.consent.mcp.undisclosed.outdated.",
+  // derives: title, description and line for both, plus retry for the one that
+  // offers it. Listed per reason rather than as one subtree, which would also
+  // exempt the two sibling keys named literally.
+  "oauth2.consent.mcp.undisclosed.undisclosable.",
   "oauth2.consent.mcp.undisclosed.unknown.",
-  "oauth2.consent.mcp.undisclosed.unserved.",
   // Keys consumed by SHARED non-React `.ts` modules that translate via
   // `@/lib/i18n` (the same react-i18next instance — vue-i18n is gone), but
   // live OUTSIDE this checker's React-only scan, so they read as unused. They

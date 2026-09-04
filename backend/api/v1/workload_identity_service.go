@@ -14,6 +14,7 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
+	"github.com/bytebase/bytebase/backend/plugin/idp/wif"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -90,6 +91,9 @@ func (s *WorkloadIdentityService) CreateWorkloadIdentity(ctx context.Context, re
 	// Convert API workload identity config to store workload identity config
 	var storeConfig *storepb.WorkloadIdentityConfig
 	if wi.WorkloadIdentityConfig != nil {
+		if err := validateWorkloadIdentityConfig(wi.WorkloadIdentityConfig); err != nil {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid workload_identity_config"))
+		}
 		storeConfig = convertToStoreWorkloadIdentityConfig(wi.WorkloadIdentityConfig)
 	}
 
@@ -232,6 +236,9 @@ func (s *WorkloadIdentityService) UpdateWorkloadIdentity(ctx context.Context, re
 			patch.Name = &request.Msg.WorkloadIdentity.Title
 		case "workload_identity_config":
 			if request.Msg.WorkloadIdentity.WorkloadIdentityConfig != nil {
+				if err := validateWorkloadIdentityConfig(request.Msg.WorkloadIdentity.WorkloadIdentityConfig); err != nil {
+					return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid workload_identity_config"))
+				}
 				patch.Config = convertToStoreWorkloadIdentityConfig(request.Msg.WorkloadIdentity.WorkloadIdentityConfig)
 			} else {
 				patch.Config = &storepb.WorkloadIdentityConfig{}
@@ -308,6 +315,47 @@ func (s *WorkloadIdentityService) UndeleteWorkloadIdentity(ctx context.Context, 
 	return connect.NewResponse(convertToWorkloadIdentity(restoredWI)), nil
 }
 
+func validateWorkloadIdentityConfig(config *v1pb.WorkloadIdentityConfig) error {
+	if config == nil {
+		return nil
+	}
+
+	switch config.ProviderType {
+	case v1pb.WorkloadIdentityConfig_GITHUB, v1pb.WorkloadIdentityConfig_GITLAB:
+		return nil
+	case v1pb.WorkloadIdentityConfig_OIDC:
+		issuerURL := strings.TrimSpace(config.IssuerUrl)
+		if issuerURL == "" {
+			return errors.New("issuer_url is required for OIDC")
+		}
+		if err := wif.ValidateIssuerURL(issuerURL); err != nil {
+			return err
+		}
+		jwksURL := strings.TrimSpace(config.JwksUrl)
+		if jwksURL != "" {
+			if err := wif.ValidateJWKSURL(jwksURL); err != nil {
+				return err
+			}
+		}
+		if len(config.AllowedAudiences) == 0 {
+			return errors.New("allowed_audiences is required for OIDC")
+		}
+		for _, audience := range config.AllowedAudiences {
+			if strings.TrimSpace(audience) == "" {
+				return errors.New("allowed_audiences must not contain an empty value")
+			}
+		}
+		if strings.TrimSpace(config.SubjectPattern) == "" {
+			return errors.New("subject_pattern is required for OIDC")
+		}
+		return nil
+	case v1pb.WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED:
+		return errors.New("provider_type is required")
+	default:
+		return errors.New("provider_type is invalid")
+	}
+}
+
 // convertToWorkloadIdentity converts a store.WorkloadIdentityMessage to a v1pb.WorkloadIdentity.
 func convertToWorkloadIdentity(wi *store.WorkloadIdentityMessage) *v1pb.WorkloadIdentity {
 	result := &v1pb.WorkloadIdentity{
@@ -330,11 +378,27 @@ func convertToStoreWorkloadIdentityConfig(config *v1pb.WorkloadIdentityConfig) *
 	if config == nil {
 		return nil
 	}
+
+	issuerURL := config.IssuerUrl
+	jwksURL := config.JwksUrl
+	allowedAudiences := config.AllowedAudiences
+	subjectPattern := config.SubjectPattern
+	if config.ProviderType == v1pb.WorkloadIdentityConfig_OIDC {
+		issuerURL = strings.TrimSpace(issuerURL)
+		jwksURL = strings.TrimSpace(jwksURL)
+		allowedAudiences = make([]string, len(config.AllowedAudiences))
+		for i, audience := range config.AllowedAudiences {
+			allowedAudiences[i] = strings.TrimSpace(audience)
+		}
+		subjectPattern = strings.TrimSpace(subjectPattern)
+	}
+
 	return &storepb.WorkloadIdentityConfig{
 		ProviderType:     storepb.WorkloadIdentityConfig_ProviderType(config.ProviderType),
-		IssuerUrl:        config.IssuerUrl,
-		AllowedAudiences: config.AllowedAudiences,
-		SubjectPattern:   config.SubjectPattern,
+		IssuerUrl:        issuerURL,
+		AllowedAudiences: allowedAudiences,
+		SubjectPattern:   subjectPattern,
+		JwksUrl:          jwksURL,
 	}
 }
 
@@ -348,5 +412,6 @@ func convertToAPIWorkloadIdentityConfig(config *storepb.WorkloadIdentityConfig) 
 		IssuerUrl:        config.IssuerUrl,
 		AllowedAudiences: config.AllowedAudiences,
 		SubjectPattern:   config.SubjectPattern,
+		JwksUrl:          config.JwksUrl,
 	}
 }

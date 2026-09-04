@@ -91,6 +91,33 @@
   
     - [AuditLogService](#bytebase-v1-AuditLogService)
   
+- [v1/idp_service.proto](#v1_idp_service-proto)
+    - [CreateIdentityProviderRequest](#bytebase-v1-CreateIdentityProviderRequest)
+    - [DeleteIdentityProviderRequest](#bytebase-v1-DeleteIdentityProviderRequest)
+    - [FieldMapping](#bytebase-v1-FieldMapping)
+    - [GetIdentityProviderRequest](#bytebase-v1-GetIdentityProviderRequest)
+    - [IdentityProvider](#bytebase-v1-IdentityProvider)
+    - [IdentityProviderConfig](#bytebase-v1-IdentityProviderConfig)
+    - [LDAPIdentityProviderConfig](#bytebase-v1-LDAPIdentityProviderConfig)
+    - [LDAPIdentityProviderTestRequestContext](#bytebase-v1-LDAPIdentityProviderTestRequestContext)
+    - [ListIdentityProvidersRequest](#bytebase-v1-ListIdentityProvidersRequest)
+    - [ListIdentityProvidersResponse](#bytebase-v1-ListIdentityProvidersResponse)
+    - [OAuth2IdentityProviderConfig](#bytebase-v1-OAuth2IdentityProviderConfig)
+    - [OAuth2IdentityProviderTestRequestContext](#bytebase-v1-OAuth2IdentityProviderTestRequestContext)
+    - [OIDCIdentityProviderConfig](#bytebase-v1-OIDCIdentityProviderConfig)
+    - [OIDCIdentityProviderTestRequestContext](#bytebase-v1-OIDCIdentityProviderTestRequestContext)
+    - [TestIdentityProviderRequest](#bytebase-v1-TestIdentityProviderRequest)
+    - [TestIdentityProviderResponse](#bytebase-v1-TestIdentityProviderResponse)
+    - [TestIdentityProviderResponse.ClaimsEntry](#bytebase-v1-TestIdentityProviderResponse-ClaimsEntry)
+    - [TestIdentityProviderResponse.UserInfoEntry](#bytebase-v1-TestIdentityProviderResponse-UserInfoEntry)
+    - [UpdateIdentityProviderRequest](#bytebase-v1-UpdateIdentityProviderRequest)
+  
+    - [IdentityProviderType](#bytebase-v1-IdentityProviderType)
+    - [LDAPIdentityProviderConfig.SecurityProtocol](#bytebase-v1-LDAPIdentityProviderConfig-SecurityProtocol)
+    - [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle)
+  
+    - [IdentityProviderService](#bytebase-v1-IdentityProviderService)
+  
 - [v1/rollout_service.proto](#v1_rollout_service-proto)
     - [BatchCancelTaskRunsRequest](#bytebase-v1-BatchCancelTaskRunsRequest)
     - [BatchCancelTaskRunsResponse](#bytebase-v1-BatchCancelTaskRunsResponse)
@@ -339,10 +366,12 @@
   
 - [v1/auth_service.proto](#v1_auth_service-proto)
     - [AuthenticationInfo](#bytebase-v1-AuthenticationInfo)
+    - [AuthorizationRequest](#bytebase-v1-AuthorizationRequest)
     - [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest)
     - [ExchangeTokenResponse](#bytebase-v1-ExchangeTokenResponse)
-    - [GetAuthenticationRestrictionRequest](#bytebase-v1-GetAuthenticationRestrictionRequest)
+    - [GetAuthenticationInfoRequest](#bytebase-v1-GetAuthenticationInfoRequest)
     - [IdentityProviderContext](#bytebase-v1-IdentityProviderContext)
+    - [LoginIdentityProvider](#bytebase-v1-LoginIdentityProvider)
     - [LoginRequest](#bytebase-v1-LoginRequest)
     - [LoginResponse](#bytebase-v1-LoginResponse)
     - [LogoutRequest](#bytebase-v1-LogoutRequest)
@@ -550,33 +579,6 @@
     - [GroupMember.Role](#bytebase-v1-GroupMember-Role)
   
     - [GroupService](#bytebase-v1-GroupService)
-  
-- [v1/idp_service.proto](#v1_idp_service-proto)
-    - [CreateIdentityProviderRequest](#bytebase-v1-CreateIdentityProviderRequest)
-    - [DeleteIdentityProviderRequest](#bytebase-v1-DeleteIdentityProviderRequest)
-    - [FieldMapping](#bytebase-v1-FieldMapping)
-    - [GetIdentityProviderRequest](#bytebase-v1-GetIdentityProviderRequest)
-    - [IdentityProvider](#bytebase-v1-IdentityProvider)
-    - [IdentityProviderConfig](#bytebase-v1-IdentityProviderConfig)
-    - [LDAPIdentityProviderConfig](#bytebase-v1-LDAPIdentityProviderConfig)
-    - [LDAPIdentityProviderTestRequestContext](#bytebase-v1-LDAPIdentityProviderTestRequestContext)
-    - [ListIdentityProvidersRequest](#bytebase-v1-ListIdentityProvidersRequest)
-    - [ListIdentityProvidersResponse](#bytebase-v1-ListIdentityProvidersResponse)
-    - [OAuth2IdentityProviderConfig](#bytebase-v1-OAuth2IdentityProviderConfig)
-    - [OAuth2IdentityProviderTestRequestContext](#bytebase-v1-OAuth2IdentityProviderTestRequestContext)
-    - [OIDCIdentityProviderConfig](#bytebase-v1-OIDCIdentityProviderConfig)
-    - [OIDCIdentityProviderTestRequestContext](#bytebase-v1-OIDCIdentityProviderTestRequestContext)
-    - [TestIdentityProviderRequest](#bytebase-v1-TestIdentityProviderRequest)
-    - [TestIdentityProviderResponse](#bytebase-v1-TestIdentityProviderResponse)
-    - [TestIdentityProviderResponse.ClaimsEntry](#bytebase-v1-TestIdentityProviderResponse-ClaimsEntry)
-    - [TestIdentityProviderResponse.UserInfoEntry](#bytebase-v1-TestIdentityProviderResponse-UserInfoEntry)
-    - [UpdateIdentityProviderRequest](#bytebase-v1-UpdateIdentityProviderRequest)
-  
-    - [IdentityProviderType](#bytebase-v1-IdentityProviderType)
-    - [LDAPIdentityProviderConfig.SecurityProtocol](#bytebase-v1-LDAPIdentityProviderConfig-SecurityProtocol)
-    - [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle)
-  
-    - [IdentityProviderService](#bytebase-v1-IdentityProviderService)
   
 - [v1/org_policy_service.proto](#v1_org_policy_service-proto)
     - [CreatePolicyRequest](#bytebase-v1-CreatePolicyRequest)
@@ -797,17 +799,11 @@
     - [LeaveWorkspaceRequest](#bytebase-v1-LeaveWorkspaceRequest)
     - [ListWorkspacesRequest](#bytebase-v1-ListWorkspacesRequest)
     - [ListWorkspacesResponse](#bytebase-v1-ListWorkspacesResponse)
-    - [MCPCapabilityMode](#bytebase-v1-MCPCapabilityMode)
-    - [MCPEngineEnforcement](#bytebase-v1-MCPEngineEnforcement)
     - [MCPInfo](#bytebase-v1-MCPInfo)
-    - [MCPMethod](#bytebase-v1-MCPMethod)
     - [RotateDirectorySyncTokenRequest](#bytebase-v1-RotateDirectorySyncTokenRequest)
     - [RotateDirectorySyncTokenResponse](#bytebase-v1-RotateDirectorySyncTokenResponse)
     - [UpdateWorkspaceRequest](#bytebase-v1-UpdateWorkspaceRequest)
     - [Workspace](#bytebase-v1-Workspace)
-  
-    - [MCPEngineEnforcement.Masking](#bytebase-v1-MCPEngineEnforcement-Masking)
-    - [MCPEngineEnforcement.ReadOnlyDepth](#bytebase-v1-MCPEngineEnforcement-ReadOnlyDepth)
   
     - [WorkspaceService](#bytebase-v1-WorkspaceService)
   
@@ -1996,6 +1992,413 @@ AuditLogService manages audit logs for system activities and API calls.
 | ----------- | ------------ | ------------- | ------------|
 | SearchAuditLogs | [SearchAuditLogsRequest](#bytebase-v1-SearchAuditLogsRequest) | [SearchAuditLogsResponse](#bytebase-v1-SearchAuditLogsResponse) | Searches audit logs with optional filtering and pagination. Permissions required: bb.auditLogs.search |
 | ExportAuditLogs | [ExportAuditLogsRequest](#bytebase-v1-ExportAuditLogsRequest) | [ExportAuditLogsResponse](#bytebase-v1-ExportAuditLogsResponse) | Exports audit logs in a specified format for external analysis. Permissions required: bb.auditLogs.export |
+
+ 
+
+
+
+<a name="v1_idp_service-proto"></a>
+<p align="right"><a href="#top">Top</a></p>
+
+## v1/idp_service.proto
+
+
+
+<a name="bytebase-v1-CreateIdentityProviderRequest"></a>
+
+### CreateIdentityProviderRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| identity_provider | [IdentityProvider](#bytebase-v1-IdentityProvider) |  | The identity provider to create. |
+| identity_provider_id | [string](#string) |  | The ID to use for the identity provider, which will become the final component of the identity provider&#39;s resource name.
+
+This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
+| validate_only | [bool](#bool) |  | If set to true, the request will be validated without actually creating the identity provider. |
+
+
+
+
+
+
+<a name="bytebase-v1-DeleteIdentityProviderRequest"></a>
+
+### DeleteIdentityProviderRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the identity provider to delete. Format: idps/{identity_provider} |
+
+
+
+
+
+
+<a name="bytebase-v1-FieldMapping"></a>
+
+### FieldMapping
+FieldMapping saves the field names from user info API of identity provider.
+As we save all raw json string of user info response data into `principal.idp_user_info`,
+we can extract the relevant data based with `FieldMapping`.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| identifier | [string](#string) |  | Identifier is the field name of the unique identifier in 3rd-party idp user info. Required. |
+| display_name | [string](#string) |  | DisplayName is the field name of display name in 3rd-party idp user info. Optional. |
+| phone | [string](#string) |  | Phone is the field name of primary phone in 3rd-party idp user info. Optional. |
+| groups | [string](#string) |  | Groups is the field name of groups in 3rd-party idp user info. Optional. Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/ |
+
+
+
+
+
+
+<a name="bytebase-v1-GetIdentityProviderRequest"></a>
+
+### GetIdentityProviderRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the identity provider to retrieve. Format: idps/{idp} |
+
+
+
+
+
+
+<a name="bytebase-v1-IdentityProvider"></a>
+
+### IdentityProvider
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the identity provider. Format: idps/{idp} |
+| title | [string](#string) |  | The display title of the identity provider. |
+| domain | [string](#string) |  | The domain for email matching when using this identity provider. |
+| type | [IdentityProviderType](#bytebase-v1-IdentityProviderType) |  | The type of identity provider protocol. |
+| config | [IdentityProviderConfig](#bytebase-v1-IdentityProviderConfig) |  | The configuration details for the identity provider. |
+
+
+
+
+
+
+<a name="bytebase-v1-IdentityProviderConfig"></a>
+
+### IdentityProviderConfig
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| oauth2_config | [OAuth2IdentityProviderConfig](#bytebase-v1-OAuth2IdentityProviderConfig) |  | OAuth2 protocol configuration. |
+| oidc_config | [OIDCIdentityProviderConfig](#bytebase-v1-OIDCIdentityProviderConfig) |  | OIDC protocol configuration. |
+| ldap_config | [LDAPIdentityProviderConfig](#bytebase-v1-LDAPIdentityProviderConfig) |  | LDAP protocol configuration. |
+
+
+
+
+
+
+<a name="bytebase-v1-LDAPIdentityProviderConfig"></a>
+
+### LDAPIdentityProviderConfig
+LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| host | [string](#string) |  | Host is the hostname or IP address of the LDAP server, e.g., &#34;ldap.example.com&#34;. |
+| port | [int32](#int32) |  | Port is the port number of the LDAP server, e.g., 389. When not set, the default port of the corresponding security protocol will be used, i.e. 389 for StartTLS and 636 for LDAPS. |
+| skip_tls_verify | [bool](#bool) |  | SkipTLSVerify controls whether to skip TLS certificate verification. |
+| bind_dn | [string](#string) |  | BindDN is the DN of the user to bind as a service account to perform search requests. |
+| bind_password | [string](#string) |  | BindPassword is the password of the user to bind as a service account. |
+| base_dn | [string](#string) |  | BaseDN is the base DN to search for users, e.g., &#34;ou=users,dc=example,dc=com&#34;. |
+| user_filter | [string](#string) |  | UserFilter is the filter to search for users, e.g., &#34;(uid=%s)&#34;. |
+| security_protocol | [LDAPIdentityProviderConfig.SecurityProtocol](#bytebase-v1-LDAPIdentityProviderConfig-SecurityProtocol) |  | SecurityProtocol is the security protocol to be used for establishing connections with the LDAP server. |
+| field_mapping | [FieldMapping](#bytebase-v1-FieldMapping) |  | FieldMapping is the mapping of the user attributes returned by the LDAP server. |
+
+
+
+
+
+
+<a name="bytebase-v1-LDAPIdentityProviderTestRequestContext"></a>
+
+### LDAPIdentityProviderTestRequestContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| username | [string](#string) |  | The username of a directory user, substituted into the user filter. |
+| password | [string](#string) |  | The password of the directory user. |
+
+
+
+
+
+
+<a name="bytebase-v1-ListIdentityProvidersRequest"></a>
+
+### ListIdentityProvidersRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| parent | [string](#string) |  | The parent workspace whose identity providers should be listed. It must be the workspace the caller&#39;s credential belongs to. Format: workspaces/{workspace} |
+
+
+
+
+
+
+<a name="bytebase-v1-ListIdentityProvidersResponse"></a>
+
+### ListIdentityProvidersResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| identity_providers | [IdentityProvider](#bytebase-v1-IdentityProvider) | repeated | The identity providers from the specified request. |
+
+
+
+
+
+
+<a name="bytebase-v1-OAuth2IdentityProviderConfig"></a>
+
+### OAuth2IdentityProviderConfig
+OAuth2IdentityProviderConfig is the structure for OAuth2 identity provider config.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| auth_url | [string](#string) |  | The authorization endpoint URL for OAuth2 flow. |
+| token_url | [string](#string) |  | The token endpoint URL for exchanging authorization code. |
+| user_info_url | [string](#string) |  | The user information endpoint URL. |
+| client_id | [string](#string) |  | The OAuth2 client identifier. |
+| client_secret | [string](#string) |  | The OAuth2 client secret for authentication. |
+| scopes | [string](#string) | repeated | The list of OAuth2 scopes to request. |
+| field_mapping | [FieldMapping](#bytebase-v1-FieldMapping) |  | Mapping configuration for user attributes from OAuth2 response. |
+| skip_tls_verify | [bool](#bool) |  | Whether to skip TLS certificate verification. |
+| auth_style | [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle) |  | The authentication style for client credentials. |
+
+
+
+
+
+
+<a name="bytebase-v1-OAuth2IdentityProviderTestRequestContext"></a>
+
+### OAuth2IdentityProviderTestRequestContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| code | [string](#string) |  | Authorize code from website. |
+
+
+
+
+
+
+<a name="bytebase-v1-OIDCIdentityProviderConfig"></a>
+
+### OIDCIdentityProviderConfig
+OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| issuer | [string](#string) |  | The OIDC issuer URL for the identity provider. |
+| client_id | [string](#string) |  | The OIDC client identifier. |
+| client_secret | [string](#string) |  | The OIDC client secret for authentication. |
+| scopes | [string](#string) | repeated | The scopes that the OIDC provider supports. Should be fetched from the well-known configuration file of the OIDC provider. |
+| field_mapping | [FieldMapping](#bytebase-v1-FieldMapping) |  | Mapping configuration for user attributes from OIDC claims. |
+| skip_tls_verify | [bool](#bool) |  | Whether to skip TLS certificate verification. |
+| auth_style | [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle) |  | The authentication style for client credentials. |
+| auth_endpoint | [string](#string) |  | The authorization endpoint of the OIDC provider. Should be fetched from the well-known configuration file of the OIDC provider. |
+
+
+
+
+
+
+<a name="bytebase-v1-OIDCIdentityProviderTestRequestContext"></a>
+
+### OIDCIdentityProviderTestRequestContext
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| code | [string](#string) |  | Authorize code from OIDC provider. |
+
+
+
+
+
+
+<a name="bytebase-v1-TestIdentityProviderRequest"></a>
+
+### TestIdentityProviderRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| identity_provider | [IdentityProvider](#bytebase-v1-IdentityProvider) |  | The identity provider to test connection including uncreated. |
+| oauth2_context | [OAuth2IdentityProviderTestRequestContext](#bytebase-v1-OAuth2IdentityProviderTestRequestContext) |  |  |
+| oidc_context | [OIDCIdentityProviderTestRequestContext](#bytebase-v1-OIDCIdentityProviderTestRequestContext) |  | OIDC authentication context for test connection. |
+| ldap_context | [LDAPIdentityProviderTestRequestContext](#bytebase-v1-LDAPIdentityProviderTestRequestContext) |  | LDAP credentials context for test connection. |
+
+
+
+
+
+
+<a name="bytebase-v1-TestIdentityProviderResponse"></a>
+
+### TestIdentityProviderResponse
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| claims | [TestIdentityProviderResponse.ClaimsEntry](#bytebase-v1-TestIdentityProviderResponse-ClaimsEntry) | repeated | The map of claims returned by the identity provider. |
+| user_info | [TestIdentityProviderResponse.UserInfoEntry](#bytebase-v1-TestIdentityProviderResponse-UserInfoEntry) | repeated | The matched user info from the claims. |
+
+
+
+
+
+
+<a name="bytebase-v1-TestIdentityProviderResponse-ClaimsEntry"></a>
+
+### TestIdentityProviderResponse.ClaimsEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-TestIdentityProviderResponse-UserInfoEntry"></a>
+
+### TestIdentityProviderResponse.UserInfoEntry
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| key | [string](#string) |  |  |
+| value | [string](#string) |  |  |
+
+
+
+
+
+
+<a name="bytebase-v1-UpdateIdentityProviderRequest"></a>
+
+### UpdateIdentityProviderRequest
+
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| identity_provider | [IdentityProvider](#bytebase-v1-IdentityProvider) |  | The identity provider to update.
+
+The identity provider&#39;s `name` field is used to identify the identity provider to update. Format: idps/{identity_provider} |
+| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
+| allow_missing | [bool](#bool) |  | If set to true, and the identity provider is not found, a new identity provider will be created. In this situation, `update_mask` is ignored. |
+
+
+
+
+
+ 
+
+
+<a name="bytebase-v1-IdentityProviderType"></a>
+
+### IdentityProviderType
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| IDENTITY_PROVIDER_TYPE_UNSPECIFIED | 0 | Unspecified identity provider type. |
+| OAUTH2 | 1 | OAuth 2.0 authentication protocol. |
+| OIDC | 2 | OpenID Connect authentication protocol. |
+| LDAP | 3 | LDAP directory service authentication. |
+
+
+
+<a name="bytebase-v1-LDAPIdentityProviderConfig-SecurityProtocol"></a>
+
+### LDAPIdentityProviderConfig.SecurityProtocol
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| SECURITY_PROTOCOL_UNSPECIFIED | 0 |  |
+| START_TLS | 1 | StartTLS is the security protocol that starts with an unencrypted connection and then upgrades to TLS. |
+| LDAPS | 2 | LDAPS is the security protocol that uses TLS from the beginning. |
+
+
+
+<a name="bytebase-v1-OAuth2AuthStyle"></a>
+
+### OAuth2AuthStyle
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| OAUTH2_AUTH_STYLE_UNSPECIFIED | 0 |  |
+| IN_PARAMS | 1 | IN_PARAMS sends the &#34;client_id&#34; and &#34;client_secret&#34; in the POST body as application/x-www-form-urlencoded parameters. |
+| IN_HEADER | 2 | IN_HEADER sends the client_id and client_password using HTTP Basic Authorization. This is an optional style described in the OAuth2 RFC 6749 section 2.3.1. |
+
+
+ 
+
+ 
+
+
+<a name="bytebase-v1-IdentityProviderService"></a>
+
+### IdentityProviderService
+IdentityProviderService manages external identity providers for SSO authentication.
+
+| Method Name | Request Type | Response Type | Description |
+| ----------- | ------------ | ------------- | ------------|
+| GetIdentityProvider | [GetIdentityProviderRequest](#bytebase-v1-GetIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) | Gets an identity provider by name. Permissions required: bb.identityProviders.get |
+| ListIdentityProviders | [ListIdentityProvidersRequest](#bytebase-v1-ListIdentityProvidersRequest) | [ListIdentityProvidersResponse](#bytebase-v1-ListIdentityProvidersResponse) | Lists the identity providers configured for the caller&#39;s workspace. The login page reads AuthService.GetAuthenticationInfo instead, which publishes only the fields a browser needs to start an SSO redirect.
+
+Returns the same representation as GetIdentityProvider — secrets redacted, the rest of the configuration included — so granting bb.identityProviders.list conveys configuration read over the whole collection, not merely the names in it. Permissions required: bb.identityProviders.list |
+| CreateIdentityProvider | [CreateIdentityProviderRequest](#bytebase-v1-CreateIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) | Creates a new identity provider. Permissions required: bb.identityProviders.create |
+| UpdateIdentityProvider | [UpdateIdentityProviderRequest](#bytebase-v1-UpdateIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) | Updates an identity provider. Permissions required: bb.identityProviders.update When allow_missing=true, also requires: bb.identityProviders.create |
+| DeleteIdentityProvider | [DeleteIdentityProviderRequest](#bytebase-v1-DeleteIdentityProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes an identity provider. Permissions required: bb.identityProviders.delete |
+| TestIdentityProvider | [TestIdentityProviderRequest](#bytebase-v1-TestIdentityProviderRequest) | [TestIdentityProviderResponse](#bytebase-v1-TestIdentityProviderResponse) | Tests the connection and configuration of an identity provider. Permissions required: bb.identityProviders.update |
 
  
 
@@ -5898,6 +6301,24 @@ UserService manages user accounts and authentication.
 | ----- | ---- | ----- | ----------- |
 | workspace | [string](#string) |  | The workspace used for authentication, when one can be resolved. Format: workspaces/{workspace} |
 | restriction | [Restriction](#bytebase-v1-Restriction) |  | The effective authentication restrictions. |
+| identity_providers | [LoginIdentityProvider](#bytebase-v1-LoginIdentityProvider) | repeated | The identity providers the login page renders, in display order. |
+
+
+
+
+
+
+<a name="bytebase-v1-AuthorizationRequest"></a>
+
+### AuthorizationRequest
+AuthorizationRequest is what a browser needs to start an SSO redirect.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| endpoint | [string](#string) |  | The OAuth2 auth_url, or the authorization endpoint from the OIDC issuer&#39;s discovery document. |
+| client_id | [string](#string) |  | The OAuth2 or OIDC client identifier. |
+| scopes | [string](#string) | repeated | The scopes to request. |
 
 
 
@@ -5935,9 +6356,9 @@ UserService manages user accounts and authentication.
 
 
 
-<a name="bytebase-v1-GetAuthenticationRestrictionRequest"></a>
+<a name="bytebase-v1-GetAuthenticationInfoRequest"></a>
 
-### GetAuthenticationRestrictionRequest
+### GetAuthenticationInfoRequest
 
 
 
@@ -5960,6 +6381,27 @@ Context for identity provider authentication.
 | ----- | ---- | ----- | ----------- |
 | oauth2_context | [OAuth2IdentityProviderContext](#bytebase-v1-OAuth2IdentityProviderContext) |  | OAuth2 authentication context. |
 | oidc_context | [OIDCIdentityProviderContext](#bytebase-v1-OIDCIdentityProviderContext) |  | OpenID Connect authentication context. |
+
+
+
+
+
+
+<a name="bytebase-v1-LoginIdentityProvider"></a>
+
+### LoginIdentityProvider
+LoginIdentityProvider is an identity provider as the login page sees it.
+Deliberately not a view of IdentityProvider: this message is served without
+a credential, so every field it exposes is published by hand and no
+provider configuration reaches it by default.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| name | [string](#string) |  | The name of the identity provider. Format: idps/{idp} |
+| type | [IdentityProviderType](#bytebase-v1-IdentityProviderType) |  | The type of identity provider protocol. |
+| title | [string](#string) |  | The display title of the identity provider. |
+| authorization_request | [AuthorizationRequest](#bytebase-v1-AuthorizationRequest) |  | The parameters the browser needs to start the authorization redirect. Set for OAUTH2 and OIDC, absent for LDAP, whose bind happens server-side. |
 
 
 
@@ -6185,7 +6627,7 @@ AuthService handles user authentication operations.
 
 | Method Name | Request Type | Response Type | Description |
 | ----------- | ------------ | ------------- | ------------|
-| GetAuthenticationRestriction | [GetAuthenticationRestrictionRequest](#bytebase-v1-GetAuthenticationRestrictionRequest) | [AuthenticationInfo](#bytebase-v1-AuthenticationInfo) | Gets the effective restrictions needed to render authentication flows. Permissions required: None |
+| GetAuthenticationInfo | [GetAuthenticationInfoRequest](#bytebase-v1-GetAuthenticationInfoRequest) | [AuthenticationInfo](#bytebase-v1-AuthenticationInfo) | Gets everything the login page renders: the sign-in restrictions and the identity providers it offers. Permissions required: None |
 | Login | [LoginRequest](#bytebase-v1-LoginRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Authenticates a user and returns access tokens. Permissions required: None |
 | Logout | [LogoutRequest](#bytebase-v1-LogoutRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Logs out the current user session. Permissions required: None |
 | ExchangeToken | [ExchangeTokenRequest](#bytebase-v1-ExchangeTokenRequest) | [ExchangeTokenResponse](#bytebase-v1-ExchangeTokenResponse) | Exchanges an external OIDC token for a Bytebase access token. Used by CI/CD pipelines with Workload Identity Federation. Permissions required: None (validates via OIDC token) |
@@ -9206,411 +9648,6 @@ GroupService manages user groups for organizing users and permissions.
 | CreateGroup | [CreateGroupRequest](#bytebase-v1-CreateGroupRequest) | [Group](#bytebase-v1-Group) | Creates a new group. Permissions required: bb.groups.create |
 | UpdateGroup | [UpdateGroupRequest](#bytebase-v1-UpdateGroupRequest) | [Group](#bytebase-v1-Group) | Updates a group. Group owners or users with bb.groups.update permission can update. Permissions required: bb.groups.update OR caller is group owner When allow_missing=true, also requires: bb.groups.create |
 | DeleteGroup | [DeleteGroupRequest](#bytebase-v1-DeleteGroupRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes a group. Group owners or users with bb.groups.delete permission can delete. Permissions required: bb.groups.delete OR caller is group owner |
-
- 
-
-
-
-<a name="v1_idp_service-proto"></a>
-<p align="right"><a href="#top">Top</a></p>
-
-## v1/idp_service.proto
-
-
-
-<a name="bytebase-v1-CreateIdentityProviderRequest"></a>
-
-### CreateIdentityProviderRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| identity_provider | [IdentityProvider](#bytebase-v1-IdentityProvider) |  | The identity provider to create. |
-| identity_provider_id | [string](#string) |  | The ID to use for the identity provider, which will become the final component of the identity provider&#39;s resource name.
-
-This value should be 4-63 characters, and valid characters are /[a-z][0-9]-/. |
-| validate_only | [bool](#bool) |  | If set to true, the request will be validated without actually creating the identity provider. |
-
-
-
-
-
-
-<a name="bytebase-v1-DeleteIdentityProviderRequest"></a>
-
-### DeleteIdentityProviderRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the identity provider to delete. Format: idps/{identity_provider} |
-
-
-
-
-
-
-<a name="bytebase-v1-FieldMapping"></a>
-
-### FieldMapping
-FieldMapping saves the field names from user info API of identity provider.
-As we save all raw json string of user info response data into `principal.idp_user_info`,
-we can extract the relevant data based with `FieldMapping`.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| identifier | [string](#string) |  | Identifier is the field name of the unique identifier in 3rd-party idp user info. Required. |
-| display_name | [string](#string) |  | DisplayName is the field name of display name in 3rd-party idp user info. Optional. |
-| phone | [string](#string) |  | Phone is the field name of primary phone in 3rd-party idp user info. Optional. |
-| groups | [string](#string) |  | Groups is the field name of groups in 3rd-party idp user info. Optional. Mainly used for OIDC: https://developer.okta.com/docs/guides/customize-tokens-groups-claim/main/ |
-
-
-
-
-
-
-<a name="bytebase-v1-GetIdentityProviderRequest"></a>
-
-### GetIdentityProviderRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the identity provider to retrieve. Format: idps/{idp} |
-
-
-
-
-
-
-<a name="bytebase-v1-IdentityProvider"></a>
-
-### IdentityProvider
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| name | [string](#string) |  | The name of the identity provider. Format: idps/{idp} |
-| title | [string](#string) |  | The display title of the identity provider. |
-| domain | [string](#string) |  | The domain for email matching when using this identity provider. |
-| type | [IdentityProviderType](#bytebase-v1-IdentityProviderType) |  | The type of identity provider protocol. |
-| config | [IdentityProviderConfig](#bytebase-v1-IdentityProviderConfig) |  | The configuration details for the identity provider. |
-
-
-
-
-
-
-<a name="bytebase-v1-IdentityProviderConfig"></a>
-
-### IdentityProviderConfig
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| oauth2_config | [OAuth2IdentityProviderConfig](#bytebase-v1-OAuth2IdentityProviderConfig) |  | OAuth2 protocol configuration. |
-| oidc_config | [OIDCIdentityProviderConfig](#bytebase-v1-OIDCIdentityProviderConfig) |  | OIDC protocol configuration. |
-| ldap_config | [LDAPIdentityProviderConfig](#bytebase-v1-LDAPIdentityProviderConfig) |  | LDAP protocol configuration. |
-
-
-
-
-
-
-<a name="bytebase-v1-LDAPIdentityProviderConfig"></a>
-
-### LDAPIdentityProviderConfig
-LDAPIdentityProviderConfig is the structure for LDAP identity provider config.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| host | [string](#string) |  | Host is the hostname or IP address of the LDAP server, e.g., &#34;ldap.example.com&#34;. |
-| port | [int32](#int32) |  | Port is the port number of the LDAP server, e.g., 389. When not set, the default port of the corresponding security protocol will be used, i.e. 389 for StartTLS and 636 for LDAPS. |
-| skip_tls_verify | [bool](#bool) |  | SkipTLSVerify controls whether to skip TLS certificate verification. |
-| bind_dn | [string](#string) |  | BindDN is the DN of the user to bind as a service account to perform search requests. |
-| bind_password | [string](#string) |  | BindPassword is the password of the user to bind as a service account. |
-| base_dn | [string](#string) |  | BaseDN is the base DN to search for users, e.g., &#34;ou=users,dc=example,dc=com&#34;. |
-| user_filter | [string](#string) |  | UserFilter is the filter to search for users, e.g., &#34;(uid=%s)&#34;. |
-| security_protocol | [LDAPIdentityProviderConfig.SecurityProtocol](#bytebase-v1-LDAPIdentityProviderConfig-SecurityProtocol) |  | SecurityProtocol is the security protocol to be used for establishing connections with the LDAP server. |
-| field_mapping | [FieldMapping](#bytebase-v1-FieldMapping) |  | FieldMapping is the mapping of the user attributes returned by the LDAP server. |
-
-
-
-
-
-
-<a name="bytebase-v1-LDAPIdentityProviderTestRequestContext"></a>
-
-### LDAPIdentityProviderTestRequestContext
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| username | [string](#string) |  | The username of a directory user, substituted into the user filter. |
-| password | [string](#string) |  | The password of the directory user. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListIdentityProvidersRequest"></a>
-
-### ListIdentityProvidersRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| parent | [string](#string) |  | The parent workspace whose identity providers should be listed. Format: workspaces/{workspace} When unset, the workspace is resolved from the request context. |
-
-
-
-
-
-
-<a name="bytebase-v1-ListIdentityProvidersResponse"></a>
-
-### ListIdentityProvidersResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| identity_providers | [IdentityProvider](#bytebase-v1-IdentityProvider) | repeated | The identity providers from the specified request. |
-
-
-
-
-
-
-<a name="bytebase-v1-OAuth2IdentityProviderConfig"></a>
-
-### OAuth2IdentityProviderConfig
-OAuth2IdentityProviderConfig is the structure for OAuth2 identity provider config.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| auth_url | [string](#string) |  | The authorization endpoint URL for OAuth2 flow. |
-| token_url | [string](#string) |  | The token endpoint URL for exchanging authorization code. |
-| user_info_url | [string](#string) |  | The user information endpoint URL. |
-| client_id | [string](#string) |  | The OAuth2 client identifier. |
-| client_secret | [string](#string) |  | The OAuth2 client secret for authentication. |
-| scopes | [string](#string) | repeated | The list of OAuth2 scopes to request. |
-| field_mapping | [FieldMapping](#bytebase-v1-FieldMapping) |  | Mapping configuration for user attributes from OAuth2 response. |
-| skip_tls_verify | [bool](#bool) |  | Whether to skip TLS certificate verification. |
-| auth_style | [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle) |  | The authentication style for client credentials. |
-
-
-
-
-
-
-<a name="bytebase-v1-OAuth2IdentityProviderTestRequestContext"></a>
-
-### OAuth2IdentityProviderTestRequestContext
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| code | [string](#string) |  | Authorize code from website. |
-
-
-
-
-
-
-<a name="bytebase-v1-OIDCIdentityProviderConfig"></a>
-
-### OIDCIdentityProviderConfig
-OIDCIdentityProviderConfig is the structure for OIDC identity provider config.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| issuer | [string](#string) |  | The OIDC issuer URL for the identity provider. |
-| client_id | [string](#string) |  | The OIDC client identifier. |
-| client_secret | [string](#string) |  | The OIDC client secret for authentication. |
-| scopes | [string](#string) | repeated | The scopes that the OIDC provider supports. Should be fetched from the well-known configuration file of the OIDC provider. |
-| field_mapping | [FieldMapping](#bytebase-v1-FieldMapping) |  | Mapping configuration for user attributes from OIDC claims. |
-| skip_tls_verify | [bool](#bool) |  | Whether to skip TLS certificate verification. |
-| auth_style | [OAuth2AuthStyle](#bytebase-v1-OAuth2AuthStyle) |  | The authentication style for client credentials. |
-| auth_endpoint | [string](#string) |  | The authorization endpoint of the OIDC provider. Should be fetched from the well-known configuration file of the OIDC provider. |
-
-
-
-
-
-
-<a name="bytebase-v1-OIDCIdentityProviderTestRequestContext"></a>
-
-### OIDCIdentityProviderTestRequestContext
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| code | [string](#string) |  | Authorize code from OIDC provider. |
-
-
-
-
-
-
-<a name="bytebase-v1-TestIdentityProviderRequest"></a>
-
-### TestIdentityProviderRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| identity_provider | [IdentityProvider](#bytebase-v1-IdentityProvider) |  | The identity provider to test connection including uncreated. |
-| oauth2_context | [OAuth2IdentityProviderTestRequestContext](#bytebase-v1-OAuth2IdentityProviderTestRequestContext) |  |  |
-| oidc_context | [OIDCIdentityProviderTestRequestContext](#bytebase-v1-OIDCIdentityProviderTestRequestContext) |  | OIDC authentication context for test connection. |
-| ldap_context | [LDAPIdentityProviderTestRequestContext](#bytebase-v1-LDAPIdentityProviderTestRequestContext) |  | LDAP credentials context for test connection. |
-
-
-
-
-
-
-<a name="bytebase-v1-TestIdentityProviderResponse"></a>
-
-### TestIdentityProviderResponse
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| claims | [TestIdentityProviderResponse.ClaimsEntry](#bytebase-v1-TestIdentityProviderResponse-ClaimsEntry) | repeated | The map of claims returned by the identity provider. |
-| user_info | [TestIdentityProviderResponse.UserInfoEntry](#bytebase-v1-TestIdentityProviderResponse-UserInfoEntry) | repeated | The matched user info from the claims. |
-
-
-
-
-
-
-<a name="bytebase-v1-TestIdentityProviderResponse-ClaimsEntry"></a>
-
-### TestIdentityProviderResponse.ClaimsEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-TestIdentityProviderResponse-UserInfoEntry"></a>
-
-### TestIdentityProviderResponse.UserInfoEntry
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| key | [string](#string) |  |  |
-| value | [string](#string) |  |  |
-
-
-
-
-
-
-<a name="bytebase-v1-UpdateIdentityProviderRequest"></a>
-
-### UpdateIdentityProviderRequest
-
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| identity_provider | [IdentityProvider](#bytebase-v1-IdentityProvider) |  | The identity provider to update.
-
-The identity provider&#39;s `name` field is used to identify the identity provider to update. Format: idps/{identity_provider} |
-| update_mask | [google.protobuf.FieldMask](#google-protobuf-FieldMask) |  | The list of fields to update. |
-| allow_missing | [bool](#bool) |  | If set to true, and the identity provider is not found, a new identity provider will be created. In this situation, `update_mask` is ignored. |
-
-
-
-
-
- 
-
-
-<a name="bytebase-v1-IdentityProviderType"></a>
-
-### IdentityProviderType
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| IDENTITY_PROVIDER_TYPE_UNSPECIFIED | 0 | Unspecified identity provider type. |
-| OAUTH2 | 1 | OAuth 2.0 authentication protocol. |
-| OIDC | 2 | OpenID Connect authentication protocol. |
-| LDAP | 3 | LDAP directory service authentication. |
-
-
-
-<a name="bytebase-v1-LDAPIdentityProviderConfig-SecurityProtocol"></a>
-
-### LDAPIdentityProviderConfig.SecurityProtocol
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| SECURITY_PROTOCOL_UNSPECIFIED | 0 |  |
-| START_TLS | 1 | StartTLS is the security protocol that starts with an unencrypted connection and then upgrades to TLS. |
-| LDAPS | 2 | LDAPS is the security protocol that uses TLS from the beginning. |
-
-
-
-<a name="bytebase-v1-OAuth2AuthStyle"></a>
-
-### OAuth2AuthStyle
-
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| OAUTH2_AUTH_STYLE_UNSPECIFIED | 0 |  |
-| IN_PARAMS | 1 | IN_PARAMS sends the &#34;client_id&#34; and &#34;client_secret&#34; in the POST body as application/x-www-form-urlencoded parameters. |
-| IN_HEADER | 2 | IN_HEADER sends the client_id and client_password using HTTP Basic Authorization. This is an optional style described in the OAuth2 RFC 6749 section 2.3.1. |
-
-
- 
-
- 
-
-
-<a name="bytebase-v1-IdentityProviderService"></a>
-
-### IdentityProviderService
-IdentityProviderService manages external identity providers for SSO authentication.
-
-| Method Name | Request Type | Response Type | Description |
-| ----------- | ------------ | ------------- | ------------|
-| GetIdentityProvider | [GetIdentityProviderRequest](#bytebase-v1-GetIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) | Gets an identity provider by name. Permissions required: bb.identityProviders.get |
-| ListIdentityProviders | [ListIdentityProvidersRequest](#bytebase-v1-ListIdentityProvidersRequest) | [ListIdentityProvidersResponse](#bytebase-v1-ListIdentityProvidersResponse) | Lists all configured identity providers (public endpoint for login page). Permissions required: None |
-| CreateIdentityProvider | [CreateIdentityProviderRequest](#bytebase-v1-CreateIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) | Creates a new identity provider. Permissions required: bb.identityProviders.create |
-| UpdateIdentityProvider | [UpdateIdentityProviderRequest](#bytebase-v1-UpdateIdentityProviderRequest) | [IdentityProvider](#bytebase-v1-IdentityProvider) | Updates an identity provider. Permissions required: bb.identityProviders.update When allow_missing=true, also requires: bb.identityProviders.create |
-| DeleteIdentityProvider | [DeleteIdentityProviderRequest](#bytebase-v1-DeleteIdentityProviderRequest) | [.google.protobuf.Empty](#google-protobuf-Empty) | Deletes an identity provider. Permissions required: bb.identityProviders.delete |
-| TestIdentityProvider | [TestIdentityProviderRequest](#bytebase-v1-TestIdentityProviderRequest) | [TestIdentityProviderResponse](#bytebase-v1-TestIdentityProviderResponse) | Tests the connection and configuration of an identity provider. Permissions required: bb.identityProviders.update |
 
  
 
@@ -12748,10 +12785,11 @@ WorkloadIdentityConfig for API layer
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
-| provider_type | [WorkloadIdentityConfig.ProviderType](#bytebase-v1-WorkloadIdentityConfig-ProviderType) |  | Platform type (currently only GITHUB is supported) |
+| provider_type | [WorkloadIdentityConfig.ProviderType](#bytebase-v1-WorkloadIdentityConfig-ProviderType) |  | Provider configuration mode. |
 | issuer_url | [string](#string) |  | OIDC Issuer URL (auto-filled based on provider_type, can be overridden) |
 | allowed_audiences | [string](#string) | repeated | Allowed audiences for token validation |
 | subject_pattern | [string](#string) |  | Subject pattern to match (e.g., &#34;repo:owner/repo:ref:refs/heads/main&#34;) |
+| jwks_url | [string](#string) |  | Optional JWKS endpoint. When empty, use OIDC discovery from issuer_url. |
 
 
 
@@ -12763,13 +12801,14 @@ WorkloadIdentityConfig for API layer
 <a name="bytebase-v1-WorkloadIdentityConfig-ProviderType"></a>
 
 ### WorkloadIdentityConfig.ProviderType
-ProviderType identifies the CI/CD platform.
+ProviderType identifies the workload identity configuration mode.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |
 | PROVIDER_TYPE_UNSPECIFIED | 0 |  |
 | GITHUB | 1 |  |
 | GITLAB | 2 |  |
+| OIDC | 3 |  |
 
 
  
@@ -12882,85 +12921,23 @@ WorkloadIdentityService manages workload identities for external CI/CD integrati
 
 
 
-<a name="bytebase-v1-MCPCapabilityMode"></a>
-
-### MCPCapabilityMode
-MCPCapabilityMode is one ceiling and the method classes it serves.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  |  |
-| served_classes | [MCPMethodClass](#bytebase-v1-MCPMethodClass) | repeated | Empty means the ceiling serves nothing, which is what DISABLED is. |
-
-
-
-
-
-
-<a name="bytebase-v1-MCPEngineEnforcement"></a>
-
-### MCPEngineEnforcement
-MCPEngineEnforcement is what the read-only ceiling and the masking toggle
-reach on one database engine.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| engine | [Engine](#bytebase-v1-Engine) |  |  |
-| read_only_depth | [MCPEngineEnforcement.ReadOnlyDepth](#bytebase-v1-MCPEngineEnforcement-ReadOnlyDepth) |  |  |
-| masking | [MCPEngineEnforcement.Masking](#bytebase-v1-MCPEngineEnforcement-Masking) |  |  |
-| note | [string](#string) |  | Where the answers above are the floor rather than the whole story. Empty for most engines. |
-
-
-
-
-
-
 <a name="bytebase-v1-MCPInfo"></a>
 
 ### MCPInfo
-MCPInfo is what MCP does in this workspace: the ceiling in force, what each
-ceiling serves, and the per-engine facts a read-only session depends on.
+MCPInfo is what MCP does in this workspace: the ceiling in force, and
+whether masking narrows what a session reads under it.
 
-Everything here is resolved when the request is served, never from a stored
-copy: the method list comes off the compiled API descriptors and the engine
-answers off the code that enforces them, so a build whose rules changed
-cannot describe the rules of the build before it.
+This is the only API a served MCP session or the consent page can read the
+ceiling from. SettingService/GetSetting is served by no ceiling, and its
+answer is cached besides.
 
 
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | workspace | [string](#string) |  | The workspace this describes. Format: workspaces/{workspace}. Not this message&#39;s own resource name — MCPInfo is not a named resource and there is nothing to get it by. |
-| capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  | The ceiling in force for this workspace. A value no row in modes serves, CAPABILITY_UNSPECIFIED included, means no ceiling could be resolved from the stored row and every MCP connection is refused. |
-| modes | [MCPCapabilityMode](#bytebase-v1-MCPCapabilityMode) | repeated | What each ceiling serves, including the one in force, so an admin can compare the choices rather than only read the current answer. |
-| methods | [MCPMethod](#bytebase-v1-MCPMethod) | repeated | Every API method some ceiling serves. A mode serves a method when the method&#39;s class is one of that mode&#39;s served_classes, which is the ceiling rule the gate evaluates. Methods no ceiling serves are absent.
-
-Being listed is necessary, not sufficient. The caller still needs the permission, and two further rules narrow what a served method does: a handful of methods are refused on the shape of the request (an issue that would grant a permission, a rollout that skips approval), and under READ_ONLY every statement SQLService/Query runs must classify as a read. |
-| engines | [MCPEngineEnforcement](#bytebase-v1-MCPEngineEnforcement) | repeated | What a read-only session and the masking toggle actually reach, per engine. Both are engine-conditional in ways the ceiling alone does not show. |
-| ignore_masking_exemptions | [bool](#bool) |  | Whether this workspace stops applying the caller&#39;s own unmasking provisioning to MCP requests. It decides which branch of each engine&#39;s masking state a caller is in, and no other API tells an MCP session: SettingService/GetSetting is served by no ceiling. |
-| data_masking_available | [bool](#bool) |  | Whether data masking is licensed for this workspace. When false nothing is masked whatever an engine supports, so the masking states below describe a mechanism that does not run. Licensing can also be set per instance, so a true here is the workspace answer, not a promise about every instance. |
-
-
-
-
-
-
-<a name="bytebase-v1-MCPMethod"></a>
-
-### MCPMethod
-MCPMethod is one API method an MCP session can reach, and what decides it.
-
-
-| Field | Type | Label | Description |
-| ----- | ---- | ----- | ----------- |
-| method | [string](#string) |  | The method as an audit entry names it, so a denial can be found by it. Example: /bytebase.v1.SQLService/Query |
-| operation_id | [string](#string) |  | The same method as call_api takes it. Example: bytebase.v1.SQLService.Query |
-| class | [MCPMethodClass](#bytebase-v1-MCPMethodClass) |  |  |
-| permission | [string](#string) |  | The IAM permission the method declares. The ceiling never grants: a session may call a served method only where the person it acts for could.
-
-Empty means the method declares no permission, which is NOT the same as needing none — a method that authorizes inside its handler declares nothing here. auth_method says which case an empty value is. |
-| auth_method | [AuthMethod](#bytebase-v1-AuthMethod) |  | How the method authorizes. IAM means the permission above is the primary rule, though not always the only one — an update carrying allow_missing additionally requires the matching create permission. CUSTOM means the handler decides and the permission field is silent. |
+| capability | [MCPSetting.Capability](#bytebase-v1-MCPSetting-Capability) |  | The ceiling in force for this workspace. Any value outside the enum this build serves, CAPABILITY_UNSPECIFIED included, means no ceiling could be resolved from the stored row and every MCP connection is refused. A stored name nothing resolves arrives as CAPABILITY_UNSPECIFIED; a number a newer release wrote arrives verbatim. |
+| ignore_masking_exemptions | [bool](#bool) |  | Whether this workspace stops applying the caller&#39;s own unmasking provisioning to MCP requests. It narrows what a session reads only where Bytebase masks by column and consults exemptions; elsewhere it suppresses nothing. |
+| data_masking_available | [bool](#bool) |  | Whether data masking is licensed for this workspace. When false nothing is masked whatever an engine supports, so the toggle above suppresses nothing. Licensing can also be set per instance, so a true here is the workspace answer, not a promise about every instance. |
 
 
 
@@ -13031,35 +13008,6 @@ Empty means the method declares no permission, which is NOT the same as needing 
 
  
 
-
-<a name="bytebase-v1-MCPEngineEnforcement-Masking"></a>
-
-### MCPEngineEnforcement.Masking
-How Bytebase masks results on this engine, which is what decides whether
-ignoring masking exemptions changes anything here.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| MASKING_UNSPECIFIED | 0 |  |
-| NONE | 1 | Bytebase does not mask on this engine. Nothing narrows what a session reads, and ignoring masking exemptions does nothing. |
-| COLUMN | 2 | Column masking. A masking policy substitutes values in query results, and the exemptions granted to the caller are what let them see the real value — which is what ignoring exemptions suppresses. |
-| DOCUMENT | 3 | Document masking. Results are masked, but exemptions are never consulted on this path, so ignoring them changes nothing here either. |
-
-
-
-<a name="bytebase-v1-MCPEngineEnforcement-ReadOnlyDepth"></a>
-
-### MCPEngineEnforcement.ReadOnlyDepth
-How much of a read-only ceiling this engine can be held to.
-
-| Name | Number | Description |
-| ---- | ------ | ----------- |
-| READ_ONLY_DEPTH_UNSPECIFIED | 0 |  |
-| UNSUPPORTED | 1 | Bytebase has no read-only classifier for this engine, so a read-only session is refused every statement on it, including a plain SELECT. |
-| STATEMENT | 2 | Every statement is classified before it runs and a request holding one that is not a read is refused whole. Nothing below that: the driver does not open a read-only database session, except where the note says otherwise. |
-| STATEMENT_AND_SESSION | 3 | Statement classification, and the driver opens the database session read-only as well, so the engine refuses most writes the classifier missed. Not a proof: a statement that classifies as a read can still call a function that switches the session setting back off. |
-
-
  
 
  
@@ -13079,7 +13027,7 @@ WorkspaceService manages workspace-level operations and profile.
 | DeleteWorkspace | [DeleteWorkspaceRequest](#bytebase-v1-DeleteWorkspaceRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Deletes a workspace. SaaS only. Cancels any active subscription and soft-deletes the workspace so all associated data becomes inaccessible. Requires workspace admin permission. |
 | LeaveWorkspace | [LeaveWorkspaceRequest](#bytebase-v1-LeaveWorkspaceRequest) | [LoginResponse](#bytebase-v1-LoginResponse) | Removes the calling user from a workspace and switches to the next available workspace. Available to any workspace member. Fails if the caller is the last workspace admin. |
 | SetIamPolicy | [SetIamPolicyRequest](#bytebase-v1-SetIamPolicyRequest) | [IamPolicy](#bytebase-v1-IamPolicy) | Sets IAM policy for the workspace. Permissions required: bb.workspaces.setIamPolicy |
-| GetMCPInfo | [GetMCPInfoRequest](#bytebase-v1-GetMCPInfoRequest) | [MCPInfo](#bytebase-v1-MCPInfo) | Gets what MCP (Model Context Protocol) does in this workspace: the capability ceiling in force, what each ceiling serves, and the per-engine facts a read-only session depends on. The workspace is resolved from the authenticated session.
+| GetMCPInfo | [GetMCPInfoRequest](#bytebase-v1-GetMCPInfoRequest) | [MCPInfo](#bytebase-v1-MCPInfo) | Gets what MCP (Model Context Protocol) does in this workspace: the capability ceiling in force, and whether masking narrows what a session reads under it. The workspace is resolved from the authenticated session.
 
 Served to MCP sessions. An agent asking what it may do here is the point: the response says nothing a session&#39;s own denials do not already say, one refusal at a time, and knowing it up front is what stops the agent planning work the ceiling was never going to serve.
 

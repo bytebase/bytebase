@@ -156,6 +156,7 @@
       "failed-to-send-code": "发送验证码失败。{{error}}",
       "forget-password": "忘记密码?",
       "invited-email": "您已被邀请，请使用 {{email}} 登录",
+      "load-failed": "无法加载登录选项，请重试。",
       "new-user": "第一次使用 Bytebase?",
       "resend-code": "重新发送验证码",
       "resend-in": "{{seconds}} 秒后重新发送",
@@ -171,6 +172,11 @@
       "create-admin-account": "注册管理员",
       "existing-user": "已有账号?",
       "title": "注册您的账号"
+    },
+    "sso": {
+      "invalid-authorization-url": "授权 URL 无效：必须是有效的 HTTP 或 HTTPS 地址。",
+      "no-authorization-endpoint": "身份提供商未公开授权端点，请检查其配置。",
+      "unsupported-provider-type": "该身份提供商类型不支持 SSO 跳转。"
     },
     "token-expired-description": "Token 已过期，请重新登录",
     "token-expired-title": "令牌已过期"
@@ -1572,7 +1578,6 @@
     },
     "recovery-code": "恢复码"
   },
-  "oauth": {},
   "oauth2": {
     "consent": {
       "description": "{{clientName}} 正在请求访问您的账户",
@@ -1601,29 +1606,22 @@
           "workflow": "创建工单、计划和发布，以及导出查询结果",
           "write": "在你的权限范围内修改数据和模式"
         },
-        "see-contents": "查看此工作区策略允许的范围",
         "title": "此会话可以",
         "undisclosed": {
           "line": {
             "nothing-approved": "尚未批准任何内容，也未建立任何连接"
           },
-          "outdated": {
-            "description": "本工作空间的 MCP 策略比您打开的页面更新，因此这里无法显示会话被允许执行的操作。",
-            "line": "请先重新加载获取当前策略，再批准任何内容",
-            "retry": "重新加载",
-            "title": "此页面比本工作空间的 MCP 策略更旧"
-          },
           "policy-label": "工作空间策略",
+          "undisclosable": {
+            "description": "本工作空间的 MCP 策略是此页面无法表述的值。它可能比您打开的页面更新，也可能不是此 Bytebase 版本支持的策略，若是后者，所有 MCP 连接都会被拒绝。",
+            "line": "请重新加载以获取当前版本。如果此页面再次出现，请让工作空间管理员设置受支持的策略",
+            "title": "此页面无法显示本工作空间的 MCP 策略允许的内容"
+          },
           "unknown": {
             "description": "Bytebase 目前无法读取本工作空间的 MCP 访问策略。",
             "line": "无法显示本次会话将被允许执行的操作",
             "retry": "重新检查",
             "title": "无法确认 MCP 策略"
-          },
-          "unserved": {
-            "description": "本工作空间存储了此 Bytebase 版本不支持的策略值。所有 MCP 连接都在被拒绝。",
-            "line": "在管理员选择受支持的策略之前，任何 AI 会话都无法连接",
-            "title": "本工作空间的 MCP 策略不是此版本所支持的"
           }
         },
         "write-caution": "具有写权限的 AI 会话会造成真实变更。请仅在你可控的机器上批准。"
@@ -2115,7 +2113,6 @@
     "create-project": "创建项目",
     "new-project": "创建项目"
   },
-  "refresh-remind": {},
   "release": {
     "and-n-more-files": "以及另外 {{count}} 个文件",
     "change-tip": "该变更关联到了一个发布包。",
@@ -2614,38 +2611,6 @@
         "json-note": "这是 mcpServers 格式。各客户端的配置格式并不相同：例如 VS Code 在自己的 mcp.json 中使用 servers，此时请改用 VS Code 标签页。",
         "title": "连接客户端"
       },
-      "contents": {
-        "depth": {
-          "description": "只读上限在每个引擎上的执行强度。",
-          "not-a-proof": "两种强度都不是证明。被判定为读取的语句仍可能调用某个函数，把会话设置改回去。",
-          "statement": "每条语句在执行前都会被分类。驱动不会以只读方式打开数据库会话。",
-          "statement-and-session": "每条语句都会被分类，并且驱动会以只读方式打开数据库会话。",
-          "title": "各引擎的只读强度",
-          "unspecified": "当前版本未报告。",
-          "unsupported": "没有只读分类器，因此每条语句都会被拒绝，包括普通的 SELECT。"
-        },
-        "masking": {
-          "column": "列级脱敏。豁免决定谁能看到真实值，因此忽略豁免会改变会话读到的内容。",
-          "description-off": "本工作空间在 MCP 会话中仍应用每位用户的脱敏豁免。忽略这些豁免只会影响下列会查询豁免的引擎。",
-          "description-on": "本工作空间忽略脱敏豁免，因此会话能读到什么，取决于 Bytebase 在各引擎上的脱敏方式。",
-          "document": "文档级脱敏。此路径从不查询豁免，因此忽略豁免不产生任何变化。",
-          "none": "Bytebase 在该引擎上不做脱敏。忽略豁免不产生任何变化。",
-          "title": "各引擎的脱敏方式",
-          "unspecified": "当前版本未报告。"
-        },
-        "methods": {
-          "count": "MCP 可访问的 {{total}} 个方法中的 {{served}} 个。列出并不等于授权：连接用户仍需具备自身权限。",
-          "handler": "未声明 IAM 权限",
-          "none": "该模式不提供任何 API 方法。",
-          "write-legend": "其中高亮的 {{count}} 个是该模式相较只读新增的部分。"
-        },
-        "notes": {
-          "redshift": "在非 datashare 数据库中，驱动还会以只读方式打开会话。datashare 数据库无法运行只读事务，因此在那里仅有语句分类。",
-          "title": "上述答案只是下限的情况",
-          "unavailable": "此引擎有一条本页面尚无法显示的注意事项。请重新加载以获取当前版本。"
-        },
-        "title": "{{mode}} — 该模式提供的内容"
-      },
       "description": "使用模型上下文协议将 AI 助手连接到 Bytebase。",
       "first-prompt": {
         "description": "连接后，尝试向 AI 助手提问：",
@@ -2666,7 +2631,6 @@
           "unavailable": "本工作空间未授权数据脱敏功能，因此无论此项如何设置都不会脱敏。"
         },
         "mode": {
-          "contents": "查看 {{mode}} 提供的内容",
           "disabled": {
             "best-for": "适用于：在准备好开启之前先关闭 MCP。",
             "description": "任何 MCP 会话都无法连接到本工作空间。",
@@ -2803,10 +2767,12 @@
       "workload-identity-audience": "受众",
       "workload-identity-branch": "分支",
       "workload-identity-branch-hint": "留空表示允许所有分支",
+      "workload-identity-generic-oidc": "通用 OIDC",
       "workload-identity-gitlab-url": "GitLab 地址",
       "workload-identity-gitlab-url-hint": "您的 GitLab 实例地址",
       "workload-identity-group": "Group / 用户名",
       "workload-identity-issuer": "发行者 URL",
+      "workload-identity-jwks-url": "JWKS URL",
       "workload-identity-owner": "组织 / 用户名",
       "workload-identity-platform": "平台",
       "workload-identity-project": "项目",
