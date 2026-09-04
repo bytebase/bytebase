@@ -22243,17 +22243,25 @@ components:
         issuerUrl:
           type: string
           title: issuer_url
-          description: OIDC Issuer URL (auto-filled based on provider_type, can be overridden)
+          description: |-
+            HTTPS URL of the OIDC issuer. The exchange fetches
+             {issuer_url}/.well-known/openid-configuration to verify a token, unless
+             jwks_url names the key set directly.
         allowedAudiences:
           type: array
           items:
             type: string
           title: allowed_audiences
-          description: Allowed audiences for token validation
+          description: |-
+            Audiences a token may be minted for. A token authenticates if its `aud`
+             claim matches any entry.
         subjectPattern:
           type: string
           title: subject_pattern
-          description: Subject pattern to match (e.g., "repo:owner/repo:ref:refs/heads/main")
+          description: |-
+            The subject a token must carry, e.g. "repo:owner/repo:ref:refs/heads/main".
+             A trailing "*" is a prefix match and must complete an owner segment, so
+             "repo:my-org/*" is accepted and "repo:*" is not.
         jwksUrl:
           type: string
           title: jwks_url
