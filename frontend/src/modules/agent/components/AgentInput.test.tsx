@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import enUS from "@/locales/en-US.json";
 import esES from "@/locales/es-ES.json";
+import idID from "@/locales/id-ID.json";
 import jaJP from "@/locales/ja-JP.json";
 import viVN from "@/locales/vi-VN.json";
 import zhCN from "@/locales/zh-CN.json";
@@ -186,7 +187,7 @@ afterEach(() => {
 
 describe("AgentInput", () => {
   test("React locale token usage labels include the token count", () => {
-    for (const locale of [enUS, esES, jaJP, viVN, zhCN]) {
+    for (const locale of [enUS, esES, idID, jaJP, viVN, zhCN]) {
       expect(locale.agent["chat-total-tokens"]).toContain("{{count}}");
     }
   });

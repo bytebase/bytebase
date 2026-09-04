@@ -1,0 +1,29 @@
+{
+  "plan": {
+    "enterprise": {
+      "desc": "Extra security, compliance, and permission features. Dedicated support with SLA.",
+      "label": "",
+      "title": "Enterprise"
+    },
+    "free": {
+      "desc": "Team essentials to manage database development lifecycle.",
+      "label": "",
+      "title": "Community"
+    },
+    "team": {
+      "desc": "More policies to standardize and facilitate collaboration across teams.",
+      "label": "",
+      "title": "Pro"
+    },
+    "title": "Community",
+    "try": "Start free trial"
+  },
+  "vcs-users": {
+    "active": "Active VCS users",
+    "download": "Download active VCS users",
+    "download-failure": {
+      "description": "Please try again later.",
+      "title": "Failed to download active VCS users"
+    }
+  }
+}

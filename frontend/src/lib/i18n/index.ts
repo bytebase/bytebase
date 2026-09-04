@@ -2,19 +2,23 @@ import i18next from "i18next";
 import { initReactI18next } from "react-i18next";
 import enUSDynamic from "@/locales/dynamic/en-US.json";
 import esESDynamic from "@/locales/dynamic/es-ES.json";
+import idIDDynamic from "@/locales/dynamic/id-ID.json";
 import jaJPDynamic from "@/locales/dynamic/ja-JP.json";
 import viVNDynamic from "@/locales/dynamic/vi-VN.json";
 import zhCNDynamic from "@/locales/dynamic/zh-CN.json";
 import enUS from "@/locales/en-US.json";
 import esES from "@/locales/es-ES.json";
+import idID from "@/locales/id-ID.json";
 import jaJP from "@/locales/ja-JP.json";
 import enUSSQLReview from "@/locales/sql-review/en-US.json";
 import esESSQLReview from "@/locales/sql-review/es-ES.json";
+import idIDSQLReview from "@/locales/sql-review/id-ID.json";
 import jaJPSQLReview from "@/locales/sql-review/ja-JP.json";
 import viVNSQLReview from "@/locales/sql-review/vi-VN.json";
 import zhCNSQLReview from "@/locales/sql-review/zh-CN.json";
 import enUSSubscription from "@/locales/subscription/en-US.json";
 import esESSubscription from "@/locales/subscription/es-ES.json";
+import idIDSubscription from "@/locales/subscription/id-ID.json";
 import jaJPSubscription from "@/locales/subscription/ja-JP.json";
 import viVNSubscription from "@/locales/subscription/vi-VN.json";
 import zhCNSubscription from "@/locales/subscription/zh-CN.json";
@@ -36,6 +40,7 @@ function getLocale(): string {
   const nav = navigator.language;
   const mapping: Record<string, string> = {
     en: "en-US",
+    id: "id-ID",
     ja: "ja-JP",
     es: "es-ES",
     vi: "vi-VN",
@@ -113,6 +118,14 @@ const resources = {
       dynamic: esESDynamic,
       sqlReview: esESSQLReview,
       subscription: esESSubscription,
+    }),
+  },
+  "id-ID": {
+    translation: buildTranslation({
+      main: idID,
+      dynamic: idIDDynamic,
+      sqlReview: idIDSQLReview,
+      subscription: idIDSubscription,
     }),
   },
   "ja-JP": {
