@@ -314,7 +314,7 @@ export function MCPAccessPolicySection() {
                 nothing else, then vanish when the editor closes. */}
             <RadioGroup
               aria-label={t("settings.mcp.policy.title")}
-              className="grid grid-cols-1 gap-4 md:grid-cols-3"
+              className="grid grid-cols-1 gap-4 lg:grid-cols-3"
               disabled={saving}
               value={pick === undefined ? "" : String(pick)}
               onValueChange={(value) => {
@@ -352,9 +352,7 @@ export function MCPAccessPolicySection() {
                     <p className="textinfolabel">
                       {t(`settings.mcp.policy.mode.${mode.key}.description`)}
                     </p>
-                    {/* Pinned to the bottom so the three "Best for" lines sit
-                        on one row, however long each description runs. */}
-                    <p className="textinfolabel mt-auto pt-2">
+                    <p className="textinfolabel pt-2">
                       {t(`settings.mcp.policy.mode.${mode.key}.best-for`)}
                     </p>
                   </RadioGroupItem>
@@ -368,7 +366,7 @@ export function MCPAccessPolicySection() {
                 onCheckedChange={setIgnoreMasking}
                 disabled={saving}
                 aria-label={t("settings.mcp.policy.masking.title")}
-                className="mt-0.5"
+                className="mt-0.5 shrink-0"
               />
               <div className="flex flex-col gap-1">
                 <div className="textinfo font-semibold">
@@ -395,7 +393,7 @@ export function MCPAccessPolicySection() {
             )}
 
             <Separator />
-            <div className="flex flex-wrap items-center justify-between gap-2">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <p className="textinfolabel">
                 {t("settings.mcp.policy.tightening")}
               </p>
