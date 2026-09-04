@@ -10,7 +10,7 @@
               {
                 "name": "ID",
                 "position": 1,
-                "default": "\"TESTSCHEMA\".\"ISEQ$$_73411\".nextval",
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000001\".nextval",
                 "type": "NUMBER"
               },
               {
@@ -29,7 +29,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008774",
+                "name": "SYS_C0000001",
                 "expressions": [
                   "ID"
                 ],
@@ -38,7 +38,7 @@
                 "isConstraint": true
               },
               {
-                "name": "SYS_C008775",
+                "name": "SYS_C0000002",
                 "expressions": [
                   "EMAIL"
                 ],
@@ -53,7 +53,7 @@
               {
                 "name": "ID",
                 "position": 1,
-                "default": "\"TESTSCHEMA\".\"ISEQ$$_73415\".nextval",
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000002\".nextval",
                 "type": "NUMBER"
               },
               {
@@ -89,7 +89,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008781",
+                "name": "SYS_C0000003",
                 "expressions": [
                   "ID"
                 ],
@@ -98,7 +98,7 @@
                 "isConstraint": true
               },
               {
-                "name": "SYS_C008782",
+                "name": "SYS_C0000004",
                 "expressions": [
                   "ISBN"
                 ],
@@ -168,7 +168,7 @@
               {
                 "name": "ID",
                 "position": 1,
-                "default": "\"TESTSCHEMA\".\"ISEQ$$_73411\".nextval",
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000001\".nextval",
                 "type": "NUMBER"
               },
               {
@@ -187,7 +187,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008774",
+                "name": "SYS_C0000001",
                 "expressions": [
                   "ID"
                 ],
@@ -196,7 +196,7 @@
                 "isConstraint": true
               },
               {
-                "name": "SYS_C008775",
+                "name": "SYS_C0000002",
                 "expressions": [
                   "EMAIL"
                 ],
@@ -211,7 +211,7 @@
               {
                 "name": "ID",
                 "position": 1,
-                "default": "\"TESTSCHEMA\".\"ISEQ$$_73415\".nextval",
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000002\".nextval",
                 "type": "NUMBER"
               },
               {
@@ -247,7 +247,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008781",
+                "name": "SYS_C0000003",
                 "expressions": [
                   "ID"
                 ],
@@ -256,7 +256,7 @@
                 "isConstraint": true
               },
               {
-                "name": "SYS_C008782",
+                "name": "SYS_C0000004",
                 "expressions": [
                   "ISBN"
                 ],

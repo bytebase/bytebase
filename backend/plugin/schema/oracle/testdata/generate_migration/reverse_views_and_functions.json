@@ -10,7 +10,7 @@
               {
                 "name": "ID",
                 "position": 1,
-                "default": "\"TESTSCHEMA\".\"ISEQ$$_73588\".nextval",
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000001\".nextval",
                 "type": "NUMBER"
               },
               {
@@ -32,7 +32,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008939",
+                "name": "SYS_C0000001",
                 "expressions": [
                   "ID"
                 ],
@@ -60,7 +60,7 @@
               {
                 "name": "ID",
                 "position": 1,
-                "default": "\"TESTSCHEMA\".\"ISEQ$$_73585\".nextval",
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000002\".nextval",
                 "type": "NUMBER"
               },
               {
@@ -84,7 +84,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008935",
+                "name": "SYS_C0000002",
                 "expressions": [
                   "ID"
                 ],
@@ -183,7 +183,7 @@
               {
                 "name": "ID",
                 "position": 1,
-                "default": "\"TESTSCHEMA\".\"ISEQ$$_73588\".nextval",
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000001\".nextval",
                 "type": "NUMBER"
               },
               {
@@ -205,7 +205,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008939",
+                "name": "SYS_C0000001",
                 "expressions": [
                   "ID"
                 ],
@@ -233,7 +233,7 @@
               {
                 "name": "ID",
                 "position": 1,
-                "default": "\"TESTSCHEMA\".\"ISEQ$$_73585\".nextval",
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000002\".nextval",
                 "type": "NUMBER"
               },
               {
@@ -257,7 +257,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008935",
+                "name": "SYS_C0000002",
                 "expressions": [
                   "ID"
                 ],

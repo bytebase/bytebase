@@ -22,7 +22,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008831",
+                "name": "SYS_C0000001",
                 "expressions": [
                   "ID"
                 ],

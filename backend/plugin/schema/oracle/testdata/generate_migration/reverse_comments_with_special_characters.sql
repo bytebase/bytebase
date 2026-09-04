@@ -6,7 +6,7 @@ CREATE TABLE "COMPLEX_TYPES" (
     "RAW_DATA" RAW(100),
     "LONG_RAW_DATA" LONG RAW
 );
-ALTER TABLE "COMPLEX_TYPES" ADD CONSTRAINT "SYS_C008744" PRIMARY KEY (ID);
+ALTER TABLE "COMPLEX_TYPES" ADD CONSTRAINT "SYS_C0000001" PRIMARY KEY (ID);
 COMMENT ON TABLE "COMPLEX_TYPES" IS 'Advanced data types testing table
 Supports: XMLType, Timestamps with timezone, Intervals, RAW data
 Performance: Optimized for OLTP workloads @ 10K+ TPS

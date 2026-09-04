@@ -10,7 +10,7 @@
               {
                 "name": "ID",
                 "position": 1,
-                "default": "\"TESTSCHEMA\".\"ISEQ$$_73570\".nextval",
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000001\".nextval",
                 "type": "NUMBER"
               },
               {
@@ -43,7 +43,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008929",
+                "name": "SYS_C0000001",
                 "expressions": [
                   "ID"
                 ],
@@ -71,7 +71,7 @@
               {
                 "name": "ID",
                 "position": 1,
-                "default": "\"TESTSCHEMA\".\"ISEQ$$_73558\".nextval",
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000002\".nextval",
                 "type": "NUMBER"
               },
               {
@@ -109,7 +109,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008922",
+                "name": "SYS_C0000002",
                 "expressions": [
                   "ID"
                 ],
@@ -146,7 +146,7 @@
               {
                 "name": "ID",
                 "position": 1,
-                "default": "\"TESTSCHEMA\".\"ISEQ$$_73570\".nextval",
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000001\".nextval",
                 "type": "NUMBER",
                 "comment": "Primary key for customer records"
               },
@@ -184,7 +184,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008929",
+                "name": "SYS_C0000001",
                 "expressions": [
                   "ID"
                 ],
@@ -213,7 +213,7 @@
               {
                 "name": "ID",
                 "position": 1,
-                "default": "\"TESTSCHEMA\".\"ISEQ$$_73597\".nextval",
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000003\".nextval",
                 "type": "NUMBER",
                 "comment": "Unique order identifier"
               },
@@ -262,7 +262,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008946",
+                "name": "SYS_C0000003",
                 "expressions": [
                   "ID"
                 ],
@@ -301,7 +301,7 @@
               {
                 "name": "ID",
                 "position": 1,
-                "default": "\"TESTSCHEMA\".\"ISEQ$$_73558\".nextval",
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000002\".nextval",
                 "type": "NUMBER",
                 "comment": "Unique product identifier (auto-generated)"
               },
@@ -345,7 +345,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008922",
+                "name": "SYS_C0000002",
                 "expressions": [
                   "ID"
                 ],

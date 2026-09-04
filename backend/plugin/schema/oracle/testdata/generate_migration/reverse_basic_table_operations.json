@@ -10,7 +10,7 @@
               {
                 "name": "ID",
                 "position": 1,
-                "default": "\"TESTSCHEMA\".\"ISEQ$$_73616\".nextval",
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000001\".nextval",
                 "type": "NUMBER"
               },
               {
@@ -39,7 +39,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008971",
+                "name": "SYS_C0000001",
                 "expressions": [
                   "ID"
                 ],
@@ -77,7 +77,7 @@
               {
                 "name": "ID",
                 "position": 1,
-                "default": "\"TESTSCHEMA\".\"ISEQ$$_73609\".nextval",
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000002\".nextval",
                 "type": "NUMBER"
               },
               {
@@ -101,7 +101,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008963",
+                "name": "SYS_C0000002",
                 "expressions": [
                   "ID"
                 ],
@@ -146,7 +146,7 @@
               {
                 "name": "ID",
                 "position": 1,
-                "default": "\"TESTSCHEMA\".\"ISEQ$$_73600\".nextval",
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000003\".nextval",
                 "type": "NUMBER"
               },
               {
@@ -178,7 +178,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008956",
+                "name": "SYS_C0000003",
                 "expressions": [
                   "ID"
                 ],
@@ -215,7 +215,7 @@
               {
                 "name": "ID",
                 "position": 1,
-                "default": "\"TESTSCHEMA\".\"ISEQ$$_73609\".nextval",
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000002\".nextval",
                 "type": "NUMBER"
               },
               {
@@ -239,7 +239,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008963",
+                "name": "SYS_C0000002",
                 "expressions": [
                   "ID"
                 ],
@@ -278,7 +278,7 @@
               {
                 "name": "ID",
                 "position": 1,
-                "default": "\"TESTSCHEMA\".\"ISEQ$$_73600\".nextval",
+                "default": "\"TESTSCHEMA\".\"ISEQ$$_0000003\".nextval",
                 "type": "NUMBER"
               },
               {
@@ -303,7 +303,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008956",
+                "name": "SYS_C0000003",
                 "expressions": [
                   "ID"
                 ],

@@ -21,7 +21,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008719",
+                "name": "SYS_C0000001",
                 "expressions": [
                   "ID"
                 ],
@@ -53,7 +53,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008726",
+                "name": "SYS_C0000002",
                 "expressions": [
                   "ID"
                 ],
@@ -107,7 +107,7 @@
             ],
             "indexes": [
               {
-                "name": "SYS_C008719",
+                "name": "SYS_C0000001",
                 "expressions": [
                   "ID"
                 ],
