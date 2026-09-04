@@ -168,7 +168,12 @@ TOKEN=$(curl -sfX POST -H "Authorization: Bearer $PAT" -H "Accept: application/v
   "https://api.github.com/orgs/${ORG}/actions/runners/registration-token" \
   | python3 -c 'import sys,json; print(json.load(sys.stdin)["token"])')
 cd "/scratch/$1/runner"
-rm -f .runner .credentials .credentials_rsakey   # config.sh refuses to overwrite an existing config
+# config.sh refuses to run over an existing config, and --replace only settles a name
+# collision on GitHub's side, not this check. Glob both families rather than naming
+# files: 2.337.0 migrated its config and left a .runner_migrated marker no name list
+# knew to clear, which turned every service restart into a 30s crash loop. A glob
+# cannot rot the same way. Nothing else in the tree starts with either prefix.
+rm -f .runner* .credentials*
 ./config.sh --unattended --replace --url "https://github.com/${ORG}" --token "$TOKEN" \
   --name "$(hostname -s)-$1" --work "/scratch/$1/work"   # host-qualified name: never collides with another box
 EOF
