@@ -67,19 +67,7 @@ func (t *tableState) toString(buf *strings.Builder) error {
 	if _, err := fmt.Fprintf(buf, "CREATE TABLE %s (\n  ", t.name); err != nil {
 		return err
 	}
-	columns := []*columnState{}
-	for _, column := range t.columns {
-		columns = append(columns, column)
-	}
-	slices.SortFunc(columns, func(a, b *columnState) int {
-		if a.id < b.id {
-			return -1
-		}
-		if a.id > b.id {
-			return 1
-		}
-		return 0
-	})
+	columns := sortedColumns(t.columns)
 	for i, column := range columns {
 		if i > 0 {
 			if _, err := buf.WriteString(",\n  "); err != nil {
@@ -161,6 +149,26 @@ func newTableState(id int, name string) *tableState {
 		indexes:     make(map[string]*indexState),
 		foreignKeys: make(map[string]*foreignKeyState),
 	}
+}
+
+// sortedColumns returns a table's columns in declaration order. Both the
+// CREATE TABLE body and the trailing COMMENT ON COLUMN statements go through
+// it, so the two agree and neither depends on map iteration order.
+func sortedColumns(columns map[string]*columnState) []*columnState {
+	sorted := make([]*columnState, 0, len(columns))
+	for _, column := range columns {
+		sorted = append(sorted, column)
+	}
+	slices.SortFunc(sorted, func(a, b *columnState) int {
+		if a.id < b.id {
+			return -1
+		}
+		if a.id > b.id {
+			return 1
+		}
+		return 0
+	})
+	return sorted
 }
 
 func convertToTableState(id int, table *storepb.TableMetadata) *tableState {
