@@ -120,7 +120,7 @@ func writeTable(w io.StringWriter, table *tableState) error {
 		if column.comment == "" {
 			continue
 		}
-		if _, err := fmt.Fprintf(buf, "COMMENT ON COLUMN %s.%s IS '%s';\n", table.qualifiedName(), column.name, escapeSingleQuote(column.comment)); err != nil {
+		if _, err := fmt.Fprintf(buf, "COMMENT ON COLUMN %s.%s IS '%s';\n", table.qualifiedName(), quoteIdentifier(column.name), escapeSingleQuote(column.comment)); err != nil {
 			return err
 		}
 	}

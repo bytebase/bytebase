@@ -29,14 +29,14 @@ func TestGetObjectDefinition(t *testing.T) {
 					},
 				}, nil)
 			},
-			want: `CREATE TABLE public.orders (
-  id integer NOT NULL,
-  total numeric(10,2),
-  label character varying(50)
+			want: `CREATE TABLE "public"."orders" (
+  "id" integer NOT NULL,
+  "total" numeric(10,2),
+  "label" character varying(50)
 );
-COMMENT ON TABLE public.orders IS 'one row per order';
-COMMENT ON COLUMN public.orders.id IS 'surrogate key';
-COMMENT ON COLUMN public.orders.label IS 'display name';
+COMMENT ON TABLE "public"."orders" IS 'one row per order';
+COMMENT ON COLUMN "public"."orders"."id" IS 'surrogate key';
+COMMENT ON COLUMN "public"."orders"."label" IS 'display name';
 `,
 		},
 		{
@@ -48,8 +48,8 @@ COMMENT ON COLUMN public.orders.label IS 'display name';
 					Comment:    "last 30 days",
 				})
 			},
-			want: `CREATE OR REPLACE VIEW public.recent_orders AS SELECT id, total FROM orders;
-COMMENT ON VIEW public.recent_orders IS 'last 30 days';
+			want: `CREATE OR REPLACE VIEW "public"."recent_orders" AS SELECT id, total FROM orders;
+COMMENT ON VIEW "public"."recent_orders" IS 'last 30 days';
 `,
 		},
 		{
@@ -62,8 +62,8 @@ COMMENT ON VIEW public.recent_orders IS 'last 30 days';
 					Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}},
 				}, nil)
 			},
-			want: `CREATE TABLE analytics.orders (
-  id integer NOT NULL
+			want: `CREATE TABLE "analytics"."orders" (
+  "id" integer NOT NULL
 );
 `,
 		},
@@ -78,11 +78,11 @@ COMMENT ON VIEW public.recent_orders IS 'last 30 days';
 					Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer", Comment: "don't drop"}},
 				}, nil)
 			},
-			want: `CREATE TABLE public.orders (
-  id integer NOT NULL
+			want: `CREATE TABLE "public"."orders" (
+  "id" integer NOT NULL
 );
-COMMENT ON TABLE public.orders IS 'owner''s orders';
-COMMENT ON COLUMN public.orders.id IS 'don''t drop';
+COMMENT ON TABLE "public"."orders" IS 'owner''s orders';
+COMMENT ON COLUMN "public"."orders"."id" IS 'don''t drop';
 `,
 		},
 	}
@@ -188,16 +188,16 @@ func TestGetDatabaseDefinitionKeepsSections(t *testing.T) {
 	require.Equal(t, `--
 -- Table structure for `+"`orders`"+`
 --
-CREATE TABLE public.orders (
-  id integer NOT NULL
+CREATE TABLE "public"."orders" (
+  "id" integer NOT NULL
 );
-COMMENT ON TABLE public.orders IS 'one row per order';
-COMMENT ON COLUMN public.orders.id IS 'surrogate key';
+COMMENT ON TABLE "public"."orders" IS 'one row per order';
+COMMENT ON COLUMN "public"."orders"."id" IS 'surrogate key';
 
 --
 -- View structure for `+"`recent_orders`"+`
 --
-CREATE OR REPLACE VIEW public.recent_orders AS SELECT id FROM orders;
+CREATE OR REPLACE VIEW "public"."recent_orders" AS SELECT id FROM orders;
 `, got)
 
 	table, err := GetTableDefinition("public", metadata.Schemas[0].Tables[0], nil)
@@ -227,6 +227,24 @@ func TestForeignKeyKeepsReferencedSchema(t *testing.T) {
 		},
 	}, nil)
 	require.NoError(t, err)
-	require.Contains(t, got, "REFERENCES warehouse.parent(id)")
-	require.NotContains(t, got, "REFERENCES parent(id)")
+	require.Contains(t, got, `REFERENCES "warehouse"."parent"("id")`)
+	require.NotContains(t, got, `REFERENCES "parent"("id")`)
+}
+
+// TestIdentifiersNeedingQuotesSurvive covers the names that unquoted output
+// would corrupt: Redshift folds an unquoted identifier to lower case and rejects
+// one containing a space, and an embedded double quote has to be doubled.
+func TestIdentifiersNeedingQuotesSurvive(t *testing.T) {
+	got, err := GetTableDefinition("Sales Data", &storepb.TableMetadata{
+		Name: "MixedCase",
+		Columns: []*storepb.ColumnMetadata{
+			{Name: `od"d`, Type: "integer", Comment: "quoted name"},
+		},
+	}, nil)
+	require.NoError(t, err)
+	require.Equal(t, `CREATE TABLE "Sales Data"."MixedCase" (
+  "od""d" integer NOT NULL
+);
+COMMENT ON COLUMN "Sales Data"."MixedCase"."od""d" IS 'quoted name';
+`, got)
 }

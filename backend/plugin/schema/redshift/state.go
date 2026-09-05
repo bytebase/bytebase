@@ -40,9 +40,17 @@ type schemaState struct {
 // how the single-object entry points behave when the caller passes none.
 func qualifyName(schemaName, objectName string) string {
 	if schemaName == "" {
-		return objectName
+		return quoteIdentifier(objectName)
 	}
-	return schemaName + "." + objectName
+	return quoteIdentifier(schemaName) + "." + quoteIdentifier(objectName)
+}
+
+// quoteIdentifier renders a name as a quoted SQL identifier. Redshift folds an
+// unquoted name to lower case and rejects one containing a space or a reserved
+// word outright, so a name the catalog reports verbatim has to be quoted to come
+// back as itself. An embedded double quote is doubled, as in PostgreSQL.
+func quoteIdentifier(name string) string {
+	return `"` + strings.ReplaceAll(name, `"`, `""`) + `"`
 }
 
 func (t *tableState) qualifiedName() string {
@@ -237,7 +245,7 @@ func (f *foreignKeyState) toString(buf *strings.Builder) error {
 		if _, err := buf.WriteString("FOREIGN KEY ("); err != nil {
 			return err
 		}
-		if _, err := buf.WriteString(column); err != nil {
+		if _, err := buf.WriteString(quoteIdentifier(column)); err != nil {
 			return err
 		}
 		if _, err := buf.WriteString(") REFERENCES "); err != nil {
@@ -248,7 +256,7 @@ func (f *foreignKeyState) toString(buf *strings.Builder) error {
 		// ReferencedSchema, so an unqualified target here would bind to whatever
 		// the search path resolves rather than the table the constraint names.
 		referenced := qualifyName(f.referencedSchema, f.referencedTable)
-		if _, err := fmt.Fprintf(buf, "%s(%s)", referenced, referencedColumn); err != nil {
+		if _, err := fmt.Fprintf(buf, "%s(%s)", referenced, quoteIdentifier(referencedColumn)); err != nil {
 			return err
 		}
 	}
@@ -288,7 +296,7 @@ func (i *indexState) toString(buf *strings.Builder) error {
 					return err
 				}
 			}
-			if _, err := buf.WriteString(key); err != nil {
+			if _, err := buf.WriteString(quoteIdentifier(key)); err != nil {
 				return err
 			}
 		}
@@ -305,7 +313,7 @@ func (i *indexState) toString(buf *strings.Builder) error {
 					return err
 				}
 			}
-			if _, err := buf.WriteString(key); err != nil {
+			if _, err := buf.WriteString(quoteIdentifier(key)); err != nil {
 				return err
 			}
 		}
@@ -353,7 +361,7 @@ type columnState struct {
 }
 
 func (c *columnState) toString(buf *strings.Builder) error {
-	if _, err := fmt.Fprintf(buf, "%s ", c.name); err != nil {
+	if _, err := fmt.Fprintf(buf, "%s ", quoteIdentifier(c.name)); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString(c.tp); err != nil {
