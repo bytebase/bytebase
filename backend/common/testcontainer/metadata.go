@@ -12,6 +12,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sync"
 	"sync/atomic"
 	"testing"
 
@@ -27,24 +28,40 @@ var (
 	metaHost, metaPort string
 	metaAdminDB        *sql.DB
 	metaDatabaseSeq    atomic.Int64
+	metaOnce           sync.Once
+	metaContainer      *Container
+	metaErr            error
 )
 
-// MetadataMain starts one Postgres for the package, migrates a template database, runs
-// the tests, and takes the container down. Call it from the package's TestMain.
+// MetadataMain runs the package's tests and takes the shared Postgres down
+// afterwards. Call it from the package's TestMain. Nothing starts until a test
+// actually asks for a database, so `go test -run` over tests that need none
+// still costs nothing and still works without Docker.
 func MetadataMain(m *testing.M) {
-	ctx := context.Background()
-	container, err := GetPgContainer(ctx)
-	if err != nil {
-		panic(err)
-	}
-	defer container.Close(ctx)
-
-	metaHost, metaPort = container.GetHost(), container.GetPort()
-	metaAdminDB = container.GetDB()
-	if err := migrateTemplate(ctx); err != nil {
-		panic(err)
-	}
+	defer func() {
+		if metaContainer != nil {
+			metaContainer.Close(context.Background())
+		}
+	}()
 	m.Run()
+}
+
+// startMetadata brings up the container and template on first use.
+func startMetadata(t *testing.T) {
+	t.Helper()
+	metaOnce.Do(func() {
+		ctx := context.Background()
+		container, err := GetPgContainer(ctx)
+		if err != nil {
+			metaErr = err
+			return
+		}
+		metaContainer = container
+		metaHost, metaPort = container.GetHost(), container.GetPort()
+		metaAdminDB = container.GetDB()
+		metaErr = migrateTemplate(ctx)
+	})
+	require.NoError(t, metaErr)
 }
 
 func migrateTemplate(ctx context.Context) error {
@@ -75,6 +92,7 @@ func NewMetadataDB(t *testing.T) (*sql.DB, *store.Store, string) {
 // subject is the cache itself.
 func NewMetadataDBWithCache(t *testing.T, enableCache bool) (*sql.DB, *store.Store, string) {
 	t.Helper()
+	startMetadata(t)
 	ctx := context.Background()
 	name := fmt.Sprintf("bbtest_%d", metaDatabaseSeq.Add(1))
 	_, err := metaAdminDB.ExecContext(ctx,
