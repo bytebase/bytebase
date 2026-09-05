@@ -273,17 +273,21 @@ Sorting the expensive tests by that rule gave four outcomes rather than one:
   replace it. Deleted, with
   `TestSyncerForMySQL` (its Postgres twin sits in the same file) and
   `TestGetLatestSchema`'s MySQL arm (it asserted a literal dump, including MySQL's
-  `SET @OLD_UNIQUE_CHECKS` preamble). `TestTransactionMode` moved to
-  `backend/plugin/db` and was cut to one engine, 41 s to 5 s. It had four engine
-  cases whose expectations were identical — `expectRollbackOn` was `true` in all
-  four and `skipTransaction` was never set, so both branches that existed to
-  express engine variation were unreachable. What it guards is that *our*
-  `txn-mode` branch is wired to something that really opens a transaction, which
-  needs one engine, not four. It is the only thing in the repo that guards it:
-  `executeInTransactionMode` and `executeInAutoCommitMode` appear in no other
-  test, so without it every driver could ignore the directive and the suite would
-  stay green. Verified by mutation — inverting the branch in `plugin/db/pg` fails
-  the test in both directions.
+  `SET @OLD_UNIQUE_CHECKS` preamble). `TestTransactionMode` is deleted, 41 s. It had
+  four engine cases whose expectations were identical — `expectRollbackOn` was `true`
+  in all four and `skipTransaction` was never set, so both fields that existed to
+  express engine variation were dead, along with two unreachable branches.
+
+  **This leaves a known gap, recorded here rather than left silent.** Nothing now
+  covers the execution half of the `-- txn-mode` directive:
+  `executeInTransactionMode` and `executeInAutoCommitMode` appear in no test, so
+  `txn-mode = on` could stop wrapping and every test would stay green. Parsing is
+  still covered by `plugin/parser/base`. Anyone reintroducing coverage should
+  guard the mode switch on one engine, and the case actually worth an engine
+  matrix is DDL inside `txn-mode = on`, where MySQL and Oracle implicitly commit
+  and defeat it — which is the reason the directive exists, and which no version
+  of the deleted test ever covered.
+
 - **Engine is the workflow.** `TestGhostSchemaUpdate` and
   `TestGitOpsRolloutGhostDirective` keep MySQL, and now say why in a comment:
   gh-ost is MySQL-only. `TestActionCheckCommand`'s database-group subtest keeps it
