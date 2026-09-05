@@ -265,9 +265,16 @@ Sorting the expensive tests by that rule gave four outcomes rather than one:
   `TestSyncerForMySQL` (its Postgres twin sits in the same file) and
   `TestGetLatestSchema`'s MySQL arm (it asserted a literal dump, including MySQL's
   `SET @OLD_UNIQUE_CHECKS` preamble). `TestTransactionMode` moved to
-  `backend/plugin/db`: it boots no server and opens four drivers directly, so it
-  was in `backend/tests` by accident. That move buys no time and is a layering
-  fix only.
+  `backend/plugin/db` and was cut to one engine, 41 s to 5 s. It had four engine
+  cases whose expectations were identical — `expectRollbackOn` was `true` in all
+  four and `skipTransaction` was never set, so both branches that existed to
+  express engine variation were unreachable. What it guards is that *our*
+  `txn-mode` branch is wired to something that really opens a transaction, which
+  needs one engine, not four. It is the only thing in the repo that guards it:
+  `executeInTransactionMode` and `executeInAutoCommitMode` appear in no other
+  test, so without it every driver could ignore the directive and the suite would
+  stay green. Verified by mutation — inverting the branch in `plugin/db/pg` fails
+  the test in both directions.
 - **Engine is the workflow.** `TestGhostSchemaUpdate` and
   `TestGitOpsRolloutGhostDirective` keep MySQL, and now say why in a comment:
   gh-ost is MySQL-only. `TestActionCheckCommand`'s database-group subtest keeps it
