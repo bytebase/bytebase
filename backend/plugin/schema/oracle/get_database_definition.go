@@ -689,32 +689,14 @@ func writeView(buf *strings.Builder, view *storepb.ViewMetadata) error {
 	if _, err := buf.WriteString(view.Name); err != nil {
 		return err
 	}
-	if _, err := buf.WriteString(`"`); err != nil {
-		return err
-	}
-	// ALL_VIEWS.TEXT is only the query, so a view declared as
-	// CREATE VIEW V (RENAMED) AS SELECT BASE ... loses its aliases unless the
-	// synced column names are written back out. Naming them changes nothing for
-	// a view that never had an explicit list.
-	if len(view.Columns) > 0 {
-		if _, err := buf.WriteString(` (`); err != nil {
-			return err
-		}
-		for i, column := range view.Columns {
-			if i > 0 {
-				if _, err := buf.WriteString(`, `); err != nil {
-					return err
-				}
-			}
-			if _, err := buf.WriteString(`"` + column.Name + `"`); err != nil {
-				return err
-			}
-		}
-		if _, err := buf.WriteString(`)`); err != nil {
-			return err
-		}
-	}
-	if _, err := buf.WriteString(` AS `); err != nil {
+	// The synced column names are deliberately not written back as an explicit
+	// list. They would restore the aliases of CREATE VIEW V (RENAMED) AS SELECT
+	// BASE ..., which ALL_VIEWS.TEXT does not carry, but getTableColumns drops
+	// invisible columns (COLUMN_ID IS NULL, sync.go:485) while the query keeps
+	// their expressions -- so a view with an invisible column would get fewer
+	// names than output columns and fail with ORA-01730. Losing an alias beats
+	// emitting DDL that cannot run.
+	if _, err := buf.WriteString(`" AS `); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString(view.Definition); err != nil {

@@ -85,20 +85,6 @@ END;
 `,
 			description: "A view whose INSTEAD OF trigger must survive the definition round trip",
 		},
-		{
-			name: "view_with_explicit_column_aliases",
-			initialSchema: `
-CREATE TABLE SOURCE_DATA (
-    BASE_ID NUMBER PRIMARY KEY,
-    BASE_LABEL VARCHAR2(50)
-);
-
-CREATE VIEW ALIASED_VIEW (RENAMED_ID, RENAMED_LABEL) AS
-SELECT BASE_ID, BASE_LABEL
-FROM SOURCE_DATA;
-`,
-			description: "A view declared with an explicit column list, which ALL_VIEWS.TEXT does not carry",
-		},
 	}
 
 	for _, tc := range testCases {

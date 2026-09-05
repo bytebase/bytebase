@@ -182,25 +182,6 @@ END;
 `,
 		},
 		{
-			// ALL_VIEWS.TEXT carries only the query, so the aliases from
-			// CREATE VIEW V (RENAMED_ID, ...) survive solely in view.Columns.
-			name: "view keeps its explicit column aliases",
-			get: func() (string, error) {
-				return GetViewDefinition("", &storepb.ViewMetadata{
-					Name:       "ALIASED_VIEW",
-					Definition: "SELECT BASE_ID, BASE_LABEL\nFROM SOURCE_DATA",
-					Columns: []*storepb.ColumnMetadata{
-						{Name: "RENAMED_ID", Type: "NUMBER"},
-						{Name: "RENAMED_LABEL", Type: "VARCHAR2(50 BYTE)"},
-					},
-				})
-			},
-			want: `CREATE VIEW "ALIASED_VIEW" ("RENAMED_ID", "RENAMED_LABEL") AS SELECT BASE_ID, BASE_LABEL
-FROM SOURCE_DATA;
-
-`,
-		},
-		{
 			// An INSTEAD OF trigger carries the view's DML behavior. Dropping it
 			// would hand back schema text that recreates the view read-only.
 			// The body shape is constructTriggerBody's in the Oracle sync: it
