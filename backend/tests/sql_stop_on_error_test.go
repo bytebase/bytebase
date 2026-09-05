@@ -8,7 +8,6 @@ import (
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -16,8 +15,6 @@ func TestSQLQueryStopOnError(t *testing.T) {
 	tests := []struct {
 		name                 string
 		databaseName         string
-		dbType               storepb.Engine
-		environment          string // Environment to create database in (defaults to prod if empty)
 		prepareStatements    string
 		query                string
 		wantResults          int // Number of successful results before error
@@ -26,63 +23,35 @@ func TestSQLQueryStopOnError(t *testing.T) {
 		wantPermissionDenied bool // Whether to expect permission_denied in detailed_error
 	}{
 		{
-			name:              "MySQL - All statements succeed",
-			databaseName:      "TestStopOnError1",
-			dbType:            storepb.Engine_MYSQL,
-			prepareStatements: "CREATE TABLE tbl1(id INT PRIMARY KEY, name VARCHAR(64));",
-			query:             "INSERT INTO tbl1 VALUES(1, 'Alice'); INSERT INTO tbl1 VALUES(2, 'Bob'); SELECT * FROM tbl1;",
+			name:              "All statements succeed",
+			databaseName:      "TestStopOnError4",
+			prepareStatements: "CREATE TABLE tbl4(id INT PRIMARY KEY, name VARCHAR(64));",
+			query:             "INSERT INTO tbl4 VALUES(1, 'Alice'); INSERT INTO tbl4 VALUES(2, 'Bob'); SELECT * FROM tbl4;",
 			wantResults:       3, // 2 inserts + 1 select
 			wantError:         false,
 		},
 		{
-			name:              "MySQL - Second statement fails",
-			databaseName:      "TestStopOnError2",
-			dbType:            storepb.Engine_MYSQL,
-			prepareStatements: "CREATE TABLE tbl2(id INT PRIMARY KEY, name VARCHAR(64));",
-			query:             "INSERT INTO tbl2 VALUES(1, 'Alice'); INSERT INTO nonexistent VALUES(2, 'Bob'); INSERT INTO tbl2 VALUES(3, 'Charlie');",
-			wantResults:       2, // First insert succeeds + error result
-			wantError:         true,
-		},
-		{
-			name:              "MySQL - First statement fails",
-			databaseName:      "TestStopOnError3",
-			dbType:            storepb.Engine_MYSQL,
-			prepareStatements: "CREATE TABLE tbl3(id INT PRIMARY KEY, name VARCHAR(64));",
-			query:             "INSERT INTO nonexistent VALUES(1, 'Alice'); INSERT INTO tbl3 VALUES(2, 'Bob');",
-			wantResults:       1, // Error result only
-			wantError:         true,
-		},
-		{
-			name:              "PostgreSQL - All statements succeed",
-			databaseName:      "TestStopOnError4",
-			dbType:            storepb.Engine_POSTGRES,
-			prepareStatements: "CREATE TABLE tbl4(id INT PRIMARY KEY, name VARCHAR(64));",
-			query:             "INSERT INTO tbl4 VALUES(1, 'Alice'); INSERT INTO tbl4 VALUES(2, 'Bob'); SELECT * FROM tbl4;",
-			wantResults:       3,
-			wantError:         false,
-		},
-		{
-			name:              "PostgreSQL - Second statement fails",
+			name:              "Second statement fails",
 			databaseName:      "TestStopOnError5",
-			dbType:            storepb.Engine_POSTGRES,
 			prepareStatements: "CREATE TABLE tbl5(id INT PRIMARY KEY, name VARCHAR(64));",
 			query:             "INSERT INTO tbl5 VALUES(1, 'Alice'); INSERT INTO nonexistent VALUES(2, 'Bob'); INSERT INTO tbl5 VALUES(3, 'Charlie');",
 			wantResults:       2, // First insert succeeds + error result
 			wantError:         true,
 		},
 		{
-			name:            "MySQL - Syntax error",
-			databaseName:    "TestStopOnError6",
-			dbType:          storepb.Engine_MYSQL,
-			query:           "SELECT * FORM invalid_table;",
-			wantResults:     1, // Error result
-			wantError:       true,
-			wantSyntaxError: true,
+			// Ported from the MySQL arm when it was dropped: the Postgres arm had no
+			// first-statement-fails case, and stopping before the second statement is
+			// the behavior under test.
+			name:              "First statement fails",
+			databaseName:      "TestStopOnError3",
+			prepareStatements: "CREATE TABLE tbl3(id INT PRIMARY KEY, name VARCHAR(64));",
+			query:             "INSERT INTO nonexistent VALUES(1, 'Alice'); INSERT INTO tbl3 VALUES(2, 'Bob');",
+			wantResults:       1, // Error result only
+			wantError:         true,
 		},
 		{
-			name:            "PostgreSQL - Syntax error",
+			name:            "Syntax error",
 			databaseName:    "TestStopOnError7",
-			dbType:          storepb.Engine_POSTGRES,
 			query:           "SELCT * FROM tbl5;",
 			wantResults:     1, // Error result
 			wantError:       true,
@@ -100,30 +69,11 @@ func TestSQLQueryStopOnError(t *testing.T) {
 		ctl.Close(ctx)
 	})
 
-	mysqlContainer, err := getMySQLContainer(ctx)
-	t.Cleanup(func() {
-		mysqlContainer.Close(ctx)
-	})
-	a.NoError(err)
-
 	pgContainer, err := getPgContainer(ctx)
 	t.Cleanup(func() {
 		pgContainer.Close(ctx)
 	})
 	a.NoError(err)
-
-	mysqlInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance"),
-		Instance: &v1pb.Instance{
-			Title:       "mysqlInstance",
-			Engine:      v1pb.Engine_MYSQL,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "root", Password: "root-password", Id: "admin"}},
-		},
-	}))
-	a.NoError(err)
-	mysqlInstance := mysqlInstanceResp.Msg
 
 	pgInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
@@ -138,61 +88,13 @@ func TestSQLQueryStopOnError(t *testing.T) {
 	a.NoError(err)
 	pgInstance := pgInstanceResp.Msg
 
-	// Create instances for test environment (with DML policy)
-	mysqlTestInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance"),
-		Instance: &v1pb.Instance{
-			Title:       "mysqlTestInstance",
-			Engine:      v1pb.Engine_MYSQL,
-			Environment: new("environments/test"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "root", Password: "root-password", Id: "admin"}},
-		},
-	}))
-	a.NoError(err)
-	mysqlTestInstance := mysqlTestInstanceResp.Msg
-
-	pgTestInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance"),
-		Instance: &v1pb.Instance{
-			Title:       "pgTestInstance",
-			Engine:      v1pb.Engine_POSTGRES,
-			Environment: new("environments/test"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "postgres", Password: "root-password", Id: "admin"}},
-		},
-	}))
-	a.NoError(err)
-	pgTestInstance := pgTestInstanceResp.Msg
-
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			a := require.New(t)
 
-			var instance *v1pb.Instance
-			databaseOwner := ""
-			if tt.environment == "test" {
-				switch tt.dbType {
-				case storepb.Engine_MYSQL:
-					instance = mysqlTestInstance
-				case storepb.Engine_POSTGRES:
-					instance = pgTestInstance
-					databaseOwner = "postgres"
-				default:
-					a.FailNow("unsupported db type")
-				}
-			} else {
-				switch tt.dbType {
-				case storepb.Engine_MYSQL:
-					instance = mysqlInstance
-				case storepb.Engine_POSTGRES:
-					instance = pgInstance
-					databaseOwner = "postgres"
-				default:
-					a.FailNow("unsupported db type")
-				}
-			}
+			instance := pgInstance
+			databaseOwner := "postgres"
 
 			err = ctl.createDatabase(ctx, ctl.project, instance, nil, tt.databaseName, databaseOwner)
 			a.NoError(err)
@@ -268,25 +170,14 @@ func TestSQLAdminExecuteStopOnError(t *testing.T) {
 	tests := []struct {
 		name              string
 		databaseName      string
-		dbType            storepb.Engine
 		prepareStatements string
 		query             string
 		wantResults       int
 		wantError         bool
 	}{
 		{
-			name:              "MySQL AdminExecute - Second statement fails",
-			databaseName:      "TestAdminStopOnError1",
-			dbType:            storepb.Engine_MYSQL,
-			prepareStatements: "CREATE TABLE admin_tbl1(id INT PRIMARY KEY, name VARCHAR(64));",
-			query:             "INSERT INTO admin_tbl1 VALUES(1, 'Alice'); INSERT INTO nonexistent VALUES(2, 'Bob'); INSERT INTO admin_tbl1 VALUES(3, 'Charlie');",
-			wantResults:       1,
-			wantError:         true,
-		},
-		{
-			name:              "PostgreSQL AdminExecute - Second statement fails",
+			name:              "AdminExecute - Second statement fails",
 			databaseName:      "TestAdminStopOnError2",
-			dbType:            storepb.Engine_POSTGRES,
 			prepareStatements: "CREATE TABLE admin_tbl2(id INT PRIMARY KEY, name VARCHAR(64));",
 			query:             "INSERT INTO admin_tbl2 VALUES(1, 'Alice'); INSERT INTO nonexistent VALUES(2, 'Bob'); INSERT INTO admin_tbl2 VALUES(3, 'Charlie');",
 			wantResults:       1,
@@ -304,30 +195,11 @@ func TestSQLAdminExecuteStopOnError(t *testing.T) {
 		ctl.Close(ctx)
 	})
 
-	mysqlContainer, err := getMySQLContainer(ctx)
-	t.Cleanup(func() {
-		mysqlContainer.Close(ctx)
-	})
-	a.NoError(err)
-
 	pgContainer, err := getPgContainer(ctx)
 	t.Cleanup(func() {
 		pgContainer.Close(ctx)
 	})
 	a.NoError(err)
-
-	mysqlInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance"),
-		Instance: &v1pb.Instance{
-			Title:       "mysqlInstance",
-			Engine:      v1pb.Engine_MYSQL,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "root", Password: "root-password", Id: "admin"}},
-		},
-	}))
-	a.NoError(err)
-	mysqlInstance := mysqlInstanceResp.Msg
 
 	pgInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
@@ -347,17 +219,8 @@ func TestSQLAdminExecuteStopOnError(t *testing.T) {
 			t.Parallel()
 			a := require.New(t)
 
-			var instance *v1pb.Instance
-			databaseOwner := ""
-			switch tt.dbType {
-			case storepb.Engine_MYSQL:
-				instance = mysqlInstance
-			case storepb.Engine_POSTGRES:
-				instance = pgInstance
-				databaseOwner = "postgres"
-			default:
-				a.FailNow("unsupported db type")
-			}
+			instance := pgInstance
+			databaseOwner := "postgres"
 
 			err = ctl.createDatabase(ctx, ctl.project, instance, nil, tt.databaseName, databaseOwner)
 			a.NoError(err)

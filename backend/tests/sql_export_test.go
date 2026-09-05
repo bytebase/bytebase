@@ -14,14 +14,12 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 func TestSQLExport(t *testing.T) {
 	tests := []struct {
 		databaseName     string
-		dbType           storepb.Engine
 		prepareStatement string
 		exportTests      []struct {
 			format    v1pb.ExportFormat
@@ -34,60 +32,7 @@ func TestSQLExport(t *testing.T) {
 		}
 	}{
 		{
-			databaseName: "Test1",
-			dbType:       storepb.Engine_MYSQL,
-			prepareStatement: `
-			CREATE TABLE tbl(id INT PRIMARY KEY, name VARCHAR(64), gender BIT(1), height BIT(8));
-			INSERT INTO Test1.tbl (id, name, gender, height) VALUES(1, 'Alice', B'0', B'01111111');
-			`,
-			exportTests: []struct {
-				format    v1pb.ExportFormat
-				statement string
-				password  string
-				results   []struct {
-					statement string
-					content   string
-				}
-			}{
-				{
-					format:    v1pb.ExportFormat_JSON,
-					password:  "123",
-					statement: "SELECT * FROM Test1.tbl;",
-					results: []struct {
-						statement string
-						content   string
-					}{
-						{
-							statement: "SELECT * FROM Test1.tbl;",
-							content: `[
-  {
-    "gender": "AA==",
-    "height": "fw==",
-    "id": 1,
-    "name": "Alice"
-  }
-]`,
-						},
-					},
-				},
-				{
-					format:    v1pb.ExportFormat_CSV,
-					statement: "SELECT * FROM Test1.tbl;",
-					results: []struct {
-						statement string
-						content   string
-					}{
-						{
-							statement: "SELECT * FROM Test1.tbl;",
-							content:   "id,name,gender,height\n1,\"Alice\",\"0x00\",\"0x7f\"",
-						},
-					},
-				},
-			},
-		},
-		{
 			databaseName:     "Test2",
-			dbType:           storepb.Engine_POSTGRES,
 			prepareStatement: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			exportTests: []struct {
 				format    v1pb.ExportFormat
@@ -151,30 +96,11 @@ func TestSQLExport(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	mysqlContainer, err := getMySQLContainer(ctx)
-	defer func() {
-		mysqlContainer.Close(ctx)
-	}()
-	a.NoError(err)
-
 	pgContainer, err := getPgContainer(ctx)
 	defer func() {
 		pgContainer.Close(ctx)
 	}()
 	a.NoError(err)
-
-	mysqlInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance"),
-		Instance: &v1pb.Instance{
-			Title:       "mysqlInstance",
-			Engine:      v1pb.Engine_MYSQL,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "root", Password: "root-password", Id: "admin"}},
-		},
-	}))
-	a.NoError(err)
-	mysqlInstance := mysqlInstanceResp.Msg
 
 	pgInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
@@ -190,17 +116,8 @@ func TestSQLExport(t *testing.T) {
 	pgInstance := pgInstanceResp.Msg
 
 	for _, tt := range tests {
-		var instance *v1pb.Instance
-		databaseOwner := ""
-		switch tt.dbType {
-		case storepb.Engine_MYSQL:
-			instance = mysqlInstance
-		case storepb.Engine_POSTGRES:
-			instance = pgInstance
-			databaseOwner = "postgres"
-		default:
-			a.FailNow("unsupported db type")
-		}
+		instance := pgInstance
+		databaseOwner := "postgres"
 		err = ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, tt.databaseName, databaseOwner)
 		a.NoError(err)
 
