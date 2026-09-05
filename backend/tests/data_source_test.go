@@ -12,6 +12,7 @@ import (
 )
 
 func TestDataSource(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
@@ -160,6 +161,7 @@ func TestDataSource(t *testing.T) {
 }
 
 func TestDataSourceValidateOnly(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}

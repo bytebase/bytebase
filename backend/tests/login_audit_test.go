@@ -22,6 +22,7 @@ import (
 )
 
 func TestLoginFailureLockout(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
@@ -201,7 +202,10 @@ func TestLoginFailureLockout(t *testing.T) {
 // AuditLogService/SearchAuditLogs. Downstream consumers (SIEMs, compliance
 // tooling, `docker logs | grep log_type:audit`) depend on this shape being
 // stable across releases — changes here are user-visible breaking changes.
+//
+//nolint:tparallel // Subtests share one server lifecycle.
 func TestAuditLogFormat(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}

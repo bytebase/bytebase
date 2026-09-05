@@ -193,7 +193,10 @@ func TestSQLEditorTableScopedDML(t *testing.T) {
 //
 // Postgres is required for the same reason the base test documents: it is a
 // "newACL" engine, so DML/DDL statements reach the ACL at all.
+//
+//nolint:tparallel // Subtests share one server lifecycle.
 func TestSQLEditorTableScopedDMLEdgeCases(t *testing.T) {
+	t.Parallel()
 	// Not t.Parallel(): the subtests share one server/instance/database and each
 	// rewrites the project IAM policy, so they must run serially (not in parallel
 	// with each other). The whole test still runs alongside other test binaries.

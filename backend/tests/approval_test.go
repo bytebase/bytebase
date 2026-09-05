@@ -303,7 +303,9 @@ func TestApprovalFindingRerunsPlanCheckForStaleApprovalInputVersion(t *testing.T
 	a.Equal(v1pb.PlanCheckRun_DONE, checkResp.Msg.Status)
 }
 
+//nolint:tparallel // Subtests share one server lifecycle.
 func TestApprovalActionRejectsStaleApprovalInputVersion(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	ctl := &controller{}
 

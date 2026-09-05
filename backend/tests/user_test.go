@@ -18,6 +18,7 @@ import (
 )
 
 func TestDeleteUser(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
@@ -128,6 +129,7 @@ func TestDeleteUser(t *testing.T) {
 // occupying a seat even though its IAM binding lingers, while a pending member
 // (in IAM, no principal) still counts.
 func TestBatchGetUsers(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
@@ -164,6 +166,7 @@ func TestBatchGetUsers(t *testing.T) {
 }
 
 func TestSeatCountExcludesDeletedPrincipal(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
@@ -215,6 +218,7 @@ func TestSeatCountExcludesDeletedPrincipal(t *testing.T) {
 // workspace can still add a seat-neutral member (service account / workload
 // identity) to its IAM, while adding another end user remains blocked.
 func TestSeatLimitAllowsServiceAccountWhenOverLimit(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
@@ -308,6 +312,7 @@ func TestSeatLimitAllowsServiceAccountWhenOverLimit(t *testing.T) {
 // workspace is at the limit — closing the delete-bound-user, refill, undelete
 // loophole. Undelete is still allowed when a seat is free.
 func TestSeatLimitGuardsUndeleteOfBoundUser(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
@@ -386,6 +391,7 @@ func TestSeatLimitGuardsUndeleteOfBoundUser(t *testing.T) {
 }
 
 func TestUpdateUserEmail(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
@@ -651,6 +657,7 @@ func TestUpdateUserEmail(t *testing.T) {
 }
 
 func TestGetCurrentUser_ServiceAccount(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}

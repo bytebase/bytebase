@@ -134,7 +134,10 @@ func parseSlackWebhook(body []byte) (title, description string, err error) {
 }
 
 // TestWebhookIntegration tests webhook functionality.
+//
+//nolint:tparallel // Subtests share one server and one webhook collector.
 func TestWebhookIntegration(t *testing.T) {
+	t.Parallel()
 	// Allow localhost for testing
 	webhookplugin.TestOnlyAllowedDomains[storepb.WebhookType_SLACK] = []string{"127.0.0.1", "localhost", "[::1]"}
 	defer func() {
