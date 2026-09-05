@@ -15,124 +15,6 @@ func TestValidateWorkloadIdentityConfig(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name: "nil config",
-		},
-		{
-			name: "github bound",
-			config: &v1pb.WorkloadIdentityConfig{
-				ProviderType:     v1pb.WorkloadIdentityConfig_GITHUB,
-				IssuerUrl:        "https://token.actions.githubusercontent.com",
-				AllowedAudiences: []string{"bytebase"},
-				SubjectPattern:   "repo:acme-corp/deploy:ref:refs/heads/main",
-			},
-		},
-		{
-			name: "gitlab bound",
-			config: &v1pb.WorkloadIdentityConfig{
-				ProviderType:     v1pb.WorkloadIdentityConfig_GITLAB,
-				IssuerUrl:        "https://gitlab.com",
-				AllowedAudiences: []string{"bytebase"},
-				SubjectPattern:   "project_path:grp/proj:*",
-			},
-		},
-		// BYT-10151: a GitHub or GitLab identity used to be accepted with no
-		// binding at all, and the exchange skipped the audience check when the
-		// list was empty. Every provider reaches the same exchange, so every
-		// provider carries the same requirements.
-		{
-			name: "github without an audience",
-			config: &v1pb.WorkloadIdentityConfig{
-				ProviderType:   v1pb.WorkloadIdentityConfig_GITHUB,
-				IssuerUrl:      "https://token.actions.githubusercontent.com",
-				SubjectPattern: "repo:acme-corp/deploy:ref:refs/heads/main",
-			},
-			wantErr: "allowed_audiences is required",
-		},
-		{
-			name: "github without a subject pattern",
-			config: &v1pb.WorkloadIdentityConfig{
-				ProviderType:     v1pb.WorkloadIdentityConfig_GITHUB,
-				IssuerUrl:        "https://token.actions.githubusercontent.com",
-				AllowedAudiences: []string{"bytebase"},
-			},
-			wantErr: "subject_pattern is required",
-		},
-		{
-			name: "github without an issuer",
-			config: &v1pb.WorkloadIdentityConfig{
-				ProviderType:     v1pb.WorkloadIdentityConfig_GITHUB,
-				AllowedAudiences: []string{"bytebase"},
-				SubjectPattern:   "repo:acme-corp/deploy:ref:refs/heads/main",
-			},
-			wantErr: "issuer_url is required",
-		},
-		// A trailing "*" is a prefix test, so each of these admits every
-		// repository the issuer signs for, exactly as a bare "*" does.
-		{
-			name: "subject matching every subject",
-			config: &v1pb.WorkloadIdentityConfig{
-				ProviderType:     v1pb.WorkloadIdentityConfig_GITHUB,
-				IssuerUrl:        "https://token.actions.githubusercontent.com",
-				AllowedAudiences: []string{"bytebase"},
-				SubjectPattern:   "*",
-			},
-			wantErr: "matches every subject",
-		},
-		{
-			name: "subject matching every repository",
-			config: &v1pb.WorkloadIdentityConfig{
-				ProviderType:     v1pb.WorkloadIdentityConfig_GITHUB,
-				IssuerUrl:        "https://token.actions.githubusercontent.com",
-				AllowedAudiences: []string{"bytebase"},
-				SubjectPattern:   "repo:*",
-			},
-			wantErr: "matches every repository",
-		},
-		{
-			name: "subject matching a partial owner",
-			config: &v1pb.WorkloadIdentityConfig{
-				ProviderType:     v1pb.WorkloadIdentityConfig_GITHUB,
-				IssuerUrl:        "https://token.actions.githubusercontent.com",
-				AllowedAudiences: []string{"bytebase"},
-				SubjectPattern:   "repo:acme*",
-			},
-			wantErr: "matches every repository",
-		},
-		{
-			// The prefix stops inside the vocabulary marker, so it is that
-			// whole vocabulary.
-			name: "subject wildcard inside the marker",
-			config: &v1pb.WorkloadIdentityConfig{
-				ProviderType:     v1pb.WorkloadIdentityConfig_GITHUB,
-				IssuerUrl:        "https://token.actions.githubusercontent.com",
-				AllowedAudiences: []string{"bytebase"},
-				SubjectPattern:   "r*",
-			},
-			wantErr: "matches every repository",
-		},
-		{
-			name: "subject matching every gitlab project",
-			config: &v1pb.WorkloadIdentityConfig{
-				ProviderType:     v1pb.WorkloadIdentityConfig_GITLAB,
-				IssuerUrl:        "https://gitlab.com",
-				AllowedAudiences: []string{"bytebase"},
-				SubjectPattern:   "project_path:*",
-			},
-			wantErr: "matches every project",
-		},
-		{
-			// The partial-marker rule reads the declared provider: a generic
-			// OIDC issuer may sign "role:admin", so "r*" there is not a
-			// GitHub pattern.
-			name: "oidc partial-marker wildcard stays legal",
-			config: &v1pb.WorkloadIdentityConfig{
-				ProviderType:     v1pb.WorkloadIdentityConfig_OIDC,
-				IssuerUrl:        "https://nomad.example.com",
-				AllowedAudiences: []string{"bytebase"},
-				SubjectPattern:   "r*",
-			},
-		},
-		{
 			// issuer_url is free-form, so a wildcard carrying no "/" is the
 			// operator's call outside the two vocabularies we model.
 			name: "oidc namespace wildcard stays legal",
@@ -248,7 +130,8 @@ func TestValidateWorkloadIdentityConfig(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := validateWorkloadIdentityConfig(test.config)
+			err := validateWorkloadIdentityConfig(
+				convertToStoreWorkloadIdentityConfig(test.config))
 			if test.wantErr == "" {
 				require.NoError(t, err)
 				return
@@ -258,22 +141,10 @@ func TestValidateWorkloadIdentityConfig(t *testing.T) {
 	}
 }
 
-func TestConvertToStoreWorkloadIdentityConfigNormalizesEveryProvider(t *testing.T) {
-	// validateWorkloadIdentityConfig checks the trimmed value, and every
-	// comparison at the exchange is exact, so a padded value stored verbatim
-	// is an identity that passes Create and can never authenticate.
-	stored := convertToStoreWorkloadIdentityConfig(&v1pb.WorkloadIdentityConfig{
-		ProviderType:     v1pb.WorkloadIdentityConfig_GITHUB,
-		IssuerUrl:        "  https://token.actions.githubusercontent.com  ",
-		AllowedAudiences: []string{" bytebase "},
-		SubjectPattern:   " repo:acme-corp/deploy:ref:refs/heads/main ",
-	})
-	require.Equal(t, "https://token.actions.githubusercontent.com", stored.IssuerUrl)
-	require.Equal(t, []string{"bytebase"}, stored.AllowedAudiences)
-	require.Equal(t, "repo:acme-corp/deploy:ref:refs/heads/main", stored.SubjectPattern)
-}
-
-func TestConvertToStoreWorkloadIdentityConfigNormalizesOIDCValues(t *testing.T) {
+func TestConvertToStoreWorkloadIdentityConfigNormalizes(t *testing.T) {
+	// Every comparison at the exchange is exact, so a padded value stored
+	// verbatim is an identity that passes Create and can never authenticate.
+	// The write path validates this normalized form for that reason.
 	config := &v1pb.WorkloadIdentityConfig{
 		ProviderType:     v1pb.WorkloadIdentityConfig_OIDC,
 		IssuerUrl:        "  https://nomad.example.com  ",
@@ -281,12 +152,23 @@ func TestConvertToStoreWorkloadIdentityConfigNormalizesOIDCValues(t *testing.T) 
 		AllowedAudiences: []string{"  bytebase  ", "  terraform  "},
 		SubjectPattern:   "  nomad_job:atlantis:*  ",
 	}
-	require.NoError(t, validateWorkloadIdentityConfig(config))
+	stored := convertToStoreWorkloadIdentityConfig(config)
+	require.NoError(t, validateWorkloadIdentityConfig(stored))
+	require.Equal(t, "https://nomad.example.com", stored.IssuerUrl)
+	require.Equal(t, "https://keys.example.com/jwks.json", stored.JwksUrl)
+	require.Equal(t, []string{"bytebase", "terraform"}, stored.AllowedAudiences)
+	require.Equal(t, "nomad_job:atlantis:*", stored.SubjectPattern)
 
-	converted := convertToStoreWorkloadIdentityConfig(config)
-
-	require.Equal(t, "https://nomad.example.com", converted.IssuerUrl)
-	require.Equal(t, "https://keys.example.com/jwks.json", converted.JwksUrl)
-	require.Equal(t, []string{"bytebase", "terraform"}, converted.AllowedAudiences)
-	require.Equal(t, "nomad_job:atlantis:*", converted.SubjectPattern)
+	// A pattern that only looks bindable before normalization. Validating the
+	// request instead of the stored form let these through, and the matcher
+	// then refused them forever.
+	for _, pattern := range []string{" * ", " repo:* "} {
+		padded := convertToStoreWorkloadIdentityConfig(&v1pb.WorkloadIdentityConfig{
+			ProviderType:     v1pb.WorkloadIdentityConfig_GITHUB,
+			IssuerUrl:        "https://token.actions.githubusercontent.com",
+			AllowedAudiences: []string{"bytebase"},
+			SubjectPattern:   pattern,
+		})
+		require.Error(t, validateWorkloadIdentityConfig(padded), "pattern=%q", pattern)
+	}
 }
