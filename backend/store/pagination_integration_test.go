@@ -25,6 +25,7 @@ import (
 // issue IDs restart per project, so every id below is tied three ways and rows
 // cross the page boundary between reads.
 func TestPaginationStabilityAcrossProjects(t *testing.T) {
+	t.Parallel()
 	const (
 		workspaceID  = "pagination-ws"
 		projectCount = 3
@@ -110,6 +111,7 @@ func seedTiedIssues(ctx context.Context, t *testing.T, db *sql.DB, workspaceID s
 // The feed would then be stably scrambled: "labels changed" above "title
 // changed", permanently, for that issue.
 func TestIssueCommentBatchKeepsInsertionOrder(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	db, stores, _ := testcontainer.NewMetadataDB(t)
 

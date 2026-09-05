@@ -12,6 +12,7 @@ import (
 )
 
 func TestTryAdvisoryXactLockWithStringKeyScopesByKey(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	db, _, _ := testcontainer.NewMetadataDB(t)
 	tx1, err := db.BeginTx(ctx, nil)

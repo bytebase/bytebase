@@ -10,6 +10,7 @@ import (
 // raw builds an invalid tsquery — `(`, `:`, `'`, `&`, `|` and `!` are tsquery
 // syntax — which fails the whole issue list at cast time.
 func TestGetTSQueryRejectsNonLexemeText(t *testing.T) {
+	t.Parallel()
 	for _, text := range []string{"(", ")", ":", "'", "&", "|", "!", "!!!", "<->", " ", `\`} {
 		require.Empty(t, getTSQuery(text), "getTSQuery(%q)", text)
 	}

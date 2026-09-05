@@ -12,6 +12,7 @@ import (
 )
 
 func TestClaimAvailableTaskRunsSkipsDeletedProjects(t *testing.T) {
+	t.Parallel()
 	fixture := newStorePostgresFixture(t, `
 		INSERT INTO instance (resource_id, workspace) VALUES ('instance-a', 'default');
 		INSERT INTO plan (id, creator, project, name, description)
@@ -40,6 +41,7 @@ func TestClaimAvailableTaskRunsSkipsDeletedProjects(t *testing.T) {
 }
 
 func TestClaimAvailableTaskRunsSkipsArchivedInstances(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskRunClaimFixture(t, `
 		INSERT INTO instance (resource_id, workspace, deleted) VALUES ('instance-a', 'default', TRUE);
 		INSERT INTO plan (id, creator, project, name, description)
@@ -68,6 +70,7 @@ func TestClaimAvailableTaskRunsSkipsArchivedInstances(t *testing.T) {
 }
 
 func TestClaimAvailableTaskRunsClaimsLiveInstanceSpecialTaskTypes(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskRunClaimFixture(t, `
 		INSERT INTO instance (resource_id, workspace) VALUES ('instance-a', 'default');
 		INSERT INTO plan (id, creator, project, name, description)

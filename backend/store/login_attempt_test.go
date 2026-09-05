@@ -22,6 +22,8 @@ import (
 // nothing (so the lock expires exactly D after the Nth attempt), the counter
 // forgets after D of quiet, and success deletes the row.
 func TestLoginAttemptClaim(t *testing.T) {
+	// Not parallel: the purge subtest asserts a table-wide delete count, which only
+	// holds while no other subtest is writing login_attempt rows.
 	ctx := context.Background()
 	db, s, _ := testcontainer.NewMetadataDB(t)
 
@@ -194,6 +196,7 @@ func TestLoginAttemptClaim(t *testing.T) {
 // TestSendBudgetClaim covers the outbound send budget: the same ClaimAttempt as
 // the lockout, under the window rule EMAIL_CODE_SEND selects.
 func TestSendBudgetClaim(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	db, s, _ := testcontainer.NewMetadataDB(t)
 
@@ -210,6 +213,7 @@ func TestSendBudgetClaim(t *testing.T) {
 	}
 
 	t.Run("grants exactly max per window", func(t *testing.T) {
+		t.Parallel()
 		const key = "sender-a"
 		for i := range 3 {
 			granted, err := s.ClaimAttempt(ctx, key, kind, 3, window)
@@ -226,6 +230,7 @@ func TestSendBudgetClaim(t *testing.T) {
 	// never resets it and "3 per hour" would become "3 ever, until an hour of
 	// silence", refusing traffic that never approached the rate.
 	t.Run("a steady trickle does not accumulate across windows", func(t *testing.T) {
+		t.Parallel()
 		const key = "sender-trickle"
 		// Six sends, each arriving well inside the window but with the window
 		// itself rolling over between every pair. A lockout counter would reach
@@ -241,6 +246,7 @@ func TestSendBudgetClaim(t *testing.T) {
 	})
 
 	t.Run("a full window reopens once it expires", func(t *testing.T) {
+		t.Parallel()
 		const key = "sender-expiry"
 		for range 2 {
 			granted, err := s.ClaimAttempt(ctx, key, kind, 2, window)
@@ -258,6 +264,7 @@ func TestSendBudgetClaim(t *testing.T) {
 	})
 
 	t.Run("refusals do not extend the window", func(t *testing.T) {
+		t.Parallel()
 		const key = "sender-refusal"
 		granted, err := s.ClaimAttempt(ctx, key, kind, 1, window)
 		require.NoError(t, err)
@@ -280,6 +287,7 @@ func TestSendBudgetClaim(t *testing.T) {
 	})
 
 	t.Run("senders and kinds are independent", func(t *testing.T) {
+		t.Parallel()
 		granted, err := s.ClaimAttempt(ctx, "sender-x", kind, 1, window)
 		require.NoError(t, err)
 		require.True(t, granted)
@@ -292,6 +300,7 @@ func TestSendBudgetClaim(t *testing.T) {
 	})
 
 	t.Run("an unkeyed claim is refused outright", func(t *testing.T) {
+		t.Parallel()
 		_, err := s.ClaimAttempt(ctx, "", kind, 1, window)
 		require.Error(t, err)
 	})

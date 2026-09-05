@@ -8,6 +8,7 @@ import (
 )
 
 func TestGetActiveAccessGrantFilter(t *testing.T) {
+	t.Parallel()
 	expireTime := time.Date(2026, time.September, 3, 0, 0, 0, 0, time.UTC)
 	q := getActiveAccessGrantFilter(&FindActiveAccessGrantMessage{
 		Target:     "instances/prod/databases/app",
@@ -27,6 +28,7 @@ func TestGetActiveAccessGrantFilter(t *testing.T) {
 }
 
 func TestGetListAccessGrantFilter(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		filter      string
@@ -207,6 +209,7 @@ func TestGetListAccessGrantFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			q, err := GetListAccessGrantFilter(tt.filter)
 
 			if tt.wantErr {

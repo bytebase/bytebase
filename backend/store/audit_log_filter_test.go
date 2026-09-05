@@ -15,6 +15,7 @@ func mustParseTime(t *testing.T, s string) time.Time {
 }
 
 func TestGetSearchAuditLogsFilter_WithoutUserLookup(t *testing.T) {
+	t.Parallel()
 	// Note: This test skips user filter tests since they require database access
 	// User filter functionality is tested in integration tests
 
@@ -138,6 +139,7 @@ func TestGetSearchAuditLogsFilter_WithoutUserLookup(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			q, err := GetSearchAuditLogsFilter(tt.filter)
 
 			if tt.wantErr {
@@ -168,6 +170,7 @@ func TestGetSearchAuditLogsFilter_WithoutUserLookup(t *testing.T) {
 }
 
 func TestGetSearchAuditLogsFilter_EdgeCases(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		filter      string
@@ -205,6 +208,7 @@ func TestGetSearchAuditLogsFilter_EdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			q, err := GetSearchAuditLogsFilter(tt.filter)
 
 			if tt.wantErr {

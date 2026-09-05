@@ -15,6 +15,7 @@ import (
 )
 
 func TestClaimAvailablePlanCheckRunsDefaultsMissingApprovalInputVersion(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -41,6 +42,7 @@ func TestClaimAvailablePlanCheckRunsDefaultsMissingApprovalInputVersion(t *testi
 }
 
 func TestClaimAvailablePlanCheckRunsSkipsArchivedProjects(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -80,6 +82,7 @@ func TestClaimAvailablePlanCheckRunsSkipsArchivedProjects(t *testing.T) {
 }
 
 func TestUpdatePlanCheckRunIfApprovalInputVersionSkipsStaleWorkerOnRefreshedRow(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -135,6 +138,7 @@ func TestUpdatePlanCheckRunIfApprovalInputVersionSkipsStaleWorkerOnRefreshedRow(
 }
 
 func TestUpdatePlanCheckRunIfApprovalInputVersionAllowsClaimedRowAfterPlanVersionBump(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -180,6 +184,7 @@ func TestUpdatePlanCheckRunIfApprovalInputVersionAllowsClaimedRowAfterPlanVersio
 }
 
 func TestCreatePlanCheckRunDoesNotResetActiveSameVersionRun(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -220,6 +225,7 @@ func TestCreatePlanCheckRunDoesNotResetActiveSameVersionRun(t *testing.T) {
 }
 
 func TestCreatePlanCheckRunDoesNotResetActiveSameVersionAvailableRun(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -255,6 +261,7 @@ func TestCreatePlanCheckRunDoesNotResetActiveSameVersionAvailableRun(t *testing.
 }
 
 func TestCreatePlanCheckRunAllowsTerminalSameVersionRerun(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -304,6 +311,7 @@ func TestCreatePlanCheckRunAllowsTerminalSameVersionRerun(t *testing.T) {
 }
 
 func TestCreatePlanCheckRunSkipsStaleIncomingApprovalInputVersion(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -339,6 +347,7 @@ func TestCreatePlanCheckRunSkipsStaleIncomingApprovalInputVersion(t *testing.T) 
 }
 
 func TestRefreshPlanCheckRunIfStaleApprovalInputVersionDoesNotResetRunningCheck(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -375,6 +384,7 @@ func TestRefreshPlanCheckRunIfStaleApprovalInputVersionDoesNotResetRunningCheck(
 }
 
 func TestRefreshPlanCheckRunIfStaleApprovalInputVersionRefreshesTerminalStaleCheck(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -423,6 +433,7 @@ func TestRefreshPlanCheckRunIfStaleApprovalInputVersionRefreshesTerminalStaleChe
 }
 
 func TestRefreshPlanCheckRunIfStaleApprovalInputVersionSkipsSameVersionRow(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -470,6 +481,7 @@ func TestRefreshPlanCheckRunIfStaleApprovalInputVersionSkipsSameVersionRow(t *te
 }
 
 func TestRefreshPlanCheckRunIfStaleApprovalInputVersionDoesNotRewindNewerRow(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -516,6 +528,7 @@ func TestRefreshPlanCheckRunIfStaleApprovalInputVersionDoesNotRewindNewerRow(t *
 }
 
 func TestCancelPlanCheckRunIfApprovalInputVersionSkipsRefreshedRow(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -570,6 +583,7 @@ func TestCancelPlanCheckRunIfApprovalInputVersionSkipsRefreshedRow(t *testing.T)
 }
 
 func TestCancelPlanCheckRunIfApprovalInputVersionAllowsObservedStaleRow(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 
@@ -607,6 +621,7 @@ func TestCancelPlanCheckRunIfApprovalInputVersionAllowsObservedStaleRow(t *testi
 }
 
 func TestFailStalePlanCheckRunsPreservesApprovalInputVersion(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s := setupPlanCheckRunVersionStore(ctx, t)
 

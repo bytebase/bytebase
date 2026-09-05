@@ -23,6 +23,7 @@ import (
 // the read into another workspace, another resource type, or — worst — another
 // policy type, whose payload would then be unmarshalled as an IamPolicy.
 func TestListProjectIamPoliciesIsScoped(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	db, stores, _ := testcontainer.NewMetadataDB(t)
 	_, err := db.ExecContext(ctx, `

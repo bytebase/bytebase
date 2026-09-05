@@ -19,6 +19,7 @@ func savedQueryStarCount(t *testing.T, fixture *storePostgresFixture) int {
 }
 
 func TestSavedQueryDeleteAndStarToggleLockOrder(t *testing.T) {
+	t.Parallel()
 	const seedSQL = `
 		INSERT INTO saved_query (resource_id, creator, project, name, statement)
 			VALUES ('saved-query-a', 'user@example.com', 'default', 'Saved Query A', '');
@@ -26,6 +27,7 @@ func TestSavedQueryDeleteAndStarToggleLockOrder(t *testing.T) {
 	`
 
 	t.Run("delete first", func(t *testing.T) {
+		t.Parallel()
 		fixture := newStorePostgresFixture(t, seedSQL)
 		const barrierID = 9935
 		barrier := newMaintenanceLockBarrier(fixture.ctx, t, fixture.db, barrierID)
@@ -62,6 +64,7 @@ func TestSavedQueryDeleteAndStarToggleLockOrder(t *testing.T) {
 	})
 
 	t.Run("toggle first", func(t *testing.T) {
+		t.Parallel()
 		fixture := newStorePostgresFixture(t, seedSQL)
 		const barrierID = 9936
 		barrier := newMaintenanceLockBarrier(fixture.ctx, t, fixture.db, barrierID)
@@ -94,6 +97,7 @@ func TestSavedQueryDeleteAndStarToggleLockOrder(t *testing.T) {
 }
 
 func TestSavedQueryBatchFolderMovesLockOrder(t *testing.T) {
+	t.Parallel()
 	const seedSQL = `
 		INSERT INTO saved_query (resource_id, creator, project, name, statement, folder) VALUES
 			('saved-query-a', 'user@example.com', 'default', 'A', '', 'start'),
@@ -141,6 +145,7 @@ func TestSavedQueryBatchFolderMovesLockOrder(t *testing.T) {
 }
 
 func TestCreateSavedQueryRejectsInactiveProject(t *testing.T) {
+	t.Parallel()
 	fixture := newStorePostgresFixture(t, "")
 
 	_, err := fixture.store.CreateSavedQuery(fixture.ctx, &store.SavedQueryMessage{
@@ -172,6 +177,7 @@ func TestCreateSavedQueryRejectsInactiveProject(t *testing.T) {
 }
 
 func TestSavedQueryFolderPrefixMovesLockOrder(t *testing.T) {
+	t.Parallel()
 	const seedSQL = `
 		INSERT INTO saved_query (resource_id, creator, project, name, statement, folder) VALUES
 			('saved-query-a', 'user@example.com', 'default', 'A', '', 'a'),
@@ -195,6 +201,7 @@ func TestSavedQueryFolderPrefixMovesLockOrder(t *testing.T) {
 	}
 
 	t.Run("parent first", func(t *testing.T) {
+		t.Parallel()
 		fixture := newStorePostgresFixture(t, seedSQL)
 		const barrierID = 9961
 		barrier := newMaintenanceLockBarrier(fixture.ctx, t, fixture.db, barrierID)
@@ -226,6 +233,7 @@ func TestSavedQueryFolderPrefixMovesLockOrder(t *testing.T) {
 	})
 
 	t.Run("child first", func(t *testing.T) {
+		t.Parallel()
 		fixture := newStorePostgresFixture(t, seedSQL)
 		const barrierID = 9962
 		barrier := newMaintenanceLockBarrier(fixture.ctx, t, fixture.db, barrierID)
@@ -258,6 +266,7 @@ func TestSavedQueryFolderPrefixMovesLockOrder(t *testing.T) {
 }
 
 func TestSavedQueryWritersProjectScoped(t *testing.T) {
+	t.Parallel()
 	const seedSQL = `
 		INSERT INTO saved_query (resource_id, creator, project, name, statement, folder)
 			VALUES ('saved-query-a', 'user@example.com', 'project-a', 'Saved Query A', '', 'kept');

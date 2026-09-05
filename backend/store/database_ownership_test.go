@@ -11,6 +11,7 @@ import (
 )
 
 func TestDatabaseWritersRespectProjectInstanceOwnership(t *testing.T) {
+	t.Parallel()
 	fixture := newStorePostgresFixture(t, `
 		ALTER TABLE instance ADD COLUMN IF NOT EXISTS project TEXT REFERENCES project(resource_id);
 		INSERT INTO project (resource_id, workspace, name) VALUES
@@ -117,6 +118,7 @@ func TestDatabaseWritersRespectProjectInstanceOwnership(t *testing.T) {
 }
 
 func TestListDatabasesIncludesInstanceProject(t *testing.T) {
+	t.Parallel()
 	fixture := newStorePostgresFixture(t, `
 		ALTER TABLE instance ADD COLUMN IF NOT EXISTS project TEXT REFERENCES project(resource_id);
 		INSERT INTO project (resource_id, workspace, name) VALUES ('project-b', 'default', 'Project B');
@@ -155,6 +157,7 @@ func getDatabaseProject(ctx context.Context, t *testing.T, s *store.Store, insta
 }
 
 func TestProjectInstanceDatabaseUpsertAllowsArchivedOwner(t *testing.T) {
+	t.Parallel()
 	fixture := newStorePostgresFixture(t, `
 		ALTER TABLE instance ADD COLUMN IF NOT EXISTS project TEXT REFERENCES project(resource_id);
 		INSERT INTO project (resource_id, workspace, name, deleted)
@@ -174,6 +177,7 @@ func TestProjectInstanceDatabaseUpsertAllowsArchivedOwner(t *testing.T) {
 }
 
 func TestProjectInstanceDatabaseUpdateAllowsArchivedOwner(t *testing.T) {
+	t.Parallel()
 	fixture := newStorePostgresFixture(t, `
 		ALTER TABLE instance ADD COLUMN IF NOT EXISTS project TEXT REFERENCES project(resource_id);
 		INSERT INTO project (resource_id, workspace, name, deleted)
