@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	"time"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -431,7 +431,7 @@ CREATE TABLE cities (
 			t.Parallel()
 
 			// Create first database with original DDL using unique name
-			dbNameA := fmt.Sprintf("test_a_%s_%d", strings.ReplaceAll(tc.name, "-", "_"), time.Now().UnixNano()%1000000)
+			dbNameA := fmt.Sprintf("test_a_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
 			_, err := pgContainer.GetDB().Exec(fmt.Sprintf("CREATE DATABASE %s", dbNameA))
 			require.NoError(t, err)
 
@@ -454,7 +454,7 @@ CREATE TABLE cities (
 			require.NotEmpty(t, generatedDDL, "generated DDL should not be empty")
 
 			// Create second database and apply generated DDL using unique name
-			dbNameB := fmt.Sprintf("test_b_%s_%d", strings.ReplaceAll(tc.name, "-", "_"), time.Now().UnixNano()%1000000)
+			dbNameB := fmt.Sprintf("test_b_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
 			_, err = pgContainer.GetDB().Exec(fmt.Sprintf("CREATE DATABASE %s", dbNameB))
 			require.NoError(t, err)
 
@@ -914,7 +914,7 @@ func TestSyncCompositeTypesWithTestcontainer(t *testing.T) {
 
 	pgContainer := sharedPgContainer(t)
 
-	dbName := fmt.Sprintf("test_sync_composite_%d", time.Now().UnixNano()%1000000)
+	dbName := fmt.Sprintf("test_sync_composite_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
 	_, err := pgContainer.GetDB().Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))
 	require.NoError(t, err)
 

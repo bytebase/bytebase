@@ -425,9 +425,12 @@ func TestGetDatabaseDefinitionWithConnectedDeps(t *testing.T) {
 		t.Skip("Skipping MySQL testcontainer test in short mode")
 	}
 
+	// Unique per run: TestMain keeps one container for the whole package, so a
+	// fixed name collides with itself under go test -count=2.
+	databaseName := fmt.Sprintf("test_complex_deps_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
+
 	const (
-		databaseName = "test_complex_deps"
-		originalDDL  = `
+		originalDDL = `
 CREATE TABLE department (
 	id INT PRIMARY KEY AUTO_INCREMENT,
 	name VARCHAR(100) NOT NULL,
