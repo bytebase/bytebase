@@ -28,6 +28,11 @@ var testMySQLAdvisorExplainJSON string
 // statement the server refuses to EXPLAIN.
 var testMySQLAdvisorExplainErr error
 
+// testMySQLAdvisorQueries records every statement the fake driver is asked to
+// run, so a rule that sent raw DML instead of EXPLAIN is caught rather than
+// silently succeeding.
+var testMySQLAdvisorQueries []string
+
 func init() {
 	sql.Register("test_mysql_advisor_explain", testMySQLAdvisorExplainDriver{})
 }
@@ -53,6 +58,7 @@ func (testMySQLAdvisorExplainConn) Begin() (driver.Tx, error) {
 }
 
 func (testMySQLAdvisorExplainConn) QueryContext(_ context.Context, query string, _ []driver.NamedValue) (driver.Rows, error) {
+	testMySQLAdvisorQueries = append(testMySQLAdvisorQueries, query)
 	if testMySQLAdvisorExplainErr != nil {
 		return nil, testMySQLAdvisorExplainErr
 	}
@@ -340,7 +346,8 @@ func TestMySQLDMLDryRunAdvisor(t *testing.T) {
 	defer db.Close()
 
 	// Sequential: the middle case arms a package-level failure hook.
-	t.Run("a statement whose EXPLAIN succeeds raises nothing", func(t *testing.T) {
+	t.Run("a statement whose EXPLAIN succeeds raises nothing, and the DML never runs", func(t *testing.T) {
+		testMySQLAdvisorQueries = nil
 		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, stmt, rules, advisor.Context{
 			DBType:          storepb.Engine_MYSQL,
 			Driver:          db,
@@ -348,6 +355,16 @@ func TestMySQLDMLDryRunAdvisor(t *testing.T) {
 		})
 		require.NoError(t, err)
 		require.Empty(t, adviceList)
+
+		// The deleted workflow test guaranteed non-mutation by reading the table
+		// back afterwards. Here the driver is the only way out, so assert nothing
+		// left it except an EXPLAIN: a dry run that sent the raw UPDATE would
+		// otherwise pass.
+		require.NotEmpty(t, testMySQLAdvisorQueries, "the rule must actually reach the driver")
+		for _, q := range testMySQLAdvisorQueries {
+			require.True(t, strings.HasPrefix(q, "EXPLAIN "),
+				"the dry run must only ever EXPLAIN, got %q", q)
+		}
 	})
 
 	t.Run("a statement whose EXPLAIN fails is reported", func(t *testing.T) {

@@ -27,6 +27,26 @@ import (
 )
 
 var (
+	// builtinOnlyPolicyWithConflict is what review returns with no user policy
+	// configured but the builtin walk-through still running, against a statement
+	// that conflicts with the schema already in the database.
+	builtinOnlyPolicyWithConflict = []*v1pb.PlanCheckRun_Result{
+		{
+			Status: v1pb.Advice_WARNING,
+			// Postgres reaches this through DDL simulation where MySQL used a
+			// walk-through, but either way it is the builtin rule speaking, which is
+			// the point: no user policy is configured at this stage.
+			Title:   "DDL simulation failed",
+			Content: `ERROR: relation "tech_book" already exists (SQLSTATE 42P07)`,
+			Code:    607,
+			Report: &v1pb.PlanCheckRun_Result_SqlReviewReport_{
+				SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
+					StartPosition: &v1pb.Position{Line: 1},
+				},
+			},
+		},
+	}
+
 	noSQLReviewPolicy = []*v1pb.PlanCheckRun_Result{
 		{
 			Status: v1pb.Advice_SUCCESS,
@@ -178,6 +198,14 @@ func TestSQLReviewForPostgreSQL(t *testing.T) {
 
 	result = createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database.Msg, statements[0], false)
 	equalReviewResultProtos(a, noSQLReviewPolicy, result, database.Msg.Name, "")
+
+	// With no user-configured policy the builtin rules still run, and this is the
+	// only place that proves it: statements[0] creates a table that does not
+	// exist, so an OK there cannot tell "builtin ran and found nothing" apart
+	// from "review was skipped". tech_book was created for real by the run:true
+	// case in the fixture, so re-creating it must draw the builtin walk-through.
+	result = createIssueAndReturnSQLReviewResult(ctx, a, ctl, ctl.project, database.Msg, "CREATE TABLE tech_book(id INT);", false)
+	equalReviewResultProtos(a, builtinOnlyPolicyWithConflict, result, database.Msg.Name, "")
 }
 
 func readTestData(path string) ([]test, error) {
