@@ -259,8 +259,21 @@ package from **614.7 s to a median 173 s**, over ten runs spanning 155–236 s
 with no failures. The spread is real: twenty concurrent servers is a noisy
 schedule, and the worst run is still 2.6× better than the best serial one.
 
-Nothing structural was in the way. 32 of the 34 boot a server, and each already
-gets its own server, workspace and database, so there is nothing to share. Every
+Almost nothing structural was in the way. 32 of the 34 boot a server, and each
+already gets its own server, workspace and database, so there is nothing to
+share. **One exception, and it is the interesting one:**
+`webhook.TestOnlyAllowedDomains` is a plain map in `plugin/webhook` that
+`TestWebhookIntegration` wrote and deleted, while `ValidateWebhookURL` reads it
+unsynchronized on behalf of every other test that adds a webhook — and two of
+those were already parallel. Concurrent map access is fatal to the process, not
+merely racy. `TestMain` now seeds it once for SLACK and DINGTALK and nothing
+mutates it afterwards.
+
+The lesson generalizes past this one map: **grepping the package for shared state
+is not enough, because the shared state can live in the package under test.** A
+`^var ` sweep of `backend/tests` finds `nextPort` and friends and reports all
+clear. What it cannot see is a test reaching into another package's global. When
+turning parallelism on, follow the writes out of the test package as well. Every
 piece of package-level state is already guarded — `nextPort` and
 `nextDatabaseNumber` behind `mu`, `externalPgHost`/`Port` written once in
 `TestMain` and read-only thereafter — and the package has no `t.Setenv` or
