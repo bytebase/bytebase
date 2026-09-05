@@ -181,6 +181,35 @@ END;
 
 `,
 		},
+		{
+			// An INSTEAD OF trigger carries the view's DML behavior. Dropping it
+			// would hand back schema text that recreates the view read-only.
+			// The body shape is constructTriggerBody's in the Oracle sync: it
+			// prepends CREATE OR REPLACE TRIGGER to ALL_TRIGGERS.DESCRIPTION.
+			name: "view keeps its INSTEAD OF trigger",
+			get: func() (string, error) {
+				return GetViewDefinition("", &storepb.ViewMetadata{
+					Name:       "EMPLOYEE_VIEW",
+					Definition: "SELECT EMP_ID, EMAIL FROM EMPLOYEES",
+					Triggers: []*storepb.TriggerMetadata{
+						{
+							Name: "EMPLOYEE_VIEW_INSERT_TRG",
+							Body: "CREATE OR REPLACE TRIGGER EMPLOYEE_VIEW_INSERT_TRG\nINSTEAD OF INSERT ON EMPLOYEE_VIEW\nFOR EACH ROW\nBEGIN\n    NULL;\nEND;",
+						},
+					},
+				})
+			},
+			want: `CREATE VIEW "EMPLOYEE_VIEW" AS SELECT EMP_ID, EMAIL FROM EMPLOYEES;
+
+CREATE OR REPLACE TRIGGER EMPLOYEE_VIEW_INSERT_TRG
+INSTEAD OF INSERT ON EMPLOYEE_VIEW
+FOR EACH ROW
+BEGIN
+    NULL;
+END;
+
+`,
+		},
 	}
 
 	for _, tt := range tests {

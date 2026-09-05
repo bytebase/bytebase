@@ -305,14 +305,7 @@ func writeTable(buf *strings.Builder, table *storepb.TableMetadata) error {
 		}
 	}
 
-	// Write triggers for this table
-	for _, trigger := range table.Triggers {
-		if err := writeTrigger(buf, trigger); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return writeTriggers(buf, table.Triggers)
 }
 
 func writeIndex(buf *strings.Builder, table string, index *storepb.IndexMetadata) error {
@@ -710,7 +703,10 @@ func writeView(buf *strings.Builder, view *storepb.ViewMetadata) error {
 	if _, err := buf.WriteString("\n\n"); err != nil {
 		return err
 	}
-	return nil
+
+	// An INSTEAD OF trigger carries the view's DML behavior, so it belongs with
+	// the view the way writeTable emits a table's triggers.
+	return writeTriggers(buf, view.Triggers)
 }
 
 // writeMaterializedView writes a CREATE MATERIALIZED VIEW statement
@@ -735,7 +731,8 @@ func writeMaterializedView(buf *strings.Builder, view *storepb.MaterializedViewM
 	if _, err := buf.WriteString("\n\n"); err != nil {
 		return err
 	}
-	return nil
+
+	return writeTriggers(buf, view.Triggers)
 }
 
 // writeFunction writes a CREATE FUNCTION statement
@@ -780,6 +777,16 @@ func writeProcedure(buf *strings.Builder, procedure *storepb.ProcedureMetadata) 
 	}
 	if _, err := buf.WriteString("\n\n"); err != nil {
 		return err
+	}
+	return nil
+}
+
+// writeTriggers writes the CREATE TRIGGER statements owned by a table or view.
+func writeTriggers(buf *strings.Builder, triggers []*storepb.TriggerMetadata) error {
+	for _, trigger := range triggers {
+		if err := writeTrigger(buf, trigger); err != nil {
+			return err
+		}
 	}
 	return nil
 }

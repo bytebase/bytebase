@@ -66,6 +66,28 @@ CREATE INDEX IDX_EMP_NAME ON EMPLOYEES(NAME);
 `,
 			description: "Basic tables with primary keys, foreign keys, unique constraints, check constraints, and indexes",
 		},
+		{
+			name: "view_with_instead_of_trigger",
+			initialSchema: `
+CREATE TABLE EMPLOYEES (
+    EMP_ID NUMBER PRIMARY KEY,
+    EMAIL VARCHAR2(100)
+);
+
+CREATE VIEW EMPLOYEE_VIEW AS
+SELECT EMP_ID, EMAIL
+FROM EMPLOYEES;
+
+CREATE OR REPLACE TRIGGER EMPLOYEE_VIEW_INSERT_TRG
+INSTEAD OF INSERT ON EMPLOYEE_VIEW
+FOR EACH ROW
+BEGIN
+    INSERT INTO EMPLOYEES (EMP_ID, EMAIL) VALUES (:NEW.EMP_ID, :NEW.EMAIL);
+END;
+/
+`,
+			description: "A view whose INSTEAD OF trigger must survive the definition round trip",
+		},
 	}
 
 	for _, tc := range testCases {
@@ -144,6 +166,20 @@ CREATE INDEX IDX_EMP_NAME ON EMPLOYEES(NAME);
 // normalizeOracleMetadata handles Oracle-specific normalization for metadata comparison
 func normalizeOracleMetadata(metadata *storepb.DatabaseSchemaMetadata) {
 	for _, schema := range metadata.Schemas {
+		// A view's dependency columns record their owning Oracle user, and this
+		// test recreates the schema under a second user by construction, so the
+		// two can never match.
+		for _, view := range schema.Views {
+			for _, dependency := range view.DependencyColumns {
+				dependency.Schema = ""
+			}
+		}
+		for _, view := range schema.MaterializedViews {
+			for _, dependency := range view.DependencyColumns {
+				dependency.Schema = ""
+			}
+		}
+
 		for _, table := range schema.Tables {
 			for _, column := range table.Columns {
 				// Normalize system-generated sequence references in default expressions
