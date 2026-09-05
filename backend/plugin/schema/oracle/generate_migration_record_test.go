@@ -35,7 +35,6 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/testing/protocmp"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -57,8 +56,7 @@ var oracleGeneratedName = regexp.MustCompile(`ISEQ\$\$_[0-9]+|SYS_C[0-9]+`)
 func TestRecordGenerateMigrationFixtures(t *testing.T) {
 	ctx := context.Background()
 
-	container := testcontainer.GetTestOracleContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
+	container := sharedOracleContainer(t)
 	systemDB := container.GetDB()
 
 	require.NoError(t, os.MkdirAll(generateMigrationFixtureDir, 0o755))

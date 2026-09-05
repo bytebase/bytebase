@@ -8,9 +8,24 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
+// Two of GetSchemaString's object types are deliberately left unregistered.
+//
+// SCHEMA: an Oracle schema is a user, one per database, so its definition is the
+// database definition GetDatabaseDefinition already renders. Only pg registers a
+// schema definition; MSSQL, MySQL and TiDB have real schemas and do not.
+//
+// SEQUENCE: getSequences in backend/plugin/db/oracle/sync.go selects only
+// SEQUENCE_NAME, so synced sequences carry no Start, Increment, MaxValue or
+// Cycle. Rendering one would emit a bare CREATE SEQUENCE that silently drops the
+// real increment and bounds. Registering it has to wait for the sync to read
+// those columns.
 func init() {
 	schema.RegisterGetDatabaseDefinition(storepb.Engine_ORACLE, GetDatabaseDefinition)
 	schema.RegisterGetTableDefinition(storepb.Engine_ORACLE, GetTableDefinition)
+	schema.RegisterGetViewDefinition(storepb.Engine_ORACLE, GetViewDefinition)
+	schema.RegisterGetMaterializedViewDefinition(storepb.Engine_ORACLE, GetMaterializedViewDefinition)
+	schema.RegisterGetFunctionDefinition(storepb.Engine_ORACLE, GetFunctionDefinition)
+	schema.RegisterGetProcedureDefinition(storepb.Engine_ORACLE, GetProcedureDefinition)
 }
 
 func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSchemaMetadata) (string, error) {
@@ -177,6 +192,46 @@ func GetTableDefinition(_ string, table *storepb.TableMetadata, _ []*storepb.Seq
 	return buf.String(), nil
 }
 
+// The single-object definitions below all ignore the schema argument: Oracle has
+// one schema per database and the writers emit unqualified names, matching
+// GetTableDefinition and the whole-database output.
+
+func GetViewDefinition(_ string, view *storepb.ViewMetadata) (string, error) {
+	var buf strings.Builder
+	if err := writeView(&buf, view); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+func GetMaterializedViewDefinition(_ string, view *storepb.MaterializedViewMetadata) (string, error) {
+	var buf strings.Builder
+	if err := writeMaterializedView(&buf, view); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+func GetFunctionDefinition(_ string, function *storepb.FunctionMetadata) (string, error) {
+	var buf strings.Builder
+	if err := writeFunction(&buf, function); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+func GetProcedureDefinition(_ string, procedure *storepb.ProcedureMetadata) (string, error) {
+	var buf strings.Builder
+	if err := writeProcedure(&buf, procedure); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
 func writeTable(buf *strings.Builder, table *storepb.TableMetadata) error {
 	if _, err := buf.WriteString(`CREATE TABLE "`); err != nil {
 		return err
@@ -250,14 +305,7 @@ func writeTable(buf *strings.Builder, table *storepb.TableMetadata) error {
 		}
 	}
 
-	// Write triggers for this table
-	for _, trigger := range table.Triggers {
-		if err := writeTrigger(buf, trigger); err != nil {
-			return err
-		}
-	}
-
-	return nil
+	return writeTriggers(buf, table.Triggers)
 }
 
 func writeIndex(buf *strings.Builder, table string, index *storepb.IndexMetadata) error {
@@ -641,6 +689,13 @@ func writeView(buf *strings.Builder, view *storepb.ViewMetadata) error {
 	if _, err := buf.WriteString(view.Name); err != nil {
 		return err
 	}
+	// The synced column names are deliberately not written back as an explicit
+	// list. They would restore the aliases of CREATE VIEW V (RENAMED) AS SELECT
+	// BASE ..., which ALL_VIEWS.TEXT does not carry, but getTableColumns drops
+	// invisible columns (COLUMN_ID IS NULL, sync.go:485) while the query keeps
+	// their expressions -- so a view with an invisible column would get fewer
+	// names than output columns and fail with ORA-01730. Losing an alias beats
+	// emitting DDL that cannot run.
 	if _, err := buf.WriteString(`" AS `); err != nil {
 		return err
 	}
@@ -655,7 +710,10 @@ func writeView(buf *strings.Builder, view *storepb.ViewMetadata) error {
 	if _, err := buf.WriteString("\n\n"); err != nil {
 		return err
 	}
-	return nil
+
+	// An INSTEAD OF trigger carries the view's DML behavior, so it belongs with
+	// the view the way writeTable emits a table's triggers.
+	return writeTriggers(buf, view.Triggers)
 }
 
 // writeMaterializedView writes a CREATE MATERIALIZED VIEW statement
@@ -680,7 +738,8 @@ func writeMaterializedView(buf *strings.Builder, view *storepb.MaterializedViewM
 	if _, err := buf.WriteString("\n\n"); err != nil {
 		return err
 	}
-	return nil
+
+	return writeTriggers(buf, view.Triggers)
 }
 
 // writeFunction writes a CREATE FUNCTION statement
@@ -725,6 +784,16 @@ func writeProcedure(buf *strings.Builder, procedure *storepb.ProcedureMetadata) 
 	}
 	if _, err := buf.WriteString("\n\n"); err != nil {
 		return err
+	}
+	return nil
+}
+
+// writeTriggers writes the CREATE TRIGGER statements owned by a table or view.
+func writeTriggers(buf *strings.Builder, triggers []*storepb.TriggerMetadata) error {
+	for _, trigger := range triggers {
+		if err := writeTrigger(buf, trigger); err != nil {
+			return err
+		}
 	}
 	return nil
 }
