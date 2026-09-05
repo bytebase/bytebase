@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/bytebase/bytebase/backend/common/testpg"
+
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -22,7 +24,7 @@ import (
 //     "<", excluding an issue at the exact boundary.
 func TestIssueListFilterEdgeCases(t *testing.T) {
 	ctx := context.Background()
-	db, stores, _ := newTestDB(t)
+	db, stores, _ := testpg.New(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
 		INSERT INTO principal (name, email, password_hash) VALUES ('c', 'c@example.com', 'x');
@@ -90,7 +92,7 @@ func TestIssueListFilterEdgeCases(t *testing.T) {
 // assertion in this file and fails this one.
 func TestIssueListNextApproverIsProjectScoped(t *testing.T) {
 	ctx := context.Background()
-	db, stores, _ := newTestDB(t)
+	db, stores, _ := testpg.New(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
 		INSERT INTO principal (name, email, password_hash) VALUES ('c', 'c@example.com', 'x');

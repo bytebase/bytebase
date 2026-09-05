@@ -2,15 +2,14 @@ package taskrun
 
 import (
 	"context"
-	"fmt"
 	"testing"
+
+	"github.com/bytebase/bytebase/backend/common/testpg"
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -382,11 +381,7 @@ func setupRolloutCreatorStoreInWorkspace(ctx context.Context, t *testing.T, work
 func setupRolloutCreatorStoreInWorkspaceWithCache(ctx context.Context, t *testing.T, workspaceID string, enableCache bool) *store.Store {
 	t.Helper()
 
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, s, _ := testpg.NewWithCache(t, enableCache)
 
 	_, err := db.ExecContext(ctx, "INSERT INTO workspace (resource_id) VALUES ($1)", workspaceID)
 	require.NoError(t, err)
@@ -395,12 +390,5 @@ func setupRolloutCreatorStoreInWorkspaceWithCache(ctx context.Context, t *testin
 	_, err = db.ExecContext(ctx, "INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', $1, 'Project A')", workspaceID)
 	require.NoError(t, err)
 
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	s, err := store.New(ctx, pgURL, enableCache)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, s.Close()) })
 	return s
 }

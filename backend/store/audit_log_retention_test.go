@@ -10,6 +10,8 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/bytebase/bytebase/backend/common/testpg"
+
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -118,7 +120,7 @@ func TestAuditLogRetentionFilterIncludesExactCutoffRow(t *testing.T) {
 func setupAuditLogRetentionTest(t *testing.T) (context.Context, *store.Store, *enterprise.LicenseService) {
 	t.Helper()
 	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, testAuditLogWorkspace)
-	_, stores, _ := newTestDB(t)
+	_, stores, _ := testpg.New(t)
 
 	_, err := stores.GetDB().ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('default')`)
 	require.NoError(t, err)

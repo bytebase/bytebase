@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common/testpg"
+
 	"github.com/labstack/echo/v5"
 	metricpb "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/expfmt"
@@ -18,12 +19,10 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/productmetrics"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -41,18 +40,7 @@ func newMetricsTestEcho(t *testing.T) (*echo.Echo, *store.Store, *enterprise.Lic
 
 func newMetricsTestEchoWithCollector(t *testing.T) (*echo.Echo, *store.Store, *enterprise.LicenseService, *productmetrics.ProductMetrics) {
 	t.Helper()
-	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
-
-	pgURL := fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort())
-	st, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { st.Close() })
+	_, st, _ := testpg.New(t)
 
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, st, false, "")
 	require.NoError(t, err)

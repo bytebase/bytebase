@@ -6,14 +6,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common/testpg"
+
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/emptypb"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
@@ -49,22 +49,12 @@ func newProcedureRequest(t *testing.T, bearer string) *procedureRequest {
 // resolvePrincipal has real state to re-resolve against.
 func newLiveStore(t *testing.T) *store.Store {
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
+	db, st, _ := testpg.New(t)
 
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
 	_, err := db.ExecContext(ctx, fmt.Sprintf(`
 		INSERT INTO workspace (resource_id) VALUES ('%s');
 		INSERT INTO principal (name, email, password_hash) VALUES ('live', '%s', 'unused');
 	`, liveWorkspace, liveUserEmail))
-	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	st, err := store.New(ctx, pgURL, false)
 	require.NoError(t, err)
 
 	_, err = st.PatchWorkspaceIamPolicy(ctx, &store.PatchIamPolicyMessage{

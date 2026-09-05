@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common/testpg"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/store"
@@ -19,7 +21,7 @@ func TestListTaskRunsPagination(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
-	db, s, _ := newTestDB(t)
+	db, s, _ := testpg.New(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');

@@ -5,15 +5,15 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/bytebase/bytebase/backend/common/testpg"
+
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
@@ -36,21 +36,12 @@ func (r *specRequest) Spec() connect.Spec {
 // CreateAuditLog has a real parent row to write under.
 func newAuditLiveStore(t *testing.T) *store.Store {
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
+	db, st, _ := testpg.New(t)
 
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
 	_, err := db.ExecContext(ctx, fmt.Sprintf(
 		`INSERT INTO workspace (resource_id) VALUES ('%s')`, auditTestWorkspace))
 	require.NoError(t, err)
 
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	st, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
 	return st
 }
 

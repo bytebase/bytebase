@@ -2,17 +2,16 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"testing"
+
+	"github.com/bytebase/bytebase/backend/common/testpg"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -113,20 +112,12 @@ func setupWorkspaceInstanceDescendantServiceTest(t *testing.T) (context.Context,
 func setupInstanceDescendantServiceTest(t *testing.T, instanceProjectID *string) (context.Context, *store.Store, string, string, string, string) {
 	t.Helper()
 	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, stores, _ := testpg.New(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
 		INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A'), ('project-b', 'default', 'Project B');
 	`)
 	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres", container.GetHost(), container.GetPort())
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
 
 	instanceID := "project-instance"
 	_, err = stores.CreateInstance(ctx, &store.InstanceMessage{

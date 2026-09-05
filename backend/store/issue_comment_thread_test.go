@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/bytebase/bytebase/backend/common/testpg"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -27,7 +29,7 @@ func TestIssueCommentThreads(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	db, stores, _ := newTestDB(t)
+	db, stores, _ := testpg.New(t)
 
 	_, err := db.ExecContext(ctx,
 		`INSERT INTO workspace (resource_id) VALUES ($1)`, workspaceID)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/base64"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -12,14 +11,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common/testpg"
+
 	"github.com/labstack/echo/v5"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/api/auth"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
@@ -39,11 +38,7 @@ import (
 // refusal assertion below green and fails only the row assertions.
 func TestConsentCeiling(t *testing.T) {
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, st, _ := testpg.New(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES
@@ -58,13 +53,6 @@ func TestConsentCeiling(t *testing.T) {
 			('MCP', 'ws-typo', '{"capability":"READ_ONLYY"}'),
 			('MCP', 'ws-reserved', '{"capability":2}');
 	`)
-	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	st, err := store.New(ctx, pgURL, false)
 	require.NoError(t, err)
 
 	s := newTestService(st, "https://bb.example.com")
@@ -158,11 +146,8 @@ func TestConsentCeiling(t *testing.T) {
 // any grant is issued at all, before the requested mode is considered.
 func TestConsentCeilingRefusalIsNotAWideningPath(t *testing.T) {
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
+	db, st, _ := testpg.New(t)
 
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('ws-disabled');
 		INSERT INTO principal (name, email, password_hash) VALUES ('demo', 'demo@example.com', 'unused');
@@ -172,12 +157,6 @@ func TestConsentCeilingRefusalIsNotAWideningPath(t *testing.T) {
 	`)
 	require.NoError(t, err)
 
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	st, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
 	s := newTestService(st, "https://bb.example.com")
 
 	for _, scope := range []string{"mcp:read-only", "mcp:read-write", ""} {
@@ -237,24 +216,14 @@ func consentTo(t *testing.T, s *Service, workspaceID string, extra ...url.Values
 // nothing to fix.
 func TestConsentCeilingOutageIsNotARefusal(t *testing.T) {
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
+	db, st, _ := testpg.New(t)
 
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('ws-outage');
 		INSERT INTO principal (name, email, password_hash) VALUES ('demo', 'demo@example.com', 'unused');
 		INSERT INTO oauth2_client (client_id, workspace, client_secret_hash, config)
 		VALUES ('client-A', NULL, 'unused-hash', '{"clientName":"test","redirectUris":["http://localhost/cb"],"grantTypes":["authorization_code","refresh_token"],"tokenEndpointAuthMethod":"none"}'::jsonb);
 	`)
-	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	st, err := store.New(ctx, pgURL, false)
 	require.NoError(t, err)
 
 	s := newTestService(st, "https://bb.example.com")
@@ -295,11 +264,8 @@ func (f failingCeilingReader) GetMCPSettingsUncached(context.Context, string) (*
 // this endpoint exists for the same reason, and says so in its own comment.
 func TestTokenIssuanceRechecksTheCeiling(t *testing.T) {
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
+	db, st, _ := testpg.New(t)
 
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('ws-test');
 		INSERT INTO principal (name, email, password_hash) VALUES ('demo', 'demo@example.com', 'unused');
@@ -309,12 +275,6 @@ func TestTokenIssuanceRechecksTheCeiling(t *testing.T) {
 	`)
 	require.NoError(t, err)
 
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	st, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
 	s := newTestService(st, "https://bb.example.com")
 
 	// Consent while MCP is on, so the grant is genuine and only the ceiling

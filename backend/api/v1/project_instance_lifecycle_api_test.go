@@ -3,18 +3,18 @@ package v1
 import (
 	"context"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/bytebase/bytebase/backend/common/testpg"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/sample"
 	"github.com/bytebase/bytebase/backend/component/sample/selfhost"
@@ -22,7 +22,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -237,10 +236,7 @@ func newInstanceServiceTestLicenseService(t *testing.T, stores *store.Store) *en
 func setupProjectInstanceLifecycleAPITest(t *testing.T) (context.Context, *store.Store, string, string, string) {
 	t.Helper()
 	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, stores, _ := testpg.New(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
 		INSERT INTO project (resource_id, workspace, name) VALUES
@@ -248,11 +244,6 @@ func setupProjectInstanceLifecycleAPITest(t *testing.T) (context.Context, *store
 			('project-b', 'default', 'Project B');
 	`)
 	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres", container.GetHost(), container.GetPort())
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
 
 	projectID := "project-a"
 	instanceID := "project-instance"

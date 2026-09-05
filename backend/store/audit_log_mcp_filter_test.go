@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/bytebase/bytebase/backend/common/testpg"
+
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -25,7 +27,7 @@ import (
 // rather than a query.
 func TestSearchAuditLogsMCPFilters(t *testing.T) {
 	ctx := context.Background()
-	db, s, _ := newTestDB(t)
+	db, s, _ := testpg.New(t)
 
 	_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('ws-test')`)
 	require.NoError(t, err)

@@ -1,4 +1,4 @@
-package store_test
+package recovery_test
 
 import (
 	"testing"

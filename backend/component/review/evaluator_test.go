@@ -3,19 +3,18 @@ package review
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
+
+	"github.com/bytebase/bytebase/backend/common/testpg"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/migrator"
 
 	// Registers the BigQuery parser handlers the same way backend/server
 	// ultimate.go does for the server binary; statementTypesFromParser resolves
@@ -882,11 +881,7 @@ func setupApprovalRunnerStore(ctx context.Context, t *testing.T) *store.Store {
 func setupApprovalRunnerStoreInWorkspace(ctx context.Context, t *testing.T, workspaceID string) *store.Store {
 	t.Helper()
 
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, s, _ := testpg.New(t)
 
 	_, err := db.ExecContext(ctx, "INSERT INTO workspace (resource_id) VALUES ($1)", workspaceID)
 	require.NoError(t, err)
@@ -895,13 +890,6 @@ func setupApprovalRunnerStoreInWorkspace(ctx context.Context, t *testing.T, work
 	_, err = db.ExecContext(ctx, "INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', $1, 'Project A')", workspaceID)
 	require.NoError(t, err)
 
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	s, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, s.Close()) })
 	return s
 }
 

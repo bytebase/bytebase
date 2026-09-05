@@ -2,12 +2,13 @@ package mcp
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/bytebase/bytebase/backend/common/testpg"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
@@ -15,10 +16,8 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
@@ -31,22 +30,11 @@ import (
 // blocks the disabled workspace.
 func TestMCPKillSwitchEndToEnd(t *testing.T) {
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, s, _ := testpg.New(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('ws-disabled'), ('ws-open');
 	`)
-	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	s, err := store.New(ctx, pgURL, false)
 	require.NoError(t, err)
 
 	// Both workspaces have the metadata row required after migration.
@@ -99,22 +87,11 @@ func TestMCPKillSwitchEndToEnd(t *testing.T) {
 // truth on the next request.
 func TestMCPKillSwitchBypassesSettingCache(t *testing.T) {
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, s, _ := testpg.NewWithCache(t, true)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('ws-cached');
 	`)
-	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	s, err := store.New(ctx, pgURL, true /* enableCache */)
 	require.NoError(t, err)
 
 	// The explicit default row has to exist for the out-of-band flip below to
@@ -196,11 +173,7 @@ func tokenForWorkspace(t *testing.T, secret, workspaceID string) string {
 // value no Bytebase write produces.
 func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, _, pgURL := testpg.New(t)
 
 	rows := []struct {
 		workspace string
@@ -251,12 +224,9 @@ func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
 		}
 	}
 
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
 	s, err := store.New(ctx, pgURL, false)
 	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, s.Close()) })
 
 	secret := "test-secret-key"
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}

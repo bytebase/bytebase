@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common/testpg"
+
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -29,7 +31,7 @@ import (
 //     singleton can take over.
 func TestOAuth2WorkspaceBinding(t *testing.T) {
 	ctx := context.Background()
-	db, s, _ := newTestDB(t)
+	db, s, _ := testpg.New(t)
 
 	// Seed the minimal fixtures needed by the FK constraints on the OAuth2
 	// tables: a workspace and a principal.

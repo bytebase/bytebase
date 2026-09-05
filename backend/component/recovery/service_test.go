@@ -2,11 +2,12 @@ package recovery_test
 
 import (
 	"context"
-	"fmt"
 	"slices"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/bytebase/bytebase/backend/common/testpg"
 
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
@@ -14,10 +15,8 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/recovery"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -624,16 +623,10 @@ func TestAddUserToWorkspace(t *testing.T) {
 	}
 }
 
-func setupRecoveryStore(ctx context.Context, t *testing.T) *store.Store {
+func setupRecoveryStore(_ context.Context, t *testing.T) *store.Store {
 	t.Helper()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	require.NoError(t, migrator.MigrateSchema(ctx, container.GetDB()))
+	_, stores, _ := testpg.New(t)
 
-	pgURL := fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres", container.GetHost(), container.GetPort())
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
 	return stores
 }
 

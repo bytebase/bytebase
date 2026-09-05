@@ -2,24 +2,20 @@ package lsp
 
 import (
 	"context"
-	"fmt"
 	"testing"
+
+	"github.com/bytebase/bytebase/backend/common/testpg"
 
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
 func TestMetadataProjectInstanceScope(t *testing.T) {
 	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	db, stores, _ := testpg.New(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
 		INSERT INTO project (resource_id, workspace, name) VALUES
@@ -27,11 +23,6 @@ func TestMetadataProjectInstanceScope(t *testing.T) {
 			('project-b', 'default', 'Project B');
 	`)
 	require.NoError(t, err)
-
-	pgURL := fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres", container.GetHost(), container.GetPort())
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
 
 	projectID := "project-a"
 	instanceID := "project-instance"

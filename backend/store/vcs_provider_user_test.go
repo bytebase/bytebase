@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common/testpg"
+
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -242,7 +244,7 @@ func TestDeleteExpiredVCSProviderUsers(t *testing.T) {
 func setupVCSProviderUserStore(ctx context.Context, t *testing.T) (*store.Store, *sql.DB) {
 	t.Helper()
 
-	db, s, _ := newTestDB(t)
+	db, s, _ := testpg.New(t)
 
 	_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('default')`)
 	require.NoError(t, err)
