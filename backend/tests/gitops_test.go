@@ -777,6 +777,10 @@ func TestGitOpsRollout(t *testing.T) {
 	a.Equal(rollout.Name, rolloutResp2.Msg.Name)
 }
 
+// TestGitOpsRolloutGhostDirective keeps MySQL deliberately. gh-ost is a MySQL-only
+// online schema change tool, so the engine is the workflow here rather than a
+// substitutable backing store, and no Postgres equivalent can prove it.
+// Everything else in this package tests workflows against Postgres.
 func TestGitOpsRolloutGhostDirective(t *testing.T) {
 	t.Parallel()
 	a := require.New(t)

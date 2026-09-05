@@ -37,6 +37,10 @@ var (
 	wantDBSchema2 string
 )
 
+// TestGhostSchemaUpdate keeps MySQL deliberately. gh-ost is a MySQL-only
+// online schema change tool, so the engine is the workflow here rather than a
+// substitutable backing store, and no Postgres equivalent can prove it.
+// Everything else in this package tests workflows against Postgres.
 func TestGhostSchemaUpdate(t *testing.T) {
 	const databaseName = "testGhostSchemaUpdate"
 
