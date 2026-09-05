@@ -238,11 +238,43 @@ each test grants to its own principal.
 `TestWebhookIntegration` needs separate attention: 144 s, the slowest test in
 the repo, 24 subtests behind one boot with several fixed sleeps.
 
-### 5. Postgres only for `backend/store` and `backend/tests`
+### [✓] 5. Postgres only for `backend/store` and `backend/tests`
 
-**Up to 320 s inside `backend/tests`**, of which 115 s is container starts and
-the rest is the duplicated test bodies. `TestSQLReviewForMySQL` costs 52.7 s
-where `TestSQLReviewForPostgreSQL` costs 17.9 s for the same assertion.
+**Done, and the headline example in the original sizing was wrong.** This section
+said `TestSQLReviewForMySQL` cost 52.7 s where `TestSQLReviewForPostgreSQL` cost
+17.9 s "for the same assertion". They were not the same assertion:
+`sql_review_mysql.yaml` held 21 cases against `sql_review_pg.yaml`'s 9. Deleting
+it as a duplicate would have dropped real rule coverage.
+
+The principle that resolved it is sharper than the one written here.
+**`backend/tests` tests workflows; engines belong to the layer that owns them.**
+Sorting the expensive tests by that rule gave four outcomes rather than one:
+
+- **Same workflow run twice.** Five tests had literally mirrored cases —
+  "MySQL - Second statement fails" beside "PostgreSQL - Second statement fails" —
+  for behavior that is ours, not a dialect's. MySQL arm dropped, one unique case
+  ported: **127.9 s → 59.9 s**.
+- **MySQL-only, engine incidental.** Three tests about data source resolution and
+  masking, ported to Postgres. The translation was not mechanical — Postgres
+  grants are per object, `BIN_TO_UUID` became a `uuid` cast, and the catalog
+  needed a `public` schema.
+- **Engine wearing workflow clothing.** `TestSQLReviewForMySQL` was rule coverage
+  in the wrong place: all 41 rules its fixture asserts have a dedicated file under
+  `plugin/advisor/mysql/test`, and `TestMySQLRules` drives ~60 rules through them
+  with a fake driver and no container, in 2.3 s. Deleted, with
+  `TestSyncerForMySQL` (its Postgres twin sits in the same file) and
+  `TestGetLatestSchema`'s MySQL arm (it asserted a literal dump, including MySQL's
+  `SET @OLD_UNIQUE_CHECKS` preamble). `TestTransactionMode` moved to
+  `backend/plugin/db`: it boots no server and opens four drivers directly, so it
+  was in `backend/tests` by accident. That move buys no time and is a layering
+  fix only.
+- **Engine is the workflow.** `TestGhostSchemaUpdate` and
+  `TestGitOpsRolloutGhostDirective` keep MySQL, and now say why in a comment:
+  gh-ost is MySQL-only. `TestActionCheckCommand`'s database-group subtest keeps it
+  too — the port was tried and reverted, because the declarative check returns
+  three errors against the same schema on Postgres. Worth chasing separately.
+
+MySQL in `backend/tests` is now those three tests and nothing else.
 
 Two packages may hold a real database, and no others. `backend/store` is where a
 metadata query is asserted against one, and `backend/tests` is the only package
@@ -253,30 +285,16 @@ packages that keep one, the engine is Postgres: engine dialects and DDL fidelity
 belong in omni. The root `AGENTS.md` carries that second half of the rule today,
 in the words "test API and workflow behavior against Postgres only".
 
-`docker events` recorded 11 MySQL containers from `backend/tests`. The
-candidates, one container each:
+`docker events` recorded 11 MySQL containers from `backend/tests` when this was
+written. Each of those twelve candidate tests is accounted for above; the one
+that is not is `TestActionCheckCommand`, which keeps its container.
 
-```
-TestSQLReviewForMySQL              TestSyncerForMySQL
-TestSQLExport                      TestSQLAdminQuery
-TestSensitiveData                  TestAdminQueryAffectedRows
-TestSQLQueryStopOnError            TestSQLAdminExecuteStopOnError
-TestSQLExportDataSourceResolution  TestSQLQueryDataSourceResolution
-TestActionCheckCommand             TestGetLatestSchema   (MySQL arm of an engine switch)
-```
-
-Where a Postgres equivalent proves the same workflow, delete the MySQL copy and
-save the whole test. Where the MySQL path is the only coverage, port it to
-Postgres and save only the container difference — which is why the payoff is a
-ceiling, not a promise.
-
-Three keep their engine. Each needs a comment saying why:
-
-- `TestGhostSchemaUpdate` and `TestGitOpsRolloutGhostDirective` — gh-ost is
-  MySQL-only.
-- `TestTransactionMode` — per-engine transaction semantics are the behavior
-  under test. It covers MySQL, Postgres, Oracle and MSSQL in one table, and
-  boots no server.
+The original plan here said "where a Postgres equivalent proves the same
+workflow, delete the MySQL copy". That held for `TestSyncerForMySQL`, whose twin
+was already in the same file. It did not hold for `TestSQLReviewForMySQL`: the
+copy was not equivalent, and the thing that made it deletable was finding the
+coverage a layer down rather than a layer across. **Check the layer below before
+calling a test a duplicate.**
 
 ### 6. Seams instead of containers
 
