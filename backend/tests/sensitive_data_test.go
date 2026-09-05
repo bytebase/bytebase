@@ -18,7 +18,7 @@ import (
 var (
 	maskedData = &v1pb.QueryResult{
 		ColumnNames:     []string{"id", "name", "author"},
-		ColumnTypeNames: []string{"INT", "VARCHAR", "VARCHAR"},
+		ColumnTypeNames: []string{"INT4", "VARCHAR", "VARCHAR"},
 		Masked: []*v1pb.MaskingReason{
 			{SemanticTypeId: "default", Algorithm: "Full mask"},
 			nil,
@@ -52,7 +52,7 @@ var (
 	}
 	originData = &v1pb.QueryResult{
 		ColumnNames:     []string{"id", "name", "author"},
-		ColumnTypeNames: []string{"INT", "VARCHAR", "VARCHAR"},
+		ColumnTypeNames: []string{"INT4", "VARCHAR", "VARCHAR"},
 		Rows: []*v1pb.QueryRow{
 			{
 				Values: []*v1pb.RowValue{
@@ -131,38 +131,26 @@ func TestSensitiveData(t *testing.T) {
 	}))
 	a.NoError(err)
 
-	mysqlContainer, err := getMySQLContainer(ctx)
+	pgContainer, err := getPgContainer(ctx)
 	defer func() {
-		mysqlContainer.Close(ctx)
+		pgContainer.Close(ctx)
 	}()
-	a.NoError(err)
-
-	mysqlDB := mysqlContainer.db
-	_, err = mysqlDB.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %v", databaseName))
-	a.NoError(err)
-
-	_, err = mysqlDB.Exec("DROP USER IF EXISTS bytebase")
-	a.NoError(err)
-	_, err = mysqlDB.Exec("CREATE USER 'bytebase' IDENTIFIED WITH mysql_native_password BY 'bytebase'")
-	a.NoError(err)
-
-	_, err = mysqlDB.Exec("GRANT ALTER, ALTER ROUTINE, CREATE, CREATE ROUTINE, CREATE VIEW, DELETE, DROP, EVENT, EXECUTE, INDEX, INSERT, PROCESS, REFERENCES, SELECT, SHOW DATABASES, SHOW VIEW, TRIGGER, UPDATE, USAGE, REPLICATION CLIENT, REPLICATION SLAVE, LOCK TABLES, RELOAD ON *.* to bytebase")
 	a.NoError(err)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       "mysqlInstance",
-			Engine:      v1pb.Engine_MYSQL,
+			Title:       "pgInstance",
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "bytebase", Password: "bytebase", Id: "admin"}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "postgres", Password: "root-password", Id: "admin"}},
 		},
 	}))
 	a.NoError(err)
 	instance := instanceResp.Msg
 
-	err = ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, databaseName, "")
+	err = ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, databaseName, "postgres")
 	a.NoError(err)
 
 	databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
@@ -179,13 +167,16 @@ func TestSensitiveData(t *testing.T) {
 	a.NoError(err)
 	a.Equal(1, len(syntaxErrorResp.Msg.Results))
 	a.NotEmpty(syntaxErrorResp.Msg.Results[0].Error)
-	a.Contains(syntaxErrorResp.Msg.Results[0].Error, "Syntax error")
+	a.Contains(strings.ToLower(syntaxErrorResp.Msg.Results[0].Error), "syntax error")
 	// Check the detailed_error field for syntax_error with position
 	syntaxErr := syntaxErrorResp.Msg.Results[0].GetSyntaxError()
 	a.NotNil(syntaxErr)
 	a.NotNil(syntaxErr.StartPosition)
 	a.Equal(int32(1), syntaxErr.StartPosition.Line)
-	a.Equal(int32(14), syntaxErr.StartPosition.Column)
+	// Column 13 is where the pg parser puts "TO" in "SELECT hello TO world;".
+	// The MySQL parser reported 14 for the same statement; the column is a
+	// per-parser convention, not behavior this test is about.
+	a.Equal(int32(13), syntaxErr.StartPosition.Column)
 
 	sheetResp, err := ctl.sheetServiceClient.CreateSheet(ctx, connect.NewRequest(&v1pb.CreateSheetRequest{
 		Parent: ctl.project.Name,
@@ -206,7 +197,8 @@ func TestSensitiveData(t *testing.T) {
 			Name: fmt.Sprintf("%s/catalog", database.Name),
 			Schemas: []*v1pb.SchemaCatalog{
 				{
-					Name: "",
+					// Postgres has schemas; the MySQL arm of this test left it empty.
+					Name: "public",
 					Tables: []*v1pb.TableCatalog{
 						{
 							Name: tableName,
@@ -260,19 +252,19 @@ func TestSensitiveData(t *testing.T) {
 
 	expectedMaskedData := &v1pb.QueryResult{
 		ColumnNames:     []string{"id", "name", "author"},
-		ColumnTypeNames: []string{"INT", "VARCHAR", "VARCHAR"},
+		ColumnTypeNames: []string{"INT4", "VARCHAR", "VARCHAR"},
 		Masked: []*v1pb.MaskingReason{
 			{
 				SemanticTypeId:    "default",
 				Algorithm:         "Full mask",
-				Context:           fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s", instanceID, databaseName, tableName, "id"),
+				Context:           fmt.Sprintf("Column-level semantic type: %s.%s.public.%s.%s", instanceID, databaseName, tableName, "id"),
 				SemanticTypeTitle: "Default",
 			},
 			nil,
 			{
 				SemanticTypeId:    "default",
 				Algorithm:         "Full mask",
-				Context:           fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s", instanceID, databaseName, tableName, "author"),
+				Context:           fmt.Sprintf("Column-level semantic type: %s.%s.public.%s.%s", instanceID, databaseName, tableName, "author"),
 				SemanticTypeTitle: "Default",
 			},
 		},
@@ -293,12 +285,12 @@ func TestSensitiveData(t *testing.T) {
 	diff = cmp.Diff(originData, result, protocmp.Transform(), protocmp.IgnoreMessages(&durationpb.Duration{}))
 	a.Empty(diff)
 
-	// Query with a type-incompatible function on a masked column.
+	// Query with a type-incompatible cast on a masked column.
 	// The database error message would normally contain the actual column value,
 	// but the masking pipeline should redact it.
 	errorLeakResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
 		Name:      database.Name,
-		Statement: "SELECT BIN_TO_UUID(author) FROM tech_book WHERE id = 1",
+		Statement: "SELECT author::uuid FROM tech_book WHERE id = 1",
 	}))
 	a.NoError(err)
 	a.Equal(1, len(errorLeakResp.Msg.Results))
@@ -310,7 +302,7 @@ func TestSensitiveData(t *testing.T) {
 	// Same query on a non-masked column should preserve the original error.
 	nonMaskedErrorResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
 		Name:      database.Name,
-		Statement: "SELECT BIN_TO_UUID(name) FROM tech_book WHERE id = 1",
+		Statement: "SELECT name::uuid FROM tech_book WHERE id = 1",
 	}))
 	a.NoError(err)
 	a.Equal(1, len(nonMaskedErrorResp.Msg.Results))

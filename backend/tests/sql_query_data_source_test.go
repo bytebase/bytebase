@@ -2,6 +2,7 @@ package tests
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"reflect"
 	"testing"
@@ -28,35 +29,35 @@ func TestSQLQueryDataSourceResolution(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	mysqlContainer, err := getMySQLContainer(ctx)
+	pgContainer, err := getPgContainer(ctx)
 	defer func() {
-		mysqlContainer.Close(ctx)
+		pgContainer.Close(ctx)
 	}()
 	a.NoError(err)
 
-	mysqlDB := mysqlContainer.db
-	_, err = mysqlDB.Exec("DROP USER IF EXISTS 'query_ro'@'%'")
+	// A login role for the read-only data source. Its grants have to wait until
+	// the table exists, further down: Postgres grants are per object, where
+	// MySQL's GRANT SELECT ON *.* covered tables created later.
+	_, err = pgContainer.db.Exec("DROP ROLE IF EXISTS query_ro")
 	a.NoError(err)
-	_, err = mysqlDB.Exec("CREATE USER 'query_ro'@'%' IDENTIFIED WITH mysql_native_password BY 'query_ro_password'")
-	a.NoError(err)
-	_, err = mysqlDB.Exec("GRANT SELECT ON *.* TO 'query_ro'@'%'")
+	_, err = pgContainer.db.Exec("CREATE ROLE query_ro LOGIN PASSWORD 'query_ro_password'")
 	a.NoError(err)
 
 	instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
 		Instance: &v1pb.Instance{
-			Title:       "mysqlInstance",
-			Engine:      v1pb.Engine_MYSQL,
+			Title:       "pgInstance",
+			Engine:      v1pb.Engine_POSTGRES,
 			Environment: new("environments/prod"),
 			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "root", Password: "root-password", Id: "admin"}},
+			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "postgres", Password: "root-password", Id: "admin"}},
 		},
 	}))
 	a.NoError(err)
 	instance := instanceResp.Msg
 
 	const databaseName = "QueryDataSourceResolution"
-	err = ctl.createDatabase(ctx, ctl.project, instance, nil, databaseName, "")
+	err = ctl.createDatabase(ctx, ctl.project, instance, nil, databaseName, "postgres")
 	a.NoError(err)
 
 	databaseResp, err := ctl.databaseServiceClient.GetDatabase(ctx, connect.NewRequest(&v1pb.GetDatabaseRequest{
@@ -73,6 +74,18 @@ func TestSQLQueryDataSourceResolution(t *testing.T) {
 	err = ctl.changeDatabase(ctx, ctl.project, database, setupSheetResp.Msg, false)
 	a.NoError(err)
 
+	grantDB, err := sql.Open("pgx", fmt.Sprintf("postgresql://postgres:root-password@%s:%s/%s?sslmode=disable", pgContainer.host, pgContainer.port, databaseName))
+	a.NoError(err)
+	defer grantDB.Close()
+	for _, stmt := range []string{
+		fmt.Sprintf("GRANT CONNECT ON DATABASE %q TO query_ro", databaseName),
+		"GRANT USAGE ON SCHEMA public TO query_ro",
+		"GRANT SELECT ON ALL TABLES IN SCHEMA public TO query_ro",
+	} {
+		_, err = grantDB.Exec(stmt)
+		a.NoError(err)
+	}
+
 	queryResp, err := ctl.sqlServiceClient.Query(ctx, connect.NewRequest(&v1pb.QueryRequest{
 		Name:      database.Name,
 		Statement: "SELECT name FROM books;",
@@ -86,8 +99,8 @@ func TestSQLQueryDataSourceResolution(t *testing.T) {
 		DataSource: &v1pb.DataSource{
 			Id:       "readonly",
 			Type:     v1pb.DataSourceType_READ_ONLY,
-			Host:     mysqlContainer.host,
-			Port:     mysqlContainer.port,
+			Host:     pgContainer.host,
+			Port:     pgContainer.port,
 			Username: "query_ro",
 			Password: "query_ro_password",
 		},
