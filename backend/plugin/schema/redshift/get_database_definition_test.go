@@ -248,3 +248,36 @@ func TestIdentifiersNeedingQuotesSurvive(t *testing.T) {
 COMMENT ON COLUMN "Sales Data"."MixedCase"."od""d" IS 'quoted name';
 `, got)
 }
+
+// TestIndexKeysAreVerbatimAndForeignKeyColumnsAreQuoted pins the split between
+// the two: index expressions arrive from pg_get_indexdef(.., true) already
+// quoted, while getColumnList strips the quotes off foreign key columns, so one
+// must be written as-is and the other must be quoted.
+func TestIndexKeysAreVerbatimAndForeignKeyColumnsAreQuoted(t *testing.T) {
+	got, err := GetTableDefinition("public", &storepb.TableMetadata{
+		Name: "t",
+		Columns: []*storepb.ColumnMetadata{
+			{Name: "MixedCase", Type: "integer"},
+			{Name: "parent_id", Type: "integer", Nullable: true},
+		},
+		Indexes: []*storepb.IndexMetadata{
+			{Name: "t_pkey", Primary: true, Expressions: []string{`"MixedCase"`}},
+		},
+		ForeignKeys: []*storepb.ForeignKeyMetadata{
+			{
+				Name:              "t_parent_fk",
+				Columns:           []string{"parent_id"},
+				ReferencedSchema:  "public",
+				ReferencedTable:   "parent",
+				ReferencedColumns: []string{"id"},
+			},
+		},
+	}, nil)
+	require.NoError(t, err)
+
+	// The canonical expression passes through untouched, not re-quoted.
+	require.Contains(t, got, `PRIMARY KEY ("MixedCase")`)
+	require.NotContains(t, got, `"""MixedCase"""`)
+	// Foreign key columns arrive bare and are quoted here.
+	require.Contains(t, got, `FOREIGN KEY ("parent_id") REFERENCES "public"."parent"("id")`)
+}

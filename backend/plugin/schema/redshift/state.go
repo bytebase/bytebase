@@ -296,7 +296,10 @@ func (i *indexState) toString(buf *strings.Builder) error {
 					return err
 				}
 			}
-			if _, err := buf.WriteString(quoteIdentifier(key)); err != nil {
+			// Written verbatim: these come from pg_get_indexdef(.., true), which
+			// already quotes what needs it and can be an expression rather than
+			// a column, so quoting again would name something else.
+			if _, err := buf.WriteString(key); err != nil {
 				return err
 			}
 		}
@@ -313,7 +316,10 @@ func (i *indexState) toString(buf *strings.Builder) error {
 					return err
 				}
 			}
-			if _, err := buf.WriteString(quoteIdentifier(key)); err != nil {
+			// Written verbatim: these come from pg_get_indexdef(.., true), which
+			// already quotes what needs it and can be an expression rather than
+			// a column, so quoting again would name something else.
+			if _, err := buf.WriteString(key); err != nil {
 				return err
 			}
 		}
