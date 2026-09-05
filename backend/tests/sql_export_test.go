@@ -45,6 +45,11 @@ func TestSQLExport(t *testing.T) {
 			}{
 				{
 					format: v1pb.ExportFormat_JSON,
+					// Kept non-empty so the encrypted-ZIP path stays covered: the
+					// entries below are opened with this password, so an export that
+					// came back unencrypted or unreadable fails here. The MySQL case
+					// that used to carry it was this test's only one.
+					password: "123",
 					statement: `
 					SELECT 1;
 					SELECT 2;
