@@ -120,7 +120,7 @@ func TestTryCreateRolloutSkipsDraft(t *testing.T) {
 	require.NotNil(t, gotIssue)
 	require.True(t, gotIssue.Payload.GetDraft())
 	require.Equal(t, storepb.Issue_OPEN, gotIssue.Status)
-	require.Empty(t, b.TaskRunTickleChan)
+	require.Empty(t, b.TaskRunPendingTickleChan)
 }
 
 func TestTryCreateRolloutSkipsArchivedProject(t *testing.T) {
@@ -204,7 +204,7 @@ func TestTryCreateRolloutSkipsArchivedProject(t *testing.T) {
 	tasks, err := s.ListTasks(ctx, &store.TaskFind{ProjectID: plan.ProjectID, PlanID: &plan.UID})
 	require.NoError(t, err)
 	require.Empty(t, tasks)
-	require.Empty(t, b.TaskRunTickleChan)
+	require.Empty(t, b.TaskRunPendingTickleChan)
 }
 
 func TestTryCreateRolloutResolvesProjectInstanceOutsideRequestContext(t *testing.T) {
@@ -277,7 +277,7 @@ func TestTryCreateRolloutResolvesProjectInstanceOutsideRequestContext(t *testing
 	tasks, err := s.ListTasks(ctx, &store.TaskFind{ProjectID: projectID, PlanID: &plan.UID})
 	require.NoError(t, err)
 	require.Len(t, tasks, 1)
-	require.Len(t, b.TaskRunTickleChan, 1)
+	require.Len(t, b.TaskRunPendingTickleChan, 1)
 }
 
 func TestTryCreateRolloutRejectsArchivedProjectInstanceWithWarmDatabaseCache(t *testing.T) {
@@ -367,7 +367,7 @@ func TestTryCreateRolloutRejectsArchivedProjectInstanceWithWarmDatabaseCache(t *
 	tasks, err := s.ListTasks(ctx, &store.TaskFind{ProjectID: projectID, PlanID: &plan.UID})
 	require.NoError(t, err)
 	require.Empty(t, tasks)
-	require.Empty(t, b.TaskRunTickleChan)
+	require.Empty(t, b.TaskRunPendingTickleChan)
 }
 
 func setupRolloutCreatorStore(ctx context.Context, t *testing.T) *store.Store {

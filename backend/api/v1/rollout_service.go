@@ -336,8 +336,8 @@ func (s *RolloutService) CreateRollout(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to convert to rollout"))
 	}
 
-	// Tickle task run scheduler.
-	s.bus.TaskRunTickleChan <- 0
+	// Tickle the pending task run scheduler.
+	bus.Tickle(s.bus.TaskRunPendingTickleChan)
 
 	return connect.NewResponse(rolloutV1), nil
 }
@@ -930,8 +930,8 @@ func (s *RolloutService) BatchRunTasks(ctx context.Context, req *connect.Request
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create pending task runs, error %v", err))
 	}
 
-	// Tickle task run scheduler.
-	s.bus.TaskRunTickleChan <- 0
+	// Tickle the pending task run scheduler.
+	bus.Tickle(s.bus.TaskRunPendingTickleChan)
 
 	return connect.NewResponse(&v1pb.BatchRunTasksResponse{}), nil
 }
