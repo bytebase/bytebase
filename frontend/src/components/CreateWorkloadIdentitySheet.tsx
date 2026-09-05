@@ -45,7 +45,6 @@ import {
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
   parseWorkloadIdentitySubjectPattern,
-  resolveWorkloadIdentityProviderType,
 } from "@/utils";
 
 type RefType = "branch" | "tag" | "all";
@@ -175,11 +174,18 @@ function WorkloadIdentityForm({
   );
   // Resolved, not read raw: an identity written before provider_type was
   // required may carry PROVIDER_TYPE_UNSPECIFIED, which names no platform and
-  // parses no subject.
+  // Migration 3.23.4 types every stored row from its subject prefix, so an
+  // unspecified provider only reaches here from an older replica writing after
+  // that backfill ran. The form opens such a row on the GitHub tab; picking the
+  // platform and saving types it.
+  const storedProviderType =
+    workloadIdentity?.workloadIdentityConfig?.providerType;
   const initialProviderType =
-    resolveWorkloadIdentityProviderType(
-      workloadIdentity?.workloadIdentityConfig
-    ) ?? WorkloadIdentityConfig_ProviderType.GITHUB;
+    storedProviderType === undefined ||
+    storedProviderType ===
+      WorkloadIdentityConfig_ProviderType.PROVIDER_TYPE_UNSPECIFIED
+      ? WorkloadIdentityConfig_ProviderType.GITHUB
+      : storedProviderType;
   const initialIssuerUrl =
     workloadIdentity?.workloadIdentityConfig?.issuerUrl ??
     PLATFORM_PRESETS[initialProviderType]?.issuerUrl ??

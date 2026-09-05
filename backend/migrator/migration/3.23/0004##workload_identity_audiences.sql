@@ -54,3 +54,27 @@ SET config = jsonb_set(
     )
 WHERE config->'allowedAudiences' IS NULL
   AND COALESCE(config->>'issuerUrl', '') <> '';
+
+-- Type the rows that never declared a provider.
+--
+-- provider_type was optional until this release, so identities written through
+-- the API carry no value. The subject's own prefix says which vocabulary the
+-- row uses, and it is the same evidence the audience arms above read, so the
+-- label can be settled once here instead of being inferred on every read.
+--
+-- Keyed on the subject prefix alone: the issuer is not evidence about the
+-- subject vocabulary, and a self-hosted GitLab or GitHub Enterprise row must
+-- be typed too. No `deleted` filter, matching the arms above, so undeleting a
+-- row cannot bring back an untyped one.
+--
+-- The values are the enum names as JSON strings, which is how protojson writes
+-- the field and how the GitLab arm above reads it.
+UPDATE workload_identity
+SET config = jsonb_set(config, '{providerType}', '"GITHUB"')
+WHERE config->'providerType' IS NULL
+  AND config->>'subjectPattern' LIKE 'repo:%';
+
+UPDATE workload_identity
+SET config = jsonb_set(config, '{providerType}', '"GITLAB"')
+WHERE config->'providerType' IS NULL
+  AND config->>'subjectPattern' LIKE 'project\_path:%';

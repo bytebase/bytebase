@@ -27,6 +27,9 @@ func TestMigration3_23_4_WorkloadIdentityAudiences(t *testing.T) {
 		deleted  bool
 		config   *storepb.WorkloadIdentityConfig
 		expected []string // nil means the row must be left alone
+		// The provider the backfill types the row with, for rows stored
+		// without one. Zero value means it stays untyped.
+		expectedProvider storepb.WorkloadIdentityConfig_ProviderType
 	}{
 		{
 			email:    "legacy-github",
@@ -73,14 +76,16 @@ func TestMigration3_23_4_WorkloadIdentityAudiences(t *testing.T) {
 			// so identities created through the API often omit it. protojson
 			// drops the zero enum, leaving no key at all. These rows are still
 			// repairable from the issuer and the subject.
-			email:    "unspecified-provider-github",
-			config:   &storepb.WorkloadIdentityConfig{IssuerUrl: ghIssuer, SubjectPattern: "repo:acme-corp/*"},
-			expected: []string{"bytebase", "https://github.com/acme-corp"},
+			email:            "unspecified-provider-github",
+			expectedProvider: storepb.WorkloadIdentityConfig_GITHUB,
+			config:           &storepb.WorkloadIdentityConfig{IssuerUrl: ghIssuer, SubjectPattern: "repo:acme-corp/*"},
+			expected:         []string{"bytebase", "https://github.com/acme-corp"},
 		},
 		{
-			email:    "unspecified-provider-gitlab",
-			config:   &storepb.WorkloadIdentityConfig{IssuerUrl: "https://gitlab.acme.com", SubjectPattern: "project_path:grp/*"},
-			expected: []string{"bytebase", "https://gitlab.acme.com"},
+			email:            "unspecified-provider-gitlab",
+			expectedProvider: storepb.WorkloadIdentityConfig_GITLAB,
+			config:           &storepb.WorkloadIdentityConfig{IssuerUrl: "https://gitlab.acme.com", SubjectPattern: "project_path:grp/*"},
+			expected:         []string{"bytebase", "https://gitlab.acme.com"},
 		},
 		{
 			// No provider and an unreadable subject: the provider default
@@ -160,6 +165,11 @@ func TestMigration3_23_4_WorkloadIdentityAudiences(t *testing.T) {
 			var got storepb.WorkloadIdentityConfig
 			require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal([]byte(raw), &got))
 			require.Equal(t, tc.expected, got.AllowedAudiences)
+			if tc.config.ProviderType == storepb.WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED {
+				// "unspecified-provider-unreadable" names no vocabulary, so it
+				// stays untyped and the zero value is the assertion.
+				require.Equal(t, tc.expectedProvider, got.ProviderType)
+			}
 		})
 	}
 }

@@ -625,39 +625,6 @@ describe("CreateWorkloadIdentitySheet", () => {
     act(() => root.unmount());
   });
 
-  test("opens an identity that never declared a provider", async () => {
-    const identity = editableIdentity(
-      WorkloadIdentityConfig_ProviderType.PROVIDER_TYPE_UNSPECIFIED,
-      "repo:acme-corp/deploy:ref:refs/heads/main"
-    );
-    mocks.store.updateWorkloadIdentity.mockResolvedValue(identity);
-    const { container, root } = renderSheet(identity);
-
-    // The subject names the provider, so the fields parse and the form is
-    // usable; reading the stored enum leaves owner empty and Update dead.
-    expect(
-      inputFor(container, "settings.members.workload-identity-owner").value
-    ).toBe("acme-corp");
-
-    type(inputFor(container, "common.name"), "CI deploy renamed");
-    const update = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent === "common.update"
-    );
-    expect(update?.hasAttribute("disabled")).toBe(false);
-    await act(async () => {
-      update?.click();
-    });
-
-    const sent =
-      mocks.store.updateWorkloadIdentity.mock.calls[0]?.[0]
-        ?.workloadIdentityConfig;
-    expect(sent?.subjectPattern).toBe("repo:acme-corp/deploy:ref:refs/heads/main");
-    // provider_type is required on write now, so the save must name one.
-    expect(sent?.providerType).toBe(WorkloadIdentityConfig_ProviderType.GITHUB);
-
-    act(() => root.unmount());
-  });
-
   test("recomputes the subject pattern from every derived control", () => {
     const { container, root } = renderSheet(
       editableIdentity(
