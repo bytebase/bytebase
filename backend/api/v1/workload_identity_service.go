@@ -92,10 +92,10 @@ func (s *WorkloadIdentityService) CreateWorkloadIdentity(ctx context.Context, re
 	if wi.WorkloadIdentityConfig == nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("workload_identity_config is required"))
 	}
-	if err := validateWorkloadIdentityConfig(wi.WorkloadIdentityConfig); err != nil {
+	storeConfig := convertToStoreWorkloadIdentityConfig(wi.WorkloadIdentityConfig)
+	if err := validateWorkloadIdentityConfig(storeConfig); err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid workload_identity_config"))
 	}
-	storeConfig := convertToStoreWorkloadIdentityConfig(wi.WorkloadIdentityConfig)
 
 	// Create the workload identity
 	createdWI, err := s.store.CreateWorkloadIdentity(ctx, &store.CreateWorkloadIdentityMessage{
@@ -239,10 +239,11 @@ func (s *WorkloadIdentityService) UpdateWorkloadIdentity(ctx context.Context, re
 			if request.Msg.WorkloadIdentity.WorkloadIdentityConfig == nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("workload_identity_config is required"))
 			}
-			if err := validateWorkloadIdentityConfig(request.Msg.WorkloadIdentity.WorkloadIdentityConfig); err != nil {
+			storeConfig := convertToStoreWorkloadIdentityConfig(request.Msg.WorkloadIdentity.WorkloadIdentityConfig)
+			if err := validateWorkloadIdentityConfig(storeConfig); err != nil {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Wrap(err, "invalid workload_identity_config"))
 			}
-			patch.Config = convertToStoreWorkloadIdentityConfig(request.Msg.WorkloadIdentity.WorkloadIdentityConfig)
+			patch.Config = storeConfig
 		default:
 			// Ignore unknown fields
 		}
@@ -315,16 +316,20 @@ func (s *WorkloadIdentityService) UndeleteWorkloadIdentity(ctx context.Context, 
 	return connect.NewResponse(convertToWorkloadIdentity(restoredWI)), nil
 }
 
-func validateWorkloadIdentityConfig(config *v1pb.WorkloadIdentityConfig) error {
+// validateWorkloadIdentityConfig judges the configuration as it will be
+// stored, so the caller normalizes first. Validating the request instead let
+// " * " through: convert trimmed it to "*" on the way to the column, and the
+// matcher then refused forever what the write path had accepted.
+func validateWorkloadIdentityConfig(config *storepb.WorkloadIdentityConfig) error {
 	if config == nil {
 		return nil
 	}
 
 	switch config.ProviderType {
-	case v1pb.WorkloadIdentityConfig_GITHUB,
-		v1pb.WorkloadIdentityConfig_GITLAB,
-		v1pb.WorkloadIdentityConfig_OIDC:
-	case v1pb.WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED:
+	case storepb.WorkloadIdentityConfig_GITHUB,
+		storepb.WorkloadIdentityConfig_GITLAB,
+		storepb.WorkloadIdentityConfig_OIDC:
+	case storepb.WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED:
 		return errors.New("provider_type is required")
 	default:
 		return errors.New("provider_type is invalid")
@@ -333,15 +338,14 @@ func validateWorkloadIdentityConfig(config *v1pb.WorkloadIdentityConfig) error {
 	// Every provider reaches the same token exchange, so every provider needs
 	// the same binding: an issuer whose keys can be fetched, an audience the
 	// token has to name, and a subject it has to match.
-	issuerURL := strings.TrimSpace(config.IssuerUrl)
-	if issuerURL == "" {
+	if config.IssuerUrl == "" {
 		return errors.New("issuer_url is required")
 	}
-	if err := wif.ValidateIssuerURL(issuerURL); err != nil {
+	if err := wif.ValidateIssuerURL(config.IssuerUrl); err != nil {
 		return err
 	}
-	if jwksURL := strings.TrimSpace(config.JwksUrl); jwksURL != "" {
-		if err := wif.ValidateJWKSURL(jwksURL); err != nil {
+	if config.JwksUrl != "" {
+		if err := wif.ValidateJWKSURL(config.JwksUrl); err != nil {
 			return err
 		}
 	}
@@ -349,7 +353,7 @@ func validateWorkloadIdentityConfig(config *v1pb.WorkloadIdentityConfig) error {
 		return errors.New("allowed_audiences is required")
 	}
 	for _, audience := range config.AllowedAudiences {
-		if strings.TrimSpace(audience) == "" {
+		if audience == "" {
 			return errors.New("allowed_audiences must not contain an empty value")
 		}
 	}
@@ -379,9 +383,9 @@ func convertToStoreWorkloadIdentityConfig(config *v1pb.WorkloadIdentityConfig) *
 		return nil
 	}
 
-	// Normalized for every provider, because validateWorkloadIdentityConfig
-	// checks the trimmed value: storing the raw one would validate a value the
-	// exchange never sees, and every comparison there is exact.
+	// Normalized here for every provider, and validated in this form: every
+	// comparison at the exchange is exact, so a value that reaches the column
+	// untrimmed could never match a token.
 	allowedAudiences := make([]string, len(config.AllowedAudiences))
 	for i, audience := range config.AllowedAudiences {
 		allowedAudiences[i] = strings.TrimSpace(audience)
