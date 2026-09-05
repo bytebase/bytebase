@@ -689,7 +689,32 @@ func writeView(buf *strings.Builder, view *storepb.ViewMetadata) error {
 	if _, err := buf.WriteString(view.Name); err != nil {
 		return err
 	}
-	if _, err := buf.WriteString(`" AS `); err != nil {
+	if _, err := buf.WriteString(`"`); err != nil {
+		return err
+	}
+	// ALL_VIEWS.TEXT is only the query, so a view declared as
+	// CREATE VIEW V (RENAMED) AS SELECT BASE ... loses its aliases unless the
+	// synced column names are written back out. Naming them changes nothing for
+	// a view that never had an explicit list.
+	if len(view.Columns) > 0 {
+		if _, err := buf.WriteString(` (`); err != nil {
+			return err
+		}
+		for i, column := range view.Columns {
+			if i > 0 {
+				if _, err := buf.WriteString(`, `); err != nil {
+					return err
+				}
+			}
+			if _, err := buf.WriteString(`"` + column.Name + `"`); err != nil {
+				return err
+			}
+		}
+		if _, err := buf.WriteString(`)`); err != nil {
+			return err
+		}
+	}
+	if _, err := buf.WriteString(` AS `); err != nil {
 		return err
 	}
 	if _, err := buf.WriteString(view.Definition); err != nil {
