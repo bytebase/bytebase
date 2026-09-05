@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -641,7 +643,7 @@ func TestFailStalePlanCheckRunsPreservesApprovalInputVersion(t *testing.T) {
 func setupPlanCheckRunVersionStore(ctx context.Context, t *testing.T) *store.Store {
 	t.Helper()
 
-	db, s, _ := newTestDB(t)
+	db, s, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');

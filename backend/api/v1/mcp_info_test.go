@@ -2,19 +2,18 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"testing"
+
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -25,15 +24,7 @@ import (
 // this is the backend receipt for what the page may disclose.
 func TestGetMCPInfoHandler(t *testing.T) {
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	require.NoError(t, migrator.MigrateSchema(ctx, container.GetDB()))
-
-	pgURL := fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort())
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
 	require.NoError(t, err)
@@ -58,7 +49,7 @@ func TestGetMCPInfoHandler(t *testing.T) {
 	}
 	setCeiling := func(t *testing.T, value string) {
 		t.Helper()
-		_, err := container.GetDB().ExecContext(ctx, `
+		_, err := db.ExecContext(ctx, `
 			INSERT INTO setting (name, workspace, value) VALUES ('MCP', $1, $2)
 			ON CONFLICT (workspace, name) DO UPDATE SET value = EXCLUDED.value`,
 			workspaceID, value)

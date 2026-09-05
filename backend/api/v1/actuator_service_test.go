@@ -3,10 +3,11 @@ package v1
 import (
 	"context"
 	"errors"
-	"fmt"
 	"slices"
 	"testing"
 	"time"
+
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
@@ -14,7 +15,6 @@ import (
 	"google.golang.org/protobuf/reflect/protoreflect"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/sample"
 	"github.com/bytebase/bytebase/backend/component/sample/saas"
@@ -22,20 +22,12 @@ import (
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
 func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	require.NoError(t, migrator.MigrateSchema(ctx, container.GetDB()))
-
-	pgURL := fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres", container.GetHost(), container.GetPort())
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
+	_, stores, pgURL := testcontainer.NewMetadataDB(t)
 
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
 	require.NoError(t, err)
@@ -46,7 +38,7 @@ func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	}
 	sampleManager, err := saas.NewManager(
 		stores,
-		fmt.Sprintf("postgresql://postgres:root-password@%s:%s/postgres?sslmode=disable", container.GetHost(), container.GetPort()),
+		pgURL,
 		nil,
 		sample.ManagerOptions{ReplicaID: "replica-a"},
 	)

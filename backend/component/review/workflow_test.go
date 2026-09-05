@@ -3,19 +3,18 @@ package review
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -1284,11 +1283,8 @@ func TestPlanMutationMakesPendingApprovalFindingStale(t *testing.T) {
 func setupWorkflowStore(ctx context.Context, t *testing.T) *store.Store {
 	t.Helper()
 
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
 		INSERT INTO principal (name, email, password_hash) VALUES
@@ -1300,13 +1296,6 @@ func setupWorkflowStore(ctx context.Context, t *testing.T) *store.Store {
 	`)
 	require.NoError(t, err)
 
-	pgURL := fmt.Sprintf(
-		"host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort(),
-	)
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
 	return stores
 }
 

@@ -6,20 +6,19 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
-	"fmt"
 	"math"
 	"testing"
 	"time"
+
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -161,16 +160,8 @@ func TestParseLicenseExpiredIsInvalid(t *testing.T) {
 
 func TestGetUserLimitUncached(t *testing.T) {
 	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
+	_, s, _ := testcontainer.NewMetadataDB(t)
 
-	db := container.GetDB()
-	require.NoError(t, migrator.MigrateSchema(ctx, db))
-
-	pgURL := fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres",
-		container.GetHost(), container.GetPort())
-	s, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
 	t.Cleanup(func() { s.Close() })
 
 	// Sign licenses with a test-only keypair so finite and expired licenses can

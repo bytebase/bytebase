@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -31,7 +33,7 @@ func TestPaginationStabilityAcrossProjects(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	db, stores, _ := newTestDB(t)
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 
 	projectIDs := make([]string, 0, projectCount)
 	for i := range projectCount {
@@ -109,7 +111,7 @@ func seedTiedIssues(ctx context.Context, t *testing.T, db *sql.DB, workspaceID s
 // changed", permanently, for that issue.
 func TestIssueCommentBatchKeepsInsertionOrder(t *testing.T) {
 	ctx := context.Background()
-	db, stores, _ := newTestDB(t)
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 
 	const (
 		workspaceID = "comment-ws"

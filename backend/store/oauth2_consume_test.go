@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -21,7 +23,7 @@ import (
 // and a second sequential redemption must observe consumed=false.
 func TestOAuth2AtomicConsume(t *testing.T) {
 	ctx := context.Background()
-	db, s, _ := newTestDB(t)
+	db, s, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('ws-test');

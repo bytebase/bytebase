@@ -7,6 +7,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/store"
@@ -25,7 +27,7 @@ func newStorePostgresFixture(t *testing.T, seedSQL string) *storePostgresFixture
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	t.Cleanup(cancel)
-	db, s, url := newTestDB(t)
+	db, s, url := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');

@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/store"
@@ -18,7 +20,7 @@ func newProjectPurgeCacheFixture(t *testing.T) (context.Context, *sql.DB, *store
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	t.Cleanup(cancel)
-	db, _, url := newTestDB(t)
+	db, s, _ := testcontainer.NewMetadataDBWithCache(t, true)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
 		INSERT INTO project (resource_id, workspace, name, deleted) VALUES
@@ -28,9 +30,6 @@ func newProjectPurgeCacheFixture(t *testing.T) (context.Context, *sql.DB, *store
 	`)
 	require.NoError(t, err)
 
-	s, err := store.New(ctx, url, true)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, s.Close()) })
 	return ctx, db, s
 }
 

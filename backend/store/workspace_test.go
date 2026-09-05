@@ -5,6 +5,8 @@ import (
 	"slices"
 	"testing"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -18,7 +20,7 @@ import (
 
 func TestCreateWorkspaceInitializesDefaults(t *testing.T) {
 	ctx := context.Background()
-	_, stores, _ := newTestDB(t)
+	_, stores, _ := testcontainer.NewMetadataDB(t)
 
 	const workspaceID = "workspace-defaults"
 	_, err := stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
@@ -72,7 +74,7 @@ func TestCreateWorkspaceInitializesDefaults(t *testing.T) {
 
 func TestListWorkspacesByEmailEvaluatesBindingConditions(t *testing.T) {
 	ctx := context.Background()
-	db, stores, _ := newTestDB(t)
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 
 	const email = "member@example.com"
 	activeCondition := `request.time < timestamp("2099-01-01T00:00:00Z")`

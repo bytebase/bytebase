@@ -2,9 +2,10 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
+
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"connectrpc.com/connect"
 	"github.com/pquerna/otp/totp"
@@ -13,12 +14,10 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	"github.com/bytebase/bytebase/backend/migrator"
 	"github.com/bytebase/bytebase/backend/runner/cleaner"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -431,15 +430,7 @@ func TestLoginAttemptRetentionOutlivesLockouts(t *testing.T) {
 
 func newAuthTestStore(t *testing.T) *store.Store {
 	t.Helper()
-	ctx := context.Background()
-	container := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
-	require.NoError(t, migrator.MigrateSchema(ctx, container.GetDB()))
-
-	pgURL := fmt.Sprintf("host=%s port=%s user=postgres password=root-password database=postgres", container.GetHost(), container.GetPort())
-	stores, err := store.New(ctx, pgURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
+	_, stores, _ := testcontainer.NewMetadataDB(t)
 	return stores
 }
 

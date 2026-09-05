@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
@@ -29,13 +31,10 @@ func newSettingAtomicFixtureWithCache(t *testing.T, enableCache bool) (context.C
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	t.Cleanup(cancel)
-	db, _, url := newTestDB(t)
+	db, s, _ := testcontainer.NewMetadataDBWithCache(t, enableCache)
 
 	_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('default');`)
 	require.NoError(t, err)
-	s, err := store.New(ctx, url, enableCache)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, s.Close()) })
 
 	_, err = s.UpsertSetting(ctx, &store.SettingMessage{
 		Name:      storepb.SettingName_WORKSPACE_PROFILE,
