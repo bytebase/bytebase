@@ -44,8 +44,18 @@ type Bus struct {
 
 	// PlanCheckTickleChan is the tickler for plan check scheduler.
 	PlanCheckTickleChan chan int
-	// TaskRunTickleChan is the tickler for task run scheduler.
-	TaskRunTickleChan chan int
+	// TaskRunPendingTickleChan is the tickler for the pending task run
+	// scheduler: a task run was created and needs scheduling.
+	TaskRunPendingTickleChan chan int
+	// TaskRunRunningTickleChan is the tickler for the running task run
+	// scheduler: a task run became available and needs to be picked up.
+	//
+	// The two task run schedulers must not share one channel. A channel value is
+	// delivered to exactly one receiver, so a shared channel hands each wake-up
+	// to whichever scheduler happens to be ready for it rather than to the one
+	// the sender meant, and the scheduler that actually had work waits out its
+	// 5s ticker instead. That cost a measured ~5s per task run transition.
+	TaskRunRunningTickleChan chan int
 	// ReviewRunTickleChan is the tickler for the review run scheduler.
 	ReviewRunTickleChan chan int
 
@@ -58,11 +68,23 @@ type Bus struct {
 
 func New() (*Bus, error) {
 	return &Bus{
-		ApprovalCheckChan:       make(chan IssueRef, 1000),
-		PlanCheckTickleChan:     make(chan int, 1000),
-		TaskRunTickleChan:       make(chan int, 1000),
-		ReviewRunTickleChan:     make(chan int, 1000),
-		RolloutCreationChan:     make(chan PlanRef, 100),
-		PlanCompletionCheckChan: make(chan PlanRef, 1000),
+		ApprovalCheckChan:        make(chan IssueRef, 1000),
+		PlanCheckTickleChan:      make(chan int, 1000),
+		TaskRunPendingTickleChan: make(chan int, 1000),
+		TaskRunRunningTickleChan: make(chan int, 1000),
+		ReviewRunTickleChan:      make(chan int, 1000),
+		RolloutCreationChan:      make(chan PlanRef, 100),
+		PlanCompletionCheckChan:  make(chan PlanRef, 1000),
 	}, nil
+}
+
+// Tickle wakes a scheduler without blocking. A tickle carries no information
+// beyond "there may be work"; every scheduler sweeps the store for all of it,
+// so a wake-up already queued makes another redundant. Not blocking here also
+// keeps a request handler from parking on a scheduler that has stopped reading.
+func Tickle(ch chan int) {
+	select {
+	case ch <- 0:
+	default:
+	}
 }

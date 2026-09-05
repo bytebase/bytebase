@@ -13,6 +13,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/log"
+	"github.com/bytebase/bytebase/backend/component/bus"
 	"github.com/bytebase/bytebase/backend/component/productmetrics"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/store"
@@ -40,7 +41,7 @@ func (s *Scheduler) runPendingTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 			if err := s.schedulePendingTaskRuns(ctx); err != nil {
 				slog.Error("failed to schedule pending task runs", log.BBError(err))
 			}
-		case <-s.bus.TaskRunTickleChan:
+		case <-s.bus.TaskRunPendingTickleChan:
 			if err := s.licenseService.CheckReplicaLimit(ctx); err != nil {
 				// Grace period is tracked by the ticker branch; just skip here.
 				continue
@@ -247,10 +248,9 @@ func (s *Scheduler) promoteTaskRun(ctx context.Context, taskRun *store.TaskRunMe
 		return errors.Wrapf(err, "failed to update task run status to available")
 	}
 
-	select {
-	case s.bus.TaskRunTickleChan <- 0:
-	default:
-	}
+	// The task run is available now, which is the running scheduler's business,
+	// not this one's.
+	bus.Tickle(s.bus.TaskRunRunningTickleChan)
 
 	return nil
 }
