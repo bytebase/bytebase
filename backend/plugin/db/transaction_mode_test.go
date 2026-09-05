@@ -1,4 +1,4 @@
-package tests
+package db_test
 
 import (
 	"context"
@@ -12,9 +12,21 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
+
+	// Register the drivers this test opens.
+	_ "github.com/bytebase/bytebase/backend/plugin/db/mssql"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/mysql"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/oracle"
+	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 )
 
-// TestTransactionMode tests the configurable transaction mode feature across different database engines.
+// TestTransactionMode tests the configurable transaction mode feature across
+// different database engines.
+//
+// This lives beside the driver rather than in backend/tests because per-engine
+// transaction semantics are the behavior under test: it boots no Bytebase
+// server and touches no workflow, it opens each engine's driver directly.
+// backend/tests is for workflows, which are proven against Postgres alone.
 func TestTransactionMode(t *testing.T) {
 	ctx := context.Background()
 

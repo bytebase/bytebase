@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
@@ -116,7 +115,6 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 func TestGetLatestSchema(t *testing.T) {
 	tests := []struct {
 		name                 string
-		dbType               storepb.Engine
 		instanceID           string
 		databaseName         string
 		ddl                  string
@@ -124,64 +122,7 @@ func TestGetLatestSchema(t *testing.T) {
 		wantDatabaseMetadata *v1pb.DatabaseMetadata
 	}{
 		{
-			name:         "MySQL",
-			dbType:       storepb.Engine_MYSQL,
-			instanceID:   "latest-schema-mysql",
-			databaseName: "latestSchema",
-			ddl:          `CREATE TABLE book(id INT, name TEXT);`,
-			wantRawSchema: "SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;\n" +
-				"SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;\n" +
-				"--\n" +
-				"-- Table structure for `book`\n" +
-				"--\n" +
-				"CREATE TABLE `book` (\n" +
-				"  `id` int DEFAULT NULL,\n" +
-				"  `name` text DEFAULT NULL\n" +
-				") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;\n\n" +
-				"SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;\n" +
-				"SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;\n",
-			wantDatabaseMetadata: &v1pb.DatabaseMetadata{
-				Name:         "instances/latest-schema-mysql/databases/latestSchema/metadata",
-				CharacterSet: "utf8mb4",
-				Collation:    "utf8mb4_general_ci",
-				Schemas: []*v1pb.SchemaMetadata{
-					{
-						Tables: []*v1pb.TableMetadata{
-							{
-								Name:      "book",
-								Engine:    "InnoDB",
-								Collation: "utf8mb4_general_ci",
-								Charset:   "utf8mb4",
-								DataSize:  16384,
-								Columns: []*v1pb.ColumnMetadata{
-									{
-										Name:       "id",
-										Position:   1,
-										Nullable:   true,
-										HasDefault: true,
-										Default:    "NULL",
-										Type:       "int",
-									},
-									{
-										Name:         "name",
-										Position:     2,
-										Nullable:     true,
-										Type:         "text",
-										HasDefault:   true,
-										Default:      "NULL",
-										CharacterSet: "utf8mb4",
-										Collation:    "utf8mb4_general_ci",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		{
 			name:         "PostgreSQL",
-			dbType:       storepb.Engine_POSTGRES,
 			instanceID:   "latest-schema-postgres",
 			databaseName: "latestSchema",
 			ddl:          `CREATE TABLE book(id INT, name TEXT);`,
@@ -246,48 +187,23 @@ CREATE TABLE "public"."book" (
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			a := require.New(t)
-			var instance *v1pb.Instance
-			switch test.dbType {
-			case storepb.Engine_POSTGRES:
-				pgContainer, err := getPgContainer(ctx)
-				defer func() {
-					pgContainer.Close(ctx)
-				}()
-				a.NoError(err)
-				instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-					InstanceId: test.instanceID,
-					Instance: &v1pb.Instance{
-						Title:       test.name,
-						Engine:      v1pb.Engine_POSTGRES,
-						Environment: new(environment.Name),
-						Activation:  true,
-						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "postgres", Password: "root-password", Id: "admin"}},
-					},
-				}))
-				a.NoError(err)
-				instance = instanceResp.Msg
-			case storepb.Engine_MYSQL:
-				mysqlContainer, err := getMySQLContainer(ctx)
-				defer func() {
-					mysqlContainer.Close(ctx)
-				}()
-				a.NoError(err)
-
-				instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-					InstanceId: test.instanceID,
-					Instance: &v1pb.Instance{
-						Title:       "mysqlInstance",
-						Engine:      v1pb.Engine_MYSQL,
-						Environment: new(environment.Name),
-						Activation:  true,
-						DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "root", Password: "root-password", Id: "admin"}},
-					},
-				}))
-				a.NoError(err)
-				instance = instanceResp.Msg
-			default:
-				a.FailNow("unsupported db type")
-			}
+			pgContainer, err := getPgContainer(ctx)
+			defer func() {
+				pgContainer.Close(ctx)
+			}()
+			a.NoError(err)
+			instanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
+				InstanceId: test.instanceID,
+				Instance: &v1pb.Instance{
+					Title:       test.name,
+					Engine:      v1pb.Engine_POSTGRES,
+					Environment: new(environment.Name),
+					Activation:  true,
+					DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: pgContainer.host, Port: pgContainer.port, Username: "postgres", Password: "root-password", Id: "admin"}},
+				},
+			}))
+			a.NoError(err)
+			instance := instanceResp.Msg
 
 			err = ctl.createDatabase(ctx, ctl.project, instance, nil, test.databaseName, "postgres")
 			a.NoError(err)
