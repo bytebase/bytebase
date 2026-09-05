@@ -43,6 +43,42 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			},
 		},
 		{
+			// Ported from the MySQL arm when it was dropped: the only case proving a
+			// successful multi-statement AdminExecute streams one affected-row result
+			// per statement, each carrying its own statement text.
+			databaseName:      "Test2",
+			prepareStatements: "CREATE TABLE public.tbl(id INT PRIMARY KEY);",
+			query:             "INSERT INTO tbl VALUES(1); DELETE FROM tbl WHERE id = 1;",
+			affectedRows: []*v1pb.QueryResult{
+				{
+					ColumnNames:     []string{"Affected Rows"},
+					ColumnTypeNames: []string{"INT"},
+					Rows: []*v1pb.QueryRow{
+						{
+							Values: []*v1pb.RowValue{
+								{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1}},
+							},
+						},
+					},
+					Statement: "INSERT INTO tbl VALUES(1);",
+					RowsCount: 1,
+				},
+				{
+					ColumnNames:     []string{"Affected Rows"},
+					ColumnTypeNames: []string{"INT"},
+					Rows: []*v1pb.QueryRow{
+						{
+							Values: []*v1pb.RowValue{
+								{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1}},
+							},
+						},
+					},
+					Statement: " DELETE FROM tbl WHERE id = 1;",
+					RowsCount: 1,
+				},
+			},
+		},
+		{
 			databaseName:      "Test4",
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "ALTER TABLE tbl ADD COLUMN name VARCHAR(255);",
