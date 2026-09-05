@@ -384,7 +384,10 @@ func TestActionCheckCommand(t *testing.T) {
 		a.NoError(err)
 		defer ctl.Close(ctx)
 
-		// Create MySQL test database
+		// Keeps MySQL. Porting this to Postgres was tried and reverted: the
+		// declarative release check returns three errors against the same schema
+		// on Postgres, so the engine changes the result here rather than being
+		// incidental, and what those errors are is its own question.
 		_, mysqlContainer := ctl.createTestMySQLDatabase(ctx, t)
 		defer mysqlContainer.Close(ctx)
 

@@ -33,23 +33,6 @@ var (
 			Title:  "OK",
 		},
 	}
-	// builtinOnlyPolicyWithConflict is the expected result when:
-	// 1. There's no user-configured SQL review policy
-	// 2. But builtin rules still run (BUILTIN_WALK_THROUGH_CHECK)
-	// 3. And the statement conflicts with existing schema (e.g., table already exists)
-	builtinOnlyPolicyWithConflict = []*v1pb.PlanCheckRun_Result{
-		{
-			Status:  v1pb.Advice_WARNING,
-			Title:   "Table `user` already exists",
-			Content: "Table `user` already exists",
-			Code:    607, // code.TableExists
-			Report: &v1pb.PlanCheckRun_Result_SqlReviewReport_{
-				SqlReviewReport: &v1pb.PlanCheckRun_Result_SqlReviewReport{
-					StartPosition: &v1pb.Position{Line: 1},
-				},
-			},
-		},
-	}
 )
 
 type test struct {
