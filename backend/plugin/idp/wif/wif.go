@@ -65,7 +65,7 @@ func ValidateToken(ctx context.Context, tokenString string, config *storepb.Work
 	}
 
 	// Validate subject pattern
-	if !matchSubjectPattern(config.ProviderType, claims.Subject, config.SubjectPattern) {
+	if !matchSubjectPattern(claims.Subject, config.SubjectPattern) {
 		return nil, errors.Errorf("subject mismatch: expected pattern %q, got %q", config.SubjectPattern, claims.Subject)
 	}
 
@@ -94,11 +94,11 @@ func validateAudience(tokenAudience []string, allowedAudiences []string) bool {
 	return false
 }
 
-func matchSubjectPattern(providerType storepb.WorkloadIdentityConfig_ProviderType, subject, pattern string) bool {
+func matchSubjectPattern(subject, pattern string) bool {
 	// The write-time rule is the read-time rule: a pattern the write paths
 	// would refuse matches nothing, so a row stored before that rule existed
 	// fails closed instead of admitting every subject behind a broad prefix.
-	if ValidateSubjectPattern(providerType, pattern) != nil {
+	if ValidateSubjectPattern(pattern) != nil {
 		return false
 	}
 	if strings.HasSuffix(pattern, "*") {

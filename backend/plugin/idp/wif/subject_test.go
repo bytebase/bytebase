@@ -165,6 +165,8 @@ func TestValidateTokenAudienceBinding(t *testing.T) {
 func TestValidateTokenRefusesLegacyPartialMarker(t *testing.T) {
 	key := seedIssuer(t)
 
+	// The rule reads the pattern, not the row's label, so the provider it
+	// claims makes no difference to any of these.
 	for _, pattern := range []string{"r*", "repo*", "repo:*", "repo:acme*"} {
 		config := githubConfig()
 		config.ProviderType = storepb.WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED
@@ -175,15 +177,6 @@ func TestValidateTokenRefusesLegacyPartialMarker(t *testing.T) {
 			config)
 		require.ErrorContains(t, err, "subject mismatch", "pattern=%q", pattern)
 	}
-
-	// The same shapes stay legal on an issuer whose subjects are not GitHub's.
-	oidc := githubConfig()
-	oidc.ProviderType = storepb.WorkloadIdentityConfig_OIDC
-	oidc.SubjectPattern = "r*"
-	claims, err := ValidateToken(context.Background(),
-		signToken(t, key, "role:admin", "bytebase"), oidc)
-	require.NoError(t, err)
-	require.Equal(t, "role:admin", claims.Subject)
 }
 
 // TestValidateTokenUnspecifiedProviderStillBinds pins the upgrade path for
@@ -202,7 +195,6 @@ func TestValidateTokenUnspecifiedProviderStillBinds(t *testing.T) {
 }
 
 func TestValidateSubjectPattern(t *testing.T) {
-	const github = storepb.WorkloadIdentityConfig_GITHUB
 	accepted := []string{
 		"repo:acme-corp/deploy:ref:refs/heads/main",
 		"repo:acme-corp/*",
@@ -216,46 +208,29 @@ func TestValidateSubjectPattern(t *testing.T) {
 		"svc-bytebase-*",
 	}
 	for _, pattern := range accepted {
-		require.NoError(t, ValidateSubjectPattern(github, pattern), "pattern=%q", pattern)
+		require.NoError(t, ValidateSubjectPattern(pattern), "pattern=%q", pattern)
 	}
 
-	rejected := map[string]string{
-		"":                  "subject_pattern is required",
-		"   ":               "subject_pattern is required",
-		"*":                 "matches every subject",
-		"repo:*":            "matches every repository",
-		"repo:acme*":        "matches every repository",
-		"r*":                "matches every repository",
-		"repo*":             "matches every repository",
-		"project_path:*":    "matches every project",
-		"project_path:grp*": "matches every project",
+	rejected := []string{
+		"",
+		"   ",
+		"*",
+		// Spells a marker out.
+		"repo:*",
+		"repo:acme*",
+		"project_path:*",
+		"project_path:grp*",
+		// Stops part-way inside one, so it still addresses everything written
+		// with that marker.
+		"r*",
+		"repo*",
+		"p*",
+		"project*",
+		"project_path*",
 	}
-	for pattern, want := range rejected {
-		require.ErrorContains(t, ValidateSubjectPattern(github, pattern), want, "pattern=%q", pattern)
+	for _, pattern := range rejected {
+		require.Error(t, ValidateSubjectPattern(pattern), "pattern=%q", pattern)
 	}
-
-	// A prefix that stops inside a marker belongs to that vocabulary only if
-	// the row could be using it. A declared generic issuer could not.
-	for _, pattern := range []string{"r*", "repo*", "project*", "project_path*"} {
-		require.NoError(t, ValidateSubjectPattern(
-			storepb.WorkloadIdentityConfig_OIDC, pattern), "pattern=%q", pattern)
-	}
-	// A row that declares no provider predates the requirement, so it is
-	// judged against both markers: it is the population the migration repairs.
-	for _, pattern := range []string{"r*", "repo*", "project*", "project_path*"} {
-		require.ErrorContains(t, ValidateSubjectPattern(
-			storepb.WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED, pattern),
-			"matches every", "pattern=%q", pattern)
-	}
-	require.ErrorContains(t, ValidateSubjectPattern(
-		storepb.WorkloadIdentityConfig_GITLAB, "project*"), "matches every project")
-	// A full marker names its own vocabulary whatever the provider says.
-	require.ErrorContains(t, ValidateSubjectPattern(
-		storepb.WorkloadIdentityConfig_OIDC, "repo:*"), "matches every repository")
-	// A wildcard outside both vocabularies stays the operator's call, even on
-	// a row that declares nothing.
-	for _, pattern := range []string{"system:serviceaccount:prod:*", "svc-bytebase-*"} {
-		require.NoError(t, ValidateSubjectPattern(
-			storepb.WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED, pattern), "pattern=%q", pattern)
-	}
+	require.ErrorContains(t, ValidateSubjectPattern(""), "subject_pattern is required")
+	require.ErrorContains(t, ValidateSubjectPattern("repo*"), "matches every subject")
 }
