@@ -11,6 +11,26 @@ import (
 
 func init() {
 	schema.RegisterGetDatabaseDefinition(storepb.Engine_REDSHIFT, GetDatabaseDefinition)
+	schema.RegisterGetTableDefinition(storepb.Engine_REDSHIFT, GetTableDefinition)
+	schema.RegisterGetViewDefinition(storepb.Engine_REDSHIFT, GetViewDefinition)
+}
+
+// GetTableDefinition renders one table exactly as the whole-database output
+// renders it, minus the section banner.
+func GetTableDefinition(schemaName string, table *storepb.TableMetadata, _ []*storepb.SequenceMetadata) (string, error) {
+	var sb strings.Builder
+	if err := writeTable(&sb, convertToTableState(0, schemaName, table)); err != nil {
+		return "", err
+	}
+	return sb.String(), nil
+}
+
+func GetViewDefinition(schemaName string, view *storepb.ViewMetadata) (string, error) {
+	var sb strings.Builder
+	if err := writeView(&sb, convertToViewState(0, schemaName, view)); err != nil {
+		return "", err
+	}
+	return sb.String(), nil
 }
 
 func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSchemaMetadata) (string, error) {
@@ -48,24 +68,7 @@ func writeTables(w io.StringWriter, to *storepb.DatabaseSchemaMetadata, state *d
 				return err
 			}
 
-			buf := &strings.Builder{}
-			if err := table.toString(buf); err != nil {
-				return err
-			}
-			// Generate comment for table and columns.
-			if table.comment != "" {
-				if _, err := fmt.Fprintf(buf, "COMMENT ON TABLE %s IS '%s';\n", table.name, table.comment); err != nil {
-					return err
-				}
-			}
-			for _, column := range table.columns {
-				if column.comment != "" {
-					if _, err := fmt.Fprintf(buf, "COMMENT ON COLUMN %s.%s IS '%s';\n", table.name, column.name, column.comment); err != nil {
-						return err
-					}
-				}
-			}
-			if _, err := w.WriteString(buf.String()); err != nil {
+			if err := writeTable(w, table); err != nil {
 				return err
 			}
 			delete(schemaState.tables, table.name)
@@ -91,23 +94,53 @@ func writeViews(w io.StringWriter, to *storepb.DatabaseSchemaMetadata, state *da
 				return err
 			}
 
-			buf := &strings.Builder{}
-			if err := view.toString(buf); err != nil {
-				return err
-			}
-			// Generate comment for view.
-			if view.comment != "" {
-				if _, err := fmt.Fprintf(buf, "COMMENT ON VIEW %s IS '%s';\n", view.name, view.comment); err != nil {
-					return err
-				}
-			}
-			if _, err := w.WriteString(buf.String()); err != nil {
+			if err := writeView(w, view); err != nil {
 				return err
 			}
 			delete(schemaState.views, view.name)
 		}
 	}
 	return nil
+}
+
+// writeTable writes one table and the comments that belong to it. Column
+// comments follow the column order the CREATE TABLE body uses; ranging over the
+// map directly, as this did before, ordered them differently run to run.
+func writeTable(w io.StringWriter, table *tableState) error {
+	buf := &strings.Builder{}
+	if err := table.toString(buf); err != nil {
+		return err
+	}
+	if table.comment != "" {
+		if _, err := fmt.Fprintf(buf, "COMMENT ON TABLE %s IS '%s';\n", table.qualifiedName(), escapeSingleQuote(table.comment)); err != nil {
+			return err
+		}
+	}
+	for _, column := range sortedColumns(table.columns) {
+		if column.comment == "" {
+			continue
+		}
+		if _, err := fmt.Fprintf(buf, "COMMENT ON COLUMN %s.%s IS '%s';\n", table.qualifiedName(), quoteIdentifier(column.name), escapeSingleQuote(column.comment)); err != nil {
+			return err
+		}
+	}
+	_, err := w.WriteString(buf.String())
+	return err
+}
+
+// writeView writes one view and its comment.
+func writeView(w io.StringWriter, view *viewState) error {
+	buf := &strings.Builder{}
+	if err := view.toString(buf); err != nil {
+		return err
+	}
+	if view.comment != "" {
+		if _, err := fmt.Fprintf(buf, "COMMENT ON VIEW %s IS '%s';\n", view.qualifiedName(), escapeSingleQuote(view.comment)); err != nil {
+			return err
+		}
+	}
+	_, err := w.WriteString(buf.String())
+	return err
 }
 
 func getTableAnnouncement(name string) string {
