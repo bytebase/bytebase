@@ -317,9 +317,8 @@ func (s *WorkloadIdentityService) UndeleteWorkloadIdentity(ctx context.Context, 
 }
 
 // validateWorkloadIdentityConfig judges the configuration as it will be
-// stored, so the caller normalizes first. Validating the request instead let
-// " * " through: convert trimmed it to "*" on the way to the column, and the
-// matcher then refused forever what the write path had accepted.
+// stored, so the caller converts first: every comparison at the exchange is
+// exact, and the stored form is the one it compares.
 func validateWorkloadIdentityConfig(config *storepb.WorkloadIdentityConfig) error {
 	if config == nil {
 		return nil

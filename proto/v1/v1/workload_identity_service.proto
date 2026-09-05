@@ -154,8 +154,10 @@ message WorkloadIdentityConfig {
   // claim matches any entry.
   repeated string allowed_audiences = 3 [(google.api.field_behavior) = REQUIRED];
   // The subject a token must carry, e.g. "repo:owner/repo:ref:refs/heads/main".
-  // A trailing "*" is a prefix match and must complete an owner segment, so
-  // "repo:my-org/*" is accepted and "repo:*" is not.
+  // A trailing "*" is a prefix match. For GitHub and GitLab subjects it must
+  // complete an owner or group segment, so "repo:my-org/*" is accepted and
+  // "repo:*" is not. Other issuers write other vocabularies, so a wildcard
+  // outside those two is accepted as given.
   string subject_pattern = 4 [(google.api.field_behavior) = REQUIRED];
   // Optional JWKS endpoint. When empty, use OIDC discovery from issuer_url.
   string jwks_url = 5;

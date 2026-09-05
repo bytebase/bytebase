@@ -22,10 +22,9 @@ const (
 // must pin at least the owner segment: "repo:*", "repo:acme*" and "r*" all
 // admit every repository on GitHub.
 //
-// The rule reads the pattern only. provider_type is set by the client and is
-// not evidence about which subjects the issuer signs: a row labelled for one
-// provider can carry another's pattern, and honouring the label would let
-// "repo*" through on a row that simply says it is not GitHub.
+// The rule reads the pattern only. provider_type is client-set and says
+// nothing about which subjects the issuer signs, so honoring it would let
+// "repo*" through on a row that merely claims not to be GitHub.
 func ValidateSubjectPattern(pattern string) error {
 	if strings.TrimSpace(pattern) == "" {
 		return errors.New("subject_pattern is required")

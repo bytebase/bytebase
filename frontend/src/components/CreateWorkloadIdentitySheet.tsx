@@ -172,12 +172,11 @@ function WorkloadIdentityForm({
         : undefined,
     []
   );
-  // Resolved, not read raw: an identity written before provider_type was
-  // required may carry PROVIDER_TYPE_UNSPECIFIED, which names no platform and
-  // Migration 3.23.4 types every stored row from its subject prefix, so an
-  // unspecified provider only reaches here from an older replica writing after
-  // that backfill ran. The form opens such a row on the GitHub tab; picking the
-  // platform and saving types it.
+  // PROVIDER_TYPE_UNSPECIFIED names no platform, so the form has no tab to
+  // open on. Migration 3.23.4 types the rows whose subject prefix says which
+  // vocabulary they use; a row whose subject says neither, and a row an older
+  // replica writes after that backfill, still arrive untyped. Both open on the
+  // GitHub tab, and picking the platform types them on save.
   const storedProviderType =
     workloadIdentity?.workloadIdentityConfig?.providerType;
   const initialProviderType =
@@ -296,6 +295,13 @@ function WorkloadIdentityForm({
   };
 
   const handlePlatformChange = (value: WorkloadIdentityConfig_ProviderType) => {
+    // Re-selecting the platform already shown changes nothing, and the reset
+    // below would drop the provider-default audience migration 3.23.4 records
+    // alongside "bytebase". A real change makes that value stale, so only a
+    // real change resets it.
+    if (value === providerType) {
+      return;
+    }
     const preset = PLATFORM_PRESETS[value];
     if (preset) {
       setIssuerUrl(preset.issuerUrl);
