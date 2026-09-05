@@ -96,9 +96,9 @@ func TestWorkloadIdentityEmailValidation(t *testing.T) {
 	})
 }
 
-// TestWorkloadIdentityConfigValidation pins the write paths BYT-10151 made
-// strict. The token-exchange regression in backend/plugin/idp/wif covers the
-// read path; nothing else covers these.
+// TestWorkloadIdentityConfigValidation pins that the write RPCs reach the
+// configuration validator, and how Update treats each update-mask shape. The
+// rules themselves are pinned without a server in backend/api/v1.
 func TestWorkloadIdentityConfigValidation(t *testing.T) {
 	a := require.New(t)
 	ctx := context.Background()
@@ -126,12 +126,11 @@ func TestWorkloadIdentityConfigValidation(t *testing.T) {
 		return err
 	}
 
+	// One row, not the rule table: TestValidateWorkloadIdentityConfig in
+	// backend/api/v1 pins every rule without a server. What a boot earns here
+	// is that Create and Update actually reach the validator.
 	rejected := map[string]func(*v1pb.WorkloadIdentityConfig){
-		"no-audience":      func(c *v1pb.WorkloadIdentityConfig) { c.AllowedAudiences = nil },
-		"blank-audience":   func(c *v1pb.WorkloadIdentityConfig) { c.AllowedAudiences = []string{" "} },
-		"no-subject":       func(c *v1pb.WorkloadIdentityConfig) { c.SubjectPattern = "" },
-		"wildcard-subject": func(c *v1pb.WorkloadIdentityConfig) { c.SubjectPattern = "*" },
-		"no-issuer":        func(c *v1pb.WorkloadIdentityConfig) { c.IssuerUrl = "" },
+		"no-audience": func(c *v1pb.WorkloadIdentityConfig) { c.AllowedAudiences = nil },
 	}
 	for name, mutate := range rejected {
 		t.Run("create rejects "+name, func(t *testing.T) {

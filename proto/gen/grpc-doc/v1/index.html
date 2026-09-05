@@ -36384,8 +36384,10 @@ claim matches any entry. </p></td>
                   <td><a href="#string">string</a></td>
                   <td></td>
                   <td><p>The subject a token must carry, e.g. &#34;repo:owner/repo:ref:refs/heads/main&#34;.
-A trailing &#34;*&#34; is a prefix match and must complete an owner segment, so
-&#34;repo:my-org/*&#34; is accepted and &#34;repo:*&#34; is not. </p></td>
+A trailing &#34;*&#34; is a prefix match. For GitHub and GitLab subjects it must
+complete an owner or group segment, so &#34;repo:my-org/*&#34; is accepted and
+&#34;repo:*&#34; is not. Other issuers write other vocabularies, so a wildcard
+outside those two is accepted as given. </p></td>
                 </tr>
               
                 <tr>

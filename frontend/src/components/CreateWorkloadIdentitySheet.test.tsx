@@ -689,9 +689,10 @@ describe("CreateWorkloadIdentitySheet", () => {
     act(() => root.unmount());
   });
 
-  // The migration leaves some rows without a derivable audience and tells the
-  // operator to set one. Prefilling would make the form look unchanged, so
-  // Update would stay disabled and the row could never be repaired.
+  // An identity whose audience list is empty, which an older replica can still
+  // write after the backfill has run. Prefilling would make the form look
+  // unchanged, so Update would stay disabled and the row could never be
+  // repaired.
   test("does not prefill an audience the identity does not hold", () => {
     const unrepaired = create(WorkloadIdentitySchema, {
       name: "workloadIdentities/ghes@workload.bytebase.com",

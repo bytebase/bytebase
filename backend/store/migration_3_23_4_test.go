@@ -105,7 +105,7 @@ func TestMigration3_23_4_WorkloadIdentityAudiences(t *testing.T) {
 		{
 			// A row declaring GITLAB whose issuer is GitHub's: the first arm
 			// reads the evidence and the enum does not override it.
-			email:    "mislabelled-provider",
+			email:    "mislabeled-provider",
 			config:   &storepb.WorkloadIdentityConfig{ProviderType: storepb.WorkloadIdentityConfig_GITLAB, IssuerUrl: ghIssuer, SubjectPattern: "repo:acme-corp/*"},
 			expected: []string{"bytebase", "https://github.com/acme-corp"},
 		},
@@ -118,7 +118,7 @@ func TestMigration3_23_4_WorkloadIdentityAudiences(t *testing.T) {
 		{
 			// A GitLab identity whose stored enum says GITHUB. The arms key on
 			// the subject's shape, so it still gets the instance URL.
-			email:    "gitlab-mislabelled-github",
+			email:    "gitlab-mislabeled-github",
 			config:   &storepb.WorkloadIdentityConfig{ProviderType: storepb.WorkloadIdentityConfig_GITHUB, IssuerUrl: "https://gitlab.acme.com", SubjectPattern: "project_path:grp/*"},
 			expected: []string{"bytebase", "https://gitlab.acme.com"},
 		},
@@ -169,6 +169,12 @@ func TestMigration3_23_4_WorkloadIdentityAudiences(t *testing.T) {
 				// "unspecified-provider-unreadable" names no vocabulary, so it
 				// stays untyped and the zero value is the assertion.
 				require.Equal(t, tc.expectedProvider, got.ProviderType)
+			} else {
+				// A declared provider is evidence the operator supplied; the
+				// backfill keys on an absent one and must not overwrite it,
+				// including "gitlab-mislabeled-github", whose subject prefix
+				// disagrees with its label.
+				require.Equal(t, tc.config.ProviderType, got.ProviderType)
 			}
 		})
 	}

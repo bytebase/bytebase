@@ -186,8 +186,10 @@ type WorkloadIdentityConfig struct {
 	// claim matches any entry.
 	AllowedAudiences []string `protobuf:"bytes,3,rep,name=allowed_audiences,json=allowedAudiences,proto3" json:"allowed_audiences,omitempty"`
 	// The subject a token must carry, e.g. "repo:owner/repo:ref:refs/heads/main".
-	// A trailing "*" is a prefix match and must complete an owner segment, so
-	// "repo:my-org/*" is accepted and "repo:*" is not.
+	// A trailing "*" is a prefix match. For GitHub and GitLab subjects it must
+	// complete an owner or group segment, so "repo:my-org/*" is accepted and
+	// "repo:*" is not. Other issuers write other vocabularies, so a wildcard
+	// outside those two is accepted as given.
 	SubjectPattern string `protobuf:"bytes,4,opt,name=subject_pattern,json=subjectPattern,proto3" json:"subject_pattern,omitempty"`
 	// Optional JWKS endpoint. When empty, use OIDC discovery from issuer_url.
 	JwksUrl       string `protobuf:"bytes,5,opt,name=jwks_url,json=jwksUrl,proto3" json:"jwks_url,omitempty"`
