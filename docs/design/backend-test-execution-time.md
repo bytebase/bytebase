@@ -259,9 +259,18 @@ Sorting the expensive tests by that rule gave four outcomes rather than one:
   grants are per object, `BIN_TO_UUID` became a `uuid` cast, and the catalog
   needed a `public` schema.
 - **Engine wearing workflow clothing.** `TestSQLReviewForMySQL` was rule coverage
-  in the wrong place: all 41 rules its fixture asserts have a dedicated file under
-  `plugin/advisor/mysql/test`, and `TestMySQLRules` drives ~60 rules through them
-  with a fake driver and no container, in 2.3 s. Deleted, with
+  in the wrong place: of the 41 rules its fixture asserts, 39 have a file under
+  `plugin/advisor/mysql/test` carrying real `want:` expectations, and
+  `TestMySQLRules` drives ~60 rules through them with no container, in 2.3 s.
+  **Two did not, and checking that the file merely exists would have missed it.**
+  `RunSQLReviewRuleTest` builds its context with `Driver: nil`, so the two rules
+  that need a live `EXPLAIN` — `STATEMENT_AFFECTED_ROW_LIMIT` and
+  `STATEMENT_DML_DRY_RUN` — have yaml files holding statements and no
+  expectations at all. The first is covered anyway by two driver-backed tests
+  against a fake `database/sql` EXPLAIN driver; the second was not, so deleting
+  the workflow test would have dropped its only coverage, and
+  `TestMySQLDMLDryRunAdvisor` was written against that same fake driver to
+  replace it. Deleted, with
   `TestSyncerForMySQL` (its Postgres twin sits in the same file) and
   `TestGetLatestSchema`'s MySQL arm (it asserted a literal dump, including MySQL's
   `SET @OLD_UNIQUE_CHECKS` preamble). `TestTransactionMode` moved to
