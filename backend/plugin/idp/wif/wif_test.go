@@ -4,17 +4,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func TestMatchSubjectPattern(t *testing.T) {
 	tests := []struct {
-		name         string
-		providerType storepb.WorkloadIdentityConfig_ProviderType
-		subject      string
-		pattern      string
-		expected     bool
+		name     string
+		subject  string
+		pattern  string
+		expected bool
 	}{
 		{
 			name:     "empty pattern matches nothing",
@@ -43,31 +40,12 @@ func TestMatchSubjectPattern(t *testing.T) {
 			expected: false,
 		},
 		{
-			// Only a declared GitHub identity reads "r*" as the whole
-			// "repo:" vocabulary.
-			name:         "wildcard inside the marker matches nothing on GitHub",
-			providerType: storepb.WorkloadIdentityConfig_GITHUB,
-			subject:      "repo:owner/repo:ref:refs/heads/main",
-			pattern:      "r*",
-			expected:     false,
-		},
-		{
-			// A generic OIDC issuer may sign "role:admin", so "r*" there is
-			// the operator's call, not a GitHub rule.
-			name:         "wildcard inside the marker still matches on a custom issuer",
-			providerType: storepb.WorkloadIdentityConfig_OIDC,
-			subject:      "role:admin",
-			pattern:      "r*",
-			expected:     true,
-		},
-		{
-			// A row written before provider_type was required cannot say which
-			// vocabulary it meant, so it is judged against both.
-			name:         "wildcard inside the marker matches nothing with no declared provider",
-			providerType: storepb.WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED,
-			subject:      "repo:owner/repo:ref:refs/heads/main",
-			pattern:      "r*",
-			expected:     false,
+			// "r*" stops inside "repo:", so it addresses every repository the
+			// issuer signs whatever the row calls itself.
+			name:     "wildcard inside the marker matches nothing",
+			subject:  "repo:owner/repo:ref:refs/heads/main",
+			pattern:  "r*",
+			expected: false,
 		},
 		{
 			// Not a modelled vocabulary, so the owner rule does not apply.
@@ -128,7 +106,7 @@ func TestMatchSubjectPattern(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			result := matchSubjectPattern(tc.providerType, tc.subject, tc.pattern)
+			result := matchSubjectPattern(tc.subject, tc.pattern)
 			require.Equal(t, tc.expected, result, "subject=%q pattern=%q", tc.subject, tc.pattern)
 		})
 	}

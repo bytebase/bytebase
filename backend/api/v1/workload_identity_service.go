@@ -353,9 +353,7 @@ func validateWorkloadIdentityConfig(config *v1pb.WorkloadIdentityConfig) error {
 			return errors.New("allowed_audiences must not contain an empty value")
 		}
 	}
-	return wif.ValidateSubjectPattern(
-		storepb.WorkloadIdentityConfig_ProviderType(config.ProviderType),
-		config.SubjectPattern)
+	return wif.ValidateSubjectPattern(config.SubjectPattern)
 }
 
 // convertToWorkloadIdentity converts a store.WorkloadIdentityMessage to a v1pb.WorkloadIdentity.
