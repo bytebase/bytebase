@@ -8,9 +8,17 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
+// Oracle registers no schema definition: a schema is a user, one per database,
+// so GetDatabaseDefinition below already renders it. GetSchemaString's SCHEMA
+// case therefore stays unsupported here, as it is for MSSQL, MySQL and TiDB.
 func init() {
 	schema.RegisterGetDatabaseDefinition(storepb.Engine_ORACLE, GetDatabaseDefinition)
 	schema.RegisterGetTableDefinition(storepb.Engine_ORACLE, GetTableDefinition)
+	schema.RegisterGetViewDefinition(storepb.Engine_ORACLE, GetViewDefinition)
+	schema.RegisterGetMaterializedViewDefinition(storepb.Engine_ORACLE, GetMaterializedViewDefinition)
+	schema.RegisterGetFunctionDefinition(storepb.Engine_ORACLE, GetFunctionDefinition)
+	schema.RegisterGetProcedureDefinition(storepb.Engine_ORACLE, GetProcedureDefinition)
+	schema.RegisterGetSequenceDefinition(storepb.Engine_ORACLE, GetSequenceDefinition)
 }
 
 func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSchemaMetadata) (string, error) {
@@ -171,6 +179,62 @@ func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSc
 func GetTableDefinition(_ string, table *storepb.TableMetadata, _ []*storepb.SequenceMetadata) (string, error) {
 	var buf strings.Builder
 	if err := writeTable(&buf, table); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+// The single-object definitions below all ignore the schema argument: Oracle has
+// one schema per database and the writers emit unqualified names, matching
+// GetTableDefinition and the whole-database output.
+
+func GetViewDefinition(_ string, view *storepb.ViewMetadata) (string, error) {
+	var buf strings.Builder
+	if err := writeView(&buf, view); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+func GetMaterializedViewDefinition(_ string, view *storepb.MaterializedViewMetadata) (string, error) {
+	var buf strings.Builder
+	if err := writeMaterializedView(&buf, view); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+func GetFunctionDefinition(_ string, function *storepb.FunctionMetadata) (string, error) {
+	var buf strings.Builder
+	if err := writeFunction(&buf, function); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+func GetProcedureDefinition(_ string, procedure *storepb.ProcedureMetadata) (string, error) {
+	var buf strings.Builder
+	if err := writeProcedure(&buf, procedure); err != nil {
+		return "", err
+	}
+
+	return buf.String(), nil
+}
+
+// GetSequenceDefinition skips the sequences Oracle creates for identity columns,
+// the way the whole-database output does: they belong to their table's DDL and
+// cannot be created independently.
+func GetSequenceDefinition(_ string, sequence *storepb.SequenceMetadata) (string, error) {
+	if strings.HasPrefix(sequence.Name, "ISEQ$$_") {
+		return "", nil
+	}
+
+	var buf strings.Builder
+	if err := writeSequence(&buf, sequence); err != nil {
 		return "", err
 	}
 
