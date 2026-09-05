@@ -11,24 +11,21 @@ import (
 	"google.golang.org/protobuf/testing/protocmp"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
 func TestAdminQueryAffectedRows(t *testing.T) {
 	tests := []struct {
 		databaseName      string
-		dbType            storepb.Engine
 		prepareStatements string
 		query             string
 		want              bool
 		affectedRows      []*v1pb.QueryResult
 	}{
 		{
-			databaseName:      "Test1",
-			dbType:            storepb.Engine_MYSQL,
-			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
-			query:             "INSERT INTO tbl VALUES(1);",
+			databaseName:      "Test3",
+			prepareStatements: "CREATE TABLE public.tbl(id INT PRIMARY KEY);",
+			query:             "INSERT INTO tbl VALUES(1),(2);",
 			affectedRows: []*v1pb.QueryResult{
 				{
 					ColumnNames:     []string{"Affected Rows"},
@@ -36,19 +33,21 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 					Rows: []*v1pb.QueryRow{
 						{
 							Values: []*v1pb.RowValue{
-								{Kind: &v1pb.RowValue_Int64Value{Int64Value: 1}},
+								{Kind: &v1pb.RowValue_Int64Value{Int64Value: 2}},
 							},
 						},
 					},
-					Statement: "INSERT INTO tbl VALUES(1);",
+					Statement: "INSERT INTO tbl VALUES(1),(2);",
 					RowsCount: 1,
 				},
 			},
 		},
 		{
+			// Ported from the MySQL arm when it was dropped: the only case proving a
+			// successful multi-statement AdminExecute streams one affected-row result
+			// per statement, each carrying its own statement text.
 			databaseName:      "Test2",
-			dbType:            storepb.Engine_MYSQL,
-			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
+			prepareStatements: "CREATE TABLE public.tbl(id INT PRIMARY KEY);",
 			query:             "INSERT INTO tbl VALUES(1); DELETE FROM tbl WHERE id = 1;",
 			affectedRows: []*v1pb.QueryResult{
 				{
@@ -80,29 +79,7 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 			},
 		},
 		{
-			databaseName:      "Test3",
-			dbType:            storepb.Engine_POSTGRES,
-			prepareStatements: "CREATE TABLE public.tbl(id INT PRIMARY KEY);",
-			query:             "INSERT INTO tbl VALUES(1),(2);",
-			affectedRows: []*v1pb.QueryResult{
-				{
-					ColumnNames:     []string{"Affected Rows"},
-					ColumnTypeNames: []string{"INT"},
-					Rows: []*v1pb.QueryRow{
-						{
-							Values: []*v1pb.RowValue{
-								{Kind: &v1pb.RowValue_Int64Value{Int64Value: 2}},
-							},
-						},
-					},
-					Statement: "INSERT INTO tbl VALUES(1),(2);",
-					RowsCount: 1,
-				},
-			},
-		},
-		{
 			databaseName:      "Test4",
-			dbType:            storepb.Engine_POSTGRES,
 			prepareStatements: "CREATE TABLE tbl(id INT PRIMARY KEY);",
 			query:             "ALTER TABLE tbl ADD COLUMN name VARCHAR(255);",
 			affectedRows: []*v1pb.QueryResult{
@@ -131,30 +108,11 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 	a.NoError(err)
 	defer ctl.Close(ctx)
 
-	mysqlContainer, err := getMySQLContainer(ctx)
-	defer func() {
-		mysqlContainer.Close(ctx)
-	}()
-	a.NoError(err)
-
 	pgContainer, err := getPgContainer(ctx)
 	defer func() {
 		pgContainer.Close(ctx)
 	}()
 	a.NoError(err)
-
-	mysqlInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
-		InstanceId: generateRandomString("instance"),
-		Instance: &v1pb.Instance{
-			Title:       "mysqlInstance",
-			Engine:      v1pb.Engine_MYSQL,
-			Environment: new("environments/prod"),
-			Activation:  true,
-			DataSources: []*v1pb.DataSource{{Type: v1pb.DataSourceType_ADMIN, Host: mysqlContainer.host, Port: mysqlContainer.port, Username: "root", Password: "root-password", Id: "admin"}},
-		},
-	}))
-	a.NoError(err)
-	mysqlInstance := mysqlInstanceResp.Msg
 
 	pgInstanceResp, err := ctl.instanceServiceClient.CreateInstance(ctx, connect.NewRequest(&v1pb.CreateInstanceRequest{
 		InstanceId: generateRandomString("instance"),
@@ -170,17 +128,8 @@ func TestAdminQueryAffectedRows(t *testing.T) {
 	pgInstance := pgInstanceResp.Msg
 
 	for _, tt := range tests {
-		var instance *v1pb.Instance
-		databaseOwner := ""
-		switch tt.dbType {
-		case storepb.Engine_MYSQL:
-			instance = mysqlInstance
-		case storepb.Engine_POSTGRES:
-			instance = pgInstance
-			databaseOwner = "postgres"
-		default:
-			a.FailNow("unsupported db type")
-		}
+		instance := pgInstance
+		databaseOwner := "postgres"
 		err = ctl.createDatabase(ctx, ctl.project, instance, nil /* environment */, tt.databaseName, databaseOwner)
 		a.NoError(err)
 
