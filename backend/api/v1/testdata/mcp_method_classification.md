@@ -16,12 +16,12 @@ served by no ceiling.
 
 | Class | Methods | Meaning |
 |---|---|---|
-| READ | 57 | served to a read-only session and above |
+| READ | 56 | served to a read-only session and above |
 | WRITE | 41 | served to a read-write session only |
 | EXCLUDED | 85 | served by no ceiling this phase ships |
 | FORBIDDEN | 35 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
-| **total** | **218** | |
+| **total** | **217** | |
 
 | Method | Class | Reason | Permission |
 |---|---|---|---|
