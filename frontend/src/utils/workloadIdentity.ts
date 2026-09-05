@@ -8,26 +8,6 @@ export const GENERATED_WORKFLOW_AUDIENCE = "bytebase";
 // provider_type is optional in storage and identities written before it was
 // required may carry PROVIDER_TYPE_UNSPECIFIED. Every reader that needs a
 // provider for such an identity resolves it here, or two readers disagree
-// about the same record.
-export const resolveWorkloadIdentityProviderType = (config?: {
-  subjectPattern: string;
-  providerType: WorkloadIdentityConfig_ProviderType;
-}): WorkloadIdentityConfig_ProviderType | undefined => {
-  if (!config) return undefined;
-  if (
-    config.providerType !==
-    WorkloadIdentityConfig_ProviderType.PROVIDER_TYPE_UNSPECIFIED
-  ) {
-    return config.providerType;
-  }
-  if (config.subjectPattern.startsWith("repo:")) {
-    return WorkloadIdentityConfig_ProviderType.GITHUB;
-  }
-  if (config.subjectPattern.startsWith("project_path:")) {
-    return WorkloadIdentityConfig_ProviderType.GITLAB;
-  }
-  return undefined;
-};
 
 // Parse subject pattern and extract owner/repo/branch/refType
 export const parseWorkloadIdentitySubjectPattern = (wi: {
@@ -45,10 +25,7 @@ export const parseWorkloadIdentitySubjectPattern = (wi: {
     return;
   }
 
-  const providerType = resolveWorkloadIdentityProviderType(
-    wi.workloadIdentityConfig
-  );
-  switch (providerType) {
+  switch (wi.workloadIdentityConfig.providerType) {
     case WorkloadIdentityConfig_ProviderType.GITHUB: {
       const match = /^repo:([^/]+)\/(.*)$/.exec(pattern);
       if (!match) return;

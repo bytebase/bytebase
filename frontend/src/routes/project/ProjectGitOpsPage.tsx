@@ -26,7 +26,6 @@ import {
   getWorkloadIdentityProviderText,
   hasProjectPermissionV2,
   parseWorkloadIdentitySubjectPattern,
-  resolveWorkloadIdentityProviderType,
 } from "@/utils";
 import { WorkloadIdentitySelect } from "./WorkloadIdentitySelect";
 
@@ -89,12 +88,8 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   }, [selectedIdentityName, fetchWorkloadIdentity]);
 
   const selectedConfig = selectedIdentity?.workloadIdentityConfig;
-  // Resolved, not read raw: the subject parser below resolves an unspecified
-  // provider from the subject prefix, so a page reading the stored enum would
-  // render this identity's repository under a "provider does not match" alert
-  // naming no provider.
   const selectedProviderType =
-    resolveWorkloadIdentityProviderType(selectedConfig) ??
+    selectedConfig?.providerType ??
     WorkloadIdentityConfig_ProviderType.PROVIDER_TYPE_UNSPECIFIED;
 
   // Sync active tab with selected identity provider
