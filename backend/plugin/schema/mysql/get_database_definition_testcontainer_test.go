@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -28,9 +27,7 @@ func TestGetDatabaseDefinition(t *testing.T) {
 	ctx := context.Background()
 
 	// Start shared MySQL container for all subtests
-	container, err := testcontainer.GetTestMySQLContainer(ctx)
-	require.NoError(t, err)
-	t.Cleanup(func() { container.Close(ctx) })
+	container := sharedMySQLContainer(t)
 
 	type testCase struct {
 		description string
@@ -428,9 +425,12 @@ func TestGetDatabaseDefinitionWithConnectedDeps(t *testing.T) {
 		t.Skip("Skipping MySQL testcontainer test in short mode")
 	}
 
+	// Unique per run: TestMain keeps one container for the whole package, so a
+	// fixed name collides with itself under go test -count=2.
+	databaseName := fmt.Sprintf("test_complex_deps_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
+
 	const (
-		databaseName = "test_complex_deps"
-		originalDDL  = `
+		originalDDL = `
 CREATE TABLE department (
 	id INT PRIMARY KEY AUTO_INCREMENT,
 	name VARCHAR(100) NOT NULL,
@@ -470,12 +470,10 @@ CREATE TABLE project_member (
 	ctx := context.Background()
 
 	// Start MySQL container
-	container, err := testcontainer.GetTestMySQLContainer(ctx)
-	require.NoError(t, err)
-	t.Cleanup(func() { container.Close(ctx) })
+	container := sharedMySQLContainer(t)
 
 	// Create test database
-	_, err = container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s`", databaseName))
+	_, err := container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s`", databaseName))
 	require.NoError(t, err)
 
 	// Step 1: Initialize the database schema

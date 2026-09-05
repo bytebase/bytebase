@@ -6,18 +6,17 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	_ "github.com/microsoft/go-mssqldb"
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 //nolint:tparallel
 func TestGetDatabaseMetadataWithTestcontainer(t *testing.T) {
 	ctx := context.Background()
-	container := testcontainer.GetTestMSSQLContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
+	container := sharedMSSQLContainer(t)
 
 	testCases := []struct {
 		name     string
@@ -646,7 +645,7 @@ GO
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel() // Safe to parallelize - shared container, unique databases per test
-			databaseName := fmt.Sprintf("test_%s", strings.ReplaceAll(tc.name, " ", "_"))
+			databaseName := fmt.Sprintf("test_%s_%s", strings.ReplaceAll(tc.name, " ", "_"), strings.ReplaceAll(uuid.New().String(), "-", "_"))
 
 			// Create test database using container's master connection
 			_, err := container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE [%s]", databaseName))

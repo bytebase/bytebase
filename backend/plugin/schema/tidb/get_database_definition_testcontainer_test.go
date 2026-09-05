@@ -13,7 +13,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
@@ -26,8 +25,7 @@ func TestGetDatabaseDefinition(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	container := testcontainer.GetTestTiDBContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
+	container := sharedTiDBContainer(t)
 
 	type testCase struct {
 		description string
@@ -244,8 +242,7 @@ func TestGetDatabaseDefinitionWithConnectedDeps(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	container := testcontainer.GetTestTiDBContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
+	container := sharedTiDBContainer(t)
 
 	// Create unique test database using UUID
 	testDB := fmt.Sprintf("test_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))

@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -33,9 +32,7 @@ func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 	ctx := context.Background()
 
 	// Start shared MySQL container for all subtests
-	container, err := testcontainer.GetTestMySQLContainer(ctx)
-	require.NoError(t, err)
-	t.Cleanup(func() { container.Close(ctx) })
+	container := sharedMySQLContainer(t)
 
 	// Test cases with various schema changes
 	testCases := []struct {
@@ -1695,7 +1692,7 @@ CREATE TABLE some_table (
 			// Step 1: Initialize the database schema and get schema result A
 			// Create a unique test database for parallel execution
 			testDBName := fmt.Sprintf("test_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
-			_, err = container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE `%s`", testDBName))
+			_, err := container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE `%s`", testDBName))
 			require.NoError(t, err)
 
 			// Create MySQL driver for this test's database
