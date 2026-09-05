@@ -24,6 +24,9 @@ const mocks = vi.hoisted(() => ({
   workspaceList: { value: [] as { name: string; title: string }[] },
   loadWorkspace: vi.fn(async () => {}),
   loadWorkspaceList: vi.fn(async () => {}),
+  loadSubscription: vi.fn(async () => {}),
+  loadServerInfo: vi.fn(),
+  refreshServerInfo: vi.fn(),
   switchWorkspace: vi.fn(async () => {}),
   routerReplace: vi.fn(),
   routerBack: vi.fn(),
@@ -34,7 +37,7 @@ const mocks = vi.hoisted(() => ({
     },
   },
   fetchImpl: vi.fn(),
-  getMCPInfo: vi.fn(),
+  dataMaskingAvailable: { value: true },
 }));
 mocks.useAuthStore.mockImplementation(() => ({
   get isLoggedIn() {
@@ -55,15 +58,13 @@ mocks.useAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
     isLoggedIn: () => mocks.isLoggedIn.value,
     loadWorkspace: mocks.loadWorkspace,
     loadWorkspaceList: mocks.loadWorkspaceList,
+    loadSubscription: mocks.loadSubscription,
+    loadServerInfo: mocks.loadServerInfo,
+    refreshServerInfo: mocks.refreshServerInfo,
     switchWorkspace: mocks.switchWorkspace,
+    hasFeature: () => mocks.dataMaskingAvailable.value,
   })
 );
-// The consent page also calls `useAppStore.getState().loadServerInfo()` on mount.
-(mocks.useAppStore as unknown as { getState: () => unknown }).getState =
-  () => ({
-    loadServerInfo: vi.fn().mockResolvedValue(undefined),
-  });
-
 vi.mock("@/hooks/useAppState", () => ({
   useWorkspace: mocks.useWorkspace,
 }));
@@ -126,17 +127,11 @@ vi.mock("@/components/BytebaseLogo", () => ({
   BytebaseLogo: () => null,
 }));
 
-vi.mock("@/api", () => ({
-  workspaceServiceClientConnect: { getMCPInfo: mocks.getMCPInfo },
-}));
-
 vi.mock("react-i18next", () => ({
   useTranslation: () => ({
     t: (key: string, vars?: Record<string, string>) =>
       vars ? `${key}:${JSON.stringify(vars)}` : key,
   }),
-  // The page now reaches the connect client for GetMCPInfo, and @/api's error
-  // middleware imports the shared i18n instance, which registers this.
   initReactI18next: { type: "3rdParty", init: () => {} },
 }));
 
@@ -179,15 +174,15 @@ beforeEach(async () => {
   mocks.currentRoute.value.fullPath = "/oauth2/consent";
   globalThis.fetch = mocks.fetchImpl as typeof fetch;
   mocks.fetchImpl.mockReset();
-  mocks.getMCPInfo.mockReset();
+  mocks.dataMaskingAvailable.value = true;
   // Default: a served read-only ceiling, the page's ordinary case. Allow
   // renders only under one, so a failing default would leave every test that
   // is not about the ceiling asserting against the undisclosed card.
-  mocks.getMCPInfo.mockResolvedValue({
-    capability: 3,
-    ignoreMaskingExemptions: false,
-    dataMaskingAvailable: true,
-  });
+  const serverInfo = {
+    mcpSetting: { capability: 3, ignoreMaskingExemptions: false },
+  };
+  mocks.loadServerInfo.mockResolvedValue(serverInfo);
+  mocks.refreshServerInfo.mockResolvedValue(serverInfo);
   ({ OAuth2ConsentPage } = await import("./OAuth2ConsentPage"));
 });
 
@@ -238,6 +233,7 @@ describe("OAuth2ConsentPage", () => {
     render();
     await flushPromises();
     expect(mocks.fetchImpl).toHaveBeenCalledWith("/api/oauth2/clients/c1");
+    expect(mocks.loadSubscription).toHaveBeenCalledOnce();
     expect(container.textContent).toContain("Acme");
     expect(container.querySelector('form[method="POST"]')).not.toBeNull();
     const hiddenClientId = container.querySelector<HTMLInputElement>(
@@ -515,13 +511,13 @@ describe("OAuth2ConsentPage", () => {
     code_challenge_method: "S256",
   });
 
-  const renderWithCeiling = async (info: Record<string, unknown>) => {
+  const renderWithCeiling = async (setting: Record<string, unknown>) => {
     mocks.currentRoute.value.query = consentQuery();
     mocks.fetchImpl.mockResolvedValue({
       ok: true,
       json: async () => ({ client_name: "Acme" }),
     });
-    mocks.getMCPInfo.mockResolvedValue(info);
+    mocks.loadServerInfo.mockResolvedValue({ mcpSetting: setting });
     const handle = renderIntoContainer(<OAuth2ConsentPage />);
     handle.render();
     await flushPromises();
@@ -535,9 +531,6 @@ describe("OAuth2ConsentPage", () => {
   test("a failed client lookup shows its error without waiting on the policy", async () => {
     mocks.currentRoute.value.query = consentQuery();
     mocks.fetchImpl.mockRejectedValue(new Error("network down"));
-    // Never settles: if the error waits on this, the test sees the spinner.
-    mocks.getMCPInfo.mockReturnValue(new Promise(() => {}));
-
     const handle = renderIntoContainer(<OAuth2ConsentPage />);
     handle.render();
     await flushPromises();
@@ -569,7 +562,6 @@ describe("OAuth2ConsentPage", () => {
     const { container, unmount } = await renderWithCeiling({
       capability: 4,
       ignoreMaskingExemptions: true,
-      dataMaskingAvailable: true,
     });
     expect(container.textContent).toContain("oauth2.consent.mcp.line.write");
     expect(container.textContent).toContain("oauth2.consent.mcp.write-caution");
@@ -582,10 +574,10 @@ describe("OAuth2ConsentPage", () => {
   // masking does not run — and this card is read at the moment someone decides
   // whether to hand over access.
   test("the masking line is not promised where masking does not run", async () => {
+    mocks.dataMaskingAvailable.value = false;
     const { container, unmount } = await renderWithCeiling({
       capability: 4,
       ignoreMaskingExemptions: true,
-      dataMaskingAvailable: false,
     });
     // The rest of the card is unchanged, so this is the line and not the card.
     expect(container.textContent).toContain("oauth2.consent.mcp.line.write");
@@ -603,7 +595,6 @@ describe("OAuth2ConsentPage", () => {
     const { container, unmount } = await renderWithCeiling({
       capability: 1,
       ignoreMaskingExemptions: false,
-      dataMaskingAvailable: true,
     });
 
     const submitted: HTMLFormElement[] = [];
@@ -633,7 +624,6 @@ describe("OAuth2ConsentPage", () => {
     const { container, unmount } = await renderWithCeiling({
       capability: 1,
       ignoreMaskingExemptions: false,
-      dataMaskingAvailable: true,
     });
     expect(container.textContent).toContain("oauth2.consent.workspace-label");
     unmount();
@@ -656,7 +646,7 @@ describe("OAuth2ConsentPage", () => {
 
   // BOT-106, and the reason this is a blocker rather than a tidy-up. The page
   // used to fall through to a generic "access your account" card with Allow
-  // live whenever GetMCPInfo failed for ANY reason. The POST refuses a stored
+  // live whenever actuator info lacked the MCP setting for ANY reason. The POST refuses a stored
   // value nothing resolves, so that half was cosmetic; it refuses neither a
   // transient failure nor a tier this bundle is merely too old to name. In both
   // of those the POST reads the ceiling for itself, succeeds, and issues a grant
@@ -670,7 +660,7 @@ describe("OAuth2ConsentPage", () => {
       ok: true,
       json: async () => ({ client_name: "Acme" }),
     });
-    mocks.getMCPInfo.mockRejectedValueOnce(new Error("deadline exceeded"));
+    mocks.loadServerInfo.mockResolvedValueOnce(undefined);
 
     const { container, render, unmount } = renderIntoContainer(
       <OAuth2ConsentPage />
@@ -716,7 +706,6 @@ describe("OAuth2ConsentPage", () => {
     const { container, unmount } = await renderWithCeiling({
       capability,
       ignoreMaskingExemptions: false,
-      dataMaskingAvailable: true,
     });
     expect(container.textContent).not.toContain("common.allow");
     expect(container.querySelector('form[method="POST"]')).toBeNull();
@@ -739,7 +728,6 @@ describe("OAuth2ConsentPage", () => {
     const { container, unmount } = await renderWithCeiling({
       capability: 0,
       ignoreMaskingExemptions: false,
-      dataMaskingAvailable: true,
     });
 
     const submitted: HTMLFormElement[] = [];

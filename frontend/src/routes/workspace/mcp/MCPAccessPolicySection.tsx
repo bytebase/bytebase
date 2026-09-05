@@ -1,11 +1,8 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { Rows3 } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { settingServiceClientConnect } from "@/api";
-import { silentContextKey } from "@/api/context-key";
 import type { MCPMode } from "@/components/mcp/mcpPolicy";
 import { isMCPMode, MCP_CAPABILITY_CHOICES } from "@/components/mcp/mcpPolicy";
 import { PermissionGuard } from "@/components/PermissionGuard";
@@ -17,7 +14,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
-import { settingNamePrefix } from "@/lib/resourceName";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -25,7 +21,6 @@ import {
   MCPSetting_Capability,
   MCPSettingSchema,
   Setting_SettingName,
-  SettingSchema,
   SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
@@ -55,122 +50,38 @@ const MODES: Record<
   },
 };
 
-const mcpSettingName = `${settingNamePrefix}${Setting_SettingName[Setting_SettingName.MCP]}`;
-
 export function MCPAccessPolicySection() {
   const { t } = useTranslation();
-
-  const settingsByName = useAppStore((s) => s.settingsByName);
-  // Read from the licence the store already holds, not from a request that can
-  // fail: hiding this line lets an admin arm a toggle that does nothing while
-  // believing they tightened masking.
-  const dataMaskingAvailable = useAppStore((s) =>
-    s.hasFeature(PlanFeature.FEATURE_DATA_MASKING)
-  );
-  const mcpSetting = useMemo(() => {
-    const setting = useAppStore
-      .getState()
-      .getSettingByName(Setting_SettingName.MCP);
-    if (setting?.value?.value?.case === "mcp") {
-      return setting.value.value.value;
-    }
-    return undefined;
-  }, [settingsByName]);
 
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [pick, setPick] = useState<MCPMode | undefined>(undefined);
   const [ignoreMasking, setIgnoreMasking] = useState(false);
-
-  // The read carries a generation, and the effect retires it on unmount. A
-  // response has no way of knowing it was overtaken, and the store it writes is
-  // shared: a read left flying by a visit the admin navigated away from would
-  // otherwise land later and put that visit's row back, reverting a save made
-  // since.
-  const settingGeneration = useRef(0);
-
-  // Read the setting past the store's cache. The server reads this row uncached
-  // for a reason — a hand edit or a newer replica changes it out of band — and
-  // getOrFetchSettingByName returns a cached snapshot without revalidating, so
-  // a second visit in one session would compute the form's dirty state against
-  // a value that is no longer stored. On an invalid row that makes the
-  // one-save repair unreachable without a reload.
   const [readFailed, setReadFailed] = useState(false);
-  // Whether this mount's own read has answered. Until it has, a value left in
-  // the store by an earlier visit is a guess, not the ceiling — so the page
-  // waits rather than offering it for editing.
   const [readSettled, setReadSettled] = useState(false);
-  useEffect(() => {
-    setReadFailed(false);
-    setReadSettled(false);
-    const generation = ++settingGeneration.current;
-    const settle = (failed: boolean) => {
-      if (generation !== settingGeneration.current) {
-        return;
-      }
-      setReadFailed(failed);
-      setReadSettled(true);
-    };
-    settingServiceClientConnect
-      .getSetting(
-        {
-          name: mcpSettingName,
-        },
-        {
-          contextValues: createContextValues().set(silentContextKey, true),
-          // The card waits for this read, so an unbounded one is a page that
-          // never loads. The transport declares no default timeout.
-          timeoutMs: 30_000,
-        }
-      )
-      .then((setting) => {
-        if (generation !== settingGeneration.current) {
-          return;
-        }
-        useAppStore.getState().setSettingByName(setting);
-        settle(false);
-      })
-      .catch((error: unknown) => {
-        if (generation !== settingGeneration.current) {
-          return;
-        }
-        // Older workspaces can legitimately have no row. Match the backend's
-        // effective READ_WRITE policy; all other read failures still win over
-        // any value left in the frontend store.
-        if (error instanceof ConnectError && error.code === Code.NotFound) {
-          useAppStore.getState().setSettingByName(
-            create(SettingSchema, {
-              name: mcpSettingName,
-              value: create(SettingValueSchema, {
-                value: {
-                  case: "mcp",
-                  value: create(MCPSettingSchema, {
-                    capability: MCPSetting_Capability.READ_WRITE,
-                  }),
-                },
-              }),
-            })
-          );
-          settle(false);
-          return;
-        }
-        settle(true);
-      });
-    // Retire the read when this instance goes away. The generation is this
-    // mount's; the setting store it writes is the application's.
-    return () => {
-      settingGeneration.current++;
-    };
-  }, []);
+  const serverInfo = useAppStore((state) => state.serverInfo);
+  const loadServerInfo = useAppStore((state) => state.loadServerInfo);
+  const refreshServerInfo = useAppStore((state) => state.refreshServerInfo);
+  const dataMaskingAvailable = useAppStore((state) =>
+    state.hasFeature(PlanFeature.FEATURE_DATA_MASKING)
+  );
 
-  const storedCapability = mcpSetting?.capability;
+  useEffect(() => {
+    void loadServerInfo().then((info) => {
+      setReadFailed(!info?.mcpSetting);
+      setReadSettled(true);
+    });
+  }, [loadServerInfo]);
+
+  const storedCapability = serverInfo?.mcpSetting?.capability;
   const storedMode =
     storedCapability !== undefined && isMCPMode(storedCapability)
       ? storedCapability
       : undefined;
   const unreadable =
     storedCapability === MCPSetting_Capability.CAPABILITY_UNSPECIFIED;
-  const storedIgnoreMasking = mcpSetting?.ignoreMaskingExemptions ?? false;
+  const storedIgnoreMasking =
+    serverInfo?.mcpSetting?.ignoreMaskingExemptions ?? false;
 
   // The form is seeded when editing opens, not on every store change: the
   // stored value only moves under an open form when someone else saved, and
@@ -221,6 +132,7 @@ export function MCPAccessPolicySection() {
         updateMask: create(FieldMaskSchema, { paths }),
       });
       setEditing(false);
+      await refreshServerInfo();
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",

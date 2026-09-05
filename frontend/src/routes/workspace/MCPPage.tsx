@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { useServerState } from "@/hooks/useAppState";
-import { isDev } from "@/utils";
 import { MCPAccessPolicySection } from "./mcp/MCPAccessPolicySection";
 
 export function MCPPage() {
@@ -98,9 +97,7 @@ export function MCPPage() {
       {/* Warning if external URL not configured */}
       <ExternalUrlAlert actionAppearance="outline" />
 
-      {/* Hidden in prod builds until release readiness; the settings API and
-          server-side enforcement stay live intentionally. */}
-      {isDev() && <MCPAccessPolicySection />}
+      <MCPAccessPolicySection />
 
       {/* Authentication Notice */}
       <Alert

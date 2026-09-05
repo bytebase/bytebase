@@ -10,7 +10,6 @@ import "google/protobuf/field_mask.proto";
 import "v1/annotation.proto";
 import "v1/auth_service.proto";
 import "v1/iam_policy.proto";
-import "v1/setting_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
@@ -97,22 +96,6 @@ service WorkspaceService {
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
-  // Gets what MCP (Model Context Protocol) does in this workspace: the
-  // capability ceiling in force, and whether masking narrows what a session
-  // reads under it. The workspace is resolved from the authenticated session.
-  //
-  // Served to MCP sessions. An agent asking what it may do here is the point:
-  // the response says nothing a session's own denials do not already say, one
-  // refusal at a time, and knowing it up front is what stops the agent
-  // planning work the ceiling was never going to serve.
-  //
-  // Permissions required: None (authentication required)
-  rpc GetMCPInfo(GetMCPInfoRequest) returns (MCPInfo) {
-    option (google.api.http) = {get: "/v1/mcp/info"};
-    option (google.api.method_signature) = "";
-    option (bytebase.v1.mcp_method_class) = READ;
-  }
-
   // Mints a new directory sync (SCIM) token, immediately invalidating the
   // previous one. The plaintext token is returned exactly once and cannot be
   // retrieved afterwards; only its hash is stored. Callers that lose it must
@@ -130,45 +113,6 @@ service WorkspaceService {
     option (bytebase.v1.mcp_method_class) = FORBIDDEN;
     option (bytebase.v1.mcp_denial_reason) = MINTS_CREDENTIAL_FOR_OTHERS;
   }
-}
-
-message GetMCPInfoRequest {}
-
-// MCPInfo is what MCP does in this workspace: the ceiling in force, and
-// whether masking narrows what a session reads under it.
-//
-// This is the only API a served MCP session or the consent page can read the
-// ceiling from. SettingService/GetSetting is served by no ceiling, and its
-// answer is cached besides.
-message MCPInfo {
-  // The workspace this describes. Format: workspaces/{workspace}. Not this
-  // message's own resource name — MCPInfo is not a named resource and there is
-  // nothing to get it by.
-  string workspace = 1 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // The ceiling in force for this workspace. Any value outside the enum this
-  // build serves, CAPABILITY_UNSPECIFIED included, means no ceiling could be
-  // resolved from the stored row and every MCP connection is refused. A stored
-  // name nothing resolves arrives as CAPABILITY_UNSPECIFIED; a number a newer
-  // release wrote arrives verbatim.
-  MCPSetting.Capability capability = 2 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Was the mode-contents half of this message: the serving table, the served
-  // method list, and the per-engine enforcement facts. Shipped in 3.22.0.
-  reserved 3, 4, 5;
-  reserved "modes", "methods", "engines";
-
-  // Whether this workspace stops applying the caller's own unmasking
-  // provisioning to MCP requests. It narrows what a session reads only where
-  // Bytebase masks by column and consults exemptions; elsewhere it suppresses
-  // nothing.
-  bool ignore_masking_exemptions = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
-
-  // Whether data masking is licensed for this workspace. When false nothing is
-  // masked whatever an engine supports, so the toggle above suppresses nothing.
-  // Licensing can also be set per instance, so a true here is the workspace
-  // answer, not a promise about every instance.
-  bool data_masking_available = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 }
 
 message RotateDirectorySyncTokenRequest {

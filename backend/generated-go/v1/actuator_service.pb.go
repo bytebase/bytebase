@@ -150,7 +150,9 @@ type ActuatorInfo struct {
 	// The number of active VCS users seen in the active window.
 	ActiveVcsUserCount int32 `protobuf:"varint,28,opt,name=active_vcs_user_count,json=activeVcsUserCount,proto3" json:"active_vcs_user_count,omitempty"`
 	// Sample setup availability and provisioned resources.
-	Sample        *SampleInfo `protobuf:"bytes,29,opt,name=sample,proto3" json:"sample,omitempty"`
+	Sample *SampleInfo `protobuf:"bytes,29,opt,name=sample,proto3" json:"sample,omitempty"`
+	// The MCP (Model Context Protocol) setting in the current workspace.
+	McpSetting    *MCPSetting `protobuf:"bytes,30,opt,name=mcp_setting,json=mcpSetting,proto3" json:"mcp_setting,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -290,6 +292,13 @@ func (x *ActuatorInfo) GetSample() *SampleInfo {
 	return nil
 }
 
+func (x *ActuatorInfo) GetMcpSetting() *MCPSetting {
+	if x != nil {
+		return x.McpSetting
+	}
+	return nil
+}
+
 // Instance describes one provisioned sample instance.
 type SampleInfo_Instance struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -350,7 +359,7 @@ var File_v1_actuator_service_proto protoreflect.FileDescriptor
 
 const file_v1_actuator_service_proto_rawDesc = "" +
 	"\n" +
-	"\x19v1/actuator_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\"\x18\n" +
+	"\x19v1/actuator_service.proto\x12\vbytebase.v1\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x18v1/setting_service.proto\"\x18\n" +
 	"\x16GetActuatorInfoRequest\"\xfe\x01\n" +
 	"\n" +
 	"SampleInfo\x12!\n" +
@@ -360,7 +369,7 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\binstance\x18\x01 \x01(\tB\x1d\xe0A\x03\xfaA\x17\n" +
 	"\x15bytebase.com/InstanceR\binstance\x12@\n" +
 	"\vexpire_time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"expireTime\"\x92\x06\n" +
+	"expireTime\"\xd1\x06\n" +
 	"\fActuatorInfo\x12\x1d\n" +
 	"\aversion\x18\x01 \x01(\tB\x03\xe0A\x03R\aversion\x12\"\n" +
 	"\n" +
@@ -377,7 +386,9 @@ const file_v1_actuator_service_proto_rawDesc = "" +
 	"\x0fdefault_project\x18\x1a \x01(\tB\x03\xe0A\x03R\x0edefaultProject\x12.\n" +
 	"\x11user_count_in_iam\x18\x1b \x01(\x05B\x03\xe0A\x03R\x0euserCountInIam\x126\n" +
 	"\x15active_vcs_user_count\x18\x1c \x01(\x05B\x03\xe0A\x03R\x12activeVcsUserCount\x124\n" +
-	"\x06sample\x18\x1d \x01(\v2\x17.bytebase.v1.SampleInfoB\x03\xe0A\x03R\x06sampleJ\x04\b\x03\x10\x04J\x04\b\x05\x10\bJ\x04\b\t\x10\n" +
+	"\x06sample\x18\x1d \x01(\v2\x17.bytebase.v1.SampleInfoB\x03\xe0A\x03R\x06sample\x12=\n" +
+	"\vmcp_setting\x18\x1e \x01(\v2\x17.bytebase.v1.MCPSettingB\x03\xe0A\x03R\n" +
+	"mcpSettingJ\x04\b\x03\x10\x04J\x04\b\x05\x10\bJ\x04\b\t\x10\n" +
 	"J\x04\b\n" +
 	"\x10\vJ\x04\b\f\x10\rJ\x04\b\x0e\x10\x0fJ\x04\b\x10\x10\x14J\x04\b\x16\x10\x17J\x04\b\x19\x10\x1a2\x86\x01\n" +
 	"\x0fActuatorService\x12s\n" +
@@ -403,19 +414,21 @@ var file_v1_actuator_service_proto_goTypes = []any{
 	(*ActuatorInfo)(nil),           // 2: bytebase.v1.ActuatorInfo
 	(*SampleInfo_Instance)(nil),    // 3: bytebase.v1.SampleInfo.Instance
 	(*timestamppb.Timestamp)(nil),  // 4: google.protobuf.Timestamp
+	(*MCPSetting)(nil),             // 5: bytebase.v1.MCPSetting
 }
 var file_v1_actuator_service_proto_depIdxs = []int32{
 	3, // 0: bytebase.v1.SampleInfo.instances:type_name -> bytebase.v1.SampleInfo.Instance
 	4, // 1: bytebase.v1.ActuatorInfo.last_active_time:type_name -> google.protobuf.Timestamp
 	1, // 2: bytebase.v1.ActuatorInfo.sample:type_name -> bytebase.v1.SampleInfo
-	4, // 3: bytebase.v1.SampleInfo.Instance.expire_time:type_name -> google.protobuf.Timestamp
-	0, // 4: bytebase.v1.ActuatorService.GetActuatorInfo:input_type -> bytebase.v1.GetActuatorInfoRequest
-	2, // 5: bytebase.v1.ActuatorService.GetActuatorInfo:output_type -> bytebase.v1.ActuatorInfo
-	5, // [5:6] is the sub-list for method output_type
-	4, // [4:5] is the sub-list for method input_type
-	4, // [4:4] is the sub-list for extension type_name
-	4, // [4:4] is the sub-list for extension extendee
-	0, // [0:4] is the sub-list for field type_name
+	5, // 3: bytebase.v1.ActuatorInfo.mcp_setting:type_name -> bytebase.v1.MCPSetting
+	4, // 4: bytebase.v1.SampleInfo.Instance.expire_time:type_name -> google.protobuf.Timestamp
+	0, // 5: bytebase.v1.ActuatorService.GetActuatorInfo:input_type -> bytebase.v1.GetActuatorInfoRequest
+	2, // 6: bytebase.v1.ActuatorService.GetActuatorInfo:output_type -> bytebase.v1.ActuatorInfo
+	6, // [6:7] is the sub-list for method output_type
+	5, // [5:6] is the sub-list for method input_type
+	5, // [5:5] is the sub-list for extension type_name
+	5, // [5:5] is the sub-list for extension extendee
+	0, // [0:5] is the sub-list for field type_name
 }
 
 func init() { file_v1_actuator_service_proto_init() }
@@ -424,6 +437,7 @@ func file_v1_actuator_service_proto_init() {
 		return
 	}
 	file_v1_annotation_proto_init()
+	file_v1_setting_service_proto_init()
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

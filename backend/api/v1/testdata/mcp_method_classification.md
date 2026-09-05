@@ -236,7 +236,6 @@ served by no ceiling.
 | WorkloadIdentityService/UpdateWorkloadIdentity | FORBIDDEN | MINTS_CREDENTIAL_FOR_OTHERS | bb.workloadIdentities.update |
 | WorkspaceService/DeleteWorkspace | FORBIDDEN | ENDS_MEMBERSHIP | bb.workspaces.delete |
 | WorkspaceService/GetIamPolicy | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.workspaces.getIamPolicy |
-| WorkspaceService/GetMCPInfo | READ | — | — |
 | WorkspaceService/GetWorkspace | READ | — | — |
 | WorkspaceService/LeaveWorkspace | FORBIDDEN | ENDS_MEMBERSHIP | — |
 | WorkspaceService/ListWorkspaces | READ | — | — |

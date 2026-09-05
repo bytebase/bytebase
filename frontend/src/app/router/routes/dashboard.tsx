@@ -416,7 +416,6 @@ const workspaceLevelRoutes: RouteObject[] = [
         path: "mcp",
         handle: {
           name: WORKSPACE_ROUTE_MCP,
-          requiredPermissionList: (): Permission[] => ["bb.settings.get"],
         },
         lazy: lazyPage(
           () => import("@/routes/workspace/MCPPage"),

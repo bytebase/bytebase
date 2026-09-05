@@ -8,38 +8,6 @@ import (
 	fieldmaskpb "google.golang.org/protobuf/types/known/fieldmaskpb"
 )
 
-func (x *GetMCPInfoRequest) Equal(y *GetMCPInfoRequest) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	return true
-}
-
-func (x *MCPInfo) Equal(y *MCPInfo) bool {
-	if x == y {
-		return true
-	}
-	if x == nil || y == nil {
-		return x == nil && y == nil
-	}
-	if x.Workspace != y.Workspace {
-		return false
-	}
-	if x.Capability != y.Capability {
-		return false
-	}
-	if x.IgnoreMaskingExemptions != y.IgnoreMaskingExemptions {
-		return false
-	}
-	if x.DataMaskingAvailable != y.DataMaskingAvailable {
-		return false
-	}
-	return true
-}
-
 func (x *RotateDirectorySyncTokenRequest) Equal(y *RotateDirectorySyncTokenRequest) bool {
 	if x == y {
 		return true
