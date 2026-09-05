@@ -29,14 +29,14 @@ func TestGetObjectDefinition(t *testing.T) {
 					},
 				}, nil)
 			},
-			want: `CREATE TABLE orders (
+			want: `CREATE TABLE public.orders (
   id integer NOT NULL,
   total numeric(10,2),
   label character varying(50)
 );
-COMMENT ON TABLE orders IS 'one row per order';
-COMMENT ON COLUMN orders.id IS 'surrogate key';
-COMMENT ON COLUMN orders.label IS 'display name';
+COMMENT ON TABLE public.orders IS 'one row per order';
+COMMENT ON COLUMN public.orders.id IS 'surrogate key';
+COMMENT ON COLUMN public.orders.label IS 'display name';
 `,
 		},
 		{
@@ -48,8 +48,41 @@ COMMENT ON COLUMN orders.label IS 'display name';
 					Comment:    "last 30 days",
 				})
 			},
-			want: `CREATE OR REPLACE VIEW recent_orders AS SELECT id, total FROM orders;
-COMMENT ON VIEW recent_orders IS 'last 30 days';
+			want: `CREATE OR REPLACE VIEW public.recent_orders AS SELECT id, total FROM orders;
+COMMENT ON VIEW public.recent_orders IS 'last 30 days';
+`,
+		},
+		{
+			// GetSchemaString passes the requested schema, and a table outside
+			// the search path has to carry it or the DDL lands somewhere else.
+			name: "table outside the default schema keeps its qualifier",
+			get: func() (string, error) {
+				return GetTableDefinition("analytics", &storepb.TableMetadata{
+					Name:    "orders",
+					Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer"}},
+				}, nil)
+			},
+			want: `CREATE TABLE analytics.orders (
+  id integer NOT NULL
+);
+`,
+		},
+		{
+			// An apostrophe would close the literal and produce DDL that will
+			// not replay.
+			name: "comments with apostrophes stay valid",
+			get: func() (string, error) {
+				return GetTableDefinition("public", &storepb.TableMetadata{
+					Name:    "orders",
+					Comment: "owner's orders",
+					Columns: []*storepb.ColumnMetadata{{Name: "id", Type: "integer", Comment: "don't drop"}},
+				}, nil)
+			},
+			want: `CREATE TABLE public.orders (
+  id integer NOT NULL
+);
+COMMENT ON TABLE public.orders IS 'owner''s orders';
+COMMENT ON COLUMN public.orders.id IS 'don''t drop';
 `,
 		},
 	}
@@ -155,16 +188,16 @@ func TestGetDatabaseDefinitionKeepsSections(t *testing.T) {
 	require.Equal(t, `--
 -- Table structure for `+"`orders`"+`
 --
-CREATE TABLE orders (
+CREATE TABLE public.orders (
   id integer NOT NULL
 );
-COMMENT ON TABLE orders IS 'one row per order';
-COMMENT ON COLUMN orders.id IS 'surrogate key';
+COMMENT ON TABLE public.orders IS 'one row per order';
+COMMENT ON COLUMN public.orders.id IS 'surrogate key';
 
 --
 -- View structure for `+"`recent_orders`"+`
 --
-CREATE OR REPLACE VIEW recent_orders AS SELECT id FROM orders;
+CREATE OR REPLACE VIEW public.recent_orders AS SELECT id FROM orders;
 `, got)
 
 	table, err := GetTableDefinition("public", metadata.Schemas[0].Tables[0], nil)

@@ -16,19 +16,18 @@ func init() {
 }
 
 // GetTableDefinition renders one table exactly as the whole-database output
-// renders it, minus the section banner. The schema argument is unused: the
-// writers emit the name the metadata carries.
-func GetTableDefinition(_ string, table *storepb.TableMetadata, _ []*storepb.SequenceMetadata) (string, error) {
+// renders it, minus the section banner.
+func GetTableDefinition(schemaName string, table *storepb.TableMetadata, _ []*storepb.SequenceMetadata) (string, error) {
 	var sb strings.Builder
-	if err := writeTable(&sb, convertToTableState(0, table)); err != nil {
+	if err := writeTable(&sb, convertToTableState(0, schemaName, table)); err != nil {
 		return "", err
 	}
 	return sb.String(), nil
 }
 
-func GetViewDefinition(_ string, view *storepb.ViewMetadata) (string, error) {
+func GetViewDefinition(schemaName string, view *storepb.ViewMetadata) (string, error) {
 	var sb strings.Builder
-	if err := writeView(&sb, convertToViewState(0, view)); err != nil {
+	if err := writeView(&sb, convertToViewState(0, schemaName, view)); err != nil {
 		return "", err
 	}
 	return sb.String(), nil
@@ -113,7 +112,7 @@ func writeTable(w io.StringWriter, table *tableState) error {
 		return err
 	}
 	if table.comment != "" {
-		if _, err := fmt.Fprintf(buf, "COMMENT ON TABLE %s IS '%s';\n", table.name, table.comment); err != nil {
+		if _, err := fmt.Fprintf(buf, "COMMENT ON TABLE %s IS '%s';\n", table.qualifiedName(), escapeSingleQuote(table.comment)); err != nil {
 			return err
 		}
 	}
@@ -121,7 +120,7 @@ func writeTable(w io.StringWriter, table *tableState) error {
 		if column.comment == "" {
 			continue
 		}
-		if _, err := fmt.Fprintf(buf, "COMMENT ON COLUMN %s.%s IS '%s';\n", table.name, column.name, column.comment); err != nil {
+		if _, err := fmt.Fprintf(buf, "COMMENT ON COLUMN %s.%s IS '%s';\n", table.qualifiedName(), column.name, escapeSingleQuote(column.comment)); err != nil {
 			return err
 		}
 	}
@@ -136,7 +135,7 @@ func writeView(w io.StringWriter, view *viewState) error {
 		return err
 	}
 	if view.comment != "" {
-		if _, err := fmt.Fprintf(buf, "COMMENT ON VIEW %s IS '%s';\n", view.name, view.comment); err != nil {
+		if _, err := fmt.Fprintf(buf, "COMMENT ON VIEW %s IS '%s';\n", view.qualifiedName(), escapeSingleQuote(view.comment)); err != nil {
 			return err
 		}
 	}

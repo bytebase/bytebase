@@ -35,6 +35,30 @@ type schemaState struct {
 	views  map[string]*viewState
 }
 
+// qualifiedName prefixes the object with its schema, so DDL for analytics.orders
+// cannot land in public. The prefix is dropped when no schema is known, which is
+// how the single-object entry points behave when the caller passes none.
+func qualifyName(schemaName, objectName string) string {
+	if schemaName == "" {
+		return objectName
+	}
+	return schemaName + "." + objectName
+}
+
+func (t *tableState) qualifiedName() string {
+	return qualifyName(t.schema, t.name)
+}
+
+func (v *viewState) qualifiedName() string {
+	return qualifyName(v.schema, v.name)
+}
+
+// escapeSingleQuote encodes a comment for a SQL string literal; an apostrophe in
+// "owner's orders" would otherwise close the literal and produce invalid DDL.
+func escapeSingleQuote(s string) string {
+	return strings.ReplaceAll(s, "'", "''")
+}
+
 func newSchemaState() *schemaState {
 	return &schemaState{
 		tables: make(map[string]*tableState),
@@ -46,16 +70,17 @@ func convertToSchemaState(schema *storepb.SchemaMetadata) *schemaState {
 	state := newSchemaState()
 	state.name = schema.Name
 	for i, table := range schema.Tables {
-		state.tables[table.Name] = convertToTableState(i, table)
+		state.tables[table.Name] = convertToTableState(i, schema.Name, table)
 	}
 	for i, view := range schema.Views {
-		state.views[view.Name] = convertToViewState(i, view)
+		state.views[view.Name] = convertToViewState(i, schema.Name, view)
 	}
 	return state
 }
 
 type tableState struct {
 	id          int
+	schema      string
 	name        string
 	columns     map[string]*columnState
 	indexes     map[string]*indexState
@@ -64,7 +89,7 @@ type tableState struct {
 }
 
 func (t *tableState) toString(buf *strings.Builder) error {
-	if _, err := fmt.Fprintf(buf, "CREATE TABLE %s (\n  ", t.name); err != nil {
+	if _, err := fmt.Fprintf(buf, "CREATE TABLE %s (\n  ", t.qualifiedName()); err != nil {
 		return err
 	}
 	columns := sortedColumns(t.columns)
@@ -171,8 +196,9 @@ func sortedColumns(columns map[string]*columnState) []*columnState {
 	return sorted
 }
 
-func convertToTableState(id int, table *storepb.TableMetadata) *tableState {
+func convertToTableState(id int, schemaName string, table *storepb.TableMetadata) *tableState {
 	state := newTableState(id, table.Name)
+	state.schema = schemaName
 	state.comment = table.Comment
 	for i, column := range table.Columns {
 		state.columns[column.Name] = convertToColumnState(i, column)
@@ -377,14 +403,16 @@ func isExpression(value string) bool {
 
 type viewState struct {
 	id         int
+	schema     string
 	name       string
 	definition string
 	comment    string
 }
 
-func convertToViewState(id int, view *storepb.ViewMetadata) *viewState {
+func convertToViewState(id int, schemaName string, view *storepb.ViewMetadata) *viewState {
 	return &viewState{
 		id:         id,
+		schema:     schemaName,
 		name:       view.Name,
 		definition: view.Definition,
 		comment:    view.Comment,
@@ -392,7 +420,7 @@ func convertToViewState(id int, view *storepb.ViewMetadata) *viewState {
 }
 
 func (v *viewState) toString(buf io.StringWriter) error {
-	stmt := fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", v.name, v.definition)
+	stmt := fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", v.qualifiedName(), v.definition)
 	if !strings.HasSuffix(stmt, ";") {
 		stmt += ";"
 	}
