@@ -145,13 +145,20 @@ message WorkloadIdentityConfig {
   }
 
   // Provider configuration mode.
-  ProviderType provider_type = 1;
-  // OIDC Issuer URL (auto-filled based on provider_type, can be overridden)
-  string issuer_url = 2;
-  // Allowed audiences for token validation
-  repeated string allowed_audiences = 3;
-  // Subject pattern to match (e.g., "repo:owner/repo:ref:refs/heads/main")
-  string subject_pattern = 4;
+  ProviderType provider_type = 1 [(google.api.field_behavior) = REQUIRED];
+  // HTTPS URL of the OIDC issuer. The exchange fetches
+  // {issuer_url}/.well-known/openid-configuration to verify a token, unless
+  // jwks_url names the key set directly.
+  string issuer_url = 2 [(google.api.field_behavior) = REQUIRED];
+  // Audiences a token may be minted for. A token authenticates if its `aud`
+  // claim matches any entry.
+  repeated string allowed_audiences = 3 [(google.api.field_behavior) = REQUIRED];
+  // The subject a token must carry, e.g. "repo:owner/repo:ref:refs/heads/main".
+  // A trailing "*" is a prefix match. For GitHub and GitLab subjects it must
+  // complete an owner or group segment, so "repo:my-org/*" is accepted and
+  // "repo:*" is not. Other issuers write other vocabularies, so a wildcard
+  // outside those two is accepted as given.
+  string subject_pattern = 4 [(google.api.field_behavior) = REQUIRED];
   // Optional JWKS endpoint. When empty, use OIDC discovery from issuer_url.
   string jwks_url = 5;
 }

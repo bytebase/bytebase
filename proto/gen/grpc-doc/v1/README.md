@@ -12786,9 +12786,9 @@ WorkloadIdentityConfig for API layer
 | Field | Type | Label | Description |
 | ----- | ---- | ----- | ----------- |
 | provider_type | [WorkloadIdentityConfig.ProviderType](#bytebase-v1-WorkloadIdentityConfig-ProviderType) |  | Provider configuration mode. |
-| issuer_url | [string](#string) |  | OIDC Issuer URL (auto-filled based on provider_type, can be overridden) |
-| allowed_audiences | [string](#string) | repeated | Allowed audiences for token validation |
-| subject_pattern | [string](#string) |  | Subject pattern to match (e.g., &#34;repo:owner/repo:ref:refs/heads/main&#34;) |
+| issuer_url | [string](#string) |  | HTTPS URL of the OIDC issuer. The exchange fetches {issuer_url}/.well-known/openid-configuration to verify a token, unless jwks_url names the key set directly. |
+| allowed_audiences | [string](#string) | repeated | Audiences a token may be minted for. A token authenticates if its `aud` claim matches any entry. |
+| subject_pattern | [string](#string) |  | The subject a token must carry, e.g. &#34;repo:owner/repo:ref:refs/heads/main&#34;. A trailing &#34;*&#34; is a prefix match. For GitHub and GitLab subjects it must complete an owner or group segment, so &#34;repo:my-org/*&#34; is accepted and &#34;repo:*&#34; is not. Other issuers write other vocabularies, so a wildcard outside those two is accepted as given. |
 | jwks_url | [string](#string) |  | Optional JWKS endpoint. When empty, use OIDC discovery from issuer_url. |
 
 

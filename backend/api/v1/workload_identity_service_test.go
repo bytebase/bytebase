@@ -15,19 +15,25 @@ func TestValidateWorkloadIdentityConfig(t *testing.T) {
 		wantErr string
 	}{
 		{
-			name: "nil config",
-		},
-		{
-			name: "github compatibility",
+			// issuer_url is free-form, so a wildcard carrying no "/" is the
+			// operator's call outside the two vocabularies we model.
+			name: "oidc namespace wildcard stays legal",
 			config: &v1pb.WorkloadIdentityConfig{
-				ProviderType: v1pb.WorkloadIdentityConfig_GITHUB,
+				ProviderType:     v1pb.WorkloadIdentityConfig_OIDC,
+				IssuerUrl:        "https://oidc.eks.us-east-1.amazonaws.com/id/9F8E",
+				AllowedAudiences: []string{"bytebase"},
+				SubjectPattern:   "system:serviceaccount:prod:*",
 			},
 		},
 		{
-			name: "gitlab compatibility",
+			name: "github audience with a blank entry",
 			config: &v1pb.WorkloadIdentityConfig{
-				ProviderType: v1pb.WorkloadIdentityConfig_GITLAB,
+				ProviderType:     v1pb.WorkloadIdentityConfig_GITHUB,
+				IssuerUrl:        "https://token.actions.githubusercontent.com",
+				AllowedAudiences: []string{"bytebase", "  "},
+				SubjectPattern:   "repo:acme-corp/deploy:ref:refs/heads/main",
 			},
+			wantErr: "allowed_audiences must not contain an empty value",
 		},
 		{
 			name: "oidc valid",
@@ -124,7 +130,8 @@ func TestValidateWorkloadIdentityConfig(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := validateWorkloadIdentityConfig(test.config)
+			err := validateWorkloadIdentityConfig(
+				convertToStoreWorkloadIdentityConfig(test.config))
 			if test.wantErr == "" {
 				require.NoError(t, err)
 				return
@@ -134,7 +141,10 @@ func TestValidateWorkloadIdentityConfig(t *testing.T) {
 	}
 }
 
-func TestConvertToStoreWorkloadIdentityConfigNormalizesOIDCValues(t *testing.T) {
+func TestConvertToStoreWorkloadIdentityConfigNormalizes(t *testing.T) {
+	// Every comparison at the exchange is exact, so a padded value stored
+	// verbatim is an identity that passes Create and can never authenticate.
+	// The write path validates this normalized form for that reason.
 	config := &v1pb.WorkloadIdentityConfig{
 		ProviderType:     v1pb.WorkloadIdentityConfig_OIDC,
 		IssuerUrl:        "  https://nomad.example.com  ",
@@ -142,12 +152,23 @@ func TestConvertToStoreWorkloadIdentityConfigNormalizesOIDCValues(t *testing.T) 
 		AllowedAudiences: []string{"  bytebase  ", "  terraform  "},
 		SubjectPattern:   "  nomad_job:atlantis:*  ",
 	}
-	require.NoError(t, validateWorkloadIdentityConfig(config))
+	stored := convertToStoreWorkloadIdentityConfig(config)
+	require.NoError(t, validateWorkloadIdentityConfig(stored))
+	require.Equal(t, "https://nomad.example.com", stored.IssuerUrl)
+	require.Equal(t, "https://keys.example.com/jwks.json", stored.JwksUrl)
+	require.Equal(t, []string{"bytebase", "terraform"}, stored.AllowedAudiences)
+	require.Equal(t, "nomad_job:atlantis:*", stored.SubjectPattern)
 
-	converted := convertToStoreWorkloadIdentityConfig(config)
-
-	require.Equal(t, "https://nomad.example.com", converted.IssuerUrl)
-	require.Equal(t, "https://keys.example.com/jwks.json", converted.JwksUrl)
-	require.Equal(t, []string{"bytebase", "terraform"}, converted.AllowedAudiences)
-	require.Equal(t, "nomad_job:atlantis:*", converted.SubjectPattern)
+	// A pattern that only looks bindable before normalization. Validating the
+	// request instead of the stored form let these through, and the matcher
+	// then refused them forever.
+	for _, pattern := range []string{" * ", " repo:* "} {
+		padded := convertToStoreWorkloadIdentityConfig(&v1pb.WorkloadIdentityConfig{
+			ProviderType:     v1pb.WorkloadIdentityConfig_GITHUB,
+			IssuerUrl:        "https://token.actions.githubusercontent.com",
+			AllowedAudiences: []string{"bytebase"},
+			SubjectPattern:   pattern,
+		})
+		require.Error(t, validateWorkloadIdentityConfig(padded), "pattern=%q", pattern)
+	}
 }
