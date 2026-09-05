@@ -216,6 +216,7 @@ type foreignKeyState struct {
 	id                int
 	name              string
 	columns           []string
+	referencedSchema  string
 	referencedTable   string
 	referencedColumns []string
 }
@@ -225,6 +226,7 @@ func convertToForeignKeyState(id int, foreignKey *storepb.ForeignKeyMetadata) *f
 		id:                id,
 		name:              foreignKey.Name,
 		columns:           foreignKey.Columns,
+		referencedSchema:  foreignKey.ReferencedSchema,
 		referencedTable:   foreignKey.ReferencedTable,
 		referencedColumns: foreignKey.ReferencedColumns,
 	}
@@ -242,7 +244,11 @@ func (f *foreignKeyState) toString(buf *strings.Builder) error {
 			return err
 		}
 		referencedColumn := f.referencedColumns[i]
-		if _, err := fmt.Fprintf(buf, "%s(%s)", f.referencedTable, referencedColumn); err != nil {
+		// The sync strips the qualifier off ReferencedTable and keeps it in
+		// ReferencedSchema, so an unqualified target here would bind to whatever
+		// the search path resolves rather than the table the constraint names.
+		referenced := qualifyName(f.referencedSchema, f.referencedTable)
+		if _, err := fmt.Fprintf(buf, "%s(%s)", referenced, referencedColumn); err != nil {
 			return err
 		}
 	}

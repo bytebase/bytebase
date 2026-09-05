@@ -204,3 +204,29 @@ CREATE OR REPLACE VIEW public.recent_orders AS SELECT id FROM orders;
 	require.NoError(t, err)
 	require.Contains(t, got, table)
 }
+
+// TestForeignKeyKeepsReferencedSchema pins the qualifier on the REFERENCES
+// target. The Redshift sync strips it off ReferencedTable and keeps it in
+// ReferencedSchema, so dropping it binds the constraint to whatever the search
+// path resolves instead of the table the metadata names.
+func TestForeignKeyKeepsReferencedSchema(t *testing.T) {
+	got, err := GetTableDefinition("analytics", &storepb.TableMetadata{
+		Name: "child",
+		Columns: []*storepb.ColumnMetadata{
+			{Name: "id", Type: "integer"},
+			{Name: "parent_id", Type: "integer", Nullable: true},
+		},
+		ForeignKeys: []*storepb.ForeignKeyMetadata{
+			{
+				Name:              "child_parent_fk",
+				Columns:           []string{"parent_id"},
+				ReferencedSchema:  "warehouse",
+				ReferencedTable:   "parent",
+				ReferencedColumns: []string{"id"},
+			},
+		},
+	}, nil)
+	require.NoError(t, err)
+	require.Contains(t, got, "REFERENCES warehouse.parent(id)")
+	require.NotContains(t, got, "REFERENCES parent(id)")
+}
