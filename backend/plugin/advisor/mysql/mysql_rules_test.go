@@ -326,12 +326,10 @@ func TestMySQLBuiltinWalkThroughCheckTableExists(t *testing.T) {
 	require.Equal(t, "Table `user` already exists", adviceList[0].Content)
 }
 
-// TestMySQLDMLDryRunAdvisor covers STATEMENT_DML_DRY_RUN, which
-// RunSQLReviewRuleTest cannot: that harness builds its context with Driver: nil
-// and this rule does nothing without a driver, which is why
-// test/statement_dml_dry_run.yaml carries statements and no `want:` at all. The
-// rule's only real coverage used to be TestSQLReviewForMySQL, against a live
-// MySQL; this replaces it against the fake EXPLAIN driver above.
+// TestMySQLDMLDryRunAdvisor covers STATEMENT_DML_DRY_RUN, which the yaml harness
+// cannot: RunSQLReviewRuleTest builds its context with Driver: nil and this rule
+// does nothing without one, which is why test/statement_dml_dry_run.yaml carries
+// statements and no `want:` at all.
 func TestMySQLDMLDryRunAdvisor(t *testing.T) {
 	const stmt = "UPDATE tech_book SET name = 'xz' WHERE id = 1;"
 	rules := []*storepb.SQLReviewRule{{
@@ -345,7 +343,7 @@ func TestMySQLDMLDryRunAdvisor(t *testing.T) {
 	require.NoError(t, err)
 	defer db.Close()
 
-	// Sequential: the middle case arms a package-level failure hook.
+	// Sequential: the second case arms a package-level failure hook.
 	t.Run("a statement whose EXPLAIN succeeds raises nothing, and the DML never runs", func(t *testing.T) {
 		testMySQLAdvisorQueries = nil
 		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, stmt, rules, advisor.Context{
@@ -356,10 +354,8 @@ func TestMySQLDMLDryRunAdvisor(t *testing.T) {
 		require.NoError(t, err)
 		require.Empty(t, adviceList)
 
-		// The deleted workflow test guaranteed non-mutation by reading the table
-		// back afterwards. Here the driver is the only way out, so assert nothing
-		// left it except an EXPLAIN: a dry run that sent the raw UPDATE would
-		// otherwise pass.
+		// The driver is the only way out of the rule, so assert nothing left it but
+		// an EXPLAIN: a dry run that sent the raw UPDATE would pass otherwise.
 		require.NotEmpty(t, testMySQLAdvisorQueries, "the rule must actually reach the driver")
 		for _, q := range testMySQLAdvisorQueries {
 			require.True(t, strings.HasPrefix(q, "EXPLAIN "),
@@ -380,14 +376,5 @@ func TestMySQLDMLDryRunAdvisor(t *testing.T) {
 		require.Len(t, adviceList, 1)
 		require.Equal(t, code.StatementDMLDryRunFailed.Int32(), adviceList[0].Code)
 		require.Contains(t, adviceList[0].Content, "dry runs failed")
-	})
-
-	t.Run("without a driver the rule cannot run at all", func(t *testing.T) {
-		adviceList, err := advisor.SQLReviewCheck(context.Background(), sm, stmt, rules, advisor.Context{
-			DBType:          storepb.Engine_MYSQL,
-			NoAppendBuiltin: true,
-		})
-		require.NoError(t, err)
-		require.Empty(t, adviceList, "pins why the yaml harness proves nothing here: it passes Driver: nil")
 	})
 }

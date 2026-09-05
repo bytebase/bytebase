@@ -15,26 +15,14 @@ import (
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 )
 
-// TestTransactionModeSwitch pins the execution half of the `-- txn-mode`
-// directive: "on" wraps the script in one transaction, "off" runs the statements
-// in auto-commit. Nothing else in the repo covers that. The parsing half is
-// plugin/parser/base's TestCleanDirectives, but executeInTransactionMode and
-// executeInAutoCommitMode have no other test, so without this one every driver
-// could silently ignore the directive and the suite would stay green.
+// TestTransactionModeSwitch covers the execution half of the `-- txn-mode`
+// directive: "on" wraps the script in one transaction, "off" runs it in
+// auto-commit. It is the only coverage of that half -- executeInTransactionMode
+// and executeInAutoCommitMode have no other test -- so it needs a replacement
+// before it goes. Parsing is covered by plugin/parser/base.
 //
-// It lives beside the driver rather than in backend/tests because it boots no
-// Bytebase server and drives no workflow.
-//
-// One engine on purpose. Every driver implements the same two branches, and what
-// this guards is that our branch is wired to something that really opens a
-// transaction -- not how an engine behaves once it is in one. The earlier
-// four-engine version asserted identical expectations four times over, for three
-// extra containers.
-//
-// The case worth adding, if anyone wants that spend back: DDL inside
-// `txn-mode = on`, where MySQL and Oracle implicitly commit and silently defeat
-// it. That is the reason the directive exists (see common/engine.go), and no
-// version of this test has ever covered it.
+// Not covered: DDL inside `txn-mode = on`, where MySQL and Oracle implicitly
+// commit and defeat it, which is what the directive exists for.
 func TestTransactionModeSwitch(t *testing.T) {
 	ctx := context.Background()
 
@@ -65,8 +53,7 @@ func TestTransactionModeSwitch(t *testing.T) {
 		INSERT INTO test_table (id, value) VALUES (1, 'duplicate');
 	`
 
-	// Sequential, and they share one table: each asserts a row count over the
-	// whole table and then empties it for the next.
+	// Sequential: both count rows across the one table, so each empties it after.
 	t.Run("on rolls the whole script back", func(t *testing.T) {
 		_, err := driver.Execute(ctx, "-- txn-mode = on\n"+script, db.ExecuteOptions{})
 		require.Error(t, err, "the duplicate key must fail the script")
@@ -94,15 +81,9 @@ func rowCount(ctx context.Context, t *testing.T, driver db.Driver) int {
 	require.Len(t, results[0].Rows, 1)
 	require.Len(t, results[0].Rows[0].Values, 1)
 
-	switch v := results[0].Rows[0].Values[0].Kind.(type) {
-	case *v1pb.RowValue_Int32Value:
-		return int(v.Int32Value)
-	case *v1pb.RowValue_Int64Value:
-		return int(v.Int64Value)
-	default:
-		t.Fatalf("unexpected count value type: %T", v)
-		return 0
-	}
+	count, ok := results[0].Rows[0].Values[0].Kind.(*v1pb.RowValue_Int64Value)
+	require.True(t, ok, "COUNT(*) should come back as int64, got %T", results[0].Rows[0].Values[0].Kind)
+	return int(count.Int64Value)
 }
 
 func emptyTable(ctx context.Context, t *testing.T, driver db.Driver) {
