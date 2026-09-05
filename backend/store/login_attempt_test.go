@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/stretchr/testify/require"
 
@@ -23,7 +23,7 @@ import (
 // forgets after D of quiet, and success deletes the row.
 func TestLoginAttemptClaim(t *testing.T) {
 	ctx := context.Background()
-	db, s, _ := testpg.New(t)
+	db, s, _ := testcontainer.NewMetadataDB(t)
 
 	const window = 10 * time.Minute
 
@@ -195,7 +195,7 @@ func TestLoginAttemptClaim(t *testing.T) {
 // the lockout, under the window rule EMAIL_CODE_SEND selects.
 func TestSendBudgetClaim(t *testing.T) {
 	ctx := context.Background()
-	db, s, _ := testpg.New(t)
+	db, s, _ := testcontainer.NewMetadataDB(t)
 
 	const window = time.Hour
 	const kind = storepb.LoginAttemptKind_EMAIL_CODE_SEND

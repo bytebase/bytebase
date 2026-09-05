@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
@@ -27,7 +27,7 @@ import (
 
 func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
 	ctx := context.Background()
-	_, stores, pgURL := testpg.New(t)
+	_, stores, pgURL := testcontainer.NewMetadataDB(t)
 
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
 	require.NoError(t, err)

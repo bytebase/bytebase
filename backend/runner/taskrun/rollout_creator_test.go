@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/stretchr/testify/require"
 
@@ -381,7 +381,7 @@ func setupRolloutCreatorStoreInWorkspace(ctx context.Context, t *testing.T, work
 func setupRolloutCreatorStoreInWorkspaceWithCache(ctx context.Context, t *testing.T, workspaceID string, enableCache bool) *store.Store {
 	t.Helper()
 
-	db, s, _ := testpg.NewWithCache(t, enableCache)
+	db, s, _ := testcontainer.NewMetadataDBWithCache(t, enableCache)
 
 	_, err := db.ExecContext(ctx, "INSERT INTO workspace (resource_id) VALUES ($1)", workspaceID)
 	require.NoError(t, err)

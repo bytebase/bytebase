@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
@@ -236,7 +236,7 @@ func newInstanceServiceTestLicenseService(t *testing.T, stores *store.Store) *en
 func setupProjectInstanceLifecycleAPITest(t *testing.T) (context.Context, *store.Store, string, string, string) {
 	t.Helper()
 	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
-	db, stores, _ := testpg.New(t)
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
 		INSERT INTO project (resource_id, workspace, name) VALUES

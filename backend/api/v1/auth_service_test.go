@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"connectrpc.com/connect"
 	"github.com/golang-jwt/jwt/v5"
@@ -25,7 +25,7 @@ const authTestEnterpriseLicense = "eyJhbGciOiJSUzI1NiIsImtpZCI6InYxIiwidHlwIjoiS
 
 func TestLoginAnnouncesPreAuthenticationWorkspace(t *testing.T) {
 	ctx := context.Background()
-	db, stores, _ := testpg.New(t)
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 	_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('ws-test')`)
 	require.NoError(t, err)
 

@@ -47,8 +47,9 @@ boot only if it needs a background runner, a real rollout, or the audit trail â€
 those live in `backend/tests`, the only package that may start one; everything
 else asserts in `backend/api/v1` or `backend/store`.
 
-A package needing a real metadata Postgres shares one through `testpg.Main` and
-`testpg.New`, never its own container. Prefer needing none: extract the
+A package needing a real metadata Postgres shares one through
+`testcontainer.MetadataMain` and `testcontainer.NewMetadataDB`, never its own
+container. Prefer needing none: extract the
 decide-and-convert half of a handler as functions over plain data, and where
 state is genuinely read declare an interface beside the handler and fake it, as
 `backend/api/mcp` does with `serverStore` â€” never one interface over the whole

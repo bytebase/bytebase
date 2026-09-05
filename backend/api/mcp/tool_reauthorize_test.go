@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/labstack/echo/v5"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -28,7 +28,7 @@ import (
 // tool operates on.
 func newReauthorizeTestServer(ctx context.Context, t *testing.T) (*Server, *store.Store, string) {
 	t.Helper()
-	db, st, _ := testpg.New(t)
+	db, st, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('ws-test');

@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/hashicorp/golang-lru/v2/expirable"
@@ -160,7 +160,7 @@ func TestParseLicenseExpiredIsInvalid(t *testing.T) {
 
 func TestGetUserLimitUncached(t *testing.T) {
 	ctx := context.Background()
-	_, s, _ := testpg.New(t)
+	_, s, _ := testcontainer.NewMetadataDB(t)
 
 	t.Cleanup(func() { s.Close() })
 

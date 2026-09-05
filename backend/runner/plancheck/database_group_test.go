@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
@@ -122,7 +122,7 @@ func TestGetDatabaseGroupForPlanUsesDatabaseResourceName(t *testing.T) {
 func setupPlancheckStore(ctx context.Context, t *testing.T) *store.Store {
 	t.Helper()
 
-	db, s, _ := testpg.New(t)
+	db, s, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');

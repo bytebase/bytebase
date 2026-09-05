@@ -11,7 +11,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/labstack/echo/v5"
 	"github.com/pkg/errors"
@@ -38,7 +38,7 @@ import (
 // refusal assertion below green and fails only the row assertions.
 func TestConsentCeiling(t *testing.T) {
 	ctx := context.Background()
-	db, st, _ := testpg.New(t)
+	db, st, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES
@@ -146,7 +146,7 @@ func TestConsentCeiling(t *testing.T) {
 // any grant is issued at all, before the requested mode is considered.
 func TestConsentCeilingRefusalIsNotAWideningPath(t *testing.T) {
 	ctx := context.Background()
-	db, st, _ := testpg.New(t)
+	db, st, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('ws-disabled');
@@ -216,7 +216,7 @@ func consentTo(t *testing.T, s *Service, workspaceID string, extra ...url.Values
 // nothing to fix.
 func TestConsentCeilingOutageIsNotARefusal(t *testing.T) {
 	ctx := context.Background()
-	db, st, _ := testpg.New(t)
+	db, st, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('ws-outage');
@@ -264,7 +264,7 @@ func (f failingCeilingReader) GetMCPSettingsUncached(context.Context, string) (*
 // this endpoint exists for the same reason, and says so in its own comment.
 func TestTokenIssuanceRechecksTheCeiling(t *testing.T) {
 	ctx := context.Background()
-	db, st, _ := testpg.New(t)
+	db, st, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('ws-test');

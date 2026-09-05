@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/bcrypt"
@@ -625,7 +625,7 @@ func TestAddUserToWorkspace(t *testing.T) {
 
 func setupRecoveryStore(_ context.Context, t *testing.T) *store.Store {
 	t.Helper()
-	_, stores, _ := testpg.New(t)
+	_, stores, _ := testcontainer.NewMetadataDB(t)
 
 	return stores
 }

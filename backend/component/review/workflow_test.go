@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
@@ -1283,7 +1283,7 @@ func TestPlanMutationMakesPendingApprovalFindingStale(t *testing.T) {
 func setupWorkflowStore(ctx context.Context, t *testing.T) *store.Store {
 	t.Helper()
 
-	db, stores, _ := testpg.New(t)
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');

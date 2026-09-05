@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
@@ -24,7 +24,7 @@ import (
 // this is the backend receipt for what the page may disclose.
 func TestGetMCPInfoHandler(t *testing.T) {
 	ctx := context.Background()
-	db, stores, _ := testpg.New(t)
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
 	require.NoError(t, err)

@@ -3,7 +3,7 @@ package store_test
 import (
 	"testing"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 )
 
-func TestMain(m *testing.M) { testpg.Main(m) }
+func TestMain(m *testing.M) { testcontainer.MetadataMain(m) }

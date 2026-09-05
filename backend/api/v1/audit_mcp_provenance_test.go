@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
@@ -36,7 +36,7 @@ func (r *specRequest) Spec() connect.Spec {
 // CreateAuditLog has a real parent row to write under.
 func newAuditLiveStore(t *testing.T) *store.Store {
 	ctx := context.Background()
-	db, st, _ := testpg.New(t)
+	db, st, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, fmt.Sprintf(
 		`INSERT INTO workspace (resource_id) VALUES ('%s')`, auditTestWorkspace))

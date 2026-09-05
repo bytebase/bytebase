@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/stretchr/testify/require"
 
@@ -17,7 +17,7 @@ func newSampleInstanceFixture(t *testing.T) (context.Context, *store.Store) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	t.Cleanup(cancel)
-	db, stores, _ := testpg.New(t)
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES
 			('workspace-a'), ('workspace-b'), ('workspace-c'), ('workspace-d');

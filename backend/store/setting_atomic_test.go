@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
@@ -31,7 +31,7 @@ func newSettingAtomicFixtureWithCache(t *testing.T, enableCache bool) (context.C
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	t.Cleanup(cancel)
-	db, s, _ := testpg.NewWithCache(t, enableCache)
+	db, s, _ := testcontainer.NewMetadataDBWithCache(t, enableCache)
 
 	_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('default');`)
 	require.NoError(t, err)

@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5"
@@ -23,7 +23,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/permission"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
@@ -340,7 +339,7 @@ func newSampleProjectInstanceFixture(t *testing.T, clock func() time.Time) (cont
 	target := testcontainer.GetTestTLSPgContainer(ctx, t)
 	t.Cleanup(func() { target.Close(context.Background()) })
 
-	metadataDB, stores, _ := testpg.New(t)
+	metadataDB, stores, _ := testcontainer.NewMetadataDB(t)
 	_, err := metadataDB.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('sample-workspace');
 		INSERT INTO project (resource_id, workspace, name) VALUES ('sample-project', 'sample-workspace', 'Sample Project');

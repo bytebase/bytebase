@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
@@ -361,7 +361,7 @@ func TestSyncQueuedDatabasesProjectLookupFailureRecordsFailure(t *testing.T) {
 func setupSyncerStore(ctx context.Context, t *testing.T) *store.Store {
 	t.Helper()
 
-	db, s, _ := testpg.New(t)
+	db, s, _ := testcontainer.NewMetadataDB(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
 		INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A');

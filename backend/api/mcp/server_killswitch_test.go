@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/labstack/echo/v5"
@@ -30,7 +30,7 @@ import (
 // blocks the disabled workspace.
 func TestMCPKillSwitchEndToEnd(t *testing.T) {
 	ctx := context.Background()
-	db, s, _ := testpg.New(t)
+	db, s, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('ws-disabled'), ('ws-open');
@@ -87,7 +87,7 @@ func TestMCPKillSwitchEndToEnd(t *testing.T) {
 // truth on the next request.
 func TestMCPKillSwitchBypassesSettingCache(t *testing.T) {
 	ctx := context.Background()
-	db, s, _ := testpg.NewWithCache(t, true)
+	db, s, _ := testcontainer.NewMetadataDBWithCache(t, true)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('ws-cached');
@@ -173,7 +173,7 @@ func tokenForWorkspace(t *testing.T, secret, workspaceID string) string {
 // value no Bytebase write produces.
 func TestMCPCeilingStoredValueFailsClosed(t *testing.T) {
 	ctx := context.Background()
-	db, _, pgURL := testpg.New(t)
+	db, _, pgURL := testcontainer.NewMetadataDB(t)
 
 	rows := []struct {
 		workspace string

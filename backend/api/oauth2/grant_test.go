@@ -14,7 +14,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/labstack/echo/v5"
 	"github.com/stretchr/testify/require"
@@ -57,7 +57,7 @@ func TestConsentWorkspaceRequiresSessionClaim(t *testing.T) {
 // grant rather than whatever the client asks for.
 func TestResourceScopeGrantLifecycle(t *testing.T) {
 	ctx := context.Background()
-	db, st, _ := testpg.New(t)
+	db, st, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('ws-test');

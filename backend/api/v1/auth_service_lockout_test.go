@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"connectrpc.com/connect"
 	"github.com/pquerna/otp/totp"
@@ -430,7 +430,7 @@ func TestLoginAttemptRetentionOutlivesLockouts(t *testing.T) {
 
 func newAuthTestStore(t *testing.T) *store.Store {
 	t.Helper()
-	_, stores, _ := testpg.New(t)
+	_, stores, _ := testcontainer.NewMetadataDB(t)
 	return stores
 }
 

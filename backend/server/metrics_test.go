@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/labstack/echo/v5"
 	metricpb "github.com/prometheus/client_model/go"
@@ -40,7 +40,7 @@ func newMetricsTestEcho(t *testing.T) (*echo.Echo, *store.Store, *enterprise.Lic
 
 func newMetricsTestEchoWithCollector(t *testing.T) (*echo.Echo, *store.Store, *enterprise.LicenseService, *productmetrics.ProductMetrics) {
 	t.Helper()
-	_, st, _ := testpg.New(t)
+	_, st, _ := testcontainer.NewMetadataDB(t)
 
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, st, false, "")
 	require.NoError(t, err)

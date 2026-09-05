@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
@@ -49,7 +49,7 @@ func newProcedureRequest(t *testing.T, bearer string) *procedureRequest {
 // resolvePrincipal has real state to re-resolve against.
 func newLiveStore(t *testing.T) *store.Store {
 	ctx := context.Background()
-	db, st, _ := testpg.New(t)
+	db, st, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, fmt.Sprintf(`
 		INSERT INTO workspace (resource_id) VALUES ('%s');

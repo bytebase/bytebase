@@ -6,7 +6,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/assert"
@@ -1064,7 +1064,7 @@ func issueNames(issues []*v1pb.Issue) []string {
 func setupIssueServiceTestStore(ctx context.Context, t *testing.T) *store.Store {
 	t.Helper()
 
-	db, stores, _ := testpg.New(t)
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');

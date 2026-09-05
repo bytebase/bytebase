@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
@@ -131,7 +131,7 @@ func setupBOT36ProjectDatabase(t *testing.T) (context.Context, *store.Store, str
 	t.Helper()
 	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
 	ctx = context.WithValue(ctx, common.UserContextKey, &store.UserMessage{Email: "user@example.com"})
-	db, stores, _ := testpg.New(t)
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
 		INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A'), ('other-project', 'default', 'Other Project');

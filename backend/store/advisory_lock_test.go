@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/bytebase/bytebase/backend/common/testpg"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 
 	"github.com/stretchr/testify/require"
 
@@ -13,7 +13,7 @@ import (
 
 func TestTryAdvisoryXactLockWithStringKeyScopesByKey(t *testing.T) {
 	ctx := context.Background()
-	db, _, _ := testpg.New(t)
+	db, _, _ := testcontainer.NewMetadataDB(t)
 	tx1, err := db.BeginTx(ctx, nil)
 	require.NoError(t, err)
 	defer tx1.Rollback()
