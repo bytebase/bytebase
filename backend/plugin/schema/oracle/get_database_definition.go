@@ -8,9 +8,17 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
-// Oracle registers no schema definition: a schema is a user, one per database,
-// so GetDatabaseDefinition below already renders it. GetSchemaString's SCHEMA
-// case therefore stays unsupported here, as it is for MSSQL, MySQL and TiDB.
+// Two of GetSchemaString's object types are deliberately left unregistered.
+//
+// SCHEMA: an Oracle schema is a user, one per database, so its definition is the
+// database definition GetDatabaseDefinition already renders. Only pg registers a
+// schema definition; MSSQL, MySQL and TiDB have real schemas and do not.
+//
+// SEQUENCE: getSequences in backend/plugin/db/oracle/sync.go selects only
+// SEQUENCE_NAME, so synced sequences carry no Start, Increment, MaxValue or
+// Cycle. Rendering one would emit a bare CREATE SEQUENCE that silently drops the
+// real increment and bounds. Registering it has to wait for the sync to read
+// those columns.
 func init() {
 	schema.RegisterGetDatabaseDefinition(storepb.Engine_ORACLE, GetDatabaseDefinition)
 	schema.RegisterGetTableDefinition(storepb.Engine_ORACLE, GetTableDefinition)
@@ -18,7 +26,6 @@ func init() {
 	schema.RegisterGetMaterializedViewDefinition(storepb.Engine_ORACLE, GetMaterializedViewDefinition)
 	schema.RegisterGetFunctionDefinition(storepb.Engine_ORACLE, GetFunctionDefinition)
 	schema.RegisterGetProcedureDefinition(storepb.Engine_ORACLE, GetProcedureDefinition)
-	schema.RegisterGetSequenceDefinition(storepb.Engine_ORACLE, GetSequenceDefinition)
 }
 
 func GetDatabaseDefinition(_ schema.GetDefinitionContext, to *storepb.DatabaseSchemaMetadata) (string, error) {
@@ -219,22 +226,6 @@ func GetFunctionDefinition(_ string, function *storepb.FunctionMetadata) (string
 func GetProcedureDefinition(_ string, procedure *storepb.ProcedureMetadata) (string, error) {
 	var buf strings.Builder
 	if err := writeProcedure(&buf, procedure); err != nil {
-		return "", err
-	}
-
-	return buf.String(), nil
-}
-
-// GetSequenceDefinition skips the sequences Oracle creates for identity columns,
-// the way the whole-database output does: they belong to their table's DDL and
-// cannot be created independently.
-func GetSequenceDefinition(_ string, sequence *storepb.SequenceMetadata) (string, error) {
-	if strings.HasPrefix(sequence.Name, "ISEQ$$_") {
-		return "", nil
-	}
-
-	var buf strings.Builder
-	if err := writeSequence(&buf, sequence); err != nil {
 		return "", err
 	}
 

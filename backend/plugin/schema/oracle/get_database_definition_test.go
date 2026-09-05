@@ -112,91 +112,84 @@ func TestGetTableDefinition(t *testing.T) {
 }
 
 // TestGetObjectDefinition covers the single-object definitions GetSchemaString
-// serves. Metadata shapes are taken from what Oracle actually reports: view and
-// materialized-view definitions are a bare SELECT, routine definitions start at
-// FUNCTION/PROCEDURE with no CREATE, and sequences carry attributes rather than
-// text.
+// serves. The metadata is shaped the way Oracle reports it: view and
+// materialized-view definitions are a bare SELECT, and routine definitions
+// start at FUNCTION/PROCEDURE with no CREATE of their own.
 func TestGetObjectDefinition(t *testing.T) {
-	t.Parallel()
-
-	t.Run("view", func(t *testing.T) {
-		t.Parallel()
-		got, err := GetViewDefinition("", &storepb.ViewMetadata{
-			Name:       "DEPT_EMPLOYEE_COUNT",
-			Definition: "SELECT D.ID AS DEPT_ID, COUNT(E.ID) AS EMP_COUNT\nFROM DEPARTMENTS D",
-		})
-		require.NoError(t, err)
-		require.Equal(t, `CREATE VIEW "DEPT_EMPLOYEE_COUNT" AS SELECT D.ID AS DEPT_ID, COUNT(E.ID) AS EMP_COUNT
+	tests := []struct {
+		name string
+		get  func() (string, error)
+		want string
+	}{
+		{
+			name: "view",
+			get: func() (string, error) {
+				return GetViewDefinition("", &storepb.ViewMetadata{
+					Name:       "DEPT_EMPLOYEE_COUNT",
+					Definition: "SELECT D.ID AS DEPT_ID, COUNT(E.ID) AS EMP_COUNT\nFROM DEPARTMENTS D",
+				})
+			},
+			want: `CREATE VIEW "DEPT_EMPLOYEE_COUNT" AS SELECT D.ID AS DEPT_ID, COUNT(E.ID) AS EMP_COUNT
 FROM DEPARTMENTS D;
 
-`, got)
-	})
+`,
+		},
+		{
+			name: "materialized view",
+			get: func() (string, error) {
+				return GetMaterializedViewDefinition("", &storepb.MaterializedViewMetadata{
+					Name:       "PRODUCT_STATS",
+					Definition: "SELECT PRODUCT_ID, COUNT(*) AS ORDER_COUNT FROM ORDERS GROUP BY PRODUCT_ID",
+				})
+			},
+			want: `CREATE MATERIALIZED VIEW "PRODUCT_STATS" AS SELECT PRODUCT_ID, COUNT(*) AS ORDER_COUNT FROM ORDERS GROUP BY PRODUCT_ID;
 
-	t.Run("materialized view", func(t *testing.T) {
-		t.Parallel()
-		got, err := GetMaterializedViewDefinition("", &storepb.MaterializedViewMetadata{
-			Name:       "PRODUCT_STATS",
-			Definition: "SELECT PRODUCT_ID, COUNT(*) AS ORDER_COUNT FROM ORDERS GROUP BY PRODUCT_ID",
-		})
-		require.NoError(t, err)
-		require.Equal(t, `CREATE MATERIALIZED VIEW "PRODUCT_STATS" AS SELECT PRODUCT_ID, COUNT(*) AS ORDER_COUNT FROM ORDERS GROUP BY PRODUCT_ID;
-
-`, got)
-	})
-
-	t.Run("function gains the CREATE OR REPLACE prefix", func(t *testing.T) {
-		t.Parallel()
-		got, err := GetFunctionDefinition("", &storepb.FunctionMetadata{
-			Name:       "CALCULATE_DISCOUNT",
-			Definition: "FUNCTION CALCULATE_DISCOUNT(AMOUNT NUMBER)\nRETURN NUMBER\nIS\nBEGIN\n    RETURN AMOUNT * 0.1;\nEND;",
-		})
-		require.NoError(t, err)
-		require.Equal(t, `CREATE OR REPLACE FUNCTION CALCULATE_DISCOUNT(AMOUNT NUMBER)
+`,
+		},
+		{
+			// ALL_SOURCE hands back the body starting at FUNCTION, so the
+			// CREATE OR REPLACE prefix has to be supplied here.
+			name: "function gains the CREATE OR REPLACE prefix",
+			get: func() (string, error) {
+				return GetFunctionDefinition("", &storepb.FunctionMetadata{
+					Name:       "CALCULATE_DISCOUNT",
+					Definition: "FUNCTION CALCULATE_DISCOUNT(AMOUNT NUMBER)\nRETURN NUMBER\nIS\nBEGIN\n    RETURN AMOUNT * 0.1;\nEND;",
+				})
+			},
+			want: `CREATE OR REPLACE FUNCTION CALCULATE_DISCOUNT(AMOUNT NUMBER)
 RETURN NUMBER
 IS
 BEGIN
     RETURN AMOUNT * 0.1;
 END;
 
-`, got)
-	})
-
-	t.Run("procedure gains the CREATE OR REPLACE prefix", func(t *testing.T) {
-		t.Parallel()
-		got, err := GetProcedureDefinition("", &storepb.ProcedureMetadata{
-			Name:       "LOG_AUDIT",
-			Definition: "PROCEDURE LOG_AUDIT(P_TABLE_NAME VARCHAR2)\nIS\nBEGIN\n    NULL;\nEND;",
-		})
-		require.NoError(t, err)
-		require.Equal(t, `CREATE OR REPLACE PROCEDURE LOG_AUDIT(P_TABLE_NAME VARCHAR2)
+`,
+		},
+		{
+			name: "procedure gains the CREATE OR REPLACE prefix",
+			get: func() (string, error) {
+				return GetProcedureDefinition("", &storepb.ProcedureMetadata{
+					Name:       "LOG_AUDIT",
+					Definition: "PROCEDURE LOG_AUDIT(P_TABLE_NAME VARCHAR2)\nIS\nBEGIN\n    NULL;\nEND;",
+				})
+			},
+			want: `CREATE OR REPLACE PROCEDURE LOG_AUDIT(P_TABLE_NAME VARCHAR2)
 IS
 BEGIN
     NULL;
 END;
 
-`, got)
-	})
+`,
+		},
+	}
 
-	t.Run("sequence", func(t *testing.T) {
-		t.Parallel()
-		got, err := GetSequenceDefinition("", &storepb.SequenceMetadata{
-			Name:      "ORDER_SEQ",
-			Start:     "100",
-			Increment: "2",
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.get()
+			require.NoError(t, err)
+			require.Equal(t, tt.want, got)
 		})
-		require.NoError(t, err)
-		require.Equal(t, "CREATE SEQUENCE \"ORDER_SEQ\" START WITH 100 INCREMENT BY 2;\n\n", got)
-	})
-
-	// Oracle creates these for identity columns. They belong to their table's
-	// DDL and cannot be created on their own, so the whole-database output skips
-	// them and so does this.
-	t.Run("identity-column sequence is skipped", func(t *testing.T) {
-		t.Parallel()
-		got, err := GetSequenceDefinition("", &storepb.SequenceMetadata{Name: "ISEQ$$_73349"})
-		require.NoError(t, err)
-		require.Empty(t, got)
-	})
+	}
 }
 
 // TestObjectDefinitionsRegisteredForOracle goes through the schema registry
@@ -206,26 +199,39 @@ END;
 // supportGetStringSchema on the frontend lists ORACLE and offers "view schema
 // text" on views.
 func TestObjectDefinitionsRegisteredForOracle(t *testing.T) {
-	t.Parallel()
-
-	view := &storepb.ViewMetadata{Name: "V", Definition: "SELECT 1 FROM DUAL"}
-	materializedView := &storepb.MaterializedViewMetadata{Name: "MV", Definition: "SELECT 1 FROM DUAL"}
-	function := &storepb.FunctionMetadata{Name: "F", Definition: "FUNCTION F RETURN NUMBER IS BEGIN RETURN 1; END;"}
-	procedure := &storepb.ProcedureMetadata{Name: "P", Definition: "PROCEDURE P IS BEGIN NULL; END;"}
-	sequence := &storepb.SequenceMetadata{Name: "S", Start: "1"}
-
-	for name, get := range map[string]func() (string, error){
-		"view": func() (string, error) { return schema.GetViewDefinition(storepb.Engine_ORACLE, "", view) },
-		"materializedView": func() (string, error) {
-			return schema.GetMaterializedViewDefinition(storepb.Engine_ORACLE, "", materializedView)
+	tests := []struct {
+		name string
+		get  func() (string, error)
+	}{
+		{
+			name: "view",
+			get: func() (string, error) {
+				return schema.GetViewDefinition(storepb.Engine_ORACLE, "", &storepb.ViewMetadata{Name: "V", Definition: "SELECT 1 FROM DUAL"})
+			},
 		},
-		"function":  func() (string, error) { return schema.GetFunctionDefinition(storepb.Engine_ORACLE, "", function) },
-		"procedure": func() (string, error) { return schema.GetProcedureDefinition(storepb.Engine_ORACLE, "", procedure) },
-		"sequence":  func() (string, error) { return schema.GetSequenceDefinition(storepb.Engine_ORACLE, "", sequence) },
-	} {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-			got, err := get()
+		{
+			name: "materialized view",
+			get: func() (string, error) {
+				return schema.GetMaterializedViewDefinition(storepb.Engine_ORACLE, "", &storepb.MaterializedViewMetadata{Name: "MV", Definition: "SELECT 1 FROM DUAL"})
+			},
+		},
+		{
+			name: "function",
+			get: func() (string, error) {
+				return schema.GetFunctionDefinition(storepb.Engine_ORACLE, "", &storepb.FunctionMetadata{Name: "F", Definition: "FUNCTION F RETURN NUMBER IS BEGIN RETURN 1; END;"})
+			},
+		},
+		{
+			name: "procedure",
+			get: func() (string, error) {
+				return schema.GetProcedureDefinition(storepb.Engine_ORACLE, "", &storepb.ProcedureMetadata{Name: "P", Definition: "PROCEDURE P IS BEGIN NULL; END;"})
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := tt.get()
 			require.NoError(t, err)
 			require.NotEmpty(t, got)
 		})
