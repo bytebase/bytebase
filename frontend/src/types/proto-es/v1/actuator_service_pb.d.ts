@@ -5,6 +5,7 @@
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import type { MCPSetting } from "./setting_service_pb";
 
 /**
  * Describes the file v1/actuator_service.proto.
@@ -193,6 +194,13 @@ export declare type ActuatorInfo = Message<"bytebase.v1.ActuatorInfo"> & {
    * @generated from field: bytebase.v1.SampleInfo sample = 29;
    */
   sample?: SampleInfo | undefined;
+
+  /**
+   * The MCP (Model Context Protocol) setting in the current workspace.
+   *
+   * @generated from field: bytebase.v1.MCPSetting mcp_setting = 30;
+   */
+  mcpSetting?: MCPSetting | undefined;
 };
 
 /**

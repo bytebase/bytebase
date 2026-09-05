@@ -93,6 +93,12 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 
 	if workspaceID != "" {
 		serverInfo.Workspace = common.FormatWorkspace(workspaceID)
+		mcpSetting, err := mcpSettingsForCurrentWorkspace(ctx, s.store, workspaceID)
+		if err != nil {
+			slog.Error("failed to read the MCP setting", slog.String("workspace", workspaceID), log.BBError(err))
+		} else {
+			serverInfo.McpSetting = convertToMCPSetting(mcpSetting)
+		}
 		if s.sampleManager != nil {
 			serverInfo.Sample.Available = s.sampleManager.CheckAvailable(ctx) == nil
 			instances, err := s.sampleManager.ListInstances(ctx, workspaceID)

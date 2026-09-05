@@ -1,12 +1,8 @@
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
-import { Code, ConnectError } from "@connectrpc/connect";
 import { beforeEach, describe, expect, test, vi } from "vitest";
-import {
-  MCPSetting_Capability,
-  type Setting,
-} from "@/types/proto-es/v1/setting_service_pb";
+import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -14,60 +10,50 @@ import {
 
 const mocks = vi.hoisted(() => ({
   useUnsavedChangesGuard: vi.fn(),
-  getSetting: vi.fn(),
-  setSettingByName: vi.fn(),
   upsertSetting: vi.fn(),
-  hasFeature: vi.fn(() => true),
-  settingsByName: { value: {} as Record<string, Setting> },
-  mcpSetting: {
-    value: undefined as
-      | {
-          capability: number;
-          ignoreMaskingExemptions: boolean;
-        }
-      | undefined,
+  loadServerInfo: vi.fn(),
+  refreshServerInfo: vi.fn(),
+  serverInfo: {
+    value: {
+      mcpSetting: {
+        capability: 3,
+        ignoreMaskingExemptions: false,
+      },
+    } as { mcpSetting?: { capability: MCPSetting_Capability; ignoreMaskingExemptions: boolean } } | undefined,
   },
+  dataMaskingAvailable: { value: true },
+  permissionDisabled: { value: false },
+  permissionGuard: vi.fn(),
 }));
 
 vi.mock("@/hooks/useUnsavedChangesGuard", () => ({
   useUnsavedChangesGuard: mocks.useUnsavedChangesGuard,
 }));
 
-vi.mock("@/api", () => ({
-  settingServiceClientConnect: { getSetting: mocks.getSetting },
-}));
-
 vi.mock("@/components/PermissionGuard", () => ({
   PermissionGuard: ({
+    permissions,
     children,
   }: {
+    permissions: string[];
     children: (props: { disabled: boolean }) => ReactElement;
-  }) => children({ disabled: false }),
+  }) => {
+    mocks.permissionGuard(permissions);
+    return children({ disabled: mocks.permissionDisabled.value });
+  },
 }));
 
 vi.mock("@/stores", () => ({ pushNotification: vi.fn() }));
 
 vi.mock("@/stores/app", () => {
   const state = {
-    get settingsByName() {
-      return mocks.settingsByName.value;
-    },
-    getSettingByName: () =>
-      mocks.mcpSetting.value === undefined
-        ? undefined
-        : { value: { value: { case: "mcp", value: mocks.mcpSetting.value } } },
-    setSettingByName: (setting: Setting) => {
-      mocks.setSettingByName(setting);
-      mocks.settingsByName.value = {
-        ...mocks.settingsByName.value,
-        [setting.name]: setting,
-      };
-      if (setting.value?.value?.case === "mcp") {
-        mocks.mcpSetting.value = setting.value.value.value;
-      }
-    },
     upsertSetting: mocks.upsertSetting,
-    hasFeature: mocks.hasFeature,
+    loadServerInfo: mocks.loadServerInfo,
+    refreshServerInfo: mocks.refreshServerInfo,
+    hasFeature: () => mocks.dataMaskingAvailable.value,
+    get serverInfo() {
+      return mocks.serverInfo.value;
+    },
   };
   const useAppStore = (selector: (s: unknown) => unknown) => selector(state);
   useAppStore.getState = () => state;
@@ -108,13 +94,6 @@ const deferred = <T,>() => {
   return { promise, resolve, reject };
 };
 
-const toggleMasking = (container: HTMLElement) => {
-  const input = container.querySelector('input[type="checkbox"]');
-  act(() => {
-    (input as HTMLInputElement).click();
-  });
-};
-
 const clickText = (container: HTMLElement, text: string) => {
   const el = [...container.querySelectorAll("button, label")].find((n) =>
     n.textContent?.includes(text)
@@ -126,18 +105,33 @@ const clickText = (container: HTMLElement, text: string) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
-  mocks.settingsByName.value = {};
-  mocks.mcpSetting.value = {
-    capability: 3, // READ_ONLY
-    ignoreMaskingExemptions: false,
+  mocks.permissionDisabled.value = false;
+  mocks.dataMaskingAvailable.value = true;
+  mocks.serverInfo.value = {
+    mcpSetting: {
+      capability: MCPSetting_Capability.READ_ONLY,
+      ignoreMaskingExemptions: false,
+    },
   };
+  mocks.loadServerInfo.mockResolvedValue(mocks.serverInfo.value);
+  mocks.refreshServerInfo.mockResolvedValue(mocks.serverInfo.value);
   mocks.upsertSetting.mockResolvedValue(undefined);
-  mocks.hasFeature.mockReturnValue(true);
-  mocks.getSetting.mockResolvedValue({ name: "settings/MCP" });
   ({ MCPAccessPolicySection } = await import("./MCPAccessPolicySection"));
 });
 
 describe("MCPAccessPolicySection", () => {
+  test("reads the displayed policy from cached actuator info", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+
+    expect(mocks.loadServerInfo).toHaveBeenCalledOnce();
+    expect(container.textContent).toContain("settings.mcp.policy.in-force");
+    unmount();
+  });
+
   // Codex raised exactly this on #21236 after the form moved off GeneralPage,
   // where it had been registered in the guarded section refs. Without an
   // assertion the regression returns silently, which is why both sibling forms
@@ -168,11 +162,9 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
-  // The read is deliberately uncached because the row changes out of band. When
-  // it fails, the store may still hold a value from an earlier visit, and
-  // rendering that reports a ceiling nobody is enforcing.
-  test("a failed read outranks a value left in the store", async () => {
-    mocks.getSetting.mockRejectedValue(new Error("does not parse"));
+  test("shows the policy-read failure instead of a stale policy", async () => {
+    mocks.serverInfo.value = undefined;
+    mocks.loadServerInfo.mockResolvedValue(undefined);
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
     );
@@ -186,64 +178,30 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
-  test("a missing row uses the READ_WRITE compatibility default", async () => {
-    mocks.getSetting.mockRejectedValue(
-      new ConnectError("setting MCP not found", Code.NotFound)
-    );
+  test("uses the permission wrapper to disable policy editing", async () => {
+    mocks.permissionDisabled.value = true;
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
     );
     render();
     await flush();
 
-    expect(mocks.setSettingByName).toHaveBeenCalledWith(
-      expect.objectContaining({
-        name: "settings/MCP",
-        value: expect.objectContaining({
-          value: expect.objectContaining({
-            case: "mcp",
-            value: expect.objectContaining({
-              capability: MCPSetting_Capability.READ_WRITE,
-              ignoreMaskingExemptions: false,
-            }),
-          }),
-        }),
-      })
-    );
-    expect(container.textContent).toContain("settings.mcp.policy.in-force");
-    expect(container.textContent).not.toContain(
-      "settings.mcp.policy.read-failed.title"
-    );
-
-    clickText(container, "settings.mcp.policy.edit");
-    await flush();
-    toggleMasking(container);
-    await flush();
-    clickText(container, "settings.mcp.policy.save");
-    await flush();
-
-    expect(mocks.upsertSetting).toHaveBeenCalledWith(
-      expect.objectContaining({
-        value: expect.objectContaining({
-          value: expect.objectContaining({
-            value: expect.objectContaining({
-              capability: MCPSetting_Capability.READ_WRITE,
-            }),
-          }),
-        }),
-        updateMask: expect.objectContaining({
-          paths: ["value.mcp.ignore_masking_exemptions"],
-        }),
-      })
-    );
+    expect(mocks.permissionGuard).toHaveBeenCalledWith(["bb.settings.set"]);
+    expect(
+      [...container.querySelectorAll("button")].find((button) =>
+        button.textContent?.includes("settings.mcp.policy.edit")
+      )
+    ).toHaveProperty("disabled", true);
 
     unmount();
   });
 
-  test("repairs an unspecified capability without a frontend fallback", async () => {
-    mocks.mcpSetting.value = {
-      capability: 0,
-      ignoreMaskingExemptions: false,
+  test("repairs an unspecified capability reported by actuator info", async () => {
+    mocks.serverInfo.value = {
+      mcpSetting: {
+        capability: MCPSetting_Capability.CAPABILITY_UNSPECIFIED,
+        ignoreMaskingExemptions: false,
+      },
     };
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
@@ -280,11 +238,10 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
-  // Codex, #21236. Two halves of one race, both pinned here.
-  test("waits for its own read before offering the cached policy for editing", async () => {
-    // Second visit: the store already holds a value from visit one.
-    const pending = deferred<{ name: string }>();
-    mocks.getSetting.mockReturnValue(pending.promise);
+  test("waits for actuator info before offering policy editing", async () => {
+    const pending = deferred<undefined>();
+    mocks.serverInfo.value = undefined;
+    mocks.loadServerInfo.mockReturnValue(pending.promise);
 
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
@@ -292,25 +249,15 @@ describe("MCPAccessPolicySection", () => {
     render();
     await flush();
 
-    // The cached ceiling must not be presented as authoritative, and Edit must
-    // not be reachable, while this mount's own read is still in flight.
     expect(container.textContent).toContain("settings.mcp.policy.loading");
     expect(container.textContent).not.toContain("settings.mcp.policy.in-force");
     expect(container.textContent).not.toContain("settings.mcp.policy.edit");
 
-    act(() => pending.resolve({ name: "settings/MCP" }));
-    await flush();
-    expect(container.textContent).toContain("settings.mcp.policy.in-force");
-
     unmount();
   });
 
-  // Codex, #21236: this warning was once gated on a GetMCPInfo response, which
-  // can fail through an outage. Hiding it there lets an admin arm a toggle that
-  // does nothing while believing they tightened masking, so it reads the
-  // licence the store already holds.
   test("says masking is unlicensed", async () => {
-    mocks.hasFeature.mockReturnValue(false);
+    mocks.dataMaskingAvailable.value = false;
 
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
@@ -395,26 +342,8 @@ describe("MCPAccessPolicySection", () => {
 
     act(() => inFlight.resolve(undefined));
     await flush();
+    expect(mocks.refreshServerInfo).toHaveBeenCalledOnce();
     unmount();
   });
 
-  // The generations are per-mount; the setting store they write is the
-  // application's. A read left flying by a visit the admin navigated away from
-  // still passed its own check and wrote — which is Codex's corruption with
-  // "the cached policy" replaced by "the previous visit's unfinished read".
-  test("a read left in flight by an unmounted visit cannot write", async () => {
-    const abandoned = deferred<{ name: string }>();
-    mocks.getSetting.mockReturnValueOnce(abandoned.promise);
-
-    const first = renderIntoContainer(<MCPAccessPolicySection />);
-    first.render();
-    await flush();
-    first.unmount();
-
-    mocks.setSettingByName.mockClear();
-    act(() => abandoned.resolve({ name: "settings/MCP" }));
-    await flush();
-
-    expect(mocks.setSettingByName).not.toHaveBeenCalled();
-  });
 });

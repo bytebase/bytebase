@@ -5434,29 +5434,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.BatchUpdateInstancesResponse'
-  /v1/mcp/info:
-    get:
-      tags:
-        - WorkspaceService
-      summary: |-
-        Gets what MCP (Model Context Protocol) does in this workspace: the
-         capability ceiling in force, and whether masking narrows what a session
-         reads under it. The workspace is resolved from the authenticated session.
-      description: |-
-        Served to MCP sessions. An agent asking what it may do here is the point:
-         the response says nothing a session's own denials do not already say, one
-         refusal at a time, and knowing it up front is what stops the agent
-         planning work the ceiling was never going to serve.
-
-         Permissions required: None (authentication required)
-      operationId: WorkspaceService_GetMCPInfo
-      responses:
-        "200":
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/bytebase.v1.MCPInfo'
   /v1/projects:
     get:
       tags:
@@ -19546,6 +19523,11 @@ components:
           description: Sample setup availability and provisioned resources.
           readOnly: true
           $ref: '#/components/schemas/bytebase.v1.SampleInfo'
+        mcpSetting:
+          title: mcp_setting
+          description: The MCP (Model Context Protocol) setting in the current workspace.
+          readOnly: true
+          $ref: '#/components/schemas/bytebase.v1.MCPSetting'
       title: ActuatorInfo
       additionalProperties: false
       description: |-
@@ -23898,10 +23880,6 @@ components:
       required:
         - name
       additionalProperties: false
-    bytebase.v1.GetMCPInfoRequest:
-      type: object
-      title: GetMCPInfoRequest
-      additionalProperties: false
     bytebase.v1.GetPaymentInfoRequest:
       type: object
       title: GetPaymentInfoRequest
@@ -26842,54 +26820,6 @@ components:
          that contradicts its class. Neither is expressible now, and the one check
          left — the reason belongs to the class it is used on — is a table the gate
          already keeps for the wording.
-    bytebase.v1.MCPInfo:
-      type: object
-      properties:
-        workspace:
-          type: string
-          title: workspace
-          description: |-
-            The workspace this describes. Format: workspaces/{workspace}. Not this
-             message's own resource name — MCPInfo is not a named resource and there is
-             nothing to get it by.
-          readOnly: true
-        capability:
-          title: capability
-          description: |-
-            The ceiling in force for this workspace. Any value outside the enum this
-             build serves, CAPABILITY_UNSPECIFIED included, means no ceiling could be
-             resolved from the stored row and every MCP connection is refused. A stored
-             name nothing resolves arrives as CAPABILITY_UNSPECIFIED; a number a newer
-             release wrote arrives verbatim.
-          readOnly: true
-          $ref: '#/components/schemas/bytebase.v1.MCPSetting.Capability'
-        ignoreMaskingExemptions:
-          type: boolean
-          title: ignore_masking_exemptions
-          description: |-
-            Whether this workspace stops applying the caller's own unmasking
-             provisioning to MCP requests. It narrows what a session reads only where
-             Bytebase masks by column and consults exemptions; elsewhere it suppresses
-             nothing.
-          readOnly: true
-        dataMaskingAvailable:
-          type: boolean
-          title: data_masking_available
-          description: |-
-            Whether data masking is licensed for this workspace. When false nothing is
-             masked whatever an engine supports, so the toggle above suppresses nothing.
-             Licensing can also be set per instance, so a true here is the workspace
-             answer, not a promise about every instance.
-          readOnly: true
-      title: MCPInfo
-      additionalProperties: false
-      description: |-
-        MCPInfo is what MCP does in this workspace: the ceiling in force, and
-         whether masking narrows what a session reads under it.
-
-         This is the only API a served MCP session or the consent page can read the
-         ceiling from. SettingService/GetSetting is served by no ceiling, and its
-         answer is cached besides.
     bytebase.v1.MCPMethodClass:
       type: string
       title: MCPMethodClass
@@ -35183,14 +35113,6 @@ security: []
 tags:
   - name: AccessGrantService
     description: AccessGrantService manages temporary access grants within projects.
-  - name: ActuatorService
-    description: ActuatorService manages system health and operational information.
-  - name: AIService
-    description: AIService provides AI chat capabilities for the page agent.
-  - name: AuditLogService
-    description: AuditLogService manages audit logs for system activities and API calls.
-  - name: IdentityProviderService
-    description: IdentityProviderService manages external identity providers for SSO authentication.
   - name: RolloutService
     description: RolloutService manages the execution of deployment plans.
   - name: QueryHistoryService
@@ -35203,6 +35125,14 @@ tags:
     description: IssueService manages issues for tracking database changes and tasks.
   - name: SettingService
     description: SettingService manages workspace-level settings and configurations.
+  - name: ActuatorService
+    description: ActuatorService manages system health and operational information.
+  - name: AIService
+    description: AIService provides AI chat capabilities for the page agent.
+  - name: AuditLogService
+    description: AuditLogService manages audit logs for system activities and API calls.
+  - name: IdentityProviderService
+    description: IdentityProviderService manages external identity providers for SSO authentication.
   - name: UserService
     description: UserService manages user accounts and authentication.
   - name: AuthService

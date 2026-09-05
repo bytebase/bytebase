@@ -4,7 +4,6 @@
 
 import type { GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
-import type { MCPSetting_Capability } from "./setting_service_pb";
 import type { FieldMask } from "@bufbuild/protobuf/wkt";
 import type { GetIamPolicyRequestSchema, IamPolicySchema, SetIamPolicyRequestSchema } from "./iam_policy_pb";
 import type { LoginResponseSchema } from "./auth_service_pb";
@@ -13,76 +12,6 @@ import type { LoginResponseSchema } from "./auth_service_pb";
  * Describes the file v1/workspace_service.proto.
  */
 export declare const file_v1_workspace_service: GenFile;
-
-/**
- * @generated from message bytebase.v1.GetMCPInfoRequest
- */
-export declare type GetMCPInfoRequest = Message<"bytebase.v1.GetMCPInfoRequest"> & {
-};
-
-/**
- * Describes the message bytebase.v1.GetMCPInfoRequest.
- * Use `create(GetMCPInfoRequestSchema)` to create a new message.
- */
-export declare const GetMCPInfoRequestSchema: GenMessage<GetMCPInfoRequest>;
-
-/**
- * MCPInfo is what MCP does in this workspace: the ceiling in force, and
- * whether masking narrows what a session reads under it.
- *
- * This is the only API a served MCP session or the consent page can read the
- * ceiling from. SettingService/GetSetting is served by no ceiling, and its
- * answer is cached besides.
- *
- * @generated from message bytebase.v1.MCPInfo
- */
-export declare type MCPInfo = Message<"bytebase.v1.MCPInfo"> & {
-  /**
-   * The workspace this describes. Format: workspaces/{workspace}. Not this
-   * message's own resource name — MCPInfo is not a named resource and there is
-   * nothing to get it by.
-   *
-   * @generated from field: string workspace = 1;
-   */
-  workspace: string;
-
-  /**
-   * The ceiling in force for this workspace. Any value outside the enum this
-   * build serves, CAPABILITY_UNSPECIFIED included, means no ceiling could be
-   * resolved from the stored row and every MCP connection is refused. A stored
-   * name nothing resolves arrives as CAPABILITY_UNSPECIFIED; a number a newer
-   * release wrote arrives verbatim.
-   *
-   * @generated from field: bytebase.v1.MCPSetting.Capability capability = 2;
-   */
-  capability: MCPSetting_Capability;
-
-  /**
-   * Whether this workspace stops applying the caller's own unmasking
-   * provisioning to MCP requests. It narrows what a session reads only where
-   * Bytebase masks by column and consults exemptions; elsewhere it suppresses
-   * nothing.
-   *
-   * @generated from field: bool ignore_masking_exemptions = 6;
-   */
-  ignoreMaskingExemptions: boolean;
-
-  /**
-   * Whether data masking is licensed for this workspace. When false nothing is
-   * masked whatever an engine supports, so the toggle above suppresses nothing.
-   * Licensing can also be set per instance, so a true here is the workspace
-   * answer, not a promise about every instance.
-   *
-   * @generated from field: bool data_masking_available = 7;
-   */
-  dataMaskingAvailable: boolean;
-};
-
-/**
- * Describes the message bytebase.v1.MCPInfo.
- * Use `create(MCPInfoSchema)` to create a new message.
- */
-export declare const MCPInfoSchema: GenMessage<MCPInfo>;
 
 /**
  * @generated from message bytebase.v1.RotateDirectorySyncTokenRequest
@@ -340,25 +269,6 @@ export declare const WorkspaceService: GenService<{
     methodKind: "unary";
     input: typeof SetIamPolicyRequestSchema;
     output: typeof IamPolicySchema;
-  },
-  /**
-   * Gets what MCP (Model Context Protocol) does in this workspace: the
-   * capability ceiling in force, and whether masking narrows what a session
-   * reads under it. The workspace is resolved from the authenticated session.
-   *
-   * Served to MCP sessions. An agent asking what it may do here is the point:
-   * the response says nothing a session's own denials do not already say, one
-   * refusal at a time, and knowing it up front is what stops the agent
-   * planning work the ceiling was never going to serve.
-   *
-   * Permissions required: None (authentication required)
-   *
-   * @generated from rpc bytebase.v1.WorkspaceService.GetMCPInfo
-   */
-  getMCPInfo: {
-    methodKind: "unary";
-    input: typeof GetMCPInfoRequestSchema;
-    output: typeof MCPInfoSchema;
   },
   /**
    * Mints a new directory sync (SCIM) token, immediately invalidating the

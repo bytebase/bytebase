@@ -18,12 +18,13 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// TestGetMCPInfoHandler drives the RPC against a real store, across the ways a
+// TestGetActuatorInfoMCPSetting drives the MCP setting in actuator info against
+// a real store, across the ways a
 // stored row resolves: served, disabled, a name nothing resolves, a number
 // nothing serves, and a row that does not unmarshal. capability is the whole
 // answer now, and the consent page derives its three states from it alone, so
 // this is the backend receipt for what the page may disclose.
-func TestGetMCPInfoHandler(t *testing.T) {
+func TestGetActuatorInfoMCPSetting(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.GetTestPgContainer(ctx, t)
 	t.Cleanup(func() { container.Close(ctx) })
@@ -37,7 +38,7 @@ func TestGetMCPInfoHandler(t *testing.T) {
 
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
 	require.NoError(t, err)
-	service := NewWorkspaceService(stores, nil, &config.Profile{}, licenseService, nil)
+	service := NewActuatorService(stores, &config.Profile{}, nil, licenseService, nil)
 
 	const workspaceID = "mcp-info-handler"
 	_, err = stores.CreateWorkspace(ctx, &store.WorkspaceMessage{
@@ -46,14 +47,23 @@ func TestGetMCPInfoHandler(t *testing.T) {
 	}, "admin@example.com")
 	require.NoError(t, err)
 
-	get := func(ctx context.Context) (*v1pb.MCPInfo, error) {
-		resp, err := service.GetMCPInfo(ctx, connect.NewRequest(&v1pb.GetMCPInfoRequest{}))
+	user, err := stores.CreateUser(ctx, &store.UserMessage{
+		Email:        "admin@example.com",
+		Name:         "Admin",
+		PasswordHash: "unused",
+		Profile:      &storepb.UserProfile{},
+	})
+	require.NoError(t, err)
+
+	get := func(ctx context.Context) (*v1pb.MCPSetting, error) {
+		resp, err := service.GetActuatorInfo(ctx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
 		if err != nil {
 			return nil, err
 		}
-		return resp.Msg, nil
+		return resp.Msg.McpSetting, nil
 	}
 	workspaceCtx := func() context.Context {
+		ctx := context.WithValue(ctx, common.UserContextKey, user)
 		return context.WithValue(ctx, common.WorkspaceIDContextKey, workspaceID)
 	}
 	setCeiling := func(t *testing.T, value string) {
@@ -68,7 +78,6 @@ func TestGetMCPInfoHandler(t *testing.T) {
 	t.Run("a workspace with the default MCP policy", func(t *testing.T) {
 		info, err := get(workspaceCtx())
 		require.NoError(t, err)
-		require.Equal(t, "workspaces/"+workspaceID, info.Workspace)
 		require.Equal(t, v1pb.MCPSetting_READ_ONLY, info.Capability,
 			"a new workspace is seeded READ_ONLY; only a workspace with no row at all falls back to READ_WRITE")
 		require.False(t, info.IgnoreMaskingExemptions)
@@ -104,14 +113,11 @@ func TestGetMCPInfoHandler(t *testing.T) {
 			"no MCP request runs under this ceiling, so the toggle carries neither the row's value nor a decision")
 	})
 
-	// The subtest above covers a mistyped enum NAME, which unmarshals away to
-	// unset and is therefore describable. A wrong-TYPED value is different: it
-	// fails the whole unmarshal, so the generic setting read errors and there is
-	// no ceiling in the row to describe. The last two rows are why that is a
-	// property of the row and not of the capability — the capability is
-	// readable and a sibling field is not, and one failed unmarshal takes the
-	// whole row with it.
-	t.Run("a row that does not unmarshal is refused, not described", func(t *testing.T) {
+	// A wrong-typed field fails the whole setting unmarshal. Actuator info is a
+	// shared bootstrap response, so it remains available and leaves the optional
+	// setting absent; the policy page then withholds editing rather than showing
+	// a guessed ceiling.
+	t.Run("a row that does not unmarshal leaves the setting absent", func(t *testing.T) {
 		for _, row := range []string{
 			`{"capability":{}}`,
 			`{"capability":true}`,
@@ -121,9 +127,9 @@ func TestGetMCPInfoHandler(t *testing.T) {
 			`{"capability":"READ_ONLY","ignoreMaskingExemptions":"yes"}`,
 		} {
 			setCeiling(t, row)
-			_, err := get(workspaceCtx())
-			require.Error(t, err, "%s: no ceiling in the row to describe", row)
-			require.Equal(t, connect.CodeUnavailable, connect.CodeOf(err), row)
+			setting, err := get(workspaceCtx())
+			require.NoError(t, err, row)
+			require.Nil(t, setting, row)
 		}
 	})
 
@@ -155,7 +161,7 @@ func TestGetMCPInfoHandler(t *testing.T) {
 	})
 
 	t.Run("no workspace on the request", func(t *testing.T) {
-		_, err := get(ctx)
+		_, err := get(context.WithValue(ctx, common.UserContextKey, user))
 		require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
 	})
 }

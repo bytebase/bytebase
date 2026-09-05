@@ -3,8 +3,10 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
-import type { MCPInfo } from "@/types/proto-es/v1/workspace_service_pb";
+import {
+  type MCPSetting,
+  MCPSetting_Capability,
+} from "@/types/proto-es/v1/setting_service_pb";
 
 interface Line {
   readonly key: string;
@@ -13,7 +15,8 @@ interface Line {
 }
 
 interface Props {
-  readonly info: MCPInfo;
+  readonly setting: MCPSetting;
+  readonly dataMaskingAvailable: boolean;
 }
 
 /**
@@ -24,10 +27,10 @@ interface Props {
  * render of a decision the backend makes either way — never the decision
  * itself.
  */
-export function MCPConsentCeiling({ info }: Props) {
+export function MCPConsentCeiling({ setting, dataMaskingAvailable }: Props) {
   const { t } = useTranslation();
 
-  const readWrite = info.capability === MCPSetting_Capability.READ_WRITE;
+  const readWrite = setting.capability === MCPSetting_Capability.READ_WRITE;
   const modeKey = readWrite ? "read-write" : "read-only";
   const modeLabel = t(`settings.mcp.policy.mode.${modeKey}.title`);
 
@@ -69,7 +72,7 @@ export function MCPConsentCeiling({ info }: Props) {
     // withholds unmasking exemptions from MCP sessions, which changes nothing
     // where masking does not run at all — asserting it there would tell the
     // person approving that their data is covered when it is not.
-    ...(info.ignoreMaskingExemptions && info.dataMaskingAvailable
+    ...(setting.ignoreMaskingExemptions && dataMaskingAvailable
       ? [
           {
             key: "masking",

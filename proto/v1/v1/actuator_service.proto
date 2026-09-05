@@ -8,6 +8,7 @@ import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 import "v1/annotation.proto";
+import "v1/setting_service.proto";
 
 option go_package = "github.com/bytebase/bytebase/backend/generated-go/v1";
 
@@ -99,4 +100,7 @@ message ActuatorInfo {
 
   // Sample setup availability and provisioned resources.
   SampleInfo sample = 29 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // The MCP (Model Context Protocol) setting in the current workspace.
+  MCPSetting mcp_setting = 30 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

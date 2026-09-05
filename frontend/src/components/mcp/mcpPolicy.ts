@@ -1,5 +1,7 @@
-import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
-import type { MCPInfo } from "@/types/proto-es/v1/workspace_service_pb";
+import {
+  type MCPSetting,
+  MCPSetting_Capability,
+} from "@/types/proto-es/v1/setting_service_pb";
 
 export type MCPMode =
   | MCPSetting_Capability.DISABLED
@@ -31,14 +33,14 @@ export const isMCPMode = (
  */
 export type ConsentCeiling =
   /** Carries the response, so the disclosure cannot be rendered without it. */
-  | { kind: "mode"; info: MCPInfo }
-  /** GetMCPInfo failed or timed out. The policy is not known to be anything. */
+  | { kind: "mode"; setting: MCPSetting }
+  /** Actuator info did not provide a policy. The policy is not known to be anything. */
   | { kind: "unknown" }
   /** A stored ceiling this build has no wording for, whatever wrote it. */
   | { kind: "undisclosable" };
 
 /**
- * Reads a GetMCPInfo response — or its absence — into that state.
+ * Reads the MCP setting in actuator info — or its absence — into that state.
  *
  * The check is local and total: a capability this bundle can name is one it has
  * copy for. That covers a value nothing resolved (CAPABILITY_UNSPECIFIED), the
@@ -46,13 +48,13 @@ export type ConsentCeiling =
  * of the three it is.
  */
 export const readConsentCeiling = (
-  info: MCPInfo | undefined
+  setting: MCPSetting | undefined
 ): ConsentCeiling => {
-  if (!info) {
+  if (!setting) {
     return { kind: "unknown" };
   }
-  if (!isMCPMode(info.capability)) {
+  if (!isMCPMode(setting.capability)) {
     return { kind: "undisclosable" };
   }
-  return { kind: "mode", info };
+  return { kind: "mode", setting };
 };

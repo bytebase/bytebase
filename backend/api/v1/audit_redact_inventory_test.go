@@ -691,7 +691,6 @@ var auditRecordedFields = []string{
 	"bytebase.v1.MCPDelegation.correlation_id",
 	"bytebase.v1.MCPDelegation.resource",
 	"bytebase.v1.MCPDelegation.scope",
-	"bytebase.v1.MCPInfo.workspace",
 	"bytebase.v1.MaskingExemptionPolicy.Exemption.members",
 	"bytebase.v1.MaskingReason.algorithm",
 	"bytebase.v1.MaskingReason.context",

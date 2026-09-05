@@ -283,6 +283,13 @@ func mcpSettingsFromContext(ctx context.Context) (*storepb.MCPSetting, bool) {
 	return settings, ok && settings != nil
 }
 
+func mcpSettingsForCurrentWorkspace(ctx context.Context, reader mcpSettingsReader, workspaceID string) (*storepb.MCPSetting, error) {
+	if settings, ok := mcpSettingsFromContext(ctx); ok {
+		return settings, nil
+	}
+	return reader.GetMCPSettingsUncached(ctx, workspaceID)
+}
+
 // internalMCPGateInterceptor refuses, before dispatch, every request an MCP
 // session may not make. The rule is one line — effective = ceiling ∩ RBAC — and
 // this interceptor is the ceiling half: it never grants anything, and ACL runs

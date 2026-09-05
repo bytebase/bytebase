@@ -107,5 +107,8 @@ func (x *ActuatorInfo) Equal(y *ActuatorInfo) bool {
 	if !x.Sample.Equal(y.Sample) {
 		return false
 	}
+	if !x.McpSetting.Equal(y.McpSetting) {
+		return false
+	}
 	return true
 }

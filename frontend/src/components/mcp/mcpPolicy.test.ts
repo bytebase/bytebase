@@ -1,7 +1,9 @@
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, test } from "vitest";
-import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
-import { MCPInfoSchema } from "@/types/proto-es/v1/workspace_service_pb";
+import {
+  MCPSetting_Capability,
+  MCPSettingSchema,
+} from "@/types/proto-es/v1/setting_service_pb";
 import {
   isMCPMode,
   MCP_CAPABILITY_CHOICES,
@@ -40,7 +42,8 @@ describe("isMCPMode", () => {
   });
 });
 
-const infoWith = (capability: number) => create(MCPInfoSchema, { capability });
+const settingWith = (capability: number) =>
+  create(MCPSettingSchema, { capability });
 
 describe("readConsentCeiling", () => {
   test("no response is the policy being unknown, not absent", () => {
@@ -48,15 +51,15 @@ describe("readConsentCeiling", () => {
   });
 
   test("a served ceiling carries the response the disclosure needs", () => {
-    const info = infoWith(MCPSetting_Capability.READ_WRITE);
-    expect(readConsentCeiling(info)).toEqual({ kind: "mode", info });
+    const setting = settingWith(MCPSetting_Capability.READ_WRITE);
+    expect(readConsentCeiling(setting)).toEqual({ kind: "mode", setting });
   });
 
   test("disabled is a policy, so it reaches its own screen", () => {
     // Not undisclosable: an admin turned MCP off, which is a decision this page
     // can name and the one refusing ceiling with a screen of its own.
-    const info = infoWith(MCPSetting_Capability.DISABLED);
-    expect(readConsentCeiling(info)).toEqual({ kind: "mode", info });
+    const setting = settingWith(MCPSetting_Capability.DISABLED);
+    expect(readConsentCeiling(setting)).toEqual({ kind: "mode", setting });
   });
 
   // The three ways a stored ceiling reaches this page without a name for it.
@@ -64,15 +67,21 @@ describe("readConsentCeiling", () => {
   // the remedy the page prints now names both repairs, so they are one state.
   test("a value nothing could resolve is undisclosable", () => {
     expect(
-      readConsentCeiling(infoWith(MCPSetting_Capability.CAPABILITY_UNSPECIFIED))
+      readConsentCeiling(
+        settingWith(MCPSetting_Capability.CAPABILITY_UNSPECIFIED)
+      )
     ).toEqual({ kind: "undisclosable" });
   });
 
   test("the reserved tier is undisclosable", () => {
-    expect(readConsentCeiling(infoWith(2))).toEqual({ kind: "undisclosable" });
+    expect(readConsentCeiling(settingWith(2))).toEqual({
+      kind: "undisclosable",
+    });
   });
 
   test("a tier a newer release wrote is undisclosable", () => {
-    expect(readConsentCeiling(infoWith(5))).toEqual({ kind: "undisclosable" });
+    expect(readConsentCeiling(settingWith(5))).toEqual({
+      kind: "undisclosable",
+    });
   });
 });

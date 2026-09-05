@@ -3,7 +3,9 @@ import { describe, expect, it } from "vitest";
 import {
   PROJECT_V1_ROUTE_PLAN_DETAIL_SPECS,
   WORKSPACE_ROUTE_404,
+  WORKSPACE_ROUTE_MCP,
 } from "@/app/router/handles";
+import { buildReactRoute } from "./index";
 import { routes } from "./routes";
 import { sqlEditorRoutes } from "./routes/sqlEditor";
 
@@ -82,6 +84,20 @@ describe("workspace root", () => {
 
     expect(leaf).toBeDefined();
     expect(typeof leaf?.loader).toBe("function");
+  });
+});
+
+describe("MCP integration route", () => {
+  it("does not require settings access to open the setup page", () => {
+    const matches = matchRoutes(routes, "/integration/mcp");
+    const route = buildReactRoute(
+      { pathname: "/integration/mcp", search: "", hash: "" },
+      (matches ?? []).map((match) => ({ handle: match.route.handle })),
+      {}
+    );
+
+    expect(route.name).toBe(WORKSPACE_ROUTE_MCP);
+    expect(route.requiredPermissions).toEqual([]);
   });
 });
 

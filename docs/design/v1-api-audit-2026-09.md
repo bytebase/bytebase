@@ -606,8 +606,8 @@ runtime check.
 
 ### A1 · Unset `auth_method` means "any principal" — MED
 
-`GetActuatorInfo`, `BatchParse`, `BatchDeparse`, `GetSubscription`, `ListPurchasePlans` and
-`GetMCPInfo` carry no `auth_method`. `doIAMPermissionCheck` returns true for anything that is not
+`GetActuatorInfo`, `BatchParse`, `BatchDeparse`, `GetSubscription` and `ListPurchasePlans`
+carry no `auth_method`. `doIAMPermissionCheck` returns true for anything that is not
 `IAM` (`acl.go:254-256`), so UNSPECIFIED and CUSTOM are indistinguishable to the interceptor and
 the effective rule is "any authenticated member of the workspace" — right for all six today, and
 the default an RPC gets by forgetting the annotation. Nothing rejects `AUTH_METHOD_UNSPECIFIED`:
@@ -616,7 +616,7 @@ same descriptor walk, one more assertion.
 
 ### A2 · The published permission is not the checked one — MED
 
-`GetMCPInfo` publishes each method's `permission` option to agents (`mcp_info.go:143-145`); the
+The MCP OpenAPI publishes each method's `permission` option to agents; the
 `Permissions required:` comment publishes it to the OpenAPI. Four methods publish one thing and
 check another:
 
@@ -638,7 +638,7 @@ check another:
 The other eleven CUSTOM methods that declare a permission check exactly it, with documented
 creator/owner/member bypasses. The fix is one of two: make the annotation mean something on
 CUSTOM methods by having the handler declare its check where a test can read it, or drop it from
-CUSTOM methods so `GetMCPInfo` stops publishing a contract nobody enforces.
+CUSTOM methods so the MCP OpenAPI stops publishing a contract nobody enforces.
 
 ### A3 · The resource extractor still fails silent — MED
 
@@ -768,7 +768,7 @@ follow.
 6. **Three more descriptor-walking assertions** (A1, A3, A4): no `AUTH_METHOD_UNSPECIFIED`, no
    write request that resolves to the workspace by falling through the extractor, and a
    `Permissions required:` line on every RPC. Decide what `permission` means on a CUSTOM method
-   and make `GetMCPInfo` publish only what is true (A2).
+and make the MCP OpenAPI publish only what is true (A2).
 7. **Pagination where it is still cheap** (L1–L5): negative `page_size` errors in
    `parseLimitAndOffset`; `page_size`/`page_token` on `ListDatabaseGroups`, `ListPolicies`,
    `ListReleaseCategories`, `SearchSavedQueryFolders` and a renamed `:listDatabases` custom method
