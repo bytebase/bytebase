@@ -95,6 +95,7 @@ func warmProjectPurgeCaches(ctx context.Context, t *testing.T, s *store.Store) {
 // immediately unavailable through the cached getters while surviving rows
 // still resolve correctly.
 func TestDeleteProjectPurgeInvalidatesDescendantCaches(t *testing.T) {
+	t.Parallel()
 	ctx, db, s := newProjectPurgeCacheFixture(t)
 	seedProjectPurgeFixture(ctx, t, db)
 	warmProjectPurgeCaches(ctx, t, s)
@@ -150,6 +151,7 @@ func TestDeleteProjectPurgeInvalidatesDescendantCaches(t *testing.T) {
 // data. Reused rows are inserted directly so a stale cache entry would still
 // be observable through the getters.
 func TestDeleteProjectPurgeSupportsDescendantIDReuse(t *testing.T) {
+	t.Parallel()
 	ctx, db, s := newProjectPurgeCacheFixture(t)
 	seedProjectPurgeFixture(ctx, t, db)
 	warmProjectPurgeCaches(ctx, t, s)
@@ -192,6 +194,7 @@ func TestDeleteProjectPurgeSupportsDescendantIDReuse(t *testing.T) {
 // directly, so any surviving getter result can only come from the still-warm
 // cache entries.
 func TestDeleteProjectFailedTransactionKeepsDescendantCaches(t *testing.T) {
+	t.Parallel()
 	ctx, db, s := newProjectPurgeCacheFixture(t)
 	seedProjectPurgeFixture(ctx, t, db)
 	warmProjectPurgeCaches(ctx, t, s)

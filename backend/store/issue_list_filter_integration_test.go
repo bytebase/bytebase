@@ -23,6 +23,7 @@ import (
 //   - create_time is documented as ">=" and "<=" but was implemented as ">" and
 //     "<", excluding an issue at the exact boundary.
 func TestIssueListFilterEdgeCases(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	db, stores, _ := testcontainer.NewMetadataDB(t)
 	_, err := db.ExecContext(ctx, `
@@ -91,6 +92,7 @@ func TestIssueListFilterEdgeCases(t *testing.T) {
 // issue. A flat role list without the project pairing passes every other
 // assertion in this file and fails this one.
 func TestIssueListNextApproverIsProjectScoped(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	db, stores, _ := testcontainer.NewMetadataDB(t)
 	_, err := db.ExecContext(ctx, `

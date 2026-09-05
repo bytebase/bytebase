@@ -17,6 +17,7 @@ import (
 )
 
 func TestVCSProviderUserTouchAndCount(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s, db := setupVCSProviderUserStore(ctx, t)
 
@@ -69,6 +70,7 @@ func TestVCSProviderUserTouchAndCount(t *testing.T) {
 }
 
 func TestVCSProviderUserInactiveUsersDoNotCountAndLimitRejectionKeepsRows(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s, db := setupVCSProviderUserStore(ctx, t)
 
@@ -136,6 +138,7 @@ func TestVCSProviderUserInactiveUsersDoNotCountAndLimitRejectionKeepsRows(t *tes
 }
 
 func TestVCSProviderUserTouchInactiveUserWhenUnderLimit(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s, db := setupVCSProviderUserStore(ctx, t)
 
@@ -165,6 +168,7 @@ func TestVCSProviderUserTouchInactiveUserWhenUnderLimit(t *testing.T) {
 }
 
 func TestVCSProviderUserListActiveUsersSortedDesc(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s, db := setupVCSProviderUserStore(ctx, t)
 
@@ -187,6 +191,7 @@ func TestVCSProviderUserListActiveUsersSortedDesc(t *testing.T) {
 }
 
 func TestVCSProviderUserTouchStoresEmptyPayloadWhenNil(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s, _ := setupVCSProviderUserStore(ctx, t)
 
@@ -207,6 +212,7 @@ func TestVCSProviderUserTouchStoresEmptyPayloadWhenNil(t *testing.T) {
 }
 
 func TestDeleteExpiredVCSProviderUsers(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s, db := setupVCSProviderUserStore(ctx, t)
 

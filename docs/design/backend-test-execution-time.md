@@ -81,19 +81,21 @@ constant — it will drift as package times change.
 `backend/tests` at 635 s is the slowest package. Fixing the four serial packages
 makes the run floor-bound on it almost immediately, so everything after that has
 to come out of `backend/tests` itself. Working through the efforts below should
-land the local pass around 6 minutes.
+land the local pass around 7.5 minutes.
 
 ## Design
 
-Seven efforts, ordered by payoff per unit of work.
+Six efforts, ordered by payoff per unit of work. Two have moved since this was
+written, and the numbering is kept through both so existing references resolve:
+effort 3 — a checkout pool for the 104 `provisionPgInstance` callers — is
+dropped, and effort 6 was rescoped and now runs ahead of effort 2 for `api/v1`.
 
-Efforts 1, 3, 4 and 5 all target `backend/tests`. Their figures are fixture
-cost inside a package that runs 3.7× parallel, and effort 1's saving sits inside
+Efforts 1, 4 and 5 all target `backend/tests`. Their figures are fixture cost
+inside a package that runs 3.7× parallel, and effort 1's saving sits inside
 effort 4's, so they do not simply add. Together they should take it from 635 s
-of wall clock to roughly 330 s.
-
-Effort 6 was rescoped and now runs ahead of effort 2 for `api/v1`; the numbering
-is kept so existing references resolve.
+of wall clock to roughly 450 s: dropping effort 3 leaves its 450 s of container
+time in place, which is about 120 s of wall at that compression, on top of the
+330 s the four efforts were originally worth.
 
 ### [✓] 1. Close idle connections before shutting the server down
 
@@ -125,15 +127,15 @@ went from **679 s to 611 s** across its 233 boots: 227 s off the summed test
 time, compressed 3.3× by the package's own parallelism. Measure the efforts
 below against 611 s.
 
-### [✓ step 1, store] 2. One shared container per package, then turn parallelism on
+### [✓] 2. One shared container per package, then turn parallelism on
 
 **459 s of wall clock, 390 s of it container starts.** `store` starts 90
 containers, and because it runs serially that cost is its wall clock almost
 exactly.
 
 `api/v1`, `component/review` and `migrator` were in this effort's original
-scope. AGENTS.md now confines a real metadata Postgres to `store` and `tests`,
-so all three move to effort 6 instead.
+scope. Effort 5 confines a real metadata Postgres to `store` and `tests`, so all
+three move to effort 6 instead.
 
 Two changes, in this order:
 
@@ -175,40 +177,33 @@ roughly 1.3 GB — but they live inside the package's own container, which
 each database costs about 54 ms, or 7 s across the package, to reclaim disk that
 is already reclaimed.
 
-**Step 2 is not done.** Nothing calls `t.Parallel()` yet, so this is step 1
-alone. Two things that would have blocked it are already checked: Postgres
-advisory locks are per-database, so the lock and claim tests cannot reach each
-other across per-test databases, and eight concurrent
-`CREATE DATABASE … TEMPLATE` from one template all succeed.
+**What step 2 bought, measured on one Linux box (20 vCPU), same tests both
+sides.** `t.Parallel()` on all 139 tests took `backend/store` from **16.2 s to
+10.9 s**, means of runs spanning 16.0–16.3 and 10.8–10.9. Those are not the
+12.0 s above; that was the Mac. Two things that would have blocked this were
+checked first and held: Postgres advisory locks are per-database, so the lock and
+claim tests cannot reach each other across per-test databases, and eight
+concurrent `CREATE DATABASE … TEMPLATE` from one template all succeed.
 
-### 3. Pool the provisioned Postgres instances
+**What is left is nearly all floor.** The package costs 1.3 s with no container
+at all and 6.9 s for a single test that needs one, so 5.6 s of the 10.9 s is the
+one container start and template migration that every test now queues behind
+inside `metaOnce`. Subtracting that 6.9 s from each side, the 138 other tests'
+own work went from 9.3 s to 4.0 s. Nothing further is worth spending here: the
+next second has to come off the container, not off the tests.
 
-**450 s of fixture time inside `backend/tests`.** 104 of its tests call
-`provisionPgInstance` to get a managed instance for Bytebase to point at, and
-each one is a fresh container.
+**Nine tests keep serial subtests, and two of them give up top-level parallelism
+for it.** `TestAuditLogRetentionFilteringEndToEnd` sets one workspace license row
+per subtest and reads it back, and `TestLoginAttemptClaim`'s purge subtest
+asserts a table-wide delete count that only holds while nothing else writes the
+table; both carry a comment saying so. The other seven parallelize at both levels
+because their subtests are keyed apart — distinct identities, codes, token
+hashes — or take a database each. `tparallel` enforces all-or-nothing per test,
+which is why those two go serial rather than parallel with serial subtests.
 
-Most of these tests only need an instance to exist and to hold their own
-databases, which they already create. Those can borrow from a pool of about 8
-long-lived containers and take a database each, leaving about 35 s.
-
-Ten files are the exception: they call `UpdateInstance`, `DeleteInstance` or a
-data-source mutation, so a shared instance would break for everyone else. The
-pool needs checkout semantics — borrow a shared instance by default, take an
-exclusive one when the test mutates instance config:
-
-```
-project_instance_test.go   project_instance_iam_collision_test.go
-project_instance_archive_task_run_test.go   cross_project_delete_test.go
-plan_update_test.go   data_source_test.go   sql_query_data_source_test.go
-sql_export_data_source_test.go   instance_keytab_retention_test.go
-mcp_forbidden_credential_mints_test.go
-```
-
-There is one place to fix this because `backend/tests` is the only package that
-starts a Bytebase server — `server.NewServer` has exactly two call sites, the
-real binary and `backend/tests/tests.go`. Keep it that way. A server-starting
-test elsewhere would need its own workspace scaffolding and its own instance
-pool, and would put a second package on the critical path.
+Peak concurrent connections to the shared container is 38 against Postgres's
+default 100, at `-parallel=20`. A runner with many more cores should have that
+re-measured before it is trusted.
 
 ### 4. Isolate per project, not per workspace
 
@@ -243,12 +238,20 @@ each test grants to its own principal.
 `TestWebhookIntegration` needs separate attention: 144 s, the slowest test in
 the repo, 24 subtests behind one boot with several fixed sleeps.
 
-### 5. Postgres only for API and workflow tests
+### 5. Postgres only for `backend/store` and `backend/tests`
 
 **Up to 320 s inside `backend/tests`**, of which 115 s is container starts and
 the rest is the duplicated test bodies. `TestSQLReviewForMySQL` costs 52.7 s
-where `TestSQLReviewForPostgreSQL` costs 17.9 s for the same assertion. The rule
-is now in the root `AGENTS.md`.
+where `TestSQLReviewForPostgreSQL` costs 17.9 s for the same assertion.
+
+Two packages may hold a real database, and no others. `backend/store` is where a
+metadata query is asserted against one, and `backend/tests` is the only package
+that boots a server. Everywhere else — `api/v1` above all — the handler's
+decide-and-convert half is tested over a fake or over plain data, which is effort
+6; an API test does not earn a container by being an API test. Inside the two
+packages that keep one, the engine is Postgres: engine dialects and DDL fidelity
+belong in omni. The root `AGENTS.md` carries that second half of the rule today,
+in the words "test API and workflow behavior against Postgres only".
 
 `docker events` recorded 11 MySQL containers from `backend/tests`. The
 candidates, one container each:
@@ -278,7 +281,7 @@ Three keep their engine. Each needs a comment saying why:
 ### 6. Seams instead of containers
 
 **822 s of wall clock, 611 s of it container starts**, after `migrator` was
-settled by deletion below. AGENTS.md confines a real metadata Postgres to
+settled by deletion below. Effort 5 confines a real metadata Postgres to
 `store` and `tests`; `api/v1` and `component/review` are not on that list and
 start 141 containers between them. `backend/api/mcp` is the proof this is
 livable: 168 tests in 39.5 s, 16 of its 18 files containerless.

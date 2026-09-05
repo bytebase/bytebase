@@ -30,6 +30,7 @@ import (
 //     back as "" so the handler's fallback chain to client.Workspace /
 //     singleton can take over.
 func TestOAuth2WorkspaceBinding(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	db, s, _ := testcontainer.NewMetadataDB(t)
 
@@ -44,6 +45,7 @@ func TestOAuth2WorkspaceBinding(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("auth code round-trips workspace bound at consent time", func(t *testing.T) {
+		t.Parallel()
 		_, err := s.CreateOAuth2AuthorizationCode(ctx, &store.OAuth2AuthorizationCodeMessage{
 			Code:      "code-with-ws",
 			ClientID:  "client-A",
@@ -62,6 +64,7 @@ func TestOAuth2WorkspaceBinding(t *testing.T) {
 	})
 
 	t.Run("auth code with empty workspace stays empty for legacy fallback", func(t *testing.T) {
+		t.Parallel()
 		// Simulates a pre-3.18.2 auth code created before the workspace
 		// column existed. The migration added the column as nullable, so
 		// existing rows have NULL and Get returns "".
@@ -83,6 +86,7 @@ func TestOAuth2WorkspaceBinding(t *testing.T) {
 	})
 
 	t.Run("refresh token preserves workspace across refresh", func(t *testing.T) {
+		t.Parallel()
 		_, err := s.CreateOAuth2RefreshToken(ctx, &store.OAuth2RefreshTokenMessage{
 			TokenHash: "rt-hash-1",
 			ClientID:  "client-A",
@@ -100,6 +104,7 @@ func TestOAuth2WorkspaceBinding(t *testing.T) {
 	})
 
 	t.Run("refresh token with empty workspace stays empty", func(t *testing.T) {
+		t.Parallel()
 		_, err := s.CreateOAuth2RefreshToken(ctx, &store.OAuth2RefreshTokenMessage{
 			TokenHash: "rt-hash-2",
 			ClientID:  "client-A",
@@ -119,6 +124,7 @@ func TestOAuth2WorkspaceBinding(t *testing.T) {
 	// boundary: a refresh reads it back to re-issue the same grant, so a dropped
 	// value would silently widen or unbind the session.
 	t.Run("refresh token config round-trips resource and scope", func(t *testing.T) {
+		t.Parallel()
 		_, err := s.CreateOAuth2RefreshToken(ctx, &store.OAuth2RefreshTokenMessage{
 			TokenHash: "rt-hash-3",
 			ClientID:  "client-A",
@@ -140,6 +146,7 @@ func TestOAuth2WorkspaceBinding(t *testing.T) {
 	})
 
 	t.Run("refresh token with no config stays empty", func(t *testing.T) {
+		t.Parallel()
 		// Both parameters are optional, and rows written before 3.22.1 default to
 		// '{}' — either way the handler must see "" and carry "" forward.
 		_, err := s.CreateOAuth2RefreshToken(ctx, &store.OAuth2RefreshTokenMessage{
@@ -159,6 +166,7 @@ func TestOAuth2WorkspaceBinding(t *testing.T) {
 	})
 
 	t.Run("auth code config round-trips resource and scope", func(t *testing.T) {
+		t.Parallel()
 		_, err := s.CreateOAuth2AuthorizationCode(ctx, &store.OAuth2AuthorizationCodeMessage{
 			Code:      "code-with-resource",
 			ClientID:  "client-A",

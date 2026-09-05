@@ -19,6 +19,7 @@ import (
 )
 
 func TestCreateWorkspaceInitializesDefaults(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	_, stores, _ := testcontainer.NewMetadataDB(t)
 
@@ -73,6 +74,7 @@ func TestCreateWorkspaceInitializesDefaults(t *testing.T) {
 }
 
 func TestListWorkspacesByEmailEvaluatesBindingConditions(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	db, stores, _ := testcontainer.NewMetadataDB(t)
 

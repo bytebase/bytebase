@@ -40,6 +40,7 @@ func testInstanceMetadata() *storepb.Instance {
 }
 
 func TestCreateAndListProjectInstance(t *testing.T) {
+	t.Parallel()
 	ctx, db, s := newInstanceProjectFixture(t)
 	projectID := "project-a"
 	instance, err := s.CreateInstance(ctx, &store.InstanceMessage{
@@ -124,6 +125,7 @@ func TestCreateAndListProjectInstance(t *testing.T) {
 }
 
 func TestUpdateInstanceWithoutWorkspace(t *testing.T) {
+	t.Parallel()
 	ctx, _, s := newInstanceProjectFixture(t)
 	instance, err := s.CreateInstance(ctx, &store.InstanceMessage{
 		ResourceID: "workspace-instance",
@@ -142,9 +144,11 @@ func TestUpdateInstanceWithoutWorkspace(t *testing.T) {
 }
 
 func TestCreateProjectInstanceRejectsDefaultDeletedAndMissingProject(t *testing.T) {
+	t.Parallel()
 	ctx, _, s := newInstanceProjectFixture(t)
 	for _, projectID := range []string{"default", "deleted-project", "missing-project"} {
 		t.Run(projectID, func(t *testing.T) {
+			t.Parallel()
 			_, err := s.CreateInstance(ctx, &store.InstanceMessage{
 				ResourceID: projectID + "-instance",
 				Workspace:  "default",
@@ -157,6 +161,7 @@ func TestCreateProjectInstanceRejectsDefaultDeletedAndMissingProject(t *testing.
 }
 
 func TestDeleteProjectDeletesProjectInstancesAndKeepsWorkspaceInstanceDatabases(t *testing.T) {
+	t.Parallel()
 	ctx, db, s := newInstanceProjectFixture(t)
 	_, err := db.ExecContext(ctx, `
 		UPDATE project SET deleted = TRUE WHERE resource_id = 'project-a';
@@ -189,6 +194,7 @@ func TestDeleteProjectDeletesProjectInstancesAndKeepsWorkspaceInstanceDatabases(
 }
 
 func TestDeleteProjectInstancePurgesHistory(t *testing.T) {
+	t.Parallel()
 	ctx, db, s := newInstanceProjectFixture(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO instance (resource_id, workspace, project, deleted) VALUES

@@ -8,6 +8,7 @@ import (
 )
 
 func TestGetListRolloutFilter(t *testing.T) {
+	t.Parallel()
 	// The subquery used for update_time filtering
 	updatedAtSubquery := `COALESCE((SELECT MAX(task_run.updated_at) FROM task JOIN task_run ON task_run.project = task.project AND task_run.task_id = task.id WHERE task.project = plan.project AND task.plan_id = plan.id), plan.created_at)`
 
@@ -125,6 +126,7 @@ func TestGetListRolloutFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			q, err := GetListRolloutFilter(tt.filter)
 
 			if tt.wantErr {

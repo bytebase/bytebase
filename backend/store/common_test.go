@@ -7,6 +7,7 @@ import (
 )
 
 func TestParseOrderBy(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		input string
 		want  []*OrderByKey

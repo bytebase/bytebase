@@ -26,6 +26,7 @@ import (
 // Postgres with one question mark instead of two is a parameter count error
 // rather than a query.
 func TestSearchAuditLogsMCPFilters(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	db, s, _ := testcontainer.NewMetadataDB(t)
 
@@ -85,6 +86,7 @@ func TestSearchAuditLogsMCPFilters(t *testing.T) {
 	}
 
 	t.Run("mcp == true returns every MCP row and only those", func(t *testing.T) {
+		t.Parallel()
 		got := search(t, "mcp == true")
 		require.Len(t, got, 4, "the four rows carrying the marker, including the empty-field legacy one")
 		for _, log := range got {
@@ -94,12 +96,14 @@ func TestSearchAuditLogsMCPFilters(t *testing.T) {
 	})
 
 	t.Run("mcp == false returns the rest", func(t *testing.T) {
+		t.Parallel()
 		got := search(t, "mcp == false")
 		require.Len(t, got, 1)
 		require.Nil(t, got[0].Payload.GetMcpDelegation())
 	})
 
 	t.Run("the correlation filter returns one session's rows", func(t *testing.T) {
+		t.Parallel()
 		got := search(t, `mcp_correlation_id == "session-one"`)
 		require.Len(t, got, 2)
 		for _, log := range got {
@@ -108,16 +112,19 @@ func TestSearchAuditLogsMCPFilters(t *testing.T) {
 	})
 
 	t.Run("the MCP filters compose with the existing ones", func(t *testing.T) {
+		t.Parallel()
 		got := search(t, `mcp == true && method == "/bytebase.v1.SQLService/Query"`)
 		require.Len(t, got, 3)
 	})
 
 	t.Run("an unknown key still errors", func(t *testing.T) {
+		t.Parallel()
 		_, err := store.GetSearchAuditLogsFilter(`mcp_client_id == "client-A"`)
 		require.ErrorContains(t, err, "unknown variable mcp_client_id")
 	})
 
 	t.Run("mcp is a boolean, not a string", func(t *testing.T) {
+		t.Parallel()
 		// Every other boolean filter key in the codebase takes a real CEL
 		// boolean and says so on a mismatch; this one must not be the outlier.
 		_, err := store.GetSearchAuditLogsFilter(`mcp == "true"`)

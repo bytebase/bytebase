@@ -19,6 +19,7 @@ import (
 // creation with its root invariants, resolve/reopen on the root only, the
 // timeline and reply list filters, and statement anchor round-trips.
 func TestIssueCommentThreads(t *testing.T) {
+	t.Parallel()
 	const (
 		workspaceID  = "thread-ws"
 		projectID    = "thread-p"

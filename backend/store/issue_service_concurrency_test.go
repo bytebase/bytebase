@@ -30,6 +30,7 @@ import (
 )
 
 func TestDraftLabelUpdateConflictsWithConcurrentSubmission(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service, issueBus := newIssueServiceForTest(t, stores)
@@ -80,6 +81,7 @@ func TestDraftLabelUpdateConflictsWithConcurrentSubmission(t *testing.T) {
 }
 
 func TestConcurrentSubmissionWithLabelsWritesOneAuditComment(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service, issueBus := newIssueServiceForTest(t, stores)
@@ -131,6 +133,7 @@ func TestConcurrentSubmissionWithLabelsWritesOneAuditComment(t *testing.T) {
 }
 
 func TestConcurrentIdenticalLabelUpdatesCreateOneAuditComment(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service, _ := newIssueServiceForTest(t, stores)
@@ -171,6 +174,7 @@ func TestConcurrentIdenticalLabelUpdatesCreateOneAuditComment(t *testing.T) {
 }
 
 func TestConcurrentIdenticalTitleUpdatesCreateOneAuditComment(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service, _ := newIssueServiceForTest(t, stores)
@@ -210,6 +214,7 @@ func TestConcurrentIdenticalTitleUpdatesCreateOneAuditComment(t *testing.T) {
 }
 
 func TestMixedIssuePatchRollsBackWhenLabelsFail(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service, _ := newIssueServiceForTest(t, stores)
@@ -243,12 +248,14 @@ func TestMixedIssuePatchRollsBackWhenLabelsFail(t *testing.T) {
 }
 
 func TestCreateDraftAndRolloutAreSerialized(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service, _ := newIssueServiceForTest(t, stores)
 
 	for i := range 10 {
 		t.Run(fmt.Sprintf("attempt-%d", i), func(t *testing.T) {
+			t.Parallel()
 			plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
 				ProjectID: "project-a",
 				Name:      "draft rollout race",
@@ -318,6 +325,7 @@ func TestCreateDraftAndRolloutAreSerialized(t *testing.T) {
 }
 
 func TestCreateDraftIssueIsIdempotent(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	b, err := bus.New()
@@ -443,6 +451,7 @@ func TestCreateDraftIssueIsIdempotent(t *testing.T) {
 }
 
 func TestIssueApprovalFiltersRunBeforePaging(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service, _ := newIssueServiceForTest(t, stores)

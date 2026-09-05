@@ -41,6 +41,8 @@ const (
 // subscription path, so the feature gate, retention cutoff, filter application
 // and SQL execution are all exercised.
 func TestAuditLogRetentionFilteringEndToEnd(t *testing.T) {
+	// Not parallel: the subtests set the workspace license in turn and read it back,
+	// so they share one mutable row and have to run in order.
 	ctx, stores, licenseService := setupAuditLogRetentionTest(t)
 
 	now := time.Now().UTC()
@@ -97,6 +99,7 @@ func TestAuditLogRetentionFilteringEndToEnd(t *testing.T) {
 // ApplyRetentionFilter against real rows: a row created exactly at the cutoff
 // is retained and a row one microsecond earlier is dropped.
 func TestAuditLogRetentionFilterIncludesExactCutoffRow(t *testing.T) {
+	t.Parallel()
 	ctx, stores, _ := setupAuditLogRetentionTest(t)
 
 	cutoff := time.Now().UTC().Truncate(time.Microsecond)
