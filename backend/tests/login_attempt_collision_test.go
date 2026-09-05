@@ -22,6 +22,7 @@ import (
 // buckets: rows sharing an identity (other kind) or sharing a kind (other
 // identity) must be untouched by claims, clears, and purges on a neighbor.
 func TestCollision_LoginAttempt(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	container := testcontainer.GetTestPgContainer(ctx, t)
 	t.Cleanup(func() { container.Close(ctx) })

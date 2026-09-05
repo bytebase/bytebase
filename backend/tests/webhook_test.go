@@ -18,9 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
-	webhookplugin "github.com/bytebase/bytebase/backend/plugin/webhook"
 )
 
 // webhookCollector collects webhook requests for testing.
@@ -134,13 +132,13 @@ func parseSlackWebhook(body []byte) (title, description string, err error) {
 }
 
 // TestWebhookIntegration tests webhook functionality.
+//
+//nolint:tparallel // Subtests share one server and one webhook collector.
 func TestWebhookIntegration(t *testing.T) {
-	// Allow localhost for testing
-	webhookplugin.TestOnlyAllowedDomains[storepb.WebhookType_SLACK] = []string{"127.0.0.1", "localhost", "[::1]"}
-	defer func() {
-		// Clean up after test
-		delete(webhookplugin.TestOnlyAllowedDomains, storepb.WebhookType_SLACK)
-	}()
+	t.Parallel()
+	// Localhost is allowed for SLACK and DINGTALK by TestMain, once, for the
+	// whole package. Do not set it here: ValidateWebhookURL reads that map
+	// unsynchronized from every parallel test that adds a webhook.
 
 	ctx := context.Background()
 	ctl := &controller{}
@@ -772,10 +770,6 @@ func TestWebhookIntegration(t *testing.T) {
 			_, _ = w.Write([]byte(`{"errcode":0}`))
 		}))
 		defer dingtalkServer.Close()
-		webhookplugin.TestOnlyAllowedDomains[storepb.WebhookType_DINGTALK] = []string{"127.0.0.1", "localhost", "[::1]"}
-		t.Cleanup(func() {
-			delete(webhookplugin.TestOnlyAllowedDomains, storepb.WebhookType_DINGTALK)
-		})
 		_, err = ctl.projectServiceClient.AddWebhook(ctx, connect.NewRequest(&v1pb.AddWebhookRequest{
 			Project: project.Name,
 			Webhook: &v1pb.Webhook{

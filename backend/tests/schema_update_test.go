@@ -113,7 +113,9 @@ func TestSchemaAndDataUpdate(t *testing.T) {
 	a.Equal(v1pb.Changelog_DONE, getResp.Msg.Status)
 }
 
+//nolint:tparallel // Subtests share one server lifecycle.
 func TestGetLatestSchema(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name                 string
 		dbType               storepb.Engine

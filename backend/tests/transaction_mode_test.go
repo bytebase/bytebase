@@ -15,7 +15,10 @@ import (
 )
 
 // TestTransactionMode tests the configurable transaction mode feature across different database engines.
+//
+//nolint:tparallel // Each subtest drives one engine container through both transaction modes in order.
 func TestTransactionMode(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
 	tests := []struct {
