@@ -24,7 +24,7 @@ const mocks = vi.hoisted(() => ({
   workspaceList: { value: [] as { name: string; title: string }[] },
   loadWorkspace: vi.fn(async () => {}),
   loadWorkspaceList: vi.fn(async () => {}),
-  loadSubscription: vi.fn(async () => {}),
+  refreshSubscription: vi.fn(),
   loadServerInfo: vi.fn(),
   refreshServerInfo: vi.fn(),
   switchWorkspace: vi.fn(async () => {}),
@@ -58,7 +58,7 @@ mocks.useAppStore.mockImplementation((selector: (state: unknown) => unknown) =>
     isLoggedIn: () => mocks.isLoggedIn.value,
     loadWorkspace: mocks.loadWorkspace,
     loadWorkspaceList: mocks.loadWorkspaceList,
-    loadSubscription: mocks.loadSubscription,
+    refreshSubscription: mocks.refreshSubscription,
     loadServerInfo: mocks.loadServerInfo,
     refreshServerInfo: mocks.refreshServerInfo,
     switchWorkspace: mocks.switchWorkspace,
@@ -183,6 +183,7 @@ beforeEach(async () => {
   };
   mocks.loadServerInfo.mockResolvedValue(serverInfo);
   mocks.refreshServerInfo.mockResolvedValue(serverInfo);
+  mocks.refreshSubscription.mockResolvedValue({});
   ({ OAuth2ConsentPage } = await import("./OAuth2ConsentPage"));
 });
 
@@ -233,7 +234,7 @@ describe("OAuth2ConsentPage", () => {
     render();
     await flushPromises();
     expect(mocks.fetchImpl).toHaveBeenCalledWith("/api/oauth2/clients/c1");
-    expect(mocks.loadSubscription).toHaveBeenCalledOnce();
+    expect(mocks.refreshSubscription).toHaveBeenCalledOnce();
     expect(container.textContent).toContain("Acme");
     expect(container.querySelector('form[method="POST"]')).not.toBeNull();
     const hiddenClientId = container.querySelector<HTMLInputElement>(
@@ -547,6 +548,35 @@ describe("OAuth2ConsentPage", () => {
     expect(mocks.loadServerInfo).not.toHaveBeenCalled();
     expect(container.textContent).toContain("oauth2.consent.mcp.line.write");
     unmount();
+  });
+
+  test("waits for a fresh subscription before presenting consent", async () => {
+    mocks.currentRoute.value.query = consentQuery();
+    mocks.fetchImpl.mockResolvedValue({
+      ok: true,
+      json: async () => ({ client_name: "Acme" }),
+    });
+    let resolveSubscription: (() => void) | undefined;
+    mocks.refreshSubscription.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveSubscription = () => resolve({});
+        })
+    );
+
+    const { container, render, unmount } = renderIntoContainer(
+      <OAuth2ConsentPage />
+    );
+    try {
+      render();
+      await flushPromises();
+
+      expect(mocks.refreshSubscription).toHaveBeenCalledOnce();
+      expect(container.querySelector('form[method="POST"]')).toBeNull();
+    } finally {
+      resolveSubscription?.();
+      unmount();
+    }
   });
 
   // Codex, #21237: the !response.ok branch returned, its sibling catch did not.
