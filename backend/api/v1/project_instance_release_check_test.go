@@ -18,6 +18,7 @@ import (
 )
 
 func TestCheckReleaseDatabaseTargetsKeepCanonicalNames(t *testing.T) {
+	t.Parallel()
 	ctx, stores, instanceID, databaseName := setupProjectInstanceReleaseCheckTest(t)
 	projectID := "project-a"
 	projectTarget := common.FormatProjectDatabase(projectID, instanceID, databaseName)
@@ -41,6 +42,7 @@ func TestCheckReleaseDatabaseTargetsKeepCanonicalNames(t *testing.T) {
 }
 
 func TestCheckReleaseRejectsCrossProjectTargets(t *testing.T) {
+	t.Parallel()
 	ctx, stores, instanceID, databaseName := setupProjectInstanceReleaseCheckTest(t)
 	service := NewReleaseService(stores, sheet.NewManager(), nil, nil)
 	request := func(target string) *connect.Request[v1pb.CheckReleaseRequest] {
@@ -61,6 +63,7 @@ func TestCheckReleaseRejectsCrossProjectTargets(t *testing.T) {
 }
 
 func TestCheckReleaseHidesDatabasesOutsideProject(t *testing.T) {
+	t.Parallel()
 	ctx, stores, _, _ := setupProjectInstanceReleaseCheckTest(t)
 	sharedInstanceID := "shared-instance"
 	_, err := stores.CreateInstance(ctx, &store.InstanceMessage{
@@ -100,6 +103,7 @@ func TestCheckReleaseHidesDatabasesOutsideProject(t *testing.T) {
 }
 
 func TestCheckReleaseRejectsArchivedProject(t *testing.T) {
+	t.Parallel()
 	ctx, stores, instanceID, databaseName := setupProjectInstanceReleaseCheckTest(t)
 	archived := true
 	require.NoError(t, stores.UpdateProjects(ctx, &store.UpdateProjectMessage{

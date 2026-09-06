@@ -378,6 +378,7 @@ func TestAuditPlanHandlesCyclicDescriptors(t *testing.T) {
 // sits inside one today — exactly why either bug would go unnoticed until one
 // did.
 func TestAuditRedactionFollowsACycleToAnyDepth(t *testing.T) {
+	t.Parallel()
 	descriptor := cyclicSensitiveDescriptor(t)
 	secret := descriptor.Fields().ByName("secret")
 	child := descriptor.Fields().ByName("child")
@@ -418,6 +419,7 @@ func TestAuditRedactionFollowsACycleToAnyDepth(t *testing.T) {
 // type with a plan today, so this violation of "redaction does not mutate the
 // caller's message" would otherwise go uncaught until one appeared.
 func TestAuditRedactionRebuildsMapsRatherThanSharing(t *testing.T) {
+	t.Parallel()
 	descriptor := mapOfSensitiveDescriptor(t)
 	entryValue := dynamicpb.NewMessage(descriptor.Fields().ByName("entries").MapValue().Message())
 	entryValue.Set(entryValue.Descriptor().Fields().ByName("secret"), protoreflect.ValueOfString(secretSentinel))
@@ -444,6 +446,7 @@ func TestAuditRedactionRebuildsMapsRatherThanSharing(t *testing.T) {
 // app_role is a message that would survive as {}, so clearing would make token
 // auth indistinguishable from unconfigured while AppRole stayed legible.
 func TestAuditRedactionKeepsSensitiveOneofArmsPresent(t *testing.T) {
+	t.Parallel()
 	request := &v1pb.AddDataSourceRequest{DataSource: &v1pb.DataSource{
 		ExternalSecret: &v1pb.DataSourceExternalSecret{
 			Url:        "https://vault.example.com",
@@ -476,6 +479,7 @@ func TestAuditRedactionKeepsSensitiveOneofArmsPresent(t *testing.T) {
 // pointer, never copied. A 5 MB sheet inside an audited batch used to be cloned
 // only to have its content nulled.
 func TestAuditRedactionSharesUnannotatedSubtrees(t *testing.T) {
+	t.Parallel()
 	labels := map[string]string{"env": "prod"}
 	instance := &v1pb.Instance{
 		Name:        "instances/instance-a",
@@ -585,6 +589,7 @@ func TestAuditRedactsPackedAny(t *testing.T) {
 // persistence is exercised through the createAuditLogFunc stub, which bypasses
 // the real path; this one writes a real row and reads it back.
 func TestStreamingAuditRedactsRows(t *testing.T) {
+	t.Parallel()
 	st := newAuditLiveStore(t)
 	t.Cleanup(func() { require.NoError(t, st.Close()) })
 	interceptor := NewAuditInterceptor(st, "test-secret", &config.Profile{})
@@ -628,6 +633,7 @@ func TestStreamingAuditRedactsRows(t *testing.T) {
 // instance at marshal time; it would be a hole if an annotation could ever sit
 // inside one.
 func TestNoAnnotationOutsideBytebaseProtos(t *testing.T) {
+	t.Parallel()
 	var annotated []string
 	protoregistry.GlobalFiles.RangeFiles(func(fd protoreflect.FileDescriptor) bool {
 		if strings.HasPrefix(string(fd.Package()), "bytebase.") {

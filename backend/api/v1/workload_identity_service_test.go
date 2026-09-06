@@ -9,6 +9,7 @@ import (
 )
 
 func TestValidateWorkloadIdentityConfig(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		config  *v1pb.WorkloadIdentityConfig
@@ -124,6 +125,7 @@ func TestValidateWorkloadIdentityConfig(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateWorkloadIdentityConfig(test.config)
 			if test.wantErr == "" {
 				require.NoError(t, err)
@@ -135,6 +137,7 @@ func TestValidateWorkloadIdentityConfig(t *testing.T) {
 }
 
 func TestConvertToStoreWorkloadIdentityConfigNormalizesOIDCValues(t *testing.T) {
+	t.Parallel()
 	config := &v1pb.WorkloadIdentityConfig{
 		ProviderType:     v1pb.WorkloadIdentityConfig_OIDC,
 		IssuerUrl:        "  https://nomad.example.com  ",

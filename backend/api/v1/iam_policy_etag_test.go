@@ -72,6 +72,7 @@ func TestRequestedIamPolicyEtag(t *testing.T) {
 // somewhere else would attribute a real permission change to the wrong
 // workspace, so the two have to agree.
 func TestWorkspaceResourceMatches(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name     string
 		resource string
@@ -86,6 +87,7 @@ func TestWorkspaceResourceMatches(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			require.Equal(t, tc.want, workspaceResourceMatches(tc.resource, "ws-a"))
 		})
 	}

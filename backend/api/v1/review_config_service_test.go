@@ -9,6 +9,7 @@ import (
 )
 
 func TestValidateSQLReviewRules(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		rules   []*v1pb.SQLReviewRule
@@ -131,6 +132,7 @@ func TestValidateSQLReviewRules(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateSQLReviewRules(tt.rules)
 			if tt.wantErr {
 				require.Error(t, err)

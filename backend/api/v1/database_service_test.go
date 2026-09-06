@@ -14,6 +14,7 @@ import (
 )
 
 func TestShouldDiffSchemaViaSDL(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name   string
 		engine storepb.Engine
@@ -93,12 +94,14 @@ func TestShouldDiffSchemaViaSDL(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			require.Equal(t, tt.want, shouldDiffSchemaViaSDL(tt.engine, tt.req))
 		})
 	}
 }
 
 func TestFormatDatabaseResourceName(t *testing.T) {
+	t.Parallel()
 	database := &store.DatabaseMessage{InstanceID: "instance-a", DatabaseName: "app"}
 	require.Equal(t, "instances/instance-a/databases/app", formatDatabaseResourceName(&store.InstanceMessage{ResourceID: "instance-a"}, database))
 	projectID := "project-a"
@@ -109,6 +112,7 @@ func TestFormatDatabaseResourceName(t *testing.T) {
 }
 
 func TestListDatabaseFilter(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		input    string
 		wantSQL  string
@@ -181,6 +185,7 @@ func TestListDatabaseFilter(t *testing.T) {
 }
 
 func TestGetDatabaseMetadataFilter(t *testing.T) {
+	t.Parallel()
 	testCases := []struct {
 		name         string
 		input        string
@@ -211,6 +216,7 @@ func TestGetDatabaseMetadataFilter(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			filter, err := getDatabaseMetadataFilter(tc.input)
 			if tc.errContains != "" {
 				require.Error(t, err)
@@ -233,6 +239,7 @@ func TestGetDatabaseMetadataFilter(t *testing.T) {
 }
 
 func TestGetDatabaseMetadataFilterRedactsSyntaxError(t *testing.T) {
+	t.Parallel()
 	_, err := getDatabaseMetadataFilter(`table == "sensitive SQL" &&`)
 	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 	require.ErrorContains(t, err, "invalid filter expression")

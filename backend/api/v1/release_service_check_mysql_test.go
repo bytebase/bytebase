@@ -15,6 +15,7 @@ import (
 // TestEngineSupportsDeclarativeRelease asserts MySQL is admitted into the declarative
 // release gating alongside PostgreSQL, and that engines without SDL support are excluded.
 func TestEngineSupportsDeclarativeRelease(t *testing.T) {
+	t.Parallel()
 	require.True(t, engineSupportsDeclarativeRelease(storepb.Engine_POSTGRES), "postgres must be admitted")
 	require.True(t, engineSupportsDeclarativeRelease(storepb.Engine_MYSQL), "mysql must be admitted")
 	require.False(t, engineSupportsDeclarativeRelease(storepb.Engine_ORACLE), "oracle must not be admitted")
@@ -24,6 +25,7 @@ func TestEngineSupportsDeclarativeRelease(t *testing.T) {
 // TestGetStatementTypesWithPositionsForEngineMySQL proves the MySQL case of the gating
 // statement-type extractor classifies SDL statements and carries position info.
 func TestGetStatementTypesWithPositionsForEngineMySQL(t *testing.T) {
+	t.Parallel()
 	sql := "CREATE TABLE t (id INT PRIMARY KEY);\nDROP TABLE old;\n"
 	stmts, err := base.ParseStatements(storepb.Engine_MYSQL, sql)
 	require.NoError(t, err)
@@ -46,6 +48,7 @@ func TestGetStatementTypesWithPositionsForEngineMySQL(t *testing.T) {
 // MySQL-only overlay (no PostgreSQL analog); mutating statements and unclassified
 // (UNSPECIFIED) statements are rejected for every engine — fail closed.
 func TestIsAllowedInSDL(t *testing.T) {
+	t.Parallel()
 	commonAllowed := []storepb.StatementType{
 		storepb.StatementType_CREATE_TABLE,
 		storepb.StatementType_CREATE_VIEW,
@@ -95,6 +98,7 @@ func TestIsAllowedInSDL(t *testing.T) {
 // rejected — dropping it would let arbitrary unclassified statements bypass the SDL
 // allowlist entirely.
 func TestMySQLSDLGateFailsClosedOnUnclassifiedStatement(t *testing.T) {
+	t.Parallel()
 	sql := "CREATE TABLE t (id INT PRIMARY KEY);\nGRANT SELECT ON *.* TO 'x'@'%';\n"
 	stmts, err := base.ParseStatements(storepb.Engine_MYSQL, sql)
 	require.NoError(t, err, "omni must parse the GRANT for this gate to be reachable")

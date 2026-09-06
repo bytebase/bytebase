@@ -17,6 +17,7 @@ import (
 // engine in both sets would take the document path and never be column-masked
 // there. Nothing else asserts this; the branch order alone decides it.
 func TestMaskersAreDisjoint(t *testing.T) {
+	t.Parallel()
 	values := storepb.Engine(0).Descriptor().Values()
 	document := 0
 	for i := range values.Len() {

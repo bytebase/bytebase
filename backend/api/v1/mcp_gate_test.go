@@ -97,6 +97,7 @@ func forbiddenProceduresFromDescriptors(t *testing.T) map[string]v1pb.MCPDenialR
 // Membership is a security decision, so adding or removing one has to be
 // deliberate: this list is the second signature on that decision.
 func TestForbiddenClassMembership(t *testing.T) {
+	t.Parallel()
 	want := []string{
 		v1connect.AuthServiceLoginProcedure,
 		v1connect.AuthServiceSignupProcedure,
@@ -349,10 +350,12 @@ func checkEveryClassHasAServingDecision(
 }
 
 func TestLintEveryMethodIsClassified(t *testing.T) {
+	t.Parallel()
 	require.Empty(t, checkEveryMethodIsClassified(mcpClassificationsFromDescriptors(t)))
 }
 
 func TestLintReasonsMatchTheClass(t *testing.T) {
+	t.Parallel()
 	require.Empty(t, checkReasonsMatchTheClass(mcpClassificationsFromDescriptors(t), mcpDenialReasons))
 }
 
@@ -366,6 +369,7 @@ func mcpEnums(t *testing.T) (classes, modes protoreflect.EnumDescriptor) {
 }
 
 func TestLintEveryClassHasAServingDecision(t *testing.T) {
+	t.Parallel()
 	classes, modes := mcpEnums(t)
 	require.Empty(t, checkEveryClassHasAServingDecision(
 		mcpClassificationsFromDescriptors(t), mcpServingClasses, mcpDeniedClasses, classes, modes))
@@ -379,6 +383,7 @@ func TestLintEveryClassHasAServingDecision(t *testing.T) {
 // serving a class cannot leave discovery hiding it — or the reverse, which is
 // the one that would offer an agent work it can never do.
 func TestLintRefusedClassesMatchTheServingTable(t *testing.T) {
+	t.Parallel()
 	served := map[v1pb.MCPMethodClass]bool{}
 	for _, classes := range mcpServingClasses {
 		for _, class := range classes {
@@ -400,6 +405,7 @@ func TestLintRefusedClassesMatchTheServingTable(t *testing.T) {
 // that serves no class cannot start admitting sessions — or the reverse, which
 // would refuse a connection whose methods the gate is ready to serve.
 func TestLintCeilingAdmissionMatchesTheServingTable(t *testing.T) {
+	t.Parallel()
 	values := storepb.MCPSetting_Capability(0).Descriptor().Values()
 	for i := range values.Len() {
 		capability := storepb.MCPSetting_Capability(values.Get(i).Number())
@@ -424,6 +430,7 @@ func TestLintCeilingAdmissionMatchesTheServingTable(t *testing.T) {
 // something else entirely, and every serving decision above would be about the
 // wrong vocabulary.
 func TestMCPCapabilityEnumsAgree(t *testing.T) {
+	t.Parallel()
 	v1Values := v1pb.MCPSetting_Capability(0).Descriptor().Values()
 	storeValues := storepb.MCPSetting_Capability(0).Descriptor().Values()
 
@@ -573,6 +580,7 @@ func TestLintClausesFireWhenBroken(t *testing.T) {
 // so forbidding it would cost an agent legitimate work while protecting nothing
 // an anonymous client could not already read.
 func TestForbiddenClassLeavesReadsAlone(t *testing.T) {
+	t.Parallel()
 	got := forbiddenProceduresFromDescriptors(t)
 	for _, procedure := range []string{
 		v1connect.IdentityProviderServiceGetIdentityProviderProcedure,
@@ -631,6 +639,7 @@ func TestForbiddenClassLeavesReadsAlone(t *testing.T) {
 //     of UpdateUser does not. UpdateUser is FORBIDDEN either way, so that
 //     response is not a surface an agent reaches.
 func TestExcludedOnlyForALeak(t *testing.T) {
+	t.Parallel()
 	var got []string
 	for _, row := range mcpClassificationsFromDescriptors(t) {
 		if row.reason == v1pb.MCPDenialReason_RETURNS_A_STORED_SECRET {
@@ -656,6 +665,7 @@ func TestExcludedOnlyForALeak(t *testing.T) {
 // regression coming back — an MCP session unable to name a project or an
 // instance, and so unable to reach a database at all.
 func TestTheLeakingReadsAreServed(t *testing.T) {
+	t.Parallel()
 	class := map[string]v1pb.MCPMethodClass{}
 	for _, row := range mcpClassificationsFromDescriptors(t) {
 		class[row.procedure] = row.class
@@ -701,6 +711,7 @@ func TestTheLeakingReadsAreServed(t *testing.T) {
 // resolves them by operation ID. An alias classified more permissively than the
 // method it forwards to is a straight bypass of that method's classification.
 func TestDeprecatedSQLServiceAliasesMatchTheirCanonicalMethod(t *testing.T) {
+	t.Parallel()
 	class := map[string]v1pb.MCPMethodClass{}
 	for _, row := range mcpClassificationsFromDescriptors(t) {
 		class[row.procedure] = row.class
@@ -777,6 +788,7 @@ func renderMCPInventory(rows []mcpClassification) string {
 // annotations. It fails on a stale file rather than regenerating silently, so a
 // classification change shows up in the diff a reviewer reads.
 func TestMCPClassificationInventory(t *testing.T) {
+	t.Parallel()
 	rendered := renderMCPInventory(mcpClassificationsFromDescriptors(t))
 	if os.Getenv("MCP_INVENTORY") == "write" {
 		require.NoError(t, os.WriteFile(mcpInventoryPath, []byte(rendered), 0o600))
@@ -1004,6 +1016,7 @@ func TestMCPGateFailsClosedOnTheCeiling(t *testing.T) {
 // lint fails the build on one, and if a build ever ships past that, the method
 // is refused rather than served.
 func TestMCPGateFailsClosedOnAnUnclassifiedMethod(t *testing.T) {
+	t.Parallel()
 	got := invokeMCPGate(t, readWriteCeiling(), classContext(v1pb.MCPMethodClass_MCP_METHOD_CLASS_UNSPECIFIED),
 		"/bytebase.v1.NewService/NewMethod", connect.NewRequest(&v1pb.GetUserRequest{}))
 	require.Error(t, got.err)
@@ -1041,6 +1054,7 @@ func TestMCPGateFallsBackToGenericWording(t *testing.T) {
 
 // TestMCPGateFailsClosedWithoutAnAuthContext pins that the gate does not guess.
 func TestMCPGateFailsClosedWithoutAnAuthContext(t *testing.T) {
+	t.Parallel()
 	got := invokeMCPGate(t, readWriteCeiling(), nil,
 		v1connect.AuthServiceLoginProcedure, connect.NewRequest(&v1pb.LoginRequest{}))
 	require.Error(t, got.err, "without a resolved classification the interceptor must not guess")
@@ -1166,7 +1180,10 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 // rows are checked for what they wrote as well as that they wrote. The gate
 // refuses before dispatch, so nothing in them was ever used — recording one
 // verbatim would turn a silent denial into a worse one.
+//
+//nolint:tparallel // Subtests share the parent's fixture.
 func TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation(t *testing.T) {
+	t.Parallel()
 	st := newAuditLiveStore(t)
 	auditIn := NewAuditInterceptor(st, "test-secret", &config.Profile{})
 	gate := NewInternalMCPGateInterceptor(readWriteCeiling())
@@ -1511,6 +1528,7 @@ func mcpRequestFieldNeedsReview(field protoreflect.FieldDescriptor) bool {
 // message-typed fields the inventory's scalar scope does not — DiffMetadata's
 // target_metadata is a whole schema, and no string field names it.
 func TestLintDenialRequestsAreReviewedForRedaction(t *testing.T) {
+	t.Parallel()
 	needsReview := map[string][]string{}
 	for _, row := range mcpClassificationsFromDescriptors(t) {
 		if row.audit {

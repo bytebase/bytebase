@@ -142,6 +142,7 @@ func maskCosmosDBDoc(t *testing.T, query string, inputJSON string, schema *store
 // ---------------------------------------------------------------------------
 
 func TestCosmosDBMaskingSelectTop(t *testing.T) {
+	t.Parallel()
 	// SELECT TOP N should mask sensitive fields just like regular SELECT.
 	query := `SELECT TOP 10 c.name, c.email FROM c`
 	input := `{"name":"Alice","email":"alice@example.com"}`
@@ -152,6 +153,7 @@ func TestCosmosDBMaskingSelectTop(t *testing.T) {
 }
 
 func TestCosmosDBMaskingSelectStar(t *testing.T) {
+	t.Parallel()
 	// SELECT * masks all fields based on schema.
 	query := `SELECT * FROM c`
 	input := `{"name":"Alice","email":"alice@example.com","country":"US"}`
@@ -162,6 +164,7 @@ func TestCosmosDBMaskingSelectStar(t *testing.T) {
 }
 
 func TestCosmosDBMaskingSelectTopStar(t *testing.T) {
+	t.Parallel()
 	// SELECT TOP N * masks like SELECT *.
 	query := `SELECT TOP 5 * FROM c`
 	input := `{"name":"Alice","email":"alice@example.com"}`
@@ -172,6 +175,7 @@ func TestCosmosDBMaskingSelectTopStar(t *testing.T) {
 }
 
 func TestCosmosDBMaskingFunctionsInSelect(t *testing.T) {
+	t.Parallel()
 	// Functions in SELECT produce computed values. The function result column
 	// (aliased) shouldn't match any schema field, so it should pass through unmasked.
 	// Direct field references should still be masked.
@@ -184,6 +188,7 @@ func TestCosmosDBMaskingFunctionsInSelect(t *testing.T) {
 }
 
 func TestCosmosDBMaskingAggregation(t *testing.T) {
+	t.Parallel()
 	// Aggregation result: COUNT(1) AS totalRecords.
 	// The result is a computed value, not a direct field reference.
 	query := `SELECT COUNT(1) AS totalRecords FROM c`
@@ -195,6 +200,7 @@ func TestCosmosDBMaskingAggregation(t *testing.T) {
 }
 
 func TestCosmosDBMaskingGroupBy(t *testing.T) {
+	t.Parallel()
 	// GROUP BY with aggregation. Direct field (country) + function result (cnt).
 	query := `SELECT c.country, COUNT(1) AS cnt FROM c GROUP BY c.country`
 	input := `{"country":"US","cnt":5}`
@@ -205,6 +211,7 @@ func TestCosmosDBMaskingGroupBy(t *testing.T) {
 }
 
 func TestCosmosDBMaskingOrderBy(t *testing.T) {
+	t.Parallel()
 	// ORDER BY doesn't affect masking.
 	query := `SELECT c.name, c.email FROM c ORDER BY c.name ASC`
 	input := `{"name":"Alice","email":"alice@example.com"}`
@@ -215,6 +222,7 @@ func TestCosmosDBMaskingOrderBy(t *testing.T) {
 }
 
 func TestCosmosDBMaskingOffsetLimit(t *testing.T) {
+	t.Parallel()
 	// OFFSET LIMIT doesn't affect masking.
 	query := `SELECT c.name, c.email FROM c ORDER BY c.name OFFSET 0 LIMIT 10`
 	input := `{"name":"Alice","email":"alice@example.com"}`
@@ -225,6 +233,7 @@ func TestCosmosDBMaskingOffsetLimit(t *testing.T) {
 }
 
 func TestCosmosDBMaskingStringFunctions(t *testing.T) {
+	t.Parallel()
 	// String functions in SELECT: UPPER, LOWER, LENGTH.
 	query := `SELECT UPPER(c.name) AS upperName, LOWER(c.country) AS lowerCountry, LENGTH(c.name) AS nameLen FROM c`
 	input := `{"upperName":"ALICE","lowerCountry":"us","nameLen":5}`
@@ -235,6 +244,7 @@ func TestCosmosDBMaskingStringFunctions(t *testing.T) {
 }
 
 func TestCosmosDBMaskingMathFunctions(t *testing.T) {
+	t.Parallel()
 	// Math functions in SELECT.
 	query := `SELECT c.name, ROUND(c.score) AS roundedScore FROM c`
 	input := `{"name":"Alice","roundedScore":95}`
@@ -245,6 +255,7 @@ func TestCosmosDBMaskingMathFunctions(t *testing.T) {
 }
 
 func TestCosmosDBMaskingTypeCheckFunctions(t *testing.T) {
+	t.Parallel()
 	// Type-check functions in SELECT.
 	query := `SELECT c.name, IS_STRING(c.name) AS isStr, IS_NUMBER(c.population) AS isNum FROM c`
 	input := `{"name":"Alice","isStr":true,"isNum":true}`
@@ -255,6 +266,7 @@ func TestCosmosDBMaskingTypeCheckFunctions(t *testing.T) {
 }
 
 func TestCosmosDBMaskingUnderscoreFields(t *testing.T) {
+	t.Parallel()
 	// Underscore-prefixed fields like _ts, _etag should work with the new IDENTIFIER rule.
 	query := `SELECT c._ts, c._etag, c.name FROM c`
 	input := `{"_ts":1743702439,"_etag":"abc123","name":"Alice"}`
@@ -265,6 +277,7 @@ func TestCosmosDBMaskingUnderscoreFields(t *testing.T) {
 }
 
 func TestCosmosDBMaskingNestedFieldProjection(t *testing.T) {
+	t.Parallel()
 	// Projecting nested sensitive field.
 	query := `SELECT c.name, c.contact.phone AS phone FROM c`
 	input := `{"name":"Alice","phone":"123-456"}`
@@ -275,6 +288,7 @@ func TestCosmosDBMaskingNestedFieldProjection(t *testing.T) {
 }
 
 func TestCosmosDBMaskingDistinctValue(t *testing.T) {
+	t.Parallel()
 	// SELECT DISTINCT VALUE returns scalar values, not objects.
 	// The result is just a plain value like "US" instead of {"country":"US"}.
 	// CosmosDB returns each value as a single-field JSON, but the masking
@@ -288,6 +302,7 @@ func TestCosmosDBMaskingDistinctValue(t *testing.T) {
 }
 
 func TestCosmosDBMaskingDistinctValueSensitive(t *testing.T) {
+	t.Parallel()
 	// SELECT DISTINCT VALUE on a sensitive field.
 	query := `SELECT DISTINCT VALUE c.email FROM c`
 	input := `{"email":"alice@example.com"}`
@@ -298,6 +313,7 @@ func TestCosmosDBMaskingDistinctValueSensitive(t *testing.T) {
 }
 
 func TestCosmosDBMaskingGeospatial(t *testing.T) {
+	t.Parallel()
 	// Geospatial function with JSON object literal where source field IS sensitive.
 	// ST_DISTANCE(c.location, ...) -- c.location is tagged with bb.default.
 	// The distance result must be masked because it derives from sensitive location data.
@@ -310,6 +326,7 @@ func TestCosmosDBMaskingGeospatial(t *testing.T) {
 }
 
 func TestCosmosDBMaskingValueSensitive(t *testing.T) {
+	t.Parallel()
 	// SELECT VALUE c.email returns scalar values from CosmosDB, not objects.
 	// The driver returns each result as a raw JSON string (e.g., "\"alice@example.com\"").
 	// maskResults must handle non-object JSON values for VALUE queries.
@@ -336,6 +353,7 @@ func TestCosmosDBMaskingValueSensitive(t *testing.T) {
 }
 
 func TestCosmosDBMaskingValueNonSensitive(t *testing.T) {
+	t.Parallel()
 	// SELECT VALUE c.name returns scalar values; c.name is not sensitive.
 	schema := cosmosDBTestSchema()
 	maskers := cosmosDBMaskers()
@@ -359,6 +377,7 @@ func TestCosmosDBMaskingValueNonSensitive(t *testing.T) {
 }
 
 func TestCosmosDBMaskingValueCount(t *testing.T) {
+	t.Parallel()
 	// SELECT VALUE COUNT(1) returns a number. No source field, not masked.
 	schema := cosmosDBTestSchema()
 	maskers := cosmosDBMaskers()
@@ -382,6 +401,7 @@ func TestCosmosDBMaskingValueCount(t *testing.T) {
 }
 
 func TestCosmosDBMaskingValueConcatSensitive(t *testing.T) {
+	t.Parallel()
 	// SELECT VALUE CONCAT(c.name, " <", c.email, ">") -- no alias, expression has sensitive c.email.
 	// The expression has no output name, but source paths must still be tracked so
 	// findMaskerForScalarValue can detect that c.email is sensitive and mask the result.
@@ -407,6 +427,7 @@ func TestCosmosDBMaskingValueConcatSensitive(t *testing.T) {
 }
 
 func TestCosmosDBMaskingValueConcatNonSensitive(t *testing.T) {
+	t.Parallel()
 	// SELECT VALUE CONCAT(c.name, " - ", c.country) -- no alias, no sensitive fields.
 	schema := cosmosDBTestSchema()
 	maskers := cosmosDBMaskers()
@@ -434,6 +455,7 @@ func TestCosmosDBMaskingValueConcatNonSensitive(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCosmosDBMaskingArithmeticProjection(t *testing.T) {
+	t.Parallel()
 	// Arithmetic expression: c.population / 1000 AS popK.
 	// Expression path is nil, alias "popK" not in schema, so not masked.
 	query := `SELECT c.name, c.population / 1000 AS popK FROM c`
@@ -445,6 +467,7 @@ func TestCosmosDBMaskingArithmeticProjection(t *testing.T) {
 }
 
 func TestCosmosDBMaskingStringConcatProjection(t *testing.T) {
+	t.Parallel()
 	// String concatenation of non-sensitive fields: c.name || " - " || c.country AS label.
 	// Source fields (name, country) are not sensitive, so result is not masked.
 	query := `SELECT c.name || " - " || c.country AS label FROM c`
@@ -456,6 +479,7 @@ func TestCosmosDBMaskingStringConcatProjection(t *testing.T) {
 }
 
 func TestCosmosDBMaskingStringConcatWithSensitiveField(t *testing.T) {
+	t.Parallel()
 	// String concatenation that includes a sensitive field.
 	// c.name || " - " || c.email AS label -- c.email is sensitive.
 	// Result must be masked because it derives from sensitive data.
@@ -468,6 +492,7 @@ func TestCosmosDBMaskingStringConcatWithSensitiveField(t *testing.T) {
 }
 
 func TestCosmosDBMaskingNestedFunctionProjection(t *testing.T) {
+	t.Parallel()
 	// Nested function calls: ROUND(StringToNumber(c.population)).
 	// Expression path is nil, computed value not masked.
 	query := `SELECT c.name, ROUND(StringToNumber(c.population)) AS rounded FROM c`
@@ -479,6 +504,7 @@ func TestCosmosDBMaskingNestedFunctionProjection(t *testing.T) {
 }
 
 func TestCosmosDBMaskingArithmeticOnFunctionProjection(t *testing.T) {
+	t.Parallel()
 	// Arithmetic on function result: StringToNumber(c.population) / 1000.
 	// Expression path is nil, alias not in schema, not masked.
 	query := `SELECT CONCAT(c.name, " - ", c.country) AS label, StringToNumber(c.population) / 1000 AS populationInThousands FROM c`
@@ -490,6 +516,7 @@ func TestCosmosDBMaskingArithmeticOnFunctionProjection(t *testing.T) {
 }
 
 func TestCosmosDBMaskingExprWithSensitiveFieldAlias(t *testing.T) {
+	t.Parallel()
 	// Expression alias matches a sensitive schema field name.
 	// UPPER(c.name) AS email -- source field c.name is NOT sensitive.
 	// Even though alias "email" is sensitive in the schema, the masking
@@ -504,6 +531,7 @@ func TestCosmosDBMaskingExprWithSensitiveFieldAlias(t *testing.T) {
 }
 
 func TestCosmosDBMaskingExprMixedWithDirectFields(t *testing.T) {
+	t.Parallel()
 	// Mix of direct field references and expressions.
 	// Direct sensitive field (email) should be masked.
 	// Expression results from non-sensitive fields (upperName, popK) should not be masked.
@@ -516,6 +544,7 @@ func TestCosmosDBMaskingExprMixedWithDirectFields(t *testing.T) {
 }
 
 func TestCosmosDBMaskingExprOnSensitiveFieldNonMatchingAlias(t *testing.T) {
+	t.Parallel()
 	// Function wrapping a sensitive field with a non-matching alias.
 	// UPPER(c.email) AS upperEmail -- c.email IS sensitive.
 	// The result must be masked because it derives from sensitive data,
@@ -529,6 +558,7 @@ func TestCosmosDBMaskingExprOnSensitiveFieldNonMatchingAlias(t *testing.T) {
 }
 
 func TestCosmosDBMaskingConcatWithSensitiveArg(t *testing.T) {
+	t.Parallel()
 	// CONCAT with a sensitive field argument.
 	// CONCAT(c.name, " <", c.email, ">") AS display -- c.email is sensitive.
 	// Result must be masked because it contains sensitive data.
@@ -545,6 +575,7 @@ func TestCosmosDBMaskingConcatWithSensitiveArg(t *testing.T) {
 // ---------------------------------------------------------------------------
 
 func TestCosmosDBPredicateNotEqual(t *testing.T) {
+	t.Parallel()
 	// WHERE with != on a sensitive field should be detected.
 	query := `SELECT * FROM c WHERE c.email != "test@example.com"`
 	span := getCosmosDBQuerySpan(t, query)
@@ -558,6 +589,7 @@ func TestCosmosDBPredicateNotEqual(t *testing.T) {
 }
 
 func TestCosmosDBPredicateIn(t *testing.T) {
+	t.Parallel()
 	// WHERE with IN on a sensitive field should be detected.
 	query := `SELECT * FROM c WHERE c.email IN ("alice@example.com", "bob@example.com")`
 	span := getCosmosDBQuerySpan(t, query)
@@ -571,6 +603,7 @@ func TestCosmosDBPredicateIn(t *testing.T) {
 }
 
 func TestCosmosDBPredicateBetween(t *testing.T) {
+	t.Parallel()
 	// WHERE with BETWEEN on a non-sensitive field should NOT be blocked.
 	query := `SELECT * FROM c WHERE c.age BETWEEN 18 AND 65`
 	span := getCosmosDBQuerySpan(t, query)
@@ -584,6 +617,7 @@ func TestCosmosDBPredicateBetween(t *testing.T) {
 }
 
 func TestCosmosDBPredicateInNonSensitive(t *testing.T) {
+	t.Parallel()
 	// WHERE with IN on a non-sensitive field should NOT be blocked.
 	query := `SELECT * FROM c WHERE c.country IN ("US", "UK", "CA")`
 	span := getCosmosDBQuerySpan(t, query)
@@ -597,6 +631,7 @@ func TestCosmosDBPredicateInNonSensitive(t *testing.T) {
 }
 
 func TestCosmosDBPredicateNotEqualNonSensitive(t *testing.T) {
+	t.Parallel()
 	// WHERE with != on a non-sensitive field should NOT be blocked.
 	query := `SELECT * FROM c WHERE c.status != "inactive"`
 	span := getCosmosDBQuerySpan(t, query)
@@ -610,6 +645,7 @@ func TestCosmosDBPredicateNotEqualNonSensitive(t *testing.T) {
 }
 
 func TestCosmosDBPredicateNestedSensitive(t *testing.T) {
+	t.Parallel()
 	// WHERE with nested sensitive field c.contact.phone.
 	query := `SELECT * FROM c WHERE c.contact.phone = "123-456"`
 	span := getCosmosDBQuerySpan(t, query)
@@ -623,6 +659,7 @@ func TestCosmosDBPredicateNestedSensitive(t *testing.T) {
 }
 
 func TestCosmosDBPredicateFunctionInWhere(t *testing.T) {
+	t.Parallel()
 	// Function used in WHERE clause should extract fields from arguments.
 	query := `SELECT * FROM c WHERE CONTAINS(c.email, "example")`
 	span := getCosmosDBQuerySpan(t, query)
@@ -636,6 +673,7 @@ func TestCosmosDBPredicateFunctionInWhere(t *testing.T) {
 }
 
 func TestCosmosDBPredicateCompoundWhere(t *testing.T) {
+	t.Parallel()
 	// Compound WHERE with multiple operators including new ones.
 	query := `SELECT * FROM c WHERE c.country != "US" AND c._ts > 1743702439`
 	span := getCosmosDBQuerySpan(t, query)

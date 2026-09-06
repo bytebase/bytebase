@@ -26,6 +26,7 @@ import (
 )
 
 func TestProjectInstanceLifecycleAPIGatesArchivedProjectDescendants(t *testing.T) {
+	t.Parallel()
 	ctx, stores, projectID, instanceID, databaseName := setupProjectInstanceLifecycleAPITest(t)
 	_, err := stores.UpdateInstance(ctx, &store.UpdateInstanceMessage{
 		ResourceID: &instanceID,
@@ -90,6 +91,7 @@ func TestProjectInstanceLifecycleAPIGatesArchivedProjectDescendants(t *testing.T
 }
 
 func TestProjectPurgeCleansSampleBeforeDeletingMetadata(t *testing.T) {
+	t.Parallel()
 	ctx, stores, projectID, instanceID, _ := setupProjectInstanceLifecycleAPITest(t)
 	manager := &sampleManagerStub{}
 	cleanupErr := errors.New("sample cleanup failed")
@@ -138,6 +140,7 @@ func TestProjectPurgeCleansSampleBeforeDeletingMetadata(t *testing.T) {
 }
 
 func TestProjectPurgeRemovesSelfHostSample(t *testing.T) {
+	t.Parallel()
 	ctx, stores, projectID, instanceID, databaseName := setupProjectInstanceLifecycleAPITest(t)
 	payload, err := protojson.Marshal(&storepb.SelfHostSampleInstanceSetupPayload{
 		Instances: []*storepb.SelfHostSampleInstanceSetupPayload_Instance{{
@@ -193,6 +196,7 @@ func TestProjectPurgeRemovesSelfHostSample(t *testing.T) {
 }
 
 func TestBatchSyncDatabasesValidatesAllTargetsBeforeScheduling(t *testing.T) {
+	t.Parallel()
 	ctx, stores, projectID, instanceID, databaseName := setupProjectInstanceLifecycleAPITest(t)
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
 	require.NoError(t, err)
@@ -209,6 +213,7 @@ func TestBatchSyncDatabasesValidatesAllTargetsBeforeScheduling(t *testing.T) {
 }
 
 func TestUndeleteProjectInstanceChecksActivationLimit(t *testing.T) {
+	t.Parallel()
 	ctx, stores, projectID, instanceID, _ := setupProjectInstanceLifecycleAPITest(t)
 	licenseService := newInstanceServiceTestLicenseService(t, stores)
 	instanceService := &InstanceService{store: stores, licenseService: licenseService}

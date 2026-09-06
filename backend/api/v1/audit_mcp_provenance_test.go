@@ -154,6 +154,7 @@ func TestAuditRowCarriesMCPDelegationProvenance(t *testing.T) {
 // dedup, a single denied batch call naming N items would write N identical
 // rows.
 func TestAuditParentsDeduplicated(t *testing.T) {
+	t.Parallel()
 	st := newAuditLiveStore(t)
 	in := NewAuditInterceptor(st, "test-secret", &config.Profile{})
 

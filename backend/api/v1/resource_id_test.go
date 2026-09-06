@@ -7,6 +7,7 @@ import (
 )
 
 func TestValidateResourceID(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 
 	testCases := []struct {

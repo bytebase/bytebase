@@ -12,6 +12,7 @@ import (
 )
 
 func TestEvalMaskingLevelOfColumn(t *testing.T) {
+	t.Parallel()
 	environment := "prod"
 	defaultDatabaseMessage := &store.DatabaseMessage{
 		EffectiveEnvironmentID: &environment,

@@ -18,6 +18,7 @@ import (
 // password instead — and never against a live MFA factor. The SaaS side has
 // no e2e harness, so the rule is pinned here.
 func TestEmailCodeEligibility(t *testing.T) {
+	t.Parallel()
 	userWith := func(otpSecret string, lastChangePassword bool) *store.UserMessage {
 		profile := &storepb.UserProfile{}
 		if lastChangePassword {
@@ -61,6 +62,7 @@ func TestEmailCodeEligibility(t *testing.T) {
 // SSO-provisioned account holds a random password nobody was told, and the
 // server cannot tell it apart from one whose owner simply did not type it.
 func TestFirstTimeEnrollmentCredentialShape(t *testing.T) {
+	t.Parallel()
 	saas := &UserService{profile: &config.Profile{SaaS: true}}
 	selfHosted := &UserService{profile: &config.Profile{SaaS: false}}
 	enrolling := &store.UserMessage{

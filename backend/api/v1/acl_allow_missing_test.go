@@ -75,6 +75,7 @@ type allowMissingCreateCheck struct {
 // TestAllowMissingCreatePermission fails when an allow_missing create path is
 // authorized by nobody, or by a permission that cannot deny or cannot grant.
 func TestAllowMissingCreatePermission(t *testing.T) {
+	t.Parallel()
 	found := allowMissingMethods(t)
 
 	var undeclared []string

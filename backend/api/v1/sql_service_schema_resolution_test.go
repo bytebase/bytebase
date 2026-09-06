@@ -14,6 +14,7 @@ import (
 // sentinel when that can't be determined ahead of execution (so resource.schema_name is
 // omitted and schema-scoped grants fail closed). See SUP-222 / BYT-9698.
 func TestSchemaForWriteTargetResolution(t *testing.T) {
+	t.Parallel()
 	const dbName = "ORADB"
 	tests := []struct {
 		name          string
@@ -37,6 +38,7 @@ func TestSchemaForWriteTargetResolution(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			require.Equal(t, tc.want, schemaForWriteTargetResolution(tc.engine, dbName, tc.requestSchema))
 		})
 	}
@@ -70,5 +72,6 @@ func TestPostgresWriteTargetSchemaForRequest(t *testing.T) {
 // TestUnresolvedSchemaSentinelIsImpossible guards that the sentinel can never collide with a
 // real schema: a NUL byte is not representable in a PostgreSQL/MSSQL identifier.
 func TestUnresolvedSchemaSentinelIsImpossible(t *testing.T) {
+	t.Parallel()
 	require.Contains(t, unresolvedSchemaSentinel, "\x00")
 }

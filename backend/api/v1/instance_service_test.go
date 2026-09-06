@@ -22,6 +22,7 @@ import (
 )
 
 func TestPrepareSampleProjectInstanceValidatesParentAndManager(t *testing.T) {
+	t.Parallel()
 	service := &InstanceService{}
 	_, err := service.PrepareSampleProjectInstance(context.Background(), connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{}))
 	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
@@ -37,7 +38,9 @@ func TestPrepareSampleProjectInstanceValidatesParentAndManager(t *testing.T) {
 	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
 }
 
+//nolint:tparallel // Subtests share the parent's fixture.
 func TestPrepareSampleProjectInstanceUsesConfiguredManagerInBothDeployments(t *testing.T) {
+	t.Parallel()
 	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
 	for _, saas := range []bool{false, true} {
 		t.Run(fmt.Sprintf("saas=%t", saas), func(t *testing.T) {
@@ -65,6 +68,7 @@ func TestPrepareSampleProjectInstanceUsesConfiguredManagerInBothDeployments(t *t
 }
 
 func TestPrepareSampleProjectInstanceChecksManagerAvailability(t *testing.T) {
+	t.Parallel()
 	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
 	manager := &sampleManagerStub{
 		checkAvailableErr: sample.NewFailure(sample.FailureUnavailable, errors.New("sample target unavailable")),
@@ -84,6 +88,7 @@ func TestPrepareSampleProjectInstanceChecksManagerAvailability(t *testing.T) {
 }
 
 func TestSampleInstanceLifecycleHooksWrapMetadataUpdate(t *testing.T) {
+	t.Parallel()
 	ctx, stores, projectID, instanceID, _ := setupProjectInstanceLifecycleAPITest(t)
 	_, err := stores.UpdateInstance(ctx, &store.UpdateInstanceMessage{
 		ResourceID: &instanceID,
@@ -126,6 +131,7 @@ func TestSampleInstanceLifecycleHooksWrapMetadataUpdate(t *testing.T) {
 }
 
 func TestPrepareSampleProjectInstanceRejectsConsumedEntitlementAfterProjectDeletion(t *testing.T) {
+	t.Parallel()
 	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	payload, err := protojson.Marshal(&storepb.SaaSSampleInstanceSetupPayload{
@@ -162,11 +168,13 @@ func TestPrepareSampleProjectInstanceRejectsConsumedEntitlementAfterProjectDelet
 }
 
 func TestSampleProjectInstanceConnectErrorMapsUnknownFailure(t *testing.T) {
+	t.Parallel()
 	err := sampleProjectInstanceConnectError(errors.New("unexpected manager failure"))
 	require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
 }
 
 func TestSampleProjectInstanceCapacityGuardMapsCapacityDenial(t *testing.T) {
+	t.Parallel()
 	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
 	for i := 0; i < 9; i++ {
 		_, err := stores.CreateInstance(ctx, &store.InstanceMessage{
@@ -189,6 +197,7 @@ func TestSampleProjectInstanceCapacityGuardMapsCapacityDenial(t *testing.T) {
 }
 
 func TestSampleProjectInstanceCapacityGuardDoesNotConsumeActivationQuota(t *testing.T) {
+	t.Parallel()
 	ctx, stores, _, _, _ := setupProjectInstanceLifecycleAPITest(t)
 	service := &InstanceService{
 		store:          stores,
@@ -366,6 +375,7 @@ func TestValidateIAMCredentialForSaaS(t *testing.T) {
 }
 
 func TestValidateExtraConnectionParametersRejectsTiDBAllowAllFiles(t *testing.T) {
+	t.Parallel()
 	err := validateExtraConnectionParameters(storepb.Engine_TIDB, map[string]string{
 		"allowAllFiles": "true",
 	})
@@ -374,6 +384,7 @@ func TestValidateExtraConnectionParametersRejectsTiDBAllowAllFiles(t *testing.T)
 }
 
 func TestValidateProjectInstanceListFilter(t *testing.T) {
+	t.Parallel()
 	projectID := "project-a"
 	tests := []struct {
 		name    string
@@ -392,6 +403,7 @@ func TestValidateProjectInstanceListFilter(t *testing.T) {
 	}
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateProjectInstanceListFilter(test.parent, test.filter)
 			if test.wantErr {
 				require.Error(t, err)
@@ -403,6 +415,7 @@ func TestValidateProjectInstanceListFilter(t *testing.T) {
 }
 
 func TestClassifyConnectionFailure(t *testing.T) {
+	t.Parallel()
 	connectErr := connect.NewError(connect.CodeInvalidArgument, errors.New("generic connect error"))
 	connectErr.Meta().Set(connectionCategoryHeader, connectionCategoryAuthFailed)
 	var typedNilConnectErr *connect.Error
@@ -429,6 +442,7 @@ func TestClassifyConnectionFailure(t *testing.T) {
 }
 
 func TestBuildInstanceConnectionLogAttrs(t *testing.T) {
+	t.Parallel()
 	instance := &store.InstanceMessage{
 		Metadata: &storepb.Instance{
 			Engine: storepb.Engine_POSTGRES,

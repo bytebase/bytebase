@@ -9,6 +9,7 @@ import (
 )
 
 func TestValidateCatalogSchemaNames(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		config   *storepb.DatabaseConfig
@@ -61,6 +62,7 @@ func TestValidateCatalogSchemaNames(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateCatalogSchemaNames(tc.config, tc.metadata)
 			if tc.wantErr {
 				require.Error(t, err)
@@ -72,6 +74,7 @@ func TestValidateCatalogSchemaNames(t *testing.T) {
 }
 
 func TestValidateCatalogSemanticTypeIDs(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		config  *storepb.DatabaseConfig
@@ -154,6 +157,7 @@ func TestValidateCatalogSemanticTypeIDs(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateCatalogSemanticTypeIDs(tc.config, tc.setting)
 			if tc.wantErr != "" {
 				require.EqualError(t, err, tc.wantErr)

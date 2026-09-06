@@ -26,6 +26,7 @@ import (
 )
 
 func TestAuthenticationInfoAndActuatorBoundary(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	_, stores, pgURL := testcontainer.NewMetadataDB(t)
 

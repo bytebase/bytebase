@@ -39,6 +39,7 @@ import (
 )
 
 func TestPrepareSampleProjectInstanceLifecycle(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2026, time.August, 17, 12, 0, 0, 0, time.UTC)
 	ctx, fixture := newSampleProjectInstanceFixture(t, func() time.Time { return now })
 	runner := samplerunner.NewRunner(fixture.manager)
@@ -149,6 +150,7 @@ func TestPrepareSampleProjectInstanceLifecycle(t *testing.T) {
 }
 
 func TestSampleProjectPurgeRejectsPendingReservation(t *testing.T) {
+	t.Parallel()
 	ctx, fixture := newSampleProjectInstanceFixture(t, time.Now)
 	payload := &storepb.SaaSSampleInstanceSetupPayload{
 		ProjectId:    fixture.projectID,
@@ -177,7 +179,9 @@ func TestSampleProjectPurgeRejectsPendingReservation(t *testing.T) {
 	require.Nil(t, setup.DeletedAt)
 }
 
+//nolint:tparallel // Subtests share the parent's fixture.
 func TestPrepareSampleProjectInstanceAdditionalLifecycleCoverage(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2026, time.August, 17, 12, 0, 0, 0, time.UTC)
 	ctx, fixture := newSampleProjectInstanceFixture(t, func() time.Time { return now })
 	runner := samplerunner.NewRunner(fixture.manager)

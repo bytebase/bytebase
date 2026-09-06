@@ -7,6 +7,7 @@ import (
 )
 
 func TestValidateServiceAccountEmail(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		email string
@@ -31,6 +32,7 @@ func TestValidateServiceAccountEmail(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateServiceAccountEmail(test.email)
 			if test.valid {
 				require.NoError(t, err)
@@ -42,6 +44,7 @@ func TestValidateServiceAccountEmail(t *testing.T) {
 }
 
 func TestValidateWorkloadIdentityEmail(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		email string
@@ -66,6 +69,7 @@ func TestValidateWorkloadIdentityEmail(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateWorkloadIdentityEmail(test.email)
 			if test.valid {
 				require.NoError(t, err)

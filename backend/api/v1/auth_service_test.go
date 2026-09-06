@@ -106,6 +106,7 @@ func TestLoginAnnouncesPreAuthenticationWorkspace(t *testing.T) {
 }
 
 func TestExtractDomain(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		domain string
 		want   string
@@ -346,6 +347,7 @@ func TestLoginEnforcesWorkspaceDomains(t *testing.T) {
 // invisible to the raw-secret extraction the guard used to do (asserted below).
 // Recognizing only extractable claims would fail OPEN for every MCP session.
 func TestSwitchWorkspaceMCPRecognition(t *testing.T) {
+	t.Parallel()
 	const secret = "test-secret"
 
 	delegated, err := auth.GenerateInternalMCPToken(auth.DelegatedMCPCredential{
@@ -395,6 +397,7 @@ func mustLegacyOAuth2Token(t *testing.T, secret string) string {
 }
 
 func TestLoginAuthMethodRequiresPasswordReset(t *testing.T) {
+	t.Parallel()
 	emailCode := "123456"
 	tests := []struct {
 		name    string
@@ -420,6 +423,7 @@ func TestLoginAuthMethodRequiresPasswordReset(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			got := loginAuthMethodFromRequest(test.request).requiresPasswordReset()
 			require.Equal(t, test.want, got)
 		})
@@ -427,6 +431,7 @@ func TestLoginAuthMethodRequiresPasswordReset(t *testing.T) {
 }
 
 func TestMFATempTokenPreservesLoginAuthMethod(t *testing.T) {
+	t.Parallel()
 	const secret = "test-secret"
 
 	tests := []struct {
@@ -451,6 +456,7 @@ func TestMFATempTokenPreservesLoginAuthMethod(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			token, err := auth.GenerateMFATempTokenWithLoginMethod("user@example.com", string(test.method), secret, time.Minute)
 			require.NoError(t, err)
 
@@ -464,6 +470,7 @@ func TestMFATempTokenPreservesLoginAuthMethod(t *testing.T) {
 }
 
 func TestLegacyMFATempTokenDefaultsToPasswordLoginAuthMethod(t *testing.T) {
+	t.Parallel()
 	const secret = "test-secret"
 
 	token, err := auth.GenerateMFATempToken("user@example.com", secret, time.Minute)
@@ -488,6 +495,7 @@ func TestLegacyMFATempTokenDefaultsToPasswordLoginAuthMethod(t *testing.T) {
 // return before generateLoginToken touches it, so a regression panics rather
 // than quietly minting a token.
 func TestSwitchWorkspaceInternalRefusesMCPCaller(t *testing.T) {
+	t.Parallel()
 	const secret = "test-secret"
 	s := &AuthService{secret: secret}
 	user := &store.UserMessage{Email: "demo@example.com"}

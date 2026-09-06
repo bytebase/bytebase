@@ -18,6 +18,7 @@ import (
 )
 
 func TestBOT36SQLPrepareRelatedMessageRequiresCanonicalActiveOwner(t *testing.T) {
+	t.Parallel()
 	ctx, stores, projectID, instanceID, databaseName := setupBOT36ProjectDatabase(t)
 	service := NewSQLService(stores, nil, nil, nil, nil, nil)
 
@@ -42,6 +43,7 @@ func TestBOT36SQLPrepareRelatedMessageRequiresCanonicalActiveOwner(t *testing.T)
 }
 
 func TestBOT36SavedQueryDatabasesUseCanonicalOwningProjectNames(t *testing.T) {
+	t.Parallel()
 	ctx, stores, projectID, instanceID, databaseName := setupBOT36ProjectDatabase(t)
 	service := NewSavedQueryService(stores, nil)
 
@@ -70,6 +72,7 @@ func TestBOT36SavedQueryDatabasesUseCanonicalOwningProjectNames(t *testing.T) {
 }
 
 func TestUpdateSavedQueryKeepsDanglingDatabaseReference(t *testing.T) {
+	t.Parallel()
 	ctx, stores, projectID, _, _ := setupBOT36ProjectDatabase(t)
 	service := NewSavedQueryService(stores, nil)
 
@@ -110,6 +113,7 @@ func TestUpdateSavedQueryKeepsDanglingDatabaseReference(t *testing.T) {
 }
 
 func TestBOT36AccessGrantTargetsRequireCanonicalOwningProject(t *testing.T) {
+	t.Parallel()
 	ctx, stores, projectID, instanceID, databaseName := setupBOT36ProjectDatabase(t)
 	service := NewAccessGrantService(stores, nil, nil, nil)
 

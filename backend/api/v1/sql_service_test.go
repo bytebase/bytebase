@@ -14,6 +14,7 @@ import (
 )
 
 func TestSQLIAMDatabaseResourceUsesCanonicalInstanceScope(t *testing.T) {
+	t.Parallel()
 	projectID := "project-a"
 	projectInstance := &store.InstanceMessage{ResourceID: "instance-a", ProjectID: &projectID}
 	workspaceInstance := &store.InstanceMessage{ResourceID: "instance-b"}
@@ -55,6 +56,7 @@ func TestSQLIAMDatabaseResourceUsesCanonicalInstanceScope(t *testing.T) {
 // rollout/stage names must fail name parsing with InvalidArgument, not fall
 // through as 500s.
 func TestExportRejectsRetiredRolloutNames(t *testing.T) {
+	t.Parallel()
 	ctx := context.WithValue(context.Background(), common.UserContextKey, &store.UserMessage{Email: "u@example.com"})
 	s := &SQLService{}
 	for _, name := range []string{
@@ -156,6 +158,7 @@ func TestBuildExportQueryContextPropagatesSkipMasking(t *testing.T) {
 // TestBuildExportQueryContextPropagatesOtherFields guards against accidental
 // drops of the surrounding fields if buildExportQueryContext is edited.
 func TestBuildExportQueryContextPropagatesOtherFields(t *testing.T) {
+	t.Parallel()
 	schema := "public"
 	restriction := &store.EffectiveQueryDataPolicy{
 		MaximumResultRows:        500,
@@ -178,6 +181,7 @@ func TestBuildExportQueryContextPropagatesOtherFields(t *testing.T) {
 // MaxQueryTimeoutInSeconds doesn't leak a zero-Duration timeout into the
 // query context (which the driver layer treats differently from "no timeout").
 func TestBuildExportQueryContextOmitsTimeoutWhenZero(t *testing.T) {
+	t.Parallel()
 	restriction := &store.EffectiveQueryDataPolicy{
 		MaximumResultRows: 100,
 		MaximumResultSize: 1 << 20,
@@ -189,6 +193,7 @@ func TestBuildExportQueryContextOmitsTimeoutWhenZero(t *testing.T) {
 }
 
 func TestResolveDataSourceIDUsesAdminForNonReadOnlyAutomaticQueryWhenAllowed(t *testing.T) {
+	t.Parallel()
 	instance := &store.InstanceMessage{
 		Metadata: &storepb.Instance{
 			Engine: storepb.Engine_MYSQL,
@@ -205,6 +210,7 @@ func TestResolveDataSourceIDUsesAdminForNonReadOnlyAutomaticQueryWhenAllowed(t *
 }
 
 func TestResolveDataSourceIDKeepsReadOnlyForReadOnlyAutomaticQueryWhenAllowed(t *testing.T) {
+	t.Parallel()
 	instance := &store.InstanceMessage{
 		Metadata: &storepb.Instance{
 			Engine: storepb.Engine_MYSQL,
@@ -221,6 +227,7 @@ func TestResolveDataSourceIDKeepsReadOnlyForReadOnlyAutomaticQueryWhenAllowed(t 
 }
 
 func TestResolveDataSourceIDKeepsReadOnlyForNonReadOnlyAutomaticQueryWhenAdminDisallowed(t *testing.T) {
+	t.Parallel()
 	instance := &store.InstanceMessage{
 		Metadata: &storepb.Instance{
 			Engine: storepb.Engine_MYSQL,
@@ -237,6 +244,7 @@ func TestResolveDataSourceIDKeepsReadOnlyForNonReadOnlyAutomaticQueryWhenAdminDi
 }
 
 func TestResolveDataSourceIDUsesAdminForDocumentEngineAutomaticWriteQueryWhenAllowed(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		engine    storepb.Engine
@@ -266,6 +274,7 @@ func TestResolveDataSourceIDUsesAdminForDocumentEngineAutomaticWriteQueryWhenAll
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			instance := &store.InstanceMessage{
 				Metadata: &storepb.Instance{
 					Engine: tc.engine,
@@ -284,6 +293,7 @@ func TestResolveDataSourceIDUsesAdminForDocumentEngineAutomaticWriteQueryWhenAll
 }
 
 func TestResolveDataSourceIDKeepsReadOnlyForDocumentEngineAutomaticReadQueryWhenAllowed(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		engine    storepb.Engine
@@ -303,6 +313,7 @@ func TestResolveDataSourceIDKeepsReadOnlyForDocumentEngineAutomaticReadQueryWhen
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			instance := &store.InstanceMessage{
 				Metadata: &storepb.Instance{
 					Engine: tc.engine,

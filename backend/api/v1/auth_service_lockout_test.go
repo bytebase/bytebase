@@ -308,6 +308,7 @@ func TestMFALockoutClaims(t *testing.T) {
 }
 
 func TestSwitchWorkspaceMFAClaims(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	stores := newAuthTestStore(t)
 	const secret = "test-secret"
@@ -363,6 +364,7 @@ func TestSwitchWorkspaceMFAClaims(t *testing.T) {
 // bucket of LDAP user "alice@corp.com" on IDP "corpldap". ":" is legal in
 // neither alphabet, so an LDAP identity can never be a valid email.
 func TestLDAPLoginIdentity(t *testing.T) {
+	t.Parallel()
 	// The submitted username is kept verbatim: a case-exact directory
 	// attribute can name two accounts differing only by case, and merging
 	// them would let either lock — or clear — the other.
@@ -373,6 +375,7 @@ func TestLDAPLoginIdentity(t *testing.T) {
 }
 
 func TestLDAPLockoutClaims(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	stores := newAuthTestStore(t)
 	service := &AuthService{store: stores, secret: "test-secret", profile: &config.Profile{ExternalURL: "http://localhost"}}
@@ -424,6 +427,7 @@ func TestLDAPLockoutClaims(t *testing.T) {
 // to the lockout window: a retention shorter than the window would delete
 // still-running locks, silently capping every lockout at the retention.
 func TestLoginAttemptRetentionOutlivesLockouts(t *testing.T) {
+	t.Parallel()
 	require.Greater(t, cleaner.LoginAttemptRetentionPeriod, loginAttemptWindow,
 		"the hourly purge must never delete a still-running lock")
 }

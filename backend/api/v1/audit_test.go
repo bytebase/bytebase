@@ -17,6 +17,7 @@ import (
 )
 
 func TestFailedLoginWithoutWorkspaceIsSkipped(t *testing.T) {
+	t.Parallel()
 	ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{Audit: true})
 	st := newAuditLiveStore(t)
 	t.Cleanup(func() { require.NoError(t, st.Close()) })
@@ -41,6 +42,7 @@ func TestFailedLoginWithoutWorkspaceIsSkipped(t *testing.T) {
 }
 
 func TestFailedLoginWithHandlerWorkspaceCreatesSingleAuditRow(t *testing.T) {
+	t.Parallel()
 	ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{Audit: true})
 	st := newAuditLiveStore(t)
 	t.Cleanup(func() { require.NoError(t, st.Close()) })
@@ -154,6 +156,7 @@ func (c *auditRecorderConn) Send(any) error {
 }
 
 func TestLifecycleAuditResource(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name    string
 		request any
@@ -211,6 +214,7 @@ func TestLifecycleAuditResource(t *testing.T) {
 		{name: "prepare sample project instance", request: &v1pb.PrepareSampleProjectInstanceRequest{Parent: "projects/project-a"}, method: "/bytebase.v1.InstanceService/PrepareSampleProjectInstance", want: "projects/project-a"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			require.Equal(t, test.want, getRequestResource(test.request, test.method))
 		})
 	}

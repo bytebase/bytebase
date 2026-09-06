@@ -126,12 +126,14 @@ func TestLookupSemanticTypeByDotPath(t *testing.T) {
 }
 
 func TestMaskElasticsearchHitsColumn(t *testing.T) {
+	t.Parallel()
 	td := loadElasticsearchTestData(t)
 	schema := testElasticsearchObjectSchema()
 	maskers := testElasticsearchMaskerMap()
 
 	for _, tc := range td.MaskHitsColumn {
 		t.Run(tc.Description, func(t *testing.T) {
+			t.Parallel()
 			result, err := maskElasticsearchHitsColumn(tc.Input, tc.SortFields, schema, maskers)
 			require.NoError(t, err)
 			requireJSONEqual(t, tc.Want, result)
@@ -140,12 +142,14 @@ func TestMaskElasticsearchHitsColumn(t *testing.T) {
 }
 
 func TestMaskElasticsearchDocSource(t *testing.T) {
+	t.Parallel()
 	td := loadElasticsearchTestData(t)
 	schema := testElasticsearchObjectSchema()
 	maskers := testElasticsearchMaskerMap()
 
 	for _, tc := range td.MaskDocSource {
 		t.Run(tc.Description, func(t *testing.T) {
+			t.Parallel()
 			result, err := maskDocumentString(tc.Input, schema, maskers)
 			require.NoError(t, err)
 			requireJSONEqual(t, tc.Want, result)
@@ -154,12 +158,14 @@ func TestMaskElasticsearchDocSource(t *testing.T) {
 }
 
 func TestMaskElasticsearchGetSourceColumn(t *testing.T) {
+	t.Parallel()
 	td := loadElasticsearchTestData(t)
 	schema := testElasticsearchObjectSchema()
 	maskers := testElasticsearchMaskerMap()
 
 	for _, tc := range td.MaskGetSourceColumn {
 		t.Run(tc.Description, func(t *testing.T) {
+			t.Parallel()
 			result, err := maskElasticsearchGetSourceColumn(tc.FieldName, tc.Input, schema, maskers)
 			require.NoError(t, err)
 			requireJSONEqual(t, tc.Want, result)
@@ -168,12 +174,14 @@ func TestMaskElasticsearchGetSourceColumn(t *testing.T) {
 }
 
 func TestMaskElasticsearchMGetSource(t *testing.T) {
+	t.Parallel()
 	td := loadElasticsearchTestData(t)
 	schema := testElasticsearchObjectSchema()
 	maskers := testElasticsearchMaskerMap()
 
 	for _, tc := range td.MaskMGetSource {
 		t.Run(tc.Description, func(t *testing.T) {
+			t.Parallel()
 			result, err := maskElasticsearchMGetSource(tc.Input, schema, maskers)
 			require.NoError(t, err)
 			requireJSONEqual(t, tc.Want, result)
@@ -182,12 +190,14 @@ func TestMaskElasticsearchMGetSource(t *testing.T) {
 }
 
 func TestMaskElasticsearchInnerHits(t *testing.T) {
+	t.Parallel()
 	td := loadElasticsearchTestData(t)
 	schema := testElasticsearchObjectSchema()
 	maskers := testElasticsearchMaskerMap()
 
 	for _, tc := range td.MaskInnerHits {
 		t.Run(tc.Description, func(t *testing.T) {
+			t.Parallel()
 			result, err := maskElasticsearchHitsColumn(tc.Input, tc.SortFields, schema, maskers)
 			require.NoError(t, err)
 			requireJSONEqual(t, tc.Want, result)
@@ -196,12 +206,14 @@ func TestMaskElasticsearchInnerHits(t *testing.T) {
 }
 
 func TestMaskElasticsearchMSearchResponses(t *testing.T) {
+	t.Parallel()
 	td := loadElasticsearchTestData(t)
 	schema := testElasticsearchObjectSchema()
 	maskers := testElasticsearchMaskerMap()
 
 	for _, tc := range td.MaskMSearchResponses {
 		t.Run(tc.Description, func(t *testing.T) {
+			t.Parallel()
 			result, err := maskElasticsearchMSearchResponses(tc.Input, tc.SortFields, schema, maskers)
 			require.NoError(t, err)
 			requireJSONEqual(t, tc.Want, result)
@@ -210,6 +222,7 @@ func TestMaskElasticsearchMSearchResponses(t *testing.T) {
 }
 
 func TestMaskElasticsearchSourceObjectDirectReplacement(t *testing.T) {
+	t.Parallel()
 	maskers := map[string]masker.Masker{
 		"bb.default": masker.NewDefaultFullMasker(),
 	}
@@ -283,6 +296,7 @@ func TestMaskElasticsearchSourceObjectDirectReplacement(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.description, func(t *testing.T) {
+			t.Parallel()
 			masked, err := walkAndMaskJSONRecursive(tc.input, tc.schema, maskers)
 			require.NoError(t, err)
 			got, ok := masked.(map[string]any)
@@ -293,10 +307,12 @@ func TestMaskElasticsearchSourceObjectDirectReplacement(t *testing.T) {
 }
 
 func TestCheckElasticsearchRequestBlocked(t *testing.T) {
+	t.Parallel()
 	td := loadElasticsearchTestData(t)
 
 	for _, tc := range td.CheckBlocked {
 		t.Run(tc.Description, func(t *testing.T) {
+			t.Parallel()
 			analysis := &esparser.RequestAnalysis{
 				API:             tc.API,
 				Index:           tc.Index,

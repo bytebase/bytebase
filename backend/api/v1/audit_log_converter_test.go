@@ -13,6 +13,7 @@ import (
 // The resource name is built from the payload's parent, not the row's
 // workspace. Split out of the retention test that moved to backend/store.
 func TestConvertToAuditLogsNamesRowsByPayloadParent(t *testing.T) {
+	t.Parallel()
 	logs := convertToAuditLogs([]*store.AuditLog{
 		{ResourceID: "after-cutoff", CreatedAt: time.Unix(2, 0), Payload: &storepb.AuditLog{Parent: "projects/project-a"}},
 		{ResourceID: "at-cutoff", CreatedAt: time.Unix(1, 0), Payload: &storepb.AuditLog{Parent: "projects/project-a"}},

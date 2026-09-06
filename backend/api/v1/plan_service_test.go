@@ -19,6 +19,7 @@ import (
 )
 
 func TestPlanServiceListPlansHidesMalformedUIPlans(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	stores := setupPlanServiceTestStore(ctx, t)
 	service := NewPlanService(stores, nil, nil, nil, nil)
@@ -133,6 +134,7 @@ func TestPlanServiceCreatePlanRecordsAuthenticatedPrincipalAsLastEditor(t *testi
 }
 
 func TestPlanServiceReleaseBackedPlanKeepsCreatorAsLastEditor(t *testing.T) {
+	t.Parallel()
 	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
 	ctx = context.WithValue(ctx, common.UserContextKey, &store.UserMessage{Email: "creator@example.com", Name: "creator"})
 	stores := setupPlanServiceTestStore(ctx, t)
@@ -171,6 +173,7 @@ func TestPlanServiceReleaseBackedPlanKeepsCreatorAsLastEditor(t *testing.T) {
 }
 
 func TestPlanServiceListPlansIncludesIssueStatus(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	stores := setupPlanServiceTestStore(ctx, t)
 	service := NewPlanService(stores, nil, nil, nil, nil)
@@ -248,6 +251,7 @@ func TestPlanServiceListPlansIncludesIssueStatus(t *testing.T) {
 }
 
 func TestConvertToPlansScopesIssueStatusByProject(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	stores := setupPlanServiceTestStore(ctx, t)
 	_, err := stores.GetDB().ExecContext(ctx, `
@@ -296,6 +300,7 @@ func TestConvertToPlansScopesIssueStatusByProject(t *testing.T) {
 }
 
 func TestPlanServiceCreatePlanRejectsMixedDatabaseSpecs(t *testing.T) {
+	t.Parallel()
 	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
 	ctx = context.WithValue(ctx, common.UserContextKey, &store.UserMessage{
 		Email: "creator@example.com",
@@ -331,6 +336,7 @@ func TestPlanServiceCreatePlanRejectsMixedDatabaseSpecs(t *testing.T) {
 // spec: a legacy client sending the removed field decodes to a spec with no
 // config, which creation must reject.
 func TestCreatePlanRejectsSpecsWithoutConfig(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, "default")
 	ctx = context.WithValue(ctx, common.UserContextKey, &store.UserMessage{Email: "creator@example.com", Name: "creator"})

@@ -16,6 +16,7 @@ import (
 )
 
 func TestProjectInstanceDescendantServicesUseCanonicalNames(t *testing.T) {
+	t.Parallel()
 	ctx, stores, instanceID, databaseName, changelogID, revisionID := setupProjectInstanceDescendantServiceTest(t)
 	projectID := "project-a"
 	parent := common.FormatProjectDatabase(projectID, instanceID, databaseName)
@@ -49,6 +50,7 @@ func TestProjectInstanceDescendantServicesUseCanonicalNames(t *testing.T) {
 }
 
 func TestProjectInstanceDescendantServicesRejectWrongScopeParents(t *testing.T) {
+	t.Parallel()
 	ctx, stores, instanceID, databaseName, changelogID, revisionID := setupProjectInstanceDescendantServiceTest(t)
 	workspaceParent := common.FormatDatabase(instanceID, databaseName)
 	wrongProjectID := "project-b"
@@ -80,6 +82,7 @@ func TestProjectInstanceDescendantServicesRejectWrongScopeParents(t *testing.T) 
 }
 
 func TestWorkspaceInstanceDescendantServicesKeepWorkspaceNames(t *testing.T) {
+	t.Parallel()
 	ctx, stores, instanceID, databaseName, changelogID, revisionID := setupWorkspaceInstanceDescendantServiceTest(t)
 	parent := common.FormatDatabase(instanceID, databaseName)
 

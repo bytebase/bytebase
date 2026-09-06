@@ -260,6 +260,7 @@ func mustMaskableAPI(t *testing.T, api string) mongoparser.MaskableAPI {
 }
 
 func TestMaskMongoDBDocumentString(t *testing.T) {
+	t.Parallel()
 	td := loadMongoDBMaskingTestData(t)
 	maskers := map[string]masker.Masker{
 		"bb.default": masker.NewDefaultFullMasker(),
@@ -267,6 +268,7 @@ func TestMaskMongoDBDocumentString(t *testing.T) {
 
 	for _, tc := range td.MaskDocument {
 		t.Run(tc.Description, func(t *testing.T) {
+			t.Parallel()
 			schema := mustMongoSchema(t, tc.Schema)
 			got, err := maskDocumentString(tc.Input, schema, maskers)
 			require.NoError(t, err)
@@ -276,10 +278,12 @@ func TestMaskMongoDBDocumentString(t *testing.T) {
 }
 
 func TestCheckMongoDBRequestBlocked(t *testing.T) {
+	t.Parallel()
 	td := loadMongoDBMaskingTestData(t)
 
 	for _, tc := range td.CheckBlocked {
 		t.Run(tc.Description, func(t *testing.T) {
+			t.Parallel()
 			var analysis *mongoparser.MaskingAnalysis
 			if !tc.AnalysisNil {
 				analysis = &mongoparser.MaskingAnalysis{

@@ -48,6 +48,7 @@ import (
 // leaves the audited surface without anyone deciding what the audit row may
 // record for it.
 func TestLintAuditPayloadInventory(t *testing.T) {
+	t.Parallel()
 	found := auditRecordedScalarFields(t)
 
 	recorded := map[string]bool{}
@@ -1091,6 +1092,7 @@ var auditRecordedFields = []string{
 // caller_supplied_user_agent is caller-controlled and the likeliest candidate —
 // and this fails, because nothing would redact it.
 func TestAuditRowNeedsNoRedactionBeyondTheAnyPayloads(t *testing.T) {
+	t.Parallel()
 	for _, message := range []proto.Message{&storepb.RequestMetadata{}, &storepb.MCPDelegation{}} {
 		descriptor := message.ProtoReflect().Descriptor()
 		require.Nil(t, planFor(descriptor),
@@ -1117,6 +1119,7 @@ func TestAuditRowNeedsNoRedactionBeyondTheAnyPayloads(t *testing.T) {
 // Without it a new Any field would be governed by nothing: the runtime drops
 // what it cannot place, so the payload would vanish silently.
 func TestLintAuditAnyFieldsAreRegistered(t *testing.T) {
+	t.Parallel()
 	found := auditReachableAnyFields(t)
 
 	var unregistered []string

@@ -21,6 +21,7 @@ import (
 )
 
 func TestValidateMembers(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		member  string
 		wantErr bool
@@ -83,6 +84,7 @@ func TestValidateMembers(t *testing.T) {
 }
 
 func TestValidateBindings(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		bindings []*v1pb.Binding
 		roles    []*store.RoleMessage
@@ -257,6 +259,7 @@ func TestValidateBindings(t *testing.T) {
 }
 
 func TestValidateIAMPolicyExpression(t *testing.T) {
+	t.Parallel()
 	timeNow := time.Now()
 	thirtyDays := &durationpb.Duration{Seconds: 60 * 60 * 24 * 30}
 	withinCap := fmt.Sprintf("request.time < timestamp(\"%s\")", timeNow.AddDate(0, 0, 15).Format(time.RFC3339))
@@ -307,6 +310,7 @@ func TestValidateIAMPolicyExpression(t *testing.T) {
 }
 
 func TestFindIamPolicyDeltas(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		oldPolicy    *storepb.IamPolicy
 		newIamPolicy *storepb.IamPolicy
@@ -520,6 +524,7 @@ func TestValidateLabels(t *testing.T) {
 }
 
 func TestValidateIssueLabelsColor(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		labels  []*v1pb.Label
@@ -561,6 +566,7 @@ func TestValidateIssueLabelsColor(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			err := validateIssueLabels(tc.labels)
 			if tc.wantErr {
 				require.Error(t, err)

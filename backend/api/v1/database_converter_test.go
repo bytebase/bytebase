@@ -82,6 +82,7 @@ func TestConvertColumnMetadataSRIDInvisibleRoundTrip(t *testing.T) {
 // SRID/INVISIBLE fields must not be stripped by the v1->store conversion, so the diff shows
 // only the intended change and never a spurious spatial/visibility MODIFY.
 func TestDiffMetadataPreservesSRIDInvisible(t *testing.T) {
+	t.Parallel()
 	mkV1 := func(noteComment string) *v1pb.DatabaseMetadata {
 		return &v1pb.DatabaseMetadata{
 			Schemas: []*v1pb.SchemaMetadata{{

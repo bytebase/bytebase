@@ -27,6 +27,7 @@ import (
 )
 
 func TestUpdateIssueCommentRejectsEmptyComment(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)
@@ -64,6 +65,7 @@ func TestUpdateIssueCommentRejectsEmptyComment(t *testing.T) {
 // and root comments: the v1 message cannot represent a reply, so a reply must
 // neither render as a top-level row nor consume a page slot.
 func TestListIssueCommentsExcludesReplies(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)
@@ -108,6 +110,7 @@ func TestListIssueCommentsExcludesReplies(t *testing.T) {
 }
 
 func TestUpdateIssueLabelsResetsApprovalBeforeRollout(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)
@@ -122,6 +125,7 @@ func TestUpdateIssueLabelsResetsApprovalBeforeRollout(t *testing.T) {
 }
 
 func TestUpdateIssueLabelsClearedBeforeRolloutResetsApproval(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)
@@ -137,6 +141,7 @@ func TestUpdateIssueLabelsClearedBeforeRolloutResetsApproval(t *testing.T) {
 }
 
 func TestUpdateIssueLabelsDoesNotResetApprovalAfterRollout(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)
@@ -162,6 +167,7 @@ func TestUpdateIssueLabelsDoesNotResetApprovalAfterRollout(t *testing.T) {
 }
 
 func TestMixedIssuePatchCommitsWithAuditComments(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)
@@ -215,6 +221,7 @@ func TestMixedIssuePatchCommitsWithAuditComments(t *testing.T) {
 }
 
 func TestIssueMetadataNoopDoesNotCreateAuditComments(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)
@@ -244,6 +251,7 @@ func TestIssueMetadataNoopDoesNotCreateAuditComments(t *testing.T) {
 }
 
 func TestApproveIssueFailsClosedWhenIAMLookupFails(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)
@@ -268,6 +276,7 @@ func TestApproveIssueFailsClosedWhenIAMLookupFails(t *testing.T) {
 }
 
 func TestCreateRolloutAndPendingTasksAllowsUnapprovedIssueWhenApprovalNotRequired(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	plan, issue := createIssueServiceApprovalIssue(ctx, t, stores)
@@ -305,6 +314,7 @@ func TestCreateRolloutAndPendingTasksAllowsUnapprovedIssueWhenApprovalNotRequire
 }
 
 func TestCreateRolloutAndPendingTasksClassifiesApprovalRaceAsStale(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	require.NoError(t, stores.UpdateProjects(ctx, &store.UpdateProjectMessage{
@@ -337,6 +347,7 @@ func TestCreateRolloutAndPendingTasksClassifiesApprovalRaceAsStale(t *testing.T)
 }
 
 func TestCreateRolloutAndPendingTasksRejectsDraft(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	plan, issue := createIssueServiceApprovalIssue(ctx, t, stores)
@@ -368,6 +379,7 @@ func TestCreateRolloutAndPendingTasksRejectsDraft(t *testing.T) {
 }
 
 func TestCreateRolloutAndPendingTasksRejectsPersistedDraftWithStaleIssueSnapshot(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	plan, issue := createIssueServiceApprovalIssue(ctx, t, stores)
@@ -395,6 +407,7 @@ func TestCreateRolloutAndPendingTasksRejectsPersistedDraftWithStaleIssueSnapshot
 }
 
 func TestCreateDraftIssueRejectedAfterRollout(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)
@@ -436,6 +449,7 @@ func TestCreateDraftIssueRejectedAfterRollout(t *testing.T) {
 }
 
 func TestUpdateIssueLabelsNoopDoesNotResetApproval(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)
@@ -451,6 +465,7 @@ func TestUpdateIssueLabelsNoopDoesNotResetApproval(t *testing.T) {
 }
 
 func TestUpdateIssueLabelsDoesNotResetCreateDatabaseApproval(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)
@@ -466,6 +481,7 @@ func TestUpdateIssueLabelsDoesNotResetCreateDatabaseApproval(t *testing.T) {
 }
 
 func TestUpdateIssueLabelsOnDraftPreservesApproval(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)
@@ -488,6 +504,7 @@ func TestUpdateIssueLabelsOnDraftPreservesApproval(t *testing.T) {
 }
 
 func TestRetryIssueApprovalRejectsDraft(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)
@@ -511,6 +528,7 @@ func TestRetryIssueApprovalRejectsDraft(t *testing.T) {
 }
 
 func TestDraftIssueApprovalActionsRejectedBeforeApprovalValidation(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 
@@ -543,6 +561,7 @@ func TestDraftIssueApprovalActionsRejectedBeforeApprovalValidation(t *testing.T)
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			service := newIssueServiceForTest(t, stores)
 			plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
 				ProjectID: "project-a",
@@ -574,6 +593,7 @@ func TestDraftIssueApprovalActionsRejectedBeforeApprovalValidation(t *testing.T)
 }
 
 func TestStaleReviewRequestDispatchesNoPostCommitEffects(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)
@@ -611,6 +631,7 @@ func TestStaleReviewRequestDispatchesNoPostCommitEffects(t *testing.T) {
 }
 
 func TestCreateDraftIssue(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)
@@ -702,6 +723,7 @@ func TestCreateDraftIssue(t *testing.T) {
 }
 
 func TestCreateDraftIssueDoesNotExposeAnotherCreatorsDraft(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)
@@ -753,6 +775,7 @@ func TestCreateDraftIssueDoesNotExposeAnotherCreatorsDraft(t *testing.T) {
 }
 
 func TestCreateSubmittedIssueBlockedByExistingDraft(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)
@@ -814,6 +837,7 @@ func TestCreateSubmittedIssueBlockedByExistingDraft(t *testing.T) {
 }
 
 func TestCreateDraftIssueBlockedByExistingNonDraftIssue(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)
@@ -975,6 +999,7 @@ func TestCreateDraftIssueRejectsUnsupportedWorkflows(t *testing.T) {
 // TestCreateIssueRejectsRetiredExportType pins the retired DATABASE_EXPORT
 // issue type: legacy clients still sending wire value 3 get InvalidArgument.
 func TestCreateIssueRejectsRetiredExportType(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)
@@ -990,6 +1015,7 @@ func TestCreateIssueRejectsRetiredExportType(t *testing.T) {
 }
 
 func TestIssueListsHideDraftIssues(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)
@@ -1270,6 +1296,7 @@ func issueApprover(status storepb.IssuePayloadApproval_Approver_Status) *storepb
 // filtering the default My Issues view answered with an empty page and a live
 // next page token underneath it.
 func TestIssueApprovalStatusFilterMatchesConverter(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service := newIssueServiceForTest(t, stores)

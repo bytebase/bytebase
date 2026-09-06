@@ -183,6 +183,7 @@ func TestMaskedWriteGuardRefusesTheSentinel(t *testing.T) {
 // in this file rather than anything about the caller — and a refusal path that
 // meets a bug refuses.
 func TestMaskedWriteGuardFailsClosedOnAWiringBug(t *testing.T) {
+	t.Parallel()
 	forced := withMCPSettings(
 		contextWithAuth(&common.AuthContext{DelegatedGrant: &common.DelegatedGrant{}}),
 		maskingSettings(true))
@@ -259,6 +260,7 @@ func TestMaskedWriteGuardIsWiredIntoTheGate(t *testing.T) {
 // it, and it authorizes DML per statement — under READ_WRITE an agent can
 // overwrite the column it just read masked without proposing anything.
 func TestMaskedWriteGuardCoversTheExecutionDoor(t *testing.T) {
+	t.Parallel()
 	masked := "UPDATE employee SET secret = '" + masker.DefaultFullMaskSubstitution + "' WHERE id = 1"
 
 	got := invokeMCPGate(t,

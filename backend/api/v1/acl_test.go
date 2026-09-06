@@ -30,6 +30,7 @@ func TestResourceResolutionConnectError(t *testing.T) {
 }
 
 func TestACLCheckResourceResolutionStatus(t *testing.T) {
+	t.Parallel()
 	ctx, stores, _, _, _, _ := setupWorkspaceInstanceDescendantServiceTest(t)
 	interceptor := NewACLInterceptor(stores, "", nil, nil)
 
@@ -50,6 +51,7 @@ func TestACLCheckResourceResolutionStatus(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			err := interceptor.doACLCheck(authenticatedACLContext(ctx), test.request, v1connect.DatabaseServiceGetDatabaseProcedure)
 			require.Equal(t, test.want, connect.CodeOf(err))
 		})
@@ -57,6 +59,7 @@ func TestACLCheckResourceResolutionStatus(t *testing.T) {
 }
 
 func TestACLCheckAuthenticatesBeforeResolvingResources(t *testing.T) {
+	t.Parallel()
 	ctx, stores, _, _, _, _ := setupWorkspaceInstanceDescendantServiceTest(t)
 	interceptor := NewACLInterceptor(stores, "", nil, nil)
 
@@ -69,6 +72,7 @@ func TestACLCheckAuthenticatesBeforeResolvingResources(t *testing.T) {
 }
 
 func TestACLCheckPanicPreventsRequestAdmission(t *testing.T) {
+	t.Parallel()
 	ctx := authenticatedACLContext(context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default"))
 	interceptor := NewACLInterceptor(nil, "", nil, nil)
 	aclCheckReturnedNil := false
@@ -102,6 +106,7 @@ func unauthenticatedACLContext(ctx context.Context) context.Context {
 }
 
 func TestGetResourceRoute(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		parts []string
@@ -186,12 +191,14 @@ func TestGetResourceRoute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			require.Equal(t, tt.want, getResourceRoute(tt.parts))
 		})
 	}
 }
 
 func TestFindResourceResolver(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		route      resourceRoute
@@ -218,6 +225,7 @@ func TestFindResourceResolver(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			gotRoute, resolver, gotExists := findResourceResolver(tt.route)
 			require.Equal(t, tt.wantExists, gotExists)
 			if !tt.wantExists {
@@ -265,6 +273,7 @@ func TestResolveRawResource(t *testing.T) {
 }
 
 func TestResolveRawResourceWorkspaceDatabaseUsesDatabaseProject(t *testing.T) {
+	t.Parallel()
 	ctx, stores, instanceID, databaseName, _, _ := setupWorkspaceInstanceDescendantServiceTest(t)
 	resource, err := resolveRawResource(ctx, stores, common.FormatDatabase(instanceID, databaseName)+"/revisions/1")
 	require.NoError(t, err)
@@ -272,6 +281,7 @@ func TestResolveRawResourceWorkspaceDatabaseUsesDatabaseProject(t *testing.T) {
 }
 
 func TestPopulateRawResourcesUsesWorkspaceFallback(t *testing.T) {
+	t.Parallel()
 	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
 	for _, request := range []any{
 		&v1pb.GetInstanceRequest{Name: "projects/-"},
@@ -288,6 +298,7 @@ func TestPopulateRawResourcesUsesWorkspaceFallback(t *testing.T) {
 }
 
 func TestPopulateRawResourcesBatchSyncUsesDatabaseProject(t *testing.T) {
+	t.Parallel()
 	ctx, stores, instanceID, databaseName, _, _ := setupWorkspaceInstanceDescendantServiceTest(t)
 	resources, err := populateRawResources(
 		ctx,
@@ -303,6 +314,7 @@ func TestPopulateRawResourcesBatchSyncUsesDatabaseProject(t *testing.T) {
 }
 
 func TestPopulateRawResourcesAllowsDeletedSampleProjectInstanceProject(t *testing.T) {
+	t.Parallel()
 	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	_, err := stores.GetDB().ExecContext(ctx, `
@@ -323,6 +335,7 @@ func TestPopulateRawResourcesAllowsDeletedSampleProjectInstanceProject(t *testin
 }
 
 func TestGetResourceFromRequest(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		request any
 		method  string
@@ -679,6 +692,7 @@ func TestGetResourceFromRequest(t *testing.T) {
 }
 
 func TestToSnakeCase(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		input string
 		want  string
@@ -708,6 +722,7 @@ func TestToSnakeCase(t *testing.T) {
 }
 
 func TestGetPermissionForRequest(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name              string
 		request           any
@@ -741,6 +756,7 @@ func TestGetPermissionForRequest(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := getPermissionForRequest(tt.request, tt.defaultPermission)
 			require.Equal(t, tt.want, got)
 		})
@@ -748,6 +764,7 @@ func TestGetPermissionForRequest(t *testing.T) {
 }
 
 func TestHasAllowMissingEnabled(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		request any
@@ -821,6 +838,7 @@ func TestHasAllowMissingEnabled(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := hasAllowMissingEnabled(tt.request)
 			require.Equal(t, tt.want, got)
 		})
