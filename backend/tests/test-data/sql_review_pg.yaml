@@ -71,6 +71,18 @@
           }
         }
       }
+    - |-
+      {
+        "status":  "WARNING",
+        "title":  "STATEMENT_DML_DRY_RUN",
+        "content":  "\"DELETE FROM t\" dry runs failed: ERROR: relation \"t\" does not exist (SQLSTATE 42P01)",
+        "code":  208,
+        "sqlReviewReport":  {
+          "startPosition":  {
+            "line":  1
+          }
+        }
+      }
   run: false
 - statement: DELETE FROM t WHERE a like '%abc'
   result:
@@ -86,21 +98,47 @@
           }
         }
       }
+    - |-
+      {
+        "status":  "WARNING",
+        "title":  "STATEMENT_DML_DRY_RUN",
+        "content":  "\"DELETE FROM t WHERE a like '%abc'\" dry runs failed: ERROR: relation \"t\" does not exist (SQLSTATE 42P01)",
+        "code":  208,
+        "sqlReviewReport":  {
+          "startPosition":  {
+            "line":  1
+          }
+        }
+      }
   run: false
 - statement: DELETE FROM t WHERE a = (SELECT max(id) FROM "user" WHERE name = 'bytebase')
   result:
     - |-
       {
-        "status":  "SUCCESS",
-        "title":  "OK"
+        "status":  "WARNING",
+        "title":  "STATEMENT_DML_DRY_RUN",
+        "content":  "\"DELETE FROM t WHERE a = (SELECT max(id) FROM \"user\" WHERE name = 'bytebase')\" dry runs failed: ERROR: relation \"t\" does not exist (SQLSTATE 42P01)",
+        "code":  208,
+        "sqlReviewReport":  {
+          "startPosition":  {
+            "line":  1
+          }
+        }
       }
   run: false
 - statement: INSERT INTO t VALUES (1), (2)
   result:
     - |-
       {
-        "status":  "SUCCESS",
-        "title":  "OK"
+        "status":  "WARNING",
+        "title":  "STATEMENT_DML_DRY_RUN",
+        "content":  "\"INSERT INTO t VALUES (1), (2)\" dry runs failed: ERROR: relation \"t\" does not exist (SQLSTATE 42P01)",
+        "code":  208,
+        "sqlReviewReport":  {
+          "startPosition":  {
+            "line":  1
+          }
+        }
       }
   run: false
 - statement: |-

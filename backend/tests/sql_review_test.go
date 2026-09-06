@@ -350,6 +350,15 @@ func prodTemplateReviewConfigForPostgreSQL() *v1pb.ReviewConfig {
 		Title:   "Prod",
 		Enabled: true,
 		Rules: []*v1pb.SQLReviewRule{
+			// Driver-dependent: this rule EXPLAINs each DML statement, so it only
+			// produces advice when the plan check executor hands the advisor a live
+			// connection. It is the one rule here that covers that wiring, which the
+			// advisor-level tests cannot: they pass a driver in directly.
+			{
+				Type:   v1pb.SQLReviewRule_STATEMENT_DML_DRY_RUN,
+				Level:  v1pb.SQLReviewRule_WARNING,
+				Engine: v1pb.Engine_POSTGRES,
+			},
 			// Naming
 			{
 				Type:   v1pb.SQLReviewRule_NAMING_TABLE,
