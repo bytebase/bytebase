@@ -279,3 +279,24 @@ func TestResolveDiffSchemaTargetSDL(t *testing.T) {
 		require.ErrorContains(t, err, "target must be either schema text or changelog")
 	})
 }
+
+// TestCheckDiffSchemaTargetProject pins the gate DiffSchema puts on a changelog
+// target. The ACL interceptor authorizes request.name only, so without it a
+// changelog under another project's database would hand over that project's
+// schema. A foreign changelog is indistinguishable from one that does not
+// exist, or the error itself answers the question.
+func TestCheckDiffSchemaTargetProject(t *testing.T) {
+	t.Parallel()
+	source := &store.DatabaseMessage{ProjectID: "project-a", InstanceID: "shared-instance", DatabaseName: "app-a"}
+
+	require.NoError(t, checkDiffSchemaTargetProject(source.ProjectID, source, "instances/shared-instance/databases/app-a/changelogs/1"))
+
+	foreign := checkDiffSchemaTargetProject(source.ProjectID,
+		&store.DatabaseMessage{ProjectID: "project-b", InstanceID: "shared-instance", DatabaseName: "app-b"},
+		"instances/shared-instance/databases/app-b/changelogs/2")
+	require.Equal(t, connect.CodeNotFound, connect.CodeOf(foreign))
+	require.NotContains(t, foreign.Error(), "project-b")
+
+	missing := checkDiffSchemaTargetProject(source.ProjectID, nil, "instances/shared-instance/databases/no-such-db/changelogs/1")
+	require.Equal(t, connect.CodeOf(foreign), connect.CodeOf(missing))
+}

@@ -36,6 +36,37 @@ type releaseCheckTarget struct {
 	name     string
 }
 
+// checkReleaseTargetProject refuses a database target that spells another
+// project: it asks for nothing this project could hold, so it is malformed
+// for this request rather than merely absent.
+func checkReleaseTargetProject(projectID, target string, targetProjectID *string) error {
+	if targetProjectID != nil && *targetProjectID != projectID {
+		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database target %q does not belong to project %q", target, projectID))
+	}
+	return nil
+}
+
+// checkReleaseDatabase refuses a target whose database is missing or belongs
+// to another project. One error for both: a distinct one would confirm what
+// lives in a project the caller cannot see.
+func checkReleaseDatabase(projectID, target string, database *store.DatabaseMessage) error {
+	if database == nil || database.ProjectID != projectID {
+		return connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", target))
+	}
+	return nil
+}
+
+// checkReleaseDatabaseInstance refuses a target whose instance is gone or whose
+// name is not the database's own canonical one — a project instance's database
+// is not reachable through the workspace form. The same error as
+// checkReleaseDatabase, for the same reason.
+func checkReleaseDatabaseInstance(target string, database *store.DatabaseMessage, instance *store.InstanceMessage) error {
+	if instance == nil || instance.Deleted || database.ResourceName() != target {
+		return connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", target))
+	}
+	return nil
+}
+
 func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[v1pb.CheckReleaseRequest]) (*connect.Response[v1pb.CheckReleaseResponse], error) {
 	request := req.Msg
 	projectID, err := common.GetProjectID(request.GetParent())
@@ -78,8 +109,8 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 	for _, target := range request.Targets {
 		// Handle database target.
 		if targetProjectID, instanceID, databaseName, err := common.GetDatabaseResourceName(target); err == nil {
-			if targetProjectID != nil && *targetProjectID != projectID {
-				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("database target %q does not belong to project %q", target, projectID))
+			if err := checkReleaseTargetProject(projectID, target, targetProjectID); err != nil {
+				return nil, err
 			}
 			database, err := s.store.GetDatabase(ctx, &store.FindDatabaseMessage{
 				Workspace:    workspaceID,
@@ -89,12 +120,8 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to found database %v", target))
 			}
-			// One error for missing, foreign, archived, and non-canonical: a
-			// distinct one would confirm what lives in a project the caller
-			// cannot see.
-			notFound := connect.NewError(connect.CodeNotFound, errors.Errorf("database %v not found", target))
-			if database == nil || database.ProjectID != projectID {
-				return nil, notFound
+			if err := checkReleaseDatabase(projectID, target, database); err != nil {
+				return nil, err
 			}
 			instance, err := s.store.GetInstance(ctx, &store.FindInstanceMessage{
 				Workspace:  workspaceID,
@@ -103,8 +130,8 @@ func (s *ReleaseService) CheckRelease(ctx context.Context, req *connect.Request[
 			if err != nil {
 				return nil, connect.NewError(connect.CodeInternal, err)
 			}
-			if instance == nil || instance.Deleted || database.ResourceName() != target {
-				return nil, notFound
+			if err := checkReleaseDatabaseInstance(target, database, instance); err != nil {
+				return nil, err
 			}
 			targets = append(targets, &releaseCheckTarget{database: database, name: target})
 			continue

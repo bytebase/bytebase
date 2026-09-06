@@ -415,6 +415,27 @@ func (s *RolloutService) ListTaskRuns(ctx context.Context, req *connect.Request[
 	}), nil
 }
 
+// classifyRolloutError maps what the review workflow refused a rollout for
+// onto the two answers a caller acts on: the issue is still a draft, or the
+// approval the rollout was built on is no longer current. Anything else is
+// passed through as it came.
+func classifyRolloutError(err error) error {
+	if errors.Is(err, errStaleRolloutApproval) {
+		return errStaleRolloutApproval
+	}
+	var workflowErr *review.Error
+	if errors.As(err, &workflowErr) {
+		switch workflowErr.Reason {
+		case review.ReasonDraftIssue:
+			return errDraftIssueNotSubmitted
+		case review.ReasonApprovalRequired, review.ReasonStaleInput:
+			return errStaleRolloutApproval
+		default:
+		}
+	}
+	return err
+}
+
 // CreateRolloutAndPendingTasks creates rollout tasks and pending task runs.
 func CreateRolloutAndPendingTasks(
 	ctx context.Context,
@@ -449,20 +470,7 @@ func CreateRolloutAndPendingTasks(
 		},
 	})
 	if err != nil {
-		if errors.Is(err, errStaleRolloutApproval) {
-			return errStaleRolloutApproval
-		}
-		var workflowErr *review.Error
-		if errors.As(err, &workflowErr) {
-			switch workflowErr.Reason {
-			case review.ReasonDraftIssue:
-				return errDraftIssueNotSubmitted
-			case review.ReasonApprovalRequired, review.ReasonStaleInput:
-				return errStaleRolloutApproval
-			default:
-			}
-		}
-		return err
+		return classifyRolloutError(err)
 	}
 	tasks = result.Tasks
 	issue = result.Issue

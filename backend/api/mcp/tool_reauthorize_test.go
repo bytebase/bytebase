@@ -8,52 +8,24 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
-
 	"github.com/labstack/echo/v5"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/store"
-
-	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 )
 
-// newReauthorizeTestServer boots a store-backed MCP server with one OAuth2
-// client, one principal, and one live refresh grant — the state the reauthorize
-// tool operates on.
-func newReauthorizeTestServer(ctx context.Context, t *testing.T) (*Server, *store.Store, string) {
+// newReauthorizeTestServer builds an MCP server over the in-memory store, which
+// records the refresh grants the reauthorize tool asks it to revoke. That the
+// real store deletes them and the token endpoint stops refreshing is pinned
+// in backend/tests TestOAuth2GrantLifecycle.
+func newReauthorizeTestServer(t *testing.T) (*Server, *testServerStore) {
 	t.Helper()
-	db, st, _ := testcontainer.NewMetadataDB(t)
-
-	_, err := db.ExecContext(ctx, `
-		INSERT INTO workspace (resource_id) VALUES ('ws-test');
-		INSERT INTO setting (name, workspace, value)
-		VALUES ('MCP', 'ws-test', '{"capability":"READ_WRITE"}');
-		INSERT INTO principal (name, email, password_hash) VALUES ('demo', 'test@example.com', 'unused');
-		INSERT INTO oauth2_client (client_id, workspace, client_secret_hash, config)
-		VALUES ('client-A', NULL, 'unused-hash', '{"clientName":"test","redirectUris":["http://localhost/cb"],"grantTypes":["authorization_code","refresh_token"],"tokenEndpointAuthMethod":"none"}'::jsonb);
-	`)
+	st := newTestServerStore()
+	s, err := newServerWithStore(st, &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}, revalidationSecret, nil)
 	require.NoError(t, err)
-
-	refreshToken := "refresh-token"
-	_, err = st.CreateOAuth2RefreshToken(ctx, &store.OAuth2RefreshTokenMessage{
-		TokenHash: auth.HashToken(refreshToken),
-		ClientID:  "client-A",
-		UserEmail: "test@example.com",
-		Workspace: "ws-test",
-		Config:    &storepb.OAuth2RefreshTokenConfig{},
-		ExpiresAt: time.Now().Add(time.Hour),
-	})
-	require.NoError(t, err)
-
-	s, err := NewServer(st, &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}, revalidationSecret, nil)
-	require.NoError(t, err)
-	return s, st, refreshToken
+	return s, st
 }
 
 // probeAuthMiddleware reports the status the /mcp boundary gives a bearer.
@@ -75,10 +47,9 @@ func probeAuthMiddleware(t *testing.T, s *Server, bearer string) int {
 
 func TestReauthorizeRejectsCurrentAccessToken(t *testing.T) {
 	ctx := context.Background()
-	s, st, refreshToken := newReauthorizeTestServer(ctx, t)
-	const secret = revalidationSecret
+	s, st := newReauthorizeTestServer(t)
 
-	accessToken := generateOAuth2MCPToken(t, secret, "client-A", "ws-test")
+	accessToken := generateOAuth2MCPToken(t, revalidationSecret, "client-A", "ws-test")
 	reauthorizeCtx := withAccessToken(ctx, accessToken)
 	reauthorizeCtx = withUserEmail(reauthorizeCtx, "test@example.com")
 	reauthorizeCtx = withOAuth2ClientID(reauthorizeCtx, "client-A")
@@ -86,10 +57,8 @@ func TestReauthorizeRejectsCurrentAccessToken(t *testing.T) {
 	_, _, err := s.handleReauthorize(reauthorizeCtx, nil, ReauthorizeInput{})
 	require.NoError(t, err)
 
-	stored, err := st.GetOAuth2RefreshToken(ctx, "client-A", auth.HashToken(refreshToken))
-	require.NoError(t, err)
-	require.Nil(t, stored)
-
+	require.Equal(t, [][2]string{{"test@example.com", "client-A"}}, st.deletedRefreshGrants,
+		"the caller's refresh grants for this client are revoked, and only those")
 	require.Equal(t, http.StatusUnauthorized, probeAuthMiddleware(t, s, accessToken))
 }
 
@@ -104,7 +73,7 @@ func TestReauthorizeRejectsCurrentAccessToken(t *testing.T) {
 // grants but never producing the OAuth challenge the tool promises.
 func TestReauthorizeRejectsRefreshedAccessToken(t *testing.T) {
 	ctx := context.Background()
-	s, _, _ := newReauthorizeTestServer(ctx, t)
+	s, _ := newReauthorizeTestServer(t)
 
 	e := echo.New()
 	s.RegisterRoutes(e)

@@ -1,10 +1,9 @@
-package v1
+package tests
 
 import (
 	"context"
 	"crypto/sha256"
 	"database/sql"
-	"errors"
 	"fmt"
 	"net/http/httptest"
 	"net/url"
@@ -14,15 +13,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
-
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/encoding/protojson"
 
+	apiv1 "github.com/bytebase/bytebase/backend/api/v1"
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/permission"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
@@ -32,16 +32,77 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
+	"github.com/bytebase/bytebase/backend/migrator"
 	samplerunner "github.com/bytebase/bytebase/backend/runner/sample"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
+// The Sample Project Instance tests provision roles and databases on a real
+// TLS Postgres target, run the cleanup runner against it, and issue DDL as the
+// sample role: that is engine plus workflow, which is why they live here and
+// not beside the handler. They drive the service directly rather than a
+// server, so each gets its own migrated metadata database on the package's
+// Postgres and they share one target, isolated by workspace.
+
+// newMetadataStore gives a test its own migrated metadata database on the
+// package's Postgres, for service-level tests that need a Store but no server.
+func newMetadataStore(ctx context.Context, t *testing.T) (*sql.DB, *store.Store) {
+	t.Helper()
+	admin, err := sql.Open("pgx", fmt.Sprintf("postgresql://postgres:root-password@%s:%s/postgres", externalPgHost, externalPgPort))
+	require.NoError(t, err)
+	defer admin.Close()
+	name := getTestDatabaseString()
+	_, err = admin.ExecContext(ctx, "CREATE DATABASE "+name)
+	require.NoError(t, err)
+
+	dsn := fmt.Sprintf("postgresql://postgres:root-password@%s:%s/%s", externalPgHost, externalPgPort, name)
+	db, err := sql.Open("pgx", dsn)
+	require.NoError(t, err)
+	require.NoError(t, migrator.MigrateSchema(ctx, db))
+	stores, err := store.New(ctx, dsn, false)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, stores.Close())
+		require.NoError(t, db.Close())
+	})
+	return db, stores
+}
+
+var (
+	sampleTargetOnce      sync.Once
+	sampleTargetContainer *testcontainer.Container
+	sampleTargetErr       error
+)
+
+// sharedSampleTarget starts the TLS Postgres the sample tests provision onto,
+// once for the package; startMain takes it down. The tests isolate by
+// workspace — every sample resource name derives from the workspace ID — so
+// one target serves them all.
+func sharedSampleTarget(t *testing.T) *testcontainer.Container {
+	t.Helper()
+	sampleTargetOnce.Do(func() {
+		ctx := context.Background()
+		container, err := testcontainer.GetTLSPgContainer(ctx)
+		if err != nil {
+			sampleTargetErr = err
+			return
+		}
+		if err := prepareSampleTargetBaseline(ctx, container.GetDB()); err != nil {
+			container.Close(ctx)
+			sampleTargetErr = err
+			return
+		}
+		sampleTargetContainer = container
+	})
+	require.NoError(t, sampleTargetErr)
+	return sampleTargetContainer
+}
+
 func TestPrepareSampleProjectInstanceLifecycle(t *testing.T) {
 	t.Parallel()
 	now := time.Date(2026, time.August, 17, 12, 0, 0, 0, time.UTC)
-	ctx, fixture := newSampleProjectInstanceFixture(t, func() time.Time { return now })
+	ctx, fixture := newSampleProjectInstanceFixture(t, func() time.Time { return now }, "sample-lifecycle")
 	runner := samplerunner.NewRunner(fixture.manager)
 
 	prepared, err := fixture.service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
@@ -151,7 +212,7 @@ func TestPrepareSampleProjectInstanceLifecycle(t *testing.T) {
 
 func TestSampleProjectPurgeRejectsPendingReservation(t *testing.T) {
 	t.Parallel()
-	ctx, fixture := newSampleProjectInstanceFixture(t, time.Now)
+	ctx, fixture := newSampleProjectInstanceFixture(t, time.Now, "sample-purge")
 	payload := &storepb.SaaSSampleInstanceSetupPayload{
 		ProjectId:    fixture.projectID,
 		InstanceId:   "pending-sample",
@@ -179,17 +240,47 @@ func TestSampleProjectPurgeRejectsPendingReservation(t *testing.T) {
 	require.Nil(t, setup.DeletedAt)
 }
 
-//nolint:tparallel // Subtests share the parent's fixture.
+// TestPrepareSampleProjectInstanceRejectsConsumedEntitlementAfterProjectDeletion
+// pins that a workspace's one sample entitlement stays consumed once it was
+// spent, even after the project it was spent on is deleted: the next request
+// is refused rather than provisioning a second sample.
+func TestPrepareSampleProjectInstanceRejectsConsumedEntitlementAfterProjectDeletion(t *testing.T) {
+	t.Parallel()
+	ctx, fixture := newSampleProjectInstanceFixture(t, time.Now, "sample-consumed")
+	payload, err := protojson.Marshal(&storepb.SaaSSampleInstanceSetupPayload{
+		ProjectId:    fixture.projectID,
+		InstanceId:   "sample-deleted-project",
+		Title:        "Sample Project Instance",
+		DatabaseName: "bb_sample_deleted_project",
+		RoleName:     "bb_sample_role_deleted_project",
+	})
+	require.NoError(t, err)
+	_, _, err = fixture.store.ReserveSampleInstanceSetup(ctx, &store.SampleInstanceSetupMessage{
+		WorkspaceID: fixture.workspaceID,
+		ReplicaID:   "replica-a",
+		Payload:     payload,
+	})
+	require.NoError(t, err)
+	_, err = fixture.store.GetDB().ExecContext(ctx, `UPDATE project SET deleted = TRUE WHERE workspace = $1 AND resource_id = $2`, fixture.workspaceID, fixture.projectID)
+	require.NoError(t, err)
+
+	_, err = fixture.service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
+		Parent: common.FormatProject(fixture.projectID),
+	}))
+	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+}
+
+//nolint:tparallel // Subtests share one fixture and advance its clock in order.
 func TestPrepareSampleProjectInstanceAdditionalLifecycleCoverage(t *testing.T) {
 	t.Parallel()
 	now := time.Date(2026, time.August, 17, 12, 0, 0, 0, time.UTC)
-	ctx, fixture := newSampleProjectInstanceFixture(t, func() time.Time { return now })
+	ctx, fixture := newSampleProjectInstanceFixture(t, func() time.Time { return now }, "sample-extra")
 	runner := samplerunner.NewRunner(fixture.manager)
 
 	t.Run("ACL denies callers without project permission", func(t *testing.T) {
 		iamManager, err := iam.NewManager(fixture.store, nil, true)
 		require.NoError(t, err)
-		aclInterceptor := NewACLInterceptor(fixture.store, "", iamManager, fixture.service.profile)
+		aclInterceptor := apiv1.NewACLInterceptor(fixture.store, "", iamManager, fixture.profile)
 		injectIdentity := connect.UnaryInterceptorFunc(func(next connect.UnaryFunc) connect.UnaryFunc {
 			return func(requestCtx context.Context, request connect.AnyRequest) (connect.AnyResponse, error) {
 				requestCtx = context.WithValue(requestCtx, common.WorkspaceIDContextKey, fixture.workspaceID)
@@ -277,7 +368,7 @@ func TestPrepareSampleProjectInstanceAdditionalLifecycleCoverage(t *testing.T) {
 		require.False(t, fixture.target.roleExists(staleCtx, allocation.Role))
 		instance, err := fixture.store.GetInstance(staleCtx, &store.FindInstanceMessage{
 			Workspace:   "sample-workspace-stale",
-			ResourceID:  ptr(sampleInstanceID("sample-workspace-stale")),
+			ResourceID:  new(sampleInstanceID("sample-workspace-stale")),
 			ShowDeleted: true,
 		})
 		require.NoError(t, err)
@@ -326,37 +417,33 @@ func TestPrepareSampleProjectInstanceAdditionalLifecycleCoverage(t *testing.T) {
 
 type sampleProjectInstanceFixture struct {
 	store       *store.Store
-	service     *InstanceService
+	service     *apiv1.InstanceService
+	profile     *config.Profile
+	syncer      *schemasync.Syncer
 	manager     *saas.Manager
 	target      *sampleTargetInspector
 	workspaceID string
 	projectID   string
 }
 
-func newSampleProjectInstanceFixture(t *testing.T, clock func() time.Time) (context.Context, *sampleProjectInstanceFixture) {
+func newSampleProjectInstanceFixture(t *testing.T, clock func() time.Time, workspaceID string) (context.Context, *sampleProjectInstanceFixture) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	t.Cleanup(cancel)
 
-	// Only the target is a container: it is a TLS server Bytebase connects to,
-	// not metadata.
-	target := testcontainer.GetTestTLSPgContainer(ctx, t)
-	t.Cleanup(func() { target.Close(context.Background()) })
-
-	metadataDB, stores, _ := testcontainer.NewMetadataDB(t)
-	_, err := metadataDB.ExecContext(ctx, `
-		INSERT INTO workspace (resource_id) VALUES ('sample-workspace');
-		INSERT INTO project (resource_id, workspace, name) VALUES ('sample-project', 'sample-workspace', 'Sample Project');
-	`)
+	target := sharedSampleTarget(t)
+	_, stores := newMetadataStore(ctx, t)
+	_, err := stores.GetDB().ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ($1)`, workspaceID)
+	require.NoError(t, err)
+	_, err = stores.GetDB().ExecContext(ctx, `INSERT INTO project (resource_id, workspace, name) VALUES ('sample-project', $1, 'Sample Project')`, workspaceID)
 	require.NoError(t, err)
 
-	setSampleProjectInstanceTestEnvironment(ctx, t, stores, "sample-workspace")
+	setSampleProjectInstanceTestEnvironment(ctx, t, stores, workspaceID)
 
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
 	require.NoError(t, err)
 	dbFactory := dbfactory.New(stores, licenseService)
 	syncer := schemasync.NewSyncer(stores, dbFactory, licenseService, nil)
-	require.NoError(t, prepareSampleTargetBaseline(ctx, target.GetDB()))
 	targetURL := tlsPostgresTestURL(target)
 	inspector := newSampleTargetInspector(t, targetURL)
 	manager, err := saas.NewManager(
@@ -366,19 +453,15 @@ func newSampleProjectInstanceFixture(t *testing.T, clock func() time.Time) (cont
 		sample.ManagerOptions{Clock: clock, ReplicaID: "replica-a"},
 	)
 	require.NoError(t, err)
-	return context.WithValue(ctx, common.WorkspaceIDContextKey, "sample-workspace"), &sampleProjectInstanceFixture{
-		store: stores,
-		service: &InstanceService{
-			store:          stores,
-			profile:        &config.Profile{SaaS: true},
-			licenseService: licenseService,
-			dbFactory:      dbFactory,
-			schemaSyncer:   syncer,
-			sampleManager:  manager,
-		},
+	profile := &config.Profile{SaaS: true}
+	return context.WithValue(ctx, common.WorkspaceIDContextKey, workspaceID), &sampleProjectInstanceFixture{
+		store:       stores,
+		service:     apiv1.NewInstanceService(stores, profile, licenseService, dbFactory, syncer, manager),
+		profile:     profile,
+		syncer:      syncer,
 		manager:     manager,
 		target:      inspector,
-		workspaceID: "sample-workspace",
+		workspaceID: workspaceID,
 		projectID:   "sample-project",
 	}
 }
@@ -414,7 +497,7 @@ func (f *sampleProjectInstanceFixture) sampleRecordFor(ctx context.Context, t *t
 	payload := &storepb.SaaSSampleInstanceSetupPayload{}
 	require.NoError(t, common.ProtojsonUnmarshaler.Unmarshal(setup.Payload, payload))
 	require.NotNil(t, setup.ExpiresAt)
-	record := sampleProjectInstanceRecord{
+	return sampleProjectInstanceRecord{
 		workspace: workspaceID,
 		project:   payload.ProjectId,
 		instance:  payload.InstanceId,
@@ -424,7 +507,6 @@ func (f *sampleProjectInstanceFixture) sampleRecordFor(ctx context.Context, t *t
 		expiresAt: *setup.ExpiresAt,
 		deletedAt: setup.DeletedAt,
 	}
-	return record
 }
 
 func (f *sampleProjectInstanceFixture) sampleRecordCount(ctx context.Context, t *testing.T) int {
@@ -455,11 +537,8 @@ func (f *sampleProjectInstanceFixture) allocation(ctx context.Context, t *testin
 	return f.allocationFor(ctx, t, f.workspaceID)
 }
 
-func (f *sampleProjectInstanceFixture) allocationFor(
-	ctx context.Context,
-	t *testing.T,
-	workspaceID string,
-) testAllocation {
+func (f *sampleProjectInstanceFixture) allocationFor(ctx context.Context, t *testing.T, workspaceID string) testAllocation {
+	t.Helper()
 	record := f.sampleRecordFor(ctx, t, workspaceID)
 	instance, err := f.store.GetInstance(ctx, &store.FindInstanceMessage{
 		Workspace:   workspaceID,
@@ -544,7 +623,7 @@ func (f *sampleProjectInstanceFixture) createPartialReservation(
 		ProjectId:     projectID,
 		InstanceId:    sampleInstanceID(workspaceID),
 		Title:         "Sample Project Instance",
-		EnvironmentId: ptr("test"),
+		EnvironmentId: new("test"),
 		DatabaseName:  sampleDatabaseName(workspaceID),
 		RoleName:      sampleRoleName(workspaceID),
 	}
@@ -567,7 +646,7 @@ func (f *sampleProjectInstanceFixture) createPartialReservation(
 	instance, err := f.store.CreateInstance(ctx, &store.InstanceMessage{
 		Workspace:     workspaceID,
 		ProjectID:     &projectID,
-		EnvironmentID: ptr("test"),
+		EnvironmentID: new("test"),
 		ResourceID:    payload.InstanceId,
 		Metadata: &storepb.Instance{
 			Title:      "Sample Project Instance",
@@ -582,7 +661,7 @@ func (f *sampleProjectInstanceFixture) createPartialReservation(
 		},
 	})
 	require.NoError(t, err)
-	_, _, databases, err := f.service.schemaSyncer.SyncInstance(ctx, instance)
+	_, _, databases, err := f.syncer.SyncInstance(ctx, instance)
 	require.NoError(t, err)
 	require.Len(t, databases, 1)
 	_, err = f.store.GetDB().ExecContext(ctx, `

@@ -568,17 +568,25 @@ func (s *IssueService) findLinkedIssueForCreate(ctx context.Context, issue *stor
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to find issue by plan"))
 	}
+	return linkedIssueForCreate(*issue.PlanUID, existing, issue)
+}
+
+// linkedIssueForCreate decides what creating issue means when its plan,
+// planUID, already has one. A submitted issue is final for the plan. A draft is the creator's
+// own: the same creator asking again gets it back, a submission must go
+// through it, and another creator is told the plan is taken.
+func linkedIssueForCreate(planUID int64, existing, issue *store.IssueMessage) (*store.IssueMessage, error) {
 	if existing == nil {
 		return nil, nil
 	}
 	if !existing.Payload.GetDraft() {
-		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("plan %d already has a non-draft issue", *issue.PlanUID))
+		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("plan %d already has a non-draft issue", planUID))
 	}
 	if !issue.Payload.GetDraft() {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("plan %d already has a draft issue; update or submit the existing draft instead of creating another issue", *issue.PlanUID))
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.Errorf("plan %d already has a draft issue; update or submit the existing draft instead of creating another issue", planUID))
 	}
 	if existing.CreatorEmail != issue.CreatorEmail {
-		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("plan %d already has a draft issue", *issue.PlanUID))
+		return nil, connect.NewError(connect.CodeAlreadyExists, errors.Errorf("plan %d already has a draft issue", planUID))
 	}
 	return existing, nil
 }
@@ -1000,49 +1008,13 @@ func (s *IssueService) UpdateIssue(ctx context.Context, req *connect.Request[v1p
 			return nil, mapIssueSubmissionError(err)
 		}
 		issue = result.Issue
-		for _, event := range result.Events {
-			switch event := event.(type) {
-			case review.IssueTitleUpdatedEvent:
-				issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
-					IssueUID: issue.UID,
-					Payload: &storepb.IssueCommentPayload{
-						Event: &storepb.IssueCommentPayload_IssueUpdate_{
-							IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
-								FromTitle: &event.FromTitle,
-								ToTitle:   &event.ToTitle,
-							},
-						},
-					},
-				})
-			case review.IssueDescriptionUpdatedEvent:
-				issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
-					IssueUID: issue.UID,
-					Payload: &storepb.IssueCommentPayload{
-						Event: &storepb.IssueCommentPayload_IssueUpdate_{
-							IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
-								FromDescription: &event.FromDescription,
-								ToDescription:   &event.ToDescription,
-							},
-						},
-					},
-				})
-			case review.IssueLabelsUpdatedEvent:
-				issueCommentCreates = append(issueCommentCreates, &store.IssueCommentMessage{
-					IssueUID: issue.UID,
-					Payload: &storepb.IssueCommentPayload{
-						Event: &storepb.IssueCommentPayload_IssueUpdate_{
-							IssueUpdate: &storepb.IssueCommentPayload_IssueUpdate{
-								FromLabels: event.FromLabels,
-								ToLabels:   event.ToLabels,
-							},
-						},
-					},
-				})
-			case review.ApprovalCheckEvent:
-				s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: issue.ProjectID, UID: issue.UID}
-			default:
-				return nil, connect.NewError(connect.CodeInternal, errors.Errorf("unexpected issue metadata event %T", event))
-			}
+		comments, approvalCheck, err := issueCommentsForMetadataEvents(issue.UID, result.Events)
+		if err != nil {
+			return nil, connect.NewError(connect.CodeInternal, err)
+		}
+		issueCommentCreates = append(issueCommentCreates, comments...)
+		if approvalCheck {
+			s.bus.ApprovalCheckChan <- bus.IssueRef{ProjectID: issue.ProjectID, UID: issue.UID}
 		}
 	}
 
@@ -1105,6 +1077,39 @@ func newIssueLabelsUpdateComment(issueUID int64, fromLabels, toLabels []string) 
 			},
 		},
 	}
+}
+
+// issueCommentsForMetadataEvents turns the events a metadata patch produced
+// into the audit comments the issue timeline shows, and reports whether the
+// patch reset the approval, which is what asks for the approval check to run
+// again. Which patches reset the approval is the review workflow's decision;
+// this is only its record.
+func issueCommentsForMetadataEvents(issueUID int64, events []review.Event) ([]*store.IssueCommentMessage, bool, error) {
+	var comments []*store.IssueCommentMessage
+	approvalCheck := false
+	for _, event := range events {
+		var update *storepb.IssueCommentPayload_IssueUpdate
+		switch event := event.(type) {
+		case review.IssueTitleUpdatedEvent:
+			update = &storepb.IssueCommentPayload_IssueUpdate{FromTitle: &event.FromTitle, ToTitle: &event.ToTitle}
+		case review.IssueDescriptionUpdatedEvent:
+			update = &storepb.IssueCommentPayload_IssueUpdate{FromDescription: &event.FromDescription, ToDescription: &event.ToDescription}
+		case review.IssueLabelsUpdatedEvent:
+			update = &storepb.IssueCommentPayload_IssueUpdate{FromLabels: event.FromLabels, ToLabels: event.ToLabels}
+		case review.ApprovalCheckEvent:
+			approvalCheck = true
+			continue
+		default:
+			return nil, false, errors.Errorf("unexpected issue metadata event %T", event)
+		}
+		comments = append(comments, &store.IssueCommentMessage{
+			IssueUID: issueUID,
+			Payload: &storepb.IssueCommentPayload{
+				Event: &storepb.IssueCommentPayload_IssueUpdate_{IssueUpdate: update},
+			},
+		})
+	}
+	return comments, approvalCheck, nil
 }
 
 func mapIssueSubmissionError(err error) error {

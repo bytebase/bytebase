@@ -88,6 +88,14 @@ func TestProjectInstanceCoreBehavior(t *testing.T) {
 	a.NoError(err)
 	a.Len(query.Msg.Results, 1)
 
+	// A batch validates every target before scheduling any: one name that
+	// cannot be resolved fails the whole request.
+	_, err = ctl.databaseServiceClient.BatchSyncDatabases(ctx, connect.NewRequest(&v1pb.BatchSyncDatabasesRequest{
+		Parent: projectInstance.Name,
+		Names:  []string{databaseName, "invalid"},
+	}))
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+
 	// The history row carries the project-scoped database name, so the
 	// `instance ==` filter must accept the project-scoped instance name
 	// (T18c-ii); the workspace form of the same ID names no instance here.
@@ -435,4 +443,35 @@ func projectInstanceTestInstanceNames(instances []*v1pb.Instance) []string {
 		names = append(names, instance.Name)
 	}
 	return names
+}
+
+// TestUndeleteProjectInstanceChecksActivationLimit pins that restoring an
+// archived, activated project instance counts against the plan's activated
+// instance limit the way creating one does: with the license gone it is
+// refused, and it comes back once the license is.
+func TestUndeleteProjectInstanceChecksActivationLimit(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	pg, err := provisionPgInstance(ctx, t)
+	a.NoError(err)
+	instance := createProjectInstanceTestInstance(ctx, t, ctl, &ctl.project.Name, "bot35-activation-limit", "activated project instance", pg)
+	a.True(instance.Activation)
+
+	_, err = ctl.instanceServiceClient.DeleteInstance(ctx, connect.NewRequest(&v1pb.DeleteInstanceRequest{Name: instance.Name}))
+	a.NoError(err)
+
+	a.NoError(ctl.removeLicense(ctx))
+	_, err = ctl.instanceServiceClient.UndeleteInstance(ctx, connect.NewRequest(&v1pb.UndeleteInstanceRequest{Name: instance.Name}))
+	a.Equal(connect.CodeResourceExhausted, connect.CodeOf(err))
+
+	a.NoError(ctl.setLicense(ctx))
+	restored, err := ctl.instanceServiceClient.UndeleteInstance(ctx, connect.NewRequest(&v1pb.UndeleteInstanceRequest{Name: instance.Name}))
+	a.NoError(err)
+	a.True(restored.Msg.Activation)
 }

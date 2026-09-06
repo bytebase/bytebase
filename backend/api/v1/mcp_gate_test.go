@@ -17,7 +17,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/api/auth"
 	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
@@ -1184,8 +1183,7 @@ func TestMCPGateRefusesGrantIssues(t *testing.T) {
 //nolint:tparallel // Subtests share the parent's fixture.
 func TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation(t *testing.T) {
 	t.Parallel()
-	st := newAuditLiveStore(t)
-	auditIn := NewAuditInterceptor(st, "test-secret", &config.Profile{})
+	auditIn, captured := newRecordingAuditInterceptor()
 	gate := NewInternalMCPGateInterceptor(readWriteCeiling())
 
 	invoke := func(t *testing.T, correlationID, procedure string, req connect.AnyRequest) {
@@ -1213,9 +1211,9 @@ func TestMCPGateDenialIsAuditedWithoutAnAuditAnnotation(t *testing.T) {
 
 	assertOneDeniedRow := func(t *testing.T, correlationID, procedure string) *storepb.AuditLog {
 		t.Helper()
-		rows := findRowsByCorrelation(t, st, correlationID)
+		rows := rowsByCorrelation(*captured, correlationID)
 		require.Len(t, rows, 1, "a policy denial must be recorded even where the method asks for no audit row")
-		row := rows[0].Payload
+		row := rows[0]
 		require.Equal(t, procedure, row.Method)
 		require.Equal(t, int32(connect.CodePermissionDenied), row.GetStatus().GetCode())
 		require.Equal(t, "workspaces/"+auditTestWorkspace, row.Parent)

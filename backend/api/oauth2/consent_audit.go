@@ -79,7 +79,19 @@ func (s *Service) refuseConsentByCeiling(c *echo.Context, attempt consentAttempt
 // The row is written here for the same reason the connection gate writes its
 // own: this route is echo, so no interceptor sees it.
 func (s *Service) refuseConsent(c *echo.Context, attempt consentAttempt, verdict auth.MCPCeilingVerdict) error {
-	row := &storepb.AuditLog{
+	row := consentRefusalRow(attempt, verdict, common.RequestMetadataFromHTTP(c.Request()))
+	common.RecordOutOfBandAudit(c.Request().Context(), s.store,
+		s.profile.RuntimeEnableAuditLogStdout.Load(), attempt.user.workspaceID, row)
+	return c.HTML(http.StatusForbidden, consentRefusedHTML(verdict, attempt.redirectURI, attempt.state))
+}
+
+// consentRefusalRow is the audit row a refused consent leaves: a
+// PermissionDenied under the consenting user's workspace, carrying the MCP
+// provenance this flow has — the client asking, and the resource and scope it
+// asked for. No correlation ID: that is minted at /mcp, and this attempt never
+// got there.
+func consentRefusalRow(attempt consentAttempt, verdict auth.MCPCeilingVerdict, requestMetadata *storepb.RequestMetadata) *storepb.AuditLog {
+	return &storepb.AuditLog{
 		Parent:   common.FormatWorkspace(attempt.user.workspaceID),
 		Method:   common.AuditMethodMCPConsentApprove,
 		Resource: common.FormatWorkspace(attempt.user.workspaceID),
@@ -89,19 +101,13 @@ func (s *Service) refuseConsent(c *echo.Context, attempt consentAttempt, verdict
 			Code:    int32(codes.PermissionDenied),
 			Message: verdict.Refusal(),
 		},
-		RequestMetadata: common.RequestMetadataFromHTTP(c.Request()),
-		// The MCP provenance this flow has: the client asking, and the
-		// resource and scope it asked for. No correlation ID — that is minted
-		// at /mcp, and this attempt never got there.
+		RequestMetadata: requestMetadata,
 		McpDelegation: &storepb.MCPDelegation{
 			Scope:    attempt.params.scope,
 			Resource: attempt.params.resource,
 			ClientId: attempt.clientID,
 		},
 	}
-	common.RecordOutOfBandAudit(c.Request().Context(), s.store,
-		s.profile.RuntimeEnableAuditLogStdout.Load(), attempt.user.workspaceID, row)
-	return c.HTML(http.StatusForbidden, consentRefusedHTML(verdict, attempt.redirectURI, attempt.state))
 }
 
 // consentRefusedHTML renders the refusal. Inline styles only: the global CSP

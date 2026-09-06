@@ -134,6 +134,18 @@ func TestChangePasswordProofAndRevocation(t *testing.T) {
 	a.Equal(connect.CodeUnauthenticated, connect.CodeOf(err))
 	_, err = ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{Email: email, Password: newPassword}))
 	a.NoError(err)
+
+	// On a workspace that accepts signups, a registered address is reported
+	// as taken, and that outranks the password policy: a registered user
+	// should be told to log in, not to pick a better password.
+	for _, password := range []string{"password-long-enough", "short"} {
+		_, err := ctl.authServiceClient.Signup(ctx, connect.NewRequest(&v1pb.SignupRequest{
+			Email:    email,
+			Title:    "Signup test",
+			Password: password,
+		}))
+		a.Equal(connect.CodeAlreadyExists, connect.CodeOf(err), "password %q", password)
+	}
 	ctl.authInterceptor.token = adminToken
 }
 

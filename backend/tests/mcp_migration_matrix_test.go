@@ -11,17 +11,15 @@ package tests
 //   - accepted: backend/api/mcp/server_test.go
 //     TestMCPAuthMiddlewareAudienceMatrix/"unexpired legacy oauth2 audience is
 //     accepted" and TestDecideAudience/"legacy oauth2 audience is accepted
-//     while its token lives"; against a real store,
-//     backend/api/mcp/server_killswitch_test.go TestMCPKillSwitchEndToEnd
-//     (its tokenForWorkspace helper mints the legacy audience).
+//     while its token lives".
 //   - expired: backend/api/mcp/server_test.go TestMCPAuthMiddleware/"expired
 //     token returns 401", whose generateExpiredToken deliberately carries the
 //     legacy audience for exactly this reason.
 //
 // Row 2 — a legacy refresh grant with no stored resource is refused with the
 // re-consent signal (invalid_grant naming the reauthorize tool). MAPPED:
-// backend/api/oauth2/grant_test.go TestResourceScopeGrantLifecycle/"legacy
-// unbound grants are refused at the token endpoint with re-auth guidance" —
+// TestOAuth2GrantLifecycle/"legacy unbound grants are refused at the token
+// endpoint with re-auth guidance" in this package —
 // both grant types, plus the negative control that a resource-bound grant
 // with an empty scope is NOT legacy.
 //
@@ -29,17 +27,19 @@ package tests
 // delegation state is BOTH-EMPTY. The links were pinned separately (session
 // works: TestMCPToolCallParity; credential: backend/api/mcp/
 // internal_transport_test.go TestMCPAuthMiddlewareLegacySessionEmptyGrantState;
-// AuthContext: backend/api/auth/internal_interceptor_livestate_test.go;
-// audit row: backend/api/v1/audit_mcp_provenance_test.go) but nothing composed
-// them on a live server. NEW: TestMCPMigrationGrantStateMatrix.
+// AuthContext: backend/api/auth/internal_interceptor_test.go
+// TestAuthenticateDelegatedCarriesGrantVerbatim; audit row:
+// backend/api/v1/audit_test.go TestAuditRowCarriesMCPDelegationProvenance)
+// but nothing composed them on a live server. NEW:
+// TestMCPMigrationGrantStateMatrix.
 //
 // Row 4 — a grant whose client omitted `scope` at consent: resource bound,
 // scope empty. The state has two indistinguishable origins — scope-omitting
 // clients, which make it permanent rather than only migration-era, and,
 // transiently, PR-3-era tokens whose grant DID record a scope — and it must
 // never collapse into row 3. The AuthContext-level distinction is pinned
-// (internal_interceptor_livestate_test.go/"grant-backed token: resource
-// present, scope empty"); nothing minted the state from a real scope-less
+// (TestAuthenticateDelegatedCarriesGrantVerbatim/"grant-backed token:
+// resource present, scope empty"); nothing minted the state from a real scope-less
 // token, carried it to an audit row, or checked it survives a refresh that
 // names a scope — the one path that could widen a grant which recorded none.
 // NEW: TestMCPMigrationGrantStateMatrix, which asserts rows 3 and 4 against
@@ -47,10 +47,8 @@ package tests
 //
 // Row 5 — bb.oauth2.access on the public v1 API is refused. MAPPED:
 // backend/api/auth/auth_test.go TestCheckTokenAudience/"legacy oauth2
-// audience is refused: it is MCP-minted too" (the legacy audience by name),
-// backend/api/oauth2/grant_test.go TestResourceScopeGrantLifecycle/"an MCP
-// token is refused on the general API but keeps serving /mcp", and the
-// end-to-end flow in TestMCPTokenIsRejectedOnGeneralAPI.
+// audience is refused: it is MCP-minted too" (the legacy audience by name)
+// and the end-to-end flow in TestMCPTokenIsRejectedOnGeneralAPI.
 //
 // Row 6 — a ceiling lookup FAILURE fails closed (lookup error → DISABLED →
 // connection refused). NEW: TestMCPMigrationCeilingLookupFailureFailsClosed.
@@ -60,12 +58,10 @@ package tests
 // backend/api/mcp/server_test.go TestDecideAudience.
 //
 // Row 7 — a tightened ceiling bites the NEXT request of a live MCP session,
-// with no re-auth. The request-level half is pinned
-// (backend/api/mcp/server_killswitch_test.go
-// TestMCPKillSwitchBypassesSettingCache, which also pins that the read
-// bypasses the setting cache), but that test has no session and the
-// session-level test runs with a nil store, so the ceiling is never consulted
-// there. NEW: TestMCPMigrationTightenedCeilingBitesLiveSession.
+// with no re-auth. That the gate reads the stored setting fresh, past the
+// setting cache, is pinned by TestMCPMaskingToggleBitesTheNextRequest in this
+// package, which flips the same setting out of band. NEW:
+// TestMCPMigrationTightenedCeilingBitesLiveSession.
 
 import (
 	"context"
@@ -74,6 +70,7 @@ import (
 	"encoding/json"
 	"io"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -313,9 +310,8 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 	// The stored ceiling is given a value the MCP setting cannot be parsed with,
 	// so the read errors outright. That is a distinct arm from an unrecognized
 	// enum NAME, which the store's unmarshaler discards: a name it does not
-	// know is parsed as UNSPECIFIED and fails closed, and
-	// TestMCPCeilingStoredValueFailsClosed
-	// (backend/api/mcp) owns that case. This one is the unmarshal error itself.
+	// know is parsed as UNSPECIFIED and fails closed, and TestMCPCutoverAdmitsReadOnlyAndNothingElse
+	// owns that case. This one is the unmarshal error itself.
 	restore := func() {
 		result, err := db.ExecContext(ctx, `
 			UPDATE setting SET value = '{"capability":"READ_WRITE"}'::jsonb
@@ -349,6 +345,23 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 		"a ceiling that cannot be read must fail closed, not fall back to permitting MCP; %s", body)
 	a.Contains(body, "could not be read")
 	a.NotContains(body, "turned MCP access off")
+
+	// The same outage refuses a NEW consent as an outage too, never as a
+	// policy: the client is told to retry in its own vocabulary and gets no
+	// code, and no denial row is written — telling a user their admin
+	// disabled MCP during a database blip would send them to an admin with
+	// nothing to fix, and an outage recorded as a denial is a decision nobody
+	// made.
+	consentStatus, consentBody := postOAuth2Consent(t, ctl, ctl.authInterceptor.token,
+		oauth2ConsentForm(registerOAuth2Client(t, ctl), url.Values{"resource": {ctl.rootURL + "/mcp"}, "scope": {"mcp:read-only"}}))
+	a.Equal(http.StatusOK, consentStatus, "an error redirect is a 200 carrying the error")
+	consentCallback := oauth2Callback(t, consentBody)
+	a.Equal("temporarily_unavailable", consentCallback.Query().Get("error"))
+	a.Empty(consentCallback.Query().Get("code"), "an outage must not mint a credential either")
+	var consentDenials int
+	a.NoError(db.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM audit_log WHERE payload->>'method' = '/bytebase.mcp.Consent/Approve'`).Scan(&consentDenials))
+	a.Zero(consentDenials)
 
 	// Restoring the row proves the refusal was the unreadable policy and
 	// nothing else: the very same token opens a session again.
@@ -413,4 +426,79 @@ func TestMCPMigrationTightenedCeilingBitesLiveSession(t *testing.T) {
 	restored := openMCPSession(ctx, t, ctl, mcpToken)
 	defer restored.Close()
 	a.Equal(http.StatusOK, callAPIStatus(ctx, t, restored, "WorkspaceService/ListWorkspaces", nil))
+}
+
+// TestMCPMembershipRevocationBitesLiveSession pins the property the delegated
+// credential rests on: it carries identity and grant state only, so
+// authorization-relevant state — here workspace membership — is re-resolved
+// against the store on EVERY internal request. Revoking membership bites on
+// the very next tool call with the SAME still-valid bearer: no re-consent, no
+// token expiry, no session restart. If a refactor ever starts trusting the
+// credential for authorization state, this goes red.
+func TestMCPMembershipRevocationBitesLiveSession(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	const memberEmail = "revoked-member@example.com"
+	const memberPassword = "1024bytebase"
+	memberResp, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+		User: &v1pb.User{Title: "revoked member", Email: memberEmail, Password: memberPassword},
+	}))
+	a.NoError(err)
+	workspace := memberResp.Msg.Workspace
+	member := "user:" + memberEmail
+	_, err = ctl.addMemberToWorkspaceIAM(ctx, workspace, member, "roles/workspaceMember")
+	a.NoError(err)
+	memberLogin, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:    memberEmail,
+		Password: memberPassword,
+	}))
+	a.NoError(err)
+
+	mcpToken, _ := mintMCPOAuthToken(t, ctl, memberLogin.Msg.Token)
+	session := openMCPSession(ctx, t, ctl, mcpToken)
+	defer session.Close()
+	a.Equal(http.StatusOK, callAPIStatus(ctx, t, session, "WorkspaceService/ListWorkspaces", nil),
+		"a member's session serves tool calls")
+
+	setWorkspaceMemberRoles(ctx, t, ctl, workspace, member, nil)
+	a.Equal(http.StatusUnauthorized, callAPIStatus(ctx, t, session, "WorkspaceService/ListWorkspaces", nil),
+		"the same credential must stop working the moment membership is revoked")
+
+	// Live in both directions, not a one-way latch: restoring membership
+	// restores service with the unchanged credential.
+	setWorkspaceMemberRoles(ctx, t, ctl, workspace, member, []string{"roles/workspaceMember"})
+	a.Equal(http.StatusOK, callAPIStatus(ctx, t, session, "WorkspaceService/ListWorkspaces", nil))
+}
+
+// setWorkspaceMemberRoles rewrites the workspace IAM policy so that member holds
+// exactly roles — none, to revoke the membership entirely.
+func setWorkspaceMemberRoles(ctx context.Context, t *testing.T, ctl *controller, workspace, member string, roles []string) {
+	t.Helper()
+	policyResp, err := ctl.workspaceServiceClient.GetIamPolicy(ctx, connect.NewRequest(&v1pb.GetIamPolicyRequest{Resource: workspace}))
+	require.NoError(t, err)
+	policy := policyResp.Msg
+	for _, binding := range policy.Bindings {
+		kept := binding.Members[:0]
+		for _, m := range binding.Members {
+			if m != member {
+				kept = append(kept, m)
+			}
+		}
+		binding.Members = kept
+	}
+	for _, role := range roles {
+		policy.Bindings = append(policy.Bindings, &v1pb.Binding{Role: role, Members: []string{member}})
+	}
+	_, err = ctl.workspaceServiceClient.SetIamPolicy(ctx, connect.NewRequest(&v1pb.SetIamPolicyRequest{
+		Etag:     policy.Etag,
+		Policy:   policy,
+		Resource: workspace,
+	}))
+	require.NoError(t, err)
 }

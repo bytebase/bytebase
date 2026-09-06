@@ -114,6 +114,8 @@ type controller struct {
 	serviceAccountServiceClient   v1connect.ServiceAccountServiceClient
 	workloadIdentityServiceClient v1connect.WorkloadIdentityServiceClient
 	accessGrantServiceClient      v1connect.AccessGrantServiceClient
+	identityProviderServiceClient v1connect.IdentityProviderServiceClient
+	instanceRoleServiceClient     v1connect.InstanceRoleServiceClient
 
 	project *v1pb.Project
 
@@ -288,6 +290,8 @@ func (ctl *controller) start(ctx context.Context, port int) (context.Context, er
 	ctl.projectServiceClient = v1connect.NewProjectServiceClient(ctl.client, baseURL, interceptors)
 	ctl.databaseGroupServiceClient = v1connect.NewDatabaseGroupServiceClient(ctl.client, baseURL, interceptors)
 	ctl.authServiceClient = v1connect.NewAuthServiceClient(ctl.client, baseURL, interceptors)
+	ctl.identityProviderServiceClient = v1connect.NewIdentityProviderServiceClient(ctl.client, baseURL, interceptors)
+	ctl.instanceRoleServiceClient = v1connect.NewInstanceRoleServiceClient(ctl.client, baseURL, interceptors)
 	ctl.userServiceClient = v1connect.NewUserServiceClient(ctl.client, baseURL, interceptors)
 	ctl.settingServiceClient = v1connect.NewSettingServiceClient(ctl.client, baseURL, interceptors)
 	ctl.instanceServiceClient = v1connect.NewInstanceServiceClient(ctl.client, baseURL, interceptors)

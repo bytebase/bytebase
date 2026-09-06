@@ -509,8 +509,8 @@ below stands; only the payoff line has changed. `backend/api/mcp` remains the
 proof it is livable: 168 tests in 19 s, 16 of its 18 files containerless.
 
 Effort 2 declined a fake store on two grounds, and both fail here. `api/v1` is
-not testing its API — `mcp_info_test.go` calls `service.GetMCPInfo` as a Go
-method, so the container buys a `*store.Store` and nothing the test asserts. And
+not testing its API — `mcp_info_test.go` called `service.GetMCPInfo` as a Go
+method, so the container bought a `*store.Store` and nothing the test asserts. And
 "a fake store" was the wrong unit: `store.Store` has 305 methods and `api/v1`
 calls 181, but `api/mcp` needed five (`serverStore`, faked in 62 lines) and
 `mcp_gate.go` needed one (`mcpSettingsReader`). Interfaces go beside the handler
@@ -602,8 +602,20 @@ Five of the 18 call unexported `api/v1` methods — `getAndVerifyUser`,
 move without exporting them. `TestLoginAttemptRetentionOutlivesLockouts` is not
 a database test at all; it compares two constants.
 
-Convert `mcp_info_test.go` first — `mcpSettingsReader` exists and the test is 60
-lines — and measure before doing the rest. Server boots go the same way:
+**Landed for `backend/api`.** `auth`, `oauth2`, `lsp` and `mcp` hold no
+metadata Postgres now — about 1.5 s each, `mcp` 9.6 s of deliberate sleeps —
+and `api/v1` runs in 9 s with 14 tests left on the shared container. No fake
+was written. The decide-and-convert halves came out as functions over plain
+data (`buildAuditRows`, `buildV1Plans`, `linkedIssueForCreate`,
+`checkReleaseDatabase`, `consentRefusalRow`), `mcp_info_test.go` became
+`TestActuatorMCPSetting` over the existing `mcpSettingsReader`, and what needs
+a live workflow — the OAuth2 grant lifecycle, login lockouts, the sample
+project instance — joined the tests already in `backend/tests`. The 14 that
+stay need state no API can set up: a planted email code, a stale approval
+snapshot, a sample instance's lifecycle hooks. The seven packages outside
+`api/` are untouched.
+
+Server boots go the same way:
 `mcp_capability_setting_test.go` spends 6 to read and write one settings row,
 the saved-query list and filter tests 12, GitOps `CheckRelease` 11 of 17. Keep
 the 27 `TestCollision*` and `TestClaim*` tests where they are —

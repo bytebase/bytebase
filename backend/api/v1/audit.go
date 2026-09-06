@@ -40,8 +40,8 @@ type AuditInterceptor struct {
 	secret  string
 	profile *config.Profile
 
-	// createAuditLogFunc, when set, replaces createAuditLog for streaming sends.
-	// Test-only seam that lets unit tests observe audit persistence ordering
+	// createAuditLogFunc, when set, replaces createAuditLog. Test-only seam
+	// that lets unit tests observe what an audited call writes, and when,
 	// without a database.
 	createAuditLogFunc func(context.Context, *auditEntry) error
 }
@@ -111,7 +111,7 @@ func (in *AuditInterceptor) WrapUnary(next connect.UnaryFunc) connect.UnaryFunc 
 				peerAddr:                req.Peer().Addr,
 				latency:                 latency,
 			}
-			if err := in.createAuditLog(ctx, entry); err != nil {
+			if err := in.writeAuditLog(ctx, entry); err != nil {
 				slog.Warn("audit interceptor: failed to create audit log", log.BBError(err), slog.String("method", req.Spec().Procedure))
 			}
 		}
@@ -177,11 +177,7 @@ func (c *auditConnectStreamingConn) Send(resp any) error {
 			peerAddr: c.Peer().Addr,
 			latency:  time.Since(c.startTime),
 		}
-		writeAuditLog := c.interceptor.createAuditLog
-		if c.interceptor.createAuditLogFunc != nil {
-			writeAuditLog = c.interceptor.createAuditLogFunc
-		}
-		if auditErr := writeAuditLog(c.ctx, entry); auditErr != nil {
+		if auditErr := c.interceptor.writeAuditLog(c.ctx, entry); auditErr != nil {
 			return auditErr
 		}
 	}
@@ -208,7 +204,43 @@ type auditEntry struct {
 	latency                 time.Duration
 }
 
+// auditRow is one row an audited call leaves: the payload, under the
+// workspace it belongs to.
+type auditRow struct {
+	workspaceID string
+	payload     *storepb.AuditLog
+}
+
+// writeAuditLog records an audited call, through the test seam when one is set.
+func (in *AuditInterceptor) writeAuditLog(ctx context.Context, e *auditEntry) error {
+	if in.createAuditLogFunc != nil {
+		return in.createAuditLogFunc(ctx, e)
+	}
+	return in.createAuditLog(ctx, e)
+}
+
 func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) error {
+	rows, err := in.buildAuditRows(ctx, e)
+	if err != nil {
+		return err
+	}
+	createAuditLogCtx := context.WithoutCancel(ctx)
+	for _, row := range rows {
+		if err := in.store.CreateAuditLog(createAuditLogCtx, row.workspaceID, row.payload); err != nil {
+			return err
+		}
+		// Log audit event to stdout using slog (if enabled)
+		if in.profile.RuntimeEnableAuditLogStdout.Load() {
+			common.LogAuditToStdout(ctx, row.payload)
+		}
+	}
+	return nil
+}
+
+// buildAuditRows decides what an audited call leaves behind — which parents
+// it is filed under, what each row carries, and whether it is recorded at
+// all — without writing anything. createAuditLog writes what it returns.
+func (in *AuditInterceptor) buildAuditRows(ctx context.Context, e *auditEntry) ([]auditRow, error) {
 	// Skip audit logging for validate-only requests that SUCCEEDED. A dry run
 	// that Bytebase accepted changed nothing, so recording it is noise — that
 	// is the whole reason for the skip.
@@ -230,7 +262,7 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 	// refusals that happen to carry that code and silently drop every other
 	// rejected attempt.
 	if e.rerr == nil && isValidateOnlyRequest(e.request) {
-		return nil
+		return nil, nil
 	}
 
 	requestString := marshalAuditPayload(e.request)
@@ -249,7 +281,7 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 	authContextAny := ctx.Value(common.AuthContextKey)
 	authContext, ok := authContextAny.(*common.AuthContext)
 	if !ok {
-		return connect.NewError(connect.CodeInternal, errors.New("auth context not found"))
+		return nil, connect.NewError(connect.CodeInternal, errors.New("auth context not found"))
 	}
 
 	requestMetadata := getRequestMetadataFromHeaders(e.headers, e.peerAddr)
@@ -356,7 +388,7 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 	auditStatus := redactAuditStatus(convertErrToStatus(e.rerr))
 	mcpDelegation := mcpDelegationFromAuthContext(authContext)
 
-	createAuditLogCtx := context.WithoutCancel(ctx)
+	var rows []auditRow
 	for _, ap := range parents {
 		resource := getRequestResource(e.request, e.method)
 		// For login requests, if resource is empty, try to get email from user context or MFA temp token.
@@ -372,40 +404,34 @@ func (in *AuditInterceptor) createAuditLog(ctx context.Context, e *auditEntry) e
 			}
 		}
 
-		p := &storepb.AuditLog{
-			Parent:          ap.parent,
-			Method:          e.method,
-			Resource:        resource,
-			Severity:        storepb.AuditLog_INFO,
-			User:            user,
-			Request:         requestString,
-			Response:        responseString,
-			Status:          auditStatus,
-			Latency:         durationpb.New(e.latency),
-			ServiceData:     serviceData,
-			RequestMetadata: requestMetadata,
-			McpDelegation:   mcpDelegation,
-		}
 		// Resolve workspace for audit log.
 		workspaceIDForAudit := ap.auditWorkspaceID
 		if workspaceIDForAudit == "" {
-			workspaceIDForAudit = common.GetWorkspaceIDFromContext(createAuditLogCtx)
+			workspaceIDForAudit = common.GetWorkspaceIDFromContext(ctx)
 		}
 		if workspaceIDForAudit == "" {
 			// Skip audit log if no workspace can be determined (e.g., unauthenticated request).
 			continue
 		}
-		if err := in.store.CreateAuditLog(createAuditLogCtx, workspaceIDForAudit, p); err != nil {
-			return err
-		}
-
-		// Log audit event to stdout using slog (if enabled)
-		if in.profile.RuntimeEnableAuditLogStdout.Load() {
-			common.LogAuditToStdout(ctx, p)
-		}
+		rows = append(rows, auditRow{
+			workspaceID: workspaceIDForAudit,
+			payload: &storepb.AuditLog{
+				Parent:          ap.parent,
+				Method:          e.method,
+				Resource:        resource,
+				Severity:        storepb.AuditLog_INFO,
+				User:            user,
+				Request:         requestString,
+				Response:        responseString,
+				Status:          auditStatus,
+				Latency:         durationpb.New(e.latency),
+				ServiceData:     serviceData,
+				RequestMetadata: requestMetadata,
+				McpDelegation:   mcpDelegation,
+			},
+		})
 	}
-
-	return nil
+	return rows, nil
 }
 
 // mcpDelegationFromAuthContext copies the delegated MCP grant state onto the

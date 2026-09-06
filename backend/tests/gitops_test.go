@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/genproto/googleapis/type/expr"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -715,6 +716,25 @@ func TestGitOpsRollout(t *testing.T) {
 	changeDatabaseConfig := plan.Specs[0].GetChangeDatabaseConfig()
 	a.NotNil(changeDatabaseConfig)
 	a.Equal(createReleaseResp.Msg.Name, changeDatabaseConfig.Release)
+
+	// A release-backed plan's specs are the release's: editing them here would
+	// desynchronize the plan from what was released, so the update is refused
+	// and the plan's editor attribution stays with its creator.
+	_, err = ctl.planServiceClient.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
+		Plan: &v1pb.Plan{
+			Name: plan.Name,
+			Specs: []*v1pb.Plan_Spec{{
+				Id:     uuid.NewString(),
+				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{}},
+			}},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"specs"}},
+	}))
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+	a.ErrorContains(err, "created from a release")
+	unchanged, err := ctl.planServiceClient.GetPlan(ctx, connect.NewRequest(&v1pb.GetPlanRequest{Name: plan.Name}))
+	a.NoError(err)
+	a.Equal(plan.LastPlanEditor, unchanged.Msg.LastPlanEditor)
 
 	// Step 3: Create a rollout from the plan.
 	rolloutResp, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{

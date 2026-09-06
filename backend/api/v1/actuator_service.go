@@ -79,6 +79,23 @@ func (s *ActuatorService) GetActuatorInfo(
 	return connect.NewResponse(info), nil
 }
 
+// actuatorMCPSetting is the MCP policy actuator info discloses: the resolution
+// the gate admitted this request under when there is one, else a fresh read.
+// The consent page derives its states from this alone, so it is the backend
+// receipt for what the page may show. A row this build cannot parse leaves the
+// setting absent rather than refusing the whole bootstrap response — the policy
+// page then withholds editing instead of showing a guessed ceiling. A ceiling
+// nobody serves arrives as the stored number: a client that has no name for it
+// is exactly the client that must not disclose it.
+func actuatorMCPSetting(ctx context.Context, reader mcpSettingsReader, workspaceID string) *v1pb.MCPSetting {
+	mcpSetting, err := mcpSettingsForCurrentWorkspace(ctx, reader, workspaceID)
+	if err != nil {
+		slog.Error("failed to read the MCP setting", slog.String("workspace", workspaceID), log.BBError(err))
+		return nil
+	}
+	return convertToMCPSetting(mcpSetting)
+}
+
 func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string) (*v1pb.ActuatorInfo, error) {
 	serverInfo := v1pb.ActuatorInfo{
 		Version:             s.profile.Version,
@@ -93,12 +110,7 @@ func (s *ActuatorService) getServerInfo(ctx context.Context, workspaceID string)
 
 	if workspaceID != "" {
 		serverInfo.Workspace = common.FormatWorkspace(workspaceID)
-		mcpSetting, err := mcpSettingsForCurrentWorkspace(ctx, s.store, workspaceID)
-		if err != nil {
-			slog.Error("failed to read the MCP setting", slog.String("workspace", workspaceID), log.BBError(err))
-		} else {
-			serverInfo.McpSetting = convertToMCPSetting(mcpSetting)
-		}
+		serverInfo.McpSetting = actuatorMCPSetting(ctx, s.store, workspaceID)
 		if s.sampleManager != nil {
 			serverInfo.Sample.Available = s.sampleManager.CheckAvailable(ctx) == nil
 			instances, err := s.sampleManager.ListInstances(ctx, workspaceID)

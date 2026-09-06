@@ -145,6 +145,18 @@ func TestMCPConnectionDenialEmission(t *testing.T) {
 			"the interceptor audits what an admitted session then does; this gate only records refusals")
 	})
 
+	t.Run("a read-only ceiling admits the session", func(t *testing.T) {
+		// READ_ONLY opens a session: what a read-only session may then do is
+		// refused per method by the gate on the internal chain and per
+		// statement by the SQL clamp, not at this door.
+		st := newTestServerStore()
+		st.capability = storepb.MCPSetting_READ_ONLY
+		srv := newServer(t, st)
+
+		require.Equal(t, http.StatusOK, connect(t, srv, mcpToken(t, secret, tokenOptions{})))
+		require.Empty(t, st.auditRows)
+	})
+
 	t.Run("the row carries the whole grant, not just its presence", func(t *testing.T) {
 		const resource = "https://bb.example.com/mcp"
 		st := newTestServerStore()

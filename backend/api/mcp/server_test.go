@@ -139,8 +139,7 @@ func TestNewServerRequiresStore(t *testing.T) {
 // telling a client to retry a mistyped stored value promises something no
 // retry delivers.
 //
-// The stored-value cases are covered against a real database in
-// TestMCPCeilingStoredValueFailsClosed; this covers the arm above them.
+// This covers the arm above the stored-value cases.
 func TestMCPReadFailureRefusesTheConnectionAsUnavailable(t *testing.T) {
 	secret := "test-secret-key"
 	profile := &config.Profile{Mode: common.ReleaseModeDev, ExternalURL: "https://bb.example.com"}
@@ -567,6 +566,25 @@ func generateTokenWithWrongAudience(t *testing.T, secret string) string {
 		"sub":          "test@example.com",
 		"aud":          "wrong.audience",
 		"workspace_id": "ws-test",
+		"exp":          time.Now().Add(time.Hour).Unix(),
+		"iat":          time.Now().Unix(),
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	token.Header["kid"] = "v1"
+	tokenStr, err := token.SignedString([]byte(secret))
+	require.NoError(t, err)
+	return tokenStr
+}
+
+// tokenForWorkspace mints a legacy-audience MCP token for a workspace, the
+// shape the boundary still admits while such tokens live.
+func tokenForWorkspace(t *testing.T, secret, workspaceID string) string {
+	t.Helper()
+	claims := jwt.MapClaims{
+		"iss":          "bytebase",
+		"sub":          "test@example.com",
+		"aud":          auth.OAuth2AccessTokenAudience,
+		"workspace_id": workspaceID,
 		"exp":          time.Now().Add(time.Hour).Unix(),
 		"iat":          time.Now().Unix(),
 	}

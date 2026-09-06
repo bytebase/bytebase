@@ -8,6 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"regexp"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"connectrpc.com/connect"
 	"github.com/pquerna/otp/totp"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -67,31 +69,85 @@ func TestLoginFailureLockout(t *testing.T) {
 	}))
 	a.NoError(err)
 
+	// A second account and an unreachable LDAP provider for the arms below;
+	// both need the admin session the login attempts run without.
+	_, err = ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+		User: &v1pb.User{Title: "clearing", Email: "clearing@example.com", Password: "1024bytebase"},
+	}))
+	a.NoError(err)
+	_, err = ctl.identityProviderServiceClient.CreateIdentityProvider(ctx, connect.NewRequest(&v1pb.CreateIdentityProviderRequest{
+		IdentityProviderId: "ldap-lockout",
+		IdentityProvider: &v1pb.IdentityProvider{
+			Title: "Unreachable directory",
+			Type:  v1pb.IdentityProviderType_LDAP,
+			Config: &v1pb.IdentityProviderConfig{Config: &v1pb.IdentityProviderConfig_LdapConfig{LdapConfig: &v1pb.LDAPIdentityProviderConfig{
+				Host:         "127.0.0.1",
+				Port:         1,
+				BindDn:       "cn=admin,dc=example,dc=com",
+				BindPassword: "unused",
+				BaseDn:       "dc=example,dc=com",
+				UserFilter:   "(uid=%s)",
+				FieldMapping: &v1pb.FieldMapping{Identifier: "uid"},
+			}}},
+		},
+	}))
+	a.NoError(err)
+
 	adminToken := ctl.authInterceptor.token
 	ctl.authInterceptor.token = ""
 
-	mfaStart, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
-		Email:    "demo@example.com",
-		Password: "1024bytebase",
-	}))
-	a.NoError(err)
-	mfaTempToken := mfaStart.Msg.GetMfaTempToken()
-	a.NotEmpty(mfaTempToken)
-	invalidOTP := "not-a-code"
-	for range 5 {
-		_, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
-			OtpCode:      &invalidOTP,
+	// Every MFA attempt runs under a fresh temp token: slots are claimed per
+	// identity, so a new token must not buy new guesses.
+	var mfaTempTokens []string
+	mfaLogin := func(otpCode *string) error {
+		start, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+			Email:    "demo@example.com",
+			Password: "1024bytebase",
+		}))
+		a.NoError(err)
+		mfaTempToken := start.Msg.GetMfaTempToken()
+		a.NotEmpty(mfaTempToken)
+		mfaTempTokens = append(mfaTempTokens, mfaTempToken)
+		_, err = ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+			OtpCode:      otpCode,
 			MfaTempToken: &mfaTempToken,
 		}))
+		return err
+	}
+	// A request carrying no code is not a guess: nothing is compared, so no
+	// slot is consumed and the full allowance is still there afterwards.
+	for range 6 {
+		err := mfaLogin(nil)
+		a.Equal(connect.CodeUnauthenticated, connect.CodeOf(err))
+		a.ErrorContains(err, "OTP or recovery code is required")
+	}
+	invalidOTP := "not-a-code"
+	for range 5 {
+		err := mfaLogin(&invalidOTP)
 		a.Equal(connect.CodeUnauthenticated, connect.CodeOf(err))
 		a.ErrorContains(err, "invalid MFA code")
 	}
-	_, err = ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
-		OtpCode:      &invalidOTP,
+	err = mfaLogin(&invalidOTP)
+	a.Equal(connect.CodeResourceExhausted, connect.CodeOf(err))
+	a.ErrorContains(err, "too many failed MFA attempts")
+	// A locked identity is refused before the TOTP comparison.
+	lockedOTP, err := totp.GenerateCode(mfaSetup.Msg.OtpSecret, time.Now())
+	a.NoError(err)
+	a.Equal(connect.CodeResourceExhausted, connect.CodeOf(mfaLogin(&lockedOTP)))
+	mfaTempToken := mfaTempTokens[len(mfaTempTokens)-1]
+
+	// MFA completion on a workspace switch draws from the same per-identity
+	// bucket, so the lock demo's guesses earned holds there too: the first
+	// wrong code is refused as exhausted, before any TOTP comparison.
+	ctl.authInterceptor.token = adminToken
+	_, err = ctl.authServiceClient.SwitchWorkspace(ctx, connect.NewRequest(&v1pb.SwitchWorkspaceRequest{
+		Workspace:    workspace,
 		MfaTempToken: &mfaTempToken,
+		OtpCode:      &invalidOTP,
 	}))
 	a.Equal(connect.CodeResourceExhausted, connect.CodeOf(err))
 	a.ErrorContains(err, "too many failed MFA attempts")
+	ctl.authInterceptor.token = ""
 
 	for _, email := range []string{" Demo@Example.com ", " Unknown@Example.com "} {
 		for range 5 {
@@ -109,6 +165,53 @@ func TestLoginFailureLockout(t *testing.T) {
 		a.Equal(connect.CodeResourceExhausted, connect.CodeOf(err))
 		a.ErrorContains(err, "too many failed login attempts")
 	}
+
+	// A locked identity is refused before bcrypt: the correct password must
+	// not slip through the lock, or the lock would only slow a guesser down
+	// until the right guess.
+	_, err = ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:    "demo@example.com",
+		Password: "1024bytebase",
+	}))
+	a.Equal(connect.CodeResourceExhausted, connect.CodeOf(err))
+
+	// Success clears the counter: three wrong guesses, the right password,
+	// then the full allowance again before the lock engages — the forgotten
+	// failures must not count against the fresh window.
+	clearingLogin := func(password string) error {
+		_, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+			Email:    "clearing@example.com",
+			Password: password,
+		}))
+		return err
+	}
+	for range 3 {
+		a.Equal(connect.CodeUnauthenticated, connect.CodeOf(clearingLogin("wrong-password")))
+	}
+	a.NoError(clearingLogin("1024bytebase"))
+	for range 5 {
+		a.Equal(connect.CodeUnauthenticated, connect.CodeOf(clearingLogin("wrong-password")))
+	}
+	a.Equal(connect.CodeResourceExhausted, connect.CodeOf(clearingLogin("wrong-password")))
+
+	// LDAP logins claim under a provider-scoped key before the bind, so an
+	// unreachable directory still counts guesses and locks at the same attempt.
+	ldapLogin := func() error {
+		_, err := ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+			IdpName:  "idps/ldap-lockout",
+			Email:    "Alice",
+			Password: "wrong",
+		}))
+		return err
+	}
+	for range 5 {
+		err := ldapLogin()
+		a.Error(err, "the directory is unreachable")
+		a.NotEqual(connect.CodeResourceExhausted, connect.CodeOf(err))
+	}
+	err = ldapLogin()
+	a.Equal(connect.CodeResourceExhausted, connect.CodeOf(err))
+	a.ErrorContains(err, "too many failed login attempts")
 
 	// Email-code guessing is bounded by the same per-identity claims, taken
 	// before the code row is even loaded — no code needs to be pending and no
@@ -158,7 +261,9 @@ func TestLoginFailureLockout(t *testing.T) {
 		a.NotEqual(wrongCode, request.GetEmailCode())
 		a.NotContains(auditLog.Request, "wrong-password")
 		a.NotContains(auditLog.Request, invalidOTP)
-		a.NotContains(auditLog.Request, mfaTempToken)
+		for _, token := range mfaTempTokens {
+			a.NotContains(auditLog.Request, token)
+		}
 
 		switch auditLog.Status.Message {
 		case "invalid email or password":
@@ -178,10 +283,10 @@ func TestLoginFailureLockout(t *testing.T) {
 	}
 	a.Equal(5, invalidPasswordCount["demo@example.com"])
 	a.Equal(5, invalidPasswordCount["unknown@example.com"])
-	a.Equal(1, passwordLockoutCount["demo@example.com"])
+	a.Equal(2, passwordLockoutCount["demo@example.com"], "the sixth wrong guess and the refused correct password")
 	a.Equal(1, passwordLockoutCount["unknown@example.com"])
 	a.Equal(5, invalidMFACount)
-	a.Equal(1, mfaLockoutCount)
+	a.Equal(2, mfaLockoutCount, "the sixth wrong guess and the refused valid code")
 	a.Equal(5, invalidEmailCodeCount)
 	a.Equal(1, emailCodeLockoutCount)
 
@@ -912,4 +1017,130 @@ func TestAuditLogFormat(t *testing.T) {
 	a.NoError(err)
 	a.Empty(workspaceSearch.Msg.AuditLogs,
 		"project-scoped SetIamPolicy audit must not leak into the workspace-scoped log stream")
+}
+
+// TestLoginAuditsTheRequestedWorkspace pins where a failed login is filed when
+// the request names a workspace: under that workspace, before the account is
+// even looked up, so an attempt against an unknown address still leaves a row
+// where the workspace's operators read. A workspace that does not exist is
+// refused outright rather than audited nowhere. Pre-authentication, the login
+// page learns only the restriction and the workspace.
+func TestLoginAuditsTheRequestedWorkspace(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	workspaceResp, err := ctl.workspaceServiceClient.GetWorkspace(ctx, connect.NewRequest(&v1pb.GetWorkspaceRequest{Name: "workspaces/-"}))
+	a.NoError(err)
+	workspace := workspaceResp.Msg.Name
+
+	adminToken := ctl.authInterceptor.token
+	ctl.authInterceptor.token = ""
+
+	_, err = ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:     "stranger@example.com",
+		Password:  "wrong-password",
+		Workspace: &workspace,
+	}))
+	a.Equal(connect.CodeUnauthenticated, connect.CodeOf(err))
+
+	missing := "workspaces/missing"
+	_, err = ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:     "stranger@example.com",
+		Password:  "wrong-password",
+		Workspace: &missing,
+	}))
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+
+	info, err := ctl.authServiceClient.GetAuthenticationInfo(ctx, connect.NewRequest(&v1pb.GetAuthenticationInfoRequest{}))
+	a.NoError(err)
+	var populated []string
+	info.Msg.ProtoReflect().Range(func(field protoreflect.FieldDescriptor, _ protoreflect.Value) bool {
+		populated = append(populated, string(field.Name()))
+		return true
+	})
+	slices.Sort(populated)
+	a.Equal([]string{"restriction", "workspace"}, populated, "nothing but the restriction and the workspace is disclosed before authentication")
+	a.Equal(workspace, info.Msg.Workspace)
+
+	ctl.authInterceptor.token = adminToken
+	search, err := ctl.auditLogServiceClient.SearchAuditLogs(ctx, connect.NewRequest(&v1pb.SearchAuditLogsRequest{
+		Parent:   workspace,
+		Filter:   `method == "/bytebase.v1.AuthService/Login"`,
+		PageSize: 100,
+	}))
+	a.NoError(err)
+	strangerRows := 0
+	for _, auditLog := range search.Msg.AuditLogs {
+		if auditLog.Resource == "stranger@example.com" {
+			strangerRows++
+			a.True(strings.HasPrefix(auditLog.Name, workspace+"/auditLogs/"))
+		}
+	}
+	a.Equal(1, strangerRows, "the named workspace gets the row; the nonexistent one is refused before any row")
+}
+
+// TestLoginEnforcesWorkspaceDomains pins the identity-domain gate on the two
+// doors that lead to a session: password login of an existing user — an admin
+// included — and the sign-in code for an address the workspace would never
+// accept, which is refused before a code is written.
+func TestLoginEnforcesWorkspaceDomains(t *testing.T) {
+	t.Parallel()
+	a := require.New(t)
+	ctx := context.Background()
+	ctl := &controller{}
+	ctx, err := ctl.StartServerWithExternalPg(ctx)
+	a.NoError(err)
+	defer ctl.Close(ctx)
+
+	// The blocked admin exists before the domains are enforced, as an account
+	// created under a looser policy would.
+	const blockedAdmin = "admin@blocked.example"
+	created, err := ctl.userServiceClient.CreateUser(ctx, connect.NewRequest(&v1pb.CreateUserRequest{
+		User: &v1pb.User{Title: "Blocked admin", Email: blockedAdmin, Password: "1024bytebase"},
+	}))
+	a.NoError(err)
+	_, err = ctl.addMemberToWorkspaceIAM(ctx, created.Msg.Workspace, "user:"+blockedAdmin, "roles/workspaceAdmin")
+	a.NoError(err)
+
+	_, err = ctl.settingServiceClient.UpdateSetting(ctx, connect.NewRequest(&v1pb.UpdateSettingRequest{
+		AllowMissing: true,
+		Setting: &v1pb.Setting{
+			Name: "settings/" + v1pb.Setting_WORKSPACE_PROFILE.String(),
+			Value: &v1pb.SettingValue{Value: &v1pb.SettingValue_WorkspaceProfile{WorkspaceProfile: &v1pb.WorkspaceProfileSetting{
+				Domains:               []string{"example.com"},
+				EnforceIdentityDomain: true,
+			}}},
+		},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{
+			"value.workspace_profile.domains",
+			"value.workspace_profile.enforce_identity_domain",
+		}},
+	}))
+	a.NoError(err)
+
+	adminToken := ctl.authInterceptor.token
+	ctl.authInterceptor.token = ""
+	defer func() { ctl.authInterceptor.token = adminToken }()
+
+	_, err = ctl.authServiceClient.Login(ctx, connect.NewRequest(&v1pb.LoginRequest{
+		Email:    blockedAdmin,
+		Password: "1024bytebase",
+	}))
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err), "%v", err)
+	a.ErrorContains(err, "does not belong to allowed domains")
+
+	// The code request names the workspace, as the login page does: an
+	// address nobody has seen resolves to no workspace on its own, and the
+	// domain gate is the named workspace's.
+	_, err = ctl.authServiceClient.SendEmailLoginCode(ctx, connect.NewRequest(&v1pb.SendEmailLoginCodeRequest{
+		Email:     "new@blocked.example",
+		Workspace: &created.Msg.Workspace,
+	}))
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err), "%v", err)
+	a.ErrorContains(err, "does not belong to allowed domains")
 }

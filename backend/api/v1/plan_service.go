@@ -831,11 +831,6 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 		return nil, nil
 	}
 
-	type planKey struct {
-		projectID string
-		planUID   int64
-	}
-
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
 	planUIDs := make([]int64, 0, len(plans))
 	rolloutPlanUIDs := make([]int64, 0, len(plans))
@@ -860,13 +855,6 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to batch list issues")
 	}
-	issueByPlanKey := make(map[planKey]*store.IssueMessage, len(issues))
-	for _, issue := range issues {
-		if issue.PlanUID != nil {
-			issueByPlanKey[planKey{projectID: issue.ProjectID, planUID: *issue.PlanUID}] = issue
-		}
-	}
-
 	planCheckRuns, err := s.ListPlanCheckRuns(ctx, &store.FindPlanCheckRunMessage{
 		ProjectIDs: &projectIDs,
 		PlanUIDs:   &planUIDs,
@@ -874,12 +862,8 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to batch list plan check runs")
 	}
-	planCheckRunByPlanKey := make(map[planKey]*store.PlanCheckRunMessage, len(planCheckRuns))
-	for _, run := range planCheckRuns {
-		planCheckRunByPlanKey[planKey{projectID: run.ProjectID, planUID: run.PlanUID}] = run
-	}
 
-	taskStatusCountByPlanKey := make(map[planKey][]*store.TaskStatusCount)
+	var taskStatusCounts []*store.TaskStatusCount
 	environmentOrderMap := map[string]int{}
 	if len(rolloutPlanUIDs) > 0 {
 		environmentSetting, err := s.GetEnvironment(ctx, workspaceID)
@@ -888,14 +872,36 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 		}
 		environmentOrderMap = common.EnvironmentOrderMap(environmentSetting.GetEnvironments())
 
-		taskStatusCounts, err := s.ListTaskStatusCountByPlanIDs(ctx, projectIDs, rolloutPlanUIDs)
+		taskStatusCounts, err = s.ListTaskStatusCountByPlanIDs(ctx, projectIDs, rolloutPlanUIDs)
 		if err != nil {
 			return nil, errors.Wrap(err, "failed to batch list task status counts")
 		}
-		for _, count := range taskStatusCounts {
-			key := planKey{projectID: count.ProjectID, planUID: count.PlanID}
-			taskStatusCountByPlanKey[key] = append(taskStatusCountByPlanKey[key], count)
+	}
+	return buildV1Plans(plans, issues, planCheckRuns, taskStatusCounts, environmentOrderMap), nil
+}
+
+// buildV1Plans joins the batch reads onto their plans. Every relation is keyed
+// by (project, plan UID) rather than by UID alone: plan UIDs are allocated per
+// project, so the same number names a different plan in every project.
+func buildV1Plans(plans []*store.PlanMessage, issues []*store.IssueMessage, planCheckRuns []*store.PlanCheckRunMessage, taskStatusCounts []*store.TaskStatusCount, environmentOrderMap map[string]int) []*v1pb.Plan {
+	type planKey struct {
+		projectID string
+		planUID   int64
+	}
+	issueByPlanKey := make(map[planKey]*store.IssueMessage, len(issues))
+	for _, issue := range issues {
+		if issue.PlanUID != nil {
+			issueByPlanKey[planKey{projectID: issue.ProjectID, planUID: *issue.PlanUID}] = issue
 		}
+	}
+	planCheckRunByPlanKey := make(map[planKey]*store.PlanCheckRunMessage, len(planCheckRuns))
+	for _, run := range planCheckRuns {
+		planCheckRunByPlanKey[planKey{projectID: run.ProjectID, planUID: run.PlanUID}] = run
+	}
+	taskStatusCountByPlanKey := make(map[planKey][]*store.TaskStatusCount)
+	for _, count := range taskStatusCounts {
+		key := planKey{projectID: count.ProjectID, planUID: count.PlanID}
+		taskStatusCountByPlanKey[key] = append(taskStatusCountByPlanKey[key], count)
 	}
 
 	v1Plans := make([]*v1pb.Plan, len(plans))
@@ -907,7 +913,7 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 			v1Plan.Issue = common.FormatIssue(issue.ProjectID, issue.UID)
 			v1Plan.IssueStatus = convertToIssueStatus(issue.Status)
 			if !issue.Payload.GetDraft() {
-				v1Plan.ApprovalStatus = computeApprovalStatus(issue.Payload.GetApproval())
+				v1Plan.ApprovalStatus = store.ComputeApprovalStatus(issue.Payload.GetApproval())
 			}
 		}
 
@@ -924,7 +930,7 @@ func convertToPlans(ctx context.Context, s *store.Store, plans []*store.PlanMess
 
 		v1Plans[i] = v1Plan
 	}
-	return v1Plans, nil
+	return v1Plans
 }
 
 func convertToPlan(ctx context.Context, s *store.Store, plan *store.PlanMessage) (*v1pb.Plan, error) {

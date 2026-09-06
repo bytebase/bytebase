@@ -66,60 +66,9 @@ func (*IssueService) convertToIssue(issue *store.IssueMessage) (*v1pb.Issue, err
 		}
 		issueV1.Approvers = append(issueV1.Approvers, convertedApprover)
 	}
-	issueV1.ApprovalStatus = computeApprovalStatus(approval)
+	issueV1.ApprovalStatus = store.ComputeApprovalStatus(approval)
 
 	return issueV1, nil
-}
-
-func computeApprovalStatus(approval *storepb.IssuePayloadApproval) v1pb.ApprovalStatus {
-	// If approval finding is not done, status is checking
-	// Note: approval.GetApprovalFindingDone() returns false when approval is nil
-	if !approval.GetApprovalFindingDone() {
-		return v1pb.ApprovalStatus_CHECKING
-	}
-
-	// If no approval template, approval is skipped (not required)
-	if approval.GetApprovalTemplate() == nil {
-		return v1pb.ApprovalStatus_SKIPPED
-	}
-
-	approvalTemplate := approval.GetApprovalTemplate()
-	approvers := approval.GetApprovers()
-	totalSteps := len(approvalTemplate.GetFlow().GetRoles())
-
-	// If no approvers are assigned yet, it's pending
-	if len(approvers) == 0 {
-		return v1pb.ApprovalStatus_PENDING
-	}
-
-	// Check approver statuses
-	for _, approver := range approvers {
-		if approver.GetStatus() == storepb.IssuePayloadApproval_Approver_REJECTED {
-			// Short-circuit: if any approver rejected, overall status is rejected
-			return v1pb.ApprovalStatus_REJECTED
-		}
-	}
-
-	// Check if all steps are completed
-	// Each approver corresponds to one step in the approval flow
-	// All steps are approved if:
-	// 1. Number of approvers equals number of steps
-	// 2. All approvers have APPROVED status
-	if len(approvers) >= totalSteps {
-		allApproved := true
-		for _, approver := range approvers {
-			if approver.GetStatus() != storepb.IssuePayloadApproval_Approver_APPROVED {
-				allApproved = false
-				break
-			}
-		}
-		if allApproved {
-			return v1pb.ApprovalStatus_APPROVED
-		}
-	}
-
-	// Otherwise, approval is pending (more steps to complete or waiting for approvals)
-	return v1pb.ApprovalStatus_PENDING
 }
 
 func convertToIssueType(t storepb.Issue_Type) v1pb.Issue_Type {

@@ -2,15 +2,18 @@ package v1
 
 import (
 	"context"
-	"errors"
+	"encoding/base64"
 	"net/http"
+	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/component/config"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/store"
@@ -19,11 +22,9 @@ import (
 func TestFailedLoginWithoutWorkspaceIsSkipped(t *testing.T) {
 	t.Parallel()
 	ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{Audit: true})
-	st := newAuditLiveStore(t)
-	t.Cleanup(func() { require.NoError(t, st.Close()) })
-	in := NewAuditInterceptor(st, "test-secret", &config.Profile{})
+	in := NewAuditInterceptor(nil, "test-secret", &config.Profile{})
 
-	err := in.createAuditLog(ctx, &auditEntry{
+	rows, err := in.buildAuditRows(ctx, &auditEntry{
 		request: &v1pb.LoginRequest{
 			Email:    " Unknown@Example.com ",
 			Password: "wrong-password",
@@ -35,20 +36,15 @@ func TestFailedLoginWithoutWorkspaceIsSkipped(t *testing.T) {
 		),
 	})
 	require.NoError(t, err)
-
-	rows, err := st.SearchAuditLogs(ctx, &store.AuditLogFind{})
-	require.NoError(t, err)
 	require.Empty(t, rows)
 }
 
 func TestFailedLoginWithHandlerWorkspaceCreatesSingleAuditRow(t *testing.T) {
 	t.Parallel()
 	ctx := context.WithValue(context.Background(), common.AuthContextKey, &common.AuthContext{Audit: true})
-	st := newAuditLiveStore(t)
-	t.Cleanup(func() { require.NoError(t, st.Close()) })
-	in := NewAuditInterceptor(st, "test-secret", &config.Profile{})
+	in := NewAuditInterceptor(nil, "test-secret", &config.Profile{})
 
-	err := in.createAuditLog(ctx, &auditEntry{
+	rows, err := in.buildAuditRows(ctx, &auditEntry{
 		request: &v1pb.LoginRequest{
 			Email:    " Member@Example.com ",
 			Password: "wrong-password",
@@ -61,13 +57,10 @@ func TestFailedLoginWithHandlerWorkspaceCreatesSingleAuditRow(t *testing.T) {
 		),
 	})
 	require.NoError(t, err)
-
-	rows, err := st.SearchAuditLogs(ctx, &store.AuditLogFind{})
-	require.NoError(t, err)
 	require.Len(t, rows, 1)
-	require.Equal(t, auditTestWorkspace, rows[0].Workspace)
-	require.Equal(t, common.FormatWorkspace(auditTestWorkspace), rows[0].Payload.GetParent())
-	require.Equal(t, "member@example.com", rows[0].Payload.GetResource())
+	require.Equal(t, auditTestWorkspace, rows[0].workspaceID)
+	require.Equal(t, common.FormatWorkspace(auditTestWorkspace), rows[0].payload.GetParent())
+	require.Equal(t, "member@example.com", rows[0].payload.GetResource())
 }
 
 // TestStreamingAuditPersistedBeforeSend pins the streaming audit contract: a
@@ -218,4 +211,366 @@ func TestLifecycleAuditResource(t *testing.T) {
 			require.Equal(t, test.want, getRequestResource(test.request, test.method))
 		})
 	}
+}
+
+const auditTestWorkspace = "ws-audit"
+
+// specRequest overrides a request's Spec so the interceptors see a full
+// procedure name — connect.NewRequest alone leaves it empty.
+type specRequest struct {
+	connect.AnyRequest
+	procedure string
+}
+
+func (r *specRequest) Spec() connect.Spec {
+	return connect.Spec{Procedure: r.procedure}
+}
+
+// newRecordingAuditInterceptor builds the interceptor with no store and
+// captures the rows each audited call would have written, so a test asserts on
+// what the interceptor decided rather than on a database. That the rows reach
+// the audit page on a live server is backend/tests' TestMCPAuditProvenance.
+func newRecordingAuditInterceptor() (*AuditInterceptor, *[]auditRow) {
+	in := NewAuditInterceptor(nil, "test-secret", &config.Profile{})
+	rows := &[]auditRow{}
+	in.createAuditLogFunc = func(ctx context.Context, e *auditEntry) error {
+		built, err := in.buildAuditRows(ctx, e)
+		if err != nil {
+			return err
+		}
+		*rows = append(*rows, built...)
+		return nil
+	}
+	return in, rows
+}
+
+func auditTestUser() *store.UserMessage {
+	return &store.UserMessage{
+		ID:    1,
+		Email: "agent-driver@example.com",
+		Type:  storepb.PrincipalType_END_USER,
+	}
+}
+
+func newAuditTestContext(authCtx *common.AuthContext) context.Context {
+	ctx := context.WithValue(context.Background(), common.AuthContextKey, authCtx)
+	ctx = context.WithValue(ctx, common.UserContextKey, auditTestUser())
+	ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, auditTestWorkspace)
+	return ctx
+}
+
+// rowsByCorrelation returns the captured rows whose MCP delegation carries the
+// given correlation ID.
+func rowsByCorrelation(rows []auditRow, correlationID string) []*storepb.AuditLog {
+	var matched []*storepb.AuditLog
+	for _, row := range rows {
+		if row.payload.GetMcpDelegation().GetCorrelationId() == correlationID {
+			matched = append(matched, row.payload)
+		}
+	}
+	return matched
+}
+
+// TestAuditRowCarriesMCPDelegationProvenance pins P1a PR 5b's provenance
+// contract: an audited call that arrived with a delegated MCP credential
+// (AuthContext.DelegatedGrant non-nil) writes its grant state verbatim onto the
+// audit row, empty values preserved as empty; a public-chain call (nil grant)
+// writes a row with no MCP fields at all.
+func TestAuditRowCarriesMCPDelegationProvenance(t *testing.T) {
+	in, rows := newRecordingAuditInterceptor()
+
+	invoke := func(t *testing.T, grant *common.DelegatedGrant) {
+		t.Helper()
+		authCtx := &common.AuthContext{
+			Audit:          true,
+			AuthMethod:     common.AuthMethodIAM,
+			Resources:      []*common.Resource{{Type: common.ResourceTypeWorkspace, ID: auditTestWorkspace}},
+			DelegatedGrant: grant,
+		}
+		next := func(_ context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {
+			return connect.NewResponse(&v1pb.QueryResponse{}), nil
+		}
+		req := &specRequest{
+			AnyRequest: connect.NewRequest(&v1pb.QueryRequest{Name: "instances/i/databases/d"}),
+			procedure:  "/bytebase.v1.SQLService/Query",
+		}
+		_, err := in.WrapUnary(next)(newAuditTestContext(authCtx), req)
+		require.NoError(t, err)
+	}
+
+	t.Run("a consented grant is stamped verbatim", func(t *testing.T) {
+		invoke(t, &common.DelegatedGrant{
+			Scope:         "mcp:read-only",
+			Resource:      "https://bb.example.com/mcp",
+			ClientID:      "client-A",
+			CorrelationID: "corr-full",
+		})
+		matched := rowsByCorrelation(*rows, "corr-full")
+		require.Len(t, matched, 1, "an audited internal-chain call must produce exactly one provenance-carrying row")
+		got := matched[0].GetMcpDelegation()
+		require.Equal(t, "mcp:read-only", got.GetScope())
+		require.Equal(t, "https://bb.example.com/mcp", got.GetResource())
+		require.Equal(t, "client-A", got.GetClientId())
+	})
+
+	t.Run("a legacy empty grant still marks MCP origin, empty stays empty", func(t *testing.T) {
+		invoke(t, &common.DelegatedGrant{CorrelationID: "corr-legacy"})
+		matched := rowsByCorrelation(*rows, "corr-legacy")
+		require.Len(t, matched, 1)
+		got := matched[0].GetMcpDelegation()
+		require.NotNil(t, got, "presence of the delegation message is the MCP-origin marker, even for empty legacy grants")
+		require.Empty(t, got.GetScope(), "an empty grant scope must be recorded empty, never resolved to a label")
+		require.Empty(t, got.GetResource())
+		require.Empty(t, got.GetClientId())
+	})
+
+	t.Run("a public-chain row carries no MCP fields", func(t *testing.T) {
+		invoke(t, nil)
+		var publicRows int
+		for _, row := range *rows {
+			if row.payload.GetMcpDelegation() == nil {
+				publicRows++
+			}
+		}
+		require.Equal(t, 1, publicRows, "the nil-grant call must produce exactly one row without MCP provenance")
+	})
+}
+
+// TestAuditParentsDeduplicated pins that an audited call writes ONE row per
+// distinct parent. Batch requests repeat the same project resource once per
+// item, and since PR 5b routes ACL-denied internal-chain calls through the
+// audit interceptor, an unprivileged caller reaches this fan-out — without
+// dedup, a single denied batch call naming N items would write N identical
+// rows.
+func TestAuditParentsDeduplicated(t *testing.T) {
+	t.Parallel()
+	in, rows := newRecordingAuditInterceptor()
+
+	authCtx := &common.AuthContext{
+		Audit:      true,
+		AuthMethod: common.AuthMethodIAM,
+		Resources: []*common.Resource{
+			{Type: common.ResourceTypeProject, ID: "proj-batch"},
+			{Type: common.ResourceTypeProject, ID: "proj-batch"},
+			{Type: common.ResourceTypeProject, ID: "proj-batch"},
+			{Type: common.ResourceTypeWorkspace, ID: auditTestWorkspace},
+		},
+		DelegatedGrant: &common.DelegatedGrant{CorrelationID: "corr-dedup"},
+	}
+	next := func(_ context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {
+		return connect.NewResponse(&v1pb.QueryResponse{}), nil
+	}
+	req := &specRequest{
+		AnyRequest: connect.NewRequest(&v1pb.QueryRequest{Name: "instances/i/databases/d"}),
+		procedure:  "/bytebase.v1.SQLService/Query",
+	}
+	_, err := in.WrapUnary(next)(newAuditTestContext(authCtx), req)
+	require.NoError(t, err)
+
+	var parents []string
+	for _, row := range rowsByCorrelation(*rows, "corr-dedup") {
+		parents = append(parents, row.Parent)
+	}
+	require.ElementsMatch(t,
+		[]string{common.FormatProject("proj-batch"), "workspaces/" + auditTestWorkspace},
+		parents,
+		"one audit row per DISTINCT parent — repeated batch resources must not multiply rows")
+}
+
+// TestInternalChainAuditRecordsACLDenial pins PR 5b's denial-audit mechanism:
+// with the audit interceptor wrapped OUTSIDE the ACL interceptor (the internal
+// MCP chain's order), an ACL denial produces an audit row carrying the
+// provenance and the denied status; a method whose annotation opts out of
+// auditing stays silent for permitted and denied calls alike. The workspace
+// mismatch is decided on the request alone, so no store is needed.
+func TestInternalChainAuditRecordsACLDenial(t *testing.T) {
+	auditIn, rows := newRecordingAuditInterceptor()
+	aclIn := NewACLInterceptor(nil, "test-secret", nil /* iamManager: unreached on these paths */, &config.Profile{})
+
+	invoke := func(t *testing.T, audited bool, correlationID, resource string) (handlerReached bool, rerr error) {
+		t.Helper()
+		authCtx := &common.AuthContext{
+			Audit:      audited,
+			AuthMethod: common.AuthMethodCustom,
+			DelegatedGrant: &common.DelegatedGrant{
+				Scope:         "mcp:read-only",
+				Resource:      "https://bb.example.com/mcp",
+				ClientID:      "client-A",
+				CorrelationID: correlationID,
+			},
+		}
+		handler := func(_ context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {
+			handlerReached = true
+			return connect.NewResponse(&v1pb.IamPolicy{}), nil
+		}
+		// The internal chain's order: audit outside, ACL inside.
+		chain := auditIn.WrapUnary(aclIn.WrapUnary(handler))
+		req := &specRequest{
+			AnyRequest: connect.NewRequest(&v1pb.SetIamPolicyRequest{Resource: resource}),
+			procedure:  "/bytebase.v1.WorkspaceService/SetIamPolicy",
+		}
+		_, rerr = chain(newAuditTestContext(authCtx), req)
+		return handlerReached, rerr
+	}
+
+	t.Run("an ACL denial produces a provenance-carrying denied row", func(t *testing.T) {
+		handlerReached, err := invoke(t, true, "corr-denied", "workspaces/other-ws")
+		require.Error(t, err)
+		require.Equal(t, connect.CodePermissionDenied, connect.CodeOf(err))
+		require.False(t, handlerReached, "the denial must come from the ACL interceptor, not the handler")
+
+		matched := rowsByCorrelation(*rows, "corr-denied")
+		require.Len(t, matched, 1, "an ACL-denied internal-chain call must still produce an audit row")
+		row := matched[0]
+		require.Equal(t, "workspaces/"+auditTestWorkspace, row.Parent,
+			"a denied cross-workspace attempt must be audited under the CALLER's workspace, never the foreign one it named")
+		require.Equal(t, "/bytebase.v1.WorkspaceService/SetIamPolicy", row.Method)
+		require.Equal(t, common.FormatUserEmail(auditTestUser().Email), row.User)
+		require.NotNil(t, row.Status, "the row must reflect the denial")
+		require.Equal(t, int32(connect.CodePermissionDenied), row.Status.Code)
+		require.Equal(t, "mcp:read-only", row.GetMcpDelegation().GetScope())
+	})
+
+	t.Run("a method opted out of auditing stays silent for denials too", func(t *testing.T) {
+		_, err := invoke(t, false, "corr-optout", "workspaces/other-ws")
+		require.Error(t, err)
+		require.Empty(t, rowsByCorrelation(*rows, "corr-optout"),
+			"audit opt-out must behave consistently for permitted and denied calls")
+	})
+
+	t.Run("a permitted call is audited exactly once", func(t *testing.T) {
+		handlerReached, err := invoke(t, true, "corr-permitted", "workspaces/"+auditTestWorkspace)
+		require.NoError(t, err)
+		require.True(t, handlerReached)
+
+		matched := rowsByCorrelation(*rows, "corr-permitted")
+		require.Len(t, matched, 1)
+		require.Nil(t, matched[0].Status, "a permitted call keeps its success status")
+	})
+}
+
+// TestValidateOnlyAuditSkipAppliesOnlyToSuccess pins the boundary of the
+// validate-only skip in createAuditLog.
+//
+// The skip exists so a dry run — which changes nothing — does not spam the
+// audit log. It said nothing about the outcome, so it also swallowed every
+// FAILED attempt whose request carries validate_only. That handed an agent an
+// unlogged attempt at any forbidden method taking one of those six requests:
+// two identical denials of the same method, in the same session, differing only
+// in that flag, produced one row between them.
+//
+// The three cases below are the whole rule: outcome decides, not the flag
+// alone.
+func TestValidateOnlyAuditSkipAppliesOnlyToSuccess(t *testing.T) {
+	in, captured := newRecordingAuditInterceptor()
+
+	// A retarget with the stored password left to ride along — the shape the
+	// MCP class refuses. The secrets are here so the redaction assertion below
+	// has something to catch.
+	const storedPassword = "stored-db-secret"
+	const storedKeytab = "stored-keytab-bytes"
+	retargetRequest := func(validateOnly bool) *v1pb.UpdateDataSourceRequest {
+		return &v1pb.UpdateDataSourceRequest{
+			Name: "instances/probe",
+			DataSource: &v1pb.DataSource{
+				Id:       "admin-ds",
+				Host:     "attacker.example.com",
+				Password: storedPassword,
+				SaslConfig: &v1pb.SASLConfig{
+					Mechanism: &v1pb.SASLConfig_KrbConfig{
+						KrbConfig: &v1pb.KerberosConfig{Keytab: []byte(storedKeytab)},
+					},
+				},
+			},
+			ValidateOnly: validateOnly,
+		}
+	}
+
+	invoke := func(t *testing.T, correlationID string, request *v1pb.UpdateDataSourceRequest, rerr error) {
+		t.Helper()
+		authCtx := &common.AuthContext{
+			Audit:          true,
+			AuthMethod:     common.AuthMethodIAM,
+			Resources:      []*common.Resource{{Type: common.ResourceTypeWorkspace, ID: auditTestWorkspace}},
+			DelegatedGrant: &common.DelegatedGrant{CorrelationID: correlationID},
+		}
+		next := func(_ context.Context, _ connect.AnyRequest) (connect.AnyResponse, error) {
+			if rerr != nil {
+				return nil, rerr
+			}
+			return connect.NewResponse(&v1pb.Instance{Name: "instances/probe"}), nil
+		}
+		req := &specRequest{
+			AnyRequest: connect.NewRequest(request),
+			procedure:  "/bytebase.v1.InstanceService/UpdateDataSource",
+		}
+		_, err := in.WrapUnary(next)(newAuditTestContext(authCtx), req)
+		if rerr == nil {
+			require.NoError(t, err)
+		} else {
+			require.Error(t, err)
+		}
+	}
+
+	t.Run("a denied validate-only call is recorded", func(t *testing.T) {
+		denial := connect.NewError(connect.CodePermissionDenied,
+			errors.New("InstanceService/UpdateDataSource is not available to MCP sessions"))
+		invoke(t, "corr-validate-only-denied", retargetRequest(true), denial)
+
+		rows := rowsByCorrelation(*captured, "corr-validate-only-denied")
+		require.Len(t, rows, 1,
+			"a refused attempt must be auditable whether or not validate_only was set — "+
+				"otherwise the flag is a switch that turns off the record")
+		require.Equal(t, int32(connect.CodePermissionDenied), rows[0].GetStatus().GetCode(),
+			"the row must carry the denial, not a blank status")
+
+		// The newly-logged row goes through the same marshalAuditPayload
+		// redaction as every other UpdateDataSource row — that is why
+		// narrowing the skip exposes no field the plain path did not already
+		// write. It pins that the path runs on a row the skip used to swallow;
+		// which fields the redaction covers is the annotation's job, pinned by
+		// TestAuditRedactionCoversEveryAnnotatedField.
+		request := rows[0].GetRequest()
+		require.NotEmpty(t, request)
+		require.NotContains(t, request, storedPassword,
+			"the request payload must be redacted before it reaches the audit row")
+		// The row is protojson, which renders a bytes field base64, so the
+		// keytab has to be looked for in that form — searching for the ASCII
+		// literal would pass even with keytab redaction deleted outright.
+		require.NotContains(t, request, base64.StdEncoding.EncodeToString([]byte(storedKeytab)),
+			"the keytab reaches the row base64-encoded, and must be masked before it does")
+		require.Contains(t, request, "attacker.example.com",
+			"the destination is what an operator reads the row for — it must survive redaction")
+	})
+
+	t.Run("a succeeding validate-only call stays silent", func(t *testing.T) {
+		invoke(t, "corr-validate-only-ok", retargetRequest(true), nil)
+
+		require.Empty(t, rowsByCorrelation(*captured, "corr-validate-only-ok"),
+			"a dry run that succeeded changed nothing — the original reason for the skip")
+	})
+
+	t.Run("a failed validate-only call is recorded, denial or not", func(t *testing.T) {
+		// The rule is any failure, not any refusal, and this is the case that
+		// pins it: a validate-only connection test that could not reach the
+		// host. It is also the bulk of what the change adds, since the
+		// instance form dials before every save.
+		failedDial := connect.NewError(connect.CodeInvalidArgument,
+			errors.New("failed to connect to attacker.example.com: connection refused"))
+		invoke(t, "corr-validate-only-dial-failed", retargetRequest(true), failedDial)
+
+		rows := rowsByCorrelation(*captured, "corr-validate-only-dial-failed")
+		require.Len(t, rows, 1,
+			"keying on a denial code would drop every other rejected attempt — the hole this change closes")
+		require.Equal(t, int32(connect.CodeInvalidArgument), rows[0].GetStatus().GetCode())
+	})
+
+	t.Run("a denied ordinary call is recorded", func(t *testing.T) {
+		denial := connect.NewError(connect.CodePermissionDenied, errors.New("denied"))
+		invoke(t, "corr-plain-denied", retargetRequest(false), denial)
+
+		rows := rowsByCorrelation(*captured, "corr-plain-denied")
+		require.Len(t, rows, 1, "control: the flag is the only difference between this and the first case")
+		require.True(t, strings.Contains(rows[0].GetMethod(), "UpdateDataSource"))
+	})
 }

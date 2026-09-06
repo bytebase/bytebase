@@ -13,6 +13,7 @@ import (
 	"github.com/alexmullins/zip"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/durationpb"
+	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -165,6 +166,26 @@ func TestProjectInstanceSavedQuery(t *testing.T) {
 	a.Error(err)
 	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
 	a.Contains(err.Error(), fmt.Sprintf("database name %q is not canonical for its instance", workspaceFormName))
+
+	// The database reference is a soft link. Once the instance is purged, an
+	// autosave that re-sends the stored, now dangling, value must not fail
+	// validation — that would brick content saves — while an explicit change
+	// to a database that does not exist still fails hard.
+	_, err = ctl.instanceServiceClient.DeleteInstance(ctx, connect.NewRequest(&v1pb.DeleteInstanceRequest{Name: instance.Name}))
+	a.NoError(err)
+	_, err = ctl.instanceServiceClient.DeleteInstance(ctx, connect.NewRequest(&v1pb.DeleteInstanceRequest{Name: instance.Name, Purge: true}))
+	a.NoError(err)
+	updated, err := ctl.savedQueryServiceClient.UpdateSavedQuery(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryRequest{
+		SavedQuery: &v1pb.SavedQuery{Name: created.Name, Database: databaseName, Content: []byte("SELECT 2;")},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"database", "content"}},
+	}))
+	a.NoError(err)
+	a.Equal(databaseName, updated.Msg.Database)
+	_, err = ctl.savedQueryServiceClient.UpdateSavedQuery(ctx, connect.NewRequest(&v1pb.UpdateSavedQueryRequest{
+		SavedQuery: &v1pb.SavedQuery{Name: created.Name, Database: "instances/another-missing/databases/db"},
+		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"database"}},
+	}))
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
 }
 
 // TestProjectInstanceAccessGrant verifies that access grants targeting a

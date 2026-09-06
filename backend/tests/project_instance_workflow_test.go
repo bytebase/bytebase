@@ -3,6 +3,7 @@ package tests
 import (
 	"context"
 	"fmt"
+	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -100,6 +101,66 @@ func TestProjectInstanceWorkflowTargets(t *testing.T) {
 	rollout, err := ctl.rolloutServiceClient.CreateRollout(ctx, connect.NewRequest(&v1pb.CreateRolloutRequest{Parent: plan.Msg.Name}))
 	a.NoError(err)
 	a.Equal(databaseName, rollout.Msg.Stages[0].Tasks[0].Target)
+
+	// The instance's and database's descendant collections answer under the
+	// canonical names and refuse the workspace form of the same instance.
+	roles, err := ctl.instanceRoleServiceClient.ListInstanceRoles(ctx, connect.NewRequest(&v1pb.ListInstanceRolesRequest{Parent: instance.Name}))
+	a.NoError(err)
+	a.NotEmpty(roles.Msg.Roles)
+	for _, role := range roles.Msg.Roles {
+		a.True(strings.HasPrefix(role.Name, instance.Name+"/roles/"), role.Name)
+	}
+	changelogs, err := ctl.changelogServiceClient.ListChangelogs(ctx, connect.NewRequest(&v1pb.ListChangelogsRequest{Parent: databaseName}))
+	a.NoError(err)
+	for _, changelog := range changelogs.Msg.Changelogs {
+		a.True(strings.HasPrefix(changelog.Name, databaseName+"/changelogs/"), changelog.Name)
+	}
+	revisions, err := ctl.revisionServiceClient.ListRevisions(ctx, connect.NewRequest(&v1pb.ListRevisionsRequest{Parent: databaseName}))
+	a.NoError(err)
+	for _, revision := range revisions.Msg.Revisions {
+		a.True(strings.HasPrefix(revision.Name, databaseName+"/revisions/"), revision.Name)
+	}
+	_, err = ctl.instanceRoleServiceClient.ListInstanceRoles(ctx, connect.NewRequest(&v1pb.ListInstanceRolesRequest{Parent: "instances/bot36-project-instance"}))
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+	_, err = ctl.changelogServiceClient.ListChangelogs(ctx, connect.NewRequest(&v1pb.ListChangelogsRequest{Parent: workspaceAliasDatabase}))
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+	_, err = ctl.revisionServiceClient.ListRevisions(ctx, connect.NewRequest(&v1pb.ListRevisionsRequest{Parent: workspaceAliasDatabase}))
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+
+	// A release check confines its targets the same way: the canonical name
+	// is checked and answered under that name, the workspace form of the same
+	// database is not found, a target spelling another project is malformed
+	// for this project, and an archived project checks nothing at all.
+	release := &v1pb.Release{
+		Type:  v1pb.Release_DECLARATIVE,
+		Files: []*v1pb.Release_File{{Path: "schema.sql", Version: "1", Statement: []byte("DROP TABLE obsolete;")}},
+	}
+	checkRelease := func(parent string, target string) (*v1pb.CheckReleaseResponse, error) {
+		resp, err := ctl.releaseServiceClient.CheckRelease(ctx, connect.NewRequest(&v1pb.CheckReleaseRequest{
+			Parent:  parent,
+			Release: release,
+			Targets: []string{target},
+		}))
+		if err != nil {
+			return nil, err
+		}
+		return resp.Msg, nil
+	}
+	checked, err := checkRelease(ctl.project.Name, databaseName)
+	a.NoError(err)
+	a.Len(checked.Results, 1)
+	a.Equal(databaseName, checked.Results[0].Target)
+	_, err = checkRelease(ctl.project.Name, workspaceAliasDatabase)
+	a.Equal(connect.CodeNotFound, connect.CodeOf(err))
+	_, err = checkRelease(ctl.project.Name, crossProjectDatabaseName)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+	_, err = checkRelease(otherProject.Name, databaseName)
+	a.Equal(connect.CodeInvalidArgument, connect.CodeOf(err))
+
+	_, err = ctl.projectServiceClient.DeleteProject(ctx, connect.NewRequest(&v1pb.DeleteProjectRequest{Name: otherProject.Name}))
+	a.NoError(err)
+	_, err = checkRelease(otherProject.Name, databaseName)
+	a.Equal(connect.CodeFailedPrecondition, connect.CodeOf(err))
 
 	_, err = ctl.planServiceClient.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
 		Parent: otherProject.Name,

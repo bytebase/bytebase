@@ -2,13 +2,8 @@ package tests
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/json"
-	"io"
 	"net/http"
 	"net/url"
-	"strings"
 	"testing"
 
 	"connectrpc.com/connect"
@@ -77,7 +72,7 @@ func TestMCPPolicyDenialsReachTheAuditPage(t *testing.T) {
 	// The same workspace now refuses a NEW authorization too, and that refusal
 	// is a second row. Without it an operator sees an agent stop connecting and
 	// cannot tell a client that gave up from one that was never let in.
-	consentRefused := consentUnderDisabledCeiling(t, ctl)
+	consentRefused := consentUnderDisabledCeiling(t, ctl, "mcp:read-only")
 	a.Equal(http.StatusForbidden, consentRefused)
 
 	consentRows := searchMCP(`method == "/bytebase.mcp.Consent/Approve"`)
@@ -96,47 +91,28 @@ func TestMCPPolicyDenialsReachTheAuditPage(t *testing.T) {
 	// operator pivoting on a session must not be handed rows that were never
 	// part of one.
 	a.Empty(searchMCP(`mcp_correlation_id == "any-session"`))
+
+	// The refusal cannot be walked around by asking for a different scope, or
+	// for none: the ceiling decides whether any grant is issued at all, before
+	// the requested mode is considered. And every attempt is recorded, not
+	// just the first.
+	for _, scope := range []string{"mcp:read-write", ""} {
+		a.Equal(http.StatusForbidden, consentUnderDisabledCeiling(t, ctl, scope), "scope %q", scope)
+	}
+	a.Len(searchMCP(`method == "/bytebase.mcp.Consent/Approve"`), 3)
 }
 
 // consentUnderDisabledCeiling registers a fresh MCP client and posts an
 // approved consent form, returning the HTTP status the authorize handler
 // answered with. It is the first half of mintMCPOAuthToken's flow, stopped
-// where a refused consent stops it.
-func consentUnderDisabledCeiling(t *testing.T, ctl *controller) int {
+// where a refused consent stops it. An empty scope omits the parameter.
+func consentUnderDisabledCeiling(t *testing.T, ctl *controller, scope string) int {
 	t.Helper()
-	httpClient := &http.Client{}
-
-	resp, err := httpClient.Post(ctl.rootURL+"/api/oauth2/register", "application/json",
-		strings.NewReader(`{"client_name":"bb-e2e-refused","redirect_uris":["http://localhost/cb"],"grant_types":["authorization_code"],"token_endpoint_auth_method":"none"}`))
-	require.NoError(t, err)
-	defer resp.Body.Close()
-	var reg struct {
-		ClientID string `json:"client_id"`
+	extra := url.Values{"resource": {ctl.rootURL + "/mcp"}}
+	if scope != "" {
+		extra.Set("scope", scope)
 	}
-	require.NoError(t, json.NewDecoder(resp.Body).Decode(&reg))
-	require.NotEmpty(t, reg.ClientID)
-
-	verifier := "e2eVerifier_e2eVerifier_e2eVerifier_e2eVerifier"
-	challenge := sha256.Sum256([]byte(verifier))
-	form := url.Values{
-		"client_id":             {reg.ClientID},
-		"redirect_uri":          {"http://localhost/cb"},
-		"state":                 {"e2e-state"},
-		"code_challenge":        {base64.RawURLEncoding.EncodeToString(challenge[:])},
-		"code_challenge_method": {"S256"},
-		"action":                {"allow"},
-		"resource":              {ctl.rootURL + "/mcp"},
-		"scope":                 {"mcp:read-only"},
-	}
-	req, err := http.NewRequest(http.MethodPost, ctl.rootURL+"/api/oauth2/authorize", strings.NewReader(form.Encode()))
-	require.NoError(t, err)
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-	req.Header.Set("Authorization", "Bearer "+ctl.authInterceptor.token)
-	consentResp, err := httpClient.Do(req)
-	require.NoError(t, err)
-	defer consentResp.Body.Close()
-	body, err := io.ReadAll(consentResp.Body)
-	require.NoError(t, err)
-	require.NotContains(t, string(body), "code=", "a refused consent must issue no authorization code")
-	return consentResp.StatusCode
+	status, body := postOAuth2Consent(t, ctl, ctl.authInterceptor.token, oauth2ConsentForm(registerOAuth2Client(t, ctl), extra))
+	require.NotContains(t, body, "code=", "a refused consent must issue no authorization code")
+	return status
 }

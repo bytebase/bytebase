@@ -899,9 +899,16 @@ func (s *DatabaseService) validateDiffSchemaTargetProject(ctx context.Context, r
 	if err != nil {
 		return err
 	}
-	// One error for both: a distinct one would confirm what lives in a project
-	// the caller cannot see.
-	if target == nil || target.ProjectID != source.ProjectID {
+	return checkDiffSchemaTargetProject(source.ProjectID, target, changelog)
+}
+
+// checkDiffSchemaTargetProject confines a changelog target to the source
+// database's project. The ACL interceptor authorizes request.name only, so without this
+// a changelog under another project's database would hand over that project's
+// schema. One error for a missing and a foreign changelog: a distinct one
+// would confirm what lives in a project the caller cannot see.
+func checkDiffSchemaTargetProject(projectID string, target *store.DatabaseMessage, changelog string) error {
+	if target == nil || target.ProjectID != projectID {
 		return connect.NewError(connect.CodeNotFound, errors.Errorf("changelog %q not found", changelog))
 	}
 	return nil

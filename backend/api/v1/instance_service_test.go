@@ -3,89 +3,23 @@ package v1
 import (
 	"context"
 	"errors"
-	"fmt"
 	"log/slog"
 	"testing"
 	"time"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/sample"
+	"github.com/bytebase/bytebase/backend/enterprise"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
 	"github.com/bytebase/bytebase/backend/store"
 )
-
-func TestPrepareSampleProjectInstanceValidatesParentAndManager(t *testing.T) {
-	t.Parallel()
-	service := &InstanceService{}
-	_, err := service.PrepareSampleProjectInstance(context.Background(), connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{}))
-	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
-
-	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
-	service = &InstanceService{
-		store:          stores,
-		licenseService: newInstanceServiceTestLicenseService(t, stores),
-	}
-	_, err = service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
-		Parent: common.FormatProject(projectID),
-	}))
-	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
-}
-
-//nolint:tparallel // Subtests share the parent's fixture.
-func TestPrepareSampleProjectInstanceUsesConfiguredManagerInBothDeployments(t *testing.T) {
-	t.Parallel()
-	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
-	for _, saas := range []bool{false, true} {
-		t.Run(fmt.Sprintf("saas=%t", saas), func(t *testing.T) {
-			manager := &sampleManagerStub{instance: &store.InstanceMessage{
-				ResourceID: "sample-one",
-				ProjectID:  &projectID,
-				Metadata:   &storepb.Instance{Title: "Sample Project Instance"},
-			}}
-			service := &InstanceService{
-				store:          stores,
-				profile:        &config.Profile{SaaS: saas},
-				licenseService: newInstanceServiceTestLicenseService(t, stores),
-				sampleManager:  manager,
-			}
-
-			response, err := service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
-				Parent: common.FormatProject(projectID),
-			}))
-			require.NoError(t, err)
-			require.Equal(t, common.FormatProjectInstance(projectID, "sample-one"), response.Msg.Name)
-			require.Equal(t, 1, manager.checkAvailableCalls)
-			require.Equal(t, []sample.PrepareRequest{{WorkspaceID: "default", ProjectID: projectID}}, manager.prepareRequests)
-		})
-	}
-}
-
-func TestPrepareSampleProjectInstanceChecksManagerAvailability(t *testing.T) {
-	t.Parallel()
-	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
-	manager := &sampleManagerStub{
-		checkAvailableErr: sample.NewFailure(sample.FailureUnavailable, errors.New("sample target unavailable")),
-	}
-	service := &InstanceService{
-		store:          stores,
-		licenseService: newInstanceServiceTestLicenseService(t, stores),
-		sampleManager:  manager,
-	}
-
-	_, err := service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
-		Parent: common.FormatProject(projectID),
-	}))
-	require.Equal(t, connect.CodeUnavailable, connect.CodeOf(err))
-	require.Equal(t, 1, manager.checkAvailableCalls)
-	require.Empty(t, manager.prepareRequests)
-}
 
 func TestSampleInstanceLifecycleHooksWrapMetadataUpdate(t *testing.T) {
 	t.Parallel()
@@ -130,81 +64,10 @@ func TestSampleInstanceLifecycleHooksWrapMetadataUpdate(t *testing.T) {
 	require.Equal(t, []bool{true, false}, manager.lifecycleCalls)
 }
 
-func TestPrepareSampleProjectInstanceRejectsConsumedEntitlementAfterProjectDeletion(t *testing.T) {
-	t.Parallel()
-	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
-	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	payload, err := protojson.Marshal(&storepb.SaaSSampleInstanceSetupPayload{
-		ProjectId:    projectID,
-		InstanceId:   "sample-deleted-project",
-		Title:        "Sample Project Instance",
-		DatabaseName: "bb_sample_deleted_project",
-		RoleName:     "bb_sample_role_deleted_project",
-	})
-	require.NoError(t, err)
-	_, _, err = stores.ReserveSampleInstanceSetup(ctx, &store.SampleInstanceSetupMessage{
-		WorkspaceID: workspaceID,
-		ReplicaID:   "replica-a",
-		Payload:     payload,
-	})
-	require.NoError(t, err)
-	_, err = stores.GetDB().ExecContext(ctx, `
-		UPDATE project
-		SET deleted = TRUE
-		WHERE workspace = $1 AND resource_id = $2
-	`, workspaceID, projectID)
-	require.NoError(t, err)
-	service := &InstanceService{
-		store:          stores,
-		profile:        &config.Profile{SaaS: true},
-		licenseService: newInstanceServiceTestLicenseService(t, stores),
-		sampleManager:  &sampleManagerStub{},
-	}
-
-	_, err = service.PrepareSampleProjectInstance(ctx, connect.NewRequest(&v1pb.PrepareSampleProjectInstanceRequest{
-		Parent: common.FormatProject(projectID),
-	}))
-	require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
-}
-
 func TestSampleProjectInstanceConnectErrorMapsUnknownFailure(t *testing.T) {
 	t.Parallel()
 	err := sampleProjectInstanceConnectError(errors.New("unexpected manager failure"))
 	require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
-}
-
-func TestSampleProjectInstanceCapacityGuardMapsCapacityDenial(t *testing.T) {
-	t.Parallel()
-	ctx, stores, projectID, _, _ := setupProjectInstanceLifecycleAPITest(t)
-	for i := 0; i < 9; i++ {
-		_, err := stores.CreateInstance(ctx, &store.InstanceMessage{
-			ResourceID: fmt.Sprintf("capacity-instance-%d", i),
-			Workspace:  "default",
-			ProjectID:  &projectID,
-			Metadata: &storepb.Instance{
-				DataSources: []*storepb.DataSource{{Id: "admin", Type: storepb.DataSourceType_ADMIN}},
-			},
-		})
-		require.NoError(t, err)
-	}
-	service := &InstanceService{
-		store:          stores,
-		profile:        &config.Profile{SaaS: true},
-		licenseService: newInstanceServiceTestLicenseService(t, stores),
-	}
-	err := service.instanceCountGuard(ctx)
-	require.Equal(t, connect.CodeResourceExhausted, connect.CodeOf(err))
-}
-
-func TestSampleProjectInstanceCapacityGuardDoesNotConsumeActivationQuota(t *testing.T) {
-	t.Parallel()
-	ctx, stores, _, _, _ := setupProjectInstanceLifecycleAPITest(t)
-	service := &InstanceService{
-		store:          stores,
-		profile:        &config.Profile{SaaS: true},
-		licenseService: newInstanceServiceTestLicenseService(t, stores),
-	}
-	require.NoError(t, service.instanceCountGuard(ctx))
 }
 
 type sampleManagerStub struct {
@@ -610,4 +473,50 @@ func TestApplyDataSourceUpdateMaskCredentials(t *testing.T) {
 		require.Error(t, err)
 		require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 	})
+}
+
+func newInstanceServiceTestLicenseService(t *testing.T, stores *store.Store) *enterprise.LicenseService {
+	t.Helper()
+	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
+	require.NoError(t, err)
+	return licenseService
+}
+
+func setupProjectInstanceLifecycleAPITest(t *testing.T) (context.Context, *store.Store, string, string, string) {
+	t.Helper()
+	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
+	db, stores, _ := testcontainer.NewMetadataDB(t)
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO workspace (resource_id) VALUES ('default');
+		INSERT INTO project (resource_id, workspace, name) VALUES
+			('project-a', 'default', 'Project A'),
+			('project-b', 'default', 'Project B');
+	`)
+	require.NoError(t, err)
+
+	projectID := "project-a"
+	instanceID := "project-instance"
+	_, err = stores.CreateInstance(ctx, &store.InstanceMessage{
+		ResourceID: instanceID,
+		Workspace:  "default",
+		ProjectID:  &projectID,
+		Metadata: &storepb.Instance{
+			Activation: true,
+			DataSources: []*storepb.DataSource{{
+				Id:   "admin",
+				Type: storepb.DataSourceType_ADMIN,
+			}},
+		},
+	})
+	require.NoError(t, err)
+
+	databaseName := "app"
+	_, err = stores.UpsertDatabase(ctx, &store.DatabaseMessage{
+		InstanceID:   instanceID,
+		DatabaseName: databaseName,
+		ProjectID:    projectID,
+		Metadata:     &storepb.DatabaseMetadata{},
+	})
+	require.NoError(t, err)
+	return ctx, stores, projectID, instanceID, databaseName
 }

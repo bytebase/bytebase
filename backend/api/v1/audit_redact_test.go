@@ -23,6 +23,7 @@ import (
 	"google.golang.org/protobuf/types/known/anypb"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
@@ -591,7 +592,6 @@ func TestAuditRedactsPackedAny(t *testing.T) {
 func TestStreamingAuditRedactsRows(t *testing.T) {
 	t.Parallel()
 	st := newAuditLiveStore(t)
-	t.Cleanup(func() { require.NoError(t, st.Close()) })
 	interceptor := NewAuditInterceptor(st, "test-secret", &config.Profile{})
 
 	handler := interceptor.WrapStreamingHandler(func(_ context.Context, conn connect.StreamingHandlerConn) error {
@@ -620,10 +620,22 @@ func TestStreamingAuditRedactsRows(t *testing.T) {
 	rows, err := st.SearchAuditLogs(ctx, &store.AuditLogFind{})
 	require.NoError(t, err)
 	require.Len(t, rows, 1)
-	require.NotContains(t, rows[0].Payload.Response, secretSentinel, "an admin-mode result row reached the audit log")
-	require.Contains(t, rows[0].Payload.Response, "card_number", "the column names and the statement are the point of the row")
-	require.Contains(t, rows[0].Payload.Response, `"rowsCount":"1"`,
+	response := rows[0].Payload.Response
+	require.NotContains(t, response, secretSentinel, "an admin-mode result row reached the audit log")
+	require.Contains(t, response, "card_number", "the column names and the statement are the point of the row")
+	require.Contains(t, response, `"rowsCount":"1"`,
 		"how many rows the query returned survives; only the rows themselves are dropped")
+}
+
+// newAuditLiveStore is a real metadata store holding the audit test
+// workspace, for the one test that exercises the interceptor's write half.
+func newAuditLiveStore(t *testing.T) *store.Store {
+	t.Helper()
+	db, st, _ := testcontainer.NewMetadataDB(t)
+	_, err := db.ExecContext(context.Background(), fmt.Sprintf(
+		`INSERT INTO workspace (resource_id) VALUES ('%s')`, auditTestWorkspace))
+	require.NoError(t, err)
+	return st
 }
 
 // ---- Guards on the fixtures the sweep builds for itself ------------------

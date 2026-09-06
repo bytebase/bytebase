@@ -499,13 +499,8 @@ func TestIssueApprovalFiltersRunBeforePaging(t *testing.T) {
 
 // The fixture helpers below are duplicated from
 // backend/api/v1/issue_service_test.go, which keeps its own copies for the
-// issue tests that stay there. Change both together: nothing catches a
-// divergence, and these tests would keep passing against a stale fixture.
-// The duplication ends when those tests move to a fake.
-// TestIssueApprovalStatusFilterMatchesConverter pins the SQL derivation of
-// approval_status to computeApprovalStatus. They are two implementations of one
-// rule, and the SQL side has to read an absent JSON key as a zero value because
-// payloads are written with a bare protojson.Marshal.
+// issue test that stays there. Change both together: nothing catches a
+// divergence.
 func issueNames(issues []*v1pb.Issue) []string {
 	names := make([]string, 0, len(issues))
 	for _, issue := range issues {

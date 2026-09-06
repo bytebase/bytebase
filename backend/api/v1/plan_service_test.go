@@ -2,368 +2,107 @@ package v1
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
-
-	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/fieldmaskpb"
 
-	"github.com/bytebase/bytebase/backend/common"
-	"github.com/bytebase/bytebase/backend/component/bus"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-func TestPlanServiceListPlansHidesMalformedUIPlans(t *testing.T) {
+// TestValidateSpecsRejectsShapesBeforeAnyLookup pins the two plan shapes
+// creation refuses on the request alone: a plan mixing create-database and
+// change-database specs, and a spec with no config at all — which is what a
+// legacy client sending the retired export_data_config decodes to. Neither
+// reaches the store, so nil is one.
+func TestValidateSpecsRejectsShapesBeforeAnyLookup(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
-	stores := setupPlanServiceTestStore(ctx, t)
-	service := NewPlanService(stores, nil, nil, nil, nil)
 
-	createPlan := func(name string, config *storepb.PlanConfig) *store.PlanMessage {
-		t.Helper()
-		plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
-			ProjectID: "project-a",
-			Name:      name,
-			Config:    config,
-		}, "creator@example.com")
-		require.NoError(t, err)
-		return plan
-	}
-	changeConfig := func(id, release string) *storepb.PlanConfig {
-		return &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
-			Id: id,
-			Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
-				ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{Release: release},
-			},
-		}}}
-	}
-	createConfig := func(id string) *storepb.PlanConfig {
-		return &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
-			Id: id,
-			Config: &storepb.PlanConfig_Spec_CreateDatabaseConfig{
-				CreateDatabaseConfig: &storepb.PlanConfig_CreateDatabaseConfig{},
-			},
-		}}}
-	}
-
-	createPlan("malformed change", changeConfig("malformed-change", ""))
-	createPlan("malformed create", createConfig("malformed-create"))
-	createPlan("malformed mixed", &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{
-		createConfig("mixed-create").Specs[0],
-		changeConfig("mixed-change", "").Specs[0],
-	}})
-	oldMalformed := createPlan("old malformed", changeConfig("old", ""))
-	_, err := stores.GetDB().ExecContext(ctx, `
-		UPDATE plan SET created_at = CURRENT_TIMESTAMP - INTERVAL '31 days'
-		WHERE project = $1 AND id = $2`, oldMalformed.ProjectID, oldMalformed.UID)
-	require.NoError(t, err)
-	gitOps := createPlan("GitOps", changeConfig("gitops", "projects/project-a/releases/release-a"))
-	deleted := createPlan("deleted", changeConfig("deleted", ""))
-	_, err = stores.GetDB().ExecContext(ctx, `
-		UPDATE plan SET deleted = TRUE
-		WHERE project = $1 AND id = $2`, deleted.ProjectID, deleted.UID)
-	require.NoError(t, err)
-	linked := createPlan("linked", changeConfig("linked", ""))
-	_, err = stores.CreateIssue(ctx, &store.IssueMessage{
-		ProjectID: linked.ProjectID, CreatorEmail: "creator@example.com", PlanUID: &linked.UID,
-		Title: "linked issue", Type: storepb.Issue_DATABASE_CHANGE, Payload: &storepb.Issue{},
+	_, err := validateSpecs(ctx, nil, "project-a", []*v1pb.Plan_Spec{
+		{Id: "create", Config: &v1pb.Plan_Spec_CreateDatabaseConfig{CreateDatabaseConfig: &v1pb.Plan_CreateDatabaseConfig{}}},
+		{Id: "change", Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{}}},
 	})
-	require.NoError(t, err)
-
-	response, err := service.ListPlans(ctx, connect.NewRequest(&v1pb.ListPlansRequest{
-		Parent:   "projects/project-a",
-		PageSize: 100,
-	}))
-	require.NoError(t, err)
-	var got []string
-	for _, plan := range response.Msg.Plans {
-		got = append(got, plan.Title)
-	}
-	require.ElementsMatch(t, []string{gitOps.Name, deleted.Name, linked.Name}, got)
-
-	gotMalformed, err := service.GetPlan(ctx, connect.NewRequest(&v1pb.GetPlanRequest{
-		Name: fmt.Sprintf("projects/project-a/plans/%d", oldMalformed.UID),
-	}))
-	require.NoError(t, err)
-	require.Equal(t, oldMalformed.Name, gotMalformed.Msg.Title)
-}
-
-func TestPlanServiceCreatePlanRecordsAuthenticatedPrincipalAsLastEditor(t *testing.T) {
-	stores := setupPlanServiceTestStore(context.Background(), t)
-	eventBus, err := bus.New()
-	require.NoError(t, err)
-	service := NewPlanService(stores, eventBus, nil, nil, nil)
-
-	for _, test := range []struct {
-		name          string
-		email         string
-		principalType storepb.PrincipalType
-	}{
-		{name: "service account", email: "automation@service.bytebase.com", principalType: storepb.PrincipalType_SERVICE_ACCOUNT},
-		{name: "workload identity", email: "deployment@workload.bytebase.com", principalType: storepb.PrincipalType_WORKLOAD_IDENTITY},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
-			ctx = context.WithValue(ctx, common.UserContextKey, &store.UserMessage{
-				Email: test.email,
-				Name:  test.name,
-				Type:  test.principalType,
-			})
-
-			created, err := service.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
-				Parent: "projects/project-a",
-				Plan: &v1pb.Plan{
-					Title: test.name,
-					Specs: []*v1pb.Plan_Spec{{
-						Id: "create-" + test.principalType.String(),
-						Config: &v1pb.Plan_Spec_CreateDatabaseConfig{
-							CreateDatabaseConfig: &v1pb.Plan_CreateDatabaseConfig{},
-						},
-					}},
-				},
-			}))
-			require.NoError(t, err)
-			require.Equal(t, common.FormatUserEmail(test.email), created.Msg.LastPlanEditor)
-		})
-	}
-}
-
-func TestPlanServiceReleaseBackedPlanKeepsCreatorAsLastEditor(t *testing.T) {
-	t.Parallel()
-	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
-	ctx = context.WithValue(ctx, common.UserContextKey, &store.UserMessage{Email: "creator@example.com", Name: "creator"})
-	stores := setupPlanServiceTestStore(ctx, t)
-	plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
-		ProjectID: "project-a",
-		Name:      "release-backed",
-		Config: &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
-			Id: "release",
-			Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
-				ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{Release: "projects/project-a/releases/release-a"},
-			},
-		}}},
-	}, "creator@example.com")
-	require.NoError(t, err)
-	require.Equal(t, "creator@example.com", *plan.LastPlanEditor)
-
-	service := NewPlanService(stores, nil, nil, nil, nil)
-	_, err = service.UpdatePlan(ctx, connect.NewRequest(&v1pb.UpdatePlanRequest{
-		Plan: &v1pb.Plan{
-			Name: common.FormatPlan(plan.ProjectID, plan.UID),
-			Specs: []*v1pb.Plan_Spec{{
-				Id: "replacement",
-				Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-					ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{},
-				},
-			}},
-		},
-		UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"specs"}},
-	}))
-	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
-	require.ErrorContains(t, err, "created from a release")
-
-	got, err := stores.GetPlan(ctx, &store.FindPlanMessage{ProjectID: plan.ProjectID, UID: &plan.UID})
-	require.NoError(t, err)
-	require.Equal(t, "creator@example.com", *got.LastPlanEditor)
-}
-
-func TestPlanServiceListPlansIncludesIssueStatus(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	stores := setupPlanServiceTestStore(ctx, t)
-	service := NewPlanService(stores, nil, nil, nil, nil)
-
-	createPlan := func(title, release string) *store.PlanMessage {
-		t.Helper()
-		plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
-			ProjectID: "project-a",
-			Name:      title,
-			Config: &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
-				Id: title,
-				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
-					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{Release: release},
-				},
-			}}},
-		}, "creator@example.com")
-		require.NoError(t, err)
-		return plan
-	}
-	createIssue := func(plan *store.PlanMessage, draft bool, status storepb.Issue_Status) {
-		t.Helper()
-		issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
-			ProjectID:    plan.ProjectID,
-			CreatorEmail: "creator@example.com",
-			PlanUID:      &plan.UID,
-			Title:        plan.Name,
-			Type:         storepb.Issue_DATABASE_CHANGE,
-			Payload: &storepb.Issue{
-				Draft: draft,
-				Approval: &storepb.IssuePayloadApproval{
-					ApprovalFindingDone: true,
-				},
-			},
-		})
-		require.NoError(t, err)
-		if status != storepb.Issue_OPEN {
-			_, err = stores.UpdateIssue(ctx, issue.ProjectID, issue.UID, &store.UpdateIssueMessage{Status: &status})
-			require.NoError(t, err)
-		}
-	}
-
-	createPlan("no issue", "projects/project-a/releases/release-a")
-	draftPlan := createPlan("draft", "")
-	createIssue(draftPlan, true, storepb.Issue_OPEN)
-	openPlan := createPlan("open", "")
-	createIssue(openPlan, false, storepb.Issue_OPEN)
-	donePlan := createPlan("done", "")
-	createIssue(donePlan, false, storepb.Issue_DONE)
-	canceledPlan := createPlan("canceled", "")
-	createIssue(canceledPlan, false, storepb.Issue_CANCELED)
-
-	response, err := service.ListPlans(ctx, connect.NewRequest(&v1pb.ListPlansRequest{
-		Parent:   "projects/project-a",
-		PageSize: 100,
-	}))
-	require.NoError(t, err)
-	require.Len(t, response.Msg.Plans, 5)
-	plansByTitle := make(map[string]*v1pb.Plan, len(response.Msg.Plans))
-	for _, plan := range response.Msg.Plans {
-		plansByTitle[plan.Title] = plan
-	}
-
-	require.Empty(t, plansByTitle["no issue"].Issue)
-	require.Equal(t, v1pb.IssueStatus_ISSUE_STATUS_UNSPECIFIED, plansByTitle["no issue"].IssueStatus)
-	require.Equal(t, v1pb.ApprovalStatus_APPROVAL_STATUS_UNSPECIFIED, plansByTitle["no issue"].ApprovalStatus)
-
-	require.NotEmpty(t, plansByTitle["draft"].Issue)
-	require.Equal(t, v1pb.IssueStatus_OPEN, plansByTitle["draft"].IssueStatus)
-	require.Equal(t, v1pb.ApprovalStatus_APPROVAL_STATUS_UNSPECIFIED, plansByTitle["draft"].ApprovalStatus)
-
-	require.Equal(t, v1pb.IssueStatus_OPEN, plansByTitle["open"].IssueStatus)
-	require.Equal(t, v1pb.ApprovalStatus_SKIPPED, plansByTitle["open"].ApprovalStatus)
-	require.Equal(t, v1pb.IssueStatus_DONE, plansByTitle["done"].IssueStatus)
-	require.Equal(t, v1pb.IssueStatus_CANCELED, plansByTitle["canceled"].IssueStatus)
-}
-
-func TestConvertToPlansScopesIssueStatusByProject(t *testing.T) {
-	t.Parallel()
-	ctx := context.Background()
-	stores := setupPlanServiceTestStore(ctx, t)
-	_, err := stores.GetDB().ExecContext(ctx, `
-		INSERT INTO project (resource_id, workspace, name)
-		VALUES ('project-b', 'default', 'Project B')
-	`)
-	require.NoError(t, err)
-
-	createPlanWithIssue := func(projectID string, status storepb.Issue_Status) *store.PlanMessage {
-		t.Helper()
-		plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
-			ProjectID: projectID,
-			Name:      projectID,
-			Config: &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
-				Id: projectID,
-				Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
-					ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{},
-				},
-			}}},
-		}, "creator@example.com")
-		require.NoError(t, err)
-		issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
-			ProjectID:    projectID,
-			CreatorEmail: "creator@example.com",
-			PlanUID:      &plan.UID,
-			Title:        projectID,
-			Type:         storepb.Issue_DATABASE_CHANGE,
-			Payload:      &storepb.Issue{},
-		})
-		require.NoError(t, err)
-		if status != storepb.Issue_OPEN {
-			_, err = stores.UpdateIssue(ctx, projectID, issue.UID, &store.UpdateIssueMessage{Status: &status})
-			require.NoError(t, err)
-		}
-		return plan
-	}
-
-	planA := createPlanWithIssue("project-a", storepb.Issue_CANCELED)
-	planB := createPlanWithIssue("project-b", storepb.Issue_DONE)
-	require.Equal(t, planA.UID, planB.UID)
-
-	plans, err := convertToPlans(ctx, stores, []*store.PlanMessage{planA, planB})
-	require.NoError(t, err)
-	require.Equal(t, v1pb.IssueStatus_CANCELED, plans[0].IssueStatus)
-	require.Equal(t, v1pb.IssueStatus_DONE, plans[1].IssueStatus)
-}
-
-func TestPlanServiceCreatePlanRejectsMixedDatabaseSpecs(t *testing.T) {
-	t.Parallel()
-	ctx := context.WithValue(context.Background(), common.WorkspaceIDContextKey, "default")
-	ctx = context.WithValue(ctx, common.UserContextKey, &store.UserMessage{
-		Email: "creator@example.com",
-		Name:  "creator",
-	})
-	stores := setupPlanServiceTestStore(ctx, t)
-	service := NewPlanService(stores, nil, nil, nil, nil)
-
-	_, err := service.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
-		Parent: "projects/project-a",
-		Plan: &v1pb.Plan{
-			Specs: []*v1pb.Plan_Spec{
-				{
-					Id: "create",
-					Config: &v1pb.Plan_Spec_CreateDatabaseConfig{
-						CreateDatabaseConfig: &v1pb.Plan_CreateDatabaseConfig{},
-					},
-				},
-				{
-					Id: "change",
-					Config: &v1pb.Plan_Spec_ChangeDatabaseConfig{
-						ChangeDatabaseConfig: &v1pb.Plan_ChangeDatabaseConfig{},
-					},
-				},
-			},
-		},
-	}))
-	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
 	require.ErrorContains(t, err, "each plan must contain only one type")
+
+	_, err = validateSpecs(ctx, nil, "project-a", []*v1pb.Plan_Spec{{Id: "spec-1"}})
+	require.ErrorContains(t, err, "invalid spec type")
 }
 
-// TestCreatePlanRejectsSpecsWithoutConfig pins the retired export_data_config
-// spec: a legacy client sending the removed field decodes to a spec with no
-// config, which creation must reject.
-func TestCreatePlanRejectsSpecsWithoutConfig(t *testing.T) {
+// TestBuildV1PlansScopesRelationsByProject pins the join the plan list depends
+// on: issue status, approval status, plan check counts and rollout stage
+// summaries are attached by (project, plan UID), never by UID alone — plan
+// UIDs are allocated per project, so two projects' plans share every number.
+func TestBuildV1PlansScopesRelationsByProject(t *testing.T) {
 	t.Parallel()
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, common.WorkspaceIDContextKey, "default")
-	ctx = context.WithValue(ctx, common.UserContextKey, &store.UserMessage{Email: "creator@example.com", Name: "creator"})
-	stores := setupPlanServiceTestStore(ctx, t)
-	service := NewPlanService(stores, nil, nil, nil, nil)
+	changeConfig := &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{{
+		Id:     "change",
+		Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{}},
+	}}}
+	plans := []*store.PlanMessage{
+		{ProjectID: "project-a", UID: 101, Name: "canceled in a", Config: changeConfig},
+		{ProjectID: "project-b", UID: 101, Name: "done in b", Config: changeConfig},
+		{ProjectID: "project-a", UID: 102, Name: "draft", Config: changeConfig},
+		{ProjectID: "project-a", UID: 103, Name: "open and skipped", Config: changeConfig},
+		{ProjectID: "project-a", UID: 104, Name: "no issue", Config: changeConfig},
+	}
+	planUID := func(uid int64) *int64 { return &uid }
+	issues := []*store.IssueMessage{
+		{ProjectID: "project-a", UID: 1, PlanUID: planUID(101), Status: storepb.Issue_CANCELED, Payload: &storepb.Issue{}},
+		{ProjectID: "project-b", UID: 1, PlanUID: planUID(101), Status: storepb.Issue_DONE, Payload: &storepb.Issue{}},
+		{ProjectID: "project-a", UID: 2, PlanUID: planUID(102), Status: storepb.Issue_OPEN, Payload: &storepb.Issue{
+			Draft:    true,
+			Approval: &storepb.IssuePayloadApproval{ApprovalFindingDone: true},
+		}},
+		{ProjectID: "project-a", UID: 3, PlanUID: planUID(103), Status: storepb.Issue_OPEN, Payload: &storepb.Issue{
+			Approval: &storepb.IssuePayloadApproval{ApprovalFindingDone: true},
+		}},
+	}
 
-	_, err := service.CreatePlan(ctx, connect.NewRequest(&v1pb.CreatePlanRequest{
-		Parent: "projects/project-a",
-		Plan: &v1pb.Plan{
-			Title: "legacy export plan",
-			Specs: []*v1pb.Plan_Spec{{Id: "spec-1"}},
-		},
-	}))
-	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
-}
+	planCheckRuns := []*store.PlanCheckRunMessage{
+		{ProjectID: "project-a", PlanUID: 101, Status: store.PlanCheckRunStatusDone, Result: &storepb.PlanCheckRunResult{
+			Results: []*storepb.PlanCheckRunResult_Result{{Status: storepb.Advice_WARNING}},
+		}},
+		{ProjectID: "project-b", PlanUID: 101, Status: store.PlanCheckRunStatusFailed, Result: &storepb.PlanCheckRunResult{}},
+	}
+	taskStatusCounts := []*store.TaskStatusCount{
+		{ProjectID: "project-a", PlanID: 101, Environment: "prod", Status: storepb.TaskRun_DONE.String(), Count: 2},
+		{ProjectID: "project-b", PlanID: 101, Environment: "prod", Status: storepb.TaskRun_FAILED.String(), Count: 1},
+	}
 
-func setupPlanServiceTestStore(ctx context.Context, t *testing.T) *store.Store {
-	t.Helper()
+	got := buildV1Plans(plans, issues, planCheckRuns, taskStatusCounts, map[string]int{"prod": 0})
+	require.Len(t, got, len(plans))
+	byTitle := map[string]*v1pb.Plan{}
+	for _, plan := range got {
+		byTitle[plan.Title] = plan
+	}
 
-	db, s, _ := testcontainer.NewMetadataDB(t)
+	require.Equal(t, "projects/project-a/issues/1", byTitle["canceled in a"].Issue)
+	require.Equal(t, v1pb.IssueStatus_CANCELED, byTitle["canceled in a"].IssueStatus)
+	require.Equal(t, "projects/project-b/issues/1", byTitle["done in b"].Issue)
+	require.Equal(t, v1pb.IssueStatus_DONE, byTitle["done in b"].IssueStatus)
 
-	_, err := db.ExecContext(ctx, `
-		INSERT INTO workspace (resource_id) VALUES ('default');
-		INSERT INTO principal (name, email, password_hash) VALUES ('creator', 'creator@example.com', 'unused');
-		INSERT INTO project (resource_id, workspace, name) VALUES ('project-a', 'default', 'Project A');
-	`)
-	require.NoError(t, err)
+	require.Equal(t, map[string]int32{"DONE": 1, "WARNING": 1}, byTitle["canceled in a"].PlanCheckRunStatusCount)
+	require.Equal(t, map[string]int32{"FAILED": 1}, byTitle["done in b"].PlanCheckRunStatusCount)
+	require.Empty(t, byTitle["draft"].PlanCheckRunStatusCount)
+	stageCounts := func(plan *v1pb.Plan) []*v1pb.Plan_TaskStatusCount {
+		require.Len(t, plan.RolloutStageSummaries, 1)
+		return plan.RolloutStageSummaries[0].TaskStatusCounts
+	}
+	require.Len(t, stageCounts(byTitle["canceled in a"]), 1)
+	require.Equal(t, v1pb.Task_DONE, stageCounts(byTitle["canceled in a"])[0].Status)
+	require.EqualValues(t, 2, stageCounts(byTitle["canceled in a"])[0].Count)
+	require.Equal(t, v1pb.Task_FAILED, stageCounts(byTitle["done in b"])[0].Status)
+	require.Empty(t, byTitle["draft"].RolloutStageSummaries)
 
-	return s
+	require.Equal(t, v1pb.IssueStatus_OPEN, byTitle["draft"].IssueStatus)
+	require.Equal(t, v1pb.ApprovalStatus_APPROVAL_STATUS_UNSPECIFIED, byTitle["draft"].ApprovalStatus,
+		"a draft has no approval yet, whatever its payload says")
+	require.Equal(t, v1pb.IssueStatus_OPEN, byTitle["open and skipped"].IssueStatus)
+	require.Equal(t, v1pb.ApprovalStatus_SKIPPED, byTitle["open and skipped"].ApprovalStatus)
+
+	require.Empty(t, byTitle["no issue"].Issue)
+	require.Equal(t, v1pb.IssueStatus_ISSUE_STATUS_UNSPECIFIED, byTitle["no issue"].IssueStatus)
+	require.Equal(t, v1pb.ApprovalStatus_APPROVAL_STATUS_UNSPECIFIED, byTitle["no issue"].ApprovalStatus)
 }

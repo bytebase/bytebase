@@ -29,6 +29,9 @@ func startMain(ctx context.Context, m *testing.M) (int, error) {
 		if pgContainer != nil {
 			pgContainer.Close(ctx)
 		}
+		if sampleTargetContainer != nil {
+			sampleTargetContainer.Close(ctx)
+		}
 	}()
 	externalPgHost = pgContainer.host
 	externalPgPort = pgContainer.port
