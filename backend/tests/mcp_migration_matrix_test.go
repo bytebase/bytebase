@@ -346,6 +346,13 @@ func TestMCPMigrationCeilingLookupFailureFailsClosed(t *testing.T) {
 	a.Contains(body, "could not be read")
 	a.NotContains(body, "turned MCP access off")
 
+	// The same row must not take the bootstrap response down with it (BOT-106):
+	// actuator info still answers, with the setting absent rather than guessed,
+	// so the admin repairing the row is not locked out of the app.
+	info, err := ctl.actuatorServiceClient.GetActuatorInfo(ctx, connect.NewRequest(&v1pb.GetActuatorInfoRequest{}))
+	a.NoError(err)
+	a.Nil(info.Msg.McpSetting)
+
 	// The same outage refuses a NEW consent as an outage too, never as a
 	// policy: the client is told to retry in its own vocabulary and gets no
 	// code, and no denial row is written — telling a user their admin
