@@ -132,11 +132,16 @@ The standing order, by what is left rather than by number:
 
 | | Effort | Worth |
 | --- | --- | --- |
-| 1 | 5, drop the duplicated MySQL bodies | ~320 s of work, ~2 min of suite wall |
-| 2 | `TestWebhookIntegration` | 148 s in one test, now `backend/tests`'s floor |
-| 3 | 7, engine conformance to omni | 164 s, behind a large ownership blocker |
-| 4 | 6, seams instead of containers | seconds; do it for the tests, not the clock |
-| 5 | 4, isolate per project | a memory ceiling, not a speed play |
+| 1 | 7, engine conformance to omni | 164 s, behind a large ownership blocker |
+| 2 | 6, seams instead of containers | seconds; do it for the tests, not the clock |
+| 3 | 4, isolate per project | a memory ceiling, not a speed play |
+
+Two entries have left this list. Effort 5 is done — and was worth less than the
+~320 s it was sized at, because a third of that number was
+`TestSQLReviewForMySQL`, which was not the duplicate the sizing assumed; see its
+section. `TestWebhookIntegration` was second at 148 s until #21355 fixed the
+scheduler stall underneath it and took it to 45 s, which is the largest single
+saving on this page and came from a production bug rather than a test change.
 
 ### [✓] 1. Close idle connections before shutting the server down
 
@@ -291,11 +296,11 @@ subtests in order, which is `backend/tests`'s existing
 `//nolint:tparallel // Subtests share one server lifecycle.` case; each now
 carries that directive with its own reason. Note what this does not cost:
 the parent stays parallel with the rest of the package either way, and that is
-where the entire saving came from. Making `TestTransactionMode`'s four engine
-subtests parallel would buy nothing, because the package floor is
-`TestWebhookIntegration`, not the sum of everything else.
+where the entire saving came from.
 
-**`TestWebhookIntegration` is now the package floor.** At 148 s it is most of the
+**`TestWebhookIntegration` was the package floor at 148 s.** #21355 then took it
+to 45 s by fixing the task run scheduler stall, so it no longer dominates; the
+paragraph below described the state before that landed. At 148 s it was most of the
 173 s, and the rest of the package finishes around it. It is the one place left
 in `backend/tests` where a single test is worth attacking on its own.
 
