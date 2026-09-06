@@ -124,7 +124,8 @@ func GetTestMySQLContainer(ctx context.Context) (retc *Container, retErr error) 
 
 // GetPgContainer creates a PostgreSQL 16 container for testing.
 func GetPgContainer(ctx context.Context) (*Container, error) {
-	return getPgContainerWithImage(ctx, "postgres:16-alpine")
+	image, ready := pgImage(ctx)
+	return getPgContainerWithImage(ctx, image, ready)
 }
 
 // GetTLSPgContainer creates a TLS-enabled PostgreSQL 16 container. Clients
@@ -136,10 +137,12 @@ func GetTLSPgContainer(ctx context.Context) (*Container, error) {
 // GetPg17Container creates a PostgreSQL 17 container for testing. PG17 is required
 // for features absent in 16 — notably MERGE ... RETURNING.
 func GetPg17Container(ctx context.Context) (*Container, error) {
-	return getPgContainerWithImage(ctx, "postgres:17-alpine")
+	return getPgContainerWithImage(ctx, "postgres:17-alpine", 2)
 }
 
-func getPgContainerWithImage(ctx context.Context, image string) (retC *Container, retErr error) {
+// getPgContainerWithImage starts image and waits for the readyOccurrence-th
+// "ready to accept connections" in its log; see pgImageReady.
+func getPgContainerWithImage(ctx context.Context, image string, readyOccurrence int) (retC *Container, retErr error) {
 	req := testcontainers.ContainerRequest{
 		Image: image,
 		Env: map[string]string{
@@ -147,7 +150,7 @@ func getPgContainerWithImage(ctx context.Context, image string) (retC *Container
 			"POSTGRES_PASSWORD": "root-password",
 		},
 		ExposedPorts: []string{"5432/tcp"},
-		WaitingFor:   wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5 * time.Minute),
+		WaitingFor:   wait.ForLog("database system is ready to accept connections").WithOccurrence(readyOccurrence).WithStartupTimeout(5 * time.Minute),
 	}
 
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -336,26 +339,26 @@ func createPostgreSQLTLSMaterial() (string, string, []byte, []byte, error) {
 	return tlsDir, caPath, certificate, key, nil
 }
 
+// waitDBPing returns once the database accepts a connection. The container's
+// log wait has already passed by the time this runs, so the first ping nearly
+// always succeeds; the poll only covers the gap between "ready" in the log and
+// the listener. A 3 s ticker here used to add 3 s to every container start.
 func waitDBPing(ctx context.Context, db *sql.DB) error {
-	started := time.Now()
-	ticker := time.NewTicker(3 * time.Second)
+	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
 	timeout := time.After(10 * time.Minute)
-outerLoop:
 	for {
+		if err := db.PingContext(ctx); err == nil {
+			return nil
+		}
 		select {
 		case <-ticker.C:
-			if err := db.PingContext(ctx); err == nil {
-				if time.Since(started) > 1*time.Minute {
-					fmt.Printf("Total wait time: %s\n", time.Since(started))
-				}
-				break outerLoop
-			}
 		case <-timeout:
 			return errors.Errorf("start container timeout reached")
+		case <-ctx.Done():
+			return ctx.Err()
 		}
 	}
-	return nil
 }
 
 // GetTestPgContainer is a helper function for tests that creates a PostgreSQL container
