@@ -428,19 +428,7 @@ func TestWebhookIntegration(t *testing.T) {
 
 		project := ctl.createTestProject(ctx, t, "byt9398-c4")
 
-		// Create databases before registering the webhook so the implicit
-		// PIPELINE_COMPLETED events fired by createDatabase (which internally
-		// runs a createDatabaseConfig plan) do not pollute the collector.
-		err := ctl.createDatabase(ctx, project, instance, nil, "byt9398_c4_pass", "")
-		require.NoError(t, err)
-		err = ctl.createDatabase(ctx, project, instance, nil, "byt9398_c4_fail", "")
-		require.NoError(t, err)
-
-		collector.reset()
-		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-			v1pb.Activity_PIPELINE_FAILED,
-			v1pb.Activity_PIPELINE_COMPLETED,
-		})
+		createDatabasesFlushingCompletion(ctx, t, ctl, collector, project, instance, webhookServer.URL, "byt9398_c4_pass", "byt9398_c4_fail")
 
 		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
 			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c4_pass")},
@@ -462,12 +450,7 @@ func TestWebhookIntegration(t *testing.T) {
 	t.Run("PipelineCompleted_AllTasksDone", func(t *testing.T) {
 		collector.reset()
 		project := ctl.createTestProject(ctx, t, "byt9398-c1")
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c1_a", ""))
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c1_b", ""))
-		collector.reset() // flush any PIPELINE_COMPLETED from database creation
-		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-			v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
-		})
+		createDatabasesFlushingCompletion(ctx, t, ctl, collector, project, instance, webhookServer.URL, "byt9398_c1_a", "byt9398_c1_b")
 
 		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
 			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c1_a")},
@@ -482,12 +465,7 @@ func TestWebhookIntegration(t *testing.T) {
 	t.Run("PipelineCompleted_DoneAndSkipped", func(t *testing.T) {
 		collector.reset()
 		project := ctl.createTestProject(ctx, t, "byt9398-c2")
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c2_a", ""))
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c2_b", ""))
-		collector.reset() // flush any PIPELINE_COMPLETED from database creation
-		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-			v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
-		})
+		createDatabasesFlushingCompletion(ctx, t, ctl, collector, project, instance, webhookServer.URL, "byt9398_c2_a", "byt9398_c2_b")
 
 		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
 			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c2_a")},
@@ -504,12 +482,7 @@ func TestWebhookIntegration(t *testing.T) {
 	t.Run("PipelineCompleted_AllSkipped", func(t *testing.T) {
 		collector.reset()
 		project := ctl.createTestProject(ctx, t, "byt9398-c5")
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c5_a", ""))
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c5_b", ""))
-		collector.reset() // flush any PIPELINE_COMPLETED from database creation
-		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-			v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
-		})
+		createDatabasesFlushingCompletion(ctx, t, ctl, collector, project, instance, webhookServer.URL, "byt9398_c5_a", "byt9398_c5_b")
 
 		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
 			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c5_a")},
@@ -525,12 +498,7 @@ func TestWebhookIntegration(t *testing.T) {
 	t.Run("PipelineCompleted_DoneAndFailedThenRetriedDone", func(t *testing.T) {
 		collector.reset()
 		project := ctl.createTestProject(ctx, t, "byt9398-c3")
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c3_pass", ""))
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c3_fail", ""))
-		collector.reset() // flush any PIPELINE_COMPLETED from database creation
-		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-			v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
-		})
+		createDatabasesFlushingCompletion(ctx, t, ctl, collector, project, instance, webhookServer.URL, "byt9398_c3_pass", "byt9398_c3_fail")
 
 		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
 			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c3_pass")},
@@ -552,12 +520,7 @@ func TestWebhookIntegration(t *testing.T) {
 	t.Run("PipelineCompleted_AllFailedThenAllSkipped", func(t *testing.T) {
 		collector.reset()
 		project := ctl.createTestProject(ctx, t, "byt9398-c6")
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c6_a", ""))
-		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, "byt9398_c6_b", ""))
-		collector.reset() // flush any PIPELINE_COMPLETED from database creation
-		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-			v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
-		})
+		createDatabasesFlushingCompletion(ctx, t, ctl, collector, project, instance, webhookServer.URL, "byt9398_c6_a", "byt9398_c6_b")
 
 		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
 			{seedFailingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c6_a")},
@@ -576,13 +539,7 @@ func TestWebhookIntegration(t *testing.T) {
 	t.Run("PipelineCompleted_MixedRecovery", func(t *testing.T) {
 		collector.reset()
 		project := ctl.createTestProject(ctx, t, "byt9398-c7")
-		for _, n := range []string{"byt9398_c7_done", "byt9398_c7_skip", "byt9398_c7_retry", "byt9398_c7_skipfailed"} {
-			require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, n, ""))
-		}
-		collector.reset() // flush any PIPELINE_COMPLETED from database creation
-		addWebhookForEvents(ctx, t, ctl, project, webhookServer.URL, []v1pb.Activity_Type{
-			v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
-		})
+		createDatabasesFlushingCompletion(ctx, t, ctl, collector, project, instance, webhookServer.URL, "byt9398_c7_done", "byt9398_c7_skip", "byt9398_c7_retry", "byt9398_c7_skipfailed")
 
 		plan := createPlanWithSpecs(ctx, t, ctl, project, []taskSpec{
 			{seedPassingSheet(ctx, t, ctl, project), dbTargetName(instance, "byt9398_c7_done")},

@@ -97,6 +97,25 @@ func waitForWebhookCount(t *testing.T, c *webhookCollector, projectName, eventTi
 	}
 }
 
+// createDatabasesFlushingCompletion registers a PIPELINE_FAILED and
+// PIPELINE_COMPLETED webhook, provisions the databases, then waits for the
+// completion each creation rollout fires and discards it. Registering the
+// webhook after creation is not enough: the scheduler marks the task DONE,
+// which is what createDatabase waits on, before it emits the completion event,
+// so a webhook added in that gap still receives it and a later assertion of
+// zero completions fails.
+func createDatabasesFlushingCompletion(ctx context.Context, t *testing.T, ctl *controller, c *webhookCollector, project *v1pb.Project, instance *v1pb.Instance, url string, databases ...string) {
+	t.Helper()
+	addWebhookForEvents(ctx, t, ctl, project, url, []v1pb.Activity_Type{
+		v1pb.Activity_PIPELINE_FAILED, v1pb.Activity_PIPELINE_COMPLETED,
+	})
+	for _, database := range databases {
+		require.NoError(t, ctl.createDatabase(ctx, project, instance, nil, database, ""))
+	}
+	waitForWebhookCount(t, c, project.Name, "Rollout completed", len(databases))
+	c.reset()
+}
+
 // requireWebhookCount asserts the exact count of webhooks for (project, eventTitle).
 func requireWebhookCount(t *testing.T, c *webhookCollector, projectName, eventTitle string, n int, resources ...string) {
 	t.Helper()
