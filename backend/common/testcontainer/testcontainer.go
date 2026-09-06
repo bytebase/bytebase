@@ -124,8 +124,7 @@ func GetTestMySQLContainer(ctx context.Context) (retc *Container, retErr error) 
 
 // GetPgContainer creates a PostgreSQL 16 container for testing.
 func GetPgContainer(ctx context.Context) (*Container, error) {
-	image, ready := pgImage(ctx)
-	return getPgContainerWithImage(ctx, image, ready)
+	return getPgContainerWithImage(ctx, "postgres:16-alpine")
 }
 
 // GetTLSPgContainer creates a TLS-enabled PostgreSQL 16 container. Clients
@@ -137,12 +136,10 @@ func GetTLSPgContainer(ctx context.Context) (*Container, error) {
 // GetPg17Container creates a PostgreSQL 17 container for testing. PG17 is required
 // for features absent in 16 — notably MERGE ... RETURNING.
 func GetPg17Container(ctx context.Context) (*Container, error) {
-	return getPgContainerWithImage(ctx, "postgres:17-alpine", 2)
+	return getPgContainerWithImage(ctx, "postgres:17-alpine")
 }
 
-// getPgContainerWithImage starts image and waits for the readyOccurrence-th
-// "ready to accept connections" in its log; see pgImageReady.
-func getPgContainerWithImage(ctx context.Context, image string, readyOccurrence int) (retC *Container, retErr error) {
+func getPgContainerWithImage(ctx context.Context, image string) (retC *Container, retErr error) {
 	req := testcontainers.ContainerRequest{
 		Image: image,
 		Env: map[string]string{
@@ -150,7 +147,7 @@ func getPgContainerWithImage(ctx context.Context, image string, readyOccurrence 
 			"POSTGRES_PASSWORD": "root-password",
 		},
 		ExposedPorts: []string{"5432/tcp"},
-		WaitingFor:   wait.ForLog("database system is ready to accept connections").WithOccurrence(readyOccurrence).WithStartupTimeout(5 * time.Minute),
+		WaitingFor:   wait.ForLog("database system is ready to accept connections").WithOccurrence(2).WithStartupTimeout(5 * time.Minute),
 	}
 
 	c, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{

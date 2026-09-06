@@ -85,11 +85,11 @@ there is now about what the tests say, not what they cost. And
 `plugin/schema/*` as a whole went from 475 s to 164 s, `plugin/db/*` from 339 s
 to 145 s, which shrinks effort 7 from the largest item here to a middling one.
 
-### Second pass: 189 s to 140 s
+### Second pass: 189 s to 152 s
 
 Same command, same box, measured again on 2026-09-06 after everything above
 had landed: **189 s**, package walls summing to 620 s and overlapping 3.3×.
-Six changes later it is **140 s**, walls summing to 595 s and overlapping 4.3×.
+Five changes later it is **152 s**, walls summing to 654 s and overlapping 4.3×.
 Every package passes, `api/v1` also under `-race`.
 
 What the measurement found, what changed, and what it bought:
@@ -98,7 +98,6 @@ What the measurement found, what changed, and what it bought:
 | --- | --- | --- |
 | `backend/tests` was scheduled last. `./backend/...` expands alphabetically, so it got its first `-p=8` slot at +93 s and ran alone from +125 s. | CI lists `./backend/tests ./backend/api/v1` ahead of `./backend/...`; `go test` keeps command-line order and drops duplicates. | 189 s → 147 s on a cold cache, before any other change. |
 | `waitDBPing` waited on a 3 s ticker before its first ping, and a container is pingable 13 ms after `GenericContainer` returns. | Ping first, then poll every 100 ms. | Postgres start 4.33 s → 1.33 s; `backend/tests` alone 97 s → 79 s, its summed test time 1215 s → 953 s. |
-| `backend/tests` started 161 Postgres containers per run, and `initdb` is most of a start. | `GetPgContainer` starts from an image whose `PGDATA` is already initialized, built once per machine and tagged with its Dockerfile's hash (`pgimage.go`). | Ready in 0.18 s against 1.25 s from `postgres:16-alpine`, with no `initdb` CPU; `backend/store` 12.4 s → 7.5 s. |
 | Parallel subtests only get a slot once every top-level test has started, so the action command cases and the database group cases ran last, at one to eight concurrency, for the package's final 25 s. | Flattened into top-level tests. | The tail is gone; `TestWebhookIntegration`, 43 s from a first slot at about +18 s, is now the package floor. |
 | `plugin/db/pg` started nine containers, serially. | One shared container, a database per test with roles named after it, `t.Parallel()`. | 53 s → 7 s. |
 | `api/v1` ran 336 tests serially, and four of them were 27 s of its 38 s. | `t.Parallel()` on 263 tests: 217 without subtests, 46 table-driven ones at both levels, 3 slow parents under `//nolint:tparallel`. Six stay serial for `t.Setenv`, 62 with sequential subtests stay serial. | 41 s → 25 s inside the full run. |
@@ -110,20 +109,25 @@ schedulers polling Postgres. And `TestWebhookIntegration` is the longest test at
 43 s but no longer the tail; it is the floor of a package whose other 225 tests
 now fit around it.
 
-Effort 3's checkout pool stays dropped, for a better reason than before: at
-0.18 s a container is cheaper than the reset a pool would need, and every test
-keeps a server nothing else has touched.
+What is left of a Postgres start is `initdb`, about 1.25 s, and `backend/tests`
+still pays it 161 times. An image with the data directory already initialized
+was tried: a container answered in 0.18 s and the run came in at 140 s, but a
+`docker build` inside the test helper is more machinery than the 12 s it
+bought, and it is not in. The way to take those starts out is the one
+`plugin/db/pg` and the metadata packages use, one container per package and a
+database per test, with one caveat: a Bytebase instance syncs every database on
+its server, so the tests that assert on an instance's database list keep a
+server of their own.
 
-Measured standalone after all of it, `backend/tests` is **58.5 s** against
-97.1 s, with 921 s of summed test time against 1215 s.
+Measured standalone after all of it, `backend/tests` is **75.2 s** against
+97.1 s, with 1139 s of summed test time against 1215 s.
 
-**The gate has moved again.** With `backend/tests` finishing at +110 s, the
+**The gate has moved again.** With `backend/tests` finishing at +122 s, the
 run's last 30 s are `plugin/schema/oracle` alone. It still sorts into the
-alphabetical part of the list, starts at +72 s and takes 67 s under contention:
+alphabetical part of the list, starts at +74 s and takes 77 s under contention:
 13 subtests of 4.4 s of Oracle work each, on an engine capped at two threads,
 so Go-side parallelism buys at most 2×. Listing it ahead of `./backend/...` as
-well measured **117 s** for the run; shrinking the package is effort 7's
-business.
+well takes that tail off the run; shrinking the package is effort 7's business.
 
 One race surfaced under the heavier overlap, in `TestWebhookIntegration`'s
 completion cases. They provisioned databases, reset the collector, and only
