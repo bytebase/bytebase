@@ -13,6 +13,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/fieldmaskpb"
@@ -28,6 +30,7 @@ import (
 )
 
 func TestDraftLabelUpdateConflictsWithConcurrentSubmission(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service, issueBus := newIssueServiceForTest(t, stores)
@@ -78,6 +81,7 @@ func TestDraftLabelUpdateConflictsWithConcurrentSubmission(t *testing.T) {
 }
 
 func TestConcurrentSubmissionWithLabelsWritesOneAuditComment(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service, issueBus := newIssueServiceForTest(t, stores)
@@ -129,6 +133,7 @@ func TestConcurrentSubmissionWithLabelsWritesOneAuditComment(t *testing.T) {
 }
 
 func TestConcurrentIdenticalLabelUpdatesCreateOneAuditComment(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service, _ := newIssueServiceForTest(t, stores)
@@ -169,6 +174,7 @@ func TestConcurrentIdenticalLabelUpdatesCreateOneAuditComment(t *testing.T) {
 }
 
 func TestConcurrentIdenticalTitleUpdatesCreateOneAuditComment(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service, _ := newIssueServiceForTest(t, stores)
@@ -208,6 +214,7 @@ func TestConcurrentIdenticalTitleUpdatesCreateOneAuditComment(t *testing.T) {
 }
 
 func TestMixedIssuePatchRollsBackWhenLabelsFail(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service, _ := newIssueServiceForTest(t, stores)
@@ -241,12 +248,14 @@ func TestMixedIssuePatchRollsBackWhenLabelsFail(t *testing.T) {
 }
 
 func TestCreateDraftAndRolloutAreSerialized(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service, _ := newIssueServiceForTest(t, stores)
 
 	for i := range 10 {
 		t.Run(fmt.Sprintf("attempt-%d", i), func(t *testing.T) {
+			t.Parallel()
 			plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
 				ProjectID: "project-a",
 				Name:      "draft rollout race",
@@ -316,6 +325,7 @@ func TestCreateDraftAndRolloutAreSerialized(t *testing.T) {
 }
 
 func TestCreateDraftIssueIsIdempotent(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	b, err := bus.New()
@@ -441,6 +451,7 @@ func TestCreateDraftIssueIsIdempotent(t *testing.T) {
 }
 
 func TestIssueApprovalFiltersRunBeforePaging(t *testing.T) {
+	t.Parallel()
 	ctx := issueServiceTestContext()
 	stores := setupIssueServiceTestStore(ctx, t)
 	service, _ := newIssueServiceForTest(t, stores)
@@ -506,7 +517,7 @@ func issueNames(issues []*v1pb.Issue) []string {
 func setupIssueServiceTestStore(ctx context.Context, t *testing.T) *store.Store {
 	t.Helper()
 
-	db, stores, _ := newTestDB(t)
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
 		INSERT INTO principal (name, email, password_hash) VALUES ('creator', 'creator@example.com', 'unused');

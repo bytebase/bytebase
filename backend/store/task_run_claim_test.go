@@ -6,10 +6,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"github.com/stretchr/testify/require"
 )
 
 func TestClaimAvailableTaskRunsSkipsDeletedProjects(t *testing.T) {
+	t.Parallel()
 	fixture := newStorePostgresFixture(t, `
 		INSERT INTO instance (resource_id, workspace) VALUES ('instance-a', 'default');
 		INSERT INTO plan (id, creator, project, name, description)
@@ -38,6 +41,7 @@ func TestClaimAvailableTaskRunsSkipsDeletedProjects(t *testing.T) {
 }
 
 func TestClaimAvailableTaskRunsSkipsArchivedInstances(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskRunClaimFixture(t, `
 		INSERT INTO instance (resource_id, workspace, deleted) VALUES ('instance-a', 'default', TRUE);
 		INSERT INTO plan (id, creator, project, name, description)
@@ -66,6 +70,7 @@ func TestClaimAvailableTaskRunsSkipsArchivedInstances(t *testing.T) {
 }
 
 func TestClaimAvailableTaskRunsClaimsLiveInstanceSpecialTaskTypes(t *testing.T) {
+	t.Parallel()
 	fixture := newTaskRunClaimFixture(t, `
 		INSERT INTO instance (resource_id, workspace) VALUES ('instance-a', 'default');
 		INSERT INTO plan (id, creator, project, name, description)
@@ -95,7 +100,7 @@ func newTaskRunClaimFixture(t *testing.T, seedSQL string) *storePostgresFixture 
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	t.Cleanup(cancel)
-	db, s, _ := newTestDB(t)
+	db, s, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');

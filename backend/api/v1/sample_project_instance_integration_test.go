@@ -14,6 +14,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"connectrpc.com/connect"
 	"github.com/jackc/pgx/v5"
 	"github.com/stretchr/testify/require"
@@ -21,7 +23,6 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/permission"
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	"github.com/bytebase/bytebase/backend/component/config"
 	"github.com/bytebase/bytebase/backend/component/dbfactory"
 	"github.com/bytebase/bytebase/backend/component/iam"
@@ -31,7 +32,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/generated-go/v1/v1connect"
-	"github.com/bytebase/bytebase/backend/migrator"
 	_ "github.com/bytebase/bytebase/backend/plugin/db/pg"
 	samplerunner "github.com/bytebase/bytebase/backend/runner/sample"
 	"github.com/bytebase/bytebase/backend/runner/schemasync"
@@ -334,22 +334,18 @@ func newSampleProjectInstanceFixture(t *testing.T, clock func() time.Time) (cont
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	t.Cleanup(cancel)
 
-	metadata := testcontainer.GetTestPgContainer(ctx, t)
-	t.Cleanup(func() { metadata.Close(context.Background()) })
+	// Only the target is a container: it is a TLS server Bytebase connects to,
+	// not metadata.
 	target := testcontainer.GetTestTLSPgContainer(ctx, t)
 	t.Cleanup(func() { target.Close(context.Background()) })
 
-	require.NoError(t, migrator.MigrateSchema(ctx, metadata.GetDB()))
-	_, err := metadata.GetDB().ExecContext(ctx, `
+	metadataDB, stores, _ := testcontainer.NewMetadataDB(t)
+	_, err := metadataDB.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('sample-workspace');
 		INSERT INTO project (resource_id, workspace, name) VALUES ('sample-project', 'sample-workspace', 'Sample Project');
 	`)
 	require.NoError(t, err)
 
-	metadataURL := postgresTestURL(metadata)
-	stores, err := store.New(ctx, metadataURL, false)
-	require.NoError(t, err)
-	t.Cleanup(func() { require.NoError(t, stores.Close()) })
 	setSampleProjectInstanceTestEnvironment(ctx, t, stores, "sample-workspace")
 
 	licenseService, err := enterprise.NewLicenseService(common.ReleaseModeDev, stores, false, "")
@@ -388,14 +384,6 @@ func tlsPostgresTestURL(container *testcontainer.Container) string {
 		"postgres://postgres:root-password@localhost:%s/postgres?sslmode=verify-full&sslrootcert=%s",
 		container.GetPort(),
 		url.QueryEscape(container.GetTLSCAPath()),
-	)
-}
-
-func postgresTestURL(container *testcontainer.Container) string {
-	return fmt.Sprintf(
-		"postgres://postgres:root-password@%s:%s/postgres?sslmode=disable",
-		container.GetHost(),
-		container.GetPort(),
 	)
 }
 

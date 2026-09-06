@@ -14,6 +14,7 @@ import (
 // TestReviewRunStoreLifecycle walks the slot through reset, claim, supersede,
 // fenced completion, and heartbeat reaping against a real PostgreSQL.
 func TestReviewRunStoreLifecycle(t *testing.T) {
+	t.Parallel()
 	fixture := newStorePostgresFixture(t, `
 		INSERT INTO issue (id, creator, project, name, status, type)
 		VALUES (201, 'admin@example.com', 'default', 'Issue Default', 'OPEN', 'DATABASE_CHANGE');

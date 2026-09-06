@@ -38,7 +38,7 @@ func (s *Scheduler) runRunningTaskRunsScheduler(ctx context.Context, wg *sync.Wa
 			if err := s.scheduleRunningTaskRuns(ctx); err != nil {
 				slog.Error("failed to schedule running task runs", log.BBError(err))
 			}
-		case <-s.bus.TaskRunTickleChan:
+		case <-s.bus.TaskRunRunningTickleChan:
 			if err := s.licenseService.CheckReplicaLimit(ctx); err != nil {
 				continue
 			}

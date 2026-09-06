@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/uuid"
 	_ "github.com/microsoft/go-mssqldb"
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
@@ -17,8 +17,7 @@ import (
 //nolint:tparallel
 func TestGetDatabaseDefinitionWithTestcontainer(t *testing.T) {
 	ctx := context.Background()
-	container := testcontainer.GetTestMSSQLContainer(ctx, t)
-	t.Cleanup(func() { container.Close(ctx) })
+	container := sharedMSSQLContainer(t)
 
 	testCases := []struct {
 		name      string
@@ -397,7 +396,7 @@ GO
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel() // Safe to parallelize - shared container, unique databases per test
 			// Use test name for database name - each test case has a unique name
-			databaseName := fmt.Sprintf("test_%s", strings.ReplaceAll(tc.name, " ", "_"))
+			databaseName := fmt.Sprintf("test_%s_%s", strings.ReplaceAll(tc.name, " ", "_"), strings.ReplaceAll(uuid.New().String(), "-", "_"))
 
 			// Create test database using container's master connection
 			_, err := container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE [%s]", databaseName))
@@ -421,7 +420,7 @@ GO
 			require.NotEmpty(t, definitionX)
 
 			// Step 3: Create a new database and run the definition X
-			newDatabaseName := fmt.Sprintf("test_copy_%s", strings.ReplaceAll(tc.name, " ", "_"))
+			newDatabaseName := fmt.Sprintf("copy_%s", databaseName)
 
 			// Create new database using container's master connection
 			_, err = container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE [%s]", newDatabaseName))

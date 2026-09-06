@@ -13,6 +13,7 @@ import (
 )
 
 func TestDatabaseEnvironment(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}

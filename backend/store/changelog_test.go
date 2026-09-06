@@ -9,6 +9,7 @@ import (
 )
 
 func TestBuildListChangelogsQuerySchemaSnapshotBefore(t *testing.T) {
+	t.Parallel()
 	before, err := time.Parse(time.RFC3339Nano, "2024-12-31T23:59:59.123456789Z")
 	require.NoError(t, err)
 	database := "db"

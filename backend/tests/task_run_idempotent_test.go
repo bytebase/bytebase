@@ -18,6 +18,7 @@ import (
 // TestBatchRunTasks_Idempotent verifies that BatchRunTasks is idempotent and safe for concurrent calls.
 // This test covers both sequential double-clicks and concurrent requests scenarios.
 func TestBatchRunTasks_Idempotent(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
@@ -162,6 +163,7 @@ func TestBatchRunTasks_Idempotent(t *testing.T) {
 }
 
 func TestBatchRunTasks_ConcurrentSkipCannotBothWin(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
@@ -317,6 +319,7 @@ func TestBatchRunTasks_ConcurrentSkipCannotBothWin(t *testing.T) {
 }
 
 func TestBatchRunTasks_RejectsSkippedTasks(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}

@@ -7,6 +7,7 @@ import (
 )
 
 func TestGetListDatabaseFilterInstanceScope(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		filter   string
@@ -29,6 +30,7 @@ func TestGetListDatabaseFilterInstanceScope(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			query, err := GetListDatabaseFilter("default", tt.filter)
 			require.NoError(t, err)
 

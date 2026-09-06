@@ -1,7 +1,7 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
 import { ChevronDown, ChevronUp, PlusIcon, XIcon } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RoleSelect } from "@/components/RoleSelect";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,7 @@ import {
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
   parseWorkloadIdentitySubjectPattern,
+  resolveWorkloadIdentityProviderType,
 } from "@/utils";
 
 type RefType = "branch" | "tag" | "all";
@@ -170,9 +171,13 @@ function WorkloadIdentityForm({
         : undefined,
     []
   );
+  // Resolved, not read raw: an identity written before provider_type was
+  // required may carry PROVIDER_TYPE_UNSPECIFIED, which names no platform and
+  // parses no subject.
   const initialProviderType =
-    workloadIdentity?.workloadIdentityConfig?.providerType ??
-    WorkloadIdentityConfig_ProviderType.GITHUB;
+    resolveWorkloadIdentityProviderType(
+      workloadIdentity?.workloadIdentityConfig
+    ) ?? WorkloadIdentityConfig_ProviderType.GITHUB;
   const initialIssuerUrl =
     workloadIdentity?.workloadIdentityConfig?.issuerUrl ??
     PLATFORM_PRESETS[initialProviderType]?.issuerUrl ??
@@ -224,58 +229,69 @@ function WorkloadIdentityForm({
   const [roles, setRoles] = useState<string[]>([]);
   const [isRequesting, setIsRequesting] = useState(false);
 
-  const isUpdatingFromPatternRef = useRef(false);
-  const isUpdatingFromFieldsRef = useRef(false);
-  const didInitializeSubjectFieldsRef = useRef(false);
   const isGenericOIDC =
     providerType === WorkloadIdentityConfig_ProviderType.OIDC;
 
-  useEffect(() => {
-    if (!didInitializeSubjectFieldsRef.current) {
-      didInitializeSubjectFieldsRef.current = true;
-      return;
-    }
-    if (isGenericOIDC || isUpdatingFromPatternRef.current) return;
-    isUpdatingFromFieldsRef.current = true;
+  // The subject pattern and the owner/repository/branch fields derive from
+  // each other, and each edit resolves in the handler that made it. An effect
+  // pair cannot: the guards it needs are set and cleared inside one
+  // synchronous effect body, so the sibling effect never observes them, and a
+  // subject typed in Advanced is overwritten by the recompute that the next
+  // render schedules. The GitHub arm of computeSubjectPattern cannot express a
+  // subject pinned to a tag, an environment or a pull request, so that
+  // recompute widens the binding to "repo:<owner>/<repo>:*".
+  const applyDerivedFields = (patch: {
+    providerType?: WorkloadIdentityConfig_ProviderType;
+    owner?: string;
+    repo?: string;
+    branch?: string;
+    refType?: RefType;
+  }) => {
+    if (patch.providerType !== undefined) setProviderType(patch.providerType);
+    if (patch.owner !== undefined) setOwner(patch.owner);
+    if (patch.repo !== undefined) setRepo(patch.repo);
+    if (patch.branch !== undefined) setBranch(patch.branch);
+    if (patch.refType !== undefined) setRefType(patch.refType);
     setSubjectPattern(
-      computeSubjectPattern(providerType, owner, repo, branch, refType)
+      computeSubjectPattern(
+        patch.providerType ?? providerType,
+        patch.owner ?? owner,
+        patch.repo ?? repo,
+        patch.branch ?? branch,
+        patch.refType ?? refType
+      )
     );
-    isUpdatingFromFieldsRef.current = false;
-  }, [owner, repo, branch, providerType, refType, isGenericOIDC]);
+  };
 
-  useEffect(() => {
-    if (isGenericOIDC || isUpdatingFromFieldsRef.current) return;
+  const handleSubjectPatternChange = (value: string) => {
+    setSubjectPattern(value);
     const parsed = parseWorkloadIdentitySubjectPattern({
-      workloadIdentityConfig: {
-        subjectPattern,
-        providerType,
-      },
+      workloadIdentityConfig: { subjectPattern: value, providerType },
     });
-    if (parsed) {
-      isUpdatingFromPatternRef.current = true;
-      setOwner(parsed.owner);
-      setRepo(parsed.repo);
-      setBranch(parsed.branch);
-      if ("refType" in parsed && parsed.refType) {
-        setRefType(parsed.refType);
-      }
-      isUpdatingFromPatternRef.current = false;
+    if (!parsed) return;
+    setOwner(parsed.owner);
+    setRepo(parsed.repo);
+    setBranch(parsed.branch);
+    if ("refType" in parsed && parsed.refType) {
+      setRefType(parsed.refType);
     }
-  }, [subjectPattern, providerType, isGenericOIDC]);
+  };
 
   const handlePlatformChange = (value: WorkloadIdentityConfig_ProviderType) => {
-    setProviderType(value);
     const preset = PLATFORM_PRESETS[value];
     if (preset) {
       setIssuerUrl(preset.issuerUrl);
       setAudiences([preset.audience]);
       setJwksUrl("");
-    } else {
-      setIssuerUrl("");
-      setJwksUrl("");
-      setAudiences([""]);
-      setSubjectPattern("");
+      applyDerivedFields({ providerType: value, refType: "all", branch: "" });
+      return;
     }
+    // Generic OIDC composes nothing: its subject is typed, not derived.
+    setProviderType(value);
+    setIssuerUrl("");
+    setJwksUrl("");
+    setAudiences([""]);
+    setSubjectPattern("");
     setRefType("all");
     setBranch("");
   };
@@ -641,7 +657,7 @@ function WorkloadIdentityForm({
             >
               <Input
                 value={owner}
-                onChange={(e) => setOwner(e.target.value)}
+                onChange={(e) => applyDerivedFields({ owner: e.target.value })}
                 placeholder={isGitLab ? "my-group" : "my-org"}
                 maxLength={200}
                 autoComplete="off"
@@ -669,7 +685,7 @@ function WorkloadIdentityForm({
             >
               <Input
                 value={repo}
-                onChange={(e) => setRepo(e.target.value)}
+                onChange={(e) => applyDerivedFields({ repo: e.target.value })}
                 placeholder={isGitLab ? "my-project" : "my-repo"}
                 maxLength={200}
                 autoComplete="off"
@@ -691,7 +707,8 @@ function WorkloadIdentityForm({
               <Select
                 value={refType}
                 onValueChange={(value) => {
-                  if (value !== null) setRefType(value as RefType);
+                  if (value !== null)
+                    applyDerivedFields({ refType: value as RefType });
                 }}
               >
                 <SelectTrigger className="w-full">
@@ -742,7 +759,7 @@ function WorkloadIdentityForm({
             >
               <Input
                 value={branch}
-                onChange={(e) => setBranch(e.target.value)}
+                onChange={(e) => applyDerivedFields({ branch: e.target.value })}
                 placeholder={isTagRefType ? "v1.0.0" : "main"}
                 maxLength={200}
                 autoComplete="off"
@@ -845,7 +862,7 @@ function WorkloadIdentityForm({
               >
                 <Input
                   value={subjectPattern}
-                  onChange={(e) => setSubjectPattern(e.target.value)}
+                  onChange={(e) => handleSubjectPatternChange(e.target.value)}
                   maxLength={500}
                   autoComplete="off"
                 />

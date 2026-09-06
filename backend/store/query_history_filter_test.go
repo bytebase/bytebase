@@ -7,6 +7,7 @@ import (
 )
 
 func TestGetListQueryHistoryFilter(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		filter      string
@@ -178,6 +179,7 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			q, err := GetListQueryHistoryFilter(tt.filter)
 
 			if tt.wantErr {
@@ -206,6 +208,7 @@ func TestGetListQueryHistoryFilter(t *testing.T) {
 }
 
 func TestGetListQueryHistoryFilter_EdgeCases(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		filter      string
@@ -267,6 +270,7 @@ func TestGetListQueryHistoryFilter_EdgeCases(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			q, err := GetListQueryHistoryFilter(tt.filter)
 
 			if tt.wantErr {
@@ -291,6 +295,7 @@ func TestGetListQueryHistoryFilter_EdgeCases(t *testing.T) {
 // TestGetListQueryHistoryFilter_CompareWithOriginal verifies that the new implementation
 // produces equivalent SQL to the original v1 implementation
 func TestGetListQueryHistoryFilter_CompareWithOriginal(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name               string
 		filter             string
@@ -325,6 +330,7 @@ func TestGetListQueryHistoryFilter_CompareWithOriginal(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			q, err := GetListQueryHistoryFilter(tt.filter)
 			require.NoError(t, err)
 			require.NotNil(t, q)
@@ -341,6 +347,7 @@ func TestGetListQueryHistoryFilter_CompareWithOriginal(t *testing.T) {
 }
 
 func TestGetListQueryHistoriesCreatorFilter(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		filter      string
@@ -391,6 +398,7 @@ func TestGetListQueryHistoriesCreatorFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			creator, err := GetListQueryHistoriesCreatorFilter(tt.filter)
 			if tt.errContains != "" {
 				require.Error(t, err)

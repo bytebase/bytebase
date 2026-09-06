@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -21,8 +23,9 @@ import (
 //   - create_time is documented as ">=" and "<=" but was implemented as ">" and
 //     "<", excluding an issue at the exact boundary.
 func TestIssueListFilterEdgeCases(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
-	db, stores, _ := newTestDB(t)
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
 		INSERT INTO principal (name, email, password_hash) VALUES ('c', 'c@example.com', 'x');
@@ -89,8 +92,9 @@ func TestIssueListFilterEdgeCases(t *testing.T) {
 // issue. A flat role list without the project pairing passes every other
 // assertion in this file and fails this one.
 func TestIssueListNextApproverIsProjectScoped(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
-	db, stores, _ := newTestDB(t)
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('default');
 		INSERT INTO principal (name, email, password_hash) VALUES ('c', 'c@example.com', 'x');

@@ -22,6 +22,7 @@ import (
 // project-scoped database name for a database on a project instance and
 // rejects cross-project and workspace-form names for the same database.
 func TestProjectInstanceExport(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
@@ -102,6 +103,7 @@ func TestProjectInstanceExport(t *testing.T) {
 // canonical project-scoped database name for databases on a project instance
 // and reject cross-project references.
 func TestProjectInstanceSavedQuery(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
@@ -169,6 +171,7 @@ func TestProjectInstanceSavedQuery(t *testing.T) {
 // project-instance database work inside the owning project and are rejected
 // across projects.
 func TestProjectInstanceAccessGrant(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
@@ -246,6 +249,7 @@ func TestProjectInstanceAccessGrant(t *testing.T) {
 // invalid members with zero side effects, and retained workspace batch
 // behavior.
 func TestBatchSyncInstancesCompatibility(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}

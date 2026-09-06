@@ -9,6 +9,7 @@ import (
 )
 
 func TestGetListGroupFilter(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		filter      string
@@ -101,6 +102,7 @@ func TestGetListGroupFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			find := &FindGroupMessage{}
 			q, err := GetListGroupFilter(find, tt.filter)
 
@@ -130,6 +132,7 @@ func TestGetListGroupFilter(t *testing.T) {
 }
 
 func TestGetListGroupFilterProject(t *testing.T) {
+	t.Parallel()
 	// Test project filter separately since it modifies the find struct
 	find := &FindGroupMessage{}
 	q, err := GetListGroupFilter(find, `project == "projects/test-project"`)
@@ -146,6 +149,7 @@ func TestGetListGroupFilterProject(t *testing.T) {
 }
 
 func TestProjectMembersGroupJoinCondition(t *testing.T) {
+	t.Parallel()
 	sql, args, err := projectMembersGroupJoinCondition().ToSQL()
 	require.NoError(t, err)
 	require.Contains(t, sql, "user_group.email")

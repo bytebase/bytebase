@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -21,8 +23,9 @@ import (
 // the read into another workspace, another resource type, or — worst — another
 // policy type, whose payload would then be unmarshalled as an IamPolicy.
 func TestListProjectIamPoliciesIsScoped(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
-	db, stores, _ := newTestDB(t)
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('ws-a'), ('ws-b');
 		INSERT INTO project (resource_id, workspace, name) VALUES

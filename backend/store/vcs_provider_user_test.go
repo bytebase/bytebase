@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -15,6 +17,7 @@ import (
 )
 
 func TestVCSProviderUserTouchAndCount(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s, db := setupVCSProviderUserStore(ctx, t)
 
@@ -67,6 +70,7 @@ func TestVCSProviderUserTouchAndCount(t *testing.T) {
 }
 
 func TestVCSProviderUserInactiveUsersDoNotCountAndLimitRejectionKeepsRows(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s, db := setupVCSProviderUserStore(ctx, t)
 
@@ -134,6 +138,7 @@ func TestVCSProviderUserInactiveUsersDoNotCountAndLimitRejectionKeepsRows(t *tes
 }
 
 func TestVCSProviderUserTouchInactiveUserWhenUnderLimit(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s, db := setupVCSProviderUserStore(ctx, t)
 
@@ -163,6 +168,7 @@ func TestVCSProviderUserTouchInactiveUserWhenUnderLimit(t *testing.T) {
 }
 
 func TestVCSProviderUserListActiveUsersSortedDesc(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s, db := setupVCSProviderUserStore(ctx, t)
 
@@ -185,6 +191,7 @@ func TestVCSProviderUserListActiveUsersSortedDesc(t *testing.T) {
 }
 
 func TestVCSProviderUserTouchStoresEmptyPayloadWhenNil(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s, _ := setupVCSProviderUserStore(ctx, t)
 
@@ -205,6 +212,7 @@ func TestVCSProviderUserTouchStoresEmptyPayloadWhenNil(t *testing.T) {
 }
 
 func TestDeleteExpiredVCSProviderUsers(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 	s, db := setupVCSProviderUserStore(ctx, t)
 
@@ -242,7 +250,7 @@ func TestDeleteExpiredVCSProviderUsers(t *testing.T) {
 func setupVCSProviderUserStore(ctx context.Context, t *testing.T) (*store.Store, *sql.DB) {
 	t.Helper()
 
-	db, s, _ := newTestDB(t)
+	db, s, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('default')`)
 	require.NoError(t, err)

@@ -7,6 +7,7 @@ import (
 )
 
 func TestGetListProjectFilter(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		filter      string
@@ -141,6 +142,7 @@ func TestGetListProjectFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			q, err := GetListProjectFilter("test-workspace", tt.filter)
 
 			if tt.wantErr {

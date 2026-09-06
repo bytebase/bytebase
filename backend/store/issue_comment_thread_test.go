@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"github.com/stretchr/testify/require"
 
 	"github.com/bytebase/bytebase/backend/common"
@@ -17,6 +19,7 @@ import (
 // creation with its root invariants, resolve/reopen on the root only, the
 // timeline and reply list filters, and statement anchor round-trips.
 func TestIssueCommentThreads(t *testing.T) {
+	t.Parallel()
 	const (
 		workspaceID  = "thread-ws"
 		projectID    = "thread-p"
@@ -27,7 +30,7 @@ func TestIssueCommentThreads(t *testing.T) {
 	)
 
 	ctx := context.Background()
-	db, stores, _ := newTestDB(t)
+	db, stores, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx,
 		`INSERT INTO workspace (resource_id) VALUES ($1)`, workspaceID)

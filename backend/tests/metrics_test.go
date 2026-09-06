@@ -16,6 +16,7 @@ import (
 )
 
 func TestCollisionMetricsLicenseSeats(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}

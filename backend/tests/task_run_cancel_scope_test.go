@@ -23,6 +23,7 @@ import (
 // rights in one environment reach a task run in another environment of the same
 // project — test-environment rights killing a production migration.
 func TestBatchCancelTaskRuns_RejectsTaskRunFromAnotherStage(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()

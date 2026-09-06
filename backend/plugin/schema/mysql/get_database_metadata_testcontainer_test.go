@@ -11,7 +11,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
@@ -24,9 +23,7 @@ func TestGetDatabaseMetadataWithTestcontainer(t *testing.T) {
 	ctx := context.Background()
 
 	// Start shared MySQL container for all subtests
-	container, err := testcontainer.GetTestMySQLContainer(ctx)
-	require.NoError(t, err)
-	t.Cleanup(func() { container.Close(ctx) })
+	container := sharedMySQLContainer(t)
 
 	// Test cases with various MySQL features
 	testCases := []struct {

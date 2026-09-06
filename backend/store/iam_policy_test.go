@@ -44,6 +44,7 @@ func projectPolicyMembers(ctx context.Context, t *testing.T, s *store.Store, wor
 // transaction, so both writers passed the compare and the later one clobbered
 // the other. If the lost edit was a revoke, access stayed granted.
 func TestSetIamPolicyCompareAndSwap(t *testing.T) {
+	t.Parallel()
 	const seedSQL = `
 		INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent)
 			VALUES ('default', 'PROJECT', 'projects/project-a', 'IAM', '` + ownerAndDeveloperPolicy + `', FALSE);
@@ -119,6 +120,7 @@ func TestSetIamPolicyCompareAndSwap(t *testing.T) {
 // disagree with the row -- and comparing against it would accept exactly the
 // stale write the etag exists to reject.
 func TestSetIamPolicyComparesAgainstTheRowNotTheCache(t *testing.T) {
+	t.Parallel()
 	const seedSQL = `
 		INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent)
 			VALUES ('default', 'PROJECT', 'projects/project-a', 'IAM', '` + ownerAndDeveloperPolicy + `', FALSE);
@@ -183,6 +185,7 @@ func TestSetIamPolicyComparesAgainstTheRowNotTheCache(t *testing.T) {
 // caller leaves a gap another request can land in, so two writes both pass a
 // guard neither would have passed against what the other stored.
 func TestSetIamPolicyValidatesAgainstTheReplacedPolicy(t *testing.T) {
+	t.Parallel()
 	const seedSQL = `
 		INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent)
 			VALUES ('default', 'PROJECT', 'projects/project-a', 'IAM', '` + ownerAndDeveloperPolicy + `', FALSE);
@@ -216,6 +219,7 @@ func TestSetIamPolicyValidatesAgainstTheReplacedPolicy(t *testing.T) {
 // workspaces name their projects independently -- so the same resource string
 // exists in both. A write must touch only the workspace it named.
 func TestSetIamPolicyIsScopedToItsWorkspace(t *testing.T) {
+	t.Parallel()
 	const seedSQL = `
 		INSERT INTO workspace (resource_id) VALUES ('other');
 		INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent)
@@ -242,6 +246,7 @@ func TestSetIamPolicyIsScopedToItsWorkspace(t *testing.T) {
 // A resource whose IAM policy was never written has no row to lock, so the
 // first write creates one rather than failing the compare.
 func TestSetIamPolicyCreatesTheFirstPolicy(t *testing.T) {
+	t.Parallel()
 	fixture := newStorePostgresFixture(t, "")
 	ctx, s := fixture.ctx, fixture.store
 
@@ -267,6 +272,7 @@ func TestSetIamPolicyCreatesTheFirstPolicy(t *testing.T) {
 // policy, and now does it inside the locked transaction. Its merge semantics
 // must be unchanged by that move.
 func TestPatchWorkspaceIamPolicyMerges(t *testing.T) {
+	t.Parallel()
 	fixture := newStorePostgresFixture(t, "")
 	ctx, s := fixture.ctx, fixture.store
 
@@ -316,6 +322,7 @@ func TestPatchWorkspaceIamPolicyMerges(t *testing.T) {
 // changed. Approving a role grant while an admin revokes someone in the same
 // project put the revoked member back.
 func TestPatchIamPolicyMergesIntoTheStoredPolicy(t *testing.T) {
+	t.Parallel()
 	const seedSQL = `
 		INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent)
 			VALUES ('default', 'PROJECT', 'projects/project-a', 'IAM', '` + ownerAndDeveloperPolicy + `', FALSE);
@@ -361,6 +368,7 @@ func TestPatchIamPolicyMergesIntoTheStoredPolicy(t *testing.T) {
 // A mutation that fails leaves the policy alone rather than committing a
 // half-applied merge.
 func TestPatchIamPolicyRollsBackAFailedMutation(t *testing.T) {
+	t.Parallel()
 	const seedSQL = `
 		INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent)
 			VALUES ('default', 'PROJECT', 'projects/project-a', 'IAM', '` + ownerAndDeveloperPolicy + `', FALSE);
@@ -387,6 +395,7 @@ func TestPatchIamPolicyRollsBackAFailedMutation(t *testing.T) {
 // goroutines: after a write, the row is changed out of band, and a read that
 // still saw the written value would prove the write had published it.
 func TestSetIamPolicyDoesNotPublishItsOwnWrite(t *testing.T) {
+	t.Parallel()
 	const seedSQL = `
 		INSERT INTO policy (workspace, resource_type, resource, type, payload, inherit_from_parent)
 			VALUES ('default', 'PROJECT', 'projects/project-a', 'IAM', '` + ownerAndDeveloperPolicy + `', FALSE);

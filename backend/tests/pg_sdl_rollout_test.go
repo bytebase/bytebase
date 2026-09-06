@@ -23,7 +23,10 @@ type sdlRolloutResult struct {
 // TestPgSDLRollout tests PostgreSQL SDL rollout workflow end-to-end.
 // This test focuses on verifying the overall SDL rollout workflow works correctly.
 // Detailed logic tests for specific SDL operations should be in backend/plugin/schema/pg tests.
+//
+//nolint:tparallel // Subtests share one server lifecycle.
 func TestPgSDLRollout(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 

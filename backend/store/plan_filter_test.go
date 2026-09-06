@@ -8,6 +8,7 @@ import (
 )
 
 func TestGetListPlanFilter(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name        string
 		filter      string
@@ -178,6 +179,7 @@ func TestGetListPlanFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			if tt.skipTest {
 				t.Skip("Test requires database connection")
 			}

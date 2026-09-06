@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+
 	"github.com/stretchr/testify/require"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -20,8 +22,9 @@ import (
 // succeed (the double-mint race that the prior read-then-delete flow allowed),
 // and a second sequential redemption must observe consumed=false.
 func TestOAuth2AtomicConsume(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
-	db, s, _ := newTestDB(t)
+	db, s, _ := testcontainer.NewMetadataDB(t)
 
 	_, err := db.ExecContext(ctx, `
 		INSERT INTO workspace (resource_id) VALUES ('ws-test');
@@ -32,6 +35,7 @@ func TestOAuth2AtomicConsume(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("authorization code is single-use", func(t *testing.T) {
+		t.Parallel()
 		_, err := s.CreateOAuth2AuthorizationCode(ctx, &store.OAuth2AuthorizationCodeMessage{
 			Code:      "code-single-use",
 			ClientID:  "client-A",
@@ -52,12 +56,14 @@ func TestOAuth2AtomicConsume(t *testing.T) {
 	})
 
 	t.Run("consuming an unknown code returns false without error", func(t *testing.T) {
+		t.Parallel()
 		consumed, err := s.ConsumeOAuth2AuthorizationCode(ctx, "client-A", "never-existed")
 		require.NoError(t, err)
 		require.False(t, consumed)
 	})
 
 	t.Run("concurrent redemption of one code claims it exactly once", func(t *testing.T) {
+		t.Parallel()
 		_, err := s.CreateOAuth2AuthorizationCode(ctx, &store.OAuth2AuthorizationCodeMessage{
 			Code:      "code-racy",
 			ClientID:  "client-A",
@@ -93,6 +99,7 @@ func TestOAuth2AtomicConsume(t *testing.T) {
 	})
 
 	t.Run("refresh token is single-use", func(t *testing.T) {
+		t.Parallel()
 		_, err := s.CreateOAuth2RefreshToken(ctx, &store.OAuth2RefreshTokenMessage{
 			TokenHash: "rt-single-use",
 			ClientID:  "client-A",
@@ -112,6 +119,7 @@ func TestOAuth2AtomicConsume(t *testing.T) {
 	})
 
 	t.Run("concurrent refresh of one token claims it exactly once", func(t *testing.T) {
+		t.Parallel()
 		_, err := s.CreateOAuth2RefreshToken(ctx, &store.OAuth2RefreshTokenMessage{
 			TokenHash: "rt-racy",
 			ClientID:  "client-A",

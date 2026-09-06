@@ -15,6 +15,7 @@ import (
 // Nothing else asserts the shape directly, so a change to it would surface as
 // sharing silently matching no rows.
 func TestSavedQueryBindingsStoredShape(t *testing.T) {
+	t.Parallel()
 	const seedSQL = `
 		INSERT INTO saved_query (resource_id, creator, project, name, statement)
 			VALUES ('saved-query-a', 'owner@example.com', 'project-a', 'Saved Query A', 'SELECT 1;');
@@ -96,6 +97,7 @@ func TestSavedQueryBindingsStoredShape(t *testing.T) {
 // grants along or every saved query shared with it becomes unreachable to its
 // members.
 func TestSavedQueryBindingsFollowGroupRename(t *testing.T) {
+	t.Parallel()
 	const seedSQL = `
 		INSERT INTO user_group (id, email, workspace, name, description, payload)
 			VALUES ('group-1', 'eng@example.com', 'default', 'Eng', '', '{}');

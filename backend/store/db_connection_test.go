@@ -7,6 +7,7 @@ import (
 )
 
 func TestIsFilePath(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		in   string
@@ -66,6 +67,7 @@ func TestIsFilePath(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			require.Equal(t, tt.want, isFilePath(tt.in))
 		})
 	}

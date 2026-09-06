@@ -22,7 +22,9 @@ func getCurrentWorkspace(ctx context.Context, t *testing.T, ctl *controller) str
 }
 
 func TestServiceAccountEmailValidation(t *testing.T) {
+	t.Parallel()
 	t.Run("create rejects invalid generated email", func(t *testing.T) {
+		t.Parallel()
 		a := require.New(t)
 		ctx := context.Background()
 		ctl := &controller{}
@@ -43,6 +45,7 @@ func TestServiceAccountEmailValidation(t *testing.T) {
 	})
 
 	t.Run("get rejects malformed resource email", func(t *testing.T) {
+		t.Parallel()
 		a := require.New(t)
 		ctx := context.Background()
 		ctl := &controller{}
@@ -59,7 +62,9 @@ func TestServiceAccountEmailValidation(t *testing.T) {
 }
 
 func TestWorkloadIdentityEmailValidation(t *testing.T) {
+	t.Parallel()
 	t.Run("create rejects invalid generated email", func(t *testing.T) {
+		t.Parallel()
 		a := require.New(t)
 		ctx := context.Background()
 		ctl := &controller{}
@@ -80,6 +85,7 @@ func TestWorkloadIdentityEmailValidation(t *testing.T) {
 	})
 
 	t.Run("get rejects malformed resource email", func(t *testing.T) {
+		t.Parallel()
 		a := require.New(t)
 		ctx := context.Background()
 		ctl := &controller{}

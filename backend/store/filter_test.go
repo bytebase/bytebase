@@ -9,6 +9,7 @@ import (
 )
 
 func TestEscapeLikePattern(t *testing.T) {
+	t.Parallel()
 	// `%` and `_` are wildcards to LIKE. Left raw, a search for a statement
 	// holding either matched rows the user never asked for.
 	require.Equal(t, `100\% off`, escapeLikePattern("100% off"))
@@ -19,6 +20,7 @@ func TestEscapeLikePattern(t *testing.T) {
 }
 
 func TestContainsEscapesLikeWildcards(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name    string
 		filter  string
@@ -59,6 +61,7 @@ func TestContainsEscapesLikeWildcards(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			query, err := tt.build(tt.filter)
 			require.NoError(t, err)
 			sql, args, err := query.ToSQL()
@@ -70,6 +73,7 @@ func TestContainsEscapesLikeWildcards(t *testing.T) {
 }
 
 func TestLabelFilterAcceptsIndexSyntax(t *testing.T) {
+	t.Parallel()
 	// Label keys allow dashes (`^[a-z][a-z0-9_-]{0,62}$`). CEL parses
 	// `labels.cost-center` as subtraction, so the dotted form never reaches the
 	// store — index syntax is the only one that carries such a key. The key is
@@ -120,6 +124,7 @@ func TestLabelFilterAcceptsIndexSyntax(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			query, err := tt.build(tt.filter)
 			require.NoError(t, err)
 			sql, args, err := query.ToSQL()

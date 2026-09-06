@@ -11,7 +11,9 @@ import (
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 )
 
+//nolint:tparallel // Subtests share one server lifecycle.
 func TestArchiveProject(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}

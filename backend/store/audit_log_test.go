@@ -11,6 +11,7 @@ import (
 )
 
 func TestApplyRetentionFilter(t *testing.T) {
+	t.Parallel()
 	now := time.Now()
 	sevenDaysAgo := now.AddDate(0, 0, -7)
 
@@ -67,6 +68,7 @@ func TestApplyRetentionFilter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
 			got := ApplyRetentionFilter(tt.userFilterQ, tt.cutoff)
 
 			require.NotNil(t, got, tt.description)
