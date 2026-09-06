@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
@@ -482,6 +483,9 @@ func executeActionCommand(ctx context.Context, args ...string) (*ActionResult, e
 	// Create new world instance for test isolation
 	w := world.NewWorld()
 	w.Platform = world.LocalPlatform
+	// The release default of 5 s between rollout status polls was most of
+	// these tests' time; a rollout here finishes in well under a second.
+	w.RolloutPollInterval = 300 * time.Millisecond
 
 	// Create new command instance using the factory function
 	cmd := command.NewRootCommand(w)

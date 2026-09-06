@@ -16,6 +16,9 @@ type World struct {
 
 	// Whether it is the rollout subcommand.
 	IsRollout bool
+	// How long the rollout subcommand waits between status polls. Not a flag:
+	// releases keep the default, and the workflow tests shorten it.
+	RolloutPollInterval time.Duration
 
 	// bytebase-action flags
 	Output               string
@@ -62,7 +65,8 @@ type World struct {
 
 func NewWorld() *World {
 	return &World{
-		CurrentTime: time.Now(),
-		Logger:      slog.Default(),
+		CurrentTime:         time.Now(),
+		Logger:              slog.Default(),
+		RolloutPollInterval: 5 * time.Second,
 	}
 }

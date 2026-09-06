@@ -265,7 +265,7 @@ func waitForRollout(ctx context.Context, w *world.World, client *client, rollout
 					return errors.Wrapf(err, "failed to batch create tasks")
 				}
 			}
-			time.Sleep(5 * time.Second)
+			time.Sleep(w.RolloutPollInterval)
 		}
 	}
 
