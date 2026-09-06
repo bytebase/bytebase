@@ -12,67 +12,68 @@ import (
 )
 
 // One container per test package, started on first use and stopped by Main.
-// A test binary is its own process, so the package-level state here is per
+// A test binary is its own process, so package-level state here is per
 // package. Starting lazily is what keeps `go test -run` over the tests that
 // need no engine from paying for a container they never open.
-type sharedContainer struct {
-	once      sync.Once
-	container *Container
-	err       error
-}
-
-func (s *sharedContainer) get(t testing.TB, start func(context.Context) (*Container, error)) *Container {
-	t.Helper()
-	s.once.Do(func() { s.container, s.err = start(context.Background()) })
-	require.NoError(t, s.err, "start the shared container")
-	return s.container
-}
-
-func (s *sharedContainer) close(ctx context.Context) {
-	if s.container != nil {
-		s.container.Close(ctx)
-	}
-}
-
 var (
-	sharedPg, sharedMySQL, sharedOracle, sharedMSSQL, sharedTiDB sharedContainer
-	pgDatabaseSeq                                                atomic.Int64
+	sharedPg     = startOnce(GetPgContainer)
+	sharedMySQL  = startOnce(GetTestMySQLContainer)
+	sharedOracle = startOnce(GetOracleContainer)
+	sharedMSSQL  = startOnce(GetMSSQLContainer)
+	sharedTiDB   = startOnce(GetTiDBContainer)
+
+	startedMu sync.Mutex
+	started   []*Container
+
+	pgDatabaseSeq atomic.Int64
 )
 
-// Main runs the package's tests and stops the containers they shared. Call it
-// from the package's TestMain:
+func startOnce(start func(context.Context) (*Container, error)) func() (*Container, error) {
+	return sync.OnceValues(func() (*Container, error) {
+		c, err := start(context.Background())
+		if err == nil {
+			startedMu.Lock()
+			started = append(started, c)
+			startedMu.Unlock()
+		}
+		return c, err
+	})
+}
+
+func shared(t testing.TB, start func() (*Container, error)) *Container {
+	t.Helper()
+	c, err := start()
+	require.NoError(t, err, "start the shared container")
+	return c
+}
+
+// Main runs the package's tests and stops the containers they shared:
 //
 //	func TestMain(m *testing.M) { testcontainer.Main(m) }
 func Main(m *testing.M) {
 	defer func() {
-		ctx := context.Background()
-		for _, s := range []*sharedContainer{&sharedPg, &sharedMySQL, &sharedOracle, &sharedMSSQL, &sharedTiDB} {
-			s.close(ctx)
+		for _, c := range started {
+			c.Close(context.Background())
 		}
 	}()
 	m.Run()
 }
 
 // SharedPgContainer returns the package's PostgreSQL container, starting it on
-// the first call. Tests isolate themselves with NewPgDatabase, or with
-// NewMetadataDB for a migrated metadata database.
-func SharedPgContainer(t testing.TB) *Container { return sharedPg.get(t, GetPgContainer) }
+// the first call. Tests isolate themselves with NewPgDatabase or NewMetadataDB.
+func SharedPgContainer(t testing.TB) *Container { return shared(t, sharedPg) }
 
-// SharedMySQLContainer returns the package's MySQL container, starting it on
-// the first call. Tests isolate themselves with a database each.
-func SharedMySQLContainer(t testing.TB) *Container { return sharedMySQL.get(t, GetTestMySQLContainer) }
+// SharedMySQLContainer is SharedPgContainer for MySQL; tests take a database each.
+func SharedMySQLContainer(t testing.TB) *Container { return shared(t, sharedMySQL) }
 
-// SharedOracleContainer returns the package's Oracle container, starting it on
-// the first call. Tests isolate themselves with a user each.
-func SharedOracleContainer(t testing.TB) *Container { return sharedOracle.get(t, GetOracleContainer) }
+// SharedOracleContainer is SharedPgContainer for Oracle; tests take a user each.
+func SharedOracleContainer(t testing.TB) *Container { return shared(t, sharedOracle) }
 
-// SharedMSSQLContainer returns the package's SQL Server container, starting it
-// on the first call. Tests isolate themselves with a database each.
-func SharedMSSQLContainer(t testing.TB) *Container { return sharedMSSQL.get(t, GetMSSQLContainer) }
+// SharedMSSQLContainer is SharedPgContainer for SQL Server; tests take a database each.
+func SharedMSSQLContainer(t testing.TB) *Container { return shared(t, sharedMSSQL) }
 
-// SharedTiDBContainer returns the package's TiDB container, starting it on the
-// first call. Tests isolate themselves with a database each.
-func SharedTiDBContainer(t testing.TB) *Container { return sharedTiDB.get(t, GetTiDBContainer) }
+// SharedTiDBContainer is SharedPgContainer for TiDB; tests take a database each.
+func SharedTiDBContainer(t testing.TB) *Container { return shared(t, sharedTiDB) }
 
 // NewPgDatabase creates an empty database for the test on the shared
 // PostgreSQL container and returns its name with a superuser handle to it.
