@@ -171,6 +171,10 @@ func TestSQLExport(t *testing.T) {
 
 			for i, compressedFile := range zipReader.File {
 				if exportTest.password != "" {
+					// SetPassword only supplies a credential; it does not require the
+					// entry to be encrypted, so an export that ignored the password and
+					// returned plaintext would still open cleanly below.
+					a.True(compressedFile.IsEncrypted(), "entry %q must be encrypted when a password was supplied", compressedFile.Name)
 					compressedFile.SetPassword(exportTest.password)
 				}
 
