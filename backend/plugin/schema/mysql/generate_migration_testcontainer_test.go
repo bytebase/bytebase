@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -32,7 +33,7 @@ func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 	ctx := context.Background()
 
 	// Start shared MySQL container for all subtests
-	container := sharedMySQLContainer(t)
+	container := testcontainer.SharedMySQLContainer(t)
 
 	// Test cases with various schema changes
 	testCases := []struct {

@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -27,7 +28,7 @@ func TestGetDatabaseDefinition(t *testing.T) {
 	ctx := context.Background()
 
 	// Start shared MySQL container for all subtests
-	container := sharedMySQLContainer(t)
+	container := testcontainer.SharedMySQLContainer(t)
 
 	type testCase struct {
 		description string
@@ -470,7 +471,7 @@ CREATE TABLE project_member (
 	ctx := context.Background()
 
 	// Start MySQL container
-	container := sharedMySQLContainer(t)
+	container := testcontainer.SharedMySQLContainer(t)
 
 	// Create test database
 	_, err := container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s`", databaseName))

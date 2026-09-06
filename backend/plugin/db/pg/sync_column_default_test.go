@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
@@ -14,8 +15,8 @@ func TestSync_ColumnDefaultSchemaQualification(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	pgContainer := sharedPgContainer(t)
-	dbName, pgDB := newTestDatabase(t, pgContainer)
+	pgContainer := testcontainer.SharedPgContainer(t)
+	dbName, pgDB := testcontainer.NewPgDatabase(t)
 
 	// Set up test schema with various default value scenarios
 	setupSQL := `
@@ -94,7 +95,7 @@ COMMENT ON TABLE test_defaults IS 'Test table for column default schema qualific
 
 	openedDriver, err := driver.Open(ctx, storepb.Engine_POSTGRES, config)
 	require.NoError(t, err)
-	defer openedDriver.Close(ctx)
+	t.Cleanup(func() { require.NoError(t, openedDriver.Close(ctx)) })
 
 	pgDriver, ok := openedDriver.(*Driver)
 	require.True(t, ok)
@@ -226,8 +227,8 @@ func TestSync_ColumnDefaultCrossSchemaQualification(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	pgContainer := sharedPgContainer(t)
-	dbName, pgDB := newTestDatabase(t, pgContainer)
+	pgContainer := testcontainer.SharedPgContainer(t)
+	dbName, pgDB := testcontainer.NewPgDatabase(t)
 
 	// Create schema with cross-schema references
 	setupSQL := `

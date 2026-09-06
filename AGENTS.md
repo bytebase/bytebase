@@ -48,8 +48,10 @@ those live in `backend/tests`, the only package that may start one; everything
 else asserts in `backend/api/v1` or `backend/store`.
 
 A package needing a real metadata Postgres shares one through
-`testcontainer.MetadataMain` and `testcontainer.NewMetadataDB`, never its own
-container. Prefer needing none: extract the
+`testcontainer.Main` and `testcontainer.NewMetadataDB`, never its own
+container; a package needing a target engine shares one the same way through
+`testcontainer.SharedPgContainer` and its siblings, with `NewPgDatabase` for
+a database per test. Prefer needing none: extract the
 decide-and-convert half of a handler as functions over plain data, and where
 state is genuinely read declare an interface beside the handler and fake it, as
 `backend/api/mcp` does with `serverStore` — never one interface over the whole

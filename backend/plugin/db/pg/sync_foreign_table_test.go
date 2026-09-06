@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
@@ -58,8 +59,7 @@ func queryForeignTableRows(t *testing.T, conn *sql.DB, query string) [][4]string
 func TestListForeignTableQueryMatchesInformationSchema(t *testing.T) {
 	t.Parallel()
 
-	pgContainer := sharedPgContainer(t)
-	_, pgDB := newTestDatabase(t, pgContainer)
+	_, pgDB := testcontainer.NewPgDatabase(t)
 
 	_, err := pgDB.Exec(foreignTableSetupSQL)
 	require.NoError(t, err)
@@ -79,8 +79,8 @@ func TestSyncForeignTablesWithoutTablePrivilege(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	pgContainer := sharedPgContainer(t)
-	dbName, pgDB := newTestDatabase(t, pgContainer)
+	pgContainer := testcontainer.SharedPgContainer(t)
+	dbName, pgDB := testcontainer.NewPgDatabase(t)
 
 	_, err := pgDB.Exec(foreignTableSetupSQL)
 	require.NoError(t, err)

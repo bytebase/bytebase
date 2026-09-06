@@ -493,7 +493,7 @@ calling a test a duplicate.**
 **Re-sized: the seconds are already gone, the argument is not.** This section
 was written against 822 s of wall clock, 611 s of it container starts. #21349
 then gave `api/v1`, `component/review`, `auth`, `oauth2`, `lsp` and `mcp` a
-shared Postgres through `testcontainer.MetadataMain`, and those two packages
+shared Postgres through `testcontainer.NewMetadataDB`, and those two packages
 went to 43 s and 17 s without a single fake being written. All six now sit within
 a couple of seconds of the 6.9 s floor that a package holding one container
 cannot go below, and `api/v1` is 43 s of which about 36 s is its own tests.

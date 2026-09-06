@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
@@ -27,7 +28,7 @@ func TestGetDatabaseDefinitionWithTestcontainer(t *testing.T) {
 
 	ctx := context.Background()
 
-	container := sharedOracleContainer(t)
+	container := testcontainer.SharedOracleContainer(t)
 
 	// Get SYSTEM database connection for user management
 	systemDB := container.GetDB()

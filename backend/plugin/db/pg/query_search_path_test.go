@@ -6,6 +6,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/plugin/db"
@@ -15,8 +16,8 @@ func TestQueryConnSearchPathIncludesPublicAfterSelectedSchema(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	pgContainer := sharedPgContainer(t)
-	dbName, rawDB := newTestDatabase(t, pgContainer)
+	pgContainer := testcontainer.SharedPgContainer(t)
+	dbName, rawDB := testcontainer.NewPgDatabase(t)
 	_, err := rawDB.ExecContext(ctx, `
 		CREATE SCHEMA app;
 		CREATE TABLE public.lookup_precedence (marker text);
@@ -70,8 +71,8 @@ func TestQueryConnSearchPathEscapesSelectedSchemaName(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	pgContainer := sharedPgContainer(t)
-	dbName, rawDB := newTestDatabase(t, pgContainer)
+	pgContainer := testcontainer.SharedPgContainer(t)
+	dbName, rawDB := testcontainer.NewPgDatabase(t)
 	_, err := rawDB.ExecContext(ctx, `
 		CREATE SCHEMA "app""schema";
 		CREATE TABLE "app""schema".lookup_precedence (marker text);

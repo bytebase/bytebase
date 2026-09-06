@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
@@ -22,7 +23,7 @@ func TestGetDatabaseMetadataWithTestcontainer(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	container := sharedTiDBContainer(t)
+	container := testcontainer.SharedTiDBContainer(t)
 
 	// Test cases with various TiDB features
 	testCases := []struct {

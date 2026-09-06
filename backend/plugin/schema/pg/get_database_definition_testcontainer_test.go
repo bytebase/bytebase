@@ -9,6 +9,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
@@ -22,7 +23,7 @@ func TestGetDatabaseDefinitionWithTestcontainer(t *testing.T) {
 	ctx := context.Background()
 
 	// Get PostgreSQL container from testcontainer.go
-	pgContainer := sharedPgContainer(t)
+	pgContainer := testcontainer.SharedPgContainer(t)
 
 	// Test cases with various PostgreSQL features
 	testCases := []struct {
@@ -912,7 +913,7 @@ func compareEnumsDef(t *testing.T, enumsA, enumsB []*storepb.EnumTypeMetadata) {
 func TestSyncCompositeTypesWithTestcontainer(t *testing.T) {
 	ctx := context.Background()
 
-	pgContainer := sharedPgContainer(t)
+	pgContainer := testcontainer.SharedPgContainer(t)
 
 	dbName := fmt.Sprintf("test_sync_composite_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
 	_, err := pgContainer.GetDB().Exec(fmt.Sprintf("CREATE DATABASE %s", dbName))

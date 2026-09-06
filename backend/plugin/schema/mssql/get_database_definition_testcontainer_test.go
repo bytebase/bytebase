@@ -10,6 +10,7 @@ import (
 	_ "github.com/microsoft/go-mssqldb"
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
@@ -17,7 +18,7 @@ import (
 //nolint:tparallel
 func TestGetDatabaseDefinitionWithTestcontainer(t *testing.T) {
 	ctx := context.Background()
-	container := sharedMSSQLContainer(t)
+	container := testcontainer.SharedMSSQLContainer(t)
 
 	testCases := []struct {
 		name      string

@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
@@ -117,8 +118,7 @@ func queryColumnRows(t *testing.T, txn *sql.Tx, query string) []columnQueryRow {
 func TestListColumnQueryMatchesInformationSchema(t *testing.T) {
 	t.Parallel()
 
-	pgContainer := sharedPgContainer(t)
-	_, pgDB := newTestDatabase(t, pgContainer)
+	_, pgDB := testcontainer.NewPgDatabase(t)
 
 	setupSQL := `
 CREATE SCHEMA app;
@@ -227,8 +227,8 @@ func TestSyncColumnsWithoutTablePrivilege(t *testing.T) {
 	t.Parallel()
 	ctx := context.Background()
 
-	pgContainer := sharedPgContainer(t)
-	dbName, pgDB := newTestDatabase(t, pgContainer)
+	pgContainer := testcontainer.SharedPgContainer(t)
+	dbName, pgDB := testcontainer.NewPgDatabase(t)
 
 	setupSQL := `
 CREATE SCHEMA restricted;

@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 	"github.com/bytebase/bytebase/backend/store/model"
@@ -32,7 +33,7 @@ func TestGenerateMigrationWithTestcontainer(t *testing.T) {
 	ctx := context.Background()
 
 	// Start shared MSSQL container for all subtests
-	container := sharedMSSQLContainer(t)
+	container := testcontainer.SharedMSSQLContainer(t)
 
 	// Test cases with various schema changes
 	testCases := []struct {

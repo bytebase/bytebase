@@ -1,10 +1,8 @@
-// Shared metadata Postgres: one container for a whole test package instead of
-// one per test. A package opts in with three lines:
+// Shared metadata Postgres: the package's shared container carries a template
+// database migrated once, and each test calls NewMetadataDB for a copy of it.
+// A copy costs 44ms against a container start. The package opts in with
 //
-//	func TestMain(m *testing.M) { testcontainer.MetadataMain(m) }
-//
-// and each test calls NewMetadataDB for its own copy of a template database
-// migrated once. A copy costs 44ms against a 4.3s container.
+//	func TestMain(m *testing.M) { testcontainer.Main(m) }
 
 package testcontainer
 
@@ -29,37 +27,17 @@ var (
 	metaAdminDB        *sql.DB
 	metaDatabaseSeq    atomic.Int64
 	metaOnce           sync.Once
-	metaContainer      *Container
 	metaErr            error
 )
 
-// MetadataMain runs the package's tests and takes the shared Postgres down
-// afterwards. Call it from the package's TestMain. Nothing starts until a test
-// actually asks for a database, so `go test -run` over tests that need none
-// still costs nothing and still works without Docker.
-func MetadataMain(m *testing.M) {
-	defer func() {
-		if metaContainer != nil {
-			metaContainer.Close(context.Background())
-		}
-	}()
-	m.Run()
-}
-
-// startMetadata brings up the container and template on first use.
+// startMetadata migrates the template on the shared container on first use.
 func startMetadata(t *testing.T) {
 	t.Helper()
+	container := SharedPgContainer(t)
 	metaOnce.Do(func() {
-		ctx := context.Background()
-		container, err := GetPgContainer(ctx)
-		if err != nil {
-			metaErr = err
-			return
-		}
-		metaContainer = container
 		metaHost, metaPort = container.GetHost(), container.GetPort()
 		metaAdminDB = container.GetDB()
-		metaErr = migrateTemplate(ctx)
+		metaErr = migrateTemplate(context.Background())
 	})
 	require.NoError(t, metaErr)
 }

@@ -6,4 +6,4 @@ import (
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 )
 
-func TestMain(m *testing.M) { testcontainer.MetadataMain(m) }
+func TestMain(m *testing.M) { testcontainer.Main(m) }
