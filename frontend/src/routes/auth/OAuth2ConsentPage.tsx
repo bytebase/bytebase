@@ -47,7 +47,6 @@ export function OAuth2ConsentPage() {
   const loadWorkspace = useAppStore((state) => state.loadWorkspace);
   const loadWorkspaceList = useAppStore((state) => state.loadWorkspaceList);
   const loadSubscription = useAppStore((state) => state.loadSubscription);
-  const loadServerInfo = useAppStore((state) => state.loadServerInfo);
   const refreshServerInfo = useAppStore((state) => state.refreshServerInfo);
   const switchWorkspace = useAppStore((state) => state.switchWorkspace);
   const dataMaskingAvailable = useAppStore((state) =>
@@ -84,21 +83,18 @@ export function OAuth2ConsentPage() {
 
   // Silent: the interceptor's toast names a status code, not a fix, and the
   // card this feeds says the same thing in words the person can act on.
-  const readCeiling = useCallback(
-    async (refresh = false): Promise<MCPSetting | undefined> => {
-      try {
-        const info = await (refresh ? refreshServerInfo() : loadServerInfo());
-        return info?.mcpSetting;
-      } catch {
-        return undefined;
-      }
-    },
-    [loadServerInfo, refreshServerInfo]
-  );
+  const readCeiling = useCallback(async (): Promise<MCPSetting | undefined> => {
+    try {
+      const info = await refreshServerInfo();
+      return info?.mcpSetting;
+    } catch {
+      return undefined;
+    }
+  }, [refreshServerInfo]);
 
   const retryCeiling = async () => {
     setRetrying(true);
-    setMcpSetting(await readCeiling(true));
+    setMcpSetting(await readCeiling());
     setRetrying(false);
   };
 

@@ -517,12 +517,37 @@ describe("OAuth2ConsentPage", () => {
       ok: true,
       json: async () => ({ client_name: "Acme" }),
     });
-    mocks.loadServerInfo.mockResolvedValue({ mcpSetting: setting });
+    mocks.refreshServerInfo.mockResolvedValue({ mcpSetting: setting });
     const handle = renderIntoContainer(<OAuth2ConsentPage />);
     handle.render();
     await flushPromises();
     return handle;
   };
+
+  test("refreshes the ceiling before presenting consent", async () => {
+    mocks.currentRoute.value.query = consentQuery();
+    mocks.fetchImpl.mockResolvedValue({
+      ok: true,
+      json: async () => ({ client_name: "Acme" }),
+    });
+    mocks.loadServerInfo.mockResolvedValue({
+      mcpSetting: { capability: 3, ignoreMaskingExemptions: false },
+    });
+    mocks.refreshServerInfo.mockResolvedValue({
+      mcpSetting: { capability: 4, ignoreMaskingExemptions: false },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      <OAuth2ConsentPage />
+    );
+    render();
+    await flushPromises();
+
+    expect(mocks.refreshServerInfo).toHaveBeenCalledOnce();
+    expect(mocks.loadServerInfo).not.toHaveBeenCalled();
+    expect(container.textContent).toContain("oauth2.consent.mcp.line.write");
+    unmount();
+  });
 
   // Codex, #21237: the !response.ok branch returned, its sibling catch did not.
   // The render checks loading before error, so a failed client lookup sat
@@ -660,7 +685,7 @@ describe("OAuth2ConsentPage", () => {
       ok: true,
       json: async () => ({ client_name: "Acme" }),
     });
-    mocks.loadServerInfo.mockResolvedValueOnce(undefined);
+    mocks.refreshServerInfo.mockResolvedValueOnce(undefined);
 
     const { container, render, unmount } = renderIntoContainer(
       <OAuth2ConsentPage />
