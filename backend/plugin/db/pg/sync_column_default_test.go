@@ -6,21 +6,16 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
 func TestSync_ColumnDefaultSchemaQualification(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
-	// Use the centralized testcontainer helper
-	pgContainer := testcontainer.GetTestPgContainer(ctx, t)
-	defer pgContainer.Close(ctx)
-
-	// Get database connection
-	pgDB := pgContainer.GetDB()
-	require.NoError(t, pgDB.Ping())
+	pgContainer := sharedPgContainer(t)
+	dbName, pgDB := newTestDatabase(t, pgContainer)
 
 	// Set up test schema with various default value scenarios
 	setupSQL := `
@@ -88,12 +83,12 @@ COMMENT ON TABLE test_defaults IS 'Test table for column default schema qualific
 			Username: "postgres",
 			Host:     pgContainer.GetHost(),
 			Port:     pgContainer.GetPort(),
-			Database: "postgres",
+			Database: dbName,
 		},
 		Password: "root-password",
 		ConnectionContext: db.ConnectionContext{
 			EngineVersion: "16.0",
-			DatabaseName:  "postgres",
+			DatabaseName:  dbName,
 		},
 	}
 
@@ -200,6 +195,7 @@ COMMENT ON TABLE test_defaults IS 'Test table for column default schema qualific
 	// Verify each test case
 	for _, tc := range testCases {
 		t.Run(tc.columnName, func(t *testing.T) {
+			t.Parallel()
 			column, exists := columnMap[tc.columnName]
 			require.True(t, exists, "Column %s should exist", tc.columnName)
 
@@ -227,15 +223,11 @@ COMMENT ON TABLE test_defaults IS 'Test table for column default schema qualific
 }
 
 func TestSync_ColumnDefaultCrossSchemaQualification(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
-	// Use the centralized testcontainer helper
-	pgContainer := testcontainer.GetTestPgContainer(ctx, t)
-	defer pgContainer.Close(ctx)
-
-	// Get database connection
-	pgDB := pgContainer.GetDB()
-	require.NoError(t, pgDB.Ping())
+	pgContainer := sharedPgContainer(t)
+	dbName, pgDB := newTestDatabase(t, pgContainer)
 
 	// Create schema with cross-schema references
 	setupSQL := `
@@ -280,12 +272,12 @@ CREATE TABLE critical_test (
 			Username: "postgres",
 			Host:     pgContainer.GetHost(),
 			Port:     pgContainer.GetPort(),
-			Database: "postgres",
+			Database: dbName,
 		},
 		Password: "root-password",
 		ConnectionContext: db.ConnectionContext{
 			EngineVersion: "16.0",
-			DatabaseName:  "postgres",
+			DatabaseName:  dbName,
 		},
 	}
 

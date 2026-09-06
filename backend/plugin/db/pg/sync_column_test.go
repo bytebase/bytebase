@@ -10,7 +10,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 	pgparser "github.com/bytebase/bytebase/backend/plugin/parser/pg"
@@ -116,13 +115,10 @@ func queryColumnRows(t *testing.T, txn *sql.Tx, query string) []columnQueryRow {
 // rendering contract: the Go-side formatting in getTableColumns depends on the exact
 // data_type / precision / udt values that information_schema used to produce.
 func TestListColumnQueryMatchesInformationSchema(t *testing.T) {
-	ctx := context.Background()
+	t.Parallel()
 
-	pgContainer := testcontainer.GetTestPgContainer(ctx, t)
-	defer pgContainer.Close(ctx)
-
-	pgDB := pgContainer.GetDB()
-	require.NoError(t, pgDB.Ping())
+	pgContainer := sharedPgContainer(t)
+	_, pgDB := newTestDatabase(t, pgContainer)
 
 	setupSQL := `
 CREATE SCHEMA app;
@@ -228,13 +224,11 @@ CREATE TABLE public.plain (a serial, b text);
 // constraints (read from pg_catalog) but zero columns. The pg_catalog-based column query
 // must return the columns regardless.
 func TestSyncColumnsWithoutTablePrivilege(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
-	pgContainer := testcontainer.GetTestPgContainer(ctx, t)
-	defer pgContainer.Close(ctx)
-
-	pgDB := pgContainer.GetDB()
-	require.NoError(t, pgDB.Ping())
+	pgContainer := sharedPgContainer(t)
+	dbName, pgDB := newTestDatabase(t, pgContainer)
 
 	setupSQL := `
 CREATE SCHEMA restricted;
@@ -245,15 +239,17 @@ CREATE TABLE restricted.secret_table (
     CONSTRAINT positive_amount CHECK (amount >= 0)
 );
 CREATE INDEX idx_secret_name ON restricted.secret_table (name);
-CREATE USER limited_user WITH LOGIN PASSWORD 'limited-password';
--- pg_read_all_stats lets the sync read pg_table_size/pg_indexes_size; it grants no
--- table or column privileges, so information_schema.columns still hides the table.
-GRANT pg_read_all_stats TO limited_user;
 `
 	_, err := pgDB.Exec(setupSQL)
 	require.NoError(t, err)
 
-	limitedDB, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=limited_user password=limited-password database=postgres", pgContainer.GetHost(), pgContainer.GetPort()))
+	// pg_read_all_stats lets the sync read pg_table_size/pg_indexes_size; it grants no
+	// table or column privileges, so information_schema.columns still hides the table.
+	limitedUser := "limited_" + dbName
+	_, err = pgDB.Exec(fmt.Sprintf("CREATE USER %s WITH LOGIN PASSWORD 'limited-password'; GRANT pg_read_all_stats TO %s;", limitedUser, limitedUser))
+	require.NoError(t, err)
+
+	limitedDB, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=%s password=limited-password database=%s", pgContainer.GetHost(), pgContainer.GetPort(), limitedUser, dbName))
 	require.NoError(t, err)
 	defer limitedDB.Close()
 	require.NoError(t, limitedDB.Ping())
@@ -270,15 +266,15 @@ GRANT pg_read_all_stats TO limited_user;
 	config := db.ConnectionConfig{
 		DataSource: &storepb.DataSource{
 			Type:     storepb.DataSourceType_ADMIN,
-			Username: "limited_user",
+			Username: limitedUser,
 			Host:     pgContainer.GetHost(),
 			Port:     pgContainer.GetPort(),
-			Database: "postgres",
+			Database: dbName,
 		},
 		Password: "limited-password",
 		ConnectionContext: db.ConnectionContext{
 			EngineVersion: "16.0",
-			DatabaseName:  "postgres",
+			DatabaseName:  dbName,
 		},
 	}
 

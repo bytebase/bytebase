@@ -28,6 +28,7 @@ import (
 // security-relevant outcome at the driver boundary: the MERGE-CTE must NOT return
 // the secret value as data rows. MERGE ... RETURNING requires PostgreSQL 17.
 func TestQueryConnMergeCTEDoesNotLeakRows(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
 	pgContainer := testcontainer.GetTestPg17Container(ctx, t)

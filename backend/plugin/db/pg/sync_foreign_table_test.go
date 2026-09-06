@@ -8,7 +8,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/db"
 )
@@ -57,13 +56,10 @@ func queryForeignTableRows(t *testing.T, conn *sql.DB, query string) [][4]string
 // foreign table query produces exactly the same rows as the previous
 // information_schema.foreign_tables-based query for a privileged user.
 func TestListForeignTableQueryMatchesInformationSchema(t *testing.T) {
-	ctx := context.Background()
+	t.Parallel()
 
-	pgContainer := testcontainer.GetTestPgContainer(ctx, t)
-	defer pgContainer.Close(ctx)
-
-	pgDB := pgContainer.GetDB()
-	require.NoError(t, pgDB.Ping())
+	pgContainer := sharedPgContainer(t)
+	_, pgDB := newTestDatabase(t, pgContainer)
 
 	_, err := pgDB.Exec(foreignTableSetupSQL)
 	require.NoError(t, err)
@@ -80,26 +76,22 @@ func TestListForeignTableQueryMatchesInformationSchema(t *testing.T) {
 // privilege-filters its rows, so a sync user without privileges on a foreign table used
 // to silently lose the whole table from the synced metadata.
 func TestSyncForeignTablesWithoutTablePrivilege(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
 
-	pgContainer := testcontainer.GetTestPgContainer(ctx, t)
-	defer pgContainer.Close(ctx)
-
-	pgDB := pgContainer.GetDB()
-	require.NoError(t, pgDB.Ping())
+	pgContainer := sharedPgContainer(t)
+	dbName, pgDB := newTestDatabase(t, pgContainer)
 
 	_, err := pgDB.Exec(foreignTableSetupSQL)
 	require.NoError(t, err)
 
 	// pg_read_all_stats lets the sync read pg_table_size/pg_indexes_size; it grants no
 	// table or column privileges, so information_schema.foreign_tables still filters.
-	_, err = pgDB.Exec(`
-CREATE USER limited_user WITH LOGIN PASSWORD 'limited-password';
-GRANT pg_read_all_stats TO limited_user;
-`)
+	limitedUser := "limited_" + dbName
+	_, err = pgDB.Exec(fmt.Sprintf("CREATE USER %s WITH LOGIN PASSWORD 'limited-password'; GRANT pg_read_all_stats TO %s;", limitedUser, limitedUser))
 	require.NoError(t, err)
 
-	limitedDB, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=limited_user password=limited-password database=postgres", pgContainer.GetHost(), pgContainer.GetPort()))
+	limitedDB, err := sql.Open("pgx", fmt.Sprintf("host=%s port=%s user=%s password=limited-password database=%s", pgContainer.GetHost(), pgContainer.GetPort(), limitedUser, dbName))
 	require.NoError(t, err)
 	defer limitedDB.Close()
 	require.NoError(t, limitedDB.Ping())
@@ -114,15 +106,15 @@ GRANT pg_read_all_stats TO limited_user;
 	config := db.ConnectionConfig{
 		DataSource: &storepb.DataSource{
 			Type:     storepb.DataSourceType_ADMIN,
-			Username: "limited_user",
+			Username: limitedUser,
 			Host:     pgContainer.GetHost(),
 			Port:     pgContainer.GetPort(),
-			Database: "postgres",
+			Database: dbName,
 		},
 		Password: "limited-password",
 		ConnectionContext: db.ConnectionContext{
 			EngineVersion: "16.0",
-			DatabaseName:  "postgres",
+			DatabaseName:  dbName,
 		},
 	}
 
@@ -149,7 +141,7 @@ GRANT pg_read_all_stats TO limited_user;
 	remoteOrders := fdwSchema.ExternalTables[0]
 	require.Equal(t, "remote_orders", remoteOrders.Name)
 	require.Equal(t, "loopback_server", remoteOrders.ExternalServerName)
-	require.Equal(t, "postgres", remoteOrders.ExternalDatabaseName)
+	require.Equal(t, dbName, remoteOrders.ExternalDatabaseName)
 
 	// Columns of foreign tables come from the privilege-independent column sync.
 	require.Len(t, remoteOrders.Columns, 2)
