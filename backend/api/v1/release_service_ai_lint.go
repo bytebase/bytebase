@@ -11,6 +11,7 @@ import (
 
 	"github.com/bytebase/bytebase/backend/common"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
+	"github.com/bytebase/bytebase/backend/plugin/ai"
 )
 
 // aiLintResult represents a single lint result from AI.
@@ -64,7 +65,7 @@ func (s *ReleaseService) runAIPoweredLintBatch(ctx context.Context, files []file
 	}
 
 	slog.Info("Calling AI provider for batch schema linting", "provider", aiSetting.Provider, "endpoint", aiSetting.Endpoint, "filesCount", len(files))
-	resp, err := chatWithProvider(ctx, aiSetting, request)
+	resp, err := ai.Chat(ctx, aiSetting, request)
 	if err != nil {
 		slog.Error("AI call failed", "provider", aiSetting.Provider, "error", err)
 		return nil, errors.Wrapf(err, "%s API call failed", aiSetting.Provider)

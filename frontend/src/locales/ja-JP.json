@@ -2380,12 +2380,17 @@
           "enable-ai-assistant": "AIアシスタントを有効にする",
           "enabled-in-saas": "Gemini AI は SaaS モードで自動的に有効になります。",
           "endpoint": {
-            "description": "プライベート展開用の API エンドポイントを提供します。",
+            "description": "カスタムモデルの API エンドポイントを入力します。",
+            "openai-description": "Responses API には /responses、Chat Completions API には /chat/completions のエンドポイントを使用します。",
             "self": "API エンドポイント"
           },
           "model": {
-            "description": "供給プライベートデプロイメントのモデル名。",
-            "self": "モデル名"
+            "custom": "カスタムモデル",
+            "deployment": "デプロイ名",
+            "deployment-description": "Azure OpenAI のデプロイ名です。モデル名と異なる場合があります。",
+            "description": "対応モデルを選択するか、カスタムモデルを選択して別のモデルとエンドポイントを入力します。",
+            "name": "モデル名",
+            "self": "モデル"
           },
           "provider": {
             "azure_open_ai": "Azure OpenAI",

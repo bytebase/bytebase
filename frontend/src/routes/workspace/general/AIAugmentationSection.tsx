@@ -37,7 +37,11 @@ import {
   SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { PROVIDER_DEFAULTS } from "./aiProviderDefaults";
+import {
+  getModelEndpoint,
+  PROVIDER_DEFAULTS,
+  PROVIDER_MODELS,
+} from "./aiProviderDefaults";
 import type { SectionHandle } from "./useSettingSection";
 
 interface AIAugmentationSectionProps {
@@ -59,6 +63,17 @@ const PROVIDER_OPTIONS = [
   AISetting_Provider.GEMINI,
   AISetting_Provider.CLAUDE,
 ] as const;
+
+const CUSTOM_MODEL = "__custom__";
+
+function getSelectedModel(state: AIState): string {
+  return (
+    (PROVIDER_MODELS[state.provider] ?? []).find(
+      (model) =>
+        model.value === state.model && model.endpoint === state.endpoint
+    )?.value ?? CUSTOM_MODEL
+  );
+}
 
 export const AIAugmentationSection = forwardRef<
   SectionHandle,
@@ -92,6 +107,9 @@ export const AIAugmentationSection = forwardRef<
   }, [aiSetting]);
 
   const [state, setState] = useState<AIState>(getInitialState);
+  const [selectedModel, setSelectedModel] = useState(() =>
+    getSelectedModel(getInitialState())
+  );
 
   // Re-sync state when the store value changes (e.g. after initial fetch).
   const prevAiSettingRef = useRef(aiSetting);
@@ -99,6 +117,7 @@ export const AIAugmentationSection = forwardRef<
     if (prevAiSettingRef.current !== aiSetting) {
       prevAiSettingRef.current = aiSetting;
       setState(getInitialState());
+      setSelectedModel(getSelectedModel(getInitialState()));
     }
   }, [aiSetting, getInitialState]);
 
@@ -139,6 +158,7 @@ export const AIAugmentationSection = forwardRef<
 
   const revert = useCallback(() => {
     setState(getInitialState());
+    setSelectedModel(getSelectedModel(getInitialState()));
   }, [getInitialState]);
 
   const update = useCallback(async () => {
@@ -178,6 +198,7 @@ export const AIAugmentationSection = forwardRef<
 
   const onProviderChange = (provider: AISetting_Provider) => {
     const defaults = PROVIDER_DEFAULTS[provider];
+    setSelectedModel(defaults.model);
     setState((s) => ({
       ...s,
       provider,
@@ -187,7 +208,35 @@ export const AIAugmentationSection = forwardRef<
     }));
   };
 
+  const onModelChange = (modelName: string | null) => {
+    if (!modelName) {
+      return;
+    }
+    setSelectedModel(modelName);
+    if (modelName === CUSTOM_MODEL) {
+      return;
+    }
+    const model = (PROVIDER_MODELS[state.provider] ?? []).find(
+      (model) => model.value === modelName
+    );
+    if (!model) {
+      return;
+    }
+    setState((s) => ({
+      ...s,
+      endpoint: getModelEndpoint(s.provider, s.endpoint, model),
+      model: model.value,
+    }));
+  };
+
   const toggleEnabled = (enabled: boolean) => {
+    if (enabled && (!state.endpoint || !state.model)) {
+      setSelectedModel(
+        state.endpoint || state.model
+          ? CUSTOM_MODEL
+          : PROVIDER_DEFAULTS[state.provider].model
+      );
+    }
     setState((s) => {
       if (enabled) {
         const defaults = PROVIDER_DEFAULTS[s.provider];
@@ -201,6 +250,11 @@ export const AIAugmentationSection = forwardRef<
       return { ...s, enabled };
     });
   };
+
+  const isCustomModel = selectedModel === CUSTOM_MODEL;
+  const isAzureOpenAI = state.provider === AISetting_Provider.AZURE_OPENAI;
+  const isOpenAICompatible =
+    state.provider === AISetting_Provider.OPEN_AI || isAzureOpenAI;
 
   const providerLabel = (provider: AISetting_Provider) => {
     switch (provider) {
@@ -337,30 +391,6 @@ export const AIAugmentationSection = forwardRef<
                       />
                     </FormField>
 
-                    {/* Endpoint */}
-                    <FormField
-                      title={t(
-                        "settings.general.workspace.ai-assistant.endpoint.self"
-                      )}
-                      description={t(
-                        "settings.general.workspace.ai-assistant.endpoint.description"
-                      )}
-                    >
-                      <Input
-                        value={state.endpoint}
-                        required
-                        disabled={!canEdit}
-                        placeholder={providerDefault.endpoint}
-                        onChange={(e) =>
-                          setState((s) => ({
-                            ...s,
-                            endpoint: e.target.value,
-                          }))
-                        }
-                      />
-                    </FormField>
-
-                    {/* Model */}
                     <FormField
                       title={t(
                         "settings.general.workspace.ai-assistant.model.self"
@@ -369,15 +399,96 @@ export const AIAugmentationSection = forwardRef<
                         "settings.general.workspace.ai-assistant.model.description"
                       )}
                     >
-                      <Input
-                        value={state.model}
-                        required
+                      <Select
+                        value={selectedModel}
                         disabled={!canEdit}
-                        onChange={(e) =>
-                          setState((s) => ({ ...s, model: e.target.value }))
-                        }
-                      />
+                        onValueChange={onModelChange}
+                      >
+                        <SelectTrigger className="w-48">
+                          <SelectValue>
+                            {selectedModel === CUSTOM_MODEL
+                              ? t(
+                                  "settings.general.workspace.ai-assistant.model.custom"
+                                )
+                              : selectedModel}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(PROVIDER_MODELS[state.provider] ?? []).map(
+                            (model) => (
+                              <SelectItem key={model.value} value={model.value}>
+                                {model.value}
+                              </SelectItem>
+                            )
+                          )}
+                          <SelectItem value={CUSTOM_MODEL}>
+                            {t(
+                              "settings.general.workspace.ai-assistant.model.custom"
+                            )}
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </FormField>
+
+                    {isCustomModel && (
+                      <FormField
+                        title={
+                          isAzureOpenAI
+                            ? t(
+                                "settings.general.workspace.ai-assistant.model.deployment"
+                              )
+                            : t(
+                                "settings.general.workspace.ai-assistant.model.name"
+                              )
+                        }
+                        description={
+                          isAzureOpenAI
+                            ? t(
+                                "settings.general.workspace.ai-assistant.model.deployment-description"
+                              )
+                            : undefined
+                        }
+                      >
+                        <Input
+                          value={state.model}
+                          required
+                          disabled={!canEdit}
+                          onChange={(e) =>
+                            setState((s) => ({ ...s, model: e.target.value }))
+                          }
+                        />
+                      </FormField>
+                    )}
+
+                    {(isCustomModel || isAzureOpenAI) && (
+                      <FormField
+                        title={t(
+                          "settings.general.workspace.ai-assistant.endpoint.self"
+                        )}
+                        description={
+                          isOpenAICompatible
+                            ? t(
+                                "settings.general.workspace.ai-assistant.endpoint.openai-description"
+                              )
+                            : t(
+                                "settings.general.workspace.ai-assistant.endpoint.description"
+                              )
+                        }
+                      >
+                        <Input
+                          value={state.endpoint}
+                          required
+                          disabled={!canEdit}
+                          placeholder={providerDefault.endpoint}
+                          onChange={(e) =>
+                            setState((s) => ({
+                              ...s,
+                              endpoint: e.target.value,
+                            }))
+                          }
+                        />
+                      </FormField>
+                    )}
                   </>
                 )}
               </>
