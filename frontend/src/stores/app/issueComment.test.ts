@@ -79,6 +79,20 @@ test("existing timelines request the unfiltered list across pages", async () => 
   expect(response.nextPageToken).toBe("next");
   expect(store.getIssueComments(parent)).toEqual(timeline);
 
+  // The explicit timeline filter refreshes the cache like the empty one.
+  const refreshed = [
+    ...timeline,
+    create(IssueCommentSchema, { name: parent + "/issueComments/event" }),
+  ];
+  mocks.listIssueComments.mockResolvedValue({
+    issueComments: refreshed,
+    nextPageToken: "",
+  });
+  await store.listIssueComments(
+    create(ListIssueCommentsRequestSchema, { parent, filter: "root == null" })
+  );
+  expect(store.getIssueComments(parent)).toEqual(refreshed);
+
   // Reading one thread's replies must not replace the cached timeline.
   mocks.listIssueComments.mockResolvedValue({
     issueComments: [
@@ -92,5 +106,5 @@ test("existing timelines request the unfiltered list across pages", async () => 
       filter: `root == "${parent}/issueComments/root"`,
     })
   );
-  expect(store.getIssueComments(parent)).toEqual(timeline);
+  expect(store.getIssueComments(parent)).toEqual(refreshed);
 });
