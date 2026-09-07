@@ -2388,10 +2388,10 @@
           },
           "model": {
             "custom": "Custom model",
-            "deployment": "Deployment name",
+            "deployment": "Deployment Name",
             "deployment-description": "The Azure OpenAI deployment name. It may differ from the model.",
             "description": "Select a supported model, or choose Custom model to enter another model and endpoint.",
-            "name": "Model name",
+            "name": "Model Name",
             "self": "Model"
           },
           "provider": {

@@ -186,7 +186,7 @@ func chatOpenAI(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 
 func isOpenAIResponsesEndpoint(endpoint string) bool {
 	requestURL, err := url.Parse(endpoint)
-	return err == nil && strings.TrimRight(requestURL.Path, "/") == "/responses"
+	return err == nil && strings.HasSuffix(strings.TrimRight(requestURL.Path, "/"), "/responses")
 }
 
 func chatOpenAIChatCompletions(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {

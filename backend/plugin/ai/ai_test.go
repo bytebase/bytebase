@@ -208,7 +208,7 @@ func TestChatOpenAIResponsesEndpointUsesResponsesWireFormat(t *testing.T) {
 		context.Background(),
 		&storepb.AISetting{
 			Provider: storepb.AISetting_AZURE_OPENAI,
-			Endpoint: server.URL + "/responses",
+			Endpoint: server.URL + "/openai/v1/responses",
 			Model:    "deployment",
 			ApiKey:   "test-key",
 		},

@@ -387,7 +387,6 @@ export const AIAugmentationSection = forwardRef<
                       />
                     </FormField>
 
-                    {/* Model */}
                     <FormField
                       title={t(
                         "settings.general.workspace.ai-assistant.model.self"
@@ -427,7 +426,7 @@ export const AIAugmentationSection = forwardRef<
                       </Select>
                     </FormField>
 
-                    {(isCustomModel || isAzureOpenAI) && (
+                    {isCustomModel && (
                       <FormField
                         title={t(
                           isAzureOpenAI
@@ -453,7 +452,7 @@ export const AIAugmentationSection = forwardRef<
                       </FormField>
                     )}
 
-                    {isCustomModel && (
+                    {(isCustomModel || isAzureOpenAI) && (
                       <FormField
                         title={t(
                           "settings.general.workspace.ai-assistant.endpoint.self"
