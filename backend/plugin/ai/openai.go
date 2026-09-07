@@ -347,8 +347,9 @@ type responsesOpenAIOutputItem struct {
 	Name      string `json:"name"`
 	Arguments string `json:"arguments"`
 	Content   []struct {
-		Type string `json:"type"`
-		Text string `json:"text"`
+		Type    string `json:"type"`
+		Text    string `json:"text"`
+		Refusal string `json:"refusal"`
 	} `json:"content"`
 }
 
@@ -426,8 +427,13 @@ func chatOpenAIResponses(ctx context.Context, aiSetting *storepb.AISetting, requ
 		switch output.Type {
 		case "message":
 			for _, part := range output.Content {
-				if part.Type == "output_text" {
+				switch part.Type {
+				case "output_text":
 					content.WriteString(part.Text)
+				case "refusal":
+					content.WriteString(part.Refusal)
+				default:
+					continue
 				}
 			}
 		case "function_call":

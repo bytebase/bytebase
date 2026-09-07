@@ -461,3 +461,35 @@ func TestChatOpenAIResponsesFormatsAssistantHistoryAsOutputMessage(t *testing.T)
 	})
 	require.NoError(t, err)
 }
+
+func TestChatOpenAIResponsesSurfacesRefusalContent(t *testing.T) {
+	t.Parallel()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, err := w.Write([]byte(`{
+			"output": [{
+				"type": "message",
+				"role": "assistant",
+				"content": [{
+					"type": "refusal",
+					"refusal": "I can't help with that request."
+				}]
+			}]
+		}`))
+		require.NoError(t, err)
+	}))
+	defer server.Close()
+
+	content := "Unsafe request"
+	resp, err := chatOpenAI(context.Background(), &storepb.AISetting{
+		Endpoint: server.URL + "/responses",
+		Model:    "gpt-5.6-terra",
+	}, &v1pb.AIChatRequest{
+		Messages: []*v1pb.AIChatMessage{{
+			Role:    v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER,
+			Content: &content,
+		}},
+	})
+	require.NoError(t, err)
+	require.Equal(t, "I can't help with that request.", resp.GetContent())
+}
