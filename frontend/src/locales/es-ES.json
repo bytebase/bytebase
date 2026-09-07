@@ -1885,7 +1885,6 @@
     }
   },
   "project": {
-    "add-database": "Agregar base de datos",
     "add-database-empty-placeholder": "Agrega una base de datos de una instancia existente a este proyecto",
     "batch": {
       "archive": {
@@ -2109,7 +2108,6 @@
     }
   },
   "quick-action": {
-    "create-db": "Crear base de datos",
     "create-project": "Crear proyecto",
     "new-project": "Nuevo Proyecto"
   },

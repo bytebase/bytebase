@@ -697,7 +697,7 @@ export function ProjectDatabasesPage({ projectId }: { projectId: string }) {
               {hasVisibleDatabase
                 ? t("common.create")
                 : emptyProjectHasInstance
-                  ? t("project.add-database")
+                  ? t("database.create-database")
                   : t("project.connect-instance")}
             </Button>
           </PermissionGuard>

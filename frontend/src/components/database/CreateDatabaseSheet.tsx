@@ -261,7 +261,7 @@ function CreateDatabaseForm({
     // doesn't retain a stale derivation from the prior keystroke (the
     // `Create database 'T'` ghost after the user backspaces to empty).
     setTitle(
-      databaseName ? `${t("quick-action.create-db")} '${databaseName}'` : ""
+      databaseName ? `${t("database.create-database")} '${databaseName}'` : ""
     );
   }, [databaseName, enforceIssueTitle, projectHydrated]);
 
@@ -398,7 +398,7 @@ function CreateDatabaseForm({
       });
       const effectiveTitle =
         normalizeTitle(title) ||
-        `${t("quick-action.create-db")} '${databaseName}'`;
+        `${t("database.create-database")} '${databaseName}'`;
       const planCreate = create(PlanSchema, {
         title: effectiveTitle,
         specs: [spec],
@@ -473,7 +473,7 @@ function CreateDatabaseForm({
   return (
     <>
       <SheetHeader>
-        <SheetTitle>{t("quick-action.create-db")}</SheetTitle>
+        <SheetTitle>{t("database.create-database")}</SheetTitle>
       </SheetHeader>
 
       <SheetBody>

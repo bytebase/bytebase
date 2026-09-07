@@ -1885,7 +1885,6 @@
     }
   },
   "project": {
-    "add-database": "Thêm cơ sở dữ liệu",
     "add-database-empty-placeholder": "Thêm cơ sở dữ liệu trong một phiên bản hiện có vào dự án này",
     "batch": {
       "archive": {
@@ -2109,7 +2108,6 @@
     }
   },
   "quick-action": {
-    "create-db": "Tạo cơ sở dữ liệu",
     "create-project": "Tạo dự án",
     "new-project": "Mới Dự án"
   },

@@ -1885,7 +1885,6 @@
     }
   },
   "project": {
-    "add-database": "添加数据库",
     "add-database-empty-placeholder": "将现有实例中的数据库添加到此项目",
     "batch": {
       "archive": {
@@ -2109,7 +2108,6 @@
     }
   },
   "quick-action": {
-    "create-db": "创建数据库",
     "create-project": "创建项目",
     "new-project": "创建项目"
   },
