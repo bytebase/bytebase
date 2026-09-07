@@ -288,3 +288,109 @@ func TestIssueCommentAllowMissing(t *testing.T) {
 	require.Equal(t, connect.CodeNotFound, connect.CodeOf(err))
 	require.Equal(t, before, count())
 }
+
+func TestStatementAnchorBounds(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name       string
+		statement  string
+		start, end *v1pb.Position
+		invalid    bool
+	}{
+		{"whole line", "SELECT 1;", &v1pb.Position{Line: 1}, &v1pb.Position{Line: 1}, false},
+		{"line past EOF", "SELECT 1;", &v1pb.Position{Line: 1}, &v1pb.Position{Line: 999}, true},
+		{"start past EOF", "SELECT 1;", &v1pb.Position{Line: 999}, &v1pb.Position{Line: 1000}, true},
+		{"exclusive end", "abc", &v1pb.Position{Line: 1, Column: 1}, &v1pb.Position{Line: 1, Column: 4}, false},
+		{"end past EOL", "abc", &v1pb.Position{Line: 1, Column: 1}, &v1pb.Position{Line: 1, Column: 5}, true},
+		{"start past EOL", "a\nbc", &v1pb.Position{Line: 1, Column: 3}, &v1pb.Position{Line: 2, Column: 2}, true},
+		{"Unicode code points", "你😀é", &v1pb.Position{Line: 1, Column: 2}, &v1pb.Position{Line: 1, Column: 5}, false},
+		{"UTF16 is not code points", "你😀é", &v1pb.Position{Line: 1, Column: 2}, &v1pb.Position{Line: 1, Column: 6}, true},
+		{"newline range", "a\nb", &v1pb.Position{Line: 1, Column: 2}, &v1pb.Position{Line: 2, Column: 1}, false},
+		{"final empty line", "a\n", &v1pb.Position{Line: 2}, &v1pb.Position{Line: 2}, false},
+		{"final newline end", "a\n", &v1pb.Position{Line: 1, Column: 1}, &v1pb.Position{Line: 2, Column: 1}, false},
+		{"past final empty line", "a\n", &v1pb.Position{Line: 1, Column: 1}, &v1pb.Position{Line: 2, Column: 2}, true},
+		{"empty sheet", "", &v1pb.Position{Line: 1}, &v1pb.Position{Line: 1}, false},
+		{"empty sheet column", "", &v1pb.Position{Line: 1, Column: 1}, &v1pb.Position{Line: 1, Column: 2}, true},
+		{"CRLF", "a\r\nb\r\n", &v1pb.Position{Line: 1, Column: 2}, &v1pb.Position{Line: 3, Column: 1}, false},
+		{"CRLF past EOL", "a\r\nb", &v1pb.Position{Line: 1, Column: 3}, &v1pb.Position{Line: 2, Column: 1}, true},
+		{"CR", "a\rb", &v1pb.Position{Line: 2, Column: 1}, &v1pb.Position{Line: 2, Column: 2}, false},
+		{"missing start", "a", nil, &v1pb.Position{Line: 1}, true},
+		{"missing end", "a", &v1pb.Position{Line: 1}, nil, true},
+		{"zero line", "a", &v1pb.Position{}, &v1pb.Position{Line: 1}, true},
+		{"negative column", "a", &v1pb.Position{Line: 1, Column: -1}, &v1pb.Position{Line: 1}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			err := validateStatementAnchorBounds(&v1pb.StatementAnchor{StartPosition: tc.start, EndPosition: tc.end}, tc.statement)
+			if tc.invalid {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestIssueCommentAnchorBounds(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
+	parent := common.FormatIssue(issue.ProjectID, issue.UID)
+	sheets, err := stores.CreateSheets(ctx, issue.ProjectID, &store.SheetMessage{Statement: "SELECT 1;\n你😀\nSELECT 3;"})
+	require.NoError(t, err)
+	anchor := &v1pb.StatementAnchor{Spec: "spec-1", SheetSha256: sheets[0].Sha256, StartPosition: &v1pb.Position{Line: 1}, EndPosition: &v1pb.Position{Line: 3}}
+	root, err := service.CreateIssueComment(ctx, connect.NewRequest(&v1pb.CreateIssueCommentRequest{Parent: parent, IssueComment: &v1pb.IssueComment{Comment: "root", StatementAnchor: anchor}}))
+	require.NoError(t, err)
+	for _, tc := range []struct {
+		name       string
+		start, end *v1pb.Position
+		invalid    bool
+	}{
+		{"whole lines", &v1pb.Position{Line: 1}, &v1pb.Position{Line: 3}, false},
+		{"Unicode exclusive end", &v1pb.Position{Line: 2, Column: 1}, &v1pb.Position{Line: 2, Column: 3}, false},
+		{"invalid line", &v1pb.Position{Line: 1}, &v1pb.Position{Line: 999}, true},
+		{"invalid columns inside whole-line root", &v1pb.Position{Line: 2, Column: 999}, &v1pb.Position{Line: 2, Column: 1000}, true},
+		{"invalid start inside multiline root", &v1pb.Position{Line: 2, Column: 4}, &v1pb.Position{Line: 3, Column: 1}, true},
+		{"Unicode end overflow", &v1pb.Position{Line: 2, Column: 1}, &v1pb.Position{Line: 2, Column: 4}, true},
+	} {
+		for _, reply := range []bool{false, true} {
+			for _, allowMissing := range []bool{false, true} {
+				t.Run(fmt.Sprintf("%s/reply=%t/allowMissing=%t", tc.name, reply, allowMissing), func(t *testing.T) {
+					input := &v1pb.IssueComment{Comment: "comment", StatementAnchor: proto.CloneOf(anchor)}
+					input.StatementAnchor.StartPosition, input.StatementAnchor.EndPosition = tc.start, tc.end
+					if reply {
+						input.Root = &root.Msg.Name
+					}
+					if allowMissing {
+						input.Name = common.FormatIssueComment(parent, "missing")
+						_, err = service.UpdateIssueComment(ctx, connect.NewRequest(&v1pb.UpdateIssueCommentRequest{Parent: parent, AllowMissing: true, IssueComment: input, UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"comment"}}}))
+					} else {
+						_, err = service.CreateIssueComment(ctx, connect.NewRequest(&v1pb.CreateIssueCommentRequest{Parent: parent, IssueComment: input}))
+					}
+					if tc.invalid {
+						require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+					} else {
+						require.NoError(t, err)
+					}
+				})
+			}
+		}
+	}
+
+	// Seed a historical root whose spec no longer exists in the current plan.
+	historical, err := stores.CreateIssueComments(ctx, "creator@example.com", &store.IssueCommentMessage{
+		ProjectID: issue.ProjectID, IssueUID: issue.UID,
+		Payload: &storepb.IssueCommentPayload{Comment: "historical", StatementAnchor: &storepb.IssueCommentPayload_StatementAnchor{
+			SpecId: "removed-spec", SheetSha256: anchor.SheetSha256, StartPosition: &storepb.Position{Line: 1}, EndPosition: &storepb.Position{Line: 3},
+		}},
+	})
+	require.NoError(t, err)
+	historicalName := common.FormatIssueComment(parent, historical.ResourceID)
+	historicalAnchor := proto.CloneOf(anchor)
+	historicalAnchor.Spec = "removed-spec"
+	_, err = service.CreateIssueComment(ctx, connect.NewRequest(&v1pb.CreateIssueCommentRequest{Parent: parent, IssueComment: &v1pb.IssueComment{Comment: "historical reply", Root: &historicalName, StatementAnchor: historicalAnchor}}))
+	require.NoError(t, err)
+	_, err = service.CreateIssueComment(ctx, connect.NewRequest(&v1pb.CreateIssueCommentRequest{Parent: parent, IssueComment: &v1pb.IssueComment{Comment: "new root", StatementAnchor: historicalAnchor}}))
+	require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+}

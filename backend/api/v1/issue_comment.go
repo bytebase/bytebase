@@ -3,6 +3,8 @@ package v1
 import (
 	"context"
 	"slices"
+	"strings"
+	"unicode/utf8"
 
 	"connectrpc.com/connect"
 	"github.com/pkg/errors"
@@ -13,11 +15,8 @@ import (
 	"github.com/bytebase/bytebase/backend/store"
 )
 
-// validateStatementAnchor checks that a thread root's anchor names a spec in
-// the issue's plan and a sheet the project can read, so the historical SQL
-// the anchor promises is retrievable. The anchor is immutable, so this is
-// the only chance; replies inherit the root's spec and sheet in the store.
-func (s *IssueService) validateStatementAnchor(ctx context.Context, issue *store.IssueMessage, anchor *v1pb.StatementAnchor) error {
+// Only new roots require a current spec; replies may reference a deleted spec.
+func (s *IssueService) validateStatementAnchorSpec(ctx context.Context, issue *store.IssueMessage, anchor *v1pb.StatementAnchor) error {
 	if issue.PlanUID == nil {
 		return connect.NewError(connect.CodeInvalidArgument, errors.New("statement_anchor requires an issue with a plan"))
 	}
@@ -30,14 +29,48 @@ func (s *IssueService) validateStatementAnchor(ctx context.Context, issue *store
 	}) {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("statement_anchor.spec %q is not a spec of the issue's plan", anchor.Spec))
 	}
-	missing, err := s.store.MissingSheetsForProject(ctx, issue.ProjectID, anchor.SheetSha256)
+	return nil
+}
+
+func (s *IssueService) validateStatementAnchor(ctx context.Context, issue *store.IssueMessage, anchor *v1pb.StatementAnchor) error {
+	sheet, err := s.store.GetSheetForProject(ctx, issue.ProjectID, anchor.SheetSha256, true)
 	if err != nil {
-		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to check sheet"))
+		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get anchor sheet"))
 	}
-	if len(missing) > 0 {
+	if sheet == nil {
 		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("statement_anchor.sheet_sha256 %q is not a sheet of project %s", anchor.SheetSha256, issue.ProjectID))
 	}
+	if err := validateStatementAnchorBounds(anchor, sheet.Statement); err != nil {
+		return connect.NewError(connect.CodeInvalidArgument, err)
+	}
 	return nil
+}
+
+// The store validates range ordering and reply containment; both endpoints
+// must also exist in the saved SQL, even for replies inside a whole-line root.
+func validateStatementAnchorBounds(anchor *v1pb.StatementAnchor, statement string) error {
+	start, end := anchor.GetStartPosition(), anchor.GetEndPosition()
+	if start == nil || end == nil || start.Line < 1 || end.Line < 1 || start.Column < 0 || end.Column < 0 {
+		return errors.New("statement_anchor requires valid start and end positions")
+	}
+	// Match editor line endings and retain the empty line after a final newline.
+	statement = strings.NewReplacer("\r\n", "\n", "\r", "\n").Replace(statement)
+	lineNumber := int64(0)
+	for line := range strings.SplitSeq(statement, "\n") {
+		lineNumber++
+		if lineNumber == int64(start.Line) || lineNumber == int64(end.Line) {
+			maxColumn := int64(utf8.RuneCountInString(line)) + 1
+			for _, position := range []*v1pb.Position{start, end} {
+				if int64(position.Line) == lineNumber && int64(position.Column) > maxColumn {
+					return errors.Errorf("statement_anchor column %d exceeds line %d's last position %d", position.Column, position.Line, maxColumn)
+				}
+			}
+		}
+		if lineNumber >= int64(start.Line) && lineNumber >= int64(end.Line) {
+			return nil
+		}
+	}
+	return errors.Errorf("statement_anchor range exceeds the sheet's %d lines", lineNumber)
 }
 
 // issueCommentError maps a store error to the connect code the rest of the
