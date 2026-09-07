@@ -107,7 +107,7 @@
     "@tailwindcss/vite": "^4.3.0",
     "@testing-library/jest-dom": "^7.0.0",
     "@testing-library/react": "^16.3.2",
-    "@tsconfig/node24": "24.0.4",
+    "@tsconfig/node24": "24.0.5",
     "@types/crypto-js": "^4.2.2",
     "@types/d3-shape": "^3.1.7",
     "@types/downloadjs": "1.4.6",
