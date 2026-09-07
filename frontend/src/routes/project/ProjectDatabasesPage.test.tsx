@@ -387,7 +387,7 @@ describe("ProjectDatabasesPage", () => {
     });
   });
 
-  test("opens the add database sheet when the project is empty but the workspace has instances", async () => {
+  test("opens the create database sheet when the project is empty but the workspace has instances", async () => {
     mocks.fetchInstanceList.mockResolvedValueOnce({
       instances: [{ name: "instances/prod", title: "Prod" }],
     });
@@ -402,7 +402,7 @@ describe("ProjectDatabasesPage", () => {
     const button = container.querySelector(
       "button:not([data-product-intro-target])"
     ) as HTMLButtonElement;
-    expect(button.textContent?.trim()).toContain("project.add-database");
+    expect(button.textContent?.trim()).toContain("database.create-database");
     expect(container.textContent).toContain(
       "project.add-database-empty-placeholder"
     );
@@ -441,7 +441,7 @@ describe("ProjectDatabasesPage", () => {
 
     expect(mocks.fetchInstanceList).toHaveBeenCalledTimes(1);
     expect(mocks.fetchInstanceList).toHaveBeenCalledWith({ pageSize: 2 });
-    expect(container.textContent).toContain("project.add-database");
+    expect(container.textContent).toContain("database.create-database");
     expect(container.textContent).not.toContain("project.connect-instance");
 
     act(() => {
@@ -486,7 +486,7 @@ describe("ProjectDatabasesPage", () => {
     });
   });
 
-  test("opens the add database sheet when the project has a project instance", async () => {
+  test("opens the create database sheet when the project has a project instance", async () => {
     mocks.fetchInstanceList.mockImplementation(async (params) => ({
       instances:
         params?.parent === "projects/demo"
@@ -506,7 +506,7 @@ describe("ProjectDatabasesPage", () => {
       await Promise.resolve();
     });
 
-    expect(container.textContent).toContain("project.add-database");
+    expect(container.textContent).toContain("database.create-database");
     expect(container.textContent).not.toContain("project.connect-database");
     expect(mocks.fetchInstanceList).toHaveBeenCalledWith({
       parent: "projects/demo",
@@ -650,7 +650,7 @@ describe("ProjectDatabasesPage", () => {
       "db.project-instance-syncing-title"
     );
     const button = container.querySelector("button") as HTMLButtonElement;
-    expect(button.textContent?.trim()).toContain("project.add-database");
+    expect(button.textContent?.trim()).toContain("database.create-database");
 
     await act(async () => {
       button.click();

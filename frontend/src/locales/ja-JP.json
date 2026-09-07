@@ -1885,7 +1885,6 @@
     }
   },
   "project": {
-    "add-database": "データベースを追加",
     "add-database-empty-placeholder": "既存のインスタンスのデータベースをこのプロジェクトに追加します",
     "batch": {
       "archive": {
@@ -2109,7 +2108,6 @@
     }
   },
   "quick-action": {
-    "create-db": "データベースの作成",
     "create-project": "プロジェクトを作成",
     "new-project": "作成するプロジェクト"
   },
