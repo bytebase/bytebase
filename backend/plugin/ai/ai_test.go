@@ -184,6 +184,8 @@ func TestChatOpenAIResponsesEndpointUsesResponsesWireFormat(t *testing.T) {
 		var payload map[string]any
 		require.NoError(t, json.NewDecoder(r.Body).Decode(&payload))
 		require.Equal(t, "deployment", payload["model"])
+		require.Equal(t, false, payload["store"])
+		require.Equal(t, []any{"reasoning.encrypted_content"}, payload["include"])
 		require.NotContains(t, payload, "messages")
 		require.Contains(t, payload, "input")
 		tools, ok := payload["tools"].([]any)

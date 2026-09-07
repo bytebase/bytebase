@@ -299,9 +299,11 @@ func chatOpenAIChatCompletions(ctx context.Context, aiSetting *storepb.AISetting
 }
 
 type responsesOpenAIRequest struct {
-	Model string                `json:"model"`
-	Input []json.RawMessage     `json:"input"`
-	Tools []responsesOpenAITool `json:"tools,omitempty"`
+	Model   string                `json:"model"`
+	Input   []json.RawMessage     `json:"input"`
+	Store   bool                  `json:"store"`
+	Include []string              `json:"include,omitempty"`
+	Tools   []responsesOpenAITool `json:"tools,omitempty"`
 }
 
 type responsesOpenAITool struct {
@@ -335,7 +337,11 @@ type responsesOpenAIOutputItem struct {
 }
 
 func chatOpenAIResponses(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
-	payload := responsesOpenAIRequest{Model: aiSetting.Model}
+	payload := responsesOpenAIRequest{
+		Model:   aiSetting.Model,
+		Store:   false,
+		Include: []string{"reasoning.encrypted_content"},
+	}
 	for _, message := range request.Messages {
 		items, err := responsesInputFromMessage(message)
 		if err != nil {

@@ -428,11 +428,15 @@ export const AIAugmentationSection = forwardRef<
 
                     {isCustomModel && (
                       <FormField
-                        title={t(
+                        title={
                           isAzureOpenAI
-                            ? "settings.general.workspace.ai-assistant.model.deployment"
-                            : "settings.general.workspace.ai-assistant.model.name"
-                        )}
+                            ? t(
+                                "settings.general.workspace.ai-assistant.model.deployment"
+                              )
+                            : t(
+                                "settings.general.workspace.ai-assistant.model.name"
+                              )
+                        }
                         description={
                           isAzureOpenAI
                             ? t(
@@ -457,11 +461,15 @@ export const AIAugmentationSection = forwardRef<
                         title={t(
                           "settings.general.workspace.ai-assistant.endpoint.self"
                         )}
-                        description={t(
+                        description={
                           isOpenAICompatible
-                            ? "settings.general.workspace.ai-assistant.endpoint.openai-description"
-                            : "settings.general.workspace.ai-assistant.endpoint.description"
-                        )}
+                            ? t(
+                                "settings.general.workspace.ai-assistant.endpoint.openai-description"
+                              )
+                            : t(
+                                "settings.general.workspace.ai-assistant.endpoint.description"
+                              )
+                        }
                       >
                         <Input
                           value={state.endpoint}
