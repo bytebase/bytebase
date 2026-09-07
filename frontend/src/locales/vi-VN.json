@@ -2343,12 +2343,17 @@
           "enable-ai-assistant": "Bật Trợ lý AI",
           "enabled-in-saas": "Gemini AI được bật tự động trong chế độ SaaS.",
           "endpoint": {
-            "description": "Cung cấp triển khai riêng của Điểm cuối API.",
+            "description": "Nhập endpoint API cho model tùy chỉnh.",
+            "openai-description": "Dùng endpoint /responses cho Responses API hoặc /chat/completions cho Chat Completions API.",
             "self": "Điểm cuối API"
           },
           "model": {
-            "description": "Cung cấp triển khai riêng của tên mô hình.",
-            "self": "Tên mô hình"
+            "custom": "Model tùy chỉnh",
+            "deployment": "Tên triển khai",
+            "deployment-description": "Tên triển khai Azure OpenAI. Có thể khác với model.",
+            "description": "Chọn model được hỗ trợ hoặc chọn model tùy chỉnh để nhập model và endpoint khác.",
+            "name": "Tên model",
+            "self": "Model"
           },
           "provider": {
             "azure_open_ai": "Azure OpenAI",

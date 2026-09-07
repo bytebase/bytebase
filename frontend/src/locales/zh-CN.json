@@ -2343,12 +2343,17 @@
           "enable-ai-assistant": "启用 AI 助手",
           "enabled-in-saas": "Gemini AI 在 SaaS 模式下自动启用。",
           "endpoint": {
-            "description": "提供私有化部署的 API Endpoint。",
+            "description": "请输入自定义模型的 API 端点。",
+            "openai-description": "Responses API 使用 /responses 端点，Chat Completions API 使用 /chat/completions 端点。",
             "self": "API 端点"
           },
           "model": {
-            "description": "提供私有化部署的模型名称。",
-            "self": "模型名称"
+            "custom": "自定义模型",
+            "deployment": "部署名称",
+            "deployment-description": "Azure OpenAI 的部署名称，可以与模型名称不同。",
+            "description": "选择支持的模型，或选择自定义模型以输入其他模型和端点。",
+            "name": "模型名称",
+            "self": "模型"
           },
           "provider": {
             "azure_open_ai": "Azure OpenAI",
