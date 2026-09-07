@@ -85,7 +85,7 @@ docker info --format '{{.DockerRootDir}}' 2>/dev/null | grep -q '^/scratch/' \
   || fatal "docker not on Local SSD"   # daemon.json unwritten or rejected: dockerd starts fine on the boot disk
 
 # ---------- (b) accounts and cache paths ----------
-for u in runner1 runner2 runner3 runner4; do
+for u in runner1 runner2; do
   # Home on scratch: whatever a job writes home-relative is disposable too.
   id "$u" &>/dev/null || useradd -M -d "/scratch/$u/home" -s /usr/sbin/nologin "$u"
   # runner/ up front: systemd applies WorkingDirectory before ExecStartPre could create it.
@@ -224,7 +224,7 @@ docker system prune -af --volumes >/dev/null 2>&1
 # Everything on scratch is disposable except the runner installs, which are large and
 # would otherwise be re-downloaded on the next boot.
 rm -rf /scratch/*/cache /scratch/*/home /scratch/*/work
-for u in runner1 runner2 runner3 runner4; do
+for u in runner1 runner2; do
   install -d -o "$u" -g "$u" /scratch/$u/{cache,home,work}   # the units need them; a profile remakes an interactive account's
 done
 logger -t cache-gc "cleaned -> $(used)%"
@@ -234,7 +234,7 @@ chmod +x /usr/local/sbin/cache-gc
 printf 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin\n*/30 * * * * root /usr/local/sbin/cache-gc\n' > /etc/cron.d/devbox
 
 systemctl daemon-reload
-systemctl restart actions-runner@{runner1,runner2,runner3,runner4}
+systemctl restart actions-runner@{runner1,runner2}
 
 # Last and time-bounded: observability must not hold up CI capacity.
 systemctl is-active --quiet google-cloud-ops-agent \
