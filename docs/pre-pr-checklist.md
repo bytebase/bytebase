@@ -5,7 +5,11 @@ skip condition — check it first to avoid unnecessary work.
 
 ## 1. Determine What Changed
 
+Fetch main with an explicit destination so `origin/main` exists even in checkouts
+without remote-tracking refs. Continue with the diff only after the fetch succeeds.
+
 ```bash
+git fetch origin +refs/heads/main:refs/remotes/origin/main
 git diff origin/main...HEAD --stat
 git diff origin/main...HEAD
 ```
