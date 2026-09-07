@@ -155,9 +155,12 @@ modified store method on a composite-PK table.** Write the tests before continui
 
 Only run after steps 3b and 3c are resolved.
 
-Run the affected store collision tests, and retain the existing API collision suite:
+Run the store suite and the existing API collision suite. Run the full store
+suite because isolation tests also use behavior-specific names rather than a
+shared `TestCollision` prefix.
 
 ```bash
+go test -v -count=1 ./backend/store/ -timeout 5m
 go test -v -count=1 ./backend/tests/ -run "^(TestClaim|TestCollision)" -timeout 5m
 ```
 
