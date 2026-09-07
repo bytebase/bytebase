@@ -80,6 +80,7 @@ type chatToolCallMetadata struct {
 	OpenAIToolCall         json.RawMessage   `json:"openAIToolCall,omitempty"`
 	GeminiThoughtSignature string            `json:"geminiThoughtSignature,omitempty"`
 	ResponsesOutput        []json.RawMessage `json:"responsesOutput,omitempty"`
+	ClaudeContent          []json.RawMessage `json:"claudeContent,omitempty"`
 }
 
 type chatOpenAIToolCallProviderFields struct {
@@ -99,7 +100,7 @@ func parseChatToolCallMetadata(raw string) (chatToolCallMetadata, bool) {
 	if err := json.Unmarshal(metadataBytes, &metadata); err != nil {
 		return chatToolCallMetadata{}, false
 	}
-	if len(metadata.OpenAIToolCall) == 0 && metadata.GeminiThoughtSignature == "" && len(metadata.ResponsesOutput) == 0 {
+	if len(metadata.OpenAIToolCall) == 0 && metadata.GeminiThoughtSignature == "" && len(metadata.ResponsesOutput) == 0 && len(metadata.ClaudeContent) == 0 {
 		return chatToolCallMetadata{}, false
 	}
 	return metadata, true
@@ -160,6 +161,21 @@ func responsesOutputFromMetadata(raw string) []json.RawMessage {
 
 func buildResponsesToolCallMetadata(output []json.RawMessage) (*string, error) {
 	metadataBytes, err := json.Marshal(chatToolCallMetadata{ResponsesOutput: output})
+	if err != nil {
+		return nil, err
+	}
+	return new(string(metadataBytes)), nil
+}
+
+func claudeContentFromMetadata(raw string) []json.RawMessage {
+	if metadata, ok := parseChatToolCallMetadata(raw); ok {
+		return metadata.ClaudeContent
+	}
+	return nil
+}
+
+func buildClaudeToolCallMetadata(content []json.RawMessage) (*string, error) {
+	metadataBytes, err := json.Marshal(chatToolCallMetadata{ClaudeContent: content})
 	if err != nil {
 		return nil, err
 	}

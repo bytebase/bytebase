@@ -313,6 +313,83 @@ func TestChatOpenAIResponsesReplaysOutputForToolResult(t *testing.T) {
 	require.Equal(t, 2, requestCount)
 }
 
+func TestChatClaudeReplaysThinkingBlocksForToolResult(t *testing.T) {
+	t.Parallel()
+
+	requestCount := 0
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestCount++
+		var payload map[string]any
+		require.NoError(t, json.NewDecoder(r.Body).Decode(&payload))
+
+		switch requestCount {
+		case 1:
+			_, err := w.Write([]byte(`{
+				"content": [
+					{"type": "thinking", "thinking": "", "signature": "sig_1"},
+					{"type": "text", "text": "I will check the tables."},
+					{"type": "tool_use", "id": "toolu_1", "name": "list_tables", "input": {}}
+				]
+			}`))
+			require.NoError(t, err)
+		case 2:
+			messages, ok := payload["messages"].([]any)
+			require.True(t, ok)
+			require.Contains(t, messages, map[string]any{
+				"role": "assistant",
+				"content": []any{
+					map[string]any{"type": "thinking", "thinking": "", "signature": "sig_1"},
+					map[string]any{"type": "text", "text": "I will check the tables."},
+					map[string]any{"type": "tool_use", "id": "toolu_1", "name": "list_tables", "input": map[string]any{}},
+				},
+			})
+			_, err := w.Write([]byte(`{"content": []}`))
+			require.NoError(t, err)
+		default:
+			t.Fatalf("unexpected request %d", requestCount)
+		}
+	}))
+	defer server.Close()
+
+	userContent := "Find tables"
+	setting := &storepb.AISetting{
+		Endpoint: server.URL,
+		Model:    "claude-sonnet-5",
+		ApiKey:   "test-key",
+	}
+	first, err := chatClaude(context.Background(), setting, &v1pb.AIChatRequest{
+		Messages: []*v1pb.AIChatMessage{{
+			Role:    v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER,
+			Content: &userContent,
+		}},
+	})
+	require.NoError(t, err)
+	require.Len(t, first.ToolCalls, 1)
+	require.NotNil(t, first.ToolCalls[0].Metadata)
+	require.Equal(t, "I will check the tables.", first.GetContent())
+
+	toolResult := "users, projects"
+	_, err = chatClaude(context.Background(), setting, &v1pb.AIChatRequest{
+		Messages: []*v1pb.AIChatMessage{
+			{
+				Role:    v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_USER,
+				Content: &userContent,
+			},
+			{
+				Role:      v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_ASSISTANT,
+				ToolCalls: first.ToolCalls,
+			},
+			{
+				Role:       v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_TOOL,
+				Content:    &toolResult,
+				ToolCallId: &first.ToolCalls[0].Id,
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, 2, requestCount)
+}
+
 func TestChatOpenAIChatCompletionsEndpointUsesChatCompletions(t *testing.T) {
 	t.Parallel()
 

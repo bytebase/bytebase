@@ -8,27 +8,82 @@ import {
 
 describe("PROVIDER_DEFAULTS", () => {
   test("uses current default model IDs for built-in AI providers", () => {
-    expect(PROVIDER_DEFAULTS[AISetting_Provider.OPEN_AI].model).toBe("gpt-5.5");
+    expect(PROVIDER_DEFAULTS[AISetting_Provider.OPEN_AI].model).toBe(
+      "gpt-5.6-terra"
+    );
     expect(PROVIDER_DEFAULTS[AISetting_Provider.AZURE_OPENAI].model).toBe(
-      "gpt-5.5"
+      "gpt-5.6-terra"
     );
     expect(PROVIDER_DEFAULTS[AISetting_Provider.GEMINI].model).toBe(
-      "gemini-3.5-flash"
+      "gemini-3.8-flash"
     );
     expect(PROVIDER_DEFAULTS[AISetting_Provider.CLAUDE].model).toBe(
       "claude-sonnet-5"
     );
   });
 
-  test("uses the Responses API for GPT-5 models", () => {
+  test("includes current supported models", () => {
+    expect(
+      PROVIDER_MODELS[AISetting_Provider.OPEN_AI].map((model) => model.value)
+    ).toEqual(
+      expect.arrayContaining([
+        "gpt-6-astra",
+        "gpt-5.6-sol",
+        "gpt-5.6-terra",
+        "gpt-5.6-luna",
+      ])
+    );
+    expect(
+      PROVIDER_MODELS[AISetting_Provider.AZURE_OPENAI].map(
+        (model) => model.value
+      )
+    ).toEqual(
+      expect.arrayContaining([
+        "gpt-6-astra",
+        "gpt-5.6-sol",
+        "gpt-5.6-terra",
+        "gpt-5.6-luna",
+      ])
+    );
+    expect(
+      PROVIDER_MODELS[AISetting_Provider.GEMINI].map((model) => model.value)
+    ).toEqual(
+      expect.arrayContaining([
+        "gemini-3.8-flash",
+        "gemini-3.7-flash",
+        "gemini-3.6-flash",
+        "gemini-3.5-flash-lite",
+      ])
+    );
+    expect(
+      PROVIDER_MODELS[AISetting_Provider.CLAUDE].map((model) => model.value)
+    ).toEqual(
+      expect.arrayContaining([
+        "claude-fable-5-1",
+        "claude-opus-5",
+        "claude-haiku-4-5",
+      ])
+    );
+  });
+
+  test("uses the Responses API for current OpenAI models", () => {
+    const modelNames = [
+      "gpt-6-astra",
+      "gpt-5.6-sol",
+      "gpt-5.6-terra",
+      "gpt-5.6-luna",
+      "gpt-5.5",
+    ];
     for (const provider of [
       AISetting_Provider.OPEN_AI,
       AISetting_Provider.AZURE_OPENAI,
     ]) {
-      const gpt5 = PROVIDER_MODELS[provider].find(
-        (model) => model.value === "gpt-5.5"
-      );
-      expect(gpt5?.endpoint).toContain("/responses");
+      for (const modelName of modelNames) {
+        const model = PROVIDER_MODELS[provider].find(
+          (model) => model.value === modelName
+        );
+        expect(model?.endpoint).toContain("/responses");
+      }
     }
   });
 

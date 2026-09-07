@@ -49,8 +49,20 @@ type chatClaudeUsage struct {
 }
 
 type chatClaudeResponse struct {
-	Content []chatClaudeContentBlock `json:"content"`
-	Usage   *chatClaudeUsage         `json:"usage,omitempty"`
+	Content []json.RawMessage `json:"content"`
+	Usage   *chatClaudeUsage  `json:"usage,omitempty"`
+}
+
+func claudeContentFromToolCalls(toolCalls []*v1pb.AIChatToolCall) []json.RawMessage {
+	for _, toolCall := range toolCalls {
+		if toolCall.Metadata == nil {
+			continue
+		}
+		if content := claudeContentFromMetadata(*toolCall.Metadata); len(content) > 0 {
+			return content
+		}
+	}
+	return nil
 }
 
 func chatClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb.AIChatRequest) (*v1pb.AIChatResponse, error) {
@@ -70,6 +82,13 @@ func chatClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 				Content: m.GetContent(),
 			})
 		case v1pb.AIChatMessageRole_AI_CHAT_MESSAGE_ROLE_ASSISTANT:
+			if content := claudeContentFromToolCalls(m.ToolCalls); len(content) > 0 {
+				payload.Messages = append(payload.Messages, chatClaudeMsg{
+					Role:    "assistant",
+					Content: content,
+				})
+				continue
+			}
 			var contentBlocks []chatClaudeContentBlock
 			if m.Content != nil && *m.Content != "" {
 				contentBlocks = append(contentBlocks, chatClaudeContentBlock{
@@ -154,7 +173,11 @@ func chatClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 		result.Usage = newAIChatUsage(resp.Usage.InputTokens + resp.Usage.OutputTokens)
 	}
 	var textContent string
-	for _, block := range resp.Content {
+	for _, rawBlock := range resp.Content {
+		var block chatClaudeContentBlock
+		if err := json.Unmarshal(rawBlock, &block); err != nil {
+			return nil, errors.Errorf("failed to parse Claude response content block: %s", err)
+		}
 		switch block.Type {
 		case "text":
 			textContent += block.Text
@@ -169,6 +192,15 @@ func chatClaude(ctx context.Context, aiSetting *storepb.AISetting, request *v1pb
 				Arguments: string(args),
 			})
 		default:
+		}
+	}
+	if len(result.ToolCalls) > 0 {
+		metadata, err := buildClaudeToolCallMetadata(resp.Content)
+		if err != nil {
+			return nil, errors.Errorf("failed to encode Claude tool metadata: %s", err)
+		}
+		for _, toolCall := range result.ToolCalls {
+			toolCall.Metadata = metadata
 		}
 	}
 	if textContent != "" {
