@@ -28,8 +28,8 @@ cloud.google.com/go/monitoring v1.30.0 h1:r/d+JUbyKmJ8b07iznuKfzVzrIXTWxHQ3lBRm3
 cloud.google.com/go/monitoring v1.30.0/go.mod h1:htlUR0QWVMrjFzZmN4LGnMAve9xB/eduwjmINxVZ8RM=
 cloud.google.com/go/secretmanager v1.21.0 h1:e56QQaKWRyzBdUz40AeZaio/ZHAl268cFx3QFAAw9CY=
 cloud.google.com/go/secretmanager v1.21.0/go.mod h1:+nlV+GYqTD8DM+x7Kk3UF7ZPYgdYMowrkZxAmMXORQ8=
-cloud.google.com/go/spanner v1.93.0 h1:8cOXLMTECz1i906Nn500DuARUXrY8gH5dPSqqhQJZcY=
-cloud.google.com/go/spanner v1.93.0/go.mod h1:ywpqBwFGEG3jBgqTPqo2KDWL2GzmZ6w5plQdO6iTvM4=
+cloud.google.com/go/spanner v1.95.0 h1:qIffeZvIZLBOA0Dvvi/6YwVtIxb8P61kEf3uqFQxU2o=
+cloud.google.com/go/spanner v1.95.0/go.mod h1:Z2+83J5oVDmd1n5ntVMmjEuiNoXOpAyNeG7y1tuEHk0=
 cloud.google.com/go/sql v0.1.0 h1:WNRz/Xe/jeR7ChgaQ8vahbX7zAF/mRPZshvVlMtkbws=
 cloud.google.com/go/sql v0.1.0/go.mod h1:LZWBMAQhN4oBgqz3GRcpNTom8+U2v97D7d5qLiZmZlg=
 cloud.google.com/go/storage v1.62.3 h1:SZq1t23NCI+e96dH77Dg3PEfsNNEjqO8zE5AnD8gVD0=
