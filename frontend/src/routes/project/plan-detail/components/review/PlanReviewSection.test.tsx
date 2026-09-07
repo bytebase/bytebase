@@ -24,7 +24,7 @@ import { PlanReviewSection } from "./PlanReviewSection";
 const mocks = vi.hoisted(() => ({
   comments: [] as IssueComment[],
   getIssueComments: vi.fn((_issueName: string) => [] as IssueComment[]),
-  listIssueComments: vi.fn(async () => ({ issueComments: [] })),
+  fetchIssueCommentTimeline: vi.fn(async () => ({ issueComments: [] })),
   getOrFetchProjectByName: vi.fn(async () => ({})),
   loadProjectIamPolicy: vi.fn(async () => ({})),
   getUserByIdentifier: vi.fn(() => undefined),
@@ -89,7 +89,7 @@ vi.mock("@/stores/app", () => ({
       }),
     {
       getState: () => ({
-        listIssueComments: mocks.listIssueComments,
+        fetchIssueCommentTimeline: mocks.fetchIssueCommentTimeline,
         getOrFetchProjectByName: mocks.getOrFetchProjectByName,
         loadProjectIamPolicy: mocks.loadProjectIamPolicy,
         getProjectByName: mocks.getProjectByName,

@@ -41,9 +41,6 @@ export const getIssueCommentType = (
 // selector without producing a fresh array (which would loop forever).
 const EMPTY_COMMENTS: IssueComment[] = [];
 
-const isTimelineFilter = (filter: string) =>
-  !filter || filter.replace(/\s+/g, "") === "root==null";
-
 export const createIssueCommentSlice: AppSliceCreator<IssueCommentSlice> = (
   set,
   get
@@ -59,20 +56,27 @@ export const createIssueCommentSlice: AppSliceCreator<IssueCommentSlice> = (
         filter: request.filter,
       })
     );
-    // The cache is the issue's timeline, which the server returns for an
-    // empty filter and for `root == null`; a reply read must not replace it.
-    if (isTimelineFilter(request.filter)) {
-      set((state) => ({
-        issueCommentsByIssue: {
-          ...state.issueCommentsByIssue,
-          [request.parent]: resp.issueComments,
-        },
-      }));
-    }
     return {
       nextPageToken: resp.nextPageToken,
       issueComments: resp.issueComments,
     };
+  },
+
+  fetchIssueCommentTimeline: async ({ parent, pageSize, pageToken }) => {
+    const resp = await get().listIssueComments(
+      createProto(ListIssueCommentsRequestSchema, {
+        parent,
+        pageSize,
+        pageToken,
+      })
+    );
+    set((state) => ({
+      issueCommentsByIssue: {
+        ...state.issueCommentsByIssue,
+        [parent]: resp.issueComments,
+      },
+    }));
+    return resp;
   },
 
   createIssueComment: async ({ issueName, comment }) => {

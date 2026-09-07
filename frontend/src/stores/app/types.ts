@@ -1103,11 +1103,18 @@ export type DatabaseCatalogSlice = {
 };
 
 export type IssueCommentSlice = {
-  // Cache keyed by issue resource name → its comment list.
+  // Cache keyed by issue resource name → its timeline page (no replies).
   issueCommentsByIssue: Record<string, IssueComment[]>;
+  // Arbitrary CEL queries return results without changing the timeline cache.
   listIssueComments: (
     request: ListIssueCommentsRequest
   ) => Promise<{ nextPageToken: string; issueComments: IssueComment[] }>;
+  // Fetch an unfiltered timeline page and replace the cached page for this issue.
+  fetchIssueCommentTimeline: (request: {
+    parent: string;
+    pageSize?: number;
+    pageToken?: string;
+  }) => Promise<{ nextPageToken: string; issueComments: IssueComment[] }>;
   createIssueComment: (params: {
     issueName: string;
     comment: string;

@@ -24,7 +24,6 @@ import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
 import {
   type IssueComment,
   IssueSchema,
-  ListIssueCommentsRequestSchema,
   UpdateIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import { extractProjectResourceName } from "@/utils";
@@ -127,12 +126,10 @@ export function IssueDetailCommentList() {
     const run = async () => {
       try {
         setIsRefreshing(true);
-        await useAppStore.getState().listIssueComments(
-          create(ListIssueCommentsRequestSchema, {
-            parent: issueName,
-            pageSize: 1000,
-          })
-        );
+        await useAppStore.getState().fetchIssueCommentTimeline({
+          parent: issueName,
+          pageSize: 1000,
+        });
       } finally {
         if (!canceled) {
           setIsRefreshing(false);
@@ -175,12 +172,10 @@ export function IssueDetailCommentList() {
     if (!issueName) {
       return;
     }
-    await useAppStore.getState().listIssueComments(
-      create(ListIssueCommentsRequestSchema, {
-        parent: issueName,
-        pageSize: 1000,
-      })
-    );
+    await useAppStore.getState().fetchIssueCommentTimeline({
+      parent: issueName,
+      pageSize: 1000,
+    });
   };
 
   const allowEditComment = (comment: IssueComment): boolean =>

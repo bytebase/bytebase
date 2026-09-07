@@ -1,11 +1,9 @@
-import { create } from "@bufbuild/protobuf";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAppStore } from "@/stores/app";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { ApprovalStatus } from "@/types/proto-es/v1/common_pb";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
-import { ListIssueCommentsRequestSchema } from "@/types/proto-es/v1/issue_service_pb";
 import { usePlanDetailContext } from "../../shell/PlanDetailContext";
 import { ReviewActivityTimeline } from "./ReviewActivityTimeline";
 import { ReviewApprovalFlow } from "./ReviewApprovalFlow";
@@ -41,12 +39,10 @@ export function PlanReviewSection() {
     if (!issueName) return;
     void useAppStore
       .getState()
-      .listIssueComments(
-        create(ListIssueCommentsRequestSchema, {
-          parent: issueName,
-          pageSize: 1000,
-        })
-      )
+      .fetchIssueCommentTimeline({
+        parent: issueName,
+        pageSize: 1000,
+      })
       .catch(() => undefined);
   }, [issueName, issueUpdateKey]);
 

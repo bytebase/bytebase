@@ -51,24 +51,32 @@ test("the frontend composer still creates a general comment", async () => {
   expect(store.getIssueComments(parent)).toEqual([comment]);
 });
 
-test("existing timelines request the unfiltered list across pages", async () => {
+test("timeline loading caches the requested page and preserves other issues", async () => {
   const store = createStore();
   const parent = "projects/p/issues/101";
+  const other = "projects/p/issues/102";
+  const otherComments = [
+    create(IssueCommentSchema, { comment: "other issue" }),
+  ];
+  mocks.listIssueComments.mockResolvedValueOnce({
+    issueComments: otherComments,
+    nextPageToken: "",
+  });
+  await store.fetchIssueCommentTimeline({ parent: other });
+
   const timeline = [
     create(IssueCommentSchema, { name: parent + "/issueComments/root" }),
   ];
-  mocks.listIssueComments.mockResolvedValue({
+  mocks.listIssueComments.mockResolvedValueOnce({
     issueComments: timeline,
     nextPageToken: "next",
   });
-  const response = await store.listIssueComments(
-    create(ListIssueCommentsRequestSchema, {
-      parent,
-      pageSize: 50,
-      pageToken: "page",
-    })
-  );
-  expect(mocks.listIssueComments).toHaveBeenCalledWith(
+  const response = await store.fetchIssueCommentTimeline({
+    parent,
+    pageSize: 50,
+    pageToken: "page",
+  });
+  expect(mocks.listIssueComments).toHaveBeenLastCalledWith(
     expect.objectContaining({
       parent,
       filter: "",
@@ -76,35 +84,77 @@ test("existing timelines request the unfiltered list across pages", async () => 
       pageToken: "page",
     })
   );
-  expect(response.nextPageToken).toBe("next");
+  expect(response).toEqual({ issueComments: timeline, nextPageToken: "next" });
   expect(store.getIssueComments(parent)).toEqual(timeline);
+  expect(store.getIssueComments(other)).toEqual(otherComments);
 
-  // The explicit timeline filter refreshes the cache like the empty one.
-  const refreshed = [
-    ...timeline,
-    create(IssueCommentSchema, { name: parent + "/issueComments/event" }),
-  ];
-  mocks.listIssueComments.mockResolvedValue({
-    issueComments: refreshed,
+  mocks.listIssueComments.mockResolvedValueOnce({
+    issueComments: [],
     nextPageToken: "",
   });
-  await store.listIssueComments(
-    create(ListIssueCommentsRequestSchema, { parent, filter: "root == null" })
-  );
-  expect(store.getIssueComments(parent)).toEqual(refreshed);
+  await store.fetchIssueCommentTimeline({ parent });
+  expect(store.getIssueComments(parent)).toEqual([]);
+  expect(store.getIssueComments(other)).toEqual(otherComments);
+});
 
-  // Reading one thread's replies must not replace the cached timeline.
-  mocks.listIssueComments.mockResolvedValue({
-    issueComments: [
-      create(IssueCommentSchema, { name: parent + "/issueComments/reply" }),
-    ],
+test.each([
+  "",
+  "root == null",
+  "(root == null)",
+  "root == (null)",
+  "((root) == (null))",
+  "root == null // timeline",
+  'root == "projects/p/issues/101/issueComments/root"',
+  'root in ["projects/p/issues/101/issueComments/root"]',
+  "root in []",
+])("arbitrary queries never change the timeline cache: %s", async (filter) => {
+  const store = createStore();
+  const parent = "projects/p/issues/101";
+  const cached = [create(IssueCommentSchema, { comment: "cached timeline" })];
+  mocks.listIssueComments.mockResolvedValueOnce({
+    issueComments: cached,
     nextPageToken: "",
   });
-  await store.listIssueComments(
-    create(ListIssueCommentsRequestSchema, {
-      parent,
-      filter: `root == "${parent}/issueComments/root"`,
-    })
-  );
-  expect(store.getIssueComments(parent)).toEqual(refreshed);
+  await store.fetchIssueCommentTimeline({ parent });
+
+  for (const issueComments of [
+    [],
+    [create(IssueCommentSchema, { comment: "query result" })],
+  ]) {
+    const result = { issueComments, nextPageToken: "next" };
+    mocks.listIssueComments.mockResolvedValueOnce(result);
+    const response = await store.listIssueComments(
+      create(ListIssueCommentsRequestSchema, {
+        parent,
+        filter,
+        pageSize: 10,
+        pageToken: "page",
+      })
+    );
+    expect(response).toEqual(result);
+    expect(mocks.listIssueComments).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        parent,
+        filter,
+        pageSize: 10,
+        pageToken: "page",
+      })
+    );
+    expect(store.getIssueComments(parent)).toEqual(cached);
+  }
+});
+
+test("failed timeline refresh preserves the cached content and propagates the error", async () => {
+  const store = createStore();
+  const parent = "projects/p/issues/101";
+  const cached = [create(IssueCommentSchema, { comment: "cached timeline" })];
+  mocks.listIssueComments.mockResolvedValueOnce({
+    issueComments: cached,
+    nextPageToken: "",
+  });
+  await store.fetchIssueCommentTimeline({ parent });
+  const error = new Error("unavailable");
+  mocks.listIssueComments.mockRejectedValueOnce(error);
+  await expect(store.fetchIssueCommentTimeline({ parent })).rejects.toBe(error);
+  expect(store.getIssueComments(parent)).toEqual(cached);
 });
