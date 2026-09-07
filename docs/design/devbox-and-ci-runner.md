@@ -1,7 +1,7 @@
 # Combined Dev Box and CI Runner on GCP
 
 One Spot VM with two jobs. It is the SSH target that agentic coding tools drive, and
-it hosts four self-hosted GitHub Actions runners for the whole org.
+it hosts two self-hosted GitHub Actions runners for the whole org.
 
 ## Goals
 
@@ -11,7 +11,7 @@ it hosts four self-hosted GitHub Actions runners for the whole org.
 2. **One startup script, so the box is close to stateless.** Everything on the box is
    produced by that script. Only `/home` and a shared toolchain in `/usr/local` are
    yours to manage; nothing else is set up by hand.
-3. **GitHub Actions runners that set themselves up.** Four org-level slots. Each
+3. **GitHub Actions runners that set themselves up.** Two org-level slots. Each
    re-registers at boot from a secret, so there is no registration state to preserve.
 4. **A clear split between Local SSD and the persistent disk.** Local SSD holds what
    can be discarded: caches, Docker, temp files, swap. The boot disk holds repos and
@@ -164,7 +164,7 @@ rebuilt. Anything on the boot disk is guarded, so it is not redone.
 
 Two kinds of account use the box, and they need opposite things from it.
 
-**Runner accounts** are `runner1` through `runner4`. The script creates them,
+**Runner accounts** are `runner1` and `runner2`. The script creates them,
 `nologin`, one per job slot. Nothing of theirs is worth keeping: software, work trees
 and caches all sit on Local SSD, and their home directories are on it too. They are
 disposable, and are disposed of on every stop.
@@ -258,13 +258,20 @@ and `node_modules` — which is right for anything inside a working copy.
 
 ### c. GitHub runners
 
-Four accounts, four job slots, one systemd template. A pull request touching both
+Two accounts, two job slots, one systemd template. A pull request touching both
 backend and frontend schedules five self-hosted jobs -- one each from `backend-tests`,
-`golangci-lint` and `test_link`, two from `frontend-tests` -- so one of them queues,
+`golangci-lint` and `test_link`, two from `frontend-tests` -- so three of them queue,
 before counting any other repository in the org. That is deliberate: jobs queue, they
-do not fail. Four ways is five cores and 8 GB a slot, which is what a comparable box
-ran two slots on; watch `memory/percent_used` before adding a fifth, which is one more
-name in the script's account list.
+do not fail. It began as four slots, five cores and 8 GB each, and that oversubscribed
+the box: a Go build or a frontend build uses every core it can find, and four at once
+pushed the load average past 60 on 20 vCPUs; the one runner hang seen so far happened
+under that load. Two ways is ten cores and 16 GB a slot. Watch the load average and
+`memory/percent_used` before adding a third, which is one more name in the script's
+account list.
+
+Removing one is the reverse, with one care: `systemctl stop` cancels a running job.
+Park the runner in a runner group no repository can use, wait for its job to finish,
+then stop it, delete its registration, and delete its account.
 
 The runner is stateless, so it lives on scratch and is installed by the unit rather
 than by the startup script: an `ExecStartPre` runs `install-runner` as root, before
@@ -281,7 +288,7 @@ server-side entry of the same name. Names are host-qualified, so two boxes never
 each other's.
 
 Re-registering rather than preserving credentials means the runner holds no identity
-on disk. Wipe the boot disk and the same service account brings back the same four
+on disk. Wipe the boot disk and the same service account brings back the same two
 runners. Registration is derived state, like `/scratch`.
 
 The units carry no `[Install]` section. The script starts them rather than enabling
