@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/hex"
+	"slices"
 	"strings"
 	"time"
 
@@ -16,7 +17,7 @@ import (
 )
 
 // ThreadState is the resolvable state carried by a thread's root comment: a
-// comment created with a statement anchor. Plain comments, events, and
+// comment created with OPEN or a statement anchor. Plain comments, events, and
 // replies have no state (NULL thread_state).
 type ThreadState string
 
@@ -253,8 +254,8 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 		if create.ParentID != nil {
 			return nil, common.Errorf(common.Invalid, "replies must be created through CreateIssueCommentReply")
 		}
-		if create.ThreadState != nil {
-			return nil, common.Errorf(common.Invalid, "thread state is derived on create; an anchored root starts OPEN")
+		if create.ThreadState != nil && (*create.ThreadState != ThreadStateOpen || create.Payload.GetEvent() != nil) {
+			return nil, common.Errorf(common.Invalid, "only a comment can start a thread, in OPEN state")
 		}
 		if err := validateIssueCommentPayload(create.Payload); err != nil {
 			return nil, err
@@ -266,10 +267,9 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 		projectIDs = append(projectIDs, create.ProjectID)
 		issueIDs = append(issueIDs, create.IssueUID)
 		payloads = append(payloads, payload)
-		// An anchored comment starts a thread; validateIssueCommentPayload
-		// already rejects an anchor on an event. Plain comments, events, and
-		// hybrid rows remain outside threads.
-		threadRoots = append(threadRoots, create.Payload.GetStatementAnchor() != nil)
+		// Internal reviewers start threads with anchors; API clients can also
+		// explicitly start an unanchored thread.
+		threadRoots = append(threadRoots, create.ThreadState != nil || create.Payload.GetStatementAnchor() != nil)
 	}
 
 	// Use UNNEST to insert all comments in one query.
@@ -323,11 +323,10 @@ func (s *Store) CreateIssueComments(ctx context.Context, creator string, creates
 
 // CreateIssueCommentReply creates a reply in the thread rooted at
 // create.ParentID and returns it with ResourceID, CreatedAt, and UpdatedAt
-// filled in. The insert-select pins every reply invariant in one statement:
-// the parent is a thread root (thread_state set, so never a plain comment,
-// an event, or a reply) in the same project and issue, and replying never
-// changes the thread state. Like CreateIssueComments, it requires only the referenced
-// rows to exist, regardless of project lifecycle.
+// filled in. The insert-select pins thread membership in one statement:
+// the parent is a thread root in the same project and issue, and replying
+// never changes the thread state. Like CreateIssueComments, it requires only
+// the referenced rows to exist, regardless of project lifecycle.
 func (s *Store) CreateIssueCommentReply(ctx context.Context, creator string, create *IssueCommentMessage) (*IssueCommentMessage, error) {
 	if create.ParentID == nil {
 		return nil, common.Errorf(common.Invalid, "a reply must name its thread root")
@@ -346,6 +345,22 @@ func (s *Store) CreateIssueCommentReply(ctx context.Context, creator string, cre
 		return nil, errors.Wrapf(err, "failed to marshal payload")
 	}
 
+	if anchor := create.Payload.GetStatementAnchor(); anchor != nil {
+		root, err := s.GetIssueComment(ctx, &FindIssueCommentMessage{
+			ProjectID: create.ProjectID, IssueUID: &create.IssueUID, ResourceID: create.ParentID,
+		})
+		if err != nil {
+			return nil, errors.Wrap(err, "failed to get thread root")
+		}
+		if root == nil {
+			return nil, common.Errorf(common.NotFound, "thread root %s not found in issue %d", *create.ParentID, create.IssueUID)
+		}
+		// Anchors are immutable, so this check remains valid through the
+		// insert, which still checks thread membership atomically.
+		if !anchorWithinRoot(anchor, root.Payload.GetStatementAnchor()) {
+			return nil, common.Errorf(common.Invalid, "a reply anchor must lie within the spec, sheet, and range of thread root %s", *create.ParentID)
+		}
+	}
 	q := qb.Q().Space(`
 		INSERT INTO issue_comment (creator, project, issue_id, payload, parent_id)
 		SELECT ?, root.project, root.issue_id, ?, root.resource_id
@@ -395,6 +410,30 @@ func (s *Store) replyTargetError(ctx context.Context, create *IssueCommentMessag
 		// all carry NULL thread_state.
 		return common.Errorf(common.Invalid, "comment %s is not a thread root and cannot be replied to", *create.ParentID)
 	}
+}
+
+// anchorWithinRoot compares ranges on the same saved statement revision.
+func anchorWithinRoot(anchor, root *storepb.IssueCommentPayload_StatementAnchor) bool {
+	if root == nil || root.SpecId != anchor.SpecId || root.SheetSha256 != anchor.SheetSha256 ||
+		root.StartPosition == nil || root.EndPosition == nil {
+		return false
+	}
+	start, end := statementAnchorBounds(anchor)
+	rootStart, rootEnd := statementAnchorBounds(root)
+	return slices.Compare(rootStart[:], start[:]) <= 0 && slices.Compare(end[:], rootEnd[:]) <= 0
+}
+
+// Normalize to [line, column] pairs with an exclusive end. Whole-line ranges
+// end at the next line's first column; int64 avoids overflowing the last line.
+func statementAnchorBounds(anchor *storepb.IssueCommentPayload_StatementAnchor) (start, end [2]int64) {
+	start = [2]int64{int64(anchor.StartPosition.Line), int64(anchor.StartPosition.Column)}
+	end = [2]int64{int64(anchor.EndPosition.Line), int64(anchor.EndPosition.Column)}
+	if start[1] == 0 && end[1] == 0 {
+		start[1] = 1
+		end[0]++
+		end[1] = 1
+	}
+	return start, end
 }
 
 func (s *Store) UpdateIssueComment(ctx context.Context, patch *UpdateIssueCommentMessage) error {

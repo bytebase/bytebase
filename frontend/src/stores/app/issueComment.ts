@@ -53,14 +53,19 @@ export const createIssueCommentSlice: AppSliceCreator<IssueCommentSlice> = (
         parent: request.parent,
         pageSize: request.pageSize,
         pageToken: request.pageToken,
+        filter: request.filter,
       })
     );
-    set((state) => ({
-      issueCommentsByIssue: {
-        ...state.issueCommentsByIssue,
-        [request.parent]: resp.issueComments,
-      },
-    }));
+    // The cache is the issue's timeline, which is the unfiltered list; a
+    // filtered read (one thread's replies) must not replace it.
+    if (!request.filter) {
+      set((state) => ({
+        issueCommentsByIssue: {
+          ...state.issueCommentsByIssue,
+          [request.parent]: resp.issueComments,
+        },
+      }));
+    }
     return {
       nextPageToken: resp.nextPageToken,
       issueComments: resp.issueComments,

@@ -424,6 +424,9 @@ func (x *ListIssueCommentsRequest) Equal(y *ListIssueCommentsRequest) bool {
 	if x.PageToken != y.PageToken {
 		return false
 	}
+	if x.Filter != y.Filter {
+		return false
+	}
 	return true
 }
 
@@ -608,6 +611,15 @@ func (x *IssueComment) Equal(y *IssueComment) bool {
 	if x.Creator != y.Creator {
 		return false
 	}
+	if p, q := x.Root, y.Root; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
+	if p, q := x.ThreadState, y.ThreadState; (p == nil && q != nil) || (p != nil && (q == nil || *p != *q)) {
+		return false
+	}
+	if !x.StatementAnchor.Equal(y.StatementAnchor) {
+		return false
+	}
 	if !x.GetApproval().Equal(y.GetApproval()) {
 		return false
 	}
@@ -618,6 +630,28 @@ func (x *IssueComment) Equal(y *IssueComment) bool {
 		return false
 	}
 	if !x.GetReviewSubmission().Equal(y.GetReviewSubmission()) {
+		return false
+	}
+	return true
+}
+
+func (x *StatementAnchor) Equal(y *StatementAnchor) bool {
+	if x == y {
+		return true
+	}
+	if x == nil || y == nil {
+		return x == nil && y == nil
+	}
+	if x.Spec != y.Spec {
+		return false
+	}
+	if x.SheetSha256 != y.SheetSha256 {
+		return false
+	}
+	if !x.StartPosition.Equal(y.StartPosition) {
+		return false
+	}
+	if !x.EndPosition.Equal(y.EndPosition) {
 		return false
 	}
 	return true

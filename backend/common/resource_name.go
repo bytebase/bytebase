@@ -725,6 +725,11 @@ func FormatReviewRun(projectID string, issueUID int64, reviewRunID string) strin
 	return fmt.Sprintf("%s/%s%s", FormatIssue(projectID, issueUID), ReviewRunNamePrefix, reviewRunID)
 }
 
+// FormatIssueComment formats an issue comment resource name under its issue.
+func FormatIssueComment(issueName, issueCommentID string) string {
+	return fmt.Sprintf("%s/%s%s", issueName, IssueCommentNamePrefix, issueCommentID)
+}
+
 func FormatIssue(projectID string, issueUID int64) string {
 	return fmt.Sprintf("%s/%s%d", FormatProject(projectID), IssueNamePrefix, issueUID)
 }

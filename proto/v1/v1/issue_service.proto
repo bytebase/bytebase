@@ -605,6 +605,12 @@ message ListIssueCommentsRequest {
   // When paginating, all other parameters provided to `ListIssueComments` must match
   // the call that provided the page token.
   string page_token = 3;
+
+  // CEL filter over events, root comments, and replies.
+  // Supported: root == null, root == "<comment name>", or root in ["<comment name>", ...].
+  // Root names must belong to parent. Empty and root == null return the
+  // timeline (events and root comments); other filters return replies only.
+  string filter = 4;
 }
 
 message ListIssueCommentsResponse {
@@ -666,6 +672,29 @@ message IssueComment {
   // Format: users/{email}
   string creator = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
 
+  // The thread root's name, set only on replies. Immutable after creation.
+  // Format: projects/{project}/issues/{issue}/issueComments/{issueComment}
+  // Must name a thread root in the same issue, never a general comment or reply.
+  optional string root = 14 [(google.api.field_behavior) = IMMUTABLE];
+
+  // Present only on thread roots. Set OPEN on create to start a thread; an
+  // anchored root starts one without it. Omit root, thread_state, and
+  // statement_anchor to create a general comment.
+  // Update through the thread_state field mask to resolve or reopen.
+  // Adding a reply does not reopen a resolved thread.
+  optional ThreadState thread_state = 15;
+
+  // Optional source context on a root or reply. A reply's anchor must share
+  // the root's spec and sheet_sha256; it may narrow the range.
+  // Cannot be set on events. Immutable after creation.
+  StatementAnchor statement_anchor = 16 [(google.api.field_behavior) = IMMUTABLE];
+
+  enum ThreadState {
+    THREAD_STATE_UNSPECIFIED = 0;
+    OPEN = 1;
+    RESOLVED = 2;
+  }
+
   // The event associated with this comment.
   oneof event {
     // Approval event.
@@ -718,6 +747,21 @@ message IssueComment {
     repeated Plan.Spec from_specs = 1;
     repeated Plan.Spec to_specs = 2;
   }
+}
+
+// The saved statement revision and range referenced by a comment.
+// Source currency is derived by comparing the spec and hash with the current plan.
+// Historical SQL is available through SheetService.GetSheet with this hash.
+message StatementAnchor {
+  // The Plan.Spec.id in the issue's plan; may no longer resolve after deletion.
+  string spec = 1;
+  // SHA256 of the saved sheet, as 64 lowercase hexadecimal characters.
+  string sheet_sha256 = 2;
+  // One-based lines and Unicode code-point columns. When both columns are zero,
+  // the range covers whole lines, including the end line. Otherwise both columns
+  // must be positive, start_position is inclusive, and end_position is exclusive.
+  Position start_position = 3;
+  Position end_position = 4;
 }
 
 message ReviewRun {

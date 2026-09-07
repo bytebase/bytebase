@@ -2,6 +2,7 @@ package store_test
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
@@ -173,7 +174,7 @@ func TestIssueCommentThreads(t *testing.T) {
 		Payload:     &storepb.IssueCommentPayload{Comment: "preset"},
 		ThreadState: &preset,
 	})
-	require.Equal(t, common.Invalid, common.ErrorCode(err), "thread state is not settable on create")
+	require.Equal(t, common.Invalid, common.ErrorCode(err), "only OPEN can start a thread on create")
 	_, err = stores.CreateIssueCommentReply(ctx, creator, &store.IssueCommentMessage{
 		ProjectID:   projectID,
 		IssueUID:    issueUID,
@@ -392,4 +393,156 @@ func TestIssueCommentThreads(t *testing.T) {
 	require.Equal(t, root.ResourceID, openRoots[0].ResourceID)
 	require.True(t, editStamp.Equal(openRoots[0].UpdatedAt),
 		"resolve and reopen must not mark the comment as edited")
+
+	// An explicit OPEN starts an unanchored thread; an event never does.
+	unanchored, err := stores.CreateIssueComments(ctx, creator, &store.IssueCommentMessage{
+		ProjectID:   projectID,
+		IssueUID:    issueUID,
+		Payload:     &storepb.IssueCommentPayload{Comment: "unanchored thread"},
+		ThreadState: &open,
+	})
+	require.NoError(t, err)
+	require.Equal(t, store.ThreadStateOpen, *unanchored.ThreadState)
+	_, err = stores.CreateIssueComments(ctx, creator, &store.IssueCommentMessage{
+		ProjectID: projectID,
+		IssueUID:  issueUID,
+		Payload: &storepb.IssueCommentPayload{
+			Comment: "approved",
+			Event: &storepb.IssueCommentPayload_Approval_{
+				Approval: &storepb.IssueCommentPayload_Approval{},
+			},
+		},
+		ThreadState: &open,
+	})
+	require.Equal(t, common.Invalid, common.ErrorCode(err), "an event cannot start a thread")
+
+	// An anchored reply narrows the root's range; it cannot point elsewhere.
+	narrowed, err := stores.CreateIssueCommentReply(ctx, creator, &store.IssueCommentMessage{
+		ProjectID: projectID,
+		IssueUID:  issueUID,
+		ParentID:  &root.ResourceID,
+		Payload: &storepb.IssueCommentPayload{
+			Comment: "narrowed",
+			StatementAnchor: &storepb.IssueCommentPayload_StatementAnchor{
+				SpecId:        anchor.SpecId,
+				SheetSha256:   anchor.SheetSha256,
+				StartPosition: &storepb.Position{Line: 6, Column: 1},
+				EndPosition:   &storepb.Position{Line: 6, Column: 9},
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.Equal(t, root.ResourceID, *narrowed.ParentID)
+	for _, mismatch := range []*storepb.IssueCommentPayload_StatementAnchor{
+		{SpecId: "spec-2", SheetSha256: anchor.SheetSha256},
+		{SpecId: anchor.SpecId, SheetSha256: strings.Repeat("f", 64)},
+	} {
+		mismatch.StartPosition = &storepb.Position{Line: 6}
+		mismatch.EndPosition = &storepb.Position{Line: 6}
+		_, err = stores.CreateIssueCommentReply(ctx, creator, &store.IssueCommentMessage{
+			ProjectID: projectID,
+			IssueUID:  issueUID,
+			ParentID:  &root.ResourceID,
+			Payload:   &storepb.IssueCommentPayload{Comment: "elsewhere", StatementAnchor: mismatch},
+		})
+		require.Equal(t, common.Invalid, common.ErrorCode(err), "a reply anchor must share the root's spec and sheet")
+	}
+	_, err = stores.CreateIssueCommentReply(ctx, creator, &store.IssueCommentMessage{
+		ProjectID: projectID,
+		IssueUID:  issueUID,
+		ParentID:  &unanchored.ResourceID,
+		Payload:   &storepb.IssueCommentPayload{Comment: "anchored", StatementAnchor: anchor},
+	})
+	require.Equal(t, common.Invalid, common.ErrorCode(err), "an unanchored thread has no source context for a reply to share")
+}
+
+func TestIssueCommentReplyAnchorContainment(t *testing.T) {
+	ctx := context.Background()
+	db, stores, _ := testcontainer.NewMetadataDB(t)
+	_, err := db.ExecContext(ctx, `
+		INSERT INTO workspace (resource_id) VALUES ('anchor-ws');
+		INSERT INTO project (resource_id, workspace, name) VALUES ('anchor-p', 'anchor-ws', 'Anchors');
+		INSERT INTO issue (id, project, creator, name, status, type, description)
+		VALUES (101, 'anchor-p', 'author@example.com', 'review', 'OPEN', 'DATABASE_CHANGE', '');
+	`)
+	require.NoError(t, err)
+	anchor := func(startLine, startColumn, endLine, endColumn int32) *storepb.IssueCommentPayload_StatementAnchor {
+		return &storepb.IssueCommentPayload_StatementAnchor{
+			SpecId: "spec-1", SheetSha256: strings.Repeat("a", 64),
+			StartPosition: &storepb.Position{Line: startLine, Column: startColumn},
+			EndPosition:   &storepb.Position{Line: endLine, Column: endColumn},
+		}
+	}
+	lines := anchor(2, 0, 4, 0)
+	chars := anchor(2, 3, 4, 7)
+	for _, tc := range []struct {
+		name        string
+		root, reply *storepb.IssueCommentPayload_StatementAnchor
+		valid       bool
+	}{
+		{"equal lines", lines, anchor(2, 0, 4, 0), true},
+		{"inner lines", lines, anchor(3, 0, 3, 0), true},
+		{"first line", lines, anchor(2, 0, 2, 0), true},
+		{"last line", lines, anchor(4, 0, 4, 0), true},
+		{"starts before", lines, anchor(1, 0, 4, 0), false},
+		{"ends after", lines, anchor(2, 0, 5, 0), false},
+		{"disjoint before", lines, anchor(1, 0, 1, 0), false},
+		{"disjoint after", lines, anchor(5, 0, 5, 0), false},
+		{"chars within lines", lines, anchor(2, 1, 4, 99), true},
+		{"equivalent exclusive end", lines, anchor(2, 1, 5, 1), true},
+		{"one character beyond lines", lines, anchor(2, 1, 5, 2), false},
+		{"chars before lines", lines, anchor(1, 99, 2, 3), false},
+		{"equal chars", chars, anchor(2, 3, 4, 7), true},
+		{"inner chars", chars, anchor(2, 4, 4, 6), true},
+		{"one column before", chars, anchor(2, 2, 4, 7), false},
+		{"one column after", chars, anchor(2, 3, 4, 8), false},
+		{"inner whole line", chars, anchor(3, 0, 3, 0), true},
+		{"whole first partial line", chars, anchor(2, 0, 2, 0), false},
+		{"whole last partial line", chars, anchor(4, 0, 4, 0), false},
+		{"whole lines equal chars", anchor(2, 1, 5, 1), lines, true},
+		{"exclusive end excludes next line", anchor(2, 1, 4, 1), anchor(4, 0, 4, 0), false},
+		{"whole line before exclusive end", anchor(2, 1, 4, 1), anchor(3, 0, 3, 0), true},
+		{"last representable whole line", anchor(2147483647, 0, 2147483647, 0), anchor(2147483647, 1, 2147483647, 2), true},
+		{"unanchored reply", lines, nil, true},
+		{"unanchored thread and reply", nil, nil, true},
+		{"anchor on unanchored thread", nil, lines, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			open := store.ThreadStateOpen
+			root, err := stores.CreateIssueComments(ctx, "author@example.com", &store.IssueCommentMessage{
+				ProjectID: "anchor-p", IssueUID: 101, ThreadState: &open,
+				Payload: &storepb.IssueCommentPayload{Comment: "root", StatementAnchor: tc.root},
+			})
+			require.NoError(t, err)
+			resolved := store.ThreadStateResolved
+			require.NoError(t, stores.UpdateIssueComment(ctx, &store.UpdateIssueCommentMessage{
+				ProjectID: "anchor-p", ResourceID: root.ResourceID, ThreadState: &resolved,
+			}))
+			reply, err := stores.CreateIssueCommentReply(ctx, "author@example.com", &store.IssueCommentMessage{
+				ProjectID: "anchor-p", IssueUID: 101, ParentID: &root.ResourceID,
+				Payload: &storepb.IssueCommentPayload{Comment: "reply", StatementAnchor: tc.reply},
+			})
+			if tc.valid {
+				require.NoError(t, err)
+				require.Equal(t, root.ResourceID, *reply.ParentID)
+			} else {
+				require.Equal(t, common.Invalid, common.ErrorCode(err))
+			}
+			replies, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{
+				ProjectID: "anchor-p", IssueUID: &root.IssueUID, ParentIDs: &[]string{root.ResourceID},
+			})
+			require.NoError(t, err)
+			if tc.valid {
+				require.Len(t, replies, 1)
+				require.Equal(t, reply.ResourceID, replies[0].ResourceID)
+			} else {
+				require.Empty(t, replies, "rejected anchors must not persist a reply")
+			}
+			persisted, err := stores.GetIssueComment(ctx, &store.FindIssueCommentMessage{
+				ProjectID: "anchor-p", ResourceID: &root.ResourceID,
+			})
+			require.NoError(t, err)
+			require.Equal(t, store.ThreadStateResolved, *persisted.ThreadState, "replies never reopen a thread")
+		})
+	}
 }
