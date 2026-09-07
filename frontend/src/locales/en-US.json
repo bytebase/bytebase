@@ -2382,12 +2382,17 @@
           "enable-ai-assistant": "Enable AI Assistant",
           "enabled-in-saas": "Gemini AI is enabled automatically in the SaaS mode.",
           "endpoint": {
-            "description": "Supply private deployment of API Endpoint.",
+            "description": "Enter the API endpoint for the custom model.",
+            "openai-description": "Use a /responses endpoint for the Responses API or /chat/completions for the Chat Completions API.",
             "self": "API Endpoint"
           },
           "model": {
-            "description": "Supply private deployment of model name.",
-            "self": "Model Name"
+            "custom": "Custom model",
+            "deployment": "Deployment name",
+            "deployment-description": "The Azure OpenAI deployment name. It may differ from the model.",
+            "description": "Select a supported model, or choose Custom model to enter another model and endpoint.",
+            "name": "Model name",
+            "self": "Model"
           },
           "provider": {
             "azure_open_ai": "Azure OpenAI",

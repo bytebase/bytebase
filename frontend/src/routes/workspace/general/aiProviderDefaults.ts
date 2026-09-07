@@ -1,18 +1,58 @@
 import { AISetting_Provider } from "@/types/proto-es/v1/setting_service_pb";
 
+export interface ProviderModel {
+  endpoint: string;
+  value: string;
+}
+
+const OPENAI_RESPONSES_ENDPOINT = "https://api.openai.com/v1/responses";
+const OPENAI_CHAT_COMPLETIONS_ENDPOINT =
+  "https://api.openai.com/v1/chat/completions";
+const AZURE_OPENAI_RESPONSES_ENDPOINT =
+  "https://{resource name}.openai.azure.com/openai/v1/responses";
+const AZURE_OPENAI_CHAT_COMPLETIONS_ENDPOINT =
+  "https://{resource name}.openai.azure.com/openai/v1/chat/completions";
+
+export const PROVIDER_MODELS: Record<AISetting_Provider, ProviderModel[]> = {
+  [AISetting_Provider.OPEN_AI]: [
+    { value: "gpt-5.5", endpoint: OPENAI_RESPONSES_ENDPOINT },
+    { value: "gpt-5", endpoint: OPENAI_RESPONSES_ENDPOINT },
+    { value: "gpt-5-mini", endpoint: OPENAI_RESPONSES_ENDPOINT },
+    { value: "gpt-4o", endpoint: OPENAI_CHAT_COMPLETIONS_ENDPOINT },
+  ],
+  [AISetting_Provider.AZURE_OPENAI]: [
+    { value: "gpt-5.5", endpoint: AZURE_OPENAI_RESPONSES_ENDPOINT },
+    { value: "gpt-5", endpoint: AZURE_OPENAI_RESPONSES_ENDPOINT },
+    { value: "gpt-5-mini", endpoint: AZURE_OPENAI_RESPONSES_ENDPOINT },
+    { value: "gpt-4o", endpoint: AZURE_OPENAI_CHAT_COMPLETIONS_ENDPOINT },
+  ],
+  [AISetting_Provider.GEMINI]: [
+    {
+      value: "gemini-3.5-flash",
+      endpoint: "https://generativelanguage.googleapis.com/v1beta",
+    },
+  ],
+  [AISetting_Provider.CLAUDE]: [
+    {
+      value: "claude-sonnet-5",
+      endpoint: "https://api.anthropic.com/v1/messages",
+    },
+  ],
+  [AISetting_Provider.PROVIDER_UNSPECIFIED]: [],
+};
+
 export const PROVIDER_DEFAULTS: Record<
   AISetting_Provider,
   { apiKeyDoc: string; endpoint: string; model: string }
 > = {
   [AISetting_Provider.OPEN_AI]: {
     apiKeyDoc: "https://platform.openai.com/account/api-keys",
-    endpoint: "https://api.openai.com/v1/chat/completions",
+    endpoint: OPENAI_RESPONSES_ENDPOINT,
     model: "gpt-5.5",
   },
   [AISetting_Provider.AZURE_OPENAI]: {
     apiKeyDoc: "https://ai.azure.com/",
-    endpoint:
-      "https://{resource name}.openai.azure.com/openai/deployments/{deployment id}/chat/completions?api-version=2024-06-01",
+    endpoint: AZURE_OPENAI_RESPONSES_ENDPOINT,
     model: "gpt-5.5",
   },
   [AISetting_Provider.GEMINI]: {

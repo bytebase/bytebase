@@ -2382,12 +2382,17 @@
           "enable-ai-assistant": "Habilitar el Asistente de IA",
           "enabled-in-saas": "Gemini AI se habilita automáticamente en el modo SaaS.",
           "endpoint": {
-            "description": "Proporcione una implementación privada del Punto de conexión de API.",
+            "description": "Introduzca el endpoint de API para el modelo personalizado.",
+            "openai-description": "Use un endpoint /responses para la API Responses o /chat/completions para la API Chat Completions.",
             "self": "Punto de conexión de API"
           },
           "model": {
-            "description": "Suministro de implementación privada del nombre del modelo.",
-            "self": "Nombre del modelo"
+            "custom": "Modelo personalizado",
+            "deployment": "Nombre de implementación",
+            "deployment-description": "El nombre de la implementación de Azure OpenAI. Puede diferir del modelo.",
+            "description": "Seleccione un modelo compatible o elija un modelo personalizado para introducir otro modelo y endpoint.",
+            "name": "Nombre del modelo",
+            "self": "Modelo"
           },
           "provider": {
             "azure_open_ai": "Azure OpenAI",
