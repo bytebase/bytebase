@@ -39,6 +39,10 @@ export function OAuthCallbackPage() {
   );
   const [showCloseButton, setShowCloseButton] = useState(false);
   const payloadRef = useRef<OAuthWindowEventPayload>({ error: "", code: "" });
+  // The popup close check must not outlive the page: window.close() usually
+  // wins, and a timer firing after unmount would set state on a dead tree.
+  const closeCheckRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(closeCheckRef.current), []);
 
   useEffect(() => {
     const query = router.currentRoute.value.query;
@@ -123,7 +127,7 @@ export function OAuthCallbackPage() {
         try {
           window.close();
 
-          setTimeout(() => {
+          closeCheckRef.current = setTimeout(() => {
             if (!window.closed) {
               setShowCloseButton(true);
               if (!isError) {
