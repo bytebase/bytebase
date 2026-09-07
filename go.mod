@@ -10,7 +10,7 @@ require (
 	buf.build/gen/go/bufbuild/protovalidate/protocolbuffers/go v1.36.11-20260709200747-435963d16310.1
 	buf.build/go/protovalidate v1.2.0
 	cloud.google.com/go/bigquery v1.79.0
-	cloud.google.com/go/cloudsqlconn v1.23.0
+	cloud.google.com/go/cloudsqlconn v1.25.2
 	cloud.google.com/go/secretmanager v1.21.0
 	cloud.google.com/go/spanner v1.93.0
 	connectrpc.com/connect v1.20.0
@@ -98,7 +98,7 @@ require (
 	golang.org/x/term v0.45.0
 	golang.org/x/text v0.40.0
 	google.golang.org/api v0.290.0
-	google.golang.org/genproto v0.0.0-20260720211330-0afa2a65878a
+	google.golang.org/genproto v0.0.0-20260723164925-7274b71286bd
 	google.golang.org/genproto/googleapis/api v0.0.0-20260904194346-d0f1323225a4
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260904194346-d0f1323225a4
 	google.golang.org/grpc v1.83.1
@@ -112,6 +112,7 @@ require (
 	cloud.google.com/go/auth v0.22.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.8 // indirect
 	cloud.google.com/go/monitoring v1.30.0 // indirect
+	cloud.google.com/go/sql v0.1.0 // indirect
 	dario.cat/mergo v1.0.2 // indirect
 	filippo.io/edwards25519 v1.2.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
