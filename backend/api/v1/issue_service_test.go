@@ -337,6 +337,7 @@ func createIssueServiceApprovalIssue(ctx context.Context, t *testing.T, stores *
 			ApprovalInputVersion: 2,
 			Specs: []*storepb.PlanConfig_Spec{
 				{
+					Id: "spec-1",
 					Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
 						ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{
 							Targets: []string{"instances/prod/databases/app"},

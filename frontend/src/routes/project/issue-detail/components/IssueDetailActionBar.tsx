@@ -58,7 +58,6 @@ import { IssueStatus } from "@/types/proto-es/v1/common_pb";
 import {
   ApproveIssueRequestSchema,
   BatchUpdateIssuesStatusRequestSchema,
-  ListIssueCommentsRequestSchema,
   RejectIssueRequestSchema,
 } from "@/types/proto-es/v1/issue_service_pb";
 import {
@@ -219,12 +218,10 @@ export function IssueDetailActionBar() {
     if (!page.issue?.name) {
       return;
     }
-    await useAppStore.getState().listIssueComments(
-      create(ListIssueCommentsRequestSchema, {
-        parent: page.issue.name,
-        pageSize: 1000,
-      })
-    );
+    await useAppStore.getState().fetchIssueCommentTimeline({
+      parent: page.issue.name,
+      pageSize: 1000,
+    });
   }, [page.issue?.name]);
 
   const handleRefreshIssueDetailState = useCallback(async () => {

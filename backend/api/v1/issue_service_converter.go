@@ -1,8 +1,6 @@
 package v1
 
 import (
-	"fmt"
-
 	"github.com/pkg/errors"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
@@ -190,8 +188,28 @@ func convertToIssueComment(issueName string, ic *store.IssueCommentMessage) *v1p
 		Comment:    ic.Payload.Comment,
 		CreateTime: timestamppb.New(ic.CreatedAt),
 		UpdateTime: timestamppb.New(ic.UpdatedAt),
-		Name:       fmt.Sprintf("%s/%s%s", issueName, common.IssueCommentNamePrefix, ic.ResourceID),
+		Name:       common.FormatIssueComment(issueName, ic.ResourceID),
 		Creator:    common.FormatUserEmail(ic.CreatorEmail),
+	}
+
+	if ic.ParentID != nil {
+		root := common.FormatIssueComment(issueName, *ic.ParentID)
+		r.Root = &root
+	}
+	if ic.ThreadState != nil {
+		state := v1pb.IssueComment_OPEN
+		if *ic.ThreadState == store.ThreadStateResolved {
+			state = v1pb.IssueComment_RESOLVED
+		}
+		r.ThreadState = &state
+	}
+	if anchor := ic.Payload.GetStatementAnchor(); anchor != nil {
+		r.StatementAnchor = &v1pb.StatementAnchor{
+			Spec:          anchor.SpecId,
+			SheetSha256:   anchor.SheetSha256,
+			StartPosition: convertToPosition(anchor.StartPosition),
+			EndPosition:   convertToPosition(anchor.EndPosition),
+		}
 	}
 
 	switch e := ic.Payload.Event.(type) {

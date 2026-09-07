@@ -11209,6 +11209,16 @@ paths:
           schema:
             type: string
             title: page_token
+        - name: filter
+          in: query
+          description: |-
+            CEL filter over events, root comments, and replies.
+             Supported: root == null, root == "<comment name>", or root in ["<comment name>", ...].
+             Root names must belong to parent. Empty and root == null return the
+             timeline (events and root comments); other filters return replies only.
+          schema:
+            type: string
+            title: filter
       responses:
         "200":
           description: Success
@@ -24832,6 +24842,33 @@ components:
               title: creator
               description: 'Format: users/{email}'
               readOnly: true
+            root:
+              type:
+                - string
+                - "null"
+              title: root
+              description: |-
+                (IMMUTABLE) The thread root's name, set only on replies. Immutable after creation.
+                 Format: projects/{project}/issues/{issue}/issueComments/{issueComment}
+                 Must name a thread root in the same issue, never a general comment or reply.
+            threadState:
+              oneOf:
+                - $ref: '#/components/schemas/bytebase.v1.IssueComment.ThreadState'
+                - type: "null"
+              title: thread_state
+              description: |-
+                Present only on thread roots. Set OPEN on create to start a thread; an
+                 anchored root starts one without it. Omit root, thread_state, and
+                 statement_anchor to create a general comment.
+                 Update through the thread_state field mask to resolve or reopen.
+                 Adding a reply does not reopen a resolved thread.
+            statementAnchor:
+              title: statement_anchor
+              description: |-
+                (IMMUTABLE) Optional source context on a root or reply. A reply's anchor must share
+                 the root's spec and sheet_sha256; it may narrow the range.
+                 Cannot be set on events. Immutable after creation.
+              $ref: '#/components/schemas/bytebase.v1.StatementAnchor'
         - oneOf:
             - type: object
               properties:
@@ -24960,6 +24997,13 @@ components:
       title: ReviewSubmission
       additionalProperties: false
       description: Review submission event information.
+    bytebase.v1.IssueComment.ThreadState:
+      type: string
+      title: ThreadState
+      enum:
+        - THREAD_STATE_UNSPECIFIED
+        - OPEN
+        - RESOLVED
     bytebase.v1.IssueStatus:
       type: string
       title: IssueStatus
@@ -25683,6 +25727,14 @@ components:
 
              When paginating, all other parameters provided to `ListIssueComments` must match
              the call that provided the page token.
+        filter:
+          type: string
+          title: filter
+          description: |-
+            CEL filter over events, root comments, and replies.
+             Supported: root == null, root == "<comment name>", or root in ["<comment name>", ...].
+             Root names must belong to parent. Empty and root == null return the
+             timeline (events and root comments); other filters return replies only.
       title: ListIssueCommentsRequest
       required:
         - parent
@@ -31075,6 +31127,33 @@ components:
         - ACTIVE
         - DELETED
       description: Resource lifecycle state.
+    bytebase.v1.StatementAnchor:
+      type: object
+      properties:
+        spec:
+          type: string
+          title: spec
+          description: The Plan.Spec.id in the issue's plan; may no longer resolve after deletion.
+        sheetSha256:
+          type: string
+          title: sheet_sha256
+          description: SHA256 of the saved sheet, as 64 lowercase hexadecimal characters.
+        startPosition:
+          title: start_position
+          description: |-
+            One-based lines and Unicode code-point columns. When both columns are zero,
+             the range covers whole lines, including the end line. Otherwise both columns
+             must be positive, start_position is inclusive, and end_position is exclusive.
+          $ref: '#/components/schemas/bytebase.v1.Position'
+        endPosition:
+          title: end_position
+          $ref: '#/components/schemas/bytebase.v1.Position'
+      title: StatementAnchor
+      additionalProperties: false
+      description: |-
+        The saved statement revision and range referenced by a comment.
+         Source currency is derived by comparing the spec and hash with the current plan.
+         Historical SQL is available through SheetService.GetSheet with this hash.
     bytebase.v1.StatementType:
       type: string
       title: StatementType

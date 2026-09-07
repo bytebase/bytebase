@@ -1221,6 +1221,11 @@ func (s *IssueService) ListIssueComments(ctx context.Context, req *connect.Reque
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("%v", err.Error()))
 	}
+	find, err := store.GetIssueCommentListFilter(req.Msg.Filter, projectID, issueUID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, err)
+	}
+
 	issue, err := s.store.GetIssue(ctx, &store.FindIssueMessage{
 		Workspace:  common.GetWorkspaceIDFromContext(ctx),
 		UID:        &issueUID,
@@ -1243,16 +1248,9 @@ func (s *IssueService) ListIssueComments(ctx context.Context, req *connect.Reque
 	}
 	limitPlusOne := offset.limit + 1
 
-	issueComments, err := s.store.ListIssueComment(ctx, &store.FindIssueCommentMessage{
-		ProjectID: projectID,
-		IssueUID:  &issue.UID,
-		// The activity timeline holds events and root comments only. The v1
-		// message cannot represent a reply yet, and a reply must not consume
-		// a page slot; replies are read per thread through ParentIDs.
-		TopLevelOnly: true,
-		Limit:        &limitPlusOne,
-		Offset:       &offset.offset,
-	})
+	find.Limit = &limitPlusOne
+	find.Offset = &offset.offset
+	issueComments, err := s.store.ListIssueComment(ctx, find)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to list issue comments, err: %v", err))
 	}
@@ -1272,9 +1270,16 @@ func (s *IssueService) ListIssueComments(ctx context.Context, req *connect.Reque
 
 // CreateIssueComment creates the issue comment.
 func (s *IssueService) CreateIssueComment(ctx context.Context, req *connect.Request[v1pb.CreateIssueCommentRequest]) (*connect.Response[v1pb.IssueComment], error) {
-	if req.Msg.IssueComment.Comment == "" {
+	if req.Msg.IssueComment.GetComment() == "" {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue comment is empty"))
 	}
+	comment := req.Msg.IssueComment
+	// The store never sees the v1 event, so this is the one rule it cannot
+	// enforce; every thread invariant is the store's.
+	if comment.Event != nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("events cannot be created through CreateIssueComment"))
+	}
+
 	user, ok := GetUserFromContext(ctx)
 	if !ok {
 		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("user not found"))
@@ -1292,15 +1297,58 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("project %s not found", issue.ProjectID))
 	}
 
-	ic, err := s.store.CreateIssueComments(ctx, user.Email, &store.IssueCommentMessage{
+	create := &store.IssueCommentMessage{
 		ProjectID: issue.ProjectID,
 		IssueUID:  issue.UID,
-		Payload: &storepb.IssueCommentPayload{
-			Comment: req.Msg.IssueComment.Comment,
-		},
-	})
+		Payload:   &storepb.IssueCommentPayload{Comment: comment.Comment},
+	}
+	if comment.Root != nil {
+		p, uid, id, err := common.GetProjectIDIssueUIDIssueCommentID(comment.GetRoot())
+		if err != nil || p != issue.ProjectID || uid != issue.UID {
+			return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("root must name a comment in the same issue"))
+		}
+		create.ParentID = &id
+	}
+	if comment.ThreadState != nil {
+		state, err := convertToStoreThreadState(comment.GetThreadState())
+		if err != nil {
+			return nil, err
+		}
+		create.ThreadState = &state
+	}
+	if anchor := comment.StatementAnchor; anchor != nil {
+		if comment.Root == nil {
+			if err := s.validateStatementAnchorSpec(ctx, issue, anchor); err != nil {
+				return nil, err
+			}
+		}
+		if err := s.validateStatementAnchor(ctx, issue, anchor); err != nil {
+			return nil, err
+		}
+		create.Payload.StatementAnchor = &storepb.IssueCommentPayload_StatementAnchor{
+			SpecId:      anchor.Spec,
+			SheetSha256: anchor.SheetSha256,
+		}
+		if anchor.StartPosition != nil {
+			create.Payload.StatementAnchor.StartPosition = &storepb.Position{Line: anchor.StartPosition.Line, Column: anchor.StartPosition.Column}
+		}
+		if anchor.EndPosition != nil {
+			create.Payload.StatementAnchor.EndPosition = &storepb.Position{Line: anchor.EndPosition.Line, Column: anchor.EndPosition.Column}
+		}
+	}
+	var ic *store.IssueCommentMessage
+	if create.ParentID != nil {
+		ic, err = s.store.CreateIssueCommentReply(ctx, user.Email, create)
+		// root is a request field, not the requested resource: a missing
+		// root is a bad request, not a missing parent.
+		if err != nil && common.ErrorCode(err) == common.NotFound {
+			return nil, connect.NewError(connect.CodeInvalidArgument, err)
+		}
+	} else {
+		ic, err = s.store.CreateIssueComments(ctx, user.Email, create)
+	}
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to create issue comment: %v", err))
+		return nil, issueCommentError(err)
 	}
 
 	return connect.NewResponse(convertToIssueComment(req.Msg.Parent, ic)), nil
@@ -1308,8 +1356,12 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, req *connect.Requ
 
 // UpdateIssueComment updates the issue comment.
 func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Request[v1pb.UpdateIssueCommentRequest]) (*connect.Response[v1pb.IssueComment], error) {
-	if req.Msg.UpdateMask.Paths == nil {
+	if len(req.Msg.UpdateMask.GetPaths()) == 0 {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("update_mask is required"))
+	}
+
+	if req.Msg.IssueComment == nil {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("issue_comment is required"))
 	}
 
 	user, ok := GetUserFromContext(ctx)
@@ -1322,11 +1374,11 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid parent %q: %v", req.Msg.Parent, err))
 	}
 
-	_, commentIssueUID, issueCommentID, err := common.GetProjectIDIssueUIDIssueCommentID(req.Msg.IssueComment.Name)
+	commentProjectID, commentIssueUID, issueCommentID, err := common.GetProjectIDIssueUIDIssueCommentID(req.Msg.IssueComment.Name)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("invalid comment name %q: %v", req.Msg.IssueComment.Name, err))
 	}
-	if parentIssueUID != commentIssueUID {
+	if parentProjectID != commentProjectID || parentIssueUID != commentIssueUID {
 		return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue comment %q does not belong to parent %q", req.Msg.IssueComment.Name, req.Msg.Parent))
 	}
 	issueComment, err := s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{ProjectID: parentProjectID, ResourceID: &issueCommentID, IssueUID: &parentIssueUID})
@@ -1342,6 +1394,7 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 			if !ok {
 				return nil, connect.NewError(connect.CodePermissionDenied, errors.Errorf("user does not have permission %q", permission.IssueCommentsCreate))
 			}
+			// Creation applies the complete resource regardless of the update mask.
 			return s.CreateIssueComment(ctx, connect.NewRequest(&v1pb.CreateIssueCommentRequest{
 				Parent:       req.Msg.Parent,
 				IssueComment: req.Msg.IssueComment,
@@ -1356,20 +1409,26 @@ func (s *IssueService) UpdateIssueComment(ctx context.Context, req *connect.Requ
 	for _, path := range req.Msg.UpdateMask.Paths {
 		switch path {
 		case "comment":
-			if req.Msg.IssueComment.Comment == "" {
+			if req.Msg.IssueComment.GetComment() == "" {
 				return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf("issue comment is empty"))
 			}
 			update.Comment = &req.Msg.IssueComment.Comment
+		case "thread_state":
+			if issueComment.ThreadState == nil {
+				return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("only thread roots can be resolved or reopened"))
+			}
+			state, err := convertToStoreThreadState(req.Msg.IssueComment.GetThreadState())
+			if err != nil {
+				return nil, err
+			}
+			update.ThreadState = &state
 		default:
 			return nil, connect.NewError(connect.CodeInvalidArgument, errors.Errorf(`unsupport update_mask: "%s"`, path))
 		}
 	}
 
 	if err := s.store.UpdateIssueComment(ctx, update); err != nil {
-		if common.ErrorCode(err) == common.NotFound {
-			return nil, connect.NewError(connect.CodeNotFound, errors.Errorf("cannot found the issue comment %s", req.Msg.IssueComment.Name))
-		}
-		return nil, connect.NewError(connect.CodeInternal, errors.Errorf("failed to update the issue comment with error: %v", err.Error()))
+		return nil, issueCommentError(err)
 	}
 	issueComment, err = s.store.GetIssueComment(ctx, &store.FindIssueCommentMessage{ProjectID: parentProjectID, ResourceID: &issueCommentID})
 	if err != nil {

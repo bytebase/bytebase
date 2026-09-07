@@ -924,6 +924,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.StatementAnchor"><span class="badge">M</span>StatementAnchor</a>
+                </li>
+              
+                <li>
                   <a href="#bytebase.v1.UpdateIssueCommentRequest"><span class="badge">M</span>UpdateIssueCommentRequest</a>
                 </li>
               
@@ -942,6 +946,10 @@
               
                 <li>
                   <a href="#bytebase.v1.IssueComment.Approval.Status"><span class="badge">E</span>IssueComment.Approval.Status</a>
+                </li>
+              
+                <li>
+                  <a href="#bytebase.v1.IssueComment.ThreadState"><span class="badge">E</span>IssueComment.ThreadState</a>
                 </li>
               
                 <li>
@@ -10695,6 +10703,35 @@ Format: projects/{project}/accessGrants/{access_grant} </p></td>
                 </tr>
               
                 <tr>
+                  <td>root</td>
+                  <td><a href="#string">string</a></td>
+                  <td>optional</td>
+                  <td><p>The thread root&#39;s name, set only on replies. Immutable after creation.
+Format: projects/{project}/issues/{issue}/issueComments/{issueComment}
+Must name a thread root in the same issue, never a general comment or reply. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>thread_state</td>
+                  <td><a href="#bytebase.v1.IssueComment.ThreadState">IssueComment.ThreadState</a></td>
+                  <td>optional</td>
+                  <td><p>Present only on thread roots. Set OPEN on create to start a thread; an
+anchored root starts one without it. Omit root, thread_state, and
+statement_anchor to create a general comment.
+Update through the thread_state field mask to resolve or reopen.
+Adding a reply does not reopen a resolved thread. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>statement_anchor</td>
+                  <td><a href="#bytebase.v1.StatementAnchor">StatementAnchor</a></td>
+                  <td></td>
+                  <td><p>Optional source context on a root or reply. A reply&#39;s anchor must share
+the root&#39;s spec and sheet_sha256; it may narrow the range.
+Cannot be set on events. Immutable after creation. </p></td>
+                </tr>
+              
+                <tr>
                   <td>approval</td>
                   <td><a href="#bytebase.v1.IssueComment.Approval">IssueComment.Approval</a></td>
                   <td></td>
@@ -10900,6 +10937,16 @@ Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListIssueComments` must match
 the call that provided the page token. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>filter</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>CEL filter over events, root comments, and replies.
+Supported: root == null, root == &#34;&lt;comment name&gt;&#34;, or root in [&#34;&lt;comment name&gt;&#34;, ...].
+Root names must belong to parent. Empty and root == null return the
+timeline (events and root comments); other filters return replies only. </p></td>
                 </tr>
               
             </tbody>
@@ -11400,6 +11447,53 @@ If this field is omitted, there are no subsequent pages. </p></td>
 
         
       
+        <h3 id="bytebase.v1.StatementAnchor">StatementAnchor</h3>
+        <p>The saved statement revision and range referenced by a comment.</p><p>Source currency is derived by comparing the spec and hash with the current plan.</p><p>Historical SQL is available through SheetService.GetSheet with this hash.</p>
+
+        
+          <table class="field-table">
+            <thead>
+              <tr><td>Field</td><td>Type</td><td>Label</td><td>Description</td></tr>
+            </thead>
+            <tbody>
+              
+                <tr>
+                  <td>spec</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>The Plan.Spec.id in the issue&#39;s plan; may no longer resolve after deletion. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>sheet_sha256</td>
+                  <td><a href="#string">string</a></td>
+                  <td></td>
+                  <td><p>SHA256 of the saved sheet, as 64 lowercase hexadecimal characters. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>start_position</td>
+                  <td><a href="#bytebase.v1.Position">Position</a></td>
+                  <td></td>
+                  <td><p>One-based lines and Unicode code-point columns. When both columns are zero,
+the range covers whole lines, including the end line. Otherwise both columns
+must be positive, start_position is inclusive, and end_position is exclusive. </p></td>
+                </tr>
+              
+                <tr>
+                  <td>end_position</td>
+                  <td><a href="#bytebase.v1.Position">Position</a></td>
+                  <td></td>
+                  <td><p> </p></td>
+                </tr>
+              
+            </tbody>
+          </table>
+
+          
+
+        
+      
         <h3 id="bytebase.v1.UpdateIssueCommentRequest">UpdateIssueCommentRequest</h3>
         <p></p>
 
@@ -11591,6 +11685,35 @@ In this situation, `update_mask` is ignored. </p></td>
                 <td>REJECTED</td>
                 <td>3</td>
                 <td><p>Rejected.</p></td>
+              </tr>
+            
+          </tbody>
+        </table>
+      
+        <h3 id="bytebase.v1.IssueComment.ThreadState">IssueComment.ThreadState</h3>
+        <p></p>
+        <table class="enum-table">
+          <thead>
+            <tr><td>Name</td><td>Number</td><td>Description</td></tr>
+          </thead>
+          <tbody>
+            
+              <tr>
+                <td>THREAD_STATE_UNSPECIFIED</td>
+                <td>0</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>OPEN</td>
+                <td>1</td>
+                <td><p></p></td>
+              </tr>
+            
+              <tr>
+                <td>RESOLVED</td>
+                <td>2</td>
+                <td><p></p></td>
               </tr>
             
           </tbody>

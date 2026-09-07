@@ -5,7 +5,7 @@
 import type { GenEnum, GenFile, GenMessage, GenService } from "@bufbuild/protobuf/codegenv2";
 import type { Message } from "@bufbuild/protobuf";
 import type { Duration, FieldMask, Timestamp } from "@bufbuild/protobuf/wkt";
-import type { ApprovalStatus, IssueStatus, RiskLevel } from "./common_pb";
+import type { ApprovalStatus, IssueStatus, Position, RiskLevel } from "./common_pb";
 import type { Expr } from "../google/type/expr_pb";
 import type { Plan_Spec } from "./plan_service_pb";
 
@@ -820,6 +820,16 @@ export declare type ListIssueCommentsRequest = Message<"bytebase.v1.ListIssueCom
    * @generated from field: string page_token = 3;
    */
   pageToken: string;
+
+  /**
+   * CEL filter over events, root comments, and replies.
+   * Supported: root == null, root == "<comment name>", or root in ["<comment name>", ...].
+   * Root names must belong to parent. Empty and root == null return the
+   * timeline (events and root comments); other filters return replies only.
+   *
+   * @generated from field: string filter = 4;
+   */
+  filter: string;
 };
 
 /**
@@ -964,6 +974,35 @@ export declare type IssueComment = Message<"bytebase.v1.IssueComment"> & {
    * @generated from field: string creator = 6;
    */
   creator: string;
+
+  /**
+   * The thread root's name, set only on replies. Immutable after creation.
+   * Format: projects/{project}/issues/{issue}/issueComments/{issueComment}
+   * Must name a thread root in the same issue, never a general comment or reply.
+   *
+   * @generated from field: optional string root = 14;
+   */
+  root?: string | undefined;
+
+  /**
+   * Present only on thread roots. Set OPEN on create to start a thread; an
+   * anchored root starts one without it. Omit root, thread_state, and
+   * statement_anchor to create a general comment.
+   * Update through the thread_state field mask to resolve or reopen.
+   * Adding a reply does not reopen a resolved thread.
+   *
+   * @generated from field: optional bytebase.v1.IssueComment.ThreadState thread_state = 15;
+   */
+  threadState?: IssueComment_ThreadState | undefined;
+
+  /**
+   * Optional source context on a root or reply. A reply's anchor must share
+   * the root's spec and sheet_sha256; it may narrow the range.
+   * Cannot be set on events. Immutable after creation.
+   *
+   * @generated from field: bytebase.v1.StatementAnchor statement_anchor = 16;
+   */
+  statementAnchor?: StatementAnchor | undefined;
 
   /**
    * The event associated with this comment.
@@ -1161,6 +1200,74 @@ export declare type IssueComment_PlanUpdate = Message<"bytebase.v1.IssueComment.
  * Use `create(IssueComment_PlanUpdateSchema)` to create a new message.
  */
 export declare const IssueComment_PlanUpdateSchema: GenMessage<IssueComment_PlanUpdate>;
+
+/**
+ * @generated from enum bytebase.v1.IssueComment.ThreadState
+ */
+export enum IssueComment_ThreadState {
+  /**
+   * @generated from enum value: THREAD_STATE_UNSPECIFIED = 0;
+   */
+  THREAD_STATE_UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: OPEN = 1;
+   */
+  OPEN = 1,
+
+  /**
+   * @generated from enum value: RESOLVED = 2;
+   */
+  RESOLVED = 2,
+}
+
+/**
+ * Describes the enum bytebase.v1.IssueComment.ThreadState.
+ */
+export declare const IssueComment_ThreadStateSchema: GenEnum<IssueComment_ThreadState>;
+
+/**
+ * The saved statement revision and range referenced by a comment.
+ * Source currency is derived by comparing the spec and hash with the current plan.
+ * Historical SQL is available through SheetService.GetSheet with this hash.
+ *
+ * @generated from message bytebase.v1.StatementAnchor
+ */
+export declare type StatementAnchor = Message<"bytebase.v1.StatementAnchor"> & {
+  /**
+   * The Plan.Spec.id in the issue's plan; may no longer resolve after deletion.
+   *
+   * @generated from field: string spec = 1;
+   */
+  spec: string;
+
+  /**
+   * SHA256 of the saved sheet, as 64 lowercase hexadecimal characters.
+   *
+   * @generated from field: string sheet_sha256 = 2;
+   */
+  sheetSha256: string;
+
+  /**
+   * One-based lines and Unicode code-point columns. When both columns are zero,
+   * the range covers whole lines, including the end line. Otherwise both columns
+   * must be positive, start_position is inclusive, and end_position is exclusive.
+   *
+   * @generated from field: bytebase.v1.Position start_position = 3;
+   */
+  startPosition?: Position | undefined;
+
+  /**
+   * @generated from field: bytebase.v1.Position end_position = 4;
+   */
+  endPosition?: Position | undefined;
+};
+
+/**
+ * Describes the message bytebase.v1.StatementAnchor.
+ * Use `create(StatementAnchorSchema)` to create a new message.
+ */
+export declare const StatementAnchorSchema: GenMessage<StatementAnchor>;
 
 /**
  * @generated from message bytebase.v1.ReviewRun

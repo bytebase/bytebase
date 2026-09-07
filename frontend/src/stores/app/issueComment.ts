@@ -53,18 +53,30 @@ export const createIssueCommentSlice: AppSliceCreator<IssueCommentSlice> = (
         parent: request.parent,
         pageSize: request.pageSize,
         pageToken: request.pageToken,
+        filter: request.filter,
+      })
+    );
+    return {
+      nextPageToken: resp.nextPageToken,
+      issueComments: resp.issueComments,
+    };
+  },
+
+  fetchIssueCommentTimeline: async ({ parent, pageSize, pageToken }) => {
+    const resp = await get().listIssueComments(
+      createProto(ListIssueCommentsRequestSchema, {
+        parent,
+        pageSize,
+        pageToken,
       })
     );
     set((state) => ({
       issueCommentsByIssue: {
         ...state.issueCommentsByIssue,
-        [request.parent]: resp.issueComments,
+        [parent]: resp.issueComments,
       },
     }));
-    return {
-      nextPageToken: resp.nextPageToken,
-      issueComments: resp.issueComments,
-    };
+    return resp;
   },
 
   createIssueComment: async ({ issueName, comment }) => {

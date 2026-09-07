@@ -197,12 +197,14 @@
     - [RunReviewRequest](#bytebase-v1-RunReviewRequest)
     - [SearchIssuesRequest](#bytebase-v1-SearchIssuesRequest)
     - [SearchIssuesResponse](#bytebase-v1-SearchIssuesResponse)
+    - [StatementAnchor](#bytebase-v1-StatementAnchor)
     - [UpdateIssueCommentRequest](#bytebase-v1-UpdateIssueCommentRequest)
     - [UpdateIssueRequest](#bytebase-v1-UpdateIssueRequest)
   
     - [Issue.Approver.Status](#bytebase-v1-Issue-Approver-Status)
     - [Issue.Type](#bytebase-v1-Issue-Type)
     - [IssueComment.Approval.Status](#bytebase-v1-IssueComment-Approval-Status)
+    - [IssueComment.ThreadState](#bytebase-v1-IssueComment-ThreadState)
     - [ReviewRun.Status](#bytebase-v1-ReviewRun-Status)
     - [ReviewRun.Type](#bytebase-v1-ReviewRun-Type)
   
@@ -3509,6 +3511,9 @@ A comment on an issue.
 | create_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | update_time | [google.protobuf.Timestamp](#google-protobuf-Timestamp) |  |  |
 | creator | [string](#string) |  | Format: users/{email} |
+| root | [string](#string) | optional | The thread root&#39;s name, set only on replies. Immutable after creation. Format: projects/{project}/issues/{issue}/issueComments/{issueComment} Must name a thread root in the same issue, never a general comment or reply. |
+| thread_state | [IssueComment.ThreadState](#bytebase-v1-IssueComment-ThreadState) | optional | Present only on thread roots. Set OPEN on create to start a thread; an anchored root starts one without it. Omit root, thread_state, and statement_anchor to create a general comment. Update through the thread_state field mask to resolve or reopen. Adding a reply does not reopen a resolved thread. |
+| statement_anchor | [StatementAnchor](#bytebase-v1-StatementAnchor) |  | Optional source context on a root or reply. A reply&#39;s anchor must share the root&#39;s spec and sheet_sha256; it may narrow the range. Cannot be set on events. Immutable after creation. |
 | approval | [IssueComment.Approval](#bytebase-v1-IssueComment-Approval) |  | Approval event. |
 | issue_update | [IssueComment.IssueUpdate](#bytebase-v1-IssueComment-IssueUpdate) |  | Issue update event. |
 | plan_update | [IssueComment.PlanUpdate](#bytebase-v1-IssueComment-PlanUpdate) |  | Plan update event. |
@@ -3596,6 +3601,7 @@ Review submission event information.
 | page_token | [string](#string) |  | A page token, received from a previous `ListIssueComments` call. Provide this to retrieve the subsequent page.
 
 When paginating, all other parameters provided to `ListIssueComments` must match the call that provided the page token. |
+| filter | [string](#string) |  | CEL filter over events, root comments, and replies. Supported: root == null, root == &#34;&lt;comment name&gt;&#34;, or root in [&#34;&lt;comment name&gt;&#34;, ...]. Root names must belong to parent. Empty and root == null return the timeline (events and root comments); other filters return replies only. |
 
 
 
@@ -3798,6 +3804,26 @@ When paginating, all other parameters provided to `SearchIssues` must match the 
 
 
 
+<a name="bytebase-v1-StatementAnchor"></a>
+
+### StatementAnchor
+The saved statement revision and range referenced by a comment.
+Source currency is derived by comparing the spec and hash with the current plan.
+Historical SQL is available through SheetService.GetSheet with this hash.
+
+
+| Field | Type | Label | Description |
+| ----- | ---- | ----- | ----------- |
+| spec | [string](#string) |  | The Plan.Spec.id in the issue&#39;s plan; may no longer resolve after deletion. |
+| sheet_sha256 | [string](#string) |  | SHA256 of the saved sheet, as 64 lowercase hexadecimal characters. |
+| start_position | [Position](#bytebase-v1-Position) |  | One-based lines and Unicode code-point columns. When both columns are zero, the range covers whole lines, including the end line. Otherwise both columns must be positive, start_position is inclusive, and end_position is exclusive. |
+| end_position | [Position](#bytebase-v1-Position) |  |  |
+
+
+
+
+
+
 <a name="bytebase-v1-UpdateIssueCommentRequest"></a>
 
 ### UpdateIssueCommentRequest
@@ -3876,6 +3902,19 @@ Approval status values.
 | PENDING | 1 | Approval pending. |
 | APPROVED | 2 | Approved. |
 | REJECTED | 3 | Rejected. |
+
+
+
+<a name="bytebase-v1-IssueComment-ThreadState"></a>
+
+### IssueComment.ThreadState
+
+
+| Name | Number | Description |
+| ---- | ------ | ----------- |
+| THREAD_STATE_UNSPECIFIED | 0 |  |
+| OPEN | 1 |  |
+| RESOLVED | 2 |  |
 
 
 
