@@ -6,8 +6,8 @@ skip condition — check it first to avoid unnecessary work.
 ## 1. Determine What Changed
 
 ```bash
-git diff main...HEAD --stat
-git diff main...HEAD
+git diff origin/main...HEAD --stat
+git diff origin/main...HEAD
 ```
 
 Use the diff output to decide which sections below apply.
@@ -100,8 +100,13 @@ This is the exact bug pattern that caused BYT-9259. Fix the query first.
 
 If the diff adds or modifies a store method that touches a composite-PK table:
 
-1. Check if a corresponding `TestCollision*` or `TestClaim*` test exists in `backend/tests/`
-2. If not, add one using `setupCollidingProjects` and `assertProjectUnchanged` from
+1. Check that existing coverage exercises the changed behavior. Follow the root
+   [test-placement policy](../AGENTS.md#test-placement): query isolation belongs
+   in `backend/store`; runner, rollout, and audit behavior belongs in `backend/tests`.
+   Store tests must create colliding keys in distinct scopes, assert the intended
+   target effect, and prove the other scope is unchanged. Add or extend coverage
+   when the existing test does not exercise the changed method or path.
+2. For server-backed collision tests, use `setupCollidingProjects` and `assertProjectUnchanged` from
    `backend/tests/collision_helper_test.go`. The shared snapshot covers `plan`,
    `issue`, `task`, `task_run`, `plan_check_run`, `task_run_log`, `db_group`,
    `release`, and `sheet_blob_ref` (public APIs where one exists). `plan_webhook_delivery`
@@ -146,6 +151,8 @@ modified store method on a composite-PK table.** Write the tests before continui
 
 Only run after steps 3b and 3c are resolved.
 
+Run the affected store collision tests, and retain the existing API collision suite:
+
 ```bash
 go test -v -count=1 ./backend/tests/ -run "^(TestClaim|TestCollision)" -timeout 5m
 ```
@@ -161,7 +168,7 @@ If you removed `Server.StoreForTest()`, renamed `assertFooCollide`, etc.,
 grep for stale references that would now lie to the reader:
 
 ```bash
-git diff main...HEAD --name-only -- '*.go' | xargs -I{} grep -l 'OldSymbolName' AGENTS.md docs/ backend/ 2>/dev/null
+rg -n --hidden -F 'OldSymbolName' AGENTS.md CLAUDE.md docs backend frontend .claude --glob '*.md'
 ```
 
 For each match, either delete the prose or update it to reference the
@@ -230,34 +237,17 @@ description.
 
 **Skip if:** no code changes (docs-only PR).
 
-Run the checks relevant to the files you changed:
-
-**Go changes:**
-```bash
-gofmt -w <changed .go files>
-golangci-lint run --allow-parallel-runners
-```
-Run golangci-lint repeatedly until zero issues (the linter has a max-issues limit).
-
-**Frontend changes:**
-```bash
-pnpm --dir frontend check
-pnpm --dir frontend type-check
-```
-
-**Proto changes:**
-```bash
-buf lint proto
-```
+Complete the applicable [root verification gates](../AGENTS.md#verification)
+for Go, frontend, and proto changes. Use that section as the command source of
+truth.
 
 ## 8. Test Gate
 
 **Skip if:** no code changes.
 
-- Run tests for every changed package
-- For store changes touching composite-PK tables, run the collision tests (section 3d)
-- For Go changes: `go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go`
-- For new migration files: update `TestLatestVersion` in `backend/migrator/migrator_test.go`
+Confirm the root verification gates covered every changed package and affected
+behavior. For composite-key changes, also complete section 3d; for contention
+changes, complete section 5. New migrations require updating `TestLatestVersion`.
 
 ## 9. Final Verification
 

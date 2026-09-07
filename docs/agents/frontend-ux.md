@@ -161,6 +161,10 @@ Use semantic utilities backed by CSS custom properties:
 Do not choose a dialog merely because the implementation is smaller. Choose the
 surface from task complexity, user context, and expected navigation.
 
+### Dialog Defaults
+
+- **Dialog sizing contract** — `DialogContent` and `AlertDialogContent` are padded (`p-6`) by default; don't add inner padding wrappers, and override with `p-*` on the content element when needed. `DialogContent` defaults to a wide content size (`max-w-[max(48rem,55vw)]`); pass `max-w-*` (and `w-*` if needed) for smaller dialogs. Keep component defaults free of responsive variants like `2xl:max-w-*` — tailwind-merge can't replace them with a caller's unprefixed utility, so they silently win on wide screens.
+
 ## Form Workflows
 
 ### Shared Form Anatomy
@@ -250,9 +254,49 @@ The required structure is:
 - Create is enabled when required fields are valid. Update additionally
   requires dirty state.
 - An always-mounted edit sheet MUST use the stable-entity ref, keyed inner form,
-  and full-entity loading pattern in `frontend/AGENTS.md`.
+  and full-entity loading pattern below.
 - Nested selects, menus, and popovers MUST use their portal option or another
   shared overlay primitive; do not raise them with an ad hoc z-index.
+
+#### Edit Sheet Lifecycle
+
+- **Edit sheets must populate from props reliably** — when a Sheet is always-mounted via `<Sheet open={open}>` (the standard pattern), `useState` initializers only run on first mount, which means switching the entity being edited (e.g. clicking Edit on a different row) won't repopulate fields. Use the **outer wrapper + inner form + stable-entity ref + key** pattern. The ref freezes the last-open entity so the inner form stays visually stable through the Sheet's close animation (which is ~200ms), while the `key` forces a fresh mount when a new entity is opened. Example from `CreateUserSheet`:
+  ```tsx
+  function CreateUserSheet(props: Props) {
+    const { open, user, onClose } = props;
+    // Freeze the entity while open=false so the inner form stays visually
+    // stable during the Sheet's close animation. Base UI's Dialog.Portal
+    // unmounts after the animation, at which point the form unmounts with it.
+    const openEntityRef = useRef(user);
+    if (open) {
+      openEntityRef.current = user;
+    }
+    const stableUser = openEntityRef.current;
+    return (
+      <Sheet open={open} onOpenChange={(next) => !next && onClose()}>
+        <SheetContent width="standard">
+          <UserForm
+            key={stableUser?.name ?? "new"}
+            user={stableUser}
+            onClose={props.onClose}
+            onCreated={props.onCreated}
+            onUpdated={props.onUpdated}
+          />
+        </SheetContent>
+      </Sheet>
+    );
+  }
+  function UserForm({ user, ... }: InnerProps) {
+    // useState initializers read directly from `user` — always fresh
+    // because the inner component mounts fresh on every open.
+    const [title, setTitle] = useState(user?.title ?? "");
+    // ...
+  }
+  ```
+  Do **not** guard the inner form with `{open && ...}` — that would unmount it at the start of the close animation, leaving a blank sheet sliding off-screen for ~200ms. Base UI's Dialog.Portal already handles the mount/unmount lifecycle around the animation.
+- **Edit sheets must disable Update until dirty** — capture initial values at mount (inside the inner form component, so they reflect the just-mounted entity prop) and compute `isDirty` via `useMemo` comparing current state to captured initials. Gate the Update button on `isFormValid && isDirty`. Create mode is always "dirty" so Create is enabled as soon as required fields are valid.
+- **Fetch the full entity before opening an edit sheet** — list APIs often return partial objects. Synchronous cache lookups like `store.getX(id)` can return a stub with only name/email/title fields, leaving nested fields (e.g. `workloadIdentityConfig.subjectPattern`) undefined. Use the async `getOrFetchX` form in row-click handlers so the Sheet receives a fully-hydrated entity — otherwise parsed/derived fields will be empty on first edit.
+
 
 #### Sheet Widths
 
