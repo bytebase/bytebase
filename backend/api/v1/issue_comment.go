@@ -2,7 +2,6 @@ package v1
 
 import (
 	"context"
-	"slices"
 	"strings"
 	"unicode/utf8"
 
@@ -10,7 +9,6 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/bytebase/bytebase/backend/common"
-	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	v1pb "github.com/bytebase/bytebase/backend/generated-go/v1"
 	"github.com/bytebase/bytebase/backend/store"
 )
@@ -24,12 +22,18 @@ func (s *IssueService) validateStatementAnchorSpec(ctx context.Context, issue *s
 	if err != nil {
 		return connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get plan"))
 	}
-	if plan == nil || !slices.ContainsFunc(plan.Config.GetSpecs(), func(spec *storepb.PlanConfig_Spec) bool {
-		return spec.Id == anchor.Spec
-	}) {
-		return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("statement_anchor.spec %q is not a spec of the issue's plan", anchor.Spec))
+	if plan != nil {
+		for _, spec := range plan.Config.GetSpecs() {
+			if spec.GetId() != anchor.Spec {
+				continue
+			}
+			if spec.GetChangeDatabaseConfig() == nil {
+				return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("statement_anchor.spec %q does not have a statement-bearing configuration", anchor.Spec))
+			}
+			return nil
+		}
 	}
-	return nil
+	return connect.NewError(connect.CodeInvalidArgument, errors.Errorf("statement_anchor.spec %q is not a spec of the issue's plan", anchor.Spec))
 }
 
 func (s *IssueService) validateStatementAnchor(ctx context.Context, issue *store.IssueMessage, anchor *v1pb.StatementAnchor) error {

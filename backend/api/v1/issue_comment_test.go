@@ -289,6 +289,98 @@ func TestIssueCommentAllowMissing(t *testing.T) {
 	require.Equal(t, before, count())
 }
 
+func TestIssueCommentAnchorSpec(t *testing.T) {
+	ctx := issueServiceTestContext()
+	stores := setupIssueServiceTestStore(ctx, t)
+	service := newIssueServiceForTest(t, stores)
+	sheets, err := stores.CreateSheets(ctx, "project-a", &store.SheetMessage{Statement: "SELECT 1;"}, &store.SheetMessage{Statement: "SELECT 2;"})
+	require.NoError(t, err)
+	anchor := &v1pb.StatementAnchor{
+		Spec: "spec-1", SheetSha256: sheets[0].Sha256,
+		StartPosition: &v1pb.Position{Line: 1}, EndPosition: &v1pb.Position{Line: 1},
+	}
+	for _, tc := range []struct {
+		name    string
+		spec    *storepb.PlanConfig_Spec
+		invalid bool
+	}{
+		{"sheet", &storepb.PlanConfig_Spec{Id: "spec-1", Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+			ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{SheetSha256: sheets[0].Sha256},
+		}}, false},
+		{"historical sheet", &storepb.PlanConfig_Spec{Id: "spec-1", Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+			ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{SheetSha256: sheets[1].Sha256},
+		}}, false},
+		{"release", &storepb.PlanConfig_Spec{Id: "spec-1", Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+			ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{Release: "projects/project-a/releases/release-a"},
+		}}, false},
+		{"create database", &storepb.PlanConfig_Spec{Id: "spec-1", Config: &storepb.PlanConfig_Spec_CreateDatabaseConfig{
+			CreateDatabaseConfig: &storepb.PlanConfig_CreateDatabaseConfig{Target: "instances/prod", Database: "app"},
+		}}, true},
+		{"missing config", &storepb.PlanConfig_Spec{Id: "spec-1"}, true},
+		{"missing spec", &storepb.PlanConfig_Spec{Id: "other-spec"}, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			plan, err := stores.CreatePlan(ctx, &store.PlanMessage{
+				ProjectID: "project-a", Name: tc.name,
+				Config: &storepb.PlanConfig{Specs: []*storepb.PlanConfig_Spec{
+					tc.spec,
+					{Id: "another-sql-spec", Config: &storepb.PlanConfig_Spec_ChangeDatabaseConfig{
+						ChangeDatabaseConfig: &storepb.PlanConfig_ChangeDatabaseConfig{SheetSha256: sheets[0].Sha256},
+					}},
+				}},
+			}, "creator@example.com")
+			require.NoError(t, err)
+			issue, err := stores.CreateIssue(ctx, &store.IssueMessage{
+				ProjectID: "project-a", CreatorEmail: "creator@example.com", Title: tc.name,
+				Type: storepb.Issue_DATABASE_CHANGE, PlanUID: &plan.UID, Payload: &storepb.Issue{},
+			})
+			require.NoError(t, err)
+			parent := common.FormatIssue(issue.ProjectID, issue.UID)
+			for _, allowMissing := range []bool{false, true} {
+				t.Run(fmt.Sprintf("allowMissing=%t", allowMissing), func(t *testing.T) {
+					input := &v1pb.IssueComment{Comment: "root", StatementAnchor: anchor}
+					if allowMissing {
+						input.Name = common.FormatIssueComment(parent, "missing")
+						_, err = service.UpdateIssueComment(ctx, connect.NewRequest(&v1pb.UpdateIssueCommentRequest{
+							Parent: parent, IssueComment: input, AllowMissing: true,
+							UpdateMask: &fieldmaskpb.FieldMask{Paths: []string{"comment"}},
+						}))
+					} else {
+						_, err = service.CreateIssueComment(ctx, connect.NewRequest(&v1pb.CreateIssueCommentRequest{Parent: parent, IssueComment: input}))
+					}
+					if tc.invalid {
+						require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+						comments, err := stores.ListIssueComment(ctx, &store.FindIssueCommentMessage{ProjectID: issue.ProjectID, IssueUID: &issue.UID})
+						require.NoError(t, err)
+						require.Empty(t, comments)
+					} else {
+						require.NoError(t, err)
+					}
+				})
+			}
+
+			_, err = service.CreateIssueComment(ctx, connect.NewRequest(&v1pb.CreateIssueCommentRequest{
+				Parent: parent, IssueComment: &v1pb.IssueComment{Comment: "general"},
+			}))
+			require.NoError(t, err)
+			// A previously valid root remains replyable after its spec changes or disappears.
+			historical, err := stores.CreateIssueComments(ctx, "creator@example.com", &store.IssueCommentMessage{
+				ProjectID: issue.ProjectID, IssueUID: issue.UID,
+				Payload: &storepb.IssueCommentPayload{Comment: "historical", StatementAnchor: &storepb.IssueCommentPayload_StatementAnchor{
+					SpecId: anchor.Spec, SheetSha256: anchor.SheetSha256,
+					StartPosition: &storepb.Position{Line: 1}, EndPosition: &storepb.Position{Line: 1},
+				}},
+			})
+			require.NoError(t, err)
+			root := common.FormatIssueComment(parent, historical.ResourceID)
+			_, err = service.CreateIssueComment(ctx, connect.NewRequest(&v1pb.CreateIssueCommentRequest{
+				Parent: parent, IssueComment: &v1pb.IssueComment{Comment: "reply", Root: &root, StatementAnchor: anchor},
+			}))
+			require.NoError(t, err)
+		})
+	}
+}
+
 func TestStatementAnchorBounds(t *testing.T) {
 	t.Parallel()
 	for _, tc := range []struct {
