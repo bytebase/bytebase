@@ -25,12 +25,11 @@ When writing or modifying queries on these tables:
   a full declared non-partial UNIQUE key that contains the same scope columns;
   verify alternate keys in `LATEST.sql`. Never filter by `id` or another locally
   unique identifier alone
-- When adding a new store method touching a composite-PK table, add a
-  corresponding `TestCollision_*` test in `backend/tests/`, built on
-  `setupCollidingProjects` + `fixture.completeRolloutB` for setup and
-  `snapshotProject` / `assertProjectUnchanged` for assertions — all going through
-  the public gRPC API, no store access. Run with:
-  `go test -v -count=1 ./backend/tests/ -run "^(TestClaim|TestCollision)" -timeout 5m`
+- New or modified composite-key methods require collision tests under the root
+  [test-placement policy](../../AGENTS.md#test-placement). For store-level tests,
+  create equal local keys in distinct scopes and verify both the intended effect
+  and isolation. For tests requiring runners, rollouts, or the audit trail, use
+  the API collision fixture described in the pre-PR checklist.
 - Which tables the shared snapshot already covers, and the two (`plan_webhook_delivery`,
   `sheet_blob_ref`) that need table-specific handling because they have no public
   read API, are listed in [`docs/pre-pr-checklist.md`](../../docs/pre-pr-checklist.md)

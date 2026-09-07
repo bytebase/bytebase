@@ -94,7 +94,7 @@ into screenshots.
 ```
 frontend/tests/e2e/
 ├── README.md              — this file (human docs)
-├── AGENTS.md              — conventions + QA doctrine for AI agents / contributors
+├── AGENTS.md              — test-authoring conventions for AI agents / contributors
 ├── framework/             — shared test infrastructure
 │   ├── api-client.ts      — Bytebase v1 REST API wrapper
 │   ├── env.ts             — TestEnv interface, serialization
@@ -120,7 +120,7 @@ frontend/tests/e2e/
 
 1. **`globalSetup`**: Cleans orphaned processes, starts Bytebase + embedded Postgres on a random high port, signs up the admin (`demo@example.com` / `12345678`), creates `project-sample`, and calls `PrepareSampleProjectInstance` to provision its instance on `PORT+3`.
 2. **Setup project** (runs as a Playwright test before all others): Logs in as the admin, discovers the sample database, adds `hr_prod` on the same instance for multi-database coverage, and saves auth state to `.auth/state.json`.
-3. **Tests run**: Each spec file shares one browser context/page (see [AGENTS.md](./AGENTS.md)). Tests call `loadTestEnv()` to get the API client and env data, create their own test data, and run UI-driven verification.
+3. **Tests run**: New independent tests use isolated browser contexts; existing suites may share a context under the exceptions in [AGENTS.md](./AGENTS.md). Tests call `loadTestEnv()` to get the API client and env data, create their own test data, and run UI-driven verification.
 4. **`globalTeardown`**: Kills the server process group, removes temp data dir and PID file.
 
 ## Troubleshooting
