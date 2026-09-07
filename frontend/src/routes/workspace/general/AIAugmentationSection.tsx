@@ -37,7 +37,11 @@ import {
   SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { hasWorkspacePermissionV2 } from "@/utils";
-import { PROVIDER_DEFAULTS, PROVIDER_MODELS } from "./aiProviderDefaults";
+import {
+  getModelEndpoint,
+  PROVIDER_DEFAULTS,
+  PROVIDER_MODELS,
+} from "./aiProviderDefaults";
 import type { SectionHandle } from "./useSettingSection";
 
 interface AIAugmentationSectionProps {
@@ -220,7 +224,7 @@ export const AIAugmentationSection = forwardRef<
     }
     setState((s) => ({
       ...s,
-      endpoint: model.endpoint,
+      endpoint: getModelEndpoint(s.provider, s.endpoint, model),
       model: model.value,
     }));
   };

@@ -41,6 +41,33 @@ export const PROVIDER_MODELS: Record<AISetting_Provider, ProviderModel[]> = {
   [AISetting_Provider.PROVIDER_UNSPECIFIED]: [],
 };
 
+export function getModelEndpoint(
+  provider: AISetting_Provider,
+  currentEndpoint: string,
+  model: ProviderModel
+): string {
+  if (provider !== AISetting_Provider.AZURE_OPENAI) {
+    return model.endpoint;
+  }
+  if (
+    currentEndpoint.includes("{resource name}") ||
+    currentEndpoint.includes("{resource%20name}")
+  ) {
+    return model.endpoint;
+  }
+  try {
+    const endpoint = new URL(currentEndpoint);
+    const modelEndpoint = new URL(
+      model.endpoint.replace("{resource name}", "resource")
+    );
+    endpoint.pathname = modelEndpoint.pathname;
+    endpoint.search = modelEndpoint.search;
+    return endpoint.toString();
+  } catch {
+    return model.endpoint;
+  }
+}
+
 export const PROVIDER_DEFAULTS: Record<
   AISetting_Provider,
   { apiKeyDoc: string; endpoint: string; model: string }

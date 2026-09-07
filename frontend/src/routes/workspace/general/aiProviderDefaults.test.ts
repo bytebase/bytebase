@@ -1,6 +1,10 @@
 import { describe, expect, test } from "vitest";
 import { AISetting_Provider } from "@/types/proto-es/v1/setting_service_pb";
-import { PROVIDER_DEFAULTS, PROVIDER_MODELS } from "./aiProviderDefaults";
+import {
+  getModelEndpoint,
+  PROVIDER_DEFAULTS,
+  PROVIDER_MODELS,
+} from "./aiProviderDefaults";
 
 describe("PROVIDER_DEFAULTS", () => {
   test("uses current default model IDs for built-in AI providers", () => {
@@ -54,5 +58,42 @@ describe("PROVIDER_DEFAULTS", () => {
       );
       expect(gpt4o?.endpoint).toContain("/chat/completions");
     }
+  });
+
+  test("preserves the Azure resource origin when changing models", () => {
+    const provider = AISetting_Provider.AZURE_OPENAI;
+    const gpt4o = PROVIDER_MODELS[provider].find(
+      (model) => model.value === "gpt-4o"
+    );
+    const gpt5 = PROVIDER_MODELS[provider].find(
+      (model) => model.value === "gpt-5"
+    );
+
+    expect(gpt4o).toBeDefined();
+    expect(gpt5).toBeDefined();
+    expect(
+      getModelEndpoint(provider, PROVIDER_DEFAULTS[provider].endpoint, gpt4o!)
+    ).toBe(gpt4o!.endpoint);
+    expect(
+      getModelEndpoint(
+        provider,
+        "https://{resource%20name}.openai.azure.com/openai/v1/responses",
+        gpt4o!
+      )
+    ).toBe(gpt4o!.endpoint);
+    expect(
+      getModelEndpoint(
+        provider,
+        "https://contoso.openai.azure.com/openai/v1/responses",
+        gpt4o!
+      )
+    ).toBe("https://contoso.openai.azure.com/openai/v1/chat/completions");
+    expect(
+      getModelEndpoint(
+        provider,
+        "https://contoso.openai.azure.com/openai/deployments/legacy/chat/completions?api-version=2024-06-01",
+        gpt5!
+      )
+    ).toBe("https://contoso.openai.azure.com/openai/v1/responses");
   });
 });
