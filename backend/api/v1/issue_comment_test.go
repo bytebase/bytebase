@@ -62,8 +62,10 @@ func TestIssueCommentAPI(t *testing.T) {
 	require.Nil(t, general.Root)
 	require.Nil(t, general.ThreadState)
 	require.Nil(t, general.StatementAnchor)
+	sheets, err := stores.CreateSheets(ctx, issue.ProjectID, &store.SheetMessage{Statement: "SELECT 1;\nSELECT 2;\nSELECT 3;\nSELECT 4;"})
+	require.NoError(t, err)
 	anchor := &v1pb.StatementAnchor{
-		Spec: "spec-1", SheetSha256: strings.Repeat("a", 64),
+		Spec: "spec-1", SheetSha256: sheets[0].Sha256,
 		StartPosition: &v1pb.Position{Line: 2}, EndPosition: &v1pb.Position{Line: 4},
 	}
 	root := create(&v1pb.IssueComment{Comment: "root", ThreadState: v1pb.IssueComment_OPEN.Enum(), StatementAnchor: anchor})
@@ -154,6 +156,8 @@ func TestIssueCommentAPI(t *testing.T) {
 		{Comment: "unspecified", ThreadState: v1pb.IssueComment_THREAD_STATE_UNSPECIFIED.Enum()},
 		{Comment: "reply state", Root: &root.Name, ThreadState: v1pb.IssueComment_OPEN.Enum()},
 		{Comment: "bad anchor", ThreadState: v1pb.IssueComment_OPEN.Enum(), StatementAnchor: &v1pb.StatementAnchor{}},
+		{Comment: "unknown spec", StatementAnchor: &v1pb.StatementAnchor{Spec: "spec-9", SheetSha256: anchor.SheetSha256}},
+		{Comment: "unknown sheet", StatementAnchor: &v1pb.StatementAnchor{Spec: "spec-1", SheetSha256: strings.Repeat("a", 64)}},
 		{Comment: "anchor elsewhere", Root: &root.Name, StatementAnchor: &v1pb.StatementAnchor{Spec: "spec-2", SheetSha256: anchor.SheetSha256, StartPosition: anchor.StartPosition, EndPosition: anchor.EndPosition}},
 		{Comment: "anchor on unanchored thread", Root: &unanchored.Name, StatementAnchor: anchor},
 		{Comment: "event", Event: &v1pb.IssueComment_ReviewSubmission_{ReviewSubmission: &v1pb.IssueComment_ReviewSubmission{}}},
@@ -180,8 +184,10 @@ func TestIssueCommentAllowMissing(t *testing.T) {
 	service := newIssueServiceForTest(t, stores)
 	_, issue := createIssueServiceApprovalIssue(ctx, t, stores)
 	parent := common.FormatIssue(issue.ProjectID, issue.UID)
+	sheets, err := stores.CreateSheets(ctx, issue.ProjectID, &store.SheetMessage{Statement: "SELECT 1;\nSELECT 2;\nSELECT 3;\nSELECT 4;\nSELECT 5;"})
+	require.NoError(t, err)
 	anchor := &v1pb.StatementAnchor{
-		Spec: "spec-1", SheetSha256: strings.Repeat("a", 64),
+		Spec: "spec-1", SheetSha256: sheets[0].Sha256,
 		StartPosition: &v1pb.Position{Line: 2}, EndPosition: &v1pb.Position{Line: 4},
 	}
 	root, err := service.CreateIssueComment(ctx, connect.NewRequest(&v1pb.CreateIssueCommentRequest{

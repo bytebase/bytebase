@@ -1317,6 +1317,11 @@ func (s *IssueService) CreateIssueComment(ctx context.Context, req *connect.Requ
 		create.ThreadState = &state
 	}
 	if anchor := comment.StatementAnchor; anchor != nil {
+		if comment.Root == nil {
+			if err := s.validateStatementAnchor(ctx, issue, anchor); err != nil {
+				return nil, err
+			}
+		}
 		create.Payload.StatementAnchor = &storepb.IssueCommentPayload_StatementAnchor{
 			SpecId:      anchor.Spec,
 			SheetSha256: anchor.SheetSha256,
