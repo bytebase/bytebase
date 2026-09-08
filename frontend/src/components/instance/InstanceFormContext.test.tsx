@@ -1,4 +1,5 @@
 import { create } from "@bufbuild/protobuf";
+import { Code, ConnectError } from "@connectrpc/connect";
 import type { ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
@@ -162,13 +163,25 @@ const Probe = () => {
   );
 };
 
-const ConnectionProbe = ({ host }: { host: string }) => {
+const ConnectionProbe = ({
+  host,
+  silent = false,
+  onResult,
+}: {
+  host: string;
+  silent?: boolean;
+  onResult?: (result: { message: string; failureCategory: string }) => void;
+}) => {
   const ctx = useInstanceFormContext();
   return (
     <button
       type="button"
       onClick={async () => {
-        await ctx.testConnection({ ...ctx.adminDataSource, host });
+        const result = await ctx.testConnection(
+          { ...ctx.adminDataSource, host },
+          silent
+        );
+        onResult?.(result);
       }}
     >
       Test
@@ -242,6 +255,107 @@ describe("InstanceFormProvider", () => {
 
     harness.unmount();
   });
+
+  test.each([
+    ["HTTP 504", Code.Unavailable, false, false],
+    ["HTTP 504", Code.Unavailable, true, false],
+    ["the operation timed out", Code.DeadlineExceeded, false, false],
+    ["HTTP 504", Code.Unavailable, false, true],
+  ])(
+    "explains %s (code %s, cloud %s, silent %s)",
+    async (message, code, cloud, silent) => {
+      mocks.isSaaSMode = cloud;
+      mocks.createInstance.mockRejectedValue(new ConnectError(message, code));
+      const onResult = vi.fn();
+      const harness = renderIntoContainer();
+      await harness.render(
+        <InstanceFormProvider>
+          <ConnectionProbe
+            host="db.example.com"
+            silent={silent}
+            onResult={onResult}
+          />
+        </InstanceFormProvider>
+      );
+      await act(async () => {
+        (harness.container.firstElementChild as HTMLButtonElement).click();
+      });
+
+      expect(onResult).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          failureCategory: "timeout",
+          message: expect.stringContaining(message),
+        })
+      );
+      if (silent) {
+        expect(mocks.pushNotification).not.toHaveBeenCalled();
+      } else {
+        expect(mocks.pushNotification).toHaveBeenCalledWith(
+          expect.objectContaining({
+            title: "instance.connection-recovery.timeout.test-title",
+            description: expect.stringContaining(
+              cloud
+                ? "instance.connection-recovery.timeout.description-saas"
+                : "instance.connection-recovery.timeout.description-self-hosted"
+            ),
+          })
+        );
+        expect(mocks.pushNotification).toHaveBeenCalledWith(
+          expect.objectContaining({
+            description: expect.stringContaining(
+              `error-page.error-details: ${message}`
+            ),
+          })
+        );
+      }
+      harness.unmount();
+    }
+  );
+
+  test.each([
+    ["HTTP 503", Code.Unavailable, undefined, "unknown"],
+    ["invalid password", Code.Unauthenticated, "auth_failed", "auth_failed"],
+    ["HTTP 504", Code.Unavailable, "ssl_tls_failed", "ssl_tls_failed"],
+  ])(
+    "preserves the category for %s (code %s, metadata %s)",
+    async (message, code, category, expected) => {
+      mocks.createInstance.mockRejectedValue(
+        new ConnectError(
+          message,
+          code,
+          category
+            ? {
+                "bytebase-connection-failure-category": category,
+              }
+            : undefined
+        )
+      );
+      const onResult = vi.fn();
+      const harness = renderIntoContainer();
+      await harness.render(
+        <InstanceFormProvider>
+          <ConnectionProbe host="db.example.com" onResult={onResult} />
+        </InstanceFormProvider>
+      );
+      await act(async () => {
+        (harness.container.firstElementChild as HTMLButtonElement).click();
+      });
+      expect(onResult).toHaveBeenCalledWith(
+        expect.objectContaining({
+          failureCategory: expected,
+          message,
+        })
+      );
+      expect(mocks.pushNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          title: "instance.failed-to-connect-instance",
+          description: message,
+        })
+      );
+      harness.unmount();
+    }
+  );
 
   test("explains local-only hosts in Bytebase Cloud without Docker advice", async () => {
     mocks.isSaaSMode = true;
