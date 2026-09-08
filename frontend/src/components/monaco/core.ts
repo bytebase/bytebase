@@ -72,6 +72,18 @@ export const loadMonacoEditor = async (): Promise<typeof MonacoType> => {
   return monacoModule;
 };
 
+// Tokenizes `text` with Monaco's language support and the active theme and
+// returns HTML, one `<br/>`-separated line per input line. For code excerpts
+// rendered outside an editor that must still match the editor's colors.
+export const colorizeStatement = async (
+  text: string,
+  language: MonacoType.languages.ILanguageExtensionPoint["id"] = "sql"
+): Promise<string> => {
+  await initialize();
+  const monaco = await loadMonacoEditor();
+  return monaco.editor.colorize(text, language, { tabSize: 2 });
+};
+
 export const getMonacoEditor = async (): Promise<typeof MonacoType> => {
   return monacoLoadDefer.promise;
 };
@@ -156,6 +168,7 @@ export const defaultEditorOptions =
       autoClosingQuotes: "never",
       detectIndentation: false,
       folding: false,
+      stickyScroll: { enabled: false },
       automaticLayout: true,
       minimap: {
         enabled: false,
@@ -194,6 +207,7 @@ export const defaultDiffEditorOptions =
       theme: "vs",
       autoClosingQuotes: "never",
       folding: false,
+      stickyScroll: { enabled: false },
       automaticLayout: true,
       minimap: {
         enabled: false,

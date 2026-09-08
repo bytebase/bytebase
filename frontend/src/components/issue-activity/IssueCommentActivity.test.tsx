@@ -224,7 +224,7 @@ describe("IssueCommentRow", () => {
     expect(link).toHaveClass(
       "text-main",
       "hover:text-accent",
-      "hover:underline"
+      "hover:no-underline"
     );
     expect(link).not.toHaveAttribute("data-prevent-scroll-reset");
   });

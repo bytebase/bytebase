@@ -29,6 +29,18 @@ export class PlanDetailPage {
   // The readiness footer's single action, in either weight (link or button).
   readonly bypassAndDeployAction: Locator;
 
+  // --- Inline comment threads (StatementThreadsLayer / CommentThreadCard) ---
+  // The read-only statement editor of the selected change.
+  readonly statementEditor: Locator;
+  // Thread markers in the statement editor's glyph margin.
+  readonly threadMarkers: Locator;
+  // The hover affordance that starts a thread on the hovered line.
+  readonly addThreadGlyph: Locator;
+  // The inline composer that opens below the selected lines.
+  readonly inlineComposer: Locator;
+  readonly inlineComposerEditor: Locator;
+  readonly inlineComposerPublishButton: Locator;
+
   // --- Header lifecycle slot (PlanDetailHeader, BYT-9722) ---
   // The sticky title/action row. Scope every header-slot assertion to this so a
   // pill/stamp/label in a phase section can't be mistaken for the header slot.
@@ -70,6 +82,18 @@ export class PlanDetailPage {
     this.composerEditor = page.locator("textarea[placeholder='Add a comment...']");
     this.composerSubmitButton = page.getByRole("button", { name: "Comment", exact: true });
     this.bypassAndDeployAction = page.getByRole("button", { name: "Bypass and deploy" });
+
+    this.statementEditor = page.locator("#plan-phase-changes .monaco-editor").first();
+    this.threadMarkers = this.statementEditor.locator(".bb-thread-glyph");
+    this.addThreadGlyph = this.statementEditor.locator(".bb-thread-add-glyph");
+    this.inlineComposer = page.getByTestId("inline-thread-composer");
+    this.inlineComposerEditor = this.inlineComposer.locator(
+      "textarea[placeholder='Write a comment...']",
+    );
+    this.inlineComposerPublishButton = this.inlineComposer.getByRole("button", {
+      name: "Publish",
+      exact: true,
+    });
 
     // The sticky header row, located structurally (no product-code testid): the
     // title <input> sits in the row's left group (beside the terminal stamp), so
@@ -267,5 +291,29 @@ export class PlanDetailPage {
   // and opens the results drawer on click. Distinct from "Run checks".
   checksSummary(): Locator {
     return this.page.getByRole("button", { name: "Checks", exact: true });
+  }
+
+  // A thread card by its root comment text, in either surface. Scope with
+  // `threadCardIn` when the same thread shows in the editor and the timeline.
+  threadCard(rootText: string): Locator {
+    return this.page.getByTestId("comment-thread").filter({ hasText: rootText });
+  }
+
+  threadCardIn(phase: "changes" | "review", rootText: string): Locator {
+    return this.page
+      .locator(`#plan-phase-${phase}`)
+      .getByTestId("comment-thread")
+      .filter({ hasText: rootText });
+  }
+
+  // Hover a line's number in the statement editor so the add-thread glyph
+  // appears on that line.
+  async hoverStatementLine(lineNumber: number): Promise<void> {
+    await this.statementEditor
+      .locator(".margin-view-overlays .line-numbers", {
+        hasText: new RegExp(`^${lineNumber}$`),
+      })
+      .first()
+      .hover();
   }
 }

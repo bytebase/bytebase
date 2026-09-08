@@ -130,7 +130,7 @@ vi.mock("@/app/router", () => ({
 vi.mock("@/stores/app", () => {
   const getState = () => ({
     createSheet: vi.fn(),
-    fetchIssueCommentTimeline: vi.fn(),
+    fetchIssueCommentThreads: vi.fn(),
   });
   return { useAppStore: { getState } };
 });

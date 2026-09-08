@@ -53,7 +53,9 @@ import type {
 import type {
   Issue,
   IssueComment,
+  IssueComment_ThreadState,
   ListIssueCommentsRequest,
+  StatementAnchor,
 } from "@/types/proto-es/v1/issue_service_pb";
 import type {
   Policy,
@@ -1103,7 +1105,8 @@ export type DatabaseCatalogSlice = {
 };
 
 export type IssueCommentSlice = {
-  // Cache keyed by issue resource name → its timeline page (no replies).
+  // Cache keyed by issue resource name → its comments. A timeline fetch stores
+  // events and root comments; a thread fetch also appends the replies.
   issueCommentsByIssue: Record<string, IssueComment[]>;
   // Arbitrary CEL queries return results without changing the timeline cache.
   listIssueComments: (
@@ -1115,14 +1118,25 @@ export type IssueCommentSlice = {
     pageSize?: number;
     pageToken?: string;
   }) => Promise<{ nextPageToken: string; issueComments: IssueComment[] }>;
+  // Fetch every comment of the issue: the whole timeline plus the replies of
+  // each thread root. Replaces the cache for this issue.
+  fetchIssueCommentThreads: (request: {
+    parent: string;
+  }) => Promise<IssueComment[]>;
+  // Omit `root` and `statementAnchor` for a general comment. An anchor starts
+  // a thread; `root` creates a reply in that thread.
   createIssueComment: (params: {
     issueName: string;
     comment: string;
-  }) => Promise<void>;
+    root?: string;
+    statementAnchor?: StatementAnchor;
+  }) => Promise<IssueComment>;
+  // Only the provided fields join the update mask.
   updateIssueComment: (params: {
     issueCommentName: string;
-    comment: string;
-  }) => Promise<void>;
+    comment?: string;
+    threadState?: IssueComment_ThreadState;
+  }) => Promise<IssueComment>;
   // Synchronous cache read; returns a stable empty array on miss.
   getIssueComments: (issueName: string) => IssueComment[];
 };

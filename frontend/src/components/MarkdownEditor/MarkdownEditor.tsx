@@ -3,7 +3,9 @@ import { Bold, Code2, Hash, Heading1, Link2 } from "lucide-react";
 import MarkdownIt from "markdown-it";
 import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import "./MarkdownEditor.css";
 import { cn } from "@/lib/utils";
 
 const markdown = new MarkdownIt({
@@ -12,10 +14,13 @@ const markdown = new MarkdownIt({
 });
 
 const editorBoxClassName =
-  "min-h-34 w-full rounded-xs border border-control-border bg-transparent px-3 py-2 text-sm";
+  "w-full rounded-xs border border-control-border bg-transparent px-3 py-2 text-sm";
 
 type CommonProps = {
   content: string;
+  autoFocus?: boolean;
+  /** Start with three lines while still growing to fit the draft. */
+  compact?: boolean;
   placeholder?: string;
   maxLength?: number;
   transform?: (raw: string) => string;
@@ -38,6 +43,8 @@ type Props = EditorProps | PreviewProps;
 
 export function MarkdownEditor({
   content,
+  autoFocus = false,
+  compact = false,
   onChange,
   onSubmit,
   placeholder,
@@ -47,6 +54,10 @@ export function MarkdownEditor({
   maxHeight,
 }: Props) {
   const { t } = useTranslation();
+  const boxClassName = cn(
+    editorBoxClassName,
+    compact ? "min-h-20" : "min-h-34"
+  );
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [tab, setTab] = useState<"write" | "preview">(
     mode === "preview" ? "preview" : "write"
@@ -68,12 +79,17 @@ export function MarkdownEditor({
     if (!textareaRef.current) {
       return;
     }
-    textareaRef.current.style.height = "auto";
-    textareaRef.current.style.height = `${Math.max(
-      textareaRef.current.scrollHeight,
-      112
-    )}px`;
-  }, [content, tab]);
+    const textarea = textareaRef.current;
+    textarea.style.height = "auto";
+    // Let rows and the CSS minimum define the initial height. scrollHeight
+    // includes padding but not borders; account for both when growing.
+    const borderHeight = textarea.offsetHeight - textarea.clientHeight;
+    textarea.style.height = `${textarea.scrollHeight + borderHeight}px`;
+  }, [compact, content, tab]);
+
+  useEffect(() => {
+    if (autoFocus) textareaRef.current?.focus({ preventScroll: true });
+  }, [autoFocus, tab]);
 
   const insertTemplate = (template: string, cursorOffset: number) => {
     const textarea = textareaRef.current;
@@ -107,36 +123,30 @@ export function MarkdownEditor({
   }
 
   return (
-    <div>
-      <div className="mb-2 flex items-center justify-between pb-1">
-        <div className="flex gap-x-4">
-          <button
-            className={cn(
-              "relative px-1 pb-1 text-sm transition-colors",
-              tab === "write"
-                ? "text-accent after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-accent"
-                : "text-control-light hover:text-control"
-            )}
-            onClick={() => setTab("write")}
-            type="button"
+    <Tabs
+      className="bb-markdown-editor"
+      value={tab}
+      onValueChange={(value) => {
+        if (value === "write" || value === "preview") setTab(value);
+      }}
+    >
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2 pb-1">
+        <TabsList className="border-0">
+          <TabsTrigger
+            className="pb-1 font-normal focus-visible:bg-control-bg focus-visible:ring-0 focus-visible:ring-offset-0"
+            value="write"
           >
             {t("issue.comment-editor.write")}
-          </button>
-          <button
-            className={cn(
-              "relative px-1 pb-1 text-sm transition-colors",
-              tab === "preview"
-                ? "text-accent after:absolute after:inset-x-0 after:-bottom-px after:h-0.5 after:bg-accent"
-                : "text-control-light hover:text-control"
-            )}
-            onClick={() => setTab("preview")}
-            type="button"
+          </TabsTrigger>
+          <TabsTrigger
+            className="pb-1 font-normal focus-visible:bg-control-bg focus-visible:ring-0 focus-visible:ring-offset-0"
+            value="preview"
           >
             {t("issue.comment-editor.preview")}
-          </button>
-        </div>
+          </TabsTrigger>
+        </TabsList>
         {tab === "write" && (
-          <div className="flex items-center gap-x-2">
+          <div className="flex flex-wrap items-center gap-2">
             <ToolbarButton
               icon={<Heading1 className="h-4 w-4" />}
               label={t("issue.comment-editor.toolbar.header")}
@@ -166,61 +176,63 @@ export function MarkdownEditor({
         )}
       </div>
 
-      {tab === "preview" ? (
-        <PreviewBody
-          className={cn(editorBoxClassName, "markdown-body")}
-          html={previewHtml}
-        />
-      ) : (
-        <Textarea
-          className={editorBoxClassName}
-          maxLength={maxLength}
-          onChange={(e) => onChange?.(e.target.value)}
-          onKeyDown={(e) => {
-            const listContinuation = applyMarkdownListContinuation(
-              content,
-              e.currentTarget.selectionStart,
-              e.currentTarget.selectionEnd
-            );
-            if (
-              e.key === "Enter" &&
-              !e.nativeEvent.isComposing &&
-              !e.metaKey &&
-              !e.ctrlKey &&
-              listContinuation
-            ) {
-              e.preventDefault();
-              onChange?.(listContinuation.content);
-              window.requestAnimationFrame(() => {
-                const target = textareaRef.current;
-                if (!target) {
-                  return;
-                }
-                target.focus();
-                target.setSelectionRange(
-                  listContinuation.cursor,
-                  listContinuation.cursor
-                );
-              });
-              return;
-            }
-            if (
-              e.key === "Enter" &&
-              !e.nativeEvent.isComposing &&
-              (e.metaKey || e.ctrlKey)
-            ) {
-              e.preventDefault();
-              onSubmit?.();
-            }
-          }}
-          placeholder={placeholder ?? t("issue.leave-a-comment")}
-          ref={textareaRef}
-          rows={4}
-          style={{ maxHeight }}
-          value={content}
-        />
-      )}
-    </div>
+      <TabsPanel className="mt-0" value={tab}>
+        {tab === "preview" ? (
+          <PreviewBody
+            className={cn(boxClassName, "markdown-body")}
+            html={previewHtml}
+          />
+        ) : (
+          <Textarea
+            className={boxClassName}
+            maxLength={maxLength}
+            onChange={(e) => onChange?.(e.target.value)}
+            onKeyDown={(e) => {
+              const listContinuation = applyMarkdownListContinuation(
+                content,
+                e.currentTarget.selectionStart,
+                e.currentTarget.selectionEnd
+              );
+              if (
+                e.key === "Enter" &&
+                !e.nativeEvent.isComposing &&
+                !e.metaKey &&
+                !e.ctrlKey &&
+                listContinuation
+              ) {
+                e.preventDefault();
+                onChange?.(listContinuation.content);
+                window.requestAnimationFrame(() => {
+                  const target = textareaRef.current;
+                  if (!target) {
+                    return;
+                  }
+                  target.focus();
+                  target.setSelectionRange(
+                    listContinuation.cursor,
+                    listContinuation.cursor
+                  );
+                });
+                return;
+              }
+              if (
+                e.key === "Enter" &&
+                !e.nativeEvent.isComposing &&
+                (e.metaKey || e.ctrlKey)
+              ) {
+                e.preventDefault();
+                onSubmit?.();
+              }
+            }}
+            placeholder={placeholder ?? t("issue.leave-a-comment")}
+            ref={textareaRef}
+            rows={compact ? 3 : 4}
+            style={{ maxHeight }}
+            value={content}
+          />
+        )}
+      </TabsPanel>
+    </Tabs>
   );
 }
 
@@ -237,15 +249,16 @@ function sanitizePreviewHtml(html: string) {
 
 function PreviewBody({ className, html }: { className: string; html: string }) {
   const { t } = useTranslation();
+  if (html) {
+    return (
+      <div className={className} dangerouslySetInnerHTML={{ __html: html }} />
+    );
+  }
   return (
     <div className={className}>
-      {html ? (
-        <div dangerouslySetInnerHTML={{ __html: html }} />
-      ) : (
-        <span className="italic text-control-placeholder">
-          {t("issue.comment-editor.nothing-to-preview")}
-        </span>
-      )}
+      <span className="italic text-control-placeholder">
+        {t("issue.comment-editor.nothing-to-preview")}
+      </span>
     </div>
   );
 }

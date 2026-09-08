@@ -19,6 +19,7 @@ import { useProjectByName } from "@/hooks/useProjectByName";
 import { collectPlanUpdateSpecs } from "@/lib/plan/diffPlanSpecs";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
+import { isThreadReply } from "@/stores/app/issueComment";
 import { projectNamePrefix } from "@/stores/modules/v1/common";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
 import {
@@ -75,8 +76,14 @@ export function IssueDetailCommentList() {
   const issueName = page.issue?.name || page.plan?.issue || "";
   // `getIssueComments` returns a stable empty array on miss, so reading it
   // inside the selector won't loop.
-  const issueComments = useAppStore((state) =>
+  const cachedIssueComments = useAppStore((state) =>
     issueName ? state.getIssueComments(issueName) : EMPTY_ISSUE_COMMENTS
+  );
+  // Thread replies belong to the plan review surface; this list shows the
+  // timeline entries only.
+  const issueComments = useMemo(
+    () => cachedIssueComments.filter((comment) => !isThreadReply(comment)),
+    [cachedIssueComments]
   );
   const planUpdateSpecs = useMemo(
     () => collectPlanUpdateSpecs(issueComments),

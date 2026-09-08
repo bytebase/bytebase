@@ -297,9 +297,8 @@ export function PlanDetailHeader() {
       // issue comments so the review timeline reflects it (like issue detail).
       await Promise.all([
         page.refreshState(),
-        useAppStore.getState().fetchIssueCommentTimeline({
+        useAppStore.getState().fetchIssueCommentThreads({
           parent: issue.name,
-          pageSize: 1000,
         }),
       ]);
       if (pageKeyRef.current !== actionPageKey) return;

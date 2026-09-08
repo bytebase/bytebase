@@ -7,7 +7,12 @@ import {
   releaseServiceClientConnect,
   sheetServiceClientConnect,
 } from "@/api";
-import { MonacoEditor, ReadonlyMonaco } from "@/components/monaco";
+import {
+  type IStandaloneCodeEditor,
+  MonacoEditor,
+  type MonacoModule,
+  ReadonlyMonaco,
+} from "@/components/monaco";
 import { ReleaseInfoCard } from "@/components/release/ReleaseInfoCard";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -52,6 +57,24 @@ import {
 } from "../utils/localSheet";
 import { getSQLAdviceMarkers } from "../utils/sqlAdvice";
 import { SchemaEditorSheet } from "./SchemaEditorSheet";
+import { StatementThreadsLayer } from "./threads/StatementThreadsLayer";
+import { sheetSha256OfName } from "./threads/threadModel";
+
+// Both modes reserve the same gutter so line numbers and SQL stay aligned
+// when entering or leaving edit mode. Keep these options stable: MonacoEditor
+// re-applies options on every new object.
+const STATEMENT_EDITOR_OPTIONS = {
+  glyphMargin: true,
+  lineNumbersMinChars: 2,
+  lineDecorationsWidth: 24,
+  selectionHighlight: false,
+  occurrencesHighlight: "off",
+} as const;
+
+const THREADS_EDITOR_OPTIONS = {
+  ...STATEMENT_EDITOR_OPTIONS,
+  selectOnLineNumbers: false,
+} as const;
 
 export function PlanDetailStatementSection({
   className,
@@ -93,6 +116,17 @@ export function PlanDetailStatementSection({
   const [draftStatement, setDraftStatement] = useState("");
   const [isSchemaEditorOpen, setIsSchemaEditorOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  // The read-only editor instance, captured whenever one is created so the
+  // threads layer can attach even if threads become enabled later. Editing
+  // unmounts and disposes it; forget it then so the layer never binds to a
+  // disposed editor while the next one is still loading.
+  const [readonlyEditor, setReadonlyEditor] = useState<{
+    editor: IStandaloneCodeEditor;
+    monaco: MonacoModule;
+  }>();
+  useEffect(() => {
+    if (isEditing) setReadonlyEditor(undefined);
+  }, [isEditing]);
 
   const editingScope = useMemo(() => `statement:${spec.id}`, [spec.id]);
   const targetDatabaseName = useMemo(() => {
@@ -443,6 +477,18 @@ export function PlanDetailStatementSection({
 
   const editorContent = page.isCreating ? statement : draftStatement;
 
+  // Inline threads anchor to the saved sheet of a persisted spec, so they
+  // need an issue, a content-addressed sheet, and the complete statement.
+  const sheetSha256 = sheetSha256OfName(sheetName);
+  const issue = page.issue;
+  const threadsEnabled = Boolean(
+    issue &&
+      !page.isCreating &&
+      !isPendingDraft &&
+      sheetSha256 &&
+      !isSheetOversize
+  );
+
   return (
     <div className={cn("flex flex-col gap-y-1", className)}>
       <div className="flex items-start justify-between gap-2">
@@ -558,6 +604,7 @@ export function PlanDetailStatementSection({
               className="relative h-auto max-h-[600px] min-h-[120px]"
               content={editorContent}
               language={language}
+              options={STATEMENT_EDITOR_OPTIONS}
               onChange={(nextStatement) => {
                 if (page.isCreating) {
                   updateLocalStatement(nextStatement);
@@ -567,12 +614,32 @@ export function PlanDetailStatementSection({
               }}
             />
           ) : (
-            <ReadonlyMonaco
-              advices={markers}
-              className="relative h-auto max-h-[600px] min-h-[120px]"
-              content={statement}
-              language={language}
-            />
+            <>
+              <ReadonlyMonaco
+                advices={markers}
+                className="relative h-auto max-h-[600px] min-h-[120px]"
+                content={statement}
+                language={language}
+                onReady={(monaco, editor) =>
+                  setReadonlyEditor({ editor, monaco })
+                }
+                options={
+                  threadsEnabled
+                    ? THREADS_EDITOR_OPTIONS
+                    : STATEMENT_EDITOR_OPTIONS
+                }
+              />
+              {threadsEnabled && issue && sheetSha256 && readonlyEditor && (
+                <StatementThreadsLayer
+                  editor={readonlyEditor.editor}
+                  issue={issue}
+                  key={sheetSha256}
+                  monaco={readonlyEditor.monaco}
+                  sheetSha256={sheetSha256}
+                  spec={spec}
+                />
+              )}
+            </>
           )}
         </div>
       ) : (

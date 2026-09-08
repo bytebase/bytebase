@@ -9,6 +9,12 @@ const AVATAR_COLORS = [
   "#EF4444",
 ];
 
+const AVATAR_SIZES = {
+  xs: "size-5 text-xs",
+  sm: "size-7 text-xs",
+  md: "size-9 text-sm",
+};
+
 export function getAvatarColor(name: string) {
   let hash = 0;
   for (let i = 0; i < name.length; i++)
@@ -34,15 +40,14 @@ export function UserAvatar({
   title: string;
   /** Stable string for color derivation (e.g. email). Defaults to title. */
   colorSeed?: string;
-  size?: "sm" | "md";
+  size?: "xs" | "sm" | "md";
   className?: string;
 }) {
-  const dim = size === "sm" ? "h-7 w-7 text-xs" : "h-9 w-9 text-sm";
   return (
     <div
       className={cn(
         "rounded-full flex items-center justify-center text-white font-medium shrink-0",
-        dim,
+        AVATAR_SIZES[size],
         className
       )}
       style={{ backgroundColor: getAvatarColor(colorSeed ?? title) }}

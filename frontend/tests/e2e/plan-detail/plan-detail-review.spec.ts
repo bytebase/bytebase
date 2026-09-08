@@ -17,6 +17,8 @@
 //   - Long-history timeline fold (torn separator + Show all) (CUJ J)
 //   - Non-candidate sees no Review action but can still comment (permission boundary)
 //   - BYT-9746 guard: "(edited)" marker shows in place after an inline edit
+//   - Inline comment threads: seeded thread in editor + timeline, gutter
+//     creation, reply / resolve / reopen, View in Statement (CUJ K)
 //
 //   Rollout-readiness footer + bypass (readinessFooterState.ts)
 //   - Approved/skipped + failed checks → "Bypass and deploy" → confirm sheet →
@@ -420,6 +422,130 @@ test.describe("Permission boundary: non-candidate cannot review but can comment"
     });
     await expect(dbaPlanPage.reviewButton).not.toBeVisible();
     await expect(dbaPlanPage.composerTrigger).toBeVisible();
+  });
+});
+
+// Inline comment threads (design doc: Plan Review Comment and Thread UI/UX).
+// A thread anchors to whole lines of the spec's saved sheet; it renders as a
+// gutter marker + expanded card in the statement editor and as a card with
+// its recorded context in the Review Activity timeline.
+test.describe("Inline comment threads (CUJ K)", () => {
+  test.describe.configure({ mode: "serial" });
+  let planId: string;
+  let issueName: string;
+  let specId: string;
+  let sheetSha256: string;
+  const seededRoot = `K seeded root ${Date.now()}`;
+  const seededReply = `K seeded reply ${Date.now()}`;
+  const createdRoot = `K gutter root ${Date.now()}`;
+  const typedReply = `K typed reply ${Date.now()}`;
+
+  test.beforeAll(async () => {
+    await setupApproval(ONE_STEP_RULE);
+    const suffix = Date.now();
+    const seeded = await seedReviewPlan(env, page, {
+      prefix: "E2E Review K",
+      sql: [
+        `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_k1_${suffix} TEXT;`,
+        `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_k2_${suffix} TEXT;`,
+        `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_k3_${suffix} TEXT;`,
+        `ALTER TABLE employee ADD COLUMN IF NOT EXISTS e2e_rev_k4_${suffix} TEXT;`,
+      ].join("\n"),
+    });
+    await waitForApprovalStatus(env.api, seeded.issueName, ["PENDING"]);
+    planId = seeded.planId;
+    issueName = seeded.issueName;
+    // The anchor names the spec and the content hash embedded in the sheet name.
+    const plan = await env.api.getPlan(seeded.planName);
+    const spec = plan.specs?.[0];
+    specId = spec?.id ?? "";
+    sheetSha256 = spec?.changeDatabaseConfig?.sheet?.split("/").pop() ?? "";
+    expect(specId).not.toBe("");
+    expect(sheetSha256).toMatch(/^[0-9a-f]{64}$/);
+    const root = await env.api.createIssueComment(issueName, seededRoot, {
+      statementAnchor: { spec: specId, sheetSha256, startLine: 2, endLine: 3 },
+    });
+    await env.api.createIssueComment(issueName, seededReply, { root: root.name });
+    await goReview(planId);
+    await planPage.expandSection("Changes");
+  });
+
+  test("a seeded thread shows as a marker + expanded card in the editor and as an anchored card in the timeline", async () => {
+    // Editor: one marker on the last anchored line, the unresolved thread expanded.
+    await expect(planPage.threadMarkers).toHaveCount(1, { timeout: 15_000 });
+    const editorCard = planPage.threadCardIn("changes", seededRoot);
+    await expect(editorCard).toBeVisible();
+    await expect(editorCard).toContainText(seededReply);
+
+    // Timeline: the same thread with its recorded context.
+    const timelineCard = planPage.threadCardIn("review", seededRoot);
+    await expect(timelineCard).toBeVisible();
+    await expect(timelineCard).toContainText(seededReply);
+    const anchor = timelineCard.getByTestId("statement-anchor");
+    await expect(anchor).toHaveAttribute("data-anchor-state", "CURRENT");
+    await expect(anchor).toContainText("Lines 2–3");
+    await expect(anchor).toContainText("e2e_rev_k2_");
+    await expect(anchor.getByRole("button", { name: "View in Statement" })).toBeVisible();
+    // The reply never renders as its own timeline row.
+    await expect(
+      page.locator("#plan-phase-review [data-testid='comment-thread']"),
+    ).toHaveCount(1);
+  });
+
+  test("hovering a line offers the add-thread glyph; publishing anchors a new thread to that line", async () => {
+    await planPage.hoverStatementLine(1);
+    await expect(planPage.addThreadGlyph).toBeVisible({ timeout: 5_000 });
+    await planPage.addThreadGlyph.click();
+    await expect(planPage.inlineComposer).toBeVisible();
+    await expect(planPage.inlineComposer).toContainText("Add a comment on line 1");
+    await planPage.inlineComposerEditor.fill(createdRoot);
+    await planPage.inlineComposerPublishButton.click();
+
+    // The composer closes; the new thread expands in place of the seeded one
+    // and both markers now sit in the gutter.
+    await expect(planPage.inlineComposer).not.toBeVisible({ timeout: 15_000 });
+    await expect(planPage.threadCardIn("changes", createdRoot)).toBeVisible();
+    await expect(planPage.threadMarkers).toHaveCount(2);
+    const anchor = planPage
+      .threadCardIn("review", createdRoot)
+      .getByTestId("statement-anchor");
+    await expect(anchor).toBeVisible({ timeout: 15_000 });
+    await expect(anchor).toContainText("Line 1");
+    await expect(anchor).toContainText("e2e_rev_k1_");
+  });
+
+  test("reply, resolve, reopen, and View in Statement round-trip between the surfaces", async () => {
+    const timelineCard = planPage.threadCardIn("review", seededRoot);
+    await timelineCard.scrollIntoViewIfNeeded();
+    await timelineCard.getByRole("button", { name: "Reply..." }).click();
+    await timelineCard.locator("textarea[placeholder='Reply...']").fill(typedReply);
+    await timelineCard.getByRole("button", { name: "Reply", exact: true }).click();
+    await expect(timelineCard).toContainText(typedReply, { timeout: 15_000 });
+
+    // Resolving collapses the timeline card to its summary row.
+    await timelineCard.getByRole("button", { name: "Resolve", exact: true }).click();
+    const resolvedCard = planPage.threadCardIn("review", seededRoot);
+    await expect(resolvedCard).toHaveAttribute("data-thread-state", "resolved", { timeout: 15_000 });
+    await expect(resolvedCard).toContainText("Resolved");
+    await expect(resolvedCard).toContainText("2 replies");
+    await expect(resolvedCard).toContainText(seededRoot);
+    await expect(resolvedCard.getByTestId("thread-comment")).toHaveCount(0);
+
+    // Expanding keeps it resolved and offers Reopen.
+    await resolvedCard.getByRole("button", { name: /Resolved/ }).click();
+    await expect(resolvedCard).toContainText(seededRoot);
+    await resolvedCard.getByRole("button", { name: "Reopen", exact: true }).click();
+    const reopened = planPage.threadCardIn("review", seededRoot);
+    await expect(reopened.getByRole("button", { name: "Resolve", exact: true })).toBeVisible({
+      timeout: 15_000,
+    });
+
+    // View in Statement lands on the anchored lines with that thread expanded.
+    await reopened.getByRole("button", { name: "View in Statement" }).click();
+    const editorCard = planPage.threadCardIn("changes", seededRoot);
+    await expect(editorCard).toBeVisible({ timeout: 15_000 });
+    await expect(editorCard).toContainText(typedReply);
+    await expect(planPage.threadCardIn("changes", createdRoot)).not.toBeVisible();
   });
 });
 
