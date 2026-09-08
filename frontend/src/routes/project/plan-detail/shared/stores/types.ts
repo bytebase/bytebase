@@ -89,8 +89,9 @@ export interface PlacementMetrics {
   pairCount: number;
   // Pairs actually sent to the worker.
   computedPairCount: number;
-  // Sheets downloaded complete, and their bytes as sent to the worker.
+  // Distinct sheets the run downloaded complete, by probe or raw fetch.
   sheetCount: number;
+  // Bytes of every sheet sent to the worker, downloaded or cached.
   bytes: number;
   // Diff work spent by the worker.
   work: number;

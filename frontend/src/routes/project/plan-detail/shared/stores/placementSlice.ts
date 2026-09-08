@@ -171,6 +171,12 @@ export const createPlacementSlice =
         // Bytes downloaded by this run so far, so every phase shares one
         // total budget.
         let spentBytes = 0n;
+        // Sheets this run downloaded complete, by probe or raw fetch.
+        const downloaded = new Set<string>();
+        const recordDownload = (name: string, sheet: Sheet | undefined) => {
+          if (sheet && isSheetContentComplete(sheet)) downloaded.add(name);
+          return sheet;
+        };
         const settle = (settleUnknownSizes: boolean) => {
           plan = planPlacements({
             ...planInput,
@@ -211,7 +217,7 @@ export const createPlacementSlice =
               spentBytes += perSheet;
               const sheet = await deps.fetchSheet(name, false);
               spentBytes -= perSheet - BigInt(sheet?.content.byteLength ?? 0);
-              return sheet;
+              return recordDownload(name, sheet);
             }
           );
           if (stale()) return;
@@ -224,8 +230,8 @@ export const createPlacementSlice =
           pending.flatMap((pair) => [pair.sourceName, pair.targetName])
         );
         const fetches = plan.fetches.filter((name) => needed.has(name));
-        await runWithConcurrency(fetches, FETCH_CONCURRENCY, (name) =>
-          deps.fetchSheet(name, true)
+        await runWithConcurrency(fetches, FETCH_CONCURRENCY, async (name) =>
+          recordDownload(name, await deps.fetchSheet(name, true))
         );
         if (stale()) return;
 
@@ -310,7 +316,7 @@ export const createPlacementSlice =
             durationMs: deps.now() - started,
             pairCount: plan.pairs.length,
             computedPairCount: requestPairs.length,
-            sheetCount: fetches.length,
+            sheetCount: downloaded.size,
             bytes,
             work,
           },

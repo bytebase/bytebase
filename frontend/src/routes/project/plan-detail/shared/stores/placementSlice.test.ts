@@ -307,6 +307,23 @@ describe("placementSlice", () => {
       UNAVAILABLE
     );
     expect((client as ReturnType<typeof immediateClient>).requests).toEqual([]);
+    // Only complete downloads count: neither the missing sheet nor the
+    // truncated preview of the other.
+    expect(store.getState().placementMetrics?.sheetCount).toBe(0);
+  });
+
+  test("counts a probe that returns a complete sheet as a download", async () => {
+    const sheets = fakeSheets(
+      { [sheetName(SHA_OLD)]: OLD_TEXT, [sheetName(SHA_NEW)]: NEW_TEXT },
+      1000
+    );
+    const { store } = setup({ sheets });
+    await compute(store, [comment("moved", anchor(SHA_OLD, 1))]);
+    expect(store.getState().placements.get(nameOf("moved"))).toEqual(
+      current(2, 2)
+    );
+    expect(sheets.calls.filter((call) => call.raw)).toEqual([]);
+    expect(store.getState().placementMetrics?.sheetCount).toBe(2);
   });
 
   test("settles UNAVAILABLE when a raw download comes back incomplete", async () => {
@@ -336,6 +353,9 @@ describe("placementSlice", () => {
       UNAVAILABLE
     );
     expect((client as ReturnType<typeof immediateClient>).requests).toEqual([]);
+    // Only complete downloads count: neither the missing sheet nor the
+    // truncated preview of the other.
+    expect(store.getState().placementMetrics?.sheetCount).toBe(0);
   });
 
   test("a save during the diff supersedes the run and diffs against the new target", async () => {
