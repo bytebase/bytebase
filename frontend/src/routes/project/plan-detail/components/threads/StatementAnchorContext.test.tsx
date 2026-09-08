@@ -103,6 +103,22 @@ describe("StatementAnchorContext", () => {
     expect(container.textContent).not.toContain("CURRENT REVISION");
   });
 
+  test.each([
+    { truncated: false, state: "CURRENT", action: true },
+    { truncated: true, state: "UNAVAILABLE", action: false },
+  ])("a hash-matched anchor on a truncated sheet ($truncated) is $state", ({ truncated, state, action }) => {
+    const content = new TextEncoder().encode(original);
+    mocks.sheets[currentName] = create(SheetSchema, {
+      name: currentName,
+      content,
+      contentSize: BigInt(content.byteLength + (truncated ? 1 : 0)),
+    });
+    const onCurrent = buildWholeLineAnchor({ spec: "spec", sheetSha256: currentHash, startLine: 5, endLine: 5 });
+    const { container, queryByText } = render(<StatementAnchorContext {...props} anchor={onCurrent} placement={undefined} />);
+    expect(container.querySelector("[data-anchor-state]")?.getAttribute("data-anchor-state")).toBe(state);
+    expect(queryByText("plan.review.thread.anchor.view-in-statement") !== null).toBe(action);
+  });
+
   test("fetches a missing recorded revision instead of using the current SQL", async () => {
     delete mocks.sheets[savedName];
     const { container } = render(<StatementAnchorContext {...props} anchor={anchor(4, 5)} placement={OUTDATED} />);

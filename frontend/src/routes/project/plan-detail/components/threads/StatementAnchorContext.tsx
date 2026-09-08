@@ -43,16 +43,22 @@ export function StatementAnchorContext({
   renderPlanChangeReference: PlanChangeReferenceRenderer;
 }) {
   const { t } = useTranslation();
-  const state = resolveAnchorState(anchor, plan, placement);
   const range = anchorLineRange(anchor);
   const spec = plan.specs.find((candidate) => candidate.id === anchor.spec);
   const sheetName = project
     ? sheetNameOfSha256(project.name, anchor.sheetSha256)
     : "";
-  const { statement, isLoading } = useSheetStatement({
+  const { statement, isLoading, isTruncated } = useSheetStatement({
     enabled: sheetName !== "",
     sheetName,
   });
+  // The editor mounts its thread layer only for a complete statement. A
+  // CURRENT anchor on a truncated sheet can only come from the hash-match
+  // shortcut (a diffed sheet is always complete), and it has nowhere to be
+  // shown, so it is unavailable rather than a dead "view" action.
+  const resolved = resolveAnchorState(anchor, plan, placement);
+  const state =
+    resolved === "CURRENT" && isTruncated ? "UNAVAILABLE" : resolved;
 
   return (
     <div

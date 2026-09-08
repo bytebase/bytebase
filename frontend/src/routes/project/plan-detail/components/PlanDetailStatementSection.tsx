@@ -117,16 +117,19 @@ export function PlanDetailStatementSection({
   const [isSchemaEditorOpen, setIsSchemaEditorOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   // The read-only editor instance, captured whenever one is created so the
-  // threads layer can attach even if threads become enabled later. Editing
-  // unmounts and disposes it; forget it then so the layer never binds to a
+  // threads layer can attach even if threads become enabled later. Editing,
+  // an asynchronous sheet load, or an emptied statement unmounts and disposes
+  // it; forget it whenever that happens so the layer never binds to a
   // disposed editor while the next one is still loading.
+  const showsReadonlyEditor =
+    !isLoading && !isEditing && Boolean(statement || draftStatement);
   const [readonlyEditor, setReadonlyEditor] = useState<{
     editor: IStandaloneCodeEditor;
     monaco: MonacoModule;
   }>();
   useEffect(() => {
-    if (isEditing) setReadonlyEditor(undefined);
-  }, [isEditing]);
+    if (!showsReadonlyEditor) setReadonlyEditor(undefined);
+  }, [showsReadonlyEditor]);
 
   const editingScope = useMemo(() => `statement:${spec.id}`, [spec.id]);
   const targetDatabaseName = useMemo(() => {
@@ -595,7 +598,7 @@ export function PlanDetailStatementSection({
         <div className="rounded-sm border border-control-border bg-white px-4 py-3 text-sm text-control-light">
           {t("common.loading")}
         </div>
-      ) : statement || draftStatement || isEditing ? (
+      ) : isEditing || showsReadonlyEditor ? (
         <div className="relative overflow-hidden rounded-sm border border-control-border">
           {isEditing ? (
             <MonacoEditor
