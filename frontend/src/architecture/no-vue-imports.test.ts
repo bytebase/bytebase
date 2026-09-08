@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, test } from "vitest";
 
 // Scan the entire application source tree. The only remaining Vue runtime is

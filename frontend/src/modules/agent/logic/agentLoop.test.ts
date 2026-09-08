@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { aiServiceClientConnect } from "@/api";
 import { AIChatMessageRole } from "@/types/proto-es/v1/ai_service_pb";

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from "vitest";
 import { ApprovalStatus, IssueStatus } from "@/types/proto-es/v1/common_pb";
 import { getPlanDraftState, getReviewBadge } from "./reviewBadge";

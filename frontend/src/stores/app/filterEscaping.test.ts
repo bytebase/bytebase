@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, test } from "vitest";
 import { buildAccessGrantFilter } from "./accessGrant";
 import { buildGroupFilter } from "./group";

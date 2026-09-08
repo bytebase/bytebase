@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, test } from "vitest";
 
 import type { SavedQueryFolderNode } from "@/modules/sql-editor/model/Sheet";

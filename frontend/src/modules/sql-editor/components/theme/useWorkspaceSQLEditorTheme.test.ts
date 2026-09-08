@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, test } from "vitest";
 import { hexToColor } from "@/utils";
 import { deriveThemeFromAnchors } from "./derive";

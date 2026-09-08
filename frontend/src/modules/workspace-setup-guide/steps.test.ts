@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, test } from "vitest";
 import {
   PROJECT_V1_ROUTE_DASHBOARD,

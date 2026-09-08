@@ -1,3 +1,4 @@
+// @vitest-environment node
 import type { TFunction } from "i18next";
 import { describe, expect, it } from "vitest";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
