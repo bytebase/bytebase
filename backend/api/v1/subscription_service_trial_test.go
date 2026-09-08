@@ -13,6 +13,7 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
@@ -98,14 +99,29 @@ func TestSubscriptionServiceStartTrial(t *testing.T) {
 	})
 
 	t.Run("rejects subscription history", func(t *testing.T) {
-		requestContext := createWorkspace(t, "subscription-history")
-		_, err := stores.UpsertSubscription(requestContext, "subscription-history", &storepb.SubscriptionPayload{
-			Status: storepb.SubscriptionPayload_CANCELED,
-		})
-		require.NoError(t, err)
+		for _, tc := range []struct {
+			name    string
+			payload *storepb.SubscriptionPayload
+		}{
+			{name: "active", payload: &storepb.SubscriptionPayload{Status: storepb.SubscriptionPayload_ACTIVE}},
+			{name: "paused", payload: &storepb.SubscriptionPayload{Status: storepb.SubscriptionPayload_PAUSED}},
+			{name: "canceled", payload: &storepb.SubscriptionPayload{Status: storepb.SubscriptionPayload_CANCELED}},
+			{name: "unspecified", payload: &storepb.SubscriptionPayload{}},
+			{name: "expired", payload: &storepb.SubscriptionPayload{
+				Status:    storepb.SubscriptionPayload_ACTIVE,
+				ExpiresAt: timestamppb.New(time.Now().Add(-time.Hour)),
+			}},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				workspace := "subscription-history-" + tc.name
+				requestContext := createWorkspace(t, workspace)
+				_, err := stores.UpsertSubscription(requestContext, workspace, tc.payload)
+				require.NoError(t, err)
 
-		_, err = service.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{}))
-		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+				_, err = service.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{}))
+				require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+			})
+		}
 	})
 
 	t.Run("rejects expired trial", func(t *testing.T) {
@@ -142,6 +158,12 @@ func TestSubscriptionServiceStartTrial(t *testing.T) {
 		requestContext := createWorkspace(t, "saas-production")
 		productionService := NewSubscriptionService(&config.Profile{SaaS: true, Mode: common.ReleaseModeProd}, stores, licenseService)
 		_, err := productionService.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{}))
+		require.Equal(t, connect.CodeUnimplemented, connect.CodeOf(err))
+	})
+
+	t.Run("rejects license upload in SaaS development", func(t *testing.T) {
+		requestContext := createWorkspace(t, "saas-development-upload")
+		_, err := service.UploadLicense(requestContext, connect.NewRequest(&v1pb.UploadLicenseRequest{}))
 		require.Equal(t, connect.CodeUnimplemented, connect.CodeOf(err))
 	})
 }

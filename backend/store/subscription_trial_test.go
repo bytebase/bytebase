@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -31,20 +32,34 @@ func newTrialLicenseFixture(t *testing.T) (context.Context, *store.Store) {
 }
 
 func TestCreateTrialLicenseRejectsSubscriptionHistory(t *testing.T) {
-	t.Parallel()
-	ctx, stores := newTrialLicenseFixture(t)
+	for _, tc := range []struct {
+		name    string
+		payload *storepb.SubscriptionPayload
+	}{
+		{name: "active", payload: &storepb.SubscriptionPayload{Status: storepb.SubscriptionPayload_ACTIVE}},
+		{name: "paused", payload: &storepb.SubscriptionPayload{Status: storepb.SubscriptionPayload_PAUSED}},
+		{name: "canceled", payload: &storepb.SubscriptionPayload{Status: storepb.SubscriptionPayload_CANCELED}},
+		{name: "unspecified", payload: &storepb.SubscriptionPayload{}},
+		{name: "expired", payload: &storepb.SubscriptionPayload{
+			Status:    storepb.SubscriptionPayload_ACTIVE,
+			ExpiresAt: timestamppb.New(time.Now().Add(-time.Hour)),
+		}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			ctx, stores := newTrialLicenseFixture(t)
 
-	_, err := stores.UpsertSubscription(ctx, "default", &storepb.SubscriptionPayload{
-		Status: storepb.SubscriptionPayload_CANCELED,
-	})
-	require.NoError(t, err)
+			_, err := stores.UpsertSubscription(ctx, "default", tc.payload)
+			require.NoError(t, err)
 
-	err = stores.CreateTrialLicense(ctx, "default", "trial-license")
-	require.ErrorIs(t, err, store.ErrTrialNotEligible)
+			err = stores.CreateTrialLicense(ctx, "default", "trial-license")
+			require.ErrorIs(t, err, store.ErrTrialNotEligible)
 
-	setting, err := stores.GetSystemSettingUncached(ctx, "default")
-	require.NoError(t, err)
-	require.Empty(t, setting.License)
+			setting, err := stores.GetSystemSettingUncached(ctx, "default")
+			require.NoError(t, err)
+			require.Empty(t, setting.License)
+		})
+	}
 }
 
 func TestCreateTrialLicenseRejectsExistingLicense(t *testing.T) {

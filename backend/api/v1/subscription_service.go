@@ -106,7 +106,7 @@ func escapeCSVFormula(value string) string {
 
 // UploadLicense uploads an enterprise license (self-hosted only).
 func (s *SubscriptionService) UploadLicense(ctx context.Context, req *connect.Request[v1pb.UploadLicenseRequest]) (*connect.Response[v1pb.Subscription], error) {
-	if s.profile.SaaS && s.profile.Mode == common.ReleaseModeProd {
+	if s.profile.SaaS {
 		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("use purchase APIs in SaaS mode"))
 	}
 
