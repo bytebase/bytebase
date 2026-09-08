@@ -230,13 +230,13 @@ export const createPlacementSlice =
         if (stale()) return;
 
         // Each sheet travels to the worker once, however many pairs use it.
+        // The planner's caps count downloads only, so sheets already complete
+        // in the cache reach here uncounted; the payload is held to the same
+        // caps so a session that has cached many revisions never clones an
+        // unbounded amount onto the worker.
         let bytes = 0;
+        let sheetCount = 0;
         const sheets: Record<string, string> = {};
-        const include = (sheet: Sheet) => {
-          if (sheet.name in sheets) return;
-          sheets[sheet.name] = getSheetStatement(sheet);
-          bytes += sheet.content.byteLength;
-        };
         const requestPairs: PlacementRequestPair[] = [];
         const requested: PlacementPair[] = [];
         for (const pair of pending) {
@@ -246,8 +246,23 @@ export const createPlacementSlice =
             settleUnavailable(placements, pair);
             continue;
           }
-          include(source);
-          include(target);
+          const added = new Set(
+            [source, target].filter((sheet) => !(sheet.name in sheets))
+          );
+          let addedBytes = 0;
+          for (const sheet of added) addedBytes += sheet.content.byteLength;
+          if (
+            sheetCount + added.size > budgets.maxSheets ||
+            bytes + addedBytes > budgets.maxTotalBytes
+          ) {
+            settleUnavailable(placements, pair);
+            continue;
+          }
+          for (const sheet of added) {
+            sheets[sheet.name] = getSheetStatement(sheet);
+          }
+          sheetCount += added.size;
+          bytes += addedBytes;
           requestPairs.push({
             key: pair.key,
             saved: source.name,

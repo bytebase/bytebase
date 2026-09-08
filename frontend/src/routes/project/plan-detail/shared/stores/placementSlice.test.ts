@@ -524,6 +524,43 @@ test("reserves the per-sheet cap before each probe so concurrent probes stay wit
   expect(store.getState().placements.get(nameOf("c1"))).toEqual(UNAVAILABLE);
 });
 
+test.each([
+  { cap: "maxSheets", budgets: { maxSheets: 3 } },
+  // Two OLD_TEXT sources and the NEW_TEXT target fit; a third source does not.
+  { cap: "maxTotalBytes", budgets: { maxTotalBytes: 2 * 50 + 60 } },
+])(
+  "holds the worker payload to $cap even for sheets already cached",
+  async ({ budgets }) => {
+    const contents: Record<string, string> = { [sheetName(SHA_NEW)]: NEW_TEXT };
+    const shas = Array.from({ length: 4 }, (_, i) => String(i + 1).repeat(64));
+    for (const sha of shas) contents[sheetName(sha)] = OLD_TEXT;
+    const sheets = fakeSheets(contents);
+    for (const name of Object.keys(contents)) sheets.prime(name, true);
+    const client = immediateClient();
+    const { store } = setup({
+      sheets,
+      client,
+      budgets: { ...PLACEMENT_BUDGETS, ...budgets },
+    });
+    await compute(
+      store,
+      shas.map((sha, i) => comment(`c${i}`, anchor(sha, 1), i))
+    );
+    // Nothing to download, so the planner's caps saw nothing to count.
+    expect(sheets.calls).toEqual([]);
+    expect(Object.keys(client.requests[0].sheets)).toHaveLength(3);
+    const placed = shas.map((_, i) =>
+      store.getState().placements.get(nameOf(`c${i}`))
+    );
+    expect(placed).toEqual([
+      current(2, 2),
+      current(2, 2),
+      UNAVAILABLE,
+      UNAVAILABLE,
+    ]);
+  }
+);
+
 test("counts probe bytes against the raw download budget", async () => {
   // Previews come back truncated here, so the sheets still need a raw fetch
   // that must fit in whatever the probes left of the budget.

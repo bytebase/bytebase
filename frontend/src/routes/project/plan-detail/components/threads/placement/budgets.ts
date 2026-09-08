@@ -6,11 +6,13 @@
 // representative plans set them (design open question 3). Keep them fixed in
 // code rather than configurable so results are reproducible.
 export interface PlacementBudgets {
-  // Distinct sheets one run may download.
+  // Distinct sheets one run may download, and again the distinct sheets one
+  // run may hand to the worker, cached or not.
   readonly maxSheets: number;
   // Upper bound on a single sheet's content size in bytes.
   readonly maxBytesPerSheet: number;
-  // Upper bound on the bytes downloaded by one run, sources and targets.
+  // Upper bound on the bytes downloaded by one run, sources and targets, and
+  // again on the bytes one run hands to the worker.
   readonly maxTotalBytes: number;
   // Upper bound on the lines of one tokenized sheet.
   readonly maxLinesPerSheet: number;
