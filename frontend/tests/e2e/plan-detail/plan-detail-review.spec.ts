@@ -492,7 +492,12 @@ test.describe("Inline comment threads (CUJ K)", () => {
     ).toHaveCount(1);
   });
 
-  test("hovering a line offers the add-thread glyph; publishing anchors a new thread to that line", async () => {
+  // One journey: create a thread from the gutter, then reply, resolve,
+  // reopen, and jump back into the editor. The final assertion, that the
+  // gutter-created thread collapses when View in Statement expands the
+  // seeded one, depends on the created thread being open, so the steps stay
+  // in one test.
+  test("a gutter-created thread, then reply, resolve, reopen, and View in Statement round-trip between the surfaces", async () => {
     await planPage.hoverStatementLine(1);
     await expect(planPage.addThreadGlyph).toBeVisible({ timeout: 5_000 });
     await planPage.addThreadGlyph.click();
@@ -506,15 +511,13 @@ test.describe("Inline comment threads (CUJ K)", () => {
     await expect(planPage.inlineComposer).not.toBeVisible({ timeout: 15_000 });
     await expect(planPage.threadCardIn("changes", createdRoot)).toBeVisible();
     await expect(planPage.threadMarkers).toHaveCount(2);
-    const anchor = planPage
+    const createdAnchor = planPage
       .threadCardIn("review", createdRoot)
       .getByTestId("statement-anchor");
-    await expect(anchor).toBeVisible({ timeout: 15_000 });
-    await expect(anchor).toContainText("Line 1");
-    await expect(anchor).toContainText("e2e_rev_k1_");
-  });
+    await expect(createdAnchor).toBeVisible({ timeout: 15_000 });
+    await expect(createdAnchor).toContainText("Line 1");
+    await expect(createdAnchor).toContainText("e2e_rev_k1_");
 
-  test("reply, resolve, reopen, and View in Statement round-trip between the surfaces", async () => {
     const timelineCard = planPage.threadCardIn("review", seededRoot);
     await timelineCard.scrollIntoViewIfNeeded();
     await timelineCard.getByRole("button", { name: "Reply..." }).click();
@@ -540,7 +543,8 @@ test.describe("Inline comment threads (CUJ K)", () => {
       timeout: 15_000,
     });
 
-    // View in Statement lands on the anchored lines with that thread expanded.
+    // View in Statement lands on the anchored lines with the seeded thread
+    // expanded, collapsing the thread created above.
     await reopened.getByRole("button", { name: "View in Statement" }).click();
     const editorCard = planPage.threadCardIn("changes", seededRoot);
     await expect(editorCard).toBeVisible({ timeout: 15_000 });
