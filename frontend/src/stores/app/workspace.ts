@@ -20,6 +20,7 @@ import {
   workspaceSwitchChannel,
 } from "@/stores/workspaceSwitchChannel";
 import { defaultAppProfile } from "@/types/appProfile";
+import { PresetRoleType } from "@/types/iam/role";
 import {
   hasFeature as checkFeature,
   hasInstanceFeature as checkInstanceFeature,
