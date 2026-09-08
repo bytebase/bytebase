@@ -3,7 +3,6 @@ import { useTranslation } from "react-i18next";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
-  type IssueComment,
   IssueComment_ThreadState,
   type StatementAnchor,
 } from "@/types/proto-es/v1/issue_service_pb";
