@@ -177,6 +177,20 @@ describe("planPlacements", () => {
     expect(result.fetches).toEqual([]);
   });
 
+  test("does not report unknown sheets of a pair an oversize sibling already rules out", () => {
+    const result = plan({
+      comments: [
+        comment("doomed", anchor(SHA_A, 1), 1),
+        comment("viable", anchor(SHA_C, 1, 1, { spec: "spec-2" }), 2),
+      ],
+      specs: [spec("spec-1", SHA_B), spec("spec-2", SHA_D)],
+      sizes: { [sheet(SHA_B)]: 5000 },
+    });
+    expect(result.settled.get(nameOf("doomed"))).toEqual(UNAVAILABLE);
+    // Only the viable pair's sheets are worth a probe.
+    expect(result.unknownSizes).toEqual([sheet(SHA_C), sheet(SHA_D)]);
+  });
+
   test("leaves an unknown-size pair unsettled when asked, unless it is UNAVAILABLE anyway", () => {
     const pending = plan({
       comments: [comment("c", anchor(SHA_A, 1))],

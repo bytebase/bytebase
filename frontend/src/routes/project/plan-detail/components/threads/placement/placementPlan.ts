@@ -146,14 +146,13 @@ export function planPlacements(input: PlacementPlanInput): PlacementPlan {
         ? [candidate.sourceName]
         : [candidate.sourceName, candidate.targetName];
     let unavailable = false;
-    let unknown = false;
     let pairBytes = 0n;
     const pairFetches: string[] = [];
+    const unknown: string[] = [];
     for (const name of needed) {
       const size = input.sizeOf(name);
       if (size === undefined) {
-        unknownSizes.add(name);
-        unknown = true;
+        unknown.push(name);
         continue;
       }
       if (size > BigInt(input.budgets.maxBytesPerSheet)) {
@@ -164,11 +163,15 @@ export function planPlacements(input: PlacementPlanInput): PlacementPlan {
       pairFetches.push(name);
       pairBytes += size;
     }
-    if (unknown && !unavailable && input.settleUnknownSizes === false) {
-      continue;
+    // A sheet worth probing belongs to a pair that can still place; an
+    // oversize sibling already decides the pair, so its unknown sheets are
+    // not reported and no budget goes to them.
+    if (unknown.length > 0 && !unavailable) {
+      for (const name of unknown) unknownSizes.add(name);
+      if (input.settleUnknownSizes === false) continue;
     }
     if (
-      unknown ||
+      unknown.length > 0 ||
       unavailable ||
       fetchSet.size + pairFetches.length > input.budgets.maxSheets ||
       totalBytes + pairBytes > BigInt(input.budgets.maxTotalBytes)
