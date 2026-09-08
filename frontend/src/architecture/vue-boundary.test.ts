@@ -139,9 +139,15 @@ describe("frontend lint tooling", () => {
     expect(
       existsSync(join(repoRoot, "scripts", "check-no-crypto-randomuuid.mjs"))
     ).toBe(true);
+    // The guard must be wired into the gate. That wiring lives in the gate
+    // runner now rather than in a package.json script string, so search both.
+    const gateSources = [
+      ...Object.values(packageJson.scripts ?? {}),
+      readFileSync(join(repoRoot, "scripts", "run-gate.mjs"), "utf-8"),
+    ];
     expect(
-      Object.values(packageJson.scripts ?? {}).some((script) =>
-        script.includes("node scripts/check-no-crypto-randomuuid.mjs")
+      gateSources.some((source) =>
+        source.includes("check-no-crypto-randomuuid")
       )
     ).toBe(true);
   });

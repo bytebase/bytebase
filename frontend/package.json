@@ -8,7 +8,7 @@
     "release": "export NODE_OPTIONS=--max_old_space_size=8000 && pnpm run prepare && vite build --mode release --outDir=../backend/server/dist --emptyOutDir",
     "release-docker": "export NODE_OPTIONS=--max_old_space_size=8000 && pnpm run prepare && vite build --mode release",
     "release-aws": "export NODE_OPTIONS=--max_old_space_size=8000 && pnpm run prepare && vite build --mode release-aws",
-    "test": "export NODE_OPTIONS=--max_old_space_size=8000 && pnpm run prepare && biome ci . && node scripts/check-frontend-structure.mjs && node scripts/check-ui-guideline.mjs && node scripts/check-no-crypto-randomuuid.mjs && node scripts/check-react-i18n.mjs && node scripts/check-react-layering.mjs && node scripts/sort_i18n_keys.mjs --check && tsc --build --force && BB_SKIP_LEGACY=1 vite build --mode release --outDir=dist-check --emptyOutDir && vitest run --passWithNoTests",
+    "test": "node scripts/run-gate.mjs",
     "fix": "node scripts/sort_i18n_keys.mjs && biome check --write .",
     "i18n": "node i18n.ts && pnpm fix",
     "bundle-visualize": "export NODE_OPTIONS=--max_old_space_size=80000 && vite-bundle-visualizer -c vite.config.ts",
