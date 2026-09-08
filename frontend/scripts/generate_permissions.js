@@ -26,7 +26,11 @@ export type Permission =
 ${permissions.map(p => `  | "${p}"`).join('\n')};
 `;
 
-// Write the generated TypeScript file
-fs.writeFileSync(OUTPUT_FILE, tsContent, 'utf8');
+// Write the generated TypeScript file. Write-then-rename, because the frontend
+// gate regenerates this while tsc and the bundler are already reading it and an
+// in-place write is observable half-finished.
+const tempFile = `${OUTPUT_FILE}.${process.pid}.tmp`;
+fs.writeFileSync(tempFile, tsContent, 'utf8');
+fs.renameSync(tempFile, OUTPUT_FILE);
 
 console.log(`✅ Generated ${OUTPUT_FILE} with ${permissions.length} permissions`);
