@@ -1,6 +1,9 @@
 import { Engine } from "@/types/proto-es/v1/common_pb";
 import { supportedEngineV1List } from "@/utils";
 
+// Keep in sync with https://docs.bytebase.com/get-started/cloud#network-requirements.
+export const BYTEBASE_CLOUD_IP = "34.27.188.162";
+
 export const defaultPortForEngine = (engine: Engine) => {
   switch (engine) {
     case Engine.CLICKHOUSE:

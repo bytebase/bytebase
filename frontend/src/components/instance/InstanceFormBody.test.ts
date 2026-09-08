@@ -170,7 +170,7 @@ describe("InstanceFormBody", () => {
     expect(firewallInfoIndex).toBeGreaterThan(connectionTitleIndex);
     expect(firewallInfoIndex).toBeLessThan(connectionGridIndex);
     expect(source).toContain(
-      'href="https://docs.bytebase.com/get-started/cloud#prerequisites"'
+      'href="https://docs.bytebase.com/get-started/cloud#network-requirements"'
     );
   });
 

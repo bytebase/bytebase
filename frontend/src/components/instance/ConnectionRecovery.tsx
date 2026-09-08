@@ -136,7 +136,7 @@ export function ConnectionRecovery({
         className="mt-3 inline-flex items-center gap-x-1 text-sm font-medium underline underline-offset-2"
         href={
           isSaaSMode
-            ? "https://docs.bytebase.com/get-started/cloud#prerequisites"
+            ? "https://docs.bytebase.com/get-started/cloud#network-requirements"
             : "https://docs.bytebase.com/get-started/connect/overview?source=console"
         }
         target="_blank"

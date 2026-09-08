@@ -20,6 +20,7 @@ import { RouterLink } from "@/components/RouterLink";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { CopyButton } from "@/components/ui/copy-button";
 import {
   FormControlGroup,
   FormControlRow,
@@ -73,6 +74,7 @@ import {
 import type { EditDataSource } from "./common";
 import { hasSslConfig } from "./common";
 import {
+  BYTEBASE_CLOUD_IP,
   MongoDBConnectionStringSchemaList,
   RedisConnectionType,
   SnowflakeExtraLinkPlaceHolder,
@@ -1447,14 +1449,14 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
           </h3>
           {isSaaSMode && (
             <Alert variant="info" className="mt-2">
-              <a
-                href="https://docs.bytebase.com/get-started/cloud#prerequisites"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="normal-link"
-              >
-                {t("instance.sentence.firewall-info")}
-              </a>
+              <p>{t("instance.sentence.firewall-info")}</p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <code className="select-all font-mono">
+                  {BYTEBASE_CLOUD_IP}
+                </code>
+                <CopyButton content={BYTEBASE_CLOUD_IP} />
+                <LearnMoreLink href="https://docs.bytebase.com/get-started/cloud#network-requirements" />
+              </div>
             </Alert>
           )}
 

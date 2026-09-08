@@ -112,7 +112,7 @@ describe("ConnectionRecovery", () => {
     );
     expect(container.querySelector("a")).toHaveAttribute(
       "href",
-      "https://docs.bytebase.com/get-started/cloud#prerequisites"
+      "https://docs.bytebase.com/get-started/cloud#network-requirements"
     );
 
     act(() => root.unmount());
