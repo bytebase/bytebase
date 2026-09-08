@@ -61,49 +61,60 @@ export const createIssueCommentSlice: AppSliceCreator<IssueCommentSlice> = (
   set,
   get
 ) => {
-  // Loads in flight per issue, oldest first. Only the newest load still in
-  // flight may replace the cache. A load that succeeds retires every older
-  // one, so an older response never overwrites a newer one; a load that
-  // fails withdraws only itself, so the right passes back to the older load
-  // instead of leaving the cache stale. Successful writes are recorded on
-  // every active load, so any fallback preserves them over its response.
-  const activeLoads = new Map<string, Map<string, IssueComment>[]>();
-  const newestLoad = (parent: string) => activeLoads.get(parent)?.at(-1);
+  // Loads per issue, oldest first. Only the newest load may replace the
+  // cache: a load that succeeds while it is newest retires every older one,
+  // so an older response never overwrites a newer one. An older load that
+  // finishes first keeps its result as a fallback; if the newer load then
+  // fails, the fallback is promoted rather than leaving the cache stale.
+  // Successful writes are recorded on every active load, so whichever
+  // result lands preserves them.
+  interface Load {
+    writes: Map<string, IssueComment>;
+    result?: IssueComment[];
+  }
+  const activeLoads = new Map<string, Load[]>();
+  const loadsOf = (parent: string) => activeLoads.get(parent) ?? [];
   const recordWrite = (parent: string, comment: IssueComment) => {
-    for (const writes of activeLoads.get(parent) ?? []) {
-      writes.set(comment.name, comment);
-    }
+    for (const load of loadsOf(parent)) load.writes.set(comment.name, comment);
   };
   const beginLoad = (parent: string) => {
-    const writes = new Map<string, IssueComment>();
-    activeLoads.set(parent, [...(activeLoads.get(parent) ?? []), writes]);
-    return writes;
+    const load: Load = { writes: new Map() };
+    activeLoads.set(parent, [...loadsOf(parent), load]);
+    return load.writes;
   };
-  const withdrawLoad = (parent: string, writes: Map<string, IssueComment>) => {
-    const loads = (activeLoads.get(parent) ?? []).filter((l) => l !== writes);
-    if (loads.length === 0) activeLoads.delete(parent);
-    else activeLoads.set(parent, loads);
-  };
-  const cacheLoadedComments = (
-    parent: string,
-    writes: Map<string, IssueComment>,
-    comments: IssueComment[]
-  ) => {
-    // Not the newest (or already retired by a newer success): drop it.
-    if (newestLoad(parent) !== writes) {
-      withdrawLoad(parent, writes);
-      return;
-    }
-    // The newest succeeded; every older load is superseded with it.
+  const applyLoad = (parent: string, load: Load, comments: IssueComment[]) => {
     activeLoads.delete(parent);
     const merged = new Map(comments.map((comment) => [comment.name, comment]));
-    for (const [name, comment] of writes) merged.set(name, comment);
+    for (const [name, comment] of load.writes) merged.set(name, comment);
     set((state) => ({
       issueCommentsByIssue: {
         ...state.issueCommentsByIssue,
         [parent]: [...merged.values()],
       },
     }));
+  };
+  // Runs after a load leaves: the newest remaining load wins if it already
+  // finished; otherwise the cache waits for it.
+  const settleLoads = (parent: string) => {
+    const newest = loadsOf(parent).at(-1);
+    if (newest?.result) applyLoad(parent, newest, newest.result);
+  };
+  const withdrawLoad = (parent: string, writes: Map<string, IssueComment>) => {
+    const loads = loadsOf(parent).filter((load) => load.writes !== writes);
+    if (loads.length === 0) activeLoads.delete(parent);
+    else activeLoads.set(parent, loads);
+    settleLoads(parent);
+  };
+  const cacheLoadedComments = (
+    parent: string,
+    writes: Map<string, IssueComment>,
+    comments: IssueComment[]
+  ) => {
+    const load = loadsOf(parent).find((l) => l.writes === writes);
+    // Already retired by a newer success.
+    if (!load) return;
+    load.result = comments;
+    settleLoads(parent);
   };
 
   return {

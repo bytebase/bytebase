@@ -2,6 +2,7 @@ import { create } from "@bufbuild/protobuf";
 import { beforeEach, expect, test, vi } from "vitest";
 import { PositionSchema } from "@/types/proto-es/v1/common_pb";
 import {
+  type IssueComment,
   IssueComment_ThreadState,
   IssueCommentSchema,
   ListIssueCommentsRequestSchema,
@@ -505,6 +506,45 @@ test.each([
     expect(store.getIssueComments(parent)).toEqual(expected);
   }
 );
+
+test("an older success is kept as a fallback and promoted when the newer fetch fails", async () => {
+  const store = createStore();
+  const parent = "projects/p/issues/100";
+  const root = create(IssueCommentSchema, {
+    name: parent + "/issueComments/root",
+  });
+  let releaseOlder!: (value: {
+    issueComments: IssueComment[];
+    nextPageToken: string;
+  }) => void;
+  let failNewer!: (error: Error) => void;
+  mocks.listIssueComments.mockReset();
+  mocks.listIssueComments
+    .mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          releaseOlder = resolve;
+        })
+    )
+    .mockImplementationOnce(
+      () =>
+        new Promise((_, reject) => {
+          failNewer = reject;
+        })
+    );
+  const older = store.fetchIssueCommentTimeline({ parent });
+  const newer = store.fetchIssueCommentTimeline({ parent });
+  await vi.waitFor(() =>
+    expect(mocks.listIssueComments).toHaveBeenCalledTimes(2)
+  );
+  // The older result lands first: held back, not written, not discarded.
+  releaseOlder({ issueComments: [root], nextPageToken: "" });
+  await older;
+  expect(store.getIssueComments(parent)).toEqual([]);
+  failNewer(new Error("network"));
+  await expect(newer).rejects.toThrow("network");
+  expect(store.getIssueComments(parent)).toEqual([root]);
+});
 
 test("mutations invalidate only their issue, including colliding IDs across projects", async () => {
   const store = createStore();
