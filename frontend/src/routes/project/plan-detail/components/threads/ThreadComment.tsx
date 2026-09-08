@@ -6,7 +6,7 @@ import { canEditIssueComment } from "@/components/issue-activity/IssueCommentAct
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { UserAvatar } from "@/components/UserAvatar";
 import { Button } from "@/components/ui/button";
-import { useCurrentUser, useUserByIdentifier } from "@/hooks/useAppState";
+import { useUserByIdentifier } from "@/hooks/useAppState";
 import { cn } from "@/lib/utils";
 import { getTimeForPbTimestampProtoEs, unknownUser } from "@/types";
 import type { IssueComment } from "@/types/proto-es/v1/issue_service_pb";
@@ -32,7 +32,6 @@ export function ThreadComment({
   status?: ReactNode;
 }) {
   const { t } = useTranslation();
-  const currentUser = useCurrentUser();
   const creator =
     useUserByIdentifier(comment.creator) ?? unknownUser(comment.creator);
   const createdTs = getTimeForPbTimestampProtoEs(comment.createTime, 0);
@@ -41,7 +40,7 @@ export function ThreadComment({
   const [isEditing, setIsEditing] = useState(false);
   const [draft, setDraft] = useState(comment.comment);
   const [saving, setSaving] = useState(false);
-  const allowEdit = canEditIssueComment(comment, currentUser.email, project);
+  const allowEdit = canEditIssueComment(comment, project);
 
   useEffect(() => {
     if (!isEditing) setDraft(comment.comment);

@@ -186,7 +186,7 @@ export function IssueDetailCommentList() {
   };
 
   const allowEditComment = (comment: IssueComment): boolean =>
-    canEditIssueComment(comment, currentUser.email, project);
+    canEditIssueComment(comment, project);
 
   const startEditComment = (comment: IssueComment) => {
     setActiveCommentName(comment.name);

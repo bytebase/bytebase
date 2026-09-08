@@ -168,7 +168,6 @@ export const defaultEditorOptions =
       autoClosingQuotes: "never",
       detectIndentation: false,
       folding: false,
-      stickyScroll: { enabled: false },
       automaticLayout: true,
       minimap: {
         enabled: false,
@@ -207,7 +206,6 @@ export const defaultDiffEditorOptions =
       theme: "vs",
       autoClosingQuotes: "never",
       folding: false,
-      stickyScroll: { enabled: false },
       automaticLayout: true,
       minimap: {
         enabled: false,

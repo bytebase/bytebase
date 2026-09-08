@@ -24,7 +24,6 @@ import {
 } from "@/components/issue-activity/IssueCommentActivity";
 import { MarkdownEditor } from "@/components/MarkdownEditor";
 import { Button } from "@/components/ui/button";
-import { useCurrentUser } from "@/hooks/useAppState";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import {
   collectPlanUpdateSpecs,
@@ -352,7 +351,6 @@ function ReviewCommentRow({
 }) {
   const { t } = useTranslation();
   const page = usePlanDetailContext();
-  const currentUser = useCurrentUser();
   const project = useProjectByName(`${projectNamePrefix}${page.projectId}`);
   const [isEditing, setIsEditing] = useState(false);
   const [editContent, setEditContent] = useState(comment.comment);
@@ -374,7 +372,7 @@ function ReviewCommentRow({
     }
   }, [comment.comment, isEditing]);
 
-  const allowEdit = canEditIssueComment(comment, currentUser.email, project);
+  const allowEdit = canEditIssueComment(comment, project);
 
   const save = async () => {
     if (!editContent || editContent === comment.comment) {

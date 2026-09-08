@@ -71,9 +71,11 @@ const STATEMENT_EDITOR_OPTIONS = {
   occurrencesHighlight: "off",
 } as const;
 
+// Sticky scroll would pin statement lines over the thread view zones.
 const THREADS_EDITOR_OPTIONS = {
   ...STATEMENT_EDITOR_OPTIONS,
   selectOnLineNumbers: false,
+  stickyScroll: { enabled: false },
 } as const;
 
 export function PlanDetailStatementSection({

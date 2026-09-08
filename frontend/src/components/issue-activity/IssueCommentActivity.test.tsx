@@ -20,7 +20,7 @@ import {
   getIssueCommentType,
   IssueCommentType,
 } from "@/stores/app/issueComment";
-import { IssueCommentRow } from "./IssueCommentActivity";
+import { canEditIssueComment, IssueCommentRow } from "./IssueCommentActivity";
 
 vi.mock("react-i18next", async (importOriginal) => ({
   ...(await importOriginal<typeof import("react-i18next")>()),
@@ -35,6 +35,15 @@ vi.mock("react-i18next", async (importOriginal) => ({
       return key;
     },
   }),
+}));
+
+const mocks = vi.hoisted(() => ({
+  hasPermission: vi.fn((_project: unknown, _permission: unknown) => false),
+}));
+vi.mock("@/utils/iam/permission", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/utils/iam/permission")>()),
+  hasProjectPermissionV2: (project: unknown, permission: unknown) =>
+    mocks.hasPermission(project, permission),
 }));
 
 vi.mock("@/stores/app", () => ({
@@ -115,6 +124,33 @@ const changeSpec = ({
       }),
     },
   });
+
+describe("canEditIssueComment", () => {
+  const project = { name: "projects/p1" } as Parameters<typeof canEditIssueComment>[1];
+  const own = create(IssueCommentSchema, {
+    name: "projects/p1/issues/1/issueComments/9",
+    creator: "users/me@example.com",
+    comment: "mine",
+  });
+
+  test("authoring a comment grants no edit without the update permission", () => {
+    mocks.hasPermission.mockImplementation(
+      (_project: unknown, permission: unknown) =>
+        permission === "bb.issueComments.create"
+    );
+    expect(canEditIssueComment(own, project)).toBe(false);
+  });
+
+  test("the update permission allows editing a user comment", () => {
+    mocks.hasPermission.mockImplementation(
+      (_project: unknown, permission: unknown) =>
+        permission === "bb.issueComments.update"
+    );
+    expect(canEditIssueComment(own, project)).toBe(true);
+    expect(canEditIssueComment(reviewSubmission, project)).toBe(false);
+    expect(canEditIssueComment(own, undefined)).toBe(false);
+  });
+});
 
 describe("IssueCommentRow", () => {
   test("shows who bypassed review and created the rollout", () => {

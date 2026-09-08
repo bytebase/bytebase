@@ -30,7 +30,6 @@ import {
   type SpecDiffEntry,
 } from "@/lib/plan/diffPlanSpecs";
 import { cn } from "@/lib/utils";
-import { extractUserEmail } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
   getIssueCommentType,
@@ -96,11 +95,10 @@ function isDoneRolloutComment(
 }
 
 // Whether the current user may edit a comment: only user comments and approval
-// decisions that carry a note are editable, and only by their author or someone
-// with the update permission. Shared so both activity surfaces gate edits alike.
+// decisions that carry a note are editable, and only with the update
+// permission. Shared so every activity surface gates edits alike.
 export function canEditIssueComment(
   comment: IssueComment,
-  currentUserEmail: string,
   project: Parameters<typeof hasProjectPermissionV2>[0] | undefined
 ): boolean {
   if (!project) {
@@ -113,9 +111,8 @@ export function canEditIssueComment(
   if (!editable) {
     return false;
   }
-  if (currentUserEmail === extractUserEmail(comment.creator)) {
-    return true;
-  }
+  // Edits go through UpdateIssueComment, which the server gates on the update
+  // permission alone; authorship grants nothing there.
   return hasProjectPermissionV2(project, "bb.issueComments.update");
 }
 
