@@ -80,7 +80,13 @@ describe("Vue build tooling", () => {
     const dependencyNames = Object.keys(packageJson.dependencies ?? {});
     const devDependencyNames = Object.keys(packageJson.devDependencies ?? {});
 
-    expect(packageJson.scripts?.["type-check"]).not.toContain("vue-tsc");
+    // Asserted across every script rather than one name, so consolidating or
+    // renaming the gate cannot silently retire this policy.
+    expect(
+      Object.values(packageJson.scripts ?? {}).some((script) =>
+        /\bvue-tsc\b/.test(script)
+      )
+    ).toBe(false);
     expect(dependencyNames.filter((name) => name.startsWith("@vue/"))).toEqual(
       []
     );
@@ -132,8 +138,10 @@ describe("frontend lint tooling", () => {
     expect(
       existsSync(join(repoRoot, "scripts", "check-no-crypto-randomuuid.mjs"))
     ).toBe(true);
-    expect(packageJson.scripts?.["check"]).toContain(
-      "node scripts/check-no-crypto-randomuuid.mjs"
-    );
+    expect(
+      Object.values(packageJson.scripts ?? {}).some((script) =>
+        script.includes("node scripts/check-no-crypto-randomuuid.mjs")
+      )
+    ).toBe(true);
   });
 });

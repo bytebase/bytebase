@@ -22,7 +22,8 @@ export default defineConfig({
     // The legacy bundle is browser-compat output, not a correctness signal: it
     // builds the whole app a second time and babel-down-levels every chunk,
     // which is ~190s of a ~200s release build. The PR-time build check only
-    // needs to prove the app bundles, so `pnpm build-check` opts out of it.
+    // needs to prove the app bundles, so the bundle stage of `pnpm test` opts
+    // out by setting BB_SKIP_LEGACY=1.
     // Release builds (scripts/Dockerfile) leave BB_SKIP_LEGACY unset.
     ...(process.env.BB_SKIP_LEGACY
       ? []

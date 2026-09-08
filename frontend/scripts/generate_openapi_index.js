@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Generates a compact TypeScript index from the OpenAPI spec.
-// Run: pnpm --dir frontend run generate:openapi-index
+// Run: pnpm --dir frontend run prepare
 
 const fs = require("fs");
 const path = require("path");
@@ -251,7 +251,7 @@ for (const [schemaName, schemaDef] of Object.entries(componentSchemas)) {
 const lines = [];
 lines.push(
   "// Auto-generated from openapi.yaml. DO NOT EDIT manually.",
-  "// Run 'pnpm --dir frontend run generate:openapi-index' to regenerate.",
+  "// Run 'pnpm --dir frontend run prepare' to regenerate.",
   ""
 );
 

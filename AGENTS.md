@@ -53,9 +53,9 @@ go test -v -count=1 ./backend/store/ -run '^(TestFunctionName|TestFunctionNameTw
 
 ### Frontend changes
 
-Run `pnpm --dir frontend fix` to apply autofixes, then `pnpm --dir frontend test`. `test` is the whole gate and is exactly what CI runs: `check` (Biome plus the repo guard scripts), `type-check`, `build-check`, and the unit tests, in that order so the cheapest gate fails first.
+The frontend has two commands: `pnpm --dir frontend fix` to apply autofixes, then `pnpm --dir frontend test`. `test` is the whole gate and is exactly what CI runs — Biome, the repo guard scripts, `tsc`, a production bundle, and the unit tests, cheapest stage first.
 
-During iteration, run the individual targets instead. `pnpm --dir frontend test:unit <path>` runs vitest alone and filters to one file — do not reach for `test` for that, because pnpm appends arguments only to the last command in a chain, so the other three gates would still run first. `pnpm --dir frontend build-check` bundles the app without the legacy browser pass, which catches what `type-check` cannot (asset imports, StyleX and Tailwind extraction, module resolution) in about ten seconds. `release-docker` still emits the legacy bundle and is only for release images.
+During iteration, run a stage directly rather than the whole gate. `pnpm --dir frontend vitest run <path>` filters to one file, and `-t` to one test name; do not pass a path to `test`, because pnpm appends arguments only to the last command in a chain. `pnpm --dir frontend exec tsc --build --force` type-checks alone, and the guard scripts under `frontend/scripts/` each run standalone with `node`. These stages read gitignored generated files copied from the backend, so after switching to a revision that changes `backend/enterprise/plan.yaml`, the permission schema, or the MCP OpenAPI spec, run `pnpm --dir frontend run prepare` first — `test` and `dev` already do it for you. The gate's bundle step sets `BB_SKIP_LEGACY=1`, which skips the legacy browser pass and still catches what `tsc` cannot (asset imports, StyleX and Tailwind extraction, module resolution); `release-docker` keeps the legacy bundle and is only for release images.
 
 For browser verification, read [frontend/tests/e2e/README.md](frontend/tests/e2e/README.md); before writing tests, read its [AGENTS.md](frontend/tests/e2e/AGENTS.md).
 
