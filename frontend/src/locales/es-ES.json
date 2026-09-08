@@ -1023,13 +1023,14 @@
         "title": "Revisar permisos de base de datos"
       },
       "timeout": {
-        "description-saas": "La base de datos no respondió a tiempo. Revisa reglas de firewall, configuración de puertos, rutas de red y si la base de datos permite conexiones desde Bytebase Cloud.",
-        "description-self-hosted": "La base de datos no respondió a tiempo. Revisa las reglas de firewall, los puertos, las rutas de red y si la base de datos permite conexiones desde tu despliegue de Bytebase.",
+        "description-saas": "La prueba de conexión no se completó a tiempo. Revisa reglas de firewall, configuración de puertos, rutas de red y si la base de datos permite conexiones desde Bytebase Cloud.",
+        "description-self-hosted": "La prueba de conexión no se completó a tiempo. Revisa las reglas de firewall, los puertos, las rutas de red y si la base de datos permite conexiones desde tu despliegue de Bytebase.",
         "steps": {
           "load": "Confirma que la base de datos esté en línea y acepte nuevas conexiones.",
           "retry": "Si la base de datos está detrás de un firewall, completa primero la lista permitida o el túnel.",
           "route": "Revisa rutas, proxy, túnel, puerto y configuración de tiempo de espera."
         },
+        "test-title": "La prueba de conexión agotó el tiempo de espera",
         "title": "Revisar firewall y rutas"
       },
       "tls": {

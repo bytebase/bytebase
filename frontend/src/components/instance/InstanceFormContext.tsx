@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { ConnectError } from "@connectrpc/connect";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { cloneDeep, isEqual, omit } from "lodash-es";
 import {
   createContext,
@@ -536,11 +536,20 @@ export function InstanceFormProvider({
         return { success: true, message: "", failureCategory: "unknown" };
       };
       const fail = (host: string, err: unknown): TestConnectionResult => {
-        const failureCategory = normalizeConnectionFailureCategory(
+        let failureCategory = normalizeConnectionFailureCategory(
           err instanceof ConnectError
             ? err.metadata.get(connectionFailureCategoryHeader)
             : undefined
         );
+        // Gateways may return a bare HTTP error without Bytebase's category.
+        // Connect maps 504 to Unavailable, which also covers non-timeout errors.
+        if (
+          failureCategory === "unknown" &&
+          err instanceof ConnectError &&
+          (err.code === Code.DeadlineExceeded || err.rawMessage === "HTTP 504")
+        ) {
+          failureCategory = "timeout";
+        }
         let error =
           err instanceof ConnectError
             ? err.rawMessage
@@ -561,8 +570,18 @@ export function InstanceFormProvider({
           pushNotification({
             module: "bytebase",
             style: "CRITICAL",
-            title: t("instance.failed-to-connect-instance"),
-            description: error,
+            title:
+              failureCategory === "timeout"
+                ? t("instance.connection-recovery.timeout.test-title")
+                : t("instance.failed-to-connect-instance"),
+            description:
+              failureCategory === "timeout"
+                ? `${t(
+                    isSaaSMode
+                      ? "instance.connection-recovery.timeout.description-saas"
+                      : "instance.connection-recovery.timeout.description-self-hosted"
+                  )}\n\n${t("error-page.error-details")}: ${error}`
+                : error,
             manualHide: true,
           });
         }
