@@ -33,8 +33,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         working-directory: frontend
-      # Single gate, identical to what contributors run locally:
-      # check -> type-check -> build-check -> unit tests.
+      # Single gate, identical to what contributors run locally. The stages
+      # it runs are listed in frontend/scripts/run-gate.mjs.
       - name: Test
         run: pnpm test
         working-directory: frontend
