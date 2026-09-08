@@ -1023,13 +1023,14 @@
         "title": "Kiểm tra quyền cơ sở dữ liệu"
       },
       "timeout": {
-        "description-saas": "Cơ sở dữ liệu không phản hồi kịp thời. Kiểm tra firewall, cấu hình port, định tuyến mạng và liệu cơ sở dữ liệu có cho phép kết nối từ Bytebase Cloud hay không.",
-        "description-self-hosted": "Cơ sở dữ liệu không phản hồi kịp thời. Kiểm tra firewall, cấu hình port, định tuyến mạng và liệu cơ sở dữ liệu có cho phép kết nối từ môi trường triển khai Bytebase hay không.",
+        "description-saas": "Kiểm tra kết nối không hoàn tất kịp thời. Kiểm tra firewall, cấu hình port, định tuyến mạng và liệu cơ sở dữ liệu có cho phép kết nối từ Bytebase Cloud hay không.",
+        "description-self-hosted": "Kiểm tra kết nối không hoàn tất kịp thời. Kiểm tra firewall, cấu hình port, định tuyến mạng và liệu cơ sở dữ liệu có cho phép kết nối từ môi trường triển khai Bytebase hay không.",
         "steps": {
           "load": "Xác nhận cơ sở dữ liệu đang online và nhận kết nối mới.",
           "retry": "Nếu cơ sở dữ liệu nằm sau firewall, hãy hoàn tất allowlist hoặc tunnel trước khi thử lại.",
           "route": "Kiểm tra định tuyến, proxy, tunnel, port và cấu hình timeout kết nối."
         },
+        "test-title": "Kiểm tra kết nối đã hết thời gian chờ",
         "title": "Kiểm tra firewall và định tuyến"
       },
       "tls": {

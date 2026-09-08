@@ -1023,13 +1023,14 @@
         "title": "Check database permissions"
       },
       "timeout": {
-        "description-saas": "The database did not respond in time. Check firewall rules, port settings, network routing, and whether the database allows connections from Bytebase Cloud.",
-        "description-self-hosted": "The database did not respond in time. Check firewall rules, port settings, network routing, and whether the database allows connections from your Bytebase deployment.",
+        "description-saas": "The connection test did not complete in time. Check firewall rules, port settings, network routing, and whether the database allows connections from Bytebase Cloud.",
+        "description-self-hosted": "The connection test did not complete in time. Check firewall rules, port settings, network routing, and whether the database allows connections from your Bytebase deployment.",
         "steps": {
           "load": "Confirm the database is online and accepts new connections.",
           "retry": "If the database is behind a firewall, finish the allowlist or tunnel setup before retrying.",
           "route": "Check routing, proxy, tunnel, port, and connection timeout settings."
         },
+        "test-title": "Connection test timed out",
         "title": "Check firewall and routing"
       },
       "tls": {
