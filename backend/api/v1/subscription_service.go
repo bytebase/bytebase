@@ -121,6 +121,51 @@ func (s *SubscriptionService) UploadLicense(ctx context.Context, req *connect.Re
 	return connect.NewResponse(subscription), nil
 }
 
+// StartTrial starts a free trial for an eligible SaaS workspace.
+func (s *SubscriptionService) StartTrial(ctx context.Context, _ *connect.Request[v1pb.StartTrialRequest]) (*connect.Response[v1pb.Subscription], error) {
+	if !s.profile.SaaS || s.profile.Mode != common.ReleaseModeDev {
+		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("trial is only available in SaaS development mode"))
+	}
+
+	workspaceID := common.GetWorkspaceIDFromContext(ctx)
+	params := newTrialLicenseParams(workspaceID, time.Now())
+
+	existing, err := s.store.GetSubscriptionByWorkspace(ctx, workspaceID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get subscription"))
+	}
+	if existing != nil {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("workspace is not eligible for a free trial"))
+	}
+
+	setting, err := s.store.GetSystemSettingUncached(ctx, workspaceID)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get system setting"))
+	}
+	if setting == nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.New("system setting not found"))
+	}
+	if setting.License != "" {
+		if _, err := s.licenseService.IsTrialLicense(setting.License, workspaceID); err != nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to verify existing license"))
+		}
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("workspace is not eligible for a free trial"))
+	}
+
+	license, err := s.licenseService.CreateLicense(params)
+	if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to create trial license"))
+	}
+	if err := s.store.CreateTrialLicense(ctx, workspaceID, license); errors.Is(err, store.ErrTrialNotEligible) {
+		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("workspace is not eligible for a free trial"))
+	} else if err != nil {
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to store trial license"))
+	}
+	s.licenseService.InvalidateCache(workspaceID)
+
+	return connect.NewResponse(subscriptionFromTrialParams(params)), nil
+}
+
 // CreatePurchase creates a Stripe Checkout session (SaaS only).
 // Stateless — no subscription record is created. The subscription is only
 // created when the Stripe webhook confirms payment.

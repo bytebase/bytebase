@@ -452,6 +452,16 @@ func (s *LicenseService) IsInstanceEffectivelyActivated(ctx context.Context, wor
 	return instance.Metadata.GetActivation() || s.IsUnifiedInstanceLicense(ctx, workspaceID)
 }
 
+// IsTrialLicense verifies a license and reports its trial claim without
+// rejecting an otherwise valid expired token.
+func (s *LicenseService) IsTrialLicense(license, workspaceID string) (bool, error) {
+	subscription, err := s.parseLicenseUncheckedExpiry(license, workspaceID)
+	if err != nil {
+		return false, err
+	}
+	return subscription.Trialing, nil
+}
+
 // StoreLicense will store license into file.
 func (s *LicenseService) StoreLicense(ctx context.Context, workspaceID string, license string) error {
 	if license != "" {
@@ -476,6 +486,7 @@ type LicenseParams struct {
 	Seats       int
 	Instances   int
 	WorkspaceID string
+	Trialing    bool
 	ExpiresAt   time.Time // zero value means no expiration
 }
 
@@ -486,6 +497,7 @@ func newLicenseClaims(params *LicenseParams) *Claims {
 		ActiveInstances: params.Instances,
 		Instances:       params.Instances,
 		WorkspaceID:     params.WorkspaceID,
+		Trialing:        params.Trialing,
 	}
 }
 

@@ -45,6 +45,19 @@ service SubscriptionService {
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
+  // StartTrial starts a free trial for an eligible SaaS workspace.
+  rpc StartTrial(StartTrialRequest) returns (Subscription) {
+    option (google.api.http) = {
+      post: "/v1/subscription:startTrial"
+      body: "*"
+    };
+    option (bytebase.v1.permission) = "bb.subscription.manage";
+    option (bytebase.v1.auth_method) = IAM;
+    option (bytebase.v1.audit) = true;
+    option (bytebase.v1.mcp_method_class) = EXCLUDED;
+    option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
+  }
+
   // CreatePurchase creates a new subscription purchase (SaaS only).
   // Returns a Stripe Checkout URL for the user to complete payment.
   rpc CreatePurchase(CreatePurchaseRequest) returns (PurchaseResponse) {
@@ -373,3 +386,5 @@ message PlanLimitConfig {
   int32 maximum_seat_count = 3;
   repeated PlanFeature features = 4;
 }
+
+message StartTrialRequest {}

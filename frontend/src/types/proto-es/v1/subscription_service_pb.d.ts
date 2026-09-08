@@ -593,6 +593,18 @@ export declare type PlanLimitConfig = Message<"bytebase.v1.PlanLimitConfig"> & {
 export declare const PlanLimitConfigSchema: GenMessage<PlanLimitConfig>;
 
 /**
+ * @generated from message bytebase.v1.StartTrialRequest
+ */
+export declare type StartTrialRequest = Message<"bytebase.v1.StartTrialRequest"> & {
+};
+
+/**
+ * Describes the message bytebase.v1.StartTrialRequest.
+ * Use `create(StartTrialRequestSchema)` to create a new message.
+ */
+export declare const StartTrialRequestSchema: GenMessage<StartTrialRequest>;
+
+/**
  * @generated from enum bytebase.v1.BillingInterval
  */
 export enum BillingInterval {
@@ -1072,6 +1084,16 @@ export declare const SubscriptionService: GenService<{
   uploadLicense: {
     methodKind: "unary";
     input: typeof UploadLicenseRequestSchema;
+    output: typeof SubscriptionSchema;
+  },
+  /**
+   * StartTrial starts a free trial for an eligible SaaS workspace.
+   *
+   * @generated from rpc bytebase.v1.SubscriptionService.StartTrial
+   */
+  startTrial: {
+    methodKind: "unary";
+    input: typeof StartTrialRequestSchema;
     output: typeof SubscriptionSchema;
   },
   /**

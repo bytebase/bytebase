@@ -18,10 +18,10 @@ served by no ceiling.
 |---|---|---|
 | READ | 56 | served to a read-only session and above |
 | WRITE | 41 | served to a read-write session only |
-| EXCLUDED | 85 | served by no ceiling this phase ships |
+| EXCLUDED | 86 | served by no ceiling this phase ships |
 | FORBIDDEN | 35 | never served, whatever the ceiling |
 | MCP_METHOD_CLASS_UNSPECIFIED | 0 | unclassified — CI rejects this, and the gate refuses it |
-| **total** | **217** | |
+| **total** | **218** | |
 
 | Method | Class | Reason | Permission |
 |---|---|---|---|
@@ -209,6 +209,7 @@ served by no ceiling.
 | SubscriptionService/GetPaymentInfo | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.subscription.manage |
 | SubscriptionService/GetSubscription | EXCLUDED | ADMINISTERS_THE_WORKSPACE | — |
 | SubscriptionService/ListPurchasePlans | EXCLUDED | ADMINISTERS_THE_WORKSPACE | — |
+| SubscriptionService/StartTrial | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.subscription.manage |
 | SubscriptionService/UpdatePurchase | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.subscription.manage |
 | SubscriptionService/UploadLicense | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.subscription.manage |
 | SubscriptionService/VerifyCheckoutSession | EXCLUDED | ADMINISTERS_THE_WORKSPACE | bb.subscription.manage |

@@ -136,6 +136,14 @@ func TestCreateLicenseUsesEqualInstanceClaims(t *testing.T) {
 	}
 }
 
+func TestNewLicenseClaimsPropagatesTrialing(t *testing.T) {
+	trial := newLicenseClaims(&LicenseParams{Plan: v1pb.PlanType_TEAM.String(), Trialing: true})
+	require.True(t, trial.Trialing)
+
+	paid := newLicenseClaims(&LicenseParams{Plan: v1pb.PlanType_TEAM.String()})
+	require.False(t, paid.Trialing)
+}
+
 func TestParseLicenseExpiredIsInvalid(t *testing.T) {
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	require.NoError(t, err)
@@ -156,6 +164,46 @@ func TestParseLicenseExpiredIsInvalid(t *testing.T) {
 
 	_, err = service.parseLicense(license, "test-workspace")
 	require.Equal(t, common.Invalid, common.ErrorCode(err))
+}
+
+func TestIsTrialLicenseIncludesExpiredTrial(t *testing.T) {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
+	require.NoError(t, err)
+	service := &LicenseService{
+		config: &Config{
+			PublicKey:  &privateKey.PublicKey,
+			PrivateKey: privateKey,
+			Version:    keyID,
+			Issuer:     issuer,
+			Audience:   audience,
+		},
+	}
+
+	for _, expiresAt := range []time.Time{time.Now().Add(time.Hour), time.Now().Add(-time.Hour)} {
+		license, err := service.CreateLicense(&LicenseParams{
+			Plan:        v1pb.PlanType_TEAM.String(),
+			WorkspaceID: "test-workspace",
+			Trialing:    true,
+			ExpiresAt:   expiresAt,
+		})
+		require.NoError(t, err)
+
+		trialing, err := service.IsTrialLicense(license, "test-workspace")
+		require.NoError(t, err)
+		require.True(t, trialing)
+	}
+
+	paidLicense, err := service.CreateLicense(&LicenseParams{
+		Plan:        v1pb.PlanType_TEAM.String(),
+		WorkspaceID: "test-workspace",
+	})
+	require.NoError(t, err)
+	trialing, err := service.IsTrialLicense(paidLicense, "test-workspace")
+	require.NoError(t, err)
+	require.False(t, trialing)
+
+	_, err = service.IsTrialLicense("not-a-license", "test-workspace")
+	require.Error(t, err)
 }
 
 func TestGetUserLimitUncached(t *testing.T) {

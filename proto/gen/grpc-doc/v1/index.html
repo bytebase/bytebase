@@ -3098,6 +3098,10 @@
                 </li>
               
                 <li>
+                  <a href="#bytebase.v1.StartTrialRequest"><span class="badge">M</span>StartTrialRequest</a>
+                </li>
+
+                <li>
                   <a href="#bytebase.v1.Subscription"><span class="badge">M</span>Subscription</a>
                 </li>
               
@@ -35182,6 +35186,13 @@ If empty, the update was applied directly using the existing payment method. </p
 
         
       
+        <h3 id="bytebase.v1.StartTrialRequest">StartTrialRequest</h3>
+        <p></p>
+
+
+
+
+
         <h3 id="bytebase.v1.Subscription">Subscription</h3>
         <p></p>
 
@@ -35986,6 +35997,13 @@ If there is expired license, we will return a free plan subscription with the ex
               </tr>
             
               <tr>
+                <td>StartTrial</td>
+                <td><a href="#bytebase.v1.StartTrialRequest">StartTrialRequest</a></td>
+                <td><a href="#bytebase.v1.Subscription">Subscription</a></td>
+                <td><p>StartTrial starts a free trial for an eligible SaaS workspace.</p></td>
+              </tr>
+
+              <tr>
                 <td>CreatePurchase</td>
                 <td><a href="#bytebase.v1.CreatePurchaseRequest">CreatePurchaseRequest</a></td>
                 <td><a href="#bytebase.v1.PurchaseResponse">PurchaseResponse</a></td>
@@ -36079,6 +36097,16 @@ May return a Stripe Checkout URL if payment method change is needed.</p></td>
             
               
               
+              <tr>
+                <td>StartTrial</td>
+                <td>POST</td>
+                <td>/v1/subscription:startTrial</td>
+                <td>*</td>
+              </tr>
+
+
+
+
               <tr>
                 <td>CreatePurchase</td>
                 <td>POST</td>

@@ -765,6 +765,7 @@
     - [PurchasePlan](#bytebase-v1-PurchasePlan)
     - [PurchasePlanAdditional](#bytebase-v1-PurchasePlanAdditional)
     - [PurchaseResponse](#bytebase-v1-PurchaseResponse)
+    - [StartTrialRequest](#bytebase-v1-StartTrialRequest)
     - [Subscription](#bytebase-v1-Subscription)
     - [UpdatePurchaseRequest](#bytebase-v1-UpdatePurchaseRequest)
     - [UploadLicenseRequest](#bytebase-v1-UploadLicenseRequest)
@@ -12419,6 +12420,16 @@ PlanLimitConfig represents a single plan&#39;s configuration
 
 
 
+<a name="bytebase-v1-StartTrialRequest"></a>
+
+### StartTrialRequest
+
+
+
+
+
+
+
 <a name="bytebase-v1-Subscription"></a>
 
 ### Subscription
@@ -12656,6 +12667,7 @@ SubscriptionService manages enterprise subscriptions and licensing.
 | GetSubscription | [GetSubscriptionRequest](#bytebase-v1-GetSubscriptionRequest) | [Subscription](#bytebase-v1-Subscription) | GetSubscription returns the current subscription. If there is no license, we will return a free plan subscription without expiration time. If there is expired license, we will return a free plan subscription with the expiration time of the expired license. |
 | ExportVCSProviderUsers | [ExportVCSProviderUsersRequest](#bytebase-v1-ExportVCSProviderUsersRequest) | [ExportVCSProviderUsersResponse](#bytebase-v1-ExportVCSProviderUsersResponse) | Exports active VCS users as CSV. |
 | UploadLicense | [UploadLicenseRequest](#bytebase-v1-UploadLicenseRequest) | [Subscription](#bytebase-v1-Subscription) | Uploads an enterprise license (self-hosted only). |
+| StartTrial | [StartTrialRequest](#bytebase-v1-StartTrialRequest) | [Subscription](#bytebase-v1-Subscription) | StartTrial starts a free trial for an eligible SaaS workspace. |
 | CreatePurchase | [CreatePurchaseRequest](#bytebase-v1-CreatePurchaseRequest) | [PurchaseResponse](#bytebase-v1-PurchaseResponse) | CreatePurchase creates a new subscription purchase (SaaS only). Returns a Stripe Checkout URL for the user to complete payment. |
 | UpdatePurchase | [UpdatePurchaseRequest](#bytebase-v1-UpdatePurchaseRequest) | [PurchaseResponse](#bytebase-v1-PurchaseResponse) | UpdatePurchase updates an existing subscription (SaaS only). May return a Stripe Checkout URL if payment method change is needed. |
 | CancelPurchase | [CancelPurchaseRequest](#bytebase-v1-CancelPurchaseRequest) | [PurchaseResponse](#bytebase-v1-PurchaseResponse) | CancelPurchase cancels an active subscription (SaaS only). |

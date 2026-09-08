@@ -16932,6 +16932,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.PurchaseResponse'
+  /v1/subscription:startTrial:
+    post:
+      tags:
+        - SubscriptionService
+      summary: StartTrial
+      description: StartTrial starts a free trial for an eligible SaaS workspace.
+      operationId: SubscriptionService_StartTrial
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.StartTrialRequest'
+        required: true
+      responses:
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.Subscription'
   /v1/subscription:updatePurchase:
     post:
       tags:
@@ -31118,6 +31138,10 @@ components:
              pending one rather than promoting something this caller never saw.
           $ref: '#/components/schemas/google.protobuf.Timestamp'
       title: StartMFAEnrollmentResponse
+      additionalProperties: false
+    bytebase.v1.StartTrialRequest:
+      type: object
+      title: StartTrialRequest
       additionalProperties: false
     bytebase.v1.State:
       type: string
