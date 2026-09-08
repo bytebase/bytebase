@@ -52,13 +52,16 @@ export function StatementAnchorContext({
     enabled: sheetName !== "",
     sheetName,
   });
-  // The editor mounts its thread layer only for a complete statement. A
-  // CURRENT anchor on a truncated sheet can only come from the hash-match
-  // shortcut (a diffed sheet is always complete), and it has nowhere to be
-  // shown, so it is unavailable rather than a dead "view" action.
+  // The editor mounts its thread layer only for a complete, non-empty
+  // statement. A CURRENT anchor on a truncated or empty sheet can only come
+  // from the hash-match shortcut (a diffed sheet is complete, and an empty
+  // one matches nothing else), and it has nowhere to be shown, so it is
+  // unavailable rather than a dead "view" action.
   const resolved = resolveAnchorState(anchor, plan, placement);
   const state =
-    resolved === "CURRENT" && isTruncated ? "UNAVAILABLE" : resolved;
+    resolved === "CURRENT" && !isLoading && (isTruncated || statement === "")
+      ? "UNAVAILABLE"
+      : resolved;
 
   return (
     <div

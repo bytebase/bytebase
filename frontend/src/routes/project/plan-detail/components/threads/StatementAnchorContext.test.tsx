@@ -104,16 +104,17 @@ describe("StatementAnchorContext", () => {
   });
 
   test.each([
-    { truncated: false, state: "CURRENT", action: true },
-    { truncated: true, state: "UNAVAILABLE", action: false },
-  ])("a hash-matched anchor on a truncated sheet ($truncated) is $state", ({ truncated, state, action }) => {
-    const content = new TextEncoder().encode(original);
+    { sheet: "complete", text: original, extra: 0, state: "CURRENT", action: true },
+    { sheet: "truncated", text: original, extra: 1, state: "UNAVAILABLE", action: false },
+    { sheet: "empty", text: "", extra: 0, state: "UNAVAILABLE", action: false },
+  ])("a hash-matched anchor on a $sheet sheet is $state", ({ text, extra, state, action }) => {
+    const content = new TextEncoder().encode(text);
     mocks.sheets[currentName] = create(SheetSchema, {
       name: currentName,
       content,
-      contentSize: BigInt(content.byteLength + (truncated ? 1 : 0)),
+      contentSize: BigInt(content.byteLength + extra),
     });
-    const onCurrent = buildWholeLineAnchor({ spec: "spec", sheetSha256: currentHash, startLine: 5, endLine: 5 });
+    const onCurrent = buildWholeLineAnchor({ spec: "spec", sheetSha256: currentHash, startLine: 1, endLine: 1 });
     const { container, queryByText } = render(<StatementAnchorContext {...props} anchor={onCurrent} placement={undefined} />);
     expect(container.querySelector("[data-anchor-state]")?.getAttribute("data-anchor-state")).toBe(state);
     expect(queryByText("plan.review.thread.anchor.view-in-statement") !== null).toBe(action);
