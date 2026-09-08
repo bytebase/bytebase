@@ -53,7 +53,9 @@ go test -v -count=1 ./backend/store/ -run '^(TestFunctionName|TestFunctionNameTw
 
 ### Frontend changes
 
-Run `pnpm --dir frontend fix`, `pnpm --dir frontend check`, `pnpm --dir frontend type-check`, and `pnpm --dir frontend test`.
+Run `pnpm --dir frontend fix` to apply autofixes, then `pnpm --dir frontend test`. `test` is the whole gate and is exactly what CI runs: `check` (Biome plus the repo guard scripts), `type-check`, `build-check`, and the unit tests, in that order so the cheapest gate fails first.
+
+During iteration, run the individual targets instead. `pnpm --dir frontend test:unit <path>` runs vitest alone and filters to one file — do not reach for `test` for that, because pnpm appends arguments only to the last command in a chain, so the other three gates would still run first. `pnpm --dir frontend build-check` bundles the app without the legacy browser pass, which catches what `type-check` cannot (asset imports, StyleX and Tailwind extraction, module resolution) in about ten seconds. `release-docker` still emits the legacy bundle and is only for release images.
 
 For browser verification, read [frontend/tests/e2e/README.md](frontend/tests/e2e/README.md); before writing tests, read its [AGENTS.md](frontend/tests/e2e/AGENTS.md).
 

@@ -16,30 +16,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  static-checks:
-    runs-on: self-hosted
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24.18.1'
-          # The runner's pnpm store persists between runs, so the Actions
-          # cache adds nothing and downloading it is slow.
-          cache: ''
-      - uses: pnpm/setup@v2
-        with:
-          version: '11.17.0'
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-        working-directory: frontend
-      - name: Check (ESLint + Biome)
-        run: pnpm check
-        working-directory: frontend
-      - name: TypeScript type check
-        run: pnpm type-check
-        working-directory: frontend
-
   frontend-tests:
     runs-on: self-hosted
     timeout-minutes: 30
@@ -57,9 +33,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
         working-directory: frontend
-      - name: Run unit tests
+      # Single gate, identical to what contributors run locally:
+      # check -> type-check -> build-check -> unit tests.
+      - name: Test
         run: pnpm test
-        working-directory: frontend
-      - name: Build for production
-        run: pnpm release-docker
         working-directory: frontend
