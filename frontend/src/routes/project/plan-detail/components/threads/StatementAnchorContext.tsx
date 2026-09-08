@@ -21,6 +21,7 @@ import {
   lineRangeLabel,
   resolveAnchorState,
   sheetNameOfSha256,
+  targetSha256OfSpec,
 } from "./threadModel";
 
 // The recorded context of an anchored comment in the Review Activity
@@ -60,15 +61,18 @@ export function StatementAnchorContext({
   });
   const loaded = enabled && !isLoading;
   // The editor mounts its thread layer only for a complete, non-empty
-  // statement. A CURRENT anchor on a truncated or empty sheet can only come
-  // from the hash-match shortcut (a diffed sheet is complete, and an empty
-  // one matches nothing else), and it has nowhere to be shown, so it is
-  // unavailable rather than a dead "view" action.
+  // statement. An anchor on the spec's current sheet is CURRENT by hash
+  // alone, so that sheet must be loaded and pass those checks before the
+  // card offers to show it; until then it is pending, and a truncated or
+  // empty sheet makes it unavailable rather than a dead "view" action. A
+  // diff-mapped CURRENT anchor needs none of this: its target is complete.
   const resolved = resolveAnchorState(anchor, plan, placement);
-  const state =
-    resolved === "CURRENT" && loaded && (isTruncated || statement === "")
-      ? "UNAVAILABLE"
-      : resolved;
+  const onCurrentSheet = anchor.sheetSha256 === targetSha256OfSpec(spec);
+  const state = ((): AnchorState => {
+    if (resolved !== "CURRENT" || !onCurrentSheet) return resolved;
+    if (!loaded) return "PENDING";
+    return isTruncated || statement === "" ? "UNAVAILABLE" : "CURRENT";
+  })();
 
   return (
     <div

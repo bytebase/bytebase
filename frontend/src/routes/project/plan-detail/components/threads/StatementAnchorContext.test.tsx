@@ -120,6 +120,20 @@ describe("StatementAnchorContext", () => {
     expect(queryByText("plan.review.thread.anchor.view-in-statement") !== null).toBe(action);
   });
 
+  test("a hash-matched anchor stays pending until its sheet has loaded", async () => {
+    const content = new TextEncoder().encode(original);
+    const sheet = create(SheetSchema, { name: currentName, content, contentSize: BigInt(content.byteLength) });
+    delete mocks.sheets[currentName];
+    mocks.fetchSheet.mockResolvedValueOnce(sheet);
+    const onCurrent = buildWholeLineAnchor({ spec: "spec", sheetSha256: currentHash, startLine: 1, endLine: 1 });
+    const { container, queryByText } = render(<StatementAnchorContext {...props} anchor={onCurrent} placement={undefined} />);
+    const state = () => container.querySelector("[data-anchor-state]")?.getAttribute("data-anchor-state");
+    expect(state()).toBe("PENDING");
+    expect(queryByText("plan.review.thread.anchor.view-in-statement")).toBeNull();
+    await waitFor(() => expect(state()).toBe("CURRENT"));
+    expect(queryByText("plan.review.thread.anchor.view-in-statement")).not.toBeNull();
+  });
+
   test("fetches a missing recorded revision instead of using the current SQL", async () => {
     delete mocks.sheets[savedName];
     const { container } = render(<StatementAnchorContext {...props} anchor={anchor(4, 5)} placement={OUTDATED} />);
