@@ -257,6 +257,15 @@ describe("planPlacements", () => {
     expect(cached.fetches).toEqual([sheet(SHA_A), sheet(SHA_C)]);
   });
 
+  test("bytes already spent by the caller count against the total", () => {
+    const input = {
+      comments: [comment("c", anchor(SHA_A, 1))],
+      sizes: { [sheet(SHA_A)]: 900, [sheet(SHA_B)]: 900 },
+    };
+    expect(plan(input).pairs).toHaveLength(1);
+    expect(plan({ ...input, spentBytes: 800n }).pairs).toHaveLength(0);
+  });
+
   test("a pair blocked by budget does not reserve any sheets", () => {
     const result = plan({
       comments: [

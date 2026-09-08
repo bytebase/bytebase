@@ -58,6 +58,8 @@ export interface PlacementPlanInput {
   // Whether a pair blocked only by an unknown size settles UNAVAILABLE
   // (default) or stays out of the plan for a later pass.
   readonly settleUnknownSizes?: boolean;
+  // Bytes this run has already downloaded, counted against the total budget.
+  readonly spentBytes?: bigint;
 }
 
 export const pairKey = (
@@ -130,7 +132,7 @@ export function planPlacements(input: PlacementPlanInput): PlacementPlan {
   const fetches: string[] = [];
   const unknownSizes = new Set<string>();
   const fetchSet = new Set<string>();
-  let totalBytes = 0n;
+  let totalBytes = input.spentBytes ?? 0n;
   const settleUnavailable = (candidate: CandidatePair) => {
     for (const names of candidate.comments.values()) {
       for (const name of names) settled.set(name, UNAVAILABLE);

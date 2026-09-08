@@ -495,7 +495,7 @@ test("caches a definitive UNAVAILABLE so the pair is not diffed again", async ()
   expect(requests).toHaveLength(1);
 });
 
-test("stops probing once the byte budget is spent", async () => {
+test("reserves the per-sheet cap before each probe so concurrent probes stay within the total", async () => {
   const contents: Record<string, string> = { [sheetName(SHA_NEW)]: NEW_TEXT };
   const shas = Array.from({ length: 4 }, (_, i) => String(i + 1).repeat(64));
   for (const sha of shas) contents[sheetName(sha)] = OLD_TEXT;
@@ -506,8 +506,10 @@ test("stops probing once the byte budget is spent", async () => {
     sheets,
     budgets: {
       ...PLACEMENT_BUDGETS,
-      // The first probe to land spends the whole budget.
-      maxTotalBytes: 1,
+      // Two reservations fit; the third would exceed the total, so it never
+      // starts even though four probes could run at once.
+      maxBytesPerSheet: 100,
+      maxTotalBytes: 200,
     },
   });
   await store.getState().computePlacements({
@@ -515,13 +517,27 @@ test("stops probing once the byte budget is spent", async () => {
     projectName: PROJECT,
     specs: specs(SHA_NEW),
   });
-  // Probes run four at a time, so that many start before the cap is
-  // observed; the fifth never does.
-  expect(sheets.calls.filter((call) => !call.raw)).toHaveLength(4);
-  // Sheets already complete cost nothing more, so the first pair still
-  // places; the fifth sheet's pair stays UNAVAILABLE.
+  expect(
+    sheets.calls.filter((call) => !call.raw).map((call) => call.name)
+  ).toEqual([sheetName(shas[0]), sheetName(SHA_NEW)]);
   expect(store.getState().placements.get(nameOf("c0"))).toEqual(current(2, 2));
-  expect(store.getState().placements.get(nameOf("c3"))).toEqual(UNAVAILABLE);
+  expect(store.getState().placements.get(nameOf("c1"))).toEqual(UNAVAILABLE);
+});
+
+test("counts probe bytes against the raw download budget", async () => {
+  // Previews come back truncated here, so the sheets still need a raw fetch
+  // that must fit in whatever the probes left of the budget.
+  const { store, sheets } = setup({
+    budgets: {
+      ...PLACEMENT_BUDGETS,
+      maxBytesPerSheet: 100,
+      maxTotalBytes: 100,
+    },
+  });
+  await compute(store, [comment("moved", anchor(SHA_OLD, 1))]);
+  // One probe spends its bytes; the raw downloads no longer fit.
+  expect(sheets.calls.filter((call) => call.raw)).toEqual([]);
+  expect(store.getState().placements.get(nameOf("moved"))).toEqual(UNAVAILABLE);
 });
 
 test("retries shared-budget failures after other pairs have been cached", async () => {

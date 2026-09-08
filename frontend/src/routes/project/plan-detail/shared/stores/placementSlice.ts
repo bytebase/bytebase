@@ -168,8 +168,15 @@ export const createPlacementSlice =
         let plan = planPlacements(planInput);
         const placements = new Map<string, Placement>();
         let pending: PlacementPair[] = [];
+        // Bytes downloaded by this run so far, so every phase shares one
+        // total budget.
+        let spentBytes = 0n;
         const settle = (settleUnknownSizes: boolean) => {
-          plan = planPlacements({ ...planInput, settleUnknownSizes });
+          plan = planPlacements({
+            ...planInput,
+            settleUnknownSizes,
+            spentBytes,
+          });
           placements.clear();
           for (const [name, placement] of plan.settled) {
             placements.set(name, placement);
@@ -190,17 +197,20 @@ export const createPlacementSlice =
 
         // A sheet the cache has never seen has no known size. A preview fetch
         // is capped by the server at the per-sheet budget, so it doubles as
-        // the bounded download; the byte budget applies to it as it goes.
+        // the bounded download. Each probe reserves that cap before it starts
+        // and settles to the real size when it lands, so concurrent probes
+        // cannot overshoot the total budget between them.
         if (plan.unknownSizes.length > 0) {
-          let downloaded = 0n;
           const byteCap = BigInt(budgets.maxTotalBytes);
+          const perSheet = BigInt(budgets.maxBytesPerSheet);
           await runWithConcurrency(
             plan.unknownSizes.slice(0, budgets.maxSheets),
             FETCH_CONCURRENCY,
             async (name) => {
-              if (downloaded >= byteCap) return undefined;
+              if (spentBytes + perSheet > byteCap) return undefined;
+              spentBytes += perSheet;
               const sheet = await deps.fetchSheet(name, false);
-              if (sheet) downloaded += BigInt(sheet.content.byteLength);
+              spentBytes -= perSheet - BigInt(sheet?.content.byteLength ?? 0);
               return sheet;
             }
           );
