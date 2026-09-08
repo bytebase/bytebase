@@ -20,7 +20,7 @@ This file provides additional guidance to AI coding assistants working under `./
 - New shared UI and every UI element directly modified by a change MUST follow the guideline. Do not copy an adjacent legacy pattern merely because it is already present.
 - Existing feature violations in `scripts/ui-guideline-legacy-debt.json` are temporary incremental exceptions, not permission for new debt. A change may leave unrelated fingerprints in place, but MUST NOT add, mutate, or increase them.
 - Repeated measurements belong in `src/components/ui/styles.stylex.ts`; semantic colors belong in `src/assets/css/tailwind.css`; variants belong in the shared primitive's CVA definition.
-- Run `node frontend/scripts/check-ui-guideline.mjs` after UI work (`pnpm --dir frontend test` also runs it, along with every other gate). When a change removes legacy debt, run `node frontend/scripts/check-ui-guideline.mjs --write-baseline`; the updater accepts reductions only.
+- Run `node frontend/scripts/check-ui-guideline.mjs` after UI work. When a change removes legacy debt, run `node frontend/scripts/check-ui-guideline.mjs --write-baseline`; the updater accepts reductions only.
 
 ## Source ownership
 
@@ -53,7 +53,7 @@ Use route ownership as the primary organization axis. Do not add a generic `feat
 - Prefer direct owner imports such as `@/modules/sql-editor/store` over broad barrels when the owner is known.
 - Historical migration plans under `docs/` describe old paths and are not current architecture guidance.
 - `CLAUDE.md` files only import their adjacent `AGENTS.md`; update `AGENTS.md` as the source of truth.
-- `node frontend/scripts/check-frontend-structure.mjs` runs the structure guard, as does `pnpm --dir frontend test`. Do not bypass failures by recreating retired framework, view, or singular-store namespaces.
+- `node frontend/scripts/check-frontend-structure.mjs` runs the structure guard. Do not bypass failures by recreating retired framework, view, or singular-store namespaces.
 
 ## shadcn Skill
 
@@ -83,7 +83,7 @@ React UI components live in `src/components/ui/` and follow shadcn-style pattern
   - Menus, popovers, dropdowns, and custom floating panels should use shared `DropdownMenu`, `Popover`, `Combobox`, `Select`, `Dialog`, or `Sheet` primitives rather than ad hoc `absolute top-full z-*` markup.
   - Do not portal feature UI directly to `document.body` or a `document.body` alias. Use the shared overlay primitives, or explicitly mount into the correct semantic root with `getLayerRoot(<family>)`.
   - Do not hide raw global overlay classes in constants, imported helpers, `cn()` inputs, or interpolated template literals. A value like `fixed inset-0 z-50` is still forbidden even when it is not written directly in `className`.
-  - When adding or changing React overlays, run `node frontend/scripts/check-react-layering.mjs` before handing off (`pnpm --dir frontend test` runs it too). The scanner is intended to catch raw high-z overlays, forbidden body portals, and policy drift in feature code.
+  - When adding or changing React overlays, run `node frontend/scripts/check-react-layering.mjs` before handing off. The scanner is intended to catch raw high-z overlays, forbidden body portals, and policy drift in feature code.
   - The scanner is a guardrail, not proof of policy compliance. It intentionally avoids full static analysis, so imported, dynamic, shadowed, or complex expressions may be unresolved; passing the check does not permit raw global z-index overlays or body portals.
 
 ### Component Patterns
