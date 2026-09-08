@@ -5,6 +5,7 @@ import type { PlanChangeReferenceRenderer } from "@/components/issue-activity/Is
 import { colorizeStatement } from "@/components/monaco/core";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { useInViewOnce } from "@/hooks/useInViewOnce";
 import { useSheetStatement } from "@/hooks/useSheetStatement";
 import { cn } from "@/lib/utils";
 import type { StatementAnchor } from "@/types/proto-es/v1/issue_service_pb";
@@ -48,10 +49,16 @@ export function StatementAnchorContext({
   const sheetName = project
     ? sheetNameOfSha256(project.name, anchor.sheetSha256)
     : "";
+  // The recorded revision is downloaded only once the card nears the
+  // viewport, so a long timeline fetches sheets as the reader reaches them
+  // rather than all at once when the fold opens.
+  const { ref, inView } = useInViewOnce<HTMLDivElement>();
+  const enabled = sheetName !== "" && inView;
   const { statement, isLoading, isTruncated } = useSheetStatement({
-    enabled: sheetName !== "",
+    enabled,
     sheetName,
   });
+  const loaded = enabled && !isLoading;
   // The editor mounts its thread layer only for a complete, non-empty
   // statement. A CURRENT anchor on a truncated or empty sheet can only come
   // from the hash-match shortcut (a diffed sheet is complete, and an empty
@@ -59,12 +66,13 @@ export function StatementAnchorContext({
   // unavailable rather than a dead "view" action.
   const resolved = resolveAnchorState(anchor, plan, placement);
   const state =
-    resolved === "CURRENT" && !isLoading && (isTruncated || statement === "")
+    resolved === "CURRENT" && loaded && (isTruncated || statement === "")
       ? "UNAVAILABLE"
       : resolved;
 
   return (
     <div
+      ref={ref}
       className="@container/anchor flex min-w-0 flex-col"
       data-anchor-state={state}
       data-testid="statement-anchor"
