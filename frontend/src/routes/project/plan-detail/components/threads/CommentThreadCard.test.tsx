@@ -421,6 +421,20 @@ describe("CommentThreadCard", () => {
     expect(Array.from(document.querySelectorAll('[role="menuitem"]')).map((el) => el.textContent)).toEqual(["plan.review.thread.reply"]);
   });
 
+  test("authoring the root grants no Resolve without the update permission", () => {
+    mocks.hasPermission.mockImplementation(
+      (_project: unknown, permission: unknown) =>
+        permission === "bb.issueComments.create"
+    );
+    const [thread] = groupThreads([
+      comment("root", "Root", { creator: "users/me@example.com" }),
+    ]);
+    render(
+      <CommentThreadCard issueName={ISSUE} project={project} thread={thread} />
+    );
+    expect(buttonByText("plan.review.thread.resolve")).toBeUndefined();
+  });
+
   test("hides Resolve from users who may neither update nor own the root", () => {
     mocks.hasPermission.mockImplementation(
       (_project: unknown, permission: unknown) =>

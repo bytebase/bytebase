@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { extractUserEmail, pushNotification } from "@/stores";
+import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
   type IssueComment,
@@ -10,16 +10,13 @@ import {
 import type { Project } from "@/types/proto-es/v1/project_service_pb";
 import { hasProjectPermissionV2 } from "@/utils/iam/permission";
 
-// Resolve and Reopen reuse the comment update permission; the root's author
-// may also settle their own thread, mirroring the edit rule.
-export function canSettleThread(
-  root: IssueComment,
-  currentUserEmail: string,
-  project: Project | undefined
-): boolean {
-  if (!project) return false;
-  if (currentUserEmail === extractUserEmail(root.creator)) return true;
-  return hasProjectPermissionV2(project, "bb.issueComments.update");
+// Resolve and Reopen go through UpdateIssueComment, which the server gates
+// on the update permission alone; authoring the root grants nothing there,
+// so the UI offers the actions only to users the server will accept.
+export function canSettleThread(project: Project | undefined): boolean {
+  return Boolean(
+    project && hasProjectPermissionV2(project, "bb.issueComments.update")
+  );
 }
 
 export function canReplyToThread(project: Project | undefined): boolean {

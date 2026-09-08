@@ -137,7 +137,7 @@ export function CommentThreadCard({
   }, [collapsible, thread.resolved]);
 
   const allowReply = canReplyToThread(project);
-  const allowSettle = canSettleThread(thread.root, currentUser.email, project);
+  const allowSettle = canSettleThread(project);
   const selectedAction =
     allowSettle && replyAction === (thread.resolved ? "reopen" : "resolve")
       ? replyAction
