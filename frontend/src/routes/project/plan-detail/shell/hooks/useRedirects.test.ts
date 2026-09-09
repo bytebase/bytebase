@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, test } from "vitest";
 import { IssueSchema } from "@/types/proto-es/v1/issue_service_pb";

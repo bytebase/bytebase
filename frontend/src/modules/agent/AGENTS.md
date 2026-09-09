@@ -37,7 +37,7 @@ DOM refs such as `e1` are local to one `get_page_state(mode="dom")` snapshot. Re
 Run:
 
 ```bash
-pnpm --dir frontend run generate:openapi-index
+pnpm --dir frontend run prepare
 ```
 
 The generator reads `backend/api/mcp/gen/openapi.yaml` and writes `logic/tools/gen/openapi-index.ts`. Do not edit the generated file manually.

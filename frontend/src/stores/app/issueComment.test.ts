@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { create } from "@bufbuild/protobuf";
 import { beforeEach, expect, test, vi } from "vitest";
 import { PositionSchema } from "@/types/proto-es/v1/common_pb";

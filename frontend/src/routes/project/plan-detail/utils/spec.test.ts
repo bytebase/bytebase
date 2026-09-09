@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, test } from "vitest";
 import type { Plan_Spec } from "@/types/proto-es/v1/plan_service_pb";
 import { getSelectedSpec } from "./spec";

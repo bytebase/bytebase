@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { readdirSync, readFileSync } from "fs";
 import { isEqual } from "lodash-es";
 import { dirname, resolve } from "path";

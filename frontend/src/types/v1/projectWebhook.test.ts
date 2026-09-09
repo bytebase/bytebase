@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, test, vi } from "vitest";
 import { WebhookType } from "../proto-es/v1/common_pb";
 

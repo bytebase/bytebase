@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, test } from "vitest";
 import { AISetting_Provider } from "@/types/proto-es/v1/setting_service_pb";
 import {

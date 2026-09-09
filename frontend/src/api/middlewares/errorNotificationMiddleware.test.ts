@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { Code, ConnectError, createContextValues } from "@connectrpc/connect";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { ignoredCodesContextKey, silentContextKey } from "../context-key";

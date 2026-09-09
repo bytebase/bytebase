@@ -1,3 +1,4 @@
+// @vitest-environment node
 import i18next from "i18next";
 import { describe, expect, test } from "vitest";
 import enUS from "@/locales/en-US.json";
