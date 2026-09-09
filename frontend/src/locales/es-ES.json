@@ -2369,8 +2369,7 @@
   },
   "schema-template": {
     "classification": {
-      "search": "Clasificación de búsqueda",
-      "select": "Seleccionar clasificación"
+      "search": "Clasificación de búsqueda"
     }
   },
   "sensitive-data": {
@@ -2935,9 +2934,14 @@
         "re-order": "Reordenar"
       },
       "grant-access": "Conceder acceso",
+      "mark-sensitive-data": "Marcar datos confidenciales",
       "never-expires": "Nunca expira",
       "remove-sensitive-column-tips": "¿Exponer esta columna?",
       "semantic-types": {
+        "error": {
+          "no-changes-to-save": "No hay cambios para guardar",
+          "title-required": "El título es obligatorio"
+        },
         "label": "Las columnas que tengan el mismo tipo semántico utilizarán los mismos algoritmos de enmascaramiento.",
         "select": "Seleccionar tipo semántico",
         "self": "Tipos Semánticos",
@@ -2946,13 +2950,9 @@
           "description": "Descripción",
           "icon": "Icono",
           "masking-algorithm": "Algoritmo de enmascaramiento",
-          "semantic-type": "Tipo Semántico"
-        },
-        "template": {
-          "description": "Puede aplicar tipos semánticos integrados desde la plantilla. La plantilla integrada no se puede modificar.",
-          "duplicate-warning": "El tipo semántico \"{{title}}\" ya existe"
-        },
-        "use-predefined-type": "Utiliza el Tipo Predefinido"
+          "semantic-type": "Tipo Semántico",
+          "title": "Título"
+        }
       }
     },
     "sidebar": {

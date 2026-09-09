@@ -2369,8 +2369,7 @@
   },
   "schema-template": {
     "classification": {
-      "search": "搜索分类",
-      "select": "选择分类"
+      "search": "搜索分类"
     }
   },
   "sensitive-data": {
@@ -2935,9 +2934,14 @@
         "re-order": "排序"
       },
       "grant-access": "授予访问权限",
+      "mark-sensitive-data": "标记敏感数据",
       "never-expires": "无过期时间",
       "remove-sensitive-column-tips": "不再对此列数据脱敏？",
       "semantic-types": {
+        "error": {
+          "no-changes-to-save": "没有需要保存的更改",
+          "title-required": "标题为必填项"
+        },
         "label": "具有相同语义类型的列会使用相同的脱敏算法。",
         "select": "选择语义类型",
         "self": "语义类型",
@@ -2946,13 +2950,9 @@
           "description": "描述",
           "icon": "图标",
           "masking-algorithm": "脱敏算法",
-          "semantic-type": "语义类型"
-        },
-        "template": {
-          "description": "您可以从模板中应用内置语义类型。内置模板无法更改。",
-          "duplicate-warning": "语义类型“{{title}}”已存在"
-        },
-        "use-predefined-type": "使用预定义类型"
+          "semantic-type": "语义类型",
+          "title": "标题"
+        }
       }
     },
     "sidebar": {

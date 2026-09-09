@@ -3,7 +3,7 @@ import type {
   InputHTMLAttributes,
   ReactNode,
 } from "react";
-import { act, createElement } from "react";
+import { act, createContext, createElement, useContext } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { DatabaseCatalog } from "@/types/proto-es/v1/database_catalog_service_pb";
@@ -179,6 +179,7 @@ const mocks = vi.hoisted(() => {
     useDatabaseCatalog: vi.fn(() => makeDatabaseCatalog()),
     getOrFetchPolicyByParentAndType: vi.fn(),
     upsertPolicy: vi.fn(),
+    updateColumnCatalog: vi.fn(),
     updateDatabaseCatalog: vi.fn(),
     getOrFetchSettingByName: vi.fn(),
     getProjectClassification: vi.fn(() => ({
@@ -223,6 +224,19 @@ const mocks = vi.hoisted(() => {
       engine: 1,
     })),
     instanceV1MaskingForNoSQL: vi.fn(() => false),
+    useAppDatabaseMetadata: vi.fn(() => ({
+      schemas: [
+        {
+          name: "public",
+          tables: [
+            {
+              name: "book",
+              columns: [{ name: "email" }, { name: "phone" }],
+            },
+          ],
+        },
+      ],
+    })),
     hasProjectPermissionV2,
     autoDatabaseRoute: vi.fn(() => ({ name: "database" })),
     routerResolve: vi.fn(() => ({ fullPath: "/database/route" })),
@@ -258,6 +272,22 @@ const mocks = vi.hoisted(() => {
       <div>{children}</div>
     ),
     DialogTitle: ({ children }: { children: ReactNode }) => <h1>{children}</h1>,
+    Sheet: ({ open, children }: { open: boolean; children: ReactNode }) =>
+      open ? <div data-testid="sheet-root">{children}</div> : null,
+    SheetBody: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+    SheetContent: ({ children }: { children: ReactNode }) => (
+      <div>{children}</div>
+    ),
+    SheetDescription: ({ children }: { children: ReactNode }) => (
+      <p>{children}</p>
+    ),
+    SheetFooter: ({ children }: { children: ReactNode }) => (
+      <div>{children}</div>
+    ),
+    SheetHeader: ({ children }: { children: ReactNode }) => (
+      <div>{children}</div>
+    ),
+    SheetTitle: ({ children }: { children: ReactNode }) => <h1>{children}</h1>,
     AlertDialog: ({
       open,
       children,
@@ -356,7 +386,8 @@ let DatabaseCatalogPanel: typeof import("./DatabaseCatalogPanel").DatabaseCatalo
 
 vi.stubGlobal("localStorage", mocks.localStorage);
 
-vi.mock("react-i18next", () => ({
+vi.mock("react-i18next", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("react-i18next")>()),
   useTranslation: mocks.useTranslation,
 }));
 
@@ -367,6 +398,14 @@ vi.mock("@/stores", () => ({
 
 vi.mock("@/hooks/useDatabaseCatalog", () => ({
   useDatabaseCatalog: () => mocks.useDatabaseCatalog(),
+}));
+
+vi.mock("@/hooks/useAppDatabaseMetadata", () => ({
+  useAppDatabaseMetadata: () => mocks.useAppDatabaseMetadata(),
+}));
+
+vi.mock("@/lib/column-data-table/utils", () => ({
+  updateColumnCatalog: mocks.updateColumnCatalog,
 }));
 
 vi.mock("@/stores/app", () => {
@@ -438,13 +477,76 @@ vi.mock("@/components/ui/input", () => ({
   Input: mocks.Input,
 }));
 
-vi.mock("@/components/ui/select", () => ({
-  Select: mocks.Select,
-  SelectContent: mocks.SelectContent,
-  SelectItem: mocks.SelectItem,
-  SelectTrigger: mocks.SelectTrigger,
-  SelectValue: mocks.SelectValue,
+vi.mock("@/components/ui/sheet", () => ({
+  Sheet: mocks.Sheet,
+  SheetBody: mocks.SheetBody,
+  SheetContent: mocks.SheetContent,
+  SheetDescription: mocks.SheetDescription,
+  SheetFooter: mocks.SheetFooter,
+  SheetHeader: mocks.SheetHeader,
+  SheetTitle: mocks.SheetTitle,
 }));
+
+vi.mock("@/components/ui/select", () => {
+  const SelectContext = createContext<{
+    value?: string;
+    disabled?: boolean;
+    onValueChange?: (value: string) => void;
+  }>({});
+  return {
+    Select: ({
+      value,
+      disabled,
+      onValueChange,
+      children,
+    }: {
+      value?: string;
+      disabled?: boolean;
+      onValueChange?: (value: string) => void;
+      children: ReactNode;
+    }) => (
+      <SelectContext.Provider value={{ value, disabled, onValueChange }}>
+        {children}
+      </SelectContext.Provider>
+    ),
+    SelectTrigger: ({ children }: { children: ReactNode }) => (
+      <div data-testid="select-trigger">{children}</div>
+    ),
+    SelectValue: ({
+      children,
+    }: {
+      children?: ReactNode | ((value: string | undefined) => ReactNode);
+    }) => {
+      const { value } = useContext(SelectContext);
+      return (
+        <span data-testid="select-value">
+          {typeof children === "function"
+            ? children(value)
+            : (children ?? value)}
+        </span>
+      );
+    },
+    SelectContent: ({ children }: { children: ReactNode }) => {
+      const { value, disabled, onValueChange } = useContext(SelectContext);
+      return (
+        <select
+          value={value}
+          disabled={disabled}
+          onChange={(event) => onValueChange?.(event.target.value)}
+        >
+          {children}
+        </select>
+      );
+    },
+    SelectItem: ({
+      value,
+      children,
+    }: {
+      value: string;
+      children: ReactNode;
+    }) => <option value={value}>{children}</option>,
+  };
+});
 
 vi.mock("@/components/ui/tooltip", () => ({
   Tooltip: mocks.Tooltip,
@@ -476,6 +578,8 @@ beforeEach(async () => {
   mocks.upsertPolicy.mockReset();
   mocks.updateDatabaseCatalog.mockReset();
   mocks.updateDatabaseCatalog.mockResolvedValue(undefined);
+  mocks.updateColumnCatalog.mockReset();
+  mocks.updateColumnCatalog.mockResolvedValue(undefined);
   mocks.getOrFetchSettingByName.mockReset();
   mocks.getProjectClassification.mockReset();
   mocks.getProjectClassification.mockReturnValue({
@@ -526,6 +630,20 @@ beforeEach(async () => {
   });
   mocks.instanceV1MaskingForNoSQL.mockReset();
   mocks.instanceV1MaskingForNoSQL.mockReturnValue(false);
+  mocks.useAppDatabaseMetadata.mockReset();
+  mocks.useAppDatabaseMetadata.mockReturnValue({
+    schemas: [
+      {
+        name: "public",
+        tables: [
+          {
+            name: "book",
+            columns: [{ name: "email" }, { name: "phone" }],
+          },
+        ],
+      },
+    ],
+  });
   mocks.featureToRef.mockReset();
   mocks.featureToRef.mockReturnValue({ value: true });
   mocks.hasProjectPermissionV2.mockReset();
@@ -559,6 +677,149 @@ describe("DatabaseCatalogPanel", () => {
     expect(container.textContent).toContain("email");
     expect(container.textContent).toContain("public.profile");
     expect(container.textContent).toContain("contact.email");
+
+    unmount();
+  });
+
+  test("shows mark sensitive data when catalog update is permitted", async () => {
+    mocks.featureToRef.mockReturnValue({ value: false });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseCatalogPanel, {
+        database: makeDatabase(),
+      })
+    );
+
+    render();
+    await flush();
+
+    expect(
+      getButton(
+        container,
+        "settings.sensitive-data.mark-sensitive-data"
+      )
+    ).toBeDefined();
+
+    unmount();
+  });
+
+  test("hides mark sensitive data without catalog update permission", async () => {
+    mocks.hasProjectPermissionV2.mockImplementation(
+      (_project, permission) => permission !== "bb.databaseCatalogs.update"
+    );
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseCatalogPanel, {
+        database: makeDatabase(),
+      })
+    );
+
+    render();
+    await flush();
+
+    expect(
+      getButton(
+        container,
+        "settings.sensitive-data.mark-sensitive-data"
+      )
+    ).toBeUndefined();
+
+    unmount();
+  });
+
+  test("opens the feature dialog when marking requires data masking", async () => {
+    mocks.featureToRef.mockReturnValue({ value: false });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseCatalogPanel, {
+        database: makeDatabase(),
+      })
+    );
+
+    render();
+    await flush();
+
+    click(
+      getButton(
+        container,
+        "settings.sensitive-data.mark-sensitive-data"
+      ) as HTMLElement
+    );
+    await flush();
+
+    expect(
+      container.querySelector('[data-testid="dialog-root"]')
+    ).not.toBeNull();
+    expect(container.querySelector('[data-testid="sheet-root"]')).toBeNull();
+
+    unmount();
+  });
+
+  test("marks a selected database column with a semantic type", async () => {
+    mocks.getSettingByName.mockReturnValue({
+      value: {
+        value: {
+          case: "semanticType",
+          value: { types: [] },
+        },
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseCatalogPanel, {
+        database: makeDatabase(),
+      })
+    );
+
+    render();
+    await flush();
+
+    click(
+      getButton(
+        container,
+        "settings.sensitive-data.mark-sensitive-data"
+      ) as HTMLElement
+    );
+    await flush();
+
+    const sheet = container.querySelector('[data-testid="sheet-root"]');
+    expect(sheet).not.toBeNull();
+
+    let selects = Array.from(sheet?.querySelectorAll("select") ?? []);
+    expect(selects).toHaveLength(4);
+    await changeSelect(selects[0] as HTMLSelectElement, "0");
+    let renderedValues = Array.from(
+      sheet?.querySelectorAll('[data-testid="select-value"]') ?? []
+    );
+    expect(renderedValues[0]?.textContent).toBe("public");
+
+    selects = Array.from(sheet?.querySelectorAll("select") ?? []);
+    await changeSelect(selects[1] as HTMLSelectElement, "0");
+    renderedValues = Array.from(
+      sheet?.querySelectorAll('[data-testid="select-value"]') ?? []
+    );
+    expect(renderedValues[1]?.textContent).toBe("book");
+
+    selects = Array.from(sheet?.querySelectorAll("select") ?? []);
+    await changeSelect(selects[2] as HTMLSelectElement, "email");
+    expect(
+      Array.from(selects[3]?.options ?? []).map((option) => option.value)
+    ).toEqual(expect.arrayContaining(["bb.default", "bb.default-partial"]));
+    await changeSelect(selects[3] as HTMLSelectElement, "bb.default");
+
+    click(getButton(sheet as HTMLElement, "common.save") as HTMLElement);
+    await flush();
+
+    expect(mocks.updateColumnCatalog).toHaveBeenCalledWith({
+      database: "instances/inst1/databases/db1",
+      schema: "public",
+      table: "book",
+      column: "email",
+      columnCatalog: {
+        semanticType: "bb.default",
+      },
+      notification: "common.updated",
+    });
 
     unmount();
   });

@@ -1651,52 +1651,46 @@
       "count": 1
     },
     {
-      "path": "src/routes/project/database-detail/overview/TableDetailDialog.tsx",
+      "path": "src/routes/project/database-detail/overview/TableDetailSheet.tsx",
       "rule": "no-native-control",
       "token": "button",
       "count": 3
     },
     {
-      "path": "src/routes/project/database-detail/overview/TableDetailDialog.tsx",
+      "path": "src/routes/project/database-detail/overview/TableDetailSheet.tsx",
       "rule": "no-raw-color",
       "token": "bg-amber-500",
       "count": 1
     },
     {
-      "path": "src/routes/project/database-detail/overview/TableDetailDialog.tsx",
+      "path": "src/routes/project/database-detail/overview/TableDetailSheet.tsx",
       "rule": "no-raw-color",
       "token": "bg-green-200",
       "count": 1
     },
     {
-      "path": "src/routes/project/database-detail/overview/TableDetailDialog.tsx",
+      "path": "src/routes/project/database-detail/overview/TableDetailSheet.tsx",
       "rule": "no-raw-color",
       "token": "bg-orange-300",
       "count": 1
     },
     {
-      "path": "src/routes/project/database-detail/overview/TableDetailDialog.tsx",
+      "path": "src/routes/project/database-detail/overview/TableDetailSheet.tsx",
       "rule": "no-raw-color",
       "token": "bg-red-500",
       "count": 1
     },
     {
-      "path": "src/routes/project/database-detail/overview/TableDetailDialog.tsx",
+      "path": "src/routes/project/database-detail/overview/TableDetailSheet.tsx",
       "rule": "no-raw-color",
       "token": "bg-yellow-200",
       "count": 1
     },
     {
-      "path": "src/routes/project/database-detail/overview/TableDetailDialog.tsx",
+      "path": "src/routes/project/database-detail/overview/TableDetailSheet.tsx",
       "rule": "no-raw-table",
       "token": "table",
       "count": 2
-    },
-    {
-      "path": "src/routes/project/database-detail/panels/DatabaseCatalogPanel.tsx",
-      "rule": "no-raw-color",
-      "token": "text-white",
-      "count": 1
     },
     {
       "path": "src/routes/project/database-detail/revision/ImportRevisionSheet.tsx",

@@ -252,7 +252,10 @@ func validateCatalogSemanticTypeIDs(config *storepb.DatabaseConfig, setting *sto
 		return nil
 	}
 
-	validSemanticTypeIDs := make(map[string]bool)
+	validSemanticTypeIDs := map[string]bool{
+		defaultSemanticTypeID:        true,
+		defaultPartialSemanticTypeID: true,
+	}
 	for _, semanticType := range setting.GetTypes() {
 		validSemanticTypeIDs[semanticType.Id] = true
 	}

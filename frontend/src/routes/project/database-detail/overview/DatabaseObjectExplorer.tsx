@@ -48,9 +48,9 @@ import {
   ObjectSectionTable,
 } from "./ObjectSectionTable";
 import {
-  TableDetailDialog,
-  type TableDetailDialogData,
-} from "./TableDetailDialog";
+  TableDetailSheet,
+  type TableDetailSheetData,
+} from "./TableDetailSheet";
 import { TableMetadataTable } from "./TableMetadataTable";
 
 function filterByKeyword(name: string, keyword: string) {
@@ -159,7 +159,7 @@ export function DatabaseObjectExplorer({
       Engine.CASSANDRA,
       Engine.TRINO,
     ].includes(databaseEngine);
-  const selectedTableDetail: TableDetailDialogData | undefined = selectedTable
+  const selectedTableDetail: TableDetailSheetData | undefined = selectedTable
     ? {
         database,
         editable: canUpdateCatalog,
@@ -198,7 +198,7 @@ export function DatabaseObjectExplorer({
         partitions: (selectedTable.partitions ?? []).map(
           function mapPartition(
             partition
-          ): NonNullable<TableDetailDialogData["partitions"]>[number] {
+          ): NonNullable<TableDetailSheetData["partitions"]>[number] {
             return {
               name: partition.name,
               type:
@@ -491,7 +491,7 @@ export function DatabaseObjectExplorer({
         </>
       )}
 
-      <TableDetailDialog
+      <TableDetailSheet
         open={!!selectedTableName}
         table={selectedTableDetail}
         onOpenChange={(open) => {

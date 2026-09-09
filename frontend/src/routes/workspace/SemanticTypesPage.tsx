@@ -37,7 +37,6 @@ import {
 } from "@/components/WorkspacePageLayout";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
-import { getSemanticTemplateList } from "@/types";
 import type {
   Algorithm,
   SemanticTypeSetting_SemanticType,
@@ -55,6 +54,7 @@ import {
   SettingValueSchema as SettingSettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { getSemanticTypeListWithBuiltins } from "@/types/semanticTypes";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 type SemanticItemMode = "NORMAL" | "CREATE" | "EDIT";
@@ -89,6 +89,24 @@ function isBuiltinSemanticType(item: SemanticTypeSetting_SemanticType) {
   return item.id.startsWith("bb.");
 }
 
+function getPersistedSemanticTypes(items: SemanticItem[]) {
+  return items
+    .filter(
+      ({ item, mode }) => mode === "NORMAL" && !isBuiltinSemanticType(item)
+    )
+    .map(({ item }) => item);
+}
+
+function toSemanticItems(
+  semanticTypeList: SemanticTypeSetting_SemanticType[]
+): SemanticItem[] {
+  return getSemanticTypeListWithBuiltins(semanticTypeList).map((item) => ({
+    dirty: false,
+    item,
+    mode: "NORMAL",
+  }));
+}
+
 function useEscapeKey(onEscape: () => void) {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -108,9 +126,8 @@ export function SemanticTypesPage() {
   );
   const isReadonly = !hasPermission || !hasSensitiveDataFeature;
 
-  const [items, setItems] = useState<SemanticItem[]>([]);
+  const [items, setItems] = useState<SemanticItem[]>(() => toSemanticItems([]));
   const [loaded, setLoaded] = useState(false);
-  const [showTemplateDrawer, setShowTemplateDrawer] = useState(false);
   const [algorithmDrawer, setAlgorithmDrawer] = useState<{
     index: number;
     algorithm?: Algorithm;
@@ -135,13 +152,7 @@ export function SemanticTypesPage() {
 
   useEffect(() => {
     if (!loaded) return;
-    setItems(
-      semanticTypeSettingValue.map((st) => ({
-        dirty: false,
-        item: st,
-        mode: "NORMAL" as const,
-      }))
-    );
+    setItems(toSemanticItems(semanticTypeSettingValue));
   }, [loaded]);
 
   const upsertSetting = useCallback(
@@ -193,9 +204,7 @@ export function SemanticTypesPage() {
       next.splice(index, 1);
       setItems(next);
       if (current.mode !== "CREATE") {
-        const types = next
-          .filter((d) => d.mode === "NORMAL")
-          .map((d) => d.item);
+        const types = getPersistedSemanticTypes(next);
         void upsertSetting(types, t("common.deleted"));
       }
     },
@@ -212,7 +221,7 @@ export function SemanticTypesPage() {
       const next = [...items];
       next[index] = { ...current, dirty: false, mode: "NORMAL" };
       setItems(next);
-      const types = next.filter((d) => d.mode === "NORMAL").map((d) => d.item);
+      const types = getPersistedSemanticTypes(next);
       void upsertSetting(types, msg);
     },
     [upsertSetting, t, items]
@@ -282,9 +291,7 @@ export function SemanticTypesPage() {
         const next = [...items];
         next[index] = updated;
         setItems(next);
-        const types = next
-          .filter((d) => d.mode === "NORMAL")
-          .map((d) => d.item);
+        const types = getPersistedSemanticTypes(next);
         const msg = t(
           current.mode === "CREATE" ? "common.created" : "common.updated"
         );
@@ -306,40 +313,16 @@ export function SemanticTypesPage() {
     []
   );
 
-  const onTemplateApply = useCallback(
-    (template: SemanticTypeSetting_SemanticType) => {
-      if (items.find((item) => item.item.id === template.id)) {
-        pushNotification({
-          module: "bytebase",
-          style: "INFO",
-          title: t(
-            "settings.sensitive-data.semantic-types.template.duplicate-warning",
-            { title: template.title }
-          ),
-        });
-        setShowTemplateDrawer(false);
-        return;
-      }
-      const newItem: SemanticItem = {
-        dirty: false,
-        mode: "NORMAL",
-        item: create(SemanticTypeSetting_SemanticTypeSchema, {
-          ...template,
-        }),
-      };
-      const next = [...items, newItem];
-      setItems(next);
-      const types = next.filter((d) => d.mode === "NORMAL").map((d) => d.item);
-      void upsertSetting(types, t("common.created"));
-      setShowTemplateDrawer(false);
-    },
-    [upsertSetting, t, items]
-  );
-
-  const isConfirmDisabled = (data: SemanticItem): boolean => {
-    if (!data.item.title) return true;
-    if (data.mode === "EDIT" && !data.dirty) return true;
-    return false;
+  const getConfirmDisabledReason = (data: SemanticItem): string | undefined => {
+    if (!data.item.title.trim()) {
+      return t("settings.sensitive-data.semantic-types.error.title-required");
+    }
+    if (data.mode === "EDIT" && !data.dirty) {
+      return t(
+        "settings.sensitive-data.semantic-types.error.no-changes-to-save"
+      );
+    }
+    return undefined;
   };
 
   return (
@@ -350,23 +333,14 @@ export function SemanticTypesPage() {
       />
 
       <WorkspacePageToolbar align="end">
-        <div className="flex items-center gap-x-2">
-          <Button
-            appearance="outline"
-            disabled={isReadonly}
-            onClick={() => setShowTemplateDrawer(true)}
-          >
-            {t("settings.sensitive-data.semantic-types.use-predefined-type")}
-          </Button>
-          <Button disabled={isReadonly} onClick={onAdd}>
-            <Plus className="h-4 w-4" />
-            {t("common.create")}
-          </Button>
-        </div>
+        <Button disabled={isReadonly} onClick={onAdd}>
+          <Plus />
+          {t("common.create")}
+        </Button>
       </WorkspacePageToolbar>
 
-      <div className="border rounded-sm overflow-hidden">
-        <Table>
+      <div className="overflow-x-auto rounded-sm border">
+        <Table className="min-w-5xl">
           <TableHeader>
             <TableRow className="bg-control-bg">
               <TableHead className="w-20 text-center">
@@ -374,9 +348,7 @@ export function SemanticTypesPage() {
               </TableHead>
               <TableHead className="w-36">ID</TableHead>
               <TableHead>
-                {t(
-                  "settings.sensitive-data.semantic-types.table.semantic-type"
-                )}
+                {t("settings.sensitive-data.semantic-types.table.title")}
               </TableHead>
               <TableHead className="w-48">
                 {t("settings.sensitive-data.semantic-types.table.description")}
@@ -400,7 +372,7 @@ export function SemanticTypesPage() {
                 row={row}
                 index={index}
                 readonly={isReadonly}
-                isConfirmDisabled={isConfirmDisabled}
+                getConfirmDisabledReason={getConfirmDisabledReason}
                 onInput={onInput}
                 onRemove={onRemove}
                 onConfirm={onConfirm}
@@ -422,13 +394,6 @@ export function SemanticTypesPage() {
           </TableBody>
         </Table>
       </div>
-
-      {showTemplateDrawer && (
-        <SemanticTemplateDrawer
-          onApply={onTemplateApply}
-          onDismiss={() => setShowTemplateDrawer(false)}
-        />
-      )}
 
       {algorithmDrawer !== null && (
         <MaskingAlgorithmDrawer
@@ -948,108 +913,13 @@ function MaskingAlgorithmDrawer({
   );
 }
 
-// --- SemanticTemplateDrawer (React) ---
-
-interface SemanticTemplateDrawerProps {
-  onApply: (template: SemanticTypeSetting_SemanticType) => void;
-  onDismiss: () => void;
-}
-
-function SemanticTemplateDrawer({
-  onApply,
-  onDismiss,
-}: SemanticTemplateDrawerProps) {
-  const { t } = useTranslation();
-  useEscapeKey(onDismiss);
-  const templates = useMemo(() => getSemanticTemplateList(), []);
-
-  return (
-    <Sheet open onOpenChange={(nextOpen) => !nextOpen && onDismiss()}>
-      <SheetContent width="standard">
-        <SheetHeader>
-          <SheetTitle>
-            {t("settings.sensitive-data.semantic-types.table.semantic-type")}
-          </SheetTitle>
-        </SheetHeader>
-        <SheetBody className="p-6">
-          <p className="text-sm text-control-placeholder mb-4">
-            {t("settings.sensitive-data.semantic-types.template.description")}
-          </p>
-          <div className="border rounded-sm overflow-hidden">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-control-bg">
-                  <TableHead>ID</TableHead>
-                  <TableHead>
-                    {t(
-                      "settings.sensitive-data.semantic-types.table.semantic-type"
-                    )}
-                  </TableHead>
-                  <TableHead>
-                    {t(
-                      "settings.sensitive-data.semantic-types.table.description"
-                    )}
-                  </TableHead>
-                  <TableHead>
-                    {t(
-                      "settings.sensitive-data.semantic-types.table.masking-algorithm"
-                    )}
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {templates.map((template) => {
-                  const key = template.id.split(".").join("-");
-                  return (
-                    <TableRow
-                      key={template.id}
-                      className="cursor-pointer"
-                      onClick={() => onApply(template)}
-                    >
-                      <TableCell>{template.id}</TableCell>
-                      <TableCell>{template.title}</TableCell>
-                      <TableCell>{template.description}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-x-1">
-                          <span>
-                            {t(
-                              `dynamic.settings.sensitive-data.semantic-types.template.${key}.title`
-                            )}
-                          </span>
-                          <span
-                            className="text-control-placeholder cursor-help"
-                            title={t(
-                              `dynamic.settings.sensitive-data.semantic-types.template.${key}.algorithm.description`
-                            )}
-                          >
-                            <Info className="w-4 h-4" />
-                          </span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        </SheetBody>
-        <SheetFooter>
-          <Button appearance="outline" onClick={onDismiss}>
-            {t("common.cancel")}
-          </Button>
-        </SheetFooter>
-      </SheetContent>
-    </Sheet>
-  );
-}
-
 // --- SemanticTypeRow ---
 
 interface SemanticTypeRowProps {
   row: SemanticItem;
   index: number;
   readonly: boolean;
-  isConfirmDisabled: (data: SemanticItem) => boolean;
+  getConfirmDisabledReason: (data: SemanticItem) => string | undefined;
   onInput: (
     index: number,
     updater: (
@@ -1067,7 +937,7 @@ function SemanticTypeRow({
   row,
   index,
   readonly,
-  isConfirmDisabled,
+  getConfirmDisabledReason,
   onInput,
   onRemove,
   onConfirm,
@@ -1080,6 +950,7 @@ function SemanticTypeRow({
   const isBuiltin = isBuiltinSemanticType(row.item);
   const isItemReadonly = readonly || isBuiltin;
   const isEditing = row.mode !== "NORMAL";
+  const confirmDisabledReason = getConfirmDisabledReason(row);
 
   return (
     <TableRow>
@@ -1110,7 +981,7 @@ function SemanticTypeRow({
             value={row.item.title}
             size="sm"
             placeholder={t(
-              "settings.sensitive-data.semantic-types.table.semantic-type"
+              "settings.sensitive-data.semantic-types.table.title"
             )}
             onChange={(e) =>
               onInput(index, (item) => ({ ...item, title: e.target.value }))
@@ -1189,16 +1060,7 @@ function SemanticTypeRow({
       {!readonly && (
         <TableCell>
           <div className="flex items-center justify-end gap-x-1">
-            {isBuiltin ? (
-              <DeleteConfirmButton
-                show={showDeleteConfirm}
-                onShowChange={setShowDeleteConfirm}
-                message={t(
-                  "settings.sensitive-data.semantic-types.table.delete"
-                )}
-                onConfirm={() => onRemove(index)}
-              />
-            ) : (
+            {!isBuiltin && (
               <>
                 {isEditing && (
                   <button
@@ -1219,13 +1081,19 @@ function SemanticTypeRow({
                   />
                 )}
                 {isEditing && (
-                  <button
-                    className="p-1 rounded-xs hover:bg-accent/10 text-accent disabled:opacity-50 disabled:cursor-not-allowed"
-                    disabled={isConfirmDisabled(row)}
-                    onClick={() => onConfirm(index)}
-                  >
-                    <Check className="w-4 h-4" />
-                  </button>
+                  <Tooltip content={confirmDisabledReason}>
+                    <span className="inline-flex">
+                      <button
+                        type="button"
+                        aria-label={t("common.confirm")}
+                        className="p-1 rounded-xs hover:bg-accent/10 text-accent disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!!confirmDisabledReason}
+                        onClick={() => onConfirm(index)}
+                      >
+                        <Check className="w-4 h-4" />
+                      </button>
+                    </span>
+                  </Tooltip>
                 )}
                 {row.mode === "NORMAL" && (
                   <button

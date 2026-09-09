@@ -21,14 +21,14 @@ func testElasticsearchObjectSchema() *storepb.ObjectSchema {
 			StructKind: &storepb.ObjectSchema_StructKind{
 				Properties: map[string]*storepb.ObjectSchema{
 					"name":  {Type: storepb.ObjectSchema_STRING},
-					"email": {Type: storepb.ObjectSchema_STRING, SemanticType: "bb.default"},
+					"email": {Type: storepb.ObjectSchema_STRING, SemanticType: defaultSemanticTypeID},
 					"age":   {Type: storepb.ObjectSchema_NUMBER},
 					"contact": {
 						Type: storepb.ObjectSchema_OBJECT,
 						Kind: &storepb.ObjectSchema_StructKind_{
 							StructKind: &storepb.ObjectSchema_StructKind{
 								Properties: map[string]*storepb.ObjectSchema{
-									"phone": {Type: storepb.ObjectSchema_STRING, SemanticType: "bb.default"},
+									"phone": {Type: storepb.ObjectSchema_STRING, SemanticType: defaultSemanticTypeID},
 									"city":  {Type: storepb.ObjectSchema_STRING},
 								},
 							},
@@ -42,7 +42,7 @@ func testElasticsearchObjectSchema() *storepb.ObjectSchema {
 
 func testElasticsearchMaskerMap() map[string]masker.Masker {
 	return map[string]masker.Masker{
-		"bb.default": masker.NewDefaultFullMasker(),
+		defaultSemanticTypeID: masker.NewDefaultFullMasker(),
 	}
 }
 
@@ -224,7 +224,7 @@ func TestMaskElasticsearchMSearchResponses(t *testing.T) {
 func TestMaskElasticsearchSourceObjectDirectReplacement(t *testing.T) {
 	t.Parallel()
 	maskers := map[string]masker.Masker{
-		"bb.default": masker.NewDefaultFullMasker(),
+		defaultSemanticTypeID: masker.NewDefaultFullMasker(),
 	}
 
 	tests := []struct {
@@ -249,7 +249,7 @@ func TestMaskElasticsearchSourceObjectDirectReplacement(t *testing.T) {
 							"name": {Type: storepb.ObjectSchema_STRING},
 							"contact": {
 								Type:         storepb.ObjectSchema_OBJECT,
-								SemanticType: "bb.default",
+								SemanticType: defaultSemanticTypeID,
 								Kind: &storepb.ObjectSchema_StructKind_{
 									StructKind: &storepb.ObjectSchema_StructKind{
 										Properties: map[string]*storepb.ObjectSchema{
@@ -281,7 +281,7 @@ func TestMaskElasticsearchSourceObjectDirectReplacement(t *testing.T) {
 							"name": {Type: storepb.ObjectSchema_STRING},
 							"tags": {
 								Type:         storepb.ObjectSchema_ARRAY,
-								SemanticType: "bb.default",
+								SemanticType: defaultSemanticTypeID,
 							},
 						},
 					},

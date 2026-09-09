@@ -150,15 +150,15 @@ func getAlgorithmName(m masker.Masker) string {
 
 func buildSemanticTypeToMaskerMap(ctx context.Context, stores *store.Store) (map[string]masker.Masker, error) {
 	semanticTypeToMasker := map[string]masker.Masker{
-		"bb.default":         masker.NewDefaultFullMasker(),
-		"bb.default-partial": masker.NewDefaultRangeMasker(),
+		defaultSemanticTypeID:        masker.NewDefaultFullMasker(),
+		defaultPartialSemanticTypeID: masker.NewDefaultRangeMasker(),
 	}
 	semanticTypesSetting, err := stores.GetSemanticTypesSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get semantic types setting")
 	}
 	for _, semanticType := range semanticTypesSetting.GetTypes() {
-		if semanticType.GetId() == "bb.default" || semanticType.GetId() == "bb.default-partial" {
+		if isBuiltinSemanticTypeID(semanticType.GetId()) {
 			// Skip the built-in default semantic types.
 			continue
 		}

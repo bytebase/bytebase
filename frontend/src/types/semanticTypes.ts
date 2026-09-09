@@ -30,3 +30,16 @@ export const getSemanticTemplateList =
       }
     );
   };
+
+export const getSemanticTypeListWithBuiltins = (
+  semanticTypeList: SemanticTypeSetting_SemanticType[]
+): SemanticTypeSetting_SemanticType[] => {
+  const builtins = getSemanticTemplateList();
+  const builtinIds = new Set(builtins.map((semanticType) => semanticType.id));
+  return [
+    ...builtins,
+    ...semanticTypeList.filter(
+      (semanticType) => !builtinIds.has(semanticType.id)
+    ),
+  ];
+};

@@ -2369,8 +2369,7 @@
   },
   "schema-template": {
     "classification": {
-      "search": "Tìm kiếm phân loại",
-      "select": "Chọn phân loại"
+      "search": "Tìm kiếm phân loại"
     }
   },
   "sensitive-data": {
@@ -2935,9 +2934,14 @@
         "re-order": "Sắp xếp lại"
       },
       "grant-access": "Cấp Quyền truy cập",
+      "mark-sensitive-data": "Đánh dấu dữ liệu nhạy cảm",
       "never-expires": "Không bao giờ hết hạn",
       "remove-sensitive-column-tips": "Hiển thị cột này?",
       "semantic-types": {
+        "error": {
+          "no-changes-to-save": "Không có thay đổi để lưu",
+          "title-required": "Tiêu đề là bắt buộc"
+        },
         "label": "Các cột có cùng loại ngữ nghĩa sẽ sử dụng cùng một thuật toán che.",
         "select": "Chọn loại ngữ nghĩa",
         "self": "Loại ngữ nghĩa",
@@ -2946,13 +2950,9 @@
           "description": "Mô tả",
           "icon": "Biểu tượng",
           "masking-algorithm": "Thuật toán che",
-          "semantic-type": "Loại ngữ nghĩa"
-        },
-        "template": {
-          "description": "Bạn có thể áp dụng các loại ngữ nghĩa tích hợp từ mẫu. Mẫu tích hợp không thể thay đổi.",
-          "duplicate-warning": "Loại ngữ nghĩa \"{{title}}\" đã tồn tại"
-        },
-        "use-predefined-type": "Sử dụng Loại định nghĩa trước"
+          "semantic-type": "Loại ngữ nghĩa",
+          "title": "Tiêu đề"
+        }
       }
     },
     "sidebar": {
