@@ -14,6 +14,13 @@ linters:
     - tparallel
     - unparam
   settings:
+    errcheck:
+      # A deferred Rollback after a successful commit always errors; that is the idiom,
+      # not a bug. Matched by signature, so it cannot swallow an unrelated symbol whose
+      # name merely contains "Rollback".
+      exclude-functions:
+        - (*database/sql.Tx).Rollback
+        - (github.com/jackc/pgx/v5.Tx).Rollback
     exhaustive:
       explicit-exhaustive-switch: true
     forbidigo:
@@ -100,12 +107,6 @@ linters:
       - common-false-positives
       - legacy
       - std-error-handling
-    rules:
-      # A deferred tx.Rollback() after a successful commit always errors; that is the
-      # idiom, not a bug. Scoped to errcheck so it cannot swallow another linter's find.
-      - linters:
-          - errcheck
-        text: Rollback
     # Filters reported issues only; excluded paths are still analyzed. Not a speed knob.
     paths:
       - backend/generated-go
