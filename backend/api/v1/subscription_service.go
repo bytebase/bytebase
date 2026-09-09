@@ -48,7 +48,7 @@ func NewSubscriptionService(
 // GetSubscription gets the subscription.
 func (s *SubscriptionService) GetSubscription(ctx context.Context, _ *connect.Request[v1pb.GetSubscriptionRequest]) (*connect.Response[v1pb.Subscription], error) {
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	subscription := s.licenseService.LoadSubscription(ctx, workspaceID)
+	subscription := s.licenseService.LoadEffectiveSubscription(ctx, workspaceID)
 	// Attach etag from subscription table for optimistic concurrency.
 	if subscription.Plan != v1pb.PlanType_FREE {
 		if existing, err := s.store.GetSubscriptionByWorkspace(ctx, workspaceID); err == nil && existing != nil {
@@ -117,7 +117,7 @@ func (s *SubscriptionService) UploadLicense(ctx context.Context, req *connect.Re
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to store license"))
 	}
 
-	subscription := s.licenseService.LoadSubscription(ctx, common.GetWorkspaceIDFromContext(ctx))
+	subscription := s.licenseService.LoadEffectiveSubscription(ctx, common.GetWorkspaceIDFromContext(ctx))
 	return connect.NewResponse(subscription), nil
 }
 
@@ -138,17 +138,11 @@ func (s *SubscriptionService) StartTrial(ctx context.Context, _ *connect.Request
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("workspace is not eligible for a free trial"))
 	}
 
-	setting, err := s.store.GetSystemSettingUncached(ctx, workspaceID)
+	currentSubscription, err := s.licenseService.LoadSubscriptionFromDB(ctx, workspaceID)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get system setting"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to load subscription"))
 	}
-	if setting == nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("system setting not found"))
-	}
-	if setting.License != "" {
-		if _, err := s.licenseService.IsTrialLicense(setting.License, workspaceID); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to verify existing license"))
-		}
+	if currentSubscription != nil {
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("workspace is not eligible for a free trial"))
 	}
 

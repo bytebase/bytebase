@@ -162,14 +162,28 @@ func TestParseLicenseExpiredIsInvalid(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	_, err = service.parseLicense(license, "test-workspace")
+	err = service.validateLicense(license, "test-workspace")
 	require.Equal(t, common.Invalid, common.ErrorCode(err))
 }
 
-func TestIsTrialLicenseIncludesExpiredTrial(t *testing.T) {
+func TestLoadSubscriptionFromDB(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	t.Cleanup(cancel)
+	_, stores, _ := testcontainer.NewMetadataDBWithCache(t, true)
+
+	_, err := stores.GetDB().ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('default')`)
+	require.NoError(t, err)
+	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{
+		Name:      storepb.SettingName_SYSTEM,
+		Workspace: "default",
+		Value:     &storepb.SystemSetting{},
+	})
+	require.NoError(t, err)
+
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	require.NoError(t, err)
 	service := &LicenseService{
+		store: stores,
 		config: &Config{
 			PublicKey:  &privateKey.PublicKey,
 			PrivateKey: privateKey,
@@ -177,33 +191,40 @@ func TestIsTrialLicenseIncludesExpiredTrial(t *testing.T) {
 			Issuer:     issuer,
 			Audience:   audience,
 		},
+		cache: expirable.NewLRU[string, *v1pb.Subscription](8, nil, time.Minute),
 	}
 
-	for _, expiresAt := range []time.Time{time.Now().Add(time.Hour), time.Now().Add(-time.Hour)} {
-		license, err := service.CreateLicense(&LicenseParams{
-			Plan:        v1pb.PlanType_TEAM.String(),
-			WorkspaceID: "test-workspace",
-			Trialing:    true,
-			ExpiresAt:   expiresAt,
-		})
-		require.NoError(t, err)
+	stored, err := service.LoadSubscriptionFromDB(ctx, "default")
+	require.NoError(t, err)
+	require.Nil(t, stored)
+	require.Equal(t, v1pb.PlanType_FREE, service.LoadEffectiveSubscription(ctx, "default").Plan)
 
-		trialing, err := service.IsTrialLicense(license, "test-workspace")
-		require.NoError(t, err)
-		require.True(t, trialing)
-	}
-
-	paidLicense, err := service.CreateLicense(&LicenseParams{
+	expiresAt := time.Now().Add(-time.Hour).UTC().Truncate(time.Second)
+	license, err := service.CreateLicense(&LicenseParams{
 		Plan:        v1pb.PlanType_TEAM.String(),
-		WorkspaceID: "test-workspace",
+		WorkspaceID: "default",
+		Trialing:    true,
+		ExpiresAt:   expiresAt,
 	})
 	require.NoError(t, err)
-	trialing, err := service.IsTrialLicense(paidLicense, "test-workspace")
-	require.NoError(t, err)
-	require.False(t, trialing)
+	require.NoError(t, stores.UpdateLicense(ctx, "default", license))
+	service.InvalidateCache("default")
 
-	_, err = service.IsTrialLicense("not-a-license", "test-workspace")
+	stored, err = service.LoadSubscriptionFromDB(ctx, "default")
+	require.NoError(t, err)
+	require.Equal(t, v1pb.PlanType_TEAM, stored.Plan)
+	require.True(t, stored.Trialing)
+	require.Equal(t, expiresAt, stored.ExpiresTime.AsTime())
+
+	effective := service.LoadEffectiveSubscription(ctx, "default")
+	require.Equal(t, v1pb.PlanType_FREE, effective.Plan)
+	require.Equal(t, expiresAt, effective.ExpiresTime.AsTime())
+
+	require.NoError(t, stores.UpdateLicense(ctx, "default", "not-a-license"))
+	service.InvalidateCache("default")
+	_, err = service.LoadSubscriptionFromDB(ctx, "default")
 	require.Error(t, err)
+	require.Equal(t, v1pb.PlanType_FREE, service.LoadEffectiveSubscription(ctx, "default").Plan)
 }
 
 func TestGetUserLimitUncached(t *testing.T) {
