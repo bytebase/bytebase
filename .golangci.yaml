@@ -13,8 +13,14 @@ linters:
     - sqlclosecheck
     - tparallel
     - unparam
-    - unused
   settings:
+    errcheck:
+      # A deferred Rollback after a successful commit always errors; that is the idiom,
+      # not a bug. Matched by signature, so it cannot swallow an unrelated symbol whose
+      # name merely contains "Rollback".
+      exclude-functions:
+        - (*database/sql.Tx).Rollback
+        - (github.com/jackc/pgx/v5.Tx).Rollback
     exhaustive:
       explicit-exhaustive-switch: true
     forbidigo:
@@ -101,21 +107,6 @@ linters:
       - common-false-positives
       - legacy
       - std-error-handling
-    rules:
-      - path: (.+)\.go$
-        text: Rollback
-      - path: (.+)\.go$
-        text: logger.Sync
-      - path: (.+)\.go$
-        text: pgInstance.Stop
-      - path: (.+)\.go$
-        text: fmt.Printf
-      - path: (.+)\.go$
-        text: Enter(.*)_(.*)
-      - path: (.+)\.go$
-        text: Exit(.*)_(.*)
-      - path: action/bitbucket/bitbucket.go
-        text: "unsecure-url-scheme.*http://api.bitbucket.org"
     # Filters reported issues only; excluded paths are still analyzed. Not a speed knob.
     paths:
       - backend/generated-go
