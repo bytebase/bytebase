@@ -652,7 +652,7 @@
       "path": "src/components/MarkdownEditor/MarkdownEditor.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 3
+      "count": 1
     },
     {
       "path": "src/components/MatchedDatabaseView.tsx",

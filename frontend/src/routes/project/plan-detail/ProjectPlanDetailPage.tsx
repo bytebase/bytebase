@@ -23,6 +23,8 @@ import { PlanDetailDeployFuture } from "./components/PlanDetailDeployFuture";
 import { PlanDetailHeader } from "./components/PlanDetailHeader";
 import { PlanDetailHeaderDetails } from "./components/PlanDetailHeaderDetails";
 import { PlanReviewSection } from "./components/review/PlanReviewSection";
+import { useIssueCommentThreadsSync } from "./hooks/useIssueCommentThreadsSync";
+import { usePlacementSync } from "./hooks/usePlacementSync";
 import { PlanDetailStoreProvider } from "./shared/stores/PlanDetailStoreProvider";
 import { planPhaseAnchorId } from "./shell/focusPhase";
 import { usePlanDetailPage } from "./shell/hooks/usePlanDetailPage";
@@ -105,6 +107,13 @@ function ProjectPlanDetailPageInner({
     specId,
     stageId,
     taskId,
+  });
+  useIssueCommentThreadsSync(page.issue);
+  usePlacementSync({
+    issueName: page.issue?.name,
+    projectId,
+    ready: page.ready,
+    specs: page.plan.specs,
   });
   const isGitOpsPlan = useMemo(
     () => isReleaseBackedPlan(page.plan.specs),
