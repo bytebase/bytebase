@@ -33635,6 +33635,8 @@ components:
           description: The workload identity configuration for OIDC token validation.
           $ref: '#/components/schemas/bytebase.v1.WorkloadIdentityConfig'
       title: WorkloadIdentity
+      required:
+        - workloadIdentityConfig
       additionalProperties: false
       description: WorkloadIdentity represents an external CI/CD workload identity.
     bytebase.v1.WorkloadIdentityConfig:

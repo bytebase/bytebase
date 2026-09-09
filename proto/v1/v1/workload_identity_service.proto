@@ -131,7 +131,7 @@ message WorkloadIdentity {
   google.protobuf.Timestamp create_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // The workload identity configuration for OIDC token validation.
-  WorkloadIdentityConfig workload_identity_config = 6;
+  WorkloadIdentityConfig workload_identity_config = 6 [(google.api.field_behavior) = REQUIRED];
 }
 
 // WorkloadIdentityConfig for API layer
