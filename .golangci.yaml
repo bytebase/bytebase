@@ -116,12 +116,9 @@ linters:
         text: Exit(.*)_(.*)
       - path: action/bitbucket/bitbucket.go
         text: "unsecure-url-scheme.*http://api.bitbucket.org"
+    # Filters reported issues only; excluded paths are still analyzed. Not a speed knob.
     paths:
-      - proto/generated-go
-      - frontend
-      - third_party$
-      - builtin$
-      - examples$
+      - backend/generated-go
 formatters:
   enable:
     - goimports
@@ -132,8 +129,4 @@ formatters:
   exclusions:
     generated: lax
     paths:
-      - proto/generated-go
-      - frontend
-      - third_party$
-      - builtin$
-      - examples$
+      - backend/generated-go
