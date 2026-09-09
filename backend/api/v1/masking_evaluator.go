@@ -93,8 +93,8 @@ func (m *maskingLevelEvaluator) evaluateSemanticTypeOfColumn(
 		// Check column-level semantic type
 		semanticTypeID := columnConfig.GetSemanticType()
 		if semanticTypeID != "" {
-			semanticType, ok := m.semanticTypesMap[semanticTypeID]
-			if ok {
+			semanticType := m.semanticTypesMap[semanticTypeID]
+			if semanticType != nil || isBuiltinSemanticTypeID(semanticTypeID) {
 				context := ""
 				if schemaName != "" {
 					context = fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s.%s", databaseMessage.InstanceID, databaseMessage.DatabaseName, schemaName, tableName, columnName)
@@ -104,8 +104,8 @@ func (m *maskingLevelEvaluator) evaluateSemanticTypeOfColumn(
 				algorithmName := getAlgorithmNameFromSemanticType(semanticType)
 				eval = &MaskingEvaluation{
 					SemanticTypeID:    semanticTypeID,
-					SemanticTypeTitle: semanticType.Title,
-					SemanticTypeIcon:  semanticType.Icon,
+					SemanticTypeTitle: semanticType.GetTitle(),
+					SemanticTypeIcon:  semanticType.GetIcon(),
 					Algorithm:         algorithmName,
 					Context:           context,
 				}

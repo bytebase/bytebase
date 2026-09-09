@@ -218,6 +218,36 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			want:          "salary-amount",
 			wantAlgorithm: "Hash (MD5)",
 		},
+		{
+			description:     "Built-in Full Mask Column Catalog",
+			databaseMessage: defaultDatabaseMessage,
+			schemaName:      "hiring",
+			tableName:       "employees",
+			columnName:      "salary",
+			columnCatalog: &storepb.ColumnCatalog{
+				SemanticType: defaultSemanticTypeID,
+			},
+			maskingRulePolicy:                       &storepb.MaskingRulePolicy{},
+			dataClassification:                      defaultClassification,
+			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
+
+			want: defaultSemanticTypeID,
+		},
+		{
+			description:     "Built-in Partial Mask Column Catalog",
+			databaseMessage: defaultDatabaseMessage,
+			schemaName:      "hiring",
+			tableName:       "employees",
+			columnName:      "salary",
+			columnCatalog: &storepb.ColumnCatalog{
+				SemanticType: defaultPartialSemanticTypeID,
+			},
+			maskingRulePolicy:                       &storepb.MaskingRulePolicy{},
+			dataClassification:                      defaultClassification,
+			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
+
+			want: defaultPartialSemanticTypeID,
+		},
 	}
 
 	a := require.New(t)

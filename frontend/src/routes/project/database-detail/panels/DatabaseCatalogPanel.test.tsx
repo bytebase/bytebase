@@ -824,6 +824,45 @@ describe("DatabaseCatalogPanel", () => {
     unmount();
   });
 
+  test("offers built-in semantic types in the sensitive-column table", async () => {
+    const catalog = makeSimpleCatalog();
+    const table = catalog.schemas[0]?.tables[0];
+    if (!table || table.kind.case !== "columns") {
+      throw new Error("expected a column-backed table catalog");
+    }
+    table.kind.value.columns[0]!.semanticType = "bb.default";
+    mocks.useDatabaseCatalog.mockReturnValue(catalog);
+    mocks.getSettingByName.mockReturnValue({
+      value: {
+        value: {
+          case: "semanticType",
+          value: { types: [] },
+        },
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseCatalogPanel, {
+        database: makeDatabase(),
+      })
+    );
+
+    render();
+    await flush();
+
+    const semanticTypeSelect = container.querySelector("select");
+    expect(
+      Array.from(semanticTypeSelect?.options ?? []).map(
+        (option) => option.value
+      )
+    ).toEqual(["__EMPTY__", "bb.default", "bb.default-partial"]);
+    expect(
+      container.querySelector('[data-testid="select-value"]')?.textContent
+    ).not.toBe("common.empty");
+
+    unmount();
+  });
+
   test("enables grant access after selecting a row", async () => {
     const { container, render, unmount } = renderIntoContainer(
       createElement(DatabaseCatalogPanel, {

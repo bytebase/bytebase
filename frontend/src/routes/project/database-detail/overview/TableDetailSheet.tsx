@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useDatabaseCatalog } from "@/hooks/useDatabaseCatalog";
+import { useSemanticTypes } from "@/hooks/useSemanticTypes";
 import {
   updateColumnCatalog,
   updateTableCatalog,
@@ -50,7 +51,6 @@ import type {
 } from "@/types/proto-es/v1/setting_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { getSemanticTypeListWithBuiltins } from "@/types/semanticTypes";
 import {
   getDatabaseProject,
   getInstanceResource,
@@ -777,17 +777,7 @@ function EditableSemanticTypeCell({
   const { t } = useTranslation();
   const [showFeatureDialog, setShowFeatureDialog] = useState(false);
 
-  const semanticTypeSetting = useAppStore((s) =>
-    s.getSettingByName(Setting_SettingName.SEMANTIC_TYPES)
-  );
-  const semanticTypeList = useMemo<SemanticTypeSetting_SemanticType[]>(() => {
-    const configuredSemanticTypes =
-      semanticTypeSetting?.value?.value.case === "semanticType"
-        ? ((semanticTypeSetting.value.value.value.types ??
-            []) as SemanticTypeSetting_SemanticType[])
-        : [];
-    return getSemanticTypeListWithBuiltins(configuredSemanticTypes);
-  }, [semanticTypeSetting]);
+  const { semanticTypes: semanticTypeList } = useSemanticTypes();
   const hasSensitiveDataFeature = useAppStore((s) =>
     s.hasFeature(PlanFeature.FEATURE_DATA_MASKING)
   );

@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useDatabaseCatalog } from "@/hooks/useDatabaseCatalog";
+import { useSemanticTypes } from "@/hooks/useSemanticTypes";
 import type { MaskData, MaskDataTarget } from "@/lib/sensitive-data/types";
 import {
   getMaskDataIdentifier,
@@ -36,10 +37,7 @@ import {
   MaskingExemptionPolicySchema,
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
-import {
-  type SemanticTypeSetting_SemanticType,
-  Setting_SettingName,
-} from "@/types/proto-es/v1/setting_service_pb";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   getDatabaseProject,
@@ -191,15 +189,7 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
     (permission) => hasProjectPermissionV2(project, permission)
   );
 
-  const semanticTypeSetting = useAppStore((s) =>
-    s.getSettingByName(Setting_SettingName.SEMANTIC_TYPES)
-  );
-  const semanticTypeList = useMemo<SemanticTypeSetting_SemanticType[]>(() => {
-    return semanticTypeSetting?.value?.value.case === "semanticType"
-      ? ((semanticTypeSetting.value.value.value.types ??
-          []) as SemanticTypeSetting_SemanticType[])
-      : [];
-  }, [semanticTypeSetting]);
+  const { semanticTypes } = useSemanticTypes();
   const classificationConfig = useAppStore((s) =>
     s.getProjectClassification(project.dataClassificationConfigId ?? "")
   );
@@ -240,11 +230,11 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
 
   const semanticTypeOptions = useMemo(
     () =>
-      semanticTypeList.map((semanticType) => ({
+      semanticTypes.map((semanticType) => ({
         label: semanticType.title || semanticType.id,
         value: semanticType.id,
       })),
-    [semanticTypeList]
+    [semanticTypes]
   );
   const classificationOptions = useMemo(
     () =>
@@ -518,7 +508,7 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
       <MarkSensitiveDataSheet
         database={database}
         open={showMarkSensitiveDataSheet}
-        semanticTypeList={semanticTypeList}
+        semanticTypeList={semanticTypes}
         onOpenChange={setShowMarkSensitiveDataSheet}
       />
 

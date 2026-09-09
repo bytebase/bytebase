@@ -27,6 +27,7 @@ import {
   WorkspacePageLayout,
   WorkspacePageToolbar,
 } from "@/components/WorkspacePageLayout";
+import { useSemanticTypes } from "@/hooks/useSemanticTypes";
 import {
   factorOperatorOverrideMap,
   getClassificationLevelOptions,
@@ -123,16 +124,7 @@ function MaskingRuleConfig({
   const [dirty, setDirty] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const settingsByName = useAppStore((s) => s.settingsByName);
-  const semanticTypeOptions = useMemo(() => {
-    const setting = useAppStore
-      .getState()
-      .getSettingByName(Setting_SettingName.SEMANTIC_TYPES);
-    if (setting?.value?.value?.case === "semanticType") {
-      return setting.value.value.value.types ?? [];
-    }
-    return [];
-  }, [settingsByName]);
+  const { semanticTypes: semanticTypeOptions } = useSemanticTypes();
 
   const resetIdRef = useRef(0);
   const resetToRule = useCallback(

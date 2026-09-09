@@ -10,6 +10,7 @@ import { SemanticTypesPage } from "./SemanticTypesPage";
 const mocks = vi.hoisted(() => ({
   getOrFetchSettingByName: vi.fn(async () => undefined),
   getSettingByName: vi.fn<() => unknown>(() => undefined),
+  upsertSetting: vi.fn(async (_request: unknown) => undefined),
 }));
 
 vi.mock("react-i18next", async (importOriginal) => ({
@@ -51,10 +52,12 @@ vi.mock("@/components/WorkspacePageLayout", () => ({
 
 vi.mock("@/stores/app", () => {
   type MockAppState = {
+    getSettingByName: () => unknown;
     hasInstanceFeature: () => boolean;
     settingsByName: Map<unknown, unknown>;
   };
   const state: MockAppState = {
+    getSettingByName: mocks.getSettingByName,
     hasInstanceFeature: () => true,
     settingsByName: new Map(),
   };
@@ -64,7 +67,7 @@ vi.mock("@/stores/app", () => {
       getState: () => ({
         getOrFetchSettingByName: mocks.getOrFetchSettingByName,
         getSettingByName: mocks.getSettingByName,
-        upsertSetting: vi.fn(),
+        upsertSetting: mocks.upsertSetting,
       }),
     }
   );
@@ -84,6 +87,7 @@ afterEach(() => {
   }
   mocks.getOrFetchSettingByName.mockClear();
   mocks.getSettingByName.mockClear();
+  mocks.upsertSetting.mockClear();
 });
 
 describe("SemanticTypesPage", () => {
@@ -183,5 +187,75 @@ describe("SemanticTypesPage", () => {
     expect(container.textContent).toContain(
       "settings.sensitive-data.semantic-types.table.title"
     );
+  });
+
+  test("preserves non-built-in bb-prefixed semantic types when saving", async () => {
+    mocks.getSettingByName.mockReturnValue({
+      value: {
+        value: {
+          case: "semanticType",
+          value: {
+            types: [
+              { id: "bb.customer", title: "Customer" },
+              { id: "email", title: "Email" },
+            ],
+          },
+        },
+      },
+    });
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    roots.push(root);
+
+    await act(async () => {
+      root.render(<SemanticTypesPage />);
+      await Promise.resolve();
+    });
+
+    const emailRow = Array.from(container.querySelectorAll("tbody tr")).find(
+      (row) => row.querySelector("td:nth-child(2)")?.textContent === "email"
+    );
+    expect(emailRow).toBeDefined();
+    const editButton = Array.from(
+      emailRow?.querySelectorAll<HTMLButtonElement>("button") ?? []
+    ).at(-1);
+    expect(editButton).toBeDefined();
+    act(() => editButton?.click());
+
+    const titleInput = emailRow?.querySelector<HTMLInputElement>(
+      'input[placeholder="settings.sensitive-data.semantic-types.table.title"]'
+    );
+    expect(titleInput).toBeDefined();
+    act(() => {
+      const descriptor = Object.getOwnPropertyDescriptor(
+        HTMLInputElement.prototype,
+        "value"
+      );
+      descriptor?.set?.call(titleInput, "Email address");
+      titleInput?.dispatchEvent(new Event("input", { bubbles: true }));
+    });
+
+    const confirmButton = emailRow?.querySelector<HTMLButtonElement>(
+      'button[aria-label="common.confirm"]'
+    );
+    expect(confirmButton?.disabled).toBe(false);
+    act(() => confirmButton?.click());
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    const request = mocks.upsertSetting.mock.calls.at(-1)?.[0] as
+      | {
+          value?: {
+            value?: {
+              value?: { types?: Array<{ id: string }> };
+            };
+          };
+        }
+      | undefined;
+    expect(request?.value?.value?.value?.types?.map(({ id }) => id)).toEqual([
+      "bb.customer",
+      "email",
+    ]);
   });
 });

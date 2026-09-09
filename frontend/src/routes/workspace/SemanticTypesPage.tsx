@@ -35,6 +35,7 @@ import {
   WorkspacePageLayout,
   WorkspacePageToolbar,
 } from "@/components/WorkspacePageLayout";
+import { useSemanticTypes } from "@/hooks/useSemanticTypes";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import type {
@@ -54,7 +55,7 @@ import {
   SettingValueSchema as SettingSettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
-import { getSemanticTypeListWithBuiltins } from "@/types/semanticTypes";
+import { isBuiltinSemanticTypeId } from "@/types/semanticTypes";
 import { hasWorkspacePermissionV2 } from "@/utils";
 
 type SemanticItemMode = "NORMAL" | "CREATE" | "EDIT";
@@ -86,7 +87,7 @@ function getMaskingType(
 }
 
 function isBuiltinSemanticType(item: SemanticTypeSetting_SemanticType) {
-  return item.id.startsWith("bb.");
+  return isBuiltinSemanticTypeId(item.id);
 }
 
 function getPersistedSemanticTypes(items: SemanticItem[]) {
@@ -100,7 +101,7 @@ function getPersistedSemanticTypes(items: SemanticItem[]) {
 function toSemanticItems(
   semanticTypeList: SemanticTypeSetting_SemanticType[]
 ): SemanticItem[] {
-  return getSemanticTypeListWithBuiltins(semanticTypeList).map((item) => ({
+  return semanticTypeList.map((item) => ({
     dirty: false,
     item,
     mode: "NORMAL",
@@ -125,23 +126,16 @@ export function SemanticTypesPage() {
     s.hasInstanceFeature(PlanFeature.FEATURE_DATA_MASKING)
   );
   const isReadonly = !hasPermission || !hasSensitiveDataFeature;
+  const { configuredSemanticTypes, semanticTypes } = useSemanticTypes();
 
-  const [items, setItems] = useState<SemanticItem[]>(() => toSemanticItems([]));
+  const [items, setItems] = useState<SemanticItem[]>(() =>
+    toSemanticItems(semanticTypes)
+  );
   const [loaded, setLoaded] = useState(false);
   const [algorithmDrawer, setAlgorithmDrawer] = useState<{
     index: number;
     algorithm?: Algorithm;
   } | null>(null);
-
-  const settingsByName = useAppStore((s) => s.settingsByName);
-  const semanticTypeSettingValue = useMemo(() => {
-    const setting = useAppStore
-      .getState()
-      .getSettingByName(Setting_SettingName.SEMANTIC_TYPES);
-    return setting?.value?.value?.case === "semanticType"
-      ? (setting.value.value.value.types ?? [])
-      : [];
-  }, [settingsByName]);
 
   useEffect(() => {
     useAppStore
@@ -152,7 +146,7 @@ export function SemanticTypesPage() {
 
   useEffect(() => {
     if (!loaded) return;
-    setItems(toSemanticItems(semanticTypeSettingValue));
+    setItems(toSemanticItems(semanticTypes));
   }, [loaded]);
 
   const upsertSetting = useCallback(
@@ -235,7 +229,7 @@ export function SemanticTypesPage() {
         if (item.mode === "CREATE") {
           next.splice(index, 1);
         } else {
-          const origin = semanticTypeSettingValue.find(
+          const origin = configuredSemanticTypes.find(
             (s) => s.id === item.item.id
           );
           if (origin) {
@@ -245,7 +239,7 @@ export function SemanticTypesPage() {
         return next;
       });
     },
-    [semanticTypeSettingValue]
+    [configuredSemanticTypes]
   );
 
   const onInput = useCallback(

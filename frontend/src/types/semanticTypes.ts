@@ -12,6 +12,13 @@ interface BuildInSemantic {
   algorithm: Algorithm;
 }
 
+const builtinSemanticTypeIds = new Set(
+  (buildInSemanticTypes as unknown as BuildInSemantic[]).map(({ id }) => id)
+);
+
+export const isBuiltinSemanticTypeId = (id: string): boolean =>
+  builtinSemanticTypeIds.has(id);
+
 export const getSemanticTemplateList =
   (): SemanticTypeSetting_SemanticType[] => {
     return (buildInSemanticTypes as unknown as BuildInSemantic[]).map(
@@ -35,11 +42,10 @@ export const getSemanticTypeListWithBuiltins = (
   semanticTypeList: SemanticTypeSetting_SemanticType[]
 ): SemanticTypeSetting_SemanticType[] => {
   const builtins = getSemanticTemplateList();
-  const builtinIds = new Set(builtins.map((semanticType) => semanticType.id));
   return [
     ...builtins,
     ...semanticTypeList.filter(
-      (semanticType) => !builtinIds.has(semanticType.id)
+      (semanticType) => !isBuiltinSemanticTypeId(semanticType.id)
     ),
   ];
 };

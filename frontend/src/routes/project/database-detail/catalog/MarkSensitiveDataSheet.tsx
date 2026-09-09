@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { FormField, FormFieldGroup, FormLabel } from "@/components/ui/form";
@@ -22,7 +22,6 @@ import { useAppDatabaseMetadata } from "@/hooks/useAppDatabaseMetadata";
 import { updateColumnCatalog } from "@/lib/column-data-table/utils";
 import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { SemanticTypeSetting_SemanticType } from "@/types/proto-es/v1/setting_service_pb";
-import { getSemanticTypeListWithBuiltins } from "@/types/semanticTypes";
 
 interface MarkSensitiveDataSheetProps {
   database: Database;
@@ -44,10 +43,6 @@ export function MarkSensitiveDataSheet({
   const [columnName, setColumnName] = useState("");
   const [semanticTypeId, setSemanticTypeId] = useState("bb.default");
   const [saving, setSaving] = useState(false);
-  const availableSemanticTypeList = useMemo(
-    () => getSemanticTypeListWithBuiltins(semanticTypeList),
-    [semanticTypeList]
-  );
 
   const selectedSchema =
     schemaIndex === "" ? undefined : metadata.schemas[Number(schemaIndex)];
@@ -221,7 +216,7 @@ export function MarkSensitiveDataSheet({
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {availableSemanticTypeList.map((semanticType) => (
+                  {semanticTypeList.map((semanticType) => (
                     <SelectItem key={semanticType.id} value={semanticType.id}>
                       {semanticType.title || semanticType.id}
                     </SelectItem>
