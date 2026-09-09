@@ -19,14 +19,8 @@ import (
 	redshiftdriver "github.com/bytebase/bytebase/backend/plugin/db/redshift"
 	tidbdriver "github.com/bytebase/bytebase/backend/plugin/db/tidb"
 	parserbase "github.com/bytebase/bytebase/backend/plugin/parser/base"
-	mysqlparser "github.com/bytebase/bytebase/backend/plugin/parser/mysql"
-	tidbparser "github.com/bytebase/bytebase/backend/plugin/parser/tidb"
 
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/parser/pg"
-	"github.com/bytebase/bytebase/backend/plugin/parser/plsql"
-	redshiftparser "github.com/bytebase/bytebase/backend/plugin/parser/redshift"
-	"github.com/bytebase/bytebase/backend/plugin/parser/tsql"
 	"github.com/bytebase/bytebase/backend/store"
 )
 
@@ -150,7 +144,6 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 	asts := parserbase.ExtractASTs(stmts)
 
 	var explainCalculator getAffectedRowsFromExplain
-	var sqlTypes []storepb.StatementType
 	var defaultSchema string
 	project, err := stores.GetProject(ctx, &store.FindProjectMessage{Workspace: instance.Workspace, ResourceID: &database.ProjectID})
 	if err != nil {
@@ -171,15 +164,6 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 			return nil, errors.Errorf("invalid pg driver type")
 		}
 		explainCalculator = pd.CountAffectedRows
-
-		stmtsWithPos, err := pg.GetStatementTypes(asts)
-		if err != nil {
-			return nil, err
-		}
-		sqlTypes = make([]storepb.StatementType, len(stmtsWithPos))
-		for i, stmt := range stmtsWithPos {
-			sqlTypes[i] = stmt.Type
-		}
 		// Empty so pg's extractChangedResources falls back to the database's actual
 		// default search_path (Change-1 makes a non-empty value force [currentSchema]).
 		defaultSchema = ""
@@ -189,12 +173,6 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 			return nil, errors.Errorf("invalid redshift driver type")
 		}
 		explainCalculator = rd.CountAffectedRows
-
-		// Use Redshift parser for statement types
-		sqlTypes, err = redshiftparser.GetStatementTypes(asts)
-		if err != nil {
-			return nil, err
-		}
 		defaultSchema = "public"
 	case storepb.Engine_MYSQL, storepb.Engine_MARIADB, storepb.Engine_OCEANBASE:
 		md, ok := driver.(*mysqldriver.Driver)
@@ -202,13 +180,6 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 			return nil, errors.Errorf("invalid mysql driver type")
 		}
 		explainCalculator = md.CountAffectedRows
-
-		if instance.Metadata.GetEngine() != storepb.Engine_OCEANBASE {
-			sqlTypes, err = mysqlparser.GetStatementTypes(asts)
-			if err != nil {
-				return nil, err
-			}
-		}
 		defaultSchema = ""
 	case storepb.Engine_TIDB:
 		md, ok := driver.(*tidbdriver.Driver)
@@ -216,11 +187,6 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 			return nil, errors.Errorf("invalid tidb driver type")
 		}
 		explainCalculator = md.CountAffectedRows
-
-		sqlTypes, err = tidbparser.GetStatementTypes(asts)
-		if err != nil {
-			slog.Error("failed to get statement types", log.BBError(err))
-		}
 		defaultSchema = ""
 	case storepb.Engine_ORACLE:
 		od, ok := driver.(*oracledriver.Driver)
@@ -228,11 +194,6 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 			return nil, errors.Errorf("invalid oracle driver type")
 		}
 		explainCalculator = od.CountAffectedRows
-
-		sqlTypes, err = plsql.GetStatementTypes(asts)
-		if err != nil {
-			return nil, err
-		}
 		defaultSchema = database.DatabaseName
 	case storepb.Engine_MSSQL:
 		md, ok := driver.(*mssqldriver.Driver)
@@ -240,15 +201,15 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 			return nil, errors.Errorf("invalid mssql driver type")
 		}
 		explainCalculator = md.CountAffectedRows
-
-		sqlTypes, err = tsql.GetStatementTypes(asts)
-		if err != nil {
-			slog.Error("failed to get statement types", log.BBError(err))
-		}
 		defaultSchema = "dbo"
 	default:
 		// Already checked in the Run().
 		return nil, nil
+	}
+
+	sqlTypes, err := SummaryStatementTypes(instance.Metadata.GetEngine(), asts)
+	if err != nil {
+		return nil, err
 	}
 
 	// Database secrets feature has been removed
@@ -265,6 +226,26 @@ func GetSQLSummaryReport(ctx context.Context, stores *store.Store, sheetManager 
 		AffectedRows:     totalAffectedRows,
 		ChangedResources: changeSummary.ChangedResources.Build(),
 	}, nil
+}
+
+// SummaryStatementTypes classifies the statements a SQL summary report carries
+// for engine. It resolves through the parser registry so the report and the
+// approval evaluator's parser fallback share one classifier per engine, and the
+// executor keeps no per-engine classifier table of its own: a second table is
+// how OceanBase stayed registered for classification yet unreported for two
+// years (BYT-10136).
+//
+// Every engine common.EngineSupportStatementReport admits must have a registered
+// classifier. An unregistered engine is an error, never an empty list, because
+// an empty list silently drops every statement.sql_type approval rule. A
+// classifier only errors on an AST type mismatch, a programming error, so the
+// report fails loudly rather than logging and continuing.
+func SummaryStatementTypes(engine storepb.Engine, asts []parserbase.AST) ([]storepb.StatementType, error) {
+	sqlTypes, err := parserbase.GetStatementTypes(engine, asts)
+	if err != nil {
+		return nil, errors.Wrapf(err, "failed to get statement types for %s", engine)
+	}
+	return sqlTypes, nil
 }
 
 type getAffectedRowsFromExplain func(context.Context, string) (int64, error)
