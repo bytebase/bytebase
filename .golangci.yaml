@@ -13,7 +13,6 @@ linters:
     - sqlclosecheck
     - tparallel
     - unparam
-    - unused
   settings:
     exhaustive:
       explicit-exhaustive-switch: true
@@ -102,20 +101,11 @@ linters:
       - legacy
       - std-error-handling
     rules:
-      - path: (.+)\.go$
+      # A deferred tx.Rollback() after a successful commit always errors; that is the
+      # idiom, not a bug. Scoped to errcheck so it cannot swallow another linter's find.
+      - linters:
+          - errcheck
         text: Rollback
-      - path: (.+)\.go$
-        text: logger.Sync
-      - path: (.+)\.go$
-        text: pgInstance.Stop
-      - path: (.+)\.go$
-        text: fmt.Printf
-      - path: (.+)\.go$
-        text: Enter(.*)_(.*)
-      - path: (.+)\.go$
-        text: Exit(.*)_(.*)
-      - path: action/bitbucket/bitbucket.go
-        text: "unsecure-url-scheme.*http://api.bitbucket.org"
     # Filters reported issues only; excluded paths are still analyzed. Not a speed knob.
     paths:
       - backend/generated-go
