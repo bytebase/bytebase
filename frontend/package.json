@@ -132,7 +132,7 @@
     "unified": "^11.0.5",
     "vite": "8.1.5",
     "vite-bundle-visualizer": "^1.2.1",
-    "vitest": "4.1.10",
+    "vitest": "4.1.11",
     "vscode-oniguruma": "^2.0.1",
     "vscode-textmate": "^9.3.2",
     "ws": "^8.20.0"
