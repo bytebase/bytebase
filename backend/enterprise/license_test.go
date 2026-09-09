@@ -162,7 +162,7 @@ func TestParseLicenseExpiredIsInvalid(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	err = service.validateLicense(license, "test-workspace")
+	_, err = service.parseLicense(license, "test-workspace")
 	require.Equal(t, common.Invalid, common.ErrorCode(err))
 }
 
@@ -204,67 +204,6 @@ func TestIsTrialLicenseIncludesExpiredTrial(t *testing.T) {
 
 	_, err = service.IsTrialLicense("not-a-license", "test-workspace")
 	require.Error(t, err)
-}
-
-func TestLoadSubscriptionFromDB(t *testing.T) {
-	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
-	t.Cleanup(cancel)
-	_, stores, _ := testcontainer.NewMetadataDBWithCache(t, true)
-
-	_, err := stores.GetDB().ExecContext(ctx, `INSERT INTO workspace (resource_id) VALUES ('default')`)
-	require.NoError(t, err)
-	_, err = stores.UpsertSetting(ctx, &store.SettingMessage{
-		Name:      storepb.SettingName_SYSTEM,
-		Workspace: "default",
-		Value:     &storepb.SystemSetting{},
-	})
-	require.NoError(t, err)
-
-	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	require.NoError(t, err)
-	service := &LicenseService{
-		store: stores,
-		config: &Config{
-			PublicKey:  &privateKey.PublicKey,
-			PrivateKey: privateKey,
-			Version:    keyID,
-			Issuer:     issuer,
-			Audience:   audience,
-		},
-		cache: expirable.NewLRU[string, *v1pb.Subscription](8, nil, time.Minute),
-	}
-
-	stored, err := service.LoadSubscriptionFromDB(ctx, "default")
-	require.NoError(t, err)
-	require.Nil(t, stored)
-	require.Equal(t, v1pb.PlanType_FREE, service.LoadEffectiveSubscription(ctx, "default").Plan)
-
-	expiresAt := time.Now().Add(-time.Hour).UTC().Truncate(time.Second)
-	license, err := service.CreateLicense(&LicenseParams{
-		Plan:        v1pb.PlanType_TEAM.String(),
-		WorkspaceID: "default",
-		Trialing:    true,
-		ExpiresAt:   expiresAt,
-	})
-	require.NoError(t, err)
-	require.NoError(t, stores.UpdateLicense(ctx, "default", license))
-	service.InvalidateCache("default")
-
-	stored, err = service.LoadSubscriptionFromDB(ctx, "default")
-	require.NoError(t, err)
-	require.Equal(t, v1pb.PlanType_TEAM, stored.Plan)
-	require.True(t, stored.Trialing)
-	require.Equal(t, expiresAt, stored.ExpiresTime.AsTime())
-
-	effective := service.LoadEffectiveSubscription(ctx, "default")
-	require.Equal(t, v1pb.PlanType_FREE, effective.Plan)
-	require.Equal(t, expiresAt, effective.ExpiresTime.AsTime())
-
-	require.NoError(t, stores.UpdateLicense(ctx, "default", "not-a-license"))
-	service.InvalidateCache("default")
-	_, err = service.LoadSubscriptionFromDB(ctx, "default")
-	require.Error(t, err)
-	require.Equal(t, v1pb.PlanType_FREE, service.LoadEffectiveSubscription(ctx, "default").Plan)
 }
 
 func TestGetUserLimitUncached(t *testing.T) {

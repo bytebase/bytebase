@@ -596,12 +596,6 @@ export declare const PlanLimitConfigSchema: GenMessage<PlanLimitConfig>;
  * @generated from message bytebase.v1.StartTrialRequest
  */
 export declare type StartTrialRequest = Message<"bytebase.v1.StartTrialRequest"> & {
-  /**
-   * The requested trial plan. Only TEAM and ENTERPRISE are supported.
-   *
-   * @generated from field: bytebase.v1.PlanType plan = 1;
-   */
-  plan: PlanType;
 };
 
 /**
@@ -1093,7 +1087,7 @@ export declare const SubscriptionService: GenService<{
     output: typeof SubscriptionSchema;
   },
   /**
-   * StartTrial starts or upgrades a free trial for an eligible SaaS workspace.
+   * StartTrial starts a free trial for an eligible SaaS workspace.
    *
    * @generated from rpc bytebase.v1.SubscriptionService.StartTrial
    */

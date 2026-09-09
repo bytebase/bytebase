@@ -195,42 +195,59 @@ func licenseCacheKey(workspaceID string) string {
 	return "license/" + workspaceID
 }
 
-// LoadEffectiveSubscription returns the subscription used for entitlement
-// checks. Missing, invalid, and unreadable licenses fall back to Free; expired
-// licenses retain their expiration time but no paid-plan entitlement.
-func (s *LicenseService) LoadEffectiveSubscription(ctx context.Context, workspaceID string) *v1pb.Subscription {
+// LoadSubscription will load subscription.
+// If there is no license, we will return a free plan subscription without expiration time.
+// If there is expired license, we will return a free plan subscription with the expiration time of the expired license.
+func (s *LicenseService) LoadSubscription(ctx context.Context, workspaceID string) *v1pb.Subscription {
 	if workspaceID == "" {
 		return defaultFreeSubscription
 	}
 	key := licenseCacheKey(workspaceID)
 
-	subscription, ok := s.cache.Get(key)
-	if !ok {
-		// Load from DB with singleflight to prevent thundering herd.
-		v, err, _ := s.sfGroup.Do(key, func() (any, error) {
-			if sub, ok := s.cache.Get(key); ok {
-				return sub, nil
-			}
+	// Fast path: cache hit (TTL handled automatically by expirable.LRU)
+	if sub, ok := s.cache.Get(key); ok {
+		return sub
+	}
 
-			subscription, err := s.LoadSubscriptionFromDB(ctx, workspaceID)
-			if err != nil {
-				return nil, err
-			}
-			if subscription == nil {
-				return nil, nil
-			}
+	// Slow path: load from DB with singleflight to prevent thundering herd
+	v, _, _ := s.sfGroup.Do(key, func() (any, error) {
+		// Double check after entering singleflight
+		if sub, ok := s.cache.Get(key); ok {
+			return sub, nil
+		}
+
+		subscription := s.loadSubscriptionFromDB(ctx, workspaceID)
+
+		// Only cache non-free subscriptions. Free plan may be a transient failure
+		// (e.g. DB not ready during startup), and caching it would mask the real
+		// license for the TTL duration.
+		if subscription.Plan != v1pb.PlanType_FREE {
 			s.cache.Add(key, subscription)
-			return subscription, nil
-		})
-		if err != nil {
-			slog.Debug("failed to load subscription", log.BBError(err))
-			return defaultFreeSubscription
 		}
-		var valid bool
-		subscription, valid = v.(*v1pb.Subscription)
-		if !valid {
-			return defaultFreeSubscription
-		}
+		return subscription, nil
+	})
+
+	if sub, ok := v.(*v1pb.Subscription); ok {
+		return sub
+	}
+	return defaultFreeSubscription
+}
+
+func (s *LicenseService) loadSubscriptionFromDB(ctx context.Context, workspaceID string) *v1pb.Subscription {
+	setting, err := s.store.GetSystemSetting(ctx, workspaceID)
+	if err != nil {
+		slog.Debug("failed to get system setting", log.BBError(err))
+		return defaultFreeSubscription
+	}
+
+	if setting.License == "" {
+		return defaultFreeSubscription
+	}
+
+	subscription, err := s.parseLicense(setting.License, workspaceID)
+	if err != nil {
+		slog.Debug("failed to parse enterprise license", log.BBError(err))
+		return defaultFreeSubscription
 	}
 
 	slog.Debug(
@@ -254,24 +271,6 @@ func (s *LicenseService) LoadEffectiveSubscription(ctx context.Context, workspac
 	return subscription
 }
 
-// LoadSubscriptionFromDB reads and verifies the workspace license without
-// applying expiration or Free-plan fallback behavior. No license returns nil.
-func (s *LicenseService) LoadSubscriptionFromDB(ctx context.Context, workspaceID string) (*v1pb.Subscription, error) {
-	setting, err := s.store.GetSystemSetting(ctx, workspaceID)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to get system setting")
-	}
-	if setting == nil || setting.License == "" {
-		return nil, nil
-	}
-
-	subscription, err := s.parseLicenseUncheckedExpiry(setting.License, workspaceID)
-	if err != nil {
-		return nil, errors.Wrap(err, "failed to parse enterprise license")
-	}
-	return subscription, nil
-}
-
 func isExpired(sub *v1pb.Subscription) bool {
 	if sub == nil {
 		return false
@@ -281,7 +280,7 @@ func isExpired(sub *v1pb.Subscription) bool {
 
 // GetEffectivePlan gets the effective plan.
 func (s *LicenseService) GetEffectivePlan(ctx context.Context, workspaceID string) v1pb.PlanType {
-	return s.LoadEffectiveSubscription(ctx, workspaceID).Plan
+	return s.LoadSubscription(ctx, workspaceID).Plan
 }
 
 // IsFeatureEnabled returns whether a feature is enabled.
@@ -320,7 +319,7 @@ func (s *LicenseService) IsFeatureEnabledForInstance(ctx context.Context, worksp
 
 // GetUserLimit gets the user limit value for the plan.
 func (s *LicenseService) GetUserLimit(ctx context.Context, workspaceID string) int {
-	return userLimitFromSubscription(s.LoadEffectiveSubscription(ctx, workspaceID))
+	return userLimitFromSubscription(s.LoadSubscription(ctx, workspaceID))
 }
 
 // GetUserLimitUncached returns the effective user limit read directly from the
@@ -354,7 +353,7 @@ func userLimitFromSubscription(subscription *v1pb.Subscription) int {
 
 // GetInstanceLimit gets the instance limit value for the plan.
 func (s *LicenseService) GetInstanceLimit(ctx context.Context, workspaceID string) int {
-	subscription := s.LoadEffectiveSubscription(ctx, workspaceID)
+	subscription := s.LoadSubscription(ctx, workspaceID)
 	// Prefer to take values from the license first.
 	if subscription.Instances > 0 {
 		return int(subscription.Instances)
@@ -426,7 +425,7 @@ func instanceLimitFromSubscription(subscription *v1pb.Subscription) int {
 
 // GetActivatedInstanceLimit returns the activated instance limit for the current subscription.
 func (s *LicenseService) GetActivatedInstanceLimit(ctx context.Context, workspaceID string) int {
-	limit := s.LoadEffectiveSubscription(ctx, workspaceID).ActiveInstances
+	limit := s.LoadSubscription(ctx, workspaceID).ActiveInstances
 	if limit < 0 {
 		return math.MaxInt
 	}
@@ -466,7 +465,7 @@ func (s *LicenseService) IsTrialLicense(license, workspaceID string) (bool, erro
 // StoreLicense will store license into file.
 func (s *LicenseService) StoreLicense(ctx context.Context, workspaceID string, license string) error {
 	if license != "" {
-		if err := s.validateLicense(license, workspaceID); err != nil {
+		if _, err := s.parseLicense(license, workspaceID); err != nil {
 			return err
 		}
 	}
@@ -594,7 +593,7 @@ func (s *LicenseService) CheckReplicaLimit(ctx context.Context) error {
 		return nil
 	}
 	workspaceID, _ := s.store.GetWorkspaceID(ctx)
-	if s.LoadEffectiveSubscription(ctx, workspaceID).Ha {
+	if s.LoadSubscription(ctx, workspaceID).Ha {
 		return nil // HA license, no limit
 	}
 
@@ -609,15 +608,15 @@ func (s *LicenseService) CheckReplicaLimit(ctx context.Context) error {
 	return nil
 }
 
-func (s *LicenseService) validateLicense(license, workspaceID string) error {
+func (s *LicenseService) parseLicense(license, workspaceID string) (*v1pb.Subscription, error) {
 	subscription, err := s.parseLicenseUncheckedExpiry(license, workspaceID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if isExpired(subscription) {
-		return common.Errorf(common.Invalid, "license has expired at %v", subscription.ExpiresTime.AsTime())
+		return nil, common.Errorf(common.Invalid, "license has expired at %v", subscription.ExpiresTime.AsTime())
 	}
-	return nil
+	return subscription, nil
 }
 
 // parseLicenseUncheckedExpiry verifies a license's signature and all static

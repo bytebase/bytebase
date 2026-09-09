@@ -19081,7 +19081,7 @@ paths:
       tags:
         - SubscriptionService
       summary: StartTrial
-      description: StartTrial starts or upgrades a free trial for an eligible SaaS workspace.
+      description: StartTrial starts a free trial for an eligible SaaS workspace.
       operationId: SubscriptionService_StartTrial
       requestBody:
         content:
@@ -33479,14 +33479,7 @@ components:
       additionalProperties: false
     bytebase.v1.StartTrialRequest:
       type: object
-      properties:
-        plan:
-          title: plan
-          description: The requested trial plan. Only TEAM and ENTERPRISE are supported.
-          $ref: '#/components/schemas/bytebase.v1.PlanType'
       title: StartTrialRequest
-      required:
-        - plan
       additionalProperties: false
     bytebase.v1.State:
       type: string

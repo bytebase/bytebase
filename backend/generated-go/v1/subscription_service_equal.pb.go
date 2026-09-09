@@ -403,8 +403,5 @@ func (x *StartTrialRequest) Equal(y *StartTrialRequest) bool {
 	if x == nil || y == nil {
 		return x == nil && y == nil
 	}
-	if x.Plan != y.Plan {
-		return false
-	}
 	return true
 }
