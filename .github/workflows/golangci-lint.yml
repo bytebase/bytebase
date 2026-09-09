@@ -52,9 +52,10 @@ jobs:
       - name: golangci-lint
         env:
           # Go's default GOGC=100 collects every time a ~5 GB live heap doubles, which
-          # is the wrong policy for a batch run. Collecting only near a ceiling instead
-          # is cheaper on all three axes, and the ceiling bounds what two concurrent
-          # runners can take from the shared 31 GB box.
+          # is the wrong policy for a batch run. Collecting near a target instead is
+          # cheaper on CPU, wall and peak RSS alike. GOMEMLIMIT is a soft limit over
+          # Go-managed memory, not a guaranteed RSS ceiling, but it holds in practice
+          # here: 10.17 GB peak measured, against 11.05 GB with the default.
           GOGC: "off"
           GOMEMLIMIT: 10GiB
         run: golangci-lint run --verbose -j 8 --timeout 30m --max-same-issues=30 --allow-parallel-runners
