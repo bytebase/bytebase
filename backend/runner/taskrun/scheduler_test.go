@@ -33,6 +33,10 @@ func TestTaskCyclesRecordEmptySuccess(t *testing.T) {
 	require.NoError(t, scheduler.scheduleRunningTaskRuns(ctx))
 	tx, err := stores.GetDB().BeginTx(ctx, nil)
 	require.NoError(t, err)
+	// The explicit Rollback below is what releases the advisory lock. This guards the
+	// path where a require between here and there calls t.FailNow: that skips the
+	// explicit Rollback and would strand the lock for the rest of the package.
+	defer tx.Rollback()
 	acquired, err := store.TryAdvisoryXactLock(ctx, tx, store.AdvisoryLockKeyPendingScheduler)
 	require.NoError(t, err)
 	require.True(t, acquired)
@@ -118,6 +122,7 @@ func TestSchedulePendingTaskRunsSkipsArchivedProject(t *testing.T) {
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	require.NoError(t, err)
+	defer tx.Rollback()
 	tasks, err := s.CreateMissingTasksTx(ctx, tx, plan.ProjectID, plan.UID, []*store.TaskMessage{{
 		InstanceID: "unused",
 		Type:       storepb.Task_TASK_TYPE_UNSPECIFIED,
@@ -184,6 +189,7 @@ func TestSchedulePendingTaskRunsSkipsArchivedInstance(t *testing.T) {
 
 	tx, err := s.GetDB().BeginTx(ctx, nil)
 	require.NoError(t, err)
+	defer tx.Rollback()
 	tasks, err := s.CreateMissingTasksTx(ctx, tx, plan.ProjectID, plan.UID, []*store.TaskMessage{{
 		InstanceID: instanceID,
 		Type:       storepb.Task_TASK_TYPE_UNSPECIFIED,
