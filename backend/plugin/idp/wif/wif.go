@@ -59,8 +59,8 @@ func ValidateToken(ctx context.Context, tokenString string, config *storepb.Work
 		return nil, errors.Errorf("issuer mismatch: expected %q, got %q", config.IssuerUrl, claims.Issuer)
 	}
 
-	// Validate audience (skip if no allowed audiences configured)
-	if len(config.AllowedAudiences) > 0 && !validateAudience(claims.Audience, config.AllowedAudiences) {
+	// Validate audience
+	if !validateAudience(claims.Audience, config.AllowedAudiences) {
 		return nil, errors.Errorf("audience mismatch: token has %v, allowed %v", claims.Audience, config.AllowedAudiences)
 	}
 
@@ -79,6 +79,12 @@ func ValidateToken(ctx context.Context, tokenString string, config *storepb.Work
 
 func validateAudience(tokenAudience []string, allowedAudiences []string) bool {
 	for _, allowed := range allowedAudiences {
+		// A blank entry is not a binding. The write paths refuse one, but a row
+		// stored before they did still holds it, and go-jose reads a token's
+		// `"aud": ""` as one empty string, which would match it.
+		if strings.TrimSpace(allowed) == "" {
+			continue
+		}
 		for _, aud := range tokenAudience {
 			if aud == allowed {
 				return true
@@ -89,9 +95,11 @@ func validateAudience(tokenAudience []string, allowedAudiences []string) bool {
 }
 
 func matchSubjectPattern(subject, pattern string) bool {
-	// Simple pattern matching - exact match or wildcard suffix
-	if pattern == "" {
-		return true
+	// The write-time rule is the read-time rule: a pattern the write paths
+	// would refuse matches nothing, so a row stored before that rule existed
+	// fails closed instead of admitting every subject behind a broad prefix.
+	if ValidateSubjectPattern(pattern) != nil {
+		return false
 	}
 	if strings.HasSuffix(pattern, "*") {
 		prefix := strings.TrimSuffix(pattern, "*")

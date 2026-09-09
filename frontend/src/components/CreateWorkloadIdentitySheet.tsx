@@ -1,11 +1,12 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
+import { Code, ConnectError } from "@connectrpc/connect";
 import { ChevronDown, ChevronUp, PlusIcon, XIcon } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RoleSelect } from "@/components/RoleSelect";
 import { Button } from "@/components/ui/button";
-import { FormField } from "@/components/ui/form";
+import { FormError, FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -39,11 +40,11 @@ import {
   WorkloadIdentitySchema,
 } from "@/types/proto-es/v1/workload_identity_service_pb";
 import {
+  GENERATED_WORKFLOW_AUDIENCE,
   getWorkloadIdentityProviderText,
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
   parseWorkloadIdentitySubjectPattern,
-  resolveWorkloadIdentityProviderType,
 } from "@/utils";
 
 type RefType = "branch" | "tag" | "all";
@@ -56,11 +57,11 @@ const PLATFORM_PRESETS: Partial<
 > = {
   [WorkloadIdentityConfig_ProviderType.GITHUB]: {
     issuerUrl: "https://token.actions.githubusercontent.com",
-    audience: "",
+    audience: GENERATED_WORKFLOW_AUDIENCE,
   },
   [WorkloadIdentityConfig_ProviderType.GITLAB]: {
     issuerUrl: "https://gitlab.com",
-    audience: "",
+    audience: GENERATED_WORKFLOW_AUDIENCE,
   },
 };
 
@@ -171,13 +172,19 @@ function WorkloadIdentityForm({
         : undefined,
     []
   );
-  // Resolved, not read raw: an identity written before provider_type was
-  // required may carry PROVIDER_TYPE_UNSPECIFIED, which names no platform and
-  // parses no subject.
+  // PROVIDER_TYPE_UNSPECIFIED names no platform, so the form has no tab to
+  // open on. Migration 3.23.4 types the rows whose subject prefix says which
+  // vocabulary they use; a row whose subject says neither, and a row an older
+  // replica writes after that backfill, still arrive untyped. Both open on the
+  // GitHub tab, and picking the platform types them on save.
+  const storedProviderType =
+    workloadIdentity?.workloadIdentityConfig?.providerType;
   const initialProviderType =
-    resolveWorkloadIdentityProviderType(
-      workloadIdentity?.workloadIdentityConfig
-    ) ?? WorkloadIdentityConfig_ProviderType.GITHUB;
+    storedProviderType === undefined ||
+    storedProviderType ===
+      WorkloadIdentityConfig_ProviderType.PROVIDER_TYPE_UNSPECIFIED
+      ? WorkloadIdentityConfig_ProviderType.GITHUB
+      : storedProviderType;
   const initialIssuerUrl =
     workloadIdentity?.workloadIdentityConfig?.issuerUrl ??
     PLATFORM_PRESETS[initialProviderType]?.issuerUrl ??
@@ -185,7 +192,16 @@ function WorkloadIdentityForm({
   const initialAudiences = useMemo(() => {
     const audiences =
       workloadIdentity?.workloadIdentityConfig?.allowedAudiences;
-    return audiences?.length ? [...audiences] : [""];
+    if (audiences?.length) return [...audiences];
+    // A new identity gets the audience the generated workflows request. A
+    // stored one the migration could not repair stays visibly empty: prefilling
+    // it would make the form look unchanged, leaving Update disabled and the
+    // operator unable to set the real value.
+    return [
+      workloadIdentity
+        ? ""
+        : (PLATFORM_PRESETS[initialProviderType]?.audience ?? ""),
+    ];
   }, []);
   const initialJwksUrl =
     workloadIdentity?.workloadIdentityConfig?.jwksUrl ?? "";
@@ -228,6 +244,7 @@ function WorkloadIdentityForm({
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [roles, setRoles] = useState<string[]>([]);
   const [isRequesting, setIsRequesting] = useState(false);
+  const [serverError, setServerError] = useState<string>();
 
   const isGenericOIDC =
     providerType === WorkloadIdentityConfig_ProviderType.OIDC;
@@ -278,6 +295,13 @@ function WorkloadIdentityForm({
   };
 
   const handlePlatformChange = (value: WorkloadIdentityConfig_ProviderType) => {
+    // Re-selecting the platform already shown changes nothing, and the reset
+    // below would drop the provider-default audience migration 3.23.4 records
+    // alongside "bytebase". A real change makes that value stale, so only a
+    // real change resets it.
+    if (value === providerType) {
+      return;
+    }
     const preset = PLATFORM_PRESETS[value];
     if (preset) {
       setIssuerUrl(preset.issuerUrl);
@@ -296,18 +320,17 @@ function WorkloadIdentityForm({
     setBranch("");
   };
 
+  // Required-ness only, for every provider: the exchange refuses an identity
+  // with no audience or no subject whatever minted its tokens, so the form
+  // must not offer to save one. The configuration rules themselves live in
+  // validateWorkloadIdentityConfig, and its rejection is rendered below.
   const isFormValid = useMemo(() => {
     if (!emailPrefix && !workloadIdentity?.email) return false;
-    if (isGenericOIDC) {
-      return (
-        !!issuerUrl.trim() &&
-        audiences.length > 0 &&
-        audiences.every((audience) => !!audience.trim()) &&
-        !!subjectPattern.trim()
-      );
-    }
-    if (!owner) return false;
-    if (!issuerUrl) return false;
+    if (!issuerUrl.trim()) return false;
+    if (!audiences.length) return false;
+    if (!audiences.every((audience) => audience.trim())) return false;
+    if (!subjectPattern.trim()) return false;
+    if (!isGenericOIDC && !owner) return false;
     return true;
   }, [
     emailPrefix,
@@ -371,14 +394,21 @@ function WorkloadIdentityForm({
   const handleSubmit = async () => {
     if (!allowConfirm || !hasPermission) return;
     setIsRequesting(true);
+    setServerError(undefined);
     try {
       if (isEditMode) {
         await handleUpdate();
       } else {
         await handleCreate();
       }
-    } catch {
-      // error shown by store
+    } catch (err) {
+      // A rejected configuration is shown beside the fields, not only as the
+      // toast every failed call gets. The message names the field, which for a
+      // GitHub or GitLab identity is under Advanced Settings.
+      if (err instanceof ConnectError && err.code === Code.InvalidArgument) {
+        setServerError(err.rawMessage);
+        setShowAdvanced(true);
+      }
     } finally {
       setIsRequesting(false);
     }
@@ -767,6 +797,23 @@ function WorkloadIdentityForm({
             </FormField>
           )}
 
+          {/* Audience */}
+          {!isGenericOIDC && (
+            <FormField
+              title={
+                <>
+                  {t("settings.members.workload-identity-audience")}
+                  <span className="ml-0.5 text-error">*</span>
+                </>
+              }
+              description={
+                <>{t("settings.members.workload-identity-audience-hint")}</>
+              }
+            >
+              {audienceInputs}
+            </FormField>
+          )}
+
           {isGenericOIDC && (
             <>
               <FormField
@@ -849,16 +896,14 @@ function WorkloadIdentityForm({
                 />
               </FormField>
 
-              {/* Audience */}
-              <FormField
-                title={<>{t("settings.members.workload-identity-audience")}</>}
-              >
-                {audienceInputs}
-              </FormField>
-
               {/* Subject Pattern */}
               <FormField
-                title={<>{t("settings.members.workload-identity-subject")}</>}
+                title={
+                  <>
+                    {t("settings.members.workload-identity-subject")}
+                    <span className="ml-0.5 text-error">*</span>
+                  </>
+                }
               >
                 <Input
                   value={subjectPattern}
@@ -868,6 +913,13 @@ function WorkloadIdentityForm({
                 />
               </FormField>
             </div>
+          )}
+
+          {serverError && (
+            <FormError>
+              {t("settings.members.workload-identity-config-rejected")}{" "}
+              {serverError}
+            </FormError>
           )}
 
           {/* Advanced Settings Toggle */}
