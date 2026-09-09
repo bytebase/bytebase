@@ -7025,6 +7025,42 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/bytebase.v1.ListPurchasePlansResponse'
+  /bytebase.v1.SubscriptionService/StartTrial:
+    post:
+      tags:
+        - bytebase.v1.SubscriptionService
+      summary: StartTrial
+      description: StartTrial starts a free trial for an eligible SaaS workspace.
+      operationId: bytebase.v1.SubscriptionService.StartTrial
+      parameters:
+        - name: Connect-Protocol-Version
+          in: header
+          required: true
+          schema:
+            $ref: '#/components/schemas/connect-protocol-version'
+        - name: Connect-Timeout-Ms
+          in: header
+          schema:
+            $ref: '#/components/schemas/connect-timeout-header'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/bytebase.v1.StartTrialRequest'
+        required: true
+      responses:
+        default:
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/connect.error'
+        "200":
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/bytebase.v1.Subscription'
   /bytebase.v1.SubscriptionService/UpdatePurchase:
     post:
       tags:
@@ -8568,8 +8604,14 @@ components:
               title: ttl
               required:
                 - ttl
+            - not:
+                anyOf:
+                  - required:
+                      - expireTime
+                  - required:
+                      - ttl
+      unevaluatedProperties: false
       title: AccessGrant
-      additionalProperties: false
     bytebase.v1.AccessGrant.Status:
       type: string
       title: Status
@@ -8861,8 +8903,18 @@ components:
           title: range_mask
           required:
             - rangeMask
+        - not:
+            anyOf:
+              - required:
+                  - fullMask
+              - required:
+                  - innerOuterMask
+              - required:
+                  - md5Mask
+              - required:
+                  - rangeMask
+      unevaluatedProperties: false
       title: Algorithm
-      additionalProperties: false
     bytebase.v1.Algorithm.FullMask:
       type: object
       properties:
@@ -9067,8 +9119,22 @@ components:
               title: wecom
               required:
                 - wecom
+            - not:
+                anyOf:
+                  - required:
+                      - dingtalk
+                  - required:
+                      - feishu
+                  - required:
+                      - lark
+                  - required:
+                      - slack
+                  - required:
+                      - teams
+                  - required:
+                      - wecom
+      unevaluatedProperties: false
       title: IMSetting
-      additionalProperties: false
     bytebase.v1.AppIMSetting.Lark:
       type: object
       properties:
@@ -10800,8 +10866,18 @@ components:
           title: recovery_code
           required:
             - recoveryCode
+        - not:
+            anyOf:
+              - required:
+                  - currentPassword
+              - required:
+                  - emailCode
+              - required:
+                  - otpCode
+              - required:
+                  - recoveryCode
+      unevaluatedProperties: false
       title: CredentialProof
-      additionalProperties: false
       description: |-
         One proof that the caller currently controls a credential on the account.
          Exactly one field must be set; enforced in the handler.
@@ -11129,8 +11205,16 @@ components:
               title: gcp_credential
               required:
                 - gcpCredential
+            - not:
+                anyOf:
+                  - required:
+                      - awsCredential
+                  - required:
+                      - azureCredential
+                  - required:
+                      - gcpCredential
+      unevaluatedProperties: false
       title: DataSource
-      additionalProperties: false
     bytebase.v1.DataSource.AWSCredential:
       type: object
       properties:
@@ -11302,8 +11386,14 @@ components:
               title: token
               required:
                 - token
+            - not:
+                anyOf:
+                  - required:
+                      - appRole
+                  - required:
+                      - token
+      unevaluatedProperties: false
       title: DataSourceExternalSecret
-      additionalProperties: false
     bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption:
       type: object
       properties:
@@ -11892,8 +11982,14 @@ components:
               title: schema
               required:
                 - schema
+            - not:
+                anyOf:
+                  - required:
+                      - changelog
+                  - required:
+                      - schema
+      unevaluatedProperties: false
       title: DiffSchemaRequest
-      additionalProperties: false
     bytebase.v1.DiffSchemaResponse:
       type: object
       properties:
@@ -11993,8 +12089,12 @@ components:
               title: smtp
               required:
                 - smtp
+            - not:
+                anyOf:
+                  - required:
+                      - smtp
+      unevaluatedProperties: false
       title: EmailSetting
-      additionalProperties: false
     bytebase.v1.EmailSetting.SMTPConfig:
       type: object
       properties:
@@ -13244,8 +13344,16 @@ components:
           title: oidc_config
           required:
             - oidcConfig
+        - not:
+            anyOf:
+              - required:
+                  - ldapConfig
+              - required:
+                  - oauth2Config
+              - required:
+                  - oidcConfig
+      unevaluatedProperties: false
       title: IdentityProviderConfig
-      additionalProperties: false
     bytebase.v1.IdentityProviderContext:
       type: object
       oneOf:
@@ -13267,8 +13375,14 @@ components:
           title: oidc_context
           required:
             - oidcContext
+        - not:
+            anyOf:
+              - required:
+                  - oauth2Context
+              - required:
+                  - oidcContext
+      unevaluatedProperties: false
       title: IdentityProviderContext
-      additionalProperties: false
       description: Context for identity provider authentication.
     bytebase.v1.IdentityProviderType:
       type: string
@@ -13757,8 +13871,18 @@ components:
               title: review_submission
               required:
                 - reviewSubmission
+            - not:
+                anyOf:
+                  - required:
+                      - approval
+                  - required:
+                      - issueUpdate
+                  - required:
+                      - planUpdate
+                  - required:
+                      - reviewSubmission
+      unevaluatedProperties: false
       title: IssueComment
-      additionalProperties: false
       description: A comment on an issue.
     bytebase.v1.IssueComment.Approval:
       type: object
@@ -16121,8 +16245,14 @@ components:
               title: struct_kind
               required:
                 - structKind
+            - not:
+                anyOf:
+                  - required:
+                      - arrayKind
+                  - required:
+                      - structKind
+      unevaluatedProperties: false
       title: ObjectSchema
-      additionalProperties: false
       description: Schema definition for object-type columns.
     bytebase.v1.ObjectSchema.ArrayKind:
       type: object
@@ -16460,8 +16590,14 @@ components:
               title: create_database_config
               required:
                 - createDatabaseConfig
+            - not:
+                anyOf:
+                  - required:
+                      - changeDatabaseConfig
+                  - required:
+                      - createDatabaseConfig
+      unevaluatedProperties: false
       title: Spec
-      additionalProperties: false
     bytebase.v1.Plan.TaskStatusCount:
       type: object
       properties:
@@ -16543,8 +16679,14 @@ components:
               title: sql_summary_report
               required:
                 - sqlSummaryReport
+            - not:
+                anyOf:
+                  - required:
+                      - sqlReviewReport
+                  - required:
+                      - sqlSummaryReport
+      unevaluatedProperties: false
       title: Result
-      additionalProperties: false
     bytebase.v1.PlanCheckRun.Result.SqlReviewReport:
       type: object
       properties:
@@ -16783,8 +16925,20 @@ components:
               title: tag_policy
               required:
                 - tagPolicy
+            - not:
+                anyOf:
+                  - required:
+                      - maskingExemptionPolicy
+                  - required:
+                      - maskingRulePolicy
+                  - required:
+                      - queryDataPolicy
+                  - required:
+                      - rolloutPolicy
+                  - required:
+                      - tagPolicy
+      unevaluatedProperties: false
       title: Policy
-      additionalProperties: false
     bytebase.v1.PolicyDelta:
       type: object
       properties:
@@ -17408,8 +17562,18 @@ components:
               title: syntax_error
               required:
                 - syntaxError
+            - not:
+                anyOf:
+                  - required:
+                      - commandError
+                  - required:
+                      - permissionDenied
+                  - required:
+                      - postgresError
+                  - required:
+                      - syntaxError
+      unevaluatedProperties: false
       title: QueryResult
-      additionalProperties: false
     bytebase.v1.QueryResult.CommandError:
       type: object
       properties:
@@ -18282,8 +18446,36 @@ components:
           title: value_value
           required:
             - valueValue
+        - not:
+            anyOf:
+              - required:
+                  - boolValue
+              - required:
+                  - bytesValue
+              - required:
+                  - doubleValue
+              - required:
+                  - floatValue
+              - required:
+                  - int32Value
+              - required:
+                  - int64Value
+              - required:
+                  - nullValue
+              - required:
+                  - stringValue
+              - required:
+                  - timestampTzValue
+              - required:
+                  - timestampValue
+              - required:
+                  - uint32Value
+              - required:
+                  - uint64Value
+              - required:
+                  - valueValue
+      unevaluatedProperties: false
       title: RowValue
-      additionalProperties: false
     bytebase.v1.RowValue.Timestamp:
       type: object
       properties:
@@ -18369,8 +18561,12 @@ components:
           title: krb_config
           required:
             - krbConfig
+        - not:
+            anyOf:
+              - required:
+                  - krbConfig
+      unevaluatedProperties: false
       title: SASLConfig
-      additionalProperties: false
     bytebase.v1.SQLEditorThemeSetting:
       type: object
       properties:
@@ -18468,8 +18664,22 @@ components:
               title: string_payload
               required:
                 - stringPayload
+            - not:
+                anyOf:
+                  - required:
+                      - commentConventionPayload
+                  - required:
+                      - namingCasePayload
+                  - required:
+                      - namingPayload
+                  - required:
+                      - numberPayload
+                  - required:
+                      - stringArrayPayload
+                  - required:
+                      - stringPayload
+      unevaluatedProperties: false
       title: SQLReviewRule
-      additionalProperties: false
       description: SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
     bytebase.v1.SQLReviewRule.CommentConventionRulePayload:
       type: object
@@ -19656,8 +19866,28 @@ components:
           title: workspace_profile
           required:
             - workspaceProfile
+        - not:
+            anyOf:
+              - required:
+                  - ai
+              - required:
+                  - appIm
+              - required:
+                  - dataClassification
+              - required:
+                  - email
+              - required:
+                  - environment
+              - required:
+                  - mcp
+              - required:
+                  - semanticType
+              - required:
+                  - workspaceApproval
+              - required:
+                  - workspaceProfile
+      unevaluatedProperties: false
       title: SettingValue
-      additionalProperties: false
       description: The data in setting value.
     bytebase.v1.Sheet:
       type: object
@@ -19800,6 +20030,10 @@ components:
              pending one rather than promoting something this caller never saw.
           $ref: '#/components/schemas/google.protobuf.Timestamp'
       title: StartMFAEnrollmentResponse
+      additionalProperties: false
+    bytebase.v1.StartTrialRequest:
+      type: object
+      title: StartTrialRequest
       additionalProperties: false
     bytebase.v1.State:
       type: string
@@ -20158,8 +20392,14 @@ components:
               title: object_schema
               required:
                 - objectSchema
+            - not:
+                anyOf:
+                  - required:
+                      - columns
+                  - required:
+                      - objectSchema
+      unevaluatedProperties: false
       title: TableCatalog
-      additionalProperties: false
       description: Table metadata within a schema.
     bytebase.v1.TableCatalog.Columns:
       type: object
@@ -20466,8 +20706,14 @@ components:
               title: database_update
               required:
                 - databaseUpdate
+            - not:
+                anyOf:
+                  - required:
+                      - databaseCreate
+                  - required:
+                      - databaseUpdate
+      unevaluatedProperties: false
       title: Task
-      additionalProperties: false
     bytebase.v1.Task.DatabaseCreate:
       type: object
       properties:
@@ -20499,8 +20745,14 @@ components:
           title: sheet
           required:
             - sheet
+        - not:
+            anyOf:
+              - required:
+                  - release
+              - required:
+                  - sheet
+      unevaluatedProperties: false
       title: DatabaseUpdate
-      additionalProperties: false
       description: Payload for updating a database schema.
     bytebase.v1.Task.Status:
       type: string
@@ -20656,8 +20908,12 @@ components:
           title: parallel_tasks_limit
           required:
             - parallelTasksLimit
+        - not:
+            anyOf:
+              - required:
+                  - parallelTasksLimit
+      unevaluatedProperties: false
       title: WaitingCause
-      additionalProperties: false
       description: Information about why a task run is waiting.
     bytebase.v1.TaskRun.Status:
       type: string
@@ -21033,8 +21289,12 @@ components:
               title: postgres
               required:
                 - postgres
+            - not:
+                anyOf:
+                  - required:
+                      - postgres
+      unevaluatedProperties: false
       title: TaskRunSession
-      additionalProperties: false
     bytebase.v1.TaskRunSession.Postgres:
       type: object
       properties:
@@ -21224,8 +21484,16 @@ components:
               title: oidc_context
               required:
                 - oidcContext
+            - not:
+                anyOf:
+                  - required:
+                      - ldapContext
+                  - required:
+                      - oauth2Context
+                  - required:
+                      - oidcContext
+      unevaluatedProperties: false
       title: TestIdentityProviderRequest
-      additionalProperties: false
     bytebase.v1.TestIdentityProviderResponse:
       type: object
       properties:
@@ -22663,8 +22931,28 @@ components:
           title: uint64_value
           required:
             - uint64Value
+        - not:
+            anyOf:
+              - required:
+                  - boolValue
+              - required:
+                  - bytesValue
+              - required:
+                  - doubleValue
+              - required:
+                  - durationValue
+              - required:
+                  - int64Value
+              - required:
+                  - nullValue
+              - required:
+                  - stringValue
+              - required:
+                  - timestampValue
+              - required:
+                  - uint64Value
+      unevaluatedProperties: false
       title: Constant
-      additionalProperties: false
       description: |-
         Represents a primitive literal.
 
@@ -22758,8 +23046,24 @@ components:
               title: struct_expr
               required:
                 - structExpr
+            - not:
+                anyOf:
+                  - required:
+                      - callExpr
+                  - required:
+                      - comprehensionExpr
+                  - required:
+                      - constExpr
+                  - required:
+                      - identExpr
+                  - required:
+                      - listExpr
+                  - required:
+                      - selectExpr
+                  - required:
+                      - structExpr
+      unevaluatedProperties: false
       title: Expr
-      additionalProperties: false
       description: |-
         An abstract representation of a common expression.
 
@@ -23012,8 +23316,14 @@ components:
               title: map_key
               required:
                 - mapKey
+            - not:
+                anyOf:
+                  - required:
+                      - fieldKey
+                  - required:
+                      - mapKey
+      unevaluatedProperties: false
       title: Entry
-      additionalProperties: false
       description: Represents an entry.
     google.api.expr.v1alpha1.Expr.Ident:
       type: object
