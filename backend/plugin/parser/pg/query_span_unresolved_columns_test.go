@@ -269,6 +269,47 @@ func TestUnresolvedColumnsSignalScope(t *testing.T) {
 	})
 }
 
+// TestUnresolvedColumnsSignalResolvesRelationsNotRoutines pins that an
+// unqualified name resolves to a relation, not to whatever object comes first in
+// the search path.
+//
+// PostgreSQL keeps relations and routines in separate namespaces, so with
+// search_path "a, b", a function a.t and a table b.t, SELECT * FROM t reads b.t
+// (verified on PostgreSQL 17: 't'::regclass resolves to schema b while pg_proc
+// holds t in a). The access-table walker used SearchObject, which matches
+// functions, procedures and packages too, so it recorded a.t instead: the guard
+// then found no table in a and the query returned raw rows. It also pointed the
+// query access check at a schema the statement never reads.
+func TestUnresolvedColumnsSignalResolvesRelationsNotRoutines(t *testing.T) {
+	// A function in the earlier schema must not divert the read.
+	shadowed := &storepb.DatabaseSchemaMetadata{
+		Name:       "db",
+		SearchPath: "a, b",
+		Schemas: []*storepb.SchemaMetadata{
+			{Name: "a", Functions: []*storepb.FunctionMetadata{{Name: "t", Signature: "t()"}}},
+			{Name: "b", Tables: []*storepb.TableMetadata{{Name: "t"}}},
+		},
+	}
+	span := spanFor(t, "SELECT * FROM t", shadowed)
+	require.NotNil(t, span.UnresolvedColumnsError,
+		"a routine named like the table must not shadow it, or the column-less b.t goes unchecked")
+	require.Contains(t, span.UnresolvedColumnsError.Error(), "b.t")
+
+	// A relation in the earlier schema must still win: a sequence is a relation,
+	// and PostgreSQL resolves SELECT * FROM t to it (verified on 17, relkind S).
+	sequenceFirst := &storepb.DatabaseSchemaMetadata{
+		Name:       "db",
+		SearchPath: "a, b",
+		Schemas: []*storepb.SchemaMetadata{
+			{Name: "a", Sequences: []*storepb.SequenceMetadata{{Name: "t"}}},
+			{Name: "b", Tables: []*storepb.TableMetadata{{Name: "t"}}},
+		},
+	}
+	span = spanFor(t, "SELECT * FROM t", sequenceFirst)
+	require.Nil(t, span.UnresolvedColumnsError,
+		"the sequence in a is the relation this query reads, and a sequence carries no column list to judge")
+}
+
 // TestUnresolvedColumnsSignalNotCoveredShapes pins the reads this signal cannot
 // see, so the boundary is a recorded decision rather than something a reviewer
 // rediscovers.

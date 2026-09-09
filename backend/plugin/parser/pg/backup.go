@@ -385,7 +385,7 @@ func extractTableReferenceFromRangeVar(rv *ast.RangeVar, metadata *model.Databas
 		if len(searchPath) == 0 {
 			searchPath = []string{"public"}
 		}
-		schemaName, _ := metadata.SearchObject(searchPath, rv.Relname)
+		schemaName, _ := metadata.SearchRelation(searchPath, rv.Relname)
 		if schemaName == "" {
 			return nil, errors.Errorf("Table %q not found in metadata with search path %v", rv.Relname, searchPath)
 		}

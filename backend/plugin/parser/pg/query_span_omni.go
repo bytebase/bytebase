@@ -255,8 +255,11 @@ func (e *omniQuerySpanExtractor) relationHasNoSyncedColumns(relation base.Column
 // getQuerySpan extracts the query span for the given SQL statement.
 //
 // The signal is set on the three return paths that carry result columns. The
-// other three return an empty Results slice, and masking builds its maskers by
-// walking Results, so there is nothing there for the signal to protect.
+// other three return no table data for masking to protect: a non-SELECT
+// statement, EXPLAIN ANALYZE, whose rows are plan output rather than the
+// relation's, and SET or SHOW. Their empty Results slice is not the reason on
+// its own, since an empty Results slice on a SELECT is the state this signal
+// exists to catch.
 func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*base.QuerySpan, error) {
 	e.ctx = ctx
 
