@@ -182,7 +182,81 @@ func findDollarQuotedBody(definition string) (tag string, bodyStart int, bodyEnd
 	return "", 0, 0
 }
 
+// unresolvedColumnsError reports the relations in accesses that the stored
+// snapshot lists with no columns, or nil when every one resolves. It reads the
+// snapshot rather than analyzer
+// output, so the analyzed, expression-fallback and table-returning-function
+// paths all report the same condition.
+//
+// Every access is checked, including one naming a CTE that shares a listed
+// relation's name: ExtractAccessTables does not model CTE scope, so such a query
+// is refused rather than passed. Do not filter this set by CTE scope. A filter
+// can only drop a refusal, and a scope walk drops real reads — it misses an
+// aggregate's FILTER and ORDER BY subqueries and folds case on quoted CTE names,
+// each one a query returning unmasked rows.
+//
+// DEFER: a relation the access set never reports goes unchecked and stays
+// unmasked. A relation absent from the snapshot has no ceiling to raise here;
+// column resolution drops it upstream. The two reachable gaps are a
+// SQL-language function body (BYT-10075) and a FROM-clause function argument or
+// VALUES list (BYT-10076); upgrade when either ticket lands.
+//
+// #20581 (3.19.1) made the sync read columns from pg_catalog, so privileges no
+// longer produce this state; a snapshot written before that fix still carries it,
+// and the sync's read-committed transaction can still store a table created
+// between its column pass and its table pass with no columns.
+func (e *omniQuerySpanExtractor) unresolvedColumnsError(accesses base.SourceColumnSet) *base.UnresolvedColumnsError {
+	seen := make(map[base.ColumnResource]bool, len(accesses))
+	var unresolved []base.ColumnResource
+	for access := range accesses {
+		relation := base.ColumnResource{
+			Server:   access.Server,
+			Database: access.Database,
+			Schema:   access.Schema,
+			Table:    access.Table,
+		}
+		if relation.Table == "" || seen[relation] {
+			continue
+		}
+		seen[relation] = true
+		if e.relationHasNoSyncedColumns(relation) {
+			unresolved = append(unresolved, relation)
+		}
+	}
+	if len(unresolved) == 0 {
+		return nil
+	}
+	return &base.UnresolvedColumnsError{Relations: unresolved}
+}
+
+// relationHasNoSyncedColumns reports whether the snapshot carries the relation
+// as a table with an empty column list, and false for anything else.
+//
+// Only tables are judged, because only a table's column can carry a masking
+// policy: the masker resolves a source column through SchemaMetadata.GetTable
+// (query_result_masker.go getColumn), and SchemaCatalog, where semantic types
+// live, holds tables alone. A view, materialized view or foreign table column
+// yields NoneMasker whatever the snapshot says, so refusing an empty one
+// withholds a result masking never changed and breaks two shapes PostgreSQL
+// accepts. Partitions resolve through GetTable to their parent.
+func (e *omniQuerySpanExtractor) relationHasNoSyncedColumns(relation base.ColumnResource) bool {
+	meta, err := e.getDatabaseMetadata(relation.Database)
+	if err != nil || meta == nil {
+		return false
+	}
+	schema := meta.GetSchemaMetadata(relation.Schema)
+	if schema == nil {
+		return false
+	}
+	table := schema.GetTable(relation.Table)
+	return table != nil && len(table.GetProto().GetColumns()) == 0
+}
+
 // getQuerySpan extracts the query span for the given SQL statement.
+//
+// The signal is set on the three return paths that carry result columns. The
+// other three return an empty Results slice, and masking builds its maskers by
+// walking Results, so there is nothing there for the signal to protect.
 func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*base.QuerySpan, error) {
 	e.ctx = ctx
 
@@ -276,18 +350,20 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 		// used as table sources: SELECT * FROM func()).
 		if results := e.tryUserFuncTableSource(selStmt, accessesMap); results != nil {
 			return &base.QuerySpan{
-				Type:          base.Select,
-				SourceColumns: accessesMap,
-				Results:       results,
+				Type:                   base.Select,
+				SourceColumns:          accessesMap,
+				Results:                results,
+				UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap),
 			}, nil
 		}
 		// Fail-open: return access tables with best-effort column names and lineage
 		// when analysis fails (e.g., unsupported built-in functions).
 		return &base.QuerySpan{
-			Type:             base.Select,
-			SourceColumns:    accessesMap,
-			Results:          e.extractFallbackColumns(selStmt),
-			PredicateColumns: e.funcPredicateColumns,
+			Type:                   base.Select,
+			SourceColumns:          accessesMap,
+			Results:                e.extractFallbackColumns(selStmt),
+			PredicateColumns:       e.funcPredicateColumns,
+			UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap),
 		}, nil
 	}
 
@@ -302,10 +378,11 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	}
 
 	return &base.QuerySpan{
-		Type:             base.Select,
-		SourceColumns:    accessesMap,
-		PredicateColumns: e.funcPredicateColumns,
-		Results:          results,
+		Type:                   base.Select,
+		SourceColumns:          accessesMap,
+		PredicateColumns:       e.funcPredicateColumns,
+		Results:                results,
+		UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap),
 	}, nil
 }
 

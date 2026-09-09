@@ -61,6 +61,23 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 		if results[i].Error == "" && spans[i].NotFoundError != nil {
 			return errors.Errorf("masking error: %v", spans[i].NotFoundError)
 		}
+		// queryRetry re-syncs and rebuilds the span before this runs, so a span
+		// still carrying the signal here means a fresh sync could not describe the
+		// relation. The refusal has to precede getMaskersForQuerySpan below: a
+		// driver can return rows and an error together (MaximumSQLResultSize sets
+		// Error on the rows collected so far), and the redaction branch between
+		// them takes only zero-row results, so those partial rows would otherwise
+		// be handed to doMaskResult with no maskers. Sitting above that branch as
+		// well refuses an errored zero-row result rather than redacting it. A table
+		// PostgreSQL legally leaves without columns is stored identically and
+		// refused too, permanently: CREATE TABLE t() and dropping a table's last
+		// column both produce it, and the syncer's column query skips dropped
+		// attributes, so a re-sync reproduces it.
+		if maskingBlockedByUnresolvedColumns(spans[i], instance) {
+			return errors.Errorf(
+				"masking cannot be applied: %v, so the query was not returned",
+				spans[i].UnresolvedColumnsError)
+		}
 		// Skip masking for error result, but redact the error message if the
 		// statement touches masked columns — database errors can contain
 		// actual column values (e.g. "invalid input syntax for type integer: '<value>'").
@@ -70,6 +87,10 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 		if results[i].Error != "" && len(results[i].Rows) == 0 {
 			if i < len(spans) && spans[i] != nil && s.spanTouchesMaskedColumns(ctx, m, instance, user, spans[i]) {
 				results[i].Error = "Query execution failed. Error details are hidden because the query references columns with data masking policies."
+				// The driver also fills DetailedError with the raw PostgreSQL error
+				// fields, InternalQuery among them, which carries the failing SQL
+				// text. Those reach the client whatever Error says.
+				results[i].DetailedError = nil
 			}
 			continue
 		}
@@ -81,6 +102,19 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 	}
 
 	return nil
+}
+
+// maskingBlockedByUnresolvedColumns reports whether masking cannot be evaluated
+// for this span because the stored snapshot does not describe a relation the
+// query reads. The re-sync trigger in queryRetry and the refusal above must key
+// on this one predicate: a re-sync firing where the refusal will not is wasted
+// work on the request path, and a refusal firing where the re-sync did not never
+// gives a stale snapshot its chance to recover.
+func maskingBlockedByUnresolvedColumns(span *parserbase.QuerySpan, instance *store.InstanceMessage) bool {
+	if span == nil || span.UnresolvedColumnsError == nil || instance == nil {
+		return false
+	}
+	return common.EngineSupportMasking(instance.Metadata.GetEngine())
 }
 
 // spanTouchesMaskedColumns checks whether any column referenced anywhere in

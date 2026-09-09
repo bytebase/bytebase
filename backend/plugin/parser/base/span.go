@@ -2,6 +2,7 @@ package base
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"strings"
 
@@ -73,6 +74,45 @@ type QuerySpan struct {
 	ElasticsearchAnalysis     *ElasticsearchAnalysis
 	NotFoundError             error
 	FunctionNotSupportedError error
+	// UnresolvedColumnsError is set when the query reads a relation the stored
+	// snapshot describes no columns for. Masking is column-granular, so a
+	// consumer that masks must read it as "cannot evaluate" rather than "nothing
+	// to mask"; one that does not mask can ignore it, the span is otherwise
+	// usable.
+	UnresolvedColumnsError *UnresolvedColumnsError
+}
+
+// UnresolvedColumnsError names those relations. A sync that ran while the
+// connecting role lacked privileges is the usual cause: the relation is still
+// listed, with no columns under it.
+type UnresolvedColumnsError struct {
+	// Relations each carry an empty Column field.
+	Relations []ColumnResource
+}
+
+func (e *UnresolvedColumnsError) Error() string {
+	names := make([]string, 0, len(e.Relations))
+	for _, r := range e.Relations {
+		names = append(names, r.String())
+	}
+	slices.Sort(names)
+	return fmt.Sprintf("the synced schema describes no columns for %s", strings.Join(names, ", "))
+}
+
+// Databases names only the databases holding an unresolved relation, so a
+// caller can re-sync those rather than every database the query reads.
+func (e *UnresolvedColumnsError) Databases() []string {
+	seen := make(map[string]bool, len(e.Relations))
+	var out []string
+	for _, r := range e.Relations {
+		if r.Database == "" || seen[r.Database] {
+			continue
+		}
+		seen[r.Database] = true
+		out = append(out, r.Database)
+	}
+	slices.Sort(out)
+	return out
 }
 
 // QuerySpanResult is the result column of a query span.
