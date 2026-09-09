@@ -7,8 +7,9 @@ import {
   useState,
 } from "react";
 import { Trans, useTranslation } from "react-i18next";
+import { FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Textarea } from "@/components/ui/textarea";
 import { useServerState } from "@/hooks/useAppState";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -217,34 +218,30 @@ function CredentialSourceForm({
   };
 
   return (
-    <div className="sm:col-span-3 sm:col-start-1">
-      <label htmlFor="credential-source" className="textlabel block">
-        {t("instance.iam-extension.credential-source")}
-      </label>
-      <RadioGroup
-        className="textlabel mt-2 gap-x-4"
-        value={credentialSource}
-        onValueChange={(value) =>
-          handleCredentialSourceChange(value as CredentialSource)
-        }
-      >
-        {options.map((option) => (
-          <RadioGroupItem
-            key={option.value}
-            value={option.value}
-            disabled={!allowEdit || option.disabled}
-            title={
-              option.disabled
-                ? t(
-                    "instance.iam-extension.saas-default-credential-restriction"
-                  )
-                : undefined
-            }
-          >
-            {option.label}
-          </RadioGroupItem>
-        ))}
-      </RadioGroup>
+    <div className="flex flex-col gap-4 sm:col-span-3 sm:col-start-1">
+      <FormField title={t("instance.iam-extension.credential-source")}>
+        <SegmentedControl
+          value={credentialSource}
+          onValueChange={(value) =>
+            handleCredentialSourceChange(value as CredentialSource)
+          }
+          ariaLabel={t("instance.iam-extension.credential-source")}
+          options={options.map((option) => ({
+            ...option,
+            tooltip: option.disabled
+              ? t("instance.iam-extension.saas-default-credential-restriction")
+              : undefined,
+          }))}
+          disabled={!allowEdit}
+          size="sm"
+        />
+
+        {credentialSource === "default" && (
+          <DefaultCredentialInfo
+            authenticationType={dataSource.authenticationType}
+          />
+        )}
+      </FormField>
 
       {credentialSource === "specific-credential" && (
         <>
@@ -276,12 +273,6 @@ function CredentialSourceForm({
             />
           )}
         </>
-      )}
-
-      {credentialSource === "default" && (
-        <DefaultCredentialInfo
-          authenticationType={dataSource.authenticationType}
-        />
       )}
 
       {showsCloudSQLIPType(engine, dataSource.authenticationType) && (
@@ -356,29 +347,22 @@ function CloudSQLIPTypeField({
   }));
 
   return (
-    <div className="mt-4 sm:col-span-3 sm:col-start-1">
-      <label className="textlabel block">
-        {t("instance.cloud-sql-ip-type.label")}
-      </label>
-      <RadioGroup
-        className="textlabel mt-2 gap-x-4"
+    <FormField title={t("instance.cloud-sql-ip-type.label")}>
+      <SegmentedControl
         value={String(current)}
         onValueChange={(next) => onChange(Number(next))}
-      >
-        {options.map((option) => (
-          <RadioGroupItem
-            key={option.value}
-            value={String(option.value)}
-            disabled={!allowEdit}
-          >
-            {option.label}
-          </RadioGroupItem>
-        ))}
-      </RadioGroup>
-      <p className="textinfolabel mt-1">
+        ariaLabel={t("instance.cloud-sql-ip-type.label")}
+        options={options.map((option) => ({
+          value: String(option.value),
+          label: option.label,
+        }))}
+        disabled={!allowEdit}
+        size="sm"
+      />
+      <p className="text-sm text-control-light">
         {t("instance.cloud-sql-ip-type.description")}
       </p>
-    </div>
+    </FormField>
   );
 }
 
@@ -401,36 +385,36 @@ function AzureCredentialFields({
       : undefined;
 
   return (
-    <div className="mt-4 sm:col-span-3 sm:col-start-1">
-      <label className="textlabel block mt-2">
-        {t("instance.iam-extension.tenant-id")}
-      </label>
-      <Input
-        className="mt-2 w-full"
-        disabled={!allowEdit}
-        value={azure?.tenantId ?? ""}
-        onChange={(e) => onFieldChange("tenantId", e.target.value)}
-      />
-      <label className="textlabel block mt-2">
-        {t("instance.iam-extension.client-id")}
-      </label>
-      <Input
-        className="mt-2 w-full"
-        disabled={!allowEdit}
-        value={azure?.clientId ?? ""}
-        onChange={(e) => onFieldChange("clientId", e.target.value)}
-      />
-      <label className="textlabel block mt-2">
-        {t("instance.iam-extension.client-secret")}
-      </label>
-      <Input
-        type="password"
-        className="mt-2 w-full"
-        disabled={!allowEdit}
-        placeholder={t("instance.type-or-paste-credentials-write-only")}
-        value={azure?.clientSecret ?? ""}
-        onChange={(e) => onFieldChange("clientSecret", e.target.value)}
-      />
+    <div className="flex flex-col gap-4">
+      <FormField title={t("instance.iam-extension.tenant-id")}>
+        <Input
+          aria-label={t("instance.iam-extension.tenant-id")}
+          className="w-full"
+          disabled={!allowEdit}
+          value={azure?.tenantId ?? ""}
+          onChange={(e) => onFieldChange("tenantId", e.target.value)}
+        />
+      </FormField>
+      <FormField title={t("instance.iam-extension.client-id")}>
+        <Input
+          aria-label={t("instance.iam-extension.client-id")}
+          className="w-full"
+          disabled={!allowEdit}
+          value={azure?.clientId ?? ""}
+          onChange={(e) => onFieldChange("clientId", e.target.value)}
+        />
+      </FormField>
+      <FormField title={t("instance.iam-extension.client-secret")}>
+        <Input
+          aria-label={t("instance.iam-extension.client-secret")}
+          type="password"
+          className="w-full"
+          disabled={!allowEdit}
+          placeholder={t("instance.type-or-paste-credentials-write-only")}
+          value={azure?.clientSecret ?? ""}
+          onChange={(e) => onFieldChange("clientSecret", e.target.value)}
+        />
+      </FormField>
     </div>
   );
 }
@@ -459,55 +443,64 @@ function AwsCredentialFields({
       : undefined;
 
   return (
-    <div className="mt-4 sm:col-span-3 sm:col-start-1">
-      <label className="textlabel block mt-2">Access Key ID</label>
-      <Input
-        className="mt-2 w-full"
-        disabled={!allowEdit}
-        placeholder={t("common.sensitive-placeholder")}
-        value={aws?.accessKeyId ?? ""}
-        onChange={(e) => onFieldChange("accessKeyId", e.target.value)}
-      />
-      <label className="textlabel block mt-2">Secret Access Key</label>
-      <Input
-        className="mt-2 w-full"
-        disabled={!allowEdit}
-        placeholder={t("common.sensitive-placeholder")}
-        value={aws?.secretAccessKey ?? ""}
-        onChange={(e) => onFieldChange("secretAccessKey", e.target.value)}
-      />
-      <label className="textlabel block mt-2">Session Token</label>
-      <Input
-        className="mt-2 w-full"
-        disabled={!allowEdit}
-        placeholder={t("common.sensitive-placeholder")}
-        value={aws?.sessionToken ?? ""}
-        onChange={(e) => onFieldChange("sessionToken", e.target.value)}
-      />
-      <label className="textlabel block mt-2">{t("instance.role-arn")}</label>
-      <Input
-        className="mt-2 w-full"
-        disabled={!allowEdit}
-        placeholder={t("instance.role-arn-placeholder")}
-        value={aws?.roleArn ?? ""}
-        onChange={(e) => onFieldChange("roleArn", e.target.value)}
-      />
-      <div className="text-sm text-gray-500 mt-1">
-        {t("instance.role-arn-description")}
-      </div>
-      <label className="textlabel block mt-2">
-        {t("instance.external-id")}
-      </label>
-      <Input
-        className="mt-2 w-full"
-        disabled={!allowEdit}
-        placeholder={t("instance.external-id-placeholder")}
-        value={aws?.externalId ?? ""}
-        onChange={(e) => onFieldChange("externalId", e.target.value)}
-      />
-      <div className="text-sm text-gray-500 mt-1">
-        {t("instance.external-id-description")}
-      </div>
+    <div className="flex flex-col gap-4">
+      <FormField title={"Access Key ID"}>
+        <Input
+          aria-label={"Access Key ID"}
+          className="w-full"
+          disabled={!allowEdit}
+          placeholder={t("common.sensitive-placeholder")}
+          value={aws?.accessKeyId ?? ""}
+          onChange={(e) => onFieldChange("accessKeyId", e.target.value)}
+        />
+      </FormField>
+      <FormField title={"Secret Access Key"}>
+        <Input
+          aria-label={"Secret Access Key"}
+          className="w-full"
+          disabled={!allowEdit}
+          placeholder={t("common.sensitive-placeholder")}
+          value={aws?.secretAccessKey ?? ""}
+          onChange={(e) => onFieldChange("secretAccessKey", e.target.value)}
+        />
+      </FormField>
+      <FormField title={"Session Token"}>
+        <Input
+          aria-label={"Session Token"}
+          className="w-full"
+          disabled={!allowEdit}
+          placeholder={t("common.sensitive-placeholder")}
+          value={aws?.sessionToken ?? ""}
+          onChange={(e) => onFieldChange("sessionToken", e.target.value)}
+        />
+      </FormField>
+      <FormField title={t("instance.role-arn")}>
+        <Input
+          aria-label={t("instance.role-arn")}
+          className="w-full"
+          disabled={!allowEdit}
+          placeholder={t("instance.role-arn-placeholder")}
+          value={aws?.roleArn ?? ""}
+          onChange={(e) => onFieldChange("roleArn", e.target.value)}
+        />
+        <div className="text-sm text-control-light">
+          {t("instance.role-arn-description")}
+        </div>
+      </FormField>
+
+      <FormField title={t("instance.external-id")}>
+        <Input
+          aria-label={t("instance.external-id")}
+          className="w-full"
+          disabled={!allowEdit}
+          placeholder={t("instance.external-id-placeholder")}
+          value={aws?.externalId ?? ""}
+          onChange={(e) => onFieldChange("externalId", e.target.value)}
+        />
+        <div className="text-sm text-control-light">
+          {t("instance.external-id-description")}
+        </div>
+      </FormField>
     </div>
   );
 }
@@ -549,7 +542,7 @@ function GcpCredentialField({
   };
 
   return (
-    <div className="mt-2 sm:col-span-3 sm:col-start-1">
+    <FormField title={t("instance.iam-extension.specific-credential")}>
       <div className="flex flex-col gap-y-1 w-full">
         <p className="textinfolabel">
           <span>{t("instance.create-gcp-credentials")}</span>
@@ -577,6 +570,7 @@ function GcpCredentialField({
           </a>
         </p>
         <Textarea
+          aria-label={t("instance.iam-extension.specific-credential")}
           value={value}
           placeholder={t("instance.type-or-paste-credentials-write-only")}
           className={`w-full h-24 whitespace-pre-wrap resize-none ${isDragOver ? "border-accent" : ""}`}
@@ -586,7 +580,7 @@ function GcpCredentialField({
           onDrop={handleDrop}
         />
       </div>
-    </div>
+    </FormField>
   );
 }
 
@@ -598,7 +592,7 @@ function DefaultCredentialInfo({
   const { t } = useTranslation();
 
   return (
-    <div className="mt-1 sm:col-span-3 sm:col-start-1 textinfolabel !leading-6">
+    <div className="text-sm leading-5 text-control-light">
       {authenticationType === DataSource_AuthenticationType.AZURE_IAM && (
         <Trans
           t={t}
@@ -638,7 +632,7 @@ function DefaultCredentialInfo({
 }
 
 function Code({ children }: { children?: React.ReactNode }) {
-  return <code className="bg-gray-100 p-1 rounded-sm mr-1">{children}</code>;
+  return <code className="bg-control-bg p-1 rounded-sm mr-1">{children}</code>;
 }
 
 export { CredentialSourceForm };

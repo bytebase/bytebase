@@ -682,9 +682,8 @@
         "tls": "TLS"
       },
       "server-identity": "Server identity",
-      "verification-disabled-description": "Verification is disabled. The connection is encrypted, but the server identity is not verified; CA settings are ignored.",
-      "verify-certificate": "Verify server certificate",
-      "verify-certificate-tooltip": "Enable TLS certificate verification for secure connections. Disable only for development or when certificates cannot be properly validated (e.g., self-signed certs, VPN environments). Warning: Disabling verification is insecure"
+      "verification-disabled-description": "Verification is disabled. The connection is encrypted, but the server identity is not verified; CA settings are ignored. This is insecure. Enable verification for secure connections; disable it only temporarily for development or troubleshooting.",
+      "verify-certificate": "Verify server certificate"
     },
     "ssl-connection": "SSL Connection"
   },
@@ -964,6 +963,8 @@
   },
   "instance": {
     "account-locator": "Account Locator",
+    "add-labels": "Add labels",
+    "add-parameter": "Add parameter",
     "advanced-search": {
       "scope": {
         "host": {
@@ -978,6 +979,7 @@
     },
     "archive-instance-instance-name": "Archive instance '{{0}}'?",
     "archived-instances-will-not-be-displayed": "Archived instances will not be displayed.",
+    "authentication": "Authentication",
     "authentication-database": "Authentication Database",
     "cloud-sql-ip-type": {
       "description": "Use Private IP when the instance has no public IP and Bytebase runs in the same VPC.",
@@ -989,8 +991,8 @@
     "connect-database-to-project": "Connect database to project",
     "connect-instance": "Connect instance",
     "connecting-database-to-project": "Connecting database...",
+    "connection-database": "Connection database",
     "connection-info": "Connection info",
-    "connection-options": "Connection Options",
     "connection-recovery": {
       "auth": {
         "description": "Verify the username, password, token, or IAM authentication settings, then test the connection again.",
@@ -1123,7 +1125,7 @@
     "gcp-endpoint-tip": "Optional. Overrides the default Google API endpoint, e.g. with a Private Service Connect endpoint like {{example}}.",
     "gcp-endpoint-toggle": "Set a custom API endpoint",
     "grants": "Grants",
-    "host-or-socket": "Host or Socket",
+    "hostname": "Hostname",
     "iam-extension": {
       "client-id": "Client ID",
       "client-secret": "Client Secret",
@@ -1220,6 +1222,11 @@
     "open-data-source": "Open this data source to see what it needs.",
     "parameter-name-placeholder": "Parameter name",
     "parameter-value-placeholder": "Parameter value",
+    "password-source": {
+      "bytebase": "Bytebase",
+      "self": "Password source",
+      "stored-in-bytebase": "Stored in Bytebase"
+    },
     "password-type": {
       "aws-iam": "AWS RDS IAM",
       "azure-iam": "Azure IAM",
@@ -1329,9 +1336,13 @@
     },
     "sync-databases": {
       "add-database": "+ Add database, press enter to submit",
+      "all-databases": "All databases",
       "description": "Choose which databases to sync from this instance.",
+      "hostname-required": "Enter a hostname to choose which databases to sync.",
       "project-sync-all": "Sync all databases to this project",
+      "required-fields": "Complete the required fields above to choose which databases to sync.",
       "search-database": "Search database",
+      "selected-databases": "Selected databases",
       "self": "Sync Databases",
       "sync-all": "Sync all databases"
     },

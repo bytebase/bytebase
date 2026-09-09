@@ -682,9 +682,8 @@
         "tls": "TLS"
       },
       "server-identity": "サーバー ID",
-      "verification-disabled-description": "検証は無効です。接続は暗号化されていますが、サーバーの ID は検証されず、CA 設定は無視されます。",
-      "verify-certificate": "サーバー証明書を検証",
-      "verify-certificate-tooltip": "安全な接続のためにTLS証明書の検証を有効にします。開発環境や証明書が適切に検証できない場合（自己署名証明書、VPN環境など）にのみ無効にしてください。警告：検証を無効にすることは安全ではありません"
+      "verification-disabled-description": "検証が無効です。接続は暗号化されますが、サーバーの身元は検証されず、CA 設定は無視されます。これは安全ではありません。安全な接続のために検証を有効にし、開発やトラブルシューティング時にのみ一時的に無効にしてください。",
+      "verify-certificate": "サーバー証明書を検証"
     },
     "ssl-connection": "SSL接続"
   },
@@ -964,6 +963,8 @@
   },
   "instance": {
     "account-locator": "アカウントロケーター",
+    "add-labels": "ラベルを追加",
+    "add-parameter": "パラメータを追加",
     "advanced-search": {
       "scope": {
         "host": {
@@ -978,6 +979,7 @@
     },
     "archive-instance-instance-name": "インスタンス '{{0}}' をアーカイブしますか?",
     "archived-instances-will-not-be-displayed": "アーカイブされたインスタンスは表示されなくなります。",
+    "authentication": "認証",
     "authentication-database": "認証データベース",
     "cloud-sql-ip-type": {
       "description": "インスタンスにパブリック IP がなく、Bytebase が同じ VPC 内で実行されている場合は、プライベート IP を使用してください。",
@@ -989,8 +991,8 @@
     "connect-database-to-project": "データベースをプロジェクトに接続",
     "connect-instance": "インスタンスを接続",
     "connecting-database-to-project": "データベースを接続中...",
+    "connection-database": "接続先データベース",
     "connection-info": "接続情報",
-    "connection-options": "接続オプション",
     "connection-recovery": {
       "auth": {
         "description": "ユーザー名、パスワード、トークン、または IAM 認証設定を確認してから、もう一度接続をテストしてください。",
@@ -1123,7 +1125,7 @@
     "gcp-endpoint-tip": "省略可能。デフォルトの Google API エンドポイントを上書きします（例：Private Service Connect エンドポイント {{example}}）。",
     "gcp-endpoint-toggle": "カスタム API エンドポイントを設定",
     "grants": "権限",
-    "host-or-socket": "ホストまたはソケット",
+    "hostname": "ホスト名",
     "iam-extension": {
       "client-id": "Client ID",
       "client-secret": "Client Secret",
@@ -1220,6 +1222,11 @@
     "open-data-source": "このデータソースを開いて、何が必要か確認してください。",
     "parameter-name-placeholder": "パラメーター名",
     "parameter-value-placeholder": "パラメーター値",
+    "password-source": {
+      "bytebase": "Bytebase",
+      "self": "パスワードの取得元",
+      "stored-in-bytebase": "Bytebase に保存"
+    },
     "password-type": {
       "aws-iam": "AWS RDS IAM",
       "azure-iam": "Azure IAM",
@@ -1329,9 +1336,13 @@
     },
     "sync-databases": {
       "add-database": "+ データベースを追加し、Enterキーを押して送信します",
+      "all-databases": "すべてのデータベース",
       "description": "このインスタンスから同期するデータベースを選択してください。",
+      "hostname-required": "同期するデータベースを選択するには、ホスト名を入力してください。",
       "project-sync-all": "すべてのデータベースをこのプロジェクトに同期する",
+      "required-fields": "同期するデータベースを選択するには、上の必須項目を入力してください。",
       "search-database": "データベースを検索",
+      "selected-databases": "選択したデータベース",
       "self": "データベースを同期する",
       "sync-all": "すべてのデータベースを同期する"
     },

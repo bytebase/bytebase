@@ -682,9 +682,8 @@
         "tls": "TLS"
       },
       "server-identity": "Danh tính máy chủ",
-      "verification-disabled-description": "Đã tắt xác minh. Kết nối được mã hóa, nhưng danh tính máy chủ không được xác minh; cài đặt CA sẽ bị bỏ qua.",
-      "verify-certificate": "Xác minh chứng chỉ máy chủ",
-      "verify-certificate-tooltip": "Bật xác minh chứng chỉ TLS để kết nối an toàn. Chỉ tắt cho môi trường phát triển hoặc khi không thể xác thực chứng chỉ đúng cách (ví dụ: chứng chỉ tự ký, môi trường VPN). Cảnh báo: Tắt xác minh là không an toàn"
+      "verification-disabled-description": "Xác minh đã tắt. Kết nối vẫn được mã hóa nhưng danh tính máy chủ không được xác minh; cài đặt CA bị bỏ qua. Điều này không an toàn. Hãy bật xác minh để bảo đảm kết nối an toàn; chỉ tạm tắt khi phát triển hoặc khắc phục sự cố.",
+      "verify-certificate": "Xác minh chứng chỉ máy chủ"
     },
     "ssl-connection": "Kết nối SSL"
   },
@@ -964,6 +963,8 @@
   },
   "instance": {
     "account-locator": "Định vị tài khoản",
+    "add-labels": "Thêm nhãn",
+    "add-parameter": "Thêm tham số",
     "advanced-search": {
       "scope": {
         "host": {
@@ -978,6 +979,7 @@
     },
     "archive-instance-instance-name": "Lưu trữ phiên bản '{{0}}'?",
     "archived-instances-will-not-be-displayed": "Các phiên bản đã lưu trữ sẽ không được hiển thị.",
+    "authentication": "Xác thực",
     "authentication-database": "Cơ sở dữ liệu xác thực",
     "cloud-sql-ip-type": {
       "description": "Dùng IP riêng khi instance không có IP công khai và Bytebase chạy trong cùng một VPC.",
@@ -989,8 +991,8 @@
     "connect-database-to-project": "Kết nối cơ sở dữ liệu với dự án",
     "connect-instance": "Kết nối instance",
     "connecting-database-to-project": "Đang kết nối cơ sở dữ liệu...",
+    "connection-database": "Cơ sở dữ liệu kết nối",
     "connection-info": "Thông tin kết nối",
-    "connection-options": "Tùy chọn kết nối",
     "connection-recovery": {
       "auth": {
         "description": "Kiểm tra tên người dùng, mật khẩu, token hoặc cấu hình xác thực IAM, rồi kiểm tra kết nối lại.",
@@ -1123,7 +1125,7 @@
     "gcp-endpoint-tip": "Tùy chọn. Ghi đè điểm cuối Google API mặc định, ví dụ: điểm cuối Private Service Connect như {{example}}.",
     "gcp-endpoint-toggle": "Thiết lập điểm cuối API tùy chỉnh",
     "grants": "Quyền",
-    "host-or-socket": "Máy chủ hoặc Socket",
+    "hostname": "Tên máy chủ",
     "iam-extension": {
       "client-id": "Client ID",
       "client-secret": "Client Secret",
@@ -1220,6 +1222,11 @@
     "open-data-source": "Mở nguồn dữ liệu này để xem nó cần gì.",
     "parameter-name-placeholder": "Tên tham số",
     "parameter-value-placeholder": "Giá trị tham số",
+    "password-source": {
+      "bytebase": "Bytebase",
+      "self": "Nguồn mật khẩu",
+      "stored-in-bytebase": "Được lưu trong Bytebase"
+    },
     "password-type": {
       "aws-iam": "AWS RDS IAM",
       "azure-iam": "Azure IAM",
@@ -1329,9 +1336,13 @@
     },
     "sync-databases": {
       "add-database": "+ Thêm cơ sở dữ liệu, nhấn enter để gửi",
+      "all-databases": "Tất cả cơ sở dữ liệu",
       "description": "Chọn cơ sở dữ liệu cần đồng bộ từ instance này.",
+      "hostname-required": "Nhập tên máy chủ để chọn cơ sở dữ liệu cần đồng bộ.",
       "project-sync-all": "Đồng bộ tất cả cơ sở dữ liệu vào dự án này",
+      "required-fields": "Điền các trường bắt buộc ở trên để chọn cơ sở dữ liệu cần đồng bộ.",
       "search-database": "Tìm kiếm cơ sở dữ liệu",
+      "selected-databases": "Cơ sở dữ liệu được chọn",
       "self": "Đồng bộ cơ sở dữ liệu",
       "sync-all": "Đồng bộ tất cả cơ sở dữ liệu"
     },

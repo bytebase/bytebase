@@ -682,9 +682,8 @@
         "tls": "TLS"
       },
       "server-identity": "Identidad del servidor",
-      "verification-disabled-description": "La verificación está deshabilitada. La conexión está cifrada, pero la identidad del servidor no se verifica; la configuración de CA se ignora.",
-      "verify-certificate": "Verificar certificado del servidor",
-      "verify-certificate-tooltip": "Habilitar la verificación del certificado TLS para conexiones seguras. Deshabilitar solo para desarrollo o cuando los certificados no se pueden validar correctamente (por ejemplo, certificados autofirmados, entornos VPN). Advertencia: Deshabilitar la verificación es inseguro"
+      "verification-disabled-description": "La verificación está desactivada. La conexión está cifrada, pero no se verifica la identidad del servidor y se ignora la configuración de CA. Esto es inseguro. Activa la verificación para conexiones seguras; desactívala solo temporalmente durante el desarrollo o la resolución de problemas.",
+      "verify-certificate": "Verificar certificado del servidor"
     },
     "ssl-connection": "Conexión SSL"
   },
@@ -964,6 +963,8 @@
   },
   "instance": {
     "account-locator": "Localizadora de cuentas",
+    "add-labels": "Añadir etiquetas",
+    "add-parameter": "Añadir parámetro",
     "advanced-search": {
       "scope": {
         "host": {
@@ -978,6 +979,7 @@
     },
     "archive-instance-instance-name": "¿Archivar la instancia '{{0}}'?",
     "archived-instances-will-not-be-displayed": "Las instancias archivadas no se mostrarán.",
+    "authentication": "Autenticación",
     "authentication-database": "Base de datos de autenticación",
     "cloud-sql-ip-type": {
       "description": "Usa IP privada cuando la instancia no tiene IP pública y Bytebase se ejecuta en la misma VPC.",
@@ -989,8 +991,8 @@
     "connect-database-to-project": "Conectar base de datos al proyecto",
     "connect-instance": "Conectar instancia",
     "connecting-database-to-project": "Conectando base de datos...",
+    "connection-database": "Base de datos de conexión",
     "connection-info": "Información de conexión",
-    "connection-options": "Opciones de conexión",
     "connection-recovery": {
       "auth": {
         "description": "Verifica el usuario, la contraseña, el token o la configuración de autenticación IAM y vuelve a probar la conexión.",
@@ -1123,7 +1125,7 @@
     "gcp-endpoint-tip": "Opcional. Reemplaza el punto de conexión predeterminado de la API de Google, p. ej., un punto de conexión de Private Service Connect como {{example}}.",
     "gcp-endpoint-toggle": "Configurar un punto de conexión de API personalizado",
     "grants": "Concesiones",
-    "host-or-socket": "Host o Socket",
+    "hostname": "Nombre de host",
     "iam-extension": {
       "client-id": "Client ID",
       "client-secret": "Client Secret",
@@ -1220,6 +1222,11 @@
     "open-data-source": "Abra esta fuente de datos para ver qué necesita.",
     "parameter-name-placeholder": "Nombre de parámetro",
     "parameter-value-placeholder": "Valor de parámetro",
+    "password-source": {
+      "bytebase": "Bytebase",
+      "self": "Origen de la contraseña",
+      "stored-in-bytebase": "Almacenada en Bytebase"
+    },
     "password-type": {
       "aws-iam": "AWS RDS IAM",
       "azure-iam": "Azure IAM",
@@ -1329,9 +1336,13 @@
     },
     "sync-databases": {
       "add-database": "+ Agregar base de datos, presione enter para enviar",
+      "all-databases": "Todas las bases de datos",
       "description": "Elige qué bases de datos sincronizar desde esta instancia.",
+      "hostname-required": "Introduce un nombre de host para elegir qué bases de datos sincronizar.",
       "project-sync-all": "Sincronizar todas las bases de datos con este proyecto",
+      "required-fields": "Completa los campos obligatorios de arriba para elegir qué bases de datos sincronizar.",
       "search-database": "Buscar en la base de datos",
+      "selected-databases": "Bases de datos seleccionadas",
       "self": "Sincronizar bases de datos",
       "sync-all": "Sincronizar todas las bases de datos"
     },

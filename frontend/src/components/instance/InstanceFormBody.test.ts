@@ -4,7 +4,7 @@ import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 
 describe("InstanceFormBody", () => {
-  test("uses boolean values for inert collapsible sections", () => {
+  test("uses a boolean value for the engine selector disclosure", () => {
     const source = readFileSync(
       join(process.cwd(), "src/components/instance/InstanceFormBody.tsx"),
       "utf-8"
@@ -13,15 +13,10 @@ describe("InstanceFormBody", () => {
     expect(source).not.toContain(
       'inert={isEngineSelectorCollapsed ? "" : undefined}'
     );
-    expect(source).not.toContain(
-      'inert={isConnectionOptionsCollapsed ? "" : undefined}'
-    );
     expect(source).toContain(
       "inert={isEngineSelectorCollapsed ? true : undefined}"
     );
-    expect(source).toContain(
-      "inert={isConnectionOptionsCollapsed ? true : undefined}"
-    );
+    expect(source).not.toContain("isConnectionOptionsCollapsed");
   });
 
   test("renders database sync controls inside the connection card", () => {
@@ -33,14 +28,13 @@ describe("InstanceFormBody", () => {
     const basicInfoIndex = source.indexOf("{/* Basic Info Card */}");
     const connectionCardIndex = source.indexOf("{/* Connection Card */}");
     const syncDatabasesIndex = source.indexOf("<SyncDatabases");
-    const connectionOptionsIndex = source.indexOf(
-      "{/* Connection Options Card */}"
-    );
+    const connectionOptionsIndex = source.indexOf("optionsOnly");
 
     expect(basicInfoIndex).toBeGreaterThanOrEqual(0);
     expect(connectionCardIndex).toBeGreaterThan(basicInfoIndex);
     expect(syncDatabasesIndex).toBeGreaterThan(connectionCardIndex);
-    expect(syncDatabasesIndex).toBeLessThan(connectionOptionsIndex);
+    expect(connectionOptionsIndex).toBeGreaterThan(connectionCardIndex);
+    expect(connectionOptionsIndex).toBeLessThan(syncDatabasesIndex);
   });
 
   test("renders database sync controls only once", () => {
@@ -50,6 +44,31 @@ describe("InstanceFormBody", () => {
     );
 
     expect(source.match(/<SyncDatabases/g)).toHaveLength(1);
+  });
+
+  test("groups Redis node and Sentinel master settings with the selected mode", () => {
+    const source = readFileSync(
+      join(process.cwd(), "src/components/instance/InstanceFormBody.tsx"),
+      "utf-8"
+    );
+    const redisModeIndex = source.indexOf("{/* Redis connection type */}");
+    const additionalAddressesIndex = source.indexOf(
+      "<AdditionalAddressesFields",
+      redisModeIndex
+    );
+    const sentinelFieldsIndex = source.indexOf(
+      "<RedisSentinelFields",
+      redisModeIndex
+    );
+    const credentialsIndex = source.indexOf(
+      "{/* Credentials (auth method, username, password) */}",
+      redisModeIndex
+    );
+
+    expect(redisModeIndex).toBeGreaterThanOrEqual(0);
+    expect(additionalAddressesIndex).toBeGreaterThan(redisModeIndex);
+    expect(sentinelFieldsIndex).toBeGreaterThan(additionalAddressesIndex);
+    expect(credentialsIndex).toBeGreaterThan(sentinelFieldsIndex);
   });
 
   test("labels project-aware database sync without a redundant alert", () => {
@@ -109,19 +128,22 @@ describe("InstanceFormBody", () => {
     const descriptionIndex = source.indexOf(
       't("instance.sync-databases.description")'
     );
-    const checkboxIndex = source.indexOf("<Checkbox", descriptionIndex);
+    const syncControlIndex = source.indexOf(
+      "<SegmentedControl",
+      descriptionIndex
+    );
 
     expect(source).toContain(
       "onOpenInfoPanel?: (section: InfoSection) => void"
     );
     expect(source).toContain("onOpenInfoPanel={onOpenInfoPanel}");
     expect(source).toContain(
-      'className="inline-flex size-4 shrink-0 items-center justify-center text-accent leading-none"'
+      'className="inline-flex size-4 shrink-0 cursor-pointer items-center justify-center text-accent leading-none"'
     );
     expect(source).toContain('<Info className="size-3.5" />');
     expect(infoTriggerIndex).toBeGreaterThan(titleIndex);
     expect(infoTriggerIndex).toBeLessThan(descriptionIndex);
-    expect(infoTriggerIndex).toBeLessThan(checkboxIndex);
+    expect(infoTriggerIndex).toBeLessThan(syncControlIndex);
   });
 
   test("lets users load more database sync options", () => {
@@ -161,7 +183,7 @@ describe("InstanceFormBody", () => {
       connectionTitleIndex
     );
     const connectionGridIndex = source.indexOf(
-      'className="mt-3 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4"',
+      'className="flex flex-col gap-4"',
       connectionTitleIndex
     );
 
@@ -181,14 +203,13 @@ describe("InstanceFormBody", () => {
       "utf-8"
     );
 
-    expect(source).toContain("if (!updated.host && !isSaaSMode)");
     expect(source).toContain('t("instance.sentence.host.saas")');
     expect(source).toContain('t("instance.sentence.host.none-snowflake")');
   });
 
-  test("uses the localized testing label", () => {
+  test("moves the localized testing label into the sticky form actions", () => {
     const source = readFileSync(
-      join(process.cwd(), "src/components/instance/InstanceFormBody.tsx"),
+      join(process.cwd(), "src/components/instance/InstanceFormButtons.tsx"),
       "utf-8"
     );
 
@@ -198,14 +219,14 @@ describe("InstanceFormBody", () => {
 
   test("shows connection recovery for explicit test connection failures", () => {
     const source = readFileSync(
-      join(process.cwd(), "src/components/instance/InstanceFormBody.tsx"),
+      join(process.cwd(), "src/components/instance/InstanceFormButtons.tsx"),
       "utf-8"
     );
 
     expect(source).toContain("ConnectionRecovery");
     expect(source).toContain("testConnectionFailure");
-    expect(source).toContain("message: result.message");
-    expect(source).toContain("failureCategory: result.failureCategory");
+    expect(source).toContain("message: testResult.message");
+    expect(source).toContain("failureCategory: testResult.failureCategory");
     expect(source).toContain("setTestConnectionFailure(undefined)");
     expect(source).toContain(
       "category={testConnectionFailure.failureCategory}"

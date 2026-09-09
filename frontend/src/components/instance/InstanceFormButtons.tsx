@@ -88,6 +88,7 @@ export function InstanceFormButtons({
     editingDataSource,
     readonlyDataSourceList,
     setDataSourceEditState,
+    resetDataSource,
     hasReadonlyReplicaFeature,
     setMissingFeature,
     testConnection,
@@ -110,6 +111,9 @@ export function InstanceFormButtons({
     });
   const [connectionFailureResolver, setConnectionFailureResolver] = useState<
     ((confirmed: boolean) => void) | undefined
+  >();
+  const [testConnectionFailure, setTestConnectionFailure] = useState<
+    ConnectionFailureDialogState | undefined
   >();
 
   const checkExternalSecretFeature = (dataSources: DataSource[]) => {
@@ -163,6 +167,20 @@ export function InstanceFormButtons({
     checkDataSource,
   ]);
 
+  const allowTestConnection = useMemo(() => {
+    if (!allowEdit || !editingDataSource) return false;
+    if (basicInfo.engine === Engine.SPANNER) {
+      return isValidSpannerDataSource(editingDataSource);
+    }
+    if (basicInfo.engine === Engine.BIGQUERY) {
+      return isValidBigQueryDataSource(editingDataSource);
+    }
+    if (basicInfo.engine !== Engine.DYNAMODB && editingDataSource.host === "") {
+      return false;
+    }
+    return checkDataSource([editingDataSource]);
+  }, [allowEdit, basicInfo.engine, checkDataSource, editingDataSource]);
+
   const hasConfiguredConnectionOptions = (ds: EditDataSource): boolean => {
     const hasExtraParameters =
       Object.keys(ds.extraConnectionParameters ?? {}).length > 0;
@@ -214,10 +232,7 @@ export function InstanceFormButtons({
   const resetChanges = () => {
     const original = getOriginalEditState();
     setBasicInfo(cloneDeep(original.basicInfo));
-    setDataSourceEditState((prev) => ({
-      ...prev,
-      dataSources: cloneDeep(original.dataSources),
-    }));
+    resetDataSource();
   };
 
   const buildCreateInstance = (): Instance => {
@@ -508,6 +523,7 @@ export function InstanceFormButtons({
 
   const testConnectionForCurrentEditingDS = async () => {
     if (!editingDataSource) return;
+    setTestConnectionFailure(undefined);
     behaviorAnalytics.captureMetric(
       createBehaviorMetric("instance connection test clicked", {
         routeId: router.currentRoute.value.name?.toString(),
@@ -516,11 +532,29 @@ export function InstanceFormButtons({
 
     const testResult = await testConnection(editingDataSource, false);
     if (!testResult.success) {
+      setTestConnectionFailure({
+        open: false,
+        message: testResult.message,
+        failureCategory: testResult.failureCategory,
+      });
       maybeOpenConnectionOptions(editingDataSource);
     }
   };
 
+  const testConnectionFeedback = testConnectionFailure && (
+    <div className="border-t border-block-border px-4 py-3 sm:px-6">
+      <ConnectionRecovery
+        category={testConnectionFailure.failureCategory}
+        className="max-w-3xl"
+      />
+      <p className="mt-2 whitespace-pre-wrap break-all text-sm text-error">
+        {testConnectionFailure.message}
+      </p>
+    </div>
+  );
+
   const cancel = () => {
+    resetDataSource();
     onDismiss?.();
   };
 
@@ -565,6 +599,7 @@ export function InstanceFormButtons({
     return (
       <>
         {connectionFailureDialog}
+        {testConnectionFeedback}
         <StickyActionFooter
           className={className}
           left={
@@ -579,20 +614,37 @@ export function InstanceFormButtons({
             ) : undefined
           }
           right={
-            <Button
-              disabled={
-                !allowCreate || state.isRequesting || state.isTestingConnection
-              }
-              onClick={tryCreate}
-            >
-              {state.isRequesting
-                ? parent
-                  ? t("instance.connecting-database-to-project")
-                  : t("common.creating")
-                : parent
-                  ? t("instance.connect-database-to-project")
-                  : t("common.create")}
-            </Button>
+            <>
+              <Button
+                appearance="secondary"
+                disabled={
+                  !allowTestConnection ||
+                  state.isRequesting ||
+                  state.isTestingConnection
+                }
+                onClick={testConnectionForCurrentEditingDS}
+              >
+                {state.isTestingConnection
+                  ? t("instance.testing-connection")
+                  : t("instance.test-connection")}
+              </Button>
+              <Button
+                disabled={
+                  !allowCreate ||
+                  state.isRequesting ||
+                  state.isTestingConnection
+                }
+                onClick={tryCreate}
+              >
+                {state.isRequesting
+                  ? parent
+                    ? t("instance.connecting-database-to-project")
+                    : t("common.creating")
+                  : parent
+                    ? t("instance.connect-database-to-project")
+                    : t("common.create")}
+              </Button>
+            </>
           }
         />
       </>
@@ -605,6 +657,7 @@ export function InstanceFormButtons({
   return (
     <>
       {connectionFailureDialog}
+      {testConnectionFeedback}
       <StickyActionFooter
         className={className}
         left={

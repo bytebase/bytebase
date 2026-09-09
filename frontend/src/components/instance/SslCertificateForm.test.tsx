@@ -191,7 +191,7 @@ describe("SslCertificateForm", () => {
     });
   });
 
-  test("keeps CA controls visible when verification is disabled", () => {
+  test("hides CA controls when verification is disabled", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -216,7 +216,9 @@ describe("SslCertificateForm", () => {
     expect(container.textContent).toContain(
       "data-source.ssl.verification-disabled-description"
     );
-    expect(container.textContent).toContain("data-source.ssl.ca-source.self");
+    expect(container.textContent).not.toContain(
+      "data-source.ssl.ca-source.self"
+    );
     expect(container.textContent).not.toContain(
       "data-source.ssl.ca-empty-uses-system-trust"
     );
@@ -482,6 +484,7 @@ describe("SslCertificateForm", () => {
           hasCertPath={true}
           hasKeyPath={true}
           showKeyAndCert={true}
+          verify={true}
         />
       );
     });

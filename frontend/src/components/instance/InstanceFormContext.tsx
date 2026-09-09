@@ -131,6 +131,7 @@ export interface InstanceFormContextValue {
   valueChanged: boolean;
   isEditing: boolean;
   onDismiss?: () => void;
+  dataSourceResetEvent: number;
   showConnectionOptionsEvent: number;
   emitShowConnectionOptions: () => void;
 }
@@ -193,6 +194,7 @@ export function InstanceFormProvider({
   const [labelErrors, setLabelErrors] = useState<string[]>([]);
   const [showConnectionOptionsEvent, setShowConnectionOptionsEvent] =
     useState(0);
+  const [dataSourceResetEvent, setDataSourceResetEvent] = useState(0);
   const syncedInstanceRef = useRef({
     name: instance?.name,
     state: instance?.state,
@@ -480,6 +482,7 @@ export function InstanceFormProvider({
 
   const resetDataSource = useCallback(() => {
     setDataSourceEditState(extractDataSourceEditState(instance));
+    setDataSourceResetEvent((event) => event + 1);
   }, [instance]);
 
   // Debounced to avoid expensive cloneDeep + extraction on every keystroke.
@@ -724,6 +727,7 @@ export function InstanceFormProvider({
       valueChanged,
       isEditing,
       onDismiss,
+      dataSourceResetEvent,
       showConnectionOptionsEvent,
       emitShowConnectionOptions,
     }),
@@ -759,6 +763,7 @@ export function InstanceFormProvider({
       valueChanged,
       isEditing,
       onDismiss,
+      dataSourceResetEvent,
       showConnectionOptionsEvent,
       emitShowConnectionOptions,
     ]
