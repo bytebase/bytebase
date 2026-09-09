@@ -2,12 +2,10 @@ package store_test
 
 import (
 	"context"
-	"sync"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
@@ -31,94 +29,34 @@ func newTrialLicenseFixture(t *testing.T) (context.Context, *store.Store) {
 	return ctx, stores
 }
 
-func TestCreateTrialLicenseRejectsSubscriptionHistory(t *testing.T) {
+func TestUpdateTrialLicense(t *testing.T) {
 	t.Parallel()
-	for _, tc := range []struct {
-		name    string
-		payload *storepb.SubscriptionPayload
-	}{
-		{name: "active", payload: &storepb.SubscriptionPayload{Status: storepb.SubscriptionPayload_ACTIVE}},
-		{name: "paused", payload: &storepb.SubscriptionPayload{Status: storepb.SubscriptionPayload_PAUSED}},
-		{name: "canceled", payload: &storepb.SubscriptionPayload{Status: storepb.SubscriptionPayload_CANCELED}},
-		{name: "unspecified", payload: &storepb.SubscriptionPayload{}},
-		{name: "expired", payload: &storepb.SubscriptionPayload{
-			Status:    storepb.SubscriptionPayload_ACTIVE,
-			ExpiresAt: timestamppb.New(time.Now().Add(-time.Hour)),
-		}},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			t.Parallel()
-			ctx, stores := newTrialLicenseFixture(t)
 
-			_, err := stores.UpsertSubscription(ctx, "default", tc.payload)
-			require.NoError(t, err)
+	t.Run("stores license", func(t *testing.T) {
+		t.Parallel()
+		ctx, stores := newTrialLicenseFixture(t)
 
-			err = stores.CreateTrialLicense(ctx, "default", "trial-license")
-			require.ErrorIs(t, err, store.ErrTrialNotEligible)
+		err := stores.UpdateTrialLicense(ctx, "default", "trial-license")
+		require.NoError(t, err)
 
-			setting, err := stores.GetSystemSettingUncached(ctx, "default")
-			require.NoError(t, err)
-			require.Empty(t, setting.License)
-		})
-	}
-}
+		setting, err := stores.GetSystemSettingUncached(ctx, "default")
+		require.NoError(t, err)
+		require.Equal(t, "trial-license", setting.License)
+		cached, err := stores.GetSystemSetting(ctx, "default")
+		require.NoError(t, err)
+		require.Equal(t, "trial-license", cached.License)
+	})
 
-func TestCreateTrialLicenseRejectsExistingLicense(t *testing.T) {
-	t.Parallel()
-	ctx, stores := newTrialLicenseFixture(t)
-	require.NoError(t, stores.UpdateLicense(ctx, "default", "existing-license"))
+	t.Run("replaces license", func(t *testing.T) {
+		t.Parallel()
+		ctx, stores := newTrialLicenseFixture(t)
+		require.NoError(t, stores.UpdateLicense(ctx, "default", "team-trial"))
 
-	err := stores.CreateTrialLicense(ctx, "default", "trial-license")
-	require.ErrorIs(t, err, store.ErrTrialNotEligible)
+		err := stores.UpdateTrialLicense(ctx, "default", "enterprise-trial")
+		require.NoError(t, err)
 
-	setting, err := stores.GetSystemSettingUncached(ctx, "default")
-	require.NoError(t, err)
-	require.Equal(t, "existing-license", setting.License)
-}
-
-func TestCreateTrialLicenseConcurrentCallsCreateOnce(t *testing.T) {
-	t.Parallel()
-	ctx, stores := newTrialLicenseFixture(t)
-
-	type result struct {
-		license string
-		err     error
-	}
-	start := make(chan struct{})
-	results := make(chan result, 2)
-	var ready sync.WaitGroup
-	ready.Add(2)
-	for _, license := range []string{"trial-license-a", "trial-license-b"} {
-		go func(license string) {
-			ready.Done()
-			<-start
-			err := stores.CreateTrialLicense(ctx, "default", license)
-			results <- result{license: license, err: err}
-		}(license)
-	}
-	ready.Wait()
-	close(start)
-
-	var winner string
-	for range 2 {
-		select {
-		case result := <-results:
-			if result.err == nil {
-				require.Empty(t, winner, "only one trial may be created")
-				winner = result.license
-			} else {
-				require.ErrorIs(t, result.err, store.ErrTrialNotEligible)
-			}
-		case <-time.After(15 * time.Second):
-			t.Fatal("trial creation did not complete; possible deadlock")
-		}
-	}
-	require.NotEmpty(t, winner)
-
-	setting, err := stores.GetSystemSettingUncached(ctx, "default")
-	require.NoError(t, err)
-	require.Equal(t, winner, setting.License)
-	cached, err := stores.GetSystemSetting(ctx, "default")
-	require.NoError(t, err)
-	require.Equal(t, winner, cached.License)
+		setting, err := stores.GetSystemSettingUncached(ctx, "default")
+		require.NoError(t, err)
+		require.Equal(t, "enterprise-trial", setting.License)
+	})
 }

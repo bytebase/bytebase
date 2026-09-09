@@ -48,7 +48,7 @@ func NewSubscriptionService(
 // GetSubscription gets the subscription.
 func (s *SubscriptionService) GetSubscription(ctx context.Context, _ *connect.Request[v1pb.GetSubscriptionRequest]) (*connect.Response[v1pb.Subscription], error) {
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	subscription := s.licenseService.LoadSubscription(ctx, workspaceID)
+	subscription := s.licenseService.LoadEffectiveSubscription(ctx, workspaceID)
 	// Attach etag from subscription table for optimistic concurrency.
 	if subscription.Plan != v1pb.PlanType_FREE {
 		if existing, err := s.store.GetSubscriptionByWorkspace(ctx, workspaceID); err == nil && existing != nil {
@@ -106,7 +106,7 @@ func escapeCSVFormula(value string) string {
 
 // UploadLicense uploads an enterprise license (self-hosted only).
 func (s *SubscriptionService) UploadLicense(ctx context.Context, req *connect.Request[v1pb.UploadLicenseRequest]) (*connect.Response[v1pb.Subscription], error) {
-	if s.profile.SaaS {
+	if s.profile.SaaS && s.profile.Mode == common.ReleaseModeProd {
 		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("use purchase APIs in SaaS mode"))
 	}
 
@@ -117,18 +117,20 @@ func (s *SubscriptionService) UploadLicense(ctx context.Context, req *connect.Re
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrapf(err, "failed to store license"))
 	}
 
-	subscription := s.licenseService.LoadSubscription(ctx, common.GetWorkspaceIDFromContext(ctx))
+	subscription := s.licenseService.LoadEffectiveSubscription(ctx, common.GetWorkspaceIDFromContext(ctx))
 	return connect.NewResponse(subscription), nil
 }
 
-// StartTrial starts a free trial for an eligible SaaS workspace.
-func (s *SubscriptionService) StartTrial(ctx context.Context, _ *connect.Request[v1pb.StartTrialRequest]) (*connect.Response[v1pb.Subscription], error) {
+// StartTrial starts or upgrades a free trial for an eligible SaaS workspace.
+func (s *SubscriptionService) StartTrial(ctx context.Context, req *connect.Request[v1pb.StartTrialRequest]) (*connect.Response[v1pb.Subscription], error) {
 	if !s.profile.SaaS || s.profile.Mode != common.ReleaseModeDev {
 		return nil, connect.NewError(connect.CodeUnimplemented, errors.New("trial is only available in SaaS development mode"))
 	}
+	if req.Msg.Plan != v1pb.PlanType_TEAM && req.Msg.Plan != v1pb.PlanType_ENTERPRISE {
+		return nil, connect.NewError(connect.CodeInvalidArgument, errors.New("trial plan must be TEAM or ENTERPRISE"))
+	}
 
 	workspaceID := common.GetWorkspaceIDFromContext(ctx)
-	params := newTrialLicenseParams(workspaceID, time.Now())
 
 	existing, err := s.store.GetSubscriptionByWorkspace(ctx, workspaceID)
 	if err != nil {
@@ -138,27 +140,26 @@ func (s *SubscriptionService) StartTrial(ctx context.Context, _ *connect.Request
 		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("workspace is not eligible for a free trial"))
 	}
 
-	setting, err := s.store.GetSystemSettingUncached(ctx, workspaceID)
+	currentSubscription, err := s.licenseService.LoadSubscriptionFromDB(ctx, workspaceID)
 	if err != nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get system setting"))
+		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to load subscription"))
 	}
-	if setting == nil {
-		return nil, connect.NewError(connect.CodeInternal, errors.New("system setting not found"))
-	}
-	if setting.License != "" {
-		if _, err := s.licenseService.IsTrialLicense(setting.License, workspaceID); err != nil {
-			return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to verify existing license"))
+	params := newTrialLicenseParams(workspaceID, req.Msg.Plan, time.Now())
+	if currentSubscription != nil {
+		if !currentSubscription.Trialing || currentSubscription.Plan != v1pb.PlanType_TEAM || req.Msg.Plan != v1pb.PlanType_ENTERPRISE {
+			return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("workspace is not eligible for the requested free trial"))
 		}
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("workspace is not eligible for a free trial"))
+		if currentSubscription.ExpiresTime == nil {
+			return nil, connect.NewError(connect.CodeInternal, errors.New("existing trial has no expiration"))
+		}
+		params.ExpiresAt = currentSubscription.ExpiresTime.AsTime()
 	}
 
 	license, err := s.licenseService.CreateLicense(params)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to create trial license"))
 	}
-	if err := s.store.CreateTrialLicense(ctx, workspaceID, license); errors.Is(err, store.ErrTrialNotEligible) {
-		return nil, connect.NewError(connect.CodeFailedPrecondition, errors.New("workspace is not eligible for a free trial"))
-	} else if err != nil {
+	if err := s.store.UpdateTrialLicense(ctx, workspaceID, license); err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to store trial license"))
 	}
 	s.licenseService.InvalidateCache(workspaceID)

@@ -45,7 +45,7 @@ type SubscriptionServiceClient interface {
 	ExportVCSProviderUsers(ctx context.Context, in *ExportVCSProviderUsersRequest, opts ...grpc.CallOption) (*ExportVCSProviderUsersResponse, error)
 	// Uploads an enterprise license (self-hosted only).
 	UploadLicense(ctx context.Context, in *UploadLicenseRequest, opts ...grpc.CallOption) (*Subscription, error)
-	// StartTrial starts a free trial for an eligible SaaS workspace.
+	// StartTrial starts or upgrades a free trial for an eligible SaaS workspace.
 	StartTrial(ctx context.Context, in *StartTrialRequest, opts ...grpc.CallOption) (*Subscription, error)
 	// CreatePurchase creates a new subscription purchase (SaaS only).
 	// Returns a Stripe Checkout URL for the user to complete payment.
@@ -185,7 +185,7 @@ type SubscriptionServiceServer interface {
 	ExportVCSProviderUsers(context.Context, *ExportVCSProviderUsersRequest) (*ExportVCSProviderUsersResponse, error)
 	// Uploads an enterprise license (self-hosted only).
 	UploadLicense(context.Context, *UploadLicenseRequest) (*Subscription, error)
-	// StartTrial starts a free trial for an eligible SaaS workspace.
+	// StartTrial starts or upgrades a free trial for an eligible SaaS workspace.
 	StartTrial(context.Context, *StartTrialRequest) (*Subscription, error)
 	// CreatePurchase creates a new subscription purchase (SaaS only).
 	// Returns a Stripe Checkout URL for the user to complete payment.

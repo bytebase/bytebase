@@ -75,7 +75,7 @@ type SubscriptionServiceClient interface {
 	ExportVCSProviderUsers(context.Context, *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[v1.ExportVCSProviderUsersResponse], error)
 	// Uploads an enterprise license (self-hosted only).
 	UploadLicense(context.Context, *connect.Request[v1.UploadLicenseRequest]) (*connect.Response[v1.Subscription], error)
-	// StartTrial starts a free trial for an eligible SaaS workspace.
+	// StartTrial starts or upgrades a free trial for an eligible SaaS workspace.
 	StartTrial(context.Context, *connect.Request[v1.StartTrialRequest]) (*connect.Response[v1.Subscription], error)
 	// CreatePurchase creates a new subscription purchase (SaaS only).
 	// Returns a Stripe Checkout URL for the user to complete payment.
@@ -241,7 +241,7 @@ type SubscriptionServiceHandler interface {
 	ExportVCSProviderUsers(context.Context, *connect.Request[v1.ExportVCSProviderUsersRequest]) (*connect.Response[v1.ExportVCSProviderUsersResponse], error)
 	// Uploads an enterprise license (self-hosted only).
 	UploadLicense(context.Context, *connect.Request[v1.UploadLicenseRequest]) (*connect.Response[v1.Subscription], error)
-	// StartTrial starts a free trial for an eligible SaaS workspace.
+	// StartTrial starts or upgrades a free trial for an eligible SaaS workspace.
 	StartTrial(context.Context, *connect.Request[v1.StartTrialRequest]) (*connect.Response[v1.Subscription], error)
 	// CreatePurchase creates a new subscription purchase (SaaS only).
 	// Returns a Stripe Checkout URL for the user to complete payment.

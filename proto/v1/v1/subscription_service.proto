@@ -45,7 +45,7 @@ service SubscriptionService {
     option (bytebase.v1.mcp_denial_reason) = ADMINISTERS_THE_WORKSPACE;
   }
 
-  // StartTrial starts a free trial for an eligible SaaS workspace.
+  // StartTrial starts or upgrades a free trial for an eligible SaaS workspace.
   rpc StartTrial(StartTrialRequest) returns (Subscription) {
     option (google.api.http) = {
       post: "/v1/subscription:startTrial"
@@ -387,4 +387,7 @@ message PlanLimitConfig {
   repeated PlanFeature features = 4;
 }
 
-message StartTrialRequest {}
+message StartTrialRequest {
+  // The requested trial plan. Only TEAM and ENTERPRISE are supported.
+  PlanType plan = 1 [(google.api.field_behavior) = REQUIRED];
+}

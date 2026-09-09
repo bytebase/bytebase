@@ -1678,7 +1678,9 @@ func (x *PlanLimitConfig) GetFeatures() []PlanFeature {
 }
 
 type StartTrialRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The requested trial plan. Only TEAM and ENTERPRISE are supported.
+	Plan          PlanType `protobuf:"varint,1,opt,name=plan,proto3,enum=bytebase.v1.PlanType" json:"plan,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1711,6 +1713,13 @@ func (x *StartTrialRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use StartTrialRequest.ProtoReflect.Descriptor instead.
 func (*StartTrialRequest) Descriptor() ([]byte, []int) {
 	return file_v1_subscription_service_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *StartTrialRequest) GetPlan() PlanType {
+	if x != nil {
+		return x.Plan
+	}
+	return PlanType_PLAN_TYPE_UNSPECIFIED
 }
 
 var File_v1_subscription_service_proto protoreflect.FileDescriptor
@@ -1806,8 +1815,9 @@ const file_v1_subscription_service_proto_rawDesc = "" +
 	"\x04type\x18\x01 \x01(\x0e2\x15.bytebase.v1.PlanTypeR\x04type\x124\n" +
 	"\x16maximum_instance_count\x18\x02 \x01(\x05R\x14maximumInstanceCount\x12,\n" +
 	"\x12maximum_seat_count\x18\x03 \x01(\x05R\x10maximumSeatCount\x124\n" +
-	"\bfeatures\x18\x04 \x03(\x0e2\x18.bytebase.v1.PlanFeatureR\bfeatures\"\x13\n" +
-	"\x11StartTrialRequest*H\n" +
+	"\bfeatures\x18\x04 \x03(\x0e2\x18.bytebase.v1.PlanFeatureR\bfeatures\"C\n" +
+	"\x11StartTrialRequest\x12.\n" +
+	"\x04plan\x18\x01 \x01(\x0e2\x15.bytebase.v1.PlanTypeB\x03\xe0A\x02R\x04plan*H\n" +
 	"\x0fBillingInterval\x12 \n" +
 	"\x1cBILLING_INTERVAL_UNSPECIFIED\x10\x00\x12\t\n" +
 	"\x05MONTH\x10\x01\x12\b\n" +
@@ -1969,31 +1979,32 @@ var file_v1_subscription_service_proto_depIdxs = []int32{
 	2,  // 15: bytebase.v1.PlanConfig.instance_features:type_name -> bytebase.v1.PlanFeature
 	1,  // 16: bytebase.v1.PlanLimitConfig.type:type_name -> bytebase.v1.PlanType
 	2,  // 17: bytebase.v1.PlanLimitConfig.features:type_name -> bytebase.v1.PlanFeature
-	5,  // 18: bytebase.v1.SubscriptionService.GetSubscription:input_type -> bytebase.v1.GetSubscriptionRequest
-	6,  // 19: bytebase.v1.SubscriptionService.ExportVCSProviderUsers:input_type -> bytebase.v1.ExportVCSProviderUsersRequest
-	8,  // 20: bytebase.v1.SubscriptionService.UploadLicense:input_type -> bytebase.v1.UploadLicenseRequest
-	26, // 21: bytebase.v1.SubscriptionService.StartTrial:input_type -> bytebase.v1.StartTrialRequest
-	9,  // 22: bytebase.v1.SubscriptionService.CreatePurchase:input_type -> bytebase.v1.CreatePurchaseRequest
-	13, // 23: bytebase.v1.SubscriptionService.UpdatePurchase:input_type -> bytebase.v1.UpdatePurchaseRequest
-	14, // 24: bytebase.v1.SubscriptionService.CancelPurchase:input_type -> bytebase.v1.CancelPurchaseRequest
-	15, // 25: bytebase.v1.SubscriptionService.GetPaymentInfo:input_type -> bytebase.v1.GetPaymentInfoRequest
-	11, // 26: bytebase.v1.SubscriptionService.VerifyCheckoutSession:input_type -> bytebase.v1.VerifyCheckoutSessionRequest
-	21, // 27: bytebase.v1.SubscriptionService.ListPurchasePlans:input_type -> bytebase.v1.ListPurchasePlansRequest
-	23, // 28: bytebase.v1.SubscriptionService.GetSubscription:output_type -> bytebase.v1.Subscription
-	7,  // 29: bytebase.v1.SubscriptionService.ExportVCSProviderUsers:output_type -> bytebase.v1.ExportVCSProviderUsersResponse
-	23, // 30: bytebase.v1.SubscriptionService.UploadLicense:output_type -> bytebase.v1.Subscription
-	23, // 31: bytebase.v1.SubscriptionService.StartTrial:output_type -> bytebase.v1.Subscription
-	10, // 32: bytebase.v1.SubscriptionService.CreatePurchase:output_type -> bytebase.v1.PurchaseResponse
-	10, // 33: bytebase.v1.SubscriptionService.UpdatePurchase:output_type -> bytebase.v1.PurchaseResponse
-	10, // 34: bytebase.v1.SubscriptionService.CancelPurchase:output_type -> bytebase.v1.PurchaseResponse
-	16, // 35: bytebase.v1.SubscriptionService.GetPaymentInfo:output_type -> bytebase.v1.PaymentInfo
-	12, // 36: bytebase.v1.SubscriptionService.VerifyCheckoutSession:output_type -> bytebase.v1.VerifyCheckoutSessionResponse
-	22, // 37: bytebase.v1.SubscriptionService.ListPurchasePlans:output_type -> bytebase.v1.ListPurchasePlansResponse
-	28, // [28:38] is the sub-list for method output_type
-	18, // [18:28] is the sub-list for method input_type
-	18, // [18:18] is the sub-list for extension type_name
-	18, // [18:18] is the sub-list for extension extendee
-	0,  // [0:18] is the sub-list for field type_name
+	1,  // 18: bytebase.v1.StartTrialRequest.plan:type_name -> bytebase.v1.PlanType
+	5,  // 19: bytebase.v1.SubscriptionService.GetSubscription:input_type -> bytebase.v1.GetSubscriptionRequest
+	6,  // 20: bytebase.v1.SubscriptionService.ExportVCSProviderUsers:input_type -> bytebase.v1.ExportVCSProviderUsersRequest
+	8,  // 21: bytebase.v1.SubscriptionService.UploadLicense:input_type -> bytebase.v1.UploadLicenseRequest
+	26, // 22: bytebase.v1.SubscriptionService.StartTrial:input_type -> bytebase.v1.StartTrialRequest
+	9,  // 23: bytebase.v1.SubscriptionService.CreatePurchase:input_type -> bytebase.v1.CreatePurchaseRequest
+	13, // 24: bytebase.v1.SubscriptionService.UpdatePurchase:input_type -> bytebase.v1.UpdatePurchaseRequest
+	14, // 25: bytebase.v1.SubscriptionService.CancelPurchase:input_type -> bytebase.v1.CancelPurchaseRequest
+	15, // 26: bytebase.v1.SubscriptionService.GetPaymentInfo:input_type -> bytebase.v1.GetPaymentInfoRequest
+	11, // 27: bytebase.v1.SubscriptionService.VerifyCheckoutSession:input_type -> bytebase.v1.VerifyCheckoutSessionRequest
+	21, // 28: bytebase.v1.SubscriptionService.ListPurchasePlans:input_type -> bytebase.v1.ListPurchasePlansRequest
+	23, // 29: bytebase.v1.SubscriptionService.GetSubscription:output_type -> bytebase.v1.Subscription
+	7,  // 30: bytebase.v1.SubscriptionService.ExportVCSProviderUsers:output_type -> bytebase.v1.ExportVCSProviderUsersResponse
+	23, // 31: bytebase.v1.SubscriptionService.UploadLicense:output_type -> bytebase.v1.Subscription
+	23, // 32: bytebase.v1.SubscriptionService.StartTrial:output_type -> bytebase.v1.Subscription
+	10, // 33: bytebase.v1.SubscriptionService.CreatePurchase:output_type -> bytebase.v1.PurchaseResponse
+	10, // 34: bytebase.v1.SubscriptionService.UpdatePurchase:output_type -> bytebase.v1.PurchaseResponse
+	10, // 35: bytebase.v1.SubscriptionService.CancelPurchase:output_type -> bytebase.v1.PurchaseResponse
+	16, // 36: bytebase.v1.SubscriptionService.GetPaymentInfo:output_type -> bytebase.v1.PaymentInfo
+	12, // 37: bytebase.v1.SubscriptionService.VerifyCheckoutSession:output_type -> bytebase.v1.VerifyCheckoutSessionResponse
+	22, // 38: bytebase.v1.SubscriptionService.ListPurchasePlans:output_type -> bytebase.v1.ListPurchasePlansResponse
+	29, // [29:39] is the sub-list for method output_type
+	19, // [19:29] is the sub-list for method input_type
+	19, // [19:19] is the sub-list for extension type_name
+	19, // [19:19] is the sub-list for extension extendee
+	0,  // [0:19] is the sub-list for field type_name
 }
 
 func init() { file_v1_subscription_service_proto_init() }

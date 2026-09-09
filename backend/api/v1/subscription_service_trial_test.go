@@ -13,7 +13,6 @@ import (
 
 	"connectrpc.com/connect"
 	"github.com/stretchr/testify/require"
-	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/bytebase/bytebase/backend/common"
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
@@ -26,7 +25,7 @@ import (
 
 func TestNewTrialLicenseParams(t *testing.T) {
 	startedAt := time.Date(2026, time.September, 8, 3, 4, 5, 123, time.FixedZone("test", 8*60*60))
-	params := newTrialLicenseParams("workspace-a", startedAt)
+	params := newTrialLicenseParams("workspace-a", v1pb.PlanType_TEAM, startedAt)
 	require.Equal(t, v1pb.PlanType_TEAM.String(), params.Plan)
 	require.Equal(t, 20, params.Seats)
 	require.Equal(t, 10, params.Instances)
@@ -71,7 +70,7 @@ func TestSubscriptionServiceStartTrial(t *testing.T) {
 
 	t.Run("starts TEAM trial", func(t *testing.T) {
 		requestContext := createWorkspace(t, "starts-team-trial")
-		response, err := service.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{}))
+		response, err := service.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{Plan: v1pb.PlanType_TEAM}))
 		require.NoError(t, err)
 		require.Equal(t, v1pb.PlanType_TEAM, response.Msg.Plan)
 		require.Equal(t, int32(20), response.Msg.Seats)
@@ -94,76 +93,117 @@ func TestSubscriptionServiceStartTrial(t *testing.T) {
 		require.Equal(t, v1pb.PlanType_TEAM, current.Msg.Plan)
 		require.True(t, current.Msg.Trialing)
 
-		_, err = service.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{}))
+		_, err = service.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{Plan: v1pb.PlanType_TEAM}))
 		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
 	})
 
-	t.Run("rejects subscription history", func(t *testing.T) {
-		for _, tc := range []struct {
-			name    string
-			payload *storepb.SubscriptionPayload
-		}{
-			{name: "active", payload: &storepb.SubscriptionPayload{Status: storepb.SubscriptionPayload_ACTIVE}},
-			{name: "paused", payload: &storepb.SubscriptionPayload{Status: storepb.SubscriptionPayload_PAUSED}},
-			{name: "canceled", payload: &storepb.SubscriptionPayload{Status: storepb.SubscriptionPayload_CANCELED}},
-			{name: "unspecified", payload: &storepb.SubscriptionPayload{}},
-			{name: "expired", payload: &storepb.SubscriptionPayload{
-				Status:    storepb.SubscriptionPayload_ACTIVE,
-				ExpiresAt: timestamppb.New(time.Now().Add(-time.Hour)),
-			}},
-		} {
-			t.Run(tc.name, func(t *testing.T) {
-				workspace := "subscription-history-" + tc.name
-				requestContext := createWorkspace(t, workspace)
-				_, err := stores.UpsertSubscription(requestContext, workspace, tc.payload)
-				require.NoError(t, err)
+	t.Run("starts ENTERPRISE trial", func(t *testing.T) {
+		requestContext := createWorkspace(t, "starts-enterprise-trial")
+		response, err := service.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{Plan: v1pb.PlanType_ENTERPRISE}))
+		require.NoError(t, err)
+		require.Equal(t, v1pb.PlanType_ENTERPRISE, response.Msg.Plan)
+		require.True(t, response.Msg.Trialing)
 
-				_, err = service.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{}))
-				require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
-			})
-		}
+		_, err = service.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{Plan: v1pb.PlanType_ENTERPRISE}))
+		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
 	})
 
-	t.Run("rejects expired trial", func(t *testing.T) {
+	t.Run("upgrades TEAM trial without extending expiration", func(t *testing.T) {
+		requestContext := createWorkspace(t, "upgrades-team-trial")
+		team, err := service.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{Plan: v1pb.PlanType_TEAM}))
+		require.NoError(t, err)
+
+		enterpriseTrial, err := service.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{Plan: v1pb.PlanType_ENTERPRISE}))
+		require.NoError(t, err)
+		require.Equal(t, v1pb.PlanType_ENTERPRISE, enterpriseTrial.Msg.Plan)
+		require.True(t, enterpriseTrial.Msg.Trialing)
+		require.Equal(t, team.Msg.ExpiresTime.AsTime(), enterpriseTrial.Msg.ExpiresTime.AsTime())
+
+		storedTrial, err := licenseService.LoadSubscriptionFromDB(requestContext, "upgrades-team-trial")
+		require.NoError(t, err)
+		require.Equal(t, v1pb.PlanType_ENTERPRISE, storedTrial.Plan)
+		require.Equal(t, team.Msg.ExpiresTime.AsTime(), storedTrial.ExpiresTime.AsTime())
+	})
+
+	t.Run("rejects trial downgrade", func(t *testing.T) {
+		requestContext := createWorkspace(t, "rejects-trial-downgrade")
+		_, err := service.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{Plan: v1pb.PlanType_ENTERPRISE}))
+		require.NoError(t, err)
+
+		_, err = service.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{Plan: v1pb.PlanType_TEAM}))
+		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+	})
+
+	for _, plan := range []v1pb.PlanType{v1pb.PlanType_PLAN_TYPE_UNSPECIFIED, v1pb.PlanType_FREE} {
+		t.Run("rejects "+plan.String(), func(t *testing.T) {
+			requestContext := createWorkspace(t, "rejects-plan-"+plan.String())
+			_, err := service.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{Plan: plan}))
+			require.Equal(t, connect.CodeInvalidArgument, connect.CodeOf(err))
+		})
+	}
+
+	t.Run("rejects subscription history", func(t *testing.T) {
+		requestContext := createWorkspace(t, "subscription-history")
+		_, err := stores.UpsertSubscription(requestContext, "subscription-history", &storepb.SubscriptionPayload{
+			Status: storepb.SubscriptionPayload_CANCELED,
+		})
+		require.NoError(t, err)
+
+		_, err = service.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{Plan: v1pb.PlanType_TEAM}))
+		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+	})
+
+	t.Run("upgrades expired TEAM trial without extending expiration", func(t *testing.T) {
 		requestContext := createWorkspace(t, "expired-trial")
+		expiresAt := time.Now().Add(-time.Hour).UTC().Truncate(time.Second)
 		license, err := licenseService.CreateLicense(&enterprise.LicenseParams{
 			Plan:        v1pb.PlanType_TEAM.String(),
 			WorkspaceID: "expired-trial",
 			Trialing:    true,
-			ExpiresAt:   time.Now().Add(-time.Hour),
+			ExpiresAt:   expiresAt,
 		})
 		require.NoError(t, err)
 		require.NoError(t, stores.UpdateLicense(requestContext, "expired-trial", license))
 
-		_, err = service.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{}))
-		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
+		response, err := service.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{Plan: v1pb.PlanType_ENTERPRISE}))
+		require.NoError(t, err)
+		require.Equal(t, v1pb.PlanType_ENTERPRISE, response.Msg.Plan)
+		require.Equal(t, expiresAt, response.Msg.ExpiresTime.AsTime())
 	})
 
 	t.Run("rejects invalid stored license", func(t *testing.T) {
 		requestContext := createWorkspace(t, "invalid-license")
 		require.NoError(t, stores.UpdateLicense(requestContext, "invalid-license", "not-a-license"))
 
-		_, err := service.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{}))
+		_, err := service.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{Plan: v1pb.PlanType_TEAM}))
 		require.Equal(t, connect.CodeInternal, connect.CodeOf(err))
+	})
+
+	t.Run("rejects paid license", func(t *testing.T) {
+		requestContext := createWorkspace(t, "paid-license")
+		license, err := licenseService.CreateLicense(&enterprise.LicenseParams{
+			Plan:        v1pb.PlanType_TEAM.String(),
+			WorkspaceID: "paid-license",
+			ExpiresAt:   time.Now().Add(30 * 24 * time.Hour),
+		})
+		require.NoError(t, err)
+		require.NoError(t, stores.UpdateLicense(requestContext, "paid-license", license))
+
+		_, err = service.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{Plan: v1pb.PlanType_ENTERPRISE}))
+		require.Equal(t, connect.CodeFailedPrecondition, connect.CodeOf(err))
 	})
 
 	t.Run("rejects self-host", func(t *testing.T) {
 		requestContext := createWorkspace(t, "self-host")
 		selfHostService := NewSubscriptionService(&config.Profile{}, stores, licenseService)
-		_, err := selfHostService.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{}))
+		_, err := selfHostService.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{Plan: v1pb.PlanType_TEAM}))
 		require.Equal(t, connect.CodeUnimplemented, connect.CodeOf(err))
 	})
 
 	t.Run("rejects SaaS production", func(t *testing.T) {
 		requestContext := createWorkspace(t, "saas-production")
 		productionService := NewSubscriptionService(&config.Profile{SaaS: true, Mode: common.ReleaseModeProd}, stores, licenseService)
-		_, err := productionService.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{}))
-		require.Equal(t, connect.CodeUnimplemented, connect.CodeOf(err))
-	})
-
-	t.Run("rejects license upload in SaaS development", func(t *testing.T) {
-		requestContext := createWorkspace(t, "saas-development-upload")
-		_, err := service.UploadLicense(requestContext, connect.NewRequest(&v1pb.UploadLicenseRequest{}))
+		_, err := productionService.StartTrial(requestContext, connect.NewRequest(&v1pb.StartTrialRequest{Plan: v1pb.PlanType_TEAM}))
 		require.Equal(t, connect.CodeUnimplemented, connect.CodeOf(err))
 	})
 }

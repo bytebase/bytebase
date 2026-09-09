@@ -15,10 +15,10 @@ const (
 	trialInstances = 10
 )
 
-func newTrialLicenseParams(workspaceID string, startedAt time.Time) *enterprise.LicenseParams {
+func newTrialLicenseParams(workspaceID string, plan v1pb.PlanType, startedAt time.Time) *enterprise.LicenseParams {
 	startedAt = startedAt.UTC().Truncate(time.Second)
 	return &enterprise.LicenseParams{
-		Plan:        v1pb.PlanType_TEAM.String(),
+		Plan:        plan.String(),
 		Seats:       trialSeats,
 		Instances:   trialInstances,
 		WorkspaceID: workspaceID,
@@ -29,7 +29,7 @@ func newTrialLicenseParams(workspaceID string, startedAt time.Time) *enterprise.
 
 func subscriptionFromTrialParams(params *enterprise.LicenseParams) *v1pb.Subscription {
 	return &v1pb.Subscription{
-		Plan:            v1pb.PlanType_TEAM,
+		Plan:            v1pb.PlanType(v1pb.PlanType_value[params.Plan]),
 		Seats:           int32(params.Seats),
 		Instances:       int32(params.Instances),
 		ActiveInstances: int32(params.Instances),

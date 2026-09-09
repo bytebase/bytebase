@@ -2792,8 +2792,14 @@ paths:
                       title: schema
                       required:
                         - schema
+                    - not:
+                        anyOf:
+                          - required:
+                              - changelog
+                          - required:
+                              - schema
+              unevaluatedProperties: false
               title: DiffSchemaRequest
-              additionalProperties: false
         required: true
       responses:
         "200":
@@ -3760,13 +3766,332 @@ paths:
           schema:
             type: string
             title: use_default
-        - name: metadata.schemas.tables.partitions.subpartitions.checkConstraints.name
+        - name: metadata.schemas.tables.partitions.indexes.name
+          in: query
+          description: The name is the name of an index.
+          schema:
+            type: string
+            title: name
+        - name: metadata.schemas.tables.partitions.indexes.expressions
+          in: query
+          description: |-
+            The expressions are the ordered columns or expressions of an index.
+             This could refer to a column or an expression.
+          schema:
+            type: array
+            items:
+              type: string
+            title: expressions
+        - name: metadata.schemas.tables.partitions.indexes.keyLength
+          in: query
+          description: |-
+            The key_lengths are the ordered key lengths of an index.
+             If the key length is not specified, it's -1.
+          schema:
+            type: array
+            items:
+              type:
+                - integer
+                - string
+              format: int64
+            title: key_length
+        - name: metadata.schemas.tables.partitions.indexes.descending
+          in: query
+          description: The descending is the ordered descending of an index.
+          schema:
+            type: array
+            items:
+              type: boolean
+            title: descending
+        - name: metadata.schemas.tables.partitions.indexes.type
+          in: query
+          description: The type is the type of an index.
+          schema:
+            type: string
+            title: type
+        - name: metadata.schemas.tables.partitions.indexes.unique
+          in: query
+          description: The unique is whether the index is unique.
+          schema:
+            type: boolean
+            title: unique
+        - name: metadata.schemas.tables.partitions.indexes.primary
+          in: query
+          description: The primary is whether the index is a primary key index.
+          schema:
+            type: boolean
+            title: primary
+        - name: metadata.schemas.tables.partitions.indexes.visible
+          in: query
+          description: The visible is whether the index is visible.
+          schema:
+            type: boolean
+            title: visible
+        - name: metadata.schemas.tables.partitions.indexes.comment
+          in: query
+          description: The comment is the comment of an index.
+          schema:
+            type: string
+            title: comment
+        - name: metadata.schemas.tables.partitions.indexes.definition
+          in: query
+          description: The definition of an index.
+          schema:
+            type: string
+            title: definition
+        - name: metadata.schemas.tables.partitions.indexes.parentIndexSchema
+          in: query
+          description: The schema name of the parent index.
+          schema:
+            type: string
+            title: parent_index_schema
+        - name: metadata.schemas.tables.partitions.indexes.parentIndexName
+          in: query
+          description: The index name of the parent index.
+          schema:
+            type: string
+            title: parent_index_name
+        - name: metadata.schemas.tables.partitions.indexes.granularity
+          in: query
+          description: The number of granules in the block. It's a ClickHouse specific field.
+          schema:
+            type:
+              - integer
+              - string
+            title: granularity
+            format: int64
+        - name: metadata.schemas.tables.partitions.indexes.isConstraint
+          in: query
+          description: |-
+            It's a PostgreSQL specific field.
+             The unique constraint and unique index are not the same thing in PostgreSQL.
+          schema:
+            type: boolean
+            title: is_constraint
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.method
+          in: query
+          description: Spatial indexing method (e.g., "SPATIAL", "R-TREE", "GIST")
+          schema:
+            type: string
+            title: method
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.tessellation.scheme
+          in: query
+          description: Tessellation scheme (e.g., "GEOMETRY_GRID", "GEOGRAPHY_GRID", "GEOMETRY_AUTO_GRID")
+          schema:
+            type: string
+            title: scheme
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.tessellation.gridLevels.level
+          in: query
+          description: Grid level number (1-4 for SQL Server)
+          schema:
+            type: integer
+            title: level
+            format: int32
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.tessellation.gridLevels.density
+          in: query
+          description: Grid density (LOW, MEDIUM, HIGH)
+          schema:
+            type: string
+            title: density
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.tessellation.cellsPerObject
+          in: query
+          description: Number of cells per object (1-8192 for SQL Server)
+          schema:
+            type: integer
+            title: cells_per_object
+            format: int32
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.tessellation.boundingBox.xmin
+          in: query
+          description: Minimum X coordinate
+          schema:
+            type: number
+            title: xmin
+            format: double
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.tessellation.boundingBox.ymin
+          in: query
+          description: Minimum Y coordinate
+          schema:
+            type: number
+            title: ymin
+            format: double
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.tessellation.boundingBox.xmax
+          in: query
+          description: Maximum X coordinate
+          schema:
+            type: number
+            title: xmax
+            format: double
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.tessellation.boundingBox.ymax
+          in: query
+          description: Maximum Y coordinate
+          schema:
+            type: number
+            title: ymax
+            format: double
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.fillfactor
+          in: query
+          description: Fill factor percentage (1-100)
+          schema:
+            type: integer
+            title: fillfactor
+            format: int32
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.buffering
+          in: query
+          description: Buffering mode for PostgreSQL (auto, on, off)
+          schema:
+            type: string
+            title: buffering
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.tablespace
+          in: query
+          description: Tablespace configuration for Oracle
+          schema:
+            type: string
+            title: tablespace
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.workTablespace
+          in: query
+          schema:
+            type: string
+            title: work_tablespace
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.sdoLevel
+          in: query
+          schema:
+            type: integer
+            title: sdo_level
+            format: int32
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.commitInterval
+          in: query
+          schema:
+            type: integer
+            title: commit_interval
+            format: int32
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.padIndex
+          in: query
+          description: SQL Server specific parameters
+          schema:
+            type: boolean
+            title: pad_index
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.sortInTempdb
+          in: query
+          description: ON, OFF
+          schema:
+            type: string
+            title: sort_in_tempdb
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.dropExisting
+          in: query
+          schema:
+            type: boolean
+            title: drop_existing
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.online
+          in: query
+          schema:
+            type: boolean
+            title: online
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.allowRowLocks
+          in: query
+          schema:
+            type: boolean
+            title: allow_row_locks
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.allowPageLocks
+          in: query
+          schema:
+            type: boolean
+            title: allow_page_locks
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.maxdop
+          in: query
+          schema:
+            type: integer
+            title: maxdop
+            format: int32
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.dataCompression
+          in: query
+          description: NONE, ROW, PAGE
+          schema:
+            type: string
+            title: data_compression
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.dimensional.dimensions
+          in: query
+          description: Number of dimensions (2-4, default 2)
+          schema:
+            type: integer
+            title: dimensions
+            format: int32
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.dimensional.dataType
+          in: query
+          description: Spatial data type (GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.)
+          schema:
+            type: string
+            title: data_type
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.dimensional.srid
+          in: query
+          description: Spatial reference system identifier (SRID)
+          schema:
+            type: integer
+            title: srid
+            format: int32
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.dimensional.constraints.dimension
+          in: query
+          description: Dimension name/type (X, Y, Z, M, etc.)
+          schema:
+            type: string
+            title: dimension
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.dimensional.constraints.minValue
+          in: query
+          description: Minimum value for this dimension
+          schema:
+            type: number
+            title: min_value
+            format: double
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.dimensional.constraints.maxValue
+          in: query
+          description: Maximum value for this dimension
+          schema:
+            type: number
+            title: max_value
+            format: double
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.dimensional.constraints.tolerance
+          in: query
+          description: Tolerance for this dimension
+          schema:
+            type: number
+            title: tolerance
+            format: double
+        - name: metadata.schemas.tables.partitions.indexes.opclassNames
+          in: query
+          description: |-
+            https://www.postgresql.org/docs/current/catalog-pg-opclass.html
+             Name of the operator class for each column. (PostgreSQL specific).
+          schema:
+            type: array
+            items:
+              type: string
+            title: opclass_names
+        - name: metadata.schemas.tables.partitions.indexes.opclassDefaults
+          in: query
+          description: True if the operator class is the default. (PostgreSQL specific).
+          schema:
+            type: array
+            items:
+              type: boolean
+            title: opclass_defaults
+        - name: metadata.schemas.tables.partitions.checkConstraints.name
           in: query
           description: The name is the name of a check constraint.
           schema:
             type: string
             title: name
-        - name: metadata.schemas.tables.partitions.subpartitions.checkConstraints.expression
+        - name: metadata.schemas.tables.partitions.checkConstraints.expression
+          in: query
+          description: The expression is the expression of a check constraint.
+          schema:
+            type: string
+            title: expression
+        - name: metadata.schemas.tables.checkConstraints.name
+          in: query
+          description: The name is the name of a check constraint.
+          schema:
+            type: string
+            title: name
+        - name: metadata.schemas.tables.checkConstraints.expression
           in: query
           description: The expression is the expression of a check constraint.
           schema:
@@ -3882,6 +4207,158 @@ paths:
           schema:
             type: string
             title: external_database_name
+        - name: metadata.schemas.externalTables.columns.name
+          in: query
+          description: The name is the name of a column.
+          schema:
+            type: string
+            title: name
+        - name: metadata.schemas.externalTables.columns.position
+          in: query
+          description: The position is the position in columns.
+          schema:
+            type: integer
+            title: position
+            format: int32
+        - name: metadata.schemas.externalTables.columns.hasDefault
+          in: query
+          schema:
+            type: boolean
+            title: has_default
+        - name: metadata.schemas.externalTables.columns.default
+          in: query
+          description: The default value of column.
+          schema:
+            type: string
+            title: default
+        - name: metadata.schemas.externalTables.columns.defaultOnNull
+          in: query
+          description: |-
+            Oracle specific metadata.
+             The default_on_null is the default on null of a column.
+          schema:
+            type: boolean
+            title: default_on_null
+        - name: metadata.schemas.externalTables.columns.onUpdate
+          in: query
+          description: |-
+            The on_update is the on update action of a column.
+             For MySQL like databases, it's only supported for TIMESTAMP columns with
+             CURRENT_TIMESTAMP as on update value.
+          schema:
+            type: string
+            title: on_update
+        - name: metadata.schemas.externalTables.columns.nullable
+          in: query
+          description: The nullable is the nullable of a column.
+          schema:
+            type: boolean
+            title: nullable
+        - name: metadata.schemas.externalTables.columns.type
+          in: query
+          description: The type is the type of a column.
+          schema:
+            type: string
+            title: type
+        - name: metadata.schemas.externalTables.columns.characterSet
+          in: query
+          description: The character_set is the character_set of a column.
+          schema:
+            type: string
+            title: character_set
+        - name: metadata.schemas.externalTables.columns.collation
+          in: query
+          description: The collation is the collation of a column.
+          schema:
+            type: string
+            title: collation
+        - name: metadata.schemas.externalTables.columns.comment
+          in: query
+          description: The comment is the comment of a column.
+          schema:
+            type: string
+            title: comment
+        - name: metadata.schemas.externalTables.columns.generation.type
+          in: query
+          schema:
+            title: type
+            $ref: '#/components/schemas/bytebase.v1.GenerationMetadata.Type'
+        - name: metadata.schemas.externalTables.columns.generation.expression
+          in: query
+          schema:
+            type: string
+            title: expression
+        - name: metadata.schemas.externalTables.columns.isIdentity
+          in: query
+          schema:
+            type: boolean
+            title: is_identity
+        - name: metadata.schemas.externalTables.columns.identityGeneration
+          in: query
+          description: The identity_generation is for identity columns, PG only.
+          schema:
+            title: identity_generation
+            $ref: '#/components/schemas/bytebase.v1.ColumnMetadata.IdentityGeneration'
+        - name: metadata.schemas.externalTables.columns.identitySeed
+          in: query
+          description: The identity_seed is for identity columns, MSSQL only.
+          schema:
+            type:
+              - integer
+              - string
+            title: identity_seed
+            format: int64
+        - name: metadata.schemas.externalTables.columns.identityIncrement
+          in: query
+          description: The identity_increment is for identity columns, MSSQL only.
+          schema:
+            type:
+              - integer
+              - string
+            title: identity_increment
+            format: int64
+        - name: metadata.schemas.externalTables.columns.defaultConstraintName
+          in: query
+          description: |-
+            The default_constraint_name is the name of the default constraint, MSSQL only.
+             In MSSQL, default values are implemented as named constraints. When modifying or
+             dropping a column's default value, you must reference the constraint by name.
+             This field stores the actual constraint name from the database.
+
+             Example: A column definition like:
+               CREATE TABLE employees (
+                 status NVARCHAR(20) DEFAULT 'active'
+               )
+
+             Will create a constraint with an auto-generated name like 'DF__employees__statu__3B75D760'
+             or a user-defined name if specified:
+               ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'active' FOR status
+
+             To modify the default, you must first drop the existing constraint by name:
+               ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760
+               ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'inactive' FOR status
+
+             This field is populated when syncing from the database. When empty (e.g., when parsing
+             from SQL files), the system cannot automatically drop the constraint.
+          schema:
+            type: string
+            title: default_constraint_name
+        - name: metadata.schemas.externalTables.columns.srid
+          in: query
+          description: |-
+            The spatial reference system identifier of a spatial column, MySQL 8.0 only.
+             Unset means the column declares no SRID; presence carries the explicit SRID,
+             including the valid SRID 0. SRS_IDs are unsigned 32-bit (custom SRSs may exceed
+             int32).
+          schema:
+            type: integer
+            title: srid
+        - name: metadata.schemas.externalTables.columns.isInvisible
+          in: query
+          description: Whether the column is invisible (hidden from SELECT *), MySQL 8.0.23+ only.
+          schema:
+            type: boolean
+            title: is_invisible
         - name: metadata.schemas.views.name
           in: query
           description: The name is the name of a view.
@@ -3918,6 +4395,214 @@ paths:
           schema:
             type: string
             title: column
+        - name: metadata.schemas.views.columns.name
+          in: query
+          description: The name is the name of a column.
+          schema:
+            type: string
+            title: name
+        - name: metadata.schemas.views.columns.position
+          in: query
+          description: The position is the position in columns.
+          schema:
+            type: integer
+            title: position
+            format: int32
+        - name: metadata.schemas.views.columns.hasDefault
+          in: query
+          schema:
+            type: boolean
+            title: has_default
+        - name: metadata.schemas.views.columns.default
+          in: query
+          description: The default value of column.
+          schema:
+            type: string
+            title: default
+        - name: metadata.schemas.views.columns.defaultOnNull
+          in: query
+          description: |-
+            Oracle specific metadata.
+             The default_on_null is the default on null of a column.
+          schema:
+            type: boolean
+            title: default_on_null
+        - name: metadata.schemas.views.columns.onUpdate
+          in: query
+          description: |-
+            The on_update is the on update action of a column.
+             For MySQL like databases, it's only supported for TIMESTAMP columns with
+             CURRENT_TIMESTAMP as on update value.
+          schema:
+            type: string
+            title: on_update
+        - name: metadata.schemas.views.columns.nullable
+          in: query
+          description: The nullable is the nullable of a column.
+          schema:
+            type: boolean
+            title: nullable
+        - name: metadata.schemas.views.columns.type
+          in: query
+          description: The type is the type of a column.
+          schema:
+            type: string
+            title: type
+        - name: metadata.schemas.views.columns.characterSet
+          in: query
+          description: The character_set is the character_set of a column.
+          schema:
+            type: string
+            title: character_set
+        - name: metadata.schemas.views.columns.collation
+          in: query
+          description: The collation is the collation of a column.
+          schema:
+            type: string
+            title: collation
+        - name: metadata.schemas.views.columns.comment
+          in: query
+          description: The comment is the comment of a column.
+          schema:
+            type: string
+            title: comment
+        - name: metadata.schemas.views.columns.generation.type
+          in: query
+          schema:
+            title: type
+            $ref: '#/components/schemas/bytebase.v1.GenerationMetadata.Type'
+        - name: metadata.schemas.views.columns.generation.expression
+          in: query
+          schema:
+            type: string
+            title: expression
+        - name: metadata.schemas.views.columns.isIdentity
+          in: query
+          schema:
+            type: boolean
+            title: is_identity
+        - name: metadata.schemas.views.columns.identityGeneration
+          in: query
+          description: The identity_generation is for identity columns, PG only.
+          schema:
+            title: identity_generation
+            $ref: '#/components/schemas/bytebase.v1.ColumnMetadata.IdentityGeneration'
+        - name: metadata.schemas.views.columns.identitySeed
+          in: query
+          description: The identity_seed is for identity columns, MSSQL only.
+          schema:
+            type:
+              - integer
+              - string
+            title: identity_seed
+            format: int64
+        - name: metadata.schemas.views.columns.identityIncrement
+          in: query
+          description: The identity_increment is for identity columns, MSSQL only.
+          schema:
+            type:
+              - integer
+              - string
+            title: identity_increment
+            format: int64
+        - name: metadata.schemas.views.columns.defaultConstraintName
+          in: query
+          description: |-
+            The default_constraint_name is the name of the default constraint, MSSQL only.
+             In MSSQL, default values are implemented as named constraints. When modifying or
+             dropping a column's default value, you must reference the constraint by name.
+             This field stores the actual constraint name from the database.
+
+             Example: A column definition like:
+               CREATE TABLE employees (
+                 status NVARCHAR(20) DEFAULT 'active'
+               )
+
+             Will create a constraint with an auto-generated name like 'DF__employees__statu__3B75D760'
+             or a user-defined name if specified:
+               ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'active' FOR status
+
+             To modify the default, you must first drop the existing constraint by name:
+               ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760
+               ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'inactive' FOR status
+
+             This field is populated when syncing from the database. When empty (e.g., when parsing
+             from SQL files), the system cannot automatically drop the constraint.
+          schema:
+            type: string
+            title: default_constraint_name
+        - name: metadata.schemas.views.columns.srid
+          in: query
+          description: |-
+            The spatial reference system identifier of a spatial column, MySQL 8.0 only.
+             Unset means the column declares no SRID; presence carries the explicit SRID,
+             including the valid SRID 0. SRS_IDs are unsigned 32-bit (custom SRSs may exceed
+             int32).
+          schema:
+            type: integer
+            title: srid
+        - name: metadata.schemas.views.columns.isInvisible
+          in: query
+          description: Whether the column is invisible (hidden from SELECT *), MySQL 8.0.23+ only.
+          schema:
+            type: boolean
+            title: is_invisible
+        - name: metadata.schemas.views.triggers.name
+          in: query
+          description: The name is the name of the trigger.
+          schema:
+            type: string
+            title: name
+        - name: metadata.schemas.views.triggers.event
+          in: query
+          description: |-
+            The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
+             TRUNCATE.
+          schema:
+            type: string
+            title: event
+        - name: metadata.schemas.views.triggers.timing
+          in: query
+          description: The timing is the timing of the trigger, such as BEFORE, AFTER.
+          schema:
+            type: string
+            title: timing
+        - name: metadata.schemas.views.triggers.body
+          in: query
+          description: The body is the body of the trigger.
+          schema:
+            type: string
+            title: body
+        - name: metadata.schemas.views.triggers.sqlMode
+          in: query
+          description: The SQL mode setting for the trigger.
+          schema:
+            type: string
+            title: sql_mode
+        - name: metadata.schemas.views.triggers.characterSetClient
+          in: query
+          description: The character set used by the client creating the trigger.
+          schema:
+            type: string
+            title: character_set_client
+        - name: metadata.schemas.views.triggers.collationConnection
+          in: query
+          description: The collation used for the connection when creating the trigger.
+          schema:
+            type: string
+            title: collation_connection
+        - name: metadata.schemas.views.triggers.comment
+          in: query
+          description: The comment describing the trigger.
+          schema:
+            type: string
+            title: comment
+        - name: metadata.schemas.views.triggers.skipDump
+          in: query
+          description: Whether to skip this trigger during schema dump operations.
+          schema:
+            type: boolean
+            title: skip_dump
         - name: metadata.schemas.views.skipDump
           in: query
           schema:
@@ -4168,6 +4853,387 @@ paths:
           schema:
             type: string
             title: comment
+        - name: metadata.schemas.materializedViews.dependencyColumns.schema
+          in: query
+          description: The schema is the schema of a reference column.
+          schema:
+            type: string
+            title: schema
+        - name: metadata.schemas.materializedViews.dependencyColumns.table
+          in: query
+          description: The table is the table of a reference column.
+          schema:
+            type: string
+            title: table
+        - name: metadata.schemas.materializedViews.dependencyColumns.column
+          in: query
+          description: The column is the name of a reference column.
+          schema:
+            type: string
+            title: column
+        - name: metadata.schemas.materializedViews.triggers.name
+          in: query
+          description: The name is the name of the trigger.
+          schema:
+            type: string
+            title: name
+        - name: metadata.schemas.materializedViews.triggers.event
+          in: query
+          description: |-
+            The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
+             TRUNCATE.
+          schema:
+            type: string
+            title: event
+        - name: metadata.schemas.materializedViews.triggers.timing
+          in: query
+          description: The timing is the timing of the trigger, such as BEFORE, AFTER.
+          schema:
+            type: string
+            title: timing
+        - name: metadata.schemas.materializedViews.triggers.body
+          in: query
+          description: The body is the body of the trigger.
+          schema:
+            type: string
+            title: body
+        - name: metadata.schemas.materializedViews.triggers.sqlMode
+          in: query
+          description: The SQL mode setting for the trigger.
+          schema:
+            type: string
+            title: sql_mode
+        - name: metadata.schemas.materializedViews.triggers.characterSetClient
+          in: query
+          description: The character set used by the client creating the trigger.
+          schema:
+            type: string
+            title: character_set_client
+        - name: metadata.schemas.materializedViews.triggers.collationConnection
+          in: query
+          description: The collation used for the connection when creating the trigger.
+          schema:
+            type: string
+            title: collation_connection
+        - name: metadata.schemas.materializedViews.triggers.comment
+          in: query
+          description: The comment describing the trigger.
+          schema:
+            type: string
+            title: comment
+        - name: metadata.schemas.materializedViews.triggers.skipDump
+          in: query
+          description: Whether to skip this trigger during schema dump operations.
+          schema:
+            type: boolean
+            title: skip_dump
+        - name: metadata.schemas.materializedViews.indexes.name
+          in: query
+          description: The name is the name of an index.
+          schema:
+            type: string
+            title: name
+        - name: metadata.schemas.materializedViews.indexes.expressions
+          in: query
+          description: |-
+            The expressions are the ordered columns or expressions of an index.
+             This could refer to a column or an expression.
+          schema:
+            type: array
+            items:
+              type: string
+            title: expressions
+        - name: metadata.schemas.materializedViews.indexes.keyLength
+          in: query
+          description: |-
+            The key_lengths are the ordered key lengths of an index.
+             If the key length is not specified, it's -1.
+          schema:
+            type: array
+            items:
+              type:
+                - integer
+                - string
+              format: int64
+            title: key_length
+        - name: metadata.schemas.materializedViews.indexes.descending
+          in: query
+          description: The descending is the ordered descending of an index.
+          schema:
+            type: array
+            items:
+              type: boolean
+            title: descending
+        - name: metadata.schemas.materializedViews.indexes.type
+          in: query
+          description: The type is the type of an index.
+          schema:
+            type: string
+            title: type
+        - name: metadata.schemas.materializedViews.indexes.unique
+          in: query
+          description: The unique is whether the index is unique.
+          schema:
+            type: boolean
+            title: unique
+        - name: metadata.schemas.materializedViews.indexes.primary
+          in: query
+          description: The primary is whether the index is a primary key index.
+          schema:
+            type: boolean
+            title: primary
+        - name: metadata.schemas.materializedViews.indexes.visible
+          in: query
+          description: The visible is whether the index is visible.
+          schema:
+            type: boolean
+            title: visible
+        - name: metadata.schemas.materializedViews.indexes.comment
+          in: query
+          description: The comment is the comment of an index.
+          schema:
+            type: string
+            title: comment
+        - name: metadata.schemas.materializedViews.indexes.definition
+          in: query
+          description: The definition of an index.
+          schema:
+            type: string
+            title: definition
+        - name: metadata.schemas.materializedViews.indexes.parentIndexSchema
+          in: query
+          description: The schema name of the parent index.
+          schema:
+            type: string
+            title: parent_index_schema
+        - name: metadata.schemas.materializedViews.indexes.parentIndexName
+          in: query
+          description: The index name of the parent index.
+          schema:
+            type: string
+            title: parent_index_name
+        - name: metadata.schemas.materializedViews.indexes.granularity
+          in: query
+          description: The number of granules in the block. It's a ClickHouse specific field.
+          schema:
+            type:
+              - integer
+              - string
+            title: granularity
+            format: int64
+        - name: metadata.schemas.materializedViews.indexes.isConstraint
+          in: query
+          description: |-
+            It's a PostgreSQL specific field.
+             The unique constraint and unique index are not the same thing in PostgreSQL.
+          schema:
+            type: boolean
+            title: is_constraint
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.method
+          in: query
+          description: Spatial indexing method (e.g., "SPATIAL", "R-TREE", "GIST")
+          schema:
+            type: string
+            title: method
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.tessellation.scheme
+          in: query
+          description: Tessellation scheme (e.g., "GEOMETRY_GRID", "GEOGRAPHY_GRID", "GEOMETRY_AUTO_GRID")
+          schema:
+            type: string
+            title: scheme
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.tessellation.gridLevels.level
+          in: query
+          description: Grid level number (1-4 for SQL Server)
+          schema:
+            type: integer
+            title: level
+            format: int32
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.tessellation.gridLevels.density
+          in: query
+          description: Grid density (LOW, MEDIUM, HIGH)
+          schema:
+            type: string
+            title: density
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.tessellation.cellsPerObject
+          in: query
+          description: Number of cells per object (1-8192 for SQL Server)
+          schema:
+            type: integer
+            title: cells_per_object
+            format: int32
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.tessellation.boundingBox.xmin
+          in: query
+          description: Minimum X coordinate
+          schema:
+            type: number
+            title: xmin
+            format: double
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.tessellation.boundingBox.ymin
+          in: query
+          description: Minimum Y coordinate
+          schema:
+            type: number
+            title: ymin
+            format: double
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.tessellation.boundingBox.xmax
+          in: query
+          description: Maximum X coordinate
+          schema:
+            type: number
+            title: xmax
+            format: double
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.tessellation.boundingBox.ymax
+          in: query
+          description: Maximum Y coordinate
+          schema:
+            type: number
+            title: ymax
+            format: double
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.fillfactor
+          in: query
+          description: Fill factor percentage (1-100)
+          schema:
+            type: integer
+            title: fillfactor
+            format: int32
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.buffering
+          in: query
+          description: Buffering mode for PostgreSQL (auto, on, off)
+          schema:
+            type: string
+            title: buffering
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.tablespace
+          in: query
+          description: Tablespace configuration for Oracle
+          schema:
+            type: string
+            title: tablespace
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.workTablespace
+          in: query
+          schema:
+            type: string
+            title: work_tablespace
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.sdoLevel
+          in: query
+          schema:
+            type: integer
+            title: sdo_level
+            format: int32
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.commitInterval
+          in: query
+          schema:
+            type: integer
+            title: commit_interval
+            format: int32
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.padIndex
+          in: query
+          description: SQL Server specific parameters
+          schema:
+            type: boolean
+            title: pad_index
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.sortInTempdb
+          in: query
+          description: ON, OFF
+          schema:
+            type: string
+            title: sort_in_tempdb
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.dropExisting
+          in: query
+          schema:
+            type: boolean
+            title: drop_existing
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.online
+          in: query
+          schema:
+            type: boolean
+            title: online
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.allowRowLocks
+          in: query
+          schema:
+            type: boolean
+            title: allow_row_locks
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.allowPageLocks
+          in: query
+          schema:
+            type: boolean
+            title: allow_page_locks
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.maxdop
+          in: query
+          schema:
+            type: integer
+            title: maxdop
+            format: int32
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.dataCompression
+          in: query
+          description: NONE, ROW, PAGE
+          schema:
+            type: string
+            title: data_compression
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.dimensional.dimensions
+          in: query
+          description: Number of dimensions (2-4, default 2)
+          schema:
+            type: integer
+            title: dimensions
+            format: int32
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.dimensional.dataType
+          in: query
+          description: Spatial data type (GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.)
+          schema:
+            type: string
+            title: data_type
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.dimensional.srid
+          in: query
+          description: Spatial reference system identifier (SRID)
+          schema:
+            type: integer
+            title: srid
+            format: int32
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.dimensional.constraints.dimension
+          in: query
+          description: Dimension name/type (X, Y, Z, M, etc.)
+          schema:
+            type: string
+            title: dimension
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.dimensional.constraints.minValue
+          in: query
+          description: Minimum value for this dimension
+          schema:
+            type: number
+            title: min_value
+            format: double
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.dimensional.constraints.maxValue
+          in: query
+          description: Maximum value for this dimension
+          schema:
+            type: number
+            title: max_value
+            format: double
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.dimensional.constraints.tolerance
+          in: query
+          description: Tolerance for this dimension
+          schema:
+            type: number
+            title: tolerance
+            format: double
+        - name: metadata.schemas.materializedViews.indexes.opclassNames
+          in: query
+          description: |-
+            https://www.postgresql.org/docs/current/catalog-pg-opclass.html
+             Name of the operator class for each column. (PostgreSQL specific).
+          schema:
+            type: array
+            items:
+              type: string
+            title: opclass_names
+        - name: metadata.schemas.materializedViews.indexes.opclassDefaults
+          in: query
+          description: True if the operator class is the default. (PostgreSQL specific).
+          schema:
+            type: array
+            items:
+              type: boolean
+            title: opclass_defaults
         - name: metadata.schemas.materializedViews.skipDump
           in: query
           schema:
@@ -4581,8 +5647,14 @@ paths:
                       title: schema
                       required:
                         - schema
+                    - not:
+                        anyOf:
+                          - required:
+                              - changelog
+                          - required:
+                              - schema
+              unevaluatedProperties: false
               title: DiffSchemaRequest
-              additionalProperties: false
         required: true
       responses:
         "200":
@@ -7912,8 +8984,14 @@ paths:
                       title: schema
                       required:
                         - schema
+                    - not:
+                        anyOf:
+                          - required:
+                              - changelog
+                          - required:
+                              - schema
+              unevaluatedProperties: false
               title: DiffSchemaRequest
-              additionalProperties: false
         required: true
       responses:
         "200":
@@ -8922,13 +10000,332 @@ paths:
           schema:
             type: string
             title: use_default
-        - name: metadata.schemas.tables.partitions.subpartitions.checkConstraints.name
+        - name: metadata.schemas.tables.partitions.indexes.name
+          in: query
+          description: The name is the name of an index.
+          schema:
+            type: string
+            title: name
+        - name: metadata.schemas.tables.partitions.indexes.expressions
+          in: query
+          description: |-
+            The expressions are the ordered columns or expressions of an index.
+             This could refer to a column or an expression.
+          schema:
+            type: array
+            items:
+              type: string
+            title: expressions
+        - name: metadata.schemas.tables.partitions.indexes.keyLength
+          in: query
+          description: |-
+            The key_lengths are the ordered key lengths of an index.
+             If the key length is not specified, it's -1.
+          schema:
+            type: array
+            items:
+              type:
+                - integer
+                - string
+              format: int64
+            title: key_length
+        - name: metadata.schemas.tables.partitions.indexes.descending
+          in: query
+          description: The descending is the ordered descending of an index.
+          schema:
+            type: array
+            items:
+              type: boolean
+            title: descending
+        - name: metadata.schemas.tables.partitions.indexes.type
+          in: query
+          description: The type is the type of an index.
+          schema:
+            type: string
+            title: type
+        - name: metadata.schemas.tables.partitions.indexes.unique
+          in: query
+          description: The unique is whether the index is unique.
+          schema:
+            type: boolean
+            title: unique
+        - name: metadata.schemas.tables.partitions.indexes.primary
+          in: query
+          description: The primary is whether the index is a primary key index.
+          schema:
+            type: boolean
+            title: primary
+        - name: metadata.schemas.tables.partitions.indexes.visible
+          in: query
+          description: The visible is whether the index is visible.
+          schema:
+            type: boolean
+            title: visible
+        - name: metadata.schemas.tables.partitions.indexes.comment
+          in: query
+          description: The comment is the comment of an index.
+          schema:
+            type: string
+            title: comment
+        - name: metadata.schemas.tables.partitions.indexes.definition
+          in: query
+          description: The definition of an index.
+          schema:
+            type: string
+            title: definition
+        - name: metadata.schemas.tables.partitions.indexes.parentIndexSchema
+          in: query
+          description: The schema name of the parent index.
+          schema:
+            type: string
+            title: parent_index_schema
+        - name: metadata.schemas.tables.partitions.indexes.parentIndexName
+          in: query
+          description: The index name of the parent index.
+          schema:
+            type: string
+            title: parent_index_name
+        - name: metadata.schemas.tables.partitions.indexes.granularity
+          in: query
+          description: The number of granules in the block. It's a ClickHouse specific field.
+          schema:
+            type:
+              - integer
+              - string
+            title: granularity
+            format: int64
+        - name: metadata.schemas.tables.partitions.indexes.isConstraint
+          in: query
+          description: |-
+            It's a PostgreSQL specific field.
+             The unique constraint and unique index are not the same thing in PostgreSQL.
+          schema:
+            type: boolean
+            title: is_constraint
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.method
+          in: query
+          description: Spatial indexing method (e.g., "SPATIAL", "R-TREE", "GIST")
+          schema:
+            type: string
+            title: method
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.tessellation.scheme
+          in: query
+          description: Tessellation scheme (e.g., "GEOMETRY_GRID", "GEOGRAPHY_GRID", "GEOMETRY_AUTO_GRID")
+          schema:
+            type: string
+            title: scheme
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.tessellation.gridLevels.level
+          in: query
+          description: Grid level number (1-4 for SQL Server)
+          schema:
+            type: integer
+            title: level
+            format: int32
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.tessellation.gridLevels.density
+          in: query
+          description: Grid density (LOW, MEDIUM, HIGH)
+          schema:
+            type: string
+            title: density
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.tessellation.cellsPerObject
+          in: query
+          description: Number of cells per object (1-8192 for SQL Server)
+          schema:
+            type: integer
+            title: cells_per_object
+            format: int32
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.tessellation.boundingBox.xmin
+          in: query
+          description: Minimum X coordinate
+          schema:
+            type: number
+            title: xmin
+            format: double
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.tessellation.boundingBox.ymin
+          in: query
+          description: Minimum Y coordinate
+          schema:
+            type: number
+            title: ymin
+            format: double
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.tessellation.boundingBox.xmax
+          in: query
+          description: Maximum X coordinate
+          schema:
+            type: number
+            title: xmax
+            format: double
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.tessellation.boundingBox.ymax
+          in: query
+          description: Maximum Y coordinate
+          schema:
+            type: number
+            title: ymax
+            format: double
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.fillfactor
+          in: query
+          description: Fill factor percentage (1-100)
+          schema:
+            type: integer
+            title: fillfactor
+            format: int32
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.buffering
+          in: query
+          description: Buffering mode for PostgreSQL (auto, on, off)
+          schema:
+            type: string
+            title: buffering
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.tablespace
+          in: query
+          description: Tablespace configuration for Oracle
+          schema:
+            type: string
+            title: tablespace
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.workTablespace
+          in: query
+          schema:
+            type: string
+            title: work_tablespace
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.sdoLevel
+          in: query
+          schema:
+            type: integer
+            title: sdo_level
+            format: int32
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.commitInterval
+          in: query
+          schema:
+            type: integer
+            title: commit_interval
+            format: int32
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.padIndex
+          in: query
+          description: SQL Server specific parameters
+          schema:
+            type: boolean
+            title: pad_index
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.sortInTempdb
+          in: query
+          description: ON, OFF
+          schema:
+            type: string
+            title: sort_in_tempdb
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.dropExisting
+          in: query
+          schema:
+            type: boolean
+            title: drop_existing
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.online
+          in: query
+          schema:
+            type: boolean
+            title: online
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.allowRowLocks
+          in: query
+          schema:
+            type: boolean
+            title: allow_row_locks
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.allowPageLocks
+          in: query
+          schema:
+            type: boolean
+            title: allow_page_locks
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.maxdop
+          in: query
+          schema:
+            type: integer
+            title: maxdop
+            format: int32
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.storage.dataCompression
+          in: query
+          description: NONE, ROW, PAGE
+          schema:
+            type: string
+            title: data_compression
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.dimensional.dimensions
+          in: query
+          description: Number of dimensions (2-4, default 2)
+          schema:
+            type: integer
+            title: dimensions
+            format: int32
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.dimensional.dataType
+          in: query
+          description: Spatial data type (GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.)
+          schema:
+            type: string
+            title: data_type
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.dimensional.srid
+          in: query
+          description: Spatial reference system identifier (SRID)
+          schema:
+            type: integer
+            title: srid
+            format: int32
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.dimensional.constraints.dimension
+          in: query
+          description: Dimension name/type (X, Y, Z, M, etc.)
+          schema:
+            type: string
+            title: dimension
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.dimensional.constraints.minValue
+          in: query
+          description: Minimum value for this dimension
+          schema:
+            type: number
+            title: min_value
+            format: double
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.dimensional.constraints.maxValue
+          in: query
+          description: Maximum value for this dimension
+          schema:
+            type: number
+            title: max_value
+            format: double
+        - name: metadata.schemas.tables.partitions.indexes.spatialConfig.dimensional.constraints.tolerance
+          in: query
+          description: Tolerance for this dimension
+          schema:
+            type: number
+            title: tolerance
+            format: double
+        - name: metadata.schemas.tables.partitions.indexes.opclassNames
+          in: query
+          description: |-
+            https://www.postgresql.org/docs/current/catalog-pg-opclass.html
+             Name of the operator class for each column. (PostgreSQL specific).
+          schema:
+            type: array
+            items:
+              type: string
+            title: opclass_names
+        - name: metadata.schemas.tables.partitions.indexes.opclassDefaults
+          in: query
+          description: True if the operator class is the default. (PostgreSQL specific).
+          schema:
+            type: array
+            items:
+              type: boolean
+            title: opclass_defaults
+        - name: metadata.schemas.tables.partitions.checkConstraints.name
           in: query
           description: The name is the name of a check constraint.
           schema:
             type: string
             title: name
-        - name: metadata.schemas.tables.partitions.subpartitions.checkConstraints.expression
+        - name: metadata.schemas.tables.partitions.checkConstraints.expression
+          in: query
+          description: The expression is the expression of a check constraint.
+          schema:
+            type: string
+            title: expression
+        - name: metadata.schemas.tables.checkConstraints.name
+          in: query
+          description: The name is the name of a check constraint.
+          schema:
+            type: string
+            title: name
+        - name: metadata.schemas.tables.checkConstraints.expression
           in: query
           description: The expression is the expression of a check constraint.
           schema:
@@ -9044,6 +10441,158 @@ paths:
           schema:
             type: string
             title: external_database_name
+        - name: metadata.schemas.externalTables.columns.name
+          in: query
+          description: The name is the name of a column.
+          schema:
+            type: string
+            title: name
+        - name: metadata.schemas.externalTables.columns.position
+          in: query
+          description: The position is the position in columns.
+          schema:
+            type: integer
+            title: position
+            format: int32
+        - name: metadata.schemas.externalTables.columns.hasDefault
+          in: query
+          schema:
+            type: boolean
+            title: has_default
+        - name: metadata.schemas.externalTables.columns.default
+          in: query
+          description: The default value of column.
+          schema:
+            type: string
+            title: default
+        - name: metadata.schemas.externalTables.columns.defaultOnNull
+          in: query
+          description: |-
+            Oracle specific metadata.
+             The default_on_null is the default on null of a column.
+          schema:
+            type: boolean
+            title: default_on_null
+        - name: metadata.schemas.externalTables.columns.onUpdate
+          in: query
+          description: |-
+            The on_update is the on update action of a column.
+             For MySQL like databases, it's only supported for TIMESTAMP columns with
+             CURRENT_TIMESTAMP as on update value.
+          schema:
+            type: string
+            title: on_update
+        - name: metadata.schemas.externalTables.columns.nullable
+          in: query
+          description: The nullable is the nullable of a column.
+          schema:
+            type: boolean
+            title: nullable
+        - name: metadata.schemas.externalTables.columns.type
+          in: query
+          description: The type is the type of a column.
+          schema:
+            type: string
+            title: type
+        - name: metadata.schemas.externalTables.columns.characterSet
+          in: query
+          description: The character_set is the character_set of a column.
+          schema:
+            type: string
+            title: character_set
+        - name: metadata.schemas.externalTables.columns.collation
+          in: query
+          description: The collation is the collation of a column.
+          schema:
+            type: string
+            title: collation
+        - name: metadata.schemas.externalTables.columns.comment
+          in: query
+          description: The comment is the comment of a column.
+          schema:
+            type: string
+            title: comment
+        - name: metadata.schemas.externalTables.columns.generation.type
+          in: query
+          schema:
+            title: type
+            $ref: '#/components/schemas/bytebase.v1.GenerationMetadata.Type'
+        - name: metadata.schemas.externalTables.columns.generation.expression
+          in: query
+          schema:
+            type: string
+            title: expression
+        - name: metadata.schemas.externalTables.columns.isIdentity
+          in: query
+          schema:
+            type: boolean
+            title: is_identity
+        - name: metadata.schemas.externalTables.columns.identityGeneration
+          in: query
+          description: The identity_generation is for identity columns, PG only.
+          schema:
+            title: identity_generation
+            $ref: '#/components/schemas/bytebase.v1.ColumnMetadata.IdentityGeneration'
+        - name: metadata.schemas.externalTables.columns.identitySeed
+          in: query
+          description: The identity_seed is for identity columns, MSSQL only.
+          schema:
+            type:
+              - integer
+              - string
+            title: identity_seed
+            format: int64
+        - name: metadata.schemas.externalTables.columns.identityIncrement
+          in: query
+          description: The identity_increment is for identity columns, MSSQL only.
+          schema:
+            type:
+              - integer
+              - string
+            title: identity_increment
+            format: int64
+        - name: metadata.schemas.externalTables.columns.defaultConstraintName
+          in: query
+          description: |-
+            The default_constraint_name is the name of the default constraint, MSSQL only.
+             In MSSQL, default values are implemented as named constraints. When modifying or
+             dropping a column's default value, you must reference the constraint by name.
+             This field stores the actual constraint name from the database.
+
+             Example: A column definition like:
+               CREATE TABLE employees (
+                 status NVARCHAR(20) DEFAULT 'active'
+               )
+
+             Will create a constraint with an auto-generated name like 'DF__employees__statu__3B75D760'
+             or a user-defined name if specified:
+               ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'active' FOR status
+
+             To modify the default, you must first drop the existing constraint by name:
+               ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760
+               ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'inactive' FOR status
+
+             This field is populated when syncing from the database. When empty (e.g., when parsing
+             from SQL files), the system cannot automatically drop the constraint.
+          schema:
+            type: string
+            title: default_constraint_name
+        - name: metadata.schemas.externalTables.columns.srid
+          in: query
+          description: |-
+            The spatial reference system identifier of a spatial column, MySQL 8.0 only.
+             Unset means the column declares no SRID; presence carries the explicit SRID,
+             including the valid SRID 0. SRS_IDs are unsigned 32-bit (custom SRSs may exceed
+             int32).
+          schema:
+            type: integer
+            title: srid
+        - name: metadata.schemas.externalTables.columns.isInvisible
+          in: query
+          description: Whether the column is invisible (hidden from SELECT *), MySQL 8.0.23+ only.
+          schema:
+            type: boolean
+            title: is_invisible
         - name: metadata.schemas.views.name
           in: query
           description: The name is the name of a view.
@@ -9080,6 +10629,214 @@ paths:
           schema:
             type: string
             title: column
+        - name: metadata.schemas.views.columns.name
+          in: query
+          description: The name is the name of a column.
+          schema:
+            type: string
+            title: name
+        - name: metadata.schemas.views.columns.position
+          in: query
+          description: The position is the position in columns.
+          schema:
+            type: integer
+            title: position
+            format: int32
+        - name: metadata.schemas.views.columns.hasDefault
+          in: query
+          schema:
+            type: boolean
+            title: has_default
+        - name: metadata.schemas.views.columns.default
+          in: query
+          description: The default value of column.
+          schema:
+            type: string
+            title: default
+        - name: metadata.schemas.views.columns.defaultOnNull
+          in: query
+          description: |-
+            Oracle specific metadata.
+             The default_on_null is the default on null of a column.
+          schema:
+            type: boolean
+            title: default_on_null
+        - name: metadata.schemas.views.columns.onUpdate
+          in: query
+          description: |-
+            The on_update is the on update action of a column.
+             For MySQL like databases, it's only supported for TIMESTAMP columns with
+             CURRENT_TIMESTAMP as on update value.
+          schema:
+            type: string
+            title: on_update
+        - name: metadata.schemas.views.columns.nullable
+          in: query
+          description: The nullable is the nullable of a column.
+          schema:
+            type: boolean
+            title: nullable
+        - name: metadata.schemas.views.columns.type
+          in: query
+          description: The type is the type of a column.
+          schema:
+            type: string
+            title: type
+        - name: metadata.schemas.views.columns.characterSet
+          in: query
+          description: The character_set is the character_set of a column.
+          schema:
+            type: string
+            title: character_set
+        - name: metadata.schemas.views.columns.collation
+          in: query
+          description: The collation is the collation of a column.
+          schema:
+            type: string
+            title: collation
+        - name: metadata.schemas.views.columns.comment
+          in: query
+          description: The comment is the comment of a column.
+          schema:
+            type: string
+            title: comment
+        - name: metadata.schemas.views.columns.generation.type
+          in: query
+          schema:
+            title: type
+            $ref: '#/components/schemas/bytebase.v1.GenerationMetadata.Type'
+        - name: metadata.schemas.views.columns.generation.expression
+          in: query
+          schema:
+            type: string
+            title: expression
+        - name: metadata.schemas.views.columns.isIdentity
+          in: query
+          schema:
+            type: boolean
+            title: is_identity
+        - name: metadata.schemas.views.columns.identityGeneration
+          in: query
+          description: The identity_generation is for identity columns, PG only.
+          schema:
+            title: identity_generation
+            $ref: '#/components/schemas/bytebase.v1.ColumnMetadata.IdentityGeneration'
+        - name: metadata.schemas.views.columns.identitySeed
+          in: query
+          description: The identity_seed is for identity columns, MSSQL only.
+          schema:
+            type:
+              - integer
+              - string
+            title: identity_seed
+            format: int64
+        - name: metadata.schemas.views.columns.identityIncrement
+          in: query
+          description: The identity_increment is for identity columns, MSSQL only.
+          schema:
+            type:
+              - integer
+              - string
+            title: identity_increment
+            format: int64
+        - name: metadata.schemas.views.columns.defaultConstraintName
+          in: query
+          description: |-
+            The default_constraint_name is the name of the default constraint, MSSQL only.
+             In MSSQL, default values are implemented as named constraints. When modifying or
+             dropping a column's default value, you must reference the constraint by name.
+             This field stores the actual constraint name from the database.
+
+             Example: A column definition like:
+               CREATE TABLE employees (
+                 status NVARCHAR(20) DEFAULT 'active'
+               )
+
+             Will create a constraint with an auto-generated name like 'DF__employees__statu__3B75D760'
+             or a user-defined name if specified:
+               ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'active' FOR status
+
+             To modify the default, you must first drop the existing constraint by name:
+               ALTER TABLE employees DROP CONSTRAINT DF__employees__statu__3B75D760
+               ALTER TABLE employees ADD CONSTRAINT DF_employees_status DEFAULT 'inactive' FOR status
+
+             This field is populated when syncing from the database. When empty (e.g., when parsing
+             from SQL files), the system cannot automatically drop the constraint.
+          schema:
+            type: string
+            title: default_constraint_name
+        - name: metadata.schemas.views.columns.srid
+          in: query
+          description: |-
+            The spatial reference system identifier of a spatial column, MySQL 8.0 only.
+             Unset means the column declares no SRID; presence carries the explicit SRID,
+             including the valid SRID 0. SRS_IDs are unsigned 32-bit (custom SRSs may exceed
+             int32).
+          schema:
+            type: integer
+            title: srid
+        - name: metadata.schemas.views.columns.isInvisible
+          in: query
+          description: Whether the column is invisible (hidden from SELECT *), MySQL 8.0.23+ only.
+          schema:
+            type: boolean
+            title: is_invisible
+        - name: metadata.schemas.views.triggers.name
+          in: query
+          description: The name is the name of the trigger.
+          schema:
+            type: string
+            title: name
+        - name: metadata.schemas.views.triggers.event
+          in: query
+          description: |-
+            The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
+             TRUNCATE.
+          schema:
+            type: string
+            title: event
+        - name: metadata.schemas.views.triggers.timing
+          in: query
+          description: The timing is the timing of the trigger, such as BEFORE, AFTER.
+          schema:
+            type: string
+            title: timing
+        - name: metadata.schemas.views.triggers.body
+          in: query
+          description: The body is the body of the trigger.
+          schema:
+            type: string
+            title: body
+        - name: metadata.schemas.views.triggers.sqlMode
+          in: query
+          description: The SQL mode setting for the trigger.
+          schema:
+            type: string
+            title: sql_mode
+        - name: metadata.schemas.views.triggers.characterSetClient
+          in: query
+          description: The character set used by the client creating the trigger.
+          schema:
+            type: string
+            title: character_set_client
+        - name: metadata.schemas.views.triggers.collationConnection
+          in: query
+          description: The collation used for the connection when creating the trigger.
+          schema:
+            type: string
+            title: collation_connection
+        - name: metadata.schemas.views.triggers.comment
+          in: query
+          description: The comment describing the trigger.
+          schema:
+            type: string
+            title: comment
+        - name: metadata.schemas.views.triggers.skipDump
+          in: query
+          description: Whether to skip this trigger during schema dump operations.
+          schema:
+            type: boolean
+            title: skip_dump
         - name: metadata.schemas.views.skipDump
           in: query
           schema:
@@ -9330,6 +11087,387 @@ paths:
           schema:
             type: string
             title: comment
+        - name: metadata.schemas.materializedViews.dependencyColumns.schema
+          in: query
+          description: The schema is the schema of a reference column.
+          schema:
+            type: string
+            title: schema
+        - name: metadata.schemas.materializedViews.dependencyColumns.table
+          in: query
+          description: The table is the table of a reference column.
+          schema:
+            type: string
+            title: table
+        - name: metadata.schemas.materializedViews.dependencyColumns.column
+          in: query
+          description: The column is the name of a reference column.
+          schema:
+            type: string
+            title: column
+        - name: metadata.schemas.materializedViews.triggers.name
+          in: query
+          description: The name is the name of the trigger.
+          schema:
+            type: string
+            title: name
+        - name: metadata.schemas.materializedViews.triggers.event
+          in: query
+          description: |-
+            The event is the event of the trigger, such as INSERT, UPDATE, DELETE,
+             TRUNCATE.
+          schema:
+            type: string
+            title: event
+        - name: metadata.schemas.materializedViews.triggers.timing
+          in: query
+          description: The timing is the timing of the trigger, such as BEFORE, AFTER.
+          schema:
+            type: string
+            title: timing
+        - name: metadata.schemas.materializedViews.triggers.body
+          in: query
+          description: The body is the body of the trigger.
+          schema:
+            type: string
+            title: body
+        - name: metadata.schemas.materializedViews.triggers.sqlMode
+          in: query
+          description: The SQL mode setting for the trigger.
+          schema:
+            type: string
+            title: sql_mode
+        - name: metadata.schemas.materializedViews.triggers.characterSetClient
+          in: query
+          description: The character set used by the client creating the trigger.
+          schema:
+            type: string
+            title: character_set_client
+        - name: metadata.schemas.materializedViews.triggers.collationConnection
+          in: query
+          description: The collation used for the connection when creating the trigger.
+          schema:
+            type: string
+            title: collation_connection
+        - name: metadata.schemas.materializedViews.triggers.comment
+          in: query
+          description: The comment describing the trigger.
+          schema:
+            type: string
+            title: comment
+        - name: metadata.schemas.materializedViews.triggers.skipDump
+          in: query
+          description: Whether to skip this trigger during schema dump operations.
+          schema:
+            type: boolean
+            title: skip_dump
+        - name: metadata.schemas.materializedViews.indexes.name
+          in: query
+          description: The name is the name of an index.
+          schema:
+            type: string
+            title: name
+        - name: metadata.schemas.materializedViews.indexes.expressions
+          in: query
+          description: |-
+            The expressions are the ordered columns or expressions of an index.
+             This could refer to a column or an expression.
+          schema:
+            type: array
+            items:
+              type: string
+            title: expressions
+        - name: metadata.schemas.materializedViews.indexes.keyLength
+          in: query
+          description: |-
+            The key_lengths are the ordered key lengths of an index.
+             If the key length is not specified, it's -1.
+          schema:
+            type: array
+            items:
+              type:
+                - integer
+                - string
+              format: int64
+            title: key_length
+        - name: metadata.schemas.materializedViews.indexes.descending
+          in: query
+          description: The descending is the ordered descending of an index.
+          schema:
+            type: array
+            items:
+              type: boolean
+            title: descending
+        - name: metadata.schemas.materializedViews.indexes.type
+          in: query
+          description: The type is the type of an index.
+          schema:
+            type: string
+            title: type
+        - name: metadata.schemas.materializedViews.indexes.unique
+          in: query
+          description: The unique is whether the index is unique.
+          schema:
+            type: boolean
+            title: unique
+        - name: metadata.schemas.materializedViews.indexes.primary
+          in: query
+          description: The primary is whether the index is a primary key index.
+          schema:
+            type: boolean
+            title: primary
+        - name: metadata.schemas.materializedViews.indexes.visible
+          in: query
+          description: The visible is whether the index is visible.
+          schema:
+            type: boolean
+            title: visible
+        - name: metadata.schemas.materializedViews.indexes.comment
+          in: query
+          description: The comment is the comment of an index.
+          schema:
+            type: string
+            title: comment
+        - name: metadata.schemas.materializedViews.indexes.definition
+          in: query
+          description: The definition of an index.
+          schema:
+            type: string
+            title: definition
+        - name: metadata.schemas.materializedViews.indexes.parentIndexSchema
+          in: query
+          description: The schema name of the parent index.
+          schema:
+            type: string
+            title: parent_index_schema
+        - name: metadata.schemas.materializedViews.indexes.parentIndexName
+          in: query
+          description: The index name of the parent index.
+          schema:
+            type: string
+            title: parent_index_name
+        - name: metadata.schemas.materializedViews.indexes.granularity
+          in: query
+          description: The number of granules in the block. It's a ClickHouse specific field.
+          schema:
+            type:
+              - integer
+              - string
+            title: granularity
+            format: int64
+        - name: metadata.schemas.materializedViews.indexes.isConstraint
+          in: query
+          description: |-
+            It's a PostgreSQL specific field.
+             The unique constraint and unique index are not the same thing in PostgreSQL.
+          schema:
+            type: boolean
+            title: is_constraint
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.method
+          in: query
+          description: Spatial indexing method (e.g., "SPATIAL", "R-TREE", "GIST")
+          schema:
+            type: string
+            title: method
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.tessellation.scheme
+          in: query
+          description: Tessellation scheme (e.g., "GEOMETRY_GRID", "GEOGRAPHY_GRID", "GEOMETRY_AUTO_GRID")
+          schema:
+            type: string
+            title: scheme
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.tessellation.gridLevels.level
+          in: query
+          description: Grid level number (1-4 for SQL Server)
+          schema:
+            type: integer
+            title: level
+            format: int32
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.tessellation.gridLevels.density
+          in: query
+          description: Grid density (LOW, MEDIUM, HIGH)
+          schema:
+            type: string
+            title: density
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.tessellation.cellsPerObject
+          in: query
+          description: Number of cells per object (1-8192 for SQL Server)
+          schema:
+            type: integer
+            title: cells_per_object
+            format: int32
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.tessellation.boundingBox.xmin
+          in: query
+          description: Minimum X coordinate
+          schema:
+            type: number
+            title: xmin
+            format: double
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.tessellation.boundingBox.ymin
+          in: query
+          description: Minimum Y coordinate
+          schema:
+            type: number
+            title: ymin
+            format: double
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.tessellation.boundingBox.xmax
+          in: query
+          description: Maximum X coordinate
+          schema:
+            type: number
+            title: xmax
+            format: double
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.tessellation.boundingBox.ymax
+          in: query
+          description: Maximum Y coordinate
+          schema:
+            type: number
+            title: ymax
+            format: double
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.fillfactor
+          in: query
+          description: Fill factor percentage (1-100)
+          schema:
+            type: integer
+            title: fillfactor
+            format: int32
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.buffering
+          in: query
+          description: Buffering mode for PostgreSQL (auto, on, off)
+          schema:
+            type: string
+            title: buffering
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.tablespace
+          in: query
+          description: Tablespace configuration for Oracle
+          schema:
+            type: string
+            title: tablespace
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.workTablespace
+          in: query
+          schema:
+            type: string
+            title: work_tablespace
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.sdoLevel
+          in: query
+          schema:
+            type: integer
+            title: sdo_level
+            format: int32
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.commitInterval
+          in: query
+          schema:
+            type: integer
+            title: commit_interval
+            format: int32
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.padIndex
+          in: query
+          description: SQL Server specific parameters
+          schema:
+            type: boolean
+            title: pad_index
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.sortInTempdb
+          in: query
+          description: ON, OFF
+          schema:
+            type: string
+            title: sort_in_tempdb
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.dropExisting
+          in: query
+          schema:
+            type: boolean
+            title: drop_existing
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.online
+          in: query
+          schema:
+            type: boolean
+            title: online
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.allowRowLocks
+          in: query
+          schema:
+            type: boolean
+            title: allow_row_locks
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.allowPageLocks
+          in: query
+          schema:
+            type: boolean
+            title: allow_page_locks
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.maxdop
+          in: query
+          schema:
+            type: integer
+            title: maxdop
+            format: int32
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.storage.dataCompression
+          in: query
+          description: NONE, ROW, PAGE
+          schema:
+            type: string
+            title: data_compression
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.dimensional.dimensions
+          in: query
+          description: Number of dimensions (2-4, default 2)
+          schema:
+            type: integer
+            title: dimensions
+            format: int32
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.dimensional.dataType
+          in: query
+          description: Spatial data type (GEOMETRY, GEOGRAPHY, POINT, POLYGON, etc.)
+          schema:
+            type: string
+            title: data_type
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.dimensional.srid
+          in: query
+          description: Spatial reference system identifier (SRID)
+          schema:
+            type: integer
+            title: srid
+            format: int32
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.dimensional.constraints.dimension
+          in: query
+          description: Dimension name/type (X, Y, Z, M, etc.)
+          schema:
+            type: string
+            title: dimension
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.dimensional.constraints.minValue
+          in: query
+          description: Minimum value for this dimension
+          schema:
+            type: number
+            title: min_value
+            format: double
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.dimensional.constraints.maxValue
+          in: query
+          description: Maximum value for this dimension
+          schema:
+            type: number
+            title: max_value
+            format: double
+        - name: metadata.schemas.materializedViews.indexes.spatialConfig.dimensional.constraints.tolerance
+          in: query
+          description: Tolerance for this dimension
+          schema:
+            type: number
+            title: tolerance
+            format: double
+        - name: metadata.schemas.materializedViews.indexes.opclassNames
+          in: query
+          description: |-
+            https://www.postgresql.org/docs/current/catalog-pg-opclass.html
+             Name of the operator class for each column. (PostgreSQL specific).
+          schema:
+            type: array
+            items:
+              type: string
+            title: opclass_names
+        - name: metadata.schemas.materializedViews.indexes.opclassDefaults
+          in: query
+          description: True if the operator class is the default. (PostgreSQL specific).
+          schema:
+            type: array
+            items:
+              type: boolean
+            title: opclass_defaults
         - name: metadata.schemas.materializedViews.skipDump
           in: query
           schema:
@@ -9761,8 +11899,14 @@ paths:
                       title: schema
                       required:
                         - schema
+                    - not:
+                        anyOf:
+                          - required:
+                              - changelog
+                          - required:
+                              - schema
+              unevaluatedProperties: false
               title: DiffSchemaRequest
-              additionalProperties: false
         required: true
       responses:
         "200":
@@ -16937,7 +19081,7 @@ paths:
       tags:
         - SubscriptionService
       summary: StartTrial
-      description: StartTrial starts a free trial for an eligible SaaS workspace.
+      description: StartTrial starts or upgrades a free trial for an eligible SaaS workspace.
       operationId: SubscriptionService_StartTrial
       requestBody:
         content:
@@ -19419,11 +21563,17 @@ components:
               title: ttl
               required:
                 - ttl
+            - not:
+                anyOf:
+                  - required:
+                      - expireTime
+                  - required:
+                      - ttl
+      unevaluatedProperties: false
       title: AccessGrant
       required:
         - creator
         - targets
-      additionalProperties: false
     bytebase.v1.AccessGrant.Status:
       type: string
       title: Status
@@ -19742,8 +21892,18 @@ components:
           title: range_mask
           required:
             - rangeMask
+        - not:
+            anyOf:
+              - required:
+                  - fullMask
+              - required:
+                  - innerOuterMask
+              - required:
+                  - md5Mask
+              - required:
+                  - rangeMask
+      unevaluatedProperties: false
       title: Algorithm
-      additionalProperties: false
     bytebase.v1.Algorithm.FullMask:
       type: object
       properties:
@@ -19953,8 +22113,22 @@ components:
               title: wecom
               required:
                 - wecom
+            - not:
+                anyOf:
+                  - required:
+                      - dingtalk
+                  - required:
+                      - feishu
+                  - required:
+                      - lark
+                  - required:
+                      - slack
+                  - required:
+                      - teams
+                  - required:
+                      - wecom
+      unevaluatedProperties: false
       title: IMSetting
-      additionalProperties: false
     bytebase.v1.AppIMSetting.Lark:
       type: object
       properties:
@@ -21799,8 +23973,18 @@ components:
           title: recovery_code
           required:
             - recoveryCode
+        - not:
+            anyOf:
+              - required:
+                  - currentPassword
+              - required:
+                  - emailCode
+              - required:
+                  - otpCode
+              - required:
+                  - recoveryCode
+      unevaluatedProperties: false
       title: CredentialProof
-      additionalProperties: false
       description: |-
         One proof that the caller currently controls a credential on the account.
          Exactly one field must be set; enforced in the handler.
@@ -22146,8 +24330,16 @@ components:
               title: gcp_credential
               required:
                 - gcpCredential
+            - not:
+                anyOf:
+                  - required:
+                      - awsCredential
+                  - required:
+                      - azureCredential
+                  - required:
+                      - gcpCredential
+      unevaluatedProperties: false
       title: DataSource
-      additionalProperties: false
     bytebase.v1.DataSource.AWSCredential:
       type: object
       properties:
@@ -22330,8 +24522,14 @@ components:
               title: token
               required:
                 - token
+            - not:
+                anyOf:
+                  - required:
+                      - appRole
+                  - required:
+                      - token
+      unevaluatedProperties: false
       title: DataSourceExternalSecret
-      additionalProperties: false
     bytebase.v1.DataSourceExternalSecret.AppRoleAuthOption:
       type: object
       properties:
@@ -22967,10 +25165,16 @@ components:
               title: schema
               required:
                 - schema
+            - not:
+                anyOf:
+                  - required:
+                      - changelog
+                  - required:
+                      - schema
+      unevaluatedProperties: false
       title: DiffSchemaRequest
       required:
         - name
-      additionalProperties: false
     bytebase.v1.DiffSchemaResponse:
       type: object
       properties:
@@ -23072,8 +25276,12 @@ components:
               title: smtp
               required:
                 - smtp
+            - not:
+                anyOf:
+                  - required:
+                      - smtp
+      unevaluatedProperties: false
       title: EmailSetting
-      additionalProperties: false
     bytebase.v1.EmailSetting.SMTPConfig:
       type: object
       properties:
@@ -24400,8 +26608,16 @@ components:
           title: oidc_config
           required:
             - oidcConfig
+        - not:
+            anyOf:
+              - required:
+                  - ldapConfig
+              - required:
+                  - oauth2Config
+              - required:
+                  - oidcConfig
+      unevaluatedProperties: false
       title: IdentityProviderConfig
-      additionalProperties: false
     bytebase.v1.IdentityProviderContext:
       type: object
       oneOf:
@@ -24423,8 +26639,14 @@ components:
           title: oidc_context
           required:
             - oidcContext
+        - not:
+            anyOf:
+              - required:
+                  - oauth2Context
+              - required:
+                  - oidcContext
+      unevaluatedProperties: false
       title: IdentityProviderContext
-      additionalProperties: false
       description: Context for identity provider authentication.
     bytebase.v1.IdentityProviderType:
       type: string
@@ -24926,8 +27148,18 @@ components:
               title: review_submission
               required:
                 - reviewSubmission
+            - not:
+                anyOf:
+                  - required:
+                      - approval
+                  - required:
+                      - issueUpdate
+                  - required:
+                      - planUpdate
+                  - required:
+                      - reviewSubmission
+      unevaluatedProperties: false
       title: IssueComment
-      additionalProperties: false
       description: A comment on an issue.
     bytebase.v1.IssueComment.Approval:
       type: object
@@ -27333,8 +29565,14 @@ components:
               title: struct_kind
               required:
                 - structKind
+            - not:
+                anyOf:
+                  - required:
+                      - arrayKind
+                  - required:
+                      - structKind
+      unevaluatedProperties: false
       title: ObjectSchema
-      additionalProperties: false
       description: Schema definition for object-type columns.
     bytebase.v1.ObjectSchema.ArrayKind:
       type: object
@@ -27685,8 +29923,14 @@ components:
               title: create_database_config
               required:
                 - createDatabaseConfig
+            - not:
+                anyOf:
+                  - required:
+                      - changeDatabaseConfig
+                  - required:
+                      - createDatabaseConfig
+      unevaluatedProperties: false
       title: Spec
-      additionalProperties: false
     bytebase.v1.Plan.TaskStatusCount:
       type: object
       properties:
@@ -27769,8 +30013,14 @@ components:
               title: sql_summary_report
               required:
                 - sqlSummaryReport
+            - not:
+                anyOf:
+                  - required:
+                      - sqlReviewReport
+                  - required:
+                      - sqlSummaryReport
+      unevaluatedProperties: false
       title: Result
-      additionalProperties: false
     bytebase.v1.PlanCheckRun.Result.SqlReviewReport:
       type: object
       properties:
@@ -28010,8 +30260,20 @@ components:
               title: tag_policy
               required:
                 - tagPolicy
+            - not:
+                anyOf:
+                  - required:
+                      - maskingExemptionPolicy
+                  - required:
+                      - maskingRulePolicy
+                  - required:
+                      - queryDataPolicy
+                  - required:
+                      - rolloutPolicy
+                  - required:
+                      - tagPolicy
+      unevaluatedProperties: false
       title: Policy
-      additionalProperties: false
     bytebase.v1.PolicyDelta:
       type: object
       properties:
@@ -28648,8 +30910,18 @@ components:
               title: syntax_error
               required:
                 - syntaxError
+            - not:
+                anyOf:
+                  - required:
+                      - commandError
+                  - required:
+                      - permissionDenied
+                  - required:
+                      - postgresError
+                  - required:
+                      - syntaxError
+      unevaluatedProperties: false
       title: QueryResult
-      additionalProperties: false
     bytebase.v1.QueryResult.CommandError:
       type: object
       properties:
@@ -29567,8 +31839,36 @@ components:
           title: value_value
           required:
             - valueValue
+        - not:
+            anyOf:
+              - required:
+                  - boolValue
+              - required:
+                  - bytesValue
+              - required:
+                  - doubleValue
+              - required:
+                  - floatValue
+              - required:
+                  - int32Value
+              - required:
+                  - int64Value
+              - required:
+                  - nullValue
+              - required:
+                  - stringValue
+              - required:
+                  - timestampTzValue
+              - required:
+                  - timestampValue
+              - required:
+                  - uint32Value
+              - required:
+                  - uint64Value
+              - required:
+                  - valueValue
+      unevaluatedProperties: false
       title: RowValue
-      additionalProperties: false
     bytebase.v1.RowValue.Timestamp:
       type: object
       properties:
@@ -29658,8 +31958,12 @@ components:
           title: krb_config
           required:
             - krbConfig
+        - not:
+            anyOf:
+              - required:
+                  - krbConfig
+      unevaluatedProperties: false
       title: SASLConfig
-      additionalProperties: false
     bytebase.v1.SQLEditorThemeSetting:
       type: object
       properties:
@@ -29757,8 +32061,22 @@ components:
               title: string_payload
               required:
                 - stringPayload
+            - not:
+                anyOf:
+                  - required:
+                      - commentConventionPayload
+                  - required:
+                      - namingCasePayload
+                  - required:
+                      - namingPayload
+                  - required:
+                      - numberPayload
+                  - required:
+                      - stringArrayPayload
+                  - required:
+                      - stringPayload
+      unevaluatedProperties: false
       title: SQLReviewRule
-      additionalProperties: false
       description: SQL review rule configuration. Check the SQL_REVIEW_RULES_DOCUMENTATION.md for details.
     bytebase.v1.SQLReviewRule.CommentConventionRulePayload:
       type: object
@@ -30987,8 +33305,28 @@ components:
           title: workspace_profile
           required:
             - workspaceProfile
+        - not:
+            anyOf:
+              - required:
+                  - ai
+              - required:
+                  - appIm
+              - required:
+                  - dataClassification
+              - required:
+                  - email
+              - required:
+                  - environment
+              - required:
+                  - mcp
+              - required:
+                  - semanticType
+              - required:
+                  - workspaceApproval
+              - required:
+                  - workspaceProfile
+      unevaluatedProperties: false
       title: SettingValue
-      additionalProperties: false
       description: The data in setting value.
     bytebase.v1.Sheet:
       type: object
@@ -31141,7 +33479,14 @@ components:
       additionalProperties: false
     bytebase.v1.StartTrialRequest:
       type: object
+      properties:
+        plan:
+          title: plan
+          description: The requested trial plan. Only TEAM and ENTERPRISE are supported.
+          $ref: '#/components/schemas/bytebase.v1.PlanType'
       title: StartTrialRequest
+      required:
+        - plan
       additionalProperties: false
     bytebase.v1.State:
       type: string
@@ -31513,8 +33858,14 @@ components:
               title: object_schema
               required:
                 - objectSchema
+            - not:
+                anyOf:
+                  - required:
+                      - columns
+                  - required:
+                      - objectSchema
+      unevaluatedProperties: false
       title: TableCatalog
-      additionalProperties: false
       description: Table metadata within a schema.
     bytebase.v1.TableCatalog.Columns:
       type: object
@@ -31823,8 +34174,14 @@ components:
               title: database_update
               required:
                 - databaseUpdate
+            - not:
+                anyOf:
+                  - required:
+                      - databaseCreate
+                  - required:
+                      - databaseUpdate
+      unevaluatedProperties: false
       title: Task
-      additionalProperties: false
     bytebase.v1.Task.DatabaseCreate:
       type: object
       properties:
@@ -31856,8 +34213,14 @@ components:
           title: sheet
           required:
             - sheet
+        - not:
+            anyOf:
+              - required:
+                  - release
+              - required:
+                  - sheet
+      unevaluatedProperties: false
       title: DatabaseUpdate
-      additionalProperties: false
       description: Payload for updating a database schema.
     bytebase.v1.Task.Status:
       type: string
@@ -32018,8 +34381,12 @@ components:
           title: parallel_tasks_limit
           required:
             - parallelTasksLimit
+        - not:
+            anyOf:
+              - required:
+                  - parallelTasksLimit
+      unevaluatedProperties: false
       title: WaitingCause
-      additionalProperties: false
       description: Information about why a task run is waiting.
     bytebase.v1.TaskRun.Status:
       type: string
@@ -32395,8 +34762,12 @@ components:
               title: postgres
               required:
                 - postgres
+            - not:
+                anyOf:
+                  - required:
+                      - postgres
+      unevaluatedProperties: false
       title: TaskRunSession
-      additionalProperties: false
     bytebase.v1.TaskRunSession.Postgres:
       type: object
       properties:
@@ -32590,8 +34961,16 @@ components:
               title: oidc_context
               required:
                 - oidcContext
+            - not:
+                anyOf:
+                  - required:
+                      - ldapContext
+                  - required:
+                      - oauth2Context
+                  - required:
+                      - oidcContext
+      unevaluatedProperties: false
       title: TestIdentityProviderRequest
-      additionalProperties: false
     bytebase.v1.TestIdentityProviderResponse:
       type: object
       properties:
@@ -34102,8 +36481,28 @@ components:
           title: uint64_value
           required:
             - uint64Value
+        - not:
+            anyOf:
+              - required:
+                  - boolValue
+              - required:
+                  - bytesValue
+              - required:
+                  - doubleValue
+              - required:
+                  - durationValue
+              - required:
+                  - int64Value
+              - required:
+                  - nullValue
+              - required:
+                  - stringValue
+              - required:
+                  - timestampValue
+              - required:
+                  - uint64Value
+      unevaluatedProperties: false
       title: Constant
-      additionalProperties: false
       description: |-
         Represents a primitive literal.
 
@@ -34197,8 +36596,24 @@ components:
               title: struct_expr
               required:
                 - structExpr
+            - not:
+                anyOf:
+                  - required:
+                      - callExpr
+                  - required:
+                      - comprehensionExpr
+                  - required:
+                      - constExpr
+                  - required:
+                      - identExpr
+                  - required:
+                      - listExpr
+                  - required:
+                      - selectExpr
+                  - required:
+                      - structExpr
+      unevaluatedProperties: false
       title: Expr
-      additionalProperties: false
       description: |-
         An abstract representation of a common expression.
 
@@ -34451,8 +36866,14 @@ components:
               title: map_key
               required:
                 - mapKey
+            - not:
+                anyOf:
+                  - required:
+                      - fieldKey
+                  - required:
+                      - mapKey
+      unevaluatedProperties: false
       title: Entry
-      additionalProperties: false
       description: Represents an entry.
     google.api.expr.v1alpha1.Expr.Ident:
       type: object
