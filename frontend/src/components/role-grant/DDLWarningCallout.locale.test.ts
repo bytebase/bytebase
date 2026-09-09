@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, test } from "vitest";
 import enReact from "@/locales/en-US.json";
 import esReact from "@/locales/es-ES.json";

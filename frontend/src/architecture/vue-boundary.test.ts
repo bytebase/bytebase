@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import { describe, expect, test } from "vitest";
@@ -80,7 +81,13 @@ describe("Vue build tooling", () => {
     const dependencyNames = Object.keys(packageJson.dependencies ?? {});
     const devDependencyNames = Object.keys(packageJson.devDependencies ?? {});
 
-    expect(packageJson.scripts?.["type-check"]).not.toContain("vue-tsc");
+    // Asserted across every script rather than one name, so consolidating or
+    // renaming the gate cannot silently retire this policy.
+    expect(
+      Object.values(packageJson.scripts ?? {}).some((script) =>
+        /\bvue-tsc\b/.test(script)
+      )
+    ).toBe(false);
     expect(dependencyNames.filter((name) => name.startsWith("@vue/"))).toEqual(
       []
     );
@@ -132,8 +139,16 @@ describe("frontend lint tooling", () => {
     expect(
       existsSync(join(repoRoot, "scripts", "check-no-crypto-randomuuid.mjs"))
     ).toBe(true);
-    expect(packageJson.scripts?.["check"]).toContain(
-      "node scripts/check-no-crypto-randomuuid.mjs"
-    );
+    // The guard must be wired into the gate. That wiring lives in the gate
+    // runner now rather than in a package.json script string, so search both.
+    const gateSources = [
+      ...Object.values(packageJson.scripts ?? {}),
+      readFileSync(join(repoRoot, "scripts", "run-gate.mjs"), "utf-8"),
+    ];
+    expect(
+      gateSources.some((source) =>
+        source.includes("check-no-crypto-randomuuid")
+      )
+    ).toBe(true);
   });
 });

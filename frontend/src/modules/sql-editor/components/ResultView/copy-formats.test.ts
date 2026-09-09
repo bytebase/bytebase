@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { create } from "@bufbuild/protobuf";
 import { describe, expect, it, vi } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";

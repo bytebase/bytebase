@@ -595,11 +595,15 @@ func (s *Syncer) doSyncDatabaseSchema(ctx context.Context, database *store.Datab
 
 	dbConfig := dbMetadata.GetConfig()
 
+	// Resolve store reads before UpdateDatabase opens its write transaction.
+	// Acquiring another pool connection inside the callback can deadlock sync bursts.
+	backupAvailable := s.databaseBackupAvailable(ctx, instance, syncedDatabaseMetadata)
+
 	// Build metadata updates
 	metadataUpdates := []func(*storepb.DatabaseMetadata){
 		func(md *storepb.DatabaseMetadata) {
 			md.LastSyncTime = timestamppb.Now()
-			md.BackupAvailable = s.databaseBackupAvailable(ctx, instance, syncedDatabaseMetadata)
+			md.BackupAvailable = backupAvailable
 			md.Datashare = syncedDatabaseMetadata.Datashare
 			md.SyncStatus = storepb.SyncStatus_SYNC_STATUS_OK
 			md.SyncError = ""

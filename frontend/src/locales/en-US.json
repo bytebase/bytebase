@@ -1783,6 +1783,36 @@
         "guidance-suffix": "without changes",
         "re-request-review": "re-request review",
         "title": "Rejected by {{user}}"
+      },
+      "thread": {
+        "add-comment": "Add comment",
+        "add-comment-on-line": "Add a comment on line {{line}}",
+        "add-comment-on-lines": "Add a comment on lines {{startLine}} to {{endLine}}",
+        "anchor": {
+          "line_one": "Line {{range}}",
+          "line_other": "Lines {{range}}",
+          "outdated": "Outdated",
+          "statement-unavailable": "Statement unavailable",
+          "unavailable-change": "Deleted change",
+          "view-in-statement": "View in Statement"
+        },
+        "comment-on-lines": "Comment on lines",
+        "comment-required": "Enter a comment before submitting.",
+        "n-replies-hidden_one": "{{count}} reply hidden",
+        "n-replies-hidden_other": "{{count}} replies hidden",
+        "n-replies_one": "{{count}} reply",
+        "n-replies_other": "{{count}} replies",
+        "publish": "Publish",
+        "reopen-with-comment": "Reopen with comment",
+        "reply": "Reply",
+        "reply-placeholder": "Reply...",
+        "reply-posted-status-failed": "Reply posted, but the thread status could not be updated. Retry the status action.",
+        "resolve": "Resolve",
+        "resolve-with-comment": "Resolve with comment",
+        "resolved": "Resolved",
+        "threads-on-line_one": "{{count}} thread on this line",
+        "threads-on-line_other": "{{count}} threads on this line",
+        "write-comment": "Write a comment..."
       }
     },
     "rollback": {
@@ -2769,8 +2799,10 @@
       "workload-identity-all-branches-tags": "All branches and tags",
       "workload-identity-allowed-branches-tags": "Allowed Branches/Tags",
       "workload-identity-audience": "Audience",
+      "workload-identity-audience-hint": "The audience your pipeline requests. Bytebase's generated workflows request bytebase; the setup guides request the provider default, so add that line too if your pipeline uses it.",
       "workload-identity-branch": "Branch",
       "workload-identity-branch-hint": "Leave empty for all branches",
+      "workload-identity-config-rejected": "Bytebase cannot accept this configuration:",
       "workload-identity-generic-oidc": "Generic OIDC",
       "workload-identity-gitlab-url": "GitLab URL",
       "workload-identity-gitlab-url-hint": "Your GitLab instance URL",

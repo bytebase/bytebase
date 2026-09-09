@@ -18,7 +18,6 @@ export function PlanReviewSection() {
   const page = usePlanDetailContext();
   const issue = page.issue;
   const issueName = issue?.name ?? "";
-  const issueUpdateKey = `${issue?.updateTime?.seconds ?? ""}:${issue?.updateTime?.nanos ?? ""}`;
   const loadProjectIamPolicy = useAppStore(
     (state) => state.loadProjectIamPolicy
   );
@@ -32,19 +31,6 @@ export function PlanReviewSection() {
       .catch(() => undefined);
     void loadProjectIamPolicy(projectName).catch(() => undefined);
   }, [loadProjectIamPolicy, page.projectId]);
-
-  // Refetch comments whenever the issue changes server-side (polling bumps
-  // updateTime) or after local actions refresh the issue.
-  useEffect(() => {
-    if (!issueName) return;
-    void useAppStore
-      .getState()
-      .fetchIssueCommentTimeline({
-        parent: issueName,
-        pageSize: 1000,
-      })
-      .catch(() => undefined);
-  }, [issueName, issueUpdateKey]);
 
   const comments = useAppStore((state) =>
     issueName ? state.getIssueComments(issueName) : EMPTY_COMMENTS

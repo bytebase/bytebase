@@ -459,7 +459,7 @@ Before considering a UI workflow complete, verify:
 Run the full frontend check after UI changes:
 
 ```bash
-pnpm --dir frontend check
+pnpm --dir frontend test
 ```
 
 The UX ratchet can be run directly:

@@ -592,7 +592,10 @@ export class BytebaseApiClient {
     hasRollout: boolean;
     issue: string;
     state: string;
-    specs?: { id: string; changeDatabaseConfig?: { targets?: string[] } }[];
+    specs?: {
+      id: string;
+      changeDatabaseConfig?: { targets?: string[]; sheet?: string };
+    }[];
   }> {
     return this.request("GET", `/v1/${planName}`);
   }
@@ -666,9 +669,34 @@ export class BytebaseApiClient {
     );
   }
 
-  async createIssueComment(issueName: string, comment: string): Promise<{ name: string }> {
+  // `root` creates a reply in that thread; `statementAnchor` starts a thread
+  // anchored to whole lines of the spec's saved sheet (zero columns, inclusive
+  // end line). Both omitted: a general comment.
+  async createIssueComment(
+    issueName: string,
+    comment: string,
+    thread: {
+      root?: string;
+      statementAnchor?: {
+        spec: string;
+        sheetSha256: string;
+        startLine: number;
+        endLine: number;
+      };
+    } = {},
+  ): Promise<{ name: string }> {
+    const anchor = thread.statementAnchor;
     return this.request<{ name: string }>("POST", `/v1/${issueName}:comment`, {
       comment,
+      ...(thread.root !== undefined && { root: thread.root }),
+      ...(anchor !== undefined && {
+        statementAnchor: {
+          spec: anchor.spec,
+          sheetSha256: anchor.sheetSha256,
+          startPosition: { line: anchor.startLine, column: 0 },
+          endPosition: { line: anchor.endLine, column: 0 },
+        },
+      }),
     });
   }
 

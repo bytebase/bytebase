@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { createMemoryRouter } from "react-router";
 import { afterEach, describe, expect, test } from "vitest";
 import { canonicalRedirect } from "./canonicalRedirect";

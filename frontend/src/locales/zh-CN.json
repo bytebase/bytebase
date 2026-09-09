@@ -1783,6 +1783,36 @@
         "guidance-suffix": "（不做修改）",
         "re-request-review": "重新发起审批",
         "title": "被 {{user}} 拒绝"
+      },
+      "thread": {
+        "add-comment": "添加评论",
+        "add-comment-on-line": "在第 {{line}} 行添加评论",
+        "add-comment-on-lines": "在第 {{startLine}} 至 {{endLine}} 行添加评论",
+        "anchor": {
+          "line_one": "第 {{range}} 行",
+          "line_other": "第 {{range}} 行",
+          "outdated": "已过期",
+          "statement-unavailable": "语句不可用",
+          "unavailable-change": "已删除的变更",
+          "view-in-statement": "在语句中查看"
+        },
+        "comment-on-lines": "评论所选行",
+        "comment-required": "请先填写评论再提交。",
+        "n-replies-hidden_one": "已隐藏 {{count}} 条回复",
+        "n-replies-hidden_other": "已隐藏 {{count}} 条回复",
+        "n-replies_one": "{{count}} 条回复",
+        "n-replies_other": "{{count}} 条回复",
+        "publish": "发布",
+        "reopen-with-comment": "回复并重新打开",
+        "reply": "回复",
+        "reply-placeholder": "回复...",
+        "reply-posted-status-failed": "回复已发布，但讨论状态更新失败。请重试状态操作。",
+        "resolve": "解决",
+        "resolve-with-comment": "回复并解决",
+        "resolved": "已解决",
+        "threads-on-line_one": "此行有 {{count}} 个讨论",
+        "threads-on-line_other": "此行有 {{count}} 个讨论",
+        "write-comment": "撰写评论..."
       }
     },
     "rollback": {
@@ -2769,8 +2799,10 @@
       "workload-identity-all-branches-tags": "所有分支和标签",
       "workload-identity-allowed-branches-tags": "允许的分支/标签",
       "workload-identity-audience": "受众",
+      "workload-identity-audience-hint": "流水线请求的 audience。Bytebase 生成的工作流请求 bytebase；配置指南请求提供方默认值，如果流水线使用该值，请另起一行添加。",
       "workload-identity-branch": "分支",
       "workload-identity-branch-hint": "留空表示允许所有分支",
+      "workload-identity-config-rejected": "Bytebase 无法接受此配置：",
       "workload-identity-generic-oidc": "通用 OIDC",
       "workload-identity-gitlab-url": "GitLab 地址",
       "workload-identity-gitlab-url-hint": "您的 GitLab 实例地址",

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 // Generates a compact TypeScript index from the OpenAPI spec.
-// Run: pnpm --dir frontend run generate:openapi-index
+// Run: pnpm --dir frontend run prepare
 
 const fs = require("fs");
 const path = require("path");
@@ -251,7 +251,7 @@ for (const [schemaName, schemaDef] of Object.entries(componentSchemas)) {
 const lines = [];
 lines.push(
   "// Auto-generated from openapi.yaml. DO NOT EDIT manually.",
-  "// Run 'pnpm --dir frontend run generate:openapi-index' to regenerate.",
+  "// Run 'pnpm --dir frontend run prepare' to regenerate.",
   ""
 );
 
@@ -299,7 +299,13 @@ lines.push(
   ""
 );
 
-fs.writeFileSync(OUTPUT_FILE, lines.join("\n"), "utf8");
+// Write-then-rename: the frontend gate regenerates this while tsc and the
+// bundler are already reading it, and an in-place write is observable
+// half-finished. rename(2) within a directory is atomic, so a reader sees
+// either the old file or the new one.
+const tempFile = `${OUTPUT_FILE}.${process.pid}.tmp`;
+fs.writeFileSync(tempFile, lines.join("\n"), "utf8");
+fs.renameSync(tempFile, OUTPUT_FILE);
 
 const schemaCount = Object.keys(schemas).length;
 const enumCount = Object.values(schemas).filter(

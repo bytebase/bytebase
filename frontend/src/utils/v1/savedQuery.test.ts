@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import type { SavedQuery } from "@/types/proto-es/v1/saved_query_service_pb";
 import { SavedQueryBinding_Level } from "@/types/proto-es/v1/saved_query_service_pb";

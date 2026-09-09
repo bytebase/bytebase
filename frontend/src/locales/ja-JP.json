@@ -1783,6 +1783,36 @@
         "guidance-suffix": "こともできます",
         "re-request-review": "レビューを再依頼する",
         "title": "{{user}} に却下されました"
+      },
+      "thread": {
+        "add-comment": "コメントを追加",
+        "add-comment-on-line": "{{line}} 行目にコメントを追加",
+        "add-comment-on-lines": "{{startLine}}～{{endLine}} 行目にコメントを追加",
+        "anchor": {
+          "line_one": "{{range}} 行目",
+          "line_other": "{{range}} 行",
+          "outdated": "最新ではありません",
+          "statement-unavailable": "ステートメントは利用できません",
+          "unavailable-change": "削除された変更",
+          "view-in-statement": "ステートメントで表示"
+        },
+        "comment-on-lines": "選択行にコメント",
+        "comment-required": "送信する前にコメントを入力してください。",
+        "n-replies-hidden_one": "{{count}} 件の返信が非表示",
+        "n-replies-hidden_other": "{{count}} 件の返信が非表示",
+        "n-replies_one": "{{count}} 件の返信",
+        "n-replies_other": "{{count}} 件の返信",
+        "publish": "公開",
+        "reopen-with-comment": "コメントして再開",
+        "reply": "返信",
+        "reply-placeholder": "返信...",
+        "reply-posted-status-failed": "返信は投稿されましたが、スレッドの状態を更新できませんでした。状態の変更を再試行してください。",
+        "resolve": "解決",
+        "resolve-with-comment": "コメントして解決",
+        "resolved": "解決済み",
+        "threads-on-line_one": "この行に {{count}} 件のスレッド",
+        "threads-on-line_other": "この行に {{count}} 件のスレッド",
+        "write-comment": "コメントを書く..."
       }
     },
     "rollback": {
@@ -2769,8 +2799,10 @@
       "workload-identity-all-branches-tags": "すべてのブランチとタグ",
       "workload-identity-allowed-branches-tags": "許可するブランチ/タグ",
       "workload-identity-audience": "Audience",
+      "workload-identity-audience-hint": "パイプラインが要求する audience。Bytebase が生成するワークフローは bytebase を要求します。セットアップガイドはプロバイダーの既定値を要求するため、パイプラインがそちらを使う場合は行を追加してください。",
       "workload-identity-branch": "ブランチ",
       "workload-identity-branch-hint": "すべてのブランチを対象とする場合は空欄にしてください",
+      "workload-identity-config-rejected": "Bytebase はこの設定を受け付けられません:",
       "workload-identity-generic-oidc": "汎用 OIDC",
       "workload-identity-gitlab-url": "GitLab URL",
       "workload-identity-gitlab-url-hint": "GitLab インスタンスの URL",

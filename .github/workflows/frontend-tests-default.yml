@@ -12,11 +12,6 @@ on:
 permissions: {}
 
 jobs:
-  static-checks:
-    runs-on: ubuntu-latest
-    steps:
-      - run: 'echo "Not required"'
-
   frontend-tests:
     runs-on: ubuntu-latest
     steps:

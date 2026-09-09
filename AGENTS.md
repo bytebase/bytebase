@@ -53,7 +53,7 @@ go test -v -count=1 ./backend/store/ -run '^(TestFunctionName|TestFunctionNameTw
 
 ### Frontend changes
 
-Run `pnpm --dir frontend fix`, `pnpm --dir frontend check`, `pnpm --dir frontend type-check`, and `pnpm --dir frontend test`.
+Run `pnpm --dir frontend fix`, then `pnpm --dir frontend test` — the single gate CI runs. To iterate, `pnpm --dir frontend vitest run <path>` runs one file; `pnpm --dir frontend run prepare` refreshes generated sources.
 
 For browser verification, read [frontend/tests/e2e/README.md](frontend/tests/e2e/README.md); before writing tests, read its [AGENTS.md](frontend/tests/e2e/AGENTS.md).
 

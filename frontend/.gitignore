@@ -2,6 +2,9 @@
 .eslintcache
 node_modules
 /dist
+# Throwaway output from `pnpm build-check`; kept out of /dist so it never
+# shadows a real release build.
+/dist-check
 components.d.ts
 src/types/plan.yaml
 src/types/iam/*.yaml

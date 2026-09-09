@@ -1783,6 +1783,36 @@
         "guidance-suffix": "sin cambios",
         "re-request-review": "vuelve a solicitar la revisión",
         "title": "Rechazado por {{user}}"
+      },
+      "thread": {
+        "add-comment": "Añadir comentario",
+        "add-comment-on-line": "Añadir un comentario en la línea {{line}}",
+        "add-comment-on-lines": "Añadir un comentario en las líneas {{startLine}} a {{endLine}}",
+        "anchor": {
+          "line_one": "Línea {{range}}",
+          "line_other": "Líneas {{range}}",
+          "outdated": "Obsoleto",
+          "statement-unavailable": "Sentencia no disponible",
+          "unavailable-change": "Cambio eliminado",
+          "view-in-statement": "Ver en la sentencia"
+        },
+        "comment-on-lines": "Comentar las líneas",
+        "comment-required": "Escribe un comentario antes de enviarlo.",
+        "n-replies-hidden_one": "{{count}} respuesta oculta",
+        "n-replies-hidden_other": "{{count}} respuestas ocultas",
+        "n-replies_one": "{{count}} respuesta",
+        "n-replies_other": "{{count}} respuestas",
+        "publish": "Publicar",
+        "reopen-with-comment": "Reabrir con comentario",
+        "reply": "Responder",
+        "reply-placeholder": "Responder...",
+        "reply-posted-status-failed": "La respuesta se publicó, pero no se pudo actualizar el estado del hilo. Vuelve a intentar cambiar el estado.",
+        "resolve": "Resolver",
+        "resolve-with-comment": "Resolver con comentario",
+        "resolved": "Resuelto",
+        "threads-on-line_one": "{{count}} hilo en esta línea",
+        "threads-on-line_other": "{{count}} hilos en esta línea",
+        "write-comment": "Escribe un comentario..."
       }
     },
     "rollback": {
@@ -2769,8 +2799,10 @@
       "workload-identity-all-branches-tags": "Todas las ramas y etiquetas",
       "workload-identity-allowed-branches-tags": "Ramas/etiquetas permitidas",
       "workload-identity-audience": "Audiencia",
+      "workload-identity-audience-hint": "La audiencia que solicita tu pipeline. Los flujos de trabajo generados por Bytebase solicitan bytebase; las guías de configuración solicitan el valor predeterminado del proveedor, así que añade también esa línea si tu pipeline lo usa.",
       "workload-identity-branch": "Rama",
       "workload-identity-branch-hint": "Dejar vacío para todas las ramas",
+      "workload-identity-config-rejected": "Bytebase no puede aceptar esta configuración:",
       "workload-identity-generic-oidc": "OIDC genérico",
       "workload-identity-gitlab-url": "GitLab URL",
       "workload-identity-gitlab-url-hint": "La URL de su instancia de GitLab",

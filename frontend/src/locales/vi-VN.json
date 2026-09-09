@@ -1783,6 +1783,36 @@
         "guidance-suffix": "mà không thay đổi",
         "re-request-review": "yêu cầu xét duyệt lại",
         "title": "Bị {{user}} từ chối"
+      },
+      "thread": {
+        "add-comment": "Thêm bình luận",
+        "add-comment-on-line": "Thêm bình luận vào dòng {{line}}",
+        "add-comment-on-lines": "Thêm bình luận vào các dòng từ {{startLine}} đến {{endLine}}",
+        "anchor": {
+          "line_one": "Dòng {{range}}",
+          "line_other": "Dòng {{range}}",
+          "outdated": "Đã lỗi thời",
+          "statement-unavailable": "Câu lệnh không khả dụng",
+          "unavailable-change": "Thay đổi đã xóa",
+          "view-in-statement": "Xem trong câu lệnh"
+        },
+        "comment-on-lines": "Bình luận các dòng đã chọn",
+        "comment-required": "Nhập bình luận trước khi gửi.",
+        "n-replies-hidden_one": "{{count}} phản hồi bị ẩn",
+        "n-replies-hidden_other": "{{count}} phản hồi bị ẩn",
+        "n-replies_one": "{{count}} phản hồi",
+        "n-replies_other": "{{count}} phản hồi",
+        "publish": "Đăng",
+        "reopen-with-comment": "Mở lại kèm bình luận",
+        "reply": "Trả lời",
+        "reply-placeholder": "Trả lời...",
+        "reply-posted-status-failed": "Đã đăng phản hồi nhưng không thể cập nhật trạng thái chủ đề. Hãy thử lại thao tác cập nhật trạng thái.",
+        "resolve": "Giải quyết",
+        "resolve-with-comment": "Giải quyết kèm bình luận",
+        "resolved": "Đã giải quyết",
+        "threads-on-line_one": "{{count}} chủ đề trên dòng này",
+        "threads-on-line_other": "{{count}} chủ đề trên dòng này",
+        "write-comment": "Viết bình luận..."
       }
     },
     "rollback": {
@@ -2769,8 +2799,10 @@
       "workload-identity-all-branches-tags": "Tất cả branch và tag",
       "workload-identity-allowed-branches-tags": "Branch/Tag được phép",
       "workload-identity-audience": "Audience",
+      "workload-identity-audience-hint": "Audience mà pipeline của bạn yêu cầu. Các workflow do Bytebase tạo yêu cầu bytebase; hướng dẫn thiết lập yêu cầu giá trị mặc định của nhà cung cấp, vì vậy hãy thêm dòng đó nếu pipeline của bạn dùng nó.",
       "workload-identity-branch": "Branch",
       "workload-identity-branch-hint": "Để trống cho tất cả branch",
+      "workload-identity-config-rejected": "Bytebase không thể chấp nhận cấu hình này:",
       "workload-identity-generic-oidc": "OIDC chung",
       "workload-identity-gitlab-url": "GitLab URL",
       "workload-identity-gitlab-url-hint": "URL phiên bản GitLab của bạn",
