@@ -40,7 +40,7 @@ During iteration, run focused checks for the changed behavior. Before handoff, r
 ### Go changes
 
 1. Run `gofmt -w` on modified Go files.
-2. Run `golangci-lint run --fix --allow-parallel-runners`, then `golangci-lint run --allow-parallel-runners` until clean after corrections. Run at repo root without filenames so package context is available.
+2. Run `golangci-lint run --fix -j 8 --allow-parallel-runners`, then `golangci-lint run -j 8 --allow-parallel-runners` until clean after corrections. Run at repo root without filenames so package context is available. Keep `-j 8`: on a cold cache it trades ~15s of wall time for ~30% less CPU and ~1.5 GB less peak RSS on the shared box.
 3. Run tests for changed packages and affected behavior, including required collision or contention coverage.
 4. Build: `go build -ldflags "-w -s" -p=16 -o ./bytebase-build/bytebase ./backend/bin/server/main.go`.
 5. After dependency changes, run `go mod tidy` and recheck affected code.
