@@ -54,7 +54,9 @@ type UpdateDatabaseMessage struct {
 	ProjectID *string
 	Deleted   *bool
 	// Empty string will unset the environment.
-	EnvironmentID   *string
+	EnvironmentID *string
+	// MetadataUpdates run inside a write transaction. Callbacks must not acquire
+	// another store connection; compute any required store reads before UpdateDatabase.
 	MetadataUpdates []func(*storepb.DatabaseMetadata)
 }
 
