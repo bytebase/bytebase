@@ -9,12 +9,14 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/bytebase/bytebase/backend/common"
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 )
 
 func TestMigration3_23_4_WorkloadIdentityAudiences(t *testing.T) {
+	t.Parallel()
 	ctx := context.Background()
-	db, _, _ := newTestDB(t)
+	db, _, _ := testcontainer.NewMetadataDB(t)
 
 	// workload_identity.workspace is a foreign key, and the template carries the
 	// real table, so the row the fixtures reference has to exist first.
@@ -159,6 +161,7 @@ func TestMigration3_23_4_WorkloadIdentityAudiences(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.email, func(t *testing.T) {
+			t.Parallel()
 			var raw string
 			require.NoError(t, db.QueryRowContext(ctx,
 				`SELECT config FROM workload_identity WHERE email = $1`, tc.email).Scan(&raw))

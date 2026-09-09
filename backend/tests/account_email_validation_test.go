@@ -105,7 +105,10 @@ func TestWorkloadIdentityEmailValidation(t *testing.T) {
 // TestWorkloadIdentityConfigValidation pins that the write RPCs reach the
 // configuration validator, and how Update treats each update-mask shape. The
 // rules themselves are pinned without a server in backend/api/v1.
+//
+//nolint:tparallel // Subtests share one server lifecycle.
 func TestWorkloadIdentityConfigValidation(t *testing.T) {
+	t.Parallel()
 	a := require.New(t)
 	ctx := context.Background()
 	ctl := &controller{}
