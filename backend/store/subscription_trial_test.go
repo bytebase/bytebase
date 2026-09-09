@@ -32,6 +32,7 @@ func newTrialLicenseFixture(t *testing.T) (context.Context, *store.Store) {
 }
 
 func TestCreateTrialLicenseRejectsSubscriptionHistory(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name    string
 		payload *storepb.SubscriptionPayload
