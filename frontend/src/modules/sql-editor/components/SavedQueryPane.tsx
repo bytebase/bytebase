@@ -27,6 +27,7 @@ import {
   useSheetContext,
   useSheetContextByView,
 } from "@/modules/sql-editor/model/Sheet";
+import { useSQLEditorEditorState } from "@/modules/sql-editor/store/editor";
 import { FilterMenuItem } from "./FilterMenuItem";
 import { SheetTree, type SheetTreeHandle } from "./SheetTree";
 
@@ -42,6 +43,7 @@ function collectSelectableNodes(
 
 export function SavedQueryPane() {
   const { t } = useTranslation();
+  const project = useSQLEditorEditorState((s) => s.project);
 
   const sheetContext = useSheetContext();
   const { filter, filterChanged, setFilter } = sheetContext;
@@ -116,7 +118,8 @@ export function SavedQueryPane() {
     },
   ];
 
-  const showMultiSelectToolbar = multiSelectMode && filter.showMine;
+  const showMultiSelectToolbar =
+    !!project && multiSelectMode && filter.showMine;
   const hasAnyView = filter.showMine || views.length > 0;
 
   return (
@@ -169,28 +172,36 @@ export function SavedQueryPane() {
           showMultiSelectToolbar && "pb-16"
         )}
       >
-        {filter.showMine && (
-          <SheetTree
-            key="my"
-            ref={mineSheetTreeRef}
-            view="my"
-            multiSelectMode={multiSelectMode}
-            checkedNodes={checkedNodes}
-            onMultiSelectModeChange={setMultiSelectMode}
-            onCheckedNodesChange={setCheckedNodes}
-          />
-        )}
-        {views.map((view) => (
-          // Non-"my" trees intentionally omit multi-select callbacks. Vue
-          // bound v-model only on the `my` tree; wiring them everywhere let
-          // a shared/draft right-click populate the my tree's checkedNodes,
-          // which the toolbar's Delete flow acts on.
-          <SheetTree key={view} view={view} />
-        ))}
-        {!hasAnyView && (
-          <div className="mt-10 text-center text-sm text-control-light">
-            {t("common.no-data")}
+        {!project ? (
+          <div className="mt-16 text-center text-sm text-control-light">
+            {t("common.empty")}
           </div>
+        ) : (
+          <>
+            {filter.showMine && (
+              <SheetTree
+                key="my"
+                ref={mineSheetTreeRef}
+                view="my"
+                multiSelectMode={multiSelectMode}
+                checkedNodes={checkedNodes}
+                onMultiSelectModeChange={setMultiSelectMode}
+                onCheckedNodesChange={setCheckedNodes}
+              />
+            )}
+            {views.map((view) => (
+              // Non-"my" trees intentionally omit multi-select callbacks. Vue
+              // bound v-model only on the `my` tree; wiring them everywhere let
+              // a shared/draft right-click populate the my tree's checkedNodes,
+              // which the toolbar's Delete flow acts on.
+              <SheetTree key={view} view={view} />
+            ))}
+            {!hasAnyView && (
+              <div className="mt-10 text-center text-sm text-control-light">
+                {t("common.no-data")}
+              </div>
+            )}
+          </>
         )}
       </div>
 

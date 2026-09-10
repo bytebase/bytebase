@@ -837,6 +837,7 @@ func getIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.Index
 		i.index_id,
 		i.name,
 		i.type_desc,
+		i.is_unique,
 		col.name AS column_name,
 		ic.is_descending_key
 	FROM sys.indexes i
@@ -856,8 +857,8 @@ func getIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.Index
 	for rows.Next() {
 		var schemaName, tableName, indexName, typeDesc, colName sql.NullString
 		var objectID, indexID sql.NullInt32
-		var isDescending sql.NullBool
-		if err := rows.Scan(&schemaName, &tableName, &objectID, &indexID, &indexName, &typeDesc, &colName, &isDescending); err != nil {
+		var isUnique, isDescending sql.NullBool
+		if err := rows.Scan(&schemaName, &tableName, &objectID, &indexID, &indexName, &typeDesc, &isUnique, &colName, &isDescending); err != nil {
 			return nil, err
 		}
 
@@ -870,9 +871,11 @@ func getIndexes(txn *sql.Tx, schemas []string) (map[db.TableKey][]*storepb.Index
 			indexMap[key] = make(map[string]*storepb.IndexMetadata)
 		}
 		if _, ok := indexMap[key][indexName.String]; !ok {
+			// This query excludes primary keys and unique constraints, which are
+			// reported separately, so is_unique here means a CREATE UNIQUE INDEX.
 			index := &storepb.IndexMetadata{
 				Name:         indexName.String,
-				Unique:       false,
+				Unique:       isUnique.Valid && isUnique.Bool,
 				Primary:      false,
 				IsConstraint: false,
 			}

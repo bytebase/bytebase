@@ -3,12 +3,14 @@ import { join } from "node:path";
 import * as stylex from "@stylexjs/stylex";
 import { act, createElement, type ReactElement } from "react";
 import { createRoot } from "react-dom/client";
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import {
   FormControlGroup,
   FormControlRow,
   FormError,
   FormField,
+  FormLabel,
+  ResponsiveFormLayout,
   FormFieldGroup,
   FormSection,
   FormTitle,
@@ -259,4 +261,59 @@ describe("Form section layouts", () => {
       );
     }
   });
+});
+
+describe("responsive form fields", () => {
+  test("preserves vertical consumers and associates labels after horizontal reflow", () => {
+    const container = document.createElement("div");
+    document.body.append(container);
+    const root = createRoot(container);
+    const field = (
+      <FormField>
+        <FormLabel htmlFor="form-test-host">Host</FormLabel>
+        <input id="form-test-host" />
+      </FormField>
+    );
+    act(() => root.render(field));
+    expect(container.querySelector('[data-slot="form-field-control"]')).toBeNull();
+    expect(container.querySelector("input")?.labels?.[0]?.textContent).toBe("Host");
+    act(() => root.render(
+      <ResponsiveFormLayout layout="horizontal">{field}</ResponsiveFormLayout>
+    ));
+    expect(container.querySelector('[data-slot="form-field-control"] input')).not.toBeNull();
+    expect(container.querySelector("input")?.labels?.[0]?.textContent).toBe("Host");
+    act(() => root.unmount());
+    container.remove();
+  });
+});
+
+
+test("reflows with the form width and preserves input values", () => {
+  let resize: ResizeObserverCallback | undefined;
+  vi.stubGlobal("ResizeObserver", class {
+    constructor(callback: ResizeObserverCallback) { resize = callback; }
+    observe() {}
+    disconnect() {}
+  });
+  const { container, unmount } = renderIntoContainer(
+    <ResponsiveFormLayout>
+      <FormField title="Name"><input defaultValue="production" /></FormField>
+    </ResponsiveFormLayout>
+  );
+  try {
+    act(() => resize?.(
+      [{ contentRect: { width: 700 } } as ResizeObserverEntry],
+      {} as ResizeObserver
+    ));
+    expect(container.querySelector('[data-slot="form-field-control"] input')).not.toBeNull();
+    act(() => resize?.(
+      [{ contentRect: { width: 400 } } as ResizeObserverEntry],
+      {} as ResizeObserver
+    ));
+    expect(container.querySelector('[data-slot="form-field-control"]')).toBeNull();
+    expect(container.querySelector("input")?.value).toBe("production");
+  } finally {
+    unmount();
+    vi.unstubAllGlobals();
+  }
 });

@@ -35,6 +35,7 @@ import {
 import { SampleExpirationAlert } from "@/components/SampleExpirationAlert";
 import { Alert } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { ResponsiveFormLayout } from "@/components/ui/form";
 import { Tabs, TabsList, TabsPanel, TabsTrigger } from "@/components/ui/tabs";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import type { DatabaseFilter } from "@/lib/databaseFilter";
@@ -627,9 +628,11 @@ export function InstanceDetailView({
 
         <TabsPanel value="overview">
           <InstanceFormProvider instance={instance} project={project}>
-            <InstanceFormBody />
-            <InstanceFormButtons />
-            <UnsavedChangesGuard />
+            <ResponsiveFormLayout>
+              <InstanceFormBody />
+              <InstanceFormButtons />
+              <UnsavedChangesGuard />
+            </ResponsiveFormLayout>
           </InstanceFormProvider>
         </TabsPanel>
 

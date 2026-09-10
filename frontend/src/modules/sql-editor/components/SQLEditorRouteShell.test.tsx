@@ -45,6 +45,12 @@ const mocks = vi.hoisted(() => {
       async (project: string) => project
     ),
     setAsidePanelTab: vi.fn(),
+    cleanupLegacyPouchDatabases: vi.fn(async () => undefined),
+    permissionState: {
+      missedBasicPermissions: [] as string[],
+      missedPermissions: [] as string[],
+      permitted: true,
+    },
     getOrFetchDatabaseByName: vi.fn(async (name: string) => ({
       name,
       project: "projects/proj1",
@@ -105,17 +111,13 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("@/components/ComponentPermissionGuard", () => ({
   PermissionDeniedFallback: () => <div data-testid="denied" />,
-  useComponentPermissionState: () => ({
-    missedBasicPermissions: [],
-    missedPermissions: [],
-    permitted: true,
-  }),
+  useComponentPermissionState: vi.fn(() => mocks.permissionState),
   usePermissionDataReady: () => true,
 }));
 
 vi.mock("@/hooks/useAppProject", () => ({
-  useAppProject: () => ({
-    name: "projects/proj1",
+  useAppProject: (name: string) => ({
+    name: name || "projects/-1",
   }),
 }));
 
@@ -189,7 +191,7 @@ vi.mock("@/modules/sql-editor/store/tab", () => ({
 }));
 
 vi.mock("@/modules/sql-editor/legacy/migration", () => ({
-  cleanupLegacyPouchDatabases: vi.fn(async () => undefined),
+  cleanupLegacyPouchDatabases: mocks.cleanupLegacyPouchDatabases,
 }));
 
 vi.mock("./SQLEditorHomePage", () => ({
@@ -204,6 +206,7 @@ const renderShell = () => {
     root.render(<SQLEditorRouteShell />);
   });
   return {
+    container,
     unmount: () =>
       act(() => {
         root.unmount();
@@ -251,6 +254,12 @@ beforeEach(() => {
     contentSize: BigInt(new TextEncoder().encode("select 1").length),
   }));
   mocks.editorState.project = "projects/proj1";
+  mocks.cleanupLegacyPouchDatabases.mockResolvedValue(undefined);
+  mocks.permissionState = {
+    missedBasicPermissions: [],
+    missedPermissions: [],
+    permitted: true,
+  };
   mocks.tabsState.tabsById = new Map();
   mocks.tabsState.openTmpTabList = [];
   mocks.tabsState.currentTabId = "";
@@ -285,6 +294,135 @@ beforeEach(() => {
 });
 
 describe("SQLEditorRouteShell", () => {
+  test("waits for bootstrap before rendering the project selector", async () => {
+    let finishCleanup: (value: undefined) => void;
+    const cleanup = new Promise<undefined>((resolve) => {
+      finishCleanup = resolve;
+    });
+    mocks.editorState.project = "";
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      name: "sql-editor.home",
+      params: {},
+      query: {},
+    };
+    mocks.currentRoute = mocks.renderRoute;
+    mocks.cleanupLegacyPouchDatabases.mockReturnValueOnce(cleanup);
+
+    const { container, unmount } = renderShell();
+
+    expect(
+      container.querySelector('[data-testid="sql-editor-home"]')
+    ).toBeNull();
+
+    await act(async () => {
+      finishCleanup(undefined);
+      await cleanup;
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      container.querySelector('[data-testid="sql-editor-home"]')
+    ).not.toBeNull();
+    unmount();
+  });
+
+  test("renders the project selector before workspace-level route permissions", async () => {
+    mocks.editorState.project = "";
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      name: "sql-editor.home",
+      params: {},
+      query: {},
+      requiredPermissions: ["bb.projects.get"],
+    };
+    mocks.currentRoute = mocks.renderRoute;
+    mocks.permissionState = {
+      missedBasicPermissions: ["bb.roles.list"],
+      missedPermissions: ["bb.projects.get"],
+      permitted: false,
+    };
+
+    const { container, unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      container.querySelector('[data-testid="sql-editor-home"]')
+    ).not.toBeNull();
+    expect(container.querySelector('[data-testid="denied"]')).toBeNull();
+    unmount();
+  });
+
+  test("does not auto-select a project when the editor has no selection", async () => {
+    mocks.editorState.project = "";
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      name: "sql-editor",
+      params: {},
+      query: {},
+    };
+    mocks.currentRoute = {
+      ...mocks.currentRoute,
+      name: "sql-editor",
+      params: {},
+      query: {},
+    };
+    mocks.maybeSwitchProject.mockImplementation(async (project: string) =>
+      project ? project : undefined
+    );
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.searchProjects).not.toHaveBeenCalled();
+    expect(mocks.maybeSwitchProject).not.toHaveBeenCalledWith(
+      "projects/proj1"
+    );
+    expect(mocks.editorState.setProject).toHaveBeenCalledWith("");
+    unmount();
+  });
+
+  test("does not restore the default project when it is the only project", async () => {
+    mocks.editorState.project = "projects/proj1";
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      name: "sql-editor",
+      params: {},
+      query: {},
+    };
+    mocks.currentRoute = {
+      ...mocks.currentRoute,
+      name: "sql-editor",
+      params: {},
+      query: {},
+    };
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.searchProjects).not.toHaveBeenCalled();
+    expect(mocks.maybeSwitchProject).not.toHaveBeenCalledWith(
+      "projects/proj1"
+    );
+    expect(mocks.editorState.setProject).toHaveBeenCalledWith("");
+    unmount();
+  });
+
   test("keeps a restored data explorer tab that matches the database route", async () => {
     mocks.tabsState.initProject.mockImplementationOnce(async () => {
       const tab = {

@@ -189,6 +189,17 @@ const ConnectionProbe = ({
   );
 };
 
+const DataSourceResetProbe = () => {
+  const ctx = useInstanceFormContext();
+  return (
+    <button
+      type="button"
+      data-reset-event={String(ctx.dataSourceResetEvent)}
+      onClick={ctx.resetDataSource}
+    />
+  );
+};
+
 const renderIntoContainer = () => {
   const container = document.createElement("div");
   const root = createRoot(container);
@@ -253,6 +264,26 @@ describe("InstanceFormProvider", () => {
     const probe = harness.container.firstElementChild as HTMLElement;
     expect(probe.dataset.environment).toBe("environments/dev");
 
+    harness.unmount();
+  });
+
+  test("emits a data source reset event for consumers with local form state", async () => {
+    const harness = renderIntoContainer();
+
+    await harness.render(
+      <InstanceFormProvider>
+        <DataSourceResetProbe />
+      </InstanceFormProvider>
+    );
+
+    const trigger = harness.container.firstElementChild as HTMLButtonElement;
+    expect(trigger.dataset.resetEvent).toBe("0");
+
+    await act(async () => {
+      trigger.click();
+    });
+
+    expect(trigger.dataset.resetEvent).toBe("1");
     harness.unmount();
   });
 

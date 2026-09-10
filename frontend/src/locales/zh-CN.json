@@ -682,9 +682,8 @@
         "tls": "TLS"
       },
       "server-identity": "服务器身份",
-      "verification-disabled-description": "已禁用验证。连接已加密，但未验证服务器身份；CA 设置将被忽略。",
-      "verify-certificate": "验证服务器证书",
-      "verify-certificate-tooltip": "启用 TLS 证书验证以确保安全连接。仅在开发环境或证书无法正确验证的情况下禁用（例如自签名证书、VPN 环境）。警告：禁用验证是不安全的"
+      "verification-disabled-description": "验证已关闭。连接仍然加密，但不会验证服务器身份，CA 设置将被忽略。这存在安全风险。请启用证书验证，仅在开发或故障排查时临时关闭。",
+      "verify-certificate": "验证服务器证书"
     },
     "ssl-connection": "SSL 连接"
   },
@@ -964,6 +963,8 @@
   },
   "instance": {
     "account-locator": "账户定位符",
+    "add-labels": "添加标签",
+    "add-parameter": "添加参数",
     "advanced-search": {
       "scope": {
         "host": {
@@ -978,6 +979,7 @@
     },
     "archive-instance-instance-name": "归档实例'{{0}}'?",
     "archived-instances-will-not-be-displayed": "不再会显示已归档实例。",
+    "authentication": "身份验证",
     "authentication-database": "认证数据库",
     "cloud-sql-ip-type": {
       "description": "当实例没有公共 IP 且 Bytebase 运行在同一 VPC 内时，请使用私有 IP。",
@@ -989,8 +991,8 @@
     "connect-database-to-project": "连接数据库到项目",
     "connect-instance": "连接实例",
     "connecting-database-to-project": "正在连接数据库...",
+    "connection-database": "连接数据库",
     "connection-info": "连接信息",
-    "connection-options": "连接选项",
     "connection-recovery": {
       "auth": {
         "description": "请检查用户名、密码、令牌或 IAM 认证配置，然后重新测试连接。",
@@ -1123,7 +1125,7 @@
     "gcp-endpoint-tip": "可选。覆盖默认的 Google API 端点，例如 Private Service Connect 端点 {{example}}。",
     "gcp-endpoint-toggle": "设置自定义 API 端点",
     "grants": "权限",
-    "host-or-socket": "Host 或 Socket",
+    "hostname": "主机名",
     "iam-extension": {
       "client-id": "Client ID",
       "client-secret": "Client Secret",
@@ -1212,6 +1214,9 @@
     "keytab-resupply-required": "该数据源现在连接到新的目标地址。请重新上传 keytab，以确认您仍持有它。",
     "keytab-upload-placeholder": "点击或拖拽 .keytab 文件到此处",
     "keytab-write-only": "Keytab 仅写入。上传新文件以替换现有 keytab。",
+    "master-name": "主节点名称",
+    "master-password": "主节点密码",
+    "master-username": "主节点用户名",
     "new-instance": "新实例",
     "no-environment": "此实例尚未绑定到环境",
     "no-extra-params-configured": "没有配置的额外连接参数",
@@ -1220,6 +1225,11 @@
     "open-data-source": "打开该数据源，查看还需要什么。",
     "parameter-name-placeholder": "参数名称",
     "parameter-value-placeholder": "参数值",
+    "password-source": {
+      "bytebase": "Bytebase",
+      "self": "密码来源",
+      "stored-in-bytebase": "存储在 Bytebase 中"
+    },
     "password-type": {
       "aws-iam": "AWS RDS IAM",
       "azure-iam": "Azure IAM",
@@ -1329,9 +1339,13 @@
     },
     "sync-databases": {
       "add-database": "+ 添加数据库，按回车键提交",
+      "all-databases": "全部数据库",
       "description": "选择要从此实例同步的数据库。",
+      "hostname-required": "请输入主机名，然后选择要同步的数据库。",
       "project-sync-all": "将所有数据库同步到此项目",
+      "required-fields": "请填写上方必填字段，然后选择要同步的数据库。",
       "search-database": "搜索数据库",
+      "selected-databases": "指定数据库",
       "self": "同步数据库",
       "sync-all": "同步所有数据库"
     },
