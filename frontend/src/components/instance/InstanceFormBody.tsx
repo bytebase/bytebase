@@ -1218,7 +1218,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
               onClick={() => setIsEngineSelectorCollapsed((prev) => !prev)}
             >
               <div className="min-w-0">
-                <p className="text-[11px] font-medium uppercase tracking-[0.14em] text-control-light">
+                <p className="text-xs font-medium uppercase tracking-[0.14em] text-control-light">
                   {t("database.engine")}
                 </p>
                 <div className="mt-1 flex items-center gap-x-1.5">
@@ -1525,7 +1525,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                       {onOpenInfoPanel && hasHostInfo && (
                         <button
                           type="button"
-                          className="inline-flex items-center gap-x-0.5 text-accent text-xs"
+                          className="inline-flex items-center gap-x-1 text-accent text-xs"
                           onClick={() => openInfoPanel("host")}
                         >
                           <Info className="size-3.5" />

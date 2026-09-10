@@ -119,7 +119,7 @@ export function ColumnNode({ node, keyword }: Props) {
       suffix={
         columnMetadata?.type ? (
           <div className="flex items-center justify-end gap-1 overflow-hidden whitespace-nowrap shrink opacity-80 font-normal!">
-            <span className="inline-flex items-center rounded-sm border border-control-border bg-control-bg/40 text-control h-4 px-[3px] text-[10px] leading-none">
+            <span className="inline-flex items-center rounded-sm border border-control-border bg-control-bg/40 text-control h-4 px-[3px] text-xs leading-none">
               {columnMetadata.type}
             </span>
           </div>

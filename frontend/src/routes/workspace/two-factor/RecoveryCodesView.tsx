@@ -47,7 +47,7 @@ export function RecoveryCodesView({
         }
       />
       <div className="w-full mx-auto flex flex-col justify-start items-start">
-        <ul className="w-full grid grid-cols-2 list-disc list-inside mx-auto gap-4 gap-x-24 p-8 px-12 border rounded-xs bg-gray-50">
+        <ul className="w-full grid grid-cols-2 list-disc list-inside mx-auto gap-4 gap-x-8 p-8 px-12 border rounded-xs bg-gray-50">
           {recoveryCodes.map((code) => (
             <li key={code}>
               <code className="ml-2">{code}</code>

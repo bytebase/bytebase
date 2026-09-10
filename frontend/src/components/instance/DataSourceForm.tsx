@@ -891,7 +891,7 @@ export function DataSourceForm({
                         {onOpenInfoPanel && hasAuthenticationInfo && (
                           <button
                             type="button"
-                            className="inline-flex items-center gap-x-0.5 text-accent text-xs"
+                            className="inline-flex items-center gap-x-1 text-accent text-xs"
                             onClick={() => onOpenInfoPanel("authentication")}
                           >
                             <Info className="size-3.5" />
@@ -1923,7 +1923,7 @@ export function DataSourceForm({
                   {onOpenInfoPanel && hasSslInfo && (
                     <button
                       type="button"
-                      className="inline-flex items-center gap-x-0.5 text-accent text-xs"
+                      className="inline-flex items-center gap-x-1 text-accent text-xs"
                       onClick={() => onOpenInfoPanel("ssl")}
                     >
                       <Info className="size-3.5" />
@@ -2049,7 +2049,7 @@ export function DataSourceForm({
                   {onOpenInfoPanel && hasSshInfo && (
                     <button
                       type="button"
-                      className="inline-flex items-center gap-x-0.5 text-accent text-xs"
+                      className="inline-flex items-center gap-x-1 text-accent text-xs"
                       onClick={() => onOpenInfoPanel("ssh")}
                     >
                       <Info className="size-3.5" />

@@ -744,7 +744,7 @@ function IssueDetailReviewPopover({
       />
 
       <RadioGroup
-        className="flex-col items-stretch gap-y-2.5"
+        className="flex-col items-stretch gap-y-2"
         value={selectedAction}
         onValueChange={(value) => setSelectedAction(value as IssueReviewAction)}
       >

@@ -119,7 +119,7 @@ export function IssueDetailDatabaseCreateView() {
     <div className="flex w-full flex-col gap-y-4">
       <div className="flex flex-col gap-y-2">
         <h3 className="text-base font-medium">{t("common.overview")}</h3>
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-2">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium text-gray-600">
               {t("common.environment")}:

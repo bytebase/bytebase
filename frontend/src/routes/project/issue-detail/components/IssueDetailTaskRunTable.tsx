@@ -172,7 +172,7 @@ function IssueDetailTaskRunComment({ taskRun }: { taskRun: TaskRun }) {
   const comment = getTaskRunComment(taskRun, t);
 
   return (
-    <div className="flex flex-col gap-y-0.5 xl:flex-row xl:items-center xl:gap-x-1">
+    <div className="flex flex-col gap-y-1 xl:flex-row xl:items-center xl:gap-x-1">
       <div className="min-w-0 flex-1">
         <EllipsisText className="line-clamp-1" text={comment} />
       </div>

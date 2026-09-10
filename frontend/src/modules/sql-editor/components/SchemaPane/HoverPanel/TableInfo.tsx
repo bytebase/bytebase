@@ -43,7 +43,7 @@ export function TableInfo({ database, schema, table }: Props) {
     <div className="min-w-56 max-w-[18rem] gap-y-1">
       <InfoItem title={t("common.name")}>{tableMetadata.name}</InfoItem>
       <InfoItem title={t("database.engine")}>
-        <span className="flex items-center gap-x-0.5">
+        <span className="flex items-center gap-x-1">
           <EngineIcon engine={instanceEngine} className="size-4" />
           {engineNameV1(instanceEngine)}
         </span>

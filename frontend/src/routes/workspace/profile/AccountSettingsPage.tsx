@@ -281,7 +281,7 @@ export function AccountSettingsPage() {
           >
             {getInitials(title || user.email)}
           </div>
-          <div className="flex min-w-0 flex-col gap-y-0.5">
+          <div className="flex min-w-0 flex-col gap-y-1">
             <h1 className="text-xl font-medium text-main">
               {t("settings.account.self")}
             </h1>

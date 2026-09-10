@@ -113,7 +113,7 @@ describe("Welcome", () => {
       <Welcome onChangeConnection={() => {}} />
     );
     render();
-    expect(container.firstElementChild?.className).toContain("gap-y-10");
+    expect(container.firstElementChild?.className).toContain("gap-y-8");
     expect(
       container.querySelector('[data-testid="welcome-logo"]')?.className
     ).toContain("h-20");

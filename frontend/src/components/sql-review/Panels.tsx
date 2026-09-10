@@ -245,7 +245,7 @@ function RuleSelectList({
   const visibleRuleList = useProgressiveRuleList(ruleList);
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col gap-y-4">
       {visibleRuleList.map((category) => (
         <div key={category.value}>
           <div className="flex my-3 items-center">

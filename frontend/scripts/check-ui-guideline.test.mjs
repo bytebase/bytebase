@@ -11,8 +11,70 @@ import {
 
 const FEATURE_FILE = "src/routes/project/Feature.tsx";
 const SHARED_FILE = "src/components/ui/control.tsx";
+const microLayoutRules = new Set([
+  "no-off-scale-gap",
+  "no-arbitrary-type",
+  "no-space-between",
+]);
+const microLayoutPaths = [
+  "src/components/DatabaseSelect.tsx",
+  "src/components/EnvironmentSelect.tsx",
+  "src/components/header/HeaderBreadcrumb.tsx",
+  "src/components/header/ProjectSwitchPanel.tsx",
+  "src/components/instance/DataSourceForm.tsx",
+  "src/components/instance/InfoPanel.tsx",
+  "src/components/instance/InstanceFormBody.tsx",
+  "src/components/InstanceAssignmentSheet.tsx",
+  "src/components/InstanceSelect.tsx",
+  "src/components/LabelListEditor.tsx",
+  "src/components/LearnMoreLink.tsx",
+  "src/components/sql-review/Panels.tsx",
+  "src/components/UserHoverCard.tsx",
+  "src/modules/ai/components/DynamicSuggestions.tsx",
+  "src/modules/ai/components/HistoryPanel/ConversationList.tsx",
+  "src/modules/schema-editor/Aside/AsideTree.tsx",
+  "src/modules/sql-editor/components/AccessGrantItem.tsx",
+  "src/modules/sql-editor/components/MaskingReasonPopover.tsx",
+  "src/modules/sql-editor/components/SchemaPane/HoverPanel/InfoItem.tsx",
+  "src/modules/sql-editor/components/SchemaPane/HoverPanel/TableInfo.tsx",
+  "src/modules/sql-editor/components/SchemaPane/TreeNode/CheckNode.tsx",
+  "src/modules/sql-editor/components/SchemaPane/TreeNode/ColumnNode.tsx",
+  "src/modules/sql-editor/components/SchemaPane/TreeNode/icons.tsx",
+  "src/modules/sql-editor/components/useExportGrantBypass.tsx",
+  "src/modules/sql-editor/components/Welcome.tsx",
+  "src/routes/project/issue-detail/components/IssueDetailActionBar.tsx",
+  "src/routes/project/issue-detail/components/IssueDetailApprovalFlow.tsx",
+  "src/routes/project/issue-detail/components/IssueDetailCommentList.tsx",
+  "src/routes/project/issue-detail/components/IssueDetailDatabaseCreateView.tsx",
+  "src/routes/project/issue-detail/components/IssueDetailTaskRunTable.tsx",
+  "src/routes/project/plan-detail/components/deploy/DeployPendingTasksSection.tsx",
+  "src/routes/project/plan-detail/components/deploy/DeployTaskToolbar.tsx",
+  "src/routes/project/plan-detail/components/lifecycle/PlanStatusAction.tsx",
+  "src/routes/project/plan-detail/components/PlanChangeReference.tsx",
+  "src/routes/project/plan-detail/components/PlanDetailRollbackSheet.tsx",
+  "src/routes/project/plan-detail/components/review/ReviewActionPopover.tsx",
+  "src/routes/project/plan-detail/ProjectPlanDetailPage.tsx",
+  "src/routes/project/ProjectAccessGrantsPage.tsx",
+  "src/routes/workspace/general/AccountSection.tsx",
+  "src/routes/workspace/GlobalMaskingPage.tsx",
+  "src/routes/workspace/profile/AccountSettingsPage.tsx",
+  "src/routes/workspace/profile/SettingsCard.tsx",
+  "src/routes/workspace/PurchaseSection.tsx",
+  "src/routes/workspace/two-factor/RecoveryCodesView.tsx",
+];
 
 describe("check-ui-guideline", () => {
+  test("has no remaining micro-layout legacy debt", () => {
+    const violations = microLayoutPaths.flatMap((path) =>
+      scanSource(
+        readFileSync(join(import.meta.dirname, "..", path), "utf8"),
+        path
+      ).filter((violation) => microLayoutRules.has(violation.rule))
+    );
+
+    expect(violations).toEqual([]);
+  });
+
   test("stores legacy debt as documented repository state", () => {
     const debtPath = join(import.meta.dirname, "ui-guideline-legacy-debt.json");
     const oldBaselinePath = join(import.meta.dirname, "ui-guideline-baseline.json");

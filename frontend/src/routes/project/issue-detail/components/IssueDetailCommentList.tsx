@@ -405,7 +405,7 @@ function IssueDescriptionCommentRow({
           <div className="relative">
             <div className="bg-white pt-1.5" />
             <UserAvatar
-              className="h-7 w-7 text-[0.8rem] font-medium"
+              className="h-7 w-7 text-xs font-medium"
               size="sm"
               title={creator.title || creator.email}
             />

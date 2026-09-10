@@ -346,7 +346,7 @@ export function useExportGrantBypass({
             count: uniqueGrants.length,
           })}
         </span>
-        <div className="flex flex-col gap-y-0.5 text-xs">
+        <div className="flex flex-col gap-y-1 text-xs">
           {visible.map((grant) => {
             const issueName = grant.issue ?? "";
             const href = issueName

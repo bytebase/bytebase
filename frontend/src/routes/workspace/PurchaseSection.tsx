@@ -366,7 +366,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
               <div className="text-lg font-medium">
                 {t("subscription.purchase.payment-info")}
               </div>
-              <div className="flex flex-wrap gap-x-12 gap-y-4 text-sm">
+              <div className="flex flex-wrap gap-x-8 gap-y-4 text-sm">
                 <div>
                   <span className="text-control-placeholder">
                     {t("subscription.purchase.total-price")}

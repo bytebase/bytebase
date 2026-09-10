@@ -121,14 +121,14 @@ export function AccessGrantItem({
         <div className="flex items-center gap-x-1 shrink-0">
           <Badge
             variant={badgeVariant}
-            className="text-[10px] px-1.5 py-0 rounded-full"
+            className="text-xs px-1.5 py-0 rounded-full"
           >
             {statusLabel}
           </Badge>
           {grant.unmask && (
             <Badge
               variant="default"
-              className="text-[10px] px-1.5 py-0 rounded-full"
+              className="text-xs px-1.5 py-0 rounded-full"
             >
               {t("sql-editor.grant-type-unmask")}
             </Badge>
@@ -136,7 +136,7 @@ export function AccessGrantItem({
           {grant.export && (
             <Badge
               variant="default"
-              className="text-[10px] px-1.5 py-0 rounded-full"
+              className="text-xs px-1.5 py-0 rounded-full"
             >
               {t("sql-editor.grant-type-export")}
             </Badge>

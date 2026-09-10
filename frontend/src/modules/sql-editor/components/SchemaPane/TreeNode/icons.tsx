@@ -74,12 +74,12 @@ export function SequenceIcon({ className }: IconProps) {
   return (
     <div
       className={cn(
-        "relative w-4 h-4 inline-flex items-center justify-center text-control-light",
+        "relative h-4 w-5 inline-flex items-center justify-center text-control-light",
         className
       )}
     >
-      <div className="border-y border-current w-3.5 h-3 inline-flex items-center justify-center text-[7px] overflow-visible whitespace-nowrap font-semibold">
-        <span className="leading-3">123</span>
+      <div className="inline-flex h-4 w-5 items-center justify-center border-y border-current overflow-visible whitespace-nowrap text-xs font-semibold leading-4">
+        <span>123</span>
       </div>
     </div>
   );
