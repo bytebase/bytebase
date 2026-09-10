@@ -26,14 +26,13 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
-// ProviderType identifies the workload identity configuration mode.
+// ProviderType identifies the CI/CD platform.
 type WorkloadIdentityConfig_ProviderType int32
 
 const (
 	WorkloadIdentityConfig_PROVIDER_TYPE_UNSPECIFIED WorkloadIdentityConfig_ProviderType = 0
 	WorkloadIdentityConfig_GITHUB                    WorkloadIdentityConfig_ProviderType = 1
 	WorkloadIdentityConfig_GITLAB                    WorkloadIdentityConfig_ProviderType = 2
-	WorkloadIdentityConfig_OIDC                      WorkloadIdentityConfig_ProviderType = 3
 )
 
 // Enum value maps for WorkloadIdentityConfig_ProviderType.
@@ -42,13 +41,11 @@ var (
 		0: "PROVIDER_TYPE_UNSPECIFIED",
 		1: "GITHUB",
 		2: "GITLAB",
-		3: "OIDC",
 	}
 	WorkloadIdentityConfig_ProviderType_value = map[string]int32{
 		"PROVIDER_TYPE_UNSPECIFIED": 0,
 		"GITHUB":                    1,
 		"GITLAB":                    2,
-		"OIDC":                      3,
 	}
 )
 
@@ -176,25 +173,16 @@ func (x *WorkloadIdentity) GetWorkloadIdentityConfig() *WorkloadIdentityConfig {
 // WorkloadIdentityConfig for API layer
 type WorkloadIdentityConfig struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
-	// Provider configuration mode.
+	// Platform type (currently only GITHUB is supported)
 	ProviderType WorkloadIdentityConfig_ProviderType `protobuf:"varint,1,opt,name=provider_type,json=providerType,proto3,enum=bytebase.v1.WorkloadIdentityConfig_ProviderType" json:"provider_type,omitempty"`
-	// HTTPS URL of the OIDC issuer. The exchange fetches
-	// {issuer_url}/.well-known/openid-configuration to verify a token, unless
-	// jwks_url names the key set directly.
+	// OIDC Issuer URL (auto-filled based on provider_type, can be overridden)
 	IssuerUrl string `protobuf:"bytes,2,opt,name=issuer_url,json=issuerUrl,proto3" json:"issuer_url,omitempty"`
-	// Audiences a token may be minted for. A token authenticates if its `aud`
-	// claim matches any entry.
+	// Allowed audiences for token validation
 	AllowedAudiences []string `protobuf:"bytes,3,rep,name=allowed_audiences,json=allowedAudiences,proto3" json:"allowed_audiences,omitempty"`
-	// The subject a token must carry, e.g. "repo:owner/repo:ref:refs/heads/main".
-	// A trailing "*" is a prefix match. For GitHub and GitLab subjects it must
-	// complete an owner or group segment, so "repo:my-org/*" is accepted and
-	// "repo:*" is not. Other issuers write other vocabularies, so a wildcard
-	// outside those two is accepted as given.
+	// Subject pattern to match (e.g., "repo:owner/repo:ref:refs/heads/main")
 	SubjectPattern string `protobuf:"bytes,4,opt,name=subject_pattern,json=subjectPattern,proto3" json:"subject_pattern,omitempty"`
-	// Optional JWKS endpoint. When empty, use OIDC discovery from issuer_url.
-	JwksUrl       string `protobuf:"bytes,5,opt,name=jwks_url,json=jwksUrl,proto3" json:"jwks_url,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
 }
 
 func (x *WorkloadIdentityConfig) Reset() {
@@ -251,13 +239,6 @@ func (x *WorkloadIdentityConfig) GetAllowedAudiences() []string {
 func (x *WorkloadIdentityConfig) GetSubjectPattern() string {
 	if x != nil {
 		return x.SubjectPattern
-	}
-	return ""
-}
-
-func (x *WorkloadIdentityConfig) GetJwksUrl() string {
-	if x != nil {
-		return x.JwksUrl
 	}
 	return ""
 }
@@ -692,30 +673,28 @@ var File_v1_workload_identity_service_proto protoreflect.FileDescriptor
 
 const file_v1_workload_identity_service_proto_rawDesc = "" +
 	"\n" +
-	"\"v1/workload_identity_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\xf6\x02\n" +
+	"\"v1/workload_identity_service.proto\x12\vbytebase.v1\x1a\x1bbuf/validate/validate.proto\x1a\x1cgoogle/api/annotations.proto\x1a\x17google/api/client.proto\x1a\x1fgoogle/api/field_behavior.proto\x1a\x19google/api/resource.proto\x1a\x1bgoogle/protobuf/empty.proto\x1a google/protobuf/field_mask.proto\x1a\x1fgoogle/protobuf/timestamp.proto\x1a\x13v1/annotation.proto\x1a\x0fv1/common.proto\"\xf1\x02\n" +
 	"\x10WorkloadIdentity\x12\x17\n" +
 	"\x04name\x18\x01 \x01(\tB\x03\xe0A\x03R\x04name\x12(\n" +
 	"\x05state\x18\x02 \x01(\x0e2\x12.bytebase.v1.StateR\x05state\x12\x19\n" +
 	"\x05email\x18\x03 \x01(\tB\x03\xe0A\x03R\x05email\x12\x1e\n" +
 	"\x05title\x18\x04 \x01(\tB\b\xbaH\x05r\x03\x18\xc8\x01R\x05title\x12@\n" +
 	"\vcreate_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampB\x03\xe0A\x03R\n" +
-	"createTime\x12b\n" +
-	"\x18workload_identity_config\x18\x06 \x01(\v2#.bytebase.v1.WorkloadIdentityConfigB\x03\xe0A\x02R\x16workloadIdentityConfig:>\xeaA;\n" +
-	"\x1dbytebase.com/WorkloadIdentity\x12\x1aworkloadIdentities/{email}\"\xe4\x02\n" +
-	"\x16WorkloadIdentityConfig\x12Z\n" +
-	"\rprovider_type\x18\x01 \x01(\x0e20.bytebase.v1.WorkloadIdentityConfig.ProviderTypeB\x03\xe0A\x02R\fproviderType\x12\"\n" +
+	"createTime\x12]\n" +
+	"\x18workload_identity_config\x18\x06 \x01(\v2#.bytebase.v1.WorkloadIdentityConfigR\x16workloadIdentityConfig:>\xeaA;\n" +
+	"\x1dbytebase.com/WorkloadIdentity\x12\x1aworkloadIdentities/{email}\"\xab\x02\n" +
+	"\x16WorkloadIdentityConfig\x12U\n" +
+	"\rprovider_type\x18\x01 \x01(\x0e20.bytebase.v1.WorkloadIdentityConfig.ProviderTypeR\fproviderType\x12\x1d\n" +
 	"\n" +
-	"issuer_url\x18\x02 \x01(\tB\x03\xe0A\x02R\tissuerUrl\x120\n" +
-	"\x11allowed_audiences\x18\x03 \x03(\tB\x03\xe0A\x02R\x10allowedAudiences\x12,\n" +
-	"\x0fsubject_pattern\x18\x04 \x01(\tB\x03\xe0A\x02R\x0esubjectPattern\x12\x19\n" +
-	"\bjwks_url\x18\x05 \x01(\tR\ajwksUrl\"O\n" +
+	"issuer_url\x18\x02 \x01(\tR\tissuerUrl\x12+\n" +
+	"\x11allowed_audiences\x18\x03 \x03(\tR\x10allowedAudiences\x12'\n" +
+	"\x0fsubject_pattern\x18\x04 \x01(\tR\x0esubjectPattern\"E\n" +
 	"\fProviderType\x12\x1d\n" +
 	"\x19PROVIDER_TYPE_UNSPECIFIED\x10\x00\x12\n" +
 	"\n" +
 	"\x06GITHUB\x10\x01\x12\n" +
 	"\n" +
-	"\x06GITLAB\x10\x02\x12\b\n" +
-	"\x04OIDC\x10\x03\"\xda\x01\n" +
+	"\x06GITLAB\x10\x02\"\xda\x01\n" +
 	"\x1dCreateWorkloadIdentityRequest\x121\n" +
 	"\x06parent\x18\x01 \x01(\tB\x19\xfaA\x16\n" +
 	"\x14bytebase.com/ProjectR\x06parent\x125\n" +
