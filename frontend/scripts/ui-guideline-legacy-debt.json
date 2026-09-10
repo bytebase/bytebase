@@ -411,12 +411,6 @@
     {
       "path": "src/components/instance/DataSourceForm.tsx",
       "rule": "no-native-control",
-      "token": "button",
-      "count": 3
-    },
-    {
-      "path": "src/components/instance/DataSourceForm.tsx",
-      "rule": "no-native-control",
       "token": "input",
       "count": 1
     },

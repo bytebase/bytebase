@@ -550,7 +550,7 @@ function SingleResultViewInner({
                   ariaLabel={t("sql-editor.result-view-mode")}
                   appearance="soft"
                   className="flex-nowrap"
-                  size="sm"
+                  size="xs"
                 />
               ) : supportsTableViewToggle ? (
                 <div className="flex items-center gap-x-1">

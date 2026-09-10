@@ -1148,15 +1148,18 @@ export function DataSourceForm({
                           <span className="flex items-center gap-x-1">
                             {t("common.username")}
                             {onOpenInfoPanel && hasAuthenticationInfo && (
-                              <button
+                              <Button
                                 type="button"
-                                className="inline-flex cursor-pointer items-center gap-x-1 text-accent text-xs"
+                                appearance="link"
+                                size="xs"
+                                className="w-6 shrink-0 p-0"
+                                aria-label={t("instance.authentication")}
                                 onClick={() =>
                                   onOpenInfoPanel("authentication")
                                 }
                               >
                                 <Info className="size-3.5" />
-                              </button>
+                              </Button>
                             )}
                           </span>
                         }
@@ -2137,14 +2140,16 @@ export function DataSourceForm({
                 <span className="flex items-center justify-start gap-x-2">
                   {t("data-source.ssl.connection-security")}
                   {onOpenInfoPanel && hasSslInfo && (
-                    <button
+                    <Button
                       type="button"
-                      aria-label={t("instance.authentication")}
-                      className="inline-flex cursor-pointer items-center gap-x-1 text-accent text-xs"
+                      appearance="link"
+                      size="xs"
+                      className="w-6 shrink-0 p-0"
+                      aria-label={t("data-source.ssl.connection-security")}
                       onClick={() => onOpenInfoPanel("ssl")}
                     >
                       <Info className="size-3.5" />
-                    </button>
+                    </Button>
                   )}
                 </span>
               }
@@ -2264,13 +2269,16 @@ export function DataSourceForm({
                   <span className="flex flex-row items-center gap-x-1">
                     {t("data-source.ssh-connection")}
                     {onOpenInfoPanel && hasSshInfo && (
-                      <button
+                      <Button
                         type="button"
-                        className="inline-flex cursor-pointer items-center gap-x-1 text-accent text-xs"
+                        appearance="link"
+                        size="xs"
+                        className="w-6 shrink-0 p-0"
+                        aria-label={t("data-source.ssh-connection")}
                         onClick={() => onOpenInfoPanel("ssh")}
                       >
                         <Info className="size-3.5" />
-                      </button>
+                      </Button>
                     )}
                   </span>
                 }

@@ -347,11 +347,6 @@ describe("SingleResultView document view", () => {
       expect(screen.getByText("sql-editor.table-view")).toBeInTheDocument();
       expect(screen.getByText("sql-editor.json-view")).toBeInTheDocument();
       expect(
-        screen.getByRole("radiogroup", {
-          name: "sql-editor.result-view-mode",
-        })
-      ).toHaveClass("h-7");
-      expect(
         screen.getByText("sql-editor.json-view").closest("label")
       ).toHaveClass("bg-accent/10", "text-accent");
       expect(

@@ -45,3 +45,19 @@ describe("DataSourceForm password sources", () => {
     expect(storedHintIndex).toBeGreaterThan(sourceIndex);
   });
 });
+
+describe("DataSourceForm connection information buttons", () => {
+  test("uses named shared buttons for connection information panels", () => {
+    const form = source();
+
+    expect(form).not.toContain("<button");
+    expect(form).toContain('aria-label={t("instance.authentication")}');
+    expect(form).toContain(
+      'aria-label={t("data-source.ssl.connection-security")}'
+    );
+    expect(form).toContain('aria-label={t("data-source.ssh-connection")}');
+    expect(form).toContain('onOpenInfoPanel("authentication")');
+    expect(form).toContain('onOpenInfoPanel("ssl")');
+    expect(form).toContain('onOpenInfoPanel("ssh")');
+  });
+});
