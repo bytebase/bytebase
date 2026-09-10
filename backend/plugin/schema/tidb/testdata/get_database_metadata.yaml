@@ -1149,7 +1149,7 @@
                   "expression": "(`a`\u003e0)"
                 },
                 {
-                  "name": "t_chk_3",
+                  "name": "t_chk_1",
                   "expression": "(`a`\u003c9)"
                 },
                 {
@@ -1157,7 +1157,7 @@
                   "expression": "(`a`!=5)"
                 },
                 {
-                  "name": "t_chk_4",
+                  "name": "t_chk_3",
                   "expression": "(`a`!=7)"
                 }
               ]

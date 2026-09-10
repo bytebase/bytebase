@@ -226,6 +226,7 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 	m.processColumnLevelConstraints(stmt, table)
 
 	// Process table-level constraints
+	synthesizedChecks := 0
 	for _, constraint := range stmt.Constraints {
 		switch constraint.Tp {
 		case ast.ConstraintPrimaryKey:
@@ -302,7 +303,7 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 
 		case ast.ConstraintCheck:
 			// Handle check constraints
-			m.processCheckConstraint(constraint, table)
+			m.processCheckConstraint(constraint, table, &synthesizedChecks)
 		default:
 			// Ignore other constraint types
 		}
@@ -746,29 +747,25 @@ func (*metadataExtractor) getIndexType(constraint *ast.Constraint) string {
 }
 
 // unnamedCheckName is the <table>_chk_<n> name TiDB gives a CHECK written
-// without one: n counts the unnamed checks, not every check. A table that also
-// declares that name explicitly is DDL the server rejects, so rather than emit
-// the duplicate, take the next free number.
-func unnamedCheckName(table *storepb.TableMetadata) string {
+// without one: n counts only the checks it had to name, so an explicit
+// CONSTRAINT t_chk_2 does not push the first unnamed one past t_chk_1. A table
+// that declares the resulting name explicitly is DDL the server rejects, so
+// rather than emit the duplicate, take the next free number.
+func unnamedCheckName(table *storepb.TableMetadata, synthesized *int) string {
 	taken := make(map[string]bool, len(table.CheckConstraints))
 	for _, check := range table.CheckConstraints {
 		taken[check.Name] = true
 	}
-	unnamed := 0
-	for _, check := range table.CheckConstraints {
-		if strings.HasPrefix(check.Name, table.Name+"_chk_") {
-			unnamed++
-		}
-	}
-	for n := unnamed + 1; ; n++ {
-		name := fmt.Sprintf("%s_chk_%d", table.Name, n)
+	for {
+		*synthesized++
+		name := fmt.Sprintf("%s_chk_%d", table.Name, *synthesized)
 		if !taken[name] {
 			return name
 		}
 	}
 }
 
-func (*metadataExtractor) processCheckConstraint(constraint *ast.Constraint, table *storepb.TableMetadata) {
+func (*metadataExtractor) processCheckConstraint(constraint *ast.Constraint, table *storepb.TableMetadata, synthesized *int) {
 	if constraint.Expr == nil {
 		return
 	}
@@ -778,7 +775,7 @@ func (*metadataExtractor) processCheckConstraint(constraint *ast.Constraint, tab
 	// parenthesized for the same reason: the writer emits "CHECK %s" bare.
 	name := constraint.Name
 	if name == "" {
-		name = unnamedCheckName(table)
+		name = unnamedCheckName(table, synthesized)
 	}
 	table.CheckConstraints = append(table.CheckConstraints, &storepb.CheckConstraintMetadata{
 		Name:       name,
