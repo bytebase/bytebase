@@ -161,6 +161,10 @@ description.
 three-stripe icon and the words "In force" are removed. View state reads: the mode chip (success
 for Read-only, warning for Read-write, destructive for Disabled), the "Masking exemptions ignored"
 chip when set, Edit policy on the right; then the disclosure line, which carries the description.
+The mode chip carries the mode's icon before its name — the same Lucide glyph as the card in edit
+state (`Unplug`, `Eye`, `PencilLine`) — so the identity an admin picked is the identity shown in
+force. The chip is the only place the mode's color appears; the cards stay neutral, because a
+control must not look like a status badge and the accent must remain the one selected-state color.
 The separate sentence under the chip is retired for Read-only and Read-write, since the disclosure
 line says the same thing; Disabled keeps its sentence, "No MCP session can connect to this
 workspace.", because it has no list. "Active" was considered and rejected as the label: "Active ·
@@ -226,8 +230,8 @@ approve access in the browser."
 
 **D10 — The consent page uses the row titles.** "This session may" lists the served rows with ✓,
 one ✕ line for the unserved tier under Read-only ("No changes, rollouts or exports"), then the
-existing capped, masking and audit lines. Read-write keeps its caution. One wording table serves
-both surfaces.
+existing capped, masking and audit lines. Read-write keeps its caution. Its mode chip carries the
+same icon as the settings page's. One wording table serves both surfaces.
 
 **D11 — A backend lint binds the wording to the classification.** A table in
 `backend/api/v1/mcp_gate.go` assigns every served method to exactly one row, and a lint in
@@ -302,8 +306,9 @@ All strings, so the change and the locale files have one source. Keys under
   Disabled static line use the `error` semantic tokens at low opacity; no raw palette colors, no
   `dark:` variants.
 - `MCPAccessPolicySection.tsx`: remove the `Rows3` icon, the in-force string, the mode cards and
-  the mode sentence; render the chip with its aria-label; strip the mode cards to icon, label and caption and add the
-  "Best for" line under them;
+  the mode sentence; render the chip with its aria-label and the mode's Lucide icon as its first
+  child at `size-3.5`; strip the mode cards to icon, label and caption and add the "Best for" line
+  under them;
   move the audit sentence to the section description; show the footer sentence only while editing
   and interpolate both modes when dirty; replace the masking copy.
 - `MCPPage.tsx`: remove the Authentication Required alert; extend the Connect a client description.
