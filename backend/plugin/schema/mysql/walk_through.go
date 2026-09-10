@@ -950,12 +950,29 @@ func routineToProcedureProto(r *catalog.Routine) *storepb.ProcedureMetadata {
 // catalog keeps the parts separately, but a sync stores what SHOW CREATE returns
 // -- the whole statement -- and the definition writer emits Definition verbatim,
 // so a body alone renders as a headless BEGIN ... END that no server accepts.
+// catalogDefaultDefiner is what the omni catalog fills in when a routine's
+// source omitted DEFINER. It is quoted; a declared definer is not.
+const catalogDefaultDefiner = "`root`@`%`"
+
+// quoteDefiner renders a bare user@host as MySQL writes it.
+func quoteDefiner(definer string) string {
+	user, host, ok := strings.Cut(definer, "@")
+	if !ok {
+		return definer
+	}
+	return mysqlQuoteIdentifier(user) + "@" + mysqlQuoteIdentifier(host)
+}
+
 func routineDefinition(r *catalog.Routine) string {
 	var buf strings.Builder
-	// No DEFINER: the sync strips it deliberately (see getCreateFunctionStmt),
-	// and the catalog invents one the DDL never specified, so emitting it would
-	// make every routine differ from its synced form.
 	buf.WriteString("CREATE ")
+	// A definer the source declared is part of the routine's execution identity,
+	// so it has to survive. The catalog also invents one when the source omitted
+	// it, and marks that case by quoting: an omitted definer arrives as the
+	// literal `root`@`%`, a declared one as the bare user@host it was written as.
+	if definer := r.Definer; definer != "" && definer != catalogDefaultDefiner {
+		fmt.Fprintf(&buf, "DEFINER=%s ", quoteDefiner(definer))
+	}
 	if r.IsProcedure {
 		buf.WriteString("PROCEDURE ")
 	} else {
@@ -969,8 +986,10 @@ func routineDefinition(r *catalog.Routine) string {
 		if p.Direction != "" {
 			fmt.Fprintf(&buf, "%s ", p.Direction)
 		}
-		// Parameter names are unquoted, as SHOW CREATE returns them.
-		fmt.Fprintf(&buf, "%s %s", p.Name, p.TypeName)
+		// SHOW CREATE quotes only the names that need it; quoting all of them is
+		// equally valid and keeps a reserved word such as `order` from emitting
+		// "IN order INT", which the server rejects.
+		fmt.Fprintf(&buf, "%s %s", mysqlQuoteIdentifier(p.Name), p.TypeName)
 	}
 	buf.WriteString(")")
 	if r.Returns != "" {

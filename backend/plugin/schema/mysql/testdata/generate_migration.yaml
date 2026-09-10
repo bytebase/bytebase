@@ -400,7 +400,7 @@
 
     CREATE OR REPLACE VIEW `top_products` AS select `sales`.`product_name` AS `product_name`,count(0) AS `sale_count`,sum(`sales`.`sale_amount`) AS `total_revenue` from `sales` group by `sales`.`product_name` order by sum(`sales`.`sale_amount`) desc;
 
-    CREATE FUNCTION `GetMonthlySalesTotal`(year INT, month INT) RETURNS decimal(10,2) READS SQL DATA DETERMINISTIC
+    CREATE FUNCTION `GetMonthlySalesTotal`(`year` INT, `month` INT) RETURNS decimal(10,2) READS SQL DATA DETERMINISTIC
     BEGIN
         DECLARE total DECIMAL(10, 2);
         SELECT COALESCE(SUM(sale_amount), 0) INTO total
@@ -409,7 +409,7 @@
         RETURN total;
     END;
 
-    CREATE PROCEDURE `CalculateDiscount`(IN amount DECIMAL(10,2), OUT discount DECIMAL(10,2))
+    CREATE PROCEDURE `CalculateDiscount`(IN `amount` DECIMAL(10,2), OUT `discount` DECIMAL(10,2))
     BEGIN
         SET discount = amount * 0.1;
     END;
@@ -1657,7 +1657,7 @@
 
     CREATE OR REPLACE VIEW `product_inventory` AS select `p`.`id` AS `id`,`p`.`name` AS `name`,`p`.`price` AS `price`,`p`.`stock` AS `stock`,coalesce(sum(`o`.`quantity`),0) AS `total_ordered` from (`products` `p` left join `orders` `o` on((`p`.`id` = `o`.`product_id`))) group by `p`.`id`,`p`.`name`,`p`.`price`,`p`.`stock`;
 
-    CREATE PROCEDURE `GetProductInventory`(IN product_name VARCHAR(100))
+    CREATE PROCEDURE `GetProductInventory`(IN `product_name` VARCHAR(100))
     BEGIN
         SELECT * FROM product_inventory
         WHERE name LIKE CONCAT('%', product_name, '%');
@@ -1728,7 +1728,7 @@
       UNIQUE KEY `uk_product_month` (`product_id`, `month_year`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
-    CREATE FUNCTION `CalculateTotalSales`(p_product_id INT, p_start_date DATE, p_end_date DATE) RETURNS decimal(10,2) READS SQL DATA DETERMINISTIC
+    CREATE FUNCTION `CalculateTotalSales`(`p_product_id` INT, `p_start_date` DATE, `p_end_date` DATE) RETURNS decimal(10,2) READS SQL DATA DETERMINISTIC
     BEGIN
         DECLARE total DECIMAL(10, 2);
 
@@ -1740,7 +1740,7 @@
         RETURN total;
     END;
 
-    CREATE FUNCTION `GetTaxAmount`(amount DECIMAL(10,2), tax_rate DECIMAL(5,2)) RETURNS decimal(10,2) NO SQL DETERMINISTIC
+    CREATE FUNCTION `GetTaxAmount`(`amount` DECIMAL(10,2), `tax_rate` DECIMAL(5,2)) RETURNS decimal(10,2) NO SQL DETERMINISTIC
     BEGIN
         RETURN amount * (tax_rate / 100);
     END;
@@ -2150,7 +2150,7 @@
         RETURN COALESCE(avg_value, 0);
     END;
   expected: |+
-    CREATE FUNCTION `GetAverageStat`(p_stat_name VARCHAR(100)) RETURNS decimal(10,2) READS SQL DATA DETERMINISTIC
+    CREATE FUNCTION `GetAverageStat`(`p_stat_name` VARCHAR(100)) RETURNS decimal(10,2) READS SQL DATA DETERMINISTIC
     BEGIN
         DECLARE avg_value DECIMAL(10, 2);
 
@@ -2162,7 +2162,7 @@
         RETURN COALESCE(avg_value, 0);
     END;
 
-    CREATE PROCEDURE `RecordSystemStat`(IN p_stat_name VARCHAR(100), IN p_stat_value DECIMAL(10,2))
+    CREATE PROCEDURE `RecordSystemStat`(IN `p_stat_name` VARCHAR(100), IN `p_stat_value` DECIMAL(10,2))
     BEGIN
         DECLARE EXIT HANDLER FOR SQLEXCEPTION
         BEGIN

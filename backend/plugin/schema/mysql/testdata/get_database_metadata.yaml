@@ -781,13 +781,13 @@
           "functions": [
             {
               "name": "get_employee_count",
-              "definition": "CREATE FUNCTION `get_employee_count`(dept VARCHAR(50)) RETURNS int READS SQL DATA DETERMINISTIC\nBEGIN\n    DECLARE emp_count INT;\n    SELECT COUNT(*) INTO emp_count\n    FROM employees\n    WHERE department = dept;\n    RETURN emp_count;\nEND"
+              "definition": "CREATE FUNCTION `get_employee_count`(`dept` VARCHAR(50)) RETURNS int READS SQL DATA DETERMINISTIC\nBEGIN\n    DECLARE emp_count INT;\n    SELECT COUNT(*) INTO emp_count\n    FROM employees\n    WHERE department = dept;\n    RETURN emp_count;\nEND"
             }
           ],
           "procedures": [
             {
               "name": "update_employee_salary",
-              "definition": "CREATE PROCEDURE `update_employee_salary`(IN emp_id INT, IN new_salary DECIMAL(10,2))\nBEGIN\n    UPDATE employees\n    SET salary = new_salary\n    WHERE id = emp_id;\nEND"
+              "definition": "CREATE PROCEDURE `update_employee_salary`(IN `emp_id` INT, IN `new_salary` DECIMAL(10,2))\nBEGIN\n    UPDATE employees\n    SET salary = new_salary\n    WHERE id = emp_id;\nEND"
             }
           ]
         }
