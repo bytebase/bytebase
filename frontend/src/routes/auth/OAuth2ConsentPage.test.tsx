@@ -546,7 +546,7 @@ describe("OAuth2ConsentPage", () => {
 
     expect(mocks.refreshServerInfo).toHaveBeenCalledOnce();
     expect(mocks.loadServerInfo).not.toHaveBeenCalled();
-    expect(container.textContent).toContain("oauth2.consent.mcp.line.write");
+    expect(container.textContent).toContain("settings.mcp.ladder.row.run-statements.title");
     unmount();
   });
 
@@ -602,9 +602,9 @@ describe("OAuth2ConsentPage", () => {
       capability: 3,
       ignoreMaskingExemptions: false,
     });
-    expect(container.textContent).toContain("oauth2.consent.mcp.line.read");
+    expect(container.textContent).toContain("settings.mcp.ladder.row.read-schemas.title");
     expect(container.textContent).toContain("oauth2.consent.mcp.line.no-write");
-    expect(container.textContent).not.toContain("oauth2.consent.mcp.line.write");
+    expect(container.textContent).not.toContain("settings.mcp.ladder.row.run-statements.title");
     // The masking line is the toggle's, not the ceiling's.
     expect(container.textContent).not.toContain(
       "oauth2.consent.mcp.line.masking"
@@ -618,7 +618,7 @@ describe("OAuth2ConsentPage", () => {
       capability: 4,
       ignoreMaskingExemptions: true,
     });
-    expect(container.textContent).toContain("oauth2.consent.mcp.line.write");
+    expect(container.textContent).toContain("settings.mcp.ladder.row.run-statements.title");
     expect(container.textContent).toContain("oauth2.consent.mcp.write-caution");
     expect(container.textContent).toContain("oauth2.consent.mcp.line.masking");
     unmount();
@@ -635,7 +635,7 @@ describe("OAuth2ConsentPage", () => {
       ignoreMaskingExemptions: true,
     });
     // The rest of the card is unchanged, so this is the line and not the card.
-    expect(container.textContent).toContain("oauth2.consent.mcp.line.write");
+    expect(container.textContent).toContain("settings.mcp.ladder.row.run-statements.title");
     expect(container.textContent).not.toContain(
       "oauth2.consent.mcp.line.masking"
     );
@@ -740,7 +740,7 @@ describe("OAuth2ConsentPage", () => {
       retry?.click();
     });
     await flushPromises();
-    expect(container.textContent).toContain("oauth2.consent.mcp.line.read");
+    expect(container.textContent).toContain("settings.mcp.ladder.row.read-schemas.title");
     expect(container.textContent).toContain("common.allow");
     unmount();
   });

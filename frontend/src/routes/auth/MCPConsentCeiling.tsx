@@ -1,6 +1,8 @@
 import { Check, EyeOff, ScrollText, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { servedRows } from "@/components/mcp/mcpCapabilityRows";
+import { MCP_MODE_PRESENTATION } from "@/components/mcp/mcpPolicy";
 import { Alert } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -23,46 +25,42 @@ interface Props {
  * What the workspace's ceiling lets this session do, shown before the person
  * approves rather than after.
  *
- * The same ceiling refuses the POST server-side, so this page is the richer
- * render of a decision the backend makes either way — never the decision
- * itself.
+ * The capability rows are the settings page's, from the same table, so the
+ * wording an admin chose the policy by is the wording the person approving
+ * reads. The same ceiling refuses the POST server-side, so this page is the
+ * richer render of a decision the backend makes either way — never the
+ * decision itself.
  */
 export function MCPConsentCeiling({ setting, dataMaskingAvailable }: Props) {
   const { t } = useTranslation();
 
   const readWrite = setting.capability === MCPSetting_Capability.READ_WRITE;
-  const modeKey = readWrite ? "read-write" : "read-only";
-  const modeLabel = t(`settings.mcp.policy.mode.${modeKey}.title`);
+  const mode = readWrite
+    ? MCPSetting_Capability.READ_WRITE
+    : MCPSetting_Capability.READ_ONLY;
+  const { icon: ModeIcon, badge } = MCP_MODE_PRESENTATION[mode];
+  const modeLabel = t(
+    `settings.mcp.policy.mode.${MCP_MODE_PRESENTATION[mode].key}.title`
+  );
 
   const lines: Line[] = [
-    {
-      key: "read",
+    ...servedRows(mode).map((row) => ({
+      key: row.id,
       icon: <Check className="size-4 text-success" />,
-      text: t("oauth2.consent.mcp.line.read"),
-    },
-    readWrite
-      ? {
-          key: "write",
-          icon: <Check className="size-4 text-success" />,
-          text: t("oauth2.consent.mcp.line.write"),
-        }
-      : {
-          key: "no-write",
-          icon: <X className="size-4 text-error" />,
-          text: t("oauth2.consent.mcp.line.no-write"),
-        },
-    // The WRITE class is not only data and schema: CreateIssue, CreatePlan,
-    // CreateRollout, BatchRunTasks, Export and the saved-query methods all
-    // carry it, so approving read-write approves workflow and egress too.
+      text: t(`settings.mcp.ladder.row.${row.id}.title`),
+    })),
+    // One line for the whole unserved tier rather than five muted rows: this
+    // screen is an approval, not a comparison, and the person is deciding
+    // about what the session gains.
     ...(readWrite
-      ? [
+      ? []
+      : [
           {
-            key: "workflow",
-            icon: <Check className="size-4 text-success" />,
-            text: t("oauth2.consent.mcp.line.workflow"),
+            key: "no-write",
+            icon: <X className="size-4 text-error" />,
+            text: t("oauth2.consent.mcp.line.no-write"),
           },
-        ]
-      : []),
+        ]),
     {
       key: "capped",
       icon: <Check className="size-4 text-success" />,
@@ -95,7 +93,10 @@ export function MCPConsentCeiling({ setting, dataMaskingAvailable }: Props) {
           <p className="text-sm text-control-light">
             {t("oauth2.consent.mcp.title")}
           </p>
-          <Badge variant={readWrite ? "warning" : "success"}>{modeLabel}</Badge>
+          <Badge variant={badge} className="gap-x-1">
+            <ModeIcon className="size-3.5 shrink-0" aria-hidden="true" />
+            {modeLabel}
+          </Badge>
         </div>
         <ul className="text-sm text-main flex flex-col gap-2">
           {lines.map((line) => (

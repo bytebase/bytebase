@@ -77,6 +77,11 @@ const DYNAMIC_PREFIXES = [
   "settings.mcp.policy.unreadable.title",
   "settings.mcp.policy.unserved.description",
   "settings.mcp.policy.unserved.title",
+  // The capability ladder: row titles and detail lines keyed by row id, the
+  // per-mode summary and the tier tag and divider keyed by tier, all built from
+  // the row table in components/mcp/mcpCapabilityRows.ts rather than written
+  // out as literal t("…") calls.
+  "settings.mcp.ladder.",
   // Built as `…undisclosed.${reason}.<suffix>` over a reason the consent page
   // derives: title, description and line for both, plus retry for the one that
   // offers it. Listed per reason rather than as one subtree, which would also

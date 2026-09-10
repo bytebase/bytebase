@@ -1616,10 +1616,7 @@
           "audit": "Las acciones auditadas llevan una etiqueta MCP, y lo que la política rechaza también se registra",
           "capped": "Limitada por sus propios permisos de Bytebase",
           "masking": "Sus exenciones de enmascaramiento no se aplican a esta sesión",
-          "no-write": "Ningún cambio de datos ni de esquema",
-          "read": "Explorar esquemas y ejecutar consultas de solo lectura",
-          "workflow": "Abrir incidencias, planes y despliegues, y exportar resultados de consultas",
-          "write": "Hacer los cambios de datos y esquema que permitan sus permisos"
+          "no-write": "Sin cambios, despliegues ni exportaciones"
         },
         "title": "Esta sesión puede",
         "undisclosed": {
@@ -2648,12 +2645,8 @@
       "description": "La integración de IM se utilizará para enviar mensajes directos a los usuarios para eventos de incidencias específicos. Funciona con el webhook del proyecto."
     },
     "mcp": {
-      "auth": {
-        "description": "Se requiere autenticación OAuth en la primera conexión. Asegúrese de tener los permisos apropiados en Bytebase.",
-        "title": "Autenticación requerida"
-      },
       "connect": {
-        "description": "Añada Bytebase a su cliente de IA, apruebe el acceso en el navegador y empiece a preguntar.",
+        "description": "Añada Bytebase a su cliente de IA y empiece a preguntar. En la primera conexión inicia sesión y aprueba el acceso en el navegador.",
         "desktop-note": "Claude Desktop lee los servidores remotos de su cuenta de Claude, no del archivo de configuración. Añada esta URL como conector personalizado en Customize > Connectors de claude.ai y aparecerá en Claude Desktop.",
         "json-note": "Este es el formato mcpServers. Los formatos de configuración varían según el cliente: VS Code, por ejemplo, espera servers en su propio mcp.json, así que use la pestaña de VS Code para eso.",
         "title": "Conectar un cliente"
@@ -2664,33 +2657,88 @@
         "example": "Listar todos los proyectos en mi instancia de Bytebase",
         "title": "Tu primer prompt"
       },
+      "ladder": {
+        "disabled": "No se permite nada; ninguna sesión MCP puede conectarse.",
+        "floor": {
+          "label": "Nunca, en ningún modo:",
+          "text": "aprobar issues, administrar el espacio de trabajo ni manejar credenciales."
+        },
+        "heading": "{{mode}} permite",
+        "hide-details": "Ocultar detalles",
+        "row": {
+          "export": {
+            "details": "Descargar resultados como archivo. Los datos salen de Bytebase",
+            "title": "Exportar resultados de consulta"
+          },
+          "manage": {
+            "details": "Sincronizar instancias y bases de datos · Configuración y etiquetas de bases de datos · Mover bases de datos entre proyectos · Grupos de bases de datos · Consultas guardadas",
+            "title": "Gestionar el mantenimiento de bases de datos"
+          },
+          "propose": {
+            "details": "Crear hojas · Crear y editar plans e issues · Ejecutar comprobaciones de plan y revisiones · Crear y eliminar versiones y revisiones · Generar diferencias de esquema. Un agente nunca aprueba su propio cambio; la política de aprobación del proyecto decide si una persona debe hacerlo",
+            "title": "Proponer cambios"
+          },
+          "read-data": {
+            "details": "Ejecutar consultas de solo lectura; una solicitud se rechaza por completo si alguna sentencia no es de lectura y, en motores distintos de PostgreSQL, CockroachDB y Redshift, la comprobación solo mira la forma de la sentencia · Historial de consultas · Consultas guardadas y hojas",
+            "title": "Leer datos ejecutando consultas"
+          },
+          "read-schemas": {
+            "details": "Esquemas · Bases de datos e instancias · Proyectos y grupos de bases de datos · Catálogos, historiales de cambios y revisiones · Configuraciones de revisión SQL · Datos de su propia sesión y del espacio de trabajo",
+            "title": "Leer esquemas y metadatos"
+          },
+          "read-workflow": {
+            "details": "Issues y comentarios · Plans y comprobaciones de plan · Despliegues, ejecuciones de tareas y registros · Versiones · Vistas previas de reversión",
+            "title": "Leer el flujo de cambios"
+          },
+          "run-rollouts": {
+            "details": "Crear un despliegue · Ejecutar, omitir o cancelar sus tareas, bajo la política de aprobación del proyecto",
+            "title": "Ejecutar despliegues y tareas"
+          },
+          "run-statements": {
+            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP a través de consultas, donde el motor comprueba cada sentencia y el usuario puede ejecutarla",
+            "title": "Ejecutar sentencias DML y DDL"
+          }
+        },
+        "show-details": "Mostrar detalles",
+        "stops": {
+          "read": "Solo lectura termina aquí",
+          "write": "Lectura y escritura termina aquí"
+        },
+        "summary": {
+          "read-only": "Leer esquemas, datos y el flujo de cambios; las sentencias que escriben se rechazan y no se exporta nada",
+          "read-write": "Leer esquemas, datos y el flujo de cambios; proponer, ejecutar, exportar y gestionar"
+        },
+        "tier": {
+          "read": "lectura",
+          "write": "escritura"
+        }
+      },
       "policy": {
-        "audit": "Las denegaciones de la política MCP se registran en el registro de auditoría.",
-        "description": "Lo máximo que puede hacer cualquier sesión MCP en este espacio de trabajo. Cada sesión está además limitada por los permisos del propio usuario que se conecta.",
+        "current": "Política actual: {{mode}}",
+        "description": "Lo máximo que puede hacer aquí cualquier sesión MCP. Las sesiones también están limitadas por los permisos de cada usuario, y las denegaciones de la política se auditan.",
         "edit": "Editar política",
-        "in-force": "En vigor",
         "loading": "Leyendo la política de acceso…",
         "masking": {
           "badge": "Exenciones de enmascaramiento ignoradas",
-          "description": "Los datos enmascarados siguen enmascarados en las sesiones MCP. Las exenciones de enmascaramiento concedidas a un usuario, y el desenmascarado que lleva una concesión de acceso, dejan de aplicarse a sus solicitudes MCP. El mismo usuario no se ve afectado en la consola de Bytebase.",
-          "limits": "La cobertura del enmascaramiento depende del motor. Donde Bytebase no enmascara, o enmascara sin consultar las exenciones, esto no cambia nada.",
+          "description": "Si se activa, los datos enmascarados siguen enmascarados en las sesiones MCP incluso para usuarios con exenciones o permisos de desenmascarado. La cobertura depende del motor: donde Bytebase no enmascara, esto no cambia nada. La consola no se ve afectada.",
           "title": "Ignorar las exenciones de enmascaramiento",
           "unavailable": "El enmascaramiento de datos no está licenciado para este espacio de trabajo, así que no se enmascara nada sea cual sea este ajuste."
         },
         "mode": {
           "disabled": {
             "best-for": "Ideal para: mantener MCP apagado hasta que esté listo para activarlo.",
+            "caption": "Ninguna sesión conecta",
             "description": "Ninguna sesión MCP puede conectarse a este espacio de trabajo.",
             "title": "Desactivado"
           },
           "read-only": {
             "best-for": "Ideal para: consultar y explorar datos, incluso por personas que no escriben SQL.",
-            "description": "Las sesiones pueden explorar esquemas y ejecutar consultas de solo lectura. Bytebase clasifica cada sentencia antes de ejecutarla y rechaza la solicitud entera si alguna no es una lectura. Donde el controlador del motor lo permite, la sesión de base de datos también se abre en solo lectura. Hasta dónde llega esto varía según el motor.",
+            "caption": "Explorar y consultar",
             "title": "Solo lectura"
           },
           "read-write": {
             "best-for": "Ideal para: hacer cambios en la base de datos a través de un agente de IA, siempre limitado por los permisos de cada usuario.",
-            "description": "Las sesiones también pueden cambiar datos y esquemas, hasta donde permitan los permisos del propio usuario que se conecta.",
+            "caption": "Cambiar datos y esquemas",
             "title": "Lectura y escritura"
           }
         },
@@ -2700,7 +2748,8 @@
         },
         "save": "Guardar política",
         "saved": "Política guardada. {{mode}} se aplica a la siguiente solicitud de cada sesión.",
-        "tightening": "Un cambio de techo se aplica a la siguiente solicitud de cada sesión en curso. El trabajo que un agente ya tiene admitido termina de ejecutarse.",
+        "tightening": "Se aplica a la siguiente solicitud de cada sesión en curso.",
+        "tightening-change": "{{from}} → {{to}} se aplica a la siguiente solicitud de cada sesión en curso.",
         "title": "Política de acceso",
         "unreadable": {
           "description": "Este espacio de trabajo almacena un valor de capacidad que esta versión no entiende. Se rechaza toda conexión MCP. Elija un modo y guarde para corregirlo.",

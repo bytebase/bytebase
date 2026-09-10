@@ -61,7 +61,10 @@ vi.mock("@/stores/app", () => {
 });
 
 vi.mock("react-i18next", () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({
+    t: (key: string, vars?: Record<string, string>) =>
+      vars ? `${key}(${Object.values(vars).join(",")})` : key,
+  }),
   initReactI18next: { type: "3rdParty", init: () => {} },
 }));
 
@@ -105,6 +108,9 @@ const clickText = (container: HTMLElement, text: string) => {
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  // The disclosure remembers itself per browser, so each case starts from the
+  // default rather than from whatever the previous one left open.
+  localStorage.clear();
   mocks.permissionDisabled.value = false;
   mocks.dataMaskingAvailable.value = true;
   mocks.serverInfo.value = {
@@ -128,7 +134,9 @@ describe("MCPAccessPolicySection", () => {
     await flush();
 
     expect(mocks.loadServerInfo).toHaveBeenCalledOnce();
-    expect(container.textContent).toContain("settings.mcp.policy.in-force");
+    expect(container.textContent).toContain(
+      "settings.mcp.policy.mode.read-only.title"
+    );
     unmount();
   });
 
@@ -174,7 +182,9 @@ describe("MCPAccessPolicySection", () => {
     expect(container.textContent).toContain(
       "settings.mcp.policy.read-failed.title"
     );
-    expect(container.textContent).not.toContain("settings.mcp.policy.in-force");
+    expect(container.textContent).not.toContain(
+      "settings.mcp.policy.mode.read-only.title"
+    );
     unmount();
   });
 
@@ -212,7 +222,9 @@ describe("MCPAccessPolicySection", () => {
     expect(container.textContent).toContain(
       "settings.mcp.policy.unreadable.title"
     );
-    expect(container.textContent).not.toContain("settings.mcp.policy.in-force");
+    expect(container.textContent).not.toContain(
+      "settings.mcp.policy.mode.read-only.title"
+    );
 
     clickText(container, "settings.mcp.policy.edit");
     await flush();
@@ -250,7 +262,9 @@ describe("MCPAccessPolicySection", () => {
     await flush();
 
     expect(container.textContent).toContain("settings.mcp.policy.loading");
-    expect(container.textContent).not.toContain("settings.mcp.policy.in-force");
+    expect(container.textContent).not.toContain(
+      "settings.mcp.policy.mode.read-only.title"
+    );
     expect(container.textContent).not.toContain("settings.mcp.policy.edit");
 
     unmount();
@@ -273,7 +287,9 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
-  test("keeps policy-card content compact", async () => {
+  // The cards used to carry three "Best for" lines and three descriptions,
+  // which is what made the edit state 375 words. One line, for the pick.
+  test("the Best for line is shown once and follows the selection", async () => {
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
     );
@@ -282,12 +298,20 @@ describe("MCPAccessPolicySection", () => {
     clickText(container, "settings.mcp.policy.edit");
     await flush();
 
-    const bestForLines = [...container.querySelectorAll("p")].filter((line) =>
-      line.textContent?.includes(".best-for")
+    const bestForLines = () =>
+      [...container.querySelectorAll("p")].filter((line) =>
+        line.textContent?.includes(".best-for")
+      );
+    expect(bestForLines()).toHaveLength(1);
+    expect(bestForLines()[0]?.textContent).toBe(
+      "settings.mcp.policy.mode.read-only.best-for"
     );
-    expect(bestForLines).toHaveLength(3);
-    expect(bestForLines.every((line) => !line.classList.contains("mt-auto"))).toBe(
-      true
+
+    clickText(container, "settings.mcp.policy.mode.read-write.title");
+    await flush();
+    expect(bestForLines()).toHaveLength(1);
+    expect(bestForLines()[0]?.textContent).toBe(
+      "settings.mcp.policy.mode.read-write.best-for"
     );
     unmount();
   });
@@ -346,4 +370,132 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
+  // The chip is the subject of the view: it carries the mode's own glyph, so
+  // the identity picked in the selector is the identity shown in force and, on
+  // the consent page, the identity the person approving sees.
+  test("the chip names the policy for assistive tech and carries the mode glyph", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+
+    const chip = container.querySelector(
+      '[aria-label^="settings.mcp.policy.current"]'
+    );
+    expect(chip?.getAttribute("aria-label")).toBe(
+      "settings.mcp.policy.current(settings.mcp.policy.mode.read-only.title)"
+    );
+    expect(chip?.querySelector("svg")).not.toBeNull();
+    unmount();
+  });
+
+  test("the disclosure is collapsed by default, opens, and follows the pick", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+
+    expect(container.textContent).toContain(
+      "settings.mcp.ladder.summary.read-only"
+    );
+    expect(container.querySelectorAll("li")).toHaveLength(0);
+
+    clickText(container, "settings.mcp.ladder.summary.read-only");
+    await flush();
+    expect(container.querySelectorAll("li").length).toBeGreaterThan(0);
+
+    // The open state carries into editing, and the list follows the pick
+    // rather than the stored mode.
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+    expect(container.textContent).toContain(
+      "settings.mcp.ladder.heading(settings.mcp.policy.mode.read-only.title)"
+    );
+    clickText(container, "settings.mcp.policy.mode.read-write.title");
+    await flush();
+    expect(container.textContent).toContain(
+      "settings.mcp.ladder.heading(settings.mcp.policy.mode.read-write.title)"
+    );
+    expect(container.textContent).toContain("settings.mcp.ladder.tier.write");
+    unmount();
+  });
+
+  test("the open and details state survive leaving the page", async () => {
+    const first = renderIntoContainer(<MCPAccessPolicySection />);
+    first.render();
+    await flush();
+    clickText(first.container, "settings.mcp.ladder.summary.read-only");
+    await flush();
+    clickText(first.container, "settings.mcp.ladder.show-details");
+    await flush();
+    expect(first.container.textContent).toContain(
+      "settings.mcp.ladder.row.read-schemas.details"
+    );
+    first.unmount();
+
+    const second = renderIntoContainer(<MCPAccessPolicySection />);
+    second.render();
+    await flush();
+    expect(second.container.textContent).toContain(
+      "settings.mcp.ladder.row.read-schemas.details"
+    );
+    second.unmount();
+  });
+
+  // Disabled has no list, so red means "no capability" on both surfaces: the
+  // plain sentence in view, the static line in the disclosure slot in edit.
+  test("Disabled says its one sentence in view and its static line in edit", async () => {
+    mocks.serverInfo.value = {
+      mcpSetting: {
+        capability: MCPSetting_Capability.DISABLED,
+        ignoreMaskingExemptions: false,
+      },
+    };
+    mocks.loadServerInfo.mockResolvedValue(mocks.serverInfo.value);
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+
+    expect(container.textContent).toContain(
+      "settings.mcp.policy.mode.disabled.description"
+    );
+    expect(container.textContent).not.toContain("settings.mcp.ladder.summary");
+
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+    expect(container.textContent).toContain("settings.mcp.ladder.disabled");
+    expect(container.textContent).not.toContain("settings.mcp.ladder.heading");
+    unmount();
+  });
+
+  // The tightening note is about a change being made, not about the current
+  // state, so it belongs to the editor; the audit fact moved to the section
+  // description and must not come back as a second line under the chip.
+  test("the footer shows only while editing and names the change when dirty", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+    expect(container.textContent).not.toContain("settings.mcp.policy.tightening");
+    expect(container.textContent).not.toContain("settings.mcp.policy.audit");
+
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+    expect(container.textContent).toContain("settings.mcp.policy.tightening");
+    expect(container.textContent).not.toContain(
+      "settings.mcp.policy.tightening-change"
+    );
+
+    clickText(container, "settings.mcp.policy.mode.read-write.title");
+    await flush();
+    expect(container.textContent).toContain(
+      "settings.mcp.policy.tightening-change(settings.mcp.policy.mode.read-only.title,settings.mcp.policy.mode.read-write.title)"
+    );
+    unmount();
+  });
 });

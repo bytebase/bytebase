@@ -1,13 +1,15 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { Rows3 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { MCPMode } from "@/components/mcp/mcpPolicy";
-import { isMCPMode, MCP_CAPABILITY_CHOICES } from "@/components/mcp/mcpPolicy";
+import {
+  isMCPMode,
+  MCP_CAPABILITY_CHOICES,
+  MCP_MODE_PRESENTATION,
+} from "@/components/mcp/mcpPolicy";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { Alert } from "@/components/ui/alert";
-import type { BadgeProps } from "@/components/ui/badge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -24,30 +26,43 @@ import {
   SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import { MCPCapabilityLadder } from "./MCPCapabilityLadder";
 
-// One row per ceiling an admin can pick: the locale-key stem, the glyph tone,
-// and the chip variant. The tone and the variant always agree, and carry from
-// the card to the in-force chip, so they belong on one row rather than in
-// parallel tables that can drift apart.
-const MODES: Record<
-  MCPMode,
-  { key: string; tone: string; badge: BadgeProps["variant"] }
-> = {
-  [MCPSetting_Capability.DISABLED]: {
-    key: "disabled",
-    tone: "text-error",
-    badge: "destructive",
-  },
-  [MCPSetting_Capability.READ_ONLY]: {
-    key: "read-only",
-    tone: "text-success",
-    badge: "success",
-  },
-  [MCPSetting_Capability.READ_WRITE]: {
-    key: "read-write",
-    tone: "text-warning",
-    badge: "warning",
-  },
+const LADDER_OPEN_KEY = "bb.mcp.ladder.open";
+const LADDER_DETAILS_KEY = "bb.mcp.ladder.details";
+
+/**
+ * A disclosure preference, remembered per browser.
+ *
+ * It is deliberately not part of the policy: an admin who opened the list once
+ * wants it open the next time they come to compare, and that is a habit of the
+ * person, not a fact about the workspace. Storage failures (private mode, a
+ * locked-down profile) fall back to the default rather than breaking the card.
+ */
+const useStoredFlag = (
+  key: string,
+  fallback: boolean
+): [boolean, (next: boolean) => void] => {
+  const [value, setValue] = useState(() => {
+    try {
+      const stored = localStorage.getItem(key);
+      return stored === null ? fallback : stored === "true";
+    } catch {
+      return fallback;
+    }
+  });
+  const update = useCallback(
+    (next: boolean) => {
+      setValue(next);
+      try {
+        localStorage.setItem(key, String(next));
+      } catch {
+        /* the preference is a convenience; losing it costs nothing */
+      }
+    },
+    [key]
+  );
+  return [value, update];
 };
 
 export function MCPAccessPolicySection() {
@@ -59,6 +74,11 @@ export function MCPAccessPolicySection() {
   const [ignoreMasking, setIgnoreMasking] = useState(false);
   const [readFailed, setReadFailed] = useState(false);
   const [readSettled, setReadSettled] = useState(false);
+  const [ladderOpen, setLadderOpen] = useStoredFlag(LADDER_OPEN_KEY, false);
+  const [ladderDetails, setLadderDetails] = useStoredFlag(
+    LADDER_DETAILS_KEY,
+    false
+  );
   const serverInfo = useAppStore((state) => state.serverInfo);
   const loadServerInfo = useAppStore((state) => state.loadServerInfo);
   const refreshServerInfo = useAppStore((state) => state.refreshServerInfo);
@@ -103,7 +123,9 @@ export function MCPAccessPolicySection() {
   const canSave = isDirty && pick !== undefined;
 
   const modeLabel = (capability: MCPMode): string =>
-    t(`settings.mcp.policy.mode.${MODES[capability].key}.title`);
+    t(
+      `settings.mcp.policy.mode.${MCP_MODE_PRESENTATION[capability].key}.title`
+    );
 
   const save = async () => {
     if (pick === undefined) {
@@ -143,6 +165,43 @@ export function MCPAccessPolicySection() {
     }
   };
 
+  // Disabled has no list, so it says its one sentence instead. Every other mode
+  // discloses the same ladder in view and in edit; picking a mode while editing
+  // renders exactly what the view will show once it is saved.
+  const disclosure = (mode: MCPMode, editingNow: boolean) => {
+    if (mode === MCPSetting_Capability.DISABLED) {
+      return editingNow ? (
+        <p className="rounded-sm bg-error/5 px-3 py-2 text-sm text-error">
+          {t("settings.mcp.ladder.disabled")}
+        </p>
+      ) : (
+        <p className="textinfolabel">
+          {t("settings.mcp.policy.mode.disabled.description")}
+        </p>
+      );
+    }
+    return (
+      <MCPCapabilityLadder
+        mode={mode}
+        expanded={ladderOpen}
+        details={ladderDetails}
+        onExpandedChange={setLadderOpen}
+        onDetailsChange={setLadderDetails}
+      />
+    );
+  };
+
+  // The footer names the change while the form is dirty, so an admin reads the
+  // transition they are about to apply rather than a general rule. A repair of
+  // an unreadable row has no "from" to name, so it keeps the plain sentence.
+  const footerSentence = () =>
+    pick !== undefined && storedMode !== undefined && pick !== storedMode
+      ? t("settings.mcp.policy.tightening-change", {
+          from: modeLabel(storedMode),
+          to: modeLabel(pick),
+        })
+      : t("settings.mcp.policy.tightening");
+
   // Three states share this slot and only the last renders a policy. Early
   // returns rather than a ternary chain, so each state is named where it is
   // decided and the card reads as the ordinary case it is.
@@ -163,34 +222,19 @@ export function MCPAccessPolicySection() {
     }
     return (
       <div className="rounded-sm border border-control-border p-4 flex flex-col gap-y-4">
-        <div className="flex items-start justify-between gap-x-2">
-          {storedMode === undefined ? (
-            <span className="text-sm font-medium text-warning">
-              {t(
-                unreadable
-                  ? "settings.mcp.policy.unreadable.title"
-                  : "settings.mcp.policy.unserved.title"
-              )}
-            </span>
-          ) : (
-            <div className="flex flex-wrap items-center gap-2">
-              <Rows3
-                className={cn("size-4 shrink-0", MODES[storedMode].tone)}
-              />
-              <span className="text-sm text-control-light">
-                {t("settings.mcp.policy.in-force")}
+        {!editing && (
+          <div className="flex items-start justify-between gap-x-2">
+            {storedMode === undefined ? (
+              <span className="text-sm font-medium text-warning">
+                {t(
+                  unreadable
+                    ? "settings.mcp.policy.unreadable.title"
+                    : "settings.mcp.policy.unserved.title"
+                )}
               </span>
-              <Badge variant={MODES[storedMode].badge}>
-                {modeLabel(storedMode)}
-              </Badge>
-              {storedIgnoreMasking && (
-                <Badge variant="secondary">
-                  {t("settings.mcp.policy.masking.badge")}
-                </Badge>
-              )}
-            </div>
-          )}
-          {!editing && (
+            ) : (
+              <ModeChip mode={storedMode} ignoreMasking={storedIgnoreMasking} />
+            )}
             <PermissionGuard permissions={["bb.settings.set"]}>
               {({ disabled }) => (
                 <Button
@@ -203,8 +247,8 @@ export function MCPAccessPolicySection() {
                 </Button>
               )}
             </PermissionGuard>
-          )}
-        </div>
+          </div>
+        )}
 
         {storedMode === undefined && (
           <Alert
@@ -226,7 +270,7 @@ export function MCPAccessPolicySection() {
                 nothing else, then vanish when the editor closes. */}
             <RadioGroup
               aria-label={t("settings.mcp.policy.title")}
-              className="grid grid-cols-1 gap-4 lg:grid-cols-3"
+              className="grid grid-cols-1 items-stretch gap-2 sm:grid-cols-3"
               disabled={saving}
               value={pick === undefined ? "" : String(pick)}
               onValueChange={(value) => {
@@ -237,40 +281,60 @@ export function MCPAccessPolicySection() {
               }}
             >
               {MCP_CAPABILITY_CHOICES.map((capability) => {
-                const mode = MODES[capability];
+                const { key, icon: Icon } = MCP_MODE_PRESENTATION[capability];
+                const picked = pick === capability;
                 return (
                   <RadioGroupItem
                     key={capability}
                     value={String(capability)}
-                    // The item wraps the whole card in a label, so without
-                    // this the radio's name absorbs the description and the
-                    // "Best for" line.
-                    aria-label={t(`settings.mcp.policy.mode.${mode.key}.title`)}
+                    // The item wraps the whole card in a label, so without this
+                    // the radio's name absorbs the caption too.
+                    aria-label={t(`settings.mcp.policy.mode.${key}.title`)}
                     className={cn(
-                      "relative h-full flex-col items-stretch rounded-sm border p-4",
-                      pick === capability
-                        ? "border-accent"
-                        : "border-control-border"
+                      "h-full rounded-sm border px-3 py-2",
+                      "focus-within:outline-hidden focus-within:ring-2 focus-within:ring-accent focus-within:ring-offset-2",
+                      picked
+                        ? "border-accent bg-accent/5 ring-1 ring-accent"
+                        : "border-control-border hover:border-accent/50 hover:bg-control-bg"
                     )}
-                    contentClassName="flex h-full flex-col gap-2"
-                    radioClassName="absolute right-4 top-4"
+                    contentClassName="flex min-w-0 items-center gap-x-2"
+                    // Hidden rather than placed: the card is the control, and
+                    // the label carries the focus ring for it.
+                    radioClassName="sr-only"
                   >
-                    <div className="flex items-center gap-x-2 pr-6">
-                      <Rows3 className={cn("size-4 shrink-0", mode.tone)} />
-                      <span className="textinfo font-semibold">
-                        {t(`settings.mcp.policy.mode.${mode.key}.title`)}
+                    <Icon
+                      className={cn(
+                        "size-5 shrink-0",
+                        picked ? "text-accent" : "text-control-light"
+                      )}
+                    />
+                    <span className="flex min-w-0 flex-col">
+                      <span className="text-sm font-medium text-main">
+                        {t(`settings.mcp.policy.mode.${key}.title`)}
                       </span>
-                    </div>
-                    <p className="textinfolabel">
-                      {t(`settings.mcp.policy.mode.${mode.key}.description`)}
-                    </p>
-                    <p className="textinfolabel pt-2">
-                      {t(`settings.mcp.policy.mode.${mode.key}.best-for`)}
-                    </p>
+                      <span className="text-xs text-control-light">
+                        {t(`settings.mcp.policy.mode.${key}.caption`)}
+                      </span>
+                    </span>
                   </RadioGroupItem>
                 );
               })}
             </RadioGroup>
+
+            {pick === undefined ? (
+              <p className="text-sm text-warning">
+                {t("settings.mcp.policy.unreadable.pick")}
+              </p>
+            ) : (
+              <>
+                <p className="textinfolabel">
+                  {t(
+                    `settings.mcp.policy.mode.${MCP_MODE_PRESENTATION[pick].key}.best-for`
+                  )}
+                </p>
+                {disclosure(pick, true)}
+              </>
+            )}
 
             <div className="flex items-start gap-x-3">
               <Switch
@@ -287,9 +351,6 @@ export function MCPAccessPolicySection() {
                 <div className="textinfolabel">
                   {t("settings.mcp.policy.masking.description")}
                 </div>
-                <div className="textinfolabel">
-                  {t("settings.mcp.policy.masking.limits")}
-                </div>
                 {!dataMaskingAvailable && (
                   <div className="text-sm text-warning">
                     {t("settings.mcp.policy.masking.unavailable")}
@@ -298,17 +359,9 @@ export function MCPAccessPolicySection() {
               </div>
             </div>
 
-            {pick === undefined && (
-              <p className="text-sm text-warning">
-                {t("settings.mcp.policy.unreadable.pick")}
-              </p>
-            )}
-
             <Separator />
             <div className="flex flex-wrap items-center justify-between gap-4">
-              <p className="textinfolabel">
-                {t("settings.mcp.policy.tightening")}
-              </p>
+              <p className="textinfolabel">{footerSentence()}</p>
               <div className="flex shrink-0 gap-x-2">
                 <Button
                   appearance="outline"
@@ -324,23 +377,7 @@ export function MCPAccessPolicySection() {
             </div>
           </>
         ) : (
-          <>
-            {storedMode !== undefined && (
-              <p className="textinfolabel">
-                {t(
-                  `settings.mcp.policy.mode.${
-                    MODES[storedMode].key
-                  }.description`
-                )}
-              </p>
-            )}
-            <div className="flex flex-col gap-y-1">
-              <p className="textinfolabel">
-                {t("settings.mcp.policy.tightening")}
-              </p>
-              <p className="textinfolabel">{t("settings.mcp.policy.audit")}</p>
-            </div>
-          </>
+          storedMode !== undefined && disclosure(storedMode, false)
         )}
       </div>
     );
@@ -356,6 +393,40 @@ export function MCPAccessPolicySection() {
       </div>
 
       {policyBody()}
+    </div>
+  );
+}
+
+/**
+ * The mode in force, as the subject of the view rather than the value of a
+ * labelled field. It carries the icon the admin picked in the selector, so the
+ * identity chosen there is the identity shown here and on the consent page.
+ */
+function ModeChip({
+  mode,
+  ignoreMasking,
+}: {
+  mode: MCPMode;
+  ignoreMasking: boolean;
+}) {
+  const { t } = useTranslation();
+  const { key, icon: Icon, badge } = MCP_MODE_PRESENTATION[mode];
+  const label = t(`settings.mcp.policy.mode.${key}.title`);
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <Badge
+        variant={badge}
+        className="gap-x-1"
+        aria-label={t("settings.mcp.policy.current", { mode: label })}
+      >
+        <Icon className="size-3.5 shrink-0" aria-hidden="true" />
+        {label}
+      </Badge>
+      {ignoreMasking && (
+        <Badge variant="secondary">
+          {t("settings.mcp.policy.masking.badge")}
+        </Badge>
+      )}
     </div>
   );
 }

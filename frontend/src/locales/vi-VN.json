@@ -1616,10 +1616,7 @@
           "audit": "Hành động được kiểm toán mang nhãn MCP, và những gì chính sách từ chối cũng được ghi lại",
           "capped": "Giới hạn bởi chính quyền Bytebase của bạn",
           "masking": "Các miễn trừ che dữ liệu của bạn không áp dụng cho phiên này",
-          "no-write": "Không thay đổi dữ liệu hay lược đồ",
-          "read": "Khám phá lược đồ và chạy truy vấn chỉ đọc",
-          "workflow": "Tạo vấn đề, kế hoạch và triển khai, và xuất kết quả truy vấn",
-          "write": "Thay đổi dữ liệu và lược đồ trong phạm vi quyền của bạn"
+          "no-write": "Không thay đổi, triển khai hay xuất dữ liệu"
         },
         "title": "Phiên này có thể",
         "undisclosed": {
@@ -2648,12 +2645,8 @@
       "description": "Tích hợp IM sẽ được sử dụng để đẩy tin nhắn trực tiếp đến người dùng cho các sự kiện vấn đề cụ thể. Hoạt động với webhook của dự án."
     },
     "mcp": {
-      "auth": {
-        "description": "Xác thực OAuth được yêu cầu khi kết nối lần đầu. Đảm bảo bạn có quyền Bytebase phù hợp.",
-        "title": "Yêu cầu xác thực"
-      },
       "connect": {
-        "description": "Thêm Bytebase vào client AI của bạn, phê duyệt truy cập trong trình duyệt, rồi bắt đầu hỏi.",
+        "description": "Thêm Bytebase vào ứng dụng AI của bạn và bắt đầu hỏi. Ở lần kết nối đầu tiên, bạn đăng nhập và phê duyệt quyền truy cập trong trình duyệt.",
         "desktop-note": "Claude Desktop đọc máy chủ từ xa từ tài khoản Claude của bạn, không phải từ tệp cấu hình. Hãy thêm URL này làm trình kết nối tùy chỉnh tại Customize > Connectors trên claude.ai, sau đó nó sẽ xuất hiện trong Claude Desktop.",
         "json-note": "Đây là định dạng mcpServers. Mỗi client có định dạng cấu hình khác nhau: ví dụ VS Code dùng servers trong mcp.json của nó, nên hãy dùng tab VS Code cho trường hợp đó.",
         "title": "Kết nối một client"
@@ -2664,33 +2657,88 @@
         "example": "Liệt kê tất cả các dự án trong phiên bản Bytebase của tôi",
         "title": "Prompt đầu tiên của bạn"
       },
+      "ladder": {
+        "disabled": "Không cho phép gì; không phiên MCP nào có thể kết nối.",
+        "floor": {
+          "label": "Không bao giờ, ở mọi chế độ:",
+          "text": "phê duyệt Issue, quản trị không gian làm việc, hoặc xử lý thông tin xác thực."
+        },
+        "heading": "{{mode}} cho phép",
+        "hide-details": "Ẩn chi tiết",
+        "row": {
+          "export": {
+            "details": "Tải kết quả về dưới dạng tệp. Dữ liệu rời khỏi Bytebase",
+            "title": "Xuất kết quả truy vấn"
+          },
+          "manage": {
+            "details": "Đồng bộ phiên bản và cơ sở dữ liệu · Cài đặt và nhãn cơ sở dữ liệu · Chuyển cơ sở dữ liệu giữa các dự án · Nhóm cơ sở dữ liệu · Truy vấn đã lưu",
+            "title": "Quản lý vận hành cơ sở dữ liệu"
+          },
+          "propose": {
+            "details": "Tạo sheet · Tạo và sửa Plan và Issue · Chạy kiểm tra plan và rà soát · Tạo và xóa bản phát hành và bản sửa đổi · Tạo khác biệt lược đồ. Một tác nhân không bao giờ tự phê duyệt thay đổi của mình; chính sách phê duyệt của dự án quyết định liệu có cần người phê duyệt hay không",
+            "title": "Đề xuất thay đổi"
+          },
+          "read-data": {
+            "details": "Chạy truy vấn chỉ đọc; toàn bộ yêu cầu bị từ chối nếu có bất kỳ câu lệnh nào không phải là đọc, và trên các engine ngoài PostgreSQL, CockroachDB và Redshift thì chỉ kiểm tra theo hình dạng câu lệnh · Lịch sử truy vấn · Truy vấn đã lưu và sheet",
+            "title": "Đọc dữ liệu bằng cách chạy truy vấn"
+          },
+          "read-schemas": {
+            "details": "Lược đồ · Cơ sở dữ liệu và phiên bản · Dự án và nhóm cơ sở dữ liệu · Danh mục, nhật ký thay đổi và bản sửa đổi · Cấu hình rà soát SQL · Thông tin phiên và không gian làm việc của chính bạn",
+            "title": "Đọc lược đồ và siêu dữ liệu"
+          },
+          "read-workflow": {
+            "details": "Issue và bình luận · Plan và kiểm tra plan · Triển khai, lần chạy tác vụ và nhật ký · Bản phát hành · Xem trước khôi phục",
+            "title": "Đọc quy trình thay đổi"
+          },
+          "run-rollouts": {
+            "details": "Tạo một triển khai · Chạy, bỏ qua hoặc hủy các tác vụ của nó, theo chính sách phê duyệt của dự án",
+            "title": "Chạy triển khai và tác vụ"
+          },
+          "run-statements": {
+            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP qua truy vấn, trong đó engine kiểm tra từng câu lệnh và người dùng được phép chạy nó",
+            "title": "Chạy câu lệnh DML và DDL"
+          }
+        },
+        "show-details": "Hiện chi tiết",
+        "stops": {
+          "read": "Chỉ đọc dừng ở đây",
+          "write": "Đọc và ghi dừng ở đây"
+        },
+        "summary": {
+          "read-only": "Đọc lược đồ, dữ liệu và quy trình thay đổi; câu lệnh ghi bị từ chối, không xuất được gì",
+          "read-write": "Đọc lược đồ, dữ liệu và quy trình thay đổi; đề xuất, chạy, xuất và quản lý"
+        },
+        "tier": {
+          "read": "đọc",
+          "write": "ghi"
+        }
+      },
       "policy": {
-        "audit": "Các lần từ chối theo chính sách MCP được ghi vào nhật ký kiểm toán.",
-        "description": "Mức tối đa mà một phiên MCP được phép làm trong không gian làm việc này. Mỗi phiên còn bị giới hạn thêm bởi quyền của chính người dùng đang kết nối.",
+        "current": "Chính sách hiện tại: {{mode}}",
+        "description": "Mức tối đa mà bất kỳ phiên MCP nào có thể làm ở đây. Các phiên còn bị giới hạn bởi quyền của từng người dùng, và những lần từ chối theo chính sách đều được ghi vào nhật ký kiểm toán.",
         "edit": "Sửa chính sách",
-        "in-force": "Đang áp dụng",
         "loading": "Đang đọc chính sách truy cập…",
         "masking": {
           "badge": "Đã bỏ qua miễn trừ che dữ liệu",
-          "description": "Dữ liệu được che vẫn bị che trong phiên MCP. Các miễn trừ che dữ liệu cấp cho người dùng, và việc bỏ che đi kèm một cấp quyền truy cập, đều ngừng áp dụng cho yêu cầu MCP của họ. Cũng người dùng đó không bị ảnh hưởng trong bảng điều khiển Bytebase.",
-          "limits": "Phạm vi che dữ liệu tuỳ theo công cụ. Ở nơi Bytebase không che, hoặc che mà không tra cứu miễn trừ, thiết lập này không thay đổi gì.",
+          "description": "Nếu bật, dữ liệu đã che vẫn được che trong phiên MCP kể cả với người dùng có miễn trừ hoặc quyền bỏ che. Phạm vi phụ thuộc vào engine: ở nơi Bytebase không che, điều này không thay đổi gì. Console không bị ảnh hưởng.",
           "title": "Bỏ qua miễn trừ che dữ liệu",
           "unavailable": "Không gian làm việc này chưa có giấy phép che dữ liệu, nên sẽ không có gì bị che dù thiết lập này ra sao."
         },
         "mode": {
           "disabled": {
             "best-for": "Phù hợp khi: giữ MCP tắt cho tới khi bạn sẵn sàng bật.",
+            "caption": "Không phiên nào kết nối",
             "description": "Không phiên MCP nào có thể kết nối tới không gian làm việc này.",
             "title": "Tắt"
           },
           "read-only": {
             "best-for": "Phù hợp khi: truy vấn và khám phá dữ liệu, kể cả với người không viết SQL.",
-            "description": "Phiên có thể khám phá lược đồ và chạy truy vấn chỉ đọc. Bytebase phân loại từng câu lệnh trước khi chạy và từ chối trọn yêu cầu nếu có bất kỳ câu lệnh nào không phải là đọc. Nơi trình điều khiển của công cụ hỗ trợ, phiên cơ sở dữ liệu cũng được mở ở chế độ chỉ đọc. Mức độ sâu tới đâu tuỳ theo công cụ.",
+            "caption": "Khám phá và truy vấn",
             "title": "Chỉ đọc"
           },
           "read-write": {
             "best-for": "Phù hợp khi: thực hiện thay đổi cơ sở dữ liệu qua tác nhân AI, vẫn bị giới hạn bởi quyền của từng người dùng.",
-            "description": "Phiên còn có thể thay đổi dữ liệu và lược đồ, trong phạm vi quyền của chính người dùng đang kết nối.",
+            "caption": "Thay đổi dữ liệu và lược đồ",
             "title": "Đọc và ghi"
           }
         },
@@ -2700,7 +2748,8 @@
         },
         "save": "Lưu chính sách",
         "saved": "Đã lưu chính sách. {{mode}} áp dụng cho yêu cầu kế tiếp của mọi phiên.",
-        "tightening": "Thay đổi mức trần áp dụng cho yêu cầu kế tiếp của mọi phiên đang chạy. Công việc mà tác nhân đã được cho phép vẫn chạy đến khi xong.",
+        "tightening": "Áp dụng cho yêu cầu tiếp theo của mọi phiên đang chạy.",
+        "tightening-change": "{{from}} → {{to}} áp dụng cho yêu cầu tiếp theo của mọi phiên đang chạy.",
         "title": "Chính sách truy cập",
         "unreadable": {
           "description": "Không gian làm việc này lưu một giá trị năng lực mà bản dựng hiện tại không hiểu. Mọi kết nối MCP đều bị từ chối. Hãy chọn một chế độ và lưu để sửa lại.",

@@ -1,3 +1,5 @@
+import { Eye, type LucideIcon, PencilLine, Unplug } from "lucide-react";
+import type { BadgeProps } from "@/components/ui/badge";
 import {
   type MCPSetting,
   MCPSetting_Capability,
@@ -7,6 +9,37 @@ export type MCPMode =
   | MCPSetting_Capability.DISABLED
   | MCPSetting_Capability.READ_ONLY
   | MCPSetting_Capability.READ_WRITE;
+
+/**
+ * How a mode identifies itself wherever it appears: the locale-key stem, the
+ * glyph, and the chip variant.
+ *
+ * One row per mode rather than parallel tables, because the identity has to be
+ * the same on the settings page and on the consent page — an admin who picked
+ * the eye is shown the eye when the session asks to connect. The variant is the
+ * only place a mode's color appears; the selector cards stay neutral so the
+ * accent keeps meaning "selected".
+ */
+export const MCP_MODE_PRESENTATION: Record<
+  MCPMode,
+  { key: string; icon: LucideIcon; badge: BadgeProps["variant"] }
+> = {
+  [MCPSetting_Capability.DISABLED]: {
+    key: "disabled",
+    icon: Unplug,
+    badge: "destructive",
+  },
+  [MCPSetting_Capability.READ_ONLY]: {
+    key: "read-only",
+    icon: Eye,
+    badge: "success",
+  },
+  [MCPSetting_Capability.READ_WRITE]: {
+    key: "read-write",
+    icon: PencilLine,
+    badge: "warning",
+  },
+};
 
 /**
  * The ceilings an admin picks between, least to most capable. The bundle's copy
