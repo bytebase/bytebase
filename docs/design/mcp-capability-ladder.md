@@ -60,8 +60,8 @@ mapping; it never appears in the product.
 | read | Read data by running queries | Run read-only queries; a request is refused whole if any statement is not a read · Query history · Saved queries and sheets | 9 READ methods: `SQLService/Query`, query history (4), saved-query reads (3), `GetSheet` |
 | read | Read the change workflow | Issues and comments · Plans and plan checks · Rollouts, task runs and logs · Releases · Rollback previews | 16 READ methods: issue, plan, rollout and release reads |
 | — | *Read-only stops here* | | 56 methods |
-| write | Propose changes | Create and edit sheets, plans and issues · Run plan checks and reviews · Create releases and revisions · Generate schema diffs. A human still approves; an agent never approves its own change | 22 WRITE methods: sheet, plan, issue, release and revision writes, `RequestIssue`, `RunReview`, `DiffSchema`, `DiffMetadata` |
-| write | Run rollouts and tasks | Create a rollout · Run, skip or cancel tasks of an approved change | 4 WRITE methods: `CreateRollout`, `BatchRunTasks`, `BatchSkipTasks`, `BatchCancelTaskRuns` |
+| write | Propose changes | Create and edit sheets, plans and issues · Run plan checks and reviews · Create, edit and delete releases and revisions · Generate schema diffs. An agent never approves its own change; the project's approval policy decides whether a human must | 22 WRITE methods: sheet, plan, issue, release and revision writes, `RequestIssue`, `RunReview`, `DiffSchema`, `DiffMetadata` |
+| write | Run rollouts and tasks | Create a rollout · Run, skip or cancel its tasks, under the project's approval policy | 4 WRITE methods: `CreateRollout`, `BatchRunTasks`, `BatchSkipTasks`, `BatchCancelTaskRuns` |
 | write | Run DML and DDL statements | INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, where the engine checks each statement and the user may run it | Not a method: the statement clamp in `mcp_sql_clamp.go`, which Read-write lifts |
 | write | Export query results | Download results as a file. Data leaves Bytebase | 1 WRITE method: `SQLService/Export` |
 | write | Manage database housekeeping | Sync instances and databases · Database settings and labels · Database groups · Saved queries | 14 WRITE methods: sync, `UpdateDatabase`, database groups, saved-query writes |
@@ -73,6 +73,18 @@ Two choices in the wording are deliberate. Row 2 says *Read data by running quer
 Read-only. Row 6 is not a method at all: it names the statement clamp being lifted, because that is
 a real difference between the modes that no method name shows, and a future custom policy will want
 it as its own switch.
+
+Approval is stated as the project's policy, never as a promise. The backend requires an approved
+issue before a rollout only when the project has `require_issue_approval` on and an issue is linked
+(`backend/api/v1/rollout_service.go`); the MCP-origin guard there refuses an issueless rollout only
+under that same flag, and an issue whose approval finding produced no template counts as approved
+with no human acting. The console turns the flag on for new projects; the API default is off. A row
+that said "of an approved change" would therefore promise more than the gate enforces, and the
+wording an admin reads while choosing Read-write is the wrong place to be generous. What holds
+unconditionally is that an agent never approves its own change, because the three approval methods
+are FORBIDDEN, and that is the half the rows state. Whether MCP-originated rollouts should require
+approval regardless of the project flag is a product question tracked separately (BOT-71), not one
+this doc decides.
 
 ### The verb rule
 
