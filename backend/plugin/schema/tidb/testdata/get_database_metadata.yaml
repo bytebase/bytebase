@@ -1127,3 +1127,51 @@
         }
       ]
     }
+- description: unnamed_check_name_collision
+  schema: |
+    CREATE TABLE t (
+        a INT,
+        CONSTRAINT t_chk_2 CHECK (a > 0),
+        CHECK (a < 9),
+        CONSTRAINT named_one CHECK (a <> 5),
+        CHECK (a <> 7)
+    );
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "t",
+              "columns": [
+                {
+                  "name": "a",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "int"
+                }
+              ],
+              "engine": "InnoDB",
+              "check_constraints": [
+                {
+                  "name": "t_chk_2",
+                  "expression": "(`a`\u003e0)"
+                },
+                {
+                  "name": "t_chk_3",
+                  "expression": "(`a`\u003c9)"
+                },
+                {
+                  "name": "named_one",
+                  "expression": "(`a`!=5)"
+                },
+                {
+                  "name": "t_chk_4",
+                  "expression": "(`a`!=7)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }

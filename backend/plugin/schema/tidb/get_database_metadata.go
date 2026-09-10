@@ -711,6 +711,29 @@ func (*metadataExtractor) getIndexType(constraint *ast.Constraint) string {
 	return indexType
 }
 
+// unnamedCheckName is the <table>_chk_<n> name TiDB gives a CHECK written
+// without one: n counts the unnamed checks, not every check. A table that also
+// declares that name explicitly is DDL the server rejects, so rather than emit
+// the duplicate, take the next free number.
+func unnamedCheckName(table *storepb.TableMetadata) string {
+	taken := make(map[string]bool, len(table.CheckConstraints))
+	for _, check := range table.CheckConstraints {
+		taken[check.Name] = true
+	}
+	unnamed := 0
+	for _, check := range table.CheckConstraints {
+		if strings.HasPrefix(check.Name, table.Name+"_chk_") {
+			unnamed++
+		}
+	}
+	for n := unnamed + 1; ; n++ {
+		name := fmt.Sprintf("%s_chk_%d", table.Name, n)
+		if !taken[name] {
+			return name
+		}
+	}
+}
+
 func (*metadataExtractor) processCheckConstraint(constraint *ast.Constraint, table *storepb.TableMetadata) {
 	if constraint.Expr == nil {
 		return
@@ -721,7 +744,7 @@ func (*metadataExtractor) processCheckConstraint(constraint *ast.Constraint, tab
 	// parenthesized for the same reason: the writer emits "CHECK %s" bare.
 	name := constraint.Name
 	if name == "" {
-		name = fmt.Sprintf("%s_chk_%d", table.Name, len(table.CheckConstraints)+1)
+		name = unnamedCheckName(table)
 	}
 	table.CheckConstraints = append(table.CheckConstraints, &storepb.CheckConstraintMetadata{
 		Name:       name,
