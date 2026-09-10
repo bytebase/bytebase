@@ -182,19 +182,6 @@ func GetProcedureDefinition(_ string, procedure *storepb.ProcedureMetadata) (str
 	return buf.String(), nil
 }
 
-// escapeSQLString doubles the quotes and escapes the backslashes in a value
-// destined for a single-quoted TiDB literal. Comments carry apostrophes often
-// enough that emitting one raw produces DDL the server rejects.
-//
-// The backslash half assumes the default sql_mode. Under NO_BACKSLASH_ESCAPES a
-// backslash is literal and doubling it changes the stored comment, but no
-// string-literal form is correct under both modes, so this takes the default.
-// Framing every dump in a known sql_mode would fix it for both.
-func escapeSQLString(value string) string {
-	value = strings.ReplaceAll(value, "\\", "\\\\")
-	return strings.ReplaceAll(value, "'", "''")
-}
-
 func writeEvent(out io.Writer, event *storepb.EventMetadata) error {
 	// Header.
 	if _, err := io.WriteString(out, emptyCommentLine); err != nil {
@@ -682,7 +669,7 @@ func writeTable(out *strings.Builder, table *storepb.TableMetadata) error {
 	}
 
 	if table.Comment != "" {
-		if _, err := fmt.Fprintf(out, " COMMENT='%s'", escapeSQLString(table.Comment)); err != nil {
+		if _, err := fmt.Fprintf(out, " COMMENT='%s'", table.Comment); err != nil {
 			return err
 		}
 	}
@@ -1107,12 +1094,8 @@ func printPrimaryKeyClause(buf *strings.Builder, table *storepb.TableMetadata) e
 			if _, err := fmt.Fprint(buf, ")"); err != nil {
 				return err
 			}
-			// Metadata that never said CLUSTERED or NONCLUSTERED would otherwise
-			// render as an empty marker comment.
-			if table.PrimaryKeyType != "" {
-				if _, err := fmt.Fprintf(buf, " /*T![clustered_index] %s */", table.PrimaryKeyType); err != nil {
-					return err
-				}
+			if _, err := fmt.Fprintf(buf, " /*T![clustered_index] %s */", table.PrimaryKeyType); err != nil {
+				return err
 			}
 			return nil
 		}
@@ -1191,7 +1174,7 @@ func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata, tab
 		}
 	}
 	if column.Comment != "" {
-		if _, err := fmt.Fprintf(buf, " COMMENT '%s'", escapeSQLString(column.Comment)); err != nil {
+		if _, err := fmt.Fprintf(buf, " COMMENT '%s'", column.Comment); err != nil {
 			return err
 		}
 	}

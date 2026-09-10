@@ -200,7 +200,7 @@
       `title` varchar(200) NOT NULL,
       `content` text,
       `published_at` datetime,
-      PRIMARY KEY (`id`),
+      PRIMARY KEY (`id`) /*T![clustered_index]  */,
       KEY `idx_user_published` (`user_id`, `published_at`),
       CONSTRAINT `fk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
     ) ENGINE=InnoDB;
@@ -217,7 +217,7 @@
       `updated_at` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       `profile` json,
       `is_active` tinyint(1),
-      PRIMARY KEY (`id`),
+      PRIMARY KEY (`id`) /*T![clustered_index]  */,
       UNIQUE KEY `username` (`username`),
       KEY `idx_email` (`email`),
       KEY `idx_created_at` (`created_at`)
@@ -383,7 +383,7 @@
       `warehouse` varchar(50) NOT NULL,
       `quantity` int NOT NULL,
       `last_updated` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      PRIMARY KEY (`id`),
+      PRIMARY KEY (`id`) /*T![clustered_index]  */,
       UNIQUE KEY `uk_product_warehouse` (`product_id`, `warehouse`),
       CONSTRAINT `fk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`)
     ) ENGINE=InnoDB;
@@ -399,7 +399,7 @@
       `price_with_tax` decimal(10,2) GENERATED ALWAYS AS (price * (1 + tax_rate)) STORED,
       `description` text,
       `tags` json,
-      PRIMARY KEY (`id`)
+      PRIMARY KEY (`id`) /*T![clustered_index]  */
     ) ENGINE=InnoDB;
 
     SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
@@ -583,7 +583,7 @@
       `product_name` varchar(100) NOT NULL,
       `quantity` int NOT NULL,
       `unit_price` decimal(10,2) NOT NULL,
-      PRIMARY KEY (`id`),
+      PRIMARY KEY (`id`) /*T![clustered_index]  */,
       KEY `order_id` (`order_id`),
       CONSTRAINT `fk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`)
     ) ENGINE=InnoDB;
@@ -598,7 +598,7 @@
       `total_amount` decimal(10,2) NOT NULL,
       `status` varchar(20),
       `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (`id`),
+      PRIMARY KEY (`id`) /*T![clustered_index]  */,
       UNIQUE KEY `order_number` (`order_number`)
     ) ENGINE=InnoDB;
 
@@ -763,7 +763,7 @@
       `data_type` varchar(50) NOT NULL,
       `payload` json,
       `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (`id`),
+      PRIMARY KEY (`id`) /*T![clustered_index]  */,
       KEY `idx_type_created` (`data_type`, `created_at`)
     ) ENGINE=InnoDB;
 
@@ -775,7 +775,7 @@
       `username` varchar(100) NOT NULL,
       `email` varchar(100) NOT NULL,
       `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (`id`),
+      PRIMARY KEY (`id`) /*T![clustered_index]  */,
       UNIQUE KEY `username` (`username`)
     ) ENGINE=InnoDB;
 
@@ -896,7 +896,7 @@
       `id` int NOT NULL AUTO_INCREMENT,
       `name` varchar(100) CHARACTER SET latin1,
       `description` text,
-      PRIMARY KEY (`id`)
+      PRIMARY KEY (`id`) /*T![clustered_index]  */
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
     --
@@ -907,7 +907,7 @@
       `content_utf8` varchar(255),
       `content_bin` varchar(255) COLLATE utf8mb4_bin,
       `content_unicode` varchar(255) COLLATE utf8mb4_unicode_ci,
-      PRIMARY KEY (`id`)
+      PRIMARY KEY (`id`) /*T![clustered_index]  */
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
     SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
@@ -1403,7 +1403,7 @@
       `id` int NOT NULL AUTO_INCREMENT,
       `name` varchar(100) NOT NULL,
       `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (`id`),
+      PRIMARY KEY (`id`) /*T![clustered_index]  */,
       UNIQUE KEY `name` (`name`)
     ) ENGINE=InnoDB;
 
@@ -1416,7 +1416,7 @@
       `department_id` int NOT NULL,
       `manager_id` int,
       `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (`id`),
+      PRIMARY KEY (`id`) /*T![clustered_index]  */,
       KEY `idx_department` (`department_id`),
       KEY `idx_manager` (`manager_id`),
       CONSTRAINT `fk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE RESTRICT,
@@ -1431,7 +1431,7 @@
       `employee_id` int NOT NULL,
       `role` varchar(50) NOT NULL,
       `joined_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (`project_id`, `employee_id`),
+      PRIMARY KEY (`project_id`, `employee_id`) /*T![clustered_index]  */,
       KEY `employee_id` (`employee_id`),
       CONSTRAINT `fk_1` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
       CONSTRAINT `fk_2` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
@@ -1446,7 +1446,7 @@
       `department_id` int NOT NULL,
       `lead_id` int NOT NULL,
       `created_at` timestamp DEFAULT CURRENT_TIMESTAMP,
-      PRIMARY KEY (`id`),
+      PRIMARY KEY (`id`) /*T![clustered_index]  */,
       KEY `idx_department` (`department_id`),
       KEY `idx_lead` (`lead_id`),
       CONSTRAINT `fk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE,

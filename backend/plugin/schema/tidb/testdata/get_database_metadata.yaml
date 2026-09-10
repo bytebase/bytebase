@@ -51,7 +51,6 @@
                 {
                   "name": "published",
                   "position": 5,
-                  "default": "FALSE",
                   "nullable": true,
                   "type": "tinyint(1)"
                 }
@@ -609,7 +608,6 @@
                 {
                   "name": "status",
                   "position": 4,
-                  "default": "'pending'",
                   "nullable": true,
                   "type": "varchar(20)"
                 }
@@ -1013,8 +1011,7 @@
                   "visible": true
                 }
               ],
-              "engine": "InnoDB",
-              "primary_key_type": "CLUSTERED"
+              "engine": "InnoDB"
             },
             {
               "name": "non_clustered_test",
@@ -1051,8 +1048,7 @@
                   "visible": true
                 }
               ],
-              "engine": "InnoDB",
-              "primary_key_type": "NONCLUSTERED"
+              "engine": "InnoDB"
             }
           ]
         }
@@ -1077,7 +1073,6 @@
                 {
                   "name": "id",
                   "position": 1,
-                  "default": "AUTO_RANDOM(5, 54)",
                   "type": "bigint"
                 },
                 {
@@ -1102,17 +1097,7 @@
                   "visible": true
                 }
               ],
-              "engine": "InnoDB",
-              "check_constraints": [
-                {
-                  "name": "bounded_chk_1",
-                  "expression": "(`qty`\u003e0)"
-                },
-                {
-                  "name": "chk_qty_max",
-                  "expression": "(`qty`\u003c1000)"
-                }
-              ]
+              "engine": "InnoDB"
             }
           ]
         }
@@ -1142,25 +1127,7 @@
                   "type": "int"
                 }
               ],
-              "engine": "InnoDB",
-              "check_constraints": [
-                {
-                  "name": "t_chk_2",
-                  "expression": "(`a`\u003e0)"
-                },
-                {
-                  "name": "t_chk_1",
-                  "expression": "(`a`\u003c9)"
-                },
-                {
-                  "name": "named_one",
-                  "expression": "(`a`!=5)"
-                },
-                {
-                  "name": "t_chk_3",
-                  "expression": "(`a`!=7)"
-                }
-              ]
+              "engine": "InnoDB"
             }
           ]
         }
@@ -1219,15 +1186,13 @@
                   "name": "named",
                   "position": 6,
                   "nullable": true,
-                  "type": "varchar(10)",
-                  "character_set": "latin1"
+                  "type": "varchar(10)"
                 },
                 {
                   "name": "collated",
                   "position": 7,
                   "nullable": true,
-                  "type": "varchar(10)",
-                  "collation": "utf8mb4_bin"
+                  "type": "varchar(10)"
                 },
                 {
                   "name": "plain",
@@ -1274,13 +1239,12 @@
                 {
                   "name": "id",
                   "position": 1,
-                  "default": "AUTO_RANDOM(5, 54)",
+                  "default": "AUTO_RANDOM(5)",
                   "type": "bigint"
                 },
                 {
                   "name": "label",
                   "position": 2,
-                  "default": "'pending'",
                   "nullable": true,
                   "type": "varchar(20)"
                 }

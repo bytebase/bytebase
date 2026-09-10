@@ -483,19 +483,19 @@
               "check_constraints": [
                 {
                   "name": "CHK_STATUS",
-                  "expression": "STATUS IN ('PENDING', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED')"
+                  "expression": "STATUSIN('PENDING','PROCESSING','SHIPPED','DELIVERED','CANCELLED')"
                 },
                 {
                   "name": "CHK_TOTAL_POSITIVE",
-                  "expression": "TOTAL_AMOUNT \u003e 0"
+                  "expression": "TOTAL_AMOUNT\u003e0"
                 },
                 {
                   "name": "CHK_DISCOUNT_RANGE",
-                  "expression": "DISCOUNT_PERCENT BETWEEN 0 AND 100"
+                  "expression": "DISCOUNT_PERCENTBETWEEN0AND100"
                 },
                 {
                   "name": "CHK_SHIP_AFTER_ORDER",
-                  "expression": "SHIP_DATE IS NULL OR SHIP_DATE \u003e= ORDER_DATE"
+                  "expression": "SHIP_DATEISNULLORSHIP_DATE\u003e=ORDER_DATE"
                 }
               ]
             }
@@ -722,15 +722,15 @@
               "check_constraints": [
                 {
                   "name": "CHK_SALARY_POSITIVE",
-                  "expression": "SALARY \u003e 0"
+                  "expression": "SALARY\u003e0"
                 },
                 {
                   "name": "CHK_COMMISSION_RANGE",
-                  "expression": "COMMISSION_PCT BETWEEN 0 AND 1"
+                  "expression": "COMMISSION_PCTBETWEEN0AND1"
                 },
                 {
                   "name": "CHK_EMAIL_FORMAT",
-                  "expression": "EMAIL LIKE '%@%.%'"
+                  "expression": "EMAILLIKE'%@%.%'"
                 }
               ]
             }

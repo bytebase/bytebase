@@ -10,8 +10,6 @@ import (
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/bytebase/omni/mysql/catalog"
 
-	"maps"
-
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -909,99 +907,18 @@ func partitionTypeToProto(t string) storepb.TablePartitionMetadata_Type {
 	}
 }
 
-// routineCharacteristic renders one catalog characteristic as the clause MySQL
-// accepts. The catalog stores them as information_schema does -- DETERMINISTIC
-// as YES/NO, the SQL data access under a "DATA ACCESS" key -- neither of which
-// is valid where a CREATE expects them.
-func routineCharacteristic(name, value string) string {
-	switch strings.ToUpper(name) {
-	case "DETERMINISTIC":
-		if strings.EqualFold(value, "NO") {
-			return "NOT DETERMINISTIC"
-		}
-		return "DETERMINISTIC"
-	case "DATA ACCESS":
-		return value
-	case "COMMENT":
-		return fmt.Sprintf("COMMENT '%s'", escapeSQLString(value))
-	default:
-		if value == "" {
-			return name
-		}
-		return name + " " + value
-	}
-}
-
 func routineToFunctionProto(r *catalog.Routine) *storepb.FunctionMetadata {
 	return &storepb.FunctionMetadata{
 		Name:       r.Name,
-		Definition: routineDefinition(r),
+		Definition: r.Body,
 	}
 }
 
 func routineToProcedureProto(r *catalog.Routine) *storepb.ProcedureMetadata {
 	return &storepb.ProcedureMetadata{
 		Name:       r.Name,
-		Definition: routineDefinition(r),
+		Definition: r.Body,
 	}
-}
-
-// routineDefinition rebuilds the CREATE statement around a routine's body. The
-// catalog keeps the parts separately, but a sync stores what SHOW CREATE returns
-// -- the whole statement -- and the definition writer emits Definition verbatim,
-// so a body alone renders as a headless BEGIN ... END that no server accepts.
-// catalogDefaultDefiner is what the omni catalog fills in when a routine's
-// source omitted DEFINER. It is quoted; a declared definer is not.
-const catalogDefaultDefiner = "`root`@`%`"
-
-// quoteDefiner renders a bare user@host as MySQL writes it.
-func quoteDefiner(definer string) string {
-	user, host, ok := strings.Cut(definer, "@")
-	if !ok {
-		return definer
-	}
-	return mysqlQuoteIdentifier(user) + "@" + mysqlQuoteIdentifier(host)
-}
-
-func routineDefinition(r *catalog.Routine) string {
-	var buf strings.Builder
-	buf.WriteString("CREATE ")
-	// A definer the source declared is part of the routine's execution identity,
-	// so it has to survive. The catalog also invents one when the source omitted
-	// it, and marks that case by quoting: an omitted definer arrives as the
-	// literal `root`@`%`, a declared one as the bare user@host it was written as.
-	if definer := r.Definer; definer != "" && definer != catalogDefaultDefiner {
-		fmt.Fprintf(&buf, "DEFINER=%s ", quoteDefiner(definer))
-	}
-	if r.IsProcedure {
-		buf.WriteString("PROCEDURE ")
-	} else {
-		buf.WriteString("FUNCTION ")
-	}
-	fmt.Fprintf(&buf, "%s(", mysqlQuoteIdentifier(r.Name))
-	for i, p := range r.Params {
-		if i > 0 {
-			buf.WriteString(", ")
-		}
-		if p.Direction != "" {
-			fmt.Fprintf(&buf, "%s ", p.Direction)
-		}
-		// SHOW CREATE quotes only the names that need it; quoting all of them is
-		// equally valid and keeps a reserved word such as `order` from emitting
-		// "IN order INT", which the server rejects.
-		fmt.Fprintf(&buf, "%s %s", mysqlQuoteIdentifier(p.Name), p.TypeName)
-	}
-	buf.WriteString(")")
-	if r.Returns != "" {
-		fmt.Fprintf(&buf, " RETURNS %s", r.Returns)
-	}
-	for _, name := range slices.Sorted(maps.Keys(r.Characteristics)) {
-		if clause := routineCharacteristic(name, r.Characteristics[name]); clause != "" {
-			fmt.Fprintf(&buf, " %s", clause)
-		}
-	}
-	fmt.Fprintf(&buf, "\n%s", r.Body)
-	return buf.String()
 }
 
 // triggerToProto maps an omni catalog Trigger to TriggerMetadata. The live MySQL sync

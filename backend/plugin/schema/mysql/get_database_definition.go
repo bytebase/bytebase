@@ -213,31 +213,57 @@ func writeEvent(out io.Writer, event *storepb.EventMetadata) error {
 		return err
 	}
 
-	// Charset and collation are written unquoted, so an empty value would emit
-	// "SET character_set_client = ;" -- not valid MySQL. Each is written only
-	// when it has one.
-	if err := writeAdditionalEventsIfSet(out, event.CharacterSetClient, event.CharacterSetClient, event.CollationConnection, ""); err != nil {
+	// Set charset, collation, sql mode and timezone.
+	if _, err := io.WriteString(out, setCharacterSetClient); err != nil {
 		return err
 	}
-	// sql_mode is quoted, so an empty value is the valid and meaningful
-	// "SET sql_mode = '';". It is written unconditionally: an event created
-	// under an empty mode has to be restored under one.
-	if err := writeSQLMode(out, event.SqlMode); err != nil {
+	if _, err := io.WriteString(out, event.CharacterSetClient); err != nil {
 		return err
 	}
-	if event.TimeZone != "" {
-		if _, err := io.WriteString(out, setTimezone); err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, "'"); err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, event.TimeZone); err != nil {
-			return err
-		}
-		if _, err := io.WriteString(out, "';\n"); err != nil {
-			return err
-		}
+	if _, err := io.WriteString(out, ";\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, setCharacterSetResult); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, event.CharacterSetClient); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, ";\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, setCollation); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, event.CollationConnection); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, ";\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, setSQLMode); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "'"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, event.SqlMode); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "';\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, setTimezone); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "'"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, event.TimeZone); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "';\n"); err != nil {
+		return err
 	}
 	if _, err := io.WriteString(out, delimiterDoubleSemi); err != nil {
 		return err
@@ -280,11 +306,44 @@ func writeTrigger(out io.Writer, tableName string, trigger *storepb.TriggerMetad
 		return err
 	}
 
-	// Charset and collation only when set; sql_mode always -- see writeEvent.
-	if err := writeAdditionalEventsIfSet(out, trigger.CharacterSetClient, trigger.CharacterSetClient, trigger.CollationConnection, ""); err != nil {
+	// Set charset, collation, and sql mode.
+	if _, err := io.WriteString(out, setCharacterSetClient); err != nil {
 		return err
 	}
-	if err := writeSQLMode(out, trigger.SqlMode); err != nil {
+	if _, err := io.WriteString(out, trigger.CharacterSetClient); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, ";\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, setCharacterSetResult); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, trigger.CharacterSetClient); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, ";\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, setCollation); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, trigger.CollationConnection); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, ";\n"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, setSQLMode); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "'"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, trigger.SqlMode); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "';\n"); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, delimiterDoubleSemi); err != nil {
@@ -403,13 +462,6 @@ func writeFunction(out io.Writer, function *storepb.FunctionMetadata) error {
 
 	// Set charset, collation, and sql mode.
 	if err := writeAdditionalEventsIfSet(out, function.CharacterSetClient, function.CharacterSetClient, function.CollationConnection, function.SqlMode); err != nil {
-		return err
-	}
-
-	// The body ends with ";;" below, so the delimiter has to be switched first --
-	// writeProcedure does the same. Without it the client splits the routine at
-	// the first statement inside BEGIN ... END.
-	if _, err := io.WriteString(out, delimiterDoubleSemi); err != nil {
 		return err
 	}
 
@@ -551,7 +603,7 @@ func writeTable(out *strings.Builder, table *storepb.TableMetadata) error {
 	}
 
 	if table.Comment != "" {
-		if _, err := fmt.Fprintf(out, " COMMENT='%s'", escapeSQLString(table.Comment)); err != nil {
+		if _, err := fmt.Fprintf(out, " COMMENT='%s'", table.Comment); err != nil {
 			return err
 		}
 	}
@@ -1215,7 +1267,7 @@ func printColumnClause(buf *strings.Builder, column *storepb.ColumnMetadata, tab
 	writeColumnInvisibleAttribute(buf, column)
 
 	if column.Comment != "" {
-		if _, err := fmt.Fprintf(buf, " COMMENT '%s'", escapeSQLString(column.Comment)); err != nil {
+		if _, err := fmt.Fprintf(buf, " COMMENT '%s'", column.Comment); err != nil {
 			return err
 		}
 	}
@@ -1478,36 +1530,6 @@ func writeTemporaryView(out io.Writer, view *storepb.ViewMetadata) error {
 	return err
 }
 
-// escapeSQLString doubles the quotes and escapes the backslashes in a value
-// destined for a single-quoted MySQL literal. Comments carry apostrophes often
-// enough that emitting one raw produces DDL the server rejects.
-//
-// The backslash half assumes the default sql_mode. Under NO_BACKSLASH_ESCAPES a
-// backslash is literal and doubling it changes the stored comment, but no
-// string-literal form is correct under both modes, so this takes the default.
-// Framing every dump in a known sql_mode would fix it for both.
-func escapeSQLString(value string) string {
-	value = strings.ReplaceAll(value, "\\", "\\\\")
-	return strings.ReplaceAll(value, "'", "''")
-}
-
-// writeSQLMode emits the quoted SET for a stored object's sql_mode. Unlike the
-// charset assignments it is not guarded on a non-empty value: "SET sql_mode = ”;"
-// is valid, and an object created under an empty mode must be restored under one.
-func writeSQLMode(out io.Writer, sqlMode string) error {
-	if _, err := io.WriteString(out, setSQLMode); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, "'"); err != nil {
-		return err
-	}
-	if _, err := io.WriteString(out, sqlMode); err != nil {
-		return err
-	}
-	_, err := io.WriteString(out, "';\n")
-	return err
-}
-
 func writeAdditionalEventsIfSet(out io.Writer, characterSetClient, characterSetResult, collationConnection, sqlMode string) error {
 	events := []struct {
 		condition bool
@@ -1755,7 +1777,7 @@ func writeTableSDL(buf *strings.Builder, table *storepb.TableMetadata) error {
 		}
 	}
 	if table.Comment != "" {
-		if _, err := fmt.Fprintf(buf, " COMMENT='%s'", escapeSQLString(table.Comment)); err != nil {
+		if _, err := fmt.Fprintf(buf, " COMMENT='%s'", table.Comment); err != nil {
 			return err
 		}
 	}

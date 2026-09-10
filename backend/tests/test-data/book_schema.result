@@ -12,11 +12,11 @@ SET row_security = off;
 
 CREATE SEQUENCE "public"."book_id_seq"
     AS integer
-    START WITH 1
-    INCREMENT BY 1
-    MINVALUE 1
-    MAXVALUE 2147483647
-    NO CYCLE;
+	START WITH 1
+	INCREMENT BY 1
+	MINVALUE 1
+	MAXVALUE 2147483647
+	NO CYCLE;
 
 SET default_tablespace = '';
 

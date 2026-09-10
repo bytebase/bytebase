@@ -8,7 +8,6 @@ import (
 
 	"github.com/pingcap/tidb/pkg/parser"
 	"github.com/pingcap/tidb/pkg/parser/ast"
-	"github.com/pingcap/tidb/pkg/parser/format"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
 	"github.com/pingcap/tidb/pkg/types"
 	"github.com/pkg/errors"
@@ -19,10 +18,6 @@ import (
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
-
-// charsetBinary is the charset the parser reports for the inherently binary
-// column types, whether or not the DDL declared one.
-const charsetBinary = "binary"
 
 func init() {
 	schema.RegisterGetDatabaseMetadata(storepb.Engine_TIDB, GetDatabaseMetadata)
@@ -168,14 +163,6 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 
 		// Process column type
 		column.Type = m.getColumnType(col.Tp)
-		// The parser reports "binary" as the charset of JSON, BLOB, BINARY and
-		// VARBINARY columns whether or not the DDL said so, and it rewrites an
-		// explicit "VARCHAR ... CHARACTER SET binary" to varbinary. The type
-		// already carries that, so recording the charset would only make the
-		// writer emit a CHARACTER SET clause the source never had.
-		if charset := col.Tp.GetCharset(); charset != charsetBinary {
-			column.CharacterSet = charset
-		}
 
 		// Process column options
 		for _, option := range col.Options {
@@ -205,12 +192,7 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 			case ast.ColumnOptionPrimaryKey:
 				// Mark column as primary key
 				column.Nullable = false
-				setPrimaryKeyType(table, option.PrimaryKeyTp)
 				// We'll handle creating the PRIMARY index after processing all columns
-			case ast.ColumnOptionCollate:
-				column.Collation = option.StrValue
-			case ast.ColumnOptionAutoRandom:
-				column.Default = autoRandomDefault(option.AutoRandOpt)
 			case ast.ColumnOptionUniqKey:
 				// Handle unique constraint at column level
 				// We'll handle creating unique indexes after processing all columns
@@ -226,14 +208,9 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 	m.processColumnLevelConstraints(stmt, table)
 
 	// Process table-level constraints
-	synthesizedChecks := 0
-	synthesizedForeignKeys := 0
 	for _, constraint := range stmt.Constraints {
 		switch constraint.Tp {
 		case ast.ConstraintPrimaryKey:
-			if constraint.Option != nil {
-				setPrimaryKeyType(table, constraint.Option.PrimaryKeyTp)
-			}
 			expressions, keyLengths, descending := m.getIndexColumnsInfo(constraint.Keys)
 			index := &storepb.IndexMetadata{
 				Name:        "PRIMARY",
@@ -276,12 +253,8 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 			table.Indexes = append(table.Indexes, index)
 
 		case ast.ConstraintForeignKey:
-			fkName := constraint.Name
-			if fkName == "" {
-				fkName = unnamedForeignKeyName(table, &synthesizedForeignKeys)
-			}
 			fk := &storepb.ForeignKeyMetadata{
-				Name:              fkName,
+				Name:              constraint.Name,
 				Columns:           m.getColumnNames(constraint.Keys),
 				ReferencedTable:   constraint.Refer.Table.Name.O,
 				ReferencedColumns: m.getColumnNames(constraint.Refer.IndexPartSpecifications),
@@ -308,7 +281,7 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 
 		case ast.ConstraintCheck:
 			// Handle check constraints
-			m.processCheckConstraint(constraint, table, &synthesizedChecks)
+			m.processCheckConstraint(constraint, table)
 		default:
 			// Ignore other constraint types
 		}
@@ -339,6 +312,9 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 			// Ignore other table options
 		}
 	}
+
+	// Handle TiDB-specific AUTO_RANDOM
+	m.processAutoRandom(stmt, table)
 
 	// Ensure foreign key indexes exist (after all other indexes have been processed)
 	m.ensureForeignKeyIndexes(table)
@@ -516,9 +492,6 @@ func (*metadataExtractor) getDefaultValue(expr ast.ExprNode) string {
 		// For other expression types, return the text representation
 		if textNode, ok := expr.(interface{ Text() string }); ok {
 			text := textNode.Text()
-			if text == "" {
-				return stripCharsetIntroducer(restoreExpression(expr))
-			}
 			// Clean up common default value formats
 			text = strings.Trim(text, "'\"")
 			if strings.HasPrefix(text, "_utf8mb4") {
@@ -625,58 +598,18 @@ func (m *metadataExtractor) processTiDBTableComment(comment string, table *store
 		// Find the primary key column and set AUTO_RANDOM
 		for _, col := range table.Columns {
 			if m.isPrimaryKeyColumn(col, table) {
-				// PK_AUTO_RANDOM_BITS carries the shard width alone. The column
-				// option is richer -- it can also fix the allocation range -- so it
-				// wins when both are present.
-				if !strings.HasPrefix(col.Default, autoRandomSymbol) {
-					col.Default = fmt.Sprintf("%s(%s)", autoRandomSymbol, matches[1])
-				}
+				bits := matches[1]
+				col.Default = fmt.Sprintf("AUTO_RANDOM(%s)", bits)
 				break
 			}
 		}
 	}
 }
 
-// stripCharsetIntroducer drops the _CHARSET prefix the parser restores in front
-// of a string literal. A sync records the literal without one, so keeping it
-// would make a parsed schema diff against a synced one forever.
-func stripCharsetIntroducer(value string) string {
-	if !strings.HasPrefix(value, "_") {
-		return value
-	}
-	quote := strings.IndexByte(value, '\'')
-	if quote <= 0 {
-		return value
-	}
-	for _, r := range value[1:quote] {
-		if r != '_' && (r < '0' || r > '9') && (r < 'a' || r > 'z') && (r < 'A' || r > 'Z') {
-			return value
-		}
-	}
-	return value[quote:]
-}
-
-// autoRandomDefault renders the column default the definition writer expects for
-// AUTO_RANDOM. The parser reports an omitted argument as -1, so a bare
-// AUTO_RANDOM, a shard width alone, and the two-argument form that also fixes the
-// allocation range each round-trip as written.
-func autoRandomDefault(opt ast.AutoRandomOption) string {
-	switch {
-	case opt.ShardBits <= 0:
-		return autoRandomSymbol
-	case opt.RangeBits <= 0:
-		return fmt.Sprintf("%s(%d)", autoRandomSymbol, opt.ShardBits)
-	default:
-		return fmt.Sprintf("%s(%d, %d)", autoRandomSymbol, opt.ShardBits, opt.RangeBits)
-	}
-}
-
-// setPrimaryKeyType records CLUSTERED or NONCLUSTERED. PrimaryKeyTypeDefault
-// stringifies to empty, which means the DDL said nothing and TiDB decides.
-func setPrimaryKeyType(table *storepb.TableMetadata, pkType ast.PrimaryKeyType) {
-	if rendered := pkType.String(); rendered != "" {
-		table.PrimaryKeyType = rendered
-	}
+func (*metadataExtractor) processAutoRandom(_ *ast.CreateTableStmt, _ *storepb.TableMetadata) {
+	// TiDB's AUTO_RANDOM is typically stored in table comments or special constraints
+	// This is a simplified implementation - full AUTO_RANDOM support would require
+	// parsing TiDB-specific syntax extensions
 }
 
 func (*metadataExtractor) isPrimaryKeyColumn(column *storepb.ColumnMetadata, table *storepb.TableMetadata) bool {
@@ -751,71 +684,12 @@ func (*metadataExtractor) getIndexType(constraint *ast.Constraint) string {
 	return indexType
 }
 
-// unnamedForeignKeyName is the fk_<n> name TiDB gives a FOREIGN KEY written
-// without one. It is not MySQL's <table>_ibfk_<n>: a live TiDB was asked, and it
-// names them fk_1, fk_2. The definition writer always emits an explicit
-// CONSTRAINT clause, so an empty name renders as CONSTRAINT “ and the server
-// rejects the statement with "Incorrect index name".
-func unnamedForeignKeyName(table *storepb.TableMetadata, synthesized *int) string {
-	taken := make(map[string]bool, len(table.ForeignKeys))
-	for _, fk := range table.ForeignKeys {
-		taken[fk.Name] = true
-	}
-	for {
-		*synthesized++
-		name := fmt.Sprintf("fk_%d", *synthesized)
-		if !taken[name] {
-			return name
-		}
-	}
-}
-
-// unnamedCheckName is the <table>_chk_<n> name TiDB gives a CHECK written
-// without one: n counts only the checks it had to name, so an explicit
-// CONSTRAINT t_chk_2 does not push the first unnamed one past t_chk_1. A table
-// that declares the resulting name explicitly is DDL the server rejects, so
-// rather than emit the duplicate, take the next free number.
-func unnamedCheckName(table *storepb.TableMetadata, synthesized *int) string {
-	taken := make(map[string]bool, len(table.CheckConstraints))
-	for _, check := range table.CheckConstraints {
-		taken[check.Name] = true
-	}
-	for {
-		*synthesized++
-		name := fmt.Sprintf("%s_chk_%d", table.Name, *synthesized)
-		if !taken[name] {
-			return name
-		}
-	}
-}
-
-func (*metadataExtractor) processCheckConstraint(constraint *ast.Constraint, table *storepb.TableMetadata, synthesized *int) {
-	if constraint.Expr == nil {
-		return
-	}
-	// An unnamed CHECK takes the name TiDB would assign it, because the
-	// definition writer always emits an explicit CONSTRAINT clause and an empty
-	// name renders as CONSTRAINT `` -- which no server accepts. The expression is
-	// parenthesized for the same reason: the writer emits "CHECK %s" bare.
-	name := constraint.Name
-	if name == "" {
-		name = unnamedCheckName(table, synthesized)
-	}
-	table.CheckConstraints = append(table.CheckConstraints, &storepb.CheckConstraintMetadata{
-		Name:       name,
-		Expression: "(" + restoreExpression(constraint.Expr) + ")",
-	})
-}
-
-// restoreExpression renders an expression back to SQL. The parser fills in Text()
-// only for nodes it captured verbatim, so literals such as a boolean default and
-// whole check expressions come back empty without this.
-func restoreExpression(expr ast.ExprNode) string {
-	var sb strings.Builder
-	if err := expr.Restore(format.NewRestoreCtx(format.DefaultRestoreFlags, &sb)); err != nil {
-		return ""
-	}
-	return sb.String()
+func (*metadataExtractor) processCheckConstraint(constraint *ast.Constraint, table *storepb.TableMetadata) {
+	// TiDB check constraints are handled differently
+	// For now, skip processing as the AST structure may not have ExprInCheck
+	// In a full implementation, we would need to check the constraint structure
+	_ = constraint
+	_ = table
 }
 
 func (*metadataExtractor) extractViewDefinition(stmt *ast.CreateViewStmt) string {

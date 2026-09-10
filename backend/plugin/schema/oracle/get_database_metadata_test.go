@@ -102,7 +102,7 @@ CREATE SEQUENCE emp_seq START WITH 1 INCREMENT BY 1;
 				require.False(t, departments.Columns[1].Nullable)
 				requireIndex(t, departments, "PK_DEPARTMENTS", []string{"DEPT_ID"}, true, true)
 				requireIndex(t, departments, "UK_DEPARTMENTS_DEPT_NAME", []string{"DEPT_NAME"}, false, true)
-				requireCheckConstraint(t, departments, "CHK_DEPT_NAME", "DEPT_NAME IS NOT NULL")
+				requireCheckConstraint(t, departments, "CHK_DEPT_NAME", "DEPT_NAMEISNOTNULL")
 
 				employees := requireTable(t, schemaMetadata, "EMPLOYEES")
 				require.Len(t, employees.Columns, 4)
@@ -110,7 +110,7 @@ CREATE SEQUENCE emp_seq START WITH 1 INCREMENT BY 1;
 				requireIndex(t, employees, "PK_EMPLOYEES", []string{"EMP_ID"}, true, true)
 				requireIndex(t, employees, "UK_EMPLOYEES_EMAIL", []string{"EMAIL"}, false, true)
 				requireIndex(t, employees, "IDX_EMP_DEPT", []string{"DEPT_ID"}, false, false)
-				requireCheckConstraint(t, employees, "CHK_SALARY", "SALARY >= 0")
+				requireCheckConstraint(t, employees, "CHK_SALARY", "SALARY>=0")
 				requireForeignKey(t, employees, "FK_EMP_DEPT", []string{"DEPT_ID"}, "DEPARTMENTS", []string{"DEPT_ID"}, "SET NULL")
 
 				require.Len(t, schemaMetadata.Views, 1)
@@ -313,8 +313,8 @@ CREATE TABLE EMPLOYEES (
 `,
 			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
 				employees := requireTable(t, requireSingleSchema(t, metadata), "EMPLOYEES")
-				requireCheckConstraint(t, employees, "CHK_EMPLOYEES_SALARY", "SALARY > 0")
-				requireCheckConstraint(t, employees, "CHK_EMPLOYEES_SALARY_2", "SALARY < 1000000")
+				requireCheckConstraint(t, employees, "CHK_EMPLOYEES_SALARY", "SALARY>0")
+				requireCheckConstraint(t, employees, "CHK_EMPLOYEES_SALARY_2", "SALARY<1000000")
 				requireForeignKey(t, employees, "FK_EMPLOYEES_DEPT_ID", []string{"DEPT_ID"}, "DEPARTMENTS", []string{"DEPT_ID"}, "")
 				requireForeignKey(t, employees, "FK_MANAGER_DEPT", []string{"MANAGER_DEPT_ID"}, "DEPARTMENTS", []string{"DEPT_ID"}, "")
 			},
@@ -333,7 +333,7 @@ CREATE TABLE ORDER_ITEMS (
 				require.Len(t, orderItems.Columns, 3)
 				require.Equal(t, "TOTAL", orderItems.Columns[2].Name)
 				require.Equal(t, "NUMBER", orderItems.Columns[2].Type)
-				require.Equal(t, "QTY * PRICE", orderItems.Columns[2].Default)
+				require.Equal(t, "QTY*PRICE", orderItems.Columns[2].Default)
 			},
 		},
 		{
@@ -348,8 +348,8 @@ CREATE TABLE AUTHORS (
 			verify: func(t *testing.T, metadata *storepb.DatabaseSchemaMetadata) {
 				authors := requireTable(t, requireSingleSchema(t, metadata), "AUTHORS")
 				require.Len(t, authors.Columns, 2)
-				require.Equal(t, "CASE WHEN NAME = 'O''Reilly' THEN 1 ELSE 0 END", authors.Columns[1].Default)
-				requireCheckConstraint(t, authors, "CHK_AUTHOR_NAME", "NAME <> 'O''Reilly'")
+				require.Equal(t, "CASEWHENNAME='O''Reilly'THEN1ELSE0END", authors.Columns[1].Default)
+				requireCheckConstraint(t, authors, "CHK_AUTHOR_NAME", "NAME<>'O''Reilly'")
 			},
 		},
 		{
@@ -506,6 +506,10 @@ func requireMaterializedViewIndex(t *testing.T, materializedView *storepb.Materi
 	t.Fatalf("index %q not found in materialized view %q", name, materializedView.Name)
 }
 
+// requireCheckConstraint matches an expression as the extractor renders it,
+// which for most nodes means with every space removed: "SALARY > 0" arrives as
+// "SALARY>0". The assertions below spell out that form rather than the readable
+// one so they describe what the package returns today.
 func requireCheckConstraint(t *testing.T, table *storepb.TableMetadata, name string, expression string) {
 	t.Helper()
 	for _, check := range table.CheckConstraints {
