@@ -160,7 +160,7 @@
 
 
 - description: Views, triggers, and stored procedures
-  oldSchema: |2
+  oldSchema: |
     CREATE TABLE products (
         id INT NOT NULL AUTO_INCREMENT,
         name VARCHAR(100) NOT NULL,
@@ -242,7 +242,7 @@
 
 
 - description: Stored functions and dependent tables
-  oldSchema: |2
+  oldSchema: |
     CREATE TABLE sales (
         id INT NOT NULL AUTO_INCREMENT,
         product_id INT NOT NULL,
@@ -349,7 +349,7 @@
         sale_date DATE NOT NULL,
         PRIMARY KEY (id)
     ) ENGINE=InnoDB;
-  newSchema: |2
+  newSchema: |
     CREATE TABLE sales (
         id INT NOT NULL AUTO_INCREMENT,
         product_name VARCHAR(100) NOT NULL,
@@ -998,7 +998,7 @@
 
 
 - description: Multiple triggers and audit logging
-  oldSchema: |2
+  oldSchema: |
     CREATE TABLE inventory (
         id INT NOT NULL AUTO_INCREMENT,
         product_id INT NOT NULL,
@@ -1124,7 +1124,7 @@
 
 
 - description: Events and advanced stored routines
-  oldSchema: |2
+  oldSchema: |
     CREATE TABLE system_stats (
         id INT NOT NULL AUTO_INCREMENT,
         stat_name VARCHAR(100) NOT NULL,
@@ -1592,7 +1592,7 @@
         PRIMARY KEY (id),
         CONSTRAINT fk_product FOREIGN KEY (product_id) REFERENCES products(id)
     ) ENGINE=InnoDB;
-  newSchema: |2
+  newSchema: |
     CREATE TABLE products (
         id INT NOT NULL AUTO_INCREMENT,
         name VARCHAR(100) NOT NULL,
@@ -1671,7 +1671,7 @@
         PRIMARY KEY (id),
         INDEX idx_product_date (product_id, sale_date)
     ) ENGINE=InnoDB;
-  newSchema: |2
+  newSchema: |
     CREATE TABLE sales (
         id INT NOT NULL AUTO_INCREMENT,
         product_id INT NOT NULL,
@@ -2009,7 +2009,7 @@
         changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id)
     ) ENGINE=InnoDB;
-  newSchema: |2
+  newSchema: |
     CREATE TABLE inventory (
         id INT NOT NULL AUTO_INCREMENT,
         product_id INT NOT NULL,
@@ -2093,7 +2093,7 @@
         recorded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY (id)
     ) ENGINE=InnoDB;
-  newSchema: |2
+  newSchema: |
     CREATE TABLE system_stats (
         id INT NOT NULL AUTO_INCREMENT,
         stat_name VARCHAR(100) NOT NULL,

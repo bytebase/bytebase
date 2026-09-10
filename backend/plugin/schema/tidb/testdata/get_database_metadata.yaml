@@ -1067,3 +1067,63 @@
         }
       ]
     }
+- description: unnamed_check_and_auto_random_range
+  schema: |
+    CREATE TABLE bounded (
+        id BIGINT AUTO_RANDOM(5, 54) PRIMARY KEY,
+        qty INT,
+        CHECK (qty > 0),
+        CONSTRAINT chk_qty_max CHECK (qty < 1000)
+    );
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "bounded",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_RANDOM(5, 54)",
+                  "type": "bigint"
+                },
+                {
+                  "name": "qty",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "int"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "check_constraints": [
+                {
+                  "name": "bounded_chk_1",
+                  "expression": "(`qty`\u003e0)"
+                },
+                {
+                  "name": "chk_qty_max",
+                  "expression": "(`qty`\u003c1000)"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }

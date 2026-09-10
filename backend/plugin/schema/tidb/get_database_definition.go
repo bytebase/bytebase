@@ -185,6 +185,11 @@ func GetProcedureDefinition(_ string, procedure *storepb.ProcedureMetadata) (str
 // escapeSQLString doubles the quotes and escapes the backslashes in a value
 // destined for a single-quoted TiDB literal. Comments carry apostrophes often
 // enough that emitting one raw produces DDL the server rejects.
+//
+// The backslash half assumes the default sql_mode. Under NO_BACKSLASH_ESCAPES a
+// backslash is literal and doubling it changes the stored comment, but no
+// string-literal form is correct under both modes, so this takes the default.
+// Framing every dump in a known sql_mode would fix it for both.
 func escapeSQLString(value string) string {
 	value = strings.ReplaceAll(value, "\\", "\\\\")
 	return strings.ReplaceAll(value, "'", "''")

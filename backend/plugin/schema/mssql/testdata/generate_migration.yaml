@@ -1,5 +1,5 @@
 - description: Create new table
-  oldSchema: ''
+  oldSchema: ""
   newSchema: |
     CREATE TABLE [dbo].[users] (
       [id] int NOT NULL,
@@ -23,7 +23,7 @@
       [name] nvarchar(100) NOT NULL,
       CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
     );
-  newSchema: ''
+  newSchema: ""
   expected: |
     DROP TABLE [dbo].[users];
 - description: Add column to existing table
@@ -111,7 +111,7 @@
     ALTER TABLE [dbo].[users] ADD CONSTRAINT [DF_users_status] DEFAULT 1 FOR [status];
 
 - description: Create table with check constraint
-  oldSchema: ''
+  oldSchema: ""
   newSchema: |
     CREATE TABLE [dbo].[products] (
       [id] int NOT NULL,
@@ -139,7 +139,7 @@
       [status] int NOT NULL,
       CONSTRAINT [PK_users] PRIMARY KEY CLUSTERED ([id])
     );
-  expected: ''
+  expected: ""
 - description: Change default constraint value
   oldSchema: |
     CREATE TABLE [dbo].[users] (
@@ -409,7 +409,7 @@
     ALTER TABLE [dbo].[users] DROP CONSTRAINT [PK_users];
 
 - description: Create scalar function
-  oldSchema: ''
+  oldSchema: ""
   newSchema: |
     CREATE FUNCTION [dbo].[GetFullName]
     (
@@ -445,12 +445,12 @@
     BEGIN
       RETURN @FirstName + ' ' + @LastName
     END
-  newSchema: ''
+  newSchema: ""
   expected: |
     DROP FUNCTION [dbo].[GetFullName];
     GO
 - description: Create table-valued function
-  oldSchema: ''
+  oldSchema: ""
   newSchema: |
     CREATE FUNCTION [dbo].[GetEmployeesByDepartment]
     (
@@ -479,7 +479,7 @@
     );
     GO
 - description: Create inline table-valued function
-  oldSchema: ''
+  oldSchema: ""
   newSchema: |
     CREATE FUNCTION [dbo].[GetActiveUsers]()
     RETURNS @Users TABLE
@@ -514,7 +514,7 @@
     END;
     GO
 - description: Create simple procedure
-  oldSchema: ''
+  oldSchema: ""
   newSchema: |
     CREATE PROCEDURE [dbo].[GetUserById]
       @UserId int
@@ -538,12 +538,12 @@
     BEGIN
       SELECT * FROM Users WHERE Id = @UserId
     END
-  newSchema: ''
+  newSchema: ""
   expected: |
     DROP PROCEDURE [dbo].[GetUserById];
     GO
 - description: Create procedure with output parameters
-  oldSchema: ''
+  oldSchema: ""
   newSchema: |
     CREATE PROCEDURE [dbo].[GetUserCount]
       @DepartmentId int,
@@ -600,7 +600,7 @@
     END;
     GO
 - description: Create procedure with transaction
-  oldSchema: ''
+  oldSchema: ""
   newSchema: |
     CREATE PROCEDURE [dbo].[TransferFunds]
       @FromAccount int,
@@ -639,7 +639,7 @@
     END;
     GO
 - description: Create single view
-  oldSchema: ''
+  oldSchema: ""
   newSchema: |
     CREATE TABLE [dbo].[users] (
       [id] int NOT NULL,
@@ -865,7 +865,7 @@
     SELECT * FROM [dbo].[v_users];
     GO
 - description: Complex view dependencies across schemas
-  oldSchema: ''
+  oldSchema: ""
   newSchema: |
     CREATE SCHEMA [sales];
     GO
@@ -949,7 +949,7 @@
       SELECT * FROM [dbo].[v_user_orders] WHERE id = @user_id;
     END;
     GO
-  newSchema: ''
+  newSchema: ""
   expected: |
     ALTER TABLE [dbo].[orders] DROP CONSTRAINT [FK_orders_users];
     DROP PROCEDURE [dbo].[sp_get_user_orders];
@@ -959,7 +959,7 @@
     DROP TABLE [dbo].[orders];
     DROP TABLE [dbo].[users];
 - description: Safe order - create tables before dependent objects
-  oldSchema: ''
+  oldSchema: ""
   newSchema: |
     CREATE TABLE [dbo].[users] (
       [id] int NOT NULL PRIMARY KEY,
@@ -1103,7 +1103,7 @@
     GROUP BY dept_name, location;
     GO
 - description: Safe order - circular view dependency fallback
-  oldSchema: ''
+  oldSchema: ""
   newSchema: |
     CREATE TABLE [dbo].[table1] (
       [id] int NOT NULL,
@@ -1660,7 +1660,7 @@
     DROP TABLE [ecommerce].[orders];
 
 - description: Create tables with foreign key constraints
-  oldSchema: ''
+  oldSchema: ""
   newSchema: |
     CREATE SCHEMA [test];
     GO
@@ -2390,32 +2390,7 @@
     DROP TABLE [complex].[calculations];
 
 - description: Edge cases for default constraints including special characters, unicode, extreme values
-  oldSchema: |
-    CREATE SCHEMA [edge];
-    GO
-
-    CREATE TABLE [edge].[test_defaults] (
-        [id] INT IDENTITY(1,1) PRIMARY KEY,
-        [nullable_with_default] INT CONSTRAINT [DF_test_defaults_nullable_new] DEFAULT 84,
-        [string_default] NVARCHAR(50) DEFAULT N'Default''s value',
-        [empty_string] NVARCHAR(50) DEFAULT '',
-        [zero_default] INT DEFAULT 0,
-        [negative_default] INT DEFAULT -1,
-        [decimal_precision] DECIMAL(18,6) DEFAULT 123.456789,
-        [special_chars] NVARCHAR(100) DEFAULT N'Line1' + CHAR(13) + CHAR(10) + N'Line2',
-        [unicode_default] NVARCHAR(100) DEFAULT N'你好世界 🌍',
-        [max_int] BIGINT DEFAULT 9223372036854775807,
-        [min_int] BIGINT DEFAULT -9223372036854775808,
-        [json_config] NVARCHAR(MAX) DEFAULT N'{"enabled": true, "count": 0}'
-    );
-
-    CREATE TABLE [edge].[flags] (
-        [id] INT IDENTITY(1,1) PRIMARY KEY,
-        [is_enabled] BIT NOT NULL DEFAULT 1,
-        [is_deleted] BIT NOT NULL DEFAULT 0,
-        [is_visible] BIT DEFAULT 1,
-        [is_archived] BIT DEFAULT 0
-    );
+  oldSchema: "CREATE SCHEMA [edge];\nGO\n\nCREATE TABLE [edge].[test_defaults] (\n    [id] INT IDENTITY(1,1) PRIMARY KEY,\n    [nullable_with_default] INT CONSTRAINT [DF_test_defaults_nullable_new] DEFAULT 84,\n    [string_default] NVARCHAR(50) DEFAULT N'Default''s value',\n    [empty_string] NVARCHAR(50) DEFAULT '',\n    [zero_default] INT DEFAULT 0,\n    [negative_default] INT DEFAULT -1,\n    [decimal_precision] DECIMAL(18,6) DEFAULT 123.456789,\n    [special_chars] NVARCHAR(100) DEFAULT N'Line1' + CHAR(13) + CHAR(10) + N'Line2',\n    [unicode_default] NVARCHAR(100) DEFAULT N'你好世界 \U0001F30D',\n    [max_int] BIGINT DEFAULT 9223372036854775807,\n    [min_int] BIGINT DEFAULT -9223372036854775808,\n    [json_config] NVARCHAR(MAX) DEFAULT N'{\"enabled\": true, \"count\": 0}'\n);\n\nCREATE TABLE [edge].[flags] (\n    [id] INT IDENTITY(1,1) PRIMARY KEY,\n    [is_enabled] BIT NOT NULL DEFAULT 1,\n    [is_deleted] BIT NOT NULL DEFAULT 0,\n    [is_visible] BIT DEFAULT 1,\n    [is_archived] BIT DEFAULT 0\n);\n"
   newSchema: |
     CREATE SCHEMA [edge];
     GO
@@ -3495,48 +3470,8 @@
         [negative_default] INT DEFAULT -1,
         [decimal_precision] DECIMAL(18,6) DEFAULT 123.456789
     );
-  newSchema: |
-    CREATE SCHEMA [edge];
-    GO
-
-    CREATE TABLE [edge].[test_defaults] (
-        [id] INT IDENTITY(1,1) PRIMARY KEY,
-        [nullable_with_default] INT CONSTRAINT [DF_test_defaults_nullable_new] DEFAULT 84,
-        [string_default] NVARCHAR(50) DEFAULT N'Default''s value',
-        [empty_string] NVARCHAR(50) DEFAULT '',
-        [zero_default] INT DEFAULT 0,
-        [negative_default] INT DEFAULT -1,
-        [decimal_precision] DECIMAL(18,6) DEFAULT 123.456789,
-        [special_chars] NVARCHAR(100) DEFAULT N'Line1' + CHAR(13) + CHAR(10) + N'Line2',
-        [unicode_default] NVARCHAR(100) DEFAULT N'你好世界 🌍',
-        [max_int] BIGINT DEFAULT 9223372036854775807,
-        [min_int] BIGINT DEFAULT -9223372036854775808,
-        [json_config] NVARCHAR(MAX) DEFAULT N'{"enabled": true, "count": 0}'
-    );
-
-    CREATE TABLE [edge].[flags] (
-        [id] INT IDENTITY(1,1) PRIMARY KEY,
-        [is_enabled] BIT NOT NULL DEFAULT 1,
-        [is_deleted] BIT NOT NULL DEFAULT 0,
-        [is_visible] BIT DEFAULT 1,
-        [is_archived] BIT DEFAULT 0
-    );
-  expected: |+
-    CREATE TABLE [edge].[flags] (
-      [id] INT IDENTITY(1,1) NOT NULL,
-      [is_enabled] BIT NOT NULL DEFAULT 1,
-      [is_deleted] BIT NOT NULL DEFAULT 0,
-      [is_visible] BIT NULL DEFAULT 1,
-      [is_archived] BIT NULL DEFAULT 0,
-      CONSTRAINT [PK_flags_2] PRIMARY KEY ([id])
-    );
-    ALTER TABLE [edge].[test_defaults] ADD [special_chars] NVARCHAR(100) NULL DEFAULT N'Line1' + CHAR(13) + CHAR(10) + N'Line2';
-    ALTER TABLE [edge].[test_defaults] ADD [unicode_default] NVARCHAR(100) NULL DEFAULT N'你好世界 🌍';
-    ALTER TABLE [edge].[test_defaults] ADD [max_int] BIGINT NULL DEFAULT 9223372036854775807;
-    ALTER TABLE [edge].[test_defaults] ADD [min_int] BIGINT NULL DEFAULT -9223372036854775808;
-    ALTER TABLE [edge].[test_defaults] ADD [json_config] NVARCHAR(MAX) NULL DEFAULT N'{"enabled": true, "count": 0}';
-    ALTER TABLE [edge].[test_defaults] ADD CONSTRAINT [DF_test_defaults_nullable_with_default] DEFAULT 84 FOR [nullable_with_default];
-
+  newSchema: "CREATE SCHEMA [edge];\nGO\n\nCREATE TABLE [edge].[test_defaults] (\n    [id] INT IDENTITY(1,1) PRIMARY KEY,\n    [nullable_with_default] INT CONSTRAINT [DF_test_defaults_nullable_new] DEFAULT 84,\n    [string_default] NVARCHAR(50) DEFAULT N'Default''s value',\n    [empty_string] NVARCHAR(50) DEFAULT '',\n    [zero_default] INT DEFAULT 0,\n    [negative_default] INT DEFAULT -1,\n    [decimal_precision] DECIMAL(18,6) DEFAULT 123.456789,\n    [special_chars] NVARCHAR(100) DEFAULT N'Line1' + CHAR(13) + CHAR(10) + N'Line2',\n    [unicode_default] NVARCHAR(100) DEFAULT N'你好世界 \U0001F30D',\n    [max_int] BIGINT DEFAULT 9223372036854775807,\n    [min_int] BIGINT DEFAULT -9223372036854775808,\n    [json_config] NVARCHAR(MAX) DEFAULT N'{\"enabled\": true, \"count\": 0}'\n);\n\nCREATE TABLE [edge].[flags] (\n    [id] INT IDENTITY(1,1) PRIMARY KEY,\n    [is_enabled] BIT NOT NULL DEFAULT 1,\n    [is_deleted] BIT NOT NULL DEFAULT 0,\n    [is_visible] BIT DEFAULT 1,\n    [is_archived] BIT DEFAULT 0\n);\n"
+  expected: "CREATE TABLE [edge].[flags] (\n  [id] INT IDENTITY(1,1) NOT NULL,\n  [is_enabled] BIT NOT NULL DEFAULT 1,\n  [is_deleted] BIT NOT NULL DEFAULT 0,\n  [is_visible] BIT NULL DEFAULT 1,\n  [is_archived] BIT NULL DEFAULT 0,\n  CONSTRAINT [PK_flags_2] PRIMARY KEY ([id])\n);\nALTER TABLE [edge].[test_defaults] ADD [special_chars] NVARCHAR(100) NULL DEFAULT N'Line1' + CHAR(13) + CHAR(10) + N'Line2';\nALTER TABLE [edge].[test_defaults] ADD [unicode_default] NVARCHAR(100) NULL DEFAULT N'你好世界 \U0001F30D';\nALTER TABLE [edge].[test_defaults] ADD [max_int] BIGINT NULL DEFAULT 9223372036854775807;\nALTER TABLE [edge].[test_defaults] ADD [min_int] BIGINT NULL DEFAULT -9223372036854775808;\nALTER TABLE [edge].[test_defaults] ADD [json_config] NVARCHAR(MAX) NULL DEFAULT N'{\"enabled\": true, \"count\": 0}';\nALTER TABLE [edge].[test_defaults] ADD CONSTRAINT [DF_test_defaults_nullable_with_default] DEFAULT 84 FOR [nullable_with_default];\n\n"
 - description: Spatial index operations with various tessellation schemes and parameters
   oldSchema: |
     CREATE SCHEMA [geo];
@@ -3764,7 +3699,7 @@
         GRIDS = (LEVEL_1 = LOW, LEVEL_2 = MEDIUM, LEVEL_3 = HIGH, LEVEL_4 = MEDIUM)
     );
     GO
-  expected: ''
+  expected: ""
 - description: Spatial index modifications - recreating with different parameters and adding/dropping indexes
   oldSchema: |
     CREATE SCHEMA [geo];
@@ -3922,4 +3857,3 @@
 
     ALTER TABLE [geo].[points] ADD [point_name] NVARCHAR(50) NOT NULL;
 
-...

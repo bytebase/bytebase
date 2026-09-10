@@ -137,7 +137,7 @@
     CREATE INDEX `fk_comment_user` ON `comments` (`user_id`);
     ALTER TABLE `comments` ADD CONSTRAINT `fk_comment_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE;
     ALTER TABLE `comments` ADD CONSTRAINT `fk_comment_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-    ALTER TABLE `posts` ADD CONSTRAINT `chk_title_length` CHECK (CHAR_LENGTH(`title`)>0);
+    ALTER TABLE `posts` ADD CONSTRAINT `chk_title_length` CHECK ((CHAR_LENGTH(`title`)>0));
     ALTER TABLE `users` ADD COLUMN `is_active` tinyint(1) DEFAULT TRUE;
     CREATE INDEX `idx_email_active` ON `users` (`email`, `is_active`);
 - description: TiDB specific features like AUTO_RANDOM and clustered index
@@ -434,7 +434,7 @@
     ALTER TABLE `products` ADD COLUMN `category` varchar(50);
     CREATE INDEX `idx_category` ON `products` (`category`);
     CREATE INDEX `idx_price` ON `products` (`price`);
-    ALTER TABLE `products` ADD CONSTRAINT `chk_price_positive` CHECK (`price`>0);
+    ALTER TABLE `products` ADD CONSTRAINT `chk_price_positive` CHECK ((`price`>0));
     CREATE VIEW `product_summary` AS SELECT category, COUNT(*) as count, AVG(price) as avg_price
     FROM products
     GROUP BY category;
@@ -573,7 +573,7 @@
     CREATE INDEX `idx_age` ON `users` (`age`);
     CREATE INDEX `idx_name` ON `users` (`name`);
     ALTER TABLE `users` ADD UNIQUE KEY `uk_phone` (`phone`);
-    ALTER TABLE `users` ADD CONSTRAINT `chk_age_positive` CHECK (`age`>0);
+    ALTER TABLE `users` ADD CONSTRAINT `chk_age_positive` CHECK ((`age`>0));
 - description: Complex table relationships with triggers
   oldSchema: |
     CREATE TABLE categories (
@@ -793,7 +793,7 @@
     CREATE INDEX `idx_customer` ON `sales_data` (`customer_id`);
     CREATE INDEX `idx_product` ON `sales_data` (`product_id`);
     CREATE INDEX `idx_region_date` ON `sales_data` (`region`, `sale_date`);
-    ALTER TABLE `sales_data` ADD CONSTRAINT `chk_amount_positive` CHECK (`amount`>0);
+    ALTER TABLE `sales_data` ADD CONSTRAINT `chk_amount_positive` CHECK ((`amount`>0));
     CREATE VIEW `regional_sales` AS SELECT
         region,
         YEAR(sale_date) AS year,
@@ -1012,7 +1012,7 @@
     CREATE INDEX `fk_comment_user` ON `comments` (`user_id`);
     ALTER TABLE `comments` ADD CONSTRAINT `fk_comment_post` FOREIGN KEY (`post_id`) REFERENCES `posts` (`id`) ON DELETE CASCADE;
     ALTER TABLE `comments` ADD CONSTRAINT `fk_comment_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE;
-    ALTER TABLE `posts` ADD CONSTRAINT `chk_title_length` CHECK (CHAR_LENGTH(`title`)>0);
+    ALTER TABLE `posts` ADD CONSTRAINT `chk_title_length` CHECK ((CHAR_LENGTH(`title`)>0));
     ALTER TABLE `users` ADD COLUMN `is_active` tinyint(1) DEFAULT TRUE;
     CREATE INDEX `idx_email_active` ON `users` (`email`, `is_active`);
 - description: Drop and recreate foreign key constraints with different options
@@ -1073,7 +1073,7 @@
     ALTER TABLE `books` DROP CHECK `chk_year_extended`;
 
 
-    ALTER TABLE `books` ADD CONSTRAINT `chk_year_valid` CHECK (`published_year`>=1000 AND `published_year`<=2100);
+    ALTER TABLE `books` ADD CONSTRAINT `chk_year_valid` CHECK ((`published_year`>=1000 AND `published_year`<=2100));
     ALTER TABLE `books` ADD CONSTRAINT `fk_author` FOREIGN KEY (`author_id`) REFERENCES `authors` (`id`);
 - description: Reverse of drop and recreate foreign key constraints - restoring original constraints
   oldSchema: |
@@ -1131,8 +1131,8 @@
     ALTER TABLE `books` DROP CHECK `chk_year_valid`;
 
 
-    ALTER TABLE `books` ADD CONSTRAINT `chk_title_length` CHECK (CHAR_LENGTH(`title`)>=3);
-    ALTER TABLE `books` ADD CONSTRAINT `chk_year_extended` CHECK (`published_year`>=1000 AND `published_year`<=2030);
+    ALTER TABLE `books` ADD CONSTRAINT `chk_title_length` CHECK ((CHAR_LENGTH(`title`)>=3));
+    ALTER TABLE `books` ADD CONSTRAINT `chk_year_extended` CHECK ((`published_year`>=1000 AND `published_year`<=2030));
     ALTER TABLE `books` ADD CONSTRAINT `fk_author_new` FOREIGN KEY (`author_id`) REFERENCES `authors` (`id`) ON UPDATE CASCADE ON DELETE CASCADE;
 - description: Circular foreign key dependencies
   oldSchema: |

@@ -617,12 +617,18 @@ func (m *metadataExtractor) processTiDBTableComment(comment string, table *store
 }
 
 // autoRandomDefault renders the column default the definition writer expects for
-// AUTO_RANDOM: bare when the shard width is left to TiDB, otherwise carrying it.
+// AUTO_RANDOM. The parser reports an omitted argument as -1, so a bare
+// AUTO_RANDOM, a shard width alone, and the two-argument form that also fixes the
+// allocation range each round-trip as written.
 func autoRandomDefault(opt ast.AutoRandomOption) string {
-	if opt.ShardBits <= 0 {
+	switch {
+	case opt.ShardBits <= 0:
 		return autoRandomSymbol
+	case opt.RangeBits <= 0:
+		return fmt.Sprintf("%s(%d)", autoRandomSymbol, opt.ShardBits)
+	default:
+		return fmt.Sprintf("%s(%d, %d)", autoRandomSymbol, opt.ShardBits, opt.RangeBits)
 	}
-	return fmt.Sprintf("%s(%d)", autoRandomSymbol, opt.ShardBits)
 }
 
 // setPrimaryKeyType records CLUSTERED or NONCLUSTERED. PrimaryKeyTypeDefault
@@ -709,9 +715,17 @@ func (*metadataExtractor) processCheckConstraint(constraint *ast.Constraint, tab
 	if constraint.Expr == nil {
 		return
 	}
+	// An unnamed CHECK takes the name TiDB would assign it, because the
+	// definition writer always emits an explicit CONSTRAINT clause and an empty
+	// name renders as CONSTRAINT `` -- which no server accepts. The expression is
+	// parenthesized for the same reason: the writer emits "CHECK %s" bare.
+	name := constraint.Name
+	if name == "" {
+		name = fmt.Sprintf("%s_chk_%d", table.Name, len(table.CheckConstraints)+1)
+	}
 	table.CheckConstraints = append(table.CheckConstraints, &storepb.CheckConstraintMetadata{
-		Name:       constraint.Name,
-		Expression: restoreExpression(constraint.Expr),
+		Name:       name,
+		Expression: "(" + restoreExpression(constraint.Expr) + ")",
 	})
 }
 
