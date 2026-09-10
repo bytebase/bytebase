@@ -21,6 +21,8 @@ const mocks = vi.hoisted(() => ({
   routerPush: vi.fn(),
   pushNotification: vi.fn(),
   createInstance: vi.fn(),
+  updateInstance: vi.fn(),
+  getInstanceByName: vi.fn(),
   fetchDatabases: vi.fn(),
   batchUpdateDatabases: vi.fn(),
   captureMetric: vi.fn(),
@@ -62,8 +64,12 @@ vi.mock("@/app/analytics/provider", () => ({
 vi.mock("@/stores/app", () => {
   const appState = {
     hasFeature: () => true,
+    instanceLicenseCount: () => 100,
+    activatedInstanceCount: () => 1,
     isSaaSMode: () => false,
     createInstance: mocks.createInstance,
+    updateInstance: mocks.updateInstance,
+    getInstanceByName: mocks.getInstanceByName,
     fetchDatabases: mocks.fetchDatabases,
     batchUpdateDatabases: mocks.batchUpdateDatabases,
   };
@@ -79,6 +85,7 @@ vi.mock("@/stores", () => ({
 }));
 
 vi.mock("@/utils", () => ({
+  calcUpdateMask: () => [],
   convertKVListToLabels: (list: { key: string; value: string }[]) =>
     Object.fromEntries(list.map(({ key, value }) => [key, value])),
   extractInstanceResourceName: (name: string) => name.split("/").at(-1) ?? "",
@@ -214,6 +221,7 @@ beforeEach(() => {
     valueChanged: true,
     onDismiss: vi.fn(),
     emitShowConnectionOptions: vi.fn(),
+    emitDataSourceReset: vi.fn(),
   };
 
   mocks.createInstance.mockResolvedValue(
@@ -227,6 +235,61 @@ beforeEach(() => {
 });
 
 describe("InstanceFormButtons", () => {
+  test("invalidates provider drafts only after a successful server-backed save", async () => {
+    const saved = create(InstanceSchema, {
+      name: "instances/prod",
+      title: "Updated production",
+      engine: Engine.POSTGRES,
+      dataSources: [
+        create(DataSourceSchema, {
+          id: "admin",
+          type: DataSourceType.ADMIN,
+          host: "127.0.0.1",
+          port: "5432",
+        }),
+      ],
+    });
+    let finishSave!: () => void;
+    mocks.updateInstance.mockImplementation(
+      () =>
+        new Promise<void>((resolve) => {
+          finishSave = resolve;
+        })
+    );
+    mocks.getInstanceByName.mockReturnValue(saved);
+    const emitDataSourceReset = vi.fn();
+    mocks.context = {
+      ...mocks.context,
+      instance: create(InstanceSchema, { ...saved, title: "Old production" }),
+      basicInfo: saved,
+      isCreating: false,
+      emitDataSourceReset,
+    };
+    const container = document.createElement("div");
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(<InstanceFormButtons />);
+    });
+    const update = Array.from(container.querySelectorAll("button")).find(
+      (button) => button.textContent === "common.update"
+    )!;
+    expect(update.disabled).toBe(false);
+    await act(async () => {
+      update.click();
+    });
+    expect(mocks.updateInstance).toHaveBeenCalledOnce();
+    expect(emitDataSourceReset).not.toHaveBeenCalled();
+    await act(async () => {
+      finishSave();
+    });
+    expect(mocks.getInstanceByName).toHaveBeenCalledWith(saved.name);
+    expect(emitDataSourceReset).toHaveBeenCalledOnce();
+    expect(mocks.context?.setDataSourceEditState).toHaveBeenCalledOnce();
+    await act(async () => {
+      root.unmount();
+    });
+  });
+
   test("uses project-aware create action text when creating from a project", async () => {
     mocks.context = { ...mocks.context, parent: "projects/demo" };
     const container = document.createElement("div");
