@@ -8,12 +8,12 @@ method drawer, nothing on the page says what a mode actually serves, and an admi
 Read-only and Read-write has nothing to compare beyond two sentences. The rule this doc lands on:
 **show capabilities, not methods or permissions — one ordered list of eight capability rows in
 which each mode is a prefix, collapsed by default inside the existing Access policy section, and
-following the picked mode while editing.** The page also gets shorter: the mode cards become a
-slider with the selected mode's "Best for" under it, the disclosure line is the mode's description,
-and row details sit behind one toggle. The product change is frontend-only. One backend lint binds
-the row wording to the method classification, so the list cannot drift from what the gate serves. A
-custom access policy is out of scope, but the list is shaped so that it becomes that editor later
-without a redesign.
+following the picked mode while editing.** The page also gets shorter: the mode cards shrink to an
+icon, a label and a three-word caption, with the selected mode's "Best for" under them; the
+disclosure line is the mode's description, and row details sit behind one toggle. The product
+change is frontend-only. One backend lint binds the row wording to the method classification, so
+the list cannot drift from what the gate serves. A custom access policy is out of scope, but the
+list is shaped so that it becomes that editor later without a redesign.
 
 ## Problem
 
@@ -53,7 +53,7 @@ What follows from it:
 - Rows a mode does not serve stay visible and muted, so comparing modes never needs a second
   surface.
 - What no mode serves is one line under the list, never a row.
-- Nothing on the section is said twice. The mode name appears in the chip or the slider; the
+- Nothing on the section is said twice. The mode name appears in the chip or the selector; the
   description in the disclosure line; the audience in the "Best for" line; the detail behind one
   toggle.
 
@@ -141,9 +141,10 @@ and the change workflow; propose, run, export and manage". The read half is the 
 both modes, because Read-write serves exactly the read rows Read-only serves; the EXCLUDED reads
 (audit logs, users, roles, IAM policies, other people's query history, task-run sessions) are
 refused in every mode, so no summary may say "read everything". The line never repeats the mode
-name, which the chip (view) or the slider (edit) already shows. Expanded, it becomes the list heading "Read-write allows", with a
+name, which the chip (view) or the
+selector (edit) already shows. Expanded, it becomes the list heading "Read-write allows", with a
 "Show details" control on the right. In view state it sits under the chip line; in edit state it
-sits under the slider and its "Best for" line, above the masking toggle, so the cause and its
+sits under the selector and its "Best for" line, above the masking toggle, so the cause and its
 effect are adjacent. The open state persists per browser and carries across the view-to-edit
 transition within a page visit.
 
@@ -177,16 +178,22 @@ refusal only when the RPC opts into auditing or the gate marked a policy denial,
 denial on an unannotated method is silent, and "every refusal" would promise more than the backend
 records.
 
-**D5 — Edit state: a slider, the selected mode's "Best for", and the pick's ladder.** The three
-mode cards and their descriptions are gone; they duplicated the ladder. The selector is the shared
-segmented control with three equal-width segments, Disabled · Read-only · Read-write, so the
-control reads as one setting rather than three labels of different sizes. Under it, one line: the
-"Best for" of the selected mode. "Best for" survives because it answers a different question from
-the ladder — who the mode is for — and it is now shown once instead of three times. Under that,
-the disclosure for the picked mode, rendering exactly what the view would show after saving. No
-"adds N over Read-only", no added or removed marks, no comparison against the stored mode: the muted
-rows already show what a pick does not serve. The edit state is about 100 words collapsed and 150
-expanded, down from about 215 and 375 in the first draft of this design.
+**D5 — Edit state: icon cards, the selected mode's "Best for", and the pick's ladder.** The
+three mode cards lose their descriptions; they duplicated the ladder. What remains is the shape of
+the instance engine selector: three bordered cards in a row, each with a Lucide icon, the mode name,
+and a three-word caption — Disabled "No sessions connect", Read-only "Explore and query",
+Read-write "Change data and schemas". The icons are `Unplug`, `Eye` and `PencilLine` from
+`lucide-react`, which the frontend already ships: unplug says nothing connects, in the same
+vocabulary as the Connect a client section below; eye is view only; pencil-line is write. Icons
+are grey and turn accent on the selected card, which also carries the accent border, ring and
+tint; no red, green or amber on the cards, so the mode's color keeps meaning one thing on the chip.
+A label-only card was tried and read empty; the shared segmented control was tried and read as a
+toggle. The caption costs nine words and gives back the at-a-glance comparison the old cards
+provided. Under the cards, one line: the "Best for" of the selected mode, shown once instead of
+three times. Under that, the disclosure for the picked mode, rendering exactly what the view would
+show after saving. No "adds N over Read-only", no added or removed marks, no comparison against the
+stored mode: the muted rows already show what a pick does not serve. The edit state is about 125
+words collapsed and 175 expanded, down from about 215 and 375 in the first draft of this design.
 
 **D6 — Marks: ✓ or —, plus a tier tag on served rows only.** A served row shows ✓, a `success`
 "read" badge or a `warning` "write" badge after its title, and full-contrast text. An unserved row
@@ -194,8 +201,8 @@ shows —, muted text, and no badge. Under Read-only the write rows are unserved
 never appears there.
 
 **D7 — Disabled.** In view, the chip and the sentence "No MCP session can connect to this
-workspace." are the whole answer; no disclosure. In edit with Disabled picked, the slider sits on
-Disabled, the "Best for" line reads "keeping MCP off until you are ready to turn it on", and the
+workspace." are the whole answer; no disclosure. In edit with Disabled picked, the Disabled card is
+selected, the "Best for" line reads "keeping MCP off until you are ready to turn it on", and the
 disclosure slot holds a static line in the floor's soft error tone, "Nothing is allowed; no MCP
 session can connect.", so red means "no capability" everywhere on the card. It is not a button and
 does not repeat the mode name.
@@ -237,8 +244,8 @@ shows no counts, so the frontend needs only the static tier of each row.
 | View · Read-only or Read-write | Chip line with Edit policy; the disclosure line as the description, collapsed. Nothing below it. |
 | View · Disabled | Chip line; "No MCP session can connect to this workspace." No disclosure. |
 | View · unreadable, unserved, read failed | The existing warning or error, unchanged. No disclosure. |
-| Edit · Read-only or Read-write picked | Slider on the pick; the pick's "Best for" line; the disclosure for the pick, collapsed by default, rendering the post-save view, with "Show details" once expanded; masking toggle; separator; footer sentence (naming the change when dirty), Cancel, Save (enabled only when dirty). |
-| Edit · Disabled picked | Slider on Disabled; its "Best for" line; the static soft-error line in the disclosure slot. |
+| Edit · Read-only or Read-write picked | Icon cards with the pick selected; the pick's "Best for" line; the disclosure for the pick, collapsed by default, rendering the post-save view, with "Show details" once expanded; masking toggle; separator; footer sentence (naming the change when dirty), Cancel, Save (enabled only when dirty). |
+| Edit · Disabled picked | Icon cards with Disabled selected; its "Best for" line; the static soft-error line in the disclosure slot. |
 | Consent page | Served row titles with ✓, the ✕ line under Read-only, then the existing constants and caution. |
 
 ## Copy
@@ -255,6 +262,8 @@ All strings, so the change and the locale files have one source. Keys under
   Expanded heading: "{mode} allows". Details control: "Show details" / "Hide details".
 - Disabled — view sentence: "No MCP session can connect to this workspace." Edit static line:
   "Nothing is allowed; no MCP session can connect."
+- Card captions: Disabled "No sessions connect"; Read-only "Explore and query"; Read-write "Change
+  data and schemas".
 - "Best for" lines, unchanged: Disabled "keeping MCP off until you are ready to turn it on";
   Read-only "querying and exploring data, including by people who do not write SQL"; Read-write
   "making database changes through an AI agent, still capped by each user's own permissions".
@@ -278,10 +287,13 @@ All strings, so the change and the locale files have one source. Keys under
 - Disclosure behavior belongs in a shared primitive per the UX contract. There is no
   `Collapsible` in `frontend/src/components/ui/` today; add one wrapping Base UI's Collapsible
   (trigger with `aria-expanded`, panel region) rather than hand-rolling it in the feature.
-- The mode selector is the shared `SegmentedControl` at size `md`. It sizes each segment to its
-  label today; add an equal-width option to the primitive (equal grid columns, or a shared
-  minimum width per segment) rather than styling it in the feature. The `RadioGroup` cards and
-  their `radioClassName` go away.
+- The mode selector keeps the `RadioGroup` and `RadioGroupItem` semantics with the radio hidden
+  (`radioClassName="sr-only"`), and renders each item the way `InstanceEngineRadioGrid` in
+  `InstanceFormBody.tsx` renders an engine: `rounded-sm border px-3 py-2`, selected
+  `border-accent bg-accent/5 ring-1 ring-accent`, hover `border-accent/50`. Each item holds the
+  Lucide icon at `size-5` (`text-control-light`, `text-accent` when selected), the label at
+  body size, and the caption at caption size. Verify the item shows the shared focus ring with the
+  radio hidden.
 - The ladder is an unframed region: the trigger row and the rows are separated by
   `border-block-border` hairlines, with no outer frame, so the change adds no card inside the
   section's existing framed card. (Design mocks draw a light border around the ladder for
@@ -290,7 +302,8 @@ All strings, so the change and the locale files have one source. Keys under
   Disabled static line use the `error` semantic tokens at low opacity; no raw palette colors, no
   `dark:` variants.
 - `MCPAccessPolicySection.tsx`: remove the `Rows3` icon, the in-force string, the mode cards and
-  the mode sentence; render the chip with its aria-label; add the slider and the "Best for" line;
+  the mode sentence; render the chip with its aria-label; strip the mode cards to icon, label and caption and add the
+  "Best for" line under them;
   move the audit sentence to the section description; show the footer sentence only while editing
   and interpolate both modes when dirty; replace the masking copy.
 - `MCPPage.tsx`: remove the Authentication Required alert; extend the Connect a client description.
@@ -301,7 +314,7 @@ All strings, so the change and the locale files have one source. Keys under
   removed, not left empty.
 - Tests: the served set per mode; the disclosure collapsed by default, opens, persists, and follows
   the pick; the details toggle reveals sub-items on every row and persists with the open state; the
-  "Best for" line follows the slider; Disabled renders the static line in edit and the sentence in
+  "Best for" line follows the selection; Disabled renders the static line in edit and the sentence in
   view; the consent page renders the row titles; one e2e case that edits Read-only to Read-write,
   saves, and sees the chip change.
 - Run `node frontend/scripts/check-ui-guideline.mjs`; the change must not add to the legacy
@@ -319,8 +332,8 @@ All strings, so the change and the locale files have one source. Keys under
 
 ## Out of scope
 
-- A custom access policy. When it comes, the rows become checkboxes, the slider becomes a preset
-  picker that selects a prefix, and a policy matching no prefix shows a Custom chip; the backend
+- A custom access policy. When it comes, the rows become checkboxes, the cards become preset
+  buttons that select a prefix, and a policy matching no prefix shows a Custom chip; the backend
   row table is what the gate would read. The ladder needs no redesign. One precondition before
   rows become independently selectable: `SQLService/Export` must be clamped to read statements.
   On MySQL it skips statement validation and the driver executes non-query statements, and the
