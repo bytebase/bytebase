@@ -15,6 +15,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { SegmentedControl } from "@/components/ui/segmented-control";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/app";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -425,7 +432,10 @@ export function DataSourceForm({
   const changeSecretType = (
     secretType: DataSourceExternalSecret_SecretType
   ) => {
-    const ds = { ...dataSource };
+    const ds = {
+      ...dataSource,
+      authenticationType: DataSource_AuthenticationType.PASSWORD,
+    };
     const drafts =
       sourceDraftsRef.current.get(dataSource.id) ??
       new Map<
@@ -752,53 +762,93 @@ export function DataSourceForm({
     },
   ];
 
-  const passwordSourceControl = !hideAdvancedFeatures && (
+  const secretOptions = passwordSourceOptions.map((item) => ({
+    value: `secret:${item.value}`,
+    label: (
+      <span className="flex items-center gap-x-1.5">
+        {item.value ===
+        DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED
+          ? t("common.password")
+          : item.label}
+        {item.value !==
+          DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED &&
+          currentPlan === PlanType.FREE && (
+            <span className="rounded-full border border-current px-1.5 py-0.5 text-xs">
+              Pro
+            </span>
+          )}
+      </span>
+    ),
+  }));
+
+  const passwordSourceControl = !showAuthTypeRadio && !hideAdvancedFeatures && (
     <SegmentedControl
       ariaLabel={t("instance.password-source.self")}
-      value={String(passwordType)}
+      value={`secret:${passwordType}`}
       onValueChange={(value) =>
-        changeSecretType(Number(value) as DataSourceExternalSecret_SecretType)
+        changeSecretType(
+          Number(value.split(":")[1]) as DataSourceExternalSecret_SecretType
+        )
       }
-      options={passwordSourceOptions.map((item) => ({
-        value: String(item.value),
-        label: (
-          <span className="flex items-center gap-x-1.5">
-            {item.label}
-            {item.value !==
-              DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED &&
-              currentPlan === PlanType.FREE && (
-                <span className="rounded-full border border-current px-1.5 py-0.5 text-xs">
-                  Pro
-                </span>
-              )}
-          </span>
-        ),
-      }))}
+      options={secretOptions}
       disabled={!allowEdit}
       size="sm"
     />
   );
+
+  const authenticationOptions = supportedAuthenticationTypes.flatMap((item) =>
+    item.value === DataSource_AuthenticationType.PASSWORD
+      ? hideAdvancedFeatures
+        ? secretOptions.slice(0, 1)
+        : secretOptions
+      : [{ value: `auth:${item.value}`, label: <>{item.label}</> }]
+  );
+  const authenticationValue = isPasswordAuth
+    ? `secret:${passwordType}`
+    : `auth:${dataSource.authenticationType}`;
 
   const authenticationTypeControl = showAuthTypeRadio && (
     <FormField
       title={t("instance.authentication")}
       className="sm:col-span-3 sm:col-start-1"
     >
-      <SegmentedControl
-        ariaLabel={t("instance.authentication")}
-        value={String(dataSource.authenticationType)}
-        onValueChange={(value) =>
-          update({
-            authenticationType: Number(value) as DataSource_AuthenticationType,
-          })
-        }
-        options={supportedAuthenticationTypes.map((item) => ({
-          value: String(item.value),
-          label: item.label,
-        }))}
+      <Select
+        value={authenticationValue}
+        onValueChange={(value) => {
+          if (!value) return;
+          const [kind, type] = value.split(":");
+          if (kind === "secret") {
+            changeSecretType(
+              Number(type) as DataSourceExternalSecret_SecretType
+            );
+          } else {
+            update({
+              authenticationType: Number(type) as DataSource_AuthenticationType,
+            });
+          }
+        }}
         disabled={!allowEdit}
-        size="sm"
-      />
+      >
+        <SelectTrigger
+          aria-label={t("instance.authentication")}
+          className="w-full sm:w-80"
+        >
+          <SelectValue>
+            {
+              authenticationOptions.find(
+                (item) => item.value === authenticationValue
+              )?.label
+            }
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent>
+          {authenticationOptions.map((item) => (
+            <SelectItem key={item.value} value={item.value}>
+              {item.label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
     </FormField>
   );
 
@@ -1225,7 +1275,13 @@ export function DataSourceForm({
                           DataSourceExternalSecret_SecretType.SECRET_TYPE_UNSPECIFIED &&
                           dataSource.externalSecret && (
                             <div className="flex flex-col gap-y-4">
-                              <FormField title={<>{t("common.password")}</>}>
+                              <FormField
+                                title={
+                                  passwordSourceOptions.find(
+                                    (item) => item.value === passwordType
+                                  )?.label
+                                }
+                              >
                                 <div className="flex flex-wrap items-center gap-2">
                                   {passwordSourceControl}
                                   <LearnMoreLink
