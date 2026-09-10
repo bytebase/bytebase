@@ -10,10 +10,10 @@ Read-only and Read-write has nothing to compare beyond two sentences. The rule t
 which each mode is a prefix, collapsed by default inside the existing Access policy section, and
 following the picked mode while editing.** The page also gets shorter: the mode cards shrink to an
 icon, a label and a three-word caption, with the selected mode's "Best for" under them; the
-disclosure line is the mode's description, and row details sit behind one toggle. The product
-change is frontend-only. One backend lint binds the row wording to the method classification, so
-the list cannot drift from what the gate serves. A custom access policy is out of scope, but the
-list is shaped so that it becomes that editor later without a redesign.
+disclosure line is the mode's description, and row details sit behind one toggle. The change is
+frontend-only; keeping the row wording true to the method classification is a rule in `AGENTS.md`
+rather than a lint (D11). A custom access policy is out of scope, but the list is shaped so that it
+becomes that editor later without a redesign.
 
 ## Problem
 
@@ -59,9 +59,10 @@ What follows from it:
 
 ## The rows
 
-Eight rows: three read, five write. Each has a title, a one-line list of sub-items in plain words,
-and — in code only — the set of served methods it stands for. The right column here is the code
-mapping; it never appears in the product.
+Eight rows: three read, five write. Each has a title and a one-line list of sub-items in plain
+words. The right column records which classified methods the row's wording has to cover; it is
+documentation for whoever rereads these rows after a classification change, and never appears in
+the product.
 
 | Tier | Row | Sub-items shown | Backed by (code only) |
 |---|---|---|---|
@@ -233,13 +234,18 @@ one ✕ line for the unserved tier under Read-only ("No changes, rollouts or exp
 existing capped, masking and audit lines. Read-write keeps its caution. Its mode chip carries the
 same icon as the settings page's. One wording table serves both surfaces.
 
-**D11 — A backend lint binds the wording to the classification.** A table in
-`backend/api/v1/mcp_gate.go` assigns every served method to exactly one row, and a lint in
-`mcp_gate_test.go` holds it: every READ or WRITE method is in a row, no FORBIDDEN or EXCLUDED
-method is, the read rows are exactly the READ set and the write rows exactly the WRITE set. A
-class change that moves a method across tiers then fails CI until the table — and therefore the row
-wording — is reviewed. No proto change, no new API, no generated file for the frontend: the product
-shows no counts, so the frontend needs only the static tier of each row.
+**D11 — The wording is bound to the classification by instruction, not by a lint.** The eight
+titles claim to cover every READ and WRITE method, and a method annotated into either class is
+served the moment it is annotated, whether or not a row names it. The first draft closed that with
+a row table in `backend/api/v1/mcp_gate.go` and a lint in `mcp_gate_test.go`, so a class change
+failed CI until the table — and therefore the row wording — was reviewed. That was dropped: it
+bought a mechanical check at the cost of a second table to keep in step, on a set that changes
+rarely and only in commits already about MCP classification. The rule instead lives under Metadata
+and API conventions in the root `AGENTS.md`: annotating an RPC READ or WRITE means rereading the
+rows and rewording one, or adding one, when none describes it. The cost of the trade is that a
+reclassification which skips that reread is silent — the page keeps its old sentences and an admin
+picks a ceiling on them. No proto change, no new API, no generated file: the product shows no
+counts, so the frontend needs only the static tier of each row.
 
 ## States
 
@@ -327,13 +333,8 @@ All strings, so the change and the locale files have one source. Keys under
 
 ### Backend
 
-- `mcpCapabilityRows` in `backend/api/v1/mcp_gate.go`: a map from row id to procedure names, next
-  to `mcpRequestShapeRefusals`, which it resembles in shape and intent.
-- Lint clauses in `mcp_gate_test.go`, each with a RED test that breaks one input: every served
-  method in exactly one row; no refused method in any row; read rows equal the READ set; write rows
-  equal the WRITE set.
-- `TestMCPClassificationInventory` gains a Row column in `testdata/mcp_method_classification.md`,
-  so a class or row change shows up as a reviewable diff.
+None. The rule that keeps the row wording true is an instruction under Metadata and API conventions
+in the root `AGENTS.md` (D11), not code.
 
 ## Out of scope
 
