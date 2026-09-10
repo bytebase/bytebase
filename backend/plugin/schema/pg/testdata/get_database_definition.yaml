@@ -314,11 +314,11 @@
 
     CREATE SEQUENCE "public"."custom_id_seq"
         AS bigint
-    	START WITH 1000
-    	INCREMENT BY 10
-    	MINVALUE 1
-    	MAXVALUE 9223372036854775807
-    	NO CYCLE;
+        START WITH 1000
+        INCREMENT BY 10
+        MINVALUE 1
+        MAXVALUE 9223372036854775807
+        NO CYCLE;
 
     SET default_tablespace = '';
 

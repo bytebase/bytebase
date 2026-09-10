@@ -739,6 +739,7 @@
     --
     -- Trigger structure for `order_status_change`
     --
+    SET sql_mode = '';
     DELIMITER ;;
     CREATE TRIGGER `order_status_change`
     AFTER UPDATE ON `orders` FOR EACH ROW
@@ -1537,6 +1538,7 @@
     --
     -- Event structure for `update_daily_stats`
     --
+    SET sql_mode = '';
     DELIMITER ;;
     CREATE DEFINER=`root`@`%` EVENT `update_daily_stats` ON SCHEDULE EVERY 1 DAY
     STARTS CURRENT_TIMESTAMP ON COMPLETION NOT PRESERVE ENABLE DO INSERT INTO daily_stats (stat_date, total_orders, total_revenue)
@@ -2184,6 +2186,104 @@
       CONSTRAINT `project_member_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `project` (`id`) ON DELETE CASCADE,
       CONSTRAINT `project_member_ibfk_2` FOREIGN KEY (`employee_id`) REFERENCES `employee` (`id`) ON DELETE CASCADE
     ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
+- description: Empty session context on an event and a trigger
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "audit_log",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_INCREMENT",
+                  "type": "int"
+                },
+                {
+                  "name": "note",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "varchar(100)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "triggers": [
+                {
+                  "name": "audit_log_before_insert",
+                  "event": "INSERT",
+                  "timing": "BEFORE",
+                  "body": "BEGIN\n    SET NEW.note = TRIM(NEW.note);\nEND",
+                  "sql_mode": "",
+                  "character_set_client": "",
+                  "collation_connection": ""
+                }
+              ]
+            }
+          ],
+          "events": [
+            {
+              "name": "purge_audit_log",
+              "definition": "CREATE EVENT `purge_audit_log` ON SCHEDULE EVERY 1 DAY DO DELETE FROM audit_log",
+              "sql_mode": "",
+              "character_set_client": "",
+              "collation_connection": "",
+              "time_zone": ""
+            }
+          ]
+        }
+      ]
+    }
+  expected: |
+    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+    --
+    -- Table structure for `audit_log`
+    --
+    CREATE TABLE `audit_log` (
+      `id` int NOT NULL AUTO_INCREMENT,
+      `note` varchar(100),
+      PRIMARY KEY (`id`)
+    ) ENGINE=InnoDB;
+
+    --
+    -- Event structure for `purge_audit_log`
+    --
+    SET sql_mode = '';
+    DELIMITER ;;
+    CREATE EVENT `purge_audit_log` ON SCHEDULE EVERY 1 DAY DO DELETE FROM audit_log;;
+    DELIMITER ;
+
+    --
+    -- Trigger structure for `audit_log_before_insert`
+    --
+    SET sql_mode = '';
+    DELIMITER ;;
+    CREATE TRIGGER `audit_log_before_insert`
+    BEFORE INSERT ON `audit_log` FOR EACH ROW
+    BEGIN
+        SET NEW.note = TRIM(NEW.note);
+    END;;
+    DELIMITER ;
 
     SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
     SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;

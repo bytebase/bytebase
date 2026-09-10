@@ -88,7 +88,7 @@ output is a no-op.
   metadata, not from the generator's output.
 - yaml.v3's `is_printable` stops at 3-byte UTF-8, so any astral-plane character —
   an emoji in a comment, say — is escaped, which forces the whole scalar onto one
-  quoted line. Three goldens are in that state and should stay: they are the
+  quoted line. Two goldens are in that state and should stay: they are the
   deliberate 4-byte-UTF-8 cases, which is exactly the utf8/utf8mb4 distinction
   worth covering. Read those by running the test, not by reading the fixture.
 - Generated DDL must be byte-stable before it can be pinned. Map iteration order

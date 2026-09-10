@@ -213,10 +213,16 @@ func writeEvent(out io.Writer, event *storepb.EventMetadata) error {
 		return err
 	}
 
-	// Set charset, collation, sql mode and timezone. Metadata parsed from a
-	// schema text carries none of these, and "SET character_set_client = ;" is
-	// not valid MySQL, so each is written only when it has a value.
-	if err := writeAdditionalEventsIfSet(out, event.CharacterSetClient, event.CharacterSetClient, event.CollationConnection, event.SqlMode); err != nil {
+	// Charset and collation are written unquoted, so an empty value would emit
+	// "SET character_set_client = ;" -- not valid MySQL. Each is written only
+	// when it has one.
+	if err := writeAdditionalEventsIfSet(out, event.CharacterSetClient, event.CharacterSetClient, event.CollationConnection, ""); err != nil {
+		return err
+	}
+	// sql_mode is quoted, so an empty value is the valid and meaningful
+	// "SET sql_mode = '';". It is written unconditionally: an event created
+	// under an empty mode has to be restored under one.
+	if err := writeSQLMode(out, event.SqlMode); err != nil {
 		return err
 	}
 	if event.TimeZone != "" {
@@ -274,8 +280,11 @@ func writeTrigger(out io.Writer, tableName string, trigger *storepb.TriggerMetad
 		return err
 	}
 
-	// Set charset, collation, and sql mode, each only when it has a value.
-	if err := writeAdditionalEventsIfSet(out, trigger.CharacterSetClient, trigger.CharacterSetClient, trigger.CollationConnection, trigger.SqlMode); err != nil {
+	// Charset and collation only when set; sql_mode always -- see writeEvent.
+	if err := writeAdditionalEventsIfSet(out, trigger.CharacterSetClient, trigger.CharacterSetClient, trigger.CollationConnection, ""); err != nil {
+		return err
+	}
+	if err := writeSQLMode(out, trigger.SqlMode); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, delimiterDoubleSemi); err != nil {
@@ -1468,6 +1477,23 @@ func writeTemporaryView(out io.Writer, view *storepb.ViewMetadata) error {
 func escapeSQLString(value string) string {
 	value = strings.ReplaceAll(value, "\\", "\\\\")
 	return strings.ReplaceAll(value, "'", "''")
+}
+
+// writeSQLMode emits the quoted SET for a stored object's sql_mode. Unlike the
+// charset assignments it is not guarded on a non-empty value: "SET sql_mode = ”;"
+// is valid, and an object created under an empty mode must be restored under one.
+func writeSQLMode(out io.Writer, sqlMode string) error {
+	if _, err := io.WriteString(out, setSQLMode); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, "'"); err != nil {
+		return err
+	}
+	if _, err := io.WriteString(out, sqlMode); err != nil {
+		return err
+	}
+	_, err := io.WriteString(out, "';\n")
+	return err
 }
 
 func writeAdditionalEventsIfSet(out io.Writer, characterSetClient, characterSetResult, collationConnection, sqlMode string) error {

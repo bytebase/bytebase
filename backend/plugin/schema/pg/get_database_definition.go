@@ -1489,36 +1489,36 @@ func writeCreateSequence(out io.Writer, schema string, sequence *storepb.Sequenc
 	if _, err := io.WriteString(out, sequence.DataType); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, "\n	START WITH "); err != nil {
+	if _, err := io.WriteString(out, "\n    START WITH "); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, sequence.Start); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, "\n	INCREMENT BY "); err != nil {
+	if _, err := io.WriteString(out, "\n    INCREMENT BY "); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, sequence.Increment); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, "\n	MINVALUE "); err != nil {
+	if _, err := io.WriteString(out, "\n    MINVALUE "); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, sequence.MinValue); err != nil {
 		return err
 	}
-	if _, err := io.WriteString(out, "\n	MAXVALUE "); err != nil {
+	if _, err := io.WriteString(out, "\n    MAXVALUE "); err != nil {
 		return err
 	}
 	if _, err := io.WriteString(out, sequence.MaxValue); err != nil {
 		return err
 	}
 	if sequence.Cycle {
-		if _, err := io.WriteString(out, "\n	CYCLE"); err != nil {
+		if _, err := io.WriteString(out, "\n    CYCLE"); err != nil {
 			return err
 		}
 	} else {
-		if _, err := io.WriteString(out, "\n	NO CYCLE"); err != nil {
+		if _, err := io.WriteString(out, "\n    NO CYCLE"); err != nil {
 			return err
 		}
 	}
