@@ -830,13 +830,13 @@
           "functions": [
             {
               "name": "calculate_interest",
-              "definition": "BEGIN\n    RETURN principal * POW(1 + rate, years);\nEND"
+              "definition": "CREATE DEFINER=`root`@`%` FUNCTION `calculate_interest`(`principal` DECIMAL(15,2), `rate` DECIMAL(5,4), `years` INT) RETURNS decimal(15,2) READS SQL DATA DETERMINISTIC\nBEGIN\n    RETURN principal * POW(1 + rate, years);\nEND"
             }
           ],
           "procedures": [
             {
               "name": "transfer_funds",
-              "definition": "BEGIN\n    DECLARE from_balance DECIMAL(15, 2);\n\n    START TRANSACTION;\n\n    SELECT balance INTO from_balance\n    FROM accounts\n    WHERE account_number = from_account\n    FOR UPDATE;\n\n    IF from_balance \u003e= amount THEN\n        UPDATE accounts\n        SET balance = balance - amount\n        WHERE account_number = from_account;\n\n        UPDATE accounts\n        SET balance = balance + amount\n        WHERE account_number = to_account;\n\n        COMMIT;\n    ELSE\n        ROLLBACK;\n        SIGNAL SQLSTATE '45000'\n        SET MESSAGE_TEXT = 'Insufficient funds';\n    END IF;\nEND"
+              "definition": "CREATE DEFINER=`root`@`%` PROCEDURE `transfer_funds`(IN `from_account` VARCHAR(20), IN `to_account` VARCHAR(20), IN `amount` DECIMAL(15,2))\nBEGIN\n    DECLARE from_balance DECIMAL(15, 2);\n\n    START TRANSACTION;\n\n    SELECT balance INTO from_balance\n    FROM accounts\n    WHERE account_number = from_account\n    FOR UPDATE;\n\n    IF from_balance \u003e= amount THEN\n        UPDATE accounts\n        SET balance = balance - amount\n        WHERE account_number = from_account;\n\n        UPDATE accounts\n        SET balance = balance + amount\n        WHERE account_number = to_account;\n\n        COMMIT;\n    ELSE\n        ROLLBACK;\n        SIGNAL SQLSTATE '45000'\n        SET MESSAGE_TEXT = 'Insufficient funds';\n    END IF;\nEND"
             }
           ]
         }
@@ -862,6 +862,8 @@
     --
     -- Function structure for `calculate_interest`
     --
+    DELIMITER ;;
+    CREATE DEFINER=`root`@`%` FUNCTION `calculate_interest`(`principal` DECIMAL(15,2), `rate` DECIMAL(5,4), `years` INT) RETURNS decimal(15,2) READS SQL DATA DETERMINISTIC
     BEGIN
         RETURN principal * POW(1 + rate, years);
     END;;
@@ -871,6 +873,7 @@
     -- Procedure structure for `transfer_funds`
     --
     DELIMITER ;;
+    CREATE DEFINER=`root`@`%` PROCEDURE `transfer_funds`(IN `from_account` VARCHAR(20), IN `to_account` VARCHAR(20), IN `amount` DECIMAL(15,2))
     BEGIN
         DECLARE from_balance DECIMAL(15, 2);
 
@@ -1716,7 +1719,7 @@
           "functions": [
             {
               "name": "lookup_token",
-              "definition": "BEGIN\n    RETURN p_b;\nEND"
+              "definition": "CREATE DEFINER=`root`@`%` FUNCTION `lookup_token`(`p_a` BIGINT, `p_b` VARCHAR(36)) RETURNS char(36) CHARSET utf8mb4 NO SQL DETERMINISTIC\nBEGIN\n    RETURN p_b;\nEND"
             }
           ]
         }
@@ -1741,6 +1744,8 @@
     --
     -- Function structure for `lookup_token`
     --
+    DELIMITER ;;
+    CREATE DEFINER=`root`@`%` FUNCTION `lookup_token`(`p_a` BIGINT, `p_b` VARCHAR(36)) RETURNS char(36) CHARSET utf8mb4 NO SQL DETERMINISTIC
     BEGIN
         RETURN p_b;
     END;;
@@ -2186,104 +2191,6 @@
       CONSTRAINT `project_member_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `project` (`id`) ON DELETE CASCADE,
       CONSTRAINT `project_member_ibfk_2` FOREIGN KEY (`employee_id`) REFERENCES `employee` (`id`) ON DELETE CASCADE
     ) DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-    SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-    SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;
-- description: Empty session context on an event and a trigger
-  metadata: |
-    {
-      "schemas": [
-        {
-          "tables": [
-            {
-              "name": "audit_log",
-              "columns": [
-                {
-                  "name": "id",
-                  "position": 1,
-                  "default": "AUTO_INCREMENT",
-                  "type": "int"
-                },
-                {
-                  "name": "note",
-                  "position": 2,
-                  "nullable": true,
-                  "type": "varchar(100)"
-                }
-              ],
-              "indexes": [
-                {
-                  "name": "PRIMARY",
-                  "expressions": [
-                    "id"
-                  ],
-                  "key_length": [
-                    -1
-                  ],
-                  "type": "BTREE",
-                  "unique": true,
-                  "primary": true,
-                  "visible": true
-                }
-              ],
-              "engine": "InnoDB",
-              "triggers": [
-                {
-                  "name": "audit_log_before_insert",
-                  "event": "INSERT",
-                  "timing": "BEFORE",
-                  "body": "BEGIN\n    SET NEW.note = TRIM(NEW.note);\nEND",
-                  "sql_mode": "",
-                  "character_set_client": "",
-                  "collation_connection": ""
-                }
-              ]
-            }
-          ],
-          "events": [
-            {
-              "name": "purge_audit_log",
-              "definition": "CREATE EVENT `purge_audit_log` ON SCHEDULE EVERY 1 DAY DO DELETE FROM audit_log",
-              "sql_mode": "",
-              "character_set_client": "",
-              "collation_connection": "",
-              "time_zone": ""
-            }
-          ]
-        }
-      ]
-    }
-  expected: |
-    SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-    SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-    --
-    -- Table structure for `audit_log`
-    --
-    CREATE TABLE `audit_log` (
-      `id` int NOT NULL AUTO_INCREMENT,
-      `note` varchar(100),
-      PRIMARY KEY (`id`)
-    ) ENGINE=InnoDB;
-
-    --
-    -- Event structure for `purge_audit_log`
-    --
-    SET sql_mode = '';
-    DELIMITER ;;
-    CREATE EVENT `purge_audit_log` ON SCHEDULE EVERY 1 DAY DO DELETE FROM audit_log;;
-    DELIMITER ;
-
-    --
-    -- Trigger structure for `audit_log_before_insert`
-    --
-    SET sql_mode = '';
-    DELIMITER ;;
-    CREATE TRIGGER `audit_log_before_insert`
-    BEFORE INSERT ON `audit_log` FOR EACH ROW
-    BEGIN
-        SET NEW.note = TRIM(NEW.note);
-    END;;
-    DELIMITER ;
 
     SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
     SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;

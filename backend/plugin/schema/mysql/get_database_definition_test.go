@@ -82,6 +82,7 @@ func TestGetFunctionDefinitionWithMultilineParameters(t *testing.T) {
 		"SET character_set_results = utf8mb4;\n" +
 		"SET collation_connection = utf8mb4_unicode_ci;\n" +
 		"SET sql_mode = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES';\n" +
+		"DELIMITER ;;\n" +
 		"CREATE FUNCTION `f1`(\n" +
 		"    p_a BIGINT,\n" +
 		"    p_b VARCHAR(36)\n" +

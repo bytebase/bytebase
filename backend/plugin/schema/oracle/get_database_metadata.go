@@ -698,7 +698,7 @@ func (e *oracleOmniMetadataExtractor) indexExpression(expr ast.ExprNode) string 
 func (e *oracleOmniMetadataExtractor) exprText(expr ast.ExprNode) string {
 	switch n := expr.(type) {
 	case *ast.BinaryExpr:
-		return e.exprText(n.Left) + n.Op + e.exprText(n.Right)
+		return e.exprText(n.Left) + " " + n.Op + " " + e.exprText(n.Right)
 	case *ast.BoolExpr:
 		var parts []string
 		for _, item := range listItems(n.Args) {
@@ -710,13 +710,13 @@ func (e *oracleOmniMetadataExtractor) exprText(expr ast.ExprNode) string {
 		}
 		switch n.Boolop {
 		case ast.BOOL_AND:
-			return strings.Join(parts, "AND")
+			return strings.Join(parts, " AND ")
 		case ast.BOOL_OR:
-			return strings.Join(parts, "OR")
+			return strings.Join(parts, " OR ")
 		case ast.BOOL_NOT:
-			return "NOT" + strings.Join(parts, "")
+			return "NOT " + strings.Join(parts, " ")
 		default:
-			return strings.Join(parts, "")
+			return strings.Join(parts, " ")
 		}
 	case *ast.ColumnRef:
 		if n.Table != "" {
@@ -726,31 +726,31 @@ func (e *oracleOmniMetadataExtractor) exprText(expr ast.ExprNode) string {
 	case *ast.InExpr:
 		operator := "IN"
 		if n.Not {
-			operator = "NOTIN"
+			operator = "NOT IN"
 		}
-		return e.exprText(n.Expr) + operator + "(" + strings.Join(e.exprListText(n.List), ",") + ")"
+		return e.exprText(n.Expr) + " " + operator + " (" + strings.Join(e.exprListText(n.List), ", ") + ")"
 	case *ast.BetweenExpr:
 		operator := "BETWEEN"
 		if n.Not {
-			operator = "NOTBETWEEN"
+			operator = "NOT BETWEEN"
 		}
-		return e.exprText(n.Expr) + operator + e.exprText(n.Low) + "AND" + e.exprText(n.High)
+		return e.exprText(n.Expr) + " " + operator + " " + e.exprText(n.Low) + " AND " + e.exprText(n.High)
 	case *ast.LikeExpr:
 		operator := "LIKE"
 		if n.Not {
-			operator = "NOTLIKE"
+			operator = "NOT LIKE"
 		}
-		result := e.exprText(n.Expr) + operator + e.exprText(n.Pattern)
+		result := e.exprText(n.Expr) + " " + operator + " " + e.exprText(n.Pattern)
 		if n.Escape != nil {
-			result += "ESCAPE" + e.exprText(n.Escape)
+			result += " ESCAPE " + e.exprText(n.Escape)
 		}
 		return result
 	case *ast.IsExpr:
 		operator := "IS"
 		if n.Not {
-			operator = "ISNOT"
+			operator = "IS NOT"
 		}
-		return e.exprText(n.Expr) + operator + n.Test
+		return e.exprText(n.Expr) + " " + operator + " " + n.Test
 	case *ast.ParenExpr:
 		return "(" + e.exprText(n.Expr) + ")"
 	case *ast.StringLiteral:
@@ -764,9 +764,9 @@ func (e *oracleOmniMetadataExtractor) exprText(expr ast.ExprNode) string {
 	case *ast.NullLiteral:
 		return "NULL"
 	case *ast.FuncCallExpr:
-		return objectName(n.FuncName) + "(" + strings.Join(e.exprListText(n.Args), ",") + ")"
+		return objectName(n.FuncName) + "(" + strings.Join(e.exprListText(n.Args), ", ") + ")"
 	default:
-		return strings.ReplaceAll(e.nodeText(expr), " ", "")
+		return strings.TrimSpace(e.nodeText(expr))
 	}
 }
 

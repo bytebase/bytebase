@@ -147,7 +147,7 @@
               "check_constraints": [
                 {
                   "name": "CHK_EMPLOYEES_IS_ACTIVE",
-                  "expression": "IS_ACTIVEIN(0,1)"
+                  "expression": "IS_ACTIVE IN (0, 1)"
                 }
               ]
             }
@@ -173,7 +173,7 @@
       "IS_ACTIVE" NUMBER(1) DEFAULT 1,
       CONSTRAINT "PK_EMPLOYEES" PRIMARY KEY ("ID"),
       CONSTRAINT "UK_EMPLOYEES_EMAIL" UNIQUE ("EMAIL"),
-      CONSTRAINT "CHK_EMPLOYEES_IS_ACTIVE" CHECK (IS_ACTIVEIN(0,1)),
+      CONSTRAINT "CHK_EMPLOYEES_IS_ACTIVE" CHECK (IS_ACTIVE IN (0, 1)),
       CONSTRAINT "FK_DEPT" FOREIGN KEY ("DEPARTMENT_ID") REFERENCES "DEPARTMENTS" ("ID")
     );
 

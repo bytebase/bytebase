@@ -406,6 +406,13 @@ func writeFunction(out io.Writer, function *storepb.FunctionMetadata) error {
 		return err
 	}
 
+	// The body ends with ";;" below, so the delimiter has to be switched first --
+	// writeProcedure does the same. Without it the client splits the routine at
+	// the first statement inside BEGIN ... END.
+	if _, err := io.WriteString(out, delimiterDoubleSemi); err != nil {
+		return err
+	}
+
 	// Definition.
 	if _, err := io.WriteString(out, function.Definition); err != nil {
 		return err

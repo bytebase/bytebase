@@ -10,6 +10,8 @@ import (
 	"github.com/bytebase/omni/mysql/ast"
 	"github.com/bytebase/omni/mysql/catalog"
 
+	"maps"
+
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/advisor/code"
 	"github.com/bytebase/bytebase/backend/plugin/parser/base"
@@ -907,18 +909,79 @@ func partitionTypeToProto(t string) storepb.TablePartitionMetadata_Type {
 	}
 }
 
+// routineCharacteristic renders one catalog characteristic as the clause MySQL
+// accepts. The catalog stores them as information_schema does -- DETERMINISTIC
+// as YES/NO, the SQL data access under a "DATA ACCESS" key -- neither of which
+// is valid where a CREATE expects them.
+func routineCharacteristic(name, value string) string {
+	switch strings.ToUpper(name) {
+	case "DETERMINISTIC":
+		if strings.EqualFold(value, "NO") {
+			return "NOT DETERMINISTIC"
+		}
+		return "DETERMINISTIC"
+	case "DATA ACCESS":
+		return value
+	case "COMMENT":
+		return fmt.Sprintf("COMMENT '%s'", escapeSQLString(value))
+	default:
+		if value == "" {
+			return name
+		}
+		return name + " " + value
+	}
+}
+
 func routineToFunctionProto(r *catalog.Routine) *storepb.FunctionMetadata {
 	return &storepb.FunctionMetadata{
 		Name:       r.Name,
-		Definition: r.Body,
+		Definition: routineDefinition(r),
 	}
 }
 
 func routineToProcedureProto(r *catalog.Routine) *storepb.ProcedureMetadata {
 	return &storepb.ProcedureMetadata{
 		Name:       r.Name,
-		Definition: r.Body,
+		Definition: routineDefinition(r),
 	}
+}
+
+// routineDefinition rebuilds the CREATE statement around a routine's body. The
+// catalog keeps the parts separately, but a sync stores what SHOW CREATE returns
+// -- the whole statement -- and the definition writer emits Definition verbatim,
+// so a body alone renders as a headless BEGIN ... END that no server accepts.
+func routineDefinition(r *catalog.Routine) string {
+	var buf strings.Builder
+	buf.WriteString("CREATE ")
+	if r.Definer != "" {
+		fmt.Fprintf(&buf, "DEFINER=%s ", r.Definer)
+	}
+	if r.IsProcedure {
+		buf.WriteString("PROCEDURE ")
+	} else {
+		buf.WriteString("FUNCTION ")
+	}
+	fmt.Fprintf(&buf, "%s(", mysqlQuoteIdentifier(r.Name))
+	for i, p := range r.Params {
+		if i > 0 {
+			buf.WriteString(", ")
+		}
+		if p.Direction != "" {
+			fmt.Fprintf(&buf, "%s ", p.Direction)
+		}
+		fmt.Fprintf(&buf, "%s %s", mysqlQuoteIdentifier(p.Name), p.TypeName)
+	}
+	buf.WriteString(")")
+	if r.Returns != "" {
+		fmt.Fprintf(&buf, " RETURNS %s", r.Returns)
+	}
+	for _, name := range slices.Sorted(maps.Keys(r.Characteristics)) {
+		if clause := routineCharacteristic(name, r.Characteristics[name]); clause != "" {
+			fmt.Fprintf(&buf, " %s", clause)
+		}
+	}
+	fmt.Fprintf(&buf, "\n%s", r.Body)
+	return buf.String()
 }
 
 // triggerToProto maps an omni catalog Trigger to TriggerMetadata. The live MySQL sync
