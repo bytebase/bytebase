@@ -152,6 +152,30 @@
                 }
               ]
             }
+          ],
+          "sequences": [
+            {
+              "name": "posts_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "posts",
+              "owner_column": "id"
+            },
+            {
+              "name": "users_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "users",
+              "owner_column": "id"
+            }
           ]
         }
       ]
@@ -168,6 +192,22 @@
     SET client_min_messages = warning;
     SET row_security = off;
 
+    CREATE SEQUENCE "public"."posts_id_seq"
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        MINVALUE 1
+        MAXVALUE 2147483647
+        NO CYCLE;
+
+    CREATE SEQUENCE "public"."users_id_seq"
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        MINVALUE 1
+        MAXVALUE 2147483647
+        NO CYCLE;
+
     SET default_tablespace = '';
 
     CREATE TABLE "public"."posts" (
@@ -177,6 +217,8 @@
         "content" text,
         "published" boolean DEFAULT false
     );
+
+    ALTER SEQUENCE "public"."posts_id_seq" OWNED BY "public"."posts"."id";
 
     ALTER TABLE ONLY "public"."posts" ADD CONSTRAINT "posts_pkey" PRIMARY KEY (id);
 
@@ -191,6 +233,8 @@
         "created_at" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
         "updated_at" timestamp without time zone
     );
+
+    ALTER SEQUENCE "public"."users_id_seq" OWNED BY "public"."users"."id";
 
     ALTER TABLE ONLY "public"."users" ADD CONSTRAINT "users_pkey" PRIMARY KEY (id);
 
@@ -450,6 +494,19 @@
                 }
               ]
             }
+          ],
+          "sequences": [
+            {
+              "name": "orders_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "orders",
+              "owner_column": "id"
+            }
           ]
         },
         {
@@ -520,6 +577,14 @@
         "tags" text[]
     );
 
+    CREATE SEQUENCE "public"."orders_id_seq"
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        MINVALUE 1
+        MAXVALUE 2147483647
+        NO CYCLE;
+
     SET default_tablespace = '';
 
     CREATE TABLE "public"."orders" (
@@ -528,6 +593,8 @@
         "addresses" aa_nested,
         "location" geo.point2
     );
+
+    ALTER SEQUENCE "public"."orders_id_seq" OWNED BY "public"."orders"."id";
 
     ALTER TABLE ONLY "public"."orders" ADD CONSTRAINT "orders_pkey" PRIMARY KEY (id);
 
@@ -601,6 +668,19 @@
                 }
               ]
             }
+          ],
+          "sequences": [
+            {
+              "name": "history_cost_changes_id_seq",
+              "data_type": "bigint",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "9223372036854775807",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "history_audit",
+              "owner_column": "audit_id"
+            }
           ]
         }
       ]
@@ -617,12 +697,22 @@
     SET client_min_messages = warning;
     SET row_security = off;
 
+    CREATE SEQUENCE "public"."history_cost_changes_id_seq"
+        AS bigint
+        START WITH 1
+        INCREMENT BY 1
+        MINVALUE 1
+        MAXVALUE 9223372036854775807
+        NO CYCLE;
+
     SET default_tablespace = '';
 
     CREATE TABLE "public"."history_audit" (
         "audit_id" bigint DEFAULT nextval('history_cost_changes_id_seq'::regclass) NOT NULL,
         "change_type" character varying(50)
     );
+
+    ALTER SEQUENCE "public"."history_cost_changes_id_seq" OWNED BY "public"."history_audit"."audit_id";
 
     CREATE TABLE "public"."history_cost_changes" (
         "id" bigint DEFAULT nextval('history_cost_changes_id_seq'::regclass) NOT NULL,
@@ -702,6 +792,19 @@
               "definition": "CREATE OR REPLACE FUNCTION public.get_employee_count(dept character varying)\n RETURNS integer\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    RETURN (SELECT COUNT(*) FROM employees WHERE department = dept);\nEND;\n$function$\n",
               "signature": "public.get_employee_count(character varying)"
             }
+          ],
+          "sequences": [
+            {
+              "name": "employees_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "employees",
+              "owner_column": "id"
+            }
           ]
         }
       ]
@@ -718,6 +821,14 @@
     SET client_min_messages = warning;
     SET row_security = off;
 
+    CREATE SEQUENCE "public"."employees_id_seq"
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        MINVALUE 1
+        MAXVALUE 2147483647
+        NO CYCLE;
+
     SET default_tablespace = '';
 
     CREATE VIEW "public"."active_employees" AS
@@ -733,6 +844,8 @@
         "department" character varying(50),
         "salary" numeric(10,2)
     );
+
+    ALTER SEQUENCE "public"."employees_id_seq" OWNED BY "public"."employees"."id";
 
     ALTER TABLE ONLY "public"."employees" ADD CONSTRAINT "employees_pkey" PRIMARY KEY (id);
 
@@ -897,6 +1010,19 @@
                 }
               ]
             }
+          ],
+          "sequences": [
+            {
+              "name": "sales_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "sales",
+              "owner_column": "id"
+            }
           ]
         }
       ]
@@ -913,6 +1039,14 @@
     SET client_min_messages = warning;
     SET row_security = off;
 
+    CREATE SEQUENCE "public"."sales_id_seq"
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        MINVALUE 1
+        MAXVALUE 2147483647
+        NO CYCLE;
+
     SET default_tablespace = '';
 
     CREATE TABLE "public"."sales" (
@@ -921,6 +1055,8 @@
         "amount" numeric(10,2) NOT NULL,
         "region" character varying(50) NOT NULL
     );
+
+    ALTER SEQUENCE "public"."sales_id_seq" OWNED BY "public"."sales"."id";
 
     CREATE TABLE "public"."sales_2023_q1" (
         "id" integer DEFAULT nextval('sales_id_seq'::regclass) NOT NULL,
@@ -1257,13 +1393,26 @@
               "check_constraints": [
                 {
                   "name": "chk_price",
-                  "expression": "(price \u003e (0)::numeric)"
+                  "expression": "(price > (0)::numeric)"
                 },
                 {
                   "name": "chk_quantity",
-                  "expression": "(quantity \u003e= 0)"
+                  "expression": "(quantity >= 0)"
                 }
               ]
+            }
+          ],
+          "sequences": [
+            {
+              "name": "products_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "products",
+              "owner_column": "id"
             }
           ]
         }
@@ -1281,6 +1430,14 @@
     SET client_min_messages = warning;
     SET row_security = off;
 
+    CREATE SEQUENCE "public"."products_id_seq"
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        MINVALUE 1
+        MAXVALUE 2147483647
+        NO CYCLE;
+
     SET default_tablespace = '';
 
     CREATE TABLE "public"."products" (
@@ -1291,6 +1448,8 @@
         CONSTRAINT "chk_price" CHECK (price > (0)::numeric),
         CONSTRAINT "chk_quantity" CHECK (quantity >= 0)
     );
+
+    ALTER SEQUENCE "public"."products_id_seq" OWNED BY "public"."products"."id";
 
     ALTER TABLE ONLY "public"."products" ADD CONSTRAINT "products_pkey" PRIMARY KEY (id);
 
@@ -1363,6 +1522,19 @@
                 }
               ]
             }
+          ],
+          "sequences": [
+            {
+              "name": "raw_data_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "raw_data",
+              "owner_column": "id"
+            }
           ]
         }
       ]
@@ -1378,6 +1550,14 @@
     SET xmloption = content;
     SET client_min_messages = warning;
     SET row_security = off;
+
+    CREATE SEQUENCE "public"."raw_data_id_seq"
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        MINVALUE 1
+        MAXVALUE 2147483647
+        NO CYCLE;
 
     SET default_tablespace = '';
 
@@ -1399,6 +1579,8 @@
         "category" character varying(50) NOT NULL,
         "created_at" timestamp without time zone DEFAULT CURRENT_TIMESTAMP
     );
+
+    ALTER SEQUENCE "public"."raw_data_id_seq" OWNED BY "public"."raw_data"."id";
 
     ALTER TABLE ONLY "public"."raw_data" ADD CONSTRAINT "raw_data_pkey" PRIMARY KEY (id);
 
@@ -1569,6 +1751,30 @@
                 }
               ]
             }
+          ],
+          "sequences": [
+            {
+              "name": "customers_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "customers",
+              "owner_column": "id"
+            },
+            {
+              "name": "orders_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "orders",
+              "owner_column": "id"
+            }
           ]
         }
       ]
@@ -1584,6 +1790,22 @@
     SET xmloption = content;
     SET client_min_messages = warning;
     SET row_security = off;
+
+    CREATE SEQUENCE "public"."customers_id_seq"
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        MINVALUE 1
+        MAXVALUE 2147483647
+        NO CYCLE;
+
+    CREATE SEQUENCE "public"."orders_id_seq"
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        MINVALUE 1
+        MAXVALUE 2147483647
+        NO CYCLE;
 
     SET default_tablespace = '';
 
@@ -1616,6 +1838,8 @@
         "created_at" timestamp without time zone DEFAULT CURRENT_TIMESTAMP
     );
 
+    ALTER SEQUENCE "public"."customers_id_seq" OWNED BY "public"."customers"."id";
+
     ALTER TABLE ONLY "public"."customers" ADD CONSTRAINT "customers_pkey" PRIMARY KEY (id);
 
     ALTER TABLE ONLY "public"."customers" ADD CONSTRAINT "customers_email_key" UNIQUE (email);
@@ -1641,6 +1865,8 @@
         "order_date" timestamp without time zone DEFAULT CURRENT_TIMESTAMP,
         "status" character varying(20) DEFAULT 'pending'::character varying
     );
+
+    ALTER SEQUENCE "public"."orders_id_seq" OWNED BY "public"."orders"."id";
 
     ALTER TABLE ONLY "public"."orders" ADD CONSTRAINT "orders_pkey" PRIMARY KEY (id);
 
@@ -1762,6 +1988,30 @@
               "definition": "CREATE OR REPLACE FUNCTION public.update_last_modified()\n RETURNS trigger\n LANGUAGE plpgsql\nAS $function$\nBEGIN\n    NEW.last_modified = CURRENT_TIMESTAMP;\n    RETURN NEW;\nEND;\n$function$\n",
               "signature": "public.update_last_modified()"
             }
+          ],
+          "sequences": [
+            {
+              "name": "accounts_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "accounts",
+              "owner_column": "id"
+            },
+            {
+              "name": "audit_log_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "audit_log",
+              "owner_column": "id"
+            }
           ]
         }
       ]
@@ -1778,6 +2028,22 @@
     SET client_min_messages = warning;
     SET row_security = off;
 
+    CREATE SEQUENCE "public"."accounts_id_seq"
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        MINVALUE 1
+        MAXVALUE 2147483647
+        NO CYCLE;
+
+    CREATE SEQUENCE "public"."audit_log_id_seq"
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        MINVALUE 1
+        MAXVALUE 2147483647
+        NO CYCLE;
+
     SET default_tablespace = '';
 
     CREATE TABLE "public"."accounts" (
@@ -1786,6 +2052,8 @@
         "balance" numeric(10,2) DEFAULT 0,
         "last_modified" timestamp without time zone DEFAULT CURRENT_TIMESTAMP
     );
+
+    ALTER SEQUENCE "public"."accounts_id_seq" OWNED BY "public"."accounts"."id";
 
     ALTER TABLE ONLY "public"."accounts" ADD CONSTRAINT "accounts_pkey" PRIMARY KEY (id);
 
@@ -1796,6 +2064,8 @@
         "user_name" character varying(50),
         "timestamp" timestamp without time zone DEFAULT CURRENT_TIMESTAMP
     );
+
+    ALTER SEQUENCE "public"."audit_log_id_seq" OWNED BY "public"."audit_log"."id";
 
     ALTER TABLE ONLY "public"."audit_log" ADD CONSTRAINT "audit_log_pkey" PRIMARY KEY (id);
 
@@ -1969,6 +2239,41 @@
                 }
               ]
             }
+          ],
+          "sequences": [
+            {
+              "name": "categories_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "categories",
+              "owner_column": "id"
+            },
+            {
+              "name": "orders_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "orders",
+              "owner_column": "id"
+            },
+            {
+              "name": "products_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "products",
+              "owner_column": "id"
+            }
           ]
         }
       ]
@@ -1985,12 +2290,38 @@
     SET client_min_messages = warning;
     SET row_security = off;
 
+    CREATE SEQUENCE "public"."categories_id_seq"
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        MINVALUE 1
+        MAXVALUE 2147483647
+        NO CYCLE;
+
+    CREATE SEQUENCE "public"."orders_id_seq"
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        MINVALUE 1
+        MAXVALUE 2147483647
+        NO CYCLE;
+
+    CREATE SEQUENCE "public"."products_id_seq"
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        MINVALUE 1
+        MAXVALUE 2147483647
+        NO CYCLE;
+
     SET default_tablespace = '';
 
     CREATE TABLE "public"."categories" (
         "id" integer DEFAULT nextval('categories_id_seq'::regclass) NOT NULL,
         "name" character varying(100) NOT NULL
     );
+
+    ALTER SEQUENCE "public"."categories_id_seq" OWNED BY "public"."categories"."id";
 
     ALTER TABLE ONLY "public"."categories" ADD CONSTRAINT "categories_pkey" PRIMARY KEY (id);
 
@@ -2000,6 +2331,8 @@
         "quantity" integer DEFAULT 1
     );
 
+    ALTER SEQUENCE "public"."orders_id_seq" OWNED BY "public"."orders"."id";
+
     ALTER TABLE ONLY "public"."orders" ADD CONSTRAINT "orders_pkey" PRIMARY KEY (id);
 
     CREATE TABLE "public"."products" (
@@ -2007,6 +2340,8 @@
         "name" character varying(100) NOT NULL,
         "category_id" integer
     );
+
+    ALTER SEQUENCE "public"."products_id_seq" OWNED BY "public"."products"."id";
 
     ALTER TABLE ONLY "public"."products" ADD CONSTRAINT "products_pkey" PRIMARY KEY (id);
 
@@ -2204,6 +2539,30 @@
                 }
               ]
             }
+          ],
+          "sequences": [
+            {
+              "name": "employees_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "employees",
+              "owner_column": "id"
+            },
+            {
+              "name": "projects_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "projects",
+              "owner_column": "id"
+            }
           ]
         }
       ]
@@ -2219,6 +2578,22 @@
     SET xmloption = content;
     SET client_min_messages = warning;
     SET row_security = off;
+
+    CREATE SEQUENCE "public"."employees_id_seq"
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        MINVALUE 1
+        MAXVALUE 2147483647
+        NO CYCLE;
+
+    CREATE SEQUENCE "public"."projects_id_seq"
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        MINVALUE 1
+        MAXVALUE 2147483647
+        NO CYCLE;
 
     SET default_tablespace = '';
 
@@ -2236,6 +2611,8 @@
         "manager_id" integer
     );
 
+    ALTER SEQUENCE "public"."employees_id_seq" OWNED BY "public"."employees"."id";
+
     ALTER TABLE ONLY "public"."employees" ADD CONSTRAINT "employees_pkey" PRIMARY KEY (id);
 
     CREATE TABLE "public"."projects" (
@@ -2244,6 +2621,8 @@
         "lead_emp_id" integer,
         "dept_code" character varying(10)
     );
+
+    ALTER SEQUENCE "public"."projects_id_seq" OWNED BY "public"."projects"."id";
 
     ALTER TABLE ONLY "public"."projects" ADD CONSTRAINT "projects_pkey" PRIMARY KEY (id);
 
@@ -2433,6 +2812,41 @@
                 }
               ]
             }
+          ],
+          "sequences": [
+            {
+              "name": "cities_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "cities",
+              "owner_column": "id"
+            },
+            {
+              "name": "countries_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "countries",
+              "owner_column": "id"
+            },
+            {
+              "name": "states_id_seq",
+              "data_type": "integer",
+              "start": "1",
+              "min_value": "1",
+              "max_value": "2147483647",
+              "increment": "1",
+              "cache_size": "1",
+              "owner_table": "states",
+              "owner_column": "id"
+            }
           ]
         }
       ]
@@ -2449,6 +2863,30 @@
     SET client_min_messages = warning;
     SET row_security = off;
 
+    CREATE SEQUENCE "public"."cities_id_seq"
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        MINVALUE 1
+        MAXVALUE 2147483647
+        NO CYCLE;
+
+    CREATE SEQUENCE "public"."countries_id_seq"
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        MINVALUE 1
+        MAXVALUE 2147483647
+        NO CYCLE;
+
+    CREATE SEQUENCE "public"."states_id_seq"
+        AS integer
+        START WITH 1
+        INCREMENT BY 1
+        MINVALUE 1
+        MAXVALUE 2147483647
+        NO CYCLE;
+
     SET default_tablespace = '';
 
     CREATE TABLE "public"."cities" (
@@ -2457,6 +2895,8 @@
         "state_id" integer
     );
 
+    ALTER SEQUENCE "public"."cities_id_seq" OWNED BY "public"."cities"."id";
+
     ALTER TABLE ONLY "public"."cities" ADD CONSTRAINT "cities_pkey" PRIMARY KEY (id);
 
     CREATE TABLE "public"."countries" (
@@ -2464,6 +2904,8 @@
         "code" character varying(3) NOT NULL,
         "name" character varying(100) NOT NULL
     );
+
+    ALTER SEQUENCE "public"."countries_id_seq" OWNED BY "public"."countries"."id";
 
     ALTER TABLE ONLY "public"."countries" ADD CONSTRAINT "countries_pkey" PRIMARY KEY (id);
 
@@ -2474,6 +2916,8 @@
         "name" character varying(100) NOT NULL,
         "country_id" integer
     );
+
+    ALTER SEQUENCE "public"."states_id_seq" OWNED BY "public"."states"."id";
 
     ALTER TABLE ONLY "public"."states" ADD CONSTRAINT "states_pkey" PRIMARY KEY (id);
 

@@ -1107,8 +1107,12 @@ func printPrimaryKeyClause(buf *strings.Builder, table *storepb.TableMetadata) e
 			if _, err := fmt.Fprint(buf, ")"); err != nil {
 				return err
 			}
-			if _, err := fmt.Fprintf(buf, " /*T![clustered_index] %s */", table.PrimaryKeyType); err != nil {
-				return err
+			// Metadata that never said CLUSTERED or NONCLUSTERED would otherwise
+			// render as an empty marker comment.
+			if table.PrimaryKeyType != "" {
+				if _, err := fmt.Fprintf(buf, " /*T![clustered_index] %s */", table.PrimaryKeyType); err != nil {
+					return err
+				}
 			}
 			return nil
 		}

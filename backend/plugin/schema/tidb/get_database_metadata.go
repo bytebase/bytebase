@@ -227,6 +227,7 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 
 	// Process table-level constraints
 	synthesizedChecks := 0
+	synthesizedForeignKeys := 0
 	for _, constraint := range stmt.Constraints {
 		switch constraint.Tp {
 		case ast.ConstraintPrimaryKey:
@@ -275,8 +276,12 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 			table.Indexes = append(table.Indexes, index)
 
 		case ast.ConstraintForeignKey:
+			fkName := constraint.Name
+			if fkName == "" {
+				fkName = unnamedForeignKeyName(table, &synthesizedForeignKeys)
+			}
 			fk := &storepb.ForeignKeyMetadata{
-				Name:              constraint.Name,
+				Name:              fkName,
 				Columns:           m.getColumnNames(constraint.Keys),
 				ReferencedTable:   constraint.Refer.Table.Name.O,
 				ReferencedColumns: m.getColumnNames(constraint.Refer.IndexPartSpecifications),
@@ -744,6 +749,24 @@ func (*metadataExtractor) getIndexType(constraint *ast.Constraint) string {
 	}
 
 	return indexType
+}
+
+// unnamedForeignKeyName is the <table>_ibfk_<n> name TiDB gives a FOREIGN KEY
+// written without one. The definition writer always emits an explicit CONSTRAINT
+// clause, so an empty name renders as CONSTRAINT “ and the server rejects the
+// statement with "Incorrect index name".
+func unnamedForeignKeyName(table *storepb.TableMetadata, synthesized *int) string {
+	taken := make(map[string]bool, len(table.ForeignKeys))
+	for _, fk := range table.ForeignKeys {
+		taken[fk.Name] = true
+	}
+	for {
+		*synthesized++
+		name := fmt.Sprintf("%s_ibfk_%d", table.Name, *synthesized)
+		if !taken[name] {
+			return name
+		}
+	}
 }
 
 // unnamedCheckName is the <table>_chk_<n> name TiDB gives a CHECK written
