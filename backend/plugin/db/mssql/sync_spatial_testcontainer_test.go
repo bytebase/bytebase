@@ -2,19 +2,16 @@ package mssql
 
 import (
 	"context"
-	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/uuid"
 	_ "github.com/microsoft/go-mssqldb"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/testing/protocmp"
 
 	"github.com/bytebase/bytebase/backend/common/testcontainer"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
-	"github.com/bytebase/bytebase/backend/plugin/db"
 )
 
 // TestSyncSpatialIndex pins what SyncDBSchema reports for SQL Server spatial
@@ -258,13 +255,6 @@ GO
 
 				// Spatial indexes must not disturb how sync classifies the
 				// other index kinds on the same table.
-				//
-				// idx_name_status counts as REGULAR, not UNIQUE: the index
-				// query in sync.go selects no is_unique, so only a primary key
-				// or a unique constraint is reported unique, while a plain
-				// CREATE UNIQUE INDEX is not. The omni parser does set Unique
-				// for it, so the two sides disagree. Retire this note with the
-				// counts when sync starts reading is_unique.
 				counts := make(map[string]int)
 				for _, index := range table.Indexes {
 					switch {
@@ -282,8 +272,8 @@ GO
 				}
 				require.Equal(t, map[string]int{
 					"PRIMARY":     1,
-					"UNIQUE":      1,
-					"REGULAR":     3,
+					"UNIQUE":      2,
+					"REGULAR":     2,
 					"SPATIAL":     2,
 					"COLUMNSTORE": 1,
 				}, counts)
@@ -357,7 +347,7 @@ GO
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
-			driver := newSpatialTestDatabase(ctx, t, container)
+			driver := newSyncTestDatabase(ctx, t, container)
 			executeBatches(ctx, t, driver, tc.setupSQL)
 
 			metadata, err := driver.SyncDBSchema(ctx)
@@ -376,7 +366,7 @@ func TestSyncSpatialIndexIsRepeatable(t *testing.T) {
 	ctx := context.Background()
 	container := testcontainer.SharedMSSQLContainer(t)
 
-	driver := newSpatialTestDatabase(ctx, t, container)
+	driver := newSyncTestDatabase(ctx, t, container)
 	executeBatches(ctx, t, driver, `
 CREATE SCHEMA spatial_test;
 GO
@@ -434,54 +424,6 @@ GO
 		return indexes
 	}
 	require.Empty(t, cmp.Diff(byName(first), byName(second), protocmp.Transform()))
-}
-
-// newSpatialTestDatabase gives the test a database of its own on the shared
-// container so the cases can run in parallel, and returns a driver open on it.
-func newSpatialTestDatabase(ctx context.Context, t *testing.T, container *testcontainer.Container) *Driver {
-	t.Helper()
-
-	name := fmt.Sprintf("spatial_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
-	_, err := container.GetDB().Exec(fmt.Sprintf("CREATE DATABASE [%s]", name))
-	require.NoError(t, err)
-
-	opened := openMSSQL(ctx, t, container.GetHost(), container.GetPort(), name)
-	t.Cleanup(func() { opened.Close(ctx) })
-
-	driver, ok := opened.(*Driver)
-	require.True(t, ok, "expected *Driver")
-	return driver
-}
-
-// executeBatches runs a setup script one GO-separated batch at a time, which is
-// what SQL Server requires for CREATE SCHEMA and CREATE INDEX.
-func executeBatches(ctx context.Context, t *testing.T, driver *Driver, script string) {
-	t.Helper()
-
-	for _, batch := range splitSQLStatements(script) {
-		if strings.TrimSpace(batch) == "" {
-			continue
-		}
-		_, err := driver.Execute(ctx, batch, db.ExecuteOptions{})
-		require.NoError(t, err, "setup batch: %s", batch)
-	}
-}
-
-func requireTable(t *testing.T, metadata *storepb.DatabaseSchemaMetadata, schemaName, tableName string) *storepb.TableMetadata {
-	t.Helper()
-
-	for _, schema := range metadata.Schemas {
-		if schema.Name != schemaName {
-			continue
-		}
-		for _, table := range schema.Tables {
-			if table.Name == tableName {
-				return table
-			}
-		}
-	}
-	require.FailNowf(t, "table not synced", "%s.%s", schemaName, tableName)
-	return nil
 }
 
 func spatialIndexes(table *storepb.TableMetadata) []*storepb.IndexMetadata {
@@ -549,26 +491,4 @@ func requireGridLevels(t *testing.T, index *storepb.IndexMetadata, level1, level
 		densities[level.Level] = level.Density
 	}
 	require.Equal(t, map[int32]string{1: level1, 2: level2, 3: level3, 4: level4}, densities)
-}
-
-func splitSQLStatements(script string) []string {
-	var statements []string
-	var current strings.Builder
-
-	for _, line := range strings.Split(script, "\n") {
-		if strings.EqualFold(strings.TrimSpace(line), "GO") {
-			if current.Len() > 0 {
-				statements = append(statements, current.String())
-				current.Reset()
-			}
-			continue
-		}
-		current.WriteString(line)
-		current.WriteString("\n")
-	}
-
-	if current.Len() > 0 {
-		statements = append(statements, current.String())
-	}
-	return statements
 }
