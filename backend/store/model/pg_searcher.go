@@ -156,21 +156,6 @@ func (s *DatabaseSearcher) SearchFunctions(name string) ([]string, []*storepb.Fu
 	return schemas, funcs
 }
 
-// SearchObject searches for any database object in the search path.
-// NOTE: This is primarily designed for PostgreSQL's search_path concept.
-func (s *DatabaseSearcher) SearchObject(name string) (string, string) {
-	for _, schemaName := range s.searchPath {
-		schema := s.db.GetSchemaMetadata(schemaName)
-		if schema == nil {
-			continue
-		}
-		if schema.GetTable(name) != nil || schema.GetView(name) != nil || schema.GetMaterializedView(name) != nil || schema.GetFunction(name) != nil || schema.GetProcedure(name) != nil || schema.GetPackage(name) != nil || schema.GetSequence(name) != nil || schema.GetExternalTable(name) != nil {
-			return schema.proto.Name, name
-		}
-	}
-	return "", ""
-}
-
 // SearchTable searches for a table in the search path.
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
 func (d *DatabaseMetadata) SearchTable(searchPath []string, name string) (string, *TableMetadata) {
@@ -294,15 +279,16 @@ func (d *DatabaseMetadata) SearchFunctions(searchPath []string, name string) ([]
 	return schemas, funcs
 }
 
-// SearchObject searches for any database object in the search path.
-// NOTE: This is primarily designed for PostgreSQL's search_path concept.
-func (d *DatabaseMetadata) SearchObject(searchPath []string, name string) (string, string) {
+// SearchRelation resolves a name to the first relation in the search path.
+// Routines do not shadow relations; sequences do, because PostgreSQL keeps
+// them in the relation namespace.
+func (d *DatabaseMetadata) SearchRelation(searchPath []string, name string) (string, string) {
 	for _, schemaName := range searchPath {
 		schema := d.GetSchemaMetadata(schemaName)
 		if schema == nil {
 			continue
 		}
-		if schema.GetTable(name) != nil || schema.GetView(name) != nil || schema.GetMaterializedView(name) != nil || schema.GetFunction(name) != nil || schema.GetProcedure(name) != nil || schema.GetPackage(name) != nil || schema.GetSequence(name) != nil || schema.GetExternalTable(name) != nil {
+		if schema.GetTable(name) != nil || schema.GetView(name) != nil || schema.GetMaterializedView(name) != nil || schema.GetExternalTable(name) != nil || schema.GetSequence(name) != nil {
 			return schema.proto.Name, name
 		}
 	}

@@ -182,6 +182,50 @@ func findDollarQuotedBody(definition string) (tag string, bodyStart int, bodyEnd
 	return "", 0, 0
 }
 
+// unresolvedColumnsError checks stored metadata independently of column lineage.
+// Accesses are conservative: CTE names can match physical tables, so this may
+// refuse a CTE-only query. Reads missing from the access set remain unchecked.
+func (e *omniQuerySpanExtractor) unresolvedColumnsError(accesses base.SourceColumnSet) *base.UnresolvedColumnsError {
+	seen := make(map[base.ColumnResource]bool, len(accesses))
+	var unresolved []base.ColumnResource
+	for access := range accesses {
+		relation := base.ColumnResource{
+			Server:   access.Server,
+			Database: access.Database,
+			Schema:   access.Schema,
+			Table:    access.Table,
+		}
+		if relation.Table == "" || seen[relation] {
+			continue
+		}
+		seen[relation] = true
+		if e.relationHasNoSyncedColumns(relation) {
+			unresolved = append(unresolved, relation)
+		}
+	}
+	if len(unresolved) == 0 {
+		return nil
+	}
+	return &base.UnresolvedColumnsError{Relations: unresolved}
+}
+
+// relationHasNoSyncedColumns checks tables only: masking policies attach to
+// table columns, and GetTable resolves partitions to their parent.
+// A legal zero-column table is indistinguishable from degraded metadata and
+// remains blocked even after re-syncing.
+func (e *omniQuerySpanExtractor) relationHasNoSyncedColumns(relation base.ColumnResource) bool {
+	meta, err := e.getDatabaseMetadata(relation.Database)
+	if err != nil || meta == nil {
+		return false
+	}
+	schema := meta.GetSchemaMetadata(relation.Schema)
+	if schema == nil {
+		return false
+	}
+	table := schema.GetTable(relation.Table)
+	return table != nil && len(table.GetProto().GetColumns()) == 0
+}
+
 // getQuerySpan extracts the query span for the given SQL statement.
 func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*base.QuerySpan, error) {
 	e.ctx = ctx
@@ -276,18 +320,20 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 		// used as table sources: SELECT * FROM func()).
 		if results := e.tryUserFuncTableSource(selStmt, accessesMap); results != nil {
 			return &base.QuerySpan{
-				Type:          base.Select,
-				SourceColumns: accessesMap,
-				Results:       results,
+				Type:                   base.Select,
+				SourceColumns:          accessesMap,
+				Results:                results,
+				UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap),
 			}, nil
 		}
 		// Fail-open: return access tables with best-effort column names and lineage
 		// when analysis fails (e.g., unsupported built-in functions).
 		return &base.QuerySpan{
-			Type:             base.Select,
-			SourceColumns:    accessesMap,
-			Results:          e.extractFallbackColumns(selStmt),
-			PredicateColumns: e.funcPredicateColumns,
+			Type:                   base.Select,
+			SourceColumns:          accessesMap,
+			Results:                e.extractFallbackColumns(selStmt),
+			PredicateColumns:       e.funcPredicateColumns,
+			UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap),
 		}, nil
 	}
 
@@ -302,10 +348,11 @@ func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) 
 	}
 
 	return &base.QuerySpan{
-		Type:             base.Select,
-		SourceColumns:    accessesMap,
-		PredicateColumns: e.funcPredicateColumns,
-		Results:          results,
+		Type:                   base.Select,
+		SourceColumns:          accessesMap,
+		PredicateColumns:       e.funcPredicateColumns,
+		Results:                results,
+		UnresolvedColumnsError: e.unresolvedColumnsError(accessesMap),
 	}, nil
 }
 
