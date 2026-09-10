@@ -121,10 +121,7 @@ export function DeployPendingTasksSection({
 
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
-      <SheetContent
-        className="w-[25rem] max-w-[calc(100vw-2rem)]"
-        width="standard"
-      >
+      <SheetContent width="narrow">
         <SheetHeader>
           <SheetTitle>{t("rollout.pending-tasks-preview.title")}</SheetTitle>
         </SheetHeader>

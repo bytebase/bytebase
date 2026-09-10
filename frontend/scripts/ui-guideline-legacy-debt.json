@@ -32,12 +32,6 @@
     },
     {
       "path": "src/components/AccountMultiSelect.tsx",
-      "rule": "no-literal-color",
-      "token": "#3B82F6",
-      "count": 1
-    },
-    {
-      "path": "src/components/AccountMultiSelect.tsx",
       "rule": "no-native-control",
       "token": "button",
       "count": 1
@@ -691,12 +685,6 @@
       "count": 2
     },
     {
-      "path": "src/components/Watermark.tsx",
-      "rule": "no-literal-color",
-      "token": "rgba(",
-      "count": 2
-    },
-    {
       "path": "src/modules/agent/components/AgentChat.tsx",
       "rule": "no-raw-color",
       "token": "bg-amber-50",
@@ -1148,12 +1136,6 @@
     },
     {
       "path": "src/routes/project/database-detail/revision/ImportRevisionSheet.tsx",
-      "rule": "no-ad-hoc-sheet-width",
-      "token": "max-w-[90vw]",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/database-detail/revision/ImportRevisionSheet.tsx",
       "rule": "no-native-control",
       "token": "button",
       "count": 1
@@ -1168,18 +1150,6 @@
       "path": "src/routes/project/database-detail/revision/ImportRevisionSheet.tsx",
       "rule": "no-native-control",
       "token": "select",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailActionBar.tsx",
-      "rule": "no-ad-hoc-sheet-width",
-      "token": "max-w-[32rem]",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/issue-detail/components/IssueDetailActionBar.tsx",
-      "rule": "no-ad-hoc-sheet-width",
-      "token": "w-[calc(100vw-2rem)]",
       "count": 1
     },
     {
@@ -1364,18 +1334,6 @@
     },
     {
       "path": "src/routes/project/plan-detail/components/deploy/DeployPendingTasksSection.tsx",
-      "rule": "no-ad-hoc-sheet-width",
-      "token": "max-w-[calc(100vw-2rem)]",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/deploy/DeployPendingTasksSection.tsx",
-      "rule": "no-ad-hoc-sheet-width",
-      "token": "w-[25rem]",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/deploy/DeployPendingTasksSection.tsx",
       "rule": "no-native-control",
       "token": "button",
       "count": 1
@@ -1439,18 +1397,6 @@
       "rule": "no-native-control",
       "token": "button",
       "count": 5
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/PlanDetailChangesBranch.tsx",
-      "rule": "no-ad-hoc-sheet-width",
-      "token": "sm:w-[80vw]",
-      "count": 1
-    },
-    {
-      "path": "src/routes/project/plan-detail/components/PlanDetailChangesBranch.tsx",
-      "rule": "no-ad-hoc-sheet-width",
-      "token": "w-screen",
-      "count": 1
     },
     {
       "path": "src/routes/project/plan-detail/components/PlanDetailChangesBranch.tsx",

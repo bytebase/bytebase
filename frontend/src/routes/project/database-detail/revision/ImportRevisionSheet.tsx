@@ -376,7 +376,7 @@ export function ImportRevisionSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent width="wide" className="max-w-[90vw]">
+      <SheetContent width="large">
         <SheetHeader>
           <SheetTitle>{t("database.revision.import-revision")}</SheetTitle>
         </SheetHeader>

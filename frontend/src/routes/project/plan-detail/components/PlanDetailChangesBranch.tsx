@@ -1619,7 +1619,7 @@ function TargetSelectorSheet({
 
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
-      <SheetContent className="w-screen sm:w-[80vw]" width="wide">
+      <SheetContent width="workspace">
         <SheetHeader>
           <SheetTitle>{title ?? t("plan.select-targets")}</SheetTitle>
         </SheetHeader>
