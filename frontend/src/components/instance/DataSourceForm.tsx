@@ -122,7 +122,7 @@ export function RedisSentinelFields({
       <FormField
         title={
           <>
-            Master Name <span className="text-error">*</span>
+            {t("instance.master-name")} <span className="text-error">*</span>
           </>
         }
       >
@@ -133,7 +133,7 @@ export function RedisSentinelFields({
           onChange={(e) => update({ masterName: e.target.value })}
         />
       </FormField>
-      <FormField title={<>Master Username</>}>
+      <FormField title={t("instance.master-username")}>
         <Input
           value={dataSource.masterUsername ?? ""}
           className="w-full"
@@ -141,7 +141,7 @@ export function RedisSentinelFields({
           onChange={(e) => update({ masterUsername: e.target.value })}
         />
       </FormField>
-      <FormField title={<>Master Password</>}>
+      <FormField title={t("instance.master-password")}>
         <div>
           {!isCreating && allowUsingEmptyPassword && (
             <label className="flex items-center gap-x-1.5 mb-2 text-sm cursor-pointer">

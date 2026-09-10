@@ -730,25 +730,22 @@ function AdditionalAddressesFields({
   onPortChange: (index: number, value: string) => void;
 }>) {
   const { t } = useTranslation();
+  const id = useId();
 
   return (
-    <FormField>
-      <FormLabel htmlFor="additionalAddresses">
-        {t("data-source.additional-node-addresses")}
-      </FormLabel>
+    <FormField title={t("data-source.additional-node-addresses")}>
       <FormControlGroup className="mt-1">
         {addresses.map((addr, index) => (
           <FormControlRow key={index} className="items-end">
             <FormField className="min-w-0 flex-1">
-              {index === 0 && (
-                <FormLabel
-                  htmlFor="additionalAddressesHost"
-                  className="font-normal!"
-                >
-                  {t("instance.hostname")}
-                </FormLabel>
-              )}
+              <FormLabel
+                htmlFor={`${id}-${index}-host`}
+                className={index === 0 ? "font-normal!" : "sr-only"}
+              >
+                {t("instance.hostname")}
+              </FormLabel>
               <Input
+                id={`${id}-${index}-host`}
                 value={addr.host}
                 required
                 className="w-full"
@@ -757,15 +754,14 @@ function AdditionalAddressesFields({
               />
             </FormField>
             <FormField className="w-32 shrink-0">
-              {index === 0 && (
-                <FormLabel
-                  htmlFor="additionalAddressesPort"
-                  className="font-normal!"
-                >
-                  {t("instance.port")}
-                </FormLabel>
-              )}
+              <FormLabel
+                htmlFor={`${id}-${index}-port`}
+                className={index === 0 ? "font-normal!" : "sr-only"}
+              >
+                {t("instance.port")}
+              </FormLabel>
               <Input
+                id={`${id}-${index}-port`}
                 value={addr.port}
                 className="w-full"
                 placeholder={defaultPort}
@@ -1666,15 +1662,16 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                         onPortChange={handleAdditionalAddressPortChange}
                       />
                       {adminDataSource.redisType ===
-                        DataSource_RedisType.SENTINEL && (
-                        <RedisSentinelFields
-                          dataSource={adminDataSource}
-                          isCreating={isCreating}
-                          allowEdit={allowEdit}
-                          allowUsingEmptyPassword={allowUsingEmptyPassword}
-                          onDataSourceChange={handleDataSourceChange}
-                        />
-                      )}
+                        DataSource_RedisType.SENTINEL &&
+                        editingDataSource && (
+                          <RedisSentinelFields
+                            dataSource={editingDataSource}
+                            isCreating={isCreating}
+                            allowEdit={allowEdit}
+                            allowUsingEmptyPassword={allowUsingEmptyPassword}
+                            onDataSourceChange={handleDataSourceChange}
+                          />
+                        )}
                     </fieldset>
                   </ResponsiveFormLayout>
                 )}
