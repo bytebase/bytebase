@@ -44,7 +44,7 @@ const mocks = vi.hoisted(() => {
     instanceV1SupportsTrigger: vi.fn(() => false),
     bytesToString: vi.fn((size: number) => `${size} B`),
     hasProjectPermissionV2: vi.fn(() => true),
-    dialogProps: [] as unknown[],
+    sheetProps: [] as unknown[],
     useTranslation: vi.fn(() => ({
       t: (key: string) => key,
     })),
@@ -138,10 +138,10 @@ vi.mock("@/components/ui/input", () => ({
   ),
 }));
 
-vi.mock("./TableDetailDialog", () => ({
+vi.mock("./TableDetailSheet", () => ({
   EditableClassificationCell: () => null,
-  TableDetailDialog: (props: unknown) => {
-    mocks.dialogProps.push(props);
+  TableDetailSheet: (props: unknown) => {
+    mocks.sheetProps.push(props);
     return null;
   },
 }));
@@ -288,7 +288,7 @@ beforeEach(async () => {
   mocks.instanceV1SupportsColumn.mockReturnValue(true);
   mocks.instanceV1SupportsIndex.mockReset();
   mocks.instanceV1SupportsIndex.mockReturnValue(true);
-  mocks.dialogProps.length = 0;
+  mocks.sheetProps.length = 0;
 
   vi.resetModules();
   ({ DatabaseObjectExplorer } = await import("./DatabaseObjectExplorer"));
@@ -356,9 +356,9 @@ describe("DatabaseObjectExplorer", () => {
     clickElement(ordersRow as HTMLTableRowElement);
     await flush();
 
-    const latestDialogProps = mocks.dialogProps.at(-1);
-    expect(() => JSON.stringify(latestDialogProps)).not.toThrow();
-    expect(latestDialogProps).toEqual(
+    const latestSheetProps = mocks.sheetProps.at(-1);
+    expect(() => JSON.stringify(latestSheetProps)).not.toThrow();
+    expect(latestSheetProps).toEqual(
       expect.objectContaining({
         table: expect.objectContaining({
           partitions: [

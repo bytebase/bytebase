@@ -120,7 +120,7 @@ func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, req 
 
 	databaseConfig := convertDatabaseCatalog(req.Msg.GetCatalog())
 
-	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
+	semanticTypesSetting, err := getSemanticTypesSettingWithBuiltins(ctx, s.store)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get semantic types setting"))
 	}

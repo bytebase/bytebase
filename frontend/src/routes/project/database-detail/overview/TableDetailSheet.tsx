@@ -2,14 +2,26 @@ import { create, fromJsonString, toJsonString } from "@bufbuild/protobuf";
 import { cloneDeep } from "lodash-es";
 import { Pencil, X } from "lucide-react";
 import type { MouseEvent, ReactNode } from "react";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureAttention } from "@/components/FeatureAttention";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { SearchInput } from "@/components/ui/search-input";
+import {
+  Sheet,
+  SheetBody,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import {
   Table,
   TableBody,
@@ -20,10 +32,12 @@ import {
 } from "@/components/ui/table";
 import { Textarea } from "@/components/ui/textarea";
 import { useDatabaseCatalog } from "@/hooks/useDatabaseCatalog";
+import { useSemanticTypes } from "@/hooks/useSemanticTypes";
 import {
   updateColumnCatalog,
   updateTableCatalog,
 } from "@/lib/column-data-table/utils";
+import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { getTableCatalog } from "@/stores/app/databaseCatalog";
@@ -72,7 +86,7 @@ interface TriggerDetail {
   timing: string;
 }
 
-export interface TableDetailDialogData {
+export interface TableDetailSheetData {
   classification?: string;
   classificationConfig?: DataClassificationSetting_DataClassificationConfig;
   columns: TableColumnDetail[];
@@ -292,19 +306,25 @@ function MiniActionButton({
   onClick: (event: MouseEvent<HTMLButtonElement>) => void;
 }) {
   return (
-    <button
+    <Button
       type="button"
       aria-label={ariaLabel}
       data-testid={dataTestId}
-      className={`inline-flex size-5 items-center justify-center rounded-xs text-control transition-colors hover:bg-control-bg hover:text-main disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none ${className ?? ""}`}
+      appearance="secondary"
+      size="xs"
+      className={cn("w-6 px-0", className)}
       disabled={disabled}
-      onKeyDown={(event) => event.stopPropagation()}
+      onKeyDown={(event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.stopPropagation();
+        }
+      }}
       onMouseDown={(event) => event.stopPropagation()}
       onPointerDown={(event) => event.stopPropagation()}
       onClick={onClick}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -489,18 +509,17 @@ function flattenPartitionRows(
   ]);
 }
 
-function ClassificationPickerDialog({
+function ClassificationPickerPopover({
   classificationConfig,
-  onOpenChange,
   onSelect,
-  open,
+  testId,
 }: {
   classificationConfig: DataClassificationSetting_DataClassificationConfig;
-  onOpenChange: (open: boolean) => void;
   onSelect: (classificationId: string) => void;
-  open: boolean;
+  testId: string;
 }) {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
@@ -517,16 +536,30 @@ function ClassificationPickerDialog({
   }, [classificationConfig, searchText]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-6">
-        <DialogTitle>{t("schema-template.classification.select")}</DialogTitle>
-        <div className="mt-4 flex flex-col gap-y-4">
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        aria-label={t("common.edit")}
+        data-testid={testId}
+        className="inline-flex size-5 items-center justify-center rounded-xs text-control transition-colors hover:bg-control-bg hover:text-main focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent [&_svg]:pointer-events-none"
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.stopPropagation();
+          }
+        }}
+        onMouseDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <Pencil className="size-3" />
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-96 p-0">
+        <div className="flex flex-col gap-y-2 p-3">
           <SearchInput
             placeholder={t("schema-template.classification.search")}
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
           />
-          <div className="max-h-[28rem] overflow-y-auto rounded-sm border border-block-border">
+          <div className="max-h-80 overflow-y-auto rounded-sm border border-block-border">
             {rows.length === 0 ? (
               <div className="px-4 py-6 text-sm text-control-light">
                 {t("common.no-data")}
@@ -562,47 +595,43 @@ function ClassificationPickerDialog({
                   }
 
                   return (
-                    <button
+                    <Button
                       key={node.id}
                       type="button"
+                      appearance="secondary"
+                      size="sm"
                       data-testid={`classification-option-${toTestId(node.id)}`}
-                      className="flex w-full items-center justify-between gap-x-2 px-4 py-2 text-left text-sm text-control hover:bg-control-bg"
+                      className="h-auto w-full justify-between rounded-none px-4 py-2 text-left text-sm font-normal whitespace-normal"
                       style={{ paddingLeft: `${depth * 16 + 16}px` }}
                       onClick={() => {
                         onSelect(node.id);
-                        onOpenChange(false);
+                        setOpen(false);
                       }}
                     >
                       {content}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
             )}
           </div>
-          <div className="flex justify-end gap-x-2">
-            <Button appearance="outline" onClick={() => onOpenChange(false)}>
-              {t("common.cancel")}
-            </Button>
-          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </PopoverContent>
+    </Popover>
   );
 }
 
-function SemanticTypePickerDialog({
-  onOpenChange,
+function SemanticTypePickerPopover({
   onSelect,
-  open,
   semanticTypeList,
+  testId,
 }: {
-  onOpenChange: (open: boolean) => void;
   onSelect: (semanticTypeId: string) => void;
-  open: boolean;
   semanticTypeList: SemanticTypeSetting_SemanticType[];
+  testId: string;
 }) {
   const { t } = useTranslation();
+  const [open, setOpen] = useState(false);
   const [searchText, setSearchText] = useState("");
 
   useEffect(() => {
@@ -628,18 +657,30 @@ function SemanticTypePickerDialog({
   }, [searchText, semanticTypeList]);
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl p-6">
-        <DialogTitle>
-          {t("settings.sensitive-data.semantic-types.self")}
-        </DialogTitle>
-        <div className="mt-4 flex flex-col gap-y-4">
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger
+        aria-label={t("common.edit")}
+        data-testid={testId}
+        className="inline-flex size-5 items-center justify-center rounded-xs text-control transition-colors hover:bg-control-bg hover:text-main focus:outline-hidden focus-visible:ring-2 focus-visible:ring-accent [&_svg]:pointer-events-none"
+        onKeyDown={(event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.stopPropagation();
+          }
+        }}
+        onMouseDown={(event) => event.stopPropagation()}
+        onPointerDown={(event) => event.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <Pencil className="size-3" />
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-96 p-0">
+        <div className="flex flex-col gap-y-2 p-3">
           <SearchInput
             placeholder={t("common.filter-by-name")}
             value={searchText}
             onChange={(event) => setSearchText(event.target.value)}
           />
-          <div className="max-h-[28rem] overflow-y-auto rounded-sm border border-block-border">
+          <div className="max-h-80 overflow-y-auto rounded-sm border border-block-border">
             {filteredSemanticTypeList.length === 0 ? (
               <div className="px-4 py-6 text-sm text-control-light">
                 {t("common.no-data")}
@@ -647,14 +688,16 @@ function SemanticTypePickerDialog({
             ) : (
               <div className="divide-y divide-block-border">
                 {filteredSemanticTypeList.map((semanticType) => (
-                  <button
+                  <Button
                     key={semanticType.id}
                     type="button"
+                    appearance="secondary"
+                    size="sm"
                     data-testid={`semantic-type-option-${toTestId(semanticType.id)}`}
-                    className="flex w-full flex-col items-start gap-y-1 px-4 py-3 text-left hover:bg-control-bg"
+                    className="h-auto w-full flex-col items-start rounded-none px-4 py-3 text-left font-normal whitespace-normal"
                     onClick={() => {
                       onSelect(semanticType.id);
-                      onOpenChange(false);
+                      setOpen(false);
                     }}
                   >
                     <span className="text-sm font-medium text-main">
@@ -668,19 +711,14 @@ function SemanticTypePickerDialog({
                         {semanticType.description}
                       </span>
                     )}
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
           </div>
-          <div className="flex justify-end gap-x-2">
-            <Button appearance="outline" onClick={() => onOpenChange(false)}>
-              {t("common.cancel")}
-            </Button>
-          </div>
         </div>
-      </DialogContent>
-    </Dialog>
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -698,51 +736,35 @@ export function EditableClassificationCell({
   testIdPrefix: string;
 }) {
   const { t } = useTranslation();
-  const [showPicker, setShowPicker] = useState(false);
 
   return (
-    <>
-      <div className="flex min-w-0 items-center gap-x-1">
-        <ClassificationLevelBadge
-          classification={classification}
+    <div className="flex min-w-0 items-center gap-x-1">
+      <ClassificationLevelBadge
+        classification={classification}
+        classificationConfig={classificationConfig}
+      />
+      {!readonly && classification && (
+        <MiniActionButton
+          ariaLabel={t("common.remove")}
+          dataTestId={`${testIdPrefix}-remove`}
+          onClick={(event) => {
+            event.stopPropagation();
+            void onApply("");
+          }}
+        >
+          <X className="size-3" />
+        </MiniActionButton>
+      )}
+      {!readonly && classificationConfig && (
+        <ClassificationPickerPopover
           classificationConfig={classificationConfig}
-        />
-        {!readonly && classification && (
-          <MiniActionButton
-            ariaLabel={t("common.remove")}
-            dataTestId={`${testIdPrefix}-remove`}
-            onClick={(event) => {
-              event.stopPropagation();
-              void onApply("");
-            }}
-          >
-            <X className="size-3" />
-          </MiniActionButton>
-        )}
-        {!readonly && classificationConfig && (
-          <MiniActionButton
-            ariaLabel={t("common.edit")}
-            dataTestId={`${testIdPrefix}-edit`}
-            onClick={(event) => {
-              event.stopPropagation();
-              setShowPicker(true);
-            }}
-          >
-            <Pencil className="size-3" />
-          </MiniActionButton>
-        )}
-      </div>
-      {classificationConfig && (
-        <ClassificationPickerDialog
-          classificationConfig={classificationConfig}
-          open={showPicker}
-          onOpenChange={setShowPicker}
+          testId={`${testIdPrefix}-edit`}
           onSelect={(classificationId) => {
             void onApply(classificationId);
           }}
         />
       )}
-    </>
+    </div>
   );
 }
 
@@ -761,17 +783,8 @@ function EditableSemanticTypeCell({
 }) {
   const { t } = useTranslation();
   const [showFeatureDialog, setShowFeatureDialog] = useState(false);
-  const [showPicker, setShowPicker] = useState(false);
 
-  const semanticTypeSetting = useAppStore((s) =>
-    s.getSettingByName(Setting_SettingName.SEMANTIC_TYPES)
-  );
-  const semanticTypeList = useMemo<SemanticTypeSetting_SemanticType[]>(() => {
-    return semanticTypeSetting?.value?.value.case === "semanticType"
-      ? ((semanticTypeSetting.value.value.value.types ??
-          []) as SemanticTypeSetting_SemanticType[])
-      : [];
-  }, [semanticTypeSetting]);
+  const { semanticTypes: semanticTypeList } = useSemanticTypes();
   const hasSensitiveDataFeature = useAppStore((s) =>
     s.hasFeature(PlanFeature.FEATURE_DATA_MASKING)
   );
@@ -813,32 +826,28 @@ function EditableSemanticTypeCell({
             <X className="size-3" />
           </MiniActionButton>
         )}
-        {!readonly && (
+        {!readonly && (!hasSensitiveDataFeature || instanceMissingLicense) && (
           <MiniActionButton
             ariaLabel={t("common.edit")}
             dataTestId={`${testIdPrefix}-edit`}
             onClick={(event) => {
               event.stopPropagation();
-              if (!hasSensitiveDataFeature || instanceMissingLicense) {
-                setShowFeatureDialog(true);
-                return;
-              }
-              setShowPicker(true);
+              setShowFeatureDialog(true);
             }}
           >
             <Pencil className="size-3" />
           </MiniActionButton>
         )}
+        {!readonly && hasSensitiveDataFeature && !instanceMissingLicense && (
+          <SemanticTypePickerPopover
+            semanticTypeList={semanticTypeList}
+            testId={`${testIdPrefix}-edit`}
+            onSelect={(nextSemanticTypeId) => {
+              void onApply(nextSemanticTypeId);
+            }}
+          />
+        )}
       </div>
-
-      <SemanticTypePickerDialog
-        open={showPicker}
-        semanticTypeList={semanticTypeList}
-        onOpenChange={setShowPicker}
-        onSelect={(nextSemanticTypeId) => {
-          void onApply(nextSemanticTypeId);
-        }}
-      />
 
       <Dialog open={showFeatureDialog} onOpenChange={setShowFeatureDialog}>
         <DialogContent className="p-6">
@@ -861,12 +870,41 @@ function EditableSemanticTypeCell({
   );
 }
 
-export function TableDetailDialog({
+export function TableDetailSheet({
   table,
   open,
   onOpenChange,
 }: {
-  table?: TableDetailDialogData;
+  table?: TableDetailSheetData;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const stableTableRef = useRef(table);
+  if (table) {
+    stableTableRef.current = table;
+  }
+
+  const stableTable = stableTableRef.current;
+  if (!stableTable) {
+    return null;
+  }
+
+  return (
+    <TableDetailSheetContent
+      key={`${stableTable.database?.name ?? ""}.${stableTable.schema ?? ""}.${stableTable.tableName ?? stableTable.name}`}
+      table={stableTable}
+      open={open}
+      onOpenChange={onOpenChange}
+    />
+  );
+}
+
+function TableDetailSheetContent({
+  table,
+  open,
+  onOpenChange,
+}: {
+  table: TableDetailSheetData;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
@@ -907,10 +945,6 @@ export function TableDetailDialog({
       .getState()
       .getOrFetchSettingByName(Setting_SettingName.DATA_CLASSIFICATION, true);
   }, []);
-
-  if (!table) {
-    return null;
-  }
 
   const showCharacterSetColumn = table.showCharacterSet;
   const showColumnClassification = table.showColumnClassification;
@@ -987,333 +1021,339 @@ export function TableDetailDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl p-6">
-        <DialogTitle>{table.name}</DialogTitle>
-        <div className="mt-4 grid gap-4 sm:grid-cols-3">
-          <div>
-            <div className="text-sm font-medium text-control-light">
-              {t("database.classification.self")}
-            </div>
-            <div className="mt-1 text-sm text-main">
-              <EditableClassificationCell
-                classification={table.classification}
-                classificationConfig={classificationConfig}
-                readonly={readonly}
-                testIdPrefix="table-classification"
-                onApply={handleTableClassificationApply}
-              />
-            </div>
-          </div>
-          {table.showEngine && (
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent width="huge">
+        <SheetHeader>
+          <SheetTitle>{table.name}</SheetTitle>
+        </SheetHeader>
+        <SheetBody>
+          <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <div className="text-sm font-medium text-control-light">
-                {t("database.engine")}
+                {t("database.classification.self")}
               </div>
               <div className="mt-1 text-sm text-main">
-                {table.engine || "-"}
+                <EditableClassificationCell
+                  classification={table.classification}
+                  classificationConfig={classificationConfig}
+                  readonly={readonly}
+                  testIdPrefix="table-classification"
+                  onApply={handleTableClassificationApply}
+                />
               </div>
             </div>
-          )}
-          <div>
-            <div className="text-sm font-medium text-control-light">
-              {t("database.row-count-estimate")}
-            </div>
-            <div className="mt-1 text-sm text-main">{table.rowCount}</div>
-          </div>
-          <div>
-            <div className="text-sm font-medium text-control-light">
-              {t("database.data-size")}
-            </div>
-            <div className="mt-1 text-sm text-main">{table.dataSize}</div>
-          </div>
-          {table.showIndexSize && (
-            <div>
-              <div className="text-sm font-medium text-control-light">
-                {t("database.index-size")}
-              </div>
-              <div className="mt-1 text-sm text-main">{table.indexSize}</div>
-            </div>
-          )}
-          {showSummaryCollation && (
-            <div>
-              <div className="text-sm font-medium text-control-light">
-                {t("db.collation")}
-              </div>
-              <div className="mt-1 text-sm text-main">
-                {table.collation || "-"}
-              </div>
-            </div>
-          )}
-        </div>
-
-        {showPartitionTables && (
-          <DetailSection title={t("database.partition-tables")}>
-            <div className="rounded-sm border border-block-border">
-              <Table className="min-w-full">
-                <TableHeader className="bg-control-bg">
-                  <TableRow className="hover:bg-control-bg">
-                    <TableHead>{t("common.name")}</TableHead>
-                    <TableHead>{t("common.type")}</TableHead>
-                    <TableHead>{t("database.expression")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="bg-background">
-                  {partitionRows.map(({ depth, partition }) => (
-                    <TableRow key={`${partition.name}-${depth}`}>
-                      <TableCell className="text-main">
-                        <span style={{ paddingLeft: `${depth * 16}px` }}>
-                          {partition.name}
-                        </span>
-                      </TableCell>
-                      <TableCell>{partition.type}</TableCell>
-                      <TableCell>{partition.expression || "-"}</TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </DetailSection>
-        )}
-
-        {showColumns && (
-          <DetailSection title={t("database.columns")}>
-            <div className="flex items-center justify-between gap-3">
-              <Input
-                className="w-full max-w-sm"
-                placeholder={t("common.filter-by-name")}
-                value={columnSearchKeyword}
-                onChange={(event) => setColumnSearchKeyword(event.target.value)}
-              />
-            </div>
-            <div className="rounded-sm border border-block-border">
-              <table className="min-w-full divide-y divide-block-border text-sm">
-                <thead className="bg-control-bg">
-                  <tr className="text-left text-sm text-control-light">
-                    <th className="px-4 py-2 font-medium">
-                      {t("common.name")}
-                    </th>
-                    {showSemanticTypeColumn && (
-                      <th className="px-4 py-2 font-medium">
-                        {t(
-                          "settings.sensitive-data.semantic-types.table.semantic-type"
-                        )}
-                      </th>
-                    )}
-                    {showColumnClassification && (
-                      <th className="px-4 py-2 font-medium">
-                        {t("database.classification.self")}
-                      </th>
-                    )}
-                    <th className="px-4 py-2 font-medium">
-                      {t("common.type")}
-                    </th>
-                    <th className="px-4 py-2 font-medium">
-                      {t("common.default")}
-                    </th>
-                    <th className="px-4 py-2 font-medium">
-                      {t("database.nullable")}
-                    </th>
-                    {showCharacterSetColumn && (
-                      <th className="px-4 py-2 font-medium">
-                        {t("db.character-set")}
-                      </th>
-                    )}
-                    {showColumnCollation && (
-                      <th className="px-4 py-2 font-medium">
-                        {t("db.collation")}
-                      </th>
-                    )}
-                    <th className="px-4 py-2 font-medium">
-                      {t("common.comment")}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-block-border bg-background">
-                  {filteredColumns.map((column) => (
-                    <tr key={column.name}>
-                      <td className="px-4 py-3 text-sm text-main">
-                        {column.name}
-                      </td>
-                      {showSemanticTypeColumn && (
-                        <td className="px-4 py-3 text-sm text-control">
-                          {table.database ? (
-                            <EditableSemanticTypeCell
-                              database={table.database}
-                              readonly={readonly}
-                              semanticTypeId={column.semanticType}
-                              testIdPrefix={`column-semantic-type-${toTestId(column.name)}`}
-                              onApply={(semanticTypeId) =>
-                                handleColumnSemanticTypeApply(
-                                  column.name,
-                                  semanticTypeId
-                                )
-                              }
-                            />
-                          ) : (
-                            column.semanticType || "-"
-                          )}
-                        </td>
-                      )}
-                      {showColumnClassification && (
-                        <td className="px-4 py-3 text-sm text-control">
-                          <EditableClassificationCell
-                            classification={column.classification}
-                            classificationConfig={classificationConfig}
-                            readonly={readonly}
-                            testIdPrefix={`column-classification-${toTestId(column.name)}`}
-                            onApply={(classificationId) =>
-                              handleColumnClassificationApply(
-                                column.name,
-                                classificationId
-                              )
-                            }
-                          />
-                        </td>
-                      )}
-                      <td className="px-4 py-3 text-sm text-control">
-                        {column.type}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-control">
-                        {column.defaultValue}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-control">
-                        <Checkbox checked={column.nullable} disabled />
-                      </td>
-                      {showCharacterSetColumn && (
-                        <td className="px-4 py-3 text-sm text-control">
-                          {column.characterSet || "-"}
-                        </td>
-                      )}
-                      {showColumnCollation && (
-                        <td className="px-4 py-3 text-sm text-control">
-                          {column.collation || "-"}
-                        </td>
-                      )}
-                      <td className="px-4 py-3 text-sm text-control">
-                        {column.comment || "-"}
-                      </td>
-                    </tr>
-                  ))}
-                  {filteredColumns.length === 0 && (
-                    <tr>
-                      <td
-                        className="px-4 py-6 text-center text-sm text-control-light"
-                        colSpan={
-                          5 +
-                          (showSemanticTypeColumn ? 1 : 0) +
-                          (showColumnClassification ? 1 : 0) +
-                          (showCharacterSetColumn ? 1 : 0) +
-                          (showColumnCollation ? 1 : 0)
-                        }
-                      >
-                        {t("common.no-data")}
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </DetailSection>
-        )}
-
-        {table.showIndexes && table.indexes.length > 0 && (
-          <DetailSection title={t("database.indexes")}>
-            {table.indexes.map((index) => (
-              <div
-                key={index.name}
-                className="rounded-sm border border-block-border"
-              >
-                <div className="border-b border-block-border px-4 py-3 text-base font-medium text-main">
-                  {index.name}
+            {table.showEngine && (
+              <div>
+                <div className="text-sm font-medium text-control-light">
+                  {t("database.engine")}
                 </div>
+                <div className="mt-1 text-sm text-main">
+                  {table.engine || "-"}
+                </div>
+              </div>
+            )}
+            <div>
+              <div className="text-sm font-medium text-control-light">
+                {t("database.row-count-estimate")}
+              </div>
+              <div className="mt-1 text-sm text-main">{table.rowCount}</div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-control-light">
+                {t("database.data-size")}
+              </div>
+              <div className="mt-1 text-sm text-main">{table.dataSize}</div>
+            </div>
+            {table.showIndexSize && (
+              <div>
+                <div className="text-sm font-medium text-control-light">
+                  {t("database.index-size")}
+                </div>
+                <div className="mt-1 text-sm text-main">{table.indexSize}</div>
+              </div>
+            )}
+            {showSummaryCollation && (
+              <div>
+                <div className="text-sm font-medium text-control-light">
+                  {t("db.collation")}
+                </div>
+                <div className="mt-1 text-sm text-main">
+                  {table.collation || "-"}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {showPartitionTables && (
+            <DetailSection title={t("database.partition-tables")}>
+              <div className="rounded-sm border border-block-border">
+                <Table className="min-w-full">
+                  <TableHeader className="bg-control-bg">
+                    <TableRow className="hover:bg-control-bg">
+                      <TableHead>{t("common.name")}</TableHead>
+                      <TableHead>{t("common.type")}</TableHead>
+                      <TableHead>{t("database.expression")}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody className="bg-background">
+                    {partitionRows.map(({ depth, partition }) => (
+                      <TableRow key={`${partition.name}-${depth}`}>
+                        <TableCell className="text-main">
+                          <span style={{ paddingLeft: `${depth * 16}px` }}>
+                            {partition.name}
+                          </span>
+                        </TableCell>
+                        <TableCell>{partition.type}</TableCell>
+                        <TableCell>{partition.expression || "-"}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </DetailSection>
+          )}
+
+          {showColumns && (
+            <DetailSection title={t("database.columns")}>
+              <div className="flex items-center justify-between gap-3">
+                <Input
+                  className="w-full max-w-sm"
+                  placeholder={t("common.filter-by-name")}
+                  value={columnSearchKeyword}
+                  onChange={(event) =>
+                    setColumnSearchKeyword(event.target.value)
+                  }
+                />
+              </div>
+              <div className="rounded-sm border border-block-border">
                 <table className="min-w-full divide-y divide-block-border text-sm">
                   <thead className="bg-control-bg">
                     <tr className="text-left text-sm text-control-light">
                       <th className="px-4 py-2 font-medium">
-                        {t("database.expression")}
+                        {t("common.name")}
+                      </th>
+                      {showSemanticTypeColumn && (
+                        <th className="px-4 py-2 font-medium">
+                          {t(
+                            "settings.sensitive-data.semantic-types.table.semantic-type"
+                          )}
+                        </th>
+                      )}
+                      {showColumnClassification && (
+                        <th className="px-4 py-2 font-medium">
+                          {t("database.classification.self")}
+                        </th>
+                      )}
+                      <th className="px-4 py-2 font-medium">
+                        {t("common.type")}
                       </th>
                       <th className="px-4 py-2 font-medium">
-                        {t("database.unique")}
+                        {t("common.default")}
                       </th>
-                      {showIndexVisibleColumn && (
+                      <th className="px-4 py-2 font-medium">
+                        {t("database.nullable")}
+                      </th>
+                      {showCharacterSetColumn && (
                         <th className="px-4 py-2 font-medium">
-                          {t("database.visible")}
+                          {t("db.character-set")}
                         </th>
                       )}
-                      {showIndexCommentColumn && (
+                      {showColumnCollation && (
                         <th className="px-4 py-2 font-medium">
-                          {t("common.comment")}
+                          {t("db.collation")}
                         </th>
                       )}
+                      <th className="px-4 py-2 font-medium">
+                        {t("common.comment")}
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-block-border bg-background">
-                    <tr>
-                      <td className="px-4 py-3 text-sm text-control">
-                        {index.expressions.join(", ") || "-"}
-                      </td>
-                      <td className="px-4 py-3 text-sm text-control">
-                        {String(index.unique)}
-                      </td>
-                      {showIndexVisibleColumn && (
-                        <td className="px-4 py-3 text-sm text-control">
-                          {String(index.visible)}
+                    {filteredColumns.map((column) => (
+                      <tr key={column.name}>
+                        <td className="px-4 py-3 text-sm text-main">
+                          {column.name}
                         </td>
-                      )}
-                      {showIndexCommentColumn && (
+                        {showSemanticTypeColumn && (
+                          <td className="px-4 py-3 text-sm text-control">
+                            {table.database ? (
+                              <EditableSemanticTypeCell
+                                database={table.database}
+                                readonly={readonly}
+                                semanticTypeId={column.semanticType}
+                                testIdPrefix={`column-semantic-type-${toTestId(column.name)}`}
+                                onApply={(semanticTypeId) =>
+                                  handleColumnSemanticTypeApply(
+                                    column.name,
+                                    semanticTypeId
+                                  )
+                                }
+                              />
+                            ) : (
+                              column.semanticType || "-"
+                            )}
+                          </td>
+                        )}
+                        {showColumnClassification && (
+                          <td className="px-4 py-3 text-sm text-control">
+                            <EditableClassificationCell
+                              classification={column.classification}
+                              classificationConfig={classificationConfig}
+                              readonly={readonly}
+                              testIdPrefix={`column-classification-${toTestId(column.name)}`}
+                              onApply={(classificationId) =>
+                                handleColumnClassificationApply(
+                                  column.name,
+                                  classificationId
+                                )
+                              }
+                            />
+                          </td>
+                        )}
                         <td className="px-4 py-3 text-sm text-control">
-                          {index.comment || "-"}
+                          {column.type}
                         </td>
-                      )}
-                    </tr>
+                        <td className="px-4 py-3 text-sm text-control">
+                          {column.defaultValue}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-control">
+                          <Checkbox checked={column.nullable} disabled />
+                        </td>
+                        {showCharacterSetColumn && (
+                          <td className="px-4 py-3 text-sm text-control">
+                            {column.characterSet || "-"}
+                          </td>
+                        )}
+                        {showColumnCollation && (
+                          <td className="px-4 py-3 text-sm text-control">
+                            {column.collation || "-"}
+                          </td>
+                        )}
+                        <td className="px-4 py-3 text-sm text-control">
+                          {column.comment || "-"}
+                        </td>
+                      </tr>
+                    ))}
+                    {filteredColumns.length === 0 && (
+                      <tr>
+                        <td
+                          className="px-4 py-6 text-center text-sm text-control-light"
+                          colSpan={
+                            5 +
+                            (showSemanticTypeColumn ? 1 : 0) +
+                            (showColumnClassification ? 1 : 0) +
+                            (showCharacterSetColumn ? 1 : 0) +
+                            (showColumnCollation ? 1 : 0)
+                          }
+                        >
+                          {t("common.no-data")}
+                        </td>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
-            ))}
-          </DetailSection>
-        )}
+            </DetailSection>
+          )}
 
-        {showTriggers && (
-          <DetailSection title={t("db.triggers")}>
-            <div className="rounded-sm border border-block-border">
-              <Table className="min-w-full">
-                <TableHeader className="bg-control-bg">
-                  <TableRow className="hover:bg-control-bg">
-                    <TableHead>{t("common.name")}</TableHead>
-                    <TableHead>{t("db.trigger.event")}</TableHead>
-                    <TableHead>{t("db.trigger.timing")}</TableHead>
-                    <TableHead>{t("db.trigger.body")}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody className="bg-background">
-                  {table.triggers?.map((trigger) => (
-                    <TableRow key={trigger.name}>
-                      <TableCell className="text-main">
-                        {trigger.name}
-                      </TableCell>
-                      <TableCell>{trigger.event || "-"}</TableCell>
-                      <TableCell>{trigger.timing || "-"}</TableCell>
-                      <TableCell className="max-w-xl whitespace-pre-wrap break-all">
-                        {trigger.body || trigger.sqlMode || "-"}
-                      </TableCell>
+          {table.showIndexes && table.indexes.length > 0 && (
+            <DetailSection title={t("database.indexes")}>
+              {table.indexes.map((index) => (
+                <div
+                  key={index.name}
+                  className="rounded-sm border border-block-border"
+                >
+                  <div className="border-b border-block-border px-4 py-3 text-base font-medium text-main">
+                    {index.name}
+                  </div>
+                  <table className="min-w-full divide-y divide-block-border text-sm">
+                    <thead className="bg-control-bg">
+                      <tr className="text-left text-sm text-control-light">
+                        <th className="px-4 py-2 font-medium">
+                          {t("database.expression")}
+                        </th>
+                        <th className="px-4 py-2 font-medium">
+                          {t("database.unique")}
+                        </th>
+                        {showIndexVisibleColumn && (
+                          <th className="px-4 py-2 font-medium">
+                            {t("database.visible")}
+                          </th>
+                        )}
+                        {showIndexCommentColumn && (
+                          <th className="px-4 py-2 font-medium">
+                            {t("common.comment")}
+                          </th>
+                        )}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-block-border bg-background">
+                      <tr>
+                        <td className="px-4 py-3 text-sm text-control">
+                          {index.expressions.join(", ") || "-"}
+                        </td>
+                        <td className="px-4 py-3 text-sm text-control">
+                          {String(index.unique)}
+                        </td>
+                        {showIndexVisibleColumn && (
+                          <td className="px-4 py-3 text-sm text-control">
+                            {String(index.visible)}
+                          </td>
+                        )}
+                        {showIndexCommentColumn && (
+                          <td className="px-4 py-3 text-sm text-control">
+                            {index.comment || "-"}
+                          </td>
+                        )}
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </DetailSection>
+          )}
+
+          {showTriggers && (
+            <DetailSection title={t("db.triggers")}>
+              <div className="rounded-sm border border-block-border">
+                <Table className="min-w-full">
+                  <TableHeader className="bg-control-bg">
+                    <TableRow className="hover:bg-control-bg">
+                      <TableHead>{t("common.name")}</TableHead>
+                      <TableHead>{t("db.trigger.event")}</TableHead>
+                      <TableHead>{t("db.trigger.timing")}</TableHead>
+                      <TableHead>{t("db.trigger.body")}</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </DetailSection>
-        )}
+                  </TableHeader>
+                  <TableBody className="bg-background">
+                    {table.triggers?.map((trigger) => (
+                      <TableRow key={trigger.name}>
+                        <TableCell className="text-main">
+                          {trigger.name}
+                        </TableCell>
+                        <TableCell>{trigger.event || "-"}</TableCell>
+                        <TableCell>{trigger.timing || "-"}</TableCell>
+                        <TableCell className="max-w-xl whitespace-pre-wrap break-all">
+                          {trigger.body || trigger.sqlMode || "-"}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </DetailSection>
+          )}
 
-        {showNoSQLCatalog && table.database && table.tableName && (
-          <NoSQLCatalogEditor
-            database={table.database}
-            readonly={readonly}
-            schema={table.schema ?? ""}
-            tableName={table.tableName}
-          />
-        )}
-      </DialogContent>
-    </Dialog>
+          {showNoSQLCatalog && table.database && table.tableName && (
+            <NoSQLCatalogEditor
+              database={table.database}
+              readonly={readonly}
+              schema={table.schema ?? ""}
+              tableName={table.tableName}
+            />
+          )}
+        </SheetBody>
+      </SheetContent>
+    </Sheet>
   );
 }

@@ -5,7 +5,7 @@ import type {
   InputHTMLAttributes,
   ReactNode,
 } from "react";
-import { act, createElement } from "react";
+import { act, createElement, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { Engine } from "@/types/proto-es/v1/common_pb";
@@ -14,6 +14,7 @@ import type { Database } from "@/types/proto-es/v1/database_service_pb";
 import type { DataClassificationSetting_DataClassificationConfig } from "@/types/proto-es/v1/setting_service_pb";
 import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import type { TableDetailSheetData } from "./TableDetailSheet";
 
 (
   globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -41,7 +42,7 @@ const mocks = vi.hoisted(() => ({
   hasWorkspacePermissionV2: vi.fn(),
 }));
 
-let TableDetailDialog: typeof import("./TableDetailDialog").TableDetailDialog;
+let TableDetailSheet: typeof import("./TableDetailSheet").TableDetailSheet;
 
 vi.mock("react-i18next", () => ({
   useTranslation: mocks.useTranslation,
@@ -54,6 +55,56 @@ vi.mock("@/components/ui/dialog", () => ({
     <div>{children}</div>
   ),
   DialogTitle: ({ children }: { children: ReactNode }) => <h1>{children}</h1>,
+}));
+
+vi.mock("@/components/ui/sheet", () => ({
+  Sheet: ({
+    open,
+    children,
+    onOpenChange,
+  }: {
+    open: boolean;
+    children: ReactNode;
+    onOpenChange: (open: boolean) => void;
+  }) => (
+    <div data-testid="sheet-root" data-open={open}>
+      <button
+        type="button"
+        data-testid="sheet-close"
+        onClick={() => onOpenChange(false)}
+      >
+        Close
+      </button>
+      {children}
+    </div>
+  ),
+  SheetBody: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  SheetContent: ({
+    children,
+    width,
+  }: {
+    children: ReactNode;
+    width: string;
+  }) => <div data-sheet-width={width}>{children}</div>,
+  SheetHeader: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  SheetTitle: ({ children }: { children: ReactNode }) => <h1>{children}</h1>,
+}));
+
+vi.mock("@/components/ui/popover", () => ({
+  Popover: ({ children }: { children: ReactNode }) => (
+    <div data-testid="inline-picker">{children}</div>
+  ),
+  PopoverContent: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
+  PopoverTrigger: ({
+    children,
+    ...props
+  }: ButtonHTMLAttributes<HTMLButtonElement>) => (
+    <button type="button" {...props}>
+      {children}
+    </button>
+  ),
 }));
 
 vi.mock("@/components/ui/input", () => ({
@@ -117,6 +168,18 @@ vi.mock("@/components/FeatureAttention", () => ({
   FeatureAttention: ({ feature }: { feature: PlanFeature }) => (
     <div>{PlanFeature[feature]}</div>
   ),
+}));
+
+vi.mock("@/types/semanticTypes", () => ({
+  getSemanticTypeListWithBuiltins: (
+    semanticTypeList: Array<{ id: string; title: string }>
+  ) => [
+    { id: "bb.default", title: "Default" },
+    { id: "bb.default-partial", title: "Default Partial" },
+    ...semanticTypeList.filter(
+      ({ id }) => id !== "bb.default" && id !== "bb.default-partial"
+    ),
+  ],
 }));
 
 vi.mock("@/stores", () => ({
@@ -332,10 +395,91 @@ beforeEach(async () => {
   mocks.hasWorkspacePermissionV2.mockReturnValue(true);
 
   vi.resetModules();
-  ({ TableDetailDialog } = await import("./TableDetailDialog"));
+  ({ TableDetailSheet } = await import("./TableDetailSheet"));
 });
 
-describe("TableDetailDialog", () => {
+describe("TableDetailSheet", () => {
+  test("renders table details in a huge sheet instead of a dialog", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(TableDetailSheet, {
+        open: true,
+        onOpenChange: vi.fn(),
+        table: {
+          database: makeDatabase(),
+          name: '"public"."audit"',
+          schema: "public",
+          tableName: "audit",
+          columns: [],
+          rowCount: "0",
+          dataSize: "8 KB",
+          indexSize: "32 KB",
+          indexes: [],
+          showIndexes: false,
+        },
+      })
+    );
+
+    render();
+    await flush();
+
+    expect(container.querySelector('[data-testid="sheet-root"]')).not.toBeNull();
+    expect(container.querySelector('[data-sheet-width="huge"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="dialog-root"]')).toBeNull();
+
+    unmount();
+  });
+
+  test("preserves table content while the sheet closes", async () => {
+    const table: TableDetailSheetData = {
+      database: makeDatabase(),
+      name: '"public"."audit"',
+      schema: "public",
+      tableName: "audit",
+      columns: [],
+      rowCount: "0",
+      dataSize: "8 KB",
+      indexSize: "32 KB",
+      indexes: [],
+      showIndexes: false,
+    };
+
+    function Harness() {
+      const [open, setOpen] = useState(true);
+      const [selectedTable, setSelectedTable] = useState<
+        TableDetailSheetData | undefined
+      >(table);
+
+      return createElement(TableDetailSheet, {
+        open,
+        table: selectedTable,
+        onOpenChange: (nextOpen) => {
+          setOpen(nextOpen);
+          if (!nextOpen) {
+            setSelectedTable(undefined);
+          }
+        },
+      });
+    }
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(Harness)
+    );
+
+    render();
+    await flush();
+    click(container.querySelector('[data-testid="sheet-close"]') as HTMLElement);
+    await flush();
+
+    expect(
+      container.querySelector('[data-testid="sheet-root"]')?.getAttribute(
+        "data-open"
+      )
+    ).toBe("false");
+    expect(container.textContent).toContain('"public"."audit"');
+
+    unmount();
+  });
+
   test("restores the legacy table detail sections for columns and indexes", async () => {
     const classificationConfig = {
       id: "classification-config",
@@ -350,7 +494,7 @@ describe("TableDetailDialog", () => {
     } as unknown as DataClassificationSetting_DataClassificationConfig;
 
     const { container, render, unmount } = renderIntoContainer(
-      createElement(TableDetailDialog, {
+      createElement(TableDetailSheet, {
         open: true,
         onOpenChange: vi.fn(),
         table: {
@@ -453,7 +597,7 @@ describe("TableDetailDialog", () => {
     } as unknown as DataClassificationSetting_DataClassificationConfig;
 
     const { container, render, unmount } = renderIntoContainer(
-      createElement(TableDetailDialog as unknown as ElementType, {
+      createElement(TableDetailSheet as unknown as ElementType, {
         open: true,
         onOpenChange: vi.fn(),
         table: {
@@ -563,9 +707,70 @@ describe("TableDetailDialog", () => {
     unmount();
   });
 
+  test("offers built-in semantic types when the workspace setting is empty", async () => {
+    mocks.getSettingByName.mockReturnValue({
+      value: {
+        value: {
+          case: "semanticType",
+          value: { types: [] },
+        },
+      },
+    });
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(TableDetailSheet as unknown as ElementType, {
+        open: true,
+        onOpenChange: vi.fn(),
+        table: {
+          database: makeDatabase(),
+          editable: true,
+          name: '"public"."audit"',
+          schema: "public",
+          tableName: "audit",
+          columns: [
+            {
+              name: "email",
+              semanticType: "",
+              type: "text",
+              defaultValue: "No default",
+              nullable: true,
+            },
+          ],
+          rowCount: "0",
+          dataSize: "8 KB",
+          indexSize: "32 KB",
+          indexes: [],
+          showIndexes: false,
+          showSemanticType: true,
+        },
+      })
+    );
+
+    render();
+    await flush();
+
+    press(
+      container.querySelector(
+        '[data-testid="column-semantic-type-email-edit"]'
+      ) as HTMLElement
+    );
+    await flush();
+
+    expect(
+      container.querySelector('[data-testid="semantic-type-option-bb-default"]')
+    ).not.toBeNull();
+    expect(
+      container.querySelector(
+        '[data-testid="semantic-type-option-bb-default-partial"]'
+      )
+    ).not.toBeNull();
+
+    unmount();
+  });
+
   test("loads classification config from settings when the dialog prop is unavailable", async () => {
     const { container, render, unmount } = renderIntoContainer(
-      createElement(TableDetailDialog as unknown as ElementType, {
+      createElement(TableDetailSheet as unknown as ElementType, {
         open: true,
         onOpenChange: vi.fn(),
         table: {
@@ -631,7 +836,7 @@ describe("TableDetailDialog", () => {
 
   test("shows unknown classification ids instead of replacing them with a placeholder", async () => {
     const { container, render, unmount } = renderIntoContainer(
-      createElement(TableDetailDialog as unknown as ElementType, {
+      createElement(TableDetailSheet as unknown as ElementType, {
         open: true,
         onOpenChange: vi.fn(),
         table: {
@@ -659,9 +864,9 @@ describe("TableDetailDialog", () => {
     unmount();
   });
 
-  test("restores partition and trigger sections in the React table detail dialog", async () => {
+  test("restores partition and trigger sections in the React table detail sheet", async () => {
     const { container, render, unmount } = renderIntoContainer(
-      createElement(TableDetailDialog as unknown as ElementType, {
+      createElement(TableDetailSheet as unknown as ElementType, {
         open: true,
         onOpenChange: vi.fn(),
         table: {
@@ -728,7 +933,7 @@ describe("TableDetailDialog", () => {
     });
 
     const { container, render, unmount } = renderIntoContainer(
-      createElement(TableDetailDialog as unknown as ElementType, {
+      createElement(TableDetailSheet as unknown as ElementType, {
         open: true,
         onOpenChange: vi.fn(),
         table: {

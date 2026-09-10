@@ -1,5 +1,5 @@
 import { create } from "@bufbuild/protobuf";
-import { ShieldCheck } from "lucide-react";
+import { Plus, ShieldCheck } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FeatureAttention } from "@/components/FeatureAttention";
@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { useDatabaseCatalog } from "@/hooks/useDatabaseCatalog";
+import { useSemanticTypes } from "@/hooks/useSemanticTypes";
 import type { MaskData, MaskDataTarget } from "@/lib/sensitive-data/types";
 import {
   getMaskDataIdentifier,
@@ -36,10 +37,7 @@ import {
   MaskingExemptionPolicySchema,
   PolicyType,
 } from "@/types/proto-es/v1/org_policy_service_pb";
-import {
-  type SemanticTypeSetting_SemanticType,
-  Setting_SettingName,
-} from "@/types/proto-es/v1/setting_service_pb";
+import { Setting_SettingName } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import {
   getDatabaseProject,
@@ -48,6 +46,7 @@ import {
   instanceV1MaskingForNoSQL,
 } from "@/utils";
 import { GrantAccessDialog } from "../catalog/GrantAccessDialog";
+import { MarkSensitiveDataSheet } from "../catalog/MarkSensitiveDataSheet";
 import { SensitiveColumnTable } from "../catalog/SensitiveColumnTable";
 
 const GRANT_ACCESS_PERMISSIONS: Permission[] = [
@@ -190,15 +189,7 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
     (permission) => hasProjectPermissionV2(project, permission)
   );
 
-  const semanticTypeSetting = useAppStore((s) =>
-    s.getSettingByName(Setting_SettingName.SEMANTIC_TYPES)
-  );
-  const semanticTypeList = useMemo<SemanticTypeSetting_SemanticType[]>(() => {
-    return semanticTypeSetting?.value?.value.case === "semanticType"
-      ? ((semanticTypeSetting.value.value.value.types ??
-          []) as SemanticTypeSetting_SemanticType[])
-      : [];
-  }, [semanticTypeSetting]);
+  const { semanticTypes } = useSemanticTypes();
   const classificationConfig = useAppStore((s) =>
     s.getProjectClassification(project.dataClassificationConfigId ?? "")
   );
@@ -209,6 +200,8 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
   const [searchText, setSearchText] = useState("");
   const [checkedColumnList, setCheckedColumnList] = useState<MaskData[]>([]);
   const [showFeatureDialog, setShowFeatureDialog] = useState(false);
+  const [showMarkSensitiveDataSheet, setShowMarkSensitiveDataSheet] =
+    useState(false);
   const [showGrantAccessDialog, setShowGrantAccessDialog] = useState(false);
   const [pendingDeleteItem, setPendingDeleteItem] = useState<MaskData | null>(
     null
@@ -230,17 +223,18 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
     setSearchText("");
     setCheckedColumnList([]);
     setShowFeatureDialog(false);
+    setShowMarkSensitiveDataSheet(false);
     setShowGrantAccessDialog(false);
     setPendingDeleteItem(null);
   }, [database.name]);
 
   const semanticTypeOptions = useMemo(
     () =>
-      semanticTypeList.map((semanticType) => ({
+      semanticTypes.map((semanticType) => ({
         label: semanticType.title || semanticType.id,
         value: semanticType.id,
       })),
-    [semanticTypeList]
+    [semanticTypes]
   );
   const classificationOptions = useMemo(
     () =>
@@ -381,6 +375,14 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
     setShowGrantAccessDialog(true);
   };
 
+  const handleMarkSensitiveDataClick = () => {
+    if (!hasSensitiveDataFeature) {
+      setShowFeatureDialog(true);
+      return;
+    }
+    setShowMarkSensitiveDataSheet(true);
+  };
+
   const closeGrantAccessDialog = () => {
     setShowGrantAccessDialog(false);
     setCheckedColumnList([]);
@@ -410,37 +412,59 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
           className="w-full max-w-sm"
         />
 
-        {!isMaskingForNoSQL && (
-          <PermissionGuard
-            permissions={GRANT_ACCESS_PERMISSIONS}
-            project={project}
-          >
-            {({ disabled }) => (
-              <Button
-                type="button"
-                className="w-full sm:w-auto"
-                disabled={
-                  disabled ||
-                  !hasGrantAccessPermission ||
-                  checkedColumnList.length === 0
-                }
-                onClick={handleGrantAccessClick}
-              >
-                {hasSensitiveDataFeature ? (
-                  <ShieldCheck className="w-4 h-4" />
-                ) : (
-                  <FeatureBadge
-                    feature={PlanFeature.FEATURE_DATA_MASKING}
-                    instance={instance}
-                    clickable={false}
-                    className="text-white"
-                  />
-                )}
-                {t("settings.sensitive-data.grant-access")}
-              </Button>
-            )}
-          </PermissionGuard>
-        )}
+        <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row">
+          {hasUpdateCatalogPermission && !isMaskingForNoSQL && (
+            <Button
+              type="button"
+              className="w-full sm:w-auto"
+              onClick={handleMarkSensitiveDataClick}
+            >
+              {hasSensitiveDataFeature ? (
+                <Plus className="size-4" />
+              ) : (
+                <FeatureBadge
+                  feature={PlanFeature.FEATURE_DATA_MASKING}
+                  instance={instance}
+                  clickable={false}
+                  className="inline-flex text-accent-text"
+                />
+              )}
+              {t("settings.sensitive-data.mark-sensitive-data")}
+            </Button>
+          )}
+
+          {!isMaskingForNoSQL && (
+            <PermissionGuard
+              permissions={GRANT_ACCESS_PERMISSIONS}
+              project={project}
+            >
+              {({ disabled }) => (
+                <Button
+                  type="button"
+                  appearance="outline"
+                  className="w-full sm:w-auto"
+                  disabled={
+                    disabled ||
+                    !hasGrantAccessPermission ||
+                    checkedColumnList.length === 0
+                  }
+                  onClick={handleGrantAccessClick}
+                >
+                  {hasSensitiveDataFeature ? (
+                    <ShieldCheck className="size-4" />
+                  ) : (
+                    <FeatureBadge
+                      feature={PlanFeature.FEATURE_DATA_MASKING}
+                      instance={instance}
+                      clickable={false}
+                    />
+                  )}
+                  {t("settings.sensitive-data.grant-access")}
+                </Button>
+              )}
+            </PermissionGuard>
+          )}
+        </div>
       </div>
 
       <SensitiveColumnTable
@@ -480,6 +504,13 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
           </div>
         </DialogContent>
       </Dialog>
+
+      <MarkSensitiveDataSheet
+        database={database}
+        open={showMarkSensitiveDataSheet}
+        semanticTypeList={semanticTypes}
+        onOpenChange={setShowMarkSensitiveDataSheet}
+      />
 
       <GrantAccessDialog
         open={openGrantAccessDialog}

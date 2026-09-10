@@ -110,6 +110,22 @@ func TestValidateCatalogSemanticTypeIDs(t *testing.T) {
 			},
 		},
 		{
+			name: "built-in semantic types pass without workspace configuration",
+			config: &storepb.DatabaseConfig{
+				Schemas: []*storepb.SchemaCatalog{{
+					Name: "public",
+					Tables: []*storepb.TableCatalog{{
+						Name: "users",
+						Columns: []*storepb.ColumnCatalog{
+							{Name: "email", SemanticType: defaultSemanticTypeID},
+							{Name: "phone", SemanticType: defaultPartialSemanticTypeID},
+						},
+					}},
+				}},
+			},
+			setting: &storepb.SemanticTypeSetting{Types: getBuiltinSemanticTypes()},
+		},
+		{
 			name: "unknown column semantic type rejected",
 			config: &storepb.DatabaseConfig{
 				Schemas: []*storepb.SchemaCatalog{{

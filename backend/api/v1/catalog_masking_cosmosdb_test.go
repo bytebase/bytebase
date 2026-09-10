@@ -26,7 +26,7 @@ func cosmosDBTestSchema() *storepb.ObjectSchema {
 			StructKind: &storepb.ObjectSchema_StructKind{
 				Properties: map[string]*storepb.ObjectSchema{
 					"name":       {Type: storepb.ObjectSchema_STRING},
-					"email":      {Type: storepb.ObjectSchema_STRING, SemanticType: "bb.default"},
+					"email":      {Type: storepb.ObjectSchema_STRING, SemanticType: defaultSemanticTypeID},
 					"country":    {Type: storepb.ObjectSchema_STRING},
 					"population": {Type: storepb.ObjectSchema_NUMBER},
 					"status":     {Type: storepb.ObjectSchema_STRING},
@@ -36,7 +36,7 @@ func cosmosDBTestSchema() *storepb.ObjectSchema {
 					"_etag":      {Type: storepb.ObjectSchema_STRING},
 					"location": {
 						Type:         storepb.ObjectSchema_OBJECT,
-						SemanticType: "bb.default",
+						SemanticType: defaultSemanticTypeID,
 						Kind: &storepb.ObjectSchema_StructKind_{
 							StructKind: &storepb.ObjectSchema_StructKind{
 								Properties: map[string]*storepb.ObjectSchema{
@@ -51,7 +51,7 @@ func cosmosDBTestSchema() *storepb.ObjectSchema {
 						Kind: &storepb.ObjectSchema_StructKind_{
 							StructKind: &storepb.ObjectSchema_StructKind{
 								Properties: map[string]*storepb.ObjectSchema{
-									"phone": {Type: storepb.ObjectSchema_STRING, SemanticType: "bb.default"},
+									"phone": {Type: storepb.ObjectSchema_STRING, SemanticType: defaultSemanticTypeID},
 									"city":  {Type: storepb.ObjectSchema_STRING},
 								},
 							},
@@ -65,7 +65,7 @@ func cosmosDBTestSchema() *storepb.ObjectSchema {
 
 func cosmosDBMaskers() map[string]masker.Masker {
 	return map[string]masker.Masker{
-		"bb.default": masker.NewDefaultFullMasker(),
+		defaultSemanticTypeID: masker.NewDefaultFullMasker(),
 	}
 }
 
@@ -585,7 +585,7 @@ func TestCosmosDBPredicateNotEqual(t *testing.T) {
 	require.True(t, ok, "expected c.email in predicate paths")
 
 	semanticType := getFirstSemanticTypeInPath(span.PredicatePaths["c.email"], schema)
-	require.Equal(t, "bb.default", semanticType, "email should be sensitive in predicate")
+	require.Equal(t, defaultSemanticTypeID, semanticType, "email should be sensitive in predicate")
 }
 
 func TestCosmosDBPredicateIn(t *testing.T) {
@@ -599,7 +599,7 @@ func TestCosmosDBPredicateIn(t *testing.T) {
 	require.True(t, ok, "expected c.email in predicate paths")
 
 	semanticType := getFirstSemanticTypeInPath(span.PredicatePaths["c.email"], schema)
-	require.Equal(t, "bb.default", semanticType, "email should be sensitive in predicate")
+	require.Equal(t, defaultSemanticTypeID, semanticType, "email should be sensitive in predicate")
 }
 
 func TestCosmosDBPredicateBetween(t *testing.T) {
@@ -655,7 +655,7 @@ func TestCosmosDBPredicateNestedSensitive(t *testing.T) {
 	require.True(t, ok, "expected c.contact.phone in predicate paths")
 
 	semanticType := getFirstSemanticTypeInPath(span.PredicatePaths["c.contact.phone"], schema)
-	require.Equal(t, "bb.default", semanticType, "contact.phone should be sensitive")
+	require.Equal(t, defaultSemanticTypeID, semanticType, "contact.phone should be sensitive")
 }
 
 func TestCosmosDBPredicateFunctionInWhere(t *testing.T) {
@@ -669,7 +669,7 @@ func TestCosmosDBPredicateFunctionInWhere(t *testing.T) {
 	require.True(t, ok, "expected c.email in predicate paths from function argument")
 
 	semanticType := getFirstSemanticTypeInPath(span.PredicatePaths["c.email"], schema)
-	require.Equal(t, "bb.default", semanticType, "email should be sensitive even in function")
+	require.Equal(t, defaultSemanticTypeID, semanticType, "email should be sensitive even in function")
 }
 
 func TestCosmosDBPredicateCompoundWhere(t *testing.T) {

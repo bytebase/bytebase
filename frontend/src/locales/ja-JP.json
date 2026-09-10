@@ -2369,8 +2369,7 @@
   },
   "schema-template": {
     "classification": {
-      "search": "カテゴリを検索する",
-      "select": "分類を選択"
+      "search": "カテゴリを検索する"
     }
   },
   "sensitive-data": {
@@ -2935,9 +2934,14 @@
         "re-order": "並び替え"
       },
       "grant-access": "アクセスを許可する",
+      "mark-sensitive-data": "機密データをマークする",
       "never-expires": "有効期限なし",
       "remove-sensitive-column-tips": "このデータ列を表示しますか？",
       "semantic-types": {
+        "error": {
+          "no-changes-to-save": "保存する変更はありません",
+          "title-required": "タイトルは必須です"
+        },
         "label": "同じセマンティック タイプの列は、同じマスキング アルゴリズムを使用します。",
         "select": "セマンティックタイプの選択",
         "self": "セマンティックタイプ",
@@ -2946,13 +2950,9 @@
           "description": "説明",
           "icon": "アイコン",
           "masking-algorithm": "マスキングアルゴリズム",
-          "semantic-type": "セマンティックタイプ"
-        },
-        "template": {
-          "description": "テンプレートから組み込みのセマンティック タイプを適用できます。組み込みテンプレートは変更できません。",
-          "duplicate-warning": "セマンティック タイプ \"{{title}}\" は既に存在します"
-        },
-        "use-predefined-type": "事前定義されたタイプを使用する"
+          "semantic-type": "セマンティックタイプ",
+          "title": "タイトル"
+        }
       }
     },
     "sidebar": {
