@@ -19,6 +19,7 @@ Bytebase is the standard for database development. Every product and engineering
 
 - The metadata schema is `backend/migrator/migration/LATEST.sql`; migrations live in `backend/migrator/migration/<major.minor>/`.
 - New migrations require updating `TestLatestVersion` in `backend/migrator/migrator_test.go`; DDL changes also update `LATEST.sql`.
+- A release-patch metadata backport uses `migration/<next-main-migration>-backport/` and a four-digit ordinal, so `migration/3.23.1-backport/0000##workload_identity_audiences.sql` is `3.23.1-backport.0`. Allocate it strictly between the highest metadata version shipped on the release branch and the first main migration that branch still needs, increment the ordinal for later backports, and retain every prior file. The prerelease is migration-order metadata, not an unstable product release. If it needs a Go step, the `goMigrations` key must match the full parsed version, including its prerelease and ordinal.
 - Metadata JSONB uses `protojson.Marshal`: keys are camelCase (`taskRun`), not proto snake_case (`task_run`).
 - Follow Google language style guides and AIPs for API/proto design. AIPs take precedence over the proto guide. Enum values use `HELLO`, not `TYPE_HELLO`.
 - Use American English. Avoid collection names ending in `List`.
