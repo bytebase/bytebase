@@ -66,14 +66,14 @@ mapping; it never appears in the product.
 | Tier | Row | Sub-items shown | Backed by (code only) |
 |---|---|---|---|
 | read | Read schemas and metadata | Schemas · Databases and instances · Projects and database groups · Catalogs, changelogs and revisions · SQL review configs · Your own session and workspace facts | 31 READ methods: `DatabaseService` reads, projects, instances, database groups, catalogs, changelogs, revisions, review configs, session facts |
-| read | Read data by running queries | Run read-only queries; a request is refused whole if any statement is not a read · Query history · Saved queries and sheets | 9 READ methods: `SQLService/Query`, query history (4), saved-query reads (3), `GetSheet` |
+| read | Read data by running queries | Run read-only queries; a request is refused whole if any statement is not a read, and on engines other than PostgreSQL, CockroachDB and Redshift the check is by statement shape only · Query history · Saved queries and sheets | 9 READ methods: `SQLService/Query`, query history (4), saved-query reads (3), `GetSheet` |
 | read | Read the change workflow | Issues and comments · Plans and plan checks · Rollouts, task runs and logs · Releases · Rollback previews | 16 READ methods: issue, plan, rollout and release reads |
 | — | *Read-only stops here* | | 56 methods |
-| write | Propose changes | Create and edit sheets, plans and issues · Run plan checks and reviews · Create, edit and delete releases and revisions · Generate schema diffs. An agent never approves its own change; the project's approval policy decides whether a human must | 22 WRITE methods: sheet, plan, issue, release and revision writes, `RequestIssue`, `RunReview`, `DiffSchema`, `DiffMetadata` |
+| write | Propose changes | Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create and delete releases and revisions · Generate schema diffs. An agent never approves its own change; the project's approval policy decides whether a human must | 22 WRITE methods: sheet, plan, issue, release and revision writes, `RequestIssue`, `RunReview`, `DiffSchema`, `DiffMetadata` |
 | write | Run rollouts and tasks | Create a rollout · Run, skip or cancel its tasks, under the project's approval policy | 4 WRITE methods: `CreateRollout`, `BatchRunTasks`, `BatchSkipTasks`, `BatchCancelTaskRuns` |
 | write | Run DML and DDL statements | INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, where the engine checks each statement and the user may run it | Not a method: the statement clamp in `mcp_sql_clamp.go`, which Read-write lifts |
 | write | Export query results | Download results as a file. Data leaves Bytebase | 1 WRITE method: `SQLService/Export` |
-| write | Manage database housekeeping | Sync instances and databases · Database settings and labels · Database groups · Saved queries | 14 WRITE methods: sync, `UpdateDatabase`, database groups, saved-query writes |
+| write | Manage database housekeeping | Sync instances and databases · Database settings and labels · Move databases between projects · Database groups · Saved queries | 14 WRITE methods: sync, `UpdateDatabase`, database groups, saved-query writes |
 | — | *Read-write stops here* | | 97 methods |
 | floor | Never, in any mode: approve issues, administer the workspace, or handle credentials. | | 121 methods: 35 FORBIDDEN, 86 EXCLUDED |
 
@@ -82,6 +82,18 @@ Two choices in the wording are deliberate. Row 2 says *Read data by running quer
 Read-only. Row 6 is not a method at all: it names the statement clamp being lifted, because that is
 a real difference between the modes that no method name shows, and a future custom policy will want
 it as its own switch.
+
+Every sub-item names only what the served methods can do. Sheets are created, never edited: there
+is no update RPC. Releases and revisions are created and deleted: `ReleaseService/UpdateRelease`
+is classified WRITE but answers Unimplemented, and Revision has no update RPC, so "edit" would
+advertise an operation that does not exist. Moving a database between projects is named under
+housekeeping because `DatabaseService/UpdateDatabase` accepts the `project` mask path and
+`BatchUpdateDatabases` exists for it; it changes a governance boundary and should not hide behind
+"settings and labels". Row 2 states the depth of the read-only check because only PostgreSQL,
+CockroachDB and Redshift open the database session read-only; elsewhere the clamp is statement
+classification alone, and a statement that classifies as a read can still call a function that
+writes. The proto calls the ceiling "classifier-enforced, not proven", and the row says so in the
+admin's words.
 
 Approval is stated as the project's policy, never as a promise. The backend requires an approved
 issue before a rollout only when the project has `require_issue_approval` on and an issue is linked
@@ -124,9 +136,12 @@ The tier is named once, by the dividers, so no row repeats it in its title.
 
 **D1 — Placement: a disclosure inside the Access policy section, collapsed by default.**
 Not a drawer (a second surface, one mode at a time) and not a separate section (it belongs to the
-policy it describes). Collapsed, the trigger line *is* the mode's description: "▸ Read everything,
-and propose, run, export and manage". It never repeats the mode name, which the chip (view) or the
-slider (edit) already shows. Expanded, it becomes the list heading "Read-write allows", with a
+policy it describes). Collapsed, the trigger line *is* the mode's description: "▸ Read schemas, data
+and the change workflow; propose, run, export and manage". The read half is the same phrase in
+both modes, because Read-write serves exactly the read rows Read-only serves; the EXCLUDED reads
+(audit logs, users, roles, IAM policies, other people's query history, task-run sessions) are
+refused in every mode, so no summary may say "read everything". The line never repeats the mode
+name, which the chip (view) or the slider (edit) already shows. Expanded, it becomes the list heading "Read-write allows", with a
 "Show details" control on the right. In view state it sits under the chip line; in edit state it
 sits under the slider and its "Best for" line, above the masking toggle, so the cause and its
 effect are adjacent. The open state persists per browser and carries across the view-to-edit
@@ -156,8 +171,11 @@ request…" shows only while editing, as "Applies to every running session's nex
 names the change when the form is dirty: "Read-only → Read-write applies to every running
 session's next request." "MCP policy denials are recorded in the audit log" is a fact about the
 feature, not about the current state, so it joins the section description, which becomes: "The
-most any MCP session may do here. Sessions are also capped by each user's permissions, and refusals
-are audited."
+most any MCP session may do here. Sessions are also capped by each user's permissions, and policy
+refusals are audited." The word "policy" is load-bearing: the audit interceptor writes a row for a
+refusal only when the RPC opts into auditing or the gate marked a policy denial, so a permission
+denial on an unannotated method is silent, and "every refusal" would promise more than the backend
+records.
 
 **D5 — Edit state: a slider, the selected mode's "Best for", and the pick's ladder.** The three
 mode cards and their descriptions are gone; they duplicated the ladder. The selector is the shared
@@ -230,9 +248,10 @@ All strings, so the change and the locale files have one source. Keys under
 `oauth2.consent.mcp.*` values.
 
 - Section description: "The most any MCP session may do here. Sessions are also capped by each
-  user's permissions, and refusals are audited."
-- Disclosure line, collapsed — Read-only: "Read schemas, data and the change workflow; nothing is
-  written or exported". Read-write: "Read everything, and propose, run, export and manage".
+  user's permissions, and policy refusals are audited."
+- Disclosure line, collapsed — Read-only: "Read schemas, data and the change workflow; statements
+  that write are refused, nothing is exported". Read-write: "Read schemas, data and the change
+  workflow; propose, run, export and manage".
   Expanded heading: "{mode} allows". Details control: "Show details" / "Hide details".
 - Disabled — view sentence: "No MCP session can connect to this workspace." Edit static line:
   "Nothing is allowed; no MCP session can connect."
@@ -302,7 +321,12 @@ All strings, so the change and the locale files have one source. Keys under
 
 - A custom access policy. When it comes, the rows become checkboxes, the slider becomes a preset
   picker that selects a prefix, and a policy matching no prefix shows a Custom chip; the backend
-  row table is what the gate would read. The ladder needs no redesign.
+  row table is what the gate would read. The ladder needs no redesign. One precondition before
+  rows become independently selectable: `SQLService/Export` must be clamped to read statements.
+  On MySQL it skips statement validation and the driver executes non-query statements, and the
+  clamp today lives only in `SQLService/Query`. Under the presets Export is served only alongside
+  the DML/DDL row, so there is no exposure until then. That clamp is an MCP implementation change,
+  tracked separately from this doc.
 - A docs page listing the methods per row, generated from the inventory. Worth doing; not linked
   from the card until it exists.
 - Per-engine read-only depth and masking coverage. The removed drawer showed both; they belong in
