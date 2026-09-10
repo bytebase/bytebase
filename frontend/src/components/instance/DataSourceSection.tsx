@@ -15,11 +15,13 @@ import type { InfoSection } from "./info-content";
 
 interface DataSourceSectionProps {
   hideOptions?: boolean;
+  hideAdminAuthentication?: boolean;
   onOpenInfoPanel?: (section: InfoSection) => void;
 }
 
 export function DataSourceSection({
   hideOptions = false,
+  hideAdminAuthentication = false,
   onOpenInfoPanel,
 }: DataSourceSectionProps) {
   const { t } = useTranslation();
@@ -149,7 +151,7 @@ export function DataSourceSection({
         />
       )}
 
-      <div className="mt-2 gap-y-2 gap-x-4 border-none">
+      <div className="mt-4 gap-y-2 gap-x-4 border-none">
         {/* Data source tabs */}
         {showDataSourceTabs && (
           <div className="mb-4 flex items-center gap-x-2 border-b border-block-border">
@@ -222,6 +224,10 @@ export function DataSourceSection({
           <DataSourceForm
             dataSource={editingDataSource}
             hideOptions={hideOptions}
+            hideAuthentication={
+              hideAdminAuthentication &&
+              editingDataSource.id === adminDataSource.id
+            }
             onDataSourceChange={handleDataSourceChange}
             onOpenInfoPanel={onOpenInfoPanel}
           />

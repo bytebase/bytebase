@@ -18,6 +18,7 @@ interface SegmentedControlProps<T extends string> {
   options: SegmentedControlOption<T>[];
   onValueChange: (value: T) => void;
   ariaLabel: string;
+  "aria-describedby"?: string;
   appearance?: "solid" | "soft";
   disabled?: boolean;
   className?: string;
@@ -30,6 +31,7 @@ export function SegmentedControl<T extends string>({
   options,
   onValueChange,
   ariaLabel,
+  "aria-describedby": ariaDescribedBy,
   appearance = "solid",
   disabled = false,
   className,
@@ -43,26 +45,22 @@ export function SegmentedControl<T extends string>({
       }}
       disabled={disabled}
       aria-label={ariaLabel}
+      aria-describedby={ariaDescribedBy}
       className={cn(
-        "inline-flex max-w-full flex-wrap self-start rounded-xs border border-control-border bg-background",
+        "inline-flex max-w-full flex-wrap gap-px self-start rounded-xs border border-control-border bg-control-border",
         className
       )}
     >
-      {options.map((option, index) => {
+      {options.map((option) => {
         const selected = option.value === value;
-        const previousSelected =
-          index > 0 && options[index - 1]?.value === value;
         const optionDisabled = disabled || option.disabled;
         const stylexProps = stylex.props(controlMinHeightStyle(size));
         const segment = (
           <label
             key={option.value}
             className={cn(
-              "relative inline-flex items-center justify-center transition-colors focus-within:outline-hidden focus-within:ring-2 focus-within:ring-accent focus-within:ring-inset",
+              "relative inline-flex flex-auto items-center justify-center transition-colors focus-within:outline-hidden focus-within:ring-2 focus-within:ring-accent focus-within:ring-inset",
               stylexProps.className,
-              index > 0 &&
-                !previousSelected &&
-                "border-l border-control-border",
               selected
                 ? appearance === "soft"
                   ? "bg-accent/10 text-accent"

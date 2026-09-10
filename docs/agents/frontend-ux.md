@@ -194,6 +194,37 @@ behavior:
 - Required fields, disabled state, pending state, and server errors MUST remain
   understandable without color alone.
 
+### Dense Horizontal Forms
+
+Multi-option connection forms MAY use horizontal fields through shared form
+primitives. Keep section headings above their fields rather than adding a
+third column for section titles.
+
+- Use a consistent label column and a flexible control column. Keep ordinary
+  controls at `md`; recover space through layout and progressive disclosure.
+- Stack labels based on available form width, independently of the navigation
+  sidebar breakpoint. Compound controls MAY wrap within the control column
+  before the field itself stacks.
+- Keep descriptions and validation beside the control they explain. Associate
+  labels and radio groups with accessible names in both layouts.
+- Put choices that determine subsequent fields first. Keep authentication,
+  password-source, and synchronization choices visible in a
+  `SegmentedControl`. Longer provider labels MAY wrap within the control when
+  every segment remains distinct and usable.
+- A password source selector MAY share a row with direct password entry.
+  External sources reveal their configuration below. Preserve separate drafts
+  while switching sources, and submit only the active source. Reveal dependent
+  TLS, SSH, IAM, and external-source configuration below its controlling
+  choice, using nested flow rather than a framed surface inside another frame.
+- Keep security modes visible; reveal their dependent fields when selected.
+  Switches and segmented controls align to the start of their control column.
+  Keep ordinary connection rows on the 16px rhythm. Use explicit choices for
+  modes such as syncing all or selected databases.
+- Empty optional collections MAY start as an add action. Existing entries and
+  validation errors MUST remain discoverable.
+- A connection-creation footer MAY place Test Connection beside Create, with
+  Cancel on the left. Test feedback MUST remain visible and reachable.
+
 ### Page Forms
 
 Use a page form when settings have multiple sections, need a stable URL, or are

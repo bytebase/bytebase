@@ -463,18 +463,6 @@
       "count": 1
     },
     {
-      "path": "src/components/instance/CredentialSourceForm.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-gray-100",
-      "count": 1
-    },
-    {
-      "path": "src/components/instance/CredentialSourceForm.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-500",
-      "count": 2
-    },
-    {
       "path": "src/components/instance/DataSourceForm.tsx",
       "rule": "no-native-control",
       "token": "button",
@@ -497,18 +485,6 @@
       "rule": "no-off-scale-gap",
       "token": "gap-x-0.5",
       "count": 3
-    },
-    {
-      "path": "src/components/instance/DataSourceForm.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-indigo-100",
-      "count": 1
-    },
-    {
-      "path": "src/components/instance/DataSourceForm.tsx",
-      "rule": "no-raw-color",
-      "token": "text-indigo-800",
-      "count": 1
     },
     {
       "path": "src/components/instance/DataSourceSection.tsx",
@@ -560,33 +536,9 @@
     },
     {
       "path": "src/components/instance/InstanceFormBody.tsx",
-      "rule": "no-arbitrary-type",
-      "token": "text-[11px]",
-      "count": 1
-    },
-    {
-      "path": "src/components/instance/InstanceFormBody.tsx",
       "rule": "no-native-control",
       "token": "button",
-      "count": 8
-    },
-    {
-      "path": "src/components/instance/InstanceFormBody.tsx",
-      "rule": "no-native-control",
-      "token": "input",
-      "count": 1
-    },
-    {
-      "path": "src/components/instance/InstanceFormBody.tsx",
-      "rule": "no-off-scale-gap",
-      "token": "gap-x-0.5",
-      "count": 1
-    },
-    {
-      "path": "src/components/instance/SshConnectionForm.tsx",
-      "rule": "no-native-control",
-      "token": "textarea",
-      "count": 1
+      "count": 4
     },
     {
       "path": "src/components/instance/SslCertificateForm.tsx",

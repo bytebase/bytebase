@@ -1,7 +1,19 @@
-import { type DragEvent, useCallback, useEffect, useState } from "react";
+import {
+  type DragEvent,
+  type ReactNode,
+  useCallback,
+  useEffect,
+  useState,
+} from "react";
 import { useTranslation } from "react-i18next";
+import {
+  FormField,
+  FormLabel,
+  ResponsiveFormLayout,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { SegmentedControl } from "@/components/ui/segmented-control";
+import { Textarea } from "@/components/ui/textarea";
 import type { Instance } from "@/types/proto-es/v1/instance_service_pb";
 
 const SSH_TYPES = ["NONE", "TUNNEL+PK"] as const;
@@ -16,6 +28,7 @@ interface SshValue {
 }
 
 interface SshConnectionFormProps {
+  title?: ReactNode;
   value: SshValue;
   instance?: Instance;
   disabled?: boolean;
@@ -37,6 +50,7 @@ function guessSshType(value: Partial<SshValue>): SshType {
 
 export function SshConnectionForm({
   value,
+  title,
   instance: _instance,
   disabled = false,
   onChange,
@@ -93,109 +107,99 @@ export function SshConnectionForm({
   }, []);
 
   return (
-    <>
-      {/* SSH type radio buttons */}
-      <RadioGroup
-        className="gap-x-4 mt-2"
-        value={sshType}
-        onValueChange={(value) => handleSelectType(value as SshType)}
-      >
-        {SSH_TYPES.map((type) => (
-          <RadioGroupItem
-            key={type}
-            value={type}
+    <div className="flex flex-col gap-4">
+      <FormField title={title ?? t("data-source.ssh-connection")}>
+        <div className="flex flex-col gap-4">
+          <SegmentedControl
+            value={sshType}
+            onValueChange={(value) => handleSelectType(value as SshType)}
+            ariaLabel={t("data-source.ssh-connection")}
+            options={SSH_TYPES.map((type) => ({
+              value: type,
+              label: getSshTypeLabel(type),
+            }))}
+            size="sm"
             disabled={disabled}
-            className="text-main"
-          >
-            {getSshTypeLabel(type)}
-          </RadioGroupItem>
-        ))}
-      </RadioGroup>
-
-      {sshType !== "NONE" && (
-        <>
-          {/* Host and Port */}
-          <div className="sm:col-span-1 sm:col-start-1 mt-4 grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-4">
-            <div className="sm:col-span-3 sm:col-start-1">
-              <label htmlFor="sshHost" className="textlabel block">
-                {t("data-source.ssh.host")}
-              </label>
-              <Input
-                id="sshHost"
-                className="mt-2 w-full"
-                value={value.sshHost}
-                disabled={disabled}
-                onChange={(e) => onChange({ sshHost: e.target.value })}
-              />
-            </div>
-            <div className="sm:col-span-1">
-              <label htmlFor="sshPort" className="textlabel block">
-                {t("data-source.ssh.port")}
-              </label>
-              <Input
-                id="sshPort"
-                className="mt-2 w-full"
-                value={value.sshPort}
-                disabled={disabled}
-                onChange={(e) => {
-                  const val = e.target.value;
-                  if (val === "" || /^\d+$/.test(val)) {
-                    onChange({ sshPort: val });
-                  }
-                }}
-              />
-            </div>
-          </div>
-
-          {/* User and Password */}
-          <div className="mt-2 grid grid-cols-1 gap-y-2 gap-x-4 border-none sm:grid-cols-3">
-            <div className="mt-2 sm:col-span-3 sm:col-start-1">
-              <label htmlFor="sshUser" className="textlabel block">
-                {t("data-source.ssh.user")}
-              </label>
-              <Input
-                id="sshUser"
-                className="mt-2 w-full"
-                value={value.sshUser}
-                disabled={disabled}
-                onChange={(e) => onChange({ sshUser: e.target.value })}
-              />
-            </div>
-            <div className="mt-2 sm:col-span-3 sm:col-start-1">
-              <label htmlFor="sshPassword" className="textlabel block">
-                {t("data-source.ssh.password")}
-              </label>
-              <Input
-                id="sshPassword"
-                className="mt-2 w-full"
-                placeholder={t("instance.password-write-only")}
-                value={value.sshPassword}
-                disabled={disabled}
-                onChange={(e) => onChange({ sshPassword: e.target.value })}
-              />
-            </div>
-          </div>
-
-          {/* Private Key textarea with drag-and-drop */}
-          <div className="mt-4 sm:col-span-3 sm:col-start-1">
-            <div className="mt-2 sm:col-span-1 sm:col-start-1 flex flex-col">
-              <label htmlFor="sshPrivateKey" className="textlabel block">
-                {t("data-source.ssh.ssh-key")} ({t("common.optional")})
-              </label>
-              <textarea
-                id="sshPrivateKey"
-                className="w-full h-24 mt-2 whitespace-pre-wrap rounded-xs border border-control-border bg-transparent px-3 py-2 text-sm text-main transition-colors placeholder:text-control-placeholder focus:outline-hidden focus:ring-2 focus:ring-accent focus:border-accent disabled:cursor-not-allowed disabled:bg-control-bg disabled:opacity-50 resize-none"
-                value={value.sshPrivateKey}
-                disabled={disabled}
-                placeholder={t("common.sensitive-placeholder")}
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                onChange={(e) => onChange({ sshPrivateKey: e.target.value })}
-              />
-            </div>
-          </div>
-        </>
-      )}
-    </>
+          />
+          {sshType !== "NONE" && (
+            <ResponsiveFormLayout>
+              <fieldset className="flex flex-col gap-4 rounded-xs border border-control-border px-3 py-2">
+                <legend className="px-1 textlabel">
+                  {t("data-source.ssh-connection")}
+                </legend>
+                <FormField>
+                  <FormLabel htmlFor="sshHost">
+                    {t("data-source.ssh.host")}
+                  </FormLabel>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Input
+                      id="sshHost"
+                      className="min-w-0 flex-1"
+                      value={value.sshHost}
+                      disabled={disabled}
+                      onChange={(e) => onChange({ sshHost: e.target.value })}
+                    />
+                    <FormLabel htmlFor="sshPort">
+                      {t("data-source.ssh.port")}
+                    </FormLabel>
+                    <Input
+                      id="sshPort"
+                      className="w-20 shrink-0"
+                      value={value.sshPort}
+                      disabled={disabled}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === "" || /^\d+$/.test(val))
+                          onChange({ sshPort: val });
+                      }}
+                    />
+                  </div>
+                </FormField>
+                <FormField>
+                  <FormLabel htmlFor="sshUser">
+                    {t("data-source.ssh.user")}
+                  </FormLabel>
+                  <Input
+                    id="sshUser"
+                    value={value.sshUser}
+                    disabled={disabled}
+                    onChange={(e) => onChange({ sshUser: e.target.value })}
+                  />
+                </FormField>
+                <FormField>
+                  <FormLabel htmlFor="sshPassword">
+                    {t("data-source.ssh.password")}
+                  </FormLabel>
+                  <Input
+                    id="sshPassword"
+                    placeholder={t("instance.password-write-only")}
+                    value={value.sshPassword}
+                    disabled={disabled}
+                    onChange={(e) => onChange({ sshPassword: e.target.value })}
+                  />
+                </FormField>
+                <FormField>
+                  <FormLabel htmlFor="sshPrivateKey">
+                    {t("data-source.ssh.ssh-key")} ({t("common.optional")})
+                  </FormLabel>
+                  <Textarea
+                    id="sshPrivateKey"
+                    className="w-full h-24 whitespace-pre-wrap resize-none"
+                    value={value.sshPrivateKey}
+                    disabled={disabled}
+                    placeholder={t("common.sensitive-placeholder")}
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    onChange={(e) =>
+                      onChange({ sshPrivateKey: e.target.value })
+                    }
+                  />
+                </FormField>
+              </fieldset>
+            </ResponsiveFormLayout>
+          )}
+        </div>
+      </FormField>
+    </div>
   );
 }
