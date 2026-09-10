@@ -830,13 +830,13 @@
           "functions": [
             {
               "name": "calculate_interest",
-              "definition": "CREATE DEFINER=`root`@`%` FUNCTION `calculate_interest`(`principal` DECIMAL(15,2), `rate` DECIMAL(5,4), `years` INT) RETURNS decimal(15,2) READS SQL DATA DETERMINISTIC\nBEGIN\n    RETURN principal * POW(1 + rate, years);\nEND"
+              "definition": "CREATE FUNCTION `calculate_interest`(principal DECIMAL(15,2), rate DECIMAL(5,4), years INT) RETURNS decimal(15,2) READS SQL DATA DETERMINISTIC\nBEGIN\n    RETURN principal * POW(1 + rate, years);\nEND"
             }
           ],
           "procedures": [
             {
               "name": "transfer_funds",
-              "definition": "CREATE DEFINER=`root`@`%` PROCEDURE `transfer_funds`(IN `from_account` VARCHAR(20), IN `to_account` VARCHAR(20), IN `amount` DECIMAL(15,2))\nBEGIN\n    DECLARE from_balance DECIMAL(15, 2);\n\n    START TRANSACTION;\n\n    SELECT balance INTO from_balance\n    FROM accounts\n    WHERE account_number = from_account\n    FOR UPDATE;\n\n    IF from_balance \u003e= amount THEN\n        UPDATE accounts\n        SET balance = balance - amount\n        WHERE account_number = from_account;\n\n        UPDATE accounts\n        SET balance = balance + amount\n        WHERE account_number = to_account;\n\n        COMMIT;\n    ELSE\n        ROLLBACK;\n        SIGNAL SQLSTATE '45000'\n        SET MESSAGE_TEXT = 'Insufficient funds';\n    END IF;\nEND"
+              "definition": "CREATE PROCEDURE `transfer_funds`(IN from_account VARCHAR(20), IN to_account VARCHAR(20), IN amount DECIMAL(15,2))\nBEGIN\n    DECLARE from_balance DECIMAL(15, 2);\n\n    START TRANSACTION;\n\n    SELECT balance INTO from_balance\n    FROM accounts\n    WHERE account_number = from_account\n    FOR UPDATE;\n\n    IF from_balance \u003e= amount THEN\n        UPDATE accounts\n        SET balance = balance - amount\n        WHERE account_number = from_account;\n\n        UPDATE accounts\n        SET balance = balance + amount\n        WHERE account_number = to_account;\n\n        COMMIT;\n    ELSE\n        ROLLBACK;\n        SIGNAL SQLSTATE '45000'\n        SET MESSAGE_TEXT = 'Insufficient funds';\n    END IF;\nEND"
             }
           ]
         }
@@ -863,7 +863,7 @@
     -- Function structure for `calculate_interest`
     --
     DELIMITER ;;
-    CREATE DEFINER=`root`@`%` FUNCTION `calculate_interest`(`principal` DECIMAL(15,2), `rate` DECIMAL(5,4), `years` INT) RETURNS decimal(15,2) READS SQL DATA DETERMINISTIC
+    CREATE FUNCTION `calculate_interest`(principal DECIMAL(15,2), rate DECIMAL(5,4), years INT) RETURNS decimal(15,2) READS SQL DATA DETERMINISTIC
     BEGIN
         RETURN principal * POW(1 + rate, years);
     END;;
@@ -873,7 +873,7 @@
     -- Procedure structure for `transfer_funds`
     --
     DELIMITER ;;
-    CREATE DEFINER=`root`@`%` PROCEDURE `transfer_funds`(IN `from_account` VARCHAR(20), IN `to_account` VARCHAR(20), IN `amount` DECIMAL(15,2))
+    CREATE PROCEDURE `transfer_funds`(IN from_account VARCHAR(20), IN to_account VARCHAR(20), IN amount DECIMAL(15,2))
     BEGIN
         DECLARE from_balance DECIMAL(15, 2);
 
@@ -1719,7 +1719,7 @@
           "functions": [
             {
               "name": "lookup_token",
-              "definition": "CREATE DEFINER=`root`@`%` FUNCTION `lookup_token`(`p_a` BIGINT, `p_b` VARCHAR(36)) RETURNS char(36) CHARSET utf8mb4 NO SQL DETERMINISTIC\nBEGIN\n    RETURN p_b;\nEND"
+              "definition": "CREATE FUNCTION `lookup_token`(p_a BIGINT, p_b VARCHAR(36)) RETURNS char(36) CHARSET utf8mb4 NO SQL DETERMINISTIC\nBEGIN\n    RETURN p_b;\nEND"
             }
           ]
         }
@@ -1745,7 +1745,7 @@
     -- Function structure for `lookup_token`
     --
     DELIMITER ;;
-    CREATE DEFINER=`root`@`%` FUNCTION `lookup_token`(`p_a` BIGINT, `p_b` VARCHAR(36)) RETURNS char(36) CHARSET utf8mb4 NO SQL DETERMINISTIC
+    CREATE FUNCTION `lookup_token`(p_a BIGINT, p_b VARCHAR(36)) RETURNS char(36) CHARSET utf8mb4 NO SQL DETERMINISTIC
     BEGIN
         RETURN p_b;
     END;;

@@ -67,7 +67,7 @@
               "engine": "InnoDB",
               "foreign_keys": [
                 {
-                  "name": "posts_ibfk_1",
+                  "name": "fk_1",
                   "columns": [
                     "user_id"
                   ],
@@ -202,7 +202,7 @@
       `published_at` datetime,
       PRIMARY KEY (`id`),
       KEY `idx_user_published` (`user_id`, `published_at`),
-      CONSTRAINT `posts_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+      CONSTRAINT `fk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
     ) ENGINE=InnoDB;
 
     --
@@ -296,7 +296,7 @@
               "engine": "InnoDB",
               "foreign_keys": [
                 {
-                  "name": "inventory_ibfk_1",
+                  "name": "fk_1",
                   "columns": [
                     "product_id"
                   ],
@@ -385,7 +385,7 @@
       `last_updated` timestamp DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       PRIMARY KEY (`id`),
       UNIQUE KEY `uk_product_warehouse` (`product_id`, `warehouse`),
-      CONSTRAINT `inventory_ibfk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`)
+      CONSTRAINT `fk_1` FOREIGN KEY (`product_id`) REFERENCES `products` (`id`)
     ) ENGINE=InnoDB;
 
     --
@@ -469,7 +469,7 @@
               "engine": "InnoDB",
               "foreign_keys": [
                 {
-                  "name": "order_items_ibfk_1",
+                  "name": "fk_1",
                   "columns": [
                     "order_id"
                   ],
@@ -585,7 +585,7 @@
       `unit_price` decimal(10,2) NOT NULL,
       PRIMARY KEY (`id`),
       KEY `order_id` (`order_id`),
-      CONSTRAINT `order_items_ibfk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`)
+      CONSTRAINT `fk_1` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`)
     ) ENGINE=InnoDB;
 
     --
@@ -1191,7 +1191,7 @@
               "engine": "InnoDB",
               "foreign_keys": [
                 {
-                  "name": "employees_ibfk_1",
+                  "name": "fk_1",
                   "columns": [
                     "department_id"
                   ],
@@ -1202,7 +1202,7 @@
                   "on_delete": "RESTRICT"
                 },
                 {
-                  "name": "employees_ibfk_2",
+                  "name": "fk_2",
                   "columns": [
                     "manager_id"
                   ],
@@ -1271,7 +1271,7 @@
               "engine": "InnoDB",
               "foreign_keys": [
                 {
-                  "name": "project_members_ibfk_1",
+                  "name": "fk_1",
                   "columns": [
                     "project_id"
                   ],
@@ -1282,7 +1282,7 @@
                   "on_delete": "CASCADE"
                 },
                 {
-                  "name": "project_members_ibfk_2",
+                  "name": "fk_2",
                   "columns": [
                     "employee_id"
                   ],
@@ -1366,7 +1366,7 @@
               "engine": "InnoDB",
               "foreign_keys": [
                 {
-                  "name": "projects_ibfk_1",
+                  "name": "fk_1",
                   "columns": [
                     "department_id"
                   ],
@@ -1377,7 +1377,7 @@
                   "on_delete": "CASCADE"
                 },
                 {
-                  "name": "projects_ibfk_2",
+                  "name": "fk_2",
                   "columns": [
                     "lead_id"
                   ],
@@ -1419,8 +1419,8 @@
       PRIMARY KEY (`id`),
       KEY `idx_department` (`department_id`),
       KEY `idx_manager` (`manager_id`),
-      CONSTRAINT `employees_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE RESTRICT,
-      CONSTRAINT `employees_ibfk_2` FOREIGN KEY (`manager_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL
+      CONSTRAINT `fk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE RESTRICT,
+      CONSTRAINT `fk_2` FOREIGN KEY (`manager_id`) REFERENCES `employees` (`id`) ON DELETE SET NULL
     ) ENGINE=InnoDB;
 
     --
@@ -1433,8 +1433,8 @@
       `joined_at` timestamp DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY (`project_id`, `employee_id`),
       KEY `employee_id` (`employee_id`),
-      CONSTRAINT `project_members_ibfk_1` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
-      CONSTRAINT `project_members_ibfk_2` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
+      CONSTRAINT `fk_1` FOREIGN KEY (`project_id`) REFERENCES `projects` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_2` FOREIGN KEY (`employee_id`) REFERENCES `employees` (`id`) ON DELETE CASCADE
     ) ENGINE=InnoDB;
 
     --
@@ -1449,8 +1449,8 @@
       PRIMARY KEY (`id`),
       KEY `idx_department` (`department_id`),
       KEY `idx_lead` (`lead_id`),
-      CONSTRAINT `projects_ibfk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE,
-      CONSTRAINT `projects_ibfk_2` FOREIGN KEY (`lead_id`) REFERENCES `employees` (`id`) ON DELETE RESTRICT
+      CONSTRAINT `fk_1` FOREIGN KEY (`department_id`) REFERENCES `departments` (`id`) ON DELETE CASCADE,
+      CONSTRAINT `fk_2` FOREIGN KEY (`lead_id`) REFERENCES `employees` (`id`) ON DELETE RESTRICT
     ) ENGINE=InnoDB;
 
     SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;

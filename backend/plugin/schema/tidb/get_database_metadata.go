@@ -751,10 +751,11 @@ func (*metadataExtractor) getIndexType(constraint *ast.Constraint) string {
 	return indexType
 }
 
-// unnamedForeignKeyName is the <table>_ibfk_<n> name TiDB gives a FOREIGN KEY
-// written without one. The definition writer always emits an explicit CONSTRAINT
-// clause, so an empty name renders as CONSTRAINT “ and the server rejects the
-// statement with "Incorrect index name".
+// unnamedForeignKeyName is the fk_<n> name TiDB gives a FOREIGN KEY written
+// without one. It is not MySQL's <table>_ibfk_<n>: a live TiDB was asked, and it
+// names them fk_1, fk_2. The definition writer always emits an explicit
+// CONSTRAINT clause, so an empty name renders as CONSTRAINT “ and the server
+// rejects the statement with "Incorrect index name".
 func unnamedForeignKeyName(table *storepb.TableMetadata, synthesized *int) string {
 	taken := make(map[string]bool, len(table.ForeignKeys))
 	for _, fk := range table.ForeignKeys {
@@ -762,7 +763,7 @@ func unnamedForeignKeyName(table *storepb.TableMetadata, synthesized *int) strin
 	}
 	for {
 		*synthesized++
-		name := fmt.Sprintf("%s_ibfk_%d", table.Name, *synthesized)
+		name := fmt.Sprintf("fk_%d", *synthesized)
 		if !taken[name] {
 			return name
 		}

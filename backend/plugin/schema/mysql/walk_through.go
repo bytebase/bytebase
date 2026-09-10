@@ -952,10 +952,10 @@ func routineToProcedureProto(r *catalog.Routine) *storepb.ProcedureMetadata {
 // so a body alone renders as a headless BEGIN ... END that no server accepts.
 func routineDefinition(r *catalog.Routine) string {
 	var buf strings.Builder
+	// No DEFINER: the sync strips it deliberately (see getCreateFunctionStmt),
+	// and the catalog invents one the DDL never specified, so emitting it would
+	// make every routine differ from its synced form.
 	buf.WriteString("CREATE ")
-	if r.Definer != "" {
-		fmt.Fprintf(&buf, "DEFINER=%s ", r.Definer)
-	}
 	if r.IsProcedure {
 		buf.WriteString("PROCEDURE ")
 	} else {
@@ -969,7 +969,8 @@ func routineDefinition(r *catalog.Routine) string {
 		if p.Direction != "" {
 			fmt.Fprintf(&buf, "%s ", p.Direction)
 		}
-		fmt.Fprintf(&buf, "%s %s", mysqlQuoteIdentifier(p.Name), p.TypeName)
+		// Parameter names are unquoted, as SHOW CREATE returns them.
+		fmt.Fprintf(&buf, "%s %s", p.Name, p.TypeName)
 	}
 	buf.WriteString(")")
 	if r.Returns != "" {
