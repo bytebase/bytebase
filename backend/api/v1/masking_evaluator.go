@@ -94,7 +94,7 @@ func (m *maskingLevelEvaluator) evaluateSemanticTypeOfColumn(
 		semanticTypeID := columnConfig.GetSemanticType()
 		if semanticTypeID != "" {
 			semanticType := m.semanticTypesMap[semanticTypeID]
-			if semanticType != nil || isBuiltinSemanticTypeID(semanticTypeID) {
+			if semanticType != nil {
 				context := ""
 				if schemaName != "" {
 					context = fmt.Sprintf("Column-level semantic type: %s.%s.%s.%s.%s", databaseMessage.InstanceID, databaseMessage.DatabaseName, schemaName, tableName, columnName)

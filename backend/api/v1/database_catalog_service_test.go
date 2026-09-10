@@ -123,7 +123,7 @@ func TestValidateCatalogSemanticTypeIDs(t *testing.T) {
 					}},
 				}},
 			},
-			setting: &storepb.SemanticTypeSetting{},
+			setting: &storepb.SemanticTypeSetting{Types: getBuiltinSemanticTypes()},
 		},
 		{
 			name: "unknown column semantic type rejected",

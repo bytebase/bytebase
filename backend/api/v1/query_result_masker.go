@@ -39,7 +39,7 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 		return errors.Wrapf(err, "failed to find masking rule policy")
 	}
 
-	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx, maskerWorkspaceID)
+	semanticTypesSetting, err := getSemanticTypesSettingWithBuiltins(ctx, s.store)
 	if err != nil {
 		return errors.Wrapf(err, "failed to find semantic types setting")
 	}
@@ -149,22 +149,23 @@ func getAlgorithmName(m masker.Masker) string {
 }
 
 func buildSemanticTypeToMaskerMap(ctx context.Context, stores *store.Store) (map[string]masker.Masker, error) {
-	semanticTypeToMasker := map[string]masker.Masker{
-		defaultSemanticTypeID:        masker.NewDefaultFullMasker(),
-		defaultPartialSemanticTypeID: masker.NewDefaultRangeMasker(),
-	}
-	semanticTypesSetting, err := stores.GetSemanticTypesSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
+	semanticTypesSetting, err := getSemanticTypesSettingWithBuiltins(ctx, stores)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to get semantic types setting")
 	}
+	semanticTypeToMasker := make(map[string]masker.Masker)
 	for _, semanticType := range semanticTypesSetting.GetTypes() {
-		if isBuiltinSemanticTypeID(semanticType.GetId()) {
-			// Skip the built-in default semantic types.
-			continue
-		}
-		m, err := getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm())
-		if err != nil {
-			return nil, err
+		var m masker.Masker
+		switch semanticType.GetId() {
+		case defaultSemanticTypeID:
+			m = masker.NewDefaultFullMasker()
+		case defaultPartialSemanticTypeID:
+			m = masker.NewDefaultRangeMasker()
+		default:
+			m, err = getMaskerByMaskingAlgorithmAndLevel(semanticType.GetAlgorithm())
+			if err != nil {
+				return nil, err
+			}
 		}
 		// Only add semantic types that have actual masking configured (not NoneMasker)
 		if _, isNoneMasker := m.(*masker.NoneMasker); !isNoneMasker {

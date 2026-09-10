@@ -120,7 +120,7 @@ func (s *DatabaseCatalogService) UpdateDatabaseCatalog(ctx context.Context, req 
 
 	databaseConfig := convertDatabaseCatalog(req.Msg.GetCatalog())
 
-	semanticTypesSetting, err := s.store.GetSemanticTypesSetting(ctx, common.GetWorkspaceIDFromContext(ctx))
+	semanticTypesSetting, err := getSemanticTypesSettingWithBuiltins(ctx, s.store)
 	if err != nil {
 		return nil, connect.NewError(connect.CodeInternal, errors.Wrap(err, "failed to get semantic types setting"))
 	}
@@ -252,10 +252,7 @@ func validateCatalogSemanticTypeIDs(config *storepb.DatabaseConfig, setting *sto
 		return nil
 	}
 
-	validSemanticTypeIDs := map[string]bool{
-		defaultSemanticTypeID:        true,
-		defaultPartialSemanticTypeID: true,
-	}
+	validSemanticTypeIDs := make(map[string]bool)
 	for _, semanticType := range setting.GetTypes() {
 		validSemanticTypeIDs[semanticType.Id] = true
 	}

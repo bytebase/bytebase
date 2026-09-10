@@ -56,6 +56,24 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 	defaultSemanticType := &storepb.SemanticTypeSetting{
 		Types: []*storepb.SemanticTypeSetting_SemanticType{
 			{
+				Id:    defaultSemanticTypeID,
+				Title: "Default",
+				Algorithm: &storepb.Algorithm{
+					Mask: &storepb.Algorithm_FullMask_{
+						FullMask: &storepb.Algorithm_FullMask{},
+					},
+				},
+			},
+			{
+				Id:    defaultPartialSemanticTypeID,
+				Title: "Default Partial",
+				Algorithm: &storepb.Algorithm{
+					Mask: &storepb.Algorithm_RangeMask_{
+						RangeMask: &storepb.Algorithm_RangeMask{},
+					},
+				},
+			},
+			{
 				Id:        "default",
 				Algorithm: fullAlgorithm,
 			},
@@ -79,6 +97,7 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 		dataClassification                      *storepb.DataClassificationSetting
 
 		want           string
+		wantTitle      string
 		wantAlgorithm  string
 		wantContext    string
 		wantClassLevel int32
@@ -108,6 +127,29 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			want:           "default",
 			wantAlgorithm:  "Full mask",
 			wantClassLevel: 2,
+		},
+		{
+			description:     "Follow The Global Masking Rule With Built-in Semantic Type",
+			databaseMessage: defaultDatabaseMessage,
+			schemaName:      "hiring",
+			tableName:       "employees",
+			columnName:      "salary",
+			columnCatalog:   &storepb.ColumnCatalog{},
+			maskingRulePolicy: &storepb.MaskingRulePolicy{
+				Rules: []*storepb.MaskingRulePolicy_MaskingRule{
+					{
+						Condition:    &expr.Expr{Expression: "true"},
+						SemanticType: defaultSemanticTypeID,
+					},
+				},
+			},
+			filteredMaskingExemptions:               []*storepb.MaskingExemptionPolicy_Exemption{},
+			dataClassification:                      defaultClassification,
+			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
+
+			want:          defaultSemanticTypeID,
+			wantTitle:     "Default",
+			wantAlgorithm: "Full mask",
 		},
 		{
 			description:     "Respect The Exception",
@@ -231,7 +273,9 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			dataClassification:                      defaultClassification,
 			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
-			want: defaultSemanticTypeID,
+			want:          defaultSemanticTypeID,
+			wantTitle:     "Default",
+			wantAlgorithm: "Full mask",
 		},
 		{
 			description:     "Built-in Partial Mask Column Catalog",
@@ -246,7 +290,9 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 			dataClassification:                      defaultClassification,
 			databaseProjectDatabaseClassificationID: defaultProjectDatabaseDataClassificationID,
 
-			want: defaultPartialSemanticTypeID,
+			want:          defaultPartialSemanticTypeID,
+			wantTitle:     "Default Partial",
+			wantAlgorithm: "Partial mask",
 		},
 	}
 
@@ -261,6 +307,9 @@ func TestEvalMaskingLevelOfColumn(t *testing.T) {
 		} else {
 			a.NotNil(result, tc.description)
 			a.Equal(tc.want, result.SemanticTypeID, tc.description)
+			if tc.wantTitle != "" {
+				a.Equal(tc.wantTitle, result.SemanticTypeTitle, tc.description)
+			}
 			if tc.wantAlgorithm != "" {
 				a.Equal(tc.wantAlgorithm, result.Algorithm, tc.description)
 			}

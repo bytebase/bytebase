@@ -413,7 +413,7 @@ export function DatabaseCatalogPanel({ database }: { database: Database }) {
         />
 
         <div className="flex w-full flex-col items-stretch gap-2 sm:w-auto sm:flex-row">
-          {hasUpdateCatalogPermission && (
+          {hasUpdateCatalogPermission && !isMaskingForNoSQL && (
             <Button
               type="button"
               className="w-full sm:w-auto"

@@ -703,6 +703,28 @@ describe("DatabaseCatalogPanel", () => {
     unmount();
   });
 
+  test("hides mark sensitive data for NoSQL databases", async () => {
+    mocks.instanceV1MaskingForNoSQL.mockReturnValue(true);
+
+    const { container, render, unmount } = renderIntoContainer(
+      createElement(DatabaseCatalogPanel, {
+        database: makeDatabase(),
+      })
+    );
+
+    render();
+    await flush();
+
+    expect(
+      getButton(
+        container,
+        "settings.sensitive-data.mark-sensitive-data"
+      )
+    ).toBeUndefined();
+
+    unmount();
+  });
+
   test("hides mark sensitive data without catalog update permission", async () => {
     mocks.hasProjectPermissionV2.mockImplementation(
       (_project, permission) => permission !== "bb.databaseCatalogs.update"
