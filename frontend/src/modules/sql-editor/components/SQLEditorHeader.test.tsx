@@ -336,7 +336,7 @@ describe("SQLEditorHeader", () => {
     unmount();
   });
 
-  test("keeps SQL Editor when clicking the current workspace", () => {
+  test("does nothing when clicking the current workspace", () => {
     const { render, unmount } = renderIntoContainer(<SQLEditorHeader />);
     render();
 
@@ -347,11 +347,9 @@ describe("SQLEditorHeader", () => {
       });
     });
 
-    expect(mocks.resolve).toHaveBeenCalledWith({
-      name: "sql-editor.home",
-    });
+    expect(mocks.resolve).not.toHaveBeenCalled();
     expect(mocks.record).not.toHaveBeenCalled();
-    expect(mocks.push).toHaveBeenCalledWith({ name: "sql-editor.home" });
+    expect(mocks.push).not.toHaveBeenCalled();
     expect(mocks.switchWorkspace).not.toHaveBeenCalled();
     expect(mocks.assignLocation).not.toHaveBeenCalled();
 

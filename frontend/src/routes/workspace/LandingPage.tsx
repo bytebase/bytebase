@@ -47,7 +47,9 @@ import {
   WORKSPACE_ROUTE_WORKLOAD_IDENTITIES,
 } from "@/app/router/handles";
 import { RouterLink } from "@/components/RouterLink";
+import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { QUICK_LINK_TILE_CLASS } from "@/components/ui/quick-link";
 import {
   Sheet,
   SheetBody,
@@ -55,6 +57,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useOptionalCurrentUser, useServerState } from "@/hooks/useAppState";
 import { useRecentVisit } from "@/hooks/useRecentVisit";
 import { useAppStore } from "@/stores/app";
@@ -387,7 +390,7 @@ function ConfigSheet({
               onDragEnter={() => handleDragEnter(i)}
               onDragEnd={handleDragEnd}
               onDragOver={(e: DragEvent) => e.preventDefault()}
-              className="flex items-center justify-between p-2 hover:bg-gray-100 rounded-sm cursor-grab"
+              className="flex items-center justify-between rounded-sm p-2 hover:bg-control-bg cursor-grab"
             >
               <div className="flex items-center gap-x-2">
                 <Checkbox
@@ -395,23 +398,25 @@ function ConfigSheet({
                   disabled={selected.length <= 1}
                   onCheckedChange={() => uncheck(item.id)}
                 />
-                <item.icon className="w-5 h-5 text-gray-500" />
+                <item.icon className="w-5 h-5 text-control-light" />
                 {item.title}
               </div>
-              <GripVertical className="w-5 h-5 text-gray-500" />
+              <GripVertical className="w-5 h-5 text-control-light" />
             </div>
           ))}
 
-          {unselected.length > 0 && <div className="border-t my-2" />}
+          {unselected.length > 0 && (
+            <div className="my-2 border-t border-control-border" />
+          )}
 
           {unselected.map((item) => (
             <div
               key={item.id}
-              className="flex items-center gap-x-2 p-2 hover:bg-gray-100 rounded-sm cursor-pointer"
+              className="flex items-center gap-x-2 rounded-sm p-2 hover:bg-control-bg cursor-pointer"
               onClick={() => check(item.id)}
             >
               <Checkbox checked={false} />
-              <item.icon className="w-5 h-5 text-gray-500" />
+              <item.icon className="w-5 h-5 text-control-light" />
               {item.title}
             </div>
           ))}
@@ -465,12 +470,19 @@ export function LandingPage(_: Record<string, never> = {}) {
               <div className="font-semibold text-2xl">
                 {t("landing.quick-link.self")}
               </div>
-              <button
-                className="p-1 rounded-xs hover:bg-gray-100"
-                onClick={() => setShowConfigDrawer(true)}
-              >
-                <Settings className="w-4 h-4 text-gray-500" />
-              </button>
+              <Tooltip content={t("landing.quick-link.manage")}>
+                <Button
+                  appearance="secondary"
+                  size="xs"
+                  className="aspect-square px-0"
+                  onClick={() => setShowConfigDrawer(true)}
+                >
+                  <Settings className="w-4 h-4 text-control-light" />
+                  <span className="sr-only">
+                    {t("landing.quick-link.manage")}
+                  </span>
+                </Button>
+              </Tooltip>
             </div>
             {lastProject && lastVisitProjectPath && (
               <RouterLink
@@ -484,30 +496,29 @@ export function LandingPage(_: Record<string, never> = {}) {
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {quickLinkList.map((link) => {
-              const tileClass =
-                "flex justify-center items-center gap-x-2 cursor-pointer border rounded-sm px-4 py-5 bg-white hover:bg-gray-100 no-underline text-main";
               if (link.route) {
                 return (
                   <RouterLink
                     key={link.id}
                     to={{ name: link.route }}
-                    className={tileClass}
+                    className={QUICK_LINK_TILE_CLASS}
                   >
-                    <link.icon className="w-5 h-5 text-gray-500" />
+                    <link.icon className="w-5 h-5 text-control-light" />
                     {link.title}
                   </RouterLink>
                 );
               }
               return (
-                <button
+                <Button
                   key={link.id}
                   type="button"
-                  className={tileClass}
+                  appearance="secondary"
+                  className={QUICK_LINK_TILE_CLASS}
                   onClick={() => handleClick(link)}
                 >
-                  <link.icon className="w-5 h-5 text-gray-500" />
+                  <link.icon className="w-5 h-5 text-control-light" />
                   {link.title}
-                </button>
+                </Button>
               );
             })}
           </div>

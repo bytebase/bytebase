@@ -285,6 +285,70 @@ beforeEach(() => {
 });
 
 describe("SQLEditorRouteShell", () => {
+  test("does not auto-select a project when the editor has no selection", async () => {
+    mocks.editorState.project = "";
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      name: "sql-editor",
+      params: {},
+      query: {},
+    };
+    mocks.currentRoute = {
+      ...mocks.currentRoute,
+      name: "sql-editor",
+      params: {},
+      query: {},
+    };
+    mocks.maybeSwitchProject.mockImplementation(async (project: string) =>
+      project ? project : undefined
+    );
+
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.searchProjects).not.toHaveBeenCalled();
+    expect(mocks.maybeSwitchProject).not.toHaveBeenCalledWith(
+      "projects/proj1"
+    );
+    expect(mocks.editorState.setProject).toHaveBeenCalledWith("");
+    unmount();
+  });
+
+  test("does not restore the default project when it is the only project", async () => {
+    mocks.editorState.project = "projects/proj1";
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      name: "sql-editor",
+      params: {},
+      query: {},
+    };
+    mocks.currentRoute = {
+      ...mocks.currentRoute,
+      name: "sql-editor",
+      params: {},
+      query: {},
+    };
+    const { unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(mocks.searchProjects).not.toHaveBeenCalled();
+    expect(mocks.maybeSwitchProject).not.toHaveBeenCalledWith(
+      "projects/proj1"
+    );
+    expect(mocks.editorState.setProject).toHaveBeenCalledWith("");
+    unmount();
+  });
+
   test("keeps a restored data explorer tab that matches the database route", async () => {
     mocks.tabsState.initProject.mockImplementationOnce(async () => {
       const tab = {

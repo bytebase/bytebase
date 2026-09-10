@@ -8,26 +8,29 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 ).IS_REACT_ACT_ENVIRONMENT = true;
 
 const mocks = vi.hoisted(() => ({
-  useTranslation: vi.fn(() => ({ t: (key: string) => key })),
-  usePermissionCheck:
-    vi.fn<
-      (
-        perms: readonly string[],
-        project?: unknown
-      ) => [boolean, string | undefined]
-    >(),
   routerPush: vi.fn(),
+  navigatePush: vi.fn(),
+  onChangeProject: vi.fn(),
+  fetchDatabases: vi.fn(),
+  projectName: "" as string,
   projectData: { name: "projects/test" } as { name: string },
+  projects: [] as { name: string }[],
+  hasDefaultProject: false,
   themeDark: false,
+  deniedPermissions: new Set<string>(),
 }));
 
 vi.mock("react-i18next", () => ({
   initReactI18next: { type: "3rdParty", init: () => {} },
-  useTranslation: mocks.useTranslation,
+  useTranslation: () => ({ t: (key: string) => key }),
 }));
 
 vi.mock("@/components/PermissionGuard", () => ({
-  usePermissionCheck: mocks.usePermissionCheck,
+  PermissionGuard: ({ children }: { children: ReactElement }) => children,
+  usePermissionCheck: (permissions: readonly string[]) => [
+    !permissions.some((permission) => mocks.deniedPermissions.has(permission)),
+    "missing permission",
+  ],
 }));
 
 vi.mock("@/components/BytebaseLogo", () => ({
@@ -46,21 +49,83 @@ vi.mock("@/components/BytebaseLogo", () => ({
   ),
 }));
 
+vi.mock("@/hooks/useAppState", () => ({
+  useProjectList: (
+    _query: string,
+    { excludeDefault = true }: { excludeDefault?: boolean } = {}
+  ) => ({
+    projects: [
+      ...(mocks.hasDefaultProject && !excludeDefault
+        ? [{ name: "projects/default" }]
+        : []),
+      ...mocks.projects,
+    ],
+    isLoading: false,
+  }),
+}));
+
 vi.mock("@/hooks/useAppProject", () => ({
-  useAppProject: () => mocks.projectData,
+  useAppProject: () => (mocks.projectName ? mocks.projectData : undefined),
 }));
 
 vi.mock("@/app/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/app/router")>()),
   router: { push: mocks.routerPush },
+  SQL_EDITOR_PROJECT_MODULE: "sql-editor.project",
+  useNavigate: () => ({ push: mocks.navigatePush }),
 }));
 
-vi.mock("@/stores", () => ({
-  useProjectV1Store: vi.fn(),
+vi.mock("@/app/router/handles", () => ({
+  PROJECT_V1_ROUTE_DASHBOARD: "workspace.project",
+  PROJECT_V1_ROUTE_INSTANCE_CREATE: "workspace.project.instance.create",
 }));
 
-vi.mock("@/modules/sql-editor/store/editor-vue-state", () => ({
-  useSQLEditorVueState: vi.fn(),
+vi.mock("@/utils/v1/project", () => ({
+  extractProjectResourceName: (name: string) => name.replace("projects/", ""),
+}));
+
+vi.mock("@/lib/productIntro", () => ({
+  CREATE_PROJECT_PRODUCT_INTRO: "create-project",
+  PRODUCT_INTRO_QUERY_KEY: "product-intro",
+}));
+
+vi.mock("@/modules/sql-editor/store/editor", () => ({
+  useSQLEditorEditorState: (
+    selector: (state: { project: string }) => unknown
+  ) => selector({ project: mocks.projectName }),
+}));
+
+vi.mock("@/modules/sql-editor/store", () => ({
+  useSQLEditorStore: (
+    selector: (state: { maybeSwitchProject: typeof mocks.onChangeProject }) => unknown
+  ) => selector({ maybeSwitchProject: mocks.onChangeProject }),
+}));
+
+vi.mock("@/stores/app", () => ({
+  useAppStore: {
+    getState: () => ({ fetchDatabases: mocks.fetchDatabases }),
+  },
+}));
+
+vi.mock("@/components/header/ProjectSwitchPanel", () => ({
+  ProjectSwitchPanel: ({
+    onSelectProject,
+  }: {
+    onSelectProject: (project: { name: string }) => void;
+  }) => (
+    <button
+      data-testid="choose-project"
+      onClick={() => onSelectProject({ name: "projects/selected" })}
+    >
+      Choose project
+    </button>
+  ),
+}));
+
+vi.mock("@/components/ui/popover", () => ({
+  Popover: ({ children }: { children: ReactElement }) => <>{children}</>,
+  PopoverContent: ({ children }: { children: ReactElement }) => <>{children}</>,
+  PopoverTrigger: ({ render }: { render: ReactElement }) => render,
 }));
 
 vi.mock("@/assets/logo-full.svg", () => ({
@@ -99,29 +164,178 @@ const renderIntoContainer = (element: ReactElement) => {
   };
 };
 
+const flushEffects = async () => {
+  await act(async () => {
+    await Promise.resolve();
+  });
+};
+
 beforeEach(async () => {
   vi.clearAllMocks();
+  mocks.projectName = "";
+  mocks.projects = [];
+  mocks.hasDefaultProject = false;
   mocks.themeDark = false;
-  // Default: both permissions granted.
-  mocks.usePermissionCheck.mockReturnValue([true, undefined]);
+  mocks.deniedPermissions.clear();
+  mocks.fetchDatabases.mockResolvedValue({ databases: [] });
   ({ Welcome } = await import("./Welcome"));
 });
 
 describe("Welcome", () => {
-  test("renders both buttons when both permissions present", () => {
+  test("switches to a selected accessible project", async () => {
+    mocks.projects = [{ name: "projects/selected" }];
+    mocks.onChangeProject.mockResolvedValue("projects/selected");
     const { container, render, unmount } = renderIntoContainer(
       <Welcome onChangeConnection={() => {}} />
     );
     render();
-    expect(container.firstElementChild?.className).toContain("gap-y-10");
+
     expect(
-      container.querySelector('[data-testid="welcome-logo"]')?.className
-    ).toContain("h-20");
+      container.querySelector('[data-testid="select-project"]')
+    ).not.toBeNull();
     expect(
-      container.querySelector('[data-testid="welcome-logo"]')?.className
-    ).toContain("w-44");
-    expect(container.textContent).toContain("sql-editor.add-a-new-instance");
-    expect(container.textContent).toContain("sql-editor.connect-to-a-database");
+      container.querySelector('[data-testid="create-project"]')
+    ).toBeNull();
+
+    act(() => {
+      (
+        container.querySelector(
+          '[data-testid="choose-project"]'
+        ) as HTMLButtonElement
+      ).click();
+    });
+    expect(mocks.onChangeProject).toHaveBeenCalledWith("projects/selected");
+    await flushEffects();
+    expect(mocks.navigatePush).toHaveBeenCalledWith({
+      name: "sql-editor.project",
+      params: { project: "selected" },
+    });
+    unmount();
+  });
+
+  test("offers project creation when no accessible project exists", () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <Welcome onChangeConnection={() => {}} />
+    );
+    render();
+
+    act(() => {
+      (
+        container.querySelector(
+          '[data-testid="create-project"]'
+        ) as HTMLButtonElement
+      ).click();
+    });
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "workspace.project",
+      query: { "product-intro": "create-project" },
+    });
+    unmount();
+  });
+
+  test("treats the default project as no project", () => {
+    mocks.hasDefaultProject = true;
+    const { container, render, unmount } = renderIntoContainer(
+      <Welcome onChangeConnection={() => {}} />
+    );
+    render();
+
+    expect(
+      container.querySelector('[data-testid="select-project"]')
+    ).toBeNull();
+    expect(
+      container.querySelector('[data-testid="create-project"]')
+    ).not.toBeNull();
+    unmount();
+  });
+
+  test("keeps project creation visible but disabled without permission", () => {
+    mocks.deniedPermissions.add("bb.projects.create");
+    const { container, render, unmount } = renderIntoContainer(
+      <Welcome onChangeConnection={() => {}} />
+    );
+    render();
+
+    expect(
+      container.querySelector('[data-testid="create-project"]')
+    ).toBeDisabled();
+    unmount();
+  });
+
+  test("creates an instance in the selected project when it has no databases", async () => {
+    mocks.projectName = "projects/test";
+    const { container, render, unmount } = renderIntoContainer(
+      <Welcome onChangeConnection={() => {}} />
+    );
+    render();
+    await flushEffects();
+
+    const addInstance = container.querySelector(
+      '[data-testid="create-project-instance"]'
+    ) as HTMLButtonElement;
+    expect(addInstance).not.toBeNull();
+    expect(container.querySelector('[data-testid="connect-database"]')).toBeNull();
+    act(() => addInstance.click());
+    expect(mocks.routerPush).toHaveBeenCalledWith({
+      name: "workspace.project.instance.create",
+      params: { projectId: "test" },
+    });
+    unmount();
+  });
+
+  test("keeps instance creation visible but disabled without project permission", async () => {
+    mocks.projectName = "projects/test";
+    mocks.deniedPermissions.add("bb.instances.create");
+    const { container, render, unmount } = renderIntoContainer(
+      <Welcome onChangeConnection={() => {}} />
+    );
+    render();
+    await flushEffects();
+
+    expect(
+      container.querySelector('[data-testid="create-project-instance"]')
+    ).toBeDisabled();
+    unmount();
+  });
+
+  test("keeps the database action visible but disabled without query permission", async () => {
+    mocks.projectName = "projects/test";
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [{ name: "databases/db" }],
+    });
+    mocks.deniedPermissions.add("bb.sql.select");
+    const { container, render, unmount } = renderIntoContainer(
+      <Welcome onChangeConnection={() => {}} />
+    );
+    render();
+    await flushEffects();
+
+    expect(
+      container.querySelector('[data-testid="connect-database"]')
+    ).toBeDisabled();
+    unmount();
+  });
+
+  test("opens the connection panel when a database is available", async () => {
+    mocks.projectName = "projects/test";
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [{ name: "databases/db" }],
+    });
+    const onChangeConnection = vi.fn();
+    const { container, render, unmount } = renderIntoContainer(
+      <Welcome onChangeConnection={onChangeConnection} />
+    );
+    render();
+    await flushEffects();
+
+    act(() => {
+      (
+        container.querySelector(
+          '[data-testid="connect-database"]'
+        ) as HTMLButtonElement
+      ).click();
+    });
+    expect(onChangeConnection).toHaveBeenCalledTimes(1);
     unmount();
   });
 
@@ -136,80 +350,6 @@ describe("Welcome", () => {
         "data-builtin-theme"
       )
     ).toBe("dark");
-    unmount();
-  });
-
-  test("hides Add-Instance when missing bb.instances.create", () => {
-    mocks.usePermissionCheck.mockImplementation((perms) => {
-      if (perms.includes("bb.instances.create")) return [false, "missing"];
-      return [true, undefined];
-    });
-    const { container, render, unmount } = renderIntoContainer(
-      <Welcome onChangeConnection={() => {}} />
-    );
-    render();
-    expect(container.textContent).not.toContain(
-      "sql-editor.add-a-new-instance"
-    );
-    expect(container.textContent).toContain("sql-editor.connect-to-a-database");
-    unmount();
-  });
-
-  test("hides Connect when missing bb.sql.select", () => {
-    mocks.usePermissionCheck.mockImplementation((perms) => {
-      if (perms.includes("bb.sql.select")) return [false, "missing"];
-      return [true, undefined];
-    });
-    const { container, render, unmount } = renderIntoContainer(
-      <Welcome onChangeConnection={() => {}} />
-    );
-    render();
-    expect(container.textContent).toContain("sql-editor.add-a-new-instance");
-    expect(container.textContent).not.toContain(
-      "sql-editor.connect-to-a-database"
-    );
-    unmount();
-  });
-
-  test("hides both buttons when neither permission present", () => {
-    mocks.usePermissionCheck.mockReturnValue([false, "missing"]);
-    const { container, render, unmount } = renderIntoContainer(
-      <Welcome onChangeConnection={() => {}} />
-    );
-    render();
-    expect(container.querySelectorAll("button")).toHaveLength(0);
-    unmount();
-  });
-
-  test("routes to instance dashboard with #add hash on Add-Instance click", () => {
-    const { container, render, unmount } = renderIntoContainer(
-      <Welcome onChangeConnection={() => {}} />
-    );
-    render();
-    const buttons = container.querySelectorAll("button");
-    // Add-Instance is the first button (matches Vue order).
-    act(() => {
-      (buttons[0] as HTMLButtonElement).click();
-    });
-    expect(mocks.routerPush).toHaveBeenCalledWith({
-      name: "workspace.instance",
-      hash: "#add",
-    });
-    unmount();
-  });
-
-  test("invokes onChangeConnection on Connect click", () => {
-    const onChangeConnection = vi.fn();
-    const { container, render, unmount } = renderIntoContainer(
-      <Welcome onChangeConnection={onChangeConnection} />
-    );
-    render();
-    const buttons = container.querySelectorAll("button");
-    // Connect is the second button (matches Vue order).
-    act(() => {
-      (buttons[1] as HTMLButtonElement).click();
-    });
-    expect(onChangeConnection).toHaveBeenCalledTimes(1);
     unmount();
   });
 });

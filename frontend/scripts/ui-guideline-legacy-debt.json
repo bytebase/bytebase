@@ -2611,30 +2611,6 @@
       "count": 1
     },
     {
-      "path": "src/routes/workspace/LandingPage.tsx",
-      "rule": "no-native-control",
-      "token": "button",
-      "count": 2
-    },
-    {
-      "path": "src/routes/workspace/LandingPage.tsx",
-      "rule": "no-raw-color",
-      "token": "bg-white",
-      "count": 1
-    },
-    {
-      "path": "src/routes/workspace/LandingPage.tsx",
-      "rule": "no-raw-color",
-      "token": "hover:bg-gray-100",
-      "count": 4
-    },
-    {
-      "path": "src/routes/workspace/LandingPage.tsx",
-      "rule": "no-raw-color",
-      "token": "text-gray-500",
-      "count": 6
-    },
-    {
       "path": "src/routes/workspace/MemberDatabaseResourceName.tsx",
       "rule": "no-raw-color",
       "token": "text-gray-500",

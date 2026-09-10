@@ -10,4 +10,11 @@ describe("LandingPage navigation", () => {
     expect(source).not.toContain("ProjectSwitchDialog");
     expect(source).not.toContain("setShowProjectSwitchDialog");
   });
+
+  test("uses shared controls and semantic colors for quick-link interactions", () => {
+    expect(source).toContain('import { Button } from "@/components/ui/button"');
+    expect(source).not.toContain("<button");
+    expect(source).not.toContain("hover:bg-gray-100");
+    expect(source).not.toContain("text-gray-500");
+  });
 });

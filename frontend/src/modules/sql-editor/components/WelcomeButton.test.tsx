@@ -34,7 +34,7 @@ beforeEach(async () => {
 });
 
 describe("WelcomeButton", () => {
-  test("renders icon above label", () => {
+  test("matches the workspace landing quick-link style", () => {
     const { container, render, unmount } = renderIntoContainer(
       <WelcomeButton icon={<span data-testid="icon">I</span>}>
         Hello
@@ -44,6 +44,10 @@ describe("WelcomeButton", () => {
     const button = container.querySelector("button");
     expect(button?.textContent).toContain("Hello");
     expect(container.querySelector('[data-testid="icon"]')).not.toBeNull();
+    expect(button?.className).toContain("rounded-sm");
+    expect(button?.className).toContain("bg-background");
+    expect(button?.className).toContain("hover:bg-control-bg");
+    expect(button?.className).toContain("gap-x-2");
     unmount();
   });
 
@@ -63,25 +67,4 @@ describe("WelcomeButton", () => {
     unmount();
   });
 
-  test("applies primary variant classes by default", () => {
-    const { container, render, unmount } = renderIntoContainer(
-      <WelcomeButton icon={<span>I</span>}>Primary</WelcomeButton>
-    );
-    render();
-    const button = container.querySelector("button");
-    expect(button?.className).toContain("bg-accent");
-    unmount();
-  });
-
-  test("applies secondary variant classes when variant='secondary'", () => {
-    const { container, render, unmount } = renderIntoContainer(
-      <WelcomeButton icon={<span>I</span>} variant="secondary">
-        Secondary
-      </WelcomeButton>
-    );
-    render();
-    const button = container.querySelector("button");
-    expect(button?.className).toContain("border-control-border");
-    unmount();
-  });
 });

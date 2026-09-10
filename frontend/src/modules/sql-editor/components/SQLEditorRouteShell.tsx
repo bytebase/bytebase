@@ -1,5 +1,5 @@
 import dayjs from "dayjs";
-import { debounce, head, omit } from "lodash-es";
+import { debounce, omit } from "lodash-es";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { router, useCurrentRoute, useNavigate } from "@/app/router";
@@ -46,7 +46,6 @@ import {
   extractInstanceResourceName,
   extractProjectResourceName,
   extractSavedQueryID,
-  getDefaultPagination,
   getSheetStatement,
   isSavedQueryReadableV1,
   storageKeySqlEditorSidebarTab,
@@ -159,18 +158,6 @@ export function SQLEditorRouteShell() {
     })();
   }, []);
 
-  const fallbackToFirstProject = async () => {
-    const { projects } = await useAppStore.getState().searchProjects({
-      pageSize: getDefaultPagination(),
-      pageToken: "",
-    });
-    return (
-      head(projects)?.name ??
-      useAppStore.getState().serverInfo?.defaultProject ??
-      ""
-    );
-  };
-
   const initializeProject = async () => {
     const projectInQuery = route.query.project as string | undefined;
     const projectInParams = route.params.project as string | undefined;
@@ -185,11 +172,15 @@ export function SQLEditorRouteShell() {
       project = getSQLEditorEditorState().project;
     }
 
-    let initializeSuccess = !!(await maybeSwitchProject(project));
-    if (!initializeSuccess) {
-      project = await fallbackToFirstProject();
-      initializeSuccess = !!(await maybeSwitchProject(project));
+    if (
+      !projectInQuery &&
+      !projectInParams &&
+      project === useAppStore.getState().serverInfo?.defaultProject
+    ) {
+      project = "";
     }
+
+    const initializeSuccess = !!(await maybeSwitchProject(project));
     if (!initializeSuccess) {
       getSQLEditorEditorState().setProject("");
     }
