@@ -2,6 +2,7 @@ package base
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"strings"
 
@@ -73,6 +74,39 @@ type QuerySpan struct {
 	ElasticsearchAnalysis     *ElasticsearchAnalysis
 	NotFoundError             error
 	FunctionNotSupportedError error
+	// UnresolvedColumnsError prevents masking consumers from treating missing
+	// column metadata as an absence of masking policies. Other consumers may ignore it.
+	UnresolvedColumnsError *UnresolvedColumnsError
+}
+
+// UnresolvedColumnsError identifies relations whose synced metadata has no columns.
+type UnresolvedColumnsError struct {
+	// Relations each carry an empty Column field.
+	Relations []ColumnResource
+}
+
+func (e *UnresolvedColumnsError) Error() string {
+	names := make([]string, 0, len(e.Relations))
+	for _, r := range e.Relations {
+		names = append(names, r.String())
+	}
+	slices.Sort(names)
+	return fmt.Sprintf("the synced schema describes no columns for %s", strings.Join(names, ", "))
+}
+
+// Databases returns the sorted, distinct database names that need re-syncing.
+func (e *UnresolvedColumnsError) Databases() []string {
+	seen := make(map[string]bool, len(e.Relations))
+	var out []string
+	for _, r := range e.Relations {
+		if r.Database == "" || seen[r.Database] {
+			continue
+		}
+		seen[r.Database] = true
+		out = append(out, r.Database)
+	}
+	slices.Sort(out)
+	return out
 }
 
 // QuerySpanResult is the result column of a query span.

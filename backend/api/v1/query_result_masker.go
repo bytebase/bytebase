@@ -61,6 +61,13 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 		if results[i].Error == "" && spans[i].NotFoundError != nil {
 			return errors.Errorf("masking error: %v", spans[i].NotFoundError)
 		}
+		// Reject before error handling or masking: results may contain both partial
+		// rows and an error, and unresolved lineage cannot safely mask those rows.
+		if maskingBlockedByUnresolvedColumns(spans[i], instance) {
+			return errors.Errorf(
+				"masking cannot be applied: %v, so the query was not returned",
+				spans[i].UnresolvedColumnsError)
+		}
 		// Skip masking for error result, but redact the error message if the
 		// statement touches masked columns — database errors can contain
 		// actual column values (e.g. "invalid input syntax for type integer: '<value>'").
@@ -70,6 +77,8 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 		if results[i].Error != "" && len(results[i].Rows) == 0 {
 			if i < len(spans) && spans[i] != nil && s.spanTouchesMaskedColumns(ctx, m, instance, user, spans[i]) {
 				results[i].Error = "Query execution failed. Error details are hidden because the query references columns with data masking policies."
+				// Structured error fields can contain sensitive values and SQL too.
+				results[i].DetailedError = nil
 			}
 			continue
 		}
@@ -81,6 +90,15 @@ func (s *QueryResultMasker) MaskResults(ctx context.Context, spans []*parserbase
 	}
 
 	return nil
+}
+
+// maskingBlockedByUnresolvedColumns keeps the re-sync trigger and masking
+// refusal on the same condition, so stale metadata gets a chance to recover.
+func maskingBlockedByUnresolvedColumns(span *parserbase.QuerySpan, instance *store.InstanceMessage) bool {
+	if span == nil || span.UnresolvedColumnsError == nil || instance == nil {
+		return false
+	}
+	return common.EngineSupportMasking(instance.Metadata.GetEngine())
 }
 
 // spanTouchesMaskedColumns checks whether any column referenced anywhere in
