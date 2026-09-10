@@ -48,15 +48,14 @@ message UserProfile {
 
 // WorkloadIdentityConfig stores OIDC configuration for workload identity.
 message WorkloadIdentityConfig {
-  // ProviderType identifies the workload identity configuration mode.
+  // ProviderType identifies the CI/CD platform.
   enum ProviderType {
     PROVIDER_TYPE_UNSPECIFIED = 0;
     GITHUB = 1;
     GITLAB = 2;
-    OIDC = 3;
   }
 
-  // Provider configuration mode.
+  // Provider type (currently only GITHUB is supported)
   ProviderType provider_type = 1;
   // OIDC issuer URL
   string issuer_url = 2;
@@ -64,6 +63,4 @@ message WorkloadIdentityConfig {
   repeated string allowed_audiences = 3;
   // Subject pattern to match against token subject claim
   string subject_pattern = 4;
-  // Optional JWKS endpoint. When empty, use OIDC discovery from issuer_url.
-  string jwks_url = 5;
 }

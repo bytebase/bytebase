@@ -32,8 +32,6 @@ interface UserCellProps {
   hoverEmail?: string;
   /** Inline badges rendered after the name. */
   badges?: ReactNode;
-  /** Inline action rendered after the subtitle. */
-  subtitleAction?: ReactNode;
   /** Extra className on the outer wrapper. */
   className?: string;
 }
@@ -48,7 +46,6 @@ export function UserCell({
   nameLink,
   hoverEmail,
   badges,
-  subtitleAction,
   className,
 }: UserCellProps) {
   const nameContent = title || subtitle || "?";
@@ -115,23 +112,9 @@ export function UserCell({
           {badges}
         </div>
         {subtitle && (
-          <div className="flex items-center gap-x-1 min-w-0">
-            <span className="text-control-light text-xs truncate">
-              {subtitle}
-            </span>
-            {subtitleAction && (
-              <div
-                onClick={(event) => event.stopPropagation()}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") {
-                    event.stopPropagation();
-                  }
-                }}
-              >
-                {subtitleAction}
-              </div>
-            )}
-          </div>
+          <span className="text-control-light text-xs truncate">
+            {subtitle}
+          </span>
         )}
       </div>
     </div>

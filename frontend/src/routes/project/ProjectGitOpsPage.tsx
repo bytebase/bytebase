@@ -22,7 +22,6 @@ import { DatabaseGroupView } from "@/types/proto-es/v1/database_group_service_pb
 import type { WorkloadIdentity } from "@/types/proto-es/v1/workload_identity_service_pb";
 import { WorkloadIdentityConfig_ProviderType } from "@/types/proto-es/v1/workload_identity_service_pb";
 import {
-  GENERATED_WORKFLOW_AUDIENCE,
   getWorkloadIdentityProviderText,
   hasProjectPermissionV2,
   parseWorkloadIdentitySubjectPattern,
@@ -88,20 +87,21 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   }, [selectedIdentityName, fetchWorkloadIdentity]);
 
   const selectedConfig = selectedIdentity?.workloadIdentityConfig;
-  const selectedProviderType =
-    selectedConfig?.providerType ??
-    WorkloadIdentityConfig_ProviderType.PROVIDER_TYPE_UNSPECIFIED;
 
   // Sync active tab with selected identity provider
   useEffect(() => {
-    if (selectedProviderType === WorkloadIdentityConfig_ProviderType.GITLAB) {
+    if (
+      selectedConfig?.providerType ===
+      WorkloadIdentityConfig_ProviderType.GITLAB
+    ) {
       setActiveTab("gitlab");
     } else if (
-      selectedProviderType === WorkloadIdentityConfig_ProviderType.GITHUB
+      selectedConfig?.providerType ===
+      WorkloadIdentityConfig_ProviderType.GITHUB
     ) {
       setActiveTab("github");
     }
-  }, [selectedProviderType]);
+  }, [selectedConfig?.providerType]);
 
   const parsedSubject = useMemo(() => {
     if (!selectedIdentity) return undefined;
@@ -111,16 +111,17 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   const repoUrl = useMemo(() => {
     const parsed = parsedSubject;
     if (!parsed?.owner || !parsed.repo) return "";
-    if (selectedProviderType === WorkloadIdentityConfig_ProviderType.GITHUB) {
+    const providerType = selectedConfig?.providerType;
+    if (providerType === WorkloadIdentityConfig_ProviderType.GITHUB) {
       return `https://github.com/${parsed.owner}/${parsed.repo}`;
     }
-    if (selectedProviderType === WorkloadIdentityConfig_ProviderType.GITLAB) {
+    if (providerType === WorkloadIdentityConfig_ProviderType.GITLAB) {
       const issuer = selectedConfig?.issuerUrl ?? "https://gitlab.com";
       const base = issuer.replace(/\/$/, "");
       return `${base}/${parsed.owner}/${parsed.repo}`;
     }
     return "";
-  }, [parsedSubject, selectedConfig, selectedProviderType]);
+  }, [parsedSubject, selectedConfig]);
 
   const branch = parsedSubject?.branch || "main";
 
@@ -224,11 +225,11 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
   const providerMismatchGithub =
     selectedConfig &&
     activeTab === "github" &&
-    selectedProviderType !== WorkloadIdentityConfig_ProviderType.GITHUB;
+    selectedConfig.providerType !== WorkloadIdentityConfig_ProviderType.GITHUB;
   const providerMismatchGitlab =
     selectedConfig &&
     activeTab === "gitlab" &&
-    selectedProviderType !== WorkloadIdentityConfig_ProviderType.GITLAB;
+    selectedConfig.providerType !== WorkloadIdentityConfig_ProviderType.GITLAB;
 
   return (
     <ProjectPageLayout className="gap-y-1">
@@ -434,8 +435,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
                 className="mb-3"
                 description={t("gitops.workflow.provider-not-match", {
                   provider: getWorkloadIdentityProviderText(
-                    selectedProviderType,
-                    t("settings.members.workload-identity-generic-oidc")
+                    selectedConfig!.providerType
                   ),
                 })}
               />
@@ -483,8 +483,7 @@ export function ProjectGitOpsPage({ projectId }: { projectId: string }) {
                 className="mb-3"
                 description={t("gitops.workflow.provider-not-match", {
                   provider: getWorkloadIdentityProviderText(
-                    selectedProviderType,
-                    t("settings.members.workload-identity-generic-oidc")
+                    selectedConfig!.providerType
                   ),
                 })}
               />
@@ -682,7 +681,7 @@ const exchangeTokenStep = (indent: string) =>
 ${indent}  id: bytebase-auth
 ${indent}  run: |
 ${indent}    OIDC_TOKEN=$(curl -s -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \\
-${indent}      "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=${GENERATED_WORKFLOW_AUDIENCE}" | jq -r '.value')
+${indent}      "$ACTIONS_ID_TOKEN_REQUEST_URL&audience=bytebase" | jq -r '.value')
 ${indent}    ACCESS_TOKEN=$(curl -s -X POST "$BYTEBASE_URL/v1/auth:exchangeToken" \\
 ${indent}      -H "Content-Type: application/json" \\
 ${indent}      -d "{\\"token\\":\\"$OIDC_TOKEN\\",\\"email\\":\\"$BYTEBASE_WORKLOAD_IDENTITY\\"}" \\
@@ -833,7 +832,7 @@ sql-review:
   image: bytebase/bytebase-action
   id_tokens:
     GITLAB_OIDC_TOKEN:
-      aud: ${GENERATED_WORKFLOW_AUDIENCE}
+      aud: bytebase
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
   script:
@@ -845,7 +844,7 @@ create-rollout:
   image: bytebase/bytebase-action
   id_tokens:
     GITLAB_OIDC_TOKEN:
-      aud: ${GENERATED_WORKFLOW_AUDIENCE}
+      aud: bytebase
   rules:
     - if: $CI_COMMIT_BRANCH == "${p.branch}"
   script:
@@ -860,7 +859,7 @@ deploy-to-test:
   needs: [create-rollout]
   id_tokens:
     GITLAB_OIDC_TOKEN:
-      aud: ${GENERATED_WORKFLOW_AUDIENCE}
+      aud: bytebase
   rules:
     - if: $CI_COMMIT_BRANCH == "${p.branch}"
   environment: test
@@ -875,7 +874,7 @@ deploy-to-prod:
   needs: [deploy-to-test]
   id_tokens:
     GITLAB_OIDC_TOKEN:
-      aud: ${GENERATED_WORKFLOW_AUDIENCE}
+      aud: bytebase
   rules:
     - if: $CI_COMMIT_BRANCH == "${p.branch}"
   environment: prod

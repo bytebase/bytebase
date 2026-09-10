@@ -36029,44 +36029,30 @@ For project-level: {name}@{project-id}.workload.bytebase.com </p></td>
                   <td>provider_type</td>
                   <td><a href="#bytebase.v1.WorkloadIdentityConfig.ProviderType">WorkloadIdentityConfig.ProviderType</a></td>
                   <td></td>
-                  <td><p>Provider configuration mode. </p></td>
+                  <td><p>Platform type (currently only GITHUB is supported) </p></td>
                 </tr>
               
                 <tr>
                   <td>issuer_url</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>HTTPS URL of the OIDC issuer. The exchange fetches
-{issuer_url}/.well-known/openid-configuration to verify a token, unless
-jwks_url names the key set directly. </p></td>
+                  <td><p>OIDC Issuer URL (auto-filled based on provider_type, can be overridden) </p></td>
                 </tr>
               
                 <tr>
                   <td>allowed_audiences</td>
                   <td><a href="#string">string</a></td>
                   <td>repeated</td>
-                  <td><p>Audiences a token may be minted for. A token authenticates if its `aud`
-claim matches any entry. </p></td>
+                  <td><p>Allowed audiences for token validation </p></td>
                 </tr>
               
                 <tr>
                   <td>subject_pattern</td>
                   <td><a href="#string">string</a></td>
                   <td></td>
-                  <td><p>The subject a token must carry, e.g. &#34;repo:owner/repo:ref:refs/heads/main&#34;.
-A trailing &#34;*&#34; is a prefix match. For GitHub and GitLab subjects it must
-complete an owner or group segment, so &#34;repo:my-org/*&#34; is accepted and
-&#34;repo:*&#34; is not. Other issuers write other vocabularies, so a wildcard
-outside those two is accepted as given. </p></td>
+                  <td><p>Subject pattern to match (e.g., &#34;repo:owner/repo:ref:refs/heads/main&#34;) </p></td>
                 </tr>
               
-                <tr>
-                  <td>jwks_url</td>
-                  <td><a href="#string">string</a></td>
-                  <td></td>
-                  <td><p>Optional JWKS endpoint. When empty, use OIDC discovery from issuer_url. </p></td>
-                </tr>
-
             </tbody>
           </table>
 
@@ -36077,7 +36063,7 @@ outside those two is accepted as given. </p></td>
 
       
         <h3 id="bytebase.v1.WorkloadIdentityConfig.ProviderType">WorkloadIdentityConfig.ProviderType</h3>
-        <p>ProviderType identifies the workload identity configuration mode.</p>
+        <p>ProviderType identifies the CI/CD platform.</p>
         <table class="enum-table">
           <thead>
             <tr><td>Name</td><td>Number</td><td>Description</td></tr>
@@ -36102,12 +36088,6 @@ outside those two is accepted as given. </p></td>
                 <td><p></p></td>
               </tr>
             
-              <tr>
-                <td>OIDC</td>
-                <td>3</td>
-                <td><p></p></td>
-              </tr>
-
           </tbody>
         </table>
       
@@ -37216,3 +37196,4 @@ Permissions required: bb.workspaces.rotateDirectorySyncToken</p></td>
     </table>
   </body>
 </html>
+
