@@ -1,4 +1,4 @@
-import { Check, EyeOff, ScrollText, X } from "lucide-react";
+import { Check, EyeOff, Info, ScrollText, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { MCPModeBadge } from "@/components/mcp/MCPModeBadge";
@@ -25,14 +25,7 @@ interface Line {
 
 interface Props {
   readonly setting: MCPSetting;
-  /**
-   * The ceiling this session runs at, narrowed by the caller. Passed rather
-   * than re-derived: the page already establishes that the stored capability is
-   * a mode and that it admits a session, and a local
-   * `readWrite ? READ_WRITE : READ_ONLY` would silently turn anything else into
-   * Read-only — a card claiming three read capabilities for a workspace that
-   * grants none.
-   */
+  /** The ceiling this session runs at, narrowed by the caller. */
   readonly mode: MCPServingMode;
   readonly dataMaskingAvailable: boolean;
 }
@@ -69,16 +62,23 @@ export function MCPConsentCeiling({
       ? []
       : [
           {
+            // No mark: the sentence states the prohibition itself, and
+            // prefixing "Not allowed" would double the negative.
             key: "no-write",
             icon: <X className="size-4 text-error" />,
-            mark: t("settings.mcp.ladder.mark.refused"),
             text: t("oauth2.consent.mcp.line.no-write"),
           },
         ]),
+    // A bound, not a grant: neutral glyph and no mark, so four green checks
+    // are not read as four granted capabilities. Scoped by mode because the
+    // statement clamp it describes runs only under Read-only — under
+    // Read-write the same engines execute unverified instead.
     {
       key: "capped",
-      icon: <Check className="size-4 text-success" />,
-      text: t("oauth2.consent.mcp.line.capped"),
+      icon: <Info className="size-4 text-control-light" />,
+      text: readWrite
+        ? t("oauth2.consent.mcp.line.capped-read-write")
+        : t("oauth2.consent.mcp.line.capped-read-only"),
     },
     // Both halves, because the line promises a restriction. The toggle
     // withholds unmasking exemptions from MCP sessions, which changes nothing

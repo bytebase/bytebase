@@ -259,11 +259,15 @@ their descriptions must not silently undo an unrelated edit, and under Disabled 
 inert rather than wrong, so writing it costs nothing now and honors the choice when MCP is turned
 back on.
 
-The "Masking exemptions ignored" chip is withheld from a Disabled policy in view for the same reason
-the toggle is — there are no sessions to restrict. It is deliberately NOT withheld on a workspace
-without a masking license, where the consent page does withhold its masking line: the chip reports
-what is stored, to the admin who set it, beside an editor that already says masking is unlicensed,
-while the consent page's reader sees neither and would read the line as "my data is covered".
+The "Masking exemptions ignored" chip reports the stored flag wherever a policy is readable, and
+says which of three things it is doing: in effect, stored but unlicensed, or stored with MCP off.
+Withholding it was tried and is wrong in both inert cases — the flag is storable under Disabled,
+which preserving the draft makes reachable by design, and hiding it leaves a set flag with nowhere
+to see it. The reasons it might be inert live in the editor and in the Disabled sentence, and the
+editor is a different branch behind `bb.settings.set`, so a reader of this page may never reach
+them; the chip therefore carries the reason itself. The consent page still withholds its masking
+line without a license, because its reader sees neither the setting nor any caveat and would read
+the line as "my data is covered".
 (Mock E draws the toggle under Disabled; the implementation does not.)
 
 **D8 — Copy that shrinks, but keeps the coverage limit.** The masking toggle's two paragraphs
@@ -292,8 +296,11 @@ Titles alone carry no caveats, and the caveats live in the row details this scre
 so on a workspace whose engine refuses every statement, an unqualified "Read data by running queries
 ✓" promises a capability the session does not have. The screen cannot carry eight detail lines and
 stay an approval screen, so it bounds the whole list once instead, on the line that already limits it
-by the reader's own permissions: "Capped by your own Bytebase permissions, and by what each database
-engine allows." The ✓ marks then read as what the policy admits, not as what will succeed.
+by the reader's own permissions. That bound is per mode, because the statement clamp it describes
+runs only under Read-only: "Capped by your own Bytebase permissions, and by what Bytebase can check on each database engine — where it cannot show a statement is a read, no query runs at all" against
+"Capped by your own Bytebase permissions. Where Bytebase cannot check a statement, it is not verified before it runs". One line either way, and the ✓ marks
+read as what the policy admits rather than what will succeed. It carries a neutral glyph and no
+"Allowed" mark, so a bound is not counted as a further grant.
 
 **D11 — The wording is bound to the classification by instruction, not by a lint.** The eight
 titles claim to cover every READ and WRITE method, and a method annotated into either class is
@@ -317,7 +324,7 @@ reference.
 | State | What the section shows |
 |---|---|
 | View · Read-only or Read-write | Chip line with Edit policy; the disclosure line as the description, collapsed by default. The open state persists per browser (D1), so neither the product nor a test may treat collapsed as an invariant. |
-| View · Disabled | Chip line, without the masking chip (D7); "No MCP session can connect to this workspace." No disclosure. |
+| View · Disabled | Chip line, with the masking chip naming MCP as off when the flag is stored (D7); "No MCP session can connect to this workspace." No disclosure. |
 | View · unreadable, unserved, read failed | The existing warning or error, unchanged. No disclosure. |
 | Edit · Read-only or Read-write picked | Icon cards with the pick selected; the pick's "Best for" line; the disclosure for the pick, collapsed by default, rendering the post-save view, with "Show details" once expanded; masking toggle; separator; footer sentence (naming the change when dirty), Cancel, Save (enabled only when dirty). |
 | Edit · Disabled picked | Icon cards with Disabled selected; its "Best for" line; the static soft-error line in the disclosure slot; NO masking toggle (D7); separator; footer, Cancel, Save. |
@@ -333,7 +340,7 @@ under
 
 - Section description: "The most any MCP session may do here. Sessions are also capped by each
   user's permissions, and policy refusals are audited."
-- Disclosure line, collapsed — Read-only: "Read schemas, data and the change workflow; a request carrying anything that cannot be shown to be a read is refused, and nothing is exported". Read-write: "Read schemas, data and the change
+- Disclosure line, collapsed — Read-only: "Read schemas, data and the change workflow; a request carrying anything that cannot be shown to be a read is refused, and nothing is exported".
   Read-write: "Read schemas, data and the change workflow; propose, run, export and manage".
   Expanded heading: "{mode} allows". Details control: "Show details" / "Hide details".
 - Disabled — view sentence: "No MCP session can connect to this workspace." Edit static line:
@@ -355,10 +362,15 @@ under
   because `SearchQueryHistories` pins the creator and nothing widens it.
 - Tier badges: "read", "write".
 - Masking toggle: the three sentences in D8, including the engine-coverage limit.
+- Masking chip, by what the stored flag is doing: "Masking exemptions ignored",
+  "Masking exemptions ignored — masking not licensed",
+  "Masking exemptions ignored — MCP is off".
+- Footer, when a masking edit is saved under a pick that withholds its toggle:
+  "Your change to masking exemptions is saved with it, and applies when MCP is enabled again."
 - Footer, clean: "Applies to every running session's next request." Dirty: "{from} → {to} applies
   to every running session's next request."
 - Connect a client: the sentence in D9.
-- Consent: row titles; "No changes, rollouts or exports".
+- Consent: row titles; "No changes, rollouts or exports"; the two capped lines above.
 
 ## Implementation
 
@@ -410,6 +422,25 @@ under
 No behavior change. One comment on `MCPMethodClass` in `proto/v1/v1/annotation.proto` and its
 regenerated output; the rule that keeps the row wording true is an instruction under Metadata and
 API conventions in the root `AGENTS.md` (D11), not code.
+
+## Keeping the rows true
+
+Nothing enforces the wording, so annotating an RPC `mcp_method_class = READ` or `WRITE` — a new RPC,
+or a reclassified one — is also a change to what the Access policy page and the OAuth consent screen
+promise. What to do:
+
+1. Read the row table above and judge whether a row still describes the method. The right column
+   records the method families each row stands for, not an exhaustive list, so this is a judgment
+   about the wording rather than a lookup.
+2. If none covers it, reword a row or add one. The copy is `settings.mcp.ladder.row.*` in
+   `frontend/src/locales/` — all five files — and the order and tier are in
+   `frontend/src/components/mcp/mcpCapabilityRows.ts`. Update the table above in the same change.
+3. Check the new wording on both axes, mode and engine, against the rules in The rows: state the
+   bound and never the behavior, and claim only what holds whatever the caller's permissions.
+
+The consent screen renders row titles only, so a caveat that belongs to one mode or one engine has
+to live in the bound line there (D10), not in a row's sub-items.
+
 
 ## Out of scope
 

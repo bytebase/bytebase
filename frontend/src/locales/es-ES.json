@@ -1614,7 +1614,8 @@
         },
         "line": {
           "audit": "Las acciones auditadas llevan una etiqueta MCP, y lo que la política rechaza también se registra",
-          "capped": "Limitado por sus propios permisos de Bytebase y por lo que Bytebase puede comprobar en cada motor: en algunos, ninguna consulta puede demostrarse que sea una lectura, y no se ejecuta ninguna",
+          "capped-read-only": "Limitado por sus propios permisos de Bytebase y por lo que Bytebase puede comprobar en cada motor: donde no puede demostrar que una sentencia es de lectura, no se ejecuta ninguna consulta",
+          "capped-read-write": "Limitado por sus propios permisos de Bytebase. Donde Bytebase no puede comprobar una sentencia, esta se ejecuta sin verificar",
           "masking": "Sus exenciones de enmascaramiento no se aplican a esta sesión",
           "no-write": "Sin cambios, despliegues ni exportaciones"
         },

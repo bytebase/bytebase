@@ -78,9 +78,16 @@ export const servedRows = (mode: MCPMode): readonly MCPCapabilityRow[] =>
   MCP_CAPABILITY_ROWS.filter((row) => isRowServed(mode, row));
 
 /**
- * The locale key for one of a row's strings. Stated here, beside the ids it is
- * built from, so the product and the copy test cannot disagree about its shape.
+ * The locale keys the ladder's copy is stored under, stated beside the ids they
+ * are built from so the product and the copy test cannot disagree about their
+ * shape. Every template-keyed family has one; a family without one is a family
+ * where a rename leaves the test passing against the old shape.
  */
+export const mcpTierKey = (
+  tier: MCPCapabilityTier,
+  part: "tier" | "stops"
+): string => `settings.mcp.ladder.${part}.${tier}`;
+
 export const mcpRowKey = (
   row: MCPCapabilityRow,
   part: "title" | "details"

@@ -9,12 +9,13 @@ import {
   isRowServed,
   MCP_CAPABILITY_TIERS,
   mcpRowKey,
+  mcpTierKey,
   rowsInTier,
 } from "@/components/mcp/mcpCapabilityRows";
 import {
-  MCP_MODE_PRESENTATION,
   type MCPServingMode,
   mcpModeKey,
+  mcpSummaryKey,
 } from "@/components/mcp/mcpPolicy";
 import type { BadgeProps } from "@/components/ui/badge";
 import { Badge } from "@/components/ui/badge";
@@ -27,9 +28,6 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
-// A table for the same reason SERVES is one: a ternary over the tiers that
-// exist today keeps compiling when a third is added, and picks a variant for it
-// by accident.
 const TIER_VARIANT: Record<MCPCapabilityTier, BadgeProps["variant"]> = {
   read: "success",
   write: "warning",
@@ -60,7 +58,6 @@ export function MCPCapabilityLadder({
   onDetailsChange,
 }: Props) {
   const { t } = useTranslation();
-  const modeKey = MCP_MODE_PRESENTATION[mode].key;
 
   return (
     <Collapsible open={expanded} onOpenChange={onExpandedChange}>
@@ -88,7 +85,7 @@ export function MCPCapabilityLadder({
               ? t("settings.mcp.ladder.heading", {
                   mode: t(mcpModeKey(mode, "title")),
                 })
-              : t(`settings.mcp.ladder.summary.${modeKey}`)}
+              : t(mcpSummaryKey(mode))}
           </span>
         </CollapsibleTrigger>
         {expanded && (
@@ -121,9 +118,7 @@ export function MCPCapabilityLadder({
                   details={details}
                 />
               ))}
-              <li role="presentation">
-                <TierDivider tier={tier} />
-              </li>
+              <TierDivider key={`${tier}-divider`} tier={tier} />
             </Fragment>
           ))}
         </ul>
@@ -189,7 +184,7 @@ function LadderRow({
               variant={TIER_VARIANT[row.tier]}
               className="px-2 py-0 text-xs"
             >
-              {t(`settings.mcp.ladder.tier.${row.tier}`)}
+              {t(mcpTierKey(row.tier, "tier"))}
             </Badge>
           )}
         </div>
@@ -211,12 +206,15 @@ function LadderRow({
 function TierDivider({ tier }: { tier: MCPCapabilityTier }) {
   const { t } = useTranslation();
   return (
-    <div className="flex items-center gap-x-2 border-b border-block-border py-2 text-xs text-control-light">
+    <li
+      role="presentation"
+      className="flex items-center gap-x-2 border-b border-block-border py-2 text-xs text-control-light"
+    >
       <Separator className="flex-1" />
       <span className="uppercase tracking-wide">
-        {t(`settings.mcp.ladder.stops.${tier}`)}
+        {t(mcpTierKey(tier, "stops"))}
       </span>
       <Separator className="flex-1" />
-    </div>
+    </li>
   );
 }

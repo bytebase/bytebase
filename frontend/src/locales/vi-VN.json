@@ -1614,7 +1614,8 @@
         },
         "line": {
           "audit": "Hành động được kiểm toán mang nhãn MCP, và những gì chính sách từ chối cũng được ghi lại",
-          "capped": "Giới hạn bởi quyền Bytebase của chính bạn, và bởi những gì Bytebase có thể kiểm tra trên từng engine — trên một số engine, không truy vấn nào có thể được chứng minh là đọc, và không truy vấn nào chạy",
+          "capped-read-only": "Giới hạn bởi quyền Bytebase của chính bạn, và bởi những gì Bytebase có thể kiểm tra trên từng engine — nơi không thể chứng minh một câu lệnh là đọc, không truy vấn nào chạy",
+          "capped-read-write": "Giới hạn bởi quyền Bytebase của chính bạn. Ở nơi Bytebase không thể kiểm tra câu lệnh, câu lệnh chạy mà không được xác minh",
           "masking": "Các miễn trừ che dữ liệu của bạn không áp dụng cho phiên này",
           "no-write": "Không thay đổi, triển khai hay xuất dữ liệu"
         },

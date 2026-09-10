@@ -8,12 +8,14 @@ import {
   MCP_CAPABILITY_ROWS,
   MCP_CAPABILITY_TIERS,
   mcpRowKey,
+  mcpTierKey,
 } from "./mcpCapabilityRows";
 import {
   isServingMode,
   MCP_CAPABILITY_CHOICES,
   MCP_MODE_PRESENTATION,
   mcpModeKey,
+  mcpSummaryKey,
 } from "./mcpPolicy";
 
 /**
@@ -64,14 +66,12 @@ describe("capability row copy", () => {
 
       test("every tier has a tag and a stops-here divider", () => {
         for (const tier of MCP_CAPABILITY_TIERS) {
-          for (const family of ["tier", "stops"] as const) {
-            const value = read(
-              tree as Tree,
-              `settings.mcp.ladder.${family}.${tier}`
-            );
+          for (const part of ["tier", "stops"] as const) {
+            const key = mcpTierKey(tier, part);
+            const value = read(tree as Tree, key);
             expect(
               typeof value === "string" && value.length > 0,
-              `settings.mcp.ladder.${family}.${tier} is missing in ${locale}`
+              `${key} is missing in ${locale}`
             ).toBe(true);
           }
         }
@@ -81,7 +81,7 @@ describe("capability row copy", () => {
       // and takes the static line instead.
       test("every serving mode has a collapsed summary", () => {
         for (const mode of MCP_CAPABILITY_CHOICES.filter(isServingMode)) {
-          const key = `settings.mcp.ladder.summary.${MCP_MODE_PRESENTATION[mode].key}`;
+          const key = mcpSummaryKey(mode);
           const value = read(tree as Tree, key);
           expect(
             typeof value === "string" && value.length > 0,
@@ -116,6 +116,12 @@ describe("capability row copy", () => {
           [
             "settings.mcp.ladder.summary",
             MCP_CAPABILITY_CHOICES.filter(isServingMode).map(
+              (mode) => MCP_MODE_PRESENTATION[mode].key
+            ),
+          ],
+          [
+            "settings.mcp.policy.mode",
+            MCP_CAPABILITY_CHOICES.map(
               (mode) => MCP_MODE_PRESENTATION[mode].key
             ),
           ],

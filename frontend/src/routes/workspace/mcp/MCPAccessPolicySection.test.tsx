@@ -106,6 +106,11 @@ const storePolicy = (
   mocks.refreshServerInfo.mockResolvedValue(mocks.serverInfo.value);
 };
 
+const maskingBadgeText = (container: HTMLElement) =>
+  [...container.querySelectorAll("span")].find((node) =>
+    node.textContent?.startsWith("settings.mcp.policy.masking.badge")
+  )?.textContent;
+
 const maskingSwitch = (container: HTMLElement) =>
   container.querySelector(
     '[aria-label="settings.mcp.policy.masking.title"]'
@@ -649,9 +654,10 @@ describe("MCPAccessPolicySection", () => {
     );
     render();
     await flush();
-    expect(container.textContent).toContain(
-      "settings.mcp.policy.masking.badge"
-    );
+    // Exact, not substring: the plain key is a prefix of both suffixed ones, so
+    // `toContain` would pass for every state including the two that report the
+    // flag as inert.
+    expect(maskingBadgeText(container)).toBe("settings.mcp.policy.masking.badge");
     unmount();
   });
 
@@ -667,7 +673,7 @@ describe("MCPAccessPolicySection", () => {
     );
     render();
     await flush();
-    expect(container.textContent).toContain(
+    expect(maskingBadgeText(container)).toBe(
       "settings.mcp.policy.masking.badge-unlicensed"
     );
     unmount();
@@ -684,7 +690,7 @@ describe("MCPAccessPolicySection", () => {
     render();
     await flush();
 
-    expect(container.textContent).toContain(
+    expect(maskingBadgeText(container)).toBe(
       "settings.mcp.policy.masking.badge-disabled"
     );
     unmount();

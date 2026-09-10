@@ -22,7 +22,7 @@ Bytebase is the standard for database development. Every product and engineering
 - Metadata JSONB uses `protojson.Marshal`: keys are camelCase (`taskRun`), not proto snake_case (`task_run`).
 - Follow Google language style guides and AIPs for API/proto design. AIPs take precedence over the proto guide. Enum values use `HELLO`, not `TYPE_HELLO`.
 - Use American English. Avoid collection names ending in `List`.
-- Annotating an RPC `mcp_method_class = READ` or `WRITE` also changes what the Access policy page promises, and nothing enforces that. Judge whether a capability row still describes the method, using the row table in [docs/design/mcp-capability-ladder.md](docs/design/mcp-capability-ladder.md), which records the method families each row stands for rather than an exhaustive list. When none covers it, reword a row or add one: the copy is `settings.mcp.ladder.row.*` in `frontend/src/locales/` (all five), the order and tier are in `frontend/src/components/mcp/mcpCapabilityRows.ts`, and the table itself needs the same edit.
+- Annotating an RPC `mcp_method_class = READ` or `WRITE` also changes what the MCP Access policy page promises, and nothing enforces that. Before changing one, read [mcp-capability-ladder.md](docs/design/mcp-capability-ladder.md#keeping-the-rows-true).
 
 ## Code comments
 

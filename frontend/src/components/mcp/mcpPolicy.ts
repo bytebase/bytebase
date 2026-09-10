@@ -84,6 +84,10 @@ export const isServingMode = (
  * The locale key for one of a mode's strings, assembled in one place so the
  * product and the copy test cannot disagree about its shape.
  */
+/** The collapsed disclosure line for a mode that serves a session. */
+export const mcpSummaryKey = (mode: MCPServingMode): string =>
+  `settings.mcp.ladder.summary.${MCP_MODE_PRESENTATION[mode].key}`;
+
 export const mcpModeKey = (
   mode: MCPMode,
   part: "title" | "caption" | "best-for"
