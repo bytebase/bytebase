@@ -49,7 +49,7 @@ import {
 import { RouterLink } from "@/components/RouterLink";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { QUICK_LINK_TILE_CLASS } from "@/components/ui/quick-link";
+import { QuickLinkButton, QuickLinkLink } from "@/components/ui/quick-link";
 import {
   Sheet,
   SheetBody,
@@ -498,27 +498,24 @@ export function LandingPage(_: Record<string, never> = {}) {
             {quickLinkList.map((link) => {
               if (link.route) {
                 return (
-                  <RouterLink
+                  <QuickLinkLink
                     key={link.id}
                     to={{ name: link.route }}
-                    className={QUICK_LINK_TILE_CLASS}
+                    icon={<link.icon className="w-5 h-5 text-control-light" />}
                   >
-                    <link.icon className="w-5 h-5 text-control-light" />
                     {link.title}
-                  </RouterLink>
+                  </QuickLinkLink>
                 );
               }
               return (
-                <Button
+                <QuickLinkButton
                   key={link.id}
                   type="button"
-                  appearance="secondary"
-                  className={QUICK_LINK_TILE_CLASS}
                   onClick={() => handleClick(link)}
+                  icon={<link.icon className="w-5 h-5 text-control-light" />}
                 >
-                  <link.icon className="w-5 h-5 text-control-light" />
                   {link.title}
-                </Button>
+                </QuickLinkButton>
               );
             })}
           </div>

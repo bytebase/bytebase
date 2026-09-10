@@ -12,9 +12,11 @@ describe("LandingPage navigation", () => {
   });
 
   test("uses shared controls and semantic colors for quick-link interactions", () => {
-    expect(source).toContain('import { Button } from "@/components/ui/button"');
-    expect(source).not.toContain("<button");
-    expect(source).not.toContain("hover:bg-gray-100");
-    expect(source).not.toContain("text-gray-500");
+    expect(source).toContain(
+      'import { QuickLinkButton, QuickLinkLink } from "@/components/ui/quick-link"'
+    );
+    expect(source).toContain("<QuickLinkButton");
+    expect(source).toContain("<QuickLinkLink");
+    expect(source).not.toContain("QUICK_LINK_TILE_CLASS");
   });
 });

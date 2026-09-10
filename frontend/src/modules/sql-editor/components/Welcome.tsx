@@ -46,6 +46,9 @@ export function Welcome({ onChangeConnection }: WelcomeProps) {
   const navigate = useNavigate();
   const theme = useSQLEditorTheme();
   const projectName = useSQLEditorEditorState((s) => s.project);
+  const defaultProjectName = useAppStore(
+    (s) => s.serverInfo?.defaultProject ?? ""
+  );
   const maybeSwitchProject = useSQLEditorStore((s) => s.maybeSwitchProject);
   const { projects, isLoading: isLoadingProjects } = useProjectList("", {
     excludeDefault: true,
@@ -55,8 +58,10 @@ export function Welcome({ onChangeConnection }: WelcomeProps) {
     "loading" | "empty" | "available" | "unavailable"
   >("loading");
 
-  const resolvedProject = useAppProject(projectName);
-  const project = projectName ? resolvedProject : undefined;
+  const selectedProjectName =
+    projectName === defaultProjectName ? "" : projectName;
+  const resolvedProject = useAppProject(selectedProjectName);
+  const project = selectedProjectName ? resolvedProject : undefined;
 
   const [canCreateProject] = usePermissionCheck(["bb.projects.create"]);
   const [canCreateInstance] = usePermissionCheck(
@@ -170,10 +175,10 @@ export function Welcome({ onChangeConnection }: WelcomeProps) {
         className="h-20 w-44"
       />
       <div className="flex items-center flex-wrap gap-4">
-        {!projectName && !isLoadingProjects && projects.length === 0
+        {!selectedProjectName && !isLoadingProjects && projects.length === 0
           ? createProjectAction
           : null}
-        {!projectName && projects.length > 0 ? (
+        {!selectedProjectName && projects.length > 0 ? (
           <Popover
             open={isProjectSelectorOpen}
             onOpenChange={setProjectSelectorOpen}
@@ -194,7 +199,7 @@ export function Welcome({ onChangeConnection }: WelcomeProps) {
               className="w-[24rem] max-w-[calc(100vw-2rem)] p-0! py-3!"
             >
               <ProjectSwitchPanel
-                currentProjectName={projectName}
+                currentProjectName={selectedProjectName}
                 excludeDefaultProject
                 onClose={() => setProjectSelectorOpen(false)}
                 onRequestCreate={handleCreateProject}
@@ -206,7 +211,8 @@ export function Welcome({ onChangeConnection }: WelcomeProps) {
           </Popover>
         ) : null}
         {project && databaseState !== "loading" ? createInstanceAction : null}
-        {project && databaseState === "available"
+        {project &&
+        (databaseState === "available" || databaseState === "unavailable")
           ? connectDatabaseAction
           : null}
       </div>

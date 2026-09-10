@@ -44,10 +44,10 @@ describe("WelcomeButton", () => {
     const button = container.querySelector("button");
     expect(button?.textContent).toContain("Hello");
     expect(container.querySelector('[data-testid="icon"]')).not.toBeNull();
-    expect(button?.className).toContain("rounded-sm");
+    expect(button?.className).toContain("focus-visible:ring-2");
     expect(button?.className).toContain("bg-background");
     expect(button?.className).toContain("hover:bg-control-bg");
-    expect(button?.className).toContain("gap-x-2");
+    expect(button?.className).toContain("rounded-sm");
     unmount();
   });
 

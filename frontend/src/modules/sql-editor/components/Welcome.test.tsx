@@ -16,6 +16,7 @@ const mocks = vi.hoisted(() => ({
   projectData: { name: "projects/test" } as { name: string },
   projects: [] as { name: string }[],
   hasDefaultProject: false,
+  defaultProjectName: "",
   themeDark: false,
   deniedPermissions: new Set<string>(),
 }));
@@ -101,11 +102,20 @@ vi.mock("@/modules/sql-editor/store", () => ({
   ) => selector({ maybeSwitchProject: mocks.onChangeProject }),
 }));
 
-vi.mock("@/stores/app", () => ({
-  useAppStore: {
-    getState: () => ({ fetchDatabases: mocks.fetchDatabases }),
-  },
-}));
+vi.mock("@/stores/app", () => {
+  const state = {
+    get serverInfo() {
+      return { defaultProject: mocks.defaultProjectName };
+    },
+    fetchDatabases: mocks.fetchDatabases,
+  };
+  return {
+    useAppStore: Object.assign(
+      (selector: (store: typeof state) => unknown) => selector(state),
+      { getState: () => state }
+    ),
+  };
+});
 
 vi.mock("@/components/header/ProjectSwitchPanel", () => ({
   ProjectSwitchPanel: ({
@@ -175,6 +185,7 @@ beforeEach(async () => {
   mocks.projectName = "";
   mocks.projects = [];
   mocks.hasDefaultProject = false;
+  mocks.defaultProjectName = "";
   mocks.themeDark = false;
   mocks.deniedPermissions.clear();
   mocks.fetchDatabases.mockResolvedValue({ databases: [] });
@@ -246,6 +257,25 @@ describe("Welcome", () => {
     expect(
       container.querySelector('[data-testid="create-project"]')
     ).not.toBeNull();
+    unmount();
+  });
+
+  test("treats an explicit default project as no project", async () => {
+    mocks.projectName = "projects/default";
+    mocks.defaultProjectName = "projects/default";
+    const { container, render, unmount } = renderIntoContainer(
+      <Welcome onChangeConnection={() => {}} />
+    );
+    render();
+    await flushEffects();
+
+    expect(
+      container.querySelector('[data-testid="create-project"]')
+    ).not.toBeNull();
+    expect(
+      container.querySelector('[data-testid="create-project-instance"]')
+    ).toBeNull();
+
     unmount();
   });
 
@@ -336,6 +366,25 @@ describe("Welcome", () => {
       ).click();
     });
     expect(onChangeConnection).toHaveBeenCalledTimes(1);
+    unmount();
+  });
+
+  test("keeps both recovery actions available when database discovery fails", async () => {
+    mocks.projectName = "projects/test";
+    mocks.fetchDatabases.mockRejectedValue(new Error("network error"));
+    const { container, render, unmount } = renderIntoContainer(
+      <Welcome onChangeConnection={() => {}} />
+    );
+    render();
+    await flushEffects();
+
+    expect(
+      container.querySelector('[data-testid="create-project-instance"]')
+    ).not.toBeNull();
+    expect(
+      container.querySelector('[data-testid="connect-database"]')
+    ).not.toBeNull();
+
     unmount();
   });
 
