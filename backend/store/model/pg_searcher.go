@@ -279,15 +279,9 @@ func (d *DatabaseMetadata) SearchFunctions(searchPath []string, name string) ([]
 	return schemas, funcs
 }
 
-// SearchRelation resolves an unqualified name to the first schema in the search
-// path holding a relation of that name.
-//
-// PostgreSQL keeps relations and routines in separate namespaces, so a function,
-// procedure or package named like a table does not shadow it: SELECT * FROM t
-// reads the table wherever it sits in the path, even if an earlier schema has a
-// function t. Resolving one with a search that also matches routines records an
-// access on a schema the query never reads, which both hides a degraded relation
-// from masking and points the query access check at the wrong schema.
+// SearchRelation resolves a name to the first relation in the search path.
+// Routines do not shadow relations; sequences do, because PostgreSQL keeps
+// them in the relation namespace.
 func (d *DatabaseMetadata) SearchRelation(searchPath []string, name string) (string, string) {
 	for _, schemaName := range searchPath {
 		schema := d.GetSchemaMetadata(schemaName)

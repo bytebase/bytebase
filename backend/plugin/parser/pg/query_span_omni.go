@@ -182,29 +182,9 @@ func findDollarQuotedBody(definition string) (tag string, bodyStart int, bodyEnd
 	return "", 0, 0
 }
 
-// unresolvedColumnsError reports the relations in accesses that the stored
-// snapshot lists with no columns, or nil when every one resolves. It reads the
-// snapshot rather than analyzer
-// output, so the analyzed, expression-fallback and table-returning-function
-// paths all report the same condition.
-//
-// Every access is checked, including one naming a CTE that shares a listed
-// relation's name: ExtractAccessTables does not model CTE scope, so such a query
-// is refused rather than passed. Do not filter this set by CTE scope. A filter
-// can only drop a refusal, and a scope walk drops real reads — it misses an
-// aggregate's FILTER and ORDER BY subqueries and folds case on quoted CTE names,
-// each one a query returning unmasked rows.
-//
-// DEFER: a relation the access set never reports goes unchecked and stays
-// unmasked. A relation absent from the snapshot has no ceiling to raise here;
-// column resolution drops it upstream. The two reachable gaps are a
-// SQL-language function body (BYT-10075) and a FROM-clause function argument or
-// VALUES list (BYT-10076); upgrade when either ticket lands.
-//
-// #20581 (3.19.1) made the sync read columns from pg_catalog, so privileges no
-// longer produce this state; a snapshot written before that fix still carries it,
-// and the sync's read-committed transaction can still store a table created
-// between its column pass and its table pass with no columns.
+// unresolvedColumnsError checks stored metadata independently of column lineage.
+// Accesses are conservative: CTE names can match physical tables, so this may
+// refuse a CTE-only query. Reads missing from the access set remain unchecked.
 func (e *omniQuerySpanExtractor) unresolvedColumnsError(accesses base.SourceColumnSet) *base.UnresolvedColumnsError {
 	seen := make(map[base.ColumnResource]bool, len(accesses))
 	var unresolved []base.ColumnResource
@@ -229,16 +209,10 @@ func (e *omniQuerySpanExtractor) unresolvedColumnsError(accesses base.SourceColu
 	return &base.UnresolvedColumnsError{Relations: unresolved}
 }
 
-// relationHasNoSyncedColumns reports whether the snapshot carries the relation
-// as a table with an empty column list, and false for anything else.
-//
-// Only tables are judged, because only a table's column can carry a masking
-// policy: the masker resolves a source column through SchemaMetadata.GetTable
-// (query_result_masker.go getColumn), and SchemaCatalog, where semantic types
-// live, holds tables alone. A view, materialized view or foreign table column
-// yields NoneMasker whatever the snapshot says, so refusing an empty one
-// withholds a result masking never changed and breaks two shapes PostgreSQL
-// accepts. Partitions resolve through GetTable to their parent.
+// relationHasNoSyncedColumns checks tables only: masking policies attach to
+// table columns, and GetTable resolves partitions to their parent.
+// A legal zero-column table is indistinguishable from degraded metadata and
+// remains blocked even after re-syncing.
 func (e *omniQuerySpanExtractor) relationHasNoSyncedColumns(relation base.ColumnResource) bool {
 	meta, err := e.getDatabaseMetadata(relation.Database)
 	if err != nil || meta == nil {
@@ -253,13 +227,6 @@ func (e *omniQuerySpanExtractor) relationHasNoSyncedColumns(relation base.Column
 }
 
 // getQuerySpan extracts the query span for the given SQL statement.
-//
-// The signal is set on the three return paths that carry result columns. The
-// other three return no table data for masking to protect: a non-SELECT
-// statement, EXPLAIN ANALYZE, whose rows are plan output rather than the
-// relation's, and SET or SHOW. Their empty Results slice is not the reason on
-// its own, since an empty Results slice on a SELECT is the state this signal
-// exists to catch.
 func (e *omniQuerySpanExtractor) getQuerySpan(ctx context.Context, stmt string) (*base.QuerySpan, error) {
 	e.ctx = ctx
 

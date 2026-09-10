@@ -14,8 +14,6 @@ func column(name, typ string) *storepb.ColumnMetadata {
 	return &storepb.ColumnMetadata{Name: name, Type: typ}
 }
 
-// healthySchema mirrors a fully synced database: two tables with columns, a
-// view, and a materialized view with the dependency columns real sync records.
 func healthySchema() *storepb.DatabaseSchemaMetadata {
 	return &storepb.DatabaseSchemaMetadata{
 		Name: "db",
@@ -42,16 +40,11 @@ func healthySchema() *storepb.DatabaseSchemaMetadata {
 	}
 }
 
-// degradedSchema is what a pre-#20581 sync left behind when the connecting role
-// lost its privileges: the table is still listed, with no columns under it. A
-// current PostgreSQL sync reads pg_catalog and cannot produce this, but a
-// snapshot written by an older version and never re-synced still carries it.
+// A table with no columns models a snapshot from a sync before #20581.
 func degradedSchema() *storepb.DatabaseSchemaMetadata {
 	return degradedSchemaNamed("t")
 }
 
-// degradedSchemaNamed is degradedSchema with the column-less table under a
-// chosen name, for statements that also bind a CTE of that name.
 func degradedSchemaNamed(table string) *storepb.DatabaseSchemaMetadata {
 	return &storepb.DatabaseSchemaMetadata{
 		Name: "db",
@@ -62,10 +55,6 @@ func degradedSchemaNamed(table string) *storepb.DatabaseSchemaMetadata {
 	}
 }
 
-// degradedViewSchema is the same degradation reaching a view. The syncer fills a
-// view's column list from the same map as a table's, so a pre-#20581 snapshot
-// empties both. Masking cannot read a view's columns either way, so this fixture
-// pins that a view is not refused.
 func degradedViewSchema() *storepb.DatabaseSchemaMetadata {
 	return &storepb.DatabaseSchemaMetadata{
 		Name: "db",
@@ -77,8 +66,6 @@ func degradedViewSchema() *storepb.DatabaseSchemaMetadata {
 	}
 }
 
-// partialSchema keeps some of the table's columns. Same-arity drift like this is
-// out of scope for the unresolved-columns signal; see the masking follow-up.
 func partialSchema() *storepb.DatabaseSchemaMetadata {
 	return &storepb.DatabaseSchemaMetadata{
 		Name: "db",
@@ -101,26 +88,15 @@ func spanFor(t *testing.T, statement string, metadata *storepb.DatabaseSchemaMet
 	return span
 }
 
-// TestUnresolvedColumnsSignalFiresOnDegradedSnapshot covers the reported bug: a
-// table synced with no columns yields a span whose lineage cannot support
-// masking. Every one of these shapes returned unmasked rows before the signal
-// existed, and none of them sets NotFoundError, so nothing else marks them.
 func TestUnresolvedColumnsSignalFiresOnDegradedSnapshot(t *testing.T) {
 	statements := []string{
 		"SELECT * FROM public.t",
-		// The analyzer rejects the four shapes below — the degraded table has no
-		// column to bind email, id or ssn to — so they exercise the fallback path,
-		// which has no scope resolution to consult and checks every access.
 		"SELECT email FROM public.t",
 		"SELECT t.email FROM public.t",
 		"SELECT * FROM public.t WHERE email = 'x'",
 		"SELECT id, email FROM public.t ORDER BY ssn",
 		"WITH c AS (SELECT * FROM public.t) SELECT * FROM c",
-		// The unqualified t inside a non-recursive CTE body is the physical
-		// table: a CTE's own name is not visible in its body. These three sat
-		// in positions an analyzed-query walk did not reach (an aggregate's
-		// FILTER and ORDER BY subqueries) or folded case on a quoted CTE name,
-		// and an earlier revision let them run unmasked.
+		// A non-recursive CTE cannot reference itself; the inner t is the physical table.
 		"WITH t AS (SELECT count(*) FILTER (WHERE EXISTS (SELECT 1 FROM t)) AS c FROM (SELECT 1) x) SELECT * FROM t",
 		"WITH t AS (SELECT string_agg('x', ',' ORDER BY (SELECT count(*) FROM t)) AS c FROM (SELECT 1) x) SELECT * FROM t",
 		`WITH "T" AS (SELECT 1 AS n) SELECT count(*) FILTER (WHERE EXISTS (SELECT 1 FROM t)) FROM "T"`,
@@ -139,25 +115,11 @@ func TestUnresolvedColumnsSignalFiresOnDegradedSnapshot(t *testing.T) {
 	}
 }
 
-// TestUnresolvedColumnsSignalQuietOnHealthySnapshot is the false-positive guard.
-// Enforcement refuses the query, so every shape here would become a broken query.
-//
-// The joins and the expression-fallback case are the load-bearing ones: they
-// report relations, so a wrong predicate would refuse them. The EXPLAIN, SHOW,
-// SET and constant-select cases report no relation at all and cannot fire
-// whatever the predicate does; they are here as regression guards on that, not
-// as evidence the predicate is right. They defeated an earlier arity-based
-// version of this check, which is a different mechanism.
-//
-// Quiet here means "the snapshot describes every relation", not "masking is
-// correct". NATURAL JOIN in particular produces one span result per input
-// column (5 for t(id,email,ssn) NATURAL JOIN o(id,amt)) while the driver
-// returns the 4 merged ones, and doMaskResult is positional, so its maskers
-// land one column off. That is a separate defect on the snapshot's healthy path.
 func TestUnresolvedColumnsSignalQuietOnHealthySnapshot(t *testing.T) {
 	statements := []string{
 		"SELECT * FROM public.t",
 		"SELECT email FROM public.t",
+		// Signal absence checks snapshot completeness, not masking correctness.
 		"SELECT * FROM public.t NATURAL JOIN public.o",
 		"SELECT * FROM public.t JOIN public.o USING (id)",
 		"SELECT * FROM public.t LEFT JOIN public.o ON t.id = o.id",
@@ -185,8 +147,6 @@ func TestUnresolvedColumnsSignalQuietOnHealthySnapshot(t *testing.T) {
 	}
 }
 
-// TestUnresolvedColumnsSignalScope pins what this signal deliberately does not
-// cover, so a later change does not silently widen or narrow it.
 func TestUnresolvedColumnsSignalScope(t *testing.T) {
 	t.Run("partial column loss is out of scope", func(t *testing.T) {
 		span := spanFor(t, "SELECT * FROM public.t", partialSchema())
@@ -195,7 +155,6 @@ func TestUnresolvedColumnsSignalScope(t *testing.T) {
 	})
 
 	t.Run("a view with no synced columns is not refused", func(t *testing.T) {
-		// Why only tables are judged is at relationHasNoSyncedColumns.
 		span := spanFor(t, "SELECT * FROM public.v", degradedViewSchema())
 		require.Nil(t, span.UnresolvedColumnsError)
 	})
@@ -213,12 +172,6 @@ func TestUnresolvedColumnsSignalScope(t *testing.T) {
 	})
 
 	t.Run("a CTE named like a degraded relation is refused too", func(t *testing.T) {
-		// ExtractAccessTables resolves the unqualified t to public.t without
-		// modeling CTE scope, so the access set names a table this query never
-		// reads. That is accepted: resolving CTE scope needs a second walk over
-		// the analyzed query, and an earlier revision's walk let real reads
-		// through (see the FILTER and ORDER BY cases in the fires test). On a
-		// snapshot a re-sync repairs, the refusal lasts one query.
 		for _, statement := range []string{
 			"WITH t AS (SELECT 1 AS n) SELECT * FROM t",
 			"WITH outer_q AS (WITH t AS (SELECT 1 AS n) SELECT * FROM t) SELECT * FROM outer_q",
@@ -231,30 +184,23 @@ func TestUnresolvedColumnsSignalScope(t *testing.T) {
 	})
 
 	t.Run("a non-recursive CTE reading its own name reads the table", func(t *testing.T) {
-		// A non-recursive CTE's own name is not visible inside its own body, so
-		// the inner t is the physical public.t (verified on PostgreSQL 17).
 		span := spanFor(t, "WITH t AS (SELECT * FROM t) SELECT * FROM t", degradedSchema())
 		require.NotNil(t, span.UnresolvedColumnsError)
 		require.Contains(t, span.UnresolvedColumnsError.Error(), "public.t")
 	})
 
 	t.Run("a qualified read is still checked when a CTE shares the name", func(t *testing.T) {
-		// PostgreSQL does not let a CTE shadow a schema-qualified name.
 		span := spanFor(t, "WITH t AS (SELECT 1 AS n) SELECT * FROM public.t", degradedSchema())
 		require.NotNil(t, span.UnresolvedColumnsError)
 		require.Contains(t, span.UnresolvedColumnsError.Error(), "public.t")
 	})
 
 	t.Run("a statement reading both the CTE and the qualified table is checked", func(t *testing.T) {
-		// The arms project different column counts, so the analyzer rejects the
-		// statement and the fallback path carries it.
 		span := spanFor(t, "WITH t AS (SELECT 1 AS n) SELECT * FROM t UNION ALL SELECT * FROM public.t", degradedSchema())
 		require.NotNil(t, span.UnresolvedColumnsError)
 	})
 
 	t.Run("materialized view without columns is not a degraded table", func(t *testing.T) {
-		// MaterializedViewMetadata has no column list by design, so an empty one
-		// says nothing about snapshot health.
 		span := spanFor(t, "SELECT * FROM public.mv", healthySchema())
 		require.Nil(t, span.UnresolvedColumnsError)
 	})
@@ -269,19 +215,8 @@ func TestUnresolvedColumnsSignalScope(t *testing.T) {
 	})
 }
 
-// TestUnresolvedColumnsSignalResolvesRelationsNotRoutines pins that an
-// unqualified name resolves to a relation, not to whatever object comes first in
-// the search path.
-//
-// PostgreSQL keeps relations and routines in separate namespaces, so with
-// search_path "a, b", a function a.t and a table b.t, SELECT * FROM t reads b.t
-// (verified on PostgreSQL 17: 't'::regclass resolves to schema b while pg_proc
-// holds t in a). The access-table walker used SearchObject, which matches
-// functions, procedures and packages too, so it recorded a.t instead: the guard
-// then found no table in a and the query returned raw rows. It also pointed the
-// query access check at a schema the statement never reads.
 func TestUnresolvedColumnsSignalResolvesRelationsNotRoutines(t *testing.T) {
-	// A function in the earlier schema must not divert the read.
+	// Routines do not shadow relations in PostgreSQL search_path resolution.
 	shadowed := &storepb.DatabaseSchemaMetadata{
 		Name:       "db",
 		SearchPath: "a, b",
@@ -295,8 +230,7 @@ func TestUnresolvedColumnsSignalResolvesRelationsNotRoutines(t *testing.T) {
 		"a routine named like the table must not shadow it, or the column-less b.t goes unchecked")
 	require.Contains(t, span.UnresolvedColumnsError.Error(), "b.t")
 
-	// A relation in the earlier schema must still win: a sequence is a relation,
-	// and PostgreSQL resolves SELECT * FROM t to it (verified on 17, relkind S).
+	// Sequences share the relation namespace and do shadow later tables.
 	sequenceFirst := &storepb.DatabaseSchemaMetadata{
 		Name:       "db",
 		SearchPath: "a, b",
@@ -310,14 +244,7 @@ func TestUnresolvedColumnsSignalResolvesRelationsNotRoutines(t *testing.T) {
 		"the sequence in a is the relation this query reads, and a sequence carries no column list to judge")
 }
 
-// TestUnresolvedColumnsSignalNotCoveredShapes pins the reads this signal cannot
-// see, so the boundary is a recorded decision rather than something a reviewer
-// rediscovers.
-//
-// These are not walk gaps. ExtractAccessTables never reports the relation at
-// all, so it is absent from span.SourceColumns too — the access-level fix
-// belongs upstream and is tracked in BYT-10076. Until then a query shaped like
-// this returns unmasked rows against a degraded snapshot.
+// BYT-10076 tracks reads omitted from the access set; these cases record that gap.
 func TestUnresolvedColumnsSignalNotCoveredShapes(t *testing.T) {
 	notCovered := map[string]string{
 		"subquery in a FROM-clause function argument": "SELECT * FROM generate_series(1, (SELECT count(*)::int FROM public.d))",

@@ -74,17 +74,12 @@ type QuerySpan struct {
 	ElasticsearchAnalysis     *ElasticsearchAnalysis
 	NotFoundError             error
 	FunctionNotSupportedError error
-	// UnresolvedColumnsError is set when the query reads a relation the stored
-	// snapshot describes no columns for. Masking is column-granular, so a
-	// consumer that masks must read it as "cannot evaluate" rather than "nothing
-	// to mask"; one that does not mask can ignore it, the span is otherwise
-	// usable.
+	// UnresolvedColumnsError prevents masking consumers from treating missing
+	// column metadata as an absence of masking policies. Other consumers may ignore it.
 	UnresolvedColumnsError *UnresolvedColumnsError
 }
 
-// UnresolvedColumnsError names those relations. A sync that ran while the
-// connecting role lacked privileges is the usual cause: the relation is still
-// listed, with no columns under it.
+// UnresolvedColumnsError identifies relations whose synced metadata has no columns.
 type UnresolvedColumnsError struct {
 	// Relations each carry an empty Column field.
 	Relations []ColumnResource
@@ -99,8 +94,7 @@ func (e *UnresolvedColumnsError) Error() string {
 	return fmt.Sprintf("the synced schema describes no columns for %s", strings.Join(names, ", "))
 }
 
-// Databases names only the databases holding an unresolved relation, so a
-// caller can re-sync those rather than every database the query reads.
+// Databases returns the sorted, distinct database names that need re-syncing.
 func (e *UnresolvedColumnsError) Databases() []string {
 	seen := make(map[string]bool, len(e.Relations))
 	var out []string

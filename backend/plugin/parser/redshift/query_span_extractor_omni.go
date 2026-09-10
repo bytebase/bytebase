@@ -1281,9 +1281,7 @@ func (q *omniQuerySpanExtractor) omniAccessTableExists(ctx context.Context, reso
 	if schema == nil {
 		return false
 	}
-	// Relation kinds only, matching SearchRelation on the unqualified branch
-	// above: an access table comes from a RangeVar, and PostgreSQL resolves those
-	// against the relation namespace.
+	// Match the relation kinds used by SearchRelation above.
 	return schema.GetTable(resource.Table) != nil ||
 		schema.GetView(resource.Table) != nil ||
 		schema.GetMaterializedView(resource.Table) != nil ||

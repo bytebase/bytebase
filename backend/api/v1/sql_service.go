@@ -744,13 +744,8 @@ func queryRetry(
 		if i >= len(spans) {
 			continue
 		}
-		// Re-sync before treating the condition as real: a snapshot written while
-		// the connecting role lacked privileges repairs itself here.
-		// DEFER: nothing bounds the retry, so a permanently column-less table runs
-		// a full sync on every query; upgrade when BYT-10074 lands.
-		// This sits above the error skip because
-		// MaskResults refuses whatever the result shape; skipping a size-limited
-		// result here would refuse it without ever syncing.
+		// Re-sync even for error results: MaskResults also refuses partial rows.
+		// Permanently empty tables re-sync on every query until BYT-10074 adds throttling.
 		if maskingEnabled && maskingBlockedByUnresolvedColumns(spans[i], instance) {
 			for _, dbName := range spans[i].UnresolvedColumnsError.Databases() {
 				slog.Debug("database metadata need to sync: unresolved columns",
@@ -779,12 +774,7 @@ func queryRetry(
 			return nil, nil, duration, err
 		}
 		if d == nil {
-			// The referenced database is not tracked by Bytebase (e.g. it was
-			// dropped, excluded by sync filters, or never discovered yet).
-			// Skip the sync attempt and leave the span's error in place, whether
-			// that is NotFoundError or the unresolved-columns signal, so the
-			// masking policy below can reject the query cleanly instead of
-			// panicking on a nil *DatabaseMessage.
+			// Leave the span error in place so masking can reject an untracked database.
 			slog.Debug("skip metadata sync: database not tracked",
 				slog.String("instance", instance.ResourceID),
 				slog.String("database", accessDatabaseName))

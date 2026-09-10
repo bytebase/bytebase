@@ -28,9 +28,6 @@ func unresolvedSpan() *parserbase.QuerySpan {
 	}
 }
 
-// TestMaskingBlockedByUnresolvedColumns pins the single predicate behind both
-// the re-sync trigger in queryRetry and the refusal in MaskResults; why they
-// must agree is at the function itself.
 func TestMaskingBlockedByUnresolvedColumns(t *testing.T) {
 	testCases := []struct {
 		name     string
@@ -45,9 +42,7 @@ func TestMaskingBlockedByUnresolvedColumns(t *testing.T) {
 			want:     true,
 		},
 		{
-			// CockroachDB shares the PostgreSQL span extractor, so it receives the
-			// signal, but it never masks. Acting on it would sync per query and
-			// then refuse nothing.
+			// CockroachDB shares the PostgreSQL extractor but does not support masking.
 			name:     "engine that never masks does not block",
 			span:     unresolvedSpan(),
 			instance: instanceOn(storepb.Engine_COCKROACHDB),
@@ -80,15 +75,8 @@ func TestMaskingBlockedByUnresolvedColumns(t *testing.T) {
 	}
 }
 
-// TestMaskingEnginesAgreeWithSignalProducers pins that enforcement keys on
-// EngineSupportMasking rather than on the one engine that produces the signal
-// today. Narrowing the predicate to POSTGRES passes every other test in this
-// package, so this is the only thing standing between a later edit and an
-// engine-specific gate. Add an engine as it gains a producer, so the remaining
-// gap stays visible rather than being inferred from a missing test.
+// These engines must enforce the signal once their extractors produce it.
 func TestMaskingEnginesAgreeWithSignalProducers(t *testing.T) {
-	// Masking engines whose extractors do not set the signal yet. They must block
-	// once one does; POSTGRES and COCKROACHDB are covered by the table above.
 	for _, engine := range []storepb.Engine{
 		storepb.Engine_MYSQL,
 		storepb.Engine_ORACLE,
