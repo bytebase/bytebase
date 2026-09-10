@@ -34,11 +34,8 @@ function CollapsibleTrigger({
   );
 }
 
-function CollapsiblePanel({
-  className,
-  ...props
-}: ComponentProps<typeof BaseCollapsible.Panel>) {
-  return <BaseCollapsible.Panel className={className} {...props} />;
-}
+// Re-exported rather than wrapped: unlike the root and the trigger, the panel
+// needs no styling or behavior of ours.
+const CollapsiblePanel = BaseCollapsible.Panel;
 
 export { Collapsible, CollapsiblePanel, CollapsibleTrigger };

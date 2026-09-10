@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { router } from "@/app/router";
 import { AUTH_SIGNIN_MODULE } from "@/app/router/handles";
 import { BytebaseLogo } from "@/components/BytebaseLogo";
-import { readConsentCeiling } from "@/components/mcp/mcpPolicy";
+import { isServingMode, readConsentCeiling } from "@/components/mcp/mcpPolicy";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -15,10 +15,7 @@ import {
 } from "@/components/ui/select";
 import { useWorkspace } from "@/hooks/useAppState";
 import { useAppStore } from "@/stores/app";
-import {
-  type MCPSetting,
-  MCPSetting_Capability,
-} from "@/types/proto-es/v1/setting_service_pb";
+import type { MCPSetting } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
 import { MCPConsentCeiling } from "./MCPConsentCeiling";
 import { MCPConsentDisabled } from "./MCPConsentDisabled";
@@ -321,7 +318,13 @@ export function OAuth2ConsentPage() {
         />
       );
     }
-    if (ceiling.setting.capability === MCPSetting_Capability.DISABLED) {
+    // Narrowed here, not inside the card: `kind === "mode"` proved the stored
+    // value is one this bundle can name, and Disabled is the only one of those
+    // that admits no session. Passing the proof on keeps the card from having
+    // to re-derive it with a ternary that would fold any other value into
+    // Read-only.
+    const capability = ceiling.setting.capability;
+    if (!isServingMode(capability)) {
       return (
         <MCPConsentDisabled
           workspaceTitle={
@@ -346,6 +349,7 @@ export function OAuth2ConsentPage() {
         {workspaceCard}
         <MCPConsentCeiling
           setting={ceiling.setting}
+          mode={capability}
           dataMaskingAvailable={dataMaskingAvailable}
         />
         <form method="POST" action={AUTHORIZE_URL}>

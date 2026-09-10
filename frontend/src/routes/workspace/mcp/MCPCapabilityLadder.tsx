@@ -13,7 +13,7 @@ import {
 import {
   MCP_MODE_PRESENTATION,
   type MCPServingMode,
-  mcpModeTitleKey,
+  mcpModeKey,
 } from "@/components/mcp/mcpPolicy";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -76,7 +76,7 @@ export function MCPCapabilityLadder({
           >
             {expanded
               ? t("settings.mcp.ladder.heading", {
-                  mode: t(mcpModeTitleKey(mode)),
+                  mode: t(mcpModeKey(mode, "title")),
                 })
               : t(`settings.mcp.ladder.summary.${modeKey}`)}
           </span>

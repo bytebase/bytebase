@@ -1,30 +1,20 @@
 // Workspace Settings → MCP Integration → Access policy: the capability ladder.
 //
-// Since #21324 removed the per-mode method drawer, nothing on the page said
-// what a mode actually serves, so an admin choosing between Read-only and
-// Read-write had two sentences to compare. The rework puts eight capability
-// rows in one ordered list of which every mode is a prefix, collapsed inside
-// the Access policy section and following the picked mode while editing.
-//
-// Covers:
-//   - M1 view: the mode chip is the subject of the card, the disclosure line
-//     is the mode's description, and the retired "In force" label, audit line
-//     and Authentication Required alert are gone.
-//   - M2 disclosure: opening the list shows all eight rows under either mode,
-//     with the tier tag on the served prefix only; "Show details" reveals the
-//     sub-item line on every row at once; both preferences survive a reload.
-//   - M3 edit → save: picking Read-write renders the post-save list before
-//     saving, the footer names the transition, and Save persists the ceiling
-//     (verified through the API) and changes the chip.
-//
 // State safety: the MCP setting is snapshotted in beforeAll and restored via
 // API in afterAll, because a workspace left on Read-write would change what a
 // later suite's MCP session is allowed to do. This file runs before
 // workspace-seat-limit's license drop (directory order).
 
 import { test, expect, type Page } from "@playwright/test";
+import enUS from "../../../src/locales/en-US.json";
 import { loadTestEnv, type TestEnv } from "../framework/env";
 import { BytebaseApiClient } from "../framework/api-client";
+
+// Prose the page must SHOW is read from the locale file, so a copy edit cannot
+// leave an assertion pointing at a sentence that no longer exists — which is
+// exactly how the floor line broke this spec once. Copy that must be ABSENT
+// stays a literal below: those keys are gone, so there is nothing to read.
+const COPY = enUS.settings.mcp;
 
 test.setTimeout(120_000);
 
@@ -49,11 +39,9 @@ const WRITE_ROWS = [
   "Manage database housekeeping",
 ];
 
-const READ_ONLY_SUMMARY =
-  "Read schemas, data and the change workflow; statements that write are refused, nothing is exported";
-const READ_WRITE_SUMMARY =
-  "Read schemas, data and the change workflow; propose, run, export and manage";
-const EXPORT_DETAILS = "Download results as a file. Data leaves Bytebase";
+const READ_ONLY_SUMMARY = COPY.ladder.summary["read-only"];
+const READ_WRITE_SUMMARY = COPY.ladder.summary["read-write"];
+const EXPORT_DETAILS = COPY.ladder.row.export.details;
 
 async function readCapability(): Promise<string> {
   const setting = (await env.api.getSetting("MCP")) as {
@@ -78,9 +66,8 @@ async function gotoMCPPage(page: Page): Promise<void> {
   ).toBeVisible({ timeout: 10_000 });
 }
 
-// Matched on rendered text, not an aria-label: the badge is a bare span, whose
-// implicit `generic` role ARIA forbids naming, so an attribute-based locator
-// would pass while no name reached the accessibility tree.
+// Matched on rendered text: an attribute-based locator would pass while no
+// name reached the accessibility tree.
 function chip(page: Page, mode: string) {
   return page.getByText(`Current policy: ${mode}`);
 }
@@ -171,20 +158,12 @@ test.describe("MCP access policy capability ladder", () => {
     await expect(
       page.getByText("MCP policy denials are recorded in the audit log.")
     ).toHaveCount(0);
-    await expect(
-      page.getByText(
-        "The most any MCP session may do here. Sessions are also capped by each user's permissions, and policy refusals are audited."
-      )
-    ).toBeVisible();
+    await expect(page.getByText(COPY.policy.description)).toBeVisible();
 
     // D9: the alert's two sentences already existed elsewhere on the page, and
     // the one clause worth keeping moved into Connect a client.
     await expect(page.getByText("Authentication Required")).toHaveCount(0);
-    await expect(
-      page.getByText(
-        "Add Bytebase to your AI client and start asking. On first connection you sign in and approve access in the browser."
-      )
-    ).toBeVisible();
+    await expect(page.getByText(COPY.connect.description)).toBeVisible();
 
     // Collapsed by default: the list is a disclosure, not the card.
     await expect(row(page, READ_ROWS[0])).toHaveCount(0);
@@ -216,22 +195,16 @@ test.describe("MCP access policy capability ladder", () => {
         row(page, title).getByText("write", { exact: true })
       ).toHaveCount(0);
     }
-    await expect(page.getByText("Read-only stops here")).toBeVisible();
-    await expect(page.getByText("Read-write stops here")).toBeVisible();
-    await expect(
-      page.getByText(
-        "approve issues, administer the workspace, or handle credentials."
-      )
-    ).toBeVisible();
+    await expect(page.getByText(COPY.ladder.stops.read)).toBeVisible();
+    await expect(page.getByText(COPY.ladder.stops.write)).toBeVisible();
+    await expect(page.getByText(COPY.ladder.floor.text)).toBeVisible();
 
     // One second-level control for all eight rows, not eight expanders.
     await expect(page.getByText(EXPORT_DETAILS)).toHaveCount(0);
     await page.getByRole("button", { name: "Show details" }).click();
     await expect(page.getByText(EXPORT_DETAILS)).toBeVisible();
     await expect(
-      page.getByText(
-        "Issues and comments · Plans and plan checks · Rollouts, task runs and logs · Releases · Rollback previews"
-      )
+      page.getByText(COPY.ladder.row["read-workflow"].details)
     ).toBeVisible();
 
     // Both preferences are remembered per browser.
@@ -252,18 +225,16 @@ test.describe("MCP access policy capability ladder", () => {
 
     // The cards are an icon, the mode name and a three-word caption; the
     // "Best for" line is shown once, for the pick.
-    await expect(page.getByText("Explore and query")).toBeVisible();
     await expect(
-      page.getByText(
-        "Best for: querying and exploring data, including by people who do not write SQL."
-      )
+      page.getByText(COPY.policy.mode["read-only"].caption)
+    ).toBeVisible();
+    await expect(
+      page.getByText(COPY.policy.mode["read-only"]["best-for"])
     ).toBeVisible();
 
-    await page.getByText("Change data and schemas").click();
+    await page.getByText(COPY.policy.mode["read-write"].caption).click();
     await expect(
-      page.getByText(
-        "Best for: making database changes through an AI agent, still capped by each user's own permissions."
-      )
+      page.getByText(COPY.policy.mode["read-write"]["best-for"])
     ).toBeVisible();
 
     // The disclosure line follows the pick: collapsed, it already describes
@@ -280,7 +251,9 @@ test.describe("MCP access policy capability ladder", () => {
     // The footer names the transition rather than stating a general rule.
     await expect(
       page.getByText(
-        "Read-only → Read-write applies to every running session's next request."
+        COPY.policy["tightening-change"]
+          .replace("{{from}}", COPY.policy.mode["read-only"].title)
+          .replace("{{to}}", COPY.policy.mode["read-write"].title)
       )
     ).toBeVisible();
 
@@ -291,7 +264,14 @@ test.describe("MCP access policy capability ladder", () => {
     // trigger carries the heading rather than the summary. Asserting the view's
     // write rows proves it re-read the stored mode, which the summary string
     // would not.
-    await expect(page.getByText("Read-write allows")).toBeVisible();
+    await expect(
+      page.getByText(
+        COPY.ladder.heading.replace(
+          "{{mode}}",
+          COPY.policy.mode["read-write"].title
+        )
+      )
+    ).toBeVisible();
     for (const title of WRITE_ROWS) {
       await expect(
         row(page, title).getByText("write", { exact: true })

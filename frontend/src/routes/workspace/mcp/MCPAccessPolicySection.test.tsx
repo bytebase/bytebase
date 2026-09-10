@@ -97,6 +97,11 @@ const deferred = <T,>() => {
   return { promise, resolve, reject };
 };
 
+const maskingSwitch = (container: HTMLElement) =>
+  container.querySelector(
+    '[aria-label="settings.mcp.policy.masking.title"]'
+  ) as HTMLElement | null;
+
 const clickText = (container: HTMLElement, text: string) => {
   const el = [...container.querySelectorAll("button, label")].find((n) =>
     n.textContent?.includes(text)
@@ -140,10 +145,6 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
-  // Codex raised exactly this on #21236 after the form moved off GeneralPage,
-  // where it had been registered in the guarded section refs. Without an
-  // assertion the regression returns silently, which is why both sibling forms
-  // pin the call the same way (CreateInstanceView.test.tsx, ReviewCreation.test.tsx).
   test("registers unsaved edits with the navigation guard", async () => {
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
@@ -287,8 +288,6 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
-  // The cards used to carry three "Best for" lines and three descriptions,
-  // which is what made the edit state 375 words. One line, for the pick.
   test("the Best for line is shown once and follows the selection", async () => {
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
@@ -332,10 +331,6 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
-  // Codex, #21236: setSaving gated only the footer buttons. The request has
-  // already captured pick and ignoreMasking, so a card clicked after Save went
-  // out changed the visible draft and nothing else — then the success path
-  // closed the editor and the click was gone, with no sign it had been dropped.
   test("the policy inputs are locked while a save is in flight", async () => {
     const inFlight = deferred<undefined>();
     mocks.upsertSetting.mockReturnValue(inFlight.promise);
@@ -355,9 +350,8 @@ describe("MCPAccessPolicySection", () => {
     await flush();
 
     // The Switch renders a span plus a hidden checkbox, and the checkbox is
-    // what carries `disabled` — so the masking control is inside this set only
-    // while a serving mode is picked. Pinned explicitly, because the set going
-    // quietly back to radios-only is how this test stopped covering it before.
+    // what carries `disabled`, so the masking control is in this set only while
+    // a serving mode is picked. Its presence is pinned rather than assumed.
     const controls = () =>
       [
         ...container.querySelectorAll(
@@ -386,25 +380,16 @@ describe("MCPAccessPolicySection", () => {
   // The chip is the subject of the view: it carries the mode's own glyph, so
   // the identity picked in the selector is the identity shown in force and, on
   // the consent page, the identity the person approving sees.
-  test("the chip names the policy for assistive tech and carries the mode glyph", async () => {
+  test("the chip names the policy in force, not only the mode", async () => {
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
     );
     render();
     await flush();
 
-    // Asserted on rendered text, not on an attribute: a Badge is a bare span,
-    // whose implicit `generic` role ARIA forbids naming, so an aria-label here
-    // would satisfy a DOM query while naming nothing for a screen reader.
     expect(container.textContent).toContain(
       "settings.mcp.policy.current(settings.mcp.policy.mode.read-only.title)"
     );
-    expect(container.querySelector("span.sr-only")?.textContent).toBe(
-      "settings.mcp.policy.current(settings.mcp.policy.mode.read-only.title)"
-    );
-    expect(
-      container.querySelector('[aria-label^="settings.mcp.policy.current"]')
-    ).toBeNull();
     unmount();
   });
 
@@ -506,21 +491,21 @@ describe("MCPAccessPolicySection", () => {
     clickText(container, "settings.mcp.policy.mode.disabled.title");
     await flush();
     expect(
-      container.querySelector('[aria-label="settings.mcp.policy.masking.title"]')
+      maskingSwitch(container)
     ).toBeNull();
 
     // Picking a serving mode again brings the control back.
     clickText(container, "settings.mcp.policy.mode.read-write.title");
     await flush();
     expect(
-      container.querySelector('[aria-label="settings.mcp.policy.masking.title"]')
+      maskingSwitch(container)
     ).not.toBeNull();
     unmount();
   });
 
-  // Toggling masking and then picking Disabled would otherwise write a change
-  // the admin can no longer see, because the control that made it is gone.
-  test("saving Disabled leaves the stored masking flag untouched", async () => {
+  // The flag is inert under Disabled but still stored, so an explicit choice is
+  // kept for when MCP is turned back on rather than quietly rolled back.
+  test("saving Disabled still carries a masking edit the admin made", async () => {
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
     );
@@ -529,11 +514,7 @@ describe("MCPAccessPolicySection", () => {
     clickText(container, "settings.mcp.policy.edit");
     await flush();
 
-    const maskingSwitch = () =>
-      container.querySelector(
-        '[aria-label="settings.mcp.policy.masking.title"]'
-      ) as HTMLElement | null;
-    act(() => maskingSwitch()?.click());
+    act(() => maskingSwitch(container)?.click());
     await flush();
 
     clickText(container, "settings.mcp.policy.mode.disabled.title");
@@ -541,16 +522,17 @@ describe("MCPAccessPolicySection", () => {
     clickText(container, "settings.mcp.policy.save");
     await flush();
 
-    // The mask is the whole statement of what this save writes: the masking
-    // path is absent, so the stored flag is untouched whatever the body says.
     const request = mocks.upsertSetting.mock.calls.at(-1)?.[0];
-    expect(request.updateMask.paths).toEqual(["value.mcp.capability"]);
+    expect(request.updateMask.paths).toEqual([
+      "value.mcp.capability",
+      "value.mcp.ignore_masking_exemptions",
+    ]);
+    expect(request.value.value.value.ignoreMaskingExemptions).toBe(true);
     unmount();
   });
 
-  // Nothing the editor would write, so Save stays disabled even though the
-  // hidden draft differs from the stored flag.
-  test("a masking draft alone cannot save under Disabled", async () => {
+  // Picking back to the stored mode with no other edit leaves nothing to write.
+  test("returning to the stored mode with no edit cannot save", async () => {
     mocks.serverInfo.value = {
       mcpSetting: {
         capability: MCPSetting_Capability.DISABLED,
@@ -566,16 +548,7 @@ describe("MCPAccessPolicySection", () => {
     clickText(container, "settings.mcp.policy.edit");
     await flush();
 
-    // Reach the toggle through a serving mode, set it, then return to Disabled.
     clickText(container, "settings.mcp.policy.mode.read-only.title");
-    await flush();
-    act(() =>
-      (
-        container.querySelector(
-          '[aria-label="settings.mcp.policy.masking.title"]'
-        ) as HTMLElement | null
-      )?.click()
-    );
     await flush();
     clickText(container, "settings.mcp.policy.mode.disabled.title");
     await flush();
@@ -589,9 +562,6 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
-  // Every other mask assertion in this file is ["value.mcp.capability"], so
-  // without this one the masking path could stop being pushed at all — Save
-  // permanently disabled on a masking-only edit — with the whole suite green.
   test("a masking change reaches the update mask", async () => {
     const { container, render, unmount } = renderIntoContainer(
       <MCPAccessPolicySection />
@@ -601,13 +571,7 @@ describe("MCPAccessPolicySection", () => {
     clickText(container, "settings.mcp.policy.edit");
     await flush();
 
-    act(() =>
-      (
-        container.querySelector(
-          '[aria-label="settings.mcp.policy.masking.title"]'
-        ) as HTMLElement | null
-      )?.click()
-    );
+    act(() => maskingSwitch(container)?.click());
     await flush();
     expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(true);
 
@@ -622,11 +586,10 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
-  // The symmetric half of the rule above: gating only the write would drop an
-  // edit the admin did make, leaving the stored flag opposite to their last
-  // explicit action once MCP is turned back on. The draft is reset instead, so
-  // what the form writes is what the form shows.
-  test("picking Disabled returns the masking draft to the stored value", async () => {
+  // Clicking through the modes to read their descriptions must not undo an
+  // unrelated edit. Withholding the control where it governs nothing is not a
+  // reason to discard what the admin set with it.
+  test("the masking draft survives a detour through Disabled", async () => {
     mocks.serverInfo.value = {
       mcpSetting: {
         capability: MCPSetting_Capability.READ_WRITE,
@@ -642,36 +605,32 @@ describe("MCPAccessPolicySection", () => {
     clickText(container, "settings.mcp.policy.edit");
     await flush();
 
-    const maskingSwitch = () =>
-      container.querySelector(
-        '[aria-label="settings.mcp.policy.masking.title"]'
-      ) as HTMLElement | null;
-    act(() => maskingSwitch()?.click());
+    act(() => maskingSwitch(container)?.click());
     await flush();
     expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(true);
 
     clickText(container, "settings.mcp.policy.mode.disabled.title");
     await flush();
-    clickText(container, "settings.mcp.policy.save");
-    await flush();
+    // The control is withheld — it governs nothing under Disabled — but the
+    // draft behind it is still the admin's.
+    expect(maskingSwitch(container)).toBeNull();
 
-    const request = mocks.upsertSetting.mock.calls.at(-1)?.[0];
-    expect(request.updateMask.paths).toEqual(["value.mcp.capability"]);
-
-    // Back on a serving mode the toggle shows the stored value, not a hidden
-    // draft the editor was still holding.
-    clickText(container, "settings.mcp.policy.edit");
-    await flush();
     clickText(container, "settings.mcp.policy.mode.read-write.title");
     await flush();
-    expect(maskingSwitch()?.getAttribute("aria-checked")).toBe("true");
+    expect(maskingSwitch(container)?.getAttribute("aria-checked")).toBe("false");
+
+    clickText(container, "settings.mcp.policy.save");
+    await flush();
+    const request = mocks.upsertSetting.mock.calls.at(-1)?.[0];
+    expect(request.updateMask.paths).toEqual([
+      "value.mcp.ignore_masking_exemptions",
+    ]);
+    expect(request.value.value.value.ignoreMaskingExemptions).toBe(false);
     unmount();
   });
 
-  // The rule is "a serving mode admits a session", not "the mode is not
-  // Disabled": with no mode picked, nothing is known to serve. Encoding it as a
-  // negation let this state through, arming the unsaved-changes guard for a
-  // change Save can never submit.
+  // With no mode picked, nothing is known to serve, so the control that
+  // configures a session has nothing to configure.
   test("the masking toggle is withheld when no mode is picked", async () => {
     mocks.serverInfo.value = {
       mcpSetting: {
@@ -692,9 +651,51 @@ describe("MCPAccessPolicySection", () => {
       "settings.mcp.policy.unreadable.pick"
     );
     expect(
-      container.querySelector('[aria-label="settings.mcp.policy.masking.title"]')
+      maskingSwitch(container)
     ).toBeNull();
     expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(false);
+    unmount();
+  });
+
+  test("the masking badge reports a stored restriction", async () => {
+    mocks.serverInfo.value = {
+      mcpSetting: {
+        capability: MCPSetting_Capability.READ_ONLY,
+        ignoreMaskingExemptions: true,
+      },
+    };
+    mocks.loadServerInfo.mockResolvedValue(mocks.serverInfo.value);
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+    expect(container.textContent).toContain(
+      "settings.mcp.policy.masking.badge"
+    );
+    unmount();
+  });
+
+  // Deliberately still shown without a masking license: the chip reports what
+  // is stored, and the editor beside it says masking is unlicensed. Hiding it
+  // would leave a set flag with nowhere to see it.
+  test("the masking badge still reports a stored restriction unlicensed", async () => {
+    mocks.dataMaskingAvailable.value = false;
+    mocks.serverInfo.value = {
+      mcpSetting: {
+        capability: MCPSetting_Capability.READ_ONLY,
+        ignoreMaskingExemptions: true,
+      },
+    };
+    mocks.loadServerInfo.mockResolvedValue(mocks.serverInfo.value);
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+    expect(container.textContent).toContain(
+      "settings.mcp.policy.masking.badge"
+    );
     unmount();
   });
 

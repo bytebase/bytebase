@@ -5,6 +5,7 @@ import jaJP from "@/locales/ja-JP.json";
 import viVN from "@/locales/vi-VN.json";
 import zhCN from "@/locales/zh-CN.json";
 import { MCP_CAPABILITY_ROWS, MCP_CAPABILITY_TIERS } from "./mcpCapabilityRows";
+import { MCP_CAPABILITY_CHOICES, MCP_MODE_PRESENTATION } from "./mcpPolicy";
 
 /**
  * The row table keys its copy by row id through a template literal, which
@@ -79,6 +80,22 @@ describe("capability row copy", () => {
             typeof value === "string" && value.length > 0,
             `settings.mcp.ladder.summary.${modeKey} is missing in ${locale}`
           ).toBe(true);
+        }
+      });
+
+      // Same blind spot, the other table: the mode cards build
+      // `settings.mcp.policy.mode.<key>.<part>` by template literal under a
+      // prefix the checker exempts, so a missing caption renders its own key.
+      test("every mode has a title, a caption and a Best for line", () => {
+        for (const mode of MCP_CAPABILITY_CHOICES) {
+          for (const part of ["title", "caption", "best-for"] as const) {
+            const key = `settings.mcp.policy.mode.${MCP_MODE_PRESENTATION[mode].key}.${part}`;
+            const value = read(tree as Tree, key);
+            expect(
+              typeof value === "string" && value.length > 0,
+              `${key} is missing in ${locale}`
+            ).toBe(true);
+          }
         }
       });
 

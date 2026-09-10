@@ -9,7 +9,7 @@ import {
   isServingMode,
   MCP_CAPABILITY_CHOICES,
   MCP_MODE_PRESENTATION,
-  mcpModeTitleKey,
+  mcpModeKey,
 } from "@/components/mcp/mcpPolicy";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { Alert } from "@/components/ui/alert";
@@ -91,35 +91,25 @@ export function MCPAccessPolicySection() {
   // The masking toggle governs what an MCP session may unmask, and only a
   // serving mode admits one: mcpIgnoresMaskingExemptions answers on the
   // delegated grant an MCP request carries, so the stored flag is never read
-  // under Disabled — nor under a ceiling nobody has picked yet.
+  // under Disabled — nor under a ceiling nobody has picked yet. The control is
+  // withheld there because it governs nothing there.
   //
-  // Withholding the control is not enough on its own. Gating only the write
-  // drops an edit the admin did make; gating only the render writes one they
-  // can no longer see. Both are the same fault: the editor holding a value it
-  // is not showing. `pickMode` resets the draft instead, so what the form
-  // writes is always what the form displays.
+  // The draft it holds is kept, and saved, whatever the pick. Withholding a
+  // control is not a reason to discard what the admin set with it: clicking
+  // through the modes to read their descriptions must not silently undo an
+  // unrelated edit, and under Disabled the stored flag is inert rather than
+  // wrong, so writing it costs nothing now and honors the choice when MCP is
+  // turned back on.
   const maskingApplies = isServingMode(pick);
   const maskingChanged = ignoreMasking !== storedIgnoreMasking;
   const isDirty = editing && (pick !== storedMode || maskingChanged);
-  // The section this replaced was registered in GeneralPage's guarded refs, so
-  // moving it to its own route would otherwise drop the confirm an admin gets
-  // when navigating away from an unsaved ceiling.
   useUnsavedChangesGuard(isDirty);
   // A row nobody can read is repaired by naming a capability. Saving anything
   // else would erase it, and the server refuses that write.
   const canSave = isDirty && pick !== undefined;
 
   const modeLabel = (capability: MCPMode): string =>
-    t(mcpModeTitleKey(capability));
-
-  // Picking a mode that admits no session returns the masking draft to the
-  // stored value, so nothing is pending behind a control the pick just hid.
-  const pickMode = (capability: MCPMode) => {
-    setPick(capability);
-    if (!isServingMode(capability)) {
-      setIgnoreMasking(storedIgnoreMasking);
-    }
-  };
+    t(mcpModeKey(capability, "title"));
 
   const save = async () => {
     if (pick === undefined) {
@@ -234,18 +224,19 @@ export function MCPAccessPolicySection() {
                     mode: modeLabel(storedMode),
                   })}
                 />
-                {/* Withheld under Disabled for the same reason the toggle is —
-                    there are no sessions to restrict — and where masking is
-                    unlicensed, because the chip promises a restriction that
-                    nothing then applies. The consent page gates its own masking
-                    line on both for the same reason. */}
-                {storedIgnoreMasking &&
-                  isServingMode(storedMode) &&
-                  dataMaskingAvailable && (
-                    <Badge variant="secondary">
-                      {t("settings.mcp.policy.masking.badge")}
-                    </Badge>
-                  )}
+                {/* Withheld under Disabled for the same reason the toggle is:
+                    there are no sessions to restrict. NOT withheld on an
+                    unlicensed workspace, deliberately — the chip reports what
+                    is stored, the editor beside it says masking is unlicensed,
+                    and hiding it would leave a set flag with nowhere to see it.
+                    The consent page withholds its masking line in that case
+                    instead, because its reader sees neither the setting nor the
+                    caveat and would read it as "my data is covered". */}
+                {storedIgnoreMasking && isServingMode(storedMode) && (
+                  <Badge variant="secondary">
+                    {t("settings.mcp.policy.masking.badge")}
+                  </Badge>
+                )}
               </div>
             )}
             <PermissionGuard permissions={["bb.settings.set"]}>
@@ -289,12 +280,12 @@ export function MCPAccessPolicySection() {
               onValueChange={(value) => {
                 const capability = Number(value) as MCPSetting_Capability;
                 if (isMCPMode(capability)) {
-                  pickMode(capability);
+                  setPick(capability);
                 }
               }}
             >
               {MCP_CAPABILITY_CHOICES.map((capability) => {
-                const { key, icon: Icon } = MCP_MODE_PRESENTATION[capability];
+                const { icon: Icon } = MCP_MODE_PRESENTATION[capability];
                 const picked = pick === capability;
                 return (
                   <RadioGroupItem
@@ -302,10 +293,10 @@ export function MCPAccessPolicySection() {
                     value={String(capability)}
                     // The item wraps the whole card in a label, so without this
                     // the radio's name absorbs the caption too.
-                    aria-label={t(mcpModeTitleKey(capability))}
+                    aria-label={modeLabel(capability)}
                     className={cn(
                       "h-full rounded-sm border px-3 py-2",
-                      "focus-within:outline-hidden focus-within:ring-2 focus-within:ring-accent focus-within:ring-offset-2",
+                      "has-[:focus-visible]:outline-hidden has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-accent has-[:focus-visible]:ring-offset-2",
                       picked
                         ? "border-accent bg-accent/5 ring-1 ring-accent"
                         : "border-control-border hover:border-accent/50 hover:bg-control-bg"
@@ -323,10 +314,10 @@ export function MCPAccessPolicySection() {
                     />
                     <span className="flex min-w-0 flex-col">
                       <span className="text-sm font-medium text-main">
-                        {t(mcpModeTitleKey(capability))}
+                        {modeLabel(capability)}
                       </span>
                       <span className="text-xs text-control-light">
-                        {t(`settings.mcp.policy.mode.${key}.caption`)}
+                        {t(mcpModeKey(capability, "caption"))}
                       </span>
                     </span>
                   </RadioGroupItem>
@@ -341,9 +332,7 @@ export function MCPAccessPolicySection() {
             ) : (
               <>
                 <p className="textinfolabel">
-                  {t(
-                    `settings.mcp.policy.mode.${MCP_MODE_PRESENTATION[pick].key}.best-for`
-                  )}
+                  {t(mcpModeKey(pick, "best-for"))}
                 </p>
                 {disclosure(pick)}
               </>

@@ -902,11 +902,10 @@ WRITE are the serving classes the workspace&#39;s MCP capability ceiling selects
 between, EXCLUDED and FORBIDDEN are served by no ceiling, and an unclassified
 method is refused rather than served. Annotating a method is therefore a
 change to what an MCP session can reach, taking effect on the next request.
-It is also a change to what the workspace&#39;s Access policy page promises: READ
-and WRITE methods are disclosed there as capability rows, and nothing checks
-that a row still describes the method you just annotated. Reread the row table
-in docs/design/mcp-capability-ladder.md and reword a row, or add one, when
-none covers it.
+READ and WRITE methods are also disclosed to workspace admins, as capability
+rows on the Access policy page, and the classification and that wording are
+kept in step by review rather than by a check — so annotating a method is a
+change to what the product promises as well as to what it serves.
 
 | Name | Number | Description |
 | ---- | ------ | ----------- |

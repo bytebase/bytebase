@@ -46,9 +46,9 @@ export const MCP_CAPABILITY_ROWS: readonly MCPCapabilityRow[] = [
 ];
 
 /**
- * Tier order, and with it the order the "stops here" dividers appear in. Each
- * tier renders as its own list, so a row cannot land on the wrong side of its
- * tier's divider.
+ * Tier order, and with it the order the "stops here" dividers appear in. The
+ * ladder walks the tiers and emits each one's rows followed by its divider, so
+ * a row cannot land on the wrong side of the line that closes its tier.
  */
 export const MCP_CAPABILITY_TIERS: readonly MCPCapabilityTier[] = [
   "read",
@@ -58,23 +58,33 @@ export const MCP_CAPABILITY_TIERS: readonly MCPCapabilityTier[] = [
 /**
  * The bundle's copy of the ceiling the gate evaluates (`mcpServingClasses`,
  * backend/api/v1/mcp_gate.go).
+ *
+ * A table rather than a switch, because a switch is exhaustive over the modes
+ * and not over the tiers: a comparison against the tiers that exist today
+ * compiles unchanged against a widened union and answers "refused" for rows
+ * nobody classified. Every cell here has to be filled in, so adding either a
+ * mode or a tier fails to compile until someone decides what it serves.
  */
-export const isRowServed = (mode: MCPMode, row: MCPCapabilityRow): boolean => {
-  switch (mode) {
-    // Named tier by tier, and with no default arm, so a tier or a ceiling added
-    // later fails to compile here rather than silently resolving to served or
-    // refused for rows nobody has classified.
-    case MCPSetting_Capability.READ_WRITE:
-      return row.tier === "read" || row.tier === "write";
-    case MCPSetting_Capability.READ_ONLY:
-      return row.tier === "read";
-    case MCPSetting_Capability.DISABLED:
-      return false;
-  }
+const SERVES: Record<MCPMode, Record<MCPCapabilityTier, boolean>> = {
+  [MCPSetting_Capability.DISABLED]: { read: false, write: false },
+  [MCPSetting_Capability.READ_ONLY]: { read: true, write: false },
+  [MCPSetting_Capability.READ_WRITE]: { read: true, write: true },
 };
+
+export const isRowServed = (mode: MCPMode, row: MCPCapabilityRow): boolean =>
+  SERVES[mode][row.tier];
 
 export const servedRows = (mode: MCPMode): readonly MCPCapabilityRow[] =>
   MCP_CAPABILITY_ROWS.filter((row) => isRowServed(mode, row));
+
+/**
+ * The locale key for one of a row's strings. Stated here, beside the ids it is
+ * built from, so the product and the copy test cannot disagree about its shape.
+ */
+export const mcpRowKey = (
+  row: MCPCapabilityRow,
+  part: "title" | "details"
+): string => `settings.mcp.ladder.row.${row.id}.${part}`;
 
 export const rowsInTier = (
   tier: MCPCapabilityTier

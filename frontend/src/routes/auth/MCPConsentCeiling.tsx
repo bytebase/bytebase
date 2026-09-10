@@ -2,7 +2,7 @@ import { Check, EyeOff, ScrollText, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { MCPModeBadge } from "@/components/mcp/MCPModeBadge";
-import { servedRows } from "@/components/mcp/mcpCapabilityRows";
+import { mcpRowKey, servedRows } from "@/components/mcp/mcpCapabilityRows";
 import type { MCPServingMode } from "@/components/mcp/mcpPolicy";
 import { Alert } from "@/components/ui/alert";
 import {
@@ -18,6 +18,15 @@ interface Line {
 
 interface Props {
   readonly setting: MCPSetting;
+  /**
+   * The ceiling this session runs at, narrowed by the caller. Passed rather
+   * than re-derived: the page already establishes that the stored capability is
+   * a mode and that it admits a session, and a local
+   * `readWrite ? READ_WRITE : READ_ONLY` would silently turn anything else into
+   * Read-only — a card claiming three read capabilities for a workspace that
+   * grants none.
+   */
+  readonly mode: MCPServingMode;
   readonly dataMaskingAvailable: boolean;
 }
 
@@ -31,21 +40,19 @@ interface Props {
  * richer render of a decision the backend makes either way — never the
  * decision itself.
  */
-export function MCPConsentCeiling({ setting, dataMaskingAvailable }: Props) {
+export function MCPConsentCeiling({
+  setting,
+  mode,
+  dataMaskingAvailable,
+}: Props) {
   const { t } = useTranslation();
 
-  // Narrowed rather than coerced: this card describes a live session, so the
-  // only ceilings it can speak for are the ones that admit one. The page
-  // routes Disabled and undisclosable ceilings elsewhere before reaching here.
-  const readWrite = setting.capability === MCPSetting_Capability.READ_WRITE;
-  const mode: MCPServingMode = readWrite
-    ? MCPSetting_Capability.READ_WRITE
-    : MCPSetting_Capability.READ_ONLY;
+  const readWrite = mode === MCPSetting_Capability.READ_WRITE;
   const lines: Line[] = [
     ...servedRows(mode).map((row) => ({
       key: row.id,
       icon: <Check className="size-4 text-success" />,
-      text: t(`settings.mcp.ladder.row.${row.id}.title`),
+      text: t(mcpRowKey(row, "title")),
     })),
     // One line for the whole unserved tier rather than five muted rows: this
     // screen is an approval, not a comparison, and the person is deciding

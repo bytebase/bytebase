@@ -75,14 +75,20 @@ export const isMCPMode = (
  * the editor with no pick, and a negation would count that absence as serving.
  */
 export const isServingMode = (
-  mode: MCPMode | undefined
-): mode is MCPServingMode =>
-  mode === MCPSetting_Capability.READ_ONLY ||
-  mode === MCPSetting_Capability.READ_WRITE;
+  capability: MCPSetting_Capability | undefined
+): capability is MCPServingMode =>
+  capability === MCPSetting_Capability.READ_ONLY ||
+  capability === MCPSetting_Capability.READ_WRITE;
 
-/** The locale key for a mode's name, assembled in one place. */
-export const mcpModeTitleKey = (mode: MCPMode): string =>
-  `settings.mcp.policy.mode.${MCP_MODE_PRESENTATION[mode].key}.title`;
+/**
+ * The locale key for one of a mode's strings, assembled in one place so the
+ * product and the copy test cannot disagree about its shape.
+ */
+export const mcpModeKey = (
+  mode: MCPMode,
+  part: "title" | "caption" | "best-for"
+): string =>
+  `settings.mcp.policy.mode.${MCP_MODE_PRESENTATION[mode].key}.${part}`;
 
 /**
  * What the consent page can truthfully tell someone about to approve a client.

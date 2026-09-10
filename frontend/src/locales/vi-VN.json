@@ -1614,7 +1614,7 @@
         },
         "line": {
           "audit": "Hành động được kiểm toán mang nhãn MCP, và những gì chính sách từ chối cũng được ghi lại",
-          "capped": "Giới hạn bởi chính quyền Bytebase của bạn",
+          "capped": "Giới hạn bởi quyền Bytebase của chính bạn, và bởi những gì mỗi engine cơ sở dữ liệu cho phép",
           "masking": "Các miễn trừ che dữ liệu của bạn không áp dụng cho phiên này",
           "no-write": "Không thay đổi, triển khai hay xuất dữ liệu"
         },
@@ -2661,7 +2661,7 @@
         "disabled": "Không cho phép gì; không phiên MCP nào có thể kết nối.",
         "floor": {
           "label": "Không bao giờ, ở mọi chế độ:",
-          "text": "phê duyệt Issue, quản trị không gian làm việc, xử lý thông tin xác thực, mở kết nối quản trị, đọc SQL của người khác, hoặc gửi dữ liệu cho bên thứ ba."
+          "text": "phê duyệt Issue, quản trị không gian làm việc, xử lý thông tin xác thực, mở kết nối quản trị, duyệt SQL đã lưu của tất cả mọi người, hoặc gửi dữ liệu cho bên thứ ba."
         },
         "heading": "{{mode}} cho phép",
         "hide-details": "Ẩn chi tiết",
@@ -2683,7 +2683,7 @@
             "title": "Đề xuất thay đổi"
           },
           "read-data": {
-            "details": "Chạy truy vấn chỉ đọc · Ở chế độ Chỉ đọc, toàn bộ yêu cầu bị từ chối trừ khi mọi câu lệnh đều được chứng minh là một truy vấn đọc có trả về dữ liệu; mức độ kiểm tra tùy theo engine, và trên một số engine không câu lệnh nào có thể được chứng minh là đọc · Lịch sử truy vấn của riêng bạn · Truy vấn đã lưu và sheet của riêng bạn",
+            "details": "Chạy truy vấn chỉ đọc · Ở chế độ Chỉ đọc, toàn bộ yêu cầu bị từ chối trừ khi mọi câu lệnh đều được chứng minh là một truy vấn đọc có trả về dữ liệu; mức độ kiểm tra tùy theo engine, và trên một số engine không câu lệnh nào có thể được chứng minh là đọc · Lịch sử truy vấn của riêng bạn · Truy vấn đã lưu và sheet mà bạn có quyền truy cập",
             "title": "Đọc dữ liệu bằng cách chạy truy vấn"
           },
           "read-schemas": {
@@ -2699,7 +2699,7 @@
             "title": "Chạy triển khai và tác vụ"
           },
           "run-statements": {
-            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP qua truy vấn, khi engine cho phép và người dùng được phép chạy. Trên các engine mà Bytebase không kiểm soát theo từng câu lệnh, truy vấn vẫn chỉ đọc bất kể chế độ nào",
+            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP qua truy vấn, trong phạm vi engine và quyền của chính người dùng cho phép",
             "title": "Chạy câu lệnh DML và DDL"
           }
         },
@@ -2709,7 +2709,7 @@
           "write": "Đọc và ghi dừng ở đây"
         },
         "summary": {
-          "read-only": "Đọc lược đồ, dữ liệu và quy trình thay đổi; câu lệnh ghi bị từ chối, không xuất được gì",
+          "read-only": "Đọc lược đồ, dữ liệu và quy trình thay đổi; yêu cầu chứa bất kỳ thứ gì không thể chứng minh là đọc đều bị từ chối, và không xuất được gì",
           "read-write": "Đọc lược đồ, dữ liệu và quy trình thay đổi; đề xuất, chạy, xuất và quản lý"
         },
         "tier": {

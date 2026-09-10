@@ -2,6 +2,7 @@ import { useTranslation } from "react-i18next";
 import {
   MCP_MODE_PRESENTATION,
   type MCPMode,
+  mcpModeKey,
 } from "@/components/mcp/mcpPolicy";
 import { Badge } from "@/components/ui/badge";
 
@@ -29,8 +30,8 @@ interface Props {
  */
 export function MCPModeBadge({ mode, describedAs }: Props) {
   const { t } = useTranslation();
-  const { key, icon: Icon, badge } = MCP_MODE_PRESENTATION[mode];
-  const label = t(`settings.mcp.policy.mode.${key}.title`);
+  const { icon: Icon, badge } = MCP_MODE_PRESENTATION[mode];
+  const label = t(mcpModeKey(mode, "title"));
   return (
     <Badge variant={badge} className="gap-x-1">
       <Icon className="size-3.5 shrink-0" aria-hidden="true" />

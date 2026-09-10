@@ -198,9 +198,6 @@ describe("MCPCapabilityLadder", () => {
     unmount();
   });
 
-  // A divider marks a boundary between tiers, so it must not be read as part
-  // of the row above it: nested inside that row's <li>, a screen reader
-  // announces "Read the change workflow … Read-only stops here" as one item.
   test("each tier is closed by a divider outside its rows, in list order", () => {
     const { container, unmount } = renderIntoContainer(ladder({}));
     for (const tier of ["read", "write"]) {
@@ -228,9 +225,6 @@ describe("MCPCapabilityLadder", () => {
     unmount();
   });
 
-  // Served and unserved are otherwise carried by a glyph, muting and the
-  // presence of a tier tag — all visual. Without a text alternative a refused
-  // row is announced exactly like an allowed one.
   test("every row states whether it is allowed, not only shows it", () => {
     const { container, unmount } = renderIntoContainer(
       ladder({ mode: MCPSetting_Capability.READ_ONLY })

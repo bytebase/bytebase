@@ -69,9 +69,6 @@ describe("MCPModeBadge", () => {
     unmount();
   });
 
-  // A Badge renders a bare span, whose implicit `generic` role ARIA forbids
-  // naming — so the sentence has to be text, and the visible copy has to be
-  // hidden from assistive tech or it is announced twice.
   test("a described badge reads the sentence once, not the name twice", () => {
     const { container, unmount } = renderIntoContainer(
       <MCPModeBadge
