@@ -31,6 +31,7 @@ const mocks = vi.hoisted(() => ({
   useTranslation: vi.fn(() => ({ t: (key: string) => key })),
   useSheetContext: vi.fn(),
   useSheetContextByView: vi.fn(),
+  project: "projects/proj1",
 }));
 
 vi.mock("react-i18next", () => ({
@@ -40,6 +41,11 @@ vi.mock("react-i18next", () => ({
 vi.mock("@/modules/sql-editor/model/Sheet", () => ({
   useSheetContext: mocks.useSheetContext,
   useSheetContextByView: mocks.useSheetContextByView,
+}));
+
+vi.mock("@/modules/sql-editor/store/editor", () => ({
+  useSQLEditorEditorState: (selector: (state: { project: string }) => unknown) =>
+    selector({ project: mocks.project }),
 }));
 
 // ---- primitive mocks --------------------------------------------------------
@@ -384,6 +390,7 @@ let SavedQueryPane: typeof import("./SavedQueryPane").SavedQueryPane;
 
 beforeEach(async () => {
   vi.clearAllMocks();
+  mocks.project = "projects/proj1";
   ({ SavedQueryPane } = await import("./SavedQueryPane"));
 });
 
@@ -395,6 +402,22 @@ afterEach(() => {
 // ---- tests ------------------------------------------------------------------
 
 describe("SavedQueryPane", () => {
+  test("renders an empty state instead of saved-query trees without a project", () => {
+    mocks.project = "";
+    setupDefaultMocks();
+    const { container, render, unmount } = renderIntoContainer(
+      <SavedQueryPane />
+    );
+    render();
+
+    expect(container.textContent).toContain("common.empty");
+    expect(
+      container.querySelectorAll("[data-testid='sheet-tree']")
+    ).toHaveLength(0);
+
+    unmount();
+  });
+
   test("1. Renders SheetTree for each enabled view", () => {
     setupDefaultMocks();
     const { container, render, unmount } = renderIntoContainer(

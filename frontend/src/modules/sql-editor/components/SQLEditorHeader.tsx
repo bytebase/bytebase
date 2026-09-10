@@ -92,19 +92,12 @@ export function SQLEditorHeader() {
   }, [t]);
 
   const handleSelectWorkspace = useCallback(
-    (workspaceName: string, event: React.MouseEvent<HTMLElement>) => {
+    (workspaceName: string) => {
+      if (workspaceName === workspace?.name) return;
+
       const route = navigate.resolve({
         name: SQL_EDITOR_HOME_MODULE,
       });
-
-      if (workspaceName === workspace?.name) {
-        if (event.ctrlKey || event.metaKey) {
-          window.open(route.fullPath, "_blank");
-        } else {
-          void navigate.push({ name: SQL_EDITOR_HOME_MODULE });
-        }
-        return;
-      }
 
       void switchWorkspace(workspaceName, false, true).then(() => {
         globalThis.location.assign(route.fullPath);
