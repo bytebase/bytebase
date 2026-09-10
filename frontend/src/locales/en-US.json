@@ -2661,7 +2661,7 @@
         "disabled": "Nothing is allowed; no MCP session can connect.",
         "floor": {
           "label": "Never, in any mode:",
-          "text": "approve issues, administer the workspace, or handle credentials."
+          "text": "approve issues, administer the workspace, handle credentials, open an admin connection, read other people's SQL, or send data to a third party."
         },
         "heading": "{{mode}} allows",
         "hide-details": "Hide details",
@@ -2683,7 +2683,7 @@
             "title": "Propose changes"
           },
           "read-data": {
-            "details": "Run read-only queries · Under Read-only, a request is refused whole if any statement is not a read, and on engines other than PostgreSQL, CockroachDB and Redshift the check is by statement shape only · Query history · Saved queries and sheets",
+            "details": "Run read-only queries · Under Read-only, a request is refused whole unless every statement is shown to be a read that returns data; how deeply that can be checked varies by engine, and on some engines no statement can be shown to be a read at all · Your own query history · Your own saved queries and sheets",
             "title": "Read data by running queries"
           },
           "read-schemas": {
@@ -2699,7 +2699,7 @@
             "title": "Run rollouts and tasks"
           },
           "run-statements": {
-            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, where the engine checks each statement and the user may run it",
+            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, where the engine allows it and the user may run it. On engines Bytebase does not gate per statement, queries stay read-only whatever the mode",
             "title": "Run DML and DDL statements"
           }
         },

@@ -142,6 +142,11 @@ func (AuthMethod) EnumDescriptor() ([]byte, []int) {
 // between, EXCLUDED and FORBIDDEN are served by no ceiling, and an unclassified
 // method is refused rather than served. Annotating a method is therefore a
 // change to what an MCP session can reach, taking effect on the next request.
+// It is also a change to what the workspace's Access policy page promises: READ
+// and WRITE methods are disclosed there as capability rows, and nothing checks
+// that a row still describes the method you just annotated. Reread the row table
+// in docs/design/mcp-capability-ladder.md and reword a row, or add one, when
+// none covers it.
 type MCPMethodClass int32
 
 const (

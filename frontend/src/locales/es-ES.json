@@ -2661,7 +2661,7 @@
         "disabled": "No se permite nada; ninguna sesión MCP puede conectarse.",
         "floor": {
           "label": "Nunca, en ningún modo:",
-          "text": "aprobar issues, administrar el espacio de trabajo ni manejar credenciales."
+          "text": "aprobar issues, administrar el espacio de trabajo, manejar credenciales, abrir una conexión de administración, leer el SQL de otras personas ni enviar datos a un tercero."
         },
         "heading": "{{mode}} permite",
         "hide-details": "Ocultar detalles",
@@ -2683,7 +2683,7 @@
             "title": "Proponer cambios"
           },
           "read-data": {
-            "details": "Ejecutar consultas de solo lectura · En Solo lectura, una solicitud se rechaza por completo si alguna sentencia no es de lectura y, en motores distintos de PostgreSQL, CockroachDB y Redshift, la comprobación solo mira la forma de la sentencia · Historial de consultas · Consultas guardadas y hojas",
+            "details": "Ejecutar consultas de solo lectura · En Solo lectura, una solicitud se rechaza por completo salvo que cada sentencia se demuestre ser una lectura que devuelve datos; la profundidad de esa comprobación depende del motor y, en algunos motores, ninguna sentencia puede demostrarse que sea una lectura · Su propio historial de consultas · Sus propias consultas guardadas y hojas",
             "title": "Leer datos ejecutando consultas"
           },
           "read-schemas": {
@@ -2699,7 +2699,7 @@
             "title": "Ejecutar despliegues y tareas"
           },
           "run-statements": {
-            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP a través de consultas, donde el motor comprueba cada sentencia y el usuario puede ejecutarla",
+            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP a través de consultas, donde el motor lo permite y el usuario puede ejecutarlo. En los motores que Bytebase no controla sentencia a sentencia, las consultas siguen siendo de solo lectura sea cual sea el modo",
             "title": "Ejecutar sentencias DML y DDL"
           }
         },

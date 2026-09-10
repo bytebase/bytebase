@@ -80,8 +80,8 @@ const DYNAMIC_PREFIXES = [
   // The capability ladder's template-driven families only: row titles and
   // detail lines keyed by row id, the per-mode summary, and the tier tag and
   // divider keyed by tier. Listed per family rather than as the
-  // `settings.mcp.ladder.` subtree, which would also exempt the six sibling
-  // keys the ladder names literally — including the floor line.
+  // `settings.mcp.ladder.` subtree, which would also exempt every sibling key
+  // the ladder names literally — the floor line among them.
   "settings.mcp.ladder.row.",
   "settings.mcp.ladder.stops.",
   "settings.mcp.ladder.summary.",

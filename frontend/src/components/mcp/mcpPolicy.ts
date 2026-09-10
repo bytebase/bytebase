@@ -11,6 +11,16 @@ export type MCPMode =
   | MCPSetting_Capability.READ_WRITE;
 
 /**
+ * A mode that admits MCP sessions. Anything describing what a session may do —
+ * the capability ladder, the consent disclosure, the masking toggle — takes
+ * this rather than MCPMode, so "there is a session to describe" is checked by
+ * the compiler instead of by a comparison at each call site.
+ */
+export type MCPServingMode =
+  | MCPSetting_Capability.READ_ONLY
+  | MCPSetting_Capability.READ_WRITE;
+
+/**
  * How a mode identifies itself wherever it appears: the locale-key stem, the
  * glyph, and the chip variant.
  *
@@ -61,14 +71,18 @@ export const isMCPMode = (
  * Whether a mode admits MCP sessions at all.
  *
  * Stated by the modes it admits rather than as "not Disabled", because the
- * caller's mode is often not yet chosen: an unreadable stored ceiling leaves the
- * editor with no pick, and a negation would count that absence as serving.
- * Anything that only governs a live session — the masking toggle, the chip that
- * reports it — asks this rather than comparing against DISABLED.
+ * caller's mode is often not yet chosen: an unreadable stored ceiling leaves
+ * the editor with no pick, and a negation would count that absence as serving.
  */
-export const isServingMode = (mode: MCPMode | undefined): boolean =>
+export const isServingMode = (
+  mode: MCPMode | undefined
+): mode is MCPServingMode =>
   mode === MCPSetting_Capability.READ_ONLY ||
   mode === MCPSetting_Capability.READ_WRITE;
+
+/** The locale key for a mode's name, assembled in one place. */
+export const mcpModeTitleKey = (mode: MCPMode): string =>
+  `settings.mcp.policy.mode.${MCP_MODE_PRESENTATION[mode].key}.title`;
 
 /**
  * What the consent page can truthfully tell someone about to approve a client.

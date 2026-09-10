@@ -2661,7 +2661,7 @@
         "disabled": "Không cho phép gì; không phiên MCP nào có thể kết nối.",
         "floor": {
           "label": "Không bao giờ, ở mọi chế độ:",
-          "text": "phê duyệt Issue, quản trị không gian làm việc, hoặc xử lý thông tin xác thực."
+          "text": "phê duyệt Issue, quản trị không gian làm việc, xử lý thông tin xác thực, mở kết nối quản trị, đọc SQL của người khác, hoặc gửi dữ liệu cho bên thứ ba."
         },
         "heading": "{{mode}} cho phép",
         "hide-details": "Ẩn chi tiết",
@@ -2683,7 +2683,7 @@
             "title": "Đề xuất thay đổi"
           },
           "read-data": {
-            "details": "Chạy truy vấn chỉ đọc · Ở chế độ Chỉ đọc, toàn bộ yêu cầu bị từ chối nếu có bất kỳ câu lệnh nào không phải là đọc, và trên các engine ngoài PostgreSQL, CockroachDB và Redshift thì chỉ kiểm tra theo hình dạng câu lệnh · Lịch sử truy vấn · Truy vấn đã lưu và sheet",
+            "details": "Chạy truy vấn chỉ đọc · Ở chế độ Chỉ đọc, toàn bộ yêu cầu bị từ chối trừ khi mọi câu lệnh đều được chứng minh là một truy vấn đọc có trả về dữ liệu; mức độ kiểm tra tùy theo engine, và trên một số engine không câu lệnh nào có thể được chứng minh là đọc · Lịch sử truy vấn của riêng bạn · Truy vấn đã lưu và sheet của riêng bạn",
             "title": "Đọc dữ liệu bằng cách chạy truy vấn"
           },
           "read-schemas": {
@@ -2699,7 +2699,7 @@
             "title": "Chạy triển khai và tác vụ"
           },
           "run-statements": {
-            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP qua truy vấn, trong đó engine kiểm tra từng câu lệnh và người dùng được phép chạy nó",
+            "details": "INSERT, UPDATE, DELETE, CREATE, ALTER, DROP qua truy vấn, khi engine cho phép và người dùng được phép chạy. Trên các engine mà Bytebase không kiểm soát theo từng câu lệnh, truy vấn vẫn chỉ đọc bất kể chế độ nào",
             "title": "Chạy câu lệnh DML và DDL"
           }
         },

@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { MCPModeBadge } from "@/components/mcp/MCPModeBadge";
 import { servedRows } from "@/components/mcp/mcpCapabilityRows";
+import type { MCPServingMode } from "@/components/mcp/mcpPolicy";
 import { Alert } from "@/components/ui/alert";
 import {
   type MCPSetting,
@@ -33,8 +34,11 @@ interface Props {
 export function MCPConsentCeiling({ setting, dataMaskingAvailable }: Props) {
   const { t } = useTranslation();
 
+  // Narrowed rather than coerced: this card describes a live session, so the
+  // only ceilings it can speak for are the ones that admit one. The page
+  // routes Disabled and undisclosable ceilings elsewhere before reaching here.
   const readWrite = setting.capability === MCPSetting_Capability.READ_WRITE;
-  const mode = readWrite
+  const mode: MCPServingMode = readWrite
     ? MCPSetting_Capability.READ_WRITE
     : MCPSetting_Capability.READ_ONLY;
   const lines: Line[] = [

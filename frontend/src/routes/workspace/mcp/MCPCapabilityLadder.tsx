@@ -12,7 +12,8 @@ import {
 } from "@/components/mcp/mcpCapabilityRows";
 import {
   MCP_MODE_PRESENTATION,
-  type MCPMode,
+  type MCPServingMode,
+  mcpModeTitleKey,
 } from "@/components/mcp/mcpPolicy";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -25,7 +26,7 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
 interface Props {
-  readonly mode: MCPMode;
+  readonly mode: MCPServingMode;
   readonly expanded: boolean;
   readonly details: boolean;
   readonly onExpandedChange: (expanded: boolean) => void;
@@ -75,7 +76,7 @@ export function MCPCapabilityLadder({
           >
             {expanded
               ? t("settings.mcp.ladder.heading", {
-                  mode: t(`settings.mcp.policy.mode.${modeKey}.title`),
+                  mode: t(mcpModeTitleKey(mode)),
                 })
               : t(`settings.mcp.ladder.summary.${modeKey}`)}
           </span>
@@ -95,11 +96,13 @@ export function MCPCapabilityLadder({
       </div>
 
       <CollapsiblePanel>
-        {/* One list per tier, so a tier's "stops here" divider is a sibling of
-            the list it closes rather than content inside its last row. */}
-        {MCP_CAPABILITY_TIERS.map((tier) => (
-          <Fragment key={tier}>
-            <ul className="flex flex-col">
+        {/* One list, so the rows are announced as a single ordered set and a
+            row's position in it survives without sight — the prefix the design
+            rests on. Each divider is a presentational sibling of the rows it
+            closes, never content inside the last of them. */}
+        <ul className="flex flex-col">
+          {MCP_CAPABILITY_TIERS.map((tier) => (
+            <Fragment key={tier}>
               {rowsInTier(tier).map((row) => (
                 <LadderRow
                   key={row.id}
@@ -108,10 +111,12 @@ export function MCPCapabilityLadder({
                   details={details}
                 />
               ))}
-            </ul>
-            <TierDivider tier={tier} />
-          </Fragment>
-        ))}
+              <li role="presentation">
+                <TierDivider tier={tier} />
+              </li>
+            </Fragment>
+          ))}
+        </ul>
         {/* The floor is one line rather than a row: it is what no mode serves,
             so it has no mark and belongs to no tier. */}
         <p className="bg-error/5 px-3 py-2 text-sm text-error">
@@ -196,12 +201,12 @@ function LadderRow({
 function TierDivider({ tier }: { tier: MCPCapabilityTier }) {
   const { t } = useTranslation();
   return (
-    <p className="flex items-center gap-x-2 border-b border-block-border py-2 text-xs text-control-light">
+    <div className="flex items-center gap-x-2 border-b border-block-border py-2 text-xs text-control-light">
       <Separator className="flex-1" />
       <span className="uppercase tracking-wide">
         {t(`settings.mcp.ladder.stops.${tier}`)}
       </span>
       <Separator className="flex-1" />
-    </p>
+    </div>
   );
 }

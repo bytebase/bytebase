@@ -46,6 +46,10 @@ const ladder = (props: Partial<Parameters<typeof MCPCapabilityLadder>[0]>) => (
   />
 );
 
+const rowItems = (container: HTMLElement) => [
+  ...container.querySelectorAll("li:not([role='presentation'])"),
+];
+
 const servedIds = (container: HTMLElement) =>
   [...container.querySelectorAll("li")]
     .filter((item) => item.textContent?.includes("settings.mcp.ladder.tier."))
@@ -69,16 +73,17 @@ describe("MCPCapabilityLadder", () => {
       MCPSetting_Capability.READ_WRITE,
     ] as const) {
       const { container, unmount } = renderIntoContainer(ladder({ mode }));
-      expect(container.querySelectorAll("li")).toHaveLength(
-        MCP_CAPABILITY_ROWS.length
-      );
+      // One list, so a row's position is announced as "n of 8". The dividers
+      // live in it too but are presentational, so they do not inflate that
+      // count or shift a row's index.
+      expect(container.querySelectorAll("ul")).toHaveLength(1);
+      expect(rowItems(container)).toHaveLength(MCP_CAPABILITY_ROWS.length);
       for (const row of MCP_CAPABILITY_ROWS) {
         expect(container.textContent).toContain(
           `settings.mcp.ladder.row.${row.id}.title`
         );
       }
       unmount();
-      document.body.innerHTML = "";
     }
   });
 
@@ -99,7 +104,6 @@ describe("MCPCapabilityLadder", () => {
       "settings.mcp.ladder.tier.read"
     );
     readOnly.unmount();
-    document.body.innerHTML = "";
 
     const readWrite = renderIntoContainer(
       ladder({ mode: MCPSetting_Capability.READ_WRITE })
@@ -200,11 +204,14 @@ describe("MCPCapabilityLadder", () => {
   test("each tier is closed by a divider outside its rows, in list order", () => {
     const { container, unmount } = renderIntoContainer(ladder({}));
     for (const tier of ["read", "write"]) {
-      const divider = [...container.querySelectorAll("p")].find((node) =>
+      const divider = [...container.querySelectorAll("li")].find((node) =>
         node.textContent?.includes(`settings.mcp.ladder.stops.${tier}`)
       );
       expect(divider).toBeDefined();
-      expect(divider?.closest("li")).toBeNull();
+      // Its own item, and presentational: not content inside the row it closes,
+      // and not an item of the eight.
+      expect(divider?.getAttribute("role")).toBe("presentation");
+      expect(divider?.textContent).not.toContain("settings.mcp.ladder.row.");
     }
 
     const text = container.textContent ?? "";
@@ -229,7 +236,7 @@ describe("MCPCapabilityLadder", () => {
       ladder({ mode: MCPSetting_Capability.READ_ONLY })
     );
     const markOf = (rowId: string) => {
-      const item = [...container.querySelectorAll("li")].find((node) =>
+      const item = rowItems(container).find((node) =>
         node.textContent?.includes(`row.${rowId}.title`)
       );
       return [...(item?.querySelectorAll("span.sr-only") ?? [])]

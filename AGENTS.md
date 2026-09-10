@@ -22,7 +22,7 @@ Bytebase is the standard for database development. Every product and engineering
 - Metadata JSONB uses `protojson.Marshal`: keys are camelCase (`taskRun`), not proto snake_case (`task_run`).
 - Follow Google language style guides and AIPs for API/proto design. AIPs take precedence over the proto guide. Enum values use `HELLO`, not `TYPE_HELLO`.
 - Use American English. Avoid collection names ending in `List`.
-- Annotating an RPC `mcp_method_class = READ` or `WRITE` — on a new RPC or by reclassifying one — changes what an MCP access policy serves. Nothing enforces the wording, so check by hand that a capability row on the settings page still describes it, and reword a row, or add one, when none does. The method-to-row mapping is the row table in [docs/design/mcp-capability-ladder.md](docs/design/mcp-capability-ladder.md); update it in the same change. The row order and tier live in `frontend/src/components/mcp/mcpCapabilityRows.ts` and the copy in the `settings.mcp.ladder.row.*` strings, but neither records which methods a row covers. Those rows are the whole of what an admin reads when choosing a ceiling; a served method no row names is one the admin was never told about.
+- Annotating an RPC `mcp_method_class = READ` or `WRITE` also changes what the Access policy page promises, and nothing enforces that. Reread the row table in [docs/design/mcp-capability-ladder.md](docs/design/mcp-capability-ladder.md) — the only record of which methods a row covers — and reword a row, or add one, when none describes the method.
 
 ## Code comments
 

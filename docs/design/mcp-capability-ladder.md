@@ -67,23 +67,32 @@ the product.
 | Tier | Row | Sub-items shown | Backed by (code only) |
 |---|---|---|---|
 | read | Read schemas and metadata | Schemas · Databases and instances · Projects and database groups · Catalogs, changelogs and revisions · SQL review configs · Your own session and workspace facts | 31 READ methods: `DatabaseService` reads, projects, instances, database groups, catalogs, changelogs, revisions, review configs, session facts |
-| read | Read data by running queries | Run read-only queries · Under Read-only, a request is refused whole if any statement is not a read, and on engines other than PostgreSQL, CockroachDB and Redshift the check is by statement shape only · Query history · Saved queries and sheets | 9 READ methods: `SQLService/Query`, query history (4), saved-query reads (3), `GetSheet` |
+| read | Read data by running queries | Run read-only queries · Under Read-only, a request is refused whole unless every statement is shown to be a read that returns data; how deeply that can be checked varies by engine, and on some engines no statement can be shown to be a read at all · Your own query history · Your own saved queries and sheets | 9 READ methods: `SQLService/Query`, query history (4), saved-query reads (3), `GetSheet` |
 | read | Read the change workflow | Issues and comments · Plans and plan checks · Rollouts, task runs and logs · Releases · Rollback previews | 16 READ methods: issue, plan, rollout and release reads |
 | — | *Read-only stops here* | | 56 methods |
 | write | Propose changes | Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create and delete releases and revisions · Generate schema diffs. An agent never approves its own change; the project's approval policy decides whether a human must | 22 WRITE methods: sheet, plan, issue, release and revision writes, `RequestIssue`, `RunReview`, `DiffSchema`, `DiffMetadata` |
 | write | Run rollouts and tasks | Create a rollout · Run, skip or cancel its tasks, under the project's approval policy | 4 WRITE methods: `CreateRollout`, `BatchRunTasks`, `BatchSkipTasks`, `BatchCancelTaskRuns` |
-| write | Run DML and DDL statements | INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, where the engine checks each statement and the user may run it | Not a method: the statement clamp in `mcp_sql_clamp.go`, which Read-write lifts |
+| write | Run DML and DDL statements | INSERT, UPDATE, DELETE, CREATE, ALTER, DROP through queries, where the engine allows it and the user may run it. On engines Bytebase does not gate per statement, queries stay read-only whatever the mode | Not a method: the statement clamp in `mcp_sql_clamp.go`, which Read-write lifts |
 | write | Export query results | Download results as a file. Data leaves Bytebase | 1 WRITE method: `SQLService/Export` |
 | write | Manage database housekeeping | Sync instances and databases · Database settings and labels · Move databases between projects · Database groups · Saved queries | 14 WRITE methods: sync, `UpdateDatabase`, database groups, saved-query writes |
 | — | *Read-write stops here* | | 97 methods |
-| floor | Never, in any mode: approve issues, administer the workspace, or handle credentials. | | 121 methods: 35 FORBIDDEN, 86 EXCLUDED |
+| floor | Never, in any mode: approve issues, administer the workspace, handle credentials, open an admin connection, read other people's SQL, or send data to a third party. | | 121 methods: 35 FORBIDDEN, 86 EXCLUDED |
 
-Every row is displayed under every mode — served, or muted with a `—` — so **every row's wording
-must be true under every mode.** A claim whose truth depends on the mode either names the mode as a
-condition or belongs on the row whose served mark already encodes that condition. Row 2 is the only
-one that needed it: the read-only clamp holds only under Read-only (`mcpReadOnlyClampApplies`), and
-without the qualifier the row promised a whole-request refusal under Read-write while row 6 on the
-same screen offered INSERT and DROP.
+Every row is displayed under every mode — served, or muted with a `—` — and against every engine a
+workspace happens to hold, so **every row's wording must be true on both axes: mode and engine.** A
+claim whose truth depends on the mode names the mode as a condition; a claim whose truth depends on
+the engine says so without naming engines, because per-engine depth is out of scope for this card
+(see below) and an enumeration goes stale the release a driver changes.
+
+Both axes have already caught a row. On the mode axis, the read-only clamp holds only under
+Read-only (`mcpReadOnlyClampApplies`), so without its qualifier row 2 promised a whole-request
+refusal under Read-write while row 6 on the same screen offered INSERT and DROP. On the engine axis,
+an earlier draft of row 2 named PostgreSQL, CockroachDB and Redshift and said the check elsewhere was
+"by statement shape only" — false where an engine has no query validator at all, since
+`refuseNonReadOnlyStatement` bails before classification and refuses every statement, so Read-only
+serves no query there rather than a shallowly-checked one. Row 6 has the mirror of it: `Query`
+refuses non-reads on every engine outside `EngineSupportQueryNewACL`, whatever the ceiling, so
+raising the ceiling buys nothing there.
 
 Two choices in the wording are deliberate. Row 2 says *Read data by running queries* rather than
 "Run queries" so the verb stays Read and the sub-item carries the rule that keeps it true under
@@ -302,7 +311,8 @@ All strings, so the change and the locale files have one source. Keys under
   "making database changes through an AI agent, still capped by each user's own permissions".
 - Row titles and sub-items: the table above, verbatim.
 - Dividers: "Read-only stops here", "Read-write stops here".
-- Floor: "Never, in any mode: approve issues, administer the workspace, or handle credentials."
+- Floor: "Never, in any mode: approve issues, administer the workspace, handle credentials, open an admin connection, read other people's SQL, or send data to a third party." The six verbs are chosen to cover every denial reason in the classification, not to be short: three families —
+  READS_OTHER_USERS_SQL, OPENS_AN_ADMIN_CONNECTION and SENDS_DATA_TO_A_THIRD_PARTY — sat outside an earlier three-verb draft, leaving seven refused methods the line silently did not cover.
 - Tier badges: "read", "write".
 - Masking toggle: the three sentences in D8, including the engine-coverage limit.
 - Footer, clean: "Applies to every running session's next request." Dirty: "{from} → {to} applies
@@ -315,7 +325,7 @@ All strings, so the change and the locale files have one source. Keys under
 ### Frontend
 
 - New `MCPCapabilityLadder` beside `MCPAccessPolicySection.tsx`, props `mode`, `expanded`,
-  `details`, `onToggle`, `onToggleDetails`. It derives the served set from the mode by tier:
+  `details`, `onExpandedChange`, `onDetailsChange`. It derives the served set from the mode by tier:
   READ_ONLY serves the read rows, READ_WRITE both tiers, DISABLED none. No comparison logic.
 - Disclosure behavior belongs in a shared primitive per the UX contract. There is no
   `Collapsible` in `frontend/src/components/ui/` today; add one wrapping Base UI's Collapsible

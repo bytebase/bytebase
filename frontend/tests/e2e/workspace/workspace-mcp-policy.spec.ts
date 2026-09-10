@@ -65,7 +65,7 @@ async function readCapability(): Promise<string> {
 async function setCapability(capability: string): Promise<void> {
   await env.api.upsertSetting(
     "MCP",
-    { mcp: { ...originalMCPSetting, capability } },
+    { mcp: { capability } },
     "value.mcp.capability"
   );
 }
@@ -85,16 +85,17 @@ function chip(page: Page, mode: string) {
   return page.getByText(`Current policy: ${mode}`);
 }
 
-// The disclosure remembers itself per browser. A test asserting the collapsed
-// default has to establish it rather than inherit whatever the storage state
-// carries.
-async function resetDisclosure(page: Page): Promise<void> {
-  await page.evaluate(() => {
-    localStorage.removeItem("bb.mcp.ladder.open");
-    localStorage.removeItem("bb.mcp.ladder.details");
-  });
-  await page.reload();
-  await page.waitForLoadState("networkidle").catch(() => {});
+// The disclosure remembers itself per browser, so a case that asserts the
+// collapsed default states the precondition rather than assuming it. Proving it
+// beats forcing it: if a future setup-project run ever captures these keys into
+// .auth/state.json, this fails where a silent clear would have masked it.
+async function expectDisclosureUnset(page: Page): Promise<void> {
+  expect(
+    await page.evaluate(() => [
+      localStorage.getItem("bb.mcp.ladder.open"),
+      localStorage.getItem("bb.mcp.ladder.details"),
+    ])
+  ).toEqual([null, null]);
 }
 
 // The row's list item, so a title that also appears inside a summary sentence
@@ -135,9 +136,15 @@ test.beforeAll(async () => {
 });
 
 test.afterAll(async () => {
-  // Not best-effort: M3 persists Read-write on a shared server, and a silent
-  // restore failure would broaden what every later suite's MCP session may do.
-  // A failure here fails this run rather than poisoning the next one.
+  // Nothing was written if the snapshot never resolved, and PATCHing an absent
+  // body would fail with "mcp setting is required" — a second, misleading error
+  // stacked on the one that actually stopped the run.
+  if (!originalMCPSetting) {
+    return;
+  }
+  // Not best-effort otherwise: M3 persists Read-write on a shared server, and a
+  // silent restore failure would broaden what every later suite's MCP session
+  // may do. A failure here fails this run rather than poisoning the next one.
   await env.api.upsertSetting(
     "MCP",
     { mcp: originalMCPSetting },
@@ -152,8 +159,7 @@ test.describe("MCP access policy capability ladder", () => {
   }) => {
     await setCapability("READ_ONLY");
     await gotoMCPPage(page);
-    // This case asserts the collapsed default, so it establishes it.
-    await resetDisclosure(page);
+    await expectDisclosureUnset(page);
 
     await expect(chip(page, "Read-only")).toBeVisible();
     await expect(page.getByText(READ_ONLY_SUMMARY)).toBeVisible();
@@ -189,8 +195,8 @@ test.describe("MCP access policy capability ladder", () => {
   }) => {
     await setCapability("READ_ONLY");
     await gotoMCPPage(page);
-    // Owns its preconditions: this case asserts that details start hidden.
-    await resetDisclosure(page);
+    // Owns its precondition: this case asserts that details start hidden.
+    await expectDisclosureUnset(page);
     await openLadder(page);
 
     // Rows a mode does not serve stay visible and muted, so comparing two
@@ -241,8 +247,7 @@ test.describe("MCP access policy capability ladder", () => {
   }) => {
     await setCapability("READ_ONLY");
     await gotoMCPPage(page);
-    // Reload-based, so it runs before the editor opens.
-    await resetDisclosure(page);
+    await expectDisclosureUnset(page);
     await page.getByRole("button", { name: "Edit policy" }).click();
 
     // The cards are an icon, the mode name and a three-word caption; the

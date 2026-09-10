@@ -9,6 +9,7 @@ import {
   isServingMode,
   MCP_CAPABILITY_CHOICES,
   MCP_MODE_PRESENTATION,
+  mcpModeTitleKey,
 } from "@/components/mcp/mcpPolicy";
 import { PermissionGuard } from "@/components/PermissionGuard";
 import { Alert } from "@/components/ui/alert";
@@ -90,13 +91,15 @@ export function MCPAccessPolicySection() {
   // The masking toggle governs what an MCP session may unmask, and only a
   // serving mode admits one: mcpIgnoresMaskingExemptions answers on the
   // delegated grant an MCP request carries, so the stored flag is never read
-  // under Disabled — nor under a ceiling nobody has picked yet, which is why
-  // this asks what the mode admits rather than which mode it is not. The draft
-  // survives the detour, so picking a serving mode again brings back whatever
-  // was set.
+  // under Disabled — nor under a ceiling nobody has picked yet.
+  //
+  // Withholding the control is not enough on its own. Gating only the write
+  // drops an edit the admin did make; gating only the render writes one they
+  // can no longer see. Both are the same fault: the editor holding a value it
+  // is not showing. `pickMode` resets the draft instead, so what the form
+  // writes is always what the form displays.
   const maskingApplies = isServingMode(pick);
-  const maskingChanged =
-    maskingApplies && ignoreMasking !== storedIgnoreMasking;
+  const maskingChanged = ignoreMasking !== storedIgnoreMasking;
   const isDirty = editing && (pick !== storedMode || maskingChanged);
   // The section this replaced was registered in GeneralPage's guarded refs, so
   // moving it to its own route would otherwise drop the confirm an admin gets
@@ -107,9 +110,16 @@ export function MCPAccessPolicySection() {
   const canSave = isDirty && pick !== undefined;
 
   const modeLabel = (capability: MCPMode): string =>
-    t(
-      `settings.mcp.policy.mode.${MCP_MODE_PRESENTATION[capability].key}.title`
-    );
+    t(mcpModeTitleKey(capability));
+
+  // Picking a mode that admits no session returns the masking draft to the
+  // stored value, so nothing is pending behind a control the pick just hid.
+  const pickMode = (capability: MCPMode) => {
+    setPick(capability);
+    if (!isServingMode(capability)) {
+      setIgnoreMasking(storedIgnoreMasking);
+    }
+  };
 
   const save = async () => {
     if (pick === undefined) {
@@ -152,9 +162,9 @@ export function MCPAccessPolicySection() {
   // Disabled has no list, so it says its one sentence instead. Every other mode
   // discloses the same ladder in view and in edit; picking a mode while editing
   // renders exactly what the view will show once it is saved.
-  const disclosure = (mode: MCPMode, editingNow: boolean) => {
-    if (mode === MCPSetting_Capability.DISABLED) {
-      return editingNow ? (
+  const disclosure = (mode: MCPMode) => {
+    if (!isServingMode(mode)) {
+      return editing ? (
         <p className="rounded-sm bg-error/5 px-3 py-2 text-sm text-error">
           {t("settings.mcp.ladder.disabled")}
         </p>
@@ -224,14 +234,18 @@ export function MCPAccessPolicySection() {
                     mode: modeLabel(storedMode),
                   })}
                 />
-                {/* Withheld under Disabled for the same reason the toggle is:
-                    the chip asserts a restriction on MCP sessions, and there
-                    are none to restrict. */}
-                {storedIgnoreMasking && isServingMode(storedMode) && (
-                  <Badge variant="secondary">
-                    {t("settings.mcp.policy.masking.badge")}
-                  </Badge>
-                )}
+                {/* Withheld under Disabled for the same reason the toggle is —
+                    there are no sessions to restrict — and where masking is
+                    unlicensed, because the chip promises a restriction that
+                    nothing then applies. The consent page gates its own masking
+                    line on both for the same reason. */}
+                {storedIgnoreMasking &&
+                  isServingMode(storedMode) &&
+                  dataMaskingAvailable && (
+                    <Badge variant="secondary">
+                      {t("settings.mcp.policy.masking.badge")}
+                    </Badge>
+                  )}
               </div>
             )}
             <PermissionGuard permissions={["bb.settings.set"]}>
@@ -275,7 +289,7 @@ export function MCPAccessPolicySection() {
               onValueChange={(value) => {
                 const capability = Number(value) as MCPSetting_Capability;
                 if (isMCPMode(capability)) {
-                  setPick(capability);
+                  pickMode(capability);
                 }
               }}
             >
@@ -288,7 +302,7 @@ export function MCPAccessPolicySection() {
                     value={String(capability)}
                     // The item wraps the whole card in a label, so without this
                     // the radio's name absorbs the caption too.
-                    aria-label={t(`settings.mcp.policy.mode.${key}.title`)}
+                    aria-label={t(mcpModeTitleKey(capability))}
                     className={cn(
                       "h-full rounded-sm border px-3 py-2",
                       "focus-within:outline-hidden focus-within:ring-2 focus-within:ring-accent focus-within:ring-offset-2",
@@ -309,7 +323,7 @@ export function MCPAccessPolicySection() {
                     />
                     <span className="flex min-w-0 flex-col">
                       <span className="text-sm font-medium text-main">
-                        {t(`settings.mcp.policy.mode.${key}.title`)}
+                        {t(mcpModeTitleKey(capability))}
                       </span>
                       <span className="text-xs text-control-light">
                         {t(`settings.mcp.policy.mode.${key}.caption`)}
@@ -331,7 +345,7 @@ export function MCPAccessPolicySection() {
                     `settings.mcp.policy.mode.${MCP_MODE_PRESENTATION[pick].key}.best-for`
                   )}
                 </p>
-                {disclosure(pick, true)}
+                {disclosure(pick)}
               </>
             )}
 
@@ -378,7 +392,7 @@ export function MCPAccessPolicySection() {
             </div>
           </>
         ) : (
-          storedMode !== undefined && disclosure(storedMode, false)
+          storedMode !== undefined && disclosure(storedMode)
         )}
       </div>
     );

@@ -1,8 +1,9 @@
 import { ScrollText, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { Badge } from "@/components/ui/badge";
+import { MCPModeBadge } from "@/components/mcp/MCPModeBadge";
 import { Button } from "@/components/ui/button";
+import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
 
 interface Props {
   readonly workspaceTitle: string;
@@ -55,9 +56,7 @@ export function MCPConsentDisabled({
           <p className="text-sm text-control-light">
             {t("oauth2.consent.mcp.disabled.policy-label")}
           </p>
-          <Badge variant="destructive">
-            {t("settings.mcp.policy.mode.disabled.title")}
-          </Badge>
+          <MCPModeBadge mode={MCPSetting_Capability.DISABLED} />
         </div>
         <ul className="text-sm text-main flex flex-col gap-2">
           <li className="flex items-start gap-2">

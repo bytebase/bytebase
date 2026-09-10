@@ -61,11 +61,14 @@ export const MCP_CAPABILITY_TIERS: readonly MCPCapabilityTier[] = [
  */
 export const isRowServed = (mode: MCPMode, row: MCPCapabilityRow): boolean => {
   switch (mode) {
+    // Named tier by tier, and with no default arm, so a tier or a ceiling added
+    // later fails to compile here rather than silently resolving to served or
+    // refused for rows nobody has classified.
     case MCPSetting_Capability.READ_WRITE:
-      return true;
+      return row.tier === "read" || row.tier === "write";
     case MCPSetting_Capability.READ_ONLY:
       return row.tier === "read";
-    default:
+    case MCPSetting_Capability.DISABLED:
       return false;
   }
 };
