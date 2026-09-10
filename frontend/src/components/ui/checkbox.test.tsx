@@ -82,6 +82,33 @@ describe("Checkbox", () => {
     unmount();
   });
 
+  test("clicking an associated label emits true", () => {
+    const onCheckedChange = vi.fn();
+    const { container, unmount } = renderIntoContainer(
+      createElement(
+        "div",
+        undefined,
+        createElement(Checkbox, {
+          checked: false,
+          id: "show-inactive",
+          onCheckedChange,
+        }),
+        createElement(
+          "label",
+          { htmlFor: "show-inactive" },
+          "Show inactive accounts"
+        )
+      )
+    );
+
+    act(() => {
+      container.querySelector("label")?.click();
+    });
+
+    expect(onCheckedChange).toHaveBeenCalledWith(true);
+    unmount();
+  });
+
   test("click on checked emits false", () => {
     const onCheckedChange = vi.fn();
     const { container, unmount } = renderIntoContainer(

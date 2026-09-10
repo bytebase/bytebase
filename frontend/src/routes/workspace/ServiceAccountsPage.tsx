@@ -13,6 +13,7 @@ import { UserCell } from "@/components/UserCell";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { CopyButton } from "@/components/ui/copy-button";
 import { FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
@@ -274,6 +275,7 @@ function ServiceAccountTable({
                       <UserCell
                         title={sa.title}
                         subtitle={sa.email}
+                        subtitleAction={<CopyButton content={sa.email} />}
                         nameClassName={
                           isDeleted
                             ? "line-through !text-control-light"
@@ -806,15 +808,19 @@ export function ServiceAccountsPage({ projectId }: { projectId?: string }) {
         )}
 
         {/* Inactive toggle */}
-        <label className="flex items-center gap-x-2 text-sm cursor-pointer">
+        <div className="flex items-center gap-x-2 text-sm">
           <Checkbox
+            id="show-inactive-service-accounts"
             checked={showInactive}
             onCheckedChange={(checked) => setShowInactive(checked)}
           />
-          <span className="textinfolabel">
+          <label
+            className="cursor-pointer textinfolabel"
+            htmlFor="show-inactive-service-accounts"
+          >
             {t("settings.members.show-inactive")}
-          </span>
-        </label>
+          </label>
+        </div>
 
         {/* Inactive list */}
         {showInactive && (

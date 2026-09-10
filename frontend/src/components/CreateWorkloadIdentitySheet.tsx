@@ -1,12 +1,20 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { ChevronDown, ChevronUp } from "lucide-react";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Code, ConnectError } from "@connectrpc/connect";
+import { ChevronDown, ChevronUp, PlusIcon, XIcon } from "lucide-react";
+import { useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { RoleSelect } from "@/components/RoleSelect";
 import { Button } from "@/components/ui/button";
-import { FormField } from "@/components/ui/form";
+import { FormError, FormField } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Sheet,
   SheetBody,
@@ -15,6 +23,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { Tooltip } from "@/components/ui/tooltip";
 import { useProjectByName } from "@/hooks/useProjectByName";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
@@ -31,6 +40,7 @@ import {
   WorkloadIdentitySchema,
 } from "@/types/proto-es/v1/workload_identity_service_pb";
 import {
+  GENERATED_WORKFLOW_AUDIENCE,
   getWorkloadIdentityProviderText,
   hasProjectPermissionV2,
   hasWorkspacePermissionV2,
@@ -47,11 +57,11 @@ const PLATFORM_PRESETS: Partial<
 > = {
   [WorkloadIdentityConfig_ProviderType.GITHUB]: {
     issuerUrl: "https://token.actions.githubusercontent.com",
-    audience: "",
+    audience: GENERATED_WORKFLOW_AUDIENCE,
   },
   [WorkloadIdentityConfig_ProviderType.GITLAB]: {
     issuerUrl: "https://gitlab.com",
-    audience: "",
+    audience: GENERATED_WORKFLOW_AUDIENCE,
   },
 };
 
@@ -162,15 +172,39 @@ function WorkloadIdentityForm({
         : undefined,
     []
   );
+  // PROVIDER_TYPE_UNSPECIFIED names no platform, so the form has no tab to
+  // open on. The WIF backfill types rows whose subject prefix says which
+  // vocabulary they use; a row whose subject says neither, and a row an older
+  // replica writes after that backfill, still arrive untyped. Both open on the
+  // GitHub tab, and picking the platform types them on save.
+  const storedProviderType =
+    workloadIdentity?.workloadIdentityConfig?.providerType;
   const initialProviderType =
-    workloadIdentity?.workloadIdentityConfig?.providerType ??
-    WorkloadIdentityConfig_ProviderType.GITHUB;
+    storedProviderType === undefined ||
+    storedProviderType ===
+      WorkloadIdentityConfig_ProviderType.PROVIDER_TYPE_UNSPECIFIED
+      ? WorkloadIdentityConfig_ProviderType.GITHUB
+      : storedProviderType;
   const initialIssuerUrl =
     workloadIdentity?.workloadIdentityConfig?.issuerUrl ??
     PLATFORM_PRESETS[initialProviderType]?.issuerUrl ??
     "";
-  const initialAudience =
-    workloadIdentity?.workloadIdentityConfig?.allowedAudiences[0] ?? "";
+  const initialAudiences = useMemo(() => {
+    const audiences =
+      workloadIdentity?.workloadIdentityConfig?.allowedAudiences;
+    if (audiences?.length) return [...audiences];
+    // A new identity gets the audience the generated workflows request. A
+    // stored one the migration could not repair stays visibly empty: prefilling
+    // it would make the form look unchanged, leaving Update disabled and the
+    // operator unable to set the real value.
+    return [
+      workloadIdentity
+        ? ""
+        : (PLATFORM_PRESETS[initialProviderType]?.audience ?? ""),
+    ];
+  }, []);
+  const initialJwksUrl =
+    workloadIdentity?.workloadIdentityConfig?.jwksUrl ?? "";
   const initialSubjectPattern =
     workloadIdentity?.workloadIdentityConfig?.subjectPattern ?? "";
   const initialTitle = workloadIdentity?.title ?? "";
@@ -204,61 +238,117 @@ function WorkloadIdentityForm({
   const [branch, setBranch] = useState(initialBranch);
   const [refType, setRefType] = useState<RefType>(initialRefType);
   const [issuerUrl, setIssuerUrl] = useState(initialIssuerUrl);
-  const [audience, setAudience] = useState(initialAudience);
+  const [jwksUrl, setJwksUrl] = useState(initialJwksUrl);
+  const [audiences, setAudiences] = useState(initialAudiences);
   const [subjectPattern, setSubjectPattern] = useState(initialSubjectPattern);
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [roles, setRoles] = useState<string[]>([]);
   const [isRequesting, setIsRequesting] = useState(false);
+  const [serverError, setServerError] = useState<string>();
 
-  const isUpdatingFromPatternRef = useRef(false);
-  const isUpdatingFromFieldsRef = useRef(false);
+  const isGenericOIDC =
+    providerType === WorkloadIdentityConfig_ProviderType.OIDC;
 
-  useEffect(() => {
-    if (isUpdatingFromPatternRef.current) return;
-    isUpdatingFromFieldsRef.current = true;
+  // The subject pattern and the owner/repository/branch fields derive from
+  // each other, and each edit resolves in the handler that made it. An effect
+  // pair cannot: the guards it needs are set and cleared inside one
+  // synchronous effect body, so the sibling effect never observes them, and a
+  // subject typed in Advanced is overwritten by the recompute that the next
+  // render schedules. The GitHub arm of computeSubjectPattern cannot express a
+  // subject pinned to a tag, an environment or a pull request, so that
+  // recompute widens the binding to "repo:<owner>/<repo>:*".
+  const applyDerivedFields = (patch: {
+    providerType?: WorkloadIdentityConfig_ProviderType;
+    owner?: string;
+    repo?: string;
+    branch?: string;
+    refType?: RefType;
+  }) => {
+    if (patch.providerType !== undefined) setProviderType(patch.providerType);
+    if (patch.owner !== undefined) setOwner(patch.owner);
+    if (patch.repo !== undefined) setRepo(patch.repo);
+    if (patch.branch !== undefined) setBranch(patch.branch);
+    if (patch.refType !== undefined) setRefType(patch.refType);
     setSubjectPattern(
-      computeSubjectPattern(providerType, owner, repo, branch, refType)
+      computeSubjectPattern(
+        patch.providerType ?? providerType,
+        patch.owner ?? owner,
+        patch.repo ?? repo,
+        patch.branch ?? branch,
+        patch.refType ?? refType
+      )
     );
-    isUpdatingFromFieldsRef.current = false;
-  }, [owner, repo, branch, providerType, refType]);
+  };
 
-  useEffect(() => {
-    if (isUpdatingFromFieldsRef.current) return;
+  const handleSubjectPatternChange = (value: string) => {
+    setSubjectPattern(value);
     const parsed = parseWorkloadIdentitySubjectPattern({
-      workloadIdentityConfig: {
-        subjectPattern,
-        providerType,
-      },
+      workloadIdentityConfig: { subjectPattern: value, providerType },
     });
-    if (parsed) {
-      isUpdatingFromPatternRef.current = true;
-      setOwner(parsed.owner);
-      setRepo(parsed.repo);
-      setBranch(parsed.branch);
-      if ("refType" in parsed && parsed.refType) {
-        setRefType(parsed.refType);
-      }
-      isUpdatingFromPatternRef.current = false;
+    if (!parsed) return;
+    setOwner(parsed.owner);
+    setRepo(parsed.repo);
+    setBranch(parsed.branch);
+    if ("refType" in parsed && parsed.refType) {
+      setRefType(parsed.refType);
     }
-  }, [subjectPattern]);
+  };
 
   const handlePlatformChange = (value: WorkloadIdentityConfig_ProviderType) => {
-    setProviderType(value);
+    // Re-selecting the platform already shown changes nothing, and the reset
+    // below would drop the provider-default audience the WIF backfill records
+    // alongside "bytebase". A real change makes that value stale, so only a
+    // real change resets it.
+    if (value === providerType) {
+      return;
+    }
     const preset = PLATFORM_PRESETS[value];
     if (preset) {
       setIssuerUrl(preset.issuerUrl);
-      setAudience(preset.audience);
+      setAudiences([preset.audience]);
+      setJwksUrl("");
+      applyDerivedFields({ providerType: value, refType: "all", branch: "" });
+      return;
     }
+    // Generic OIDC composes nothing: its subject is typed, not derived.
+    setProviderType(value);
+    setIssuerUrl("");
+    setJwksUrl("");
+    setAudiences([""]);
+    setSubjectPattern("");
     setRefType("all");
     setBranch("");
   };
 
+  // Required-ness only, for every provider: the exchange refuses an identity
+  // with no audience or no subject whatever minted its tokens, so the form
+  // must not offer to save one. The configuration rules themselves live in
+  // validateWorkloadIdentityConfig, and its rejection is rendered below.
   const isFormValid = useMemo(() => {
     if (!emailPrefix && !workloadIdentity?.email) return false;
-    if (!owner) return false;
-    if (!issuerUrl) return false;
+    if (!issuerUrl.trim()) return false;
+    if (!audiences.length) return false;
+    if (!audiences.every((audience) => audience.trim())) return false;
+    if (!subjectPattern.trim()) return false;
+    if (!isGenericOIDC && !owner) return false;
     return true;
-  }, [emailPrefix, workloadIdentity?.email, owner, issuerUrl]);
+  }, [
+    emailPrefix,
+    workloadIdentity?.email,
+    isGenericOIDC,
+    issuerUrl,
+    audiences,
+    subjectPattern,
+    owner,
+  ]);
+
+  const isWorkloadIdentityConfigDirty =
+    providerType !== initialProviderType ||
+    issuerUrl !== initialIssuerUrl ||
+    jwksUrl !== initialJwksUrl ||
+    audiences.length !== initialAudiences.length ||
+    audiences.some((audience, index) => audience !== initialAudiences[index]) ||
+    subjectPattern !== initialSubjectPattern;
 
   // Dirty tracking — compare current state to the initial values captured
   // at mount. In edit mode the Update button is disabled unless something
@@ -266,38 +356,30 @@ function WorkloadIdentityForm({
   const isDirty = useMemo(() => {
     if (!isEditMode) return true;
     if (title !== initialTitle) return true;
-    if (providerType !== initialProviderType) return true;
     if (owner !== initialOwner) return true;
     if (repo !== initialRepo) return true;
     if (branch !== initialBranch) return true;
     if (refType !== initialRefType) return true;
-    if (issuerUrl !== initialIssuerUrl) return true;
-    if (audience !== initialAudience) return true;
-    if (subjectPattern !== initialSubjectPattern) return true;
-    return false;
+    return isWorkloadIdentityConfigDirty;
   }, [
     isEditMode,
     title,
-    providerType,
     owner,
     repo,
     branch,
     refType,
-    issuerUrl,
-    audience,
-    subjectPattern,
     initialTitle,
-    initialProviderType,
     initialOwner,
     initialRepo,
     initialBranch,
     initialRefType,
-    initialIssuerUrl,
-    initialAudience,
-    initialSubjectPattern,
+    isWorkloadIdentityConfigDirty,
   ]);
 
   const allowConfirm = isFormValid && isDirty;
+  const allowedAudiences = audiences
+    .map((audience) => audience.trim())
+    .filter(Boolean);
 
   const requiredPermission = isEditMode
     ? "bb.workloadIdentities.update"
@@ -312,14 +394,21 @@ function WorkloadIdentityForm({
   const handleSubmit = async () => {
     if (!allowConfirm || !hasPermission) return;
     setIsRequesting(true);
+    setServerError(undefined);
     try {
       if (isEditMode) {
         await handleUpdate();
       } else {
         await handleCreate();
       }
-    } catch {
-      // error shown by store
+    } catch (err) {
+      // A rejected configuration is shown beside the fields, not only as the
+      // toast every failed call gets. The message names the field, which for a
+      // GitHub or GitLab identity is under Advanced Settings.
+      if (err instanceof ConnectError && err.code === Code.InvalidArgument) {
+        setServerError(err.rawMessage);
+        setShowAdvanced(true);
+      }
     } finally {
       setIsRequesting(false);
     }
@@ -360,7 +449,8 @@ function WorkloadIdentityForm({
         workloadIdentityConfig: create(WorkloadIdentityConfigSchema, {
           providerType,
           issuerUrl,
-          allowedAudiences: audience ? [audience] : [],
+          jwksUrl,
+          allowedAudiences,
           subjectPattern,
         }),
       },
@@ -404,12 +494,18 @@ function WorkloadIdentityForm({
         workloadIdentityConfig: create(WorkloadIdentityConfigSchema, {
           providerType,
           issuerUrl,
-          allowedAudiences: audience ? [audience] : [],
+          jwksUrl,
+          allowedAudiences,
           subjectPattern,
         }),
       }),
       create(FieldMaskSchema, {
-        paths: [...updateMask, "workload_identity_config"],
+        paths: [
+          ...updateMask,
+          ...(isWorkloadIdentityConfigDirty
+            ? ["workload_identity_config"]
+            : []),
+        ],
       })
     );
 
@@ -424,9 +520,63 @@ function WorkloadIdentityForm({
 
   const isGitLab = providerType === WorkloadIdentityConfig_ProviderType.GITLAB;
   const showBranchField =
-    providerType === WorkloadIdentityConfig_ProviderType.GITHUB ||
-    refType !== "all";
+    !isGenericOIDC &&
+    (providerType === WorkloadIdentityConfig_ProviderType.GITHUB ||
+      refType !== "all");
   const isTagRefType = isGitLab && refType === "tag";
+
+  const audienceInputs = (
+    <div className="flex flex-col gap-y-2">
+      {audiences.map((audience, index) => (
+        <div key={index} className="flex items-center gap-x-2">
+          <Input
+            value={audience}
+            aria-label={`${t("settings.members.workload-identity-audience")} ${index + 1}`}
+            onChange={(event) => {
+              const value = event.target.value;
+              setAudiences((current) =>
+                current.map((item, itemIndex) =>
+                  itemIndex === index ? value : item
+                )
+              );
+            }}
+            maxLength={500}
+            autoComplete="off"
+          />
+          {audiences.length > 1 && (
+            <Tooltip content={t("common.remove")}>
+              <Button
+                type="button"
+                appearance="outline"
+                size="md"
+                className="aspect-square p-0"
+                aria-label={t("common.remove")}
+                onClick={() =>
+                  setAudiences((current) =>
+                    current.filter((_, itemIndex) => itemIndex !== index)
+                  )
+                }
+              >
+                <XIcon className="size-4" />
+              </Button>
+            </Tooltip>
+          )}
+        </div>
+      ))}
+      <Tooltip content={t("common.add")}>
+        <Button
+          type="button"
+          appearance="outline"
+          size="md"
+          className="aspect-square p-0"
+          aria-label={t("common.add")}
+          onClick={() => setAudiences((current) => [...current, ""])}
+        >
+          <PlusIcon className="size-4" />
+        </Button>
+      </Tooltip>
+    </div>
+  );
 
   return (
     <>
@@ -490,71 +640,88 @@ function WorkloadIdentityForm({
               </>
             }
           >
-            <select
-              value={providerType}
-              onChange={(e) =>
+            <Select
+              value={String(providerType)}
+              onValueChange={(value) =>
                 handlePlatformChange(
-                  Number(e.target.value) as WorkloadIdentityConfig_ProviderType
+                  Number(value) as WorkloadIdentityConfig_ProviderType
                 )
               }
-              className="border border-control-border rounded-xs text-sm px-2 py-2 bg-background"
             >
-              {[
-                WorkloadIdentityConfig_ProviderType.GITHUB,
-                WorkloadIdentityConfig_ProviderType.GITLAB,
-              ].map((pt) => (
-                <option key={pt} value={pt}>
-                  {getWorkloadIdentityProviderText(pt)}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger className="w-full">
+                <SelectValue>
+                  {getWorkloadIdentityProviderText(
+                    providerType,
+                    t("settings.members.workload-identity-generic-oidc")
+                  )}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {[
+                  WorkloadIdentityConfig_ProviderType.GITHUB,
+                  WorkloadIdentityConfig_ProviderType.GITLAB,
+                  WorkloadIdentityConfig_ProviderType.OIDC,
+                ].map((pt) => (
+                  <SelectItem key={pt} value={String(pt)}>
+                    {getWorkloadIdentityProviderText(
+                      pt,
+                      t("settings.members.workload-identity-generic-oidc")
+                    )}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </FormField>
 
           {/* Owner / Group */}
-          <FormField
-            title={
-              <>
-                {isGitLab
-                  ? t("settings.members.workload-identity-group")
-                  : t("settings.members.workload-identity-owner")}
-                <span className="ml-0.5 text-error">*</span>
-              </>
-            }
-          >
-            <Input
-              value={owner}
-              onChange={(e) => setOwner(e.target.value)}
-              placeholder={isGitLab ? "my-group" : "my-org"}
-              maxLength={200}
-              autoComplete="off"
-            />
-          </FormField>
+          {!isGenericOIDC && (
+            <FormField
+              title={
+                <>
+                  {isGitLab
+                    ? t("settings.members.workload-identity-group")
+                    : t("settings.members.workload-identity-owner")}
+                  <span className="ml-0.5 text-error">*</span>
+                </>
+              }
+            >
+              <Input
+                value={owner}
+                onChange={(e) => applyDerivedFields({ owner: e.target.value })}
+                placeholder={isGitLab ? "my-group" : "my-org"}
+                maxLength={200}
+                autoComplete="off"
+              />
+            </FormField>
+          )}
 
           {/* Repository / Project */}
-          <FormField
-            title={
-              <>
-                {isGitLab
-                  ? t("settings.members.workload-identity-project")
-                  : t("settings.members.workload-identity-repo")}
-              </>
-            }
-            description={
-              <>
-                {isGitLab
-                  ? t("settings.members.workload-identity-project-hint")
-                  : t("settings.members.workload-identity-repo-hint")}
-              </>
-            }
-          >
-            <Input
-              value={repo}
-              onChange={(e) => setRepo(e.target.value)}
-              placeholder={isGitLab ? "my-project" : "my-repo"}
-              maxLength={200}
-              autoComplete="off"
-            />
-          </FormField>
+          {!isGenericOIDC && (
+            <FormField
+              title={
+                <>
+                  {isGitLab
+                    ? t("settings.members.workload-identity-project")
+                    : t("settings.members.workload-identity-repo")}
+                </>
+              }
+              description={
+                <>
+                  {isGitLab
+                    ? t("settings.members.workload-identity-project-hint")
+                    : t("settings.members.workload-identity-repo-hint")}
+                </>
+              }
+            >
+              <Input
+                value={repo}
+                onChange={(e) => applyDerivedFields({ repo: e.target.value })}
+                placeholder={isGitLab ? "my-project" : "my-repo"}
+                maxLength={200}
+                autoComplete="off"
+              />
+            </FormField>
+          )}
 
           {/* Allowed Branches/Tags (GitLab only) */}
           {isGitLab && (
@@ -567,21 +734,38 @@ function WorkloadIdentityForm({
                 </>
               }
             >
-              <select
+              <Select
                 value={refType}
-                onChange={(e) => setRefType(e.target.value as RefType)}
-                className="border border-control-border rounded-xs text-sm px-2 py-2 bg-background"
+                onValueChange={(value) => {
+                  if (value !== null)
+                    applyDerivedFields({ refType: value as RefType });
+                }}
               >
-                <option value="all">
-                  {t("settings.members.workload-identity-all-branches-tags")}
-                </option>
-                <option value="branch">
-                  {t("settings.members.workload-identity-specific-branch")}
-                </option>
-                <option value="tag">
-                  {t("settings.members.workload-identity-specific-tag")}
-                </option>
-              </select>
+                <SelectTrigger className="w-full">
+                  <SelectValue>
+                    {refType === "all"
+                      ? t(
+                          "settings.members.workload-identity-all-branches-tags"
+                        )
+                      : refType === "branch"
+                        ? t(
+                            "settings.members.workload-identity-specific-branch"
+                          )
+                        : t("settings.members.workload-identity-specific-tag")}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">
+                    {t("settings.members.workload-identity-all-branches-tags")}
+                  </SelectItem>
+                  <SelectItem value="branch">
+                    {t("settings.members.workload-identity-specific-branch")}
+                  </SelectItem>
+                  <SelectItem value="tag">
+                    {t("settings.members.workload-identity-specific-tag")}
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </FormField>
           )}
 
@@ -605,7 +789,7 @@ function WorkloadIdentityForm({
             >
               <Input
                 value={branch}
-                onChange={(e) => setBranch(e.target.value)}
+                onChange={(e) => applyDerivedFields({ branch: e.target.value })}
                 placeholder={isTagRefType ? "v1.0.0" : "main"}
                 maxLength={200}
                 autoComplete="off"
@@ -613,8 +797,83 @@ function WorkloadIdentityForm({
             </FormField>
           )}
 
+          {/* Audience */}
+          {!isGenericOIDC && (
+            <FormField
+              title={
+                <>
+                  {t("settings.members.workload-identity-audience")}
+                  <span className="ml-0.5 text-error">*</span>
+                </>
+              }
+              description={
+                <>{t("settings.members.workload-identity-audience-hint")}</>
+              }
+            >
+              {audienceInputs}
+            </FormField>
+          )}
+
+          {isGenericOIDC && (
+            <>
+              <FormField
+                title={
+                  <>
+                    {t("settings.members.workload-identity-issuer")}
+                    <span className="ml-0.5 text-error">*</span>
+                  </>
+                }
+              >
+                <Input
+                  value={issuerUrl}
+                  onChange={(e) => setIssuerUrl(e.target.value)}
+                  maxLength={500}
+                  autoComplete="off"
+                />
+              </FormField>
+
+              <FormField
+                title={<>{t("settings.members.workload-identity-jwks-url")}</>}
+              >
+                <Input
+                  value={jwksUrl}
+                  onChange={(e) => setJwksUrl(e.target.value)}
+                  maxLength={500}
+                  autoComplete="off"
+                />
+              </FormField>
+
+              <FormField
+                title={
+                  <>
+                    {t("settings.members.workload-identity-audience")}
+                    <span className="ml-0.5 text-error">*</span>
+                  </>
+                }
+              >
+                {audienceInputs}
+              </FormField>
+
+              <FormField
+                title={
+                  <>
+                    {t("settings.members.workload-identity-subject")}
+                    <span className="ml-0.5 text-error">*</span>
+                  </>
+                }
+              >
+                <Input
+                  value={subjectPattern}
+                  onChange={(e) => setSubjectPattern(e.target.value)}
+                  maxLength={500}
+                  autoComplete="off"
+                />
+              </FormField>
+            </>
+          )}
+
           {/* Advanced Settings */}
-          {showAdvanced && (
+          {!isGenericOIDC && showAdvanced && (
             <div className="flex flex-col gap-y-6 pt-6 border-t">
               {/* Issuer URL / GitLab URL */}
               <FormField
@@ -637,25 +896,18 @@ function WorkloadIdentityForm({
                 />
               </FormField>
 
-              {/* Audience */}
-              <FormField
-                title={<>{t("settings.members.workload-identity-audience")}</>}
-              >
-                <Input
-                  value={audience}
-                  onChange={(e) => setAudience(e.target.value)}
-                  maxLength={500}
-                  autoComplete="off"
-                />
-              </FormField>
-
               {/* Subject Pattern */}
               <FormField
-                title={<>{t("settings.members.workload-identity-subject")}</>}
+                title={
+                  <>
+                    {t("settings.members.workload-identity-subject")}
+                    <span className="ml-0.5 text-error">*</span>
+                  </>
+                }
               >
                 <Input
                   value={subjectPattern}
-                  onChange={(e) => setSubjectPattern(e.target.value)}
+                  onChange={(e) => handleSubjectPatternChange(e.target.value)}
                   maxLength={500}
                   autoComplete="off"
                 />
@@ -663,19 +915,28 @@ function WorkloadIdentityForm({
             </div>
           )}
 
+          {serverError && (
+            <FormError>
+              {t("settings.members.workload-identity-config-rejected")}{" "}
+              {serverError}
+            </FormError>
+          )}
+
           {/* Advanced Settings Toggle */}
-          <button
-            type="button"
-            className="flex items-center gap-x-1 text-sm text-accent hover:underline w-fit"
-            onClick={() => setShowAdvanced(!showAdvanced)}
-          >
-            {t("settings.members.workload-identity-advanced")}
-            {showAdvanced ? (
-              <ChevronUp className="size-4" />
-            ) : (
-              <ChevronDown className="size-4" />
-            )}
-          </button>
+          {!isGenericOIDC && (
+            <button
+              type="button"
+              className="flex items-center gap-x-1 text-sm text-accent hover:underline w-fit"
+              onClick={() => setShowAdvanced(!showAdvanced)}
+            >
+              {t("settings.members.workload-identity-advanced")}
+              {showAdvanced ? (
+                <ChevronUp className="size-4" />
+              ) : (
+                <ChevronDown className="size-4" />
+              )}
+            </button>
+          )}
         </div>
       </SheetBody>
 

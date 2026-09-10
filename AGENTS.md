@@ -28,6 +28,7 @@ This repo uses a single-context domain-doc layout. See `docs/agents/domain.md`.
 - Database migration files are in `./backend/migrator/<<version>>/`
   - `TestLatestVersion` in `./backend/migrator/migrator_test.go` needs update after new migration files are added
   - `./backend/migrator/migration/LATEST.sql` should be updated for DDL migrations
+- A release-patch metadata backport uses `migration/<next-main-migration>-backport/` and a four-digit ordinal, so `migration/3.23.1-backport/0000##workload_identity_audiences.sql` is `3.23.1-backport.0`. Allocate it strictly between the highest metadata version shipped on the release branch and the first main migration that branch still needs, increment the ordinal for later backports, and retain every prior file. The prerelease is migration-order metadata, not an unstable product release. If it needs a Go step, the `goMigrations` key must match the full parsed version, including its prerelease and ordinal.
 - Files in `./backend/store` are mappings to the database tables
 
 Anything that writes SQL against the metadata database is governed by

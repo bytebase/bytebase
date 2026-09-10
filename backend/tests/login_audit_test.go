@@ -535,6 +535,7 @@ func TestAuditLogFormat(t *testing.T) {
 			Title: "Audit reset workload identity",
 			WorkloadIdentityConfig: &v1pb.WorkloadIdentityConfig{
 				ProviderType:     v1pb.WorkloadIdentityConfig_GITHUB,
+				IssuerUrl:        "https://token.actions.githubusercontent.com",
 				AllowedAudiences: []string{"audit-reset"},
 				SubjectPattern:   "repo:bytebase/bytebase:*",
 			},

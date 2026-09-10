@@ -1,10 +1,39 @@
 package wif
 
 import (
+	"context"
+	"encoding/base64"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
+
+func TestValidateTokenRejectsExcessivelyNestedProtectedHeader(t *testing.T) {
+	// This is deliberately a bounded input slightly above go-jose's documented
+	// JSON nesting limit. It exercises the WIF entry point without reproducing
+	// an unbounded parser workload.
+	const nesting = 10_001
+	protectedHeader := `{"alg":"RS256","nested":` + strings.Repeat("[", nesting) + "0" + strings.Repeat("]", nesting) + "}"
+	token := base64.RawURLEncoding.EncodeToString([]byte(protectedHeader)) + ".e30."
+
+	_, err := ValidateToken(context.Background(), token, githubConfig())
+	require.ErrorContains(t, err, "failed to parse token")
+	require.ErrorContains(t, err, "exceeded max depth")
+}
+
+func TestValidateTokenRejectsOutOfRangeNumericDate(t *testing.T) {
+	key := seedIssuer(t)
+	config := githubConfig()
+	// The token is correctly signed and otherwise bound to this identity. Its
+	// out-of-range NumericDate must be rejected while decoding registered
+	// claims, before WIF applies its identity bindings.
+	payload := `{"iss":"` + testIssuer + `","sub":"repo:acme-corp/deploy:ref:refs/heads/main","aud":"bytebase","nbf":1e19,"exp":4102444800}`
+
+	_, err := ValidateToken(context.Background(), signRawClaimsToken(t, key, payload), config)
+	require.ErrorContains(t, err, "failed to verify token signature")
+	require.ErrorContains(t, err, "expected number value to unmarshal NumericDate")
+}
 
 func TestMatchSubjectPattern(t *testing.T) {
 	tests := []struct {
@@ -14,9 +43,44 @@ func TestMatchSubjectPattern(t *testing.T) {
 		expected bool
 	}{
 		{
-			name:     "empty pattern matches any subject",
+			name:     "empty pattern matches nothing",
 			subject:  "repo:owner/repo:ref:refs/heads/main",
 			pattern:  "",
+			expected: false,
+		},
+		{
+			name:     "bare wildcard matches nothing",
+			subject:  "repo:owner/repo:ref:refs/heads/main",
+			pattern:  "*",
+			expected: false,
+		},
+		{
+			// A trailing "*" is a prefix test, so "repo:*" is every repository
+			// on the issuer: the same hole as "*", refused the same way.
+			name:     "wildcard over every repository matches nothing",
+			subject:  "repo:owner/repo:ref:refs/heads/main",
+			pattern:  "repo:*",
+			expected: false,
+		},
+		{
+			name:     "wildcard over a partial owner matches nothing",
+			subject:  "repo:owner/repo:ref:refs/heads/main",
+			pattern:  "repo:own*",
+			expected: false,
+		},
+		{
+			// "r*" stops inside "repo:", so it addresses every repository the
+			// issuer signs whatever the row calls itself.
+			name:     "wildcard inside the marker matches nothing",
+			subject:  "repo:owner/repo:ref:refs/heads/main",
+			pattern:  "r*",
+			expected: false,
+		},
+		{
+			// Not a modelled vocabulary, so the owner rule does not apply.
+			name:     "custom issuer wildcard still matches by prefix",
+			subject:  "system:serviceaccount:prod:deployer",
+			pattern:  "system:serviceaccount:prod:*",
 			expected: true,
 		},
 		{
@@ -185,7 +249,7 @@ func TestValidateIssuerURL(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := validateIssuerURL(tc.issuerURL)
+			err := ValidateIssuerURL(tc.issuerURL)
 			if tc.wantErr {
 				require.Error(t, err)
 			} else {

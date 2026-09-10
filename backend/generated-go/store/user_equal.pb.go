@@ -84,5 +84,8 @@ func (x *WorkloadIdentityConfig) Equal(y *WorkloadIdentityConfig) bool {
 	if x.SubjectPattern != y.SubjectPattern {
 		return false
 	}
+	if x.JwksUrl != y.JwksUrl {
+		return false
+	}
 	return true
 }
