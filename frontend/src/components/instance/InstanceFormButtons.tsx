@@ -89,6 +89,7 @@ export function InstanceFormButtons({
     readonlyDataSourceList,
     setDataSourceEditState,
     resetDataSource,
+    emitDataSourceReset,
     hasReadonlyReplicaFeature,
     setMissingFeature,
     testConnection,
@@ -505,6 +506,7 @@ export function InstanceFormButtons({
         .getState()
         .getInstanceByName(inst.name);
       updateEditState(updatedInstance);
+      emitDataSourceReset();
       pushNotification({
         module: "bytebase",
         style: "SUCCESS",

@@ -1661,18 +1661,19 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                         onHostChange={handleAdditionalAddressHostChange}
                         onPortChange={handleAdditionalAddressPortChange}
                       />
-                      {adminDataSource.redisType ===
-                        DataSource_RedisType.SENTINEL &&
-                        editingDataSource && (
-                          <RedisSentinelFields
-                            dataSource={editingDataSource}
-                            isCreating={isCreating}
-                            allowEdit={allowEdit}
-                            allowUsingEmptyPassword={allowUsingEmptyPassword}
-                            onDataSourceChange={handleDataSourceChange}
-                          />
-                        )}
                     </fieldset>
+                  </ResponsiveFormLayout>
+                )}
+                {editingDataSource?.redisType ===
+                  DataSource_RedisType.SENTINEL && (
+                  <ResponsiveFormLayout className="mt-2">
+                    <RedisSentinelFields
+                      dataSource={editingDataSource}
+                      isCreating={isCreating}
+                      allowEdit={allowEdit}
+                      allowUsingEmptyPassword={allowUsingEmptyPassword}
+                      onDataSourceChange={handleDataSourceChange}
+                    />
                   </ResponsiveFormLayout>
                 )}
               </FormField>
