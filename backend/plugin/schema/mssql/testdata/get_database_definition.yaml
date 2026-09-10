@@ -836,93 +836,23 @@
         ALLOW_PAGE_LOCKS = OFF
     );
 
-- description: users_posts
+- description: basic_tables_with_constraints
   metadata: |
     {
       "schemas": [
         {
+          "name": "dbo"
+        },
+        {
           "name": "test_schema",
           "tables": [
-            {
-              "name": "users",
-              "columns": [
-                {
-                  "name": "id",
-                  "position": 1,
-                  "type": "INT",
-                  "is_identity": true,
-                  "identity_seed": 1,
-                  "identity_increment": 1
-                },
-                {
-                  "name": "email",
-                  "position": 2,
-                  "type": "VARCHAR(255)"
-                },
-                {
-                  "name": "created_at",
-                  "position": 3,
-                  "default": "GETDATE()",
-                  "nullable": true,
-                  "type": "DATETIME2"
-                },
-                {
-                  "name": "is_active",
-                  "position": 4,
-                  "default": "1",
-                  "nullable": true,
-                  "type": "BIT"
-                },
-                {
-                  "name": "age",
-                  "position": 5,
-                  "nullable": true,
-                  "type": "INT"
-                },
-                {
-                  "name": "computed_column",
-                  "position": 6,
-                  "nullable": true
-                }
-              ],
-              "indexes": [
-                {
-                  "name": "PK_users_1",
-                  "expressions": [
-                    "id"
-                  ],
-                  "descending": [
-                    false
-                  ],
-                  "unique": true,
-                  "primary": true,
-                  "is_constraint": true
-                },
-                {
-                  "name": "UQ_users_2",
-                  "expressions": [
-                    "email"
-                  ],
-                  "descending": [
-                    false
-                  ],
-                  "unique": true,
-                  "is_constraint": true
-                }
-              ],
-              "check_constraints": [
-                {
-                  "expression": "age \u003e= 18"
-                }
-              ]
-            },
             {
               "name": "posts",
               "columns": [
                 {
                   "name": "id",
                   "position": 1,
-                  "type": "INT",
+                  "type": "int",
                   "is_identity": true,
                   "identity_seed": 1,
                   "identity_increment": 1
@@ -930,32 +860,46 @@
                 {
                   "name": "user_id",
                   "position": 2,
-                  "type": "INT"
+                  "type": "int"
                 },
                 {
                   "name": "title",
                   "position": 3,
-                  "type": "NVARCHAR(200)"
+                  "type": "nvarchar(200)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
                 },
                 {
                   "name": "content",
                   "position": 4,
                   "nullable": true,
-                  "type": "NVARCHAR(MAX)"
+                  "type": "nvarchar(max)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
                 }
               ],
               "indexes": [
                 {
-                  "name": "PK_posts_3",
+                  "name": "PK__posts__3213E83F982F55CE",
                   "expressions": [
                     "id"
                   ],
                   "descending": [
                     false
                   ],
+                  "type": "CLUSTERED",
                   "unique": true,
                   "primary": true,
                   "is_constraint": true
+                },
+                {
+                  "name": "idx_posts_title",
+                  "expressions": [
+                    "title"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "NONCLUSTERED",
+                  "unique": true
                 },
                 {
                   "name": "idx_posts_user_id",
@@ -966,16 +910,6 @@
                     false
                   ],
                   "type": "NONCLUSTERED"
-                },
-                {
-                  "name": "idx_posts_title",
-                  "expressions": [
-                    "title"
-                  ],
-                  "descending": [
-                    false
-                  ],
-                  "unique": true
                 }
               ],
               "foreign_keys": [
@@ -993,6 +927,86 @@
                   "on_update": "NO ACTION"
                 }
               ]
+            },
+            {
+              "name": "users",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "int",
+                  "is_identity": true,
+                  "identity_seed": 1,
+                  "identity_increment": 1
+                },
+                {
+                  "name": "email",
+                  "position": 2,
+                  "type": "varchar(255)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
+                },
+                {
+                  "name": "created_at",
+                  "position": 3,
+                  "default": "(getdate())",
+                  "nullable": true,
+                  "type": "datetime2(7)",
+                  "default_constraint_name": "DF__users__created_a__38996AB5"
+                },
+                {
+                  "name": "is_active",
+                  "position": 4,
+                  "default": "((1))",
+                  "nullable": true,
+                  "type": "bit",
+                  "default_constraint_name": "DF__users__is_active__398D8EEE"
+                },
+                {
+                  "name": "age",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "computed_column",
+                  "position": 6,
+                  "nullable": true,
+                  "type": "AS ([id]*(2)) PERSISTED"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PK__users__3213E83F9332C18C",
+                  "expressions": [
+                    "id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "CLUSTERED",
+                  "unique": true,
+                  "primary": true,
+                  "is_constraint": true
+                },
+                {
+                  "name": "UQ__users__AB6E616484F069E2",
+                  "expressions": [
+                    "email"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "NONCLUSTERED",
+                  "unique": true,
+                  "is_constraint": true
+                }
+              ],
+              "check_constraints": [
+                {
+                  "name": "CK__users__age__3A81B327",
+                  "expression": "([age]\u003e=(18))"
+                }
+              ]
             }
           ]
         }
@@ -1003,24 +1017,29 @@
     GO
 
     CREATE TABLE [test_schema].[users] (
-        [id] INT IDENTITY(1,1) NOT NULL,
-        [email] VARCHAR(255) NOT NULL,
-        [created_at] DATETIME2 DEFAULT GETDATE(),
-        [is_active] BIT DEFAULT 1,
-        [age] INT,
-        [computed_column] ,
-        CONSTRAINT [PK_users_1] PRIMARY KEY ([id] ASC),
-        CONSTRAINT [UQ_users_2] UNIQUE ([email] ASC),
-        CONSTRAINT [] CHECK age >= 18
+        [id] int IDENTITY(1,1) NOT NULL,
+        [email] varchar(255) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+        [created_at] datetime2(7) DEFAULT (getdate()),
+        [is_active] bit DEFAULT ((1)),
+        [age] int,
+        [computed_column] AS ([id]*(2)) PERSISTED,
+        CONSTRAINT [PK__users__3213E83F9332C18C] PRIMARY KEY CLUSTERED ([id] ASC),
+        CONSTRAINT [UQ__users__AB6E616484F069E2] UNIQUE NONCLUSTERED ([email] ASC),
+        CONSTRAINT [CK__users__age__3A81B327] CHECK ([age]>=(18))
     );
 
     CREATE TABLE [test_schema].[posts] (
-        [id] INT IDENTITY(1,1) NOT NULL,
-        [user_id] INT NOT NULL,
-        [title] NVARCHAR(200) NOT NULL,
-        [content] NVARCHAR(MAX),
-        CONSTRAINT [PK_posts_3] PRIMARY KEY ([id] ASC),
+        [id] int IDENTITY(1,1) NOT NULL,
+        [user_id] int NOT NULL,
+        [title] nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+        [content] nvarchar(max) COLLATE SQL_Latin1_General_CP1_CI_AS,
+        CONSTRAINT [PK__posts__3213E83F982F55CE] PRIMARY KEY CLUSTERED ([id] ASC),
         CONSTRAINT [FK_posts_users] FOREIGN KEY ([user_id]) REFERENCES [test_schema].[users] ([id]) ON DELETE CASCADE ON UPDATE NO ACTION
+    );
+
+    CREATE UNIQUE NONCLUSTERED INDEX [idx_posts_title] ON
+    [test_schema].[posts] (
+        [title] ASC
     );
 
     CREATE NONCLUSTERED INDEX [idx_posts_user_id] ON
@@ -1028,12 +1047,7 @@
         [user_id] ASC
     );
 
-    CREATE UNIQUE INDEX [idx_posts_title] ON
-    [test_schema].[posts] (
-        [title] ASC
-    );
-
-- description: employees_v_employee_summary_v_high_earners
+- description: views_with_dependencies
   metadata: |
     {
       "schemas": [
@@ -1046,36 +1060,39 @@
                 {
                   "name": "emp_id",
                   "position": 1,
-                  "type": "INT"
+                  "type": "int"
                 },
                 {
                   "name": "emp_name",
                   "position": 2,
                   "nullable": true,
-                  "type": "VARCHAR(100)"
+                  "type": "varchar(100)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
                 },
                 {
                   "name": "department",
                   "position": 3,
                   "nullable": true,
-                  "type": "VARCHAR(50)"
+                  "type": "varchar(50)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
                 },
                 {
                   "name": "salary",
                   "position": 4,
                   "nullable": true,
-                  "type": "DECIMAL(10,2)"
+                  "type": "decimal(10, 2)"
                 }
               ],
               "indexes": [
                 {
-                  "name": "PK_employees_1",
+                  "name": "PK__employee__1299A861D2E977EA",
                   "expressions": [
                     "emp_id"
                   ],
                   "descending": [
                     false
                   ],
+                  "type": "CLUSTERED",
                   "unique": true,
                   "primary": true,
                   "is_constraint": true
@@ -1086,11 +1103,53 @@
           "views": [
             {
               "name": "v_employee_summary",
-              "definition": "CREATE VIEW dbo.v_employee_summary AS\nSELECT department, COUNT(*) as emp_count, AVG(salary) as avg_salary\nFROM dbo.employees\nGROUP BY department;"
+              "definition": "CREATE VIEW dbo.v_employee_summary AS\nSELECT department, COUNT(*) as emp_count, AVG(salary) as avg_salary\nFROM dbo.employees\nGROUP BY department;",
+              "columns": [
+                {
+                  "name": "department",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "varchar(50)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
+                },
+                {
+                  "name": "emp_count",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "avg_salary",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "decimal(38, 6)"
+                }
+              ]
             },
             {
               "name": "v_high_earners",
-              "definition": "CREATE VIEW dbo.v_high_earners AS\nSELECT * FROM dbo.v_employee_summary\nWHERE avg_salary \u003e 50000;"
+              "definition": "CREATE VIEW dbo.v_high_earners AS\nSELECT * FROM dbo.v_employee_summary\nWHERE avg_salary \u003e 50000;",
+              "columns": [
+                {
+                  "name": "department",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "varchar(50)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
+                },
+                {
+                  "name": "emp_count",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "avg_salary",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "decimal(38, 6)"
+                }
+              ]
             }
           ]
         }
@@ -1098,11 +1157,11 @@
     }
   expected: |+
     CREATE TABLE [dbo].[employees] (
-        [emp_id] INT NOT NULL,
-        [emp_name] VARCHAR(100),
-        [department] VARCHAR(50),
-        [salary] DECIMAL(10,2),
-        CONSTRAINT [PK_employees_1] PRIMARY KEY ([emp_id] ASC)
+        [emp_id] int NOT NULL,
+        [emp_name] varchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS,
+        [department] varchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS,
+        [salary] decimal(10, 2),
+        CONSTRAINT [PK__employee__1299A861D2E977EA] PRIMARY KEY CLUSTERED ([emp_id] ASC)
     );
 
     GO
@@ -1120,7 +1179,7 @@
 
     GO
 
-- description: getfullname_updatesalary
+- description: functions_and_procedures
   metadata: |
     {
       "schemas": [
@@ -1161,7 +1220,7 @@
 
     GO
 
-- description: sales_products
+- description: complex_indexes
   metadata: |
     {
       "schemas": [
@@ -1169,76 +1228,38 @@
           "name": "dbo",
           "tables": [
             {
-              "name": "sales",
-              "columns": [
-                {
-                  "name": "sale_id",
-                  "position": 1,
-                  "nullable": true,
-                  "type": "INT"
-                },
-                {
-                  "name": "product_id",
-                  "position": 2,
-                  "nullable": true,
-                  "type": "INT"
-                },
-                {
-                  "name": "sale_date",
-                  "position": 3,
-                  "nullable": true,
-                  "type": "DATE"
-                },
-                {
-                  "name": "amount",
-                  "position": 4,
-                  "nullable": true,
-                  "type": "DECIMAL(10,2)"
-                },
-                {
-                  "name": "region",
-                  "position": 5,
-                  "nullable": true,
-                  "type": "VARCHAR(50)"
-                }
-              ],
-              "indexes": [
-                {
-                  "name": "cci_sales",
-                  "type": "CLUSTERED COLUMNSTORE"
-                }
-              ]
-            },
-            {
               "name": "products",
               "columns": [
                 {
                   "name": "product_id",
                   "position": 1,
-                  "type": "INT"
+                  "type": "int"
                 },
                 {
                   "name": "product_name",
                   "position": 2,
                   "nullable": true,
-                  "type": "VARCHAR(100)"
+                  "type": "varchar(100)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
                 },
                 {
                   "name": "category",
                   "position": 3,
                   "nullable": true,
-                  "type": "VARCHAR(50)"
+                  "type": "varchar(50)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
                 }
               ],
               "indexes": [
                 {
-                  "name": "PK_products_1",
+                  "name": "PK__products__47027DF59BF03BB5",
                   "expressions": [
                     "product_id"
                   ],
                   "descending": [
                     false
                   ],
+                  "type": "CLUSTERED",
                   "unique": true,
                   "primary": true,
                   "is_constraint": true
@@ -1256,6 +1277,62 @@
                   "type": "NONCLUSTERED COLUMNSTORE"
                 }
               ]
+            },
+            {
+              "name": "sales",
+              "columns": [
+                {
+                  "name": "sale_id",
+                  "position": 1,
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "product_id",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "int"
+                },
+                {
+                  "name": "sale_date",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "date"
+                },
+                {
+                  "name": "amount",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "decimal(10, 2)"
+                },
+                {
+                  "name": "region",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "varchar(50)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "cci_sales",
+                  "expressions": [
+                    "sale_id",
+                    "product_id",
+                    "sale_date",
+                    "amount",
+                    "region"
+                  ],
+                  "descending": [
+                    false,
+                    false,
+                    false,
+                    false,
+                    false
+                  ],
+                  "type": "CLUSTERED COLUMNSTORE"
+                }
+              ]
             }
           ]
         }
@@ -1263,10 +1340,10 @@
     }
   expected: |+
     CREATE TABLE [dbo].[products] (
-        [product_id] INT NOT NULL,
-        [product_name] VARCHAR(100),
-        [category] VARCHAR(50),
-        CONSTRAINT [PK_products_1] PRIMARY KEY ([product_id] ASC)
+        [product_id] int NOT NULL,
+        [product_name] varchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS,
+        [category] varchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS,
+        CONSTRAINT [PK__products__47027DF59BF03BB5] PRIMARY KEY CLUSTERED ([product_id] ASC)
     );
 
     CREATE NONCLUSTERED COLUMNSTORE INDEX [ncci_products] ON [dbo].[products] (
@@ -1275,16 +1352,16 @@
     );
 
     CREATE TABLE [dbo].[sales] (
-        [sale_id] INT,
-        [product_id] INT,
-        [sale_date] DATE,
-        [amount] DECIMAL(10,2),
-        [region] VARCHAR(50)
+        [sale_id] int,
+        [product_id] int,
+        [sale_date] date,
+        [amount] decimal(10, 2),
+        [region] varchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS
     );
 
     CREATE CLUSTERED COLUMNSTORE INDEX [cci_sales] ON [dbo].[sales];
 
-- description: temporal_test
+- description: temporal_tables
   metadata: |
     {
       "schemas": [
@@ -1297,37 +1374,80 @@
                 {
                   "name": "id",
                   "position": 1,
-                  "type": "INT"
+                  "type": "int"
                 },
                 {
                   "name": "name",
                   "position": 2,
                   "nullable": true,
-                  "type": "VARCHAR(100)"
+                  "type": "varchar(100)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
                 },
                 {
                   "name": "SysStartTime",
                   "position": 3,
-                  "type": "DATETIME2"
+                  "type": "datetime2(7)"
                 },
                 {
                   "name": "SysEndTime",
                   "position": 4,
-                  "type": "DATETIME2"
+                  "type": "datetime2(7)"
                 }
               ],
               "indexes": [
                 {
-                  "name": "PK_temporal_test_1",
+                  "name": "PK__temporal__3213E83F3E461CC4",
                   "expressions": [
                     "id"
                   ],
                   "descending": [
                     false
                   ],
+                  "type": "CLUSTERED",
                   "unique": true,
                   "primary": true,
                   "is_constraint": true
+                }
+              ]
+            },
+            {
+              "name": "temporal_test_history",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "name",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "varchar(100)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
+                },
+                {
+                  "name": "SysStartTime",
+                  "position": 3,
+                  "type": "datetime2(7)"
+                },
+                {
+                  "name": "SysEndTime",
+                  "position": 4,
+                  "type": "datetime2(7)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "ix_temporal_test_history",
+                  "expressions": [
+                    "SysEndTime",
+                    "SysStartTime"
+                  ],
+                  "descending": [
+                    false,
+                    false
+                  ],
+                  "type": "CLUSTERED"
                 }
               ]
             }
@@ -1337,17 +1457,33 @@
     }
   expected: |+
     CREATE TABLE [dbo].[temporal_test] (
-        [id] INT NOT NULL,
-        [name] VARCHAR(100),
-        [SysStartTime] DATETIME2 NOT NULL,
-        [SysEndTime] DATETIME2 NOT NULL,
-        CONSTRAINT [PK_temporal_test_1] PRIMARY KEY ([id] ASC)
+        [id] int NOT NULL,
+        [name] varchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS,
+        [SysStartTime] datetime2(7) NOT NULL,
+        [SysEndTime] datetime2(7) NOT NULL,
+        CONSTRAINT [PK__temporal__3213E83F3E461CC4] PRIMARY KEY CLUSTERED ([id] ASC)
     );
 
-- description: locations
+    CREATE TABLE [dbo].[temporal_test_history] (
+        [id] int NOT NULL,
+        [name] varchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS,
+        [SysStartTime] datetime2(7) NOT NULL,
+        [SysEndTime] datetime2(7) NOT NULL
+    );
+
+    CREATE CLUSTERED INDEX [ix_temporal_test_history] ON
+    [dbo].[temporal_test_history] (
+        [SysEndTime] ASC,
+        [SysStartTime] ASC
+    );
+
+- description: spatial_indexes_geography
   metadata: |
     {
       "schemas": [
+        {
+          "name": "dbo"
+        },
         {
           "name": "spatial_schema",
           "tables": [
@@ -1357,7 +1493,7 @@
                 {
                   "name": "id",
                   "position": 1,
-                  "type": "INT",
+                  "type": "int",
                   "is_identity": true,
                   "identity_seed": 1,
                   "identity_increment": 1
@@ -1365,50 +1501,118 @@
                 {
                   "name": "name",
                   "position": 2,
-                  "type": "NVARCHAR(200)"
+                  "type": "nvarchar(200)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
                 },
                 {
                   "name": "location_point",
                   "position": 3,
-                  "type": "GEOGRAPHY"
+                  "type": "geography"
                 },
                 {
                   "name": "boundary_polygon",
                   "position": 4,
-                  "type": "GEOGRAPHY"
+                  "type": "geography"
                 },
                 {
                   "name": "route_line",
                   "position": 5,
                   "nullable": true,
-                  "type": "GEOGRAPHY"
+                  "type": "geography"
                 },
                 {
                   "name": "description",
                   "position": 6,
                   "nullable": true,
-                  "type": "NVARCHAR(MAX)"
+                  "type": "nvarchar(max)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
                 },
                 {
                   "name": "created_at",
                   "position": 7,
-                  "default": "GETDATE()",
+                  "default": "(getdate())",
                   "nullable": true,
-                  "type": "DATETIME2"
+                  "type": "datetime2(7)",
+                  "default_constraint_name": "DF__locations__creat__37A5467C"
                 }
               ],
               "indexes": [
                 {
-                  "name": "PK_locations_1",
+                  "name": "PK__location__3213E83FC19EBDD5",
                   "expressions": [
                     "id"
                   ],
                   "descending": [
                     false
                   ],
+                  "type": "CLUSTERED",
                   "unique": true,
                   "primary": true,
                   "is_constraint": true
+                },
+                {
+                  "name": "idx_created_at",
+                  "expressions": [
+                    "created_at"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "NONCLUSTERED"
+                },
+                {
+                  "name": "idx_name",
+                  "expressions": [
+                    "name"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "NONCLUSTERED"
+                },
+                {
+                  "name": "idx_boundary_polygon",
+                  "expressions": [
+                    "boundary_polygon"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "SPATIAL",
+                  "spatial_config": {
+                    "method": "SPATIAL",
+                    "tessellation": {
+                      "scheme": "GEOGRAPHY_GRID",
+                      "grid_levels": [
+                        {
+                          "level": 1,
+                          "density": "LOW"
+                        },
+                        {
+                          "level": 2,
+                          "density": "MEDIUM"
+                        },
+                        {
+                          "level": 3,
+                          "density": "HIGH"
+                        },
+                        {
+                          "level": 4,
+                          "density": "MEDIUM"
+                        }
+                      ],
+                      "cells_per_object": 16
+                    },
+                    "storage": {
+                      "fillfactor": 80,
+                      "allow_row_locks": true,
+                      "allow_page_locks": true
+                    },
+                    "dimensional": {
+                      "dimensions": 2,
+                      "data_type": "GEOGRAPHY"
+                    }
+                  }
                 },
                 {
                   "name": "idx_location_point",
@@ -1446,53 +1650,6 @@
                     "storage": {
                       "fillfactor": 85,
                       "pad_index": true,
-                      "sort_in_tempdb": "ON",
-                      "allow_row_locks": true,
-                      "allow_page_locks": true,
-                      "maxdop": 2,
-                      "data_compression": "PAGE"
-                    },
-                    "dimensional": {
-                      "dimensions": 2,
-                      "data_type": "GEOGRAPHY"
-                    }
-                  }
-                },
-                {
-                  "name": "idx_boundary_polygon",
-                  "expressions": [
-                    "boundary_polygon"
-                  ],
-                  "descending": [
-                    false
-                  ],
-                  "type": "SPATIAL",
-                  "spatial_config": {
-                    "method": "SPATIAL",
-                    "tessellation": {
-                      "scheme": "GEOGRAPHY_GRID",
-                      "grid_levels": [
-                        {
-                          "level": 1,
-                          "density": "LOW"
-                        },
-                        {
-                          "level": 2,
-                          "density": "MEDIUM"
-                        },
-                        {
-                          "level": 3,
-                          "density": "HIGH"
-                        },
-                        {
-                          "level": 4,
-                          "density": "MEDIUM"
-                        }
-                      ],
-                      "cells_per_object": 16
-                    },
-                    "storage": {
-                      "fillfactor": 80,
                       "allow_row_locks": true,
                       "allow_page_locks": true
                     },
@@ -1544,24 +1701,6 @@
                       "data_type": "GEOGRAPHY"
                     }
                   }
-                },
-                {
-                  "name": "idx_name",
-                  "expressions": [
-                    "name"
-                  ],
-                  "descending": [
-                    false
-                  ]
-                },
-                {
-                  "name": "idx_created_at",
-                  "expressions": [
-                    "created_at"
-                  ],
-                  "descending": [
-                    false
-                  ]
                 }
               ]
             }
@@ -1574,26 +1713,24 @@
     GO
 
     CREATE TABLE [spatial_schema].[locations] (
-        [id] INT IDENTITY(1,1) NOT NULL,
-        [name] NVARCHAR(200) NOT NULL,
-        [location_point] GEOGRAPHY NOT NULL,
-        [boundary_polygon] GEOGRAPHY NOT NULL,
-        [route_line] GEOGRAPHY,
-        [description] NVARCHAR(MAX),
-        [created_at] DATETIME2 DEFAULT GETDATE(),
-        CONSTRAINT [PK_locations_1] PRIMARY KEY ([id] ASC)
+        [id] int IDENTITY(1,1) NOT NULL,
+        [name] nvarchar(200) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+        [location_point] geography NOT NULL,
+        [boundary_polygon] geography NOT NULL,
+        [route_line] geography,
+        [description] nvarchar(max) COLLATE SQL_Latin1_General_CP1_CI_AS,
+        [created_at] datetime2(7) DEFAULT (getdate()),
+        CONSTRAINT [PK__location__3213E83FC19EBDD5] PRIMARY KEY CLUSTERED ([id] ASC)
     );
 
-    CREATE SPATIAL INDEX [idx_location_point] ON [spatial_schema].[locations] ([location_point])
-    USING GEOGRAPHY_GRID
-    WITH (
-        GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = HIGH, LEVEL_3 = MEDIUM, LEVEL_4 = LOW),
-        CELLS_PER_OBJECT = 32,
-        PAD_INDEX = ON,
-        FILLFACTOR = 85,
-        SORT_IN_TEMPDB = ON,
-        MAXDOP = 2,
-        DATA_COMPRESSION = PAGE
+    CREATE NONCLUSTERED INDEX [idx_created_at] ON
+    [spatial_schema].[locations] (
+        [created_at] ASC
+    );
+
+    CREATE NONCLUSTERED INDEX [idx_name] ON
+    [spatial_schema].[locations] (
+        [name] ASC
     );
 
     CREATE SPATIAL INDEX [idx_boundary_polygon] ON [spatial_schema].[locations] ([boundary_polygon])
@@ -1604,6 +1741,15 @@
         FILLFACTOR = 80
     );
 
+    CREATE SPATIAL INDEX [idx_location_point] ON [spatial_schema].[locations] ([location_point])
+    USING GEOGRAPHY_GRID
+    WITH (
+        GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = HIGH, LEVEL_3 = MEDIUM, LEVEL_4 = LOW),
+        CELLS_PER_OBJECT = 32,
+        PAD_INDEX = ON,
+        FILLFACTOR = 85
+    );
+
     CREATE SPATIAL INDEX [idx_route_line] ON [spatial_schema].[locations] ([route_line])
     USING GEOGRAPHY_GRID
     WITH (
@@ -1611,20 +1757,13 @@
         CELLS_PER_OBJECT = 64
     );
 
-    CREATE INDEX [idx_name] ON
-    [spatial_schema].[locations] (
-        [name] ASC
-    );
-
-    CREATE INDEX [idx_created_at] ON
-    [spatial_schema].[locations] (
-        [created_at] ASC
-    );
-
-- description: shapes
+- description: spatial_indexes_geometry
   metadata: |
     {
       "schemas": [
+        {
+          "name": "dbo"
+        },
         {
           "name": "geom_schema",
           "tables": [
@@ -1634,7 +1773,7 @@
                 {
                   "name": "shape_id",
                   "position": 1,
-                  "type": "INT",
+                  "type": "int",
                   "is_identity": true,
                   "identity_seed": 1,
                   "identity_increment": 1
@@ -1642,101 +1781,68 @@
                 {
                   "name": "shape_name",
                   "position": 2,
-                  "type": "NVARCHAR(100)"
+                  "type": "nvarchar(100)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
                 },
                 {
                   "name": "shape_point",
                   "position": 3,
-                  "type": "GEOMETRY"
+                  "type": "geometry"
                 },
                 {
                   "name": "shape_polygon",
                   "position": 4,
-                  "type": "GEOMETRY"
+                  "type": "geometry"
                 },
                 {
                   "name": "shape_line",
                   "position": 5,
                   "nullable": true,
-                  "type": "GEOMETRY"
+                  "type": "geometry"
                 },
                 {
                   "name": "area_size",
                   "position": 6,
-                  "nullable": true
+                  "nullable": true,
+                  "type": "AS ([shape_polygon].[STArea]()) PERSISTED"
                 },
                 {
                   "name": "center_x",
                   "position": 7,
-                  "nullable": true
+                  "nullable": true,
+                  "type": "AS ([shape_point].[STX]) PERSISTED"
                 },
                 {
                   "name": "center_y",
                   "position": 8,
-                  "nullable": true
+                  "nullable": true,
+                  "type": "AS ([shape_point].[STY]) PERSISTED"
                 }
               ],
               "indexes": [
                 {
-                  "name": "PK_shapes_1",
+                  "name": "PK__shapes__B2E98952FB942A88",
                   "expressions": [
                     "shape_id"
                   ],
                   "descending": [
                     false
                   ],
+                  "type": "CLUSTERED",
                   "unique": true,
                   "primary": true,
                   "is_constraint": true
                 },
                 {
-                  "name": "idx_shape_point",
+                  "name": "idx_shape_name",
                   "expressions": [
-                    "shape_point"
+                    "shape_name"
                   ],
                   "descending": [
                     false
                   ],
-                  "type": "SPATIAL",
-                  "spatial_config": {
-                    "method": "SPATIAL",
-                    "tessellation": {
-                      "scheme": "GEOMETRY_GRID",
-                      "bounding_box": {
-                        "xmax": 100,
-                        "ymax": 100
-                      },
-                      "grid_levels": [
-                        {
-                          "level": 1,
-                          "density": "MEDIUM"
-                        },
-                        {
-                          "level": 2,
-                          "density": "HIGH"
-                        },
-                        {
-                          "level": 3,
-                          "density": "LOW"
-                        },
-                        {
-                          "level": 4,
-                          "density": "LOW"
-                        }
-                      ],
-                      "cells_per_object": 16
-                    },
-                    "storage": {
-                      "fillfactor": 90,
-                      "pad_index": true,
-                      "allow_row_locks": true,
-                      "allow_page_locks": true
-                    },
-                    "dimensional": {
-                      "dimensions": 2,
-                      "data_type": "GEOMETRY"
-                    }
-                  }
+                  "type": "NONCLUSTERED",
+                  "unique": true
                 },
                 {
                   "name": "idx_shape_polygon",
@@ -1837,14 +1943,53 @@
                   }
                 },
                 {
-                  "name": "idx_shape_name",
+                  "name": "idx_shape_point",
                   "expressions": [
-                    "shape_name"
+                    "shape_point"
                   ],
                   "descending": [
                     false
                   ],
-                  "unique": true
+                  "type": "SPATIAL",
+                  "spatial_config": {
+                    "method": "SPATIAL",
+                    "tessellation": {
+                      "scheme": "GEOMETRY_GRID",
+                      "bounding_box": {
+                        "xmax": 100,
+                        "ymax": 100
+                      },
+                      "grid_levels": [
+                        {
+                          "level": 1,
+                          "density": "MEDIUM"
+                        },
+                        {
+                          "level": 2,
+                          "density": "HIGH"
+                        },
+                        {
+                          "level": 3,
+                          "density": "LOW"
+                        },
+                        {
+                          "level": 4,
+                          "density": "LOW"
+                        }
+                      ],
+                      "cells_per_object": 16
+                    },
+                    "storage": {
+                      "fillfactor": 90,
+                      "pad_index": true,
+                      "allow_row_locks": true,
+                      "allow_page_locks": true
+                    },
+                    "dimensional": {
+                      "dimensions": 2,
+                      "data_type": "GEOMETRY"
+                    }
+                  }
                 }
               ]
             }
@@ -1857,25 +2002,20 @@
     GO
 
     CREATE TABLE [geom_schema].[shapes] (
-        [shape_id] INT IDENTITY(1,1) NOT NULL,
-        [shape_name] NVARCHAR(100) NOT NULL,
-        [shape_point] GEOMETRY NOT NULL,
-        [shape_polygon] GEOMETRY NOT NULL,
-        [shape_line] GEOMETRY,
-        [area_size] ,
-        [center_x] ,
-        [center_y] ,
-        CONSTRAINT [PK_shapes_1] PRIMARY KEY ([shape_id] ASC)
+        [shape_id] int IDENTITY(1,1) NOT NULL,
+        [shape_name] nvarchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+        [shape_point] geometry NOT NULL,
+        [shape_polygon] geometry NOT NULL,
+        [shape_line] geometry,
+        [area_size] AS ([shape_polygon].[STArea]()) PERSISTED,
+        [center_x] AS ([shape_point].[STX]) PERSISTED,
+        [center_y] AS ([shape_point].[STY]) PERSISTED,
+        CONSTRAINT [PK__shapes__B2E98952FB942A88] PRIMARY KEY CLUSTERED ([shape_id] ASC)
     );
 
-    CREATE SPATIAL INDEX [idx_shape_point] ON [geom_schema].[shapes] ([shape_point])
-    USING GEOMETRY_GRID
-    WITH (
-        BOUNDING_BOX = (0, 0, 100, 100),
-        GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = HIGH, LEVEL_3 = LOW, LEVEL_4 = LOW),
-        CELLS_PER_OBJECT = 16,
-        PAD_INDEX = ON,
-        FILLFACTOR = 90
+    CREATE UNIQUE NONCLUSTERED INDEX [idx_shape_name] ON
+    [geom_schema].[shapes] (
+        [shape_name] ASC
     );
 
     CREATE SPATIAL INDEX [idx_shape_polygon] ON [geom_schema].[shapes] ([shape_polygon])
@@ -1894,12 +2034,17 @@
         CELLS_PER_OBJECT = 8
     );
 
-    CREATE UNIQUE INDEX [idx_shape_name] ON
-    [geom_schema].[shapes] (
-        [shape_name] ASC
+    CREATE SPATIAL INDEX [idx_shape_point] ON [geom_schema].[shapes] ([shape_point])
+    USING GEOMETRY_GRID
+    WITH (
+        BOUNDING_BOX = (0, 0, 100, 100),
+        GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = HIGH, LEVEL_3 = LOW, LEVEL_4 = LOW),
+        CELLS_PER_OBJECT = 16,
+        PAD_INDEX = ON,
+        FILLFACTOR = 90
     );
 
-- description: spatial_mixed_v_spatial_summary
+- description: spatial_indexes_mixed_with_constraints
   metadata: |
     {
       "schemas": [
@@ -1912,7 +2057,7 @@
                 {
                   "name": "id",
                   "position": 1,
-                  "type": "INT",
+                  "type": "int",
                   "is_identity": true,
                   "identity_seed": 1,
                   "identity_increment": 1
@@ -1920,54 +2065,78 @@
                 {
                   "name": "code",
                   "position": 2,
-                  "type": "VARCHAR(50)"
+                  "type": "varchar(50)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
                 },
                 {
                   "name": "geo_location",
                   "position": 3,
-                  "type": "GEOGRAPHY"
+                  "type": "geography"
                 },
                 {
                   "name": "geom_shape",
                   "position": 4,
-                  "type": "GEOMETRY"
+                  "type": "geometry"
                 },
                 {
                   "name": "status",
                   "position": 5,
                   "nullable": true,
-                  "type": "NVARCHAR(20)"
+                  "type": "nvarchar(20)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
                 },
                 {
                   "name": "parent_id",
                   "position": 6,
                   "nullable": true,
-                  "type": "INT"
+                  "type": "int"
                 }
               ],
               "indexes": [
                 {
-                  "name": "PK_spatial_mixed_1",
+                  "name": "PK__spatial___3213E83FB94B9AA8",
                   "expressions": [
                     "id"
                   ],
                   "descending": [
                     false
                   ],
+                  "type": "CLUSTERED",
                   "unique": true,
                   "primary": true,
                   "is_constraint": true
                 },
                 {
-                  "name": "UQ_spatial_mixed_2",
+                  "name": "UQ__spatial___357D4CF946883435",
                   "expressions": [
                     "code"
                   ],
                   "descending": [
                     false
                   ],
+                  "type": "NONCLUSTERED",
                   "unique": true,
                   "is_constraint": true
+                },
+                {
+                  "name": "idx_parent_id",
+                  "expressions": [
+                    "parent_id"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "NONCLUSTERED"
+                },
+                {
+                  "name": "idx_status",
+                  "expressions": [
+                    "status"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "NONCLUSTERED"
                 },
                 {
                   "name": "idx_geo_location_mixed",
@@ -2060,24 +2229,6 @@
                       "data_type": "GEOMETRY"
                     }
                   }
-                },
-                {
-                  "name": "idx_status",
-                  "expressions": [
-                    "status"
-                  ],
-                  "descending": [
-                    false
-                  ]
-                },
-                {
-                  "name": "idx_parent_id",
-                  "expressions": [
-                    "parent_id"
-                  ],
-                  "descending": [
-                    false
-                  ]
                 }
               ],
               "foreign_keys": [
@@ -2097,7 +2248,8 @@
               ],
               "check_constraints": [
                 {
-                  "expression": "status IN ('active', 'inactive', 'pending')"
+                  "name": "CK__spatial_m__statu__38996AB5",
+                  "expression": "([status]='pending' OR [status]='inactive' OR [status]='active')"
                 }
               ]
             }
@@ -2105,7 +2257,47 @@
           "views": [
             {
               "name": "v_spatial_summary",
-              "definition": "CREATE VIEW dbo.v_spatial_summary AS\nSELECT\n    id,\n    code,\n    geo_location.STAsText() AS geo_location_wkt,\n    geom_shape.STAsText() AS geom_shape_wkt,\n    geom_shape.STArea() AS shape_area,\n    status\nFROM dbo.spatial_mixed\nWHERE status = 'active';"
+              "definition": "-- Create a view using spatial functions\nCREATE VIEW dbo.v_spatial_summary AS\nSELECT\n    id,\n    code,\n    geo_location.STAsText() AS geo_location_wkt,\n    geom_shape.STAsText() AS geom_shape_wkt,\n    geom_shape.STArea() AS shape_area,\n    status\nFROM dbo.spatial_mixed\nWHERE status = 'active';",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "code",
+                  "position": 2,
+                  "type": "varchar(50)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
+                },
+                {
+                  "name": "geo_location_wkt",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "nvarchar(max)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
+                },
+                {
+                  "name": "geom_shape_wkt",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "nvarchar(max)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
+                },
+                {
+                  "name": "shape_area",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "float(53)"
+                },
+                {
+                  "name": "status",
+                  "position": 6,
+                  "nullable": true,
+                  "type": "nvarchar(20)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
+                }
+              ]
             }
           ]
         }
@@ -2113,16 +2305,26 @@
     }
   expected: |+
     CREATE TABLE [dbo].[spatial_mixed] (
-        [id] INT IDENTITY(1,1) NOT NULL,
-        [code] VARCHAR(50) NOT NULL,
-        [geo_location] GEOGRAPHY NOT NULL,
-        [geom_shape] GEOMETRY NOT NULL,
-        [status] NVARCHAR(20),
-        [parent_id] INT,
-        CONSTRAINT [PK_spatial_mixed_1] PRIMARY KEY ([id] ASC),
-        CONSTRAINT [UQ_spatial_mixed_2] UNIQUE ([code] ASC),
+        [id] int IDENTITY(1,1) NOT NULL,
+        [code] varchar(50) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+        [geo_location] geography NOT NULL,
+        [geom_shape] geometry NOT NULL,
+        [status] nvarchar(20) COLLATE SQL_Latin1_General_CP1_CI_AS,
+        [parent_id] int,
+        CONSTRAINT [PK__spatial___3213E83FB94B9AA8] PRIMARY KEY CLUSTERED ([id] ASC),
+        CONSTRAINT [UQ__spatial___357D4CF946883435] UNIQUE NONCLUSTERED ([code] ASC),
         CONSTRAINT [FK_spatial_mixed_parent] FOREIGN KEY ([parent_id]) REFERENCES [dbo].[spatial_mixed] ([id]) ON DELETE NO ACTION ON UPDATE NO ACTION,
-        CONSTRAINT [] CHECK status IN ('active', 'inactive', 'pending')
+        CONSTRAINT [CK__spatial_m__statu__38996AB5] CHECK ([status]='pending' OR [status]='inactive' OR [status]='active')
+    );
+
+    CREATE NONCLUSTERED INDEX [idx_parent_id] ON
+    [dbo].[spatial_mixed] (
+        [parent_id] ASC
+    );
+
+    CREATE NONCLUSTERED INDEX [idx_status] ON
+    [dbo].[spatial_mixed] (
+        [status] ASC
     );
 
     CREATE SPATIAL INDEX [idx_geo_location_mixed] ON [dbo].[spatial_mixed] ([geo_location])
@@ -2140,18 +2342,9 @@
         CELLS_PER_OBJECT = 32
     );
 
-    CREATE INDEX [idx_status] ON
-    [dbo].[spatial_mixed] (
-        [status] ASC
-    );
-
-    CREATE INDEX [idx_parent_id] ON
-    [dbo].[spatial_mixed] (
-        [parent_id] ASC
-    );
-
     GO
 
+    -- Create a view using spatial functions
     CREATE VIEW dbo.v_spatial_summary AS
     SELECT
         id,
@@ -2165,7 +2358,7 @@
 
     GO
 
-- description: geo_data
+- description: spatial_indexes_advanced_configurations
   metadata: |
     {
       "schemas": [
@@ -2178,7 +2371,7 @@
                 {
                   "name": "id",
                   "position": 1,
-                  "type": "BIGINT",
+                  "type": "bigint",
                   "is_identity": true,
                   "identity_seed": 1,
                   "identity_increment": 1
@@ -2186,69 +2379,151 @@
                 {
                   "name": "name",
                   "position": 2,
-                  "type": "NVARCHAR(255)"
+                  "type": "nvarchar(255)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
                 },
                 {
                   "name": "current_location",
                   "position": 3,
-                  "type": "GEOGRAPHY"
+                  "type": "geography"
                 },
                 {
                   "name": "delivery_route",
                   "position": 4,
                   "nullable": true,
-                  "type": "GEOGRAPHY"
+                  "type": "geography"
                 },
                 {
                   "name": "service_area",
                   "position": 5,
-                  "type": "GEOGRAPHY"
+                  "type": "geography"
                 },
                 {
                   "name": "building_footprint",
                   "position": 6,
                   "nullable": true,
-                  "type": "GEOMETRY"
+                  "type": "geometry"
                 },
                 {
                   "name": "floor_plan",
                   "position": 7,
                   "nullable": true,
-                  "type": "GEOMETRY"
+                  "type": "geometry"
                 },
                 {
                   "name": "category",
                   "position": 8,
                   "nullable": true,
-                  "type": "VARCHAR(100)"
+                  "type": "varchar(100)",
+                  "collation": "SQL_Latin1_General_CP1_CI_AS"
                 },
                 {
                   "name": "is_active",
                   "position": 9,
-                  "default": "1",
+                  "default": "((1))",
                   "nullable": true,
-                  "type": "BIT"
+                  "type": "bit",
+                  "default_constraint_name": "DF__geo_data__is_act__37A5467C"
                 },
                 {
                   "name": "last_updated",
                   "position": 10,
-                  "default": "GETDATE()",
+                  "default": "(getdate())",
                   "nullable": true,
-                  "type": "DATETIME2"
+                  "type": "datetime2(7)",
+                  "default_constraint_name": "DF__geo_data__last_u__38996AB5"
                 }
               ],
               "indexes": [
                 {
-                  "name": "PK_geo_data_1",
+                  "name": "PK__geo_data__3213E83F941B2A6B",
                   "expressions": [
                     "id"
                   ],
                   "descending": [
                     false
                   ],
+                  "type": "CLUSTERED",
                   "unique": true,
                   "primary": true,
                   "is_constraint": true
+                },
+                {
+                  "name": "idx_active_category",
+                  "expressions": [
+                    "category"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "NONCLUSTERED"
+                },
+                {
+                  "name": "ncci_geo_data",
+                  "expressions": [
+                    "id",
+                    "name",
+                    "category",
+                    "is_active",
+                    "last_updated"
+                  ],
+                  "descending": [
+                    false,
+                    false,
+                    false,
+                    false,
+                    false
+                  ],
+                  "type": "NONCLUSTERED COLUMNSTORE"
+                },
+                {
+                  "name": "idx_building_footprint",
+                  "expressions": [
+                    "building_footprint"
+                  ],
+                  "descending": [
+                    false
+                  ],
+                  "type": "SPATIAL",
+                  "spatial_config": {
+                    "method": "SPATIAL",
+                    "tessellation": {
+                      "scheme": "GEOMETRY_GRID",
+                      "bounding_box": {
+                        "xmin": -10000,
+                        "ymin": -10000,
+                        "xmax": 10000,
+                        "ymax": 10000
+                      },
+                      "grid_levels": [
+                        {
+                          "level": 1,
+                          "density": "LOW"
+                        },
+                        {
+                          "level": 2,
+                          "density": "MEDIUM"
+                        },
+                        {
+                          "level": 3,
+                          "density": "HIGH"
+                        },
+                        {
+                          "level": 4,
+                          "density": "HIGH"
+                        }
+                      ],
+                      "cells_per_object": 128
+                    },
+                    "storage": {
+                      "allow_row_locks": true,
+                      "allow_page_locks": true
+                    },
+                    "dimensional": {
+                      "dimensions": 2,
+                      "data_type": "GEOMETRY"
+                    }
+                  }
                 },
                 {
                   "name": "idx_current_location",
@@ -2338,98 +2613,6 @@
                   }
                 },
                 {
-                  "name": "idx_service_area",
-                  "expressions": [
-                    "service_area"
-                  ],
-                  "descending": [
-                    false
-                  ],
-                  "type": "SPATIAL",
-                  "spatial_config": {
-                    "method": "SPATIAL",
-                    "tessellation": {
-                      "scheme": "GEOGRAPHY_GRID",
-                      "grid_levels": [
-                        {
-                          "level": 1,
-                          "density": "MEDIUM"
-                        },
-                        {
-                          "level": 2,
-                          "density": "LOW"
-                        },
-                        {
-                          "level": 3,
-                          "density": "HIGH"
-                        },
-                        {
-                          "level": 4,
-                          "density": "MEDIUM"
-                        }
-                      ],
-                      "cells_per_object": 256
-                    },
-                    "storage": {
-                      "allow_row_locks": true,
-                      "allow_page_locks": true
-                    },
-                    "dimensional": {
-                      "dimensions": 2,
-                      "data_type": "GEOGRAPHY"
-                    }
-                  }
-                },
-                {
-                  "name": "idx_building_footprint",
-                  "expressions": [
-                    "building_footprint"
-                  ],
-                  "descending": [
-                    false
-                  ],
-                  "type": "SPATIAL",
-                  "spatial_config": {
-                    "method": "SPATIAL",
-                    "tessellation": {
-                      "scheme": "GEOMETRY_GRID",
-                      "bounding_box": {
-                        "xmin": -10000,
-                        "ymin": -10000,
-                        "xmax": 10000,
-                        "ymax": 10000
-                      },
-                      "grid_levels": [
-                        {
-                          "level": 1,
-                          "density": "LOW"
-                        },
-                        {
-                          "level": 2,
-                          "density": "MEDIUM"
-                        },
-                        {
-                          "level": 3,
-                          "density": "HIGH"
-                        },
-                        {
-                          "level": 4,
-                          "density": "HIGH"
-                        }
-                      ],
-                      "cells_per_object": 128
-                    },
-                    "storage": {
-                      "allow_row_locks": true,
-                      "allow_page_locks": true
-                    },
-                    "dimensional": {
-                      "dimensions": 2,
-                      "data_type": "GEOMETRY"
-                    }
-                  }
-                },
-                {
                   "name": "idx_floor_plan",
                   "expressions": [
                     "floor_plan"
@@ -2477,35 +2660,54 @@
                   }
                 },
                 {
-                  "name": "idx_active_category",
+                  "name": "idx_service_area",
                   "expressions": [
-                    "category"
+                    "service_area"
                   ],
                   "descending": [
                     false
-                  ]
-                },
-                {
-                  "name": "ncci_geo_data",
-                  "expressions": [
-                    "id",
-                    "name",
-                    "category",
-                    "is_active",
-                    "last_updated"
                   ],
-                  "descending": [
-                    false,
-                    false,
-                    false,
-                    false,
-                    false
-                  ],
-                  "type": "NONCLUSTERED COLUMNSTORE"
+                  "type": "SPATIAL",
+                  "spatial_config": {
+                    "method": "SPATIAL",
+                    "tessellation": {
+                      "scheme": "GEOGRAPHY_GRID",
+                      "grid_levels": [
+                        {
+                          "level": 1,
+                          "density": "MEDIUM"
+                        },
+                        {
+                          "level": 2,
+                          "density": "LOW"
+                        },
+                        {
+                          "level": 3,
+                          "density": "HIGH"
+                        },
+                        {
+                          "level": 4,
+                          "density": "MEDIUM"
+                        }
+                      ],
+                      "cells_per_object": 256
+                    },
+                    "storage": {
+                      "allow_row_locks": true,
+                      "allow_page_locks": true
+                    },
+                    "dimensional": {
+                      "dimensions": 2,
+                      "data_type": "GEOGRAPHY"
+                    }
+                  }
                 }
               ]
             }
           ]
+        },
+        {
+          "name": "dbo"
         }
       ]
     }
@@ -2514,17 +2716,38 @@
     GO
 
     CREATE TABLE [advanced_spatial].[geo_data] (
-        [id] BIGINT IDENTITY(1,1) NOT NULL,
-        [name] NVARCHAR(255) NOT NULL,
-        [current_location] GEOGRAPHY NOT NULL,
-        [delivery_route] GEOGRAPHY,
-        [service_area] GEOGRAPHY NOT NULL,
-        [building_footprint] GEOMETRY,
-        [floor_plan] GEOMETRY,
-        [category] VARCHAR(100),
-        [is_active] BIT DEFAULT 1,
-        [last_updated] DATETIME2 DEFAULT GETDATE(),
-        CONSTRAINT [PK_geo_data_1] PRIMARY KEY ([id] ASC)
+        [id] bigint IDENTITY(1,1) NOT NULL,
+        [name] nvarchar(255) COLLATE SQL_Latin1_General_CP1_CI_AS NOT NULL,
+        [current_location] geography NOT NULL,
+        [delivery_route] geography,
+        [service_area] geography NOT NULL,
+        [building_footprint] geometry,
+        [floor_plan] geometry,
+        [category] varchar(100) COLLATE SQL_Latin1_General_CP1_CI_AS,
+        [is_active] bit DEFAULT ((1)),
+        [last_updated] datetime2(7) DEFAULT (getdate()),
+        CONSTRAINT [PK__geo_data__3213E83F941B2A6B] PRIMARY KEY CLUSTERED ([id] ASC)
+    );
+
+    CREATE NONCLUSTERED INDEX [idx_active_category] ON
+    [advanced_spatial].[geo_data] (
+        [category] ASC
+    );
+
+    CREATE NONCLUSTERED COLUMNSTORE INDEX [ncci_geo_data] ON [advanced_spatial].[geo_data] (
+        [id],
+        [name],
+        [category],
+        [is_active],
+        [last_updated]
+    );
+
+    CREATE SPATIAL INDEX [idx_building_footprint] ON [advanced_spatial].[geo_data] ([building_footprint])
+    USING GEOMETRY_GRID
+    WITH (
+        BOUNDING_BOX = (-10000, -10000, 10000, 10000),
+        GRIDS = (LEVEL_1 = LOW, LEVEL_2 = MEDIUM, LEVEL_3 = HIGH, LEVEL_4 = HIGH),
+        CELLS_PER_OBJECT = 128
     );
 
     CREATE SPATIAL INDEX [idx_current_location] ON [advanced_spatial].[geo_data] ([current_location])
@@ -2546,21 +2769,6 @@
         FILLFACTOR = 50
     );
 
-    CREATE SPATIAL INDEX [idx_service_area] ON [advanced_spatial].[geo_data] ([service_area])
-    USING GEOGRAPHY_GRID
-    WITH (
-        GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = LOW, LEVEL_3 = HIGH, LEVEL_4 = MEDIUM),
-        CELLS_PER_OBJECT = 256
-    );
-
-    CREATE SPATIAL INDEX [idx_building_footprint] ON [advanced_spatial].[geo_data] ([building_footprint])
-    USING GEOMETRY_GRID
-    WITH (
-        BOUNDING_BOX = (-10000, -10000, 10000, 10000),
-        GRIDS = (LEVEL_1 = LOW, LEVEL_2 = MEDIUM, LEVEL_3 = HIGH, LEVEL_4 = HIGH),
-        CELLS_PER_OBJECT = 128
-    );
-
     CREATE SPATIAL INDEX [idx_floor_plan] ON [advanced_spatial].[geo_data] ([floor_plan])
     USING GEOMETRY_GRID
     WITH (
@@ -2569,16 +2777,10 @@
         CELLS_PER_OBJECT = 512
     );
 
-    CREATE INDEX [idx_active_category] ON
-    [advanced_spatial].[geo_data] (
-        [category] ASC
-    );
-
-    CREATE NONCLUSTERED COLUMNSTORE INDEX [ncci_geo_data] ON [advanced_spatial].[geo_data] (
-        [id],
-        [name],
-        [category],
-        [is_active],
-        [last_updated]
+    CREATE SPATIAL INDEX [idx_service_area] ON [advanced_spatial].[geo_data] ([service_area])
+    USING GEOGRAPHY_GRID
+    WITH (
+        GRIDS = (LEVEL_1 = MEDIUM, LEVEL_2 = LOW, LEVEL_3 = HIGH, LEVEL_4 = MEDIUM),
+        CELLS_PER_OBJECT = 256
     );
 
