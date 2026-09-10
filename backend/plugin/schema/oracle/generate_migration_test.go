@@ -28,10 +28,10 @@ import (
 // TestGenerateMigration runs the rollback generator over metadata Oracle itself
 // reported for each fixture: diff the post-migration schema back to the initial
 // one and compare the DDL against the recorded golden. The metadata comes from
-// testdata/generate_migration/*.json, captured by TestRecordGenerateMigrationFixtures.
+// testdata/generate_migration/*.json, captured by TestGenerateMigrationAgainstOracle.
 //
 // Set record to regenerate the .sql goldens; it needs no Oracle. Refreshing the
-// .json metadata does, and is the recorder's job.
+// .json metadata does, and is TestGenerateMigrationAgainstOracle's job.
 func TestGenerateMigration(t *testing.T) {
 	t.Parallel()
 
@@ -90,7 +90,7 @@ func loadGenerateMigrationFixture(t *testing.T, name string) (*storepb.DatabaseS
 
 	path := generateMigrationFixturePath(name)
 	raw, err := os.ReadFile(path)
-	require.NoErrorf(t, err, "missing fixture %s; regenerate with: go test -tags oracle_record -run TestRecordGenerateMigrationFixtures ./backend/plugin/schema/oracle/", path)
+	require.NoErrorf(t, err, "missing fixture %s; regenerate by setting record = true in TestGenerateMigrationAgainstOracle, then running: go test -run TestGenerateMigrationAgainstOracle ./backend/plugin/schema/oracle/", path)
 
 	var fixture generateMigrationFixture
 	require.NoError(t, json.Unmarshal(raw, &fixture), "failed to read %s", path)
