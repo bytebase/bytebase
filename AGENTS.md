@@ -23,6 +23,14 @@ Bytebase is the standard for database development. Every product and engineering
 - Follow Google language style guides and AIPs for API/proto design. AIPs take precedence over the proto guide. Enum values use `HELLO`, not `TYPE_HELLO`.
 - Use American English. Avoid collection names ending in `List`.
 
+## Code comments
+
+- Use names and structure to explain what code does. Reserve comments for non-obvious intent, invariants, ordering constraints, external behavior, and public API contracts.
+- Default to one or two sentences. Longer comments must explain a constraint a maintainer needs to change the code safely.
+- Keep implementation history, rejected approaches, review discussions, and follow-up inventories in PRs or issues. For a workaround, keep only the current limitation and a relevant issue reference beside the code.
+- Explain each constraint once, where it is enforced. In tests, let case names and assertions describe behavior; comment only on surprising fixtures or semantics.
+- Before handoff, reread added or modified comments. Remove code narration and repeated rationale, and verify the remaining claims against the implementation.
+
 ## Test placement
 
 Test API and workflow behavior against PostgreSQL. Engine dialect and DDL fidelity tests belong in omni.
