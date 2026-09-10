@@ -1,0 +1,4388 @@
+package pg
+
+import (
+	"context"
+	"fmt"
+	"strings"
+	"testing"
+
+	omnipg "github.com/bytebase/omni/pg"
+	"github.com/bytebase/omni/pg/catalog"
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"github.com/bytebase/bytebase/backend/common/testcontainer"
+	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
+	"github.com/bytebase/bytebase/backend/plugin/schema"
+	"github.com/bytebase/bytebase/backend/store/model"
+)
+
+func TestGetDatabaseDefinitionSDLFormat(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *storepb.DatabaseSchemaMetadata
+		expected string
+	}{
+		{
+			name: "Simple table with basic columns",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "users",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "SERIAL",
+										Nullable: false,
+									},
+									{
+										Name:     "name",
+										Type:     "VARCHAR(255)",
+										Nullable: false,
+									},
+									{
+										Name:     "email",
+										Type:     "VARCHAR(320)",
+										Nullable: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE TABLE "public"."users" (
+    "id" SERIAL NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
+    "email" VARCHAR(320)
+);
+
+`,
+		},
+		{
+			name: "Table with default values",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "products",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "SERIAL",
+										Nullable: false,
+									},
+									{
+										Name:     "name",
+										Type:     "VARCHAR(255)",
+										Nullable: false,
+									},
+									{
+										Name:     "price",
+										Type:     "DECIMAL(10,2)",
+										Default:  "0.00",
+										Nullable: false,
+									},
+									{
+										Name:     "active",
+										Type:     "BOOLEAN",
+										Default:  "true",
+										Nullable: false,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE TABLE "public"."products" (
+    "id" SERIAL NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
+    "price" DECIMAL(10,2) DEFAULT 0.00 NOT NULL,
+    "active" BOOLEAN DEFAULT true NOT NULL
+);
+
+`,
+		},
+		{
+			name: "Table with constraints",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "users",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "SERIAL",
+										Nullable: false,
+									},
+									{
+										Name:     "email",
+										Type:     "VARCHAR(320)",
+										Nullable: false,
+									},
+									{
+										Name:     "age",
+										Type:     "INTEGER",
+										Nullable: true,
+									},
+								},
+								Indexes: []*storepb.IndexMetadata{
+									{
+										Name:        "users_pkey",
+										Expressions: []string{"id"},
+										Primary:     true,
+									},
+									{
+										Name:         "users_email_key",
+										Expressions:  []string{"email"},
+										Unique:       true,
+										IsConstraint: true,
+									},
+								},
+								CheckConstraints: []*storepb.CheckConstraintMetadata{
+									{
+										Name:       "users_age_check",
+										Expression: "(age >= 0)",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE TABLE "public"."users" (
+    "id" SERIAL NOT NULL,
+    "email" VARCHAR(320) NOT NULL,
+    "age" INTEGER,
+    CONSTRAINT "users_pkey" PRIMARY KEY (id),
+    CONSTRAINT "users_email_key" UNIQUE (email),
+    CONSTRAINT "users_age_check" CHECK (age >= 0)
+);
+
+`,
+		},
+		{
+			name: "Table with foreign key",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "orders",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "SERIAL",
+										Nullable: false,
+									},
+									{
+										Name:     "user_id",
+										Type:     "INTEGER",
+										Nullable: false,
+									},
+								},
+								Indexes: []*storepb.IndexMetadata{
+									{
+										Name:        "orders_pkey",
+										Expressions: []string{"id"},
+										Primary:     true,
+									},
+								},
+								ForeignKeys: []*storepb.ForeignKeyMetadata{
+									{
+										Name:              "orders_user_id_fkey",
+										Columns:           []string{"user_id"},
+										ReferencedSchema:  "public",
+										ReferencedTable:   "users",
+										ReferencedColumns: []string{"id"},
+										OnDelete:          "CASCADE",
+										OnUpdate:          "NO ACTION",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE TABLE "public"."orders" (
+    "id" SERIAL NOT NULL,
+    "user_id" INTEGER NOT NULL,
+    CONSTRAINT "orders_pkey" PRIMARY KEY (id),
+    CONSTRAINT "orders_user_id_fkey" FOREIGN KEY ("user_id") REFERENCES "public"."users" ("id") ON DELETE CASCADE
+);
+
+`,
+		},
+		{
+			name: "Multiple tables",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "categories",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "SERIAL",
+										Nullable: false,
+									},
+									{
+										Name:     "name",
+										Type:     "VARCHAR(100)",
+										Nullable: false,
+									},
+								},
+							},
+							{
+								Name: "products",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "SERIAL",
+										Nullable: false,
+									},
+									{
+										Name:     "category_id",
+										Type:     "INTEGER",
+										Nullable: true,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE TABLE "public"."categories" (
+    "id" SERIAL NOT NULL,
+    "name" VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE "public"."products" (
+    "id" SERIAL NOT NULL,
+    "category_id" INTEGER
+);
+
+`,
+		},
+		{
+			name: "Table with indexes",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "products",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "SERIAL",
+										Nullable: false,
+									},
+									{
+										Name:     "name",
+										Type:     "VARCHAR(255)",
+										Nullable: false,
+									},
+									{
+										Name:     "category_id",
+										Type:     "INTEGER",
+										Nullable: true,
+									},
+									{
+										Name:     "price",
+										Type:     "DECIMAL(10,2)",
+										Nullable: false,
+									},
+								},
+								Indexes: []*storepb.IndexMetadata{
+									{
+										Name:        "products_pkey",
+										Expressions: []string{"id"},
+										Primary:     true,
+									},
+									{
+										Name:        "idx_products_name",
+										Expressions: []string{"name"},
+									},
+									{
+										Name:        "idx_products_category_price",
+										Expressions: []string{"category_id", "price"},
+										Descending:  []bool{false, true}, // price DESC
+									},
+									{
+										Name:         "idx_products_name_unique",
+										Expressions:  []string{"name"},
+										Unique:       true,
+										IsConstraint: false, // This is a unique index, not a unique constraint
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE TABLE "public"."products" (
+    "id" SERIAL NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
+    "category_id" INTEGER,
+    "price" DECIMAL(10,2) NOT NULL,
+    CONSTRAINT "products_pkey" PRIMARY KEY (id)
+);
+
+CREATE INDEX "idx_products_name" ON "public"."products" (name);
+
+CREATE INDEX "idx_products_category_price" ON "public"."products" (category_id, price DESC);
+
+CREATE UNIQUE INDEX "idx_products_name_unique" ON "public"."products" (name);
+
+`,
+		},
+		{
+			name: "Table with views",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "users",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "SERIAL",
+										Nullable: false,
+									},
+									{
+										Name:     "name",
+										Type:     "VARCHAR(255)",
+										Nullable: false,
+									},
+									{
+										Name:     "email",
+										Type:     "VARCHAR(320)",
+										Nullable: false,
+									},
+									{
+										Name:     "active",
+										Type:     "BOOLEAN",
+										Default:  "true",
+										Nullable: false,
+									},
+								},
+								Indexes: []*storepb.IndexMetadata{
+									{
+										Name:        "users_pkey",
+										Expressions: []string{"id"},
+										Primary:     true,
+									},
+								},
+							},
+							{
+								Name: "orders",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "SERIAL",
+										Nullable: false,
+									},
+									{
+										Name:     "user_id",
+										Type:     "INTEGER",
+										Nullable: false,
+									},
+									{
+										Name:     "total",
+										Type:     "DECIMAL(10,2)",
+										Nullable: false,
+									},
+								},
+								Indexes: []*storepb.IndexMetadata{
+									{
+										Name:        "orders_pkey",
+										Expressions: []string{"id"},
+										Primary:     true,
+									},
+								},
+							},
+						},
+						Views: []*storepb.ViewMetadata{
+							{
+								Name: "active_users",
+								Definition: `SELECT id, name, email
+    FROM users
+    WHERE active = true`,
+							},
+							{
+								Name: "user_order_summary",
+								Definition: `SELECT
+    u.id,
+    u.name,
+    COUNT(o.id) as order_count,
+    COALESCE(SUM(o.total), 0) as total_amount
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id
+GROUP BY u.id, u.name`,
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE TABLE "public"."users" (
+    "id" SERIAL NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
+    "email" VARCHAR(320) NOT NULL,
+    "active" BOOLEAN DEFAULT true NOT NULL,
+    CONSTRAINT "users_pkey" PRIMARY KEY (id)
+);
+
+CREATE TABLE "public"."orders" (
+    "id" SERIAL NOT NULL,
+    "user_id" INTEGER NOT NULL,
+    "total" DECIMAL(10,2) NOT NULL,
+    CONSTRAINT "orders_pkey" PRIMARY KEY (id)
+);
+
+CREATE VIEW "public"."active_users" AS SELECT id, name, email
+    FROM users
+    WHERE active = true;
+
+CREATE VIEW "public"."user_order_summary" AS SELECT
+    u.id,
+    u.name,
+    COUNT(o.id) as order_count,
+    COALESCE(SUM(o.total), 0) as total_amount
+FROM users u
+LEFT JOIN orders o ON u.id = o.user_id
+GROUP BY u.id, u.name;
+
+`,
+		},
+		{
+			name: "Database with functions and procedures",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "users",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "SERIAL",
+										Nullable: false,
+									},
+									{
+										Name:     "name",
+										Type:     "VARCHAR(255)",
+										Nullable: false,
+									},
+									{
+										Name:     "created_at",
+										Type:     "TIMESTAMP",
+										Default:  "CURRENT_TIMESTAMP",
+										Nullable: false,
+									},
+								},
+								Indexes: []*storepb.IndexMetadata{
+									{
+										Name:        "users_pkey",
+										Expressions: []string{"id"},
+										Primary:     true,
+									},
+								},
+							},
+						},
+						Functions: []*storepb.FunctionMetadata{
+							{
+								Name: "get_user_count",
+								Definition: `CREATE FUNCTION "public"."get_user_count"() RETURNS integer
+    LANGUAGE sql
+    AS $$
+    SELECT COUNT(*)::integer FROM users;
+$$`,
+							},
+							{
+								Name: "get_user_by_id",
+								Definition: `CREATE FUNCTION "public"."get_user_by_id"(user_id integer) RETURNS TABLE(id integer, name character varying, created_at timestamp without time zone)
+    LANGUAGE sql
+    AS $$
+    SELECT u.id, u.name, u.created_at
+    FROM users u
+    WHERE u.id = user_id;
+$$`,
+							},
+							{
+								Name: "update_user_name",
+								Definition: `CREATE PROCEDURE "public"."update_user_name"(IN user_id integer, IN new_name character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    UPDATE users
+    SET name = new_name
+    WHERE id = user_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'User with id % not found', user_id;
+    END IF;
+END;
+$$`,
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE TABLE "public"."users" (
+    "id" SERIAL NOT NULL,
+    "name" VARCHAR(255) NOT NULL,
+    "created_at" TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    CONSTRAINT "users_pkey" PRIMARY KEY (id)
+);
+
+CREATE FUNCTION "public"."get_user_count"() RETURNS integer
+    LANGUAGE sql
+    AS $$
+    SELECT COUNT(*)::integer FROM users;
+$$;
+
+CREATE FUNCTION "public"."get_user_by_id"(user_id integer) RETURNS TABLE(id integer, name character varying, created_at timestamp without time zone)
+    LANGUAGE sql
+    AS $$
+    SELECT u.id, u.name, u.created_at
+    FROM users u
+    WHERE u.id = user_id;
+$$;
+
+CREATE PROCEDURE "public"."update_user_name"(IN user_id integer, IN new_name character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    UPDATE users
+    SET name = new_name
+    WHERE id = user_id;
+
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'User with id % not found', user_id;
+    END IF;
+END;
+$$;
+
+`,
+		},
+		{
+			name: "Database with sequences",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Sequences: []*storepb.SequenceMetadata{
+							{
+								Name:       "independent_seq",
+								DataType:   "bigint",
+								Start:      "1",
+								Increment:  "1",
+								MinValue:   "1",
+								MaxValue:   "9223372036854775807",
+								Cycle:      false,
+								OwnerTable: "", // Independent sequence (not owned by any table)
+							},
+							{
+								Name:        "user_id_seq",
+								DataType:    "bigint",
+								Start:       "1",
+								Increment:   "1",
+								MinValue:    "1",
+								MaxValue:    "9223372036854775807",
+								Cycle:       false,
+								OwnerTable:  "users",
+								OwnerColumn: "id",
+							},
+							{
+								Name:       "order_seq",
+								DataType:   "integer",
+								Start:      "1000",
+								Increment:  "10",
+								MinValue:   "1000",
+								MaxValue:   "999999",
+								Cycle:      true,
+								OwnerTable: "", // Independent sequence
+							},
+						},
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "users",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "INTEGER",
+										Nullable: false,
+										Default:  "nextval('user_id_seq'::regclass)",
+									},
+									{
+										Name:     "name",
+										Type:     "VARCHAR(255)",
+										Nullable: false,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE SEQUENCE "public"."independent_seq" AS bigint START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE 9223372036854775807 NO CYCLE;
+
+CREATE SEQUENCE "public"."order_seq" AS integer START WITH 1000 INCREMENT BY 10 MINVALUE 1000 MAXVALUE 999999 CYCLE;
+
+CREATE TABLE "public"."users" (
+    "id" serial,
+    "name" VARCHAR(255) NOT NULL
+);
+
+`,
+		},
+		{
+			name: "Empty database",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{},
+			},
+			expected: "",
+		},
+		{
+			name: "Serial columns should use serial types",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Sequences: []*storepb.SequenceMetadata{
+							{
+								Name:        "users_id_seq",
+								DataType:    "bigint",
+								Start:       "1",
+								Increment:   "1",
+								MinValue:    "1",
+								MaxValue:    "9223372036854775807",
+								Cycle:       false,
+								OwnerTable:  "users",
+								OwnerColumn: "id",
+							},
+							{
+								Name:        "products_id_seq",
+								DataType:    "integer",
+								Start:       "1",
+								Increment:   "1",
+								MinValue:    "1",
+								MaxValue:    "2147483647",
+								Cycle:       false,
+								OwnerTable:  "products",
+								OwnerColumn: "id",
+							},
+							{
+								Name:        "orders_id_seq",
+								DataType:    "smallint",
+								Start:       "1",
+								Increment:   "1",
+								MinValue:    "1",
+								MaxValue:    "32767",
+								Cycle:       false,
+								OwnerTable:  "orders",
+								OwnerColumn: "id",
+							},
+						},
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "users",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "bigint",
+										Nullable: false,
+										Default:  "nextval('users_id_seq'::regclass)",
+									},
+									{
+										Name:     "name",
+										Type:     "VARCHAR(255)",
+										Nullable: false,
+									},
+								},
+							},
+							{
+								Name: "products",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "integer",
+										Nullable: false,
+										Default:  "nextval('products_id_seq'::regclass)",
+									},
+									{
+										Name:     "name",
+										Type:     "VARCHAR(255)",
+										Nullable: false,
+									},
+								},
+							},
+							{
+								Name: "orders",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "smallint",
+										Nullable: false,
+										Default:  "nextval('orders_id_seq'::regclass)",
+									},
+									{
+										Name:     "user_id",
+										Type:     "INTEGER",
+										Nullable: false,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE TABLE "public"."users" (
+    "id" bigserial,
+    "name" VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE "public"."products" (
+    "id" serial,
+    "name" VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE "public"."orders" (
+    "id" smallserial,
+    "user_id" INTEGER NOT NULL
+);
+
+`,
+		},
+		{
+			name: "Identity columns should use GENERATED AS IDENTITY syntax",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Sequences: []*storepb.SequenceMetadata{
+							{
+								Name:        "users_id_seq",
+								DataType:    "bigint",
+								Start:       "1",
+								Increment:   "1",
+								MinValue:    "1",
+								MaxValue:    "9223372036854775807",
+								Cycle:       false,
+								OwnerTable:  "users",
+								OwnerColumn: "id",
+							},
+							{
+								Name:        "products_id_seq",
+								DataType:    "integer",
+								Start:       "100",
+								Increment:   "5",
+								MinValue:    "1",
+								MaxValue:    "2147483647",
+								Cycle:       false,
+								OwnerTable:  "products",
+								OwnerColumn: "id",
+							},
+						},
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "users",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:               "id",
+										Type:               "bigint",
+										Nullable:           false,
+										IdentityGeneration: storepb.ColumnMetadata_ALWAYS,
+									},
+									{
+										Name:     "name",
+										Type:     "VARCHAR(255)",
+										Nullable: false,
+									},
+								},
+							},
+							{
+								Name: "products",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:               "id",
+										Type:               "integer",
+										Nullable:           false,
+										IdentityGeneration: storepb.ColumnMetadata_BY_DEFAULT,
+									},
+									{
+										Name:     "name",
+										Type:     "VARCHAR(255)",
+										Nullable: false,
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE TABLE "public"."users" (
+    "id" bigint GENERATED ALWAYS AS IDENTITY,
+    "name" VARCHAR(255) NOT NULL
+);
+
+CREATE TABLE "public"."products" (
+    "id" integer GENERATED BY DEFAULT AS IDENTITY (START WITH 100 INCREMENT BY 5),
+    "name" VARCHAR(255) NOT NULL
+);
+
+`,
+		},
+		{
+			name: "Table with indexes using custom opclass",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "documents",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "SERIAL",
+										Nullable: false,
+									},
+									{
+										Name:     "title",
+										Type:     "TEXT",
+										Nullable: false,
+									},
+									{
+										Name:     "content",
+										Type:     "TEXT",
+										Nullable: false,
+									},
+								},
+								Indexes: []*storepb.IndexMetadata{
+									{
+										Name:        "documents_pkey",
+										Expressions: []string{"id"},
+										Primary:     true,
+									},
+									{
+										Name:            "idx_documents_title_pattern",
+										Expressions:     []string{"title"},
+										Type:            "btree",
+										OpclassNames:    []string{"text_pattern_ops"},
+										OpclassDefaults: []bool{false},
+									},
+									{
+										Name:            "idx_documents_title_content",
+										Expressions:     []string{"title", "content"},
+										Type:            "btree",
+										OpclassNames:    []string{"text_pattern_ops", "text_pattern_ops"},
+										OpclassDefaults: []bool{false, false},
+									},
+									{
+										Name:            "idx_documents_default_opclass",
+										Expressions:     []string{"title"},
+										Type:            "btree",
+										OpclassNames:    []string{"text_ops"},
+										OpclassDefaults: []bool{true}, // Default opclass should not be printed
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE TABLE "public"."documents" (
+    "id" SERIAL NOT NULL,
+    "title" TEXT NOT NULL,
+    "content" TEXT NOT NULL,
+    CONSTRAINT "documents_pkey" PRIMARY KEY (id)
+);
+
+CREATE INDEX "idx_documents_title_pattern" ON "public"."documents" (title text_pattern_ops);
+
+CREATE INDEX "idx_documents_title_content" ON "public"."documents" (title text_pattern_ops, content text_pattern_ops);
+
+CREATE INDEX "idx_documents_default_opclass" ON "public"."documents" (title);
+
+`,
+		},
+		{
+			name: "Sequence with ownership (non-serial, non-identity)",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Sequences: []*storepb.SequenceMetadata{
+							{
+								Name:        "custom_seq",
+								DataType:    "bigint",
+								Start:       "100",
+								Increment:   "5",
+								MinValue:    "100",
+								MaxValue:    "9223372036854775807",
+								Cycle:       false,
+								CacheSize:   "10",
+								OwnerTable:  "orders",
+								OwnerColumn: "order_number",
+							},
+						},
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "orders",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "INTEGER",
+										Nullable: false,
+									},
+									{
+										Name:     "order_number",
+										Type:     "BIGINT",
+										Nullable: false,
+										Default:  "nextval('custom_seq'::regclass)",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE SEQUENCE "public"."custom_seq" AS bigint START WITH 100 INCREMENT BY 5 MINVALUE 100 MAXVALUE 9223372036854775807 NO CYCLE CACHE 10;
+
+CREATE TABLE "public"."orders" (
+    "id" INTEGER NOT NULL,
+    "order_number" BIGINT DEFAULT nextval('custom_seq'::regclass) NOT NULL
+);
+
+ALTER SEQUENCE "public"."custom_seq" OWNED BY "public"."orders"."order_number";
+
+`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// TODO: Skip this test case temporarily - will be fixed in a future PR
+			// to support ALTER SEQUENCE START WITH for serial columns
+			if tt.name == "Sequence with ownership (non-serial, non-identity)" {
+				t.Skip("Skipping test case - will support ALTER SEQUENCE START WITH for serial columns in future PR")
+			}
+
+			ctx := schema.GetDefinitionContext{
+				SDLFormat: true,
+			}
+
+			result, err := GetDatabaseDefinition(ctx, tt.metadata)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestGetSchemaSDLDefinition(t *testing.T) {
+	schemaMetadata := &storepb.SchemaMetadata{
+		Name: "public",
+		Tables: []*storepb.TableMetadata{
+			{
+				Name: "users",
+				Columns: []*storepb.ColumnMetadata{
+					{
+						Name:     "id",
+						Type:     "SERIAL",
+						Nullable: false,
+					},
+					{
+						Name:     "name",
+						Type:     "VARCHAR(255)",
+						Nullable: false,
+					},
+				},
+			},
+		},
+	}
+
+	result, err := GetSchemaSDLDefinition(schemaMetadata)
+	require.NoError(t, err)
+
+	expected := `CREATE TABLE "public"."users" (
+    "id" SERIAL NOT NULL,
+    "name" VARCHAR(255) NOT NULL
+);
+
+`
+
+	assert.Equal(t, expected, result)
+}
+
+func TestGetDatabaseDefinitionNormalVsSDLFormat(t *testing.T) {
+	// Create a more complex metadata to show the difference
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "users",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "SERIAL",
+								Nullable: false,
+							},
+							{
+								Name:     "name",
+								Type:     "VARCHAR(255)",
+								Nullable: false,
+							},
+							{
+								Name:     "email",
+								Type:     "VARCHAR(320)",
+								Nullable: true,
+							},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{
+								Name:        "users_pkey",
+								Expressions: []string{"id"},
+								Primary:     true,
+							},
+							{
+								Name:        "idx_users_name",
+								Expressions: []string{"name"},
+							},
+							{
+								Name:         "idx_users_email_unique",
+								Expressions:  []string{"email"},
+								Unique:       true,
+								IsConstraint: false, // This is a unique index, not a constraint
+							},
+						},
+					},
+				},
+				Views: []*storepb.ViewMetadata{
+					{
+						Name:       "active_users_view",
+						Definition: "SELECT id, name, email FROM users WHERE active = true",
+					},
+				},
+				Functions: []*storepb.FunctionMetadata{
+					{
+						Name: "count_active_users",
+						Definition: `CREATE FUNCTION "public"."count_active_users"() RETURNS integer
+    LANGUAGE sql
+    AS $$
+    SELECT COUNT(*)::integer FROM users WHERE active = true;
+$$`,
+					},
+				},
+			},
+		},
+	}
+
+	// Test SDL format is false (normal format)
+	ctxNormal := schema.GetDefinitionContext{
+		SDLFormat: false,
+	}
+
+	resultNormal, err := GetDatabaseDefinition(ctxNormal, metadata)
+	require.NoError(t, err)
+	assert.NotEqual(t, "", resultNormal)
+	assert.Contains(t, resultNormal, "CREATE TABLE")
+
+	// Test SDL format is true
+	ctxSDL := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	resultSDL, err := GetDatabaseDefinition(ctxSDL, metadata)
+	require.NoError(t, err)
+	assert.NotEqual(t, "", resultSDL)
+	assert.Contains(t, resultSDL, "CREATE TABLE")
+
+	// SDL format should be different from normal format
+	// Normal format has separate ALTER TABLE statements for constraints and separate CREATE INDEX
+	// SDL format includes constraints within CREATE TABLE and indexes immediately after
+	assert.Contains(t, resultNormal, "ALTER TABLE")      // Normal format has separate constraint statements
+	assert.NotContains(t, resultSDL, "ALTER TABLE")      // SDL format should not have separate constraints
+	assert.Contains(t, resultSDL, "CONSTRAINT")          // SDL format should have inline constraints
+	assert.Contains(t, resultSDL, "PRIMARY KEY")         // SDL format should have inline PRIMARY KEY
+	assert.Contains(t, resultSDL, "CREATE INDEX")        // SDL format should have CREATE INDEX statements
+	assert.Contains(t, resultSDL, "CREATE UNIQUE INDEX") // SDL format should have CREATE UNIQUE INDEX
+	assert.Contains(t, resultSDL, "CREATE VIEW")         // SDL format should have CREATE VIEW statements
+	assert.Contains(t, resultSDL, "CREATE FUNCTION")     // SDL format should have CREATE FUNCTION statements
+
+	t.Logf("Normal format result: %q", resultNormal)
+	t.Logf("SDL format result: %q", resultSDL)
+}
+
+// TestCheckConstraintNotValidFormat tests that CHECK constraints with NOT VALID
+// are formatted correctly without extra parentheses around the expression
+func TestCheckConstraintNotValidFormat(t *testing.T) {
+	tests := []struct {
+		name     string
+		metadata *storepb.DatabaseSchemaMetadata
+		expected string
+	}{
+		{
+			name: "Check constraint with NOT VALID",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "namespace_settings",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "namespace_id",
+										Type:     "bigint",
+										Nullable: false,
+									},
+									{
+										Name:     "default_branch_protection_defaults",
+										Type:     "jsonb",
+										Nullable: true,
+									},
+								},
+								Indexes: []*storepb.IndexMetadata{
+									{
+										Name:        "namespace_settings_pkey",
+										Expressions: []string{"namespace_id"},
+										Primary:     true,
+									},
+								},
+								CheckConstraints: []*storepb.CheckConstraintMetadata{
+									{
+										Name:       "default_branch_protection_defaults_size_constraint",
+										Expression: "(octet_length(default_branch_protection_defaults::text) <= 1024) NOT VALID",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE TABLE "public"."namespace_settings" (
+    "namespace_id" bigint NOT NULL,
+    "default_branch_protection_defaults" jsonb,
+    CONSTRAINT "namespace_settings_pkey" PRIMARY KEY (namespace_id),
+    CONSTRAINT "default_branch_protection_defaults_size_constraint" CHECK (octet_length(default_branch_protection_defaults::text) <= 1024) NOT VALID
+);
+
+`,
+		},
+		{
+			name: "Multiple check constraints with and without NOT VALID",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "test",
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "table1",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "serial",
+										Nullable: false,
+									},
+									{
+										Name:     "data",
+										Type:     "jsonb",
+										Nullable: true,
+									},
+									{
+										Name:     "age",
+										Type:     "integer",
+										Nullable: true,
+									},
+								},
+								Indexes: []*storepb.IndexMetadata{
+									{
+										Name:        "table1_pkey",
+										Expressions: []string{"id"},
+										Primary:     true,
+									},
+								},
+								CheckConstraints: []*storepb.CheckConstraintMetadata{
+									{
+										Name:       "table1_data_size_check",
+										Expression: "(octet_length(data::text) <= 1024) NOT VALID",
+									},
+									{
+										Name:       "table1_age_check",
+										Expression: "(age >= 18)",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE SCHEMA IF NOT EXISTS "test";
+
+CREATE TABLE "test"."table1" (
+    "id" serial NOT NULL,
+    "data" jsonb,
+    "age" integer,
+    CONSTRAINT "table1_pkey" PRIMARY KEY (id),
+    CONSTRAINT "table1_data_size_check" CHECK (octet_length(data::text) <= 1024) NOT VALID,
+    CONSTRAINT "table1_age_check" CHECK (age >= 18)
+);
+
+`,
+		},
+		{
+			name: "Regular check constraint without NOT VALID",
+			metadata: &storepb.DatabaseSchemaMetadata{
+				Schemas: []*storepb.SchemaMetadata{
+					{
+						Name: "public",
+						Tables: []*storepb.TableMetadata{
+							{
+								Name: "users",
+								Columns: []*storepb.ColumnMetadata{
+									{
+										Name:     "id",
+										Type:     "serial",
+										Nullable: false,
+									},
+									{
+										Name:     "age",
+										Type:     "integer",
+										Nullable: true,
+									},
+								},
+								Indexes: []*storepb.IndexMetadata{
+									{
+										Name:        "users_pkey",
+										Expressions: []string{"id"},
+										Primary:     true,
+									},
+								},
+								CheckConstraints: []*storepb.CheckConstraintMetadata{
+									{
+										Name:       "users_age_check",
+										Expression: "(age >= 0)",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			expected: `CREATE TABLE "public"."users" (
+    "id" serial NOT NULL,
+    "age" integer,
+    CONSTRAINT "users_pkey" PRIMARY KEY (id),
+    CONSTRAINT "users_age_check" CHECK (age >= 0)
+);
+
+`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := schema.GetDefinitionContext{
+				SDLFormat: true,
+			}
+
+			result, err := GetDatabaseDefinition(ctx, tt.metadata)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, result)
+
+			// Additional validation: ensure NOT VALID (if present) is outside parentheses
+			if strings.Contains(tt.expected, "NOT VALID") {
+				// Check that we don't have the incorrect format: CHECK (...) NOT VALID)
+				assert.NotContains(t, result, ") NOT VALID)", "NOT VALID should not be inside closing parenthesis")
+				// Check that we have the correct format: CHECK (...) NOT VALID
+				assert.Contains(t, result, ") NOT VALID", "NOT VALID should be after CHECK expression parenthesis")
+			}
+
+			// Validate that the generated SQL can be parsed without errors using ANTLR parser
+			_, err = omnipg.Parse(result)
+			require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
+		})
+	}
+}
+
+// TestCheckConstraintNotValidFormatNormalMode tests that CHECK constraints with NOT VALID
+// are formatted correctly in normal (non-SDL) mode
+func TestCheckConstraintNotValidFormatNormalMode(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "namespace_settings",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "namespace_id",
+								Type:     "bigint",
+								Nullable: false,
+							},
+							{
+								Name:     "default_branch_protection_defaults",
+								Type:     "jsonb",
+								Nullable: true,
+							},
+						},
+						CheckConstraints: []*storepb.CheckConstraintMetadata{
+							{
+								Name:       "default_branch_protection_defaults_size_constraint",
+								Expression: "(octet_length(default_branch_protection_defaults::text) <= 1024) NOT VALID",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	// Test normal format (SDLFormat: false)
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: false,
+	}
+
+	result, err := GetDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+
+	// Verify the CHECK constraint is output correctly in the CREATE TABLE statement
+	assert.Contains(t, result, `CONSTRAINT "default_branch_protection_defaults_size_constraint" CHECK (octet_length(default_branch_protection_defaults::text) <= 1024) NOT VALID`)
+
+	// Additional validation: ensure NOT VALID is outside parentheses (not inside extra parentheses)
+	assert.NotContains(t, result, ") NOT VALID)", "NOT VALID should not be inside closing parenthesis")
+	assert.Contains(t, result, ") NOT VALID", "NOT VALID should be after CHECK expression parenthesis")
+
+	// Validate that the generated SQL can be parsed without errors using ANTLR parser
+	_, err = omnipg.Parse(result)
+	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
+}
+
+func TestGetDatabaseDefinitionSDLFormat_WithComments(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name:    "test_schema",
+				Comment: "Test schema for comments",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name:    "users",
+						Comment: "Users table with comments",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "SERIAL",
+								Nullable: false,
+								Comment:  "User ID",
+							},
+							{
+								Name:     "name",
+								Type:     "VARCHAR(255)",
+								Nullable: false,
+								Comment:  "User name",
+							},
+							{
+								Name:     "email",
+								Type:     "VARCHAR(320)",
+								Nullable: true,
+								Comment:  "User email address",
+							},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{
+								Name:        "idx_users_email",
+								Expressions: []string{"email"},
+								Unique:      false,
+								Primary:     false,
+								Comment:     "Index on email column",
+							},
+						},
+					},
+				},
+				Views: []*storepb.ViewMetadata{
+					{
+						Name:       "active_users",
+						Definition: "SELECT id, name, email FROM test_schema.users WHERE active = true",
+						Comment:    "View of active users",
+					},
+				},
+				Functions: []*storepb.FunctionMetadata{
+					{
+						Name:       "get_user_count",
+						Signature:  "get_user_count()",
+						Definition: "CREATE FUNCTION test_schema.get_user_count() RETURNS INTEGER AS $$ BEGIN RETURN (SELECT COUNT(*) FROM test_schema.users); END; $$ LANGUAGE plpgsql",
+						Comment:    "Function to get user count",
+					},
+				},
+				Sequences: []*storepb.SequenceMetadata{
+					{
+						Name:      "custom_seq",
+						DataType:  "bigint",
+						Start:     "1",
+						Increment: "1",
+						MinValue:  "1",
+						MaxValue:  "9223372036854775807",
+						Cycle:     false,
+						CacheSize: "1",
+						Comment:   "Custom sequence for testing",
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+
+	// Verify schema comment
+	assert.Contains(t, result, `CREATE SCHEMA IF NOT EXISTS "test_schema";`)
+	assert.Contains(t, result, `COMMENT ON SCHEMA "test_schema" IS 'Test schema for comments';`)
+
+	// Verify table comment
+	assert.Contains(t, result, `COMMENT ON TABLE "test_schema"."users" IS 'Users table with comments';`)
+
+	// Verify column comments
+	assert.Contains(t, result, `COMMENT ON COLUMN "test_schema"."users"."id" IS 'User ID';`)
+	assert.Contains(t, result, `COMMENT ON COLUMN "test_schema"."users"."name" IS 'User name';`)
+	assert.Contains(t, result, `COMMENT ON COLUMN "test_schema"."users"."email" IS 'User email address';`)
+
+	// Verify view comment
+	assert.Contains(t, result, `COMMENT ON VIEW "test_schema"."active_users" IS 'View of active users';`)
+
+	// Verify function comment
+	assert.Contains(t, result, `COMMENT ON FUNCTION "test_schema".get_user_count() IS 'Function to get user count';`)
+
+	// Verify sequence comment
+	assert.Contains(t, result, `COMMENT ON SEQUENCE "test_schema"."custom_seq" IS 'Custom sequence for testing';`)
+
+	// Verify index comment
+	assert.Contains(t, result, `COMMENT ON INDEX "test_schema"."idx_users_email" IS 'Index on email column';`)
+
+	// Validate that the generated SQL can be parsed without errors using ANTLR parser
+	_, err = omnipg.Parse(result)
+	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
+}
+
+func TestGetDatabaseDefinitionSDLFormat_WithCommentsEscaping(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name:    "test_table",
+						Comment: "Table with 'single quotes' and \"double quotes\"",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "INTEGER",
+								Nullable: false,
+								Comment:  "Column with 'quoted' text",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+
+	// Verify that single quotes are properly escaped
+	assert.Contains(t, result, `COMMENT ON TABLE "public"."test_table" IS 'Table with ''single quotes'' and "double quotes"';`)
+	assert.Contains(t, result, `COMMENT ON COLUMN "public"."test_table"."id" IS 'Column with ''quoted'' text';`)
+
+	// Validate that the generated SQL can be parsed without errors using ANTLR parser
+	_, err = omnipg.Parse(result)
+	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
+}
+
+func TestGetMultiFileDatabaseDefinition_WithComments(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name:    "app_schema",
+				Comment: "Application schema",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name:    "products",
+						Comment: "Product catalog",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "INTEGER",
+								Nullable: false,
+								Comment:  "Product ID",
+							},
+							{
+								Name:     "name",
+								Type:     "TEXT",
+								Nullable: false,
+								Comment:  "Product name",
+							},
+						},
+						Indexes: []*storepb.IndexMetadata{
+							{
+								Name:        "idx_products_name",
+								Expressions: []string{"name"},
+								Unique:      false,
+								Primary:     false,
+								Comment:     "Index for product search",
+							},
+						},
+					},
+				},
+				Views: []*storepb.ViewMetadata{
+					{
+						Name:       "active_products",
+						Definition: "SELECT id, name FROM app_schema.products WHERE active = true",
+						Comment:    "View of active products",
+					},
+				},
+				MaterializedViews: []*storepb.MaterializedViewMetadata{
+					{
+						Name:       "product_summary_mv",
+						Definition: "SELECT id, name FROM app_schema.products",
+						Comment:    "Materialized view of product summary",
+					},
+				},
+				Functions: []*storepb.FunctionMetadata{
+					{
+						Name:       "count_products",
+						Signature:  "count_products()",
+						Definition: "CREATE FUNCTION app_schema.count_products() RETURNS INTEGER AS $$ BEGIN RETURN (SELECT COUNT(*) FROM app_schema.products); END; $$ LANGUAGE plpgsql",
+						Comment:    "Returns product count",
+					},
+				},
+				Sequences: []*storepb.SequenceMetadata{
+					{
+						Name:      "order_seq",
+						DataType:  "bigint",
+						Start:     "1",
+						Increment: "1",
+						MinValue:  "1",
+						MaxValue:  "9223372036854775807",
+						Cycle:     false,
+						CacheSize: "1",
+						Comment:   "Sequence for orders",
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetMultiFileDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Build a map for easier testing
+	fileMap := make(map[string]string)
+	for _, file := range result.Files {
+		fileMap[file.Name] = file.Content
+	}
+
+	// Verify schema-level file with schema comment
+	schemaFile, ok := fileMap["schemas/app_schema/schema.sql"]
+	require.True(t, ok, "schema.sql file should exist for non-public schema")
+	assert.Contains(t, schemaFile, `CREATE SCHEMA IF NOT EXISTS "app_schema";`)
+	assert.Contains(t, schemaFile, `COMMENT ON SCHEMA "app_schema" IS 'Application schema';`)
+
+	// Verify consolidated sequences file with comment (independent sequences go in sequences.sql)
+	sequenceFile, ok := fileMap["schemas/app_schema/sequences.sql"]
+	require.True(t, ok, "sequences.sql file should exist for independent sequences")
+	assert.Contains(t, sequenceFile, `CREATE SEQUENCE "app_schema"."order_seq"`)
+	assert.Contains(t, sequenceFile, `COMMENT ON SEQUENCE "app_schema"."order_seq" IS 'Sequence for orders';`)
+
+	// Verify table file with comments
+	tableFile, ok := fileMap["schemas/app_schema/tables/products.sql"]
+	require.True(t, ok, "table file should exist")
+	assert.Contains(t, tableFile, `CREATE TABLE "app_schema"."products"`)
+	assert.Contains(t, tableFile, `COMMENT ON TABLE "app_schema"."products" IS 'Product catalog';`)
+	assert.Contains(t, tableFile, `COMMENT ON COLUMN "app_schema"."products"."id" IS 'Product ID';`)
+	assert.Contains(t, tableFile, `COMMENT ON COLUMN "app_schema"."products"."name" IS 'Product name';`)
+	assert.Contains(t, tableFile, `COMMENT ON INDEX "app_schema"."idx_products_name" IS 'Index for product search';`)
+
+	// Verify view file with comment
+	viewFile, ok := fileMap["schemas/app_schema/views/active_products.sql"]
+	require.True(t, ok, "view file should exist")
+	assert.Contains(t, viewFile, `CREATE VIEW "app_schema"."active_products"`)
+	assert.Contains(t, viewFile, `COMMENT ON VIEW "app_schema"."active_products" IS 'View of active products';`)
+
+	// Verify materialized view file with comment
+	materializedViewFile, ok := fileMap["schemas/app_schema/materialized_views/product_summary_mv.sql"]
+	require.True(t, ok, "materialized view file should exist")
+	assert.Contains(t, materializedViewFile, `CREATE MATERIALIZED VIEW "app_schema"."product_summary_mv"`)
+	assert.Contains(t, materializedViewFile, `COMMENT ON MATERIALIZED VIEW "app_schema"."product_summary_mv" IS 'Materialized view of product summary';`)
+
+	// Verify function file with comment
+	functionFile, ok := fileMap["schemas/app_schema/functions/count_products.sql"]
+	require.True(t, ok, "function file should exist")
+	assert.Contains(t, functionFile, `CREATE FUNCTION app_schema.count_products()`)
+	assert.Contains(t, functionFile, `COMMENT ON FUNCTION "app_schema".count_products() IS 'Returns product count';`)
+
+	// Validate that each file's SQL can be parsed
+	for fileName, content := range fileMap {
+		_, err := omnipg.Parse(content)
+		require.NoError(t, err, "SQL in file %s should be parseable by PostgreSQL parser", fileName)
+	}
+}
+
+func TestGetMultiFileDatabaseDefinition_SchemaFileMakesCombinedSDLLoadable(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "metric_helpers",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "metrics",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "INTEGER",
+								Nullable: false,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	result, err := GetMultiFileDatabaseDefinition(schema.GetDefinitionContext{SDLFormat: true}, metadata)
+	require.NoError(t, err)
+
+	fileMap := make(map[string]string)
+	var combined strings.Builder
+	for _, file := range result.Files {
+		fileMap[file.Name] = file.Content
+		combined.WriteString(file.Content)
+		combined.WriteString("\n")
+	}
+
+	schemaFile, ok := fileMap["schemas/metric_helpers/schema.sql"]
+	assert.True(t, ok, "schema.sql file should exist for non-public schema")
+	assert.Contains(t, schemaFile, `CREATE SCHEMA IF NOT EXISTS "metric_helpers";`)
+
+	_, err = schema.DiffSDLMigration(storepb.Engine_POSTGRES, "", combined.String(), "")
+	require.NoError(t, err)
+}
+
+func TestGetDatabaseDefinitionSDLFormat_SerialColumnWithSequence(t *testing.T) {
+	// This test reproduces the issue where a SERIAL column causes duplicate CREATE SEQUENCE statements
+	// SERIAL columns automatically create sequences, so we should NOT output separate CREATE SEQUENCE for them
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Sequences: []*storepb.SequenceMetadata{
+					{
+						Name:        "users_id_seq",
+						DataType:    "integer",
+						Start:       "1",
+						Increment:   "1",
+						MinValue:    "1",
+						MaxValue:    "2147483647",
+						Cycle:       false,
+						OwnerTable:  "users",
+						OwnerColumn: "id",
+						Comment:     "Sequence for users id - should NOT appear in SDL",
+					},
+					{
+						Name:       "independent_seq",
+						DataType:   "bigint",
+						Start:      "1",
+						Increment:  "1",
+						MinValue:   "1",
+						MaxValue:   "9223372036854775807",
+						Cycle:      false,
+						OwnerTable: "", // Independent sequence - should appear in SDL
+						Comment:    "Independent sequence - should appear in SDL",
+					},
+				},
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "users",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "integer",
+								Nullable: false,
+								Default:  "nextval('users_id_seq'::regclass)",
+							},
+							{
+								Name:     "name",
+								Type:     "text",
+								Nullable: false,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+
+	// The SDL should contain the table definition with serial type
+	require.Contains(t, result, `CREATE TABLE "public"."users"`)
+	require.Contains(t, result, `"id" serial`)
+	require.Contains(t, result, `"name" text NOT NULL`)
+
+	// The SDL SHOULD contain the independent sequence
+	require.Contains(t, result, `CREATE SEQUENCE "public"."independent_seq"`,
+		"SDL should contain CREATE SEQUENCE for independent sequences")
+
+	// The SDL should NOT contain a separate CREATE SEQUENCE statement for users_id_seq
+	// because the sequence is owned by the serial column (created implicitly by SERIAL type)
+	require.NotContains(t, result, `CREATE SEQUENCE "public"."users_id_seq"`,
+		"SDL should NOT contain CREATE SEQUENCE for sequence owned by a column (created implicitly by SERIAL)")
+}
+
+func TestGetMultiFileDatabaseDefinition_SerialColumnWithSequence(t *testing.T) {
+	// This test verifies that multi-file format correctly handles serial columns and their sequences
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Sequences: []*storepb.SequenceMetadata{
+					{
+						Name:        "users_id_seq",
+						DataType:    "integer",
+						Start:       "1",
+						Increment:   "1",
+						MinValue:    "1",
+						MaxValue:    "2147483647",
+						Cycle:       false,
+						OwnerTable:  "users",
+						OwnerColumn: "id",
+						Comment:     "Sequence for users id - should NOT appear as separate file",
+					},
+					{
+						Name:       "independent_seq",
+						DataType:   "bigint",
+						Start:      "1",
+						Increment:  "1",
+						MinValue:   "1",
+						MaxValue:   "9223372036854775807",
+						Cycle:      false,
+						OwnerTable: "", // Independent sequence - not owned by any column
+						Comment:    "Independent sequence - should appear as separate file",
+					},
+					{
+						Name:       "custom_seq",
+						DataType:   "bigint",
+						Start:      "100",
+						Increment:  "5",
+						MinValue:   "100",
+						MaxValue:   "9223372036854775807",
+						Cycle:      false,
+						OwnerTable: "", // Not owned by a column (independent sequence)
+						Comment:    "Custom sequence for orders - should appear as separate file",
+					},
+				},
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "users",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "integer",
+								Nullable: false,
+								Default:  "nextval('users_id_seq'::regclass)",
+							},
+							{
+								Name:     "name",
+								Type:     "text",
+								Nullable: false,
+							},
+						},
+					},
+					{
+						Name: "orders",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "integer",
+								Nullable: false,
+							},
+							{
+								Name:     "order_number",
+								Type:     "bigint",
+								Nullable: false,
+								Default:  "nextval('custom_seq'::regclass)",
+								Comment:  "Order number using custom sequence",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetMultiFileDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+
+	// Build a map of files for easy lookup
+	fileMap := make(map[string]string)
+	for _, file := range result.Files {
+		fileMap[file.Name] = file.Content
+	}
+
+	// Verify users table file exists and contains serial column
+	usersFile, ok := fileMap["schemas/public/tables/users.sql"]
+	require.True(t, ok, "users table file should exist")
+	require.Contains(t, usersFile, `"id" serial`, "users table should use serial type")
+	require.Contains(t, usersFile, `"name" text NOT NULL`)
+
+	// Verify orders table file exists
+	ordersFile, ok := fileMap["schemas/public/tables/orders.sql"]
+	require.True(t, ok, "orders table file should exist")
+	require.Contains(t, ordersFile, `"id" integer NOT NULL`)
+	require.Contains(t, ordersFile, `"order_number" bigint DEFAULT nextval('custom_seq'::regclass) NOT NULL`,
+		"order_number should use custom_seq via DEFAULT nextval()")
+
+	// Verify the consolidated sequences file exists with both independent sequences
+	sequencesFile, ok := fileMap["schemas/public/sequences.sql"]
+	require.True(t, ok, "independent_seq file should exist")
+	require.Contains(t, sequencesFile, `CREATE SEQUENCE "public"."independent_seq"`)
+	require.Contains(t, sequencesFile, `COMMENT ON SEQUENCE "public"."independent_seq" IS 'Independent sequence - should appear as separate file'`)
+	require.Contains(t, sequencesFile, `CREATE SEQUENCE "public"."custom_seq"`)
+	require.Contains(t, sequencesFile, `COMMENT ON SEQUENCE "public"."custom_seq" IS 'Custom sequence for orders - should appear as separate file'`)
+	require.NotContains(t, sequencesFile, `ALTER SEQUENCE`, "Independent sequences should not have ALTER SEQUENCE OWNED BY")
+
+	// Verify individual sequence files do NOT exist (they should be in the consolidated file)
+	_, ok = fileMap["schemas/public/sequences/independent_seq.sql"]
+	require.False(t, ok, "independent_seq should NOT have individual file (should be in sequences.sql)")
+	_, ok = fileMap["schemas/public/sequences/custom_seq.sql"]
+	require.False(t, ok, "custom_seq should NOT have individual file (should be in sequences.sql)")
+
+	// Verify users_id_seq does NOT appear in the sequences file (it's a serial sequence)
+	require.NotContains(t, sequencesFile, "users_id_seq", "users_id_seq should NOT appear in sequences.sql because it's owned by a serial column")
+
+	// Total files should be: 2 tables + 1 sequences file = 3 files
+	require.Equal(t, 3, len(result.Files), "Should have exactly 3 files (2 tables + 1 consolidated sequences file)")
+}
+
+func TestGetDatabaseDefinitionSDLFormat_MultipleSequencesClaimingOwnership(t *testing.T) {
+	// This test verifies that when multiple sequences claim ownership of the same column,
+	// only the sequence referenced in the DEFAULT clause is skipped (treated as serial sequence).
+	// The other sequences should still be output as CREATE SEQUENCE statements.
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Sequences: []*storepb.SequenceMetadata{
+					{
+						Name:        "test_sequence2",
+						DataType:    "integer",
+						Start:       "1",
+						Increment:   "1",
+						MinValue:    "1",
+						MaxValue:    "2147483647",
+						Cycle:       false,
+						OwnerTable:  "test_table",
+						OwnerColumn: "id",
+					},
+					{
+						Name:        "test_table_id_seq",
+						DataType:    "integer",
+						Start:       "1",
+						Increment:   "1",
+						MinValue:    "1",
+						MaxValue:    "2147483647",
+						Cycle:       false,
+						OwnerTable:  "test_table",
+						OwnerColumn: "id",
+					},
+				},
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "test_table",
+						Columns: []*storepb.ColumnMetadata{
+							{
+								Name:     "id",
+								Type:     "integer",
+								Nullable: false,
+								Default:  "nextval('test_table_id_seq'::regclass)",
+							},
+							{
+								Name:     "name",
+								Type:     "text",
+								Nullable: false,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+
+	expected := `CREATE SEQUENCE "public"."test_sequence2" AS integer START WITH 1 INCREMENT BY 1 MINVALUE 1 MAXVALUE 2147483647 NO CYCLE;
+
+CREATE TABLE "public"."test_table" (
+    "id" serial,
+    "name" text NOT NULL
+);
+
+ALTER SEQUENCE "public"."test_sequence2" OWNED BY "public"."test_table"."id";
+
+`
+
+	assert.Equal(t, expected, result)
+
+	// Verify that test_sequence2 is output (not skipped)
+	assert.Contains(t, result, `CREATE SEQUENCE "public"."test_sequence2"`,
+		"test_sequence2 should be output because it's not referenced in DEFAULT clause")
+
+	// Verify that test_sequence2 has ALTER SEQUENCE OWNED BY statement
+	assert.Contains(t, result, `ALTER SEQUENCE "public"."test_sequence2" OWNED BY "public"."test_table"."id"`,
+		"test_sequence2 should have ALTER SEQUENCE OWNED BY because metadata indicates it's owned by the column")
+
+	// Verify that test_table_id_seq is NOT output (skipped)
+	assert.NotContains(t, result, `CREATE SEQUENCE "public"."test_table_id_seq"`,
+		"test_table_id_seq should be skipped because it's referenced in DEFAULT clause and treated as serial")
+
+	// Verify that the column uses serial type
+	assert.Contains(t, result, `"id" serial`,
+		"Column should use serial type because it references test_table_id_seq which is owned by it")
+
+	// Validate that the generated SQL can be parsed
+	_, err = omnipg.Parse(result)
+	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
+}
+
+func TestGetDatabaseDefinitionSDLFormat_ProcedureWithComment(t *testing.T) {
+	// This test verifies that PROCEDURE comments are correctly generated with
+	// COMMENT ON PROCEDURE (not COMMENT ON FUNCTION)
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Functions: []*storepb.FunctionMetadata{
+					{
+						Name:      "get_user_count",
+						Signature: "get_user_count()",
+						Definition: `CREATE FUNCTION "public"."get_user_count"() RETURNS integer
+    LANGUAGE sql
+    AS $$
+    SELECT COUNT(*)::integer FROM users;
+$$`,
+						Comment: "Function to count users",
+					},
+					{
+						Name:      "update_user_name",
+						Signature: "update_user_name(user_id integer, new_name character varying)",
+						Definition: `CREATE PROCEDURE "public"."update_user_name"(IN user_id integer, IN new_name character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    UPDATE users
+    SET name = new_name
+    WHERE id = user_id;
+END;
+$$`,
+						Comment: "Procedure to update user name",
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+
+	// Verify that FUNCTION has COMMENT ON FUNCTION
+	assert.Contains(t, result, `COMMENT ON FUNCTION "public".get_user_count() IS 'Function to count users';`,
+		"Function comment should use COMMENT ON FUNCTION")
+
+	// Verify that PROCEDURE has COMMENT ON PROCEDURE (not COMMENT ON FUNCTION)
+	assert.Contains(t, result, `COMMENT ON PROCEDURE "public".update_user_name(integer, character varying) IS 'Procedure to update user name';`,
+		"Procedure comment should use COMMENT ON PROCEDURE with types-only signature")
+
+	// Verify that we don't incorrectly use COMMENT ON FUNCTION for the procedure
+	assert.NotContains(t, result, `COMMENT ON FUNCTION "public".update_user_name`,
+		"Procedure comment should NOT use COMMENT ON FUNCTION")
+
+	// Validate that the generated SQL can be parsed
+	_, err = omnipg.Parse(result)
+	require.NoError(t, err, "Generated SQL should be parseable by PostgreSQL parser")
+}
+
+func TestGetMultiFileDatabaseDefinition_FunctionAndProcedureSeparation(t *testing.T) {
+	// This test verifies that functions and procedures are separated into different folders
+	// in multi-file mode
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Functions: []*storepb.FunctionMetadata{
+					{
+						Name: "get_user_count",
+						Definition: `CREATE FUNCTION "public"."get_user_count"() RETURNS integer
+    LANGUAGE sql
+    AS $$
+    SELECT COUNT(*)::integer FROM users;
+$$`,
+					},
+					{
+						Name: "get_user_by_id",
+						Definition: `CREATE FUNCTION "public"."get_user_by_id"(user_id integer) RETURNS TABLE(id integer, name character varying)
+    LANGUAGE sql
+    AS $$
+    SELECT u.id, u.name FROM users u WHERE u.id = user_id;
+$$`,
+					},
+					{
+						Name: "update_user_name",
+						Definition: `CREATE PROCEDURE "public"."update_user_name"(IN user_id integer, IN new_name character varying)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    UPDATE users SET name = new_name WHERE id = user_id;
+END;
+$$`,
+					},
+					{
+						Name: "delete_old_users",
+						Definition: `CREATE PROCEDURE "public"."delete_old_users"(IN days_old integer)
+    LANGUAGE plpgsql
+    AS $$
+BEGIN
+    DELETE FROM users WHERE created_at < NOW() - INTERVAL '1 day' * days_old;
+END;
+$$`,
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetMultiFileDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Build a map of files for easy lookup
+	fileMap := make(map[string]string)
+	for _, file := range result.Files {
+		fileMap[file.Name] = file.Content
+	}
+
+	// Verify functions are in functions folder
+	getUserCountFile, ok := fileMap["schemas/public/functions/get_user_count.sql"]
+	require.True(t, ok, "get_user_count function should be in functions folder")
+	assert.Contains(t, getUserCountFile, `CREATE FUNCTION "public"."get_user_count"()`)
+
+	getUserByIDFile, ok := fileMap["schemas/public/functions/get_user_by_id.sql"]
+	require.True(t, ok, "get_user_by_id function should be in functions folder")
+	assert.Contains(t, getUserByIDFile, `CREATE FUNCTION "public"."get_user_by_id"`)
+
+	// Verify procedures are in procedures folder (not functions folder)
+	updateUserNameFile, ok := fileMap["schemas/public/procedures/update_user_name.sql"]
+	require.True(t, ok, "update_user_name procedure should be in procedures folder")
+	assert.Contains(t, updateUserNameFile, `CREATE PROCEDURE "public"."update_user_name"`)
+
+	deleteOldUsersFile, ok := fileMap["schemas/public/procedures/delete_old_users.sql"]
+	require.True(t, ok, "delete_old_users procedure should be in procedures folder")
+	assert.Contains(t, deleteOldUsersFile, `CREATE PROCEDURE "public"."delete_old_users"`)
+
+	// Verify procedures are NOT in functions folder
+	_, ok = fileMap["schemas/public/functions/update_user_name.sql"]
+	require.False(t, ok, "update_user_name should NOT be in functions folder")
+
+	_, ok = fileMap["schemas/public/functions/delete_old_users.sql"]
+	require.False(t, ok, "delete_old_users should NOT be in functions folder")
+
+	// Total files should be: 2 functions + 2 procedures = 4 files
+	require.Equal(t, 4, len(result.Files), "Should have exactly 4 files (2 functions + 2 procedures)")
+
+	// Validate that each file's SQL can be parsed
+	for fileName, content := range fileMap {
+		_, err := omnipg.Parse(content)
+		require.NoError(t, err, "SQL in file %s should be parseable by PostgreSQL parser", fileName)
+	}
+}
+
+func TestOverloadedFunctionsPreservedInDump(t *testing.T) {
+	oneArgDef := `CREATE OR REPLACE FUNCTION "public"."camel_to_snake"(camel_cased_text character varying)
+ RETURNS character varying
+ LANGUAGE plpgsql
+ IMMUTABLE
+AS $function$
+BEGIN
+  RETURN lower(camel_cased_text);
+END;
+$function$`
+	twoArgDef := `CREATE OR REPLACE FUNCTION "public"."camel_to_snake"(camel_cased_text character varying, case_directive character varying)
+ RETURNS character varying
+ LANGUAGE plpgsql
+ IMMUTABLE
+AS $function$
+BEGIN
+  RETURN lower(camel_cased_text || '_' || case_directive);
+END;
+$function$`
+
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Functions: []*storepb.FunctionMetadata{
+					{
+						Name:       "camel_to_snake",
+						Signature:  "camel_to_snake(camel_cased_text character varying)",
+						Definition: oneArgDef,
+					},
+					{
+						Name:       "camel_to_snake",
+						Signature:  "camel_to_snake(camel_cased_text character varying, case_directive character varying)",
+						Definition: twoArgDef,
+					},
+				},
+			},
+		},
+	}
+
+	oneArgSubstring := `"camel_to_snake"(camel_cased_text character varying)`
+	twoArgSubstring := `"camel_to_snake"(camel_cased_text character varying, case_directive character varying)`
+
+	// Test non-SDL format (GetDatabaseDefinition)
+	result, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, metadata)
+	require.NoError(t, err)
+	assert.Contains(t, result, oneArgSubstring)
+	assert.Contains(t, result, twoArgSubstring)
+	assert.Equal(t, 2, strings.Count(result, "CREATE OR REPLACE FUNCTION"), "both overloads must survive in non-SDL dump")
+
+	// Test SDL format
+	resultSDL, err := GetDatabaseDefinition(schema.GetDefinitionContext{SDLFormat: true}, metadata)
+	require.NoError(t, err)
+	assert.Contains(t, resultSDL, oneArgSubstring)
+	assert.Contains(t, resultSDL, twoArgSubstring)
+	assert.Equal(t, 2, strings.Count(resultSDL, "CREATE OR REPLACE FUNCTION"), "both overloads must survive in SDL dump")
+
+	// Test single-schema path (GetSchemaDefinition)
+	resultSchema, err := GetSchemaDefinition(metadata.Schemas[0])
+	require.NoError(t, err)
+	assert.Contains(t, resultSchema, oneArgSubstring)
+	assert.Contains(t, resultSchema, twoArgSubstring)
+	assert.Equal(t, 2, strings.Count(resultSchema, "CREATE OR REPLACE FUNCTION"), "both overloads must survive in single-schema dump")
+}
+
+// TestGetDatabaseDefinition_IndexCommentUsesRealNewline reproduces the A1
+// bug where writeIndexComment used a Go raw string literal with `\n\n`,
+// producing four literal characters `\`, `n`, `\`, `n` instead of two line
+// feeds. The regression surfaced as omni pgparser choking on the backslash
+// right after `COMMENT ON INDEX ... IS '...';`.
+func TestGetDatabaseDefinition_IndexCommentUsesRealNewline(t *testing.T) {
+	meta := &storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{{
+			Name: "public",
+			Tables: []*storepb.TableMetadata{{
+				Name: "t",
+				Columns: []*storepb.ColumnMetadata{
+					{Name: "id", Type: "integer", Nullable: false},
+				},
+				Indexes: []*storepb.IndexMetadata{{
+					Name:        "idx_t_id",
+					Type:        "btree",
+					Expressions: []string{"id"},
+					Descending:  []bool{false},
+					Definition:  "CREATE INDEX idx_t_id ON public.t USING btree (id);",
+					Comment:     "sample comment",
+				}},
+			}},
+		}},
+	}
+
+	ddl, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, meta)
+	if err != nil {
+		t.Fatalf("GetDatabaseDefinition: %v", err)
+	}
+
+	if strings.Contains(ddl, `\n`) {
+		t.Errorf("DDL contains literal backslash-n escape; got:\n%s", ddl)
+	}
+	if !strings.Contains(ddl, `COMMENT ON INDEX "public"."idx_t_id" IS 'sample comment';`) {
+		t.Errorf("expected COMMENT ON INDEX statement, got:\n%s", ddl)
+	}
+
+	cat := catalog.New()
+	if _, execErr := cat.Exec(ddl, &catalog.ExecOptions{ContinueOnError: true}); execErr != nil {
+		t.Errorf("omni catalog parse error: %v\nDDL:\n%s", execErr, ddl)
+	}
+}
+
+// TestGetDatabaseDefinition_TableWithOnlyCheckConstraints reproduces the A2
+// bug where a table with zero columns but with CHECK constraints produced
+// `CREATE TABLE "..."."..." (,` — an invalid leading comma. We force the
+// case by declaring a CHECK constraint on a table with no regular columns.
+func TestGetDatabaseDefinition_TableWithOnlyCheckConstraints(t *testing.T) {
+	meta := &storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{{
+			Name: "public",
+			Tables: []*storepb.TableMetadata{{
+				Name: "cons_only",
+				CheckConstraints: []*storepb.CheckConstraintMetadata{{
+					Name:       "cons_only_dummy",
+					Expression: "(1 = 1)",
+				}},
+			}},
+		}},
+	}
+
+	ddl, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, meta)
+	if err != nil {
+		t.Fatalf("GetDatabaseDefinition: %v", err)
+	}
+	if strings.Contains(ddl, "(,") {
+		t.Errorf("DDL still has `(,` leading comma; got:\n%s", ddl)
+	}
+	if !strings.Contains(ddl, `CREATE TABLE "public"."cons_only" (`) {
+		t.Errorf("expected CREATE TABLE for cons_only, got:\n%s", ddl)
+	}
+	// A genuine zero-column table (no indexes or foreign keys) must keep its
+	// column-independent CHECK constraint — only privilege-filtered broken
+	// metadata goes down the bare-table path.
+	if !strings.Contains(ddl, "cons_only_dummy") {
+		t.Errorf("expected CHECK constraint cons_only_dummy to be preserved, got:\n%s", ddl)
+	}
+	// Omni will reject a table with zero columns semantically, but it must
+	// at least parse cleanly; the test asserts the parse-level contract.
+	if _, parseErr := catalog.New().Exec(ddl, &catalog.ExecOptions{ContinueOnError: true}); parseErr != nil {
+		t.Errorf("omni catalog parse error: %v\nDDL:\n%s", parseErr, ddl)
+	}
+}
+
+// TestGetDatabaseDefinition_TableWithConstraintsButNoColumns reproduces a
+// dump replay failure observed on a real workspace export: the sync user
+// lacked column privileges on some tables, so information_schema.columns
+// returned nothing while pg_catalog still exposed the tables' constraints.
+// The dump then emitted `CREATE TABLE "s1"."t1" ();` followed by
+// `ALTER TABLE ... ADD CONSTRAINT ... PRIMARY KEY (c1, c2);`, which
+// PostgreSQL rejects because the columns do not exist. The dump must skip
+// column-dependent DDL for such tables instead of producing non-replayable
+// statements.
+func TestGetDatabaseDefinition_TableWithConstraintsButNoColumns(t *testing.T) {
+	meta := &storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{{
+			Name: "s1",
+			Sequences: []*storepb.SequenceMetadata{
+				{
+					// Owned by a column missing from t1's metadata: the sequence
+					// itself must dump, its OWNED BY clause must not.
+					Name:        "t1_c1_seq",
+					DataType:    "bigint",
+					Start:       "1",
+					Increment:   "1",
+					MinValue:    "1",
+					MaxValue:    "9223372036854775807",
+					OwnerTable:  "t1",
+					OwnerColumn: "c1",
+				},
+				{
+					// Owned by a column of t4, a zero-column table with no
+					// broken-metadata signal (no indexes/FKs/partitions):
+					// OWNED BY must still be skipped — a sequence cannot be
+					// owned by a column of a zero-column table.
+					Name:        "t4_id_seq",
+					DataType:    "bigint",
+					Start:       "1",
+					Increment:   "1",
+					MinValue:    "1",
+					MaxValue:    "9223372036854775807",
+					OwnerTable:  "t4",
+					OwnerColumn: "id",
+				},
+			},
+			Tables: []*storepb.TableMetadata{
+				{
+					// Broken sync: constraints and indexes, but no columns.
+					Name: "t1",
+					Indexes: []*storepb.IndexMetadata{
+						{
+							Name:         "pk_t1",
+							Primary:      true,
+							Unique:       true,
+							IsConstraint: true,
+							Expressions:  []string{"c1", "c2"},
+						},
+						{
+							Name:         "uk_t1_c1",
+							Unique:       true,
+							IsConstraint: true,
+							Expressions:  []string{"c1"},
+						},
+						{
+							Name:        "idx_t1_c2",
+							Type:        "btree",
+							Expressions: []string{"c2"},
+							Definition:  `CREATE INDEX idx_t1_c2 ON s1.t1 USING btree (c2);`,
+							Comment:     "comment on a never-created index",
+						},
+					},
+					CheckConstraints: []*storepb.CheckConstraintMetadata{{
+						Name:       "chk_t1_c1",
+						Expression: "(c1 > 0)",
+					}},
+					ForeignKeys: []*storepb.ForeignKeyMetadata{{
+						Name:              "fk_t1_t2",
+						Columns:           []string{"c1"},
+						ReferencedSchema:  "s1",
+						ReferencedTable:   "t2",
+						ReferencedColumns: []string{"id"},
+					}},
+					Triggers: []*storepb.TriggerMetadata{{
+						Name:    "trg_t1_c1",
+						Body:    `CREATE TRIGGER trg_t1_c1 BEFORE UPDATE OF c1 ON s1.t1 FOR EACH ROW EXECUTE FUNCTION s1.f()`,
+						Comment: "comment on a never-created trigger",
+					}},
+					Rules: []*storepb.RuleMetadata{{
+						Name:       "rule_t1",
+						Event:      "INSERT",
+						Definition: `CREATE RULE rule_t1 AS ON INSERT TO s1.t1 WHERE new.c1 > 0 DO INSTEAD NOTHING;`,
+					}},
+				},
+				{
+					// Healthy table; its own constraints must still dump, but
+					// its foreign key into the broken table must not.
+					Name: "t2",
+					Columns: []*storepb.ColumnMetadata{
+						{Name: "id", Type: "integer", Nullable: false},
+						{Name: "t1_c1", Type: "integer", Nullable: true},
+					},
+					Indexes: []*storepb.IndexMetadata{{
+						Name:         "pk_t2",
+						Primary:      true,
+						Unique:       true,
+						IsConstraint: true,
+						Expressions:  []string{"id"},
+					}},
+					ForeignKeys: []*storepb.ForeignKeyMetadata{{
+						Name:              "fk_t2_t1",
+						Columns:           []string{"t1_c1"},
+						ReferencedSchema:  "s1",
+						ReferencedTable:   "t1",
+						ReferencedColumns: []string{"c1"},
+					}},
+				},
+				{
+					// Broken sync on a partitioned table with no indexes: the
+					// partition key references missing columns, so the table
+					// must dump bare, without the PARTITION BY clause.
+					Name: "t3",
+					Partitions: []*storepb.TablePartitionMetadata{{
+						Name:       "t3_p1",
+						Expression: "RANGE (created_at)",
+					}},
+				},
+				{
+					// Genuine zero-column table: no indexes, foreign keys, or
+					// partitions. Its column-independent CHECK must be kept.
+					Name: "t4",
+					CheckConstraints: []*storepb.CheckConstraintMetadata{{
+						Name:       "chk_t4_ok",
+						Expression: "(1 = 1)",
+					}},
+				},
+			},
+		}},
+	}
+
+	banned := []string{"pk_t1", "uk_t1_c1", "idx_t1_c2", "chk_t1_c1", "fk_t1_t2", "fk_t2_t1", "trg_t1_c1", "rule_t1", "t3_p1", "PARTITION BY", "OWNED BY", "COMMENT ON INDEX"}
+
+	for name, ctx := range map[string]schema.GetDefinitionContext{
+		"dump": {},
+		"sdl":  {SDLFormat: true},
+	} {
+		ddl, err := GetDatabaseDefinition(ctx, meta)
+		if err != nil {
+			t.Fatalf("[%s] GetDatabaseDefinition: %v", name, err)
+		}
+
+		if !strings.Contains(ddl, `CREATE TABLE "s1"."t1" (`) {
+			t.Errorf("[%s] expected bare CREATE TABLE for t1, got:\n%s", name, ddl)
+		}
+		for _, b := range banned {
+			if strings.Contains(ddl, b) {
+				t.Errorf("[%s] DDL references %q, which depends on columns missing from t1's metadata; got:\n%s", name, b, ddl)
+			}
+		}
+		if !strings.Contains(ddl, "pk_t2") {
+			t.Errorf("[%s] expected pk_t2 on the healthy table, got:\n%s", name, ddl)
+		}
+		if !strings.Contains(ddl, `CREATE SEQUENCE "s1"."t1_c1_seq"`) {
+			t.Errorf("[%s] expected CREATE SEQUENCE for t1_c1_seq, got:\n%s", name, ddl)
+		}
+		if !strings.Contains(ddl, `CREATE TABLE "s1"."t3" (`) {
+			t.Errorf("[%s] expected bare CREATE TABLE for t3, got:\n%s", name, ddl)
+		}
+		if !strings.Contains(ddl, "chk_t4_ok") {
+			t.Errorf("[%s] expected genuine zero-column table t4 to keep its CHECK constraint, got:\n%s", name, ddl)
+		}
+
+		if _, parseErr := catalog.New().Exec(ddl, &catalog.ExecOptions{ContinueOnError: true}); parseErr != nil {
+			t.Errorf("[%s] omni catalog parse error: %v\nDDL:\n%s", name, parseErr, ddl)
+		}
+	}
+
+	multiFile, err := GetMultiFileDatabaseDefinition(schema.GetDefinitionContext{}, meta)
+	if err != nil {
+		t.Fatalf("GetMultiFileDatabaseDefinition: %v", err)
+	}
+	var combined strings.Builder
+	for _, file := range multiFile.Files {
+		combined.WriteString(file.Content)
+	}
+	for _, b := range banned {
+		if strings.Contains(combined.String(), b) {
+			t.Errorf("[multi-file] DDL references %q, which depends on columns missing from t1's metadata; got:\n%s", b, combined.String())
+		}
+	}
+}
+
+// TestGetDatabaseDefinition_TableNameContainingDot reproduces A3: a table
+// whose name literally contains a period was writing out as `"".".."` —
+// because the schema + "." + object object-ID was split back on the first
+// dot and produced an empty schema. The fix uses a NUL separator.
+func TestGetDatabaseDefinition_TableNameContainingDot(t *testing.T) {
+	meta := &storepb.DatabaseSchemaMetadata{
+		Name: "db",
+		Schemas: []*storepb.SchemaMetadata{{
+			Name: "public",
+			Tables: []*storepb.TableMetadata{{
+				Name: "weird.name",
+				Columns: []*storepb.ColumnMetadata{
+					{Name: "c", Type: "text", Nullable: true},
+				},
+			}},
+		}},
+	}
+
+	ddl, err := GetDatabaseDefinition(schema.GetDefinitionContext{}, meta)
+	if err != nil {
+		t.Fatalf("GetDatabaseDefinition: %v", err)
+	}
+	if strings.Contains(ddl, `""."`) {
+		t.Errorf("DDL contains empty schema `\"\".\"` prefix; got:\n%s", ddl)
+	}
+	if !strings.Contains(ddl, `CREATE TABLE "public"."weird.name"`) {
+		t.Errorf("expected schema to be public, got:\n%s", ddl)
+	}
+	if _, parseErr := catalog.New().Exec(ddl, &catalog.ExecOptions{ContinueOnError: true}); parseErr != nil {
+		t.Errorf("omni catalog parse error: %v\nDDL:\n%s", parseErr, ddl)
+	}
+}
+
+// TestGetDatabaseDefinitionWithTestcontainer tests the get_database_definition function
+// by comparing metadata from a database created using the original DDL versus
+// metadata from a database created using the generated DDL.
+//
+//nolint:tparallel
+func TestGetDatabaseDefinitionWithTestcontainer(t *testing.T) {
+	ctx := context.Background()
+
+	// Get PostgreSQL container from testcontainer.go
+	pgContainer := testcontainer.SharedPgContainer(t)
+
+	// Test cases with various PostgreSQL features
+	testCases := []struct {
+		name string
+		ddl  string
+	}{
+		{
+			name: "basic_tables_with_constraints",
+			ddl: `
+CREATE TABLE users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP
+);
+
+CREATE TABLE posts (
+    id SERIAL PRIMARY KEY,
+    user_id INTEGER NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    content TEXT,
+    published BOOLEAN DEFAULT false,
+    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_posts_user_id ON posts(user_id);
+CREATE INDEX idx_posts_published ON posts(published) WHERE published = true;
+`,
+		},
+		{
+			name: "sequences_and_custom_types",
+			ddl: `
+CREATE TYPE status_enum AS ENUM ('pending', 'active', 'inactive', 'deleted');
+CREATE TYPE mood AS ENUM ('happy', 'sad', 'neutral');
+
+CREATE SEQUENCE custom_id_seq START WITH 1000 INCREMENT BY 10;
+
+CREATE TABLE items (
+    id INTEGER DEFAULT nextval('custom_id_seq') PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    status status_enum DEFAULT 'pending',
+    user_mood mood
+);
+`,
+		},
+		{
+			name: "composite_types",
+			ddl: `
+-- zz_base sorts after its dependent aa_nested alphabetically, so a correct
+-- dump proves dependency ordering rather than name ordering.
+CREATE TYPE zz_base AS (street text COLLATE "C", city varchar(50));
+COMMENT ON TYPE zz_base IS 'base address type';
+COMMENT ON COLUMN zz_base.street IS 'street line';
+
+CREATE TYPE aa_nested AS (home zz_base, homes zz_base[], tags text[]);
+
+CREATE TYPE order_status AS ENUM ('pending', 'shipped');
+CREATE TYPE order_info AS (status order_status, note text);
+
+CREATE SCHEMA geo;
+CREATE TYPE geo.point2 AS (lat numeric(9,6), lng numeric(9,6));
+CREATE TYPE wrapper AS (p geo.point2);
+
+CREATE TYPE empty_type AS ();
+
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    info order_info,
+    addresses aa_nested,
+    location geo.point2
+);
+`,
+		},
+		{
+			name: "owned_sequence_dependency_order",
+			ddl: `
+-- This reproduces the customer's reported issue
+-- Create a sequence that will be owned by a column
+CREATE SEQUENCE history_cost_changes_id_seq
+    AS bigint
+    START WITH 1
+    INCREMENT BY 1
+    MINVALUE 1
+    MAXVALUE 9223372036854775807
+    NO CYCLE;
+
+-- Create table using the sequence in DEFAULT clause
+CREATE TABLE history_cost_changes (
+    id bigint DEFAULT nextval('history_cost_changes_id_seq'::regclass) NOT NULL PRIMARY KEY,
+    amount numeric(10,2),
+    description text,
+    created_at timestamp DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Make the sequence owned by the column (critical for reproducing the bug!)
+ALTER SEQUENCE history_cost_changes_id_seq OWNED BY history_cost_changes.id;
+
+-- Create another table that also references the same sequence (edge case)
+CREATE TABLE history_audit (
+    audit_id bigint DEFAULT nextval('history_cost_changes_id_seq'::regclass) NOT NULL,
+    change_type varchar(50)
+);
+`,
+		},
+		{
+			name: "views_and_functions",
+			ddl: `
+CREATE TABLE employees (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    department VARCHAR(50),
+    salary DECIMAL(10, 2)
+);
+
+CREATE VIEW active_employees AS
+SELECT id, name, department
+FROM employees
+WHERE department IS NOT NULL;
+
+CREATE FUNCTION get_employee_count(dept VARCHAR) RETURNS INTEGER AS $$
+BEGIN
+    RETURN (SELECT COUNT(*) FROM employees WHERE department = dept);
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE FUNCTION calculate_bonus(emp_id INTEGER) RETURNS DECIMAL AS $$
+DECLARE
+    emp_salary DECIMAL;
+BEGIN
+    SELECT salary INTO emp_salary FROM employees WHERE id = emp_id;
+    RETURN emp_salary * 0.1;
+END;
+$$ LANGUAGE plpgsql;
+`,
+		},
+		{
+			name: "partitioned_tables",
+			ddl: `
+CREATE TABLE sales (
+    id SERIAL,
+    sale_date DATE NOT NULL,
+    amount DECIMAL(10, 2) NOT NULL,
+    region VARCHAR(50) NOT NULL
+) PARTITION BY RANGE (sale_date);
+
+CREATE TABLE sales_2023_q1 PARTITION OF sales
+FOR VALUES FROM ('2023-01-01') TO ('2023-04-01');
+
+CREATE TABLE sales_2023_q2 PARTITION OF sales
+FOR VALUES FROM ('2023-04-01') TO ('2023-07-01');
+
+CREATE TABLE sales_2023_q3 PARTITION OF sales
+FOR VALUES FROM ('2023-07-01') TO ('2023-10-01');
+
+CREATE TABLE sales_2023_q4 PARTITION OF sales
+FOR VALUES FROM ('2023-10-01') TO ('2024-01-01');
+`,
+		},
+		{
+			name: "extensions_and_advanced_features",
+			ddl: `
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+CREATE TABLE documents (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    title VARCHAR(200) NOT NULL,
+    content TEXT,
+    tags TEXT[],
+    metadata JSONB,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX idx_documents_metadata ON documents USING GIN (metadata);
+CREATE INDEX idx_documents_tags ON documents USING GIN (tags);
+`,
+		},
+		{
+			name: "check_constraints_and_comments",
+			ddl: `
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    price DECIMAL(10, 2) NOT NULL,
+    quantity INTEGER NOT NULL,
+    CONSTRAINT chk_price CHECK (price > 0),
+    CONSTRAINT chk_quantity CHECK (quantity >= 0)
+);
+
+COMMENT ON TABLE products IS 'Product catalog table';
+COMMENT ON COLUMN products.name IS 'Product name';
+COMMENT ON COLUMN products.price IS 'Product price in USD';
+`,
+		},
+		{
+			name: "materialized_views",
+			ddl: `
+CREATE TABLE raw_data (
+    id SERIAL PRIMARY KEY,
+    data_value NUMERIC NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE MATERIALIZED VIEW data_summary AS
+SELECT category, 
+       COUNT(*) as count, 
+       AVG(data_value) as avg_value,
+       MAX(data_value) as max_value,
+       MIN(data_value) as min_value
+FROM raw_data
+GROUP BY category
+WITH NO DATA;
+
+CREATE INDEX idx_data_summary_category ON data_summary(category);
+`,
+		},
+		{
+			name: "comprehensive_views",
+			ddl: `
+CREATE TABLE customers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) UNIQUE,
+    active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    customer_id INTEGER REFERENCES customers(id),
+    total_amount DECIMAL(10, 2) NOT NULL,
+    order_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) DEFAULT 'pending'
+);
+
+-- View with public schema references and various formatting
+CREATE VIEW public.active_customer_orders AS
+  SELECT 
+    c.id AS customer_id,
+    c.name,
+    c.email,
+    o.id AS order_id,
+    o.total_amount,
+    o.order_date
+  FROM 
+    public.customers c
+    INNER JOIN public.orders o ON c.id = o.customer_id
+  WHERE 
+    c.active = TRUE 
+    AND o.status = 'completed';
+
+-- Simple view without schema qualification
+CREATE VIEW customer_summary AS
+SELECT 
+  id,
+  name,
+  email,
+  (SELECT COUNT(*) FROM orders WHERE customer_id = customers.id) as order_count
+FROM customers
+WHERE active = true;
+
+-- Materialized view with complex aggregation
+CREATE MATERIALIZED VIEW monthly_sales_summary AS
+SELECT 
+  DATE_TRUNC('month', order_date) as month,
+  COUNT(*) as order_count,
+  SUM(total_amount) as total_revenue,
+  AVG(total_amount) as avg_order_value,
+  COUNT(DISTINCT customer_id) as unique_customers
+FROM public.orders
+WHERE status = 'completed'
+GROUP BY DATE_TRUNC('month', order_date)
+ORDER BY month
+WITH NO DATA;
+
+CREATE UNIQUE INDEX idx_monthly_sales_month ON monthly_sales_summary(month);
+`,
+		},
+		{
+			name: "triggers",
+			ddl: `
+CREATE TABLE audit_log (
+    id SERIAL PRIMARY KEY,
+    table_name VARCHAR(50) NOT NULL,
+    operation VARCHAR(10) NOT NULL,
+    user_name VARCHAR(50),
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE accounts (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    balance DECIMAL(10, 2) DEFAULT 0,
+    last_modified TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE OR REPLACE FUNCTION update_last_modified()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.last_modified = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_update_last_modified
+BEFORE UPDATE ON accounts
+FOR EACH ROW
+EXECUTE FUNCTION update_last_modified();
+
+CREATE OR REPLACE FUNCTION log_account_changes()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO audit_log (table_name, operation, user_name)
+    VALUES ('accounts', TG_OP, current_user);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_audit_accounts
+AFTER INSERT OR UPDATE OR DELETE ON accounts
+FOR EACH ROW
+EXECUTE FUNCTION log_account_changes();
+`,
+		},
+		{
+			name: "foreign_key_on_delete_cascade",
+			ddl: `
+CREATE TABLE categories (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE products (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    category_id INTEGER,
+    CONSTRAINT fk_category FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+);
+
+CREATE TABLE orders (
+    id SERIAL PRIMARY KEY,
+    product_id INTEGER,
+    quantity INTEGER DEFAULT 1,
+    CONSTRAINT fk_product_cascade FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE SET NULL
+);
+`,
+		},
+		{
+			name: "foreign_key_on_update_actions",
+			ddl: `
+CREATE TABLE departments (
+    code VARCHAR(10) PRIMARY KEY,
+    name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE employees (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    dept_code VARCHAR(10),
+    manager_id INTEGER,
+    CONSTRAINT fk_dept_restrict FOREIGN KEY (dept_code) REFERENCES departments(code) ON UPDATE RESTRICT ON DELETE SET NULL,
+    CONSTRAINT fk_manager_cascade FOREIGN KEY (manager_id) REFERENCES employees(id) ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+CREATE TABLE projects (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    lead_emp_id INTEGER,
+    dept_code VARCHAR(10),
+    CONSTRAINT fk_lead_setnull FOREIGN KEY (lead_emp_id) REFERENCES employees(id) ON DELETE SET NULL ON UPDATE SET NULL,
+    CONSTRAINT fk_proj_dept FOREIGN KEY (dept_code) REFERENCES departments(code) ON DELETE RESTRICT ON UPDATE RESTRICT
+);
+`,
+		},
+		{
+			name: "foreign_key_no_action",
+			ddl: `
+CREATE TABLE countries (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(3) UNIQUE NOT NULL,
+    name VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE states (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    country_id INTEGER,
+    -- Explicit NO ACTION
+    CONSTRAINT fk_country_explicit FOREIGN KEY (country_id) REFERENCES countries(id) ON DELETE NO ACTION ON UPDATE NO ACTION
+);
+
+CREATE TABLE cities (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100) NOT NULL,
+    state_id INTEGER,
+    -- Implicit NO ACTION (default behavior)
+    CONSTRAINT fk_state_implicit FOREIGN KEY (state_id) REFERENCES states(id)
+);
+`,
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			// Create first database with original DDL using unique name
+			dbNameA := fmt.Sprintf("test_a_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
+			_, err := pgContainer.GetDB().Exec(fmt.Sprintf("CREATE DATABASE %s", dbNameA))
+			require.NoError(t, err)
+
+			// Create driver for database A
+			driverA, err := createPgDriver(ctx, pgContainer.GetHost(), pgContainer.GetPort(), dbNameA)
+			require.NoError(t, err)
+			defer driverA.Close(ctx)
+
+			// Execute the original DDL
+			_, err = driverA.GetDB().ExecContext(ctx, tc.ddl)
+			require.NoError(t, err)
+
+			// Get metadata A using Driver.SyncDBSchema
+			metadataA, err := driverA.SyncDBSchema(ctx)
+			require.NoError(t, err)
+
+			// Generate database definition using GetDatabaseDefinition
+			generatedDDL, err := GetDatabaseDefinition(schema.GetDefinitionContext{PrintHeader: true}, metadataA)
+			require.NoError(t, err)
+			require.NotEmpty(t, generatedDDL, "generated DDL should not be empty")
+
+			// Create second database and apply generated DDL using unique name
+			dbNameB := fmt.Sprintf("test_b_%s", strings.ReplaceAll(uuid.New().String(), "-", "_"))
+			_, err = pgContainer.GetDB().Exec(fmt.Sprintf("CREATE DATABASE %s", dbNameB))
+			require.NoError(t, err)
+
+			// Create driver for database B
+			driverB, err := createPgDriver(ctx, pgContainer.GetHost(), pgContainer.GetPort(), dbNameB)
+			require.NoError(t, err)
+			defer driverB.Close(ctx)
+
+			// Execute the generated DDL
+			_, err = driverB.GetDB().ExecContext(ctx, generatedDDL)
+			require.NoError(t, err, "failed to execute generated DDL: %s", generatedDDL)
+
+			// Get metadata B using Driver.SyncDBSchema
+			metadataB, err := driverB.SyncDBSchema(ctx)
+			require.NoError(t, err)
+
+			// Compare metadata A and B
+			compareFullMetadata(t, metadataA, metadataB)
+		})
+	}
+}
+
+// compareFullMetadata compares all aspects of database metadata
+func compareFullMetadata(t *testing.T, metaA, metaB *storepb.DatabaseSchemaMetadata) {
+	// Compare extensions
+	compareExtensionsDef(t, metaA.Extensions, metaB.Extensions)
+
+	// Compare schemas
+	require.Equal(t, len(metaA.Schemas), len(metaB.Schemas), "number of schemas should match")
+
+	// Find the public schema in both
+	var schemaA, schemaB *storepb.SchemaMetadata
+	for _, schema := range metaA.Schemas {
+		if schema.Name == "public" {
+			schemaA = schema
+			break
+		}
+	}
+	for _, schema := range metaB.Schemas {
+		if schema.Name == "public" {
+			schemaB = schema
+			break
+		}
+	}
+
+	require.NotNil(t, schemaA, "metadata A should have public schema")
+	require.NotNil(t, schemaB, "metadata B should have public schema")
+
+	// Compare schema contents
+	compareSchemaContents(t, schemaA, schemaB)
+}
+
+// compareSchemaContents compares the contents of two schemas
+func compareSchemaContents(t *testing.T, schemaA, schemaB *storepb.SchemaMetadata) {
+	// Compare enums
+	compareEnumsDef(t, schemaA.EnumTypes, schemaB.EnumTypes)
+
+	// Compare composite types
+	compareCompositeTypesDef(t, schemaA.CompositeTypes, schemaB.CompositeTypes)
+
+	// Compare sequences (excluding implicit sequences from SERIAL columns)
+	compareExplicitSequences(t, schemaA.Sequences, schemaB.Sequences)
+
+	// Compare tables
+	compareTablesDef(t, schemaA.Tables, schemaB.Tables)
+
+	// Compare views
+	compareViewsDef(t, schemaA.Views, schemaB.Views)
+
+	// Compare materialized views
+	compareMaterializedViewsDef(t, schemaA.MaterializedViews, schemaB.MaterializedViews)
+
+	// Compare functions
+	compareFunctionsDef(t, schemaA.Functions, schemaB.Functions)
+}
+
+// compareExplicitSequences compares only explicitly created sequences
+func compareExplicitSequences(t *testing.T, seqsA, seqsB []*storepb.SequenceMetadata) {
+	// Filter out implicit sequences (those owned by columns)
+	explicitA := filterExplicitSequences(seqsA)
+	explicitB := filterExplicitSequences(seqsB)
+
+	require.Equal(t, len(explicitA), len(explicitB), "number of explicit sequences should match")
+
+	// Create maps for comparison
+	mapA := make(map[string]*storepb.SequenceMetadata)
+	for _, seq := range explicitA {
+		mapA[seq.Name] = seq
+	}
+
+	for _, seqB := range explicitB {
+		seqA, exists := mapA[seqB.Name]
+		require.True(t, exists, "sequence %s should exist in metadata A", seqB.Name)
+
+		// Compare sequence properties
+		require.Equal(t, seqA.Start, seqB.Start, "sequence %s: start value should match", seqB.Name)
+		require.Equal(t, seqA.Increment, seqB.Increment, "sequence %s: increment should match", seqB.Name)
+		require.Equal(t, seqA.MinValue, seqB.MinValue, "sequence %s: min value should match", seqB.Name)
+		require.Equal(t, seqA.MaxValue, seqB.MaxValue, "sequence %s: max value should match", seqB.Name)
+		require.Equal(t, seqA.Cycle, seqB.Cycle, "sequence %s: cycle should match", seqB.Name)
+		require.Equal(t, seqA.Comment, seqB.Comment, "sequence %s: comment should match", seqB.Name)
+	}
+}
+
+// filterExplicitSequences returns only sequences that are not owned by columns
+func filterExplicitSequences(sequences []*storepb.SequenceMetadata) []*storepb.SequenceMetadata {
+	var result []*storepb.SequenceMetadata
+	for _, seq := range sequences {
+		if seq.OwnerTable == "" || seq.OwnerColumn == "" {
+			result = append(result, seq)
+		}
+	}
+	return result
+}
+
+// compareMaterializedViewsDef compares materialized views between two schemas using PostgreSQL view comparer
+func compareMaterializedViewsDef(t *testing.T, viewsA, viewsB []*storepb.MaterializedViewMetadata) {
+	require.Equal(t, len(viewsA), len(viewsB), "number of materialized views should match")
+
+	// Create maps for comparison
+	mapA := make(map[string]*storepb.MaterializedViewMetadata)
+	for _, view := range viewsA {
+		mapA[view.Name] = view
+	}
+
+	for _, viewB := range viewsB {
+		viewA, exists := mapA[viewB.Name]
+		require.True(t, exists, "materialized view %s should exist in metadata A", viewB.Name)
+
+		// Compare view definitions using normalized string comparison
+		defA := normalizeSQLDef(viewA.Definition)
+		defB := normalizeSQLDef(viewB.Definition)
+		definitionsEqual := defA == defB
+
+		// Assert that materialized view definitions must be equal after sophisticated PostgreSQL parsing
+		require.True(t, definitionsEqual,
+			"materialized view %s: definitions must be equal using PostgreSQL view comparer (A: %q, B: %q)",
+			viewB.Name, viewA.Definition, viewB.Definition)
+
+		require.Equal(t, viewA.Comment, viewB.Comment,
+			"materialized view %s: comment should match", viewB.Name)
+
+		// Compare indexes on materialized views
+		compareIndexesDef(t, viewB.Name, viewA.Indexes, viewB.Indexes)
+	}
+}
+
+// normalizeSQLDef normalizes SQL for comparison
+func normalizeSQLDef(sql string) string {
+	// Convert to lowercase
+	sql = strings.ToLower(sql)
+
+	// Replace multiple spaces/newlines with single space
+	sql = strings.Join(strings.Fields(sql), " ")
+
+	// Remove trailing semicolons
+	sql = strings.TrimSuffix(sql, ";")
+
+	// Remove schema qualifiers for public schema
+	sql = strings.ReplaceAll(sql, "public.", "")
+
+	// Final trim
+	sql = strings.TrimSpace(sql)
+
+	return sql
+}
+
+// normalizeExprDef normalizes an expression for comparison
+func normalizeExprDef(expr string) string {
+	// Convert to lowercase
+	expr = strings.ToLower(expr)
+
+	// Replace multiple spaces with single space
+	expr = strings.Join(strings.Fields(expr), " ")
+
+	// Remove spaces around parentheses
+	expr = strings.ReplaceAll(expr, " (", "(")
+	expr = strings.ReplaceAll(expr, "( ", "(")
+	expr = strings.ReplaceAll(expr, " )", ")")
+	expr = strings.ReplaceAll(expr, ") ", ")")
+
+	// Normalize quotes around identifiers
+	expr = strings.ReplaceAll(expr, "'", "")
+
+	return expr
+}
+
+// compareTablesDef compares tables between two schemas
+func compareTablesDef(t *testing.T, tablesA, tablesB []*storepb.TableMetadata) {
+	require.Equal(t, len(tablesA), len(tablesB), "number of tables should match")
+
+	// Create maps for easier comparison
+	mapA := make(map[string]*storepb.TableMetadata)
+	for _, table := range tablesA {
+		mapA[table.Name] = table
+	}
+
+	mapB := make(map[string]*storepb.TableMetadata)
+	for _, table := range tablesB {
+		mapB[table.Name] = table
+	}
+
+	// Compare each table
+	for name, tableA := range mapA {
+		tableB, exists := mapB[name]
+		require.True(t, exists, "table %s should exist in metadata B", name)
+
+		// Compare columns
+		compareColumnsDef(t, name, tableA.Columns, tableB.Columns)
+
+		// Compare indexes
+		compareIndexesDef(t, name, tableA.Indexes, tableB.Indexes)
+
+		// Compare foreign keys
+		compareForeignKeysDef(t, name, tableA.ForeignKeys, tableB.ForeignKeys)
+
+		// Compare check constraints
+		compareCheckConstraintsDef(t, name, tableA.CheckConstraints, tableB.CheckConstraints)
+
+		// Compare partitions
+		comparePartitionsDef(t, name, tableA.Partitions, tableB.Partitions)
+
+		// Compare triggers
+		compareTriggersDef(t, name, tableA.Triggers, tableB.Triggers)
+
+		// Compare comments
+		require.Equal(t, tableA.Comment, tableB.Comment, "table %s: comment should match", name)
+	}
+}
+
+// compareColumnsDef compares columns between two tables
+func compareColumnsDef(t *testing.T, tableName string, colsA, colsB []*storepb.ColumnMetadata) {
+	require.Equal(t, len(colsA), len(colsB), "table %s: number of columns should match", tableName)
+
+	// Create maps for easier comparison
+	mapA := make(map[string]*storepb.ColumnMetadata)
+	for _, col := range colsA {
+		mapA[col.Name] = col
+	}
+
+	for _, colB := range colsB {
+		colA, exists := mapA[colB.Name]
+		require.True(t, exists, "table %s: column %s should exist in metadata A", tableName, colB.Name)
+
+		// Compare column properties
+		require.Equal(t, colA.Type, colB.Type, "table %s, column %s: type should match", tableName, colB.Name)
+		require.Equal(t, colA.Nullable, colB.Nullable, "table %s, column %s: nullable should match", tableName, colB.Name)
+		require.Equal(t, colA.Comment, colB.Comment, "table %s, column %s: comment should match", tableName, colB.Name)
+
+		// Compare default values if both exist
+		hasDefaultA := colA.Default != ""
+		hasDefaultB := colB.Default != ""
+		if hasDefaultA && hasDefaultB {
+			// Default values might be represented differently, so we just check they exist
+			t.Logf("table %s, column %s: default values exist in both", tableName, colB.Name)
+		}
+	}
+}
+
+// compareIndexesDef compares indexes between two tables
+func compareIndexesDef(t *testing.T, tableName string, indexesA, indexesB []*storepb.IndexMetadata) {
+	// Create maps for easier comparison
+	mapA := make(map[string]*storepb.IndexMetadata)
+	for _, idx := range indexesA {
+		mapA[idx.Name] = idx
+	}
+
+	mapB := make(map[string]*storepb.IndexMetadata)
+	for _, idx := range indexesB {
+		mapB[idx.Name] = idx
+	}
+
+	// Compare common indexes
+	for name, idxB := range mapB {
+		idxA, exists := mapA[name]
+		if !exists {
+			// Some indexes might be system-generated
+			t.Logf("table %s: index %s exists in B but not in A (might be implicit)", tableName, name)
+			continue
+		}
+
+		require.Equal(t, idxA.Primary, idxB.Primary, "table %s, index %s: primary should match", tableName, name)
+		require.Equal(t, idxA.Unique, idxB.Unique, "table %s, index %s: unique should match", tableName, name)
+
+		// Compare expressions
+		if len(idxA.Expressions) == len(idxB.Expressions) {
+			for i := range idxA.Expressions {
+				exprA := normalizeExprDef(idxA.Expressions[i])
+				exprB := normalizeExprDef(idxB.Expressions[i])
+				require.Equal(t, exprA, exprB, "table %s, index %s: expression[%d] should match", tableName, name, i)
+			}
+		}
+
+		// Compare IsConstraint field
+		require.Equal(t, idxA.IsConstraint, idxB.IsConstraint, "table %s, index %s: IsConstraint should match", tableName, name)
+
+		// Compare comment
+		require.Equal(t, idxA.Comment, idxB.Comment, "table %s, index %s: comment should match", tableName, name)
+	}
+}
+
+// compareForeignKeysDef compares foreign keys between two tables
+func compareForeignKeysDef(t *testing.T, tableName string, fksA, fksB []*storepb.ForeignKeyMetadata) {
+	require.Equal(t, len(fksA), len(fksB), "table %s: number of foreign keys should match", tableName)
+
+	// Create maps for easier comparison
+	mapA := make(map[string]*storepb.ForeignKeyMetadata)
+	for _, fk := range fksA {
+		mapA[fk.Name] = fk
+	}
+
+	for _, fkB := range fksB {
+		fkA, exists := mapA[fkB.Name]
+		require.True(t, exists, "table %s: foreign key %s should exist in metadata A", tableName, fkB.Name)
+
+		require.ElementsMatch(t, fkA.Columns, fkB.Columns, "table %s, FK %s: columns should match", tableName, fkB.Name)
+		require.Equal(t, fkA.ReferencedTable, fkB.ReferencedTable, "table %s, FK %s: referenced table should match", tableName, fkB.Name)
+		require.ElementsMatch(t, fkA.ReferencedColumns, fkB.ReferencedColumns, "table %s, FK %s: referenced columns should match", tableName, fkB.Name)
+
+		// Compare ON DELETE and ON UPDATE actions
+		require.Equal(t, fkA.OnDelete, fkB.OnDelete, "table %s, FK %s: ON DELETE action should match", tableName, fkB.Name)
+		require.Equal(t, fkA.OnUpdate, fkB.OnUpdate, "table %s, FK %s: ON UPDATE action should match", tableName, fkB.Name)
+	}
+}
+
+// compareCheckConstraintsDef compares check constraints between two tables
+func compareCheckConstraintsDef(t *testing.T, tableName string, checksA, checksB []*storepb.CheckConstraintMetadata) {
+	require.Equal(t, len(checksA), len(checksB), "table %s: number of check constraints should match", tableName)
+
+	// Create maps for easier comparison
+	mapA := make(map[string]*storepb.CheckConstraintMetadata)
+	for _, check := range checksA {
+		mapA[check.Name] = check
+	}
+
+	for _, checkB := range checksB {
+		checkA, exists := mapA[checkB.Name]
+		require.True(t, exists, "table %s: check constraint %s should exist in metadata A", tableName, checkB.Name)
+
+		// Normalize and compare expressions
+		exprA := normalizeExprDef(checkA.Expression)
+		exprB := normalizeExprDef(checkB.Expression)
+		require.Equal(t, exprA, exprB, "table %s, check %s: expression should match", tableName, checkB.Name)
+	}
+}
+
+// comparePartitionsDef compares partitions between two tables
+func comparePartitionsDef(t *testing.T, tableName string, partsA, partsB []*storepb.TablePartitionMetadata) {
+	require.Equal(t, len(partsA), len(partsB), "table %s: number of partitions should match", tableName)
+
+	// Create maps for easier comparison
+	mapA := make(map[string]*storepb.TablePartitionMetadata)
+	for _, part := range partsA {
+		mapA[part.Name] = part
+	}
+
+	for _, partB := range partsB {
+		partA, exists := mapA[partB.Name]
+		require.True(t, exists, "table %s: partition %s should exist in metadata A", tableName, partB.Name)
+		require.Equal(t, partA.Expression, partB.Expression, "table %s, partition %s: expression should match", tableName, partB.Name)
+		require.Equal(t, partA.Value, partB.Value, "table %s, partition %s: value should match", tableName, partB.Name)
+	}
+}
+
+// compareTriggersDef compares triggers between two tables
+func compareTriggersDef(t *testing.T, tableName string, triggersA, triggersB []*storepb.TriggerMetadata) {
+	require.Equal(t, len(triggersA), len(triggersB), "table %s: number of triggers should match", tableName)
+
+	// Create maps for easier comparison
+	mapA := make(map[string]*storepb.TriggerMetadata)
+	for _, trigger := range triggersA {
+		mapA[trigger.Name] = trigger
+	}
+
+	for _, triggerB := range triggersB {
+		triggerA, exists := mapA[triggerB.Name]
+		require.True(t, exists, "table %s: trigger %s should exist in metadata A", tableName, triggerB.Name)
+
+		// Compare trigger properties
+		require.Equal(t, normalizeSQLDef(triggerA.Body), normalizeSQLDef(triggerB.Body),
+			"table %s, trigger %s: body should match", tableName, triggerB.Name)
+		require.Equal(t, triggerA.Comment, triggerB.Comment,
+			"table %s, trigger %s: comment should match", tableName, triggerB.Name)
+	}
+}
+
+// compareViewsDef compares views between two schemas using PostgreSQL view comparer
+func compareViewsDef(t *testing.T, viewsA, viewsB []*storepb.ViewMetadata) {
+	require.Equal(t, len(viewsA), len(viewsB), "number of views should match")
+
+	// Create maps for easier comparison
+	mapA := make(map[string]*storepb.ViewMetadata)
+	for _, view := range viewsA {
+		mapA[view.Name] = view
+	}
+
+	for _, viewB := range viewsB {
+		viewA, exists := mapA[viewB.Name]
+		require.True(t, exists, "view %s should exist in metadata A", viewB.Name)
+
+		// Compare view definitions using normalized string comparison
+		require.Equal(t, normalizeSQLDef(viewA.Definition), normalizeSQLDef(viewB.Definition),
+			"view %s: definitions should match", viewB.Name)
+
+		// Compare comment
+		require.Equal(t, viewA.Comment, viewB.Comment, "view %s: comment should match", viewB.Name)
+	}
+}
+
+// compareFunctionsDef compares functions between two schemas
+func compareFunctionsDef(t *testing.T, funcsA, funcsB []*storepb.FunctionMetadata) {
+	require.Equal(t, len(funcsA), len(funcsB), "number of functions should match")
+
+	// Create maps for easier comparison
+	mapA := make(map[string]*storepb.FunctionMetadata)
+	for _, fn := range funcsA {
+		mapA[fn.Name] = fn
+	}
+
+	for _, fnB := range funcsB {
+		fnA, exists := mapA[fnB.Name]
+		require.True(t, exists, "function %s should exist in metadata A", fnB.Name)
+
+		// Compare function definitions
+		defA := normalizeSQLDef(fnA.Definition)
+		defB := normalizeSQLDef(fnB.Definition)
+		require.Equal(t, defA, defB, "function %s: definition should match", fnB.Name)
+
+		// Compare comment
+		require.Equal(t, fnA.Comment, fnB.Comment, "function %s: comment should match", fnB.Name)
+	}
+}
+
+// compareEnumsDef compares enum types between two schemas
+func compareEnumsDef(t *testing.T, enumsA, enumsB []*storepb.EnumTypeMetadata) {
+	require.Equal(t, len(enumsA), len(enumsB), "number of enums should match")
+
+	// Create maps for easier comparison
+	mapA := make(map[string]*storepb.EnumTypeMetadata)
+	for _, enum := range enumsA {
+		mapA[enum.Name] = enum
+	}
+
+	for _, enumB := range enumsB {
+		enumA, exists := mapA[enumB.Name]
+		require.True(t, exists, "enum %s should exist in metadata A", enumB.Name)
+		require.ElementsMatch(t, enumA.Values, enumB.Values, "enum %s: values should match", enumB.Name)
+		require.Equal(t, enumA.Comment, enumB.Comment, "enum %s: comment should match", enumB.Name)
+	}
+}
+
+func compareCompositeTypesDef(t *testing.T, compositesA, compositesB []*storepb.CompositeTypeMetadata) {
+	require.Equal(t, len(compositesA), len(compositesB), "number of composite types should match")
+
+	mapA := make(map[string]*storepb.CompositeTypeMetadata)
+	for _, composite := range compositesA {
+		mapA[composite.Name] = composite
+	}
+
+	for _, compositeB := range compositesB {
+		compositeA, exists := mapA[compositeB.Name]
+		require.True(t, exists, "composite type %s should exist in metadata A", compositeB.Name)
+		require.Equal(t, compositeA.Comment, compositeB.Comment, "composite type %s: comment should match", compositeB.Name)
+		require.Equal(t, len(compositeA.Attributes), len(compositeB.Attributes), "composite type %s: attribute count should match", compositeB.Name)
+		for i, attributeA := range compositeA.Attributes {
+			attributeB := compositeB.Attributes[i]
+			require.Equal(t, attributeA.Name, attributeB.Name, "composite type %s: attribute %d name should match", compositeB.Name, i)
+			require.Equal(t, attributeA.Type, attributeB.Type, "composite type %s: attribute %s type should match", compositeB.Name, attributeA.Name)
+			require.Equal(t, attributeA.Collation, attributeB.Collation, "composite type %s: attribute %s collation should match", compositeB.Name, attributeA.Name)
+			require.Equal(t, attributeA.Comment, attributeB.Comment, "composite type %s: attribute %s comment should match", compositeB.Name, attributeA.Name)
+		}
+	}
+}
+
+// compareExtensionsDef compares extensions between two databases
+func compareExtensionsDef(t *testing.T, extsA, extsB []*storepb.ExtensionMetadata) {
+	// Create maps for easier comparison
+	mapA := make(map[string]*storepb.ExtensionMetadata)
+	for _, ext := range extsA {
+		mapA[ext.Name] = ext
+	}
+
+	for _, extB := range extsB {
+		extA, exists := mapA[extB.Name]
+		require.True(t, exists, "extension %s should exist in metadata A", extB.Name)
+		require.Equal(t, extA.Schema, extB.Schema, "extension %s: schema should match", extB.Name)
+		require.Equal(t, extA.Version, extB.Version, "extension %s: version should match", extB.Name)
+	}
+}
+
+// TestCheckConstraintOrderStability tests that CHECK constraints maintain consistent order
+// when generating SDL multiple times from the same metadata
+func TestCheckConstraintOrderStability(t *testing.T) {
+	// Simulate database metadata with multiple CHECK constraints
+	// (similar to the packages_debian_group_distributions table shown in the screenshot)
+	dbMetadata := &storepb.DatabaseSchemaMetadata{
+		Name: "testdb",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "packages_debian_group_distributions",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "bigint", Nullable: false},
+							{Name: "suite", Type: "character varying(255)", Nullable: false},
+							{Name: "codename", Type: "character varying(255)", Nullable: false},
+							{Name: "signed_file", Type: "text", Nullable: true},
+							{Name: "description", Type: "character varying(255)", Nullable: true},
+							{Name: "origin", Type: "character varying(255)", Nullable: true},
+							{Name: "file", Type: "character varying(255)", Nullable: true},
+							{Name: "label", Type: "character varying(255)", Nullable: true},
+							{Name: "version", Type: "character varying(255)", Nullable: true},
+							{Name: "file_signature", Type: "character varying(4096)", Nullable: true},
+						},
+						CheckConstraints: []*storepb.CheckConstraintMetadata{
+							{Name: "check_e7c928a24b", Expression: "(char_length((suite)::text) <= 255)"},
+							{Name: "check_590e18405a", Expression: "(char_length((codename)::text) <= 255)"},
+							{Name: "check_0007e0bf61", Expression: "(char_length(signed_file) <= 255)"},
+							{Name: "check_310ac457b8", Expression: "(char_length((description)::text) <= 255)"},
+							{Name: "check_3d6f87fc31", Expression: "(char_length((file_signature)::text) <= 4096)"},
+							{Name: "check_3fdadf4a0c", Expression: "(char_length((version)::text) <= 255)"},
+							{Name: "check_b057cd840a", Expression: "(char_length((origin)::text) <= 255)"},
+							{Name: "check_be5ed8d307", Expression: "(char_length((file)::text) <= 255)"},
+							{Name: "check_d3244bfc0b", Expression: "(char_length((label)::text) <= 255)"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SkipBackupSchema: false,
+		PrintHeader:      false,
+		SDLFormat:        true,
+	}
+
+	// Generate SDL first time
+	sdl1, err := GetDatabaseDefinition(ctx, dbMetadata)
+	require.NoError(t, err)
+	require.NotEmpty(t, sdl1)
+
+	t.Logf("First SDL generation:\n%s", sdl1)
+
+	// Generate SDL second time from the same metadata
+	sdl2, err := GetDatabaseDefinition(ctx, dbMetadata)
+	require.NoError(t, err)
+	require.NotEmpty(t, sdl2)
+
+	t.Logf("Second SDL generation:\n%s", sdl2)
+
+	// The two SDL outputs should be identical
+	require.Equal(t, sdl1, sdl2, "SDL generation should be deterministic - CHECK constraint order should be stable")
+}
+
+func TestGetDatabaseDefinitionSDLFormat_CompositeTypes(t *testing.T) {
+	// aa_nested sorts before its dependency zz_base alphabetically, so correct
+	// output proves dependency ordering rather than name ordering.
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				EnumTypes: []*storepb.EnumTypeMetadata{
+					{Name: "order_status", Values: []string{"pending", "shipped"}},
+				},
+				CompositeTypes: []*storepb.CompositeTypeMetadata{
+					{
+						Name: "aa_nested",
+						Attributes: []*storepb.CompositeTypeAttribute{
+							{Name: "home", Type: "public.zz_base"},
+							{Name: "homes", Type: "public.zz_base[]"},
+							{Name: "status", Type: "public.order_status"},
+						},
+					},
+					{
+						Name:    "zz_base",
+						Comment: "base address type",
+						Attributes: []*storepb.CompositeTypeAttribute{
+							{Name: "street", Type: "text", Collation: `"C"`, Comment: "street line"},
+							{Name: "city", Type: "character varying(50)"},
+						},
+					},
+					{
+						Name:     "ext_owned",
+						SkipDump: true,
+						Attributes: []*storepb.CompositeTypeAttribute{
+							{Name: "x", Type: "integer"},
+						},
+					},
+					{
+						Name: "empty_type",
+					},
+				},
+			},
+			{
+				Name: "geo",
+				CompositeTypes: []*storepb.CompositeTypeMetadata{
+					{
+						Name: "point2",
+						Attributes: []*storepb.CompositeTypeAttribute{
+							{Name: "lat", Type: "numeric(9,6)"},
+							{Name: "lng", Type: "numeric(9,6)"},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	result, err := GetDatabaseDefinition(schema.GetDefinitionContext{SDLFormat: true}, metadata)
+	require.NoError(t, err)
+
+	assert.Contains(t, result, `CREATE TYPE "public"."zz_base" AS (`)
+	assert.Contains(t, result, `"street" text COLLATE "C"`)
+	assert.Contains(t, result, `"city" character varying(50)`)
+	assert.Contains(t, result, `CREATE TYPE "public"."aa_nested" AS (`)
+	assert.Contains(t, result, `"home" public.zz_base`)
+	assert.Contains(t, result, `"homes" public.zz_base[]`)
+	assert.Contains(t, result, `CREATE TYPE "geo"."point2" AS (`)
+	assert.Contains(t, result, `CREATE TYPE "public"."empty_type" AS (`)
+	assert.Contains(t, result, `COMMENT ON TYPE "public"."zz_base" IS 'base address type';`)
+	assert.Contains(t, result, `COMMENT ON COLUMN "public"."zz_base"."street" IS 'street line';`)
+	assert.NotContains(t, result, "ext_owned", "skip_dump composite types must not be emitted")
+
+	// Dependency order: zz_base must be created before aa_nested.
+	baseIdx := strings.Index(result, `CREATE TYPE "public"."zz_base"`)
+	nestedIdx := strings.Index(result, `CREATE TYPE "public"."aa_nested"`)
+	require.GreaterOrEqual(t, baseIdx, 0)
+	require.GreaterOrEqual(t, nestedIdx, 0)
+	assert.Less(t, baseIdx, nestedIdx, "referenced composite must be emitted before its dependent")
+
+	// Enums come before composites.
+	enumIdx := strings.Index(result, `CREATE TYPE "public"."order_status"`)
+	require.GreaterOrEqual(t, enumIdx, 0)
+	assert.Less(t, enumIdx, baseIdx, "enums must be emitted before composite types")
+
+	// The generated SDL must be loadable by the SDL migration engine.
+	_, err = schema.DiffSDLMigration(storepb.Engine_POSTGRES, "", result, "")
+	require.NoError(t, err, "generated SDL should load: %s", result)
+}
+
+func TestGetMultiFileDatabaseDefinition_CompositeTypes(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				EnumTypes: []*storepb.EnumTypeMetadata{
+					{Name: "mood", Values: []string{"happy", "sad"}},
+				},
+				CompositeTypes: []*storepb.CompositeTypeMetadata{
+					{
+						Name: "wrapper",
+						Attributes: []*storepb.CompositeTypeAttribute{
+							{Name: "b", Type: "public.base"},
+						},
+					},
+					{
+						Name: "base",
+						Attributes: []*storepb.CompositeTypeAttribute{
+							{Name: "x", Type: "integer"},
+						},
+						Comment: "base type",
+					},
+				},
+			},
+		},
+	}
+
+	result, err := GetMultiFileDatabaseDefinition(schema.GetDefinitionContext{SDLFormat: true}, metadata)
+	require.NoError(t, err)
+
+	var typesFile string
+	var combined strings.Builder
+	for _, file := range result.Files {
+		if file.Name == "schemas/public/types.sql" {
+			typesFile = file.Content
+		}
+		combined.WriteString(file.Content)
+		combined.WriteString("\n")
+	}
+	require.NotEmpty(t, typesFile, "types.sql should exist")
+
+	assert.Contains(t, typesFile, `CREATE TYPE "public"."mood" AS ENUM (`)
+	assert.Contains(t, typesFile, `CREATE TYPE "public"."base" AS (`)
+	assert.Contains(t, typesFile, `CREATE TYPE "public"."wrapper" AS (`)
+	assert.Contains(t, typesFile, `COMMENT ON TYPE "public"."base" IS 'base type';`)
+	assert.Less(t,
+		strings.Index(typesFile, `CREATE TYPE "public"."base" AS (`),
+		strings.Index(typesFile, `CREATE TYPE "public"."wrapper" AS (`),
+		"referenced composite must be emitted before its dependent")
+
+	_, err = schema.DiffSDLMigration(storepb.Engine_POSTGRES, "", combined.String(), "")
+	require.NoError(t, err, "combined multi-file SDL should load")
+}
+
+func TestParseQualifiedTypeIdent(t *testing.T) {
+	testCases := []struct {
+		input  string
+		schema string
+		name   string
+		ok     bool
+	}{
+		{"integer", "", "", false},
+		{"character varying(50)", "", "", false},
+		{"numeric(9,6)", "", "", false},
+		{"text[]", "", "", false},
+		{"timestamp(6) with time zone", "", "", false},
+		{"public.addr", "public", "addr", true},
+		{"public.addr[]", "public", "addr", true},
+		{"public.addr(5)", "public", "addr", true},
+		{`"My Schema"."Weird Type"`, "My Schema", "Weird Type", true},
+		{`"has""quote".t`, `has"quote`, "t", true},
+		{`other.geo`, "other", "geo", true},
+	}
+	for _, tc := range testCases {
+		schemaName, typeName, ok := parseQualifiedTypeIdent(tc.input)
+		assert.Equal(t, tc.ok, ok, "input %q", tc.input)
+		assert.Equal(t, tc.schema, schemaName, "input %q", tc.input)
+		assert.Equal(t, tc.name, typeName, "input %q", tc.input)
+	}
+}
+
+func TestSortCompositeTypesTopologically(t *testing.T) {
+	// Chain across schemas: public.a3 -> other.b2 -> public.c1, with names
+	// chosen so alphabetical order is the reverse of dependency order.
+	c1 := &storepb.CompositeTypeMetadata{
+		Name:       "c1",
+		Attributes: []*storepb.CompositeTypeAttribute{{Name: "x", Type: "integer"}},
+	}
+	b2 := &storepb.CompositeTypeMetadata{
+		Name:       "b2",
+		Attributes: []*storepb.CompositeTypeAttribute{{Name: "c", Type: "public.c1"}},
+	}
+	a3 := &storepb.CompositeTypeMetadata{
+		Name:       "a3",
+		Attributes: []*storepb.CompositeTypeAttribute{{Name: "b", Type: "other.b2[]"}},
+	}
+	ordered := sortCompositeTypesTopologically([]qualifiedCompositeType{
+		{Schema: "public", Composite: a3},
+		{Schema: "other", Composite: b2},
+		{Schema: "public", Composite: c1},
+	})
+	require.Len(t, ordered, 3)
+	assert.Equal(t, "c1", ordered[0].Composite.Name)
+	assert.Equal(t, "b2", ordered[1].Composite.Name)
+	assert.Equal(t, "a3", ordered[2].Composite.Name)
+
+	// Independent types come out in deterministic (schema, name) order.
+	ordered = sortCompositeTypesTopologically([]qualifiedCompositeType{
+		{Schema: "public", Composite: &storepb.CompositeTypeMetadata{Name: "zz"}},
+		{Schema: "public", Composite: &storepb.CompositeTypeMetadata{Name: "aa"}},
+	})
+	require.Len(t, ordered, 2)
+	assert.Equal(t, "aa", ordered[0].Composite.Name)
+	assert.Equal(t, "zz", ordered[1].Composite.Name)
+}
+
+func TestEventTriggerSDLSingleFileOutput(t *testing.T) {
+	metadata := eventTriggerSDLMetadata()
+
+	result, err := GetDatabaseDefinition(schema.GetDefinitionContext{SDLFormat: true}, metadata)
+	require.NoError(t, err)
+	assert.Contains(t, result, `CREATE FUNCTION "public"."audit_ddl"() RETURNS event_trigger`)
+	assert.Contains(t, result, `CREATE EVENT TRIGGER "audit_ddl_start" ON ddl_command_start`)
+	assert.Contains(t, result, `WHEN TAG IN ('CREATE TABLE')`)
+	assert.Contains(t, result, `EXECUTE FUNCTION "public"."audit_ddl"();`)
+	assert.Contains(t, result, `COMMENT ON EVENT TRIGGER "audit_ddl_start" IS 'Audit DDL start';`)
+
+	sdl, err := schema.MetadataToSDL(
+		storepb.Engine_POSTGRES,
+		model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_POSTGRES, true),
+	)
+	require.NoError(t, err)
+	assert.Contains(t, sdl, `CREATE EVENT TRIGGER "audit_ddl_start" ON ddl_command_start`)
+	assert.Contains(t, sdl, `COMMENT ON EVENT TRIGGER "audit_ddl_start" IS 'Audit DDL start';`)
+}
+
+func TestEventTriggerSDLMultiFileOutput(t *testing.T) {
+	result, err := GetMultiFileDatabaseDefinition(
+		schema.GetDefinitionContext{SDLFormat: true},
+		eventTriggerSDLMetadata(),
+	)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	fileMap := make(map[string]string)
+	for _, file := range result.Files {
+		fileMap[file.Name] = file.Content
+	}
+
+	eventTriggerFile, ok := fileMap["event_triggers.sql"]
+	require.True(t, ok, "event_triggers.sql file should exist")
+	assert.Contains(t, eventTriggerFile, `CREATE EVENT TRIGGER "audit_ddl_start" ON ddl_command_start`)
+	assert.Contains(t, eventTriggerFile, `WHEN TAG IN ('CREATE TABLE')`)
+	assert.Contains(t, eventTriggerFile, `EXECUTE FUNCTION "public"."audit_ddl"();`)
+	assert.Contains(t, eventTriggerFile, `COMMENT ON EVENT TRIGGER "audit_ddl_start" IS 'Audit DDL start';`)
+}
+
+func eventTriggerSDLMetadata() *storepb.DatabaseSchemaMetadata {
+	return &storepb.DatabaseSchemaMetadata{
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Functions: []*storepb.FunctionMetadata{
+					{
+						Name:      "audit_ddl",
+						Signature: "audit_ddl()",
+						Definition: `CREATE FUNCTION "public"."audit_ddl"() RETURNS event_trigger
+LANGUAGE plpgsql
+AS $$
+BEGIN
+END;
+$$`,
+					},
+				},
+			},
+		},
+		EventTriggers: []*storepb.EventTriggerMetadata{
+			{
+				Name:           "audit_ddl_start",
+				Event:          "ddl_command_start",
+				Tags:           []string{"CREATE TABLE"},
+				FunctionSchema: "public",
+				FunctionName:   "audit_ddl",
+				Enabled:        true,
+				Comment:        "Audit DDL start",
+			},
+		},
+	}
+}
+
+func TestTriggerSDLSingleFileOutput(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "testdb",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "users",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "integer"},
+						},
+						Triggers: []*storepb.TriggerMetadata{
+							{
+								Name: "audit_trigger",
+								Body: "CREATE TRIGGER audit_trigger AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION audit_log()",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+
+	assert.Contains(t, result, "CREATE TRIGGER audit_trigger")
+	assert.Contains(t, result, "AFTER INSERT ON public.users")
+	assert.Contains(t, result, "FOR EACH ROW EXECUTE FUNCTION audit_log()")
+}
+
+func TestTriggerSDLMultiFileOutput(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "testdb",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "users",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "integer"},
+						},
+						Triggers: []*storepb.TriggerMetadata{
+							{
+								Name: "audit_trigger",
+								Body: "CREATE TRIGGER audit_trigger AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION audit_log()",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetMultiFileDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+
+	// Find the users table file
+	var usersFileContent string
+	for _, file := range result.Files {
+		if file.Name == "schemas/public/tables/users.sql" {
+			usersFileContent = file.Content
+			break
+		}
+	}
+
+	require.NotEmpty(t, usersFileContent, "Should have users table file")
+	assert.Contains(t, usersFileContent, "CREATE TRIGGER audit_trigger")
+	assert.Contains(t, usersFileContent, "AFTER INSERT ON public.users")
+}
+
+func TestTriggerSDLWithCompleteDefinition(t *testing.T) {
+	// Test that triggers with complete CREATE TRIGGER statements in Body are output correctly
+	// This simulates triggers dumped from the database where Body contains the full statement
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "testdb",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "ci_builds",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "integer"},
+						},
+						Triggers: []*storepb.TriggerMetadata{
+							{
+								Name: "ci_builds_loose_fk_trigger",
+								Body: "CREATE TRIGGER ci_builds_loose_fk_trigger AFTER DELETE ON public.ci_builds REFERENCING OLD TABLE AS old_table FOR EACH STATEMENT EXECUTE FUNCTION public.loose_foreign_key_on_builds_projects()",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+
+	// Should contain only one CREATE TRIGGER (not duplicated)
+	createTriggerCount := strings.Count(result, "CREATE TRIGGER ci_builds_loose_fk_trigger")
+	assert.Equal(t, 1, createTriggerCount, "CREATE TRIGGER should appear exactly once, not duplicated")
+
+	// Should contain the complete trigger definition
+	assert.Contains(t, result, "AFTER DELETE ON public.ci_builds")
+	assert.Contains(t, result, "REFERENCING OLD TABLE AS old_table")
+	assert.Contains(t, result, "FOR EACH STATEMENT")
+	assert.Contains(t, result, "EXECUTE FUNCTION public.loose_foreign_key_on_builds_projects()")
+}
+
+func TestTriggerSDLWithComment(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "testdb",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "users",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "integer"},
+						},
+						Triggers: []*storepb.TriggerMetadata{
+							{
+								Name:    "audit_trigger",
+								Body:    "CREATE TRIGGER audit_trigger AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION audit_log()",
+								Comment: "Audit log trigger",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+
+	assert.Contains(t, result, "CREATE TRIGGER audit_trigger")
+	assert.Contains(t, result, "COMMENT ON TRIGGER")
+	assert.Contains(t, result, "audit_trigger")
+	assert.Contains(t, result, "Audit log trigger")
+}
+
+func TestMultipleTriggersSDL(t *testing.T) {
+	metadata := &storepb.DatabaseSchemaMetadata{
+		Name: "testdb",
+		Schemas: []*storepb.SchemaMetadata{
+			{
+				Name: "public",
+				Tables: []*storepb.TableMetadata{
+					{
+						Name: "users",
+						Columns: []*storepb.ColumnMetadata{
+							{Name: "id", Type: "integer"},
+						},
+						Triggers: []*storepb.TriggerMetadata{
+							{
+								Name: "audit_insert",
+								Body: "CREATE TRIGGER audit_insert AFTER INSERT ON public.users FOR EACH ROW EXECUTE FUNCTION audit_log()",
+							},
+							{
+								Name: "audit_update",
+								Body: "CREATE TRIGGER audit_update AFTER UPDATE ON public.users FOR EACH ROW EXECUTE FUNCTION audit_log()",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := schema.GetDefinitionContext{
+		SDLFormat: true,
+	}
+
+	result, err := GetDatabaseDefinition(ctx, metadata)
+	require.NoError(t, err)
+
+	assert.Contains(t, result, "audit_insert")
+	assert.Contains(t, result, "audit_update")
+}
+
+func TestIsDefinitionProcedure(t *testing.T) {
+	tests := []struct {
+		name        string
+		definition  string
+		isProcedure bool
+	}{
+		{
+			name: "Simple FUNCTION",
+			definition: `CREATE FUNCTION test_function()
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	NULL;
+END;
+$$;`,
+			isProcedure: false,
+		},
+		{
+			name: "Simple PROCEDURE",
+			definition: `CREATE PROCEDURE test_procedure()
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	NULL;
+END;
+$$;`,
+			isProcedure: true,
+		},
+		{
+			name: "CREATE OR REPLACE FUNCTION",
+			definition: `CREATE OR REPLACE FUNCTION test_function()
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	NULL;
+END;
+$$;`,
+			isProcedure: false,
+		},
+		{
+			name: "CREATE OR REPLACE PROCEDURE",
+			definition: `CREATE OR REPLACE PROCEDURE test_procedure()
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	NULL;
+END;
+$$;`,
+			isProcedure: true,
+		},
+		{
+			name: "FUNCTION with word 'procedure' in comment - should NOT be confused",
+			definition: `CREATE FUNCTION test_function()
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	-- This is not a procedure, it's a function
+	-- The word PROCEDURE appears in this comment
+	RAISE NOTICE 'This function is not a procedure';
+END;
+$$;`,
+			isProcedure: false,
+		},
+		{
+			name: "FUNCTION with word 'procedure' in string literal - should NOT be confused",
+			definition: `CREATE FUNCTION test_function()
+RETURNS text
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	RETURN 'This function is not a PROCEDURE';
+END;
+$$;`,
+			isProcedure: false,
+		},
+		{
+			name: "PROCEDURE with complex body",
+			definition: `CREATE OR REPLACE PROCEDURE update_user_data(
+	user_id INTEGER,
+	new_name VARCHAR
+)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+	old_name VARCHAR;
+BEGIN
+	-- Get old name
+	SELECT name INTO old_name FROM users WHERE id = user_id;
+
+	-- Update the user name
+	UPDATE users SET name = new_name WHERE id = user_id;
+
+	-- Log the change
+	INSERT INTO audit_log (message) VALUES (
+		'Changed user name from ' || old_name || ' to ' || new_name
+	);
+END;
+$$;`,
+			isProcedure: true,
+		},
+		{
+			name: "FUNCTION with RETURNS TABLE",
+			definition: `CREATE OR REPLACE FUNCTION get_users()
+RETURNS TABLE(id INTEGER, name VARCHAR)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	RETURN QUERY SELECT users.id, users.name FROM users;
+END;
+$$;`,
+			isProcedure: false,
+		},
+		{
+			name:        "Empty definition",
+			definition:  "",
+			isProcedure: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isDefinitionProcedure(tt.definition)
+			assert.Equal(t, tt.isProcedure, result,
+				"isDefinitionProcedure returned %v, expected %v for:\n%s",
+				result, tt.isProcedure, tt.definition)
+		})
+	}
+}
+
+// TestIsDefinitionProcedureRobustness tests edge cases that would fail with string-based detection
+func TestIsDefinitionProcedureRobustness(t *testing.T) {
+	tests := []struct {
+		name        string
+		definition  string
+		isProcedure bool
+		reason      string
+	}{
+		{
+			name: "FUNCTION with 'CREATE PROCEDURE' in string literal",
+			definition: `CREATE FUNCTION test_function()
+RETURNS text
+LANGUAGE sql
+AS $outer$
+	SELECT 'Example: CREATE PROCEDURE foo() LANGUAGE plpgsql AS $body$ BEGIN NULL; END; $body$;'
+$outer$;`,
+			isProcedure: false,
+			reason:      "String-based detection might incorrectly identify this as a PROCEDURE due to 'CREATE PROCEDURE' in the string literal",
+		},
+		{
+			name: "FUNCTION with 'PROCEDURE' in multi-line comment",
+			definition: `CREATE FUNCTION complex_function()
+RETURNS void
+LANGUAGE plpgsql
+AS $$
+BEGIN
+	/*
+	 * This function performs complex operations
+	 * Note: This is NOT a PROCEDURE
+	 * PROCEDURE keyword appears in this comment
+	 * But it should still be detected as a FUNCTION
+	 */
+	RAISE NOTICE 'Processing...';
+END;
+$$;`,
+			isProcedure: false,
+			reason:      "Multi-line comments with PROCEDURE keyword should not confuse the detector",
+		},
+		{
+			name: "PROCEDURE with unusual formatting",
+			definition: `CREATE    OR    REPLACE    PROCEDURE
+test_procedure
+(
+)
+LANGUAGE plpgsql
+AS
+$$
+BEGIN
+	NULL;
+END;
+$$;`,
+			isProcedure: true,
+			reason:      "Should handle unusual whitespace and formatting",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := isDefinitionProcedure(tt.definition)
+			assert.Equal(t, tt.isProcedure, result,
+				"Test failed: %s\nGot: %v, Expected: %v",
+				tt.reason, result, tt.isProcedure)
+		})
+	}
+}
+
+func TestExtractSequenceNameFromNextval(t *testing.T) {
+	testCases := []struct {
+		name         string
+		defaultValue string
+		expectedName string
+		description  string
+	}{
+		{
+			name:         "Simple sequence name with single quotes",
+			defaultValue: "nextval('users_id_seq')",
+			expectedName: "users_id_seq",
+			description:  "Basic case with simple sequence name",
+		},
+		{
+			name:         "Sequence name with schema qualification",
+			defaultValue: "nextval('public.users_id_seq')",
+			expectedName: "users_id_seq",
+			description:  "Schema-qualified sequence name",
+		},
+		{
+			name:         "Sequence with regclass cast",
+			defaultValue: "nextval('users_id_seq'::regclass)",
+			expectedName: "users_id_seq",
+			description:  "Sequence with ::regclass type cast",
+		},
+		{
+			name:         "Schema and regclass",
+			defaultValue: "nextval('public.users_id_seq'::regclass)",
+			expectedName: "users_id_seq",
+			description:  "Schema-qualified sequence with regclass cast",
+		},
+		{
+			name:         "Quoted sequence name",
+			defaultValue: `nextval('"Users_Id_Seq"')`,
+			expectedName: "Users_Id_Seq",
+			description:  "Sequence name with double quotes for case sensitivity",
+		},
+		{
+			name:         "Quoted schema and sequence",
+			defaultValue: `nextval('"Public"."Users_Id_Seq"')`,
+			expectedName: "Users_Id_Seq",
+			description:  "Both schema and sequence quoted",
+		},
+		{
+			name:         "Mixed case with public schema",
+			defaultValue: `nextval('public."MixedCaseSeq"')`,
+			expectedName: "MixedCaseSeq",
+			description:  "Unquoted schema with quoted sequence",
+		},
+		{
+			name:         "Quoted schema unquoted sequence",
+			defaultValue: `nextval('"Public".users_id_seq')`,
+			expectedName: "users_id_seq",
+			description:  "Quoted schema with unquoted sequence",
+		},
+		{
+			name:         "Complex case with all features",
+			defaultValue: `nextval('"MySchema"."MySeq"'::regclass)`,
+			expectedName: "MySeq",
+			description:  "Quoted schema, quoted sequence, and regclass",
+		},
+		{
+			name:         "Uppercase NEXTVAL",
+			defaultValue: `NEXTVAL('users_id_seq')`,
+			expectedName: "users_id_seq",
+			description:  "Case-insensitive NEXTVAL function name",
+		},
+		{
+			name:         "Mixed case nextval",
+			defaultValue: `NextVal('users_id_seq')`,
+			expectedName: "users_id_seq",
+			description:  "Mixed case nextval function name",
+		},
+		{
+			name:         "Sequence with spaces",
+			defaultValue: `nextval( 'users_id_seq' )`,
+			expectedName: "users_id_seq",
+			description:  "Extra spaces around sequence name",
+		},
+		{
+			name:         "Double quoted outer quotes",
+			defaultValue: `nextval("users_id_seq")`,
+			expectedName: "users_id_seq",
+			description:  "Double quotes as outer quotes",
+		},
+		{
+			name:         "Empty default",
+			defaultValue: "",
+			expectedName: "",
+			description:  "Empty string should return empty",
+		},
+		{
+			name:         "No nextval",
+			defaultValue: "42",
+			expectedName: "",
+			description:  "Non-nextval default should return empty",
+		},
+		{
+			name:         "Malformed nextval",
+			defaultValue: "nextval(",
+			expectedName: "",
+			description:  "Malformed nextval should return empty",
+		},
+		{
+			name:         "Special characters in schema",
+			defaultValue: `nextval('"schema-name"."seq_name"')`,
+			expectedName: "seq_name",
+			description:  "Schema with special characters",
+		},
+		{
+			name:         "Multiple dots",
+			defaultValue: `nextval('"my.schema"."my.seq"')`,
+			expectedName: "my.seq",
+			description:  "Dots within quoted identifiers",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := extractSequenceNameFromNextval(tc.defaultValue)
+			assert.Equal(t, tc.expectedName, result, tc.description)
+		})
+	}
+}
+
+func TestExtractIdentifierFromQualifiedName(t *testing.T) {
+	testCases := []struct {
+		name          string
+		qualifiedName string
+		expected      string
+		description   string
+	}{
+		{
+			name:          "Simple identifier",
+			qualifiedName: "users_id_seq",
+			expected:      "users_id_seq",
+			description:   "No schema qualification",
+		},
+		{
+			name:          "Schema qualified",
+			qualifiedName: "public.users_id_seq",
+			expected:      "users_id_seq",
+			description:   "Simple schema.sequence",
+		},
+		{
+			name:          "Both quoted",
+			qualifiedName: `"Public"."Users_Id_Seq"`,
+			expected:      `"Users_Id_Seq"`,
+			description:   "Both parts quoted",
+		},
+		{
+			name:          "Only sequence quoted",
+			qualifiedName: `public."MixedCase"`,
+			expected:      `"MixedCase"`,
+			description:   "Only sequence name quoted",
+		},
+		{
+			name:          "Dot in quoted identifier",
+			qualifiedName: `"my.schema"."my.seq"`,
+			expected:      `"my.seq"`,
+			description:   "Dots inside quoted parts should be ignored",
+		},
+		{
+			name:          "Empty string",
+			qualifiedName: "",
+			expected:      "",
+			description:   "Empty input should return empty",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := extractIdentifierFromQualifiedName(tc.qualifiedName)
+			assert.Equal(t, tc.expected, result, tc.description)
+		})
+	}
+}
