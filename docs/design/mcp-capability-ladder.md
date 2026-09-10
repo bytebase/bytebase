@@ -182,10 +182,14 @@ disclosure slot holds a static line in the floor's soft error tone, "Nothing is 
 session can connect.", so red means "no capability" everywhere on the card. It is not a button and
 does not repeat the mode name.
 
-**D8 — Copy that shrinks.** The masking toggle's two paragraphs become one sentence: "If enabled,
-masked data stays masked in MCP sessions even for users with exemptions or unmask grants. The
-console is unaffected." The engine caveat it carried moves to docs. The three "Best for" lines keep
-their current wording. The Read-only description sentence ("Sessions can explore schemas and run
+**D8 — Copy that shrinks, but keeps the coverage limit.** The masking toggle's two paragraphs
+become: "If enabled, masked data stays masked in MCP sessions even for users with exemptions or
+unmask grants. Coverage depends on the engine: where Bytebase does not mask, this changes nothing.
+The console is unaffected." The middle sentence stays in the product on purpose. Masking runs only
+on the engines `common.EngineSupportMasking` lists; on the others the query masker falls back to a
+no-op, so on Snowflake or ClickHouse the toggle keeps nothing masked, and the setting's own proto
+comment says it "is not a confidentiality boundary". A toggle that promised more would mislead the
+admin it exists to protect. The three "Best for" lines keep their current wording. The Read-only description sentence ("Sessions can explore schemas and run
 read-only queries…") is retired everywhere; its content lives in the Read-only summary and in row
 2's sub-item.
 
@@ -239,7 +243,7 @@ All strings, so the change and the locale files have one source. Keys under
 - Dividers: "Read-only stops here", "Read-write stops here".
 - Floor: "Never, in any mode: approve issues, administer the workspace, or handle credentials."
 - Tier badges: "read", "write".
-- Masking toggle: the one sentence in D8.
+- Masking toggle: the three sentences in D8, including the engine-coverage limit.
 - Footer, clean: "Applies to every running session's next request." Dirty: "{from} → {to} applies
   to every running session's next request."
 - Connect a client: the sentence in D9.
