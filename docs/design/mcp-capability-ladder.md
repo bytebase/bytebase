@@ -212,6 +212,19 @@ disclosure slot holds a static line in the floor's soft error tone, "Nothing is 
 session can connect.", so red means "no capability" everywhere on the card. It is not a button and
 does not repeat the mode name.
 
+The rule extends past color: **a control that governs only a serving session is withheld while
+Disabled is picked, and the save leaves its stored value alone.** The masking toggle is the one
+such control today. `mcpIgnoresMaskingExemptions` (`backend/api/v1/mcp_masking.go`) answers on the
+delegated grant an MCP request carries, and Disabled admits no MCP session, so the stored flag is
+never read there — a live toggle under a red line saying no session can connect would be the card
+asserting two things that cannot both hold. Withholding it costs nothing: picking a serving mode in
+the same editor brings it straight back with the draft intact, and the update mask simply omits
+`value.mcp.ignore_masking_exemptions`. Omitting it from the mask is what closes a hazard the visible
+version carries — toggling masking under Read-write and then picking Disabled would otherwise write
+a masking change through a control that is no longer on screen. For the same reason the "Masking
+exemptions ignored" chip is withheld from a Disabled policy in view: it asserts a restriction on
+sessions that do not exist. (Mock E draws the toggle under Disabled; the implementation does not.)
+
 **D8 — Copy that shrinks, but keeps the coverage limit.** The masking toggle's two paragraphs
 become: "If enabled, masked data stays masked in MCP sessions even for users with exemptions or
 unmask grants. Coverage depends on the engine: where Bytebase does not mask, this changes nothing.
@@ -252,10 +265,10 @@ counts, so the frontend needs only the static tier of each row.
 | State | What the section shows |
 |---|---|
 | View · Read-only or Read-write | Chip line with Edit policy; the disclosure line as the description, collapsed. Nothing below it. |
-| View · Disabled | Chip line; "No MCP session can connect to this workspace." No disclosure. |
+| View · Disabled | Chip line, without the masking chip (D7); "No MCP session can connect to this workspace." No disclosure. |
 | View · unreadable, unserved, read failed | The existing warning or error, unchanged. No disclosure. |
 | Edit · Read-only or Read-write picked | Icon cards with the pick selected; the pick's "Best for" line; the disclosure for the pick, collapsed by default, rendering the post-save view, with "Show details" once expanded; masking toggle; separator; footer sentence (naming the change when dirty), Cancel, Save (enabled only when dirty). |
-| Edit · Disabled picked | Icon cards with Disabled selected; its "Best for" line; the static soft-error line in the disclosure slot. |
+| Edit · Disabled picked | Icon cards with Disabled selected; its "Best for" line; the static soft-error line in the disclosure slot; NO masking toggle (D7); separator; footer, Cancel, Save. |
 | Consent page | Served row titles with ✓, the ✕ line under Read-only, then the existing constants and caution. |
 
 ## Copy

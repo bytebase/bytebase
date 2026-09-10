@@ -112,8 +112,16 @@ export function MCPAccessPolicySection() {
     setEditing(true);
   };
 
-  const isDirty =
-    editing && (pick !== storedMode || ignoreMasking !== storedIgnoreMasking);
+  // The masking toggle governs what an MCP session may unmask, and Disabled
+  // admits none: mcpIgnoresMaskingExemptions answers on the delegated grant an
+  // MCP request carries, so under Disabled the stored flag is never read. The
+  // editor therefore neither shows it nor writes it there, rather than offering
+  // a control the picked mode makes inert. The draft survives the detour, so
+  // picking a serving mode again brings back whatever was set.
+  const maskingApplies = pick !== MCPSetting_Capability.DISABLED;
+  const maskingChanged =
+    maskingApplies && ignoreMasking !== storedIgnoreMasking;
+  const isDirty = editing && (pick !== storedMode || maskingChanged);
   // The section this replaced was registered in GeneralPage's guarded refs, so
   // moving it to its own route would otherwise drop the confirm an admin gets
   // when navigating away from an unsaved ceiling.
@@ -135,7 +143,7 @@ export function MCPAccessPolicySection() {
     if (pick !== storedMode) {
       paths.push("value.mcp.capability");
     }
-    if (ignoreMasking !== storedIgnoreMasking) {
+    if (maskingChanged) {
       paths.push("value.mcp.ignore_masking_exemptions");
     }
     setSaving(true);
@@ -147,7 +155,9 @@ export function MCPAccessPolicySection() {
             case: "mcp",
             value: create(MCPSettingSchema, {
               capability: pick,
-              ignoreMaskingExemptions: ignoreMasking,
+              ignoreMaskingExemptions: maskingApplies
+                ? ignoreMasking
+                : storedIgnoreMasking,
             }),
           },
         }),
@@ -233,7 +243,16 @@ export function MCPAccessPolicySection() {
                 )}
               </span>
             ) : (
-              <ModeChip mode={storedMode} ignoreMasking={storedIgnoreMasking} />
+              <ModeChip
+                mode={storedMode}
+                // Withheld under Disabled for the same reason the toggle is:
+                // the badge asserts a restriction on MCP sessions, and there
+                // are none to restrict.
+                ignoreMasking={
+                  storedIgnoreMasking &&
+                  storedMode !== MCPSetting_Capability.DISABLED
+                }
+              />
             )}
             <PermissionGuard permissions={["bb.settings.set"]}>
               {({ disabled }) => (
@@ -336,28 +355,30 @@ export function MCPAccessPolicySection() {
               </>
             )}
 
-            <div className="flex items-start gap-x-3">
-              <Switch
-                checked={ignoreMasking}
-                onCheckedChange={setIgnoreMasking}
-                disabled={saving}
-                aria-label={t("settings.mcp.policy.masking.title")}
-                className="mt-0.5 shrink-0"
-              />
-              <div className="flex flex-col gap-1">
-                <div className="textinfo font-semibold">
-                  {t("settings.mcp.policy.masking.title")}
-                </div>
-                <div className="textinfolabel">
-                  {t("settings.mcp.policy.masking.description")}
-                </div>
-                {!dataMaskingAvailable && (
-                  <div className="text-sm text-warning">
-                    {t("settings.mcp.policy.masking.unavailable")}
+            {maskingApplies && (
+              <div className="flex items-start gap-x-3">
+                <Switch
+                  checked={ignoreMasking}
+                  onCheckedChange={setIgnoreMasking}
+                  disabled={saving}
+                  aria-label={t("settings.mcp.policy.masking.title")}
+                  className="mt-0.5 shrink-0"
+                />
+                <div className="flex flex-col gap-1">
+                  <div className="textinfo font-semibold">
+                    {t("settings.mcp.policy.masking.title")}
                   </div>
-                )}
+                  <div className="textinfolabel">
+                    {t("settings.mcp.policy.masking.description")}
+                  </div>
+                  {!dataMaskingAvailable && (
+                    <div className="text-sm text-warning">
+                      {t("settings.mcp.policy.masking.unavailable")}
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             <Separator />
             <div className="flex flex-wrap items-center justify-between gap-4">

@@ -472,6 +472,124 @@ describe("MCPAccessPolicySection", () => {
     unmount();
   });
 
+  // The toggle governs what an MCP session may unmask, and Disabled admits
+  // none, so offering it there would put a live control under a red line
+  // saying no session can connect.
+  test("the masking toggle is withheld while Disabled is picked", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+    expect(container.textContent).toContain("settings.mcp.policy.masking.title");
+
+    clickText(container, "settings.mcp.policy.mode.disabled.title");
+    await flush();
+    expect(
+      container.querySelector('[aria-label="settings.mcp.policy.masking.title"]')
+    ).toBeNull();
+
+    // Picking a serving mode again brings the control back.
+    clickText(container, "settings.mcp.policy.mode.read-write.title");
+    await flush();
+    expect(
+      container.querySelector('[aria-label="settings.mcp.policy.masking.title"]')
+    ).not.toBeNull();
+    unmount();
+  });
+
+  // Toggling masking and then picking Disabled would otherwise write a change
+  // the admin can no longer see, because the control that made it is gone.
+  test("saving Disabled leaves the stored masking flag untouched", async () => {
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+
+    const maskingSwitch = () =>
+      container.querySelector(
+        '[aria-label="settings.mcp.policy.masking.title"]'
+      ) as HTMLElement | null;
+    act(() => maskingSwitch()?.click());
+    await flush();
+
+    clickText(container, "settings.mcp.policy.mode.disabled.title");
+    await flush();
+    clickText(container, "settings.mcp.policy.save");
+    await flush();
+
+    const request = mocks.upsertSetting.mock.calls.at(-1)?.[0];
+    expect(request.updateMask.paths).toEqual(["value.mcp.capability"]);
+    expect(request.value.value.value.ignoreMaskingExemptions).toBe(false);
+    unmount();
+  });
+
+  // Nothing the editor would write, so Save stays disabled even though the
+  // hidden draft differs from the stored flag.
+  test("a masking draft alone cannot save under Disabled", async () => {
+    mocks.serverInfo.value = {
+      mcpSetting: {
+        capability: MCPSetting_Capability.DISABLED,
+        ignoreMaskingExemptions: false,
+      },
+    };
+    mocks.loadServerInfo.mockResolvedValue(mocks.serverInfo.value);
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+
+    // Reach the toggle through a serving mode, set it, then return to Disabled.
+    clickText(container, "settings.mcp.policy.mode.read-only.title");
+    await flush();
+    act(() =>
+      (
+        container.querySelector(
+          '[aria-label="settings.mcp.policy.masking.title"]'
+        ) as HTMLElement | null
+      )?.click()
+    );
+    await flush();
+    clickText(container, "settings.mcp.policy.mode.disabled.title");
+    await flush();
+
+    expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(false);
+    expect(
+      [...container.querySelectorAll("button")].find((button) =>
+        button.textContent?.includes("settings.mcp.policy.save")
+      )
+    ).toHaveProperty("disabled", true);
+    unmount();
+  });
+
+  test("the masking badge is withheld on a disabled policy", async () => {
+    mocks.serverInfo.value = {
+      mcpSetting: {
+        capability: MCPSetting_Capability.DISABLED,
+        ignoreMaskingExemptions: true,
+      },
+    };
+    mocks.loadServerInfo.mockResolvedValue(mocks.serverInfo.value);
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+
+    expect(container.textContent).not.toContain(
+      "settings.mcp.policy.masking.badge"
+    );
+    unmount();
+  });
+
   // The tightening note is about a change being made, not about the current
   // state, so it belongs to the editor; the audit fact moved to the section
   // description and must not come back as a second line under the chip.
