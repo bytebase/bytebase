@@ -156,21 +156,6 @@ func (s *DatabaseSearcher) SearchFunctions(name string) ([]string, []*storepb.Fu
 	return schemas, funcs
 }
 
-// SearchObject searches for any database object in the search path.
-// NOTE: This is primarily designed for PostgreSQL's search_path concept.
-func (s *DatabaseSearcher) SearchObject(name string) (string, string) {
-	for _, schemaName := range s.searchPath {
-		schema := s.db.GetSchemaMetadata(schemaName)
-		if schema == nil {
-			continue
-		}
-		if schema.GetTable(name) != nil || schema.GetView(name) != nil || schema.GetMaterializedView(name) != nil || schema.GetFunction(name) != nil || schema.GetProcedure(name) != nil || schema.GetPackage(name) != nil || schema.GetSequence(name) != nil || schema.GetExternalTable(name) != nil {
-			return schema.proto.Name, name
-		}
-	}
-	return "", ""
-}
-
 // SearchTable searches for a table in the search path.
 // NOTE: This is primarily designed for PostgreSQL's search_path concept.
 func (d *DatabaseMetadata) SearchTable(searchPath []string, name string) (string, *TableMetadata) {
@@ -300,9 +285,9 @@ func (d *DatabaseMetadata) SearchFunctions(searchPath []string, name string) ([]
 // PostgreSQL keeps relations and routines in separate namespaces, so a function,
 // procedure or package named like a table does not shadow it: SELECT * FROM t
 // reads the table wherever it sits in the path, even if an earlier schema has a
-// function t. SearchObject matches routines as well and is for callers resolving
-// a name that could be either; a caller resolving a FROM-clause reference wants
-// this one, or it records an access on a schema the query never reads.
+// function t. Resolving one with a search that also matches routines records an
+// access on a schema the query never reads, which both hides a degraded relation
+// from masking and points the query access check at the wrong schema.
 func (d *DatabaseMetadata) SearchRelation(searchPath []string, name string) (string, string) {
 	for _, schemaName := range searchPath {
 		schema := d.GetSchemaMetadata(schemaName)
@@ -310,23 +295,6 @@ func (d *DatabaseMetadata) SearchRelation(searchPath []string, name string) (str
 			continue
 		}
 		if schema.GetTable(name) != nil || schema.GetView(name) != nil || schema.GetMaterializedView(name) != nil || schema.GetExternalTable(name) != nil || schema.GetSequence(name) != nil {
-			return schema.proto.Name, name
-		}
-	}
-	return "", ""
-}
-
-// SearchObject searches for any database object in the search path.
-// NOTE: This is primarily designed for PostgreSQL's search_path concept.
-// It matches routines too, so a caller resolving a FROM-clause relation wants
-// SearchRelation instead.
-func (d *DatabaseMetadata) SearchObject(searchPath []string, name string) (string, string) {
-	for _, schemaName := range searchPath {
-		schema := d.GetSchemaMetadata(schemaName)
-		if schema == nil {
-			continue
-		}
-		if schema.GetTable(name) != nil || schema.GetView(name) != nil || schema.GetMaterializedView(name) != nil || schema.GetFunction(name) != nil || schema.GetProcedure(name) != nil || schema.GetPackage(name) != nil || schema.GetSequence(name) != nil || schema.GetExternalTable(name) != nil {
 			return schema.proto.Name, name
 		}
 	}

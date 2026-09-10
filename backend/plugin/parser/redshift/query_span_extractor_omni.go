@@ -280,7 +280,7 @@ func (r *redshiftQuerySpanRelationResolver) ResolveRelation(schemaName, relation
 
 	resolvedSchemaName, resolvedRelationName := schemaName, relationName
 	if resolvedSchemaName == "" {
-		resolvedSchemaName, resolvedRelationName = r.metadata.SearchObject(searchPath, relationName)
+		resolvedSchemaName, resolvedRelationName = r.metadata.SearchRelation(searchPath, relationName)
 		if resolvedSchemaName == "" && resolvedRelationName == "" {
 			return nil, nil
 		}
@@ -439,7 +439,7 @@ func collectRedshiftSchemaQualificationEdits(metadata *model.DatabaseMetadata, s
 		if isOmniCTEReference(rangeVar, ctes) || rangeVar.Loc.Start < 0 {
 			return true
 		}
-		schemaName, _ := metadata.SearchObject(searchPath, rangeVar.Relname)
+		schemaName, _ := metadata.SearchRelation(searchPath, rangeVar.Relname)
 		if schemaName == "" {
 			return true
 		}
@@ -1274,18 +1274,20 @@ func (q *omniQuerySpanExtractor) omniAccessTableExists(ctx context.Context, reso
 		return false
 	}
 	if resource.Schema == "" {
-		schemaName, objectName := metadata.SearchObject(q.searchPath, resource.Table)
+		schemaName, objectName := metadata.SearchRelation(q.searchPath, resource.Table)
 		return schemaName != "" || objectName != ""
 	}
 	schema := metadata.GetSchemaMetadata(resource.Schema)
 	if schema == nil {
 		return false
 	}
+	// Relation kinds only, matching SearchRelation on the unqualified branch
+	// above: an access table comes from a RangeVar, and PostgreSQL resolves those
+	// against the relation namespace.
 	return schema.GetTable(resource.Table) != nil ||
 		schema.GetView(resource.Table) != nil ||
 		schema.GetMaterializedView(resource.Table) != nil ||
 		schema.GetExternalTable(resource.Table) != nil ||
-		schema.GetFunction(resource.Table) != nil ||
 		schema.GetSequence(resource.Table) != nil
 }
 
@@ -1309,7 +1311,7 @@ func (q *omniQuerySpanExtractor) resolveOmniRangeVar(ctx context.Context, rangeV
 	if metadata == nil {
 		return resource, nil
 	}
-	schemaName, objectName := metadata.SearchObject(q.searchPath, resource.Table)
+	schemaName, objectName := metadata.SearchRelation(q.searchPath, resource.Table)
 	if schemaName == "" && objectName == "" {
 		return base.ColumnResource{}, &base.ResourceNotFoundError{
 			Database: &resource.Database,
