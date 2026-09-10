@@ -45,6 +45,7 @@ const mocks = vi.hoisted(() => {
       async (project: string) => project
     ),
     setAsidePanelTab: vi.fn(),
+    cleanupLegacyPouchDatabases: vi.fn(async () => undefined),
     permissionState: {
       missedBasicPermissions: [] as string[],
       missedPermissions: [] as string[],
@@ -190,7 +191,7 @@ vi.mock("@/modules/sql-editor/store/tab", () => ({
 }));
 
 vi.mock("@/modules/sql-editor/legacy/migration", () => ({
-  cleanupLegacyPouchDatabases: vi.fn(async () => undefined),
+  cleanupLegacyPouchDatabases: mocks.cleanupLegacyPouchDatabases,
 }));
 
 vi.mock("./SQLEditorHomePage", () => ({
@@ -253,6 +254,7 @@ beforeEach(() => {
     contentSize: BigInt(new TextEncoder().encode("select 1").length),
   }));
   mocks.editorState.project = "projects/proj1";
+  mocks.cleanupLegacyPouchDatabases.mockResolvedValue(undefined);
   mocks.permissionState = {
     missedBasicPermissions: [],
     missedPermissions: [],
@@ -292,6 +294,40 @@ beforeEach(() => {
 });
 
 describe("SQLEditorRouteShell", () => {
+  test("waits for bootstrap before rendering the project selector", async () => {
+    let finishCleanup: (value: undefined) => void;
+    const cleanup = new Promise<undefined>((resolve) => {
+      finishCleanup = resolve;
+    });
+    mocks.editorState.project = "";
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      name: "sql-editor.home",
+      params: {},
+      query: {},
+    };
+    mocks.currentRoute = mocks.renderRoute;
+    mocks.cleanupLegacyPouchDatabases.mockReturnValueOnce(cleanup);
+
+    const { container, unmount } = renderShell();
+
+    expect(
+      container.querySelector('[data-testid="sql-editor-home"]')
+    ).toBeNull();
+
+    await act(async () => {
+      finishCleanup(undefined);
+      await cleanup;
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      container.querySelector('[data-testid="sql-editor-home"]')
+    ).not.toBeNull();
+    unmount();
+  });
+
   test("renders the project selector before workspace-level route permissions", async () => {
     mocks.editorState.project = "";
     mocks.renderRoute = {
