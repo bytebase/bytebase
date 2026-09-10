@@ -511,7 +511,7 @@ func (*metadataExtractor) getDefaultValue(expr ast.ExprNode) string {
 		if textNode, ok := expr.(interface{ Text() string }); ok {
 			text := textNode.Text()
 			if text == "" {
-				return restoreExpression(expr)
+				return stripCharsetIntroducer(restoreExpression(expr))
 			}
 			// Clean up common default value formats
 			text = strings.Trim(text, "'\"")
@@ -619,12 +619,35 @@ func (m *metadataExtractor) processTiDBTableComment(comment string, table *store
 		// Find the primary key column and set AUTO_RANDOM
 		for _, col := range table.Columns {
 			if m.isPrimaryKeyColumn(col, table) {
-				bits := matches[1]
-				col.Default = fmt.Sprintf("AUTO_RANDOM(%s)", bits)
+				// PK_AUTO_RANDOM_BITS carries the shard width alone. The column
+				// option is richer -- it can also fix the allocation range -- so it
+				// wins when both are present.
+				if !strings.HasPrefix(col.Default, autoRandomSymbol) {
+					col.Default = fmt.Sprintf("%s(%s)", autoRandomSymbol, matches[1])
+				}
 				break
 			}
 		}
 	}
+}
+
+// stripCharsetIntroducer drops the _CHARSET prefix the parser restores in front
+// of a string literal. A sync records the literal without one, so keeping it
+// would make a parsed schema diff against a synced one forever.
+func stripCharsetIntroducer(value string) string {
+	if !strings.HasPrefix(value, "_") {
+		return value
+	}
+	quote := strings.IndexByte(value, '\'')
+	if quote <= 0 {
+		return value
+	}
+	for _, r := range value[1:quote] {
+		if r != '_' && (r < '0' || r > '9') && (r < 'a' || r > 'z') && (r < 'A' || r > 'Z') {
+			return value
+		}
+	}
+	return value[quote:]
 }
 
 // autoRandomDefault renders the column default the definition writer expects for

@@ -609,7 +609,7 @@
                 {
                   "name": "status",
                   "position": 4,
-                  "default": "_UTF8MB4'pending'",
+                  "default": "'pending'",
                   "nullable": true,
                   "type": "varchar(20)"
                 }
@@ -1252,6 +1252,56 @@
                 }
               ],
               "engine": "InnoDB"
+            }
+          ]
+        }
+      ]
+    }
+- description: auto_random_range_with_compat_comment
+  schema: |
+    CREATE TABLE sharded (
+        id BIGINT AUTO_RANDOM(5, 54) PRIMARY KEY,
+        label VARCHAR(20) DEFAULT 'pending'
+    ) COMMENT='PK_AUTO_RANDOM_BITS=5';
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "sharded",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "default": "AUTO_RANDOM(5, 54)",
+                  "type": "bigint"
+                },
+                {
+                  "name": "label",
+                  "position": 2,
+                  "default": "'pending'",
+                  "nullable": true,
+                  "type": "varchar(20)"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB",
+              "comment": "PK_AUTO_RANDOM_BITS=5"
             }
           ]
         }
