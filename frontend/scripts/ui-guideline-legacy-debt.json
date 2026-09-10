@@ -1652,12 +1652,6 @@
     },
     {
       "path": "src/routes/project/database-detail/overview/TableDetailSheet.tsx",
-      "rule": "no-native-control",
-      "token": "button",
-      "count": 3
-    },
-    {
-      "path": "src/routes/project/database-detail/overview/TableDetailSheet.tsx",
       "rule": "no-raw-color",
       "token": "bg-amber-500",
       "count": 1

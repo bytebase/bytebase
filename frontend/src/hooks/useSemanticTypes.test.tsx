@@ -1,6 +1,7 @@
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import i18n from "@/lib/i18n";
 import { useSemanticTypes } from "./useSemanticTypes";
 
 (globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT =
@@ -22,6 +23,7 @@ function SemanticTypeList() {
     <div
       data-configured={configuredSemanticTypes.map(({ id }) => id).join(",")}
       data-expanded={semanticTypes.map(({ id }) => id).join(",")}
+      data-first-title={semanticTypes[0]?.title}
     />
   );
 }
@@ -34,8 +36,9 @@ beforeEach(() => {
   root = createRoot(container);
 });
 
-afterEach(() => {
+afterEach(async () => {
   act(() => root.unmount());
+  await i18n.changeLanguage("en-US");
 });
 
 describe("useSemanticTypes", () => {
@@ -85,5 +88,22 @@ describe("useSemanticTypes", () => {
     expect(container.firstElementChild?.getAttribute("data-expanded")).toBe(
       "bb.default,bb.default-partial,phone"
     );
+  });
+
+  test("updates built-in labels when the locale changes", async () => {
+    await act(async () => {
+      await i18n.changeLanguage("en-US");
+      root.render(<SemanticTypeList />);
+    });
+    expect(
+      container.firstElementChild?.getAttribute("data-first-title")
+    ).toBe("Default");
+
+    await act(async () => {
+      await i18n.changeLanguage("zh-CN");
+    });
+    expect(
+      container.firstElementChild?.getAttribute("data-first-title")
+    ).toBe("全遮掩");
   });
 });

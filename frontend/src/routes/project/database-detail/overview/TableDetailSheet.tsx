@@ -37,6 +37,7 @@ import {
   updateColumnCatalog,
   updateTableCatalog,
 } from "@/lib/column-data-table/utils";
+import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import { getTableCatalog } from "@/stores/app/databaseCatalog";
@@ -305,11 +306,13 @@ function MiniActionButton({
   onClick: (event: MouseEvent<HTMLButtonElement>) => void;
 }) {
   return (
-    <button
+    <Button
       type="button"
       aria-label={ariaLabel}
       data-testid={dataTestId}
-      className={`inline-flex size-5 items-center justify-center rounded-xs text-control transition-colors hover:bg-control-bg hover:text-main disabled:cursor-not-allowed disabled:opacity-50 [&_svg]:pointer-events-none ${className ?? ""}`}
+      appearance="secondary"
+      size="xs"
+      className={cn("w-6 px-0", className)}
       disabled={disabled}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
@@ -321,7 +324,7 @@ function MiniActionButton({
       onClick={onClick}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -592,11 +595,13 @@ function ClassificationPickerPopover({
                   }
 
                   return (
-                    <button
+                    <Button
                       key={node.id}
                       type="button"
+                      appearance="secondary"
+                      size="sm"
                       data-testid={`classification-option-${toTestId(node.id)}`}
-                      className="flex w-full items-center justify-between gap-x-2 px-4 py-2 text-left text-sm text-control hover:bg-control-bg"
+                      className="h-auto w-full justify-between rounded-none px-4 py-2 text-left text-sm font-normal whitespace-normal"
                       style={{ paddingLeft: `${depth * 16 + 16}px` }}
                       onClick={() => {
                         onSelect(node.id);
@@ -604,7 +609,7 @@ function ClassificationPickerPopover({
                       }}
                     >
                       {content}
-                    </button>
+                    </Button>
                   );
                 })}
               </div>
@@ -683,11 +688,13 @@ function SemanticTypePickerPopover({
             ) : (
               <div className="divide-y divide-block-border">
                 {filteredSemanticTypeList.map((semanticType) => (
-                  <button
+                  <Button
                     key={semanticType.id}
                     type="button"
+                    appearance="secondary"
+                    size="sm"
                     data-testid={`semantic-type-option-${toTestId(semanticType.id)}`}
-                    className="flex w-full flex-col items-start gap-y-1 px-4 py-3 text-left hover:bg-control-bg"
+                    className="h-auto w-full flex-col items-start rounded-none px-4 py-3 text-left font-normal whitespace-normal"
                     onClick={() => {
                       onSelect(semanticType.id);
                       setOpen(false);
@@ -704,7 +711,7 @@ function SemanticTypePickerPopover({
                         {semanticType.description}
                       </span>
                     )}
-                  </button>
+                  </Button>
                 ))}
               </div>
             )}
