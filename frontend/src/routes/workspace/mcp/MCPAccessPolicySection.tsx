@@ -1,10 +1,12 @@
 import { create } from "@bufbuild/protobuf";
 import { FieldMaskSchema } from "@bufbuild/protobuf/wkt";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { MCPModeBadge } from "@/components/mcp/MCPModeBadge";
 import type { MCPMode } from "@/components/mcp/mcpPolicy";
 import {
   isMCPMode,
+  isServingMode,
   MCP_CAPABILITY_CHOICES,
   MCP_MODE_PRESENTATION,
 } from "@/components/mcp/mcpPolicy";
@@ -15,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
+import { useLocalStorageBoolean } from "@/hooks/useLocalStorageBoolean";
 import { useUnsavedChangesGuard } from "@/hooks/useUnsavedChangesGuard";
 import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
@@ -26,44 +29,11 @@ import {
   SettingValueSchema,
 } from "@/types/proto-es/v1/setting_service_pb";
 import { PlanFeature } from "@/types/proto-es/v1/subscription_service_pb";
+import {
+  STORAGE_KEY_MCP_LADDER_DETAILS,
+  STORAGE_KEY_MCP_LADDER_OPEN,
+} from "@/utils/storage-keys";
 import { MCPCapabilityLadder } from "./MCPCapabilityLadder";
-
-const LADDER_OPEN_KEY = "bb.mcp.ladder.open";
-const LADDER_DETAILS_KEY = "bb.mcp.ladder.details";
-
-/**
- * A disclosure preference, remembered per browser.
- *
- * It is deliberately not part of the policy: an admin who opened the list once
- * wants it open the next time they come to compare, and that is a habit of the
- * person, not a fact about the workspace. Storage failures (private mode, a
- * locked-down profile) fall back to the default rather than breaking the card.
- */
-const useStoredFlag = (
-  key: string,
-  fallback: boolean
-): [boolean, (next: boolean) => void] => {
-  const [value, setValue] = useState(() => {
-    try {
-      const stored = localStorage.getItem(key);
-      return stored === null ? fallback : stored === "true";
-    } catch {
-      return fallback;
-    }
-  });
-  const update = useCallback(
-    (next: boolean) => {
-      setValue(next);
-      try {
-        localStorage.setItem(key, String(next));
-      } catch {
-        /* the preference is a convenience; losing it costs nothing */
-      }
-    },
-    [key]
-  );
-  return [value, update];
-};
 
 export function MCPAccessPolicySection() {
   const { t } = useTranslation();
@@ -74,9 +44,14 @@ export function MCPAccessPolicySection() {
   const [ignoreMasking, setIgnoreMasking] = useState(false);
   const [readFailed, setReadFailed] = useState(false);
   const [readSettled, setReadSettled] = useState(false);
-  const [ladderOpen, setLadderOpen] = useStoredFlag(LADDER_OPEN_KEY, false);
-  const [ladderDetails, setLadderDetails] = useStoredFlag(
-    LADDER_DETAILS_KEY,
+  // A habit of the person, not a fact about the workspace: an admin who opened
+  // the list once wants it open the next time they come to compare.
+  const [ladderOpen, setLadderOpen] = useLocalStorageBoolean(
+    STORAGE_KEY_MCP_LADDER_OPEN,
+    false
+  );
+  const [ladderDetails, setLadderDetails] = useLocalStorageBoolean(
+    STORAGE_KEY_MCP_LADDER_DETAILS,
     false
   );
   const serverInfo = useAppStore((state) => state.serverInfo);
@@ -112,13 +87,14 @@ export function MCPAccessPolicySection() {
     setEditing(true);
   };
 
-  // The masking toggle governs what an MCP session may unmask, and Disabled
-  // admits none: mcpIgnoresMaskingExemptions answers on the delegated grant an
-  // MCP request carries, so under Disabled the stored flag is never read. The
-  // editor therefore neither shows it nor writes it there, rather than offering
-  // a control the picked mode makes inert. The draft survives the detour, so
-  // picking a serving mode again brings back whatever was set.
-  const maskingApplies = pick !== MCPSetting_Capability.DISABLED;
+  // The masking toggle governs what an MCP session may unmask, and only a
+  // serving mode admits one: mcpIgnoresMaskingExemptions answers on the
+  // delegated grant an MCP request carries, so the stored flag is never read
+  // under Disabled — nor under a ceiling nobody has picked yet, which is why
+  // this asks what the mode admits rather than which mode it is not. The draft
+  // survives the detour, so picking a serving mode again brings back whatever
+  // was set.
+  const maskingApplies = isServingMode(pick);
   const maskingChanged =
     maskingApplies && ignoreMasking !== storedIgnoreMasking;
   const isDirty = editing && (pick !== storedMode || maskingChanged);
@@ -155,9 +131,7 @@ export function MCPAccessPolicySection() {
             case: "mcp",
             value: create(MCPSettingSchema, {
               capability: pick,
-              ignoreMaskingExemptions: maskingApplies
-                ? ignoreMasking
-                : storedIgnoreMasking,
+              ignoreMaskingExemptions: ignoreMasking,
             }),
           },
         }),
@@ -243,16 +217,22 @@ export function MCPAccessPolicySection() {
                 )}
               </span>
             ) : (
-              <ModeChip
-                mode={storedMode}
-                // Withheld under Disabled for the same reason the toggle is:
-                // the badge asserts a restriction on MCP sessions, and there
-                // are none to restrict.
-                ignoreMasking={
-                  storedIgnoreMasking &&
-                  storedMode !== MCPSetting_Capability.DISABLED
-                }
-              />
+              <div className="flex flex-wrap items-center gap-2">
+                <MCPModeBadge
+                  mode={storedMode}
+                  describedAs={t("settings.mcp.policy.current", {
+                    mode: modeLabel(storedMode),
+                  })}
+                />
+                {/* Withheld under Disabled for the same reason the toggle is:
+                    the chip asserts a restriction on MCP sessions, and there
+                    are none to restrict. */}
+                {storedIgnoreMasking && isServingMode(storedMode) && (
+                  <Badge variant="secondary">
+                    {t("settings.mcp.policy.masking.badge")}
+                  </Badge>
+                )}
+              </div>
             )}
             <PermissionGuard permissions={["bb.settings.set"]}>
               {({ disabled }) => (
@@ -414,40 +394,6 @@ export function MCPAccessPolicySection() {
       </div>
 
       {policyBody()}
-    </div>
-  );
-}
-
-/**
- * The mode in force, as the subject of the view rather than the value of a
- * labelled field. It carries the icon the admin picked in the selector, so the
- * identity chosen there is the identity shown here and on the consent page.
- */
-function ModeChip({
-  mode,
-  ignoreMasking,
-}: {
-  mode: MCPMode;
-  ignoreMasking: boolean;
-}) {
-  const { t } = useTranslation();
-  const { key, icon: Icon, badge } = MCP_MODE_PRESENTATION[mode];
-  const label = t(`settings.mcp.policy.mode.${key}.title`);
-  return (
-    <div className="flex flex-wrap items-center gap-2">
-      <Badge
-        variant={badge}
-        className="gap-x-1"
-        aria-label={t("settings.mcp.policy.current", { mode: label })}
-      >
-        <Icon className="size-3.5 shrink-0" aria-hidden="true" />
-        {label}
-      </Badge>
-      {ignoreMasking && (
-        <Badge variant="secondary">
-          {t("settings.mcp.policy.masking.badge")}
-        </Badge>
-      )}
     </div>
   );
 }

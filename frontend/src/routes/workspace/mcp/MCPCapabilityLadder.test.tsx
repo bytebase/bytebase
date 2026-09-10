@@ -46,11 +46,6 @@ const ladder = (props: Partial<Parameters<typeof MCPCapabilityLadder>[0]>) => (
   />
 );
 
-const rowTitles = (container: HTMLElement) =>
-  [...container.querySelectorAll("li")].map(
-    (item) => item.querySelector("span + div span")?.textContent ?? ""
-  );
-
 const servedIds = (container: HTMLElement) =>
   [...container.querySelectorAll("li")]
     .filter((item) => item.textContent?.includes("settings.mcp.ladder.tier."))
@@ -186,20 +181,35 @@ describe("MCPCapabilityLadder", () => {
   });
 
   // The floor is what keeps the list honest about the methods no mode reaches.
-  test("the floor line closes the list under every mode", () => {
+  // It belongs to no tier, so it is not a row.
+  test("the floor line closes the list without being a row", () => {
     const { container, unmount } = renderIntoContainer(ladder({}));
     expect(container.textContent).toContain("settings.mcp.ladder.floor.label");
     expect(container.textContent).toContain("settings.mcp.ladder.floor.text");
-    expect(rowTitles(container)).not.toContain("settings.mcp.ladder.floor.text");
+    const floor = [...container.querySelectorAll("p")].find((node) =>
+      node.textContent?.includes("settings.mcp.ladder.floor.text")
+    );
+    expect(floor).toBeDefined();
+    expect(floor?.closest("li")).toBeNull();
     unmount();
   });
 
-  test("each tier is closed by its own divider, in list order", () => {
+  // A divider marks a boundary between tiers, so it must not be read as part
+  // of the row above it: nested inside that row's <li>, a screen reader
+  // announces "Read the change workflow … Read-only stops here" as one item.
+  test("each tier is closed by a divider outside its rows, in list order", () => {
     const { container, unmount } = renderIntoContainer(ladder({}));
+    for (const tier of ["read", "write"]) {
+      const divider = [...container.querySelectorAll("p")].find((node) =>
+        node.textContent?.includes(`settings.mcp.ladder.stops.${tier}`)
+      );
+      expect(divider).toBeDefined();
+      expect(divider?.closest("li")).toBeNull();
+    }
+
     const text = container.textContent ?? "";
     const readStop = text.indexOf("settings.mcp.ladder.stops.read");
     const writeStop = text.indexOf("settings.mcp.ladder.stops.write");
-    expect(readStop).toBeGreaterThan(-1);
     expect(writeStop).toBeGreaterThan(readStop);
     // The read divider sits between the last read row and the first write row.
     expect(readStop).toBeGreaterThan(
@@ -208,6 +218,26 @@ describe("MCPCapabilityLadder", () => {
     expect(readStop).toBeLessThan(
       text.indexOf("settings.mcp.ladder.row.propose.title")
     );
+    unmount();
+  });
+
+  // Served and unserved are otherwise carried by a glyph, muting and the
+  // presence of a tier tag — all visual. Without a text alternative a refused
+  // row is announced exactly like an allowed one.
+  test("every row states whether it is allowed, not only shows it", () => {
+    const { container, unmount } = renderIntoContainer(
+      ladder({ mode: MCPSetting_Capability.READ_ONLY })
+    );
+    const markOf = (rowId: string) => {
+      const item = [...container.querySelectorAll("li")].find((node) =>
+        node.textContent?.includes(`row.${rowId}.title`)
+      );
+      return [...(item?.querySelectorAll("span.sr-only") ?? [])]
+        .map((node) => node.textContent)
+        .join("");
+    };
+    expect(markOf("read-schemas")).toBe("settings.mcp.ladder.mark.allowed");
+    expect(markOf("propose")).toBe("settings.mcp.ladder.mark.refused");
     unmount();
   });
 });

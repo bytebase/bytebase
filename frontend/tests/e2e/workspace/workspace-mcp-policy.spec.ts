@@ -29,7 +29,10 @@ import { BytebaseApiClient } from "../framework/api-client";
 test.setTimeout(120_000);
 
 let env: TestEnv & { api: BytebaseApiClient };
-let originalMCPSetting: Record<string, unknown> = { capability: "READ_ONLY" };
+// No default. getSetting turns every read error into null, so a fabricated
+// baseline here would be indistinguishable from a real one — and teardown would
+// then "restore" the workspace to a ceiling it never had.
+let originalMCPSetting: Record<string, unknown>;
 
 // The eight row titles, in list order. They are the product's claim about what
 // a mode allows, and the same strings the consent page reuses.
@@ -75,8 +78,23 @@ async function gotoMCPPage(page: Page): Promise<void> {
   ).toBeVisible({ timeout: 10_000 });
 }
 
+// Matched on rendered text, not an aria-label: the badge is a bare span, whose
+// implicit `generic` role ARIA forbids naming, so an attribute-based locator
+// would pass while no name reached the accessibility tree.
 function chip(page: Page, mode: string) {
-  return page.locator(`[aria-label="Current policy: ${mode}"]`);
+  return page.getByText(`Current policy: ${mode}`);
+}
+
+// The disclosure remembers itself per browser. A test asserting the collapsed
+// default has to establish it rather than inherit whatever the storage state
+// carries.
+async function resetDisclosure(page: Page): Promise<void> {
+  await page.evaluate(() => {
+    localStorage.removeItem("bb.mcp.ladder.open");
+    localStorage.removeItem("bb.mcp.ladder.details");
+  });
+  await page.reload();
+  await page.waitForLoadState("networkidle").catch(() => {});
 }
 
 // The row's list item, so a title that also appears inside a summary sentence
@@ -85,13 +103,16 @@ function row(page: Page, title: string) {
   return page.locator("li").filter({ hasText: title }).first();
 }
 
-// The disclosure remembers itself per browser, so a test that needs the list
-// open asks for that state rather than assuming a starting point.
-async function openLadder(page: Page, summary: string): Promise<void> {
-  const trigger = page.getByRole("button", { name: summary });
+// Located by test id, not by label: the trigger's accessible name is the mode
+// summary only while collapsed and the list heading once expanded, so a
+// name-based locator cannot see the state it is meant to branch on — it would
+// match nothing in the already-open case and block until the test timeout.
+async function openLadder(page: Page): Promise<void> {
+  const trigger = page.getByTestId("mcp-ladder-trigger");
   if ((await trigger.getAttribute("aria-expanded")) === "false") {
     await trigger.click();
   }
+  await expect(trigger).toHaveAttribute("aria-expanded", "true");
   await expect(row(page, READ_ROWS[0])).toBeVisible();
 }
 
@@ -101,21 +122,28 @@ test.beforeAll(async () => {
   const setting = (await env.api.getSetting("MCP")) as {
     value?: { mcp?: Record<string, unknown> };
   } | null;
-  if (setting?.value?.mcp) {
-    originalMCPSetting = setting.value.mcp;
+  // Workspace creation persists an MCP row (backend/store/workspace.go), so a
+  // missing one means the read failed. Refuse to mutate a ceiling that could not
+  // be snapshotted, rather than leave the workspace on whatever this suite last
+  // wrote.
+  if (!setting?.value?.mcp?.capability) {
+    throw new Error(
+      "could not read the workspace MCP setting; refusing to run, since teardown could not restore it"
+    );
   }
+  originalMCPSetting = setting.value.mcp;
 });
 
 test.afterAll(async () => {
-  try {
-    await env.api.upsertSetting(
-      "MCP",
-      { mcp: originalMCPSetting },
-      "value.mcp.capability"
-    );
-  } catch {
-    /* best-effort restore */
-  }
+  // Not best-effort: M3 persists Read-write on a shared server, and a silent
+  // restore failure would broaden what every later suite's MCP session may do.
+  // A failure here fails this run rather than poisoning the next one.
+  await env.api.upsertSetting(
+    "MCP",
+    { mcp: originalMCPSetting },
+    "value.mcp.capability"
+  );
+  expect(await readCapability()).toBe(originalMCPSetting.capability);
 });
 
 test.describe("MCP access policy capability ladder", () => {
@@ -124,6 +152,8 @@ test.describe("MCP access policy capability ladder", () => {
   }) => {
     await setCapability("READ_ONLY");
     await gotoMCPPage(page);
+    // This case asserts the collapsed default, so it establishes it.
+    await resetDisclosure(page);
 
     await expect(chip(page, "Read-only")).toBeVisible();
     await expect(page.getByText(READ_ONLY_SUMMARY)).toBeVisible();
@@ -159,7 +189,9 @@ test.describe("MCP access policy capability ladder", () => {
   }) => {
     await setCapability("READ_ONLY");
     await gotoMCPPage(page);
-    await openLadder(page, READ_ONLY_SUMMARY);
+    // Owns its preconditions: this case asserts that details start hidden.
+    await resetDisclosure(page);
+    await openLadder(page);
 
     // Rows a mode does not serve stay visible and muted, so comparing two
     // modes never needs a second surface.
@@ -209,6 +241,8 @@ test.describe("MCP access policy capability ladder", () => {
   }) => {
     await setCapability("READ_ONLY");
     await gotoMCPPage(page);
+    // Reload-based, so it runs before the editor opens.
+    await resetDisclosure(page);
     await page.getByRole("button", { name: "Edit policy" }).click();
 
     // The cards are an icon, the mode name and a three-word caption; the
@@ -227,9 +261,11 @@ test.describe("MCP access policy capability ladder", () => {
       )
     ).toBeVisible();
 
-    // No delta marks and no "adds N": the edit state renders exactly the view
-    // that saving will produce.
-    await openLadder(page, READ_WRITE_SUMMARY);
+    // The disclosure line follows the pick: collapsed, it already describes
+    // Read-write before anything is saved. No delta marks and no "adds N" —
+    // the edit state renders exactly the view that saving will produce.
+    await expect(page.getByText(READ_WRITE_SUMMARY)).toBeVisible();
+    await openLadder(page);
     for (const title of WRITE_ROWS) {
       await expect(
         row(page, title).getByText("write", { exact: true })
@@ -246,6 +282,15 @@ test.describe("MCP access policy capability ladder", () => {
     await page.getByRole("button", { name: "Save policy" }).click();
     await expect.poll(readCapability, { timeout: 10_000 }).toBe("READ_WRITE");
     await expect(chip(page, "Read-write")).toBeVisible();
-    await expect(page.getByText(READ_WRITE_SUMMARY)).toBeVisible();
+    // The ladder was opened above and stays open across the save, so the
+    // trigger carries the heading rather than the summary. Asserting the view's
+    // write rows proves it re-read the stored mode, which the summary string
+    // would not.
+    await expect(page.getByText("Read-write allows")).toBeVisible();
+    for (const title of WRITE_ROWS) {
+      await expect(
+        row(page, title).getByText("write", { exact: true })
+      ).toBeVisible();
+    }
   });
 });

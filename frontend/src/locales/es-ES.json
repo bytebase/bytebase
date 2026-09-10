@@ -2665,6 +2665,10 @@
         },
         "heading": "{{mode}} permite",
         "hide-details": "Ocultar detalles",
+        "mark": {
+          "allowed": "Permitido",
+          "refused": "No permitido"
+        },
         "row": {
           "export": {
             "details": "Descargar resultados como archivo. Los datos salen de Bytebase",
@@ -2679,7 +2683,7 @@
             "title": "Proponer cambios"
           },
           "read-data": {
-            "details": "Ejecutar consultas de solo lectura; una solicitud se rechaza por completo si alguna sentencia no es de lectura y, en motores distintos de PostgreSQL, CockroachDB y Redshift, la comprobación solo mira la forma de la sentencia · Historial de consultas · Consultas guardadas y hojas",
+            "details": "Ejecutar consultas de solo lectura · En Solo lectura, una solicitud se rechaza por completo si alguna sentencia no es de lectura y, en motores distintos de PostgreSQL, CockroachDB y Redshift, la comprobación solo mira la forma de la sentencia · Historial de consultas · Consultas guardadas y hojas",
             "title": "Leer datos ejecutando consultas"
           },
           "read-schemas": {

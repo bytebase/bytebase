@@ -67,7 +67,7 @@ the product.
 | Tier | Row | Sub-items shown | Backed by (code only) |
 |---|---|---|---|
 | read | Read schemas and metadata | Schemas · Databases and instances · Projects and database groups · Catalogs, changelogs and revisions · SQL review configs · Your own session and workspace facts | 31 READ methods: `DatabaseService` reads, projects, instances, database groups, catalogs, changelogs, revisions, review configs, session facts |
-| read | Read data by running queries | Run read-only queries; a request is refused whole if any statement is not a read, and on engines other than PostgreSQL, CockroachDB and Redshift the check is by statement shape only · Query history · Saved queries and sheets | 9 READ methods: `SQLService/Query`, query history (4), saved-query reads (3), `GetSheet` |
+| read | Read data by running queries | Run read-only queries · Under Read-only, a request is refused whole if any statement is not a read, and on engines other than PostgreSQL, CockroachDB and Redshift the check is by statement shape only · Query history · Saved queries and sheets | 9 READ methods: `SQLService/Query`, query history (4), saved-query reads (3), `GetSheet` |
 | read | Read the change workflow | Issues and comments · Plans and plan checks · Rollouts, task runs and logs · Releases · Rollback previews | 16 READ methods: issue, plan, rollout and release reads |
 | — | *Read-only stops here* | | 56 methods |
 | write | Propose changes | Create sheets · Create and edit plans and issues · Run plan checks and reviews · Create and delete releases and revisions · Generate schema diffs. An agent never approves its own change; the project's approval policy decides whether a human must | 22 WRITE methods: sheet, plan, issue, release and revision writes, `RequestIssue`, `RunReview`, `DiffSchema`, `DiffMetadata` |
@@ -77,6 +77,13 @@ the product.
 | write | Manage database housekeeping | Sync instances and databases · Database settings and labels · Move databases between projects · Database groups · Saved queries | 14 WRITE methods: sync, `UpdateDatabase`, database groups, saved-query writes |
 | — | *Read-write stops here* | | 97 methods |
 | floor | Never, in any mode: approve issues, administer the workspace, or handle credentials. | | 121 methods: 35 FORBIDDEN, 86 EXCLUDED |
+
+Every row is displayed under every mode — served, or muted with a `—` — so **every row's wording
+must be true under every mode.** A claim whose truth depends on the mode either names the mode as a
+condition or belongs on the row whose served mark already encodes that condition. Row 2 is the only
+one that needed it: the read-only clamp holds only under Read-only (`mcpReadOnlyClampApplies`), and
+without the qualifier the row promised a whole-request refusal under Read-write while row 6 on the
+same screen offered INSERT and DROP.
 
 Two choices in the wording are deliberate. Row 2 says *Read data by running queries* rather than
 "Run queries" so the verb stays Read and the sub-item carries the rule that keeps it true under
@@ -170,7 +177,10 @@ The separate sentence under the chip is retired for Read-only and Read-write, si
 line says the same thing; Disabled keeps its sentence, "No MCP session can connect to this
 workspace.", because it has no list. "Active" was considered and rejected as the label: "Active ·
 Disabled" contradicts itself, and a chip under a section titled Access policy needs no label. The
-chip carries `aria-label="Current policy: Read-only"`.
+chip announces "Current policy: Read-only" through visually hidden text, never through
+`aria-label`: a chip is a bare `span`, whose implicit `generic` role ARIA forbids naming, so a
+label put there is dropped and the deleted "In force" text is replaced by nothing. Tests assert
+the rendered name rather than the attribute, which satisfies a DOM query while naming nothing.
 
 **D4 — The two notes under the card move and shrink.** "A ceiling change applies to the next
 request…" shows only while editing, as "Applies to every running session's next request.", and
@@ -264,7 +274,7 @@ counts, so the frontend needs only the static tier of each row.
 
 | State | What the section shows |
 |---|---|
-| View · Read-only or Read-write | Chip line with Edit policy; the disclosure line as the description, collapsed. Nothing below it. |
+| View · Read-only or Read-write | Chip line with Edit policy; the disclosure line as the description, collapsed by default. The open state persists per browser (D1), so neither the product nor a test may treat collapsed as an invariant. |
 | View · Disabled | Chip line, without the masking chip (D7); "No MCP session can connect to this workspace." No disclosure. |
 | View · unreadable, unserved, read failed | The existing warning or error, unchanged. No disclosure. |
 | Edit · Read-only or Read-write picked | Icon cards with the pick selected; the pick's "Best for" line; the disclosure for the pick, collapsed by default, rendering the post-save view, with "Show details" once expanded; masking toggle; separator; footer sentence (naming the change when dirty), Cancel, Save (enabled only when dirty). |
@@ -325,8 +335,9 @@ All strings, so the change and the locale files have one source. Keys under
   Disabled static line use the `error` semantic tokens at low opacity; no raw palette colors, no
   `dark:` variants.
 - `MCPAccessPolicySection.tsx`: remove the `Rows3` icon, the in-force string, the mode cards and
-  the mode sentence; render the chip with its aria-label and the mode's Lucide icon as its first
-  child at `size-3.5`; strip the mode cards to icon, label and caption and add the "Best for" line
+  the mode sentence; render the chip through the shared `MCPModeBadge`, which the consent page
+  also uses, so one component carries the glyph and the accessible name for both surfaces;
+  strip the mode cards to icon, label and caption and add the "Best for" line
   under them;
   move the audit sentence to the section description; show the footer sentence only while editing
   and interpolate both modes when dirty; replace the masking copy.

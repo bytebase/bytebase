@@ -58,6 +58,19 @@ export const isMCPMode = (
   MCP_CAPABILITY_CHOICES.some((choice) => choice === capability);
 
 /**
+ * Whether a mode admits MCP sessions at all.
+ *
+ * Stated by the modes it admits rather than as "not Disabled", because the
+ * caller's mode is often not yet chosen: an unreadable stored ceiling leaves the
+ * editor with no pick, and a negation would count that absence as serving.
+ * Anything that only governs a live session — the masking toggle, the chip that
+ * reports it — asks this rather than comparing against DISABLED.
+ */
+export const isServingMode = (mode: MCPMode | undefined): boolean =>
+  mode === MCPSetting_Capability.READ_ONLY ||
+  mode === MCPSetting_Capability.READ_WRITE;
+
+/**
  * What the consent page can truthfully tell someone about to approve a client.
  *
  * Only `mode` is a policy it can disclose. The other two are the ways it can

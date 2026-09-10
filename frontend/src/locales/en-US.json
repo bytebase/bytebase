@@ -2665,6 +2665,10 @@
         },
         "heading": "{{mode}} allows",
         "hide-details": "Hide details",
+        "mark": {
+          "allowed": "Allowed",
+          "refused": "Not allowed"
+        },
         "row": {
           "export": {
             "details": "Download results as a file. Data leaves Bytebase",
@@ -2679,7 +2683,7 @@
             "title": "Propose changes"
           },
           "read-data": {
-            "details": "Run read-only queries; a request is refused whole if any statement is not a read, and on engines other than PostgreSQL, CockroachDB and Redshift the check is by statement shape only · Query history · Saved queries and sheets",
+            "details": "Run read-only queries · Under Read-only, a request is refused whole if any statement is not a read, and on engines other than PostgreSQL, CockroachDB and Redshift the check is by statement shape only · Query history · Saved queries and sheets",
             "title": "Read data by running queries"
           },
           "read-schemas": {

@@ -348,13 +348,26 @@ describe("MCPAccessPolicySection", () => {
 
     clickText(container, "settings.mcp.policy.edit");
     await flush();
-    clickText(container, "settings.mcp.policy.mode.disabled.title");
+    // A SERVING mode, so the masking switch is on screen and inside the set
+    // this asserts on. Picking Disabled here would withhold it (D7) and the
+    // test would silently stop covering `disabled={saving}` on the Switch.
+    clickText(container, "settings.mcp.policy.mode.read-write.title");
     await flush();
 
-    const controls = () => [
-      ...container.querySelectorAll('input[type="radio"], input[type="checkbox"]'),
-    ] as HTMLInputElement[];
-    expect(controls().length).toBeGreaterThan(0);
+    // The Switch renders a span plus a hidden checkbox, and the checkbox is
+    // what carries `disabled` — so the masking control is inside this set only
+    // while a serving mode is picked. Pinned explicitly, because the set going
+    // quietly back to radios-only is how this test stopped covering it before.
+    const controls = () =>
+      [
+        ...container.querySelectorAll(
+          'input[type="radio"], input[type="checkbox"]'
+        ),
+      ] as HTMLInputElement[];
+    expect(
+      container.querySelector('input[type="checkbox"]')
+    ).not.toBeNull();
+    expect(controls().length).toBeGreaterThan(3);
     expect(controls().every((c) => !c.disabled)).toBe(true);
 
     clickText(container, "settings.mcp.policy.save");
@@ -380,13 +393,18 @@ describe("MCPAccessPolicySection", () => {
     render();
     await flush();
 
-    const chip = container.querySelector(
-      '[aria-label^="settings.mcp.policy.current"]'
-    );
-    expect(chip?.getAttribute("aria-label")).toBe(
+    // Asserted on rendered text, not on an attribute: a Badge is a bare span,
+    // whose implicit `generic` role ARIA forbids naming, so an aria-label here
+    // would satisfy a DOM query while naming nothing for a screen reader.
+    expect(container.textContent).toContain(
       "settings.mcp.policy.current(settings.mcp.policy.mode.read-only.title)"
     );
-    expect(chip?.querySelector("svg")).not.toBeNull();
+    expect(container.querySelector("span.sr-only")?.textContent).toBe(
+      "settings.mcp.policy.current(settings.mcp.policy.mode.read-only.title)"
+    );
+    expect(
+      container.querySelector('[aria-label^="settings.mcp.policy.current"]')
+    ).toBeNull();
     unmount();
   });
 
@@ -523,9 +541,10 @@ describe("MCPAccessPolicySection", () => {
     clickText(container, "settings.mcp.policy.save");
     await flush();
 
+    // The mask is the whole statement of what this save writes: the masking
+    // path is absent, so the stored flag is untouched whatever the body says.
     const request = mocks.upsertSetting.mock.calls.at(-1)?.[0];
     expect(request.updateMask.paths).toEqual(["value.mcp.capability"]);
-    expect(request.value.value.value.ignoreMaskingExemptions).toBe(false);
     unmount();
   });
 
@@ -567,6 +586,36 @@ describe("MCPAccessPolicySection", () => {
         button.textContent?.includes("settings.mcp.policy.save")
       )
     ).toHaveProperty("disabled", true);
+    unmount();
+  });
+
+  // The rule is "a serving mode admits a session", not "the mode is not
+  // Disabled": with no mode picked, nothing is known to serve. Encoding it as a
+  // negation let this state through, arming the unsaved-changes guard for a
+  // change Save can never submit.
+  test("the masking toggle is withheld when no mode is picked", async () => {
+    mocks.serverInfo.value = {
+      mcpSetting: {
+        capability: MCPSetting_Capability.CAPABILITY_UNSPECIFIED,
+        ignoreMaskingExemptions: false,
+      },
+    };
+    mocks.loadServerInfo.mockResolvedValue(mocks.serverInfo.value);
+    const { container, render, unmount } = renderIntoContainer(
+      <MCPAccessPolicySection />
+    );
+    render();
+    await flush();
+    clickText(container, "settings.mcp.policy.edit");
+    await flush();
+
+    expect(container.textContent).toContain(
+      "settings.mcp.policy.unreadable.pick"
+    );
+    expect(
+      container.querySelector('[aria-label="settings.mcp.policy.masking.title"]')
+    ).toBeNull();
+    expect(mocks.useUnsavedChangesGuard).toHaveBeenLastCalledWith(false);
     unmount();
   });
 

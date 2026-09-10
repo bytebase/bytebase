@@ -3,9 +3,9 @@ import { MCPSetting_Capability } from "@/types/proto-es/v1/setting_service_pb";
 import {
   isRowServed,
   MCP_CAPABILITY_ROWS,
+  MCP_CAPABILITY_TIERS,
+  rowsInTier,
   servedRows,
-  servedTiers,
-  tierClosedBy,
 } from "./mcpCapabilityRows";
 
 describe("mcpCapabilityRows", () => {
@@ -43,21 +43,22 @@ describe("mcpCapabilityRows", () => {
         row.tier === "read"
       );
       expect(isRowServed(MCPSetting_Capability.DISABLED, row)).toBe(false);
+      expect(isRowServed(MCPSetting_Capability.READ_WRITE, row)).toBe(true);
     }
-    expect(servedTiers(MCPSetting_Capability.READ_ONLY)).toEqual(["read"]);
-    expect(servedTiers(MCPSetting_Capability.READ_WRITE)).toEqual([
-      "read",
-      "write",
-    ]);
   });
 
-  // A tier's rows must be contiguous: otherwise a "stops here" divider would
-  // land above a row of the tier it closes.
-  test("each tier occupies one contiguous run and is closed exactly once", () => {
-    const dividers = MCP_CAPABILITY_ROWS.map((_, index) => tierClosedBy(index));
-    expect(dividers.filter(Boolean)).toEqual(["read", "write"]);
-    expect(dividers.at(-1)).toBe("write");
-    expect(dividers[2]).toBe("read");
+  // The ladder renders one list per tier, in MCP_CAPABILITY_TIERS order. This
+  // pins that doing so reproduces the ordered list exactly — which is both the
+  // contiguity of each tier and the position of its "stops here" divider.
+  test("rendering tier by tier reproduces the one ordered list", () => {
+    expect(
+      MCP_CAPABILITY_TIERS.flatMap((tier) => [...rowsInTier(tier)])
+    ).toEqual([...MCP_CAPABILITY_ROWS]);
+    expect(MCP_CAPABILITY_TIERS).toEqual(["read", "write"]);
+    // Every tier carries rows, so no divider is emitted for an empty list.
+    for (const tier of MCP_CAPABILITY_TIERS) {
+      expect(rowsInTier(tier).length).toBeGreaterThan(0);
+    }
   });
 
   test("row ids are unique, so a row cannot key another row's copy", () => {

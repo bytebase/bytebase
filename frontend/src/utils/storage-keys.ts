@@ -24,6 +24,8 @@ const withScope = (base: string, scope: string, ...rest: string[]): string =>
 export const STORAGE_KEY_BACK_PATH = "bb.back-path";
 export const STORAGE_KEY_LANGUAGE = "bb.language";
 export const STORAGE_KEY_ONBOARDING = "bb.onboarding";
+export const STORAGE_KEY_MCP_LADDER_OPEN = "bb.mcp.ladder.open";
+export const STORAGE_KEY_MCP_LADDER_DETAILS = "bb.mcp.ladder.details";
 export const STORAGE_KEY_SCHEMA_EDITOR_PREVIEW =
   "bb.schema-editor.preview-expanded";
 export const STORAGE_KEY_AI_DISMISS = "bb.ai.dismiss-placeholder";

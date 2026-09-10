@@ -2665,6 +2665,10 @@
         },
         "heading": "{{mode}} cho phép",
         "hide-details": "Ẩn chi tiết",
+        "mark": {
+          "allowed": "Được phép",
+          "refused": "Không được phép"
+        },
         "row": {
           "export": {
             "details": "Tải kết quả về dưới dạng tệp. Dữ liệu rời khỏi Bytebase",
@@ -2679,7 +2683,7 @@
             "title": "Đề xuất thay đổi"
           },
           "read-data": {
-            "details": "Chạy truy vấn chỉ đọc; toàn bộ yêu cầu bị từ chối nếu có bất kỳ câu lệnh nào không phải là đọc, và trên các engine ngoài PostgreSQL, CockroachDB và Redshift thì chỉ kiểm tra theo hình dạng câu lệnh · Lịch sử truy vấn · Truy vấn đã lưu và sheet",
+            "details": "Chạy truy vấn chỉ đọc · Ở chế độ Chỉ đọc, toàn bộ yêu cầu bị từ chối nếu có bất kỳ câu lệnh nào không phải là đọc, và trên các engine ngoài PostgreSQL, CockroachDB và Redshift thì chỉ kiểm tra theo hình dạng câu lệnh · Lịch sử truy vấn · Truy vấn đã lưu và sheet",
             "title": "Đọc dữ liệu bằng cách chạy truy vấn"
           },
           "read-schemas": {

@@ -1,10 +1,9 @@
 import { Check, EyeOff, ScrollText, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { MCPModeBadge } from "@/components/mcp/MCPModeBadge";
 import { servedRows } from "@/components/mcp/mcpCapabilityRows";
-import { MCP_MODE_PRESENTATION } from "@/components/mcp/mcpPolicy";
 import { Alert } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import {
   type MCPSetting,
   MCPSetting_Capability,
@@ -38,11 +37,6 @@ export function MCPConsentCeiling({ setting, dataMaskingAvailable }: Props) {
   const mode = readWrite
     ? MCPSetting_Capability.READ_WRITE
     : MCPSetting_Capability.READ_ONLY;
-  const { icon: ModeIcon, badge } = MCP_MODE_PRESENTATION[mode];
-  const modeLabel = t(
-    `settings.mcp.policy.mode.${MCP_MODE_PRESENTATION[mode].key}.title`
-  );
-
   const lines: Line[] = [
     ...servedRows(mode).map((row) => ({
       key: row.id,
@@ -93,10 +87,7 @@ export function MCPConsentCeiling({ setting, dataMaskingAvailable }: Props) {
           <p className="text-sm text-control-light">
             {t("oauth2.consent.mcp.title")}
           </p>
-          <Badge variant={badge} className="gap-x-1">
-            <ModeIcon className="size-3.5 shrink-0" aria-hidden="true" />
-            {modeLabel}
-          </Badge>
+          <MCPModeBadge mode={mode} />
         </div>
         <ul className="text-sm text-main flex flex-col gap-2">
           {lines.map((line) => (

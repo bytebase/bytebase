@@ -2665,6 +2665,10 @@
         },
         "heading": "{{mode}} 允许",
         "hide-details": "隐藏详情",
+        "mark": {
+          "allowed": "允许",
+          "refused": "不允许"
+        },
         "row": {
           "export": {
             "details": "将结果下载为文件。数据会离开 Bytebase",
@@ -2679,7 +2683,7 @@
             "title": "提议变更"
           },
           "read-data": {
-            "details": "执行只读查询；只要有一条语句不是读取，就整体拒绝该请求，而在 PostgreSQL、CockroachDB 和 Redshift 以外的引擎上仅按语句形态判断 · 查询历史 · 已保存的查询和工作表",
+            "details": "执行只读查询 · 在只读模式下，只要有一条语句不是读取，就整体拒绝该请求，而在 PostgreSQL、CockroachDB 和 Redshift 以外的引擎上仅按语句形态判断 · 查询历史 · 已保存的查询和工作表",
             "title": "通过执行查询读取数据"
           },
           "read-schemas": {
