@@ -606,7 +606,7 @@ func writeCreateTableWithoutForeignKeys(buf *strings.Builder, tableName string, 
 	}
 	if table.Comment != "" {
 		_, _ = buf.WriteString(" COMMENT='")
-		_, _ = buf.WriteString(table.Comment)
+		_, _ = buf.WriteString(escapeSQLString(table.Comment))
 		_, _ = buf.WriteString("'")
 	}
 
@@ -690,7 +690,7 @@ func writeColumnDefinitionBody(buf *strings.Builder, column *storepb.ColumnMetad
 
 	if column.Comment != "" {
 		_, _ = buf.WriteString(" COMMENT '")
-		_, _ = buf.WriteString(column.Comment)
+		_, _ = buf.WriteString(escapeSQLString(column.Comment))
 		_, _ = buf.WriteString("'")
 	}
 }
@@ -733,7 +733,7 @@ func writeGeneratedColumnAttributes(buf *strings.Builder, column *storepb.Column
 
 	if column.Comment != "" {
 		_, _ = buf.WriteString(" COMMENT '")
-		_, _ = buf.WriteString(column.Comment)
+		_, _ = buf.WriteString(escapeSQLString(column.Comment))
 		_, _ = buf.WriteString("'")
 	}
 }
@@ -817,7 +817,7 @@ func writeCreateIndex(buf *strings.Builder, table string, index *storepb.IndexMe
 
 	if index.Comment != "" {
 		_, _ = buf.WriteString(" COMMENT '")
-		_, _ = buf.WriteString(index.Comment)
+		_, _ = buf.WriteString(escapeSQLString(index.Comment))
 		_, _ = buf.WriteString("'")
 	}
 
@@ -988,7 +988,7 @@ func writeAlterTableComment(buf *strings.Builder, tableName, comment string) err
 	_, _ = buf.WriteString("ALTER TABLE `")
 	_, _ = buf.WriteString(tableName)
 	_, _ = buf.WriteString("` COMMENT = '")
-	_, _ = buf.WriteString(comment)
+	_, _ = buf.WriteString(escapeSQLString(comment))
 	_, _ = buf.WriteString("';\n\n")
 	return nil
 }

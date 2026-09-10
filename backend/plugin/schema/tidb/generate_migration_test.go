@@ -7,6 +7,12 @@ import (
 	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v3"
 
+	"strings"
+
+	"github.com/pingcap/tidb/pkg/parser"
+	"github.com/pingcap/tidb/pkg/parser/mysql"
+	_ "github.com/pingcap/tidb/pkg/types/parser_driver"
+
 	"github.com/bytebase/bytebase/backend/common/yamltest"
 	storepb "github.com/bytebase/bytebase/backend/generated-go/store"
 	"github.com/bytebase/bytebase/backend/plugin/schema"
@@ -43,6 +49,8 @@ func TestGenerateMigration(t *testing.T) {
 			migration, err := generateMigration(diff)
 			require.NoError(t, err)
 
+			requireParses(t, migration)
+
 			if record {
 				tests[i].Expected = migration
 				return
@@ -69,4 +77,22 @@ func parseSchema(t *testing.T, text string) *model.DatabaseMetadata {
 		metadata = parsed
 	}
 	return model.NewDatabaseMetadata(metadata, nil, nil, storepb.Engine_TIDB, false)
+}
+
+// requireParses proves the generated migration is valid TiDB, which a golden
+// alone does not: a comment carrying an apostrophe once recorded as unbalanced
+// quotes and the fixture accepted it.
+func requireParses(t *testing.T, migration string) {
+	t.Helper()
+
+	if strings.TrimSpace(migration) == "" {
+		return
+	}
+	p := parser.New()
+	mode, err := mysql.GetSQLMode(mysql.DefaultSQLMode)
+	require.NoError(t, err)
+	p.SetSQLMode(mode)
+
+	_, _, err = p.Parse(migration, "", "")
+	require.NoError(t, err, "generated migration should parse")
 }
