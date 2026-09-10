@@ -346,9 +346,6 @@ func fillAllStringFields(m protoreflect.Message, value string, depth int) {
 
 // countInvalidStringFields walks m and returns how many string values
 // (fields, list elements, map keys and values) hold invalid UTF-8.
-
-// countInvalidStringFields walks m and returns how many string values
-// (fields, list elements, map keys and values) hold invalid UTF-8.
 func countInvalidStringFields(m protoreflect.Message) int {
 	count := 0
 	m.Range(func(fd protoreflect.FieldDescriptor, v protoreflect.Value) bool {
@@ -400,12 +397,6 @@ func countInvalidStringFields(m protoreflect.Message) int {
 // defaults, definitions — not just comments: fill each one with the raw-GBK
 // shape go-ora leaks for values ending in a dangling lead byte, then assert
 // sanitization leaves zero invalid strings and proto marshaling succeeds.
-
-// TestSanitizeUTF8MessageCoversEveryStringField proves the BYT-9916 fix
-// covers every string field of the database metadata — names, types,
-// defaults, definitions — not just comments: fill each one with the raw-GBK
-// shape go-ora leaks for values ending in a dangling lead byte, then assert
-// sanitization leaves zero invalid strings and proto marshaling succeeds.
 func TestSanitizeUTF8MessageCoversEveryStringField(t *testing.T) {
 	// 测试 + dangling lead byte 0xb1: the exact wholly-unconverted raw GBK
 	// shape go-ora returns (engine-verified against Oracle 11gR2/ZHS16GBK).
@@ -430,10 +421,6 @@ func TestSanitizeUTF8MessageCoversEveryStringField(t *testing.T) {
 	_, err = protojson.Marshal(metadata)
 	require.NoError(t, err)
 }
-
-// TestSanitizeUTF8MessageNameFields pins the customer-visible BYT-9916 shape:
-// object names (schema/table/column) carrying raw GBK bytes must marshal
-// after sanitization, and valid names must pass through untouched.
 
 // TestSanitizeUTF8MessageNameFields pins the customer-visible BYT-9916 shape:
 // object names (schema/table/column) carrying raw GBK bytes must marshal
