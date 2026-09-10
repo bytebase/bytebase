@@ -20,6 +20,10 @@ import (
 	"github.com/bytebase/bytebase/backend/plugin/schema"
 )
 
+// charsetBinary is the charset the parser reports for the inherently binary
+// column types, whether or not the DDL declared one.
+const charsetBinary = "binary"
+
 func init() {
 	schema.RegisterGetDatabaseMetadata(storepb.Engine_TIDB, GetDatabaseMetadata)
 }
@@ -164,7 +168,14 @@ func (m *metadataExtractor) processCreateTable(stmt *ast.CreateTableStmt) error 
 
 		// Process column type
 		column.Type = m.getColumnType(col.Tp)
-		column.CharacterSet = col.Tp.GetCharset()
+		// The parser reports "binary" as the charset of JSON, BLOB, BINARY and
+		// VARBINARY columns whether or not the DDL said so, and it rewrites an
+		// explicit "VARCHAR ... CHARACTER SET binary" to varbinary. The type
+		// already carries that, so recording the charset would only make the
+		// writer emit a CHARACTER SET clause the source never had.
+		if charset := col.Tp.GetCharset(); charset != charsetBinary {
+			column.CharacterSet = charset
+		}
 
 		// Process column options
 		for _, option := range col.Options {

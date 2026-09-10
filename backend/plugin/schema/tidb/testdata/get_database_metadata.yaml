@@ -294,15 +294,13 @@
                   "name": "binary_col",
                   "position": 13,
                   "nullable": true,
-                  "type": "binary(10)",
-                  "character_set": "binary"
+                  "type": "binary(10)"
                 },
                 {
                   "name": "varbinary_col",
                   "position": 14,
                   "nullable": true,
-                  "type": "varbinary(100)",
-                  "character_set": "binary"
+                  "type": "varbinary(100)"
                 },
                 {
                   "name": "tinytext_col",
@@ -332,29 +330,25 @@
                   "name": "tinyblob_col",
                   "position": 19,
                   "nullable": true,
-                  "type": "tinyblob",
-                  "character_set": "binary"
+                  "type": "tinyblob"
                 },
                 {
                   "name": "blob_col",
                   "position": 20,
                   "nullable": true,
-                  "type": "blob",
-                  "character_set": "binary"
+                  "type": "blob"
                 },
                 {
                   "name": "mediumblob_col",
                   "position": 21,
                   "nullable": true,
-                  "type": "mediumblob",
-                  "character_set": "binary"
+                  "type": "mediumblob"
                 },
                 {
                   "name": "longblob_col",
                   "position": 22,
                   "nullable": true,
-                  "type": "longblob",
-                  "character_set": "binary"
+                  "type": "longblob"
                 },
                 {
                   "name": "date_col",
@@ -390,8 +384,7 @@
                   "name": "json_col",
                   "position": 28,
                   "nullable": true,
-                  "type": "json",
-                  "character_set": "binary"
+                  "type": "json"
                 },
                 {
                   "name": "enum_col",
@@ -704,8 +697,7 @@
                   "name": "tags",
                   "position": 6,
                   "nullable": true,
-                  "type": "json",
-                  "character_set": "binary"
+                  "type": "json"
                 },
                 {
                   "name": "created_at",
@@ -803,8 +795,7 @@
                   "name": "data",
                   "position": 3,
                   "nullable": true,
-                  "type": "json",
-                  "character_set": "binary"
+                  "type": "json"
                 }
               ],
               "indexes": [
@@ -1170,6 +1161,97 @@
                   "expression": "(`a`!=7)"
                 }
               ]
+            }
+          ]
+        }
+      ]
+    }
+- description: implicit_binary_charset_not_recorded
+  schema: |
+    CREATE TABLE payloads (
+        id INT PRIMARY KEY,
+        doc JSON,
+        blob_col BLOB,
+        fixed BINARY(4),
+        var_bytes VARBINARY(8),
+        named VARCHAR(10) CHARACTER SET latin1,
+        collated VARCHAR(10) COLLATE utf8mb4_bin,
+        plain TEXT
+    );
+  metadata: |
+    {
+      "schemas": [
+        {
+          "tables": [
+            {
+              "name": "payloads",
+              "columns": [
+                {
+                  "name": "id",
+                  "position": 1,
+                  "type": "int"
+                },
+                {
+                  "name": "doc",
+                  "position": 2,
+                  "nullable": true,
+                  "type": "json"
+                },
+                {
+                  "name": "blob_col",
+                  "position": 3,
+                  "nullable": true,
+                  "type": "blob"
+                },
+                {
+                  "name": "fixed",
+                  "position": 4,
+                  "nullable": true,
+                  "type": "binary(4)"
+                },
+                {
+                  "name": "var_bytes",
+                  "position": 5,
+                  "nullable": true,
+                  "type": "varbinary(8)"
+                },
+                {
+                  "name": "named",
+                  "position": 6,
+                  "nullable": true,
+                  "type": "varchar(10)",
+                  "character_set": "latin1"
+                },
+                {
+                  "name": "collated",
+                  "position": 7,
+                  "nullable": true,
+                  "type": "varchar(10)",
+                  "collation": "utf8mb4_bin"
+                },
+                {
+                  "name": "plain",
+                  "position": 8,
+                  "nullable": true,
+                  "type": "text"
+                }
+              ],
+              "indexes": [
+                {
+                  "name": "PRIMARY",
+                  "expressions": [
+                    "id"
+                  ],
+                  "key_length": [
+                    -1
+                  ],
+                  "type": "BTREE",
+                  "unique": true,
+                  "primary": true,
+                  "visible": true
+                }
+              ],
+              "engine": "InnoDB"
             }
           ]
         }
