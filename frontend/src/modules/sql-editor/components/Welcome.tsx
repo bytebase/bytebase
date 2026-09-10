@@ -1,5 +1,5 @@
 import { LayersIcon, LinkIcon } from "lucide-react";
-import { useEffect, useState } from "react";
+import { type MouseEvent as ReactMouseEvent, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { router, SQL_EDITOR_PROJECT_MODULE, useNavigate } from "@/app/router";
 import {
@@ -58,10 +58,9 @@ export function Welcome({ onChangeConnection }: WelcomeProps) {
     "loading" | "empty" | "available" | "unavailable"
   >("loading");
 
-  const selectedProjectName =
-    projectName === defaultProjectName ? "" : projectName;
-  const resolvedProject = useAppProject(selectedProjectName);
-  const project = selectedProjectName ? resolvedProject : undefined;
+  const resolvedProject = useAppProject(projectName);
+  const project = projectName ? resolvedProject : undefined;
+  const isDefaultProject = project?.name === defaultProjectName;
 
   const [canCreateProject] = usePermissionCheck(["bb.projects.create"]);
   const [canCreateInstance] = usePermissionCheck(
@@ -118,15 +117,23 @@ export function Welcome({ onChangeConnection }: WelcomeProps) {
     });
   };
 
-  const handleSelectProject = async (selectedProject: Project) => {
-    const switchedProject = await maybeSwitchProject(selectedProject.name);
-    if (!switchedProject) return;
-    await navigate.push({
+  const handleSelectProject = async (
+    selectedProject: Project,
+    event: ReactMouseEvent<HTMLElement>
+  ) => {
+    const route = navigate.resolve({
       name: SQL_EDITOR_PROJECT_MODULE,
       params: {
         project: extractProjectResourceName(selectedProject.name),
       },
     });
+    if (event.ctrlKey || event.metaKey) {
+      window.open(route.fullPath, "_blank");
+      return;
+    }
+    const switchedProject = await maybeSwitchProject(selectedProject.name);
+    if (!switchedProject) return;
+    await navigate.push(route);
   };
 
   const createProjectAction = (
@@ -175,10 +182,10 @@ export function Welcome({ onChangeConnection }: WelcomeProps) {
         className="h-20 w-44"
       />
       <div className="flex items-center flex-wrap gap-4">
-        {!selectedProjectName && !isLoadingProjects && projects.length === 0
+        {!projectName && !isLoadingProjects && projects.length === 0
           ? createProjectAction
           : null}
-        {!selectedProjectName && projects.length > 0 ? (
+        {!projectName && projects.length > 0 ? (
           <Popover
             open={isProjectSelectorOpen}
             onOpenChange={setProjectSelectorOpen}
@@ -199,18 +206,20 @@ export function Welcome({ onChangeConnection }: WelcomeProps) {
               className="w-[24rem] max-w-[calc(100vw-2rem)] p-0! py-3!"
             >
               <ProjectSwitchPanel
-                currentProjectName={selectedProjectName}
+                currentProjectName={projectName}
                 excludeDefaultProject
                 onClose={() => setProjectSelectorOpen(false)}
                 onRequestCreate={handleCreateProject}
-                onSelectProject={(selectedProject) => {
-                  void handleSelectProject(selectedProject);
+                onSelectProject={(selectedProject, event) => {
+                  void handleSelectProject(selectedProject, event);
                 }}
               />
             </PopoverContent>
           </Popover>
         ) : null}
-        {project && databaseState !== "loading" ? createInstanceAction : null}
+        {project && !isDefaultProject && databaseState !== "loading"
+          ? createInstanceAction
+          : null}
         {project &&
         (databaseState === "available" || databaseState === "unavailable")
           ? connectDatabaseAction

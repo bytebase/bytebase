@@ -45,6 +45,11 @@ const mocks = vi.hoisted(() => {
       async (project: string) => project
     ),
     setAsidePanelTab: vi.fn(),
+    permissionState: {
+      missedBasicPermissions: [] as string[],
+      missedPermissions: [] as string[],
+      permitted: true,
+    },
     getOrFetchDatabaseByName: vi.fn(async (name: string) => ({
       name,
       project: "projects/proj1",
@@ -105,17 +110,13 @@ vi.mock("react-i18next", () => ({
 
 vi.mock("@/components/ComponentPermissionGuard", () => ({
   PermissionDeniedFallback: () => <div data-testid="denied" />,
-  useComponentPermissionState: () => ({
-    missedBasicPermissions: [],
-    missedPermissions: [],
-    permitted: true,
-  }),
+  useComponentPermissionState: vi.fn(() => mocks.permissionState),
   usePermissionDataReady: () => true,
 }));
 
 vi.mock("@/hooks/useAppProject", () => ({
-  useAppProject: () => ({
-    name: "projects/proj1",
+  useAppProject: (name: string) => ({
+    name: name || "projects/-1",
   }),
 }));
 
@@ -204,6 +205,7 @@ const renderShell = () => {
     root.render(<SQLEditorRouteShell />);
   });
   return {
+    container,
     unmount: () =>
       act(() => {
         root.unmount();
@@ -251,6 +253,11 @@ beforeEach(() => {
     contentSize: BigInt(new TextEncoder().encode("select 1").length),
   }));
   mocks.editorState.project = "projects/proj1";
+  mocks.permissionState = {
+    missedBasicPermissions: [],
+    missedPermissions: [],
+    permitted: true,
+  };
   mocks.tabsState.tabsById = new Map();
   mocks.tabsState.openTmpTabList = [];
   mocks.tabsState.currentTabId = "";
@@ -285,6 +292,37 @@ beforeEach(() => {
 });
 
 describe("SQLEditorRouteShell", () => {
+  test("renders the project selector before workspace-level route permissions", async () => {
+    mocks.editorState.project = "";
+    mocks.renderRoute = {
+      ...mocks.renderRoute,
+      name: "sql-editor.home",
+      params: {},
+      query: {},
+      requiredPermissions: ["bb.projects.get"],
+    };
+    mocks.currentRoute = mocks.renderRoute;
+    mocks.permissionState = {
+      missedBasicPermissions: ["bb.roles.list"],
+      missedPermissions: ["bb.projects.get"],
+      permitted: false,
+    };
+
+    const { container, unmount } = renderShell();
+
+    await act(async () => {
+      await Promise.resolve();
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    expect(
+      container.querySelector('[data-testid="sql-editor-home"]')
+    ).not.toBeNull();
+    expect(container.querySelector('[data-testid="denied"]')).toBeNull();
+    unmount();
+  });
+
   test("does not auto-select a project when the editor has no selection", async () => {
     mocks.editorState.project = "";
     mocks.renderRoute = {

@@ -760,6 +760,17 @@ export function SQLEditorRouteShell() {
       checkBasicWorkspacePermissions: true,
     });
 
+  // The SQL Editor home route is where a project-scoped user chooses the
+  // project whose IAM policy grants access. Do not require workspace-level
+  // editor permissions before showing that selector.
+  if (!project && route.name === SQL_EDITOR_HOME_MODULE) {
+    return (
+      <div className="h-full min-h-0 flex flex-col">
+        <SQLEditorHomePage />
+      </div>
+    );
+  }
+
   if (!projectContextReady || !permissionReady) {
     return (
       <div className="flex items-center justify-center h-screen">

@@ -1,4 +1,4 @@
-import type { ReactElement } from "react";
+import type { MouseEvent as ReactMouseEvent, ReactElement } from "react";
 import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   routerPush: vi.fn(),
   navigatePush: vi.fn(),
+  navigateResolve: vi.fn(() => ({ fullPath: "/sql-editor/projects/selected" })),
   onChangeProject: vi.fn(),
   fetchDatabases: vi.fn(),
   projectName: "" as string,
@@ -66,14 +67,18 @@ vi.mock("@/hooks/useAppState", () => ({
 }));
 
 vi.mock("@/hooks/useAppProject", () => ({
-  useAppProject: () => (mocks.projectName ? mocks.projectData : undefined),
+  useAppProject: (name: string) =>
+    name ? { ...mocks.projectData, name } : undefined,
 }));
 
 vi.mock("@/app/router", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/app/router")>()),
   router: { push: mocks.routerPush },
   SQL_EDITOR_PROJECT_MODULE: "sql-editor.project",
-  useNavigate: () => ({ push: mocks.navigatePush }),
+  useNavigate: () => ({
+    push: mocks.navigatePush,
+    resolve: mocks.navigateResolve,
+  }),
 }));
 
 vi.mock("@/app/router/handles", () => ({
@@ -121,11 +126,16 @@ vi.mock("@/components/header/ProjectSwitchPanel", () => ({
   ProjectSwitchPanel: ({
     onSelectProject,
   }: {
-    onSelectProject: (project: { name: string }) => void;
+    onSelectProject: (
+      project: { name: string },
+      event: ReactMouseEvent<HTMLElement>
+    ) => void;
   }) => (
     <button
       data-testid="choose-project"
-      onClick={() => onSelectProject({ name: "projects/selected" })}
+      onClick={(event) =>
+        onSelectProject({ name: "projects/selected" }, event)
+      }
     >
       Choose project
     </button>
@@ -188,6 +198,7 @@ beforeEach(async () => {
   mocks.defaultProjectName = "";
   mocks.themeDark = false;
   mocks.deniedPermissions.clear();
+  window.open = vi.fn();
   mocks.fetchDatabases.mockResolvedValue({ databases: [] });
   ({ Welcome } = await import("./Welcome"));
 });
@@ -218,8 +229,7 @@ describe("Welcome", () => {
     expect(mocks.onChangeProject).toHaveBeenCalledWith("projects/selected");
     await flushEffects();
     expect(mocks.navigatePush).toHaveBeenCalledWith({
-      name: "sql-editor.project",
-      params: { project: "selected" },
+      fullPath: "/sql-editor/projects/selected",
     });
     unmount();
   });
@@ -260,9 +270,12 @@ describe("Welcome", () => {
     unmount();
   });
 
-  test("treats an explicit default project as no project", async () => {
+  test("keeps database connection available for an explicit default project", async () => {
     mocks.projectName = "projects/default";
     mocks.defaultProjectName = "projects/default";
+    mocks.fetchDatabases.mockResolvedValue({
+      databases: [{ name: "databases/default" }],
+    });
     const { container, render, unmount } = renderIntoContainer(
       <Welcome onChangeConnection={() => {}} />
     );
@@ -271,10 +284,13 @@ describe("Welcome", () => {
 
     expect(
       container.querySelector('[data-testid="create-project"]')
-    ).not.toBeNull();
+    ).toBeNull();
     expect(
       container.querySelector('[data-testid="create-project-instance"]')
     ).toBeNull();
+    expect(
+      container.querySelector('[data-testid="connect-database"]')
+    ).not.toBeNull();
 
     unmount();
   });
@@ -289,6 +305,31 @@ describe("Welcome", () => {
     expect(
       container.querySelector('[data-testid="create-project"]')
     ).toBeDisabled();
+    unmount();
+  });
+
+  test("opens a selected project in a new tab on a modified click", async () => {
+    mocks.projects = [{ name: "projects/selected" }];
+    const { container, render, unmount } = renderIntoContainer(
+      <Welcome onChangeConnection={() => {}} />
+    );
+    render();
+
+    act(() => {
+      container
+        .querySelector('[data-testid="choose-project"]')
+        ?.dispatchEvent(
+          new MouseEvent("click", { bubbles: true, ctrlKey: true })
+        );
+    });
+    await flushEffects();
+
+    expect(window.open).toHaveBeenCalledWith(
+      "/sql-editor/projects/selected",
+      "_blank"
+    );
+    expect(mocks.onChangeProject).not.toHaveBeenCalled();
+    expect(mocks.navigatePush).not.toHaveBeenCalled();
     unmount();
   });
 
