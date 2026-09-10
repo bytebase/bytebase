@@ -39,6 +39,7 @@ import { Input } from "@/components/ui/input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { SegmentedControl } from "@/components/ui/segmented-control";
 import { Switch } from "@/components/ui/switch";
+import { cn } from "@/lib/utils";
 import { pushNotification } from "@/stores";
 import { useAppStore } from "@/stores/app";
 import {
@@ -109,13 +110,15 @@ function GCPEndpointInput({
     if (!allowEdit) return null;
     return (
       <div className="col-span-2">
-        <button
+        <Button
           type="button"
-          className="text-sm normal-link"
+          appearance="link"
+          size="xs"
+          className="h-auto p-0 text-sm"
           onClick={() => setExpanded(true)}
         >
           {t("instance.gcp-endpoint-toggle")}
-        </button>
+        </Button>
       </div>
     );
   }
@@ -324,14 +327,17 @@ function InstanceEngineRadioGrid({
   return (
     <div className="w-full grid grid-cols-2 sm:grid-cols-[repeat(auto-fit,minmax(170px,1fr))] gap-2">
       {engineList.map((eng) => (
-        <button
+        <Button
           key={eng}
           type="button"
-          className={`flex items-center gap-x-2 rounded-sm border px-3 py-2 text-sm text-left transition-colors ${
+          appearance="outline"
+          size="lg"
+          className={cn(
+            "h-auto justify-start rounded-sm px-3 py-2 text-left",
             eng === engine
               ? "border-accent bg-accent/5 ring-1 ring-accent"
-              : "border-control-border hover:border-accent/50 hover:bg-control-bg"
-          }`}
+              : "hover:border-accent/50 hover:bg-control-bg"
+          )}
           onClick={() => onEngineChange(eng)}
         >
           <EngineIcon engine={eng} className="size-5" />
@@ -341,7 +347,7 @@ function InstanceEngineRadioGrid({
               Beta
             </span>
           )}
-        </button>
+        </Button>
       ))}
     </div>
   );
@@ -605,13 +611,16 @@ function SyncDatabases({
           <span className="flex items-center gap-x-1">
             {t("instance.sync-databases.self")}
             {onOpenInfoPanel && (
-              <button
+              <Button
                 type="button"
-                className="inline-flex size-4 shrink-0 cursor-pointer items-center justify-center text-accent leading-none"
+                appearance="link"
+                size="xs"
+                className="w-6 shrink-0 p-0"
+                aria-label={t("instance.sync-databases.self")}
                 onClick={() => onOpenInfoPanel("sync-databases")}
               >
                 <Info className="size-3.5" />
-              </button>
+              </Button>
             )}
           </span>
         ) : undefined
@@ -1360,8 +1369,12 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                         : t("instance.external-link")}
                     </FormLabel>
                     {(basicInfo.externalLink ?? "").trim().length > 0 && (
-                      <button
-                        className="ml-1 btn-icon"
+                      <Button
+                        type="button"
+                        appearance="secondary"
+                        size="xs"
+                        className="ml-1 w-6 p-0"
+                        aria-label={t("instance.external-link")}
                         onClick={(e) => {
                           e.preventDefault();
                           window.open(
@@ -1371,7 +1384,7 @@ export function InstanceFormBody({ onOpenInfoPanel }: InstanceFormBodyProps) {
                         }}
                       >
                         <ExternalLink className="size-4" />
-                      </button>
+                      </Button>
                     )}
                   </div>
                 }

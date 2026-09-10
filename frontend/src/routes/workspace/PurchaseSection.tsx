@@ -366,7 +366,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
               <div className="text-lg font-medium">
                 {t("subscription.purchase.payment-info")}
               </div>
-              <div className="flex flex-wrap gap-x-12 gap-y-4 text-sm">
+              <div className="flex flex-wrap gap-x-8 gap-y-4 text-sm">
                 <div>
                   <span className="text-control-placeholder">
                     {t("subscription.purchase.total-price")}
@@ -478,7 +478,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
                           type="button"
                           appearance="secondary"
                           size="sm"
-                          className="h-full rounded-l-sm rounded-r-none px-2"
+                          className="rounded-l-sm rounded-r-none px-2"
                           disabled={
                             seats <= (card.userAdditional.minimumCount || 1)
                           }
@@ -498,7 +498,7 @@ export function PurchaseSection({ onRequireEnterprise }: PurchaseSectionProps) {
                           type="button"
                           appearance="secondary"
                           size="sm"
-                          className="h-full rounded-l-none rounded-r-sm px-2"
+                          className="rounded-l-none rounded-r-sm px-2"
                           disabled={
                             card.userAdditional.maximumCount > 0 &&
                             seats >= card.userAdditional.maximumCount

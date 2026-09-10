@@ -133,7 +133,8 @@ export function TableDetail({ db, database, schema, table }: TableDetailProps) {
         titlePrefix={
           <Button
             appearance="secondary"
-            className="h-8 px-1 text-sm"
+            size="md"
+            className="px-1"
             onClick={deselectTrigger}
           >
             <ChevronLeft className="size-5" />
@@ -155,7 +156,8 @@ export function TableDetail({ db, database, schema, table }: TableDetailProps) {
         <div className="flex items-center gap-x-3 min-w-0">
           <Button
             appearance="secondary"
-            className="h-8 px-1 text-sm shrink-0"
+            size="md"
+            className="px-1 shrink-0"
             onClick={() => clearDetail()}
           >
             <ChevronLeft className="size-5" />

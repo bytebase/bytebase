@@ -178,7 +178,7 @@ export function FlatTableList({
                     type="button"
                     appearance="secondary"
                     size="xs"
-                    className="size-5"
+                    className="w-6"
                     onClick={(e) => {
                       e.stopPropagation();
                       setExpanded((prev) => {

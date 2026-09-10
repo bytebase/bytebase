@@ -637,7 +637,7 @@ export function GlobalMaskingPage() {
 
       {/* Rule list */}
       {items.map((item, index) => (
-        <div key={item.rule.id} className="flex items-start gap-x-5">
+        <div key={item.rule.id} className="flex items-start gap-x-4">
           {item.mode === "NORMAL" &&
             hasPermission &&
             hasSensitiveDataFeature && (

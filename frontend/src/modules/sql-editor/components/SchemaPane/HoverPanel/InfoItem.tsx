@@ -23,7 +23,7 @@ export function InfoItem({ title, titleSlot, children }: Props) {
         {titleSlot ?? title}
       </div>
       <div className="text-right flex items-center justify-end min-w-0">
-        <span className="truncate flex items-center leading-[20px] h-[20px]">
+        <span className="truncate flex h-5 items-center leading-5">
           {children}
         </span>
       </div>

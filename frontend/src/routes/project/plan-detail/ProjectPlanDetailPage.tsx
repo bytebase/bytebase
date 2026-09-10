@@ -483,7 +483,7 @@ function PhaseSection({
               <span className="textlabel uppercase">{label}</span>
               {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
               <div className="flex-1" />
-              <span className="shrink-0 text-[11px] text-control-placeholder">
+              <span className="shrink-0 text-xs text-control-placeholder">
                 {t("plan.phase.show-details")}
               </span>
             </div>
@@ -498,7 +498,7 @@ function PhaseSection({
               {badge && <Badge variant={badge.variant}>{badge.label}</Badge>}
               <div className="flex-1" />
               <span
-                className="shrink-0 cursor-pointer text-[11px] text-control-placeholder hover:text-control"
+                className="shrink-0 cursor-pointer text-xs text-control-placeholder hover:text-control"
                 onClick={onToggle}
               >
                 {t("plan.phase.hide-details")}

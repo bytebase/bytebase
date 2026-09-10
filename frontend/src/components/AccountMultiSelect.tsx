@@ -603,11 +603,7 @@ export function AccountMultiSelect({
                 <SelectionCheckbox
                   selected={selectedFullnames.has(ALL_USERS_USER_EMAIL)}
                 />
-                {/* Blue avatar circle */}
-                <div
-                  className="size-7 rounded-full flex items-center justify-center text-accent-text text-xs font-medium shrink-0"
-                  style={{ backgroundColor: "#3B82F6" }}
-                >
+                <div className="size-7 rounded-full flex items-center justify-center bg-info text-accent-text text-xs font-medium shrink-0">
                   <Users className="h-4 w-4" />
                 </div>
                 <HighlightLabelText

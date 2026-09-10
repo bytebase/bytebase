@@ -996,7 +996,7 @@ export function InstanceDashboard({
                 type="button"
                 appearance="secondary"
                 size="xs"
-                className="size-5 shrink-0 p-0"
+                className="w-6 shrink-0 p-0"
                 onClick={(e) => {
                   e.stopPropagation();
                   toggleDataSource(instance.name);

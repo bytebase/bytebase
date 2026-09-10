@@ -226,7 +226,7 @@ export function InstanceAssignmentSheet({
             {t("subscription.instance-assignment.manage-license")}
           </SheetTitle>
         </SheetHeader>
-        <SheetBody className="gap-y-5">
+        <SheetBody className="gap-y-6">
           <div>
             <div className="flex gap-x-2 text-control-light">
               <span>

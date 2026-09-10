@@ -129,7 +129,7 @@ export function DynamicSuggestions({ onEnter }: Props) {
               className="flex-1 overflow-hidden h-[22px]"
               onClick={handleConsume}
             >
-              <span className="w-full truncate leading-[22px]">{current}</span>
+              <span className="w-full truncate leading-5">{current}</span>
             </Button>
           )}
 

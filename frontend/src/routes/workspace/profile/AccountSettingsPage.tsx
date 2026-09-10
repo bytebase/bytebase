@@ -276,12 +276,12 @@ export function AccountSettingsPage() {
       <div className="mx-auto flex w-full max-w-2xl flex-col gap-y-8">
         <div className="flex items-center gap-x-4">
           <div
-            className="flex size-11 shrink-0 items-center justify-center rounded-full text-base font-bold text-white"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full text-base font-bold text-accent-text"
             style={{ backgroundColor: getAvatarColor(user.email) }}
           >
             {getInitials(title || user.email)}
           </div>
-          <div className="flex min-w-0 flex-col gap-y-0.5">
+          <div className="flex min-w-0 flex-col gap-y-1">
             <h1 className="text-xl font-medium text-main">
               {t("settings.account.self")}
             </h1>

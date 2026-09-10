@@ -53,7 +53,7 @@ export function SettingsRow({
         align === "center" ? "sm:items-center" : "sm:items-start"
       )}
     >
-      <div className="flex min-w-0 flex-1 flex-col gap-y-0.5">
+      <div className="flex min-w-0 flex-1 flex-col gap-y-1">
         <span className="text-sm font-medium text-main">{label}</span>
         {description && (
           <span className="text-xs leading-relaxed text-control-light">

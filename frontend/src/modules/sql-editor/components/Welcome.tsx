@@ -176,7 +176,7 @@ export function Welcome({ onChangeConnection }: WelcomeProps) {
   );
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center gap-y-10">
+    <div className="w-full h-full flex flex-col items-center justify-center gap-y-8">
       <BytebaseLogo
         builtinTheme={isDarkTheme(theme) ? "dark" : "light"}
         className="h-20 w-44"

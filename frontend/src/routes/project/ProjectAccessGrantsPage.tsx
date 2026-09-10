@@ -900,9 +900,9 @@ function DatabaseTargets({ targets }: { targets: string[] }) {
   );
 
   const inline = (
-    <div className="flex items-center truncate gap-x-0.5">
+    <div className="flex items-center truncate gap-x-1">
       {visible.map((target, i) => (
-        <span key={target} className="flex items-center gap-x-0.5">
+        <span key={target} className="flex items-center gap-x-1">
           {i > 0 && <span className="text-sm">, </span>}
           {renderLink(target)}
         </span>

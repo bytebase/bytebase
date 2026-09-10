@@ -622,7 +622,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
             <hr className="my-1" />
 
             {/* Sub-section 3: Require 2FA */}
-            <div className="flex flex-col gap-y-7">
+            <div className="flex flex-col gap-y-6">
               <FormField
                 title={
                   <span className="flex items-center gap-x-2">
@@ -887,7 +887,7 @@ export const AccountSection = forwardRef<SectionHandle, AccountSectionProps>(
                     setTokenState((s) => ({ ...s, inactiveTimeout: v }))
                   }
                 />
-                <span className="text-sm text-gray-500">
+                <span className="text-sm text-control-light">
                   {t(
                     "settings.general.workspace.inactive-session-timeout.hours"
                   )}

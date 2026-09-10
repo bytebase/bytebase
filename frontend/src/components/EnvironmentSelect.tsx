@@ -40,7 +40,7 @@ export function EnvironmentSelect(props: EnvironmentSelectProps) {
         value: formatEnvironmentName(env.id),
         label: env.title,
         render: (keyword: string) => (
-          <div className="flex flex-col gap-0.5">
+          <div className="flex flex-col gap-1">
             <div className="flex items-center gap-x-1">
               <EnvironmentLabel environment={env} keyword={keyword} />
               {renderSuffix?.(env)}

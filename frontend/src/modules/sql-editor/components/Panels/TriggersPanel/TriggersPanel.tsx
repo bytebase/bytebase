@@ -54,7 +54,8 @@ export function TriggersPanel() {
         titlePrefix={
           <Button
             appearance="secondary"
-            className="h-8 px-1 text-sm"
+            size="md"
+            className="px-1"
             onClick={() => clearDetail()}
           >
             <ChevronLeft className="size-5" />

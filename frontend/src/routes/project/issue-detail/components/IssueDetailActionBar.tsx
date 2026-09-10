@@ -744,7 +744,7 @@ function IssueDetailReviewPopover({
       />
 
       <RadioGroup
-        className="flex-col items-stretch gap-y-2.5"
+        className="flex-col items-stretch gap-y-2"
         value={selectedAction}
         onValueChange={(value) => setSelectedAction(value as IssueReviewAction)}
       >
@@ -806,10 +806,7 @@ function IssueDetailReviewPopover({
   if (mobile) {
     return (
       <Sheet onOpenChange={onOpenChange} open={open}>
-        <SheetContent
-          className="w-[calc(100vw-2rem)] max-w-[32rem]"
-          width="standard"
-        >
+        <SheetContent width="panel">
           <SheetHeader>
             <SheetTitle>{t("issue.review.self")}</SheetTitle>
           </SheetHeader>

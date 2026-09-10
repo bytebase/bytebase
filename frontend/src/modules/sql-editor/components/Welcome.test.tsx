@@ -212,6 +212,8 @@ describe("Welcome", () => {
     );
     render();
 
+    expect(container.firstElementChild?.className).toContain("gap-y-8");
+
     expect(
       container.querySelector('[data-testid="select-project"]')
     ).not.toBeNull();

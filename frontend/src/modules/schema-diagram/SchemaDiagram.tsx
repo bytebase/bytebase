@@ -219,7 +219,7 @@ function Body({ databaseName, onEditTable, onEditColumn }: BodyProps) {
 
         {(busy || !initialized) && (
           <div
-            className="absolute inset-0 bg-white/40 flex items-center justify-center pointer-events-none"
+            className="absolute inset-0 bg-background/40 flex items-center justify-center pointer-events-none"
             data-screenshot-hide
           >
             <LoaderCircle className="size-6 text-accent animate-spin" />

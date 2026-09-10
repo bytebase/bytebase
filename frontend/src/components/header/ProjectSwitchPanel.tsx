@@ -230,7 +230,7 @@ export function ProjectSwitchPanel({
         onValueChange={(value) => setSelectedTab(value as ProjectSwitchTab)}
       >
         <div className="mb-2 mx-3 flex items-center justify-between gap-x-3">
-          <TabsList className="gap-x-5">
+          <TabsList className="gap-x-4">
             <TabsTrigger className="pb-1.5" value="recent">
               {t("common.recent")}
             </TabsTrigger>

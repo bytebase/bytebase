@@ -152,7 +152,8 @@ export function EditorAction({ onExecute }: Props) {
         {isAdminMode && (
           <Button
             appearance="outline"
-            className="h-8 px-1.5 gap-1 border-dashed text-sm"
+            size="md"
+            className="gap-1 border-dashed"
             onClick={(e) => {
               e.stopPropagation();
               exitAdminMode();
@@ -195,7 +196,6 @@ export function EditorAction({ onExecute }: Props) {
               <Button
                 appearance="outline"
                 size="sm"
-                className="h-7 px-1.5"
                 disabled={!allowSave}
                 onClick={handleClickSave}
                 aria-label={t("common.save")}
@@ -217,7 +217,6 @@ export function EditorAction({ onExecute }: Props) {
                     <Button
                       appearance="outline"
                       size="sm"
-                      className="h-7 px-1.5"
                       disabled={!allowShare}
                       aria-label={t("common.share")}
                     >

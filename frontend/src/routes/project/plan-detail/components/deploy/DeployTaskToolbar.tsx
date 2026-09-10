@@ -127,7 +127,7 @@ export function DeployTaskToolbar({
               </div>
             </Tooltip>
             <span className="text-sm text-blue-900">{selectionCountText}</span>
-            <div className="flex items-center gap-x-0.5">
+            <div className="flex items-center gap-x-1">
               <Tooltip
                 content={
                   !hasRunnableTasks

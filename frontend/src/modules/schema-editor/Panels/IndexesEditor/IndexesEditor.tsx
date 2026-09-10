@@ -146,7 +146,7 @@ export function IndexesEditor({
                     <Button
                       appearance="secondary"
                       size="sm"
-                      className="size-7 p-0 text-error hover:text-error"
+                      className="w-7 p-0 text-error hover:text-error"
                       onClick={() => handleDropIndex(index)}
                     >
                       <Trash2 className="size-3.5" />

@@ -46,7 +46,7 @@ export function UserAvatar({
   return (
     <div
       className={cn(
-        "rounded-full flex items-center justify-center text-white font-medium shrink-0",
+        "rounded-full flex items-center justify-center text-accent-text font-medium shrink-0",
         AVATAR_SIZES[size],
         className
       )}

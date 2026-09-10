@@ -121,10 +121,7 @@ export function DeployPendingTasksSection({
 
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
-      <SheetContent
-        className="w-[25rem] max-w-[calc(100vw-2rem)]"
-        width="standard"
-      >
+      <SheetContent width="narrow">
         <SheetHeader>
           <SheetTitle>{t("rollout.pending-tasks-preview.title")}</SheetTitle>
         </SheetHeader>
@@ -142,7 +139,7 @@ export function DeployPendingTasksSection({
               {t("rollout.pending-tasks-preview.no-pending-tasks")}
             </p>
           ) : (
-            <div className="space-y-4">
+            <div className="flex flex-col gap-y-4">
               {groups.map((group) => (
                 <div key={group.environment} className="rounded-sm border">
                   <div className="flex items-center gap-2 bg-gray-50 px-3 py-2">
@@ -207,7 +204,7 @@ export function DeployPendingTasksSection({
                     </Button>
                   </div>
                   {expandedEnvs.has(group.environment) && (
-                    <ul className="space-y-1 px-3 py-2">
+                    <ul className="flex flex-col gap-y-1 px-3 py-2">
                       {group.tasks.map((task) => (
                         <li key={`${task.target}:${task.specId}`}>
                           {isValidDatabaseName(task.target) ? (

@@ -24,7 +24,7 @@ export function SplashLayout() {
   return (
     <div className="min-h-screen overflow-hidden flex">
       {showBrandingImage ? (
-        <div className="hidden bg-white lg:block relative w-0 flex-1">
+        <div className="hidden bg-background lg:block relative w-0 flex-1">
           <img
             className="absolute inset-0 h-full w-full object-cover"
             src={

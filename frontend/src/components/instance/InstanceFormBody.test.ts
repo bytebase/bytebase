@@ -137,9 +137,7 @@ describe("InstanceFormBody", () => {
       "onOpenInfoPanel?: (section: InfoSection) => void"
     );
     expect(source).toContain("onOpenInfoPanel={onOpenInfoPanel}");
-    expect(source).toContain(
-      'className="inline-flex size-4 shrink-0 cursor-pointer items-center justify-center text-accent leading-none"'
-    );
+    expect(source).toContain('aria-label={t("instance.sync-databases.self")}');
     expect(source).toContain('<Info className="size-3.5" />');
     expect(infoTriggerIndex).toBeGreaterThan(titleIndex);
     expect(infoTriggerIndex).toBeLessThan(descriptionIndex);

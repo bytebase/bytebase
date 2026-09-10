@@ -149,9 +149,9 @@ export function TableCell({
         )}
         {clickable && showDetailAction && (
           <Button
-            size="sm"
+            size="xs"
             appearance="outline"
-            className="size-6 p-0 rounded-full shadow opacity-90 hover:opacity-100"
+            className="w-6 p-0 rounded-full shadow opacity-90 hover:opacity-100"
             onClick={(e) => {
               e.stopPropagation();
               showDetail();
